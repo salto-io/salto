@@ -94,7 +94,7 @@ export type SuiteAppClientParameters = {
 export type SavedSearchQuery = {
   type: string
   columns: string[]
-  filters: string[][]
+  filters: Array<string[] | string>
 }
 
 export const SYSTEM_INFORMATION_SCHEME = {

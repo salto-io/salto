@@ -20,6 +20,7 @@ import axios from 'axios'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { Credentials } from '../credentials'
 import { HttpMethod, isError, RestletOperation, RestletResults, RESTLET_RESULTS_SCHEMA,
   SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA, SuiteAppClientParameters,
@@ -148,7 +149,7 @@ export class SuiteAppClient {
     }
 
     if (isError(response.data)) {
-      throw new Error(`Restlet request failed. Message: ${response.data.message}, error ${response.data.error}`)
+      throw new Error(`Restlet request failed. Message: ${response.data.message}, error: ${safeJsonStringify(response.data.error)}`)
     }
 
     return response.data.results

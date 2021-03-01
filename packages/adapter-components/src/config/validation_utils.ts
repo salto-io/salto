@@ -13,6 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const findDuplicates = (items: string[]): string[] => ([...(new Set(
-  items.filter((url, idx) => items.indexOf(url) !== idx)
-))].sort())
+import _ from 'lodash'
+
+export const findDuplicates = (items: string[]): string[] => (
+  Object.entries(_.countBy(items))
+    .filter(([_str, count]) => count > 1)
+    .map(([str]) => str)
+    .sort()
+)

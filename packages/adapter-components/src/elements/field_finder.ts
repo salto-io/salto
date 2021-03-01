@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, Field, isListType, isObjectType } from '@salto-io/adapter-api'
+import { ObjectType, Field, isListType, isObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FieldToOmitType, DATA_FIELD_ENTIRE_OBJECT } from '../config/transformation'
 
@@ -45,15 +45,25 @@ export const findDataField: FindNestedFieldFunc = (type, fieldsToIgnore, dataFie
     return undefined
   }
 
-  const potentialFields = (dataField !== undefined && type.fields[dataField] !== undefined
-    ? [type.fields[dataField]]
-    : Object.values(type.fields).filter(field =>
-      (fieldsToIgnore ?? []).every(({ fieldName, fieldType }) => (
-        fieldName !== field.name
-        || (fieldType !== undefined && fieldType !== field.type.elemID.name)
-      ))
-      && (isObjectType(field.type)
-        || (isListType(field.type) && isObjectType(field.type.innerType))))
+  const shouldIgnoreField = (field: Field): boolean => (
+    (fieldsToIgnore ?? []).some(({ fieldName, fieldType }) => (
+      fieldName === field.name
+      && (fieldType === undefined || fieldType === field.type.elemID.name)
+    ))
+  )
+  const isObjectTypeDeep = (fieldType: TypeElement): boolean => (
+    isObjectType(fieldType)
+    || (isListType(fieldType) && isObjectTypeDeep(fieldType.innerType))
+  )
+
+  const potentialFields = (
+    dataField !== undefined && type.fields[dataField] !== undefined
+      ? [type.fields[dataField]]
+      : (
+        Object.values(type.fields)
+          .filter(field => isObjectTypeDeep(field.type))
+          .filter(field => !shouldIgnoreField(field))
+      )
   )
 
   if (potentialFields.length > 1) {

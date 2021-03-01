@@ -30,5 +30,5 @@ export type ParsedNaclFile = {
   elements: Element[]
   data: ParsedNaclFileData
   buffer?: string
-  sourceMap?: SourceMap // TODO: Change to RemoteMap
+  sourceMap?: SourceMap
 }

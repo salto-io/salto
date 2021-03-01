@@ -414,7 +414,8 @@ const buildNaclFilesSource = (
   const buildInitState = async (): Promise<buildNaclFilesStateResult> => {
     const modifiedNaclFiles: NaclFile[] = []
     const parsedNaclFilesFromCache: ParsedNaclFile[] = []
-    // The sourceName '' is a temp hack
+    // The sourceName '' is a temp hack in the whole flow
+    // TODO: ROI REMOVE THESE HACKS PLEASE!
     if (sourceName === '') {
       await cache.clear()
     }
@@ -442,6 +443,9 @@ const buildNaclFilesSource = (
         cache
       ),
     })).state
+    if (sourceName === '') {
+      cacheOnlyState.mergedElements.clear()
+    }
     const parsedModifiedFiles = await parseNaclFiles(modifiedNaclFiles, cache, functions)
     return buildNaclFilesState({
       newNaclFiles: parsedModifiedFiles,
@@ -719,7 +723,7 @@ const buildNaclFilesSource = (
     clone: () => buildNaclFilesSource(
       sourceName,
       naclFilesStore.clone(),
-      cache, // cache.clone(),
+      cache.clone(),
       staticFilesSource.clone(),
       remoteMapCreator,
       state,

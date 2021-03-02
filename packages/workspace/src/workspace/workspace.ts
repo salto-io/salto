@@ -146,6 +146,7 @@ export const loadWorkspace = async (
   credentials: ConfigSource,
   elementsSources: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
+  ignoreFileChanges = false,
 ): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
@@ -228,7 +229,7 @@ export const loadWorkspace = async (
     return current
   }
 
-  const initChanges = await naclFilesSource.load()
+  const initChanges = await naclFilesSource.load(ignoreFileChanges)
   workspaceState = buildWorkspaceState({ changes: initChanges })
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {

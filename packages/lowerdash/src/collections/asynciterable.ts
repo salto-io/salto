@@ -275,7 +275,7 @@ export async function *iterateTogether<T>(before: AsyncIterable<T>,
     if (next.done) {
       return undefined
     }
-    if (curValue && cmp(curValue, next.value) !== -1) {
+    if (curValue && cmp(curValue, next.value) > -1) {
       throw new Error('Runtime Error: iterators must be sorted')
     }
     return next.value

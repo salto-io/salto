@@ -24,9 +24,8 @@ import { AdditionDiff } from '@salto-io/dag'
 import { MergeError, mergeElements } from '../../merger'
 import { getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource,
   getNestedStaticFiles } from './nacl_file_update'
-import { parse, SourceRange, ParseError, ParseResult, SourceMap } from '../../parser'
+import { parse, SourceRange, ParseResult, SourceMap } from '../../parser'
 import { ElementsSource, RemoteElementSource } from '../elements_source'
-import { ParseResultCache, ParseResultKey } from '../cache'
 import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
 import { StaticFilesSource } from '../static_files'
@@ -34,7 +33,9 @@ import { getStaticFilesFunctions } from '../static_files/functions'
 import { buildNewMergedElementsAndErrors } from './elements_cache'
 import { serialize, deserializeMergeErrors, deserializeSingleElement } from '../../serializer/elements'
 import { Functions } from '../../parser/functions'
-import { RemoteMap, InMemoryRemoteMap, RemoteMapCreator } from '../remote_map'
+import { RemoteMap, RemoteMapCreator } from '../remote_map'
+import { ParsedNaclFile } from './parsed_nacl_file'
+import { ParsedNaclFileCache, ParseResultKey } from './parsed_nacl_files_cache'
 
 const { awu, concatAsync } = collections.asynciterable
 const { withLimitedConcurrency } = promises.array
@@ -80,20 +81,8 @@ export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
   load: () => Promise<Change[]>
 }
 
-export type ParsedNaclFileDataKeys = 'errors' | 'timestamp' | 'referenced'
-export type ParsedNaclFile = {
-  filename: string
-  elements: Element[]
-  data: RemoteMap<Value, ParsedNaclFileDataKeys>
-  buffer?: string
-}
-
-type ParsedNaclFileMap = {
-  [key: string]: ParsedNaclFile
-}
-
 type NaclFilesState = {
-  parsedNaclFiles: ParsedNaclFileMap
+  parsedNaclFiles: ParsedNaclFileCache
   elementsIndex: RemoteMap<string[]>
   mergedElements: ElementsSource
   mergeErrors: RemoteMap<MergeError[]>
@@ -180,36 +169,33 @@ const getElementReferenced = async (element: Element): Promise<Set<string>> => {
 }
 
 export const toParsedNaclFile = async (
-  naclFile: Omit<NaclFile, 'buffer'>,
+  naclFile: NaclFile,
   parseResult: ParseResult
 ): Promise<ParsedNaclFile> => ({
   filename: naclFile.filename,
   elements: await awu(parseResult.elements).toArray(),
-  data: new InMemoryRemoteMap<Value, ParsedNaclFileDataKeys>([
-    { key: 'timestamp', value: naclFile.timestamp || Date.now() },
-    { key: 'errors', value: parseResult.errors },
-    { key: 'referenced', value: await awu(parseResult.elements).flatMap(getElementReferenced).toArray() },
-  ]),
+  data: {
+    timestamp: naclFile.timestamp ?? Date.now(),
+    errors: parseResult.errors,
+    referenced: await awu(parseResult.elements).flatMap(getElementReferenced).toArray(),
+  },
+  buffer: naclFile.buffer,
+  sourceMap: parseResult.sourceMap,
 })
 
 const parseNaclFile = async (
-  naclFile: NaclFile, cache: ParseResultCache, functions: Functions
-): Promise<Required<ParseResult>> => {
-  const parseResult = await parse(Buffer.from(naclFile.buffer), naclFile.filename, functions)
-  const key = cacheResultKey(naclFile)
-  await cache.put(key, parseResult)
-  return parseResult
-}
+  naclFile: NaclFile, functions: Functions
+): Promise<Required<ParseResult>> =>
+  (parse(Buffer.from(naclFile.buffer), naclFile.filename, functions))
 
 const parseNaclFiles = async (
-  naclFiles: NaclFile[], cache: ParseResultCache, functions: Functions
+  naclFiles: NaclFile[], cache: ParsedNaclFileCache, functions: Functions
 ): Promise<ParsedNaclFile[]> =>
   withLimitedConcurrency(naclFiles.map(naclFile => async () => {
-    const key = cacheResultKey(naclFile)
-    const cachedResult = await cache.get(key)
-    return cachedResult
-      ? toParsedNaclFile(naclFile, cachedResult)
-      : toParsedNaclFile(naclFile, await parseNaclFile(naclFile, cache, functions))
+    const hasValid = await cache.hasValid(cacheResultKey(naclFile))
+    const cachedResult = hasValid && await cache.get(naclFile.filename)
+    return (cachedResult && values.isDefined(cachedResult))
+      ? cachedResult : toParsedNaclFile(naclFile, await parseNaclFile(naclFile, functions))
   }), PARSE_CONCURRENCY)
 
 export const getFunctions = (staticFilesSource: StaticFilesSource): Functions => ({
@@ -218,7 +204,7 @@ export const getFunctions = (staticFilesSource: StaticFilesSource): Functions =>
 
 export const getParsedNaclFiles = async (
   naclFilesStore: DirectoryStore<string>,
-  cache: ParseResultCache,
+  cache: ParsedNaclFileCache,
   staticFilesSource: StaticFilesSource
 ): Promise<ParsedNaclFile[]> => {
   const naclFiles = (await naclFilesStore.getFiles(await naclFilesStore.list()))
@@ -229,41 +215,44 @@ export const getParsedNaclFiles = async (
 
 type buildNaclFilesStateResult = { state: NaclFilesState; changes: Change[] }
 
+const createNaclFilesState = async (
+  remoteMapCreator: RemoteMapCreator,
+  staticFilesSource: StaticFilesSource,
+  sourceName: string,
+  cache: ParsedNaclFileCache,
+): Promise<NaclFilesState> => ({
+  elementsIndex: await remoteMapCreator<string[]>({
+    namespace: getRemoteMapNamespace('elements_index', sourceName),
+    serialize: val => safeJsonStringify(val),
+    deserialize: data => JSON.parse(data),
+  }),
+  mergeErrors: await remoteMapCreator<MergeError[]>({
+    namespace: getRemoteMapNamespace('errors', sourceName),
+    serialize: errors => serialize(errors),
+    deserialize: async data => deserializeMergeErrors(data),
+  }),
+  mergedElements: new RemoteElementSource(await remoteMapCreator<Element>({
+    namespace: getRemoteMapNamespace('merged', sourceName),
+    serialize: element => serialize([element]),
+    deserialize: async data => deserializeSingleElement(
+      data,
+      async sf => staticFilesSource.getStaticFile(sf.filepath, sf.encoding)
+    ),
+  })),
+  parsedNaclFiles: cache,
+  referencedIndex: await remoteMapCreator<string[]>({
+    namespace: getRemoteMapNamespace('referenced_index', sourceName),
+    serialize: val => safeJsonStringify(val),
+    deserialize: data => JSON.parse(data),
+  }),
+})
+
 const buildNaclFilesState = async ({
-  newNaclFiles, remoteMapCreator, existingState, staticFilesSource, sourceName,
+  newNaclFiles, currentState,
 }: {
   newNaclFiles: ParsedNaclFile[]
-  remoteMapCreator: RemoteMapCreator
-  existingState?: NaclFilesState
-  staticFilesSource: StaticFilesSource
-  sourceName: string
+  currentState: NaclFilesState
 }): Promise<buildNaclFilesStateResult> => {
-  const currentState = existingState ?? {
-    elementsIndex: await remoteMapCreator<string[]>({
-      namespace: getRemoteMapNamespace('elements_index', sourceName),
-      serialize: val => safeJsonStringify(val),
-      deserialize: data => JSON.parse(data),
-    }),
-    mergeErrors: await remoteMapCreator<MergeError[]>({
-      namespace: getRemoteMapNamespace('errors', sourceName),
-      serialize: errors => serialize(errors),
-      deserialize: async data => deserializeMergeErrors(data),
-    }),
-    mergedElements: new RemoteElementSource(await remoteMapCreator<Element>({
-      namespace: getRemoteMapNamespace('merged', sourceName),
-      serialize: element => serialize([element]),
-      deserialize: async data => deserializeSingleElement(
-        data,
-        async sf => staticFilesSource.getStaticFile(sf.filepath, sf.encoding)
-      ),
-    })),
-    parsedNaclFiles: {} as ParsedNaclFileMap,
-    referencedIndex: await remoteMapCreator<string[]>({
-      namespace: getRemoteMapNamespace('referenced_index', sourceName),
-      serialize: val => safeJsonStringify(val),
-      deserialize: data => JSON.parse(data),
-    }),
-  }
   log.debug('building elements indices for %d NaCl files', newNaclFiles.length)
   const newParsed = _.keyBy(newNaclFiles, parsed => parsed.filename)
 
@@ -293,12 +282,12 @@ const buildNaclFilesState = async ({
   }
 
   const handleAdditionOrModification = async (naclFile: ParsedNaclFile): Promise<void> => {
-    (await naclFile.data.get('referenced') ?? []).forEach((elementFullName: string) => {
+    (naclFile.data.referenced ?? []).forEach((elementFullName: string) => {
       referencedIndexAdditions[elementFullName] = referencedIndexAdditions[elementFullName]
         ?? new Set<string>()
       referencedIndexAdditions[elementFullName].add(naclFile.filename)
     })
-    await awu(await naclFile.elements).forEach(element => {
+    await awu(naclFile.elements).forEach(element => {
       const elementFullName = element.elemID.getFullName()
       elementsIndexAdditions[elementFullName] = elementsIndexAdditions[elementFullName]
         ?? new Set<string>()
@@ -306,37 +295,41 @@ const buildNaclFilesState = async ({
     })
     relevantElementIDs.push(
       ...naclFile.elements.map(e => e.elemID),
-      ...currentState.parsedNaclFiles[naclFile.filename]?.elements.map(e => e.elemID) ?? []
+      ...(await currentState.parsedNaclFiles.get(naclFile.filename))?.elements
+        .map(e => e.elemID) ?? [],
     )
 
     newElementsToMerge.push(awu(naclFile.elements))
-    currentState.parsedNaclFiles[naclFile.filename] = naclFile
+    // This is temp and should be removed when we change the init flow
+    // This happens now cause we get here with ParsedNaclFiles that originate from the cache
+    if (values.isDefined(naclFile.buffer)) {
+      await currentState.parsedNaclFiles.put(naclFile.filename, naclFile)
+    }
   }
 
   const handleDeletion = async (naclFile: ParsedNaclFile): Promise<void> => {
-    const oldNaclFile = currentState.parsedNaclFiles[naclFile.filename]
+    const oldNaclFile = await currentState.parsedNaclFiles.get(naclFile.filename)
     if (oldNaclFile === undefined) {
       return
     }
-    (await oldNaclFile.data.get('referenced') ?? []).forEach((elementFullName: string) => {
+    (oldNaclFile.data.referenced ?? []).forEach((elementFullName: string) => {
       referencedIndexDeletions[elementFullName] = referencedIndexDeletions[elementFullName]
         ?? new Set<string>()
       referencedIndexDeletions[elementFullName].add(oldNaclFile.filename)
     })
-    await awu(await oldNaclFile.elements).forEach(element => {
+    await awu(oldNaclFile.elements).forEach(element => {
       const elementFullName = element.elemID.getFullName()
       elementsIndexDeletions[elementFullName] = elementsIndexDeletions[elementFullName]
         ?? new Set<string>()
       elementsIndexDeletions[elementFullName].add(oldNaclFile.filename)
     })
     relevantElementIDs.push(...oldNaclFile.elements.map(e => e.elemID))
-    delete currentState.parsedNaclFiles[naclFile.filename]
+    await currentState.parsedNaclFiles.delete(naclFile.filename)
   }
 
-  // Add data from bew additions
+  // Add data from new additions
   await awu(Object.values(newParsed)).forEach(async naclFile => {
-    const isDeletion = await awu(naclFile.elements).isEmpty()
-      && _.isEmpty(await naclFile.data.get('errors'))
+    const isDeletion = _.isEmpty(naclFile.elements) && _.isEmpty(naclFile.data.errors)
     if (isDeletion) {
       await handleDeletion(naclFile)
     } else {
@@ -352,11 +345,9 @@ const buildNaclFilesState = async ({
       ).filter((filename: string) => newParsed[filename] === undefined)
 
       return awu(unmodifiedFilesWithElem)
-        .map(
-          filename => currentState.parsedNaclFiles[filename].elements.find(
-            e => e.elemID.isEqual(elemID)
-          )
-        )
+        .map(async filename =>
+          (await currentState.parsedNaclFiles.get(filename))?.elements.find(
+            e => e.elemID.isEqual(elemID)))
     }).filter(values.isDefined) as AsyncIterable<Element>
 
   await updateIndex(
@@ -405,36 +396,12 @@ const logNaclFileUpdateErrorContext = (
 const buildNaclFilesSource = (
   sourceName: string,
   naclFilesStore: DirectoryStore<string>,
-  cache: ParseResultCache,
+  cache: ParsedNaclFileCache,
   staticFilesSource: StaticFilesSource,
   remoteMapCreator: RemoteMapCreator,
-  initState?: Promise<NaclFilesState>
+  initState?: Promise<NaclFilesState>,
 ): NaclFilesSource => {
   const functions: Functions = getFunctions(staticFilesSource)
-
-  const createNaclFileFromChange = async (
-    filename: string,
-    change: AdditionDiff<Element>,
-    fileData: string,
-  ): Promise<ParsedNaclFile> => {
-    const elements = [
-      (change as AdditionDiff<Element>).data.after,
-    ]
-    const parsed = {
-      filename,
-      elements,
-      data: new InMemoryRemoteMap<Value, ParsedNaclFileDataKeys>([
-        { key: 'referenced', value: await awu(elements).flatMap(getElementReferenced).toArray() },
-        { key: 'errors', value: [] },
-        { key: 'timestamp', value: Date.now() },
-      ]),
-    }
-    const key = cacheResultKey({ filename: parsed.filename,
-      buffer: fileData,
-      timestamp: await parsed.data.get('timestamp') })
-    await cache.put(key, { elements, errors: [] })
-    return parsed
-  }
 
   let state = initState
   const getState = (): Promise<NaclFilesState> => {
@@ -447,39 +414,42 @@ const buildNaclFilesSource = (
   const buildInitState = async (): Promise<buildNaclFilesStateResult> => {
     const modifiedNaclFiles: NaclFile[] = []
     const parsedNaclFilesFromCache: ParsedNaclFile[] = []
-
+    // The sourceName '' is a temp hack in the whole flow
+    // TODO: ROI REMOVE THESE HACKS PLEASE!
+    if (sourceName === '') {
+      await cache.clear()
+    }
     const cacheFilenames = await cache.list()
     const naclFilenames = await naclFilesStore.list()
 
-    const visitedFiles = new Set<string>()
-    await awu(cacheFilenames).concat(naclFilenames).forEach(async filename => {
-      if (!visitedFiles.has(filename)) {
-        const naclFile = await naclFilesStore.get(filename) ?? { filename, buffer: '' }
-        const validCache = await cache.get(cacheResultKey(naclFile))
-        const latestCache = validCache ?? await cache.get(cacheResultKey(naclFile), true)
-        if (latestCache !== undefined) {
-          parsedNaclFilesFromCache.push(await toParsedNaclFile(naclFile, latestCache))
-        }
-        if (validCache === undefined) {
-          modifiedNaclFiles.push(naclFile)
-        }
+    const fileNames = new Set([...cacheFilenames, ...naclFilenames])
+    await awu(fileNames).forEach(async filename => {
+      const naclFile = await naclFilesStore.get(filename) ?? { filename, buffer: '' }
+      const cacheVal = await cache.get(filename)
+      if (cacheVal !== undefined && sourceName !== '') {
+        parsedNaclFilesFromCache.push(cacheVal)
+      }
+      const cacheHasValidVal = await cache.hasValid(cacheResultKey(naclFile))
+      if (!cacheHasValidVal || sourceName === '') {
+        modifiedNaclFiles.push(naclFile)
       }
     })
-
     const cacheOnlyState = (await buildNaclFilesState({
       newNaclFiles: parsedNaclFilesFromCache,
-      remoteMapCreator,
-      staticFilesSource,
-      sourceName,
-    })
-    ).state
+      currentState: await createNaclFilesState(
+        remoteMapCreator,
+        staticFilesSource,
+        sourceName,
+        cache
+      ),
+    })).state
+    if (sourceName === '') {
+      cacheOnlyState.mergedElements.clear()
+    }
     const parsedModifiedFiles = await parseNaclFiles(modifiedNaclFiles, cache, functions)
     return buildNaclFilesState({
       newNaclFiles: parsedModifiedFiles,
-      remoteMapCreator,
-      existingState: cacheOnlyState,
-      staticFilesSource,
-      sourceName,
+      currentState: cacheOnlyState,
     })
   }
 
@@ -491,10 +461,7 @@ const buildNaclFilesSource = (
     const current = await state
     return buildNaclFilesState({
       newNaclFiles: parsedNaclFiles,
-      remoteMapCreator,
-      existingState: current,
-      staticFilesSource,
-      sourceName,
+      currentState: current,
     })
   }
 
@@ -504,7 +471,7 @@ const buildNaclFilesSource = (
   const getParsedNaclFile = async (filename: string): Promise<ParsedNaclFile | undefined> => {
     // We don't want to parse all nacl files here when we want only parsedResult of one file.
     if (state !== undefined) {
-      return (await getState()).parsedNaclFiles[filename]
+      return (await getState()).parsedNaclFiles.get(filename)
     }
     const naclFile = await getNaclFile(filename)
     if (naclFile === undefined) return undefined
@@ -529,19 +496,41 @@ const buildNaclFilesSource = (
   ): Promise<string[]> => await (await getState()).referencedIndex.get(elemID.getFullName()) ?? []
 
   const getSourceMap = async (filename: string): Promise<SourceMap> => {
-    const parsedNaclFile = (await getState()).parsedNaclFiles[filename]
-    const key = cacheResultKey(parsedNaclFile)
-    const cachedResult = await cache.get(key)
-    if (cachedResult && cachedResult.sourceMap) {
-      return cachedResult.sourceMap
+    // Need to check if need an extra hasValid check here
+    const parsedNaclFile = await (await getState()).parsedNaclFiles.get(filename)
+    if (values.isDefined(parsedNaclFile) && values.isDefined(parsedNaclFile.sourceMap)) {
+      return parsedNaclFile.sourceMap
     }
     const naclFile = (await naclFilesStore.get(filename))
     if (_.isUndefined(naclFile)) {
       log.error('failed to find %s in NaCl file store', filename)
       return new SourceMap()
     }
-    const parsedResult = await parseNaclFile(naclFile, cache, functions)
+    const parsedResult = await parseNaclFile(naclFile, functions)
+    const newParsedNaclFile = await toParsedNaclFile(naclFile, parsedResult)
+    await cache.put(filename, newParsedNaclFile)
     return parsedResult.sourceMap
+  }
+
+  const createNaclFileFromChange = async (
+    filename: string,
+    change: AdditionDiff<Element>,
+    fileData: string,
+  ): Promise<ParsedNaclFile> => {
+    const elements = [
+      (change as AdditionDiff<Element>).data.after,
+    ]
+    const parsed = {
+      filename,
+      elements,
+      data: {
+        timestamp: Date.now(),
+        errors: [],
+        referenced: await awu(elements).flatMap(getElementReferenced).toArray(),
+      },
+      buffer: fileData,
+    }
+    return parsed
   }
 
   const setNaclFiles = async (
@@ -577,11 +566,17 @@ const buildNaclFilesSource = (
         .toArray()
     )
     const { parsedNaclFiles } = await getState()
-    const changedFileToSourceMap: Record<string, SourceMap> = _.fromPairs(
-      await withLimitedConcurrency(naclFiles
-        .map(naclFile => async () => [parsedNaclFiles[naclFile].filename,
-          await getSourceMap(parsedNaclFiles[naclFile].filename)]),
-      CACHE_READ_CONCURRENCY)
+    const changedFileToSourceMap: Record<string, SourceMap> = Object.fromEntries(
+      (await withLimitedConcurrency(naclFiles
+        .map(naclFile => async () => {
+          const parsedNaclFile = await parsedNaclFiles.get(naclFile)
+          return values.isDefined(parsedNaclFile)
+            ? [
+              parsedNaclFile.filename,
+              await getSourceMap(parsedNaclFile.filename),
+            ] : undefined
+        }),
+      CACHE_READ_CONCURRENCY)).filter(values.isDefined)
     )
     const mergedSourceMap = Object.values(changedFileToSourceMap).reduce((acc, sourceMap) => {
       acc.merge(sourceMap)
@@ -609,9 +604,11 @@ const buildNaclFilesSource = (
             const parsed = shouldNotParse
               ? await createNaclFileFromChange(filename, fileChanges[0] as AdditionDiff<Element>,
                 buffer)
-              : await toParsedNaclFile({ filename },
-                await parseNaclFile({ filename, buffer }, cache, functions))
-            if ((await parsed.data.get('errors') ?? []).length > 0) {
+              : await toParsedNaclFile(
+                { filename, buffer },
+                await parseNaclFile({ filename, buffer }, functions),
+              )
+            if ((parsed.data.errors ?? []).length > 0) {
               logNaclFileUpdateErrorContext(filename, fileChanges, naclFileData, buffer)
             }
             await removeDanglingStaticFiles(fileChanges)
@@ -670,9 +667,7 @@ const buildNaclFilesSource = (
     getErrors: async (): Promise<Errors> => {
       const currentState = await getState()
       return new Errors({
-        parse: await awu(Object.values(currentState.parsedNaclFiles))
-          .flatMap(async parsed => parsed.data.get('errors') ?? [])
-          .toArray() as ParseError[],
+        parse: await currentState.parsedNaclFiles.getAllErrors(),
         merge: [...await awu(currentState.mergeErrors.values()).flat().toArray()],
         validation: [],
       })
@@ -760,14 +755,20 @@ const buildNaclFilesSource = (
 export const naclFilesSource = async (
   sourceName: string,
   naclFilesStore: DirectoryStore<string>,
-  cache: ParseResultCache,
+  cache: ParsedNaclFileCache,
   staticFilesSource: StaticFilesSource,
   remoteMapCreator: RemoteMapCreator,
   parsedFiles?: ParsedNaclFile[],
 ): Promise<NaclFilesSource> => {
   const state = (parsedFiles !== undefined)
     ? (await buildNaclFilesState({
-      newNaclFiles: parsedFiles, remoteMapCreator, staticFilesSource, sourceName,
+      newNaclFiles: parsedFiles,
+      currentState: await createNaclFilesState(
+        remoteMapCreator,
+        staticFilesSource,
+        sourceName,
+        cache
+      ),
     })).state
     : undefined
   return buildNaclFilesSource(

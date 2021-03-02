@@ -602,6 +602,8 @@ describe('multi env tests', () => {
     })
 
     describe('handle nacl file delete changes', () => {
+      let env1DeployPlan: Plan | undefined
+      let env2DeployPlan: Plan | undefined
       beforeAll(async () => {
         await rm(commonNaclFileName())
         await rm(env1NaclFileName())
@@ -609,13 +611,18 @@ describe('multi env tests', () => {
         await rm(env2ObjFilePath())
         await rm(env2InstFilePath())
         await runSetEnv(baseDir, ENV1_NAME)
-        await runPreviewGetPlan(baseDir)
+        env1DeployPlan = await runPreviewGetPlan(baseDir)
         await runSetEnv(baseDir, ENV2_NAME)
-        await runPreviewGetPlan(baseDir)
+        env2DeployPlan = await runPreviewGetPlan(baseDir)
         await runSetEnv(baseDir, ENV1_NAME)
         await runDeploy({ workspacePath: baseDir, allowErrors: true })
         await runSetEnv(baseDir, ENV2_NAME)
         await runDeploy({ workspacePath: baseDir, allowErrors: true })
+      })
+
+      it('Should have non-empty deploy plans', () => {
+        expect(env1DeployPlan?.size).not.toEqual(0)
+        expect(env2DeployPlan?.size).not.toEqual(0)
       })
 
       it('should remove common elements from nacl change', async () => {

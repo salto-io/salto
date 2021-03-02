@@ -507,6 +507,8 @@ const buildNaclFilesSource = (
       return new SourceMap()
     }
     const parsedResult = await parseNaclFile(naclFile, functions)
+    const newParsedNaclFile = await toParsedNaclFile(naclFile, parsedResult)
+    await cache.put(filename, newParsedNaclFile)
     return parsedResult.sourceMap
   }
 
@@ -569,8 +571,10 @@ const buildNaclFilesSource = (
         .map(naclFile => async () => {
           const parsedNaclFile = await parsedNaclFiles.get(naclFile)
           return values.isDefined(parsedNaclFile)
-            ? [parsedNaclFile.filename, await getSourceMap(parsedNaclFile.filename)]
-            : undefined
+            ? [
+              parsedNaclFile.filename,
+              await getSourceMap(parsedNaclFile.filename),
+            ] : undefined
         }),
       CACHE_READ_CONCURRENCY)).filter(values.isDefined)
     )

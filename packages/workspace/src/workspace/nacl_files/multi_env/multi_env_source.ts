@@ -134,7 +134,7 @@ const buildMultiEnvSource = (
       .flatMap(async s => (s ? s.getAll() : awu([])))
     const { errors, merged } = await mergeElements(allActiveElements)
     const elements = new RemoteElementSource(await remoteMapCreator<Element>({
-      namespace: getRemoteMapNamespace('merged'),
+      namespace: getRemoteMapNamespace('merged', env),
       serialize: element => serialize([element]),
       // TODO: we might need to pass static file reviver to the deserialization func
       deserialize: deserializeSingleElement,

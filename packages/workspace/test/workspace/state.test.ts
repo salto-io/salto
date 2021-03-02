@@ -50,6 +50,9 @@ describe('state', () => {
     it('list', async () => {
       expect(await awu(await state.list()).toArray()).toEqual([elemID])
     })
+    it('isEmpty', async () => {
+      expect(await state.isEmpty()).toEqual(false)
+    })
     it('get', async () => {
       expect(await state.get(elemID)).toEqual(elem)
     })

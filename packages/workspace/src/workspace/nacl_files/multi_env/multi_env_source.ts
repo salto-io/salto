@@ -139,6 +139,7 @@ const buildMultiEnvSource = (
       // TODO: we might need to pass static file reviver to the deserialization func
       deserialize: deserializeSingleElement,
     }))
+    // TODO: Roi to remove it after rebase cause it's a temp fix
     await elements.clear()
     await elements.setAll(applyInstancesDefaults(
       merged.values(),

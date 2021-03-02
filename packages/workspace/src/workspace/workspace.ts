@@ -383,7 +383,7 @@ export const loadWorkspace = async (
     )),
     isEmpty: async (naclFilesOnly = false): Promise<boolean> => {
       const isNaclFilesSourceEmpty = !naclFilesSource || await naclFilesSource.isEmpty()
-      return isNaclFilesSourceEmpty && (naclFilesOnly || _.isEmpty(await state().getAll()))
+      return isNaclFilesSourceEmpty && (naclFilesOnly || state().isEmpty())
     },
     hasElementsInServices: async (serviceNames: string[]): Promise<boolean> => (
       await (awu(await naclFilesSource.list()).find(

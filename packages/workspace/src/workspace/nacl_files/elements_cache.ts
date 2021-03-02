@@ -40,8 +40,8 @@ export const buildNewMergedElementsAndErrors = async ({
   log.info('going to merge new elements to the existing elements')
   const changes: Change[] = []
   const newMergedElementsResult = await mergeFunc(newElements)
-  const hasCurrentElements = !(await awu(await currentElements.getAll()).isEmpty())
-  const hasCurrentErrors = !(await awu(currentErrors.values()).flat().isEmpty())
+  const hasCurrentElements = !(await currentElements.isEmpty())
+  const hasCurrentErrors = !(await currentErrors.isEmpty())
   if (!hasCurrentElements && !hasCurrentErrors) {
     await awu(newMergedElementsResult.merged.values()).forEach(async element => {
       changes.push(toChange({ after: element }) as Change)

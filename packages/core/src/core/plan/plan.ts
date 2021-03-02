@@ -242,7 +242,7 @@ const addDifferentElements = (
   }
   const getFilteredElements = async (source: elementSource.ElementsSource):
     Promise<AsyncIterable<ChangeDataType>> =>
-    (await awu(await source.getAll()).filter(async elem =>
+    (awu(await source.getAll()).filter(async elem =>
       _.every(await Promise.all(
         topLevelFilters.map(filter => filter(elem.elemID))
       )))) as AsyncIterable<ChangeDataType>

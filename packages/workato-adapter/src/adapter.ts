@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  FetchResult, AdapterOperations, DeployResult, Element,
+  FetchResult, AdapterOperations, DeployResult, Element, PostFetchOptions,
 } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
@@ -24,6 +24,7 @@ import { FilterCreator, Filter, filtersRunner } from './filter'
 import { WorkatoConfig } from './config'
 import extractFieldsFilter from './filters/extract_fields'
 import fieldReferencesFilter from './filters/field_references'
+import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
 import { WORKATO } from './constants'
 
 const log = logger(module)
@@ -34,6 +35,7 @@ const {
 export const DEFAULT_FILTERS = [
   extractFieldsFilter,
   fieldReferencesFilter,
+  recipeCrossServiceReferencesFilter,
 ]
 
 export interface WorkatoAdapterParams {
@@ -89,6 +91,12 @@ export default class WorkatoAdapter implements AdapterOperations {
     log.debug('going to run filters on %d fetched elements', elements.length)
     await this.filtersRunner.onFetch(elements)
     return { elements }
+  }
+
+  @logDuration('updating cross-service references')
+  async postFetch(args: PostFetchOptions): Promise<{ changed: boolean }> {
+    const changed = await this.filtersRunner.onPostFetch(args)
+    return { changed }
   }
 
   /**

@@ -14,3 +14,9 @@
 * limitations under the License.
 */
 export const WORKATO = 'workato'
+
+// services supporting cross-service reference - mapping from salto name to workato name
+export const CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS: Record<string, string> = {
+  salesforce: 'salesforce',
+  netsuite: 'netsuite',
+}

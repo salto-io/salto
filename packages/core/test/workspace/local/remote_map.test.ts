@@ -131,6 +131,17 @@ describe('test operations on remote db', () => {
     })
   })
 
+  describe('isEmpty', () => {
+    it('should return true if the remote map is empty', async () => {
+      expect(await remoteMap.isEmpty()).toEqual(true)
+    })
+
+    it('should return false if the remote map is not empty', async () => {
+      await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
+      expect(await remoteMap.isEmpty()).toEqual(false)
+    })
+  })
+
   describe('list', () => {
     it('should list all keys', async () => {
       await remoteMap.setAll(createAsyncIterable(elements))
@@ -228,7 +239,8 @@ describe('test operations on remote db', () => {
 
   it('when overriden, returns new value', async () => {
     await remoteMap.setAll(createAsyncIterable(elements))
-    await remoteMap.flush()
+    expect(await remoteMap.flush()).toEqual(true)
+    expect(await remoteMap.flush()).toEqual(false)
     const cloneElements = elements.map(elem => elem.clone())
     const changedElement = cloneElements[0] as ObjectType
     const changedValue = Object.values(changedElement.fields)[0]

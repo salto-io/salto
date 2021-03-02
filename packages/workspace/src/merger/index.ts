@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   isObjectType, isInstanceElement, Element, isPrimitiveType, isVariable,
 } from '@salto-io/adapter-api'
@@ -81,7 +82,9 @@ export const mergeElements = async (
     elementsCounter += 1
     errorsCounter += mergeResult.errors.length
     await merged.set(element.elemID.getFullName(), mergeResult.merged)
-    await errors.set(element.elemID.getFullName(), mergeResult.errors)
+    if (!_.isEmpty(mergeResult.errors)) {
+      await errors.set(element.elemID.getFullName(), mergeResult.errors)
+    }
   })
 
   log.debug(`merged ${elementsCounter} elements to ${mergedCounter} elements [errors=${

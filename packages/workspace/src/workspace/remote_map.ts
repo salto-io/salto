@@ -45,10 +45,11 @@ export type RemoteMap<T, K extends string = string> = {
   entries(opts?: IterationOpts): AsyncIterable<RemoteMapEntry<T, K>>
   keys(opts?: IterationOpts): AsyncIterable<K>
   values(opts?: IterationOpts): AsyncIterable<T>
-  flush: () => Promise<void>
+  flush: () => Promise<boolean>
   revert: () => Promise<void>
   clear(): Promise<void>
   close(): Promise<void>
+  isEmpty(): Promise<boolean>
 }
 
 export type RemoteMapCreator = <T, K extends string = string>(
@@ -109,8 +110,8 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async flush(): Promise<void> {
-    return Promise.resolve(undefined)
+  async flush(): Promise<boolean> {
+    return Promise.resolve(false)
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -121,6 +122,10 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
   // eslint-disable-next-line class-methods-use-this
   async close(): Promise<void> {
     return Promise.resolve(undefined)
+  }
+
+  async isEmpty(): Promise<boolean> {
+    return this.data.size === 0
   }
 
   [Symbol.toStringTag]: '[InMemoryRemoteMap]'

@@ -20,7 +20,7 @@ import { Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { exists, readTextFile, mkdirp, rm, rename, readZipFile, replaceContents, generateZipString } from '@salto-io/file'
 import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
-import { serialization, pathIndex, state, remoteMap, RemoteElementSource } from '@salto-io/workspace'
+import { serialization, pathIndex, state, remoteMap } from '@salto-io/workspace'
 import { hash, collections } from '@salto-io/lowerdash'
 import origGlob from 'glob'
 import semver from 'semver'
@@ -33,7 +33,7 @@ import { version } from '../generated/version.json'
 
 const { awu } = collections.asynciterable
 
-const { serialize, deserialize, deserializeSingleElement } = serialization
+const { serialize, deserialize } = serialization
 const { toMD5 } = hash
 
 const glob = promisify(origGlob)
@@ -89,34 +89,6 @@ export const localState = (
   let pathToClean = ''
   let currentFilePrefix = filePrefix
 
-  const createStateNamespace = (namespace: string): string =>
-    `state-${envName}-${namespace}`
-
-  const loadFromRemoteMaps = async (): Promise<state.StateData> => {
-    const elements = new RemoteElementSource(await remoteMapCreator<Element>({
-      namespace: createStateNamespace('elements'),
-      serialize: elem => serialize([elem]),
-      // TODO: I don't think we should add reviver here but I need to think about it more
-      deserialize: deserializeSingleElement,
-    }))
-    const index = await remoteMapCreator<pathIndex.Path[]>({
-      namespace: createStateNamespace('path_index'),
-      serialize: paths => safeJsonStringify(paths),
-      deserialize: async data => JSON.parse(data),
-    })
-    const servicesUpdateDate = await remoteMapCreator<Date>({
-      namespace: createStateNamespace('service_update_date'),
-      serialize: date => date.toISOString(),
-      deserialize: async data => new Date(data),
-    })
-    const saltoMetadata = await remoteMapCreator<string, 'version'>({
-      namespace: createStateNamespace('salto_metadata'),
-      serialize: data => data,
-      deserialize: async data => data,
-    })
-    return { elements, servicesUpdateDate, pathIndex: index, saltoMetadata }
-  }
-
   const syncQuickAccessStateData = async ({
     stateData, filePaths, newHash,
   }: {
@@ -171,7 +143,7 @@ export const localState = (
     getHashFromContent((await Promise.all(filePaths.map(readTextFile))))
 
   const loadStateData = async (): Promise<state.StateData> => {
-    const quickAccessStateData = await loadFromRemoteMaps()
+    const quickAccessStateData = await state.buildStateData(envName, remoteMapCreator)
     const filePaths = await getRelevantStateFiles()
     const stateFilesHash = await getHash(filePaths)
     const quickAccessHash = (await quickAccessStateData.saltoMetadata.get('hash'))

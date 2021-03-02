@@ -250,7 +250,7 @@ describe('ParsedNaclFileCache', () => {
   })
 
   describe('flush', () => {
-    let remoteMapsFlushFuncs: jest.SpyInstance<Promise<void>>[]
+    let remoteMapsFlushFuncs: jest.SpyInstance<Promise<boolean>>[]
     beforeEach(async () => {
       // Put stuff in the cache so there will be remoteMaps
       await cache.put(

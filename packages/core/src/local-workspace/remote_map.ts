@@ -195,14 +195,12 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       .map(async entry => deserialize(entry.value))
   }
 
-  const entriesImpl = (iterationOpts?: remoteMap.IterationOpts, persistent = true, temp = true):
+  const entriesImpl = (iterationOpts?: remoteMap.IterationOpts):
   AsyncIterable<remoteMap.RemoteMapEntry<T, K>> => {
     const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
-    const iters = [
-      ...(temp ? [createTempIterator(opts)] : []),
-      ...(persistent ? [createPersistentIterator(opts)] : []),
-    ]
-    return awu(aggregatedIterable(iters))
+    const tempIter = createTempIterator(opts)
+    const iter = createPersistentIterator(opts)
+    return awu(aggregatedIterable([tempIter, iter]))
       .map(async entry => ({ key: entry.key as K, value: await deserialize(entry.value) }))
   }
 

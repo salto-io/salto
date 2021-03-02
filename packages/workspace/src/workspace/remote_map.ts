@@ -35,11 +35,6 @@ export interface CreateRemoteMapParams<T> {
   deserialize: (s: string) => Promise<T>
 }
 
-export type FlushNotification<K extends string = string> = (
-  namespace: string,
-  keys: K[],
-) => Promise<void>
-
 export type RemoteMap<T, K extends string = string> = {
   delete(key: K): Promise<void>
   get(key: K): Promise<T | undefined>

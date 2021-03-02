@@ -209,7 +209,6 @@ export const localState = (
       currentFilePrefix = newPrefix
     },
     flush: async (): Promise<void> => {
-      await inMemState.flush()
       if (!dirty && pathToClean === '') {
         return
       }
@@ -225,6 +224,7 @@ export const localState = (
         await rm(pathToClean)
       }
       await inMemState.setHash(getHashFromContent(filePathToContent.map(e => e[1])))
+      await inMemState.flush()
       log.debug('finish flushing state')
     },
     getHash: async (): Promise<string> => inMemState.getHash(),

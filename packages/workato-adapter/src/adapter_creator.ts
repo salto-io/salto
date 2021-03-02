@@ -20,9 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import WorkatoAdapter from './adapter'
-import {
-  UsernameTokenCredentials, Credentials, usernameTokenCredentialsType,
-} from './auth'
+import { Credentials, usernameTokenCredentialsType } from './auth'
 import changeValidator from './change_validator'
 import {
   configType, WorkatoConfig, CLIENT_CONFIG, FETCH_CONFIG, DEFAULT_TYPES, DEFAULT_ID_FIELDS,
@@ -35,12 +33,10 @@ const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
 const { validateDuckTypeFetchConfig } = configUtils
 
-const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => (
-  new UsernameTokenCredentials({
-    username: config.value.username,
-    token: config.value.token,
-  })
-)
+const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
+  username: config.value.username,
+  token: config.value.token,
+})
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): WorkatoConfig => {
   const configValue = config?.value ?? {}

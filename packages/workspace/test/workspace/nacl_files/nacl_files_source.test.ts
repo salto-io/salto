@@ -160,6 +160,31 @@ describe('Nacl Files Source', () => {
     })
   })
 
+  describe('load', () => {
+    it('should list files', async () => {
+      mockDirStore.list = jest.fn().mockResolvedValue(Promise.resolve([]))
+      await (await naclFilesSource(
+        '',
+        mockDirStore,
+        mockCache,
+        mockedStaticFilesSource,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+      )).load()
+      expect(mockDirStore.list as jest.Mock).toHaveBeenCalled()
+    })
+    it('should not list files if ignoreFileChanges is set', async () => {
+      mockDirStore.list = jest.fn().mockResolvedValue(Promise.resolve([]))
+      await (await naclFilesSource(
+        '',
+        mockDirStore,
+        mockCache,
+        mockedStaticFilesSource,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+      )).load(true)
+      expect(mockDirStore.list as jest.Mock).not.toHaveBeenCalled()
+    })
+  })
+
   describe('rename', () => {
     it('should rename everything', async () => {
       const newName = 'new'

@@ -78,7 +78,7 @@ export type NaclFilesSource = Omit<ElementsSource, 'clear'> & {
     cache?: boolean
   }): Promise<void>
   getElementsSource: () => Promise<ElementsSource>
-  load: () => Promise<Change[]>
+  load: (ignoreFileChanges?: boolean) => Promise<Change[]>
 }
 
 type NaclFilesState = {
@@ -411,7 +411,7 @@ const buildNaclFilesSource = (
     return state
   }
 
-  const buildInitState = async (): Promise<buildNaclFilesStateResult> => {
+  const buildInitState = async (ignoreFileChanges: boolean): Promise<buildNaclFilesStateResult> => {
     const modifiedNaclFiles: NaclFile[] = []
     const parsedNaclFilesFromCache: ParsedNaclFile[] = []
     // The sourceName '' is a temp hack in the whole flow
@@ -419,21 +419,22 @@ const buildNaclFilesSource = (
     if (sourceName === '') {
       await cache.clear()
     }
-    const cacheFilenames = await cache.list()
-    const naclFilenames = await naclFilesStore.list()
-
-    const fileNames = new Set([...cacheFilenames, ...naclFilenames])
-    await awu(fileNames).forEach(async filename => {
-      const naclFile = await naclFilesStore.get(filename) ?? { filename, buffer: '' }
-      const cacheVal = await cache.get(filename)
-      if (cacheVal !== undefined && sourceName !== '') {
-        parsedNaclFilesFromCache.push(cacheVal)
-      }
-      const cacheHasValidVal = await cache.hasValid(cacheResultKey(naclFile))
-      if (!cacheHasValidVal || sourceName === '') {
-        modifiedNaclFiles.push(naclFile)
-      }
-    })
+    if (!ignoreFileChanges) {
+      const cacheFilenames = await cache.list()
+      const naclFilenames = await naclFilesStore.list()
+      const fileNames = new Set([...cacheFilenames, ...naclFilenames])
+      await awu(fileNames).forEach(async filename => {
+        const naclFile = await naclFilesStore.get(filename) ?? { filename, buffer: '' }
+        const cacheVal = await cache.get(filename)
+        if (cacheVal !== undefined && sourceName !== '') {
+          parsedNaclFilesFromCache.push(cacheVal)
+        }
+        const cacheHasValidVal = await cache.hasValid(cacheResultKey(naclFile))
+        if (!cacheHasValidVal || sourceName === '') {
+          modifiedNaclFiles.push(naclFile)
+        }
+      })
+    }
     const cacheOnlyState = (await buildNaclFilesState({
       newNaclFiles: parsedNaclFilesFromCache,
       currentState: await createNaclFilesState(
@@ -453,10 +454,13 @@ const buildNaclFilesSource = (
     })
   }
 
-  const buildNaclFilesStateInner = async (parsedNaclFiles: ParsedNaclFile[] = []):
+  const buildNaclFilesStateInner = async (
+    parsedNaclFiles: ParsedNaclFile[] = [],
+    ignoreFileChanges = false,
+  ):
   Promise<buildNaclFilesStateResult> => {
     if (_.isUndefined(state)) {
-      return buildInitState()
+      return buildInitState(ignoreFileChanges)
     }
     const current = await state
     return buildNaclFilesState({
@@ -744,8 +748,8 @@ const buildNaclFilesSource = (
     getElementReferencedFiles,
     isEmpty: () => naclFilesStore.isEmpty(),
     getElementsSource: async () => (await getState()).mergedElements,
-    load: async () => {
-      const res = await buildNaclFilesStateInner()
+    load: async (ignoreFileChanges = false) => {
+      const res = await buildNaclFilesStateInner(undefined, ignoreFileChanges)
       state = Promise.resolve(res.state)
       return res.changes
     },

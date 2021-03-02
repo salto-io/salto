@@ -13,18 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID, ObjectType, DetailedChange, StaticFile, SaltoError, Value } from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, DetailedChange, StaticFile, SaltoError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
-import { naclFilesSource, NaclFilesSource, ParsedNaclFile } from '../../../src/workspace/nacl_files'
+import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
-import { ParseResultCache } from '../../../src/workspace/cache'
+import { ParsedNaclFileCache, createParseResultCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
-import { mockStaticFilesSource } from '../../utils'
+import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../utils'
 import * as parser from '../../../src/parser'
 import { InMemoryRemoteMap } from '../../../src/workspace/remote_map'
-import { ParsedNaclFileDataKeys } from '../../../src/workspace/nacl_files/nacl_files_source'
+import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
+import { toParsedNaclFile } from '../../../src/workspace/nacl_files/nacl_files_source'
 
 const { awu } = collections.asynciterable
 
@@ -54,28 +55,18 @@ const validateParsedNaclFile = async (
   if (parsed) {
     const parsedElements = await awu(parsed.elements).toArray()
     expect(parsedElements).toEqual(elements)
-    expect(await parsed.data.get('errors')).toEqual(errors)
+    expect(parsed.data.errors).toEqual(errors)
     expect(parsed.filename).toEqual(filename)
   }
 }
 
 describe('Nacl Files Source', () => {
   let mockDirStore: DirectoryStore<string>
-  let mockCache: ParseResultCache
+  let mockCache: ParsedNaclFileCache
   let mockedStaticFilesSource: StaticFilesSource
   const mockParse = parser.parse as jest.Mock
 
-  beforeEach(() => {
-    mockCache = {
-      get: jest.fn().mockResolvedValue({ elements: [] }),
-      put: jest.fn().mockResolvedValue(undefined),
-      clone: () => mockCache,
-      flush: () => Promise.resolve(),
-      clear: () => Promise.resolve(),
-      rename: () => Promise.resolve(),
-      delete: () => Promise.resolve(),
-      list: () => Promise.resolve([]),
-    }
+  beforeEach(async () => {
     mockDirStore = {
       list: () => Promise.resolve([]),
       isEmpty: () => Promise.resolve(false),
@@ -93,6 +84,11 @@ describe('Nacl Files Source', () => {
       getFullPath: filename => filename,
     }
     mockedStaticFilesSource = mockStaticFilesSource()
+    mockCache = createParseResultCache(
+      'test',
+      persistentMockCreateRemoteMap(),
+      mockStaticFilesSource(),
+    )
     mockParse.mockResolvedValue({ elements: [], errors: [] })
   })
 
@@ -269,11 +265,11 @@ describe('Nacl Files Source', () => {
           filename,
           elements,
           buffer: '',
-          data: new InMemoryRemoteMap<Value, ParsedNaclFileDataKeys>([
-            { key: 'errors', value: [] },
-            { key: 'timestamp', value: 0 },
-            { key: 'referenced', value: [] },
-          ]),
+          data: {
+            errors: [],
+            timestamp: 0,
+            referenced: [],
+          },
         },
       ]
       const naclSource = naclFilesSource(
@@ -312,8 +308,8 @@ describe('Nacl Files Source', () => {
     it('should return parseResult when parse cache is not updated', async () => {
       const elemID = new ElemID('dummy', 'elem')
       const elem = new ObjectType({ elemID, path: ['test', 'new'] })
-      const elements = [elem];
-      (mockCache.get as jest.Mock).mockResolvedValueOnce(undefined);
+      const elements = [elem]
+      jest.spyOn(mockCache, 'get').mockResolvedValueOnce(undefined);
       (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData)
       mockParse.mockResolvedValueOnce({ elements, errors: [], filename: mockFileData.filename })
       await validateParsedNaclFile(
@@ -328,8 +324,17 @@ describe('Nacl Files Source', () => {
       const elemID = new ElemID('dummy', 'elem')
       const elem = new ObjectType({ elemID, path: ['test', 'new'] })
       const elements = [elem];
-      (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData);
-      (mockCache.get as jest.Mock).mockResolvedValue({ elements, errors: [] })
+      (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData)
+      await mockCache.put(
+        mockFileData.filename,
+        await toParsedNaclFile(
+          mockFileData,
+          {
+            elements,
+            errors: [],
+          }
+        )
+      )
       await validateParsedNaclFile(
         await naclSource.getParsedNaclFile(mockFileData.filename),
         mockFileData.filename,

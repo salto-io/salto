@@ -16,7 +16,7 @@
 import { CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { DirectoryStore, File } from '../../src/workspace/dir_store'
-import { ParseResultCache } from '../../src/workspace/cache'
+import { ParsedNaclFileCache } from '../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
 const workspaceFiles = {
   'file.nacl': `
@@ -245,7 +245,7 @@ export const mockDirStore = (
   }
 }
 
-export const mockParseCache = (): ParseResultCache => ({
+export const mockParseCache = (): ParsedNaclFileCache => ({
   put: () => Promise.resolve(),
   get: () => Promise.resolve(undefined),
   flush: () => Promise.resolve(undefined),
@@ -254,4 +254,6 @@ export const mockParseCache = (): ParseResultCache => ({
   clone: () => mockParseCache(),
   delete: () => Promise.resolve(),
   list: () => Promise.resolve([]),
+  getAllErrors: () => Promise.resolve([]),
+  hasValid: () => Promise.resolve(true),
 })

@@ -23,7 +23,8 @@ import { validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
-import { NaclFilesSource, NaclFile, RoutingMode, ParsedNaclFile } from './nacl_files/nacl_files_source'
+import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
+import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
 import { multiEnvSource, getSourceNameForFilename } from './nacl_files/multi_env/multi_env_source'
 import { ElementSelector } from './element_selector'
 import { Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError, DeleteCurrentEnvError } from './errors'
@@ -232,7 +233,7 @@ export const loadWorkspace = async (
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
     if (_.isUndefined(workspaceState)) {
-      workspaceState = buildWorkspaceState({})
+      workspaceState = buildWorkspaceState({ changes: initChanges })
     }
     return workspaceState
   }
@@ -348,10 +349,7 @@ export const loadWorkspace = async (
         ...errorsFromSource.merge,
         ...(await awu(resolvedElements.errors.values()).flat().toArray()),
       ],
-      validation: await validateElements(
-        await awu(await resolvedElements.merged.getAll()).toArray(),
-        resolvedElements.merged
-      ),
+      validation: validationErrors,
     })
   }
 

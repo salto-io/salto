@@ -28,6 +28,11 @@ import * as mockDirStore from '../../../src/local-workspace/dir_store'
 const { ENVS_PREFIX } = ws.nacl
 const { COMMON_ENV_PREFIX } = ws
 
+const mockRemoteMapCreator = (async <T, K extends string = string>(
+  _opts: ws.remoteMap.CreateRemoteMapParams<T>,
+): Promise<ws.remoteMap.RemoteMap<T, K>> =>
+  new ws.remoteMap.InMemoryRemoteMap<T, K>())
+
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual<{}>('@salto-io/file'),
   exists: jest.fn(),
@@ -46,6 +51,10 @@ jest.mock('../../../src/local-workspace/static_files_cache', () => ({
   buildLocalStaticFilesCache: () => ({
     rename: jest.fn(),
   }),
+}))
+jest.mock('../../../src/local-workspace/remote_map', () => ({
+  ...jest.requireActual<{}>('../../../src/local-workspace/remote_map'),
+  createRemoteMapCreator: () => mockRemoteMapCreator,
 }))
 describe('local workspace', () => {
   const mockExists = file.exists as jest.Mock
@@ -77,7 +86,6 @@ describe('local workspace', () => {
       ? path.relative(getSaltoHome(), dir)
       : `${path.basename(path.dirname(dir))}${path.sep}${path.basename(dir)}`)
   }
-
   beforeEach(() => jest.clearAllMocks())
 
   describe('locateWorkspaceRoot', () => {
@@ -107,7 +115,7 @@ describe('local workspace', () => {
         '.', path.join(getSaltoHome(), 'local'), ['env1', 'env2'], creator
       )
       expect(Object.keys(elemSources.sources)).toHaveLength(3)
-      expect(mockCreateDirStore).toHaveBeenCalledTimes(9)
+      expect(mockCreateDirStore).toHaveBeenCalledTimes(6)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])
         .map(params => toWorkspaceRelative(params))
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'env1'))
@@ -185,7 +193,7 @@ describe('local workspace', () => {
       expect(mockLoad).toHaveBeenCalledTimes(1)
       const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][2]
       expect(Object.keys(envSources.sources)).toHaveLength(3)
-      expect(mockCreateDirStore).toHaveBeenCalledTimes(12)
+      expect(mockCreateDirStore).toHaveBeenCalledTimes(9)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])
         .map(params => toWorkspaceRelative(params))
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'env2'))

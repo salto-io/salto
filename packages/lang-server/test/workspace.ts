@@ -124,9 +124,10 @@ const persistentMockCreateRemoteMap = ():
       ),
       values: (): AsyncIterable<T> =>
         awu(Object.values(maps[opts.namespace])).map(async v => opts.deserialize(v as string)),
-      flush: (): Promise<void> => Promise.resolve(undefined),
+      flush: (): Promise<boolean> => Promise.resolve(false),
       revert: (): Promise<void> => Promise.resolve(undefined),
       close: (): Promise<void> => Promise.resolve(undefined),
+      isEmpty: (): Promise<boolean> => Promise.resolve(_.isEmpty(maps[opts.namespace])),
     }
   }
   return creator

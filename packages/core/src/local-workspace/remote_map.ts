@@ -35,7 +35,11 @@ const extractAndRequire = (externalsLocation: string, module: string): any => {
       { dereference: true })
     // eslint-disable-next-line no-undef
     const result = __non_webpack_require__(extractedModuleLocation)
-    rimraf.sync(externalsLocation)
+    try {
+      rimraf.sync(externalsLocation)
+    } catch {
+      // Do nothing. Deleting will fail on required native code on Windows.
+    }
     return result
   }
   // eslint-disable-next-line global-require, import/no-dynamic-require

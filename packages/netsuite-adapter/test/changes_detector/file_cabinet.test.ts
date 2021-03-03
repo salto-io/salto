@@ -46,7 +46,7 @@ describe('file_cabinet', () => {
     SELECT mediaitemfolder.appfolder, file.name, file.id
     FROM file
     JOIN mediaitemfolder ON mediaitemfolder.id = file.folder
-    WHERE file.lastmodifieddate BETWEEN '1/11/2021' AND '2/22/2021'
+    WHERE file.lastmodifieddate BETWEEN '1/11/2021' AND '2/23/2021'
   `)
       })
     })
@@ -102,7 +102,7 @@ describe('file_cabinet', () => {
         expect(runSuiteQLMock).toHaveBeenCalledWith(`
     SELECT appfolder, id
     FROM mediaitemfolder
-    WHERE lastmodifieddate BETWEEN '1/11/2021' AND '2/22/2021'
+    WHERE lastmodifieddate BETWEEN '1/11/2021' AND '2/23/2021'
   `)
       })
     })

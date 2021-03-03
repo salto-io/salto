@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { formatSavedSearchDate, formatSuiteQLDate } from '../formats'
+import { formatSavedSearchDateRange, formatSuiteQLDateRange } from '../formats'
 import { ChangedObject, TypeChangesDetector } from '../types'
 
 const log = logger(module)
@@ -78,17 +78,19 @@ const parsePermissionRolesChanges = (
 
 const changesDetector: TypeChangesDetector = {
   getChanges: async (client, dateRange) => {
+    const [startDate, endDate] = formatSuiteQLDateRange(dateRange)
+
     const rolesChangesPromise = client.runSuiteQL(`
       SELECT role.scriptid, role.id
       FROM role
       JOIN systemnote ON systemnote.recordid = role.id
-      WHERE systemnote.date BETWEEN '${formatSuiteQLDate(dateRange.start)}' AND '${formatSuiteQLDate(dateRange.end)}' AND systemnote.recordtypeid = -118
+      WHERE systemnote.date BETWEEN '${startDate}' AND '${endDate}' AND systemnote.recordtypeid = -118
     `)
 
     const permissionChangesPromise = client.runSavedSearchQuery({
       type: 'role',
       columns: ['internalid'],
-      filters: [['permchangedate', 'within', formatSavedSearchDate(dateRange.start), formatSavedSearchDate(dateRange.end)]],
+      filters: [['permchangedate', 'within', ...formatSavedSearchDateRange(dateRange)]],
     })
 
     const allRolesPromise = client.runSuiteQL(`

@@ -45,7 +45,7 @@ describe('savedsearch', () => {
       expect(runSavedSearchQueryMock).toHaveBeenCalledWith({
         type: 'savedsearch',
         columns: ['id'],
-        filters: [['datemodified', 'within', '1/11/2021 6:55 pm', '2/22/2021 6:55 pm']],
+        filters: [['datemodified', 'within', '1/11/2021 6:55 pm', '2/22/2021 6:56 pm']],
       })
     })
   })

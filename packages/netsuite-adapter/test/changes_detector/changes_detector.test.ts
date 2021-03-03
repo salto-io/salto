@@ -78,10 +78,11 @@ describe('changes_detector', () => {
     expect(changedObjectsQuery.isFileMatch('/path/to')).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/path/to/notExists')).toBeFalsy()
 
-    expect(changedObjectsQuery.isObjectMatch({ type: '', scriptId: 'a' })).toBeTruthy()
-    expect(changedObjectsQuery.isObjectMatch({ type: '', scriptId: 'b' })).toBeTruthy()
-    expect(changedObjectsQuery.isObjectMatch({ type: '', scriptId: 'c' })).toBeFalsy()
-    expect(changedObjectsQuery.isObjectMatch({ type: '', scriptId: 'd' })).toBeFalsy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'a' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'b' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'c' })).toBeFalsy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'd' })).toBeFalsy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'notSupported', scriptId: 'd' })).toBeTruthy()
 
     expect(changedObjectsQuery.isObjectMatch({ type: 'customrecordtype', scriptId: 'anything' })).toBeTruthy()
     expect(changedObjectsQuery.isTypeMatch('anything')).toBeTruthy()
@@ -99,10 +100,11 @@ describe('changes_detector', () => {
     expect(changedObjectsQuery.isFileMatch('/path/to')).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/path/to/notExists')).toBeFalsy()
 
-    expect(changedObjectsQuery.isObjectMatch({ type: '', scriptId: 'a' })).toBeTruthy()
-    expect(changedObjectsQuery.isObjectMatch({ type: '', scriptId: 'b' })).toBeTruthy()
-    expect(changedObjectsQuery.isObjectMatch({ type: '', scriptId: 'c' })).toBeTruthy()
-    expect(changedObjectsQuery.isObjectMatch({ type: '', scriptId: 'd' })).toBeFalsy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'a' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'b' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'c' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'd' })).toBeFalsy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'notSupported', scriptId: 'd' })).toBeTruthy()
 
     expect(changedObjectsQuery.isObjectMatch({ type: 'customrecordtype', scriptId: 'anything' })).toBeTruthy()
   })

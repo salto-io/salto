@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { formatSuiteQLDate } from '../formats'
+import { formatSuiteQLDateRange } from '../formats'
 import { ChangedObject, TypeChangesDetector } from '../types'
 
 const log = logger(module)
@@ -73,11 +73,13 @@ const hasFieldChanges = (changes?: Record<string, unknown>[]): boolean => {
 
 const changesDetector: TypeChangesDetector = {
   getChanges: async (client, dateRange) => {
+    const [startDate, endDate] = formatSuiteQLDateRange(dateRange)
+
     const scriptChangesPromise = client.runSuiteQL(`
       SELECT script.scriptid, script.id
       FROM script
       JOIN systemnote ON systemnote.recordid = script.id
-      WHERE systemnote.date BETWEEN '${formatSuiteQLDate(dateRange.start)}' AND '${formatSuiteQLDate(dateRange.end)}' AND systemnote.recordtypeid = -417
+      WHERE systemnote.date BETWEEN '${startDate}' AND '${endDate}' AND systemnote.recordtypeid = -417
     `)
 
     const scriptDeploymentChangesPromise = client.runSuiteQL(`
@@ -85,13 +87,13 @@ const changesDetector: TypeChangesDetector = {
       FROM scriptdeployment 
       JOIN systemnote ON systemnote.recordid = scriptdeployment.primarykey
       JOIN script ON scriptdeployment.script = script.id
-      WHERE systemnote.date BETWEEN '${formatSuiteQLDate(dateRange.start)}' AND '${formatSuiteQLDate(dateRange.end)}' AND systemnote.recordtypeid = -418
+      WHERE systemnote.date BETWEEN '${startDate}' AND '${endDate}' AND systemnote.recordtypeid = -418
     `)
 
     const scriptFieldsChangesPromise = client.runSuiteQL(`
       SELECT internalid
       FROM customfield
-      WHERE fieldtype = 'SCRIPT' AND lastmodifieddate BETWEEN '${formatSuiteQLDate(dateRange.start)}' AND '${formatSuiteQLDate(dateRange.end)}'
+      WHERE fieldtype = 'SCRIPT' AND lastmodifieddate BETWEEN '${startDate}' AND '${endDate}'
     `)
 
     const [

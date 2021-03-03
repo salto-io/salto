@@ -256,14 +256,14 @@ describe('SuiteAppClient', () => {
           status: 'success',
           results: {
             appVersion: [0, 1, 2],
-            time: '2021-02-22T18:55:17.949Z',
+            time: 1000,
           },
         },
       })
 
       const results = await client.getSystemInformation()
 
-      expect(results).toEqual({ appVersion: [0, 1, 2], time: new Date('2021-02-22T18:55:17.949Z') })
+      expect(results).toEqual({ appVersion: [0, 1, 2], time: new Date(1000) })
       expect(postMock).toHaveBeenCalledWith(
         'https://account-id.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet',
         {

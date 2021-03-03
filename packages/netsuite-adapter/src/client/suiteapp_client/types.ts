@@ -100,7 +100,7 @@ export type SavedSearchQuery = {
 export const SYSTEM_INFORMATION_SCHEME = {
   type: 'object',
   properties: {
-    time: { type: 'string' },
+    time: { type: 'number' },
     appVersion: {
       type: 'array',
       items: { type: 'number' },

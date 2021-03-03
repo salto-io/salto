@@ -45,7 +45,7 @@ describe('custom_record_type', () => {
       expect(runSuiteQLMock).toHaveBeenCalledWith(`
       SELECT scriptid
       FROM customrecordtype
-      WHERE lastmodifieddate BETWEEN '1/11/2021' AND '2/22/2021'
+      WHERE lastmodifieddate BETWEEN '1/11/2021' AND '2/23/2021'
     `)
     })
   })

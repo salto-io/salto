@@ -89,7 +89,7 @@ describe('role', () => {
       SELECT role.scriptid, role.id
       FROM role
       JOIN systemnote ON systemnote.recordid = role.id
-      WHERE systemnote.date BETWEEN '1/11/2021' AND '2/22/2021' AND systemnote.recordtypeid = -118
+      WHERE systemnote.date BETWEEN '1/11/2021' AND '2/23/2021' AND systemnote.recordtypeid = -118
     `)
 
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, `
@@ -100,7 +100,7 @@ describe('role', () => {
       expect(runSavedSearchQueryMock).toHaveBeenCalledWith({
         type: 'role',
         columns: ['internalid'],
-        filters: [['permchangedate', 'within', '1/11/2021 6:55 pm', '2/22/2021 6:55 pm']],
+        filters: [['permchangedate', 'within', '1/11/2021 6:55 pm', '2/22/2021 6:56 pm']],
       })
     })
   })

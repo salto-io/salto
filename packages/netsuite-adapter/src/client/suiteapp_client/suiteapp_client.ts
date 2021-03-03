@@ -93,7 +93,7 @@ export class SuiteAppClient {
     try {
       const results = await this.sendRestletRequest('sysInfo')
 
-      if (!this.ajv.validate<{ time: string; appVersion: number[] }>(
+      if (!this.ajv.validate<{ time: number; appVersion: number[] }>(
         SYSTEM_INFORMATION_SCHEME,
         results
       )) {

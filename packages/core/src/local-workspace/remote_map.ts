@@ -13,6 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import rimraf from 'rimraf'
+import fsExtra from 'fs-extra'
 import path from 'path'
 import { promisify } from 'util'
 import * as fileUtils from '@salto-io/file'
@@ -23,17 +25,25 @@ import { collections, promises } from '@salto-io/lowerdash'
 import type rocksdb from 'rocksdb'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let rocksdbImpl: any
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
-  rocksdbImpl = require('nexe-natives')(require.resolve('rocksdb'),
-    { localPath: path.join(__dirname, '../', '.externals'), name: 'rocksdb' })
-} catch (error) {
-  // eslint-disable-next-line no-console
-  console.error(error)
-  // eslint-disable-next-line global-require
-  rocksdbImpl = require('rocksdb')
+const extractAndRequire = (externalsLocation: string, module: string): any => {
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  if (typeof __non_webpack_require__ !== 'undefined') {
+    const extractedModuleLocation = path.join(externalsLocation, module)
+    rimraf.sync(externalsLocation)
+    // eslint-disable-next-line no-undef, @typescript-eslint/camelcase
+    fsExtra.copySync(path.dirname(__non_webpack_require__.resolve(module)), extractedModuleLocation,
+      { dereference: true })
+    // eslint-disable-next-line no-undef
+    const result = __non_webpack_require__(extractedModuleLocation)
+    rimraf.sync(externalsLocation)
+    return result
+  }
+  // eslint-disable-next-line global-require, import/no-dynamic-require
+  return require(module)
 }
+
+const rocksdbImpl = extractAndRequire(path.join(__dirname, '.externals'), 'rocksdb')
+
 const { asynciterable } = collections
 const { awu } = asynciterable
 const { withLimitedConcurrency } = promises.array

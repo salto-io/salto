@@ -56,13 +56,11 @@ const nexeConfigs = () => Object.entries(TARGET_PLATFORMS)
   })
 
 const handleError = err => {
-  if (err) {
-  	console.error(err.stack || err);
-  	if (err.details) {
+  console.error(err.stack || err);
+  if (err.details) {
     	console.error(err.details);
-  	}
-  	process.exit(2)
   }
+  process.exit(2)
 }
 
 const doWebpack = (config) => new Promise((resolve, reject) => {

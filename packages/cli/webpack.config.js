@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2020 Salto Labs Ltd.
+*                      Copyright 2021 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -45,11 +45,6 @@ module.exports = {
       },
     ],
   },
-  resolve: {
-	alias: {
-		'nexe-natives$': path.resolve(__dirname, './nexe-natives-adapted'),
-	},
-  },
   node: {
     __dirname: false,
     __filename: true,
@@ -62,7 +57,6 @@ module.exports = {
   externals: {
     vertx: 'commonjs vertx',    // workaround for: https://github.com/stefanpenner/es6-promise/issues/305
                                 // caused by requestretry which depends on an old version of es6-promise
-    '../../node_moduels/rocksdb/package.json': '../../node_moduels/rocksdb/package.json',
   },
   plugins: [
     new webpack.EnvironmentPlugin({

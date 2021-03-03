@@ -30,6 +30,7 @@ export interface SaltoElemLocation {
 
 export type SaltoElemFileLocation = Omit<SaltoElemLocation, 'range'>
 
+export const FUSE_SEARCH_THRESHOLD = 0.1
 const MAX_LOCATION_SEARCH_RESULT = 20
 
 const getAllElements = async (workspace: EditorWorkspace):
@@ -162,6 +163,7 @@ export const getQueryLocationsFuzzy = async (
         const bItem = b.item as unknown as string
         return aItem.length - bItem.length
       },
+      threshold: FUSE_SEARCH_THRESHOLD,
     }
   )
   const fuseSearchResult = fuse.search(query)

@@ -30,7 +30,7 @@ export interface SaltoElemLocation {
 
 export type SaltoElemFileLocation = Omit<SaltoElemLocation, 'range'>
 
-export const FUSE_SEARCH_THRESHOLD = 0.1
+export const FUSE_SEARCH_THRESHOLD = 0.17
 const MAX_LOCATION_SEARCH_RESULT = 20
 
 const getAllElements = async (workspace: EditorWorkspace):

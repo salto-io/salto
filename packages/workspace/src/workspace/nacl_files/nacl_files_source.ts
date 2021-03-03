@@ -46,8 +46,8 @@ const log = logger(module)
 export type RoutingMode = 'isolated' | 'default' | 'align' | 'override'
 
 export const FILE_EXTENSION = '.nacl'
-const PARSE_CONCURRENCY = 20
-const DUMP_CONCURRENCY = 20
+const PARSE_CONCURRENCY = 100
+const DUMP_CONCURRENCY = 100
 // TODO: this should moved into cache implemenation
 const CACHE_READ_CONCURRENCY = 100
 

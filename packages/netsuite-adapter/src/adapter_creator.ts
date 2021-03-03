@@ -31,21 +31,47 @@ import {
   FETCH_TARGET,
   FETCH_ALL_TYPES_AT_ONCE,
   SKIP_LIST,
+  SUITEAPP_CLIENT_CONFIG,
 } from './constants'
 import { validateParameters } from './query'
 import { Credentials } from './client/credentials'
+import { SuiteAppClient } from './client/suiteapp_client/suiteapp_client'
 
 const log = logger(module)
 const { makeArray } = collections.array
 
 const configID = new ElemID(NETSUITE)
 
+// The SuiteApp fields are commented out until we will be ready to expose them to the user
 export const defaultCredentialsType = new ObjectType({
   elemID: configID,
   fields: {
-    accountId: { type: BuiltinTypes.STRING },
-    tokenId: { type: BuiltinTypes.STRING },
-    tokenSecret: { type: BuiltinTypes.STRING },
+    accountId: {
+      type: BuiltinTypes.STRING,
+      // annotations: { message: 'Account ID' },
+    },
+    tokenId: {
+      type: BuiltinTypes.STRING,
+      // annotations: { message: 'SDF Token ID' },
+    },
+    tokenSecret: {
+      type: BuiltinTypes.STRING,
+      // annotations: { message: 'SDF Token Secret' },
+    },
+    /**
+    suiteAppTokenId: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+        message: 'Salto SuiteApp Token ID (empty if Salto SuiteApp is not installed)',
+      },
+    },
+    suiteAppTokenSecret: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+        message: 'Salto SuiteApp Token Secret (empty if Salto SuiteApp is not installed)',
+      },
+    },
+     */
   },
   annotationTypes: {},
   annotations: {},
@@ -88,6 +114,7 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
       [DEPLOY_REFERENCED_ELEMENTS]: config?.value?.[DEPLOY_REFERENCED_ELEMENTS],
       [FILE_PATHS_REGEX_SKIP_LIST]: filePathsRegexSkipList,
       [CLIENT_CONFIG]: config?.value?.[CLIENT_CONFIG],
+      [SUITEAPP_CLIENT_CONFIG]: config?.value?.[SUITEAPP_CLIENT_CONFIG],
       [FETCH_TARGET]: fetchTargetParameters,
       [SKIP_LIST]: skipListParameters,
     }
@@ -104,13 +131,32 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
 }
 
 const netsuiteCredentialsFromCredentials = (credentials: Readonly<InstanceElement>): Credentials =>
-  credentials.value as Credentials
+  ({
+    accountId: credentials.value.accountId,
+    tokenId: credentials.value.tokenId,
+    tokenSecret: credentials.value.tokenSecret,
+    suiteAppTokenId: credentials.value.suiteAppTokenId === '' ? undefined : credentials.value.suiteAppTokenId,
+    suiteAppTokenSecret: credentials.value.suiteAppTokenSecret === '' ? undefined : credentials.value.suiteAppTokenSecret,
+  })
 
 const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperations => {
   const adapterConfig = netsuiteConfigFromConfig(context.config)
   const credentials = netsuiteCredentialsFromCredentials(context.credentials)
+  const suiteAppClient = credentials.suiteAppTokenId !== undefined
+    && credentials.suiteAppTokenSecret !== undefined
+    ? new SuiteAppClient({
+      credentials: {
+        accountId: credentials.accountId,
+        suiteAppTokenId: credentials.suiteAppTokenId,
+        suiteAppTokenSecret: credentials.suiteAppTokenSecret,
+      },
+      config: adapterConfig[SUITEAPP_CLIENT_CONFIG],
+    })
+    : undefined
+
   return new NetsuiteAdapter({
     client: new NetsuiteClient({ credentials, config: adapterConfig[CLIENT_CONFIG] }),
+    suiteAppClient,
     elementsSource: context.elementsSource,
     config: adapterConfig,
     getElemIdFunc: context.getElemIdFunc,
@@ -121,7 +167,26 @@ export const adapter: Adapter = {
   operations: context => getAdapterOperations(context),
   validateCredentials: async config => {
     const credentials = netsuiteCredentialsFromCredentials(config)
-    return NetsuiteClient.validateCredentials(credentials)
+    if (credentials.suiteAppTokenId !== undefined
+      && credentials.suiteAppTokenSecret !== undefined) {
+      try {
+        await SuiteAppClient.validateCredentials({
+          accountId: credentials.accountId,
+          suiteAppTokenId: credentials.suiteAppTokenId,
+          suiteAppTokenSecret: credentials.suiteAppTokenSecret,
+        })
+      } catch (e) {
+        e.message = `Salto SuiteApp Authentication failed. ${e.message}`
+        throw e
+      }
+    }
+
+    try {
+      return await NetsuiteClient.validateCredentials(credentials)
+    } catch (e) {
+      e.message = `SDF Authentication failed. ${e.message}`
+      throw e
+    }
   },
   authenticationMethods: {
     basic: {

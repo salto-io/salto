@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { Values } from '@salto-io/adapter-api'
-import Bottleneck from 'bottleneck'
-import { Credentials } from '../credentials'
+import { SuiteAppClientConfig } from '../../config'
+import { SuiteAppCredentials } from '../credentials'
 
 
 export const SUITE_QL_RESULTS_SCHEMA = {
@@ -87,8 +87,8 @@ export type HttpMethod = 'POST' | 'GET'
 
 
 export type SuiteAppClientParameters = {
-  credentials: Credentials
-  callsLimiter: Bottleneck
+  credentials: SuiteAppCredentials
+  config?: SuiteAppClientConfig
 }
 
 export type SavedSearchQuery = {

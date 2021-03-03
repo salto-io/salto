@@ -13,8 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export type Credentials = {
+export type SuiteAppCredentials = {
+  accountId: string
+  suiteAppTokenId: string
+  suiteAppTokenSecret: string
+}
+
+export type SdfCredentials = {
   accountId: string
   tokenId: string
   tokenSecret: string
 }
+
+export type Credentials = SdfCredentials & Partial<SuiteAppCredentials>

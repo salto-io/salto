@@ -22,14 +22,15 @@ import {
 import {
   FETCH_ALL_TYPES_AT_ONCE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, NETSUITE,
   SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
-  CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST, SAVED_SEARCH,
+  CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
+  SAVED_SEARCH, SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG,
 } from './constants'
 import { NetsuiteQueryParameters } from './query'
 
 const { makeArray } = collections.array
 
 // in small Netsuite accounts the concurrency limit per integration can be between 1-4
-export const DEFAULT_SDF_CONCURRENCY = 4
+export const DEFAULT_CONCURRENCY = 4
 export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = false
 export const DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES = 8
 export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 40
@@ -65,7 +66,23 @@ const clientConfigType = new ObjectType({
     [SDF_CONCURRENCY_LIMIT]: {
       type: BuiltinTypes.NUMBER,
       annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_SDF_CONCURRENCY,
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_CONCURRENCY,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          min: 1,
+          max: 50,
+        }),
+      },
+    },
+  },
+})
+
+const suiteAppClientConfigType = new ObjectType({
+  elemID: new ElemID(NETSUITE, 'suiteAppClientConfig'),
+  fields: {
+    [SUITEAPP_CONCURRENCY_LIMIT]: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_CONCURRENCY,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           min: 1,
           max: 50,
@@ -114,6 +131,10 @@ export const configType = new ObjectType({
       type: clientConfigType,
     },
 
+    [SUITEAPP_CLIENT_CONFIG]: {
+      type: suiteAppClientConfigType,
+    },
+
     [FETCH_TARGET]: {
       type: queryConfigType,
     },
@@ -142,11 +163,16 @@ export type NetsuiteClientConfig = {
   [SDF_CONCURRENCY_LIMIT]?: number
 }
 
+export type SuiteAppClientConfig = {
+  [SUITEAPP_CONCURRENCY_LIMIT]?: number
+}
+
 export type NetsuiteConfig = {
   [TYPES_TO_SKIP]?: string[]
   [FILE_PATHS_REGEX_SKIP_LIST]?: string[]
   [DEPLOY_REFERENCED_ELEMENTS]?: boolean
   [CLIENT_CONFIG]?: NetsuiteClientConfig
+  [SUITEAPP_CLIENT_CONFIG]?: SuiteAppClientConfig
   [FETCH_TARGET]?: NetsuiteQueryParameters
   [SKIP_LIST]?: NetsuiteQueryParameters
 }

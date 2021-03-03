@@ -40,11 +40,13 @@ import {
 } from './config'
 import { getAllReferencedInstances, getRequiredReferencedInstances } from './reference_dependencies'
 import { andQuery, buildNetsuiteQuery, NetsuiteQueryParameters, notQuery } from './query'
+import { SuiteAppClient } from './client/suiteapp_client/suiteapp_client'
 
 const { makeArray } = collections.array
 
 export interface NetsuiteAdapterParams {
   client: NetsuiteClient
+  suiteAppClient?: SuiteAppClient
   elementsSource: ReadOnlyElementsSource
   // Filters to support special cases upon fetch
   filtersCreators?: FilterCreator[]

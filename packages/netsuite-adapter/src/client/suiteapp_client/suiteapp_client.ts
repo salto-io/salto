@@ -21,10 +21,11 @@ import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { Credentials } from '../credentials'
 import { HttpMethod, isError, RestletOperation, RestletResults, RESTLET_RESULTS_SCHEMA,
   SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA, SuiteAppClientParameters,
   SuiteQLResults, SUITE_QL_RESULTS_SCHEMA, SystemInformation, SYSTEM_INFORMATION_SCHEME } from './types'
+import { SuiteAppCredentials } from '../credentials'
+import { DEFAULT_CONCURRENCY } from '../../config'
 
 
 const CONSUMER_KEY = '3db2f2ec0bd98c4eee526ea0b8da876d1d739597e50ee593c67c0f2c34294073'
@@ -33,8 +34,9 @@ const PAGE_SIZE = 1000
 
 const log = logger(module)
 
+
 export class SuiteAppClient {
-  private credentials: Credentials
+  private credentials: SuiteAppCredentials
   private callsLimiter: Bottleneck
   private suiteQLUrl: URL
   private restletUrl: URL
@@ -42,7 +44,9 @@ export class SuiteAppClient {
 
   constructor(params: SuiteAppClientParameters) {
     this.credentials = params.credentials
-    this.callsLimiter = params.callsLimiter
+    this.callsLimiter = new Bottleneck({
+      concurrencyLimit: params.config?.suiteAppConcurrencyLimit ?? DEFAULT_CONCURRENCY,
+    })
 
     const accountIdUrl = params.credentials.accountId.replace('_', '-')
     this.suiteQLUrl = new URL(`https://${accountIdUrl}.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql`)
@@ -106,6 +110,11 @@ export class SuiteAppClient {
       log.error('error was thrown in getSystemInformation', { error })
       return undefined
     }
+  }
+
+  public static async validateCredentials(credentials: SuiteAppCredentials): Promise<void> {
+    const client = new SuiteAppClient({ credentials })
+    await client.sendRestletRequest('sysInfo')
   }
 
   private async sendSuiteQLRequest(query: string, offset: number, limit: number):
@@ -198,8 +207,8 @@ export class SuiteAppClient {
     }
 
     const token = {
-      key: this.credentials.tokenId,
-      secret: this.credentials.tokenSecret,
+      key: this.credentials.suiteAppTokenId,
+      secret: this.credentials.suiteAppTokenSecret,
     }
 
     return oauth.toHeader(oauth.authorize(requestData, token))

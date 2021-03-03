@@ -36,10 +36,10 @@ import {
 } from '../constants'
 import {
   DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES,
-  DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_SDF_CONCURRENCY, NetsuiteClientConfig,
+  DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, NetsuiteClientConfig,
 } from '../config'
 import { NetsuiteQuery, ObjectID } from '../query'
-import { Credentials } from './credentials'
+import { SdfCredentials } from './credentials'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -47,7 +47,7 @@ const { withTimeout } = promises.timeout
 const log = logger(module)
 
 export type NetsuiteClientOpts = {
-  credentials: Credentials
+  credentials: SdfCredentials
   config?: NetsuiteClientConfig
 }
 
@@ -206,7 +206,7 @@ type ObjectsChunk = {
 }
 
 export default class NetsuiteClient {
-  private readonly credentials: Credentials
+  private readonly credentials: SdfCredentials
   private readonly fetchAllTypesAtOnce: boolean
   private readonly fetchTypeTimeoutInMinutes: number
   private readonly maxItemsInImportObjectsRequest: number
@@ -229,14 +229,14 @@ export default class NetsuiteClient {
       ?? DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES
     this.maxItemsInImportObjectsRequest = config?.maxItemsInImportObjectsRequest
       ?? DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST
-    this.sdfConcurrencyLimit = config?.sdfConcurrencyLimit ?? DEFAULT_SDF_CONCURRENCY
+    this.sdfConcurrencyLimit = config?.sdfConcurrencyLimit ?? DEFAULT_CONCURRENCY
     this.sdfCallsLimiter = new Bottleneck({ maxConcurrent: this.sdfConcurrencyLimit })
     this.setupAccountLock = new AsyncLock()
     this.baseCommandExecutor = NetsuiteClient.initCommandActionExecutor(baseExecutionPath)
   }
 
   @NetsuiteClient.logDecorator
-  static async validateCredentials(credentials: Credentials): Promise<AccountId> {
+  static async validateCredentials(credentials: SdfCredentials): Promise<AccountId> {
     const netsuiteClient = new NetsuiteClient({ credentials })
     const { projectName, authId } = await netsuiteClient.initProject()
     await netsuiteClient.projectCleanup(projectName, authId)

@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { InMemoryRemoteMap, RemoteMap } from '../../src/workspace/remote_map'
+import { isObjectType, ObjectType, ElemID, Element } from '@salto-io/adapter-api'
+import { InMemoryRemoteMap, RemoteMap, mapRemoteMapResult } from '../../src/workspace/remote_map'
 
 const { awu } = collections.asynciterable
 
@@ -109,5 +110,85 @@ describe('remote map', () => {
         await inMemRemoteMap.close()
       })
     })
+  })
+})
+
+describe('mapRemoteMapValues', () => {
+  const mapper = async (elem: Element): Promise<Element> => {
+    if (isObjectType(elem)) {
+      return new ObjectType({
+        elemID: elem.elemID,
+        annotations: {
+          ...elem.annotations,
+          new: 'NEW',
+        },
+      })
+    }
+    return elem
+  }
+  it('should map values obtained via get', async () => {
+    const obj = new ObjectType({
+      elemID: new ElemID('salto', 'obj'),
+      annotations: {
+        anno: 'ANNO',
+      },
+    })
+    const source = new InMemoryRemoteMap<Element>([{ key: obj.elemID.getFullName(), value: obj }])
+    const mappedSource = mapRemoteMapResult(source, mapper)
+    const mappedObj = await mappedSource.get(obj.elemID.getFullName()) as ObjectType
+    expect(mappedObj.annotations).toEqual({
+      ...obj.annotations,
+      new: 'NEW',
+    })
+  })
+
+  it('should map elements obtained via values', async () => {
+    const obj = new ObjectType({
+      elemID: new ElemID('salto', 'obj'),
+      annotations: {
+        anno: 'ANNO',
+      },
+    })
+    const source = new InMemoryRemoteMap<Element>([{ key: obj.elemID.getFullName(), value: obj }])
+    const mappedSource = mapRemoteMapResult(source, mapper)
+    const mappedObjs = await awu(mappedSource.values()).toArray()
+    expect(mappedObjs.map(e => e.annotations)).toEqual([{
+      ...obj.annotations,
+      new: 'NEW',
+    }])
+  })
+
+  it('should map elements obtained via entries', async () => {
+    const obj = new ObjectType({
+      elemID: new ElemID('salto', 'obj'),
+      annotations: {
+        anno: 'ANNO',
+      },
+    })
+    const source = new InMemoryRemoteMap<Element>([{ key: obj.elemID.getFullName(), value: obj }])
+    const mappedSource = mapRemoteMapResult(source, mapper)
+    const mappedObjs = (await awu(mappedSource.entries()).toArray()).map(entry => entry.value)
+    expect(mappedObjs.map(e => e.annotations)).toEqual([{
+      ...obj.annotations,
+      new: 'NEW',
+    }])
+  })
+
+  it('should not effect the original source', async () => {
+    const obj = new ObjectType({
+      elemID: new ElemID('salto', 'obj'),
+      annotations: {
+        anno: 'ANNO',
+      },
+    })
+    const source = new InMemoryRemoteMap<Element>([{ key: obj.elemID.getFullName(), value: obj }])
+    const mappedSource = mapRemoteMapResult(source, mapper)
+    const mappedObjs = await awu(mappedSource.values()).toArray()
+    expect(mappedObjs.map(e => e.annotations)).toEqual([{
+      ...obj.annotations,
+      new: 'NEW',
+    }])
+    const origObjs = await awu(source.values()).toArray()
+    expect(origObjs.map(e => e.annotations)).toEqual([obj.annotations])
   })
 })

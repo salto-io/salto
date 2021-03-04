@@ -19,7 +19,7 @@ import uuidv4 from 'uuid/v4'
 import { DetailedChange } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, remoteMap,
-  configSource as cs, parseCache, staticFiles, dirStore, WorkspaceComponents,
+  configSource as cs, staticFiles, dirStore, WorkspaceComponents,
   COMMON_ENV_PREFIX } from '@salto-io/workspace'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome, CONFIG_DIR_NAME, getConfigDir } from '../app_config'
@@ -30,7 +30,6 @@ import { createRemoteMapCreator } from './remote_map'
 
 const { configSource } = cs
 const { FILE_EXTENSION, naclFilesSource, ENVS_PREFIX } = nacl
-const { createParseResultCache } = parseCache
 const { buildStaticFilesSource } = staticFiles
 
 export const STATES_DIR_NAME = 'states'
@@ -63,7 +62,6 @@ export const getNaclFilesSourceParams = (
   excludeDirs: string[] = []
 ): {
   naclFilesStore: dirStore.DirectoryStore<string>
-  cache: parseCache.ParsedNaclFileCache
   staticFileSource: staticFiles.StaticFilesSource
 } => {
   const dirPathToIgnore = (dirPath: string): boolean =>
@@ -91,11 +89,6 @@ export const getNaclFilesSourceParams = (
   )
   return {
     naclFilesStore,
-    cache: createParseResultCache(
-      cacheName,
-      createRemoteMapCreator(cacheDir),
-      staticFileSource,
-    ),
     staticFileSource,
   }
 }
@@ -106,11 +99,11 @@ const loadNaclFileSource = async (
   sourceName: string,
   excludeDirs: string[] = []
 ): Promise<nacl.NaclFilesSource> => {
-  const { naclFilesStore, cache, staticFileSource } = getNaclFilesSourceParams(
+  const { naclFilesStore, staticFileSource } = getNaclFilesSourceParams(
     sourceBaseDir, cacheBaseDir, sourceName, excludeDirs
   )
   return naclFilesSource(
-    sourceName, naclFilesStore, cache, staticFileSource, createRemoteMapCreator(cacheBaseDir)
+    sourceName, naclFilesStore, staticFileSource, createRemoteMapCreator(cacheBaseDir)
   )
 }
 

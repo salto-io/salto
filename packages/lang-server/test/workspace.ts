@@ -16,7 +16,7 @@
 import * as path from 'path'
 import { readFileSync } from 'fs'
 import _ from 'lodash'
-import { Workspace, parser, errors as wsErrors, state, nacl, staticFiles, dirStore, parseCache,
+import { Workspace, parser, errors as wsErrors, state, nacl, staticFiles, dirStore,
   loadWorkspace, EnvironmentsSources, remoteMap, elementSource } from '@salto-io/workspace'
 import { ElemID, SaltoError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -153,11 +153,6 @@ Promise<Workspace> => {
   const commonNaclFilesSource = await nacl.naclFilesSource(
     '',
     mockedDirStore,
-    parseCache.createParseResultCache(
-      'cacheName',
-      mockCreateRemoteMap,
-      commonStaticFilesSource,
-    ),
     commonStaticFilesSource,
     mockCreateRemoteMap,
   )
@@ -179,11 +174,6 @@ Promise<Workspace> => {
         naclFiles: await nacl.naclFilesSource(
           'default',
           mockDirStore({}),
-          parseCache.createParseResultCache(
-            'defaultCacheName',
-            mockCreateRemoteMap,
-            commonStaticFilesSource,
-          ),
           defaultStaticFilesSource,
           mockCreateRemoteMap,
         ),
@@ -201,11 +191,6 @@ Promise<Workspace> => {
         naclFiles: await nacl.naclFilesSource(
           'inactive',
           mockDirStore({}),
-          parseCache.createParseResultCache(
-            'inactiveCacheName',
-            mockCreateRemoteMap,
-            inactiveStaticFilesSource,
-          ),
           inactiveStaticFilesSource,
           mockCreateRemoteMap,
         ),

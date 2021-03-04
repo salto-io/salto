@@ -224,7 +224,7 @@ export class EditorWorkspace {
       this.pendingSets = {}
       // We start by running all deleted
       const removeChanges = (!_.isEmpty(opDeletes))
-        ? await this.workspace.removeNaclFiles(...opDeletes)
+        ? (await this.workspace.removeNaclFiles(...opDeletes))
         : []
       // Now add the waiting changes
       const updateChanges = (!_.isEmpty(opUpdates))

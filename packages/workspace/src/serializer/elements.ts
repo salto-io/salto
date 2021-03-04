@@ -28,7 +28,7 @@ import { DuplicateInstanceKeyError } from '../merger/internal/instances'
 import { DuplicateAnnotationFieldDefinitionError, ConflictingFieldTypesError,
   ConflictingSettingError, DuplicateAnnotationTypeError } from '../merger/internal/object_types'
 import { DuplicateVariableNameError } from '../merger/internal/variables'
-import { MultiplePrimitiveTypesUnsupportedError } from '../merger/internal/primitives'
+import { MultiplePrimitiveTypesError } from '../merger/internal/primitives'
 
 import { InvalidStaticFile } from '../workspace/static_files/common'
 
@@ -71,7 +71,7 @@ const NameToType = {
   ConflictingSettingError: ConflictingSettingError,
   DuplicateAnnotationTypeError: DuplicateAnnotationTypeError,
   DuplicateVariableNameError: DuplicateVariableNameError,
-  MultiplePrimitiveTypesUnsupportedError: MultiplePrimitiveTypesUnsupportedError,
+  MultiplePrimitiveTypesError: MultiplePrimitiveTypesError,
 }
 const nameToTypeEntries = Object.entries(NameToType)
 const possibleTypes = Object.values(NameToType)
@@ -273,8 +273,8 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
     DuplicateVariableNameError: v => (
       new DuplicateVariableNameError({ elemID: reviveElemID(v.elemID) })
     ),
-    MultiplePrimitiveTypesUnsupportedError: v => (
-      new MultiplePrimitiveTypesUnsupportedError({
+    MultiplePrimitiveTypesError: v => (
+      new MultiplePrimitiveTypesError({
         elemID: reviveElemID(v.elemID),
         duplicates: v.duplicates,
       })

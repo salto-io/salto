@@ -27,6 +27,7 @@ export type IterationOpts = {
 
 export type RemoteMapEntry<T, K extends string = string> = { key: K; value: T }
 export type RemoteMapType = 'workspace' | 'state'
+export type ReadOnlyRemoteMap<T> = Pick<RemoteMap<T>, 'get'|'entries'|'values'|'has'>
 
 export interface CreateRemoteMapParams<T> {
   namespace: string
@@ -130,3 +131,17 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
 
   [Symbol.toStringTag]: '[InMemoryRemoteMap]'
 }
+
+export const mapRemoteMapResult = <T, R>(
+  source: ReadOnlyRemoteMap<T>,
+  func: (orig: T) => Promise<R>
+): ReadOnlyRemoteMap<R> => ({
+    get: async id => {
+      const origValue = await source.get(id)
+      return origValue !== undefined ? func(origValue) : undefined
+    },
+    entries: () => awu(source.entries())
+      .map(async entry => ({ ...entry, value: await func(entry.value) })),
+    values: () => awu(source.values()).map(func),
+    has: id => source.has(id),
+  })

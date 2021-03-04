@@ -195,11 +195,11 @@ describe('handleHiddenChanges', () => {
           data: { after: instance },
         }
 
-        result = await handleHiddenChanges(
+        result = (await handleHiddenChanges(
           [change],
           mockState(),
           mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
-        )
+        )).visible
         expect(result).toHaveLength(1)
         filteredInstance = getChangeElement(result[0])
       })
@@ -220,11 +220,11 @@ describe('handleHiddenChanges', () => {
           data: { after: instance.annotations[INSTANCE_ANNOTATIONS.SERVICE_URL] },
         }
 
-        result = await handleHiddenChanges(
+        result = (await handleHiddenChanges(
           [change],
           mockState([instanceType, instance]),
           mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
-        )
+        )).visible
       })
       it('should omit the whole change', () => {
         expect(result).toHaveLength(0)
@@ -250,11 +250,11 @@ describe('handleHiddenChanges', () => {
     }
 
     it('hidden annotation should be omitted', async () => {
-      const result = await handleHiddenChanges(
+      const result = (await handleHiddenChanges(
         [change],
         mockState([object]),
         mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
-      )
+      )).visible
       expect(result.length).toBe(0)
     })
   })

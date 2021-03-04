@@ -21,7 +21,6 @@ import { DirectoryStore } from '../../../src/workspace/dir_store'
 
 import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
-import { ParsedNaclFileCache, createParseResultCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../utils'
 import * as parser from '../../../src/parser'
@@ -31,7 +30,6 @@ const { awu } = collections.asynciterable
 
 describe('Nacl Files Source', () => {
   let mockDirStore: DirectoryStore<string>
-  let mockCache: ParsedNaclFileCache
   let mockedStaticFilesSource: StaticFilesSource
   const mockDirStoreGet = jest.fn()
 
@@ -53,11 +51,6 @@ describe('Nacl Files Source', () => {
       getFullPath: filename => filename,
     }
     mockedStaticFilesSource = mockStaticFilesSource()
-    mockCache = createParseResultCache(
-      'test',
-      persistentMockCreateRemoteMap(),
-      mockStaticFilesSource(),
-    )
   })
 
   describe('change inner state', () => {
@@ -112,7 +105,6 @@ describe('Nacl Files Source', () => {
       naclFileSourceTest = await naclFilesSource(
         '',
         mockDirStore,
-        mockCache,
         mockedStaticFilesSource,
         persistentMockCreateRemoteMap(),
         parsedNaclFiles
@@ -318,7 +310,6 @@ describe('Nacl Files Source', () => {
             naclFileSourceWithFragments = await naclFilesSource(
               '',
               mockDirStore,
-              mockCache,
               mockedStaticFilesSource,
               persistentMockCreateRemoteMap(),
               parsedNaclFiles,

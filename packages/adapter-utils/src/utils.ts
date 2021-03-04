@@ -835,20 +835,25 @@ const createDefaultValuesFromType = async (
     : type.annotations[CORE_ANNOTATIONS.DEFAULT])
 }
 
+export const applyInstanceDefaults = async (
+  element: Element,
+  elementsSource?: ReadOnlyElementsSource,
+): Promise<Element> => {
+  if (isInstanceElement(element)) {
+    const defaultValues = await createDefaultValuesFromType(
+      await element.getType(elementsSource),
+      elementsSource
+    )
+    element.value = { ...defaultValues, ...element.value }
+  }
+  return element
+}
+
 export const applyInstancesDefaults = (
   elements: AsyncIterable<Element>,
-  elementsSrouce?: ReadOnlyElementsSource,
+  elementsSource?: ReadOnlyElementsSource,
 ): AsyncIterable<Element> => awu(elements)
-  .map(async element => {
-    if (isInstanceElement(element)) {
-      const defaultValues = await createDefaultValuesFromType(
-        await element.getType(elementsSrouce),
-        elementsSrouce
-      )
-      element.value = { ...defaultValues, ...element.value }
-    }
-    return element
-  })
+  .map(async element => applyInstanceDefaults(element, elementsSource))
 
 export const createDefaultInstanceFromType = async (name: string, objectType: ObjectType):
   Promise<InstanceElement> => {

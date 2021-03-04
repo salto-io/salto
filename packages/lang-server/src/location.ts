@@ -30,10 +30,10 @@ export interface SaltoElemLocation {
 
 export type SaltoElemFileLocation = Omit<SaltoElemLocation, 'range'>
 
-export const FUSE_SEARCH_THRESHOLD = 0.17
+export const FUSE_SEARCH_THRESHOLD = 0.3
 const MAX_LOCATION_SEARCH_RESULT = 20
 
-const getAllElements = async (workspace: EditorWorkspace):
+export const getAllElements = async (workspace: EditorWorkspace):
 Promise<ReadonlyArray<Element>> => (await workspace.elements)
   .flatMap(elem => (isObjectType(elem) ? [elem, ...Object.values(elem.fields)] : [elem]))
 
@@ -145,13 +145,9 @@ export const getQueryLocations = async (
   )
 }
 
-export const getQueryLocationsFuzzy = async (
-  workspace: EditorWorkspace,
-  query: string,
-): Promise<Fuse.FuseResult<SaltoElemFileLocation>[]> => {
-  const elements = await getAllElements(workspace)
-  const fuse = new Fuse(
-    elements.map(e => e.elemID.getFullName()),
+export const createFuzzyFilter = (items: string[]): Fuse<string> =>
+  new Fuse(
+    items,
     {
       includeMatches: true,
       ignoreLocation: true,
@@ -164,8 +160,17 @@ export const getQueryLocationsFuzzy = async (
         return aItem.length - bItem.length
       },
       threshold: FUSE_SEARCH_THRESHOLD,
+      minMatchCharLength: 2,
+      useExtendedSearch: true,
     }
   )
+
+export const getQueryLocationsFuzzy = async (
+  workspace: EditorWorkspace,
+  query: string,
+): Promise<Fuse.FuseResult<SaltoElemFileLocation>[]> => {
+  const elements = await getAllElements(workspace)
+  const fuse = createFuzzyFilter(elements.map(e => e.elemID.getFullName()))
   const fuseSearchResult = fuse.search(query)
   const topFuzzyResults = fuseSearchResult
     .slice(0, MAX_LOCATION_SEARCH_RESULT)

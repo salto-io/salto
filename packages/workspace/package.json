@@ -36,6 +36,7 @@
     "@salto-io/adapter-utils": "0.2.6",
     "@salto-io/logging": "0.2.6",
     "@salto-io/lowerdash": "0.2.6",
+    "deep-object-diff": "^1.1.0",
     "is-promise": "4.0.0",
     "lodash": "^4.17.19",
     "moo": "^0.5.1",

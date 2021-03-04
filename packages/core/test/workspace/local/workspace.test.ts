@@ -17,6 +17,8 @@ import path from 'path'
 import { Value } from '@salto-io/adapter-api'
 import * as ws from '@salto-io/workspace'
 import * as file from '@salto-io/file'
+import { EnvironmentsSources } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import {
   initLocalWorkspace, ExistingWorkspaceError, NotAnEmptyWorkspaceError, NotAWorkspaceError,
   loadLocalWorkspace, CREDENTIALS_CONFIG_PATH,
@@ -25,6 +27,7 @@ import {
 import { getSaltoHome } from '../../../src/app_config'
 import * as mockDirStore from '../../../src/local-workspace/dir_store'
 
+const { awu } = collections.asynciterable
 const { ENVS_PREFIX } = ws.nacl
 const { COMMON_ENV_PREFIX } = ws
 
@@ -63,7 +66,7 @@ describe('local workspace', () => {
     get: jest.fn().mockResolvedValue({ buffer: '', filename: '' }),
     set: jest.fn(),
     flush: jest.fn(),
-    list: jest.fn(),
+    list: jest.fn().mockResolvedValue([]),
     delete: jest.fn(),
     mtimestamp: jest.fn(),
     getFiles: jest.fn(),
@@ -234,11 +237,19 @@ describe('local workspace', () => {
   })
 
   describe('demoteAll', () => {
+    let wsElemSrcs: EnvironmentsSources
     beforeAll(() => {
       mockExists.mockResolvedValue(true)
       const mockLoad = ws.loadWorkspace as jest.Mock
-      mockLoad.mockResolvedValue({
-        demoteAll: jest.fn(),
+      mockLoad.mockImplementation(async (
+        _config,
+        _credentials,
+        elemSource: EnvironmentsSources
+      ) => {
+        wsElemSrcs = elemSource
+        return {
+          demoteAll: jest.fn(),
+        }
       })
     })
 
@@ -266,6 +277,7 @@ describe('local workspace', () => {
         const envIsEmpty = envDirStore.isEmpty as jest.Mock
         envIsEmpty.mockResolvedValueOnce(true)
         const workspace = await loadLocalWorkspace('.')
+        await awu(Object.values(wsElemSrcs.sources)).forEach(src => src.naclFiles.load({}))
         await workspace.demoteAll()
         expect(repoDirStore.rename).toHaveBeenCalled()
       })

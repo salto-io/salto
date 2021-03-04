@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Change, isEqualElements, toChange, ElemID, SaltoError } from '@salto-io/adapter-api'
+import { Element, Change, isEqualElements, toChange, ElemID, SaltoError, ReadOnlyElementsSource, getChangeElement, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 
+import _ from 'lodash'
 import { MergeResult } from '../../merger'
 import { ElementsSource } from '../elements_source'
 import { RemoteMap } from '../remote_map'
@@ -25,13 +26,13 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 export const buildNewMergedElementsAndErrors = async ({
-  newElements,
+  afterElements,
   currentElements,
   currentErrors,
   relevantElementIDs,
   mergeFunc,
 }: {
-  newElements: AsyncIterable<Element>
+  afterElements: AsyncIterable<Element>
   currentElements: ElementsSource
   currentErrors: RemoteMap<SaltoError[]>
   relevantElementIDs: AsyncIterable<ElemID>
@@ -39,7 +40,7 @@ export const buildNewMergedElementsAndErrors = async ({
 }): Promise<Change[]> => {
   log.info('going to merge new elements to the existing elements')
   const changes: Change[] = []
-  const newMergedElementsResult = await mergeFunc(newElements)
+  const newMergedElementsResult = await mergeFunc(afterElements)
   const hasCurrentElements = !(await currentElements.isEmpty())
   const hasCurrentErrors = !(await currentErrors.isEmpty())
   if (!hasCurrentElements && !hasCurrentErrors) {
@@ -73,4 +74,56 @@ export const buildNewMergedElementsAndErrors = async ({
     }
   })
   return changes
+}
+
+export const getAfterElements = async ({
+  src1Changes,
+  src2Changes,
+  src1,
+  src2,
+}: {
+  src1Changes: Change<Element>[]
+  src2Changes: Change<Element>[]
+  src1: ReadOnlyElementsSource
+  src2: ReadOnlyElementsSource
+}): Promise<{
+  afterElements: AsyncIterable<Element>
+  relevantElementIDs: AsyncIterable<ElemID>
+}> => {
+  const relevantElementIDs = _.uniqBy(
+    [src1Changes, src2Changes]
+      .flat()
+      .map(getChangeElement)
+      .map(e => e.elemID),
+    id => id.getFullName()
+  )
+
+  const src1ChangesByID = _.keyBy(
+    src1Changes,
+    change => getChangeElement(change).elemID.getFullName()
+  )
+  const src2ChangesByID = _.keyBy(
+    src2Changes,
+    change => getChangeElement(change).elemID.getFullName()
+  )
+
+  const changeAfterElements = [...src1Changes, ...src2Changes]
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeElement)
+    .filter(values.isDefined)
+
+  const unmodifiedFragments = awu(relevantElementIDs).map(async id => {
+    const sr1Change = src1ChangesByID[id.getFullName()]
+    const src2Change = src2ChangesByID[id.getFullName()]
+    if (values.isDefined(sr1Change) && values.isDefined(src2Change)) {
+      return undefined
+    }
+    return values.isDefined(sr1Change)
+      ? src2.get(id)
+      : src1.get(id)
+  }).filter(values.isDefined)
+  return {
+    afterElements: awu(changeAfterElements).concat(unmodifiedFragments),
+    relevantElementIDs: awu(relevantElementIDs),
+  }
 }

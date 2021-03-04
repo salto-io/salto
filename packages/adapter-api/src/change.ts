@@ -64,11 +64,6 @@ export const isRemovalOrModificationChange = <T extends Change<unknown>>(
 export const getChangeElement = <T>(change: Change<T>): T =>
   (change.action === 'remove' ? change.data.before : change.data.after)
 
-export const getAfterFromChange = <T>(change: Change<T>): T | undefined => {
-  const changeElem = getChangeElement(change)
-  return isRemovalChange(change) ? undefined : changeElem
-}
-
 export const getAllChangeElements = <T>(change: Change<T>): T[] => (
   [
     isRemovalOrModificationChange(change) ? change.data.before : undefined,

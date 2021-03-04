@@ -364,7 +364,7 @@ const buildNaclFilesState = async ({
     referencedIndexDeletions
   )
   const changes = await buildNewMergedElementsAndErrors({
-    newElements: concatAsync(...newElementsToMerge, unmodifiedFragments),
+    afterElements: concatAsync(...newElementsToMerge, unmodifiedFragments),
     relevantElementIDs: awu(relevantElementIDs),
     currentElements: currentState.mergedElements,
     currentErrors: currentState.mergeErrors,

@@ -29,7 +29,7 @@ import { mergeElements, MergeError } from '../../../merger'
 import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode } from '../nacl_files_source'
 import { ParsedNaclFile } from '../parsed_nacl_file'
-import { buildNewMergedElementsAndErrors, getBuildMergeData } from '../elements_cache'
+import { buildNewMergedElementsAndErrors, getAfterElements } from '../elements_cache'
 import { Errors } from '../../errors'
 import { RemoteElementSource, ElementsSource } from '../../elements_source'
 import { serialize, deserializeSingleElement, deserializeMergeErrors } from '../../../serializer/elements'
@@ -141,7 +141,7 @@ const buildMultiEnvSource = (
       ? state
       : await buildState(env)
 
-    const { newElements, relevantElementIDs } = await getBuildMergeData({
+    const { afterElements: newElements, relevantElementIDs } = await getAfterElements({
       src1Changes: actualChanges[primaryEnv] ?? [],
       src1: sources[primaryEnv],
       src2Changes: actualChanges[commonSourceName] ?? [],
@@ -149,7 +149,7 @@ const buildMultiEnvSource = (
     })
 
     const mergeChanges = await buildNewMergedElementsAndErrors({
-      newElements: awu(newElements),
+      afterElements: awu(newElements),
       currentElements: current.elements,
       currentErrors: current.mergeErrors,
       relevantElementIDs: awu(relevantElementIDs),

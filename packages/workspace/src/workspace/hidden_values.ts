@@ -18,13 +18,10 @@ import { values, collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { transformElement, TransformFunc, transformValues, applyFunctionToChangeData, elementAnnotationTypes } from '@salto-io/adapter-utils'
 import { CORE_ANNOTATIONS, Element, isInstanceElement, isType, TypeElement, getField,
-  DetailedChange, isRemovalChange, ElemID, isObjectType, ObjectType, Values,
-  isRemovalOrModificationChange, isAdditionOrModificationChange, isElement, isField,
-  ReadOnlyElementsSource,
-  ReferenceMap,
-  isPrimitiveType,
-  PrimitiveType,
-  InstanceElement } from '@salto-io/adapter-api'
+  DetailedChange, isRemovalChange, ElemID, isObjectType, ObjectType, Values,isRemovalOrModificationChange, 
+  isAdditionOrModificationChange, isElement, isField, ReadOnlyElementsSource, ReferenceMap, isPrimitiveType, 
+  PrimitiveType, InstanceElement 
+} from '@salto-io/adapter-api'
 import { addedDiff } from 'deep-object-diff'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
@@ -387,7 +384,7 @@ const isHiddenField = async (
       || isHiddenField(baseType, fieldPath.slice(0, -1), hiddenValue, elementsSource)
 }
 
-const diffElements = <T extends Element>(fullElem: T, visibleElem: T): T | undefined => {
+const diffElements = <T extends Element>(fullElem?: T, visibleElem?: T): T | undefined => {
   if (fullElem === undefined) {
     return undefined
   }
@@ -450,8 +447,9 @@ const filterOutHiddenChanges = async (
   ): Promise<{visible?: DetailedChange; hidden?: DetailedChange}> => {
     if (isRemovalChange(change)) {
       // There should be no harm in letting remove changes through here. remove should be resilient
-      // to its subject not existing
-      return { visible: change }
+      // to its subject not existing. We create both visible and hidden changes in order to make sure
+      // that hidden parts are removed from the cache as well.
+      return { visible: change, hidden: change }
     }
 
     const { parent, path } = change.id.createTopLevelParentID()
@@ -545,15 +543,6 @@ const filterOutHiddenChanges = async (
             state,
           ),
         )
-        // const hidden = await applyFunctionToChangeData(
-        //   change,
-        //   value => removeVisibleFromValues(
-        //     fieldType,
-        //     value,
-        //     change.id,
-        //     state,
-        //   ),
-        // )
         return { visible,
           hidden: {
             ...change,

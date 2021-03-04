@@ -16,10 +16,8 @@
 import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
-  Value,
-  toChange,
-  isRemovalChange,
-  getChangeElement } from '@salto-io/adapter-api'
+  Value, toChange 
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
 import { applyDetailedChanges } from '@salto-io/adapter-utils'
@@ -37,7 +35,7 @@ import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_v
 import { WorkspaceConfigSource } from './workspace_config_source'
 import { MergeError, mergeElements } from '../merger'
 import { RemoteElementSource, ElementsSource, mapReadOnlyElementsSource } from './elements_source'
-import { buildNewMergedElementsAndErrors, getBuildMergeData } from './nacl_files/elements_cache'
+import { buildNewMergedElementsAndErrors, getAfterElements } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement } from '../serializer/elements'
 
@@ -175,11 +173,12 @@ export const loadWorkspace = async (
     currentEnv(), elementsSources.commonSourceName, remoteMapCreator)
   let workspaceState: Promise<WorkspaceState> | undefined
 
-  const buildWorkspaceState = async ({ workspaceChanges = [], env, stateChanges = [] }: {
+  const buildWorkspaceState = async ({ workspaceChanges = [], env, stateOnlyChanges = [] }: {
     workspaceChanges?: Change<Element>[]
     env?: string
-    stateChanges?: Change<Element>[]
+    stateOnlyChanges?: Change<Element>[]
   }): Promise<WorkspaceState> => {
+
     const actualEnv = env ?? currentEnv()
     const stateToBuild = workspaceState !== undefined && actualEnv === currentEnv()
       ? await workspaceState : {
@@ -198,21 +197,32 @@ export const loadWorkspace = async (
         }),
       }
 
-    const initHiddenElementsChanges = await awu(await stateToBuild.merged.getAll()).isEmpty()
-      && _.isEmpty(stateChanges)
-      ? await awu(await state().getAll()).filter(element => isHidden(element, state()))
-        .map(elem => toChange({ after: elem })).toArray()
-      : []
+    // When we load the workspace with a clean cache from existings nacls, we need
+    // to add hidden elements from the state since they will not be a part of the nacl
+    // changes. In any other load - the state changes will be reflected by the workspace
+    // / hiden changes.
+    const completeStateOnlyChanges = async (
+      stateOnlyChanges: Change<Element>[]
+    ): Promise<Change<Element>[]> => {
+      // We identify a first nacl load when the state is empty, and all of the changes
+      // are visible (which indicates a nacl load and not a first 'fetch' in which the
+      // hidden changes won't be empty)
+      const isFirstInitFromNacls = await awu(await stateToBuild.merged.getAll()).isEmpty()
+        && _.isEmpty(stateOnlyChanges)
 
-    const stateRemovedElementChanges = workspaceChanges
-      .filter(change => isRemovalChange(change) && getChangeElement(change).elemID.isTopLevel())
+      const initHiddenElementsChanges = isFirstInitFromNacls
+        ? await awu(await state().getAll()).filter(element => isHidden(element, state()))
+          .map(elem => toChange({ after: elem })).toArray()
+        : []
 
-    const mergeData = await getBuildMergeData({
+      return stateOnlyChanges
+        .concat(initHiddenElementsChanges)
+    }
+
+    const mergeData = await getAfterElements({
       src1Changes: workspaceChanges,
       src1: stateToBuild.merged,
-      src2Changes: stateChanges
-        .concat(initHiddenElementsChanges)
-        .concat(stateRemovedElementChanges),
+      src2Changes: await completeStateOnlyChanges(stateOnlyChanges),
       src2: mapReadOnlyElementsSource(
         state(),
         async element => getElementHiddenParts(
@@ -257,7 +267,7 @@ export const loadWorkspace = async (
     return getWorkspaceState()
   }
 
-  const getStateChanges = async (
+  const getStateOnlyChanges = async (
     hiddenChanges: DetailedChange[],
   ): Promise<Change[]> => {
     const changesByID = _.groupBy(
@@ -293,8 +303,8 @@ export const loadWorkspace = async (
     )
     const workspaceChanges = await (await getLoadedNaclFilesSource())
       .updateNaclFiles(visibleChanges, mode)
-    const stateChanges = await getStateChanges(hiddenChanges)
-    workspaceState = buildWorkspaceState({ workspaceChanges, stateChanges })
+    const stateOnlyChanges = await getStateOnlyChanges(hiddenChanges)
+    workspaceState = buildWorkspaceState({ workspaceChanges, stateOnlyChanges })
   }
 
 
@@ -546,6 +556,8 @@ export const loadWorkspace = async (
       await credentials.delete(env)
 
       const environmentSource = elementsSources.sources[env]
+      // ensure that the env is loaded
+      await environmentSource.naclFiles.load()
       if (environmentSource) {
         await environmentSource.naclFiles.clear()
         await environmentSource.state?.clear()

@@ -228,9 +228,8 @@ export class EditorWorkspace {
         : []
       // Now add the waiting changes
       const updateChanges = (!_.isEmpty(opUpdates))
-        ? (
-          await this.workspace.setNaclFiles(...Object.values(opUpdates))
-        ) : []
+        ? await this.workspace.setNaclFiles(...Object.values(opUpdates))
+        : []
       if (this.wsErrors !== undefined) {
         const validation = await this.getValidationErrors(
           [...opDeletes, ...Object.keys(opUpdates)].filter(f => this.isWorkspaceFile(f)),

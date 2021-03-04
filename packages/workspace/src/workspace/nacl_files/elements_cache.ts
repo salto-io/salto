@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Change, isEqualElements, toChange, ElemID, SaltoError, ReadOnlyElementsSource, getChangeElement, getAfterFromChange } from '@salto-io/adapter-api'
+import { Element, Change, isEqualElements, toChange, ElemID, SaltoError, ReadOnlyElementsSource, getChangeElement, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 
@@ -26,13 +26,13 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 export const buildNewMergedElementsAndErrors = async ({
-  newElements,
+  afterElements,
   currentElements,
   currentErrors,
   relevantElementIDs,
   mergeFunc,
 }: {
-  newElements: AsyncIterable<Element>
+  afterElements: AsyncIterable<Element>
   currentElements: ElementsSource
   currentErrors: RemoteMap<SaltoError[]>
   relevantElementIDs: AsyncIterable<ElemID>
@@ -40,7 +40,7 @@ export const buildNewMergedElementsAndErrors = async ({
 }): Promise<Change[]> => {
   log.info('going to merge new elements to the existing elements')
   const changes: Change[] = []
-  const newMergedElementsResult = await mergeFunc(newElements)
+  const newMergedElementsResult = await mergeFunc(afterElements)
   const hasCurrentElements = !(await currentElements.isEmpty())
   const hasCurrentErrors = !(await currentErrors.isEmpty())
   if (!hasCurrentElements && !hasCurrentErrors) {
@@ -76,7 +76,7 @@ export const buildNewMergedElementsAndErrors = async ({
   return changes
 }
 
-export const getBuildMergeData = async ({
+export const getAfterElements = async ({
   src1Changes,
   src2Changes,
   src1,
@@ -87,7 +87,7 @@ export const getBuildMergeData = async ({
   src1: ReadOnlyElementsSource
   src2: ReadOnlyElementsSource
 }): Promise<{
-  newElements: AsyncIterable<Element>
+  afterElements: AsyncIterable<Element>
   relevantElementIDs: AsyncIterable<ElemID>
 }> => {
   const relevantElementIDs = _.uniqBy(
@@ -107,8 +107,9 @@ export const getBuildMergeData = async ({
     change => getChangeElement(change).elemID.getFullName()
   )
 
-  const changeElements = [...src1Changes, ...src2Changes]
-    .map(getAfterFromChange)
+  const changeAfterElements = [...src1Changes, ...src2Changes]
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeElement)
     .filter(values.isDefined)
 
   const unmodifiedFragments = awu(relevantElementIDs).map(async id => {
@@ -122,7 +123,7 @@ export const getBuildMergeData = async ({
       : src1.get(id)
   }).filter(values.isDefined)
   return {
-    newElements: awu(changeElements).concat(unmodifiedFragments),
+    afterElements: awu(changeAfterElements).concat(unmodifiedFragments),
     relevantElementIDs: awu(relevantElementIDs),
   }
 }

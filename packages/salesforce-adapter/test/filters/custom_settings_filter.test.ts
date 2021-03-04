@@ -36,7 +36,6 @@ const customSettingsWithNoNameField = new ObjectType({
   },
 })
 
-/* eslint-disable @typescript-eslint/camelcase */
 describe('Custom settings filter', () => {
   let connection: Connection
   let client: SalesforceClient
@@ -110,7 +109,7 @@ describe('Custom settings filter', () => {
       expect(noNameObject).toEqual(customSettingsWithNoNameField)
     })
 
-    it('Should add two instances for the valid object and no isntances for noName one', () => {
+    it('Should add two instances for the valid object and no instances for noName one', () => {
       const validObjectInstances = elements
         .filter(elm => isInstanceElement(elm)
           && elm.type.elemID.isEqual(customSettingsObject.elemID))
@@ -119,6 +118,50 @@ describe('Custom settings filter', () => {
         .filter(elm => isInstanceElement(elm)
           && elm.type.elemID.isEqual(customSettingsWithNoNameField.elemID))
       expect(noNameObjectInstances).toHaveLength(0)
+    })
+  })
+
+  describe('fetchAllCustomSettings', () => {
+    const customSettingsObject = createCustomSettingsObject('configurationobj', LIST_CUSTOM_SETTINGS_TYPE)
+    let elements: Element[]
+    beforeEach(() => {
+      elements = [customSettingsObject]
+    })
+
+    it('Should not add instances if "fetchAllCustomSettings" is false', async () => {
+      filter = filterCreator({
+        client,
+        config: {
+          fetchProfile: buildFetchProfile({ fetchAllCustomSettings: false }),
+        },
+      }) as FilterType
+      await filter.onFetch(elements)
+      expect(elements.filter(elm => isInstanceElement(elm)
+        && elm.type.elemID.isEqual(customSettingsObject.elemID))).toHaveLength(0)
+    })
+
+    it('Should not add instances if "fetchAllCustomSettings" is true', async () => {
+      filter = filterCreator({
+        client,
+        config: {
+          fetchProfile: buildFetchProfile({ fetchAllCustomSettings: true }),
+        },
+      }) as FilterType
+      await filter.onFetch(elements)
+      expect(elements.filter(elm => isInstanceElement(elm)
+        && elm.type.elemID.isEqual(customSettingsObject.elemID))).toHaveLength(2)
+    })
+
+    it('Should not add instances if "fetchAllCustomSettings" is undefined', async () => {
+      filter = filterCreator({
+        client,
+        config: {
+          fetchProfile: buildFetchProfile({}),
+        },
+      }) as FilterType
+      await filter.onFetch(elements)
+      expect(elements.filter(elm => isInstanceElement(elm)
+        && elm.type.elemID.isEqual(customSettingsObject.elemID))).toHaveLength(2)
     })
   })
 

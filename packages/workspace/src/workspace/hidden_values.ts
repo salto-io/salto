@@ -450,7 +450,7 @@ const filterOutHiddenChanges = async (
       // There should be no harm in letting remove changes through here. remove should be resilient
       // to its subject not existing. We create both visible and hidden changes in order
       // to make sure that hidden parts are removed from the cache as well.
-      return { visible: change, hidden: change }
+      return { visible: change }
     }
 
     const { parent, path } = change.id.createTopLevelParentID()

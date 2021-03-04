@@ -341,6 +341,9 @@ describe('merger', () => {
     const strType = new PrimitiveType({
       elemID: new ElemID('salto', 'string'),
       primitive: PrimitiveTypes.STRING,
+      annotationRefsOrTypes: {
+        somethingElse: BuiltinTypes.STRING,
+      },
       annotations: { somethingElse: 'type' },
     })
 
@@ -349,6 +352,7 @@ describe('merger', () => {
       primitive: PrimitiveTypes.NUMBER,
       annotations: { _default: 'type' },
     })
+
     it('should fail when more then one primitive is defined with same elemID and different primitives', async () => {
       const elements = [strType, duplicateType]
       const errors = await awu(
@@ -357,6 +361,17 @@ describe('merger', () => {
       ).flat().toArray()
       expect(errors).toHaveLength(1)
       expect(errors[0]).toBeInstanceOf(MultiplePrimitiveTypesError)
+    })
+
+    it('should fail when annotation types and annoations are defined in multiple fragments', async () => {
+      const elements = [strType, strType]
+      const errors = await awu(
+        (await mergeElements(awu(elements))
+        ).errors.values()
+      ).flat().toArray()
+      expect(errors).toHaveLength(2)
+      expect(errors[0]).toBeInstanceOf(DuplicateAnnotationTypeError)
+      expect(errors[1]).toBeInstanceOf(DuplicateAnnotationTypeError)
     })
   })
 

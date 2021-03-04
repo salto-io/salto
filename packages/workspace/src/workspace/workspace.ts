@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
-  Value, toChange } from '@salto-io/adapter-api'
+  Value, toChange, isRemovalChange, getChangeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
 import { applyDetailedChanges } from '@salto-io/adapter-utils'
@@ -213,8 +213,12 @@ export const loadWorkspace = async (
           .map(elem => toChange({ after: elem })).toArray()
         : []
 
+      const stateRemovedElementChanges = workspaceChanges
+        .filter(change => isRemovalChange(change) && getChangeElement(change).elemID.isTopLevel())
+
       return partialStateChanges
         .concat(initHiddenElementsChanges)
+        .concat(stateRemovedElementChanges)
     }
 
     const mergeData = await getAfterElements({

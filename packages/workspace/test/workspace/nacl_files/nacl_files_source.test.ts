@@ -396,4 +396,21 @@ describe('Nacl Files Source', () => {
       expect(mockParse).not.toHaveBeenCalled()
     })
   })
+
+  describe('list', () => {
+    let src: NaclFilesSource
+    beforeEach(async () => {
+      src = await naclFilesSource(
+        '',
+        mockDirStore,
+        mockedStaticFilesSource,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+      )
+      await src.load({})
+    })
+
+    it('should list all elements', async () => {
+      expect(await awu(await src.list()).toArray()).toHaveLength(2)
+    })
+  })
 })

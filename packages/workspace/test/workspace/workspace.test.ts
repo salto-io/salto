@@ -42,7 +42,6 @@ import { EnvConfig } from '../../src/workspace/config/workspace_config_types'
 import { resolve } from '../../src/expressions'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
-import { createParseResultCache } from '../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
 const { awu } = collections.asynciterable
 
@@ -111,11 +110,6 @@ const createWorkspace = async (
           naclFiles: await naclFilesSource(
             '',
             dirStore || mockDirStore(),
-            createParseResultCache(
-              'name',
-              persMockCreateRemoteMap,
-              actualStaticFilesSource,
-            ),
             actualStaticFilesSource,
             persMockCreateRemoteMap,
           ),
@@ -409,7 +403,7 @@ describe('workspace', () => {
     })
 
     it('should modify element to not include fields from removed Nacl files', async () => {
-      const changes = await workspace.removeNaclFiles('subdir/file.nacl')
+      const changes = (await workspace.removeNaclFiles('subdir/file.nacl'))
       const elemMap = await getElemMap(await workspace.elements())
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(Object.keys(lead.fields)).not.toContain('ext_field')
@@ -457,7 +451,9 @@ describe('workspace', () => {
     beforeAll(async () => {
       workspace = await createWorkspace(naclFileStore)
       await workspace.elements()
-      changes = await workspace.setNaclFiles(changedNaclFile, newNaclFile, emptyNaclFile)
+      changes = (
+        await workspace.setNaclFiles(changedNaclFile, newNaclFile, emptyNaclFile)
+      )
       await workspace.setNaclFiles(changedNaclFile, newNaclFile, emptyNaclFile)
       elemMap = await getElemMap(await workspace.elements())
     })
@@ -664,6 +660,10 @@ describe('workspace', () => {
       ['Records', 'Queue', 'QueueInstance'],
     )
 
+    const objectWithNestedHidden = new ObjectType({
+      elemID: new ElemID('salesforce', 'ObjWithNestedHidden'),
+    })
+
     const renamedTypes = {
       before: new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType1') }),
       after: new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType2'), path: ['renamed_type'] }),
@@ -701,7 +701,7 @@ describe('workspace', () => {
         id: new ElemID('salesforce', 'ObjWithNestedHidden', 'field', 'new_field'),
         action: 'add',
         data: { after: new Field(
-          new ObjectType({ elemID: new ElemID('salesforce', 'ObjWithNestedHidden') }),
+          objectWithNestedHidden,
           'new_field',
           BuiltinTypes.NUMBER,
           { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
@@ -1008,8 +1008,7 @@ describe('workspace', () => {
     const dirStore = mockDirStore()
 
     beforeAll(async () => {
-      const state = createState([])
-      workspace = await createWorkspace(dirStore, state)
+      const helperWorkspace = await createWorkspace(dirStore, createState([]))
       // We assume the state is synced with the workspace elements before we make changes
       // We also assume the state elements are updated before we call updateNaclFiles so that hidden
       // values can be taken from the state
@@ -1017,7 +1016,10 @@ describe('workspace', () => {
       // the inner references between elements correct, we then apply all the changes to the copied
       // elements and set them along with the hidden types as the state elements
       const stateElements = await awu(
-        await resolve(await (await workspace.elements()).getAll(), await workspace.elements())
+        await resolve(
+          await (await helperWorkspace.elements()).getAll(),
+          await helperWorkspace.elements()
+        )
       ).toArray()
       const stateElementsById = _.keyBy(stateElements, elem => elem.elemID.getFullName())
       const changesByElem = _.groupBy(
@@ -1030,16 +1032,17 @@ describe('workspace', () => {
           applyDetailedChanges(elem, elemChanges)
         }
       })
-      await state.override(
-        awu([
-          ...Object.values(BuiltinTypes),
-          ...stateElements,
-          accountInsightsSettingsType,
-          queueHiddenType,
-          queueHiddenInstance,
-          queueSobjectHiddenSubType,
-        ])
-      )
+      const state = createState([
+        ...Object.values(BuiltinTypes),
+        ...stateElements,
+        accountInsightsSettingsType,
+        queueHiddenType,
+        queueHiddenInstance,
+        queueSobjectHiddenSubType,
+        // objectWithNestedHidden
+      ])
+
+      workspace = await createWorkspace(dirStore, state)
 
       clonedChanges = _.cloneDeep(changes)
       await workspace.updateNaclFiles(clonedChanges)
@@ -1072,8 +1075,7 @@ describe('workspace', () => {
     })
 
     it('should not cause parse errors', async () => {
-      expect(await workspace.hasErrors()).toBeFalsy()
-      expect((await workspace.errors()).hasErrors()).toBeFalsy()
+      expect((await workspace.errors()).parse).toHaveLength(0)
     })
     it('should modify existing element', () => {
       expect(lead).toBeDefined()
@@ -1968,11 +1970,6 @@ describe('workspace', () => {
             naclFiles: await naclFilesSource(
               '',
               mockDirStore(),
-              createParseResultCache(
-                'name',
-                remoteMapCreator,
-                staticFilesSource,
-              ),
               staticFilesSource,
               remoteMapCreator,
             ),
@@ -2011,11 +2008,6 @@ describe('workspace', () => {
             naclFiles: await naclFilesSource(
               '',
               mockDirStore(),
-              createParseResultCache(
-                'name',
-                remoteMapCreator,
-                staticFilesSource,
-              ),
               staticFilesSource,
               remoteMapCreator,
             ),

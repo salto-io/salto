@@ -158,8 +158,8 @@ describe('NetsuiteQuery', () => {
     })
     const inverseQuery = notQuery(query)
 
-    it('should match only types that do not match the original query', () => {
-      expect(inverseQuery.isTypeMatch('addressForm')).toBeFalsy()
+    it('should match all types', () => {
+      expect(inverseQuery.isTypeMatch('addressForm')).toBeTruthy()
       expect(inverseQuery.isTypeMatch('advancedpdftemplate')).toBeTruthy()
     })
 

@@ -134,7 +134,7 @@ describe('Adapter', () => {
       const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION]
       expect(_.pull(Object.keys(customTypes), ...typesToSkip).every(customObjectsQuery.isTypeMatch))
         .toBeTruthy()
-      expect(typesToSkip.some(customObjectsQuery.isTypeMatch)).toBeFalsy()
+      expect(typesToSkip.every(customObjectsQuery.isTypeMatch)).toBeTruthy()
 
       const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
       expect(fileCabinetQuery.isFileMatch('Some/File/Regex')).toBeFalsy()
@@ -179,12 +179,12 @@ describe('Adapter', () => {
         expect(isPartial).toBeTruthy()
       })
 
-      it('should match the types that match fetchTarget and not in typesToSkip', async () => {
+      it('should match the types that match fetchTarget and skipList', async () => {
         await adapter.fetch(mockFetchOpts)
 
         const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
         expect(customObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
-        expect(_.pull(Object.keys(customTypes), 'addressForm').some(customObjectsQuery.isTypeMatch)).toBeFalsy()
+        expect(_.pull(Object.keys(customTypes), 'addressForm', SAVED_SEARCH, TRANSACTION_FORM).some(customObjectsQuery.isTypeMatch)).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch(INTEGRATION)).toBeFalsy()
       })
 
@@ -231,11 +231,11 @@ describe('Adapter', () => {
       expect(onFetchMock).toHaveBeenNthCalledWith(2, 2)
     })
 
-    it('should call getCustomObjects with query that only matches types that are not in typesToSkip', async () => {
+    it('should call getCustomObjects with query that matches types that match the types in skipList', async () => {
       await netsuiteAdapter.fetch(mockFetchOpts)
       const query = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
       expect(query.isTypeMatch(ENTITY_CUSTOM_FIELD)).toBeTruthy()
-      expect(query.isTypeMatch(SAVED_SEARCH)).toBeFalsy()
+      expect(query.isTypeMatch(SAVED_SEARCH)).toBeTruthy()
     })
 
     it('should return only the elements when having no config changes', async () => {

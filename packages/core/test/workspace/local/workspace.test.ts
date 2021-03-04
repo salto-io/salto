@@ -277,7 +277,7 @@ describe('local workspace', () => {
         const envIsEmpty = envDirStore.isEmpty as jest.Mock
         envIsEmpty.mockResolvedValueOnce(true)
         const workspace = await loadLocalWorkspace('.')
-        await awu(Object.values(wsElemSrcs.sources)).forEach(src => src.naclFiles.load())
+        await awu(Object.values(wsElemSrcs.sources)).forEach(src => src.naclFiles.load({}))
         await workspace.demoteAll()
         expect(repoDirStore.rename).toHaveBeenCalled()
       })

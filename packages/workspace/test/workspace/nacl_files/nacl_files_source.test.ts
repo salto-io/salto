@@ -121,7 +121,7 @@ describe('Nacl Files Source', () => {
         mockedStaticFilesSource,
         mockRemoteMapCreator,
       )
-      await naclSrc.load()
+      await naclSrc.load({})
       await naclSrc.clear()
       expect(mockDirStore.clear as jest.Mock).toHaveBeenCalledTimes(1)
       Object.values(createdMaps).forEach(cache => expect(cache.clear).toHaveBeenCalledTimes(1))
@@ -138,7 +138,7 @@ describe('Nacl Files Source', () => {
         mockedStaticFilesSource,
         mockRemoteMapCreator,
       )
-      await naclSrc.load()
+      await naclSrc.load({})
       await naclSrc.clear(
         { nacl: true, staticResources: false, cache: true }
       )
@@ -157,7 +157,7 @@ describe('Nacl Files Source', () => {
         mockedStaticFilesSource,
         mockRemoteMapCreator,
       )
-      await naclSrc.load()
+      await naclSrc.load({})
       await expect(naclSrc.clear(
         { nacl: false, staticResources: true, cache: true }
       )).rejects.toThrow('Cannot clear static resources without clearing the cache and nacls')
@@ -176,7 +176,7 @@ describe('Nacl Files Source', () => {
         mockedStaticFilesSource,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await naclSrc.load()
+      await naclSrc.load({})
       await naclSrc.isEmpty()
       expect(mockDirStore.isEmpty as jest.Mock).toHaveBeenCalledTimes(1)
     })
@@ -190,7 +190,7 @@ describe('Nacl Files Source', () => {
         mockDirStore,
         mockedStaticFilesSource,
         () => Promise.resolve(new InMemoryRemoteMap()),
-      )).load()
+      )).load({})
       expect(mockDirStore.list as jest.Mock).toHaveBeenCalled()
     })
     it('should not list files if ignoreFileChanges is set', async () => {
@@ -200,7 +200,7 @@ describe('Nacl Files Source', () => {
         mockDirStore,
         mockedStaticFilesSource,
         () => Promise.resolve(new InMemoryRemoteMap()),
-      )).load(true)
+      )).load({ ignoreFileChanges: true })
       expect(mockDirStore.list as jest.Mock).not.toHaveBeenCalled()
     })
   })
@@ -217,7 +217,7 @@ describe('Nacl Files Source', () => {
         mockedStaticFilesSource,
         mockRemoteMapCreator
       )
-      await naclSrc.load()
+      await naclSrc.load({})
       await naclSrc.rename(newName)
       expect(mockDirStore.rename).toHaveBeenCalledTimes(1)
       expect(mockDirStore.rename).toHaveBeenCalledWith(newName)
@@ -275,7 +275,7 @@ describe('Nacl Files Source', () => {
         mockedStaticFilesSource,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await naclSrc.load()
+      await naclSrc.load({})
       await naclSrc.updateNaclFiles([change])
       expect(mockParse).not.toHaveBeenCalled()
     })
@@ -293,7 +293,7 @@ describe('Nacl Files Source', () => {
         mockedStaticFilesSource,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await src.load()
+      await src.load({})
     })
     it('should not parse file when updating single add changes in a new file', async () => {
       const change = {
@@ -351,7 +351,7 @@ describe('Nacl Files Source', () => {
         mockedStaticFilesSource,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await naclSource.load()
+      await naclSource.load({})
     })
 
     it('should return undefined if file doenst exist', async () => {

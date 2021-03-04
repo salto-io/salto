@@ -16,8 +16,7 @@
 import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
-  Value, toChange 
-} from '@salto-io/adapter-api'
+  Value, toChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
 import { applyDetailedChanges } from '@salto-io/adapter-utils'
@@ -178,7 +177,6 @@ export const loadWorkspace = async (
     env?: string
     stateOnlyChanges?: Change<Element>[]
   }): Promise<WorkspaceState> => {
-
     const actualEnv = env ?? currentEnv()
     const stateToBuild = workspaceState !== undefined && actualEnv === currentEnv()
       ? await workspaceState : {
@@ -202,20 +200,20 @@ export const loadWorkspace = async (
     // changes. In any other load - the state changes will be reflected by the workspace
     // / hiden changes.
     const completeStateOnlyChanges = async (
-      stateOnlyChanges: Change<Element>[]
+      partialStateChanges: Change<Element>[]
     ): Promise<Change<Element>[]> => {
       // We identify a first nacl load when the state is empty, and all of the changes
       // are visible (which indicates a nacl load and not a first 'fetch' in which the
       // hidden changes won't be empty)
       const isFirstInitFromNacls = await awu(await stateToBuild.merged.getAll()).isEmpty()
-        && _.isEmpty(stateOnlyChanges)
+        && _.isEmpty(partialStateChanges)
 
       const initHiddenElementsChanges = isFirstInitFromNacls
         ? await awu(await state().getAll()).filter(element => isHidden(element, state()))
           .map(elem => toChange({ after: elem })).toArray()
         : []
 
-      return stateOnlyChanges
+      return partialStateChanges
         .concat(initHiddenElementsChanges)
     }
 
@@ -246,7 +244,7 @@ export const loadWorkspace = async (
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
     if (_.isUndefined(workspaceState)) {
-      const workspaceChanges = await naclFilesSource.load(ignoreFileChanges)
+      const workspaceChanges = await naclFilesSource.load({ ignoreFileChanges })
       workspaceState = buildWorkspaceState({ workspaceChanges })
     }
     return workspaceState
@@ -261,7 +259,7 @@ export const loadWorkspace = async (
 
   const elements = async (env?: string): Promise<WorkspaceState> => {
     if (env && env !== currentEnv()) {
-      const changes = await naclFilesSource.load(undefined, undefined, env)
+      const changes = await naclFilesSource.load({ env })
       return buildWorkspaceState({ env, workspaceChanges: changes })
     }
     return getWorkspaceState()
@@ -557,7 +555,7 @@ export const loadWorkspace = async (
 
       const environmentSource = elementsSources.sources[env]
       // ensure that the env is loaded
-      await environmentSource.naclFiles.load()
+      await environmentSource.naclFiles.load({})
       if (environmentSource) {
         await environmentSource.naclFiles.clear()
         await environmentSource.state?.clear()
@@ -612,15 +610,13 @@ export const loadWorkspace = async (
       if (persist) {
         await config.setWorkspaceConfig(workspaceConfig)
       }
-      // naclFilesSource.setCurrentEnv(env)
-      // const changes = await naclFilesSource.load()
       naclFilesSource = multiEnvSource(
         _.mapValues(elementsSources.sources, e => e.naclFiles),
         currentEnv(),
         elementsSources.commonSourceName,
         remoteMapCreator,
       )
-      workspaceState = undefined // buildWorkspaceState({ workspaceChanges: changes })
+      workspaceState = undefined
     },
 
     getStateRecency: async (serviceName: string): Promise<StateRecency> => {

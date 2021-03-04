@@ -1075,8 +1075,7 @@ describe('workspace', () => {
     })
 
     it('should not cause parse errors', async () => {
-      expect(await workspace.hasErrors()).toBeFalsy()
-      expect((await workspace.errors()).hasErrors()).toBeFalsy()
+      expect((await workspace.errors()).parse).toHaveLength(0)
     })
     it('should modify existing element', () => {
       expect(lead).toBeDefined()

@@ -55,7 +55,11 @@ export type NaclFile = {
   filename: string
   timestamp?: number
 }
-
+export type SourceLoadParams = {
+  ignoreFileChanges?: boolean
+  cachePrefix?: string
+  env?: string
+}
 export type NaclFilesSource<Changes=Change[]> = Omit<ElementsSource, 'clear'> & {
   updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<Changes>
   listNaclFiles: () => Promise<string[]>
@@ -78,7 +82,7 @@ export type NaclFilesSource<Changes=Change[]> = Omit<ElementsSource, 'clear'> & 
     cache?: boolean
   }): Promise<void>
   getElementsSource: () => Promise<ElementsSource>
-  load: (ignoreFileChanges?: boolean, cachePrefix?: string, env?: string) => Promise<Changes>
+  load: (args: SourceLoadParams) => Promise<Changes>
 }
 
 type NaclFilesState = {
@@ -219,7 +223,8 @@ const createNaclFilesState = async (
   remoteMapCreator: RemoteMapCreator,
   staticFilesSource: StaticFilesSource,
   sourceName: string,
-  cachePrefix?: string
+  cachePrefix?: string,
+  parsedNaclFiles?: ParsedNaclFileCache
 ): Promise<NaclFilesState> => ({
   elementsIndex: await remoteMapCreator<string[]>({
     namespace: getRemoteMapNamespace('elements_index', sourceName, cachePrefix),
@@ -239,7 +244,7 @@ const createNaclFilesState = async (
       async sf => staticFilesSource.getStaticFile(sf.filepath, sf.encoding)
     ),
   })),
-  parsedNaclFiles: createParseResultCache(
+  parsedNaclFiles: parsedNaclFiles ?? createParseResultCache(
     getRemoteMapNamespace('parsed_nacl_files', sourceName, cachePrefix),
     remoteMapCreator,
     staticFilesSource
@@ -726,7 +731,6 @@ const buildNaclFilesSource = (
         await currentState.referencedIndex.clear()
         await currentState.parsedNaclFiles.clear()
       }
-      // state = Promise.resolve(await buildInitState(cachePrefix)).state
     },
 
     rename: async (name: string) => {
@@ -737,9 +741,10 @@ const buildNaclFilesSource = (
       const newCurrentState = await createNaclFilesState(
         remoteMapCreator,
         staticFilesSource,
-        name
+        name,
+        undefined,
+        currentState.parsedNaclFiles
       )
-      newCurrentState.parsedNaclFiles = currentState.parsedNaclFiles
       await newCurrentState.mergedElements.setAll(await currentState.mergedElements.getAll())
       await currentState.mergedElements.clear()
       await newCurrentState.elementsIndex.setAll(
@@ -754,6 +759,7 @@ const buildNaclFilesSource = (
         currentState.referencedIndex.entries()
       )
       await currentState.referencedIndex.clear()
+      state = Promise.resolve(newCurrentState)
     },
 
     clone: () => buildNaclFilesSource(
@@ -777,7 +783,7 @@ const buildNaclFilesSource = (
     getElementReferencedFiles,
     isEmpty: () => naclFilesStore.isEmpty(),
     getElementsSource: async () => (await getState()).mergedElements,
-    load: async (ignoreFileChanges = false, cachePrefix?: string) => {
+    load: async ({ ignoreFileChanges = false, cachePrefix }: SourceLoadParams) => {
       if (initChanges === undefined) {
         const res = await buildNaclFilesStateInner([], ignoreFileChanges, cachePrefix)
         state = Promise.resolve(res.state)

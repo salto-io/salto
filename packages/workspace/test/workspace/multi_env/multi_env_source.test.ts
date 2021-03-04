@@ -191,7 +191,7 @@ const source = multiEnvSource(
 
 describe('multi env source', () => {
   beforeAll(async () => {
-    await source.load()
+    await source.load({})
   })
   describe('getNaclFile', () => {
     it('should return a Nacl file from an env', async () => {
@@ -254,7 +254,7 @@ describe('multi env source', () => {
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await multiEnvSourceWithMockSources.load()
+      await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
       expect(currentElements).toHaveLength(2)
@@ -284,7 +284,7 @@ describe('multi env source', () => {
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await multiEnvSourceWithMockSources.load()
+      await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
       expect(currentElements).toHaveLength(2)
@@ -333,7 +333,7 @@ describe('multi env source', () => {
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await multiEnvSourceWithMockSources.load()
+      await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
       expect(currentElements).toHaveLength(2)
@@ -393,7 +393,7 @@ describe('multi env source', () => {
         commonPrefix,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await src.load()
+      await src.load({})
       expect(await src.isEmpty()).toBeTruthy()
     })
     it('should return true when some sources have files', async () => {
@@ -408,7 +408,7 @@ describe('multi env source', () => {
         commonPrefix,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await src.load()
+      await src.load({})
       expect(await src.isEmpty()).toBeFalsy()
     })
     it('should look at elements from all active sources and not inactive sources', async () => {
@@ -422,7 +422,7 @@ describe('multi env source', () => {
         commonPrefix,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await src.load()
+      await src.load({})
       expect(await src.isEmpty()).toBeTruthy()
     })
   })
@@ -520,7 +520,7 @@ describe('multi env source', () => {
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await multiEnvSourceWithMockSources.load()
+      await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
       expect(currentElements).toHaveLength(2)
@@ -548,7 +548,7 @@ describe('multi env source', () => {
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await multiEnvSourceWithMockSources.load()
+      await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
       expect(currentElements).toHaveLength(2)
@@ -580,7 +580,7 @@ describe('multi env source', () => {
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await multiEnvSourceWithMockSources.load()
+      await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
       expect(currentElements).toHaveLength(2)
@@ -624,7 +624,7 @@ describe('multi env source', () => {
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await multiEnvSourceWithMockSources.load()
+      await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
       expect(currentElements).toHaveLength(2)
@@ -658,7 +658,7 @@ describe('multi env source', () => {
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await multiEnvSourceWithMockSources.load()
+      await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
       expect(currentElements).toHaveLength(2)
@@ -699,7 +699,7 @@ describe('multi env source', () => {
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await multiEnvSourceWithMockSources.load()
+      await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
       expect(currentElements).toHaveLength(2)
@@ -727,7 +727,7 @@ describe('multi env source', () => {
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await multiEnvSourceWithMockSources.load()
+      await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
       expect(currentElements).toHaveLength(2)

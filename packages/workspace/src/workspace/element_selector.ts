@@ -166,14 +166,14 @@ export const selectElementIdsByTraversal = (
   compact = false,
   validateDeterminedSelectors = false,
 ): ElemID[] => {
-  const [wildcardSelectors, determinedSelectors] = validateDeterminedSelectors ? [selectors, []]
+  const [selectorsToDetermine, determinedSelectors] = validateDeterminedSelectors ? [selectors, []]
     : _.partition(selectors, selector => selector.origin.includes('*'))
   const determinedIds = determinedSelectors.map(selector => selector.origin)
   const ids = new Set(determinedIds)
-  if (wildcardSelectors.length === 0) {
+  if (selectorsToDetermine.length === 0) {
     return [...ids].map(id => ElemID.fromFullName(id))
   }
-  const [topLevelSelectors, subElementSelectors] = _.partition(wildcardSelectors,
+  const [topLevelSelectors, subElementSelectors] = _.partition(selectorsToDetermine,
     isTopLevelSelector)
   if (topLevelSelectors.length !== 0) {
     const { elements: topLevelElements } = selectElementsBySelectors(elements,
@@ -202,7 +202,7 @@ export const selectElementIdsByTraversal = (
         return undefined
       }
     }
-    const stillRelevantSelectors = wildcardSelectors.filter(selector => selector
+    const stillRelevantSelectors = selectorsToDetermine.filter(selector => selector
       .origin.split(ElemID.NAMESPACE_SEPARATOR).length > testId.getFullNameParts().length)
     if (stillRelevantSelectors.length === 0) {
       return undefined

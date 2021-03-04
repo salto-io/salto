@@ -28,7 +28,7 @@ import {
   convertToCustomTypeInfo, convertToXmlContent, CustomTypeInfo, FileCustomizationInfo,
   FolderCustomizationInfo, isFileCustomizationInfo, isFolderCustomizationInfo,
   TemplateCustomTypeInfo,
-} from '../src/client/client'
+} from '../src/client/sdf_client'
 
 const removeLineBreaks = (xmlContent: string): string => xmlContent.replace(/\n\s*/g, '')
 

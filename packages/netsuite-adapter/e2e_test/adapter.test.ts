@@ -58,8 +58,6 @@ describe('Netsuite adapter E2E with real account', () => {
   beforeAll(async () => {
     await adapterCreator.install?.()
     credentialsLease = await credsLease()
-    // eslint-disable-next-line no-console
-    console.log(credentialsLease.value)
     const adapterAttr = realAdapter(
       { credentials: credentialsLease.value },
     )

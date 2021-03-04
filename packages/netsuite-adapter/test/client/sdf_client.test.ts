@@ -17,12 +17,12 @@ import _ from 'lodash'
 import { readFile, readDir, writeFile, mkdirp, rm } from '@salto-io/file'
 import osPath from 'path'
 import { buildNetsuiteQuery, notQuery } from '../../src/query'
-import mockClient, { DUMMY_CREDENTIALS } from './client'
-import NetsuiteClient, {
+import mockClient, { DUMMY_CREDENTIALS } from './sdf_client'
+import SdfClient, {
   ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, COMMANDS, CustomTypeInfo,
   fileCabinetTopLevelFolders, FileCustomizationInfo, FOLDER_ATTRIBUTES_FILE_SUFFIX,
   FolderCustomizationInfo, TemplateCustomTypeInfo,
-} from '../../src/client/client'
+} from '../../src/client/sdf_client'
 import {
   FILE_CABINET_PATH_SEPARATOR,
 } from '../../src/constants'
@@ -202,7 +202,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(NetsuiteClient.validateCredentials(DUMMY_CREDENTIALS)).rejects.toThrow()
+      await expect(SdfClient.validateCredentials(DUMMY_CREDENTIALS)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
@@ -210,7 +210,7 @@ describe('netsuite client', () => {
 
     it('should succeed', async () => {
       mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
-      const accountId = await NetsuiteClient.validateCredentials(DUMMY_CREDENTIALS)
+      const accountId = await SdfClient.validateCredentials(DUMMY_CREDENTIALS)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(accountId).toEqual(transformedAccountId)
@@ -572,7 +572,7 @@ describe('netsuite client', () => {
       filePaths: ['.*'],
     })
 
-    let client: NetsuiteClient
+    let client: SdfClient
     beforeEach(() => {
       client = mockClient()
     })
@@ -860,7 +860,7 @@ describe('netsuite client', () => {
   })
 
   describe('deploy', () => {
-    let client: NetsuiteClient
+    let client: SdfClient
     beforeEach(() => {
       client = mockClient()
     })

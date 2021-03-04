@@ -28,7 +28,7 @@ import {
   ATTRIBUTE_PREFIX, CDATA_TAG_NAME, CustomizationInfo, TemplateCustomTypeInfo,
   isTemplateCustomTypeInfo, isFileCustomizationInfo, FileCustomizationInfo,
   FolderCustomizationInfo, isFolderCustomizationInfo, CustomTypeInfo,
-} from './client/client'
+} from './client/sdf_client'
 import { fieldTypes } from './types/field_types'
 import { customTypes, fileCabinetTypes, isCustomType, isFileCabinetType } from './types'
 

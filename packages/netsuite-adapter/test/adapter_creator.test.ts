@@ -20,7 +20,7 @@ import {
 import * as cli from '@salto-io/suitecloud-cli'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
-import NetsuiteClient from '../src/client/client'
+import SdfClient from '../src/client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
 import {
   TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, SDF_CONCURRENCY_LIMIT,
@@ -31,7 +31,7 @@ import {
 import { mockGetElemIdFunc } from './utils'
 import { SuiteAppClient } from '../src/client/suiteapp_client/suiteapp_client'
 
-jest.mock('../src/client/client')
+jest.mock('../src/client/sdf_client')
 jest.mock('../src/client/suiteapp_client/suiteapp_client')
 jest.mock('../src/adapter')
 jest.mock('@salto-io/suitecloud-cli')
@@ -81,7 +81,7 @@ describe('NetsuiteAdapter creator', () => {
 
   describe('validateCredentials', () => {
     const suiteAppClientValidateMock = jest.spyOn(SuiteAppClient, 'validateCredentials')
-    const netsuiteValidateMock = jest.spyOn(NetsuiteClient, 'validateCredentials')
+    const netsuiteValidateMock = jest.spyOn(SdfClient, 'validateCredentials')
     beforeEach(() => {
       jest.mock('@salto-io/suitecloud-cli', () => undefined, { virtual: true })
       suiteAppClientValidateMock.mockReset()
@@ -157,7 +157,7 @@ describe('NetsuiteAdapter creator', () => {
         config,
         elementsSource: buildElementsSourceFromElements([]),
       })
-      expect(NetsuiteClient).toHaveBeenCalledWith({
+      expect(SdfClient).toHaveBeenCalledWith({
         credentials: {
           accountId: 'foo',
           tokenId: 'bar',

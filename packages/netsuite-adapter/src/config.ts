@@ -156,7 +156,7 @@ export const configType = new ObjectType({
   },
 })
 
-export type NetsuiteClientConfig = {
+export type SdfClientConfig = {
   [FETCH_ALL_TYPES_AT_ONCE]?: boolean
   [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]?: number
   [FETCH_TYPE_TIMEOUT_IN_MINUTES]?: number
@@ -171,7 +171,7 @@ export type NetsuiteConfig = {
   [TYPES_TO_SKIP]?: string[]
   [FILE_PATHS_REGEX_SKIP_LIST]?: string[]
   [DEPLOY_REFERENCED_ELEMENTS]?: boolean
-  [CLIENT_CONFIG]?: NetsuiteClientConfig
+  [CLIENT_CONFIG]?: SdfClientConfig
   [SUITEAPP_CLIENT_CONFIG]?: SuiteAppClientConfig
   [FETCH_TARGET]?: NetsuiteQueryParameters
   [SKIP_LIST]?: NetsuiteQueryParameters
@@ -187,7 +187,7 @@ export const UPDATE_TO_SKIP_LIST_MSG = 'The configuration options "typeToSkip" a
 const toConfigSuggestions = (
   failedToFetchAllAtOnce: boolean,
   failedFilePaths: string[]
-): Partial<Record<keyof Omit<NetsuiteConfig, 'client'> | keyof NetsuiteClientConfig, Value>> => ({
+): Partial<Record<keyof Omit<NetsuiteConfig, 'client'> | keyof SdfClientConfig, Value>> => ({
   ...(failedToFetchAllAtOnce ? { [FETCH_ALL_TYPES_AT_ONCE]: false } : {}),
   ...(!_.isEmpty(failedFilePaths)
     ? { [FILE_PATHS_REGEX_SKIP_LIST]: failedFilePaths.map(_.escapeRegExp) }

@@ -23,7 +23,6 @@ import _ from 'lodash'
 import { SdkDownloadService } from '@salto-io/suitecloud-cli'
 import changeValidator from './change_validator'
 import { getChangeGroupIds } from './group_changes'
-import NetsuiteClient from './client/client'
 import NetsuiteAdapter from './adapter'
 import { configType, NetsuiteConfig } from './config'
 import {
@@ -36,6 +35,8 @@ import {
 import { validateParameters } from './query'
 import { Credentials } from './client/credentials'
 import { SuiteAppClient } from './client/suiteapp_client/suiteapp_client'
+import SdfClient from './client/sdf_client'
+import { NetsuiteClient } from './client/client'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -142,8 +143,7 @@ const netsuiteCredentialsFromCredentials = (credentials: Readonly<InstanceElemen
 const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperations => {
   const adapterConfig = netsuiteConfigFromConfig(context.config)
   const credentials = netsuiteCredentialsFromCredentials(context.credentials)
-  const suiteAppClient = credentials.suiteAppTokenId !== undefined
-    && credentials.suiteAppTokenSecret !== undefined
+  const suiteAppClient = credentials.suiteAppTokenId && credentials.suiteAppTokenSecret
     ? new SuiteAppClient({
       credentials: {
         accountId: credentials.accountId,
@@ -154,9 +154,10 @@ const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperati
     })
     : undefined
 
+  const sdfClient = new SdfClient({ credentials, config: adapterConfig[CLIENT_CONFIG] })
+
   return new NetsuiteAdapter({
-    client: new NetsuiteClient({ credentials, config: adapterConfig[CLIENT_CONFIG] }),
-    suiteAppClient,
+    client: new NetsuiteClient(sdfClient, suiteAppClient),
     elementsSource: context.elementsSource,
     config: adapterConfig,
     getElemIdFunc: context.getElemIdFunc,
@@ -167,26 +168,7 @@ export const adapter: Adapter = {
   operations: context => getAdapterOperations(context),
   validateCredentials: async config => {
     const credentials = netsuiteCredentialsFromCredentials(config)
-    if (credentials.suiteAppTokenId !== undefined
-      && credentials.suiteAppTokenSecret !== undefined) {
-      try {
-        await SuiteAppClient.validateCredentials({
-          accountId: credentials.accountId,
-          suiteAppTokenId: credentials.suiteAppTokenId,
-          suiteAppTokenSecret: credentials.suiteAppTokenSecret,
-        })
-      } catch (e) {
-        e.message = `Salto SuiteApp Authentication failed. ${e.message}`
-        throw e
-      }
-    }
-
-    try {
-      return await NetsuiteClient.validateCredentials(credentials)
-    } catch (e) {
-      e.message = `SDF Authentication failed. ${e.message}`
-      throw e
-    }
+    return NetsuiteClient.validateCredentials(credentials)
   },
   authenticationMethods: {
     basic: {

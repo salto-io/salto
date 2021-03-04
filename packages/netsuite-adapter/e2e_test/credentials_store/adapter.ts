@@ -15,7 +15,7 @@
 */
 import { Adapter } from '@salto-io/e2e-credentials-store'
 import { Credentials } from '../../src/client/credentials'
-import NetsuiteClient from '../../src/client/client'
+import SdfClient from '../../src/client/sdf_client'
 
 type Args = {
   accountId: string
@@ -45,7 +45,7 @@ const adapter: Adapter<Args, Credentials> = {
     tokenSecret: args.tokenSecret,
   }),
   validateCredentials: credentials =>
-    NetsuiteClient.validateCredentials(credentials) as unknown as Promise<void>,
+   SdfClient.validateCredentials(credentials) as unknown as Promise<void>,
 }
 
 export default adapter

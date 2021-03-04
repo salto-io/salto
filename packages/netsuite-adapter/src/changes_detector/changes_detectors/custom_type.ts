@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { SuiteAppClient } from '../../client/suiteapp_client/suiteapp_client'
+import { NetsuiteClient } from '../../client/client'
 import { formatSuiteQLDate } from '../formats'
 import { ChangedObject, DateRange, TypeChangesDetector } from '../types'
 
 const log = logger(module)
 
-const getChanges = async (type: string, client: SuiteAppClient, dateRange: DateRange):
+const getChanges = async (type: string, client: NetsuiteClient, dateRange: DateRange):
   Promise<ChangedObject[]> => {
   const results = await client.runSuiteQL(`
       SELECT scriptid

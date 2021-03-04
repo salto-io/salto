@@ -15,7 +15,6 @@
 */
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { SuiteAppClient } from '../client/suiteapp_client/suiteapp_client'
 import { NetsuiteQuery } from '../query'
 import { getChangedFiles, getChangedFolders } from './changes_detectors/file_cabinet'
 import { customRecordTypeDetector, customFieldDetector, customListDetector } from './changes_detectors/custom_type'
@@ -25,6 +24,7 @@ import workflowDetector from './changes_detectors/workflow'
 import savedSearchDetector from './changes_detectors/savedsearch'
 import { formatSavedSearchDate } from './formats'
 import { ChangedType, DateRange } from './types'
+import { NetsuiteClient } from '../client/client'
 
 const log = logger(module)
 
@@ -38,7 +38,7 @@ export const DETECTORS = [
   savedSearchDetector,
 ]
 
-const getChangedInternalIds = async (client: SuiteAppClient, dateRange: DateRange):
+const getChangedInternalIds = async (client: NetsuiteClient, dateRange: DateRange):
 Promise<Set<number> | undefined> => {
   // Note that the internal id is NOT unique cross types and different instances
   // of different type might have the same internal id. Due the a bug in the saved
@@ -71,7 +71,7 @@ Promise<Set<number> | undefined> => {
 }
 
 export const getChangedObjects = async (
-  client: SuiteAppClient,
+  client: NetsuiteClient,
   query: NetsuiteQuery,
   dateRange: DateRange
 ): Promise<NetsuiteQuery> => {

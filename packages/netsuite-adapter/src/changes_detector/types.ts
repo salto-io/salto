@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { SuiteAppClient } from '../client/suiteapp_client/suiteapp_client'
+import { NetsuiteClient } from '../client/client'
 
 export type ChangedObject = {
   type: 'object'
@@ -34,10 +34,10 @@ export type DateRange = {
 }
 
 export type TypeChangesDetector = {
-  getChanges: (client: SuiteAppClient, dateRange: DateRange) =>
+  getChanges: (client: NetsuiteClient, dateRange: DateRange) =>
     Promise<Change[]>
   getTypes: () => string[]
 }
 
-export type FileCabinetChangesDetector = (client: SuiteAppClient, dateRange: DateRange) =>
+export type FileCabinetChangesDetector = (client: NetsuiteClient, dateRange: DateRange) =>
   Promise<Required<ChangedObject>[]>

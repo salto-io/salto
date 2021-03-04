@@ -34,7 +34,7 @@ import {
   DuplicateAnnotationTypeError, ConflictingSettingError,
 } from '../../src/merger/internal/object_types'
 import { DuplicateInstanceKeyError } from '../../src/merger/internal/instances'
-import { MultiplePrimitiveTypesUnsupportedError } from '../../src/merger/internal/primitives'
+import { MultiplePrimitiveTypesError } from '../../src/merger/internal/primitives'
 import { DuplicateVariableNameError } from '../../src/merger/internal/variables'
 
 const { awu } = collections.asynciterable
@@ -374,7 +374,7 @@ describe('State/cache serialization', () => {
     let duplicateAnnotationTypeError: DuplicateAnnotationTypeError
     let conflictingSettingError: ConflictingSettingError
     let duplicateInstanceKeyError: DuplicateInstanceKeyError
-    let multiplePrimitiveTypesUnsupportedError: MultiplePrimitiveTypesUnsupportedError
+    let multiplePrimitiveTypesUnsupportedError: MultiplePrimitiveTypesError
     let duplicateVariableNameError: DuplicateVariableNameError
     beforeAll(async () => {
       duplicateAnnotationError = new DuplicateAnnotationError({ elemID, key: 'test1', existingValue: 'old', newValue: 'new' })
@@ -383,7 +383,7 @@ describe('State/cache serialization', () => {
       duplicateAnnotationTypeError = new DuplicateAnnotationTypeError({ elemID, key: 'bla' })
       conflictingSettingError = new ConflictingSettingError({ elemID })
       duplicateInstanceKeyError = new DuplicateInstanceKeyError({ elemID, key: 'test1', existingValue: 'old', newValue: 'new' })
-      multiplePrimitiveTypesUnsupportedError = new MultiplePrimitiveTypesUnsupportedError({
+      multiplePrimitiveTypesUnsupportedError = new MultiplePrimitiveTypesError({
         elemID, duplicates: [BuiltinTypes.BOOLEAN, BuiltinTypes.NUMBER],
       })
       duplicateVariableNameError = new DuplicateVariableNameError({ elemID })

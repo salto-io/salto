@@ -374,7 +374,7 @@ export const generateElements = async (
           PrimitiveTypes.NUMBER,
         ]),
         annotationRefsOrTypes,
-        annotations: await generateAnnotations(annotationRefsOrTypes, true),
+        annotations: await generateAnnotations(annotationRefsOrTypes, false),
         path: [DUMMY_ADAPTER, 'Types', name],
       })
       await updateElementRank(element)
@@ -552,6 +552,16 @@ export const generateElements = async (
   const generateEnvElements = (): Element[] => {
     const envID = process.env.SALTO_ENV
     if (envID === undefined) return []
+    const PrimWithHiddenAnnos = new PrimitiveType({
+      elemID: new ElemID('dummy', 'PrimWithAnnos'),
+      primitive: PrimitiveTypes.STRING,
+      annotationRefsOrTypes: {
+        SharedHidden: BuiltinTypes.HIDDEN_STRING,
+        DiffHidden: BuiltinTypes.HIDDEN_STRING,
+      },
+      path: [DUMMY_ADAPTER, 'EnvStuff', 'PrimWithAnnos'],
+    })
+
     const sharedObj = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, 'EnvObj'),
       fields: {
@@ -564,16 +574,27 @@ export const generateElements = async (
         [`${envID}Field`]: {
           refType: createRefToElmWithValue(BuiltinTypes.STRING),
         },
+        [`${envID}FieldWithHidden`]: {
+          refType: createRefToElmWithValue(PrimWithHiddenAnnos),
+          annotations: {
+            SharedHidden: 'HIDDEN!',
+            DiffHidden: `${envID}-HIDDENNNN!!!!`,
+          },
+        },
       },
       annotationRefsOrTypes: {
         ShardAnno: BuiltinTypes.STRING,
         SharedButDiffAnno: BuiltinTypes.STRING,
         [`${envID}Anno`]: BuiltinTypes.STRING,
+        SharedHidden: BuiltinTypes.HIDDEN_STRING,
+        DiffHidden: BuiltinTypes.HIDDEN_STRING,
       },
       annotations: {
         SharedAnno: 'AnnoValue',
         SharedButDiffAnno: `${envID}AnnoValue`,
         [`${envID}Anno`]: 'AnnoValue',
+        SharedHidden: 'HIDDEN!',
+        DiffHidden: `${envID}-HIDDENNNN!!!!`,
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', 'EnvObj'],
     })
@@ -585,7 +606,10 @@ export const generateElements = async (
         SharedButDiffField: `${envID}FieldValue`,
         [`${envID}Field`]: 'FieldValue',
       },
-      [DUMMY_ADAPTER, 'EnvStuff', 'EnvInst']
+      [DUMMY_ADAPTER, 'EnvStuff', 'EnvInst'],
+      {
+        [CORE_ANNOTATIONS.SERVICE_URL]: `http://www.somthing.com/${envID}`,
+      }
     )
     const envSpecificObj = new ObjectType({
       elemID: new ElemID(DUMMY_ADAPTER, `${envID}EnvObj`),
@@ -602,7 +626,11 @@ export const generateElements = async (
       { Field: 'FieldValue' },
       [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvInst`]
     )
-    return [envSpecificObj, envSpecificInst, sharedObj, sharedInst]
+    const res = [envSpecificInst, sharedObj, sharedInst, PrimWithHiddenAnnos]
+    if (!process.env.SALTO_OMIT) {
+      res.push(envSpecificObj)
+    }
+    return res
   }
   const defaultTypes = [defaultObj, permissionsType, profileType, layoutAssignmentsType]
   progressReporter.reportProgress({ message: 'Generating primitive types' })

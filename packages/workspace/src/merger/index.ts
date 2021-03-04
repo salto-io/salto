@@ -24,7 +24,7 @@ import { mergeInstances } from './internal/instances'
 import { mergeVariables } from './internal/variables'
 import { mergePrimitives } from './internal/primitives'
 import { MergeError, MergeResult as InternalMergeResult } from './internal/common'
-import { RemoteMap, InMemoryRemoteMap } from '../workspace/remote_map'
+import { InMemoryRemoteMap, ReadOnlyRemoteMap } from '../workspace/remote_map'
 
 const { awu } = collections.asynciterable
 
@@ -34,11 +34,11 @@ export {
   ConflictingSettingError, DuplicateAnnotationTypeError,
 } from './internal/object_types'
 export { DuplicateInstanceKeyError } from './internal/instances'
-export { MultiplePrimitiveTypesUnsupportedError } from './internal/primitives'
+export { MultiplePrimitiveTypesError } from './internal/primitives'
 export { DuplicateVariableNameError } from './internal/variables'
 export type MergeResult = {
-  merged: RemoteMap<Element>
-  errors: RemoteMap<MergeError[]>
+  merged: ReadOnlyRemoteMap<Element>
+  errors: ReadOnlyRemoteMap<MergeError[]>
 }
 
 const log = logger(module)

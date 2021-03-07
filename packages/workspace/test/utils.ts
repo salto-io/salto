@@ -81,6 +81,10 @@ export const persistentMockCreateRemoteMap = (): RemoteMapCreator => {
     if (maps[opts.namespace] === undefined) {
       maps[opts.namespace] = {} as Record<string, string>
     }
+    const get = async (key: K): Promise<T | undefined> => {
+      const value = maps[opts.namespace][key]
+      return value ? opts.deserialize(value) : undefined
+    }
     return {
       setAll: async (
         entries: collections.asynciterable.ThenableIterable<RemoteMapEntry<T, K>>
@@ -95,10 +99,8 @@ export const persistentMockCreateRemoteMap = (): RemoteMapCreator => {
       deleteAll: async () => {
         maps[opts.namespace] = {} as Record<K, string>
       },
-      get: async (key: K): Promise<T | undefined> => {
-        const value = maps[opts.namespace][key]
-        return value ? opts.deserialize(value) : undefined
-      },
+      get,
+      getMultiple: async (keys: K[]): Promise<(T | undefined)[]> => Promise.all(keys.map(get)),
       has: async (key: K): Promise<boolean> => key in maps[opts.namespace],
       set: async (key: K, value: T): Promise<void> => {
         maps[opts.namespace][key] = opts.serialize(value)
@@ -122,53 +124,6 @@ export const persistentMockCreateRemoteMap = (): RemoteMapCreator => {
     }
   }
   return creator
-}
-
-export const mockCreateRemoteMap = async <T, K extends string = string>(
-  opts: CreateRemoteMapParams<T>
-): Promise<RemoteMap<T, K>> => {
-  let data: Record<K, string> = {} as Record<K, string>
-  return {
-    setAll: async (
-      entries: collections.asynciterable.ThenableIterable<RemoteMapEntry<T, K>>
-    ): Promise<void> => {
-      for await (const entry of entries) {
-        data[entry.key] = opts.serialize(entry.value)
-      }
-    },
-    deleteAll: async (
-      keys: collections.asynciterable.ThenableIterable<K>
-    ): Promise<void> => {
-      for await (const key of keys) {
-        delete data[key]
-      }
-    },
-    delete: async (key: K) => {
-      delete data[key]
-    },
-    get: async (key: K): Promise<T | undefined> => {
-      const value = data[key]
-      return value ? opts.deserialize(value) : undefined
-    },
-    has: async (key: K): Promise<boolean> => key in data,
-    set: async (key: K, value: T): Promise<void> => {
-      data[key] = opts.serialize(value)
-    },
-    clear: async (): Promise<void> => {
-      data = {} as Record<K, string>
-    },
-    entries: (): AsyncIterable<RemoteMapEntry<T, K>> =>
-      awu(Object.entries(data))
-        .map(async ([key, value]) =>
-          ({ key: key as K, value: await opts.deserialize(value as string) })),
-    keys: (): AsyncIterable<K> => toAsyncIterable(Object.keys(data) as unknown as K[]),
-    values: (): AsyncIterable<T> =>
-      awu(Object.values(data)).map(async v => opts.deserialize(v as string)),
-    flush: (): Promise<boolean> => Promise.resolve(true),
-    revert: (): Promise<void> => Promise.resolve(undefined),
-    close: (): Promise<void> => Promise.resolve(undefined),
-    isEmpty: (): Promise<boolean> => Promise.resolve(_.isEmpty(data)),
-  }
 }
 
 export const defaultContent = 'ZOMG'

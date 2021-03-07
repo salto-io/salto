@@ -221,11 +221,38 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
     return awu(aggregatedIterable([tempKeyIter, keyIter]))
       .map(async (entry: remoteMap.RemoteMapEntry<string>) => entry.key as K)
   }
+
+  const getImpl = (key: string): Promise<T | undefined> => new Promise(resolve => {
+    if (cache.has(keyToTempDBKey(key))) {
+      resolve(cache.get(keyToTempDBKey(key)) as T)
+    } else {
+      const resolveRet = async (value: Buffer | string): Promise<void> => {
+        const ret = (await deserialize(value.toString()))
+        cache.set(keyToTempDBKey(key), ret)
+        resolve(ret)
+      }
+      db.get(keyToTempDBKey(key), async (error, value) => {
+        if (error) {
+          db.get(keyToDBKey(key), async (innerError, innerValue) => {
+            if (innerError) {
+              resolve(undefined)
+            } else {
+              await resolveRet(innerValue)
+            }
+          })
+        } else {
+          await resolveRet(value)
+        }
+      })
+    }
+  })
+
   const getOpebDBConnection = async (loc: string): Promise<rocksdb> => {
     const newDb = rocksdb(loc)
     await promisify(newDb.open.bind(newDb))()
     return newDb
   }
+
   const createDBIfNotCreated = async (loc: string): Promise<void> => {
     if (!(loc in dbConnections)) {
       dbConnections[loc] = getOpebDBConnection(loc)
@@ -237,30 +264,9 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
   }
   await createDBIfNotCreated(location)
   return {
-    get: async (key: string): Promise<T | undefined> => new Promise(resolve => {
-      if (cache.has(keyToTempDBKey(key))) {
-        resolve(cache.get(keyToTempDBKey(key)) as T)
-      } else {
-        const resolveRet = async (value: Buffer | string): Promise<void> => {
-          const ret = (await deserialize(value.toString()))
-          cache.set(keyToTempDBKey(key), ret)
-          resolve(ret)
-        }
-        db.get(keyToTempDBKey(key), async (error, value) => {
-          if (error) {
-            db.get(keyToDBKey(key), async (innerError, innerValue) => {
-              if (innerError) {
-                resolve(undefined)
-              } else {
-                await resolveRet(innerValue)
-              }
-            })
-          } else {
-            await resolveRet(value)
-          }
-        })
-      }
-    }),
+    get: getImpl,
+    getMultiple: async (keys: string[]): Promise<(T | undefined)[]> =>
+      Promise.all(keys.map(k => getImpl(k))),
     values: (iterationOpts?: remoteMap.IterationOpts) => valuesImpl(false, iterationOpts),
     entries: (iterationOpts?: remoteMap.IterationOpts) => entriesImpl(iterationOpts),
     set: async (key: string, element: T): Promise<void> => {

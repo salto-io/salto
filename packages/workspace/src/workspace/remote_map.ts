@@ -39,6 +39,7 @@ export interface CreateRemoteMapParams<T> {
 export type RemoteMap<T, K extends string = string> = {
   delete(key: K): Promise<void>
   get(key: K): Promise<T | undefined>
+  getMultiple(keys: K[]): Promise<(T | undefined)[]>
   has(key: K): Promise<boolean>
   set(key: K, value: T): Promise<void>
   setAll(values: ThenableIterable<RemoteMapEntry<T, K>>): Promise<void>
@@ -81,6 +82,10 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
 
   async get(key: K): Promise<T | undefined> {
     return this.data.get(key)
+  }
+
+  async getMultiple(keys: K[]): Promise<(T | undefined)[]> {
+    return keys.map(key => this.data.get(key))
   }
 
   async has(key: K): Promise<boolean> {

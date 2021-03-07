@@ -13,8 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * as client from './src/client'
-export * as config from './src/config'
-export * as elements from './src/elements'
-export * as changeValidators from './src/change_validators'
-export * as filterUtils from './src/filter_utils'
+import { ChangeValidator, getChangeElement } from '@salto-io/adapter-api'
+
+export const deployNotSupportedValidator: ChangeValidator = async changes => (
+  changes.map(change => ({
+    elemID: getChangeElement(change).elemID,
+    severity: 'Error',
+    message: 'Deploy is not supported.',
+    detailedMessage: 'Deploy is not supported.',
+  }))
+)

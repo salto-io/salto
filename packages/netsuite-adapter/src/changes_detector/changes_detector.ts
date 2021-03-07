@@ -123,5 +123,6 @@ export const getChangedObjects = async (
     isTypeMatch: () => true,
     isObjectMatch: objectID => scriptIds.has(objectID.scriptId) || types.has(objectID.type),
     isFileMatch: filePath => paths.has(filePath),
+    areSomeFilesMatch: () => paths.size !== 0,
   }
 }

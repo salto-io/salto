@@ -555,6 +555,16 @@ describe('netsuite client', () => {
         }),
       }))
     })
+
+    it('should do nothing of no files are matched', async () => {
+      const { elements, failedToFetchAllAtOnce } = await mockClient()
+        .getCustomObjects(typeNames, buildNetsuiteQuery({
+          types: {},
+        }))
+      expect(elements).toHaveLength(0)
+      expect(failedToFetchAllAtOnce).toBeFalsy()
+      expect(mockExecuteAction).not.toHaveBeenCalledWith()
+    })
   })
 
   describe('importFileCabinetContent', () => {
@@ -786,6 +796,16 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, deleteAuthIdCommandMatcher)
+    })
+
+    it('should do nothing of no files are matched', async () => {
+      const { elements, failedPaths } = await client.importFileCabinetContent(buildNetsuiteQuery({
+        filePaths: [],
+      }))
+
+      expect(elements).toHaveLength(0)
+      expect(failedPaths).toHaveLength(0)
+      expect(mockExecuteAction).not.toHaveBeenCalled()
     })
 
     it('should return only loaded files', async () => {

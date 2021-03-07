@@ -14,31 +14,33 @@
 * limitations under the License.
 */
 import * as collections from './collections'
-import * as promises from './promises'
-import * as types from './types'
 import * as decorators from './decorators'
+import * as functions from './functions'
+import * as hash from './hash'
+import * as multiIndex from './multi_index'
+import * as promises from './promises'
+import * as regex from './regex'
+import * as retry from './retry'
+import * as stack from './stack'
 import * as streams from './streams'
 import * as strings from './strings'
-import * as functions from './functions'
-import * as retry from './retry'
+import * as types from './types'
 import * as validators from './validators'
-import * as stack from './stack'
-import * as hash from './hash'
 import * as values from './values'
-import * as regex from './regex'
 
 export {
   collections,
-  promises,
-  types,
   decorators,
+  functions,
+  hash,
+  multiIndex,
+  promises,
+  regex,
+  retry,
+  stack,
   streams,
   strings,
-  functions,
-  retry,
+  types,
   validators,
-  stack,
-  hash,
   values,
-  regex,
 }

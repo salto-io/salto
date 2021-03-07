@@ -372,6 +372,10 @@ export default class NetsuiteClient {
   @NetsuiteClient.logDecorator
   async getCustomObjects(typeNames: string[], query: NetsuiteQuery):
     Promise<GetCustomObjectsResult> {
+    if (typeNames.every(type => !query.isTypeMatch(type))) {
+      return { elements: [], failedToFetchAllAtOnce: false }
+    }
+
     const { executor, projectName, authId } = await this.initProject()
     const { failedToFetchAllAtOnce } = await this.importObjects(executor, typeNames, query)
     const objectsDirPath = NetsuiteClient.getObjectsDirPath(projectName)
@@ -566,6 +570,12 @@ export default class NetsuiteClient {
   @NetsuiteClient.logDecorator
   async importFileCabinetContent(query: NetsuiteQuery):
     Promise<ImportFileCabinetResult> {
+    if (!query.areSomeFilesMatch()) {
+      return {
+        elements: [],
+        failedPaths: [],
+      }
+    }
     const transformFiles = (filePaths: string[], fileAttrsPaths: string[],
       fileCabinetDirPath: string): Promise<FileCustomizationInfo[]> => {
       const filePathToAttrsPath = _.fromPairs(

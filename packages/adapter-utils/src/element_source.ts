@@ -21,7 +21,7 @@ export const buildElementsSourceFromElements = (
   fallbackSource?: ReadOnlyElementsSource
 ): ReadOnlyElementsSource => {
   const elementsMap = _.keyBy(elements, e => e.elemID.getFullName())
-  const elementsInThisSource = new Set(Object.keys(elementsMap))
+  const isIDInElementsMap = (id: ElemID): boolean => id.getFullName() in elementsMap
 
   async function *getIds(): AsyncIterable<ElemID> {
     for (const element of elements) {
@@ -31,7 +31,7 @@ export const buildElementsSourceFromElements = (
       return
     }
     for await (const elemID of await fallbackSource.list()) {
-      if (!elementsInThisSource.has(elemID.getFullName())) {
+      if (!isIDInElementsMap(elemID)) {
         yield elemID
       }
     }
@@ -45,7 +45,7 @@ export const buildElementsSourceFromElements = (
       return
     }
     for await (const element of await fallbackSource.getAll()) {
-      if (!elementsInThisSource.has(element.elemID.getFullName())) {
+      if (!isIDInElementsMap(element.elemID)) {
         yield element
       }
     }
@@ -55,6 +55,6 @@ export const buildElementsSourceFromElements = (
     getAll: async () => getElements(),
     get: async id => elementsMap[id.getFullName()] ?? fallbackSource?.get(id),
     list: async () => getIds(),
-    has: async id => id.getFullName() in elementsMap || (fallbackSource?.has(id) ?? false),
+    has: async id => isIDInElementsMap(id) || (fallbackSource?.has(id) ?? false),
   }
 }

@@ -26,3 +26,7 @@ export type MockInterface<T extends {}> = {
     ? MockFunction<T[k]>
     : MockInterface<T[k]>
 }
+
+export const mockFunction = <T extends (...args: never[]) => unknown>(): MockFunction<T> => (
+  jest.fn()
+)

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { Values } from '@salto-io/adapter-api'
+import { NetsuiteQueryParameters } from '../query'
 
 export interface CustomizationInfo {
   typeName: string
@@ -41,9 +42,26 @@ export interface FolderCustomizationInfo extends CustomizationInfo {
 export type GetCustomObjectsResult = {
   elements: CustomTypeInfo[]
   failedToFetchAllAtOnce: boolean
+  failedTypeToInstances: NetsuiteQueryParameters['types']
 }
 
 export type ImportFileCabinetResult = {
   elements: (FileCustomizationInfo | FolderCustomizationInfo)[]
-  failedPaths: string[]
+  failedPaths: NetsuiteQueryParameters['filePaths']
+}
+
+export type ImportObjectsResult = {
+  errorImports: unknown
+  successfulImports: unknown
+  failedImports: {
+    customObject: {
+      id: string
+      type: string
+      result: {
+        code: 'FAILED'
+        message: string
+      }
+    }
+    referencedFileImportResult: unknown
+  }[]
 }

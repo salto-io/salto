@@ -13,8 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { FILE, FOLDER } from '../constants'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './types'
+import { NetsuiteQueryParameters } from '../query'
 
 export const isCustomTypeInfo = (customizationInfo: CustomizationInfo):
   customizationInfo is CustomTypeInfo => 'scriptId' in customizationInfo
@@ -30,3 +32,14 @@ export const isFileCustomizationInfo = (customizationInfo: CustomizationInfo):
 export const isFolderCustomizationInfo = (customizationInfo: CustomizationInfo):
   customizationInfo is FolderCustomizationInfo =>
   customizationInfo.typeName === FOLDER
+
+export const mergeTypeToInstances = (
+  ...typeToInstances: NetsuiteQueryParameters['types'][]
+): NetsuiteQueryParameters['types'] =>
+  _.mergeWith(
+    {},
+    ...typeToInstances,
+    (objValue: string[], srcValue: string[]) => (
+      objValue ? [...objValue, ...srcValue] : srcValue
+    )
+  )

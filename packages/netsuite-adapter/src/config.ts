@@ -26,6 +26,7 @@ import {
   SAVED_SEARCH, SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG,
 } from './constants'
 import { NetsuiteQueryParameters } from './query'
+import { mergeTypeToInstances } from './client/utils'
 
 const { makeArray } = collections.array
 
@@ -182,16 +183,23 @@ export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from Ne
 
 export const UPDATE_TO_SKIP_LIST_MSG = 'The configuration options "typeToSkip" and "filePathRegexSkipList" are deprecated.'
   + ' To skip items in fetch, please use the "skipList" option.'
-  + ' The following configuration will update the deprected fields to the "skipList" field.'
+  + ' The following configuration will update the deprecated fields to the "skipList" field.'
 
 const toConfigSuggestions = (
   failedToFetchAllAtOnce: boolean,
-  failedFilePaths: string[]
+  failedFilePaths: NetsuiteQueryParameters['filePaths'],
+  failedTypeToInstances: NetsuiteQueryParameters['types']
 ): Partial<Record<keyof Omit<NetsuiteConfig, 'client'> | keyof SdfClientConfig, Value>> => ({
   ...(failedToFetchAllAtOnce ? { [FETCH_ALL_TYPES_AT_ONCE]: false } : {}),
-  ...(!_.isEmpty(failedFilePaths)
-    ? { [FILE_PATHS_REGEX_SKIP_LIST]: failedFilePaths.map(_.escapeRegExp) }
+  ...(!_.isEmpty(failedFilePaths) || !_.isEmpty(failedTypeToInstances)
+    ? {
+      skipList: {
+        filePaths: failedFilePaths.map(_.escapeRegExp),
+        types: failedTypeToInstances,
+      },
+    }
     : {}),
+
 })
 
 
@@ -199,30 +207,32 @@ const convertDeprecatedFilePathRegex = (filePathRegex: string): string => {
   let newPathRegex = filePathRegex
   newPathRegex = newPathRegex.startsWith('^')
     ? newPathRegex.substring(1)
-    : newPathRegex = `.*${newPathRegex}`
+    : `.*${newPathRegex}`
 
   newPathRegex = newPathRegex.endsWith('$')
-    ? newPathRegex = newPathRegex.substring(0, newPathRegex.length - 1)
-    : newPathRegex = `${newPathRegex}.*`
+    ? newPathRegex.substring(0, newPathRegex.length - 1)
+    : `${newPathRegex}.*`
 
   return newPathRegex
 }
 
-
 const updateConfigFromFailures = (
   failedToFetchAllAtOnce: boolean,
-  failedFilePaths: string[],
+  failedFilePaths: NetsuiteQueryParameters['filePaths'],
+  failedTypeToInstances: NetsuiteQueryParameters['types'],
   configToUpdate: InstanceElement,
 ): boolean => {
-  const suggestions = toConfigSuggestions(failedToFetchAllAtOnce, failedFilePaths)
+  const suggestions = toConfigSuggestions(
+    failedToFetchAllAtOnce, failedFilePaths, failedTypeToInstances
+  )
   if (_.isEmpty(suggestions)) {
     return false
   }
 
-  if (suggestions[FETCH_ALL_TYPES_AT_ONCE] !== undefined) {
+  if (suggestions.fetchAllTypesAtOnce !== undefined) {
     configToUpdate.value[CLIENT_CONFIG] = _.pickBy({
       ...(configToUpdate.value[CLIENT_CONFIG] ?? {}),
-      [FETCH_ALL_TYPES_AT_ONCE]: suggestions[FETCH_ALL_TYPES_AT_ONCE],
+      [FETCH_ALL_TYPES_AT_ONCE]: suggestions.fetchAllTypesAtOnce,
     }, values.isDefined)
   }
 
@@ -231,14 +241,16 @@ const updateConfigFromFailures = (
     ? _.cloneDeep(currentSkipList)
     : {}
 
-  if (!_.isEmpty(suggestions[FILE_PATHS_REGEX_SKIP_LIST])) {
-    if (newSkipList.filePaths === undefined) {
-      newSkipList.filePaths = []
-    }
+  const suggestedSkipList: NetsuiteQueryParameters = suggestions.skipList
+  if (suggestedSkipList.filePaths.length > 0) {
     newSkipList.filePaths = [
       ...makeArray(newSkipList.filePaths),
-      ...suggestions[FILE_PATHS_REGEX_SKIP_LIST],
+      ...suggestedSkipList.filePaths,
     ]
+  }
+
+  if (!_.isEmpty(suggestedSkipList.types)) {
+    newSkipList.types = mergeTypeToInstances(newSkipList.types ?? {}, suggestedSkipList.types)
   }
   configToUpdate.value[SKIP_LIST] = newSkipList
   return true
@@ -288,7 +300,8 @@ const updateConfigSkipListFormat = (
 
 export const getConfigFromConfigChanges = (
   failedToFetchAllAtOnce: boolean,
-  failedFilePaths: string[],
+  failedFilePaths: NetsuiteQueryParameters['filePaths'],
+  failedTypeToInstances: NetsuiteQueryParameters['types'],
   currentConfig: NetsuiteConfig
 ): { config: InstanceElement; message: string } | undefined => {
   const conf = new InstanceElement(
@@ -300,6 +313,7 @@ export const getConfigFromConfigChanges = (
   const didUpdateFromFailures = updateConfigFromFailures(
     failedToFetchAllAtOnce,
     failedFilePaths,
+    failedTypeToInstances,
     conf
   )
   const didUpdateSkipListFormat = updateConfigSkipListFormat(conf)

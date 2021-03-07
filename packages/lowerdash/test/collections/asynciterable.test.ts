@@ -16,18 +16,11 @@
 import { collections } from '../../src'
 
 const { asynciterable } = collections
-const { findAsync, mapAsync, toArrayAsync } = asynciterable
+const {
+  findAsync, mapAsync, toArrayAsync, filterAsync, forEachAsync, toAsyncIterable, flatMapAsync,
+} = asynciterable
 
 describe('asynciterable', () => {
-  const toAsyncIterable = <T>(i: Iterable<T>): AsyncIterable<T> => {
-    const iter = i[Symbol.iterator]()
-    return {
-      [Symbol.asyncIterator]: (): AsyncIterator<T> => ({
-        next: async () => iter.next(),
-      }),
-    }
-  }
-
   describe('findAsync', () => {
     describe('when given a sync pred', () => {
       describe('when given an empty iterable', () => {
@@ -49,25 +42,25 @@ describe('asynciterable', () => {
         })
       })
     })
-  })
 
-  describe('when given an async pred', () => {
-    describe('when given an empty iterable', () => {
-      it('should return undefined', async () => {
-        expect(await findAsync(toAsyncIterable([]), async () => true)).toBeUndefined()
+    describe('when given an async pred', () => {
+      describe('when given an empty iterable', () => {
+        it('should return undefined', async () => {
+          expect(await findAsync(toAsyncIterable([]), async () => true)).toBeUndefined()
+        })
       })
-    })
-    describe('when the predicate returns true', () => {
-      it('should return the value', async () => {
-        expect(await findAsync(
-          toAsyncIterable([1, 2, 3]),
-          async (v, i) => v === 3 && i === 2,
-        )).toBe(3)
+      describe('when the predicate returns true', () => {
+        it('should return the value', async () => {
+          expect(await findAsync(
+            toAsyncIterable([1, 2, 3]),
+            async (v, i) => v === 3 && i === 2,
+          )).toBe(3)
+        })
       })
-    })
-    describe('when the predicate does not return true', () => {
-      it('should return the value', async () => {
-        expect(await findAsync(toAsyncIterable([1, 2, 3]), async () => false)).toBeUndefined()
+      describe('when the predicate does not return true', () => {
+        it('should return the value', async () => {
+          expect(await findAsync(toAsyncIterable([1, 2, 3]), async () => false)).toBeUndefined()
+        })
       })
     })
   })
@@ -155,6 +148,75 @@ describe('asynciterable', () => {
         expect(numberIdentityMock).toHaveBeenNthCalledWith(5, 3, 2)
         expect(numberIdentityMock).toHaveBeenNthCalledWith(6, 3, 2)
       })
+    })
+  })
+
+  describe('flatMapAsync', () => {
+    let iterable: AsyncIterable<number>
+    beforeEach(() => {
+      iterable = toAsyncIterable([1, 2, 3])
+    })
+    describe('when func is sync', () => {
+      it('should return flat async iterable', async () => {
+        const result = await toArrayAsync(
+          flatMapAsync(iterable, num => [num, num])
+        )
+        expect(result).toEqual([1, 1, 2, 2, 3, 3])
+      })
+      it('should only flatten one level of iterable', async () => {
+        const result = await toArrayAsync(
+          flatMapAsync(iterable, num => [[num, num]])
+        )
+        expect(result).toEqual([[1, 1], [2, 2], [3, 3]])
+      })
+    })
+    describe('when func is async', () => {
+      it('should return flat async iterable', async () => {
+        const result = await toArrayAsync(
+          flatMapAsync(iterable, async num => [num, num])
+        )
+        expect(result).toEqual([1, 1, 2, 2, 3, 3])
+      })
+    })
+    describe('when func returns async iterable', () => {
+      it('should return flat async iterable', async () => {
+        const result = await toArrayAsync(
+          flatMapAsync(iterable, num => toAsyncIterable([num, num]))
+        )
+        expect(result).toEqual([1, 1, 2, 2, 3, 3])
+      })
+    })
+  })
+
+  describe('filterAsync', () => {
+    describe('when funcMap is sync', () => {
+      it('should return an async iterator without the filtered elements', async () => {
+        const iterable = toAsyncIterable([1, 2, 3])
+        expect(await toArrayAsync(
+          filterAsync(iterable, i => i !== 2)
+        )).toEqual([1, 3])
+      })
+    })
+    describe('when funcMap is async', () => {
+      it('should return an async iterator without the filtered elements', async () => {
+        const iterable = toAsyncIterable([1, 2, 3])
+        expect(await toArrayAsync(
+          filterAsync(iterable, async i => i !== 2)
+        )).toEqual([1, 3])
+      })
+    })
+  })
+
+  describe('forEachAsync', () => {
+    it('should run the callback on all elements', async () => {
+      let counter = 0
+      const itr = toAsyncIterable(
+        [1, 2, 3]
+      )
+      await forEachAsync(itr, async n => {
+        counter += n
+      })
+      expect(counter).toEqual(6)
     })
   })
 })

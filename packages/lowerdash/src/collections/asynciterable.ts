@@ -38,6 +38,38 @@ export async function *mapAsync<T, U>(
   }
 }
 
+export async function *flatMapAsync<T, U>(
+  itr: AsyncIterable<T>,
+  mapFunc: (t: T, index: number) => Iterable<U> | AsyncIterable<U> | Promise<Iterable<U>>
+): AsyncIterable<U> {
+  let index = 0
+  for await (const curr of itr) {
+    const res = await mapFunc(curr, index)
+    index += 1
+    for await (const nextRes of res) {
+      yield nextRes
+    }
+  }
+}
+
+export const forEachAsync = async <T>(
+  itr: AsyncIterable<T>,
+  func: (t: T, index: number) => unknown,
+): Promise<void> => {
+  let index = 0
+  for await (const curr of itr) {
+    await func(curr, index)
+    index += 1
+  }
+}
+
+export async function *toAsyncIterable<T>(iterable: Iterable<T>): AsyncIterable<T> {
+  for (const item of iterable) {
+    yield item
+  }
+}
+
+
 export const toArrayAsync = async <T>(
   iterable: AsyncIterable<T>,
 ): Promise<Array<T>> => {
@@ -46,4 +78,25 @@ export const toArrayAsync = async <T>(
     res.push(curr)
   }
   return res
+}
+
+export function filterAsync<T, S extends T>(
+  itr: AsyncIterable<T>,
+  filterFunc: (t: T, index: number) => t is S
+): AsyncIterable<S>
+export function filterAsync<T>(
+  itr: AsyncIterable<T>,
+  filterFunc: (t: T, index: number) => boolean | Promise<boolean>
+): AsyncIterable<T>
+export async function *filterAsync<T>(
+  itr: AsyncIterable<T>,
+  filterFunc: (t: T, index: number) => unknown
+): AsyncIterable<T> {
+  let index = 0
+  for await (const item of itr) {
+    if (await filterFunc(item, index)) {
+      yield item
+    }
+    index += 1
+  }
 }

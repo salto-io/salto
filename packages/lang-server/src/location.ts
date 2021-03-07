@@ -35,16 +35,6 @@ export type SaltoElemFileLocation = Omit<SaltoElemLocation, 'range'>
 
 const MAX_LOCATION_SEARCH_RESULT = 20
 
-const getAllElementIDs = (elements: AsyncIterable<Element>): AsyncIterable<ElemID> => (
-  awu(elements)
-    .flatMap(
-      elem => (isObjectType(elem)
-        ? awu([elem, ...Object.values(elem.fields)]).map(e => e.elemID)
-        : awu([elem.elemID])
-      )
-    )
-)
-
 const createFileLocations = async (
   workspace: EditorWorkspace,
   id: ElemID
@@ -141,7 +131,8 @@ export const getQueryLocations = async (
       + queryToCheck.length === fullNameToMatch.length
     return isPartOfLastNamePart || isPrefix || isSuffix
   }
-  return awu(getAllElementIDs(await (await workspace.elements).getAll()))
+  return awu(await workspace.getSearchableNames())
+    .map(fullName => ElemID.fromFullName(fullName))
     .filter(e => lastIDPartContains(e, sensitive))
     .take(MAX_LOCATION_SEARCH_RESULT)
     .flatMap(id => createFileLocations(workspace, id))
@@ -152,9 +143,7 @@ export const getQueryLocationsFuzzy = async (
   workspace: EditorWorkspace,
   query: string,
 ): Promise<Fuse.FuseResult<SaltoElemFileLocation>[]> => {
-  const elementIds = await awu(await (await workspace.elements).list())
-    .map(e => e.getFullName())
-    .toArray()
+  const elementIds = await workspace.getSearchableNames()
   const fuse = new Fuse(
     elementIds,
     {

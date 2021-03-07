@@ -13,18 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeElement } from '@salto-io/adapter-api'
+import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
+import { changeValidators } from '@salto-io/adapter-components'
 
-const deployNotSupportedValidator: ChangeValidator = async changes => (
-  changes.map(change => ({
-    elemID: getChangeElement(change).elemID,
-    severity: 'Error',
-    message: 'Deploy is not supported.',
-    detailedMessage: 'Deploy is not supported.',
-  }))
-)
+const { deployNotSupportedValidator } = changeValidators
 
-const changeValidators: ChangeValidator[] = [deployNotSupportedValidator]
+const validators: ChangeValidator[] = [deployNotSupportedValidator]
 
-export default createChangeValidator(changeValidators)
+export default createChangeValidator(validators)

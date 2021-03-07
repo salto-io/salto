@@ -29,28 +29,51 @@ export type Index<Key extends KeyType, T> = {
 type IndexFunction<
   InputType = unknown,
   FilteredType extends InputType = InputType,
-  ResultValueType = InputType,
+  ResultType = InputType,
   Key extends KeyType = KeyType,
   IndexName extends string = string,
 > = {
   name: IndexName
   filter?: TypeGuard<InputType, FilteredType> | Predicate<InputType>
   key: (item: FilteredType) => Key
-  map?: (item: FilteredType) => ResultValueType
+  map?: (item: FilteredType) => ResultType
 }
 
-type MultiIndexBuilder<T, Result extends object = never> = {
-  addIndex: <Name extends string, Key extends KeyType, U extends T = T, V = T>(
-    f: IndexFunction<T, U, V, Key, Name>
-  ) => MultiIndexBuilder<T, Result & { [k in Name]: Index<Key, V> }>
+type MultiIndexBuilder<InputType, Result extends object = {}> = {
+  addIndex: <
+    IndexName extends string,
+    Key extends KeyType,
+    FilteredType extends InputType = InputType,
+    ResultType = InputType
+  >(
+    f: IndexFunction<InputType, FilteredType, ResultType, Key, IndexName>
+  ) => MultiIndexBuilder<InputType, Result & { [name in IndexName]: Index<Key, ResultType> }>
 
-  process: (iter: AsyncIterable<T>) => Promise<Result>
+  process: (iter: AsyncIterable<InputType>) => Promise<Result>
 }
 
-export const buildMultiIndex = <T, Result extends object = {}>(): MultiIndexBuilder<T, Result> => {
+/**
+ * Index the specified items by one or more index definitions with a single iteration over the input
+ *
+ * Usage example:
+ *   const { even, odd } = await buildMultiIndex<number>()
+ *     .addIndex({
+ *       name: 'even',
+ *       filter: item => item % 2 === 0,
+ *       key: item => [item.toString()],
+ *     })
+ *     .addIndex({
+ *       name: 'odd',
+ *       filter: item => item % 2 === 1,
+ *       key: item => [item.toString()],
+ *     })
+ *     .process(items)
+ */
+export const buildMultiIndex = <InputType, Result extends object = {}>(
+): MultiIndexBuilder<InputType, Result> => {
   const indexDefinitions: IndexFunction[] = []
 
-  const processItem = (item: T, index: Record<string, unknown>): void => {
+  const processItem = (item: InputType, index: Record<string, unknown>): void => {
     indexDefinitions
       .filter(indexDef => indexDef.filter === undefined || indexDef.filter(item))
       .forEach(indexDef => {
@@ -67,22 +90,32 @@ export const buildMultiIndex = <T, Result extends object = {}>(): MultiIndexBuil
     Object.fromEntries(
       indexDefinitions.map(indexDef => ([
         indexDef.name,
-        { get: (...key: string[]): unknown => _.get(index, [indexDef.name, ...key]) },
+        { get: (...keyParts: string[]): unknown => _.get(index, [indexDef.name, ...keyParts]) },
       ]))
     ) as Result
   )
-  const indexBuilder: MultiIndexBuilder<T, Result> = {
-    addIndex: <U extends T, V, Key extends KeyType, Name extends string>(
-      func: IndexFunction<T, U, V, Key, Name>
+  const indexBuilder: MultiIndexBuilder<InputType, Result> = {
+    addIndex: <
+      FilteredType extends InputType,
+      ResultType,
+      Key extends KeyType,
+      IndexName extends string
+    >(
+      func: IndexFunction<InputType, FilteredType, ResultType, Key, IndexName>
     ) => {
-      // Note - the cast to unknown is needed because we cannot maintain a consistent type
-      // for all index functions (we treat each one separately).
-      // This is not fully safe, but with the current implementation in "processItem" it works
-      // because we make sure to put the result of each function in the correct key as it is
-      // defined in the new result type
+      // Note - the cast to unknown is needed because we store all index definition in one array.
+      // The type of that array has to be more general than the type of each index.
+      // This is not fully safe, but with the current implementation it works because we make sure
+      // to put the result of each function in the correct key as it is defined in the result type.
+      // The assumption made by both "processItem" and "toMultiIndex" is that the values in
+      // indexDefinitions match the result type - this is not guaranteed by typescript because we
+      // lose the type information here, but it is correct because at this point we make sure that
+      // the type added to Result matches the type of the index function we add here.
       indexDefinitions.push(func as unknown as IndexFunction)
       // Add the new index to the result type
-      return indexBuilder as MultiIndexBuilder<T, Result & { [k in Name]: Index<Key, V> }>
+      return indexBuilder as (
+        MultiIndexBuilder<InputType, Result & { [name in IndexName]: Index<Key, ResultType> }>
+      )
     },
     process: async iter => {
       const index = {}
@@ -93,14 +126,24 @@ export const buildMultiIndex = <T, Result extends object = {}>(): MultiIndexBuil
   return indexBuilder
 }
 
-type KeyByAsyncParams<Key extends KeyType, T, U extends T, V> = {
-  iter: AsyncIterable<T>
-} & Omit<IndexFunction<T, U, V, Key>, 'name'>
+type KeyByAsyncParams<
+  Key extends KeyType,
+  InputType,
+  FilteredType extends InputType,
+  ResultType
+> = {
+  iter: AsyncIterable<InputType>
+} & Omit<IndexFunction<InputType, FilteredType, ResultType, Key>, 'name'>
 
-export const keyByAsync = async <Key extends KeyType, T, U extends T, V>(
-  { iter, key, map, filter }: KeyByAsyncParams<Key, T, U, V>
-): Promise<Index<Key, V>> => {
-  const { idx } = await buildMultiIndex<T>()
+export const keyByAsync = async <
+  Key extends KeyType,
+  InputType,
+  FilteredType extends InputType,
+  ResultType
+>(
+  { iter, key, map, filter }: KeyByAsyncParams<Key, InputType, FilteredType, ResultType>
+): Promise<Index<Key, ResultType>> => {
+  const { idx } = await buildMultiIndex<InputType>()
     .addIndex({ name: 'idx', filter, map, key })
     .process(iter)
   return idx

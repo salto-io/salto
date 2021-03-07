@@ -31,8 +31,8 @@ import uuidv4 from 'uuid/v4'
 import AsyncLock from 'async-lock'
 import wu from 'wu'
 import {
-  SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME, FILE,
-  FILE_CABINET_PATH_SEPARATOR, FOLDER,
+  SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME,
+  FILE_CABINET_PATH_SEPARATOR,
 } from '../constants'
 import {
   DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES,
@@ -40,6 +40,9 @@ import {
 } from '../config'
 import { NetsuiteQuery, ObjectID } from '../query'
 import { SdfCredentials } from './credentials'
+import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult, TemplateCustomTypeInfo } from './types'
+import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './constants'
+import { isCustomTypeInfo, isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo } from './utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -63,8 +66,6 @@ export const COMMANDS = {
   ADD_PROJECT_DEPENDENCIES: 'project:adddependencies',
 }
 
-export const ATTRIBUTE_PREFIX = '@_'
-export const CDATA_TAG_NAME = '__cdata'
 
 export const ATTRIBUTES_FOLDER_NAME = '.attributes'
 export const ATTRIBUTES_FILE_SUFFIX = '.attr.xml'
@@ -86,29 +87,6 @@ const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING'
 const INVALID_DEPENDENCIES_PATTERN = new RegExp(`^.*(<feature required=".*">${INVALID_DEPENDENCIES.join('|')})</feature>.*\n`, 'gm')
 
 const baseExecutionPath = os.tmpdir()
-
-export interface CustomizationInfo {
-  typeName: string
-  values: Values
-}
-
-export interface CustomTypeInfo extends CustomizationInfo {
-  scriptId: string
-}
-
-export interface TemplateCustomTypeInfo extends CustomTypeInfo {
-  fileExtension: string
-  fileContent: Buffer
-}
-
-export interface FileCustomizationInfo extends CustomizationInfo {
-  path: string[]
-  fileContent: Buffer
-}
-
-export interface FolderCustomizationInfo extends CustomizationInfo {
-  path: string[]
-}
 
 export const convertToCustomizationInfo = (xmlContent: string):
   CustomizationInfo => {
@@ -148,20 +126,6 @@ export const convertToFolderCustomizationInfo = (xmlContent: string, path: strin
     { path }
   )
 
-export const isCustomTypeInfo = (customizationInfo: CustomizationInfo):
-  customizationInfo is CustomTypeInfo => 'scriptId' in customizationInfo
-
-export const isTemplateCustomTypeInfo = (customizationInfo: CustomizationInfo):
-  customizationInfo is TemplateCustomTypeInfo =>
-  'fileExtension' in customizationInfo && isCustomTypeInfo(customizationInfo)
-
-export const isFileCustomizationInfo = (customizationInfo: CustomizationInfo):
-  customizationInfo is FileCustomizationInfo =>
-  customizationInfo.typeName === FILE
-
-export const isFolderCustomizationInfo = (customizationInfo: CustomizationInfo):
-  customizationInfo is FolderCustomizationInfo =>
-  customizationInfo.typeName === FOLDER
 
 export const convertToXmlContent = (customizationInfo: CustomizationInfo): string =>
   // eslint-disable-next-line new-cap
@@ -186,16 +150,6 @@ type Project = {
   projectPath: string
   executor: CommandActionExecutor
   authId: string
-}
-
-export type GetCustomObjectsResult = {
-  elements: CustomTypeInfo[]
-  failedToFetchAllAtOnce: boolean
-}
-
-export type ImportFileCabinetResult = {
-  elements: (FileCustomizationInfo | FolderCustomizationInfo)[]
-  failedPaths: string[]
 }
 
 type ObjectsChunk = {

@@ -17,9 +17,10 @@
 import { AccountId } from '@salto-io/adapter-api'
 import { NetsuiteQuery } from '../query'
 import { Credentials } from './credentials'
-import SdfClient, { CustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult } from './sdf_client'
+import SdfClient from './sdf_client'
 import { SuiteAppClient } from './suiteapp_client/suiteapp_client'
 import { SavedSearchQuery } from './suiteapp_client/types'
+import { CustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult } from './types'
 
 export class NetsuiteClient {
   private sdfClient: SdfClient

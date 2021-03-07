@@ -24,13 +24,11 @@ import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
   SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
 } from './constants'
-import {
-  ATTRIBUTE_PREFIX, CDATA_TAG_NAME, CustomizationInfo, TemplateCustomTypeInfo,
-  isTemplateCustomTypeInfo, isFileCustomizationInfo, FileCustomizationInfo,
-  FolderCustomizationInfo, isFolderCustomizationInfo, CustomTypeInfo,
-} from './client/sdf_client'
 import { fieldTypes } from './types/field_types'
 import { customTypes, fileCabinetTypes, isCustomType, isFileCabinetType } from './types'
+import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './client/types'
+import { isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo } from './client/utils'
+import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
 
 
 const XML_TRUE_VALUE = 'T'

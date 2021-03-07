@@ -28,14 +28,13 @@ import {
   FETCH_TYPE_TIMEOUT_IN_MINUTES, INTEGRATION, CLIENT_CONFIG, FETCH_TARGET,
 } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
-import {
-  convertToCustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo,
-} from '../src/client/sdf_client'
+import { convertToCustomTypeInfo } from '../src/client/sdf_client'
 import { FilterCreator } from '../src/filter'
 import { configType, getConfigFromConfigChanges } from '../src/config'
 import { mockGetElemIdFunc, MockInterface } from './utils'
 import * as referenceDependenciesModule from '../src/reference_dependencies'
 import { NetsuiteClient } from '../src/client/client'
+import { FileCustomizationInfo, FolderCustomizationInfo } from '../src/client/types'
 
 jest.mock('../src/config', () => ({
   ...jest.requireActual<{}>('../src/config'),

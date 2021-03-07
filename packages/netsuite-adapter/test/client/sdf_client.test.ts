@@ -19,13 +19,13 @@ import osPath from 'path'
 import { buildNetsuiteQuery, notQuery } from '../../src/query'
 import mockClient, { DUMMY_CREDENTIALS } from './sdf_client'
 import SdfClient, {
-  ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, COMMANDS, CustomTypeInfo,
-  fileCabinetTopLevelFolders, FileCustomizationInfo, FOLDER_ATTRIBUTES_FILE_SUFFIX,
-  FolderCustomizationInfo, TemplateCustomTypeInfo,
+  ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, COMMANDS,
+  fileCabinetTopLevelFolders, FOLDER_ATTRIBUTES_FILE_SUFFIX,
 } from '../../src/client/sdf_client'
 import {
   FILE_CABINET_PATH_SEPARATOR,
 } from '../../src/constants'
+import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../../src/client/types'
 
 
 const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')

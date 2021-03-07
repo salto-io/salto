@@ -16,28 +16,45 @@
 import { ReadOnlyElementsSource, Element, ElemID } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
-export const buildElementsSourceFromElements = (elements: ReadonlyArray<Element>):
-  ReadOnlyElementsSource => {
+export const buildElementsSourceFromElements = (
+  elements: ReadonlyArray<Element>,
+  fallbackSource?: ReadOnlyElementsSource
+): ReadOnlyElementsSource => {
   const elementsMap = _.keyBy(elements, e => e.elemID.getFullName())
+  const elementsInThisSource = new Set(Object.keys(elementsMap))
+
+  async function *getIds(): AsyncIterable<ElemID> {
+    for (const element of elements) {
+      yield element.elemID
+    }
+    if (fallbackSource === undefined) {
+      return
+    }
+    for await (const elemID of await fallbackSource.list()) {
+      if (!elementsInThisSource.has(elemID.getFullName())) {
+        yield elemID
+      }
+    }
+  }
+
+  async function *getElements(): AsyncIterable<Element> {
+    for (const element of elements) {
+      yield element
+    }
+    if (fallbackSource === undefined) {
+      return
+    }
+    for await (const element of await fallbackSource.getAll()) {
+      if (!elementsInThisSource.has(element.elemID.getFullName())) {
+        yield element
+      }
+    }
+  }
 
   return {
-    getAll: async () => {
-      async function *getElements(): AsyncIterable<Element> {
-        for (const element of elements) {
-          yield element
-        }
-      }
-      return getElements()
-    },
-    get: async id => elementsMap[id.getFullName()],
-    list: async () => {
-      async function *getIds(): AsyncIterable<ElemID> {
-        for (const element of elements) {
-          yield element.elemID
-        }
-      }
-      return getIds()
-    },
-    has: async id => id.getFullName() in elementsMap,
+    getAll: async () => getElements(),
+    get: async id => elementsMap[id.getFullName()] ?? fallbackSource?.get(id),
+    list: async () => getIds(),
+    has: async id => id.getFullName() in elementsMap || (fallbackSource?.has(id) ?? false),
   }
 }

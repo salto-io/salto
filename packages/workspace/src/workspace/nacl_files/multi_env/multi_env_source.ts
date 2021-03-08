@@ -335,7 +335,7 @@ const buildMultiEnvSource = (
       if (name === commonSourceName) {
         return src.load({ ignoreFileChanges, cachePrefix: primarySourceName })
       }
-      return src.load({})
+      return src.load({ ignoreFileChanges })
     })
     const buildResults = await buildMultiEnvState({ envChanges: changes, env })
     state = buildResults.state

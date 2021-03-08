@@ -13,9 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import rimraf from 'rimraf'
-import fsExtra from 'fs-extra'
-import path from 'path'
 import { promisify } from 'util'
 import * as fileUtils from '@salto-io/file'
 import LRU from 'lru-cache'
@@ -23,30 +20,7 @@ import uuidv4 from 'uuid/v4'
 import { remoteMap } from '@salto-io/workspace'
 import { collections, promises } from '@salto-io/lowerdash'
 import type rocksdb from 'rocksdb'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const extractAndRequire = (externalsLocation: string, module: string): any => {
-  // eslint-disable-next-line @typescript-eslint/camelcase
-  if (typeof __non_webpack_require__ !== 'undefined') {
-    const extractedModuleLocation = path.join(externalsLocation, module)
-    rimraf.sync(externalsLocation)
-    // eslint-disable-next-line no-undef, @typescript-eslint/camelcase
-    fsExtra.copySync(path.dirname(__non_webpack_require__.resolve(module)), extractedModuleLocation,
-      { dereference: true })
-    // eslint-disable-next-line no-undef
-    const result = __non_webpack_require__(extractedModuleLocation)
-    try {
-      rimraf.sync(externalsLocation)
-    } catch {
-      // Do nothing. Deleting will fail on required native code on Windows.
-    }
-    return result
-  }
-  // eslint-disable-next-line global-require, import/no-dynamic-require
-  return require(module)
-}
-
-const rocksdbImpl = extractAndRequire(path.join(__dirname, '.externals'), 'rocksdb')
+import rocksdbImpl from './rocksdb_import'
 
 const { asynciterable } = collections
 const { awu } = asynciterable

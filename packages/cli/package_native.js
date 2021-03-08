@@ -58,7 +58,7 @@ const nexeConfigs = () => Object.entries(TARGET_PLATFORMS)
 const handleError = err => {
   console.error(err.stack || err);
   if (err.details) {
-    	console.error(err.details);
+    console.error(err.details);
   }
   process.exit(2)
 }

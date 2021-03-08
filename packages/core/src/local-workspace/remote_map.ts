@@ -19,15 +19,17 @@ import * as fileUtils from '@salto-io/file'
 import LRU from 'lru-cache'
 import uuidv4 from 'uuid/v4'
 import { remoteMap } from '@salto-io/workspace'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
 
 const { asynciterable } = collections
 const { awu } = asynciterable
+const { withLimitedConcurrency } = promises.array
 const NAMESPACE_SEPARATOR = '::'
 const TEMP_PREFIX = '~TEMP~'
 const UNIQUE_ID_SEPARATOR = '%%'
 const DELETE_OPERATION = 1
 const SET_OPERATION = 0
+const GET_CONCURRENCY = 100
 type RocksDBValue = string | Buffer | undefined
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 const cache = new LRU<string, any>({ max: 5000 })
@@ -221,11 +223,38 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
     return awu(aggregatedIterable([tempKeyIter, keyIter]))
       .map(async (entry: remoteMap.RemoteMapEntry<string>) => entry.key as K)
   }
+
+  const getImpl = (key: string): Promise<T | undefined> => new Promise(resolve => {
+    if (cache.has(keyToTempDBKey(key))) {
+      resolve(cache.get(keyToTempDBKey(key)) as T)
+    } else {
+      const resolveRet = async (value: Buffer | string): Promise<void> => {
+        const ret = (await deserialize(value.toString()))
+        cache.set(keyToTempDBKey(key), ret)
+        resolve(ret)
+      }
+      db.get(keyToTempDBKey(key), async (error, value) => {
+        if (error) {
+          db.get(keyToDBKey(key), async (innerError, innerValue) => {
+            if (innerError) {
+              resolve(undefined)
+            } else {
+              await resolveRet(innerValue)
+            }
+          })
+        } else {
+          await resolveRet(value)
+        }
+      })
+    }
+  })
+
   const getOpebDBConnection = async (loc: string): Promise<rocksdb> => {
     const newDb = rocksdb(loc)
     await promisify(newDb.open.bind(newDb))()
     return newDb
   }
+
   const createDBIfNotCreated = async (loc: string): Promise<void> => {
     if (!(loc in dbConnections)) {
       dbConnections[loc] = getOpebDBConnection(loc)
@@ -237,30 +266,9 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
   }
   await createDBIfNotCreated(location)
   return {
-    get: async (key: string): Promise<T | undefined> => new Promise(resolve => {
-      if (cache.has(keyToTempDBKey(key))) {
-        resolve(cache.get(keyToTempDBKey(key)) as T)
-      } else {
-        const resolveRet = async (value: Buffer | string): Promise<void> => {
-          const ret = (await deserialize(value.toString()))
-          cache.set(keyToTempDBKey(key), ret)
-          resolve(ret)
-        }
-        db.get(keyToTempDBKey(key), async (error, value) => {
-          if (error) {
-            db.get(keyToDBKey(key), async (innerError, innerValue) => {
-              if (innerError) {
-                resolve(undefined)
-              } else {
-                await resolveRet(innerValue)
-              }
-            })
-          } else {
-            await resolveRet(value)
-          }
-        })
-      }
-    }),
+    get: getImpl,
+    getMany: async (keys: string[]): Promise<(T | undefined)[]> =>
+      withLimitedConcurrency(keys.map(k => () => getImpl(k)), GET_CONCURRENCY),
     values: (iterationOpts?: remoteMap.IterationOpts) => valuesImpl(false, iterationOpts),
     entries: (iterationOpts?: remoteMap.IterationOpts) => entriesImpl(iterationOpts),
     set: async (key: string, element: T): Promise<void> => {

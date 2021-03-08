@@ -179,8 +179,10 @@ export const getQueryLocationsFuzzy = async (
   workspace: EditorWorkspace,
   query: string,
 ): Promise<Fuse.FuseResult<SaltoElemFileLocation>[]> => {
-  const elements = await getAllElements(workspace)
-  const fuse = createFuzzyFilter(elements.map(e => e.elemID.getFullName()))
+  const elementIds = await awu(await (await workspace.elements).list())
+    .map(e => e.getFullName())
+    .toArray()
+  const fuse = createFuzzyFilter(elementIds)
   const fuseSearchResult = fuse.search(query)
   const topFuzzyResults = fuseSearchResult
     .slice(0, MAX_LOCATION_SEARCH_RESULT)

@@ -23,6 +23,7 @@ import { Values, StaticFile, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { API_VERSION } from '../client/client'
+import { NESTED_DIR_NAMES_ANNOTATION, CONTENT_FILENAME_ANNOTATION } from '../filters/territory_deploy_pkg'
 import {
   INSTANCE_FULL_NAME_FIELD, IS_ATTRIBUTE, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX,
   RECORDS_PATH, INSTALLED_PACKAGES_PATH, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD,
@@ -407,7 +408,9 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
         const instanceContentPath = [
           PACKAGE,
           dirName,
-          `${instanceName}${suffix === undefined ? '' : `.${suffix}`}`,
+          ...instance.annotations[NESTED_DIR_NAMES_ANNOTATION] ?? [],
+          instance.annotations[CONTENT_FILENAME_ANNOTATION]
+            ?? `${instanceName}${suffix === undefined ? '' : `.${suffix}`}`,
         ].join('/')
         if (hasMetaFile) {
           zip.file(

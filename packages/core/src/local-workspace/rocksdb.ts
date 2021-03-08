@@ -39,4 +39,4 @@ const extractAndRequire = (externalsLocation: string, module: string): any => {
   return require(module)
 }
 
-export const rocksdb = extractAndRequire(path.join(__dirname, '.externals'), 'rocksdb')
+export default extractAndRequire(path.join(__dirname, '.externals'), 'rocksdb')

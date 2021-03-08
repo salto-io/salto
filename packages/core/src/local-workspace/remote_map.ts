@@ -20,7 +20,7 @@ import uuidv4 from 'uuid/v4'
 import { remoteMap } from '@salto-io/workspace'
 import { collections, promises } from '@salto-io/lowerdash'
 import type rocksdb from 'rocksdb'
-import rocksdbImpl from './rocksdb_import'
+import rocksdbImpl from './rocksdb'
 
 const { asynciterable } = collections
 const { awu } = asynciterable

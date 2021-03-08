@@ -25,8 +25,8 @@ import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { collections, promises } from '@salto-io/lowerdash'
 import { merger } from '@salto-io/workspace'
-import { collections } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan, AdditionalResolveContext } from './plan'
 import {
@@ -35,7 +35,6 @@ import {
 } from './adapters/progress'
 
 const { mergeElements } = merger
-
 const log = logger(module)
 
 export type FetchChange = {
@@ -230,8 +229,56 @@ type UpdatedConfig = {
   message: string
 }
 
+const runPostFetch = async (
+  adapters: Record<string, AdapterOperations>,
+  serviceElements: Element[],
+  workspaceElementsByAdapter: Record<string, ReadonlyArray<Element>>,
+  partiallyFetchedAdapters: Set<string>,
+): Promise<void> => {
+  const serviceElementsByAdapter = _.groupBy(serviceElements, e => e.elemID.adapter)
+
+  const getAdapterElements = (adapterName: string): ReadonlyArray<Element> => {
+    if (Object.keys(adapters).includes(adapterName)) {
+      if (partiallyFetchedAdapters.has(adapterName)) {
+        const fetchedIDs = new Set(
+          serviceElementsByAdapter[adapterName].map(e => e.elemID.getFullName())
+        )
+        const missingElements = workspaceElementsByAdapter[adapterName].filter(
+          e => !fetchedIDs.has(e.elemID.getFullName())
+        )
+        return [
+          ...serviceElementsByAdapter[adapterName],
+          ...missingElements,
+        ]
+      }
+      return serviceElementsByAdapter[adapterName]
+    }
+    return workspaceElementsByAdapter[adapterName]
+  }
+
+  const elementsByAdapter = Object.fromEntries(
+    [...new Set([
+      ...Object.keys(workspaceElementsByAdapter),
+      ...Object.keys(serviceElementsByAdapter),
+    ])].map(adapterName => [adapterName, getAdapterElements(adapterName)])
+  )
+  // only modifies elements in-place, done sequentially to avoid race conditions
+  await promises.array.series(
+    Object.entries(adapters).map(([adapterName, adapter]) => () => {
+      if (adapter.postFetch !== undefined) {
+        return adapter.postFetch({
+          localElements: serviceElementsByAdapter[adapterName],
+          elementsByAdapter,
+        })
+      }
+      return Promise.resolve(false)
+    })
+  )
+}
+
 const fetchAndProcessMergeErrors = async (
   adapters: Record<string, AdapterOperations>,
+  workspaceElementsByAdapter: Record<string, ReadonlyArray<Element>>,
   stateElements: ReadonlyArray<Element>,
   getChangesEmitter: StepEmitter,
   progressEmitter?: EventEmitter<FetchProgressEvents>
@@ -262,6 +309,7 @@ const fetchAndProcessMergeErrors = async (
           }
         })
     )
+
     const serviceElements = _.flatten(fetchResults.map(res => res.elements))
     const updatedConfigs = fetchResults
       .map(res => res.updatedConfig)
@@ -274,6 +322,24 @@ const fetchAndProcessMergeErrors = async (
     )
 
     log.debug(`fetched ${serviceElements.length} elements from adapters`)
+
+    if (Object.values(adapters).some(adapter => adapter.postFetch !== undefined)) {
+      try {
+        // update elements based on fetch results from other services
+        await runPostFetch(
+          adapters,
+          serviceElements,
+          workspaceElementsByAdapter,
+          partiallyFetchedAdapters,
+        )
+        log.debug('ran post-fetch in the following adapters: %s',
+          Object.keys(_.pickBy(adapters, adapter => adapter.postFetch !== undefined)))
+      } catch (e) {
+        // failures in this step should never fail the fetch
+        log.error(`failed to run postFetch: ${e}, stack: ${e.stack}`)
+      }
+    }
+
     const { errors: mergeErrors, merged: elements } = mergeElements(serviceElements)
     applyInstancesDefaults(elements.filter(isInstanceElement))
     log.debug(`got ${serviceElements.length} from merge results and elements and to ${elements.length} elements [errors=${
@@ -373,11 +439,14 @@ const calcFetchChanges = async (
 
 export const fetchChanges = async (
   adapters: Record<string, AdapterOperations>,
-  workspaceElements: ReadonlyArray<Element>,
+  workspaceElementsByAdapter: Record<string, ReadonlyArray<Element>>,
   stateElements: ReadonlyArray<Element>,
   currentConfigs: InstanceElement[],
   progressEmitter?: EventEmitter<FetchProgressEvents>
 ): Promise<FetchChangesResult> => {
+  const filteredWorkspaceElements: ReadonlyArray<Element> = Object.values(
+    _.pick(workspaceElementsByAdapter, Object.keys(adapters))
+  ).flat()
   const adapterNames = _.keys(adapters)
   const getChangesEmitter = new StepEmitter()
   if (progressEmitter) {
@@ -387,6 +456,7 @@ export const fetchChanges = async (
     serviceElements, processErrorsResult, updatedConfigs, partiallyFetchedAdapters,
   } = await fetchAndProcessMergeErrors(
     adapters,
+    workspaceElementsByAdapter,
     stateElements,
     getChangesEmitter,
     progressEmitter
@@ -402,7 +472,7 @@ export const fetchChanges = async (
     progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
   }
 
-  const isFirstFetch = _.isEmpty(workspaceElements.concat(stateElements)
+  const isFirstFetch = _.isEmpty(filteredWorkspaceElements.concat(stateElements)
     .filter(e => !e.elemID.isConfig()))
 
   const changes = isFirstFetch
@@ -413,8 +483,8 @@ export const fetchChanges = async (
       // When we init a new env, state will be empty. We fallback to the workspace
       // elements since they should be considered a part of the env and the diff
       // should be calculated with them in mind.
-      _.isEmpty(stateElements) ? workspaceElements : stateElements,
-      workspaceElements,
+      _.isEmpty(stateElements) ? filteredWorkspaceElements : stateElements,
+      filteredWorkspaceElements,
       partiallyFetchedAdapters,
     )
 

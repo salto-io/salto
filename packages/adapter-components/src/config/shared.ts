@@ -102,11 +102,13 @@ export const createAdapterApiConfigType = ({
 
 export const createUserFetchConfigType = (
   adapter: string,
+  additionalFields?: Record<string, FieldDefinition>,
 ): ObjectType => (
   new ObjectType({
     elemID: new ElemID(adapter, 'userFetchConfig'),
     fields: {
       includeTypes: { type: new ListType(BuiltinTypes.STRING) },
+      ...additionalFields,
     },
   })
 )

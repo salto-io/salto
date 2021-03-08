@@ -36,12 +36,24 @@ describe('filter utils', () => {
     let filters: FilterCreator<{}, { configVal: string; promise: Promise<number> }>[]
     const mockOnFetch2: () => Promise<void> = jest.fn().mockImplementation(
       async (): Promise<void> => {
-        await new Promise(resolve => setTimeout(resolve, 10))
+        await new Promise(resolve => setTimeout(resolve, 2))
       }
     )
     const mockOnFetch3: () => Promise<void> = jest.fn().mockImplementation(
       async (): Promise<void> => {
-        await new Promise(resolve => setTimeout(resolve, 10))
+        await new Promise(resolve => setTimeout(resolve, 2))
+      }
+    )
+    const mockOnPostFetch2: () => Promise<boolean> = jest.fn().mockImplementation(
+      async (): Promise<boolean> => {
+        await new Promise(resolve => setTimeout(resolve, 2))
+        return true
+      }
+    )
+    const mockOnPostFetch3: () => Promise<boolean> = jest.fn().mockImplementation(
+      async (): Promise<boolean> => {
+        await new Promise(resolve => setTimeout(resolve, 2))
+        return false
       }
     )
     beforeAll(() => {
@@ -50,12 +62,17 @@ describe('filter utils', () => {
           onFetch: jest.fn().mockImplementation(async (): Promise<void> => {
             await config.promise
           }),
+          onPostFetch: jest.fn().mockImplementation(async (): Promise<void> => {
+            await config.promise
+          }),
         }),
         () => ({
           onFetch: mockOnFetch2,
+          onPostFetch: mockOnPostFetch2,
         }),
         () => ({
           onFetch: mockOnFetch3,
+          onPostFetch: mockOnPostFetch3,
         }),
       ]
     })
@@ -64,13 +81,25 @@ describe('filter utils', () => {
       const p = makeResolvablePromise(3)
       const runner = filtersRunner({ get: jest.fn() }, { configVal: '123 ', promise: p.promise }, filters)
       const onFetchRes = runner.onFetch([])
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise(resolve => setTimeout(resolve, 2))
       expect(mockOnFetch2).not.toHaveBeenCalled()
       expect(mockOnFetch3).not.toHaveBeenCalled()
       p.resolve()
       await onFetchRes
       expect(mockOnFetch2).toHaveBeenCalled()
       expect(mockOnFetch3).toHaveBeenCalled()
+    })
+    it('should call onPostFetch for all nested filters in order', async () => {
+      const p = makeResolvablePromise(3)
+      const runner = filtersRunner({ get: jest.fn() }, { configVal: '123 ', promise: p.promise }, filters)
+      const onPostFetchRes = runner.onPostFetch({ elementsByAdapter: {}, localElements: [] })
+      await new Promise(resolve => setTimeout(resolve, 2))
+      expect(mockOnPostFetch2).not.toHaveBeenCalled()
+      expect(mockOnPostFetch3).not.toHaveBeenCalled()
+      p.resolve()
+      await onPostFetchRes
+      expect(mockOnPostFetch2).toHaveBeenCalled()
+      expect(mockOnPostFetch3).toHaveBeenCalled()
     })
   })
 })

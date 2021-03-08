@@ -205,6 +205,7 @@ export const fetch: FetchFunc = async (
   const [filteredStateElements, stateElementsNotCoveredByFetch] = partitionElementsByServices(
     stateElements, fetchServices
   )
+  const workspaceElementsByAdapter = _.groupBy(await workspace.elements(), e => e.elemID.adapter)
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
     await workspace.servicesCredentials(services),
@@ -225,7 +226,7 @@ export const fetch: FetchFunc = async (
       changes, elements, mergeErrors, configChanges, adapterNameToConfigMessage, unmergedElements,
     } = await fetchChanges(
       adapters,
-      filterElementsByServices(await workspace.elements(), fetchServices),
+      workspaceElementsByAdapter,
       filteredStateElements,
       currentConfigs,
       progressEmitter,

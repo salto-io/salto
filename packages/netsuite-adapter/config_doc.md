@@ -13,8 +13,8 @@ netsuite {
   deployReferencedElements = false
   client = {
     fetchAllTypesAtOnce = false
-    fetchTypeTimeoutInMinutes = 20
-    maxItemsInImportObjectsRequest = 30
+    fetchTypeTimeoutInMinutes = 4
+    maxItemsInImportObjectsRequest = 40
     sdfConcurrencyLimit = 4
   }
 }
@@ -33,8 +33,8 @@ netsuite {
 | Name                           | Default when undefined  | Description
 | -------------------------------| ------------------------| -----------
 | fetchAllTypesAtOnce            | false                   | Attempt to fetch all configuration elements in a single SDF API call
-| fetchTypeTimeoutInMinutes      | 20                      | The max number of minutes a single type's fetch can run
-| maxItemsInImportObjectsRequest | 30                      | Limits the max number of requested items a single import-objects request
+| fetchTypeTimeoutInMinutes      | 4                       | The max number of minutes a single type's chunk fetch can run
+| maxItemsInImportObjectsRequest | 40                      | Limits the max number of requested items a single import-objects request
 | sdfConcurrencyLimit            | 4                       | Limits the max number of concurrent SDF API calls. The number should not exceed the concurrency limit enforced by the upstream service.
 
 ### Skip list configuration options

@@ -18,10 +18,7 @@ import { readFile, readDir, writeFile, mkdirp, rm } from '@salto-io/file'
 import osPath from 'path'
 import { buildNetsuiteQuery, notQuery } from '../../src/query'
 import mockClient, { DUMMY_CREDENTIALS } from './sdf_client'
-import SdfClient, {
-  ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, COMMANDS,
-  fileCabinetTopLevelFolders, FOLDER_ATTRIBUTES_FILE_SUFFIX,
-} from '../../src/client/sdf_client'
+import SdfClient, { ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, COMMANDS, fileCabinetTopLevelFolders, FOLDER_ATTRIBUTES_FILE_SUFFIX } from '../../src/client/sdf_client'
 import {
   FILE_CABINET_PATH_SEPARATOR,
 } from '../../src/constants'
@@ -146,13 +143,12 @@ jest.mock('@salto-io/suitecloud-cli', () => ({
 }), { virtual: true })
 
 describe('netsuite client', () => {
-  const transformedAccountId = 'TSTDRV123456_SB'
   const createProjectCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.CREATE_PROJECT })
   const saveTokenCommandMatcher = expect.objectContaining({
     commandName: COMMANDS.SETUP_ACCOUNT,
     arguments: expect.objectContaining({
-      account: transformedAccountId,
+      account: DUMMY_CREDENTIALS.accountId,
       tokenid: DUMMY_CREDENTIALS.tokenId,
       tokensecret: DUMMY_CREDENTIALS.tokenSecret,
       authid: expect.anything(),
@@ -213,7 +209,7 @@ describe('netsuite client', () => {
       const accountId = await SdfClient.validateCredentials(DUMMY_CREDENTIALS)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
-      expect(accountId).toEqual(transformedAccountId)
+      expect(accountId).toEqual(DUMMY_CREDENTIALS.accountId)
     })
   })
 

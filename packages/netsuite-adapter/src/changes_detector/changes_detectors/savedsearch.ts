@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { formatSavedSearchDate } from '../formats'
+import { formatSavedSearchDateRange } from '../formats'
 import { TypeChangesDetector } from '../types'
 
 const log = logger(module)
@@ -24,7 +24,7 @@ const changesDetector: TypeChangesDetector = {
     const results = await client.runSavedSearchQuery({
       type: 'savedsearch',
       columns: ['id'],
-      filters: [['datemodified', 'within', formatSavedSearchDate(dateRange.start), formatSavedSearchDate(dateRange.end)]],
+      filters: [['datemodified', 'within', ...formatSavedSearchDateRange(dateRange)]],
     })
 
     if (results === undefined) {

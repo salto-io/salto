@@ -87,7 +87,7 @@ export const andQuery = (firstQuery: NetsuiteQuery, secondQuery: NetsuiteQuery):
 })
 
 export const notQuery = (query: NetsuiteQuery): NetsuiteQuery => ({
-  isTypeMatch: () => true,
+  isTypeMatch: typeName => !query.isTypeMatch(typeName),
   isObjectMatch: objectID => !query.isObjectMatch(objectID),
   isFileMatch: filePath => !query.isFileMatch(filePath),
   areSomeFilesMatch: () => true,

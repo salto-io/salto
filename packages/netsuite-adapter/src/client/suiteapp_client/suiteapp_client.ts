@@ -45,7 +45,7 @@ export default class SuiteAppClient {
   constructor(params: SuiteAppClientParameters) {
     this.credentials = params.credentials
     this.callsLimiter = new Bottleneck({
-      concurrencyLimit: params.config?.suiteAppConcurrencyLimit ?? DEFAULT_CONCURRENCY,
+      maxConcurrent: params.config?.suiteAppConcurrencyLimit ?? DEFAULT_CONCURRENCY,
     })
 
     const accountIdUrl = params.credentials.accountId.replace('_', '-')
@@ -97,7 +97,7 @@ export default class SuiteAppClient {
     try {
       const results = await this.sendRestletRequest('sysInfo')
 
-      if (!this.ajv.validate<{ time: string; appVersion: number[] }>(
+      if (!this.ajv.validate<{ time: number; appVersion: number[] }>(
         SYSTEM_INFORMATION_SCHEME,
         results
       )) {

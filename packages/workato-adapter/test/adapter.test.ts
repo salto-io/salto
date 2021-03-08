@@ -226,10 +226,6 @@ describe('adapter', () => {
             since_offset: '-3600',
           },
           // eslint-disable-next-line @typescript-eslint/camelcase
-          extended_output_schema: expect.anything(),
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          extended_input_schema: expect.anything(),
-          // eslint-disable-next-line @typescript-eslint/camelcase
           visible_config_fields: [
             'sobject_name',
             'since_offset',

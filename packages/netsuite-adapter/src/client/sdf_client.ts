@@ -38,11 +38,17 @@ import {
   DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES,
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
 } from '../config'
-import { NetsuiteQuery, ObjectID } from '../query'
+import { NetsuiteQuery, NetsuiteQueryParameters, ObjectID } from '../query'
 import { SdfCredentials } from './credentials'
-import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult, TemplateCustomTypeInfo } from './types'
+import {
+  CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo,
+  GetCustomObjectsResult, ImportFileCabinetResult, ImportObjectsResult, TemplateCustomTypeInfo,
+} from './types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './constants'
-import { isCustomTypeInfo, isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo } from './utils'
+import {
+  isCustomTypeInfo, isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo,
+  mergeTypeToInstances,
+} from './utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -327,11 +333,13 @@ export default class SdfClient {
   async getCustomObjects(typeNames: string[], query: NetsuiteQuery):
     Promise<GetCustomObjectsResult> {
     if (typeNames.every(type => !query.isTypeMatch(type))) {
-      return { elements: [], failedToFetchAllAtOnce: false }
+      return { elements: [], failedToFetchAllAtOnce: false, failedTypeToInstances: {} }
     }
 
     const { executor, projectName, authId } = await this.initProject()
-    const { failedToFetchAllAtOnce } = await this.importObjects(executor, typeNames, query)
+    const { failedToFetchAllAtOnce, failedTypeToInstances } = await this.importObjects(
+      executor, typeNames, query
+    )
     const objectsDirPath = SdfClient.getObjectsDirPath(projectName)
     const filenames = await readDir(objectsDirPath)
     const scriptIdToFiles = _.groupBy(filenames, filename => filename.split(FILE_SEPARATOR)[0])
@@ -349,48 +357,55 @@ export default class SdfClient {
       })
     )
     await this.projectCleanup(projectName, authId)
-    return { elements, failedToFetchAllAtOnce }
+    return { elements, failedToFetchAllAtOnce, failedTypeToInstances }
   }
 
   private async importObjects(
     executor: CommandActionExecutor,
     typeNames: string[],
     query: NetsuiteQuery
-  ): Promise<{ failedToFetchAllAtOnce: boolean }> {
-    const importAllAtOnce = async (): Promise<boolean> => {
+  ): Promise<{ failedToFetchAllAtOnce: boolean; failedTypeToInstances: NetsuiteQueryParameters['types'] }> {
+    const importAllAtOnce = async (): Promise<NetsuiteQueryParameters['types'] | undefined> => {
       log.debug('Fetching all custom objects at once')
       try {
         // When fetchAllAtOnce we use the below heuristic in order to define a proper timeout,
         // instead of adding another configuration value
-        await this.runImportObjectsCommand(executor, ALL, ALL, this.fetchTypeTimeoutInMinutes * 4)
-        return true
+        return await this.runImportObjectsCommand(
+          executor, ALL, ALL, this.fetchTypeTimeoutInMinutes * 4
+        )
       } catch (e) {
         log.warn('Attempt to fetch all custom objects has failed')
         log.warn(e)
-        return false
+        return undefined
       }
     }
 
-    if (this.fetchAllTypesAtOnce && await importAllAtOnce()) {
-      return { failedToFetchAllAtOnce: false }
+    if (this.fetchAllTypesAtOnce) {
+      const failedTypeToInstances = await importAllAtOnce()
+      if (failedTypeToInstances !== undefined) {
+        return { failedToFetchAllAtOnce: false, failedTypeToInstances }
+      }
     }
-    await this.importObjectsInChunks(executor, typeNames, query)
-    return { failedToFetchAllAtOnce: this.fetchAllTypesAtOnce }
+    const failedTypeToInstances = await this.importObjectsInChunks(executor, typeNames, query)
+    return { failedToFetchAllAtOnce: this.fetchAllTypesAtOnce, failedTypeToInstances }
   }
 
   private async importObjectsInChunks(
     executor: CommandActionExecutor,
     typeNames: string[],
     query: NetsuiteQuery
-  ): Promise<void> {
+  ): Promise<NetsuiteQueryParameters['types']> {
     const importObjectsChunk = async (
       { type, ids, index, total }: ObjectsChunk, retry = true
-    ): Promise<void> => {
+    ): Promise<NetsuiteQueryParameters['types']> => {
       try {
         log.debug('Starting to fetch chunk %d/%d with %d objects of type: %s', index, total, ids.length, type)
-        await this.runImportObjectsCommand(executor, type, ids.join(' '),
-          this.fetchTypeTimeoutInMinutes)
-        log.debug('Fetched chunk %d/%d with %d objects of type: %s', index, total, ids.length, type)
+        const failedTypeToInstances = await this.runImportObjectsCommand(
+          executor, type, ids.join(' '), this.fetchTypeTimeoutInMinutes
+        )
+        log.debug('Fetched chunk %d/%d with %d objects of type: %s. failedTypeToInstances: %o',
+          index, total, ids.length, type, failedTypeToInstances)
+        return failedTypeToInstances
       } catch (e) {
         log.warn('Failed to fetch chunk %d/%d with %d objects of type: %s', index, total, ids.length, type)
         log.warn(e)
@@ -399,15 +414,15 @@ export default class SdfClient {
         }
         if (ids.length === 1) {
           log.debug('Retrying to fetch chunk %d/%d with a single object of type: %s', index, total, type)
-          await importObjectsChunk({ type, ids, index, total }, false)
-          return
+          return importObjectsChunk({ type, ids, index, total }, false)
         }
         log.debug('Retrying to fetch chunk %d/%d with %d objects of type: %s with smaller chunks', index, total, ids.length, type)
         const middle = (ids.length + 1) / 2
-        await Promise.all([
+        const results = await Promise.all([
           importObjectsChunk({ type, ids: ids.slice(0, middle), index, total }),
           importObjectsChunk({ type, ids: ids.slice(middle, ids.length), index, total }),
         ])
+        return mergeTypeToInstances(...results)
       }
     }
 
@@ -433,10 +448,11 @@ export default class SdfClient {
     ).flatten(true).toArray()
 
     log.debug('Fetching custom objects by types in chunks')
-    await withLimitedConcurrency( // limit the number of open promises
+    const results = await withLimitedConcurrency( // limit the number of open promises
       idsChunks.map(idsChunk => () => importObjectsChunk(idsChunk)),
       this.sdfConcurrencyLimit
     )
+    return mergeTypeToInstances(...results)
   }
 
   private async runImportObjectsCommand(
@@ -444,8 +460,8 @@ export default class SdfClient {
     type: string,
     scriptIds: string,
     timeoutInMinutes: number,
-  ): Promise<ActionResult> {
-    return this.executeProjectAction(
+  ): Promise<NetsuiteQueryParameters['types']> {
+    const actionResult = await this.executeProjectAction(
       COMMANDS.IMPORT_OBJECTS,
       {
         destinationfolder: `${FILE_CABINET_PATH_SEPARATOR}${OBJECTS_DIR}`,
@@ -457,6 +473,19 @@ export default class SdfClient {
       executor,
       timeoutInMinutes
     )
+    const importResult = actionResult.data as ImportObjectsResult
+    return _(importResult.failedImports)
+      .filter(failedImport => {
+        if (failedImport.customObject.result.message.includes('unexpected error')) {
+          log.debug('Failed to fetch (%s) instance with id (%s) due to SDF unexpected error',
+            failedImport.customObject.type, failedImport.customObject.id)
+          return true
+        }
+        return false
+      })
+      .groupBy(failedImport => failedImport.customObject.type)
+      .mapValues(failedImports => failedImports.map(failedImport => failedImport.customObject.id))
+      .value()
   }
 
   async listInstances(

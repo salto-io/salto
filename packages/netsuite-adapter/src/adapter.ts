@@ -135,6 +135,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const {
       elements: customObjects,
       failedToFetchAllAtOnce,
+      failedTypeToInstances,
     } = await getCustomObjectsResult
     progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
 
@@ -150,8 +151,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
     await this.runFiltersOnFetch(elements, this.elementsSource, isPartial)
-    const updatedConfig = getConfigFromConfigChanges(failedToFetchAllAtOnce, failedFilePaths,
-      this.userConfig)
+    const updatedConfig = getConfigFromConfigChanges(
+      failedToFetchAllAtOnce, failedFilePaths, failedTypeToInstances, this.userConfig
+    )
 
     if (_.isUndefined(updatedConfig)) {
       return { elements, isPartial }

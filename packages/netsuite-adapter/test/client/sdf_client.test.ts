@@ -252,8 +252,17 @@ describe('netsuite client', () => {
             data: instancesIds,
           })
         }
-        if (context.commandName === COMMANDS.IMPORT_OBJECTS && context.arguments.type === 'ALL') {
-          return Promise.resolve({ isSuccess: () => false })
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          if (context.arguments.type === 'ALL') {
+            return Promise.resolve({
+              isSuccess: () => false,
+              data: { failedImports: [] },
+            })
+          }
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
         }
         return Promise.resolve({ isSuccess: () => true })
       })
@@ -268,6 +277,7 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(7, deleteAuthIdCommandMatcher)
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
+      expect(getCustomObjectsResult.failedTypeToInstances).toEqual({})
     })
 
     it('should fail when IMPORT_OBJECTS has failed without fetchAllAtOnce', async () => {
@@ -278,8 +288,17 @@ describe('netsuite client', () => {
             data: instancesIds,
           })
         }
-        if (context.commandName === COMMANDS.IMPORT_OBJECTS && context.arguments.type === 'addressForm') {
-          return Promise.resolve({ isSuccess: () => false })
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          if (context.arguments.type === 'addressForm') {
+            return Promise.resolve({
+              isSuccess: () => false,
+              data: { failedImports: [] },
+            })
+          }
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
         }
         return Promise.resolve({ isSuccess: () => true })
       })
@@ -299,9 +318,17 @@ describe('netsuite client', () => {
             data: ids,
           })
         }
-        if (context.commandName === COMMANDS.IMPORT_OBJECTS
-          && context.arguments.scriptid.length > 1) {
-          return Promise.resolve({ isSuccess: () => false })
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          if (context.arguments.scriptid.length > 1) {
+            return Promise.resolve({
+              isSuccess: () => false,
+              data: { failedImports: [] },
+            })
+          }
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
         }
         return Promise.resolve({ isSuccess: () => true })
       })
@@ -347,9 +374,18 @@ describe('netsuite client', () => {
             data: ids,
           })
         }
-        if (context.commandName === COMMANDS.IMPORT_OBJECTS && isFirstImportTry) {
-          isFirstImportTry = false
-          return Promise.resolve({ isSuccess: () => false })
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          if (isFirstImportTry) {
+            isFirstImportTry = false
+            return Promise.resolve({
+              isSuccess: () => false,
+              data: { failedImports: [] },
+            })
+          }
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
         }
         return Promise.resolve({ isSuccess: () => true })
       })
@@ -389,6 +425,12 @@ describe('netsuite client', () => {
           return Promise.resolve({
             isSuccess: () => true,
             data: ids,
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
           })
         }
         return Promise.resolve({ isSuccess: () => true })
@@ -433,9 +475,14 @@ describe('netsuite client', () => {
             data: instancesIds,
           })
         }
-        if (context.commandName === COMMANDS.IMPORT_OBJECTS && context.arguments.type === 'addressForm') {
-          await new Promise(resolve => setTimeout(resolve, 100))
-          return Promise.resolve({ isSuccess: () => true })
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          if (context.arguments.type === 'addressForm') {
+            await new Promise(resolve => setTimeout(resolve, 100))
+          }
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
         }
         return Promise.resolve({ isSuccess: () => true })
       })
@@ -446,13 +493,16 @@ describe('netsuite client', () => {
     it('should fail to import all types at once due to timeout and succeed type by type', async () => {
       mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
       mockExecuteAction.mockImplementation(async context => {
-        if (context.commandName === COMMANDS.IMPORT_OBJECTS && context.arguments.scriptid === 'ALL') {
-          await new Promise(resolve => setTimeout(resolve, 100))
-          return Promise.resolve({ isSuccess: () => true })
-        }
         if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
-          await new Promise(resolve => setTimeout(resolve, 1))
-          return Promise.resolve({ isSuccess: () => true })
+          if (context.arguments.scriptid === 'ALL') {
+            await new Promise(resolve => setTimeout(resolve, 100))
+          } else {
+            await new Promise(resolve => setTimeout(resolve, 1))
+          }
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
         }
         if (context.commandName === COMMANDS.LIST_OBJECTS) {
           return Promise.resolve({ isSuccess: () => true, data: [{ scriptId: 'id', type: 'type' }] })
@@ -467,6 +517,7 @@ describe('netsuite client', () => {
       })
       const getCustomObjectsResult = await client.getCustomObjects(typeNames, query)
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
+      expect(getCustomObjectsResult.failedTypeToInstances).toEqual({})
     })
 
     it('should succeed', async () => {
@@ -477,14 +528,22 @@ describe('netsuite client', () => {
             data: [{ type: 'addressForm', scriptId: 'a' }],
           })
         }
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
+        }
         return Promise.resolve({ isSuccess: () => true })
       })
 
       const {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
+        failedTypeToInstances,
       } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
+      expect(failedTypeToInstances).toEqual({})
       expect(readDirMock).toHaveBeenCalledTimes(1)
       expect(readFileMock).toHaveBeenCalledTimes(3)
       expect(rmMock).toHaveBeenCalledTimes(1)
@@ -512,6 +571,147 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
     })
 
+    it('should succeed and return failedTypeToInstances', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        if (context.commandName === COMMANDS.LIST_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: [
+              { type: 'addressForm', scriptId: 'a' },
+              { type: 'addressForm', scriptId: 'b' },
+              { type: 'addressForm', scriptId: 'c' },
+              { type: 'addressForm', scriptId: 'd' },
+              { type: 'advancedpdftemplate', scriptId: 'a' },
+            ],
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          if (context.arguments.type === 'addressForm') {
+            return Promise.resolve({
+              isSuccess: () => true,
+              data: {
+                failedImports: [
+                  {
+                    customObject: {
+                      id: 'b',
+                      type: 'addressForm',
+                      result: {
+                        code: 'FAILED',
+                        message: 'An unexpected error has occurred',
+                      },
+                    },
+                  },
+                  {
+                    customObject: {
+                      id: 'c',
+                      type: 'addressForm',
+                      result: {
+                        code: 'FAILED',
+                        message: 'An unexpected error has occurred',
+                      },
+                    },
+                  },
+                  {
+                    customObject: {
+                      id: 'd',
+                      type: 'addressForm',
+                      result: {
+                        code: 'FAILED',
+                        message: 'You cannot download the XML file for this object because it is locked.',
+                      },
+                    },
+                  },
+                ],
+              },
+            })
+          }
+          if (context.arguments.type === 'advancedpdftemplate') {
+            return Promise.resolve({
+              isSuccess: () => true,
+              data: {
+                failedImports: [
+                  {
+                    customObject: {
+                      id: 'a',
+                      type: 'advancedpdftemplate',
+                      result: {
+                        code: 'FAILED',
+                        message: 'An unexpected error has occurred',
+                      },
+                    },
+                  },
+                ],
+              },
+            })
+          }
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+
+      const {
+        failedTypeToInstances,
+      } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
+      expect(failedTypeToInstances).toEqual({
+        addressForm: ['b', 'c'],
+        advancedpdftemplate: ['a'],
+      })
+    })
+
+    it('should succeed and return merged failedTypeToInstances when split to smaller chunks', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        if (context.commandName === COMMANDS.LIST_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: [
+              { type: 'addressForm', scriptId: 'a' },
+              { type: 'addressForm', scriptId: 'b' },
+            ],
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          if (context.arguments.scriptid.length > 1) {
+            return Promise.resolve({
+              isSuccess: () => false,
+              data: { failedImports: [] },
+            })
+          }
+          if (context.arguments.type === 'addressForm') {
+            return Promise.resolve({
+              isSuccess: () => true,
+              data: {
+                failedImports: [{
+                  customObject: {
+                    id: context.arguments.scriptid,
+                    type: 'addressForm',
+                    result: {
+                      code: 'FAILED',
+                      message: 'An unexpected error has occurred',
+                    },
+                  },
+                }],
+              },
+            })
+          }
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+
+      const {
+        failedTypeToInstances,
+      } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
+      expect(failedTypeToInstances).toEqual({
+        addressForm: ['a', 'b'],
+      })
+    })
+
     it('should list and import only objects that match the query', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_OBJECTS) {
@@ -521,6 +721,14 @@ describe('netsuite client', () => {
               { type: 'addressForm', scriptId: 'a' },
               { type: 'addressForm', scriptId: 'b' },
             ],
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: {
+              failedImports: [],
+            },
           })
         }
         return Promise.resolve({ isSuccess: () => true })

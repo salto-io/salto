@@ -44,6 +44,11 @@ export abstract class ValidationError extends types.Bean<Readonly<{
   }
 }
 
+export const isValidationError = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: any
+): value is ValidationError => value instanceof ValidationError
+
 const primitiveValidators = {
   [PrimitiveTypes.STRING]: _.isString,
   [PrimitiveTypes.NUMBER]: _.isNumber,
@@ -339,11 +344,11 @@ const validateFieldAnnotations = async (
 
 export class InvalidValueTypeValidationError extends ValidationError {
   readonly value: Value
-  readonly type: TypeElement
-  constructor({ elemID, value, type }: { elemID: ElemID; value: Value; type: TypeElement }) {
+  readonly type: ElemID
+  constructor({ elemID, value, type }: { elemID: ElemID; value: Value; type: ElemID }) {
     super({
       elemID,
-      error: `Invalid value type for ${type.elemID.getFullName()}`,
+      error: `Invalid value type for ${type.getFullName()}`,
       severity: 'Warning',
     })
     this.value = value
@@ -403,7 +408,7 @@ const validateValue = async (
 
   if (isPrimitiveType(type)) {
     if (!primitiveValidators[type.primitive](value)) {
-      return [new InvalidValueTypeValidationError({ elemID, value, type })]
+      return [new InvalidValueTypeValidationError({ elemID, value, type: type.elemID })]
     }
   }
 
@@ -418,7 +423,7 @@ const validateValue = async (
 
   if (isObjectType(type) || isMapType(type)) {
     if (!_.isObjectLike(value)) {
-      return [new InvalidValueTypeValidationError({ elemID, value, type })]
+      return [new InvalidValueTypeValidationError({ elemID, value, type: type.elemID })]
     }
     const objType = toObjectType(type, value)
     return awu(Object.keys(value)).filter(k => objType.fields[k] !== undefined).flatMap(
@@ -574,3 +579,12 @@ export const validateElements = async (
     return validateType(e as TypeElement, elementsSource)
   })
   .toArray()
+
+export const validateElementsAndDependents = async (
+  elements: ReadonlyArray<Element>,
+  elementsSource: ReadOnlyElementsSource
+): Promise<ValidationError[]> => {
+  const getElementsToValidate = (): ReadonlyArray<Element> => elements
+
+  return validateElements(getElementsToValidate(), elementsSource)
+}

@@ -31,6 +31,7 @@ import { DuplicateVariableNameError } from '../merger/internal/variables'
 import { MultiplePrimitiveTypesError } from '../merger/internal/primitives'
 
 import { InvalidStaticFile } from '../workspace/static_files/common'
+import { ValidationError, InvalidValueValidationError, InvalidValueTypeValidationError, InvalidStaticFileError, CircularReferenceValidationError, IllegalReferenceValidationError, UnresolvedReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, isValidationError } from '../validator'
 
 const { awu } = collections.asynciterable
 // There are two issues with naive json stringification:
@@ -72,6 +73,15 @@ const NameToType = {
   DuplicateAnnotationTypeError: DuplicateAnnotationTypeError,
   DuplicateVariableNameError: DuplicateVariableNameError,
   MultiplePrimitiveTypesError: MultiplePrimitiveTypesError,
+  InvalidValueValidationError: InvalidValueValidationError,
+  InvalidValueTypeValidationError: InvalidValueTypeValidationError,
+  InvalidStaticFileError: InvalidStaticFileError,
+  CircularReferenceValidationError: CircularReferenceValidationError,
+  IllegalReferenceValidationError: IllegalReferenceValidationError,
+  UnresolvedReferenceValidationError: UnresolvedReferenceValidationError,
+  MissingRequiredFieldValidationError: MissingRequiredFieldValidationError,
+  RegexMismatchValidationError: RegexMismatchValidationError,
+  InvalidValueRangeValidationError: InvalidValueRangeValidationError,
 }
 const nameToTypeEntries = Object.entries(NameToType)
 const possibleTypes = Object.values(NameToType)
@@ -279,6 +289,66 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
         duplicates: v.duplicates,
       })
     ),
+    InvalidValueValidationError: v => (
+      new InvalidValueValidationError({
+        elemID: reviveElemID(v.elemID),
+        value: v.value,
+        expectedValue: v.expectedValue,
+        fieldName: v.fieldName,
+      })
+    ),
+    InvalidValueTypeValidationError: v => new InvalidValueTypeValidationError({
+      elemID: reviveElemID(v.elemID),
+      value: v.error,
+      type: reviveElemID(v.type),
+    }),
+    InvalidStaticFileError: v => (
+      new InvalidStaticFileError({
+        elemID: reviveElemID(v.elemID),
+        value: v.value,
+      })
+    ),
+    CircularReferenceValidationError: v => (
+      new CircularReferenceValidationError({
+        elemID: reviveElemID(v.elemID),
+        ref: v.ref,
+      })
+    ),
+    IllegalReferenceValidationError: v => (
+      new IllegalReferenceValidationError({
+        elemID: reviveElemID(v.elemID),
+        message: v.message,
+      })
+    ),
+    UnresolvedReferenceValidationError: v => (
+      new UnresolvedReferenceValidationError({
+        elemID: reviveElemID(v.elemID),
+        target: reviveElemID(v.target),
+      })
+    ),
+    MissingRequiredFieldValidationError: v => (
+      new MissingRequiredFieldValidationError({
+        elemID: reviveElemID(v.elemID),
+        fieldName: v.fieldName,
+      })
+    ),
+    RegexMismatchValidationError: v => (
+      new RegexMismatchValidationError({
+        elemID: reviveElemID(v.elemID),
+        fieldName: v.fieldName,
+        regex: v.regex,
+        value: v.value,
+      })
+    ),
+    InvalidValueRangeValidationError: v => (
+      new InvalidValueRangeValidationError({
+        elemID: reviveElemID(v.elemID),
+        fieldName: v.fieldName,
+        value: v.value,
+        maxValue: v.maxValue,
+        minValue: v.minValue,
+      })
+    ),
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReviver = (_k: string, v: any): any => {
@@ -300,6 +370,14 @@ export const deserializeMergeErrors = async (data: string): Promise<MergeError[]
   const { elements: errors } = (await generalDeserialize<MergeError>(data))
   if (errors.some(error => !isMergeError(error))) {
     throw new Error('Deserialization failed. At least one element did not deserialize to a MergeError')
+  }
+  return errors
+}
+
+export const deserializeValidationErrors = async (data: string): Promise<ValidationError[]> => {
+  const { elements: errors } = (await generalDeserialize<ValidationError>(data))
+  if (errors.some(error => !isValidationError(error))) {
+    throw new Error('Deserialization failed. At least one element did not deserialize to a ValidationError')
   }
   return errors
 }

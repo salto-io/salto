@@ -16,11 +16,12 @@
 import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
-  Value, toChange, isRemovalChange, getChangeElement, isAdditionChange, isObjectType, ObjectType, isModificationChange, isObjectTypeChange } from '@salto-io/adapter-api'
+  Value, toChange, isRemovalChange, getChangeElement, isAdditionChange, isObjectType, ObjectType,
+  isModificationChange, isObjectTypeChange, ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections, promises } from '@salto-io/lowerdash'
 import { applyDetailedChanges, safeJsonStringify } from '@salto-io/adapter-utils'
-import { validateElements } from '../validator'
+import { collections, promises, values } from '@salto-io/lowerdash'
+import { ValidationError, validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
@@ -36,7 +37,7 @@ import { MergeError, mergeElements } from '../merger'
 import { RemoteElementSource, ElementsSource, mapReadOnlyElementsSource } from './elements_source'
 import { buildNewMergedElementsAndErrors, getAfterElements } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
-import { serialize, deserializeMergeErrors, deserializeSingleElement } from '../serializer/elements'
+import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
 
 const log = logger(module)
 
@@ -142,6 +143,7 @@ type WorkspaceState = {
   merged: ElementsSource
   errors: RemoteMap<MergeError[]>
   searchableNamesIndex: RemoteMap<boolean>
+  validationErrors: RemoteMap<ValidationError[]>
 }
 
 export const loadWorkspace = async (
@@ -200,7 +202,59 @@ export const loadWorkspace = async (
           serialize: b => safeJsonStringify(b),
           deserialize: async data => JSON.parse(data),
         }),
+        validationErrors: await remoteMapCreator<ValidationError[]>({
+          namespace: getRemoteMapNamespace('validationErrors', actualEnv),
+          serialize: validationErrors => serialize(validationErrors),
+          deserialize: async data => deserializeValidationErrors(data),
+        }),
       }
+
+    const getElementsDependents = async (
+      elemIDs: ElemID[],
+      elementSource: ReadOnlyElementsSource,
+      addedIDs: Set<string>
+    ): Promise<Element[]> => {
+      elemIDs.forEach(id => addedIDs.add(id.getFullName()))
+      const filesWithDependencies = _.uniq(
+        await awu(elemIDs)
+          .flatMap(id => naclFilesSource.getElementReferencedFiles(id))
+          .toArray()
+      )
+
+      const dependentsIDs = _.uniqBy(
+        await awu(filesWithDependencies)
+          .map(filename => naclFilesSource.getParsedNaclFile(filename))
+          .flatMap(naclFile => naclFile?.elements.map(elem => elem.elemID) ?? [])
+          .filter(id => !addedIDs.has(id.getFullName()))
+          .toArray(),
+        id => id.getFullName()
+      )
+
+      const dependents = await awu(dependentsIDs)
+        .map(id => elementSource.get(id))
+        .filter(values.isDefined)
+        .toArray()
+
+      return _.isEmpty(dependents)
+        ? dependents
+        : dependents.concat(await getElementsDependents(dependentsIDs, elementSource, addedIDs))
+    }
+
+    const validateElementsAndDependents = async (
+      elements: ReadonlyArray<Element>,
+      elementSource: ReadOnlyElementsSource,
+      relevantElementIDs: ElemID[],
+    ): Promise<{
+      errors: ValidationError[]
+      validatedElementsIDs: ElemID[]
+    }> => {
+      const dependents = await getElementsDependents(relevantElementIDs, elementSource, new Set())
+      const elementsToValidate = [...elements, ...dependents]
+      return {
+        errors: await validateElements(elementsToValidate, elementSource),
+        validatedElementsIDs: elementsToValidate.map(elem => elem.elemID),
+      }
+    }
 
     // When we load the workspace with a clean cache from existings nacls, we need
     // to add hidden elements from the state since they will not be a part of the nacl
@@ -288,6 +342,29 @@ export const loadWorkspace = async (
       ...mergeData,
     })
     await updateSearchableNamesIndex(changes)
+    const changedElements = changes
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeElement)
+
+    const changeIDs = changes.map(getChangeElement).map(elem => elem.elemID)
+
+    const { errors: validationErrors, validatedElementsIDs } = await validateElementsAndDependents(
+      changedElements,
+      stateToBuild.merged,
+      changeIDs,
+    )
+    const validationErrorsById = await awu(validationErrors)
+      .groupBy(err => err.elemID.createTopLevelParentID().parent.getFullName())
+
+    const errorsToUpdate = Object.entries(validationErrorsById)
+      .map(([elemID, errors]) => ({ key: elemID, value: errors }))
+
+    const errorsToDelete = validatedElementsIDs
+      .map(id => id.getFullName())
+      .filter(fullname => _.isEmpty(validationErrorsById[fullname]))
+
+    await stateToBuild.validationErrors.setAll(errorsToUpdate)
+    await stateToBuild.validationErrors.deleteAll(errorsToDelete)
 
     return stateToBuild
   }
@@ -418,15 +495,11 @@ export const loadWorkspace = async (
   }
 
   const errors = async (validate = true): Promise<Errors> => {
-    const resolvedElements = await elements()
+    const currentState = await getWorkspaceState()
     const errorsFromSource = await (await getLoadedNaclFilesSource()).getErrors()
-
     const validationErrors = validate
-      ? await validateElements(
-        await awu(await resolvedElements.merged.getAll()).toArray(),
-        resolvedElements.merged
-      ) : []
-
+      ? await awu(currentState.validationErrors.values()).flat().toArray()
+      : []
     _(validationErrors)
       .groupBy(error => error.constructor.name)
       .entries()
@@ -438,7 +511,7 @@ export const loadWorkspace = async (
       ...errorsFromSource,
       merge: [
         ...errorsFromSource.merge,
-        ...(await awu(resolvedElements.errors.values()).flat().toArray()),
+        ...(await awu(currentState.errors.values()).flat().toArray()),
       ],
       validation: validationErrors,
     })

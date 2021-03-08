@@ -13,15 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { SuiteAppClient } from '../../src/client/suiteapp_client/suiteapp_client'
+import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import detector from '../../src/changes_detector/changes_detectors/workflow'
 import { Change } from '../../src/changes_detector/types'
+import NetsuiteClient from '../../src/client/client'
+import mockSdfClient from '../client/sdf_client'
 
 describe('workflow', () => {
   const runSavedSearchQueryMock = jest.fn()
-  const client = {
+  const suiteAppClient = {
     runSavedSearchQuery: runSavedSearchQueryMock,
   } as unknown as SuiteAppClient
+
+  const client = new NetsuiteClient(mockSdfClient(), suiteAppClient)
 
 
   describe('query success', () => {

@@ -14,12 +14,14 @@
 * limitations under the License.
 */
 
-import { SuiteAppClient } from '../../src/client/suiteapp_client/suiteapp_client'
+import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import { NetsuiteQuery } from '../../src/query'
 import * as fileCabinetDetector from '../../src/changes_detector/changes_detectors/file_cabinet'
 import { customRecordTypeDetector } from '../../src/changes_detector/changes_detectors/custom_type'
 import scriptDetector from '../../src/changes_detector/changes_detectors/script'
 import { getChangedObjects } from '../../src/changes_detector/changes_detector'
+import NetsuiteClient from '../../src/client/client'
+import mockSdfClient from '../client/sdf_client'
 
 describe('changes_detector', () => {
   const query = {
@@ -31,10 +33,11 @@ describe('changes_detector', () => {
   const getChangesFoldersMock = jest.spyOn(fileCabinetDetector, 'getChangedFolders').mockResolvedValue([])
 
   const runSavedSearchQueryMock = jest.fn()
-  const client = {
+  const suiteAppClient = {
     runSavedSearchQuery: runSavedSearchQueryMock,
   } as unknown as SuiteAppClient
 
+  const client = new NetsuiteClient(mockSdfClient(), suiteAppClient)
   beforeEach(() => {
     jest.resetAllMocks()
     getCustomRecordTypeChangesMock.mockResolvedValue([

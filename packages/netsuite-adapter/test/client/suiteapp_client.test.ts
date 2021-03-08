@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import axios from 'axios'
-import Bottleneck from 'bottleneck'
 import _ from 'lodash'
-import { SuiteAppClient } from '../../src/client/suiteapp_client/suiteapp_client'
+import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 
 jest.mock('axios')
 
@@ -28,10 +27,9 @@ describe('SuiteAppClient', () => {
     client = new SuiteAppClient({
       credentials: {
         accountId: 'ACCOUNT_ID',
-        tokenId: 'tokenId',
-        tokenSecret: 'tokenSecret',
+        suiteAppTokenId: 'tokenId',
+        suiteAppTokenSecret: 'tokenSecret',
       },
-      callsLimiter: new Bottleneck(),
     })
   })
 
@@ -288,6 +286,35 @@ describe('SuiteAppClient', () => {
         postMock.mockResolvedValue({ data: { status: 'success', results: {} } })
         expect(await client.getSystemInformation()).toBeUndefined()
       })
+    })
+  })
+
+  describe('validateCredentials', () => {
+    it('should fail when request fails', async () => {
+      postMock.mockRejectedValue(new Error())
+      await expect(SuiteAppClient.validateCredentials({
+        accountId: 'ACCOUNT_ID',
+        suiteAppTokenId: 'tokenId',
+        suiteAppTokenSecret: 'tokenSecret',
+      })).rejects.toThrow()
+    })
+
+    it('should succeed', async () => {
+      postMock.mockResolvedValue({
+        data: {
+          status: 'success',
+          results: {
+            appVersion: [0, 1, 2],
+            time: '2021-02-22T18:55:17.949Z',
+          },
+        },
+      })
+
+      await expect(SuiteAppClient.validateCredentials({
+        accountId: 'ACCOUNT_ID',
+        suiteAppTokenId: 'tokenId',
+        suiteAppTokenSecret: 'tokenSecret',
+      })).resolves.toBeUndefined()
     })
   })
 })

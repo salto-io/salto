@@ -20,7 +20,6 @@ import {
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
-import NetsuiteClient from './client/client'
 import {
   createInstanceElement, getLookUpName, toCustomizationInfo,
 } from './transformer'
@@ -40,6 +39,7 @@ import {
 } from './config'
 import { getAllReferencedInstances, getRequiredReferencedInstances } from './reference_dependencies'
 import { andQuery, buildNetsuiteQuery, NetsuiteQueryParameters, notQuery } from './query'
+import NetsuiteClient from './client/client'
 
 const { makeArray } = collections.array
 

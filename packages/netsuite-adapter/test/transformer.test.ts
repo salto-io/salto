@@ -25,10 +25,10 @@ import {
 } from '../src/constants'
 import { customTypes, fileCabinetTypes } from '../src/types'
 import {
-  convertToCustomTypeInfo, convertToXmlContent, CustomTypeInfo, FileCustomizationInfo,
-  FolderCustomizationInfo, isFileCustomizationInfo, isFolderCustomizationInfo,
-  TemplateCustomTypeInfo,
-} from '../src/client/client'
+  convertToCustomTypeInfo, convertToXmlContent,
+} from '../src/client/sdf_client'
+import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../src/client/types'
+import { isFileCustomizationInfo, isFolderCustomizationInfo } from '../src/client/utils'
 
 const removeLineBreaks = (xmlContent: string): string => xmlContent.replace(/\n\s*/g, '')
 

@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import createClient from './client/client'
+import createClient from './client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
 import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
 import {
@@ -28,13 +28,13 @@ import {
   FETCH_TYPE_TIMEOUT_IN_MINUTES, INTEGRATION, CLIENT_CONFIG, FETCH_TARGET,
 } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
-import {
-  convertToCustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo,
-} from '../src/client/client'
+import { convertToCustomTypeInfo } from '../src/client/sdf_client'
 import { FilterCreator } from '../src/filter'
 import { configType, getConfigFromConfigChanges } from '../src/config'
 import { mockGetElemIdFunc, MockInterface } from './utils'
 import * as referenceDependenciesModule from '../src/reference_dependencies'
+import NetsuiteClient from '../src/client/client'
+import { FileCustomizationInfo, FolderCustomizationInfo } from '../src/client/types'
 
 jest.mock('../src/config', () => ({
   ...jest.requireActual<{}>('../src/config'),
@@ -73,7 +73,7 @@ describe('Adapter', () => {
     },
   }
   const netsuiteAdapter = new NetsuiteAdapter({
-    client,
+    client: new NetsuiteClient(client),
     elementsSource: buildElementsSourceFromElements([]),
     filtersCreators: [firstDummyFilter, secondDummyFilter],
     config,
@@ -167,7 +167,7 @@ describe('Adapter', () => {
         },
       }
       const adapter = new NetsuiteAdapter({
-        client,
+        client: new NetsuiteClient(client),
         elementsSource: buildElementsSourceFromElements([]),
         filtersCreators: [firstDummyFilter, secondDummyFilter],
         config: conf,
@@ -445,7 +445,7 @@ describe('Adapter', () => {
         [DEPLOY_REFERENCED_ELEMENTS]: true,
       }
       const netsuiteAdapterWithDeployReferencedElements = new NetsuiteAdapter({
-        client,
+        client: new NetsuiteClient(client),
         elementsSource: buildElementsSourceFromElements([]),
         filtersCreators: [firstDummyFilter, secondDummyFilter],
         config: configWithDeployReferencedElements,

@@ -13,18 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { SuiteAppClient } from '../../src/client/suiteapp_client/suiteapp_client'
+import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import detector from '../../src/changes_detector/changes_detectors/role'
 import { Change } from '../../src/changes_detector/types'
+import mockSdfClient from '../client/sdf_client'
+import NetsuiteClient from '../../src/client/client'
 
 describe('role', () => {
   const runSuiteQLMock = jest.fn()
   const runSavedSearchQueryMock = jest.fn()
-  const client = {
+  const suiteAppClient = {
     runSuiteQL: runSuiteQLMock,
     runSavedSearchQuery: runSavedSearchQueryMock,
   } as unknown as SuiteAppClient
 
+  const client = new NetsuiteClient(mockSdfClient(), suiteAppClient)
 
   it('should not return permission changes on permission query error', async () => {
     runSuiteQLMock.mockResolvedValueOnce([

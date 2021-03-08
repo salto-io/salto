@@ -20,18 +20,19 @@ import {
 import * as cli from '@salto-io/suitecloud-cli'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
-import NetsuiteClient from '../src/client/client'
+import SdfClient from '../src/client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
 import {
   TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, SDF_CONCURRENCY_LIMIT,
   DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES, CLIENT_CONFIG,
-  MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
-  FETCH_TARGET,
-  SKIP_LIST,
+  MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST, SUITEAPP_CLIENT_CONFIG,
+  SUITEAPP_CONCURRENCY_LIMIT,
 } from '../src/constants'
 import { mockGetElemIdFunc } from './utils'
+import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 
-jest.mock('../src/client/client')
+jest.mock('../src/client/sdf_client')
+jest.mock('../src/client/suiteapp_client/suiteapp_client')
 jest.mock('../src/adapter')
 jest.mock('@salto-io/suitecloud-cli')
 
@@ -50,6 +51,8 @@ describe('NetsuiteAdapter creator', () => {
       accountId: 'foo',
       tokenId: 'bar',
       tokenSecret: 'secret',
+      suiteAppTokenId: '',
+      suiteAppTokenSecret: '',
     },
   )
 
@@ -77,10 +80,73 @@ describe('NetsuiteAdapter creator', () => {
   )
 
   describe('validateCredentials', () => {
-    it('should call validateCredentials with the correct credentials', async () => {
+    const suiteAppClientValidateMock = jest.spyOn(SuiteAppClient, 'validateCredentials')
+    const netsuiteValidateMock = jest.spyOn(SdfClient, 'validateCredentials')
+    beforeEach(() => {
       jest.mock('@salto-io/suitecloud-cli', () => undefined, { virtual: true })
+      suiteAppClientValidateMock.mockReset()
+      netsuiteValidateMock.mockReset()
+    })
+
+    it('should call validateCredentials with the correct credentials', async () => {
       await adapter.validateCredentials(credentials)
-      expect(NetsuiteClient.validateCredentials).toHaveBeenCalledWith(credentials.value)
+      expect(netsuiteValidateMock).toHaveBeenCalledWith(expect.objectContaining({
+        accountId: 'foo',
+        tokenId: 'bar',
+        tokenSecret: 'secret',
+      }))
+      expect(suiteAppClientValidateMock).not.toHaveBeenCalledWith()
+    })
+
+    it('should call validateCredentials of SuiteAppClient when SuiteApp credentials were passed', async () => {
+      suiteAppClientValidateMock.mockResolvedValue(undefined)
+
+      const cred = credentials.clone()
+      cred.value = {
+        ...cred.value,
+        suiteAppTokenId: 'aaa',
+        suiteAppTokenSecret: 'bbb',
+      }
+
+      await adapter.validateCredentials(cred)
+      expect(netsuiteValidateMock).toHaveBeenCalledWith(expect.objectContaining({
+        accountId: 'foo',
+        tokenId: 'bar',
+        tokenSecret: 'secret',
+      }))
+
+      expect(suiteAppClientValidateMock).toHaveBeenCalledWith({
+        accountId: 'foo',
+        suiteAppTokenId: 'aaa',
+        suiteAppTokenSecret: 'bbb',
+      })
+    })
+
+    it('SDF validation failure should throw SDF error', async () => {
+      suiteAppClientValidateMock.mockResolvedValue(undefined)
+      netsuiteValidateMock.mockRejectedValue(new Error(''))
+
+      const cred = credentials.clone()
+      cred.value = {
+        ...cred.value,
+        suiteAppTokenId: 'aaa',
+        suiteAppTokenSecret: 'bbb',
+      }
+
+      await expect(adapter.validateCredentials(cred)).rejects.toThrow('SDF Authentication failed.')
+    })
+
+    it('SuiteApp validation failure should throw SuiteApp error', async () => {
+      suiteAppClientValidateMock.mockRejectedValue(new Error(''))
+
+      const cred = credentials.clone()
+      cred.value = {
+        ...cred.value,
+        suiteAppTokenId: 'aaa',
+        suiteAppTokenSecret: 'bbb',
+      }
+
+      await expect(adapter.validateCredentials(cred)).rejects.toThrow('SuiteApp Authentication failed.')
     })
   })
 
@@ -91,9 +157,81 @@ describe('NetsuiteAdapter creator', () => {
         config,
         elementsSource: buildElementsSourceFromElements([]),
       })
-      expect(NetsuiteClient).toHaveBeenCalledWith({
-        credentials: credentials.value,
+      expect(SdfClient).toHaveBeenCalledWith({
+        credentials: {
+          accountId: 'foo',
+          tokenId: 'bar',
+          tokenSecret: 'secret',
+          suiteAppTokenId: undefined,
+          suiteAppTokenSecret: undefined,
+        },
         config: clientConfig,
+      })
+    })
+  })
+
+  describe('suiteapp client creation', () => {
+    it('should not create the client if credentials were not passed', () => {
+      adapter.operations({
+        credentials,
+        config,
+        elementsSource: buildElementsSourceFromElements([]),
+      })
+      expect(SuiteAppClient).not.toHaveBeenCalled()
+    })
+
+    it('should create the client if credentials were passed', () => {
+      const cred = credentials.clone()
+      cred.value = {
+        ...cred.value,
+        suiteAppTokenId: 'aaa',
+        suiteAppTokenSecret: 'bbb',
+      }
+
+      adapter.operations({
+        credentials: cred,
+        config,
+        elementsSource: buildElementsSourceFromElements([]),
+      })
+      expect(SuiteAppClient).toHaveBeenCalledWith({
+        credentials: {
+          accountId: 'foo',
+          suiteAppTokenId: 'aaa',
+          suiteAppTokenSecret: 'bbb',
+        },
+      })
+    })
+
+    it('should pass the config to client if passed', () => {
+      const cred = credentials.clone()
+      cred.value = {
+        ...cred.value,
+        suiteAppTokenId: 'aaa',
+        suiteAppTokenSecret: 'bbb',
+      }
+
+      const configuration = config.clone()
+      configuration.value = {
+        ...config.value,
+        [SUITEAPP_CLIENT_CONFIG]: {
+          [SUITEAPP_CONCURRENCY_LIMIT]: 5,
+        },
+      }
+
+      adapter.operations({
+        credentials: cred,
+        config: configuration,
+        elementsSource: buildElementsSourceFromElements([]),
+      })
+      expect(SuiteAppClient).toHaveBeenCalledWith({
+        credentials: {
+          accountId: 'foo',
+          suiteAppTokenId: 'aaa',
+          suiteAppTokenSecret: 'bbb',
+        },
+        config: {
+          [SUITEAPP_CONCURRENCY_LIMIT]: 5,
+        },
       })
     })
   })

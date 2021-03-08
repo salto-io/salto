@@ -13,17 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { SuiteAppClient } from '../../src/client/suiteapp_client/suiteapp_client'
+import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import { customFieldDetector as detector } from '../../src/changes_detector/changes_detectors/custom_type'
 import { Change } from '../../src/changes_detector/types'
+import NetsuiteClient from '../../src/client/client'
+import mockSdfClient from '../client/sdf_client'
 
 describe('custom_field', () => {
   const runSuiteQLMock = jest.fn()
-  const client = {
+  const suiteAppClient = {
     runSuiteQL: runSuiteQLMock,
   } as unknown as SuiteAppClient
 
-
+  const client = new NetsuiteClient(mockSdfClient(), suiteAppClient)
   describe('query success', () => {
     let results: Change[]
     beforeEach(async () => {

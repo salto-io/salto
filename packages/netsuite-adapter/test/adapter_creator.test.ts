@@ -29,7 +29,7 @@ import {
   SUITEAPP_CONCURRENCY_LIMIT,
 } from '../src/constants'
 import { mockGetElemIdFunc } from './utils'
-import { SuiteAppClient } from '../src/client/suiteapp_client/suiteapp_client'
+import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 
 jest.mock('../src/client/sdf_client')
 jest.mock('../src/client/suiteapp_client/suiteapp_client')

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { NetsuiteClient } from '../client/client'
+import NetsuiteClient from '../client/client'
 
 export type ChangedObject = {
   type: 'object'

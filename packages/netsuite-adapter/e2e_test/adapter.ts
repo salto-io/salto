@@ -24,7 +24,7 @@ import { NetsuiteConfig } from '../src/config'
 import { CLIENT_CONFIG } from '../src/constants'
 import { mockGetElemIdFunc } from '../test/utils'
 import { credsSpec } from './jest_environment'
-import { NetsuiteClient } from '../src/client/client'
+import NetsuiteClient from '../src/client/client'
 
 
 const log = logger(module)

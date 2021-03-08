@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { NetsuiteClient } from '../../client/client'
+import NetsuiteClient from '../../client/client'
 import { formatSuiteQLDate } from '../formats'
 import { ChangedObject, DateRange, TypeChangesDetector } from '../types'
 

@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { SuiteAppClient } from '../../src/client/suiteapp_client/suiteapp_client'
+import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import { getChangedFiles, getChangedFolders } from '../../src/changes_detector/changes_detectors/file_cabinet'
 import { Change } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
-import { NetsuiteClient } from '../../src/client/client'
+import NetsuiteClient from '../../src/client/client'
 
 describe('file_cabinet', () => {
   const runSuiteQLMock = jest.fn()

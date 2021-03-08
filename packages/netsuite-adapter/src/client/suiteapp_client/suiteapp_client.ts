@@ -35,7 +35,7 @@ const PAGE_SIZE = 1000
 const log = logger(module)
 
 
-export class SuiteAppClient {
+export default class SuiteAppClient {
   private credentials: SuiteAppCredentials
   private callsLimiter: Bottleneck
   private suiteQLUrl: URL

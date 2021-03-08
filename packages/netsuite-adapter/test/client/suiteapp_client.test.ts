@@ -15,7 +15,7 @@
 */
 import axios from 'axios'
 import _ from 'lodash'
-import { SuiteAppClient } from '../../src/client/suiteapp_client/suiteapp_client'
+import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 
 jest.mock('axios')
 

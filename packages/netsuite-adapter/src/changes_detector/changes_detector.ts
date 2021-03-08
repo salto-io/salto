@@ -24,7 +24,7 @@ import workflowDetector from './changes_detectors/workflow'
 import savedSearchDetector from './changes_detectors/savedsearch'
 import { formatSavedSearchDate } from './formats'
 import { ChangedType, DateRange } from './types'
-import { NetsuiteClient } from '../client/client'
+import NetsuiteClient from '../client/client'
 
 const log = logger(module)
 

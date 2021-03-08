@@ -34,9 +34,9 @@ import {
 } from './constants'
 import { validateParameters } from './query'
 import { Credentials } from './client/credentials'
-import { SuiteAppClient } from './client/suiteapp_client/suiteapp_client'
+import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import SdfClient from './client/sdf_client'
-import { NetsuiteClient } from './client/client'
+import NetsuiteClient from './client/client'
 
 const log = logger(module)
 const { makeArray } = collections.array

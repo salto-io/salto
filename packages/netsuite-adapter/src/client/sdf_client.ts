@@ -474,15 +474,18 @@ export default class SdfClient {
       timeoutInMinutes
     )
     const importResult = actionResult.data as ImportObjectsResult
-    const failedTypeToInstances = new collections.map.DefaultMap<string, string[]>(() => [])
-
-    importResult.failedImports.forEach(failedImport => {
-      if (failedImport.customObject.result.message.includes('unexpected error')) {
-        log.debug('Failed to fetch (%s) instance due to SDF unexpected error: (%s)', failedImport.customObject.type, failedImport.customObject.id)
-        failedTypeToInstances.get(failedImport.customObject.type).push(failedImport.customObject.id)
-      }
-    })
-    return Object.fromEntries(failedTypeToInstances.entries())
+    return _(importResult.failedImports)
+      .filter(failedImport => {
+        if (failedImport.customObject.result.message.includes('unexpected error')) {
+          log.debug('Failed to fetch (%s) instance with id (%s) due to SDF unexpected error',
+            failedImport.customObject.type, failedImport.customObject.id)
+          return true
+        }
+        return false
+      })
+      .groupBy(failedImport => failedImport.customObject.type)
+      .mapValues(failedImports => failedImports.map(failedImport => failedImport.customObject.id))
+      .value()
   }
 
   async listInstances(

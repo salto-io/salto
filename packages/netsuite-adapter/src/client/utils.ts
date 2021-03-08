@@ -39,7 +39,7 @@ export const mergeTypeToInstances = (
   _.mergeWith(
     {},
     ...typeToInstances,
-    (objValue: string[], srcValue: string[]) => (
+    (objValue: string[] | undefined, srcValue: string[]) => (
       objValue ? [...objValue, ...srcValue] : srcValue
     )
   )

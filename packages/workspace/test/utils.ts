@@ -100,7 +100,7 @@ export const persistentMockCreateRemoteMap = (): RemoteMapCreator => {
         maps[opts.namespace] = {} as Record<K, string>
       },
       get,
-      getMultiple: async (keys: K[]): Promise<(T | undefined)[]> => Promise.all(keys.map(get)),
+      getMany: async (keys: K[]): Promise<(T | undefined)[]> => Promise.all(keys.map(get)),
       has: async (key: K): Promise<boolean> => key in maps[opts.namespace],
       set: async (key: K, value: T): Promise<void> => {
         maps[opts.namespace][key] = opts.serialize(value)

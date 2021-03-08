@@ -91,19 +91,19 @@ describe('test operations on remote db', () => {
       expect(element).toBeUndefined()
     })
   })
-  describe('getMultiple', () => {
+  describe('getMany', () => {
     it('should get an item after it is set', async () => {
       await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
       const anotherElemID = 'dummy.bla'
       await remoteMap.set(anotherElemID, elements[0])
-      expect(await remoteMap.getMultiple([elements[0].elemID.getFullName(), anotherElemID]))
+      expect(await remoteMap.getMany([elements[0].elemID.getFullName(), anotherElemID]))
         .toEqual([elements[0], elements[0]])
     })
 
     it('get non existent key', async () => {
       await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
       const id = 'not.exist'
-      expect(await remoteMap.getMultiple([id, elements[0].elemID.getFullName()]))
+      expect(await remoteMap.getMany([id, elements[0].elemID.getFullName()]))
         .toEqual([undefined, elements[0]])
     })
   })

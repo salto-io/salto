@@ -40,6 +40,16 @@ describe('remote map', () => {
         expect(await inMemRemoteMap.get('not-exist')).toEqual(undefined)
       })
     })
+    describe('getMany', () => {
+      it('should return correct value', async () => {
+        expect(await inMemRemoteMap.getMany([testKey1, testKey2]))
+          .toEqual([testVal1, testVal2])
+      })
+      it('should return undefined if key does not exist', async () => {
+        expect(await inMemRemoteMap.getMany(['not-exist', testKey1]))
+          .toEqual([undefined, testVal1])
+      })
+    })
     describe('has', () => {
       it('should return true if key exists', async () => {
         expect(await inMemRemoteMap.has(testKey1)).toEqual(true)

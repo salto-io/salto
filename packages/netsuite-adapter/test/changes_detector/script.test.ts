@@ -18,6 +18,7 @@ import detector, { SCRIPT_TYPES } from '../../src/changes_detector/changes_detec
 import { Change } from '../../src/changes_detector/types'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
+import { createDateRange } from '../../src/changes_detector/date_range'
 
 describe('script', () => {
   const runSuiteQLMock = jest.fn()
@@ -45,7 +46,7 @@ describe('script', () => {
 
       results = await detector.getChanges(
         client,
-        { start: new Date('2021-01-11T18:55:17.949Z'), end: new Date('2021-02-22T18:55:17.949Z') }
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
       )
     })
     it('should return the changes', () => {
@@ -75,7 +76,7 @@ describe('script', () => {
 
       results = await detector.getChanges(
         client,
-        { start: new Date('2021-01-11T18:55:17.949Z'), end: new Date('2021-02-22T18:55:17.949Z') }
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
       )
     })
     it('should return the changes', () => {
@@ -114,7 +115,7 @@ describe('script', () => {
   it('return nothing when roles query fails', async () => {
     runSuiteQLMock.mockResolvedValue(undefined)
     expect(
-      await detector.getChanges(client, { start: new Date(), end: new Date() })
+      await detector.getChanges(client, createDateRange(new Date(), new Date()))
     ).toHaveLength(0)
   })
 })

@@ -15,14 +15,13 @@
 */
 import path from 'path'
 import { logger } from '@salto-io/logging'
-import { formatSuiteQLDateRange } from '../formats'
 import { FileCabinetChangesDetector } from '../types'
 
 const log = logger(module)
 
 
 export const getChangedFiles: FileCabinetChangesDetector = async (client, dateRange) => {
-  const [startDate, endDate] = formatSuiteQLDateRange(dateRange)
+  const [startDate, endDate] = dateRange.toSuiteQLRange()
 
   const results = await client.runSuiteQL(`
     SELECT mediaitemfolder.appfolder, file.name, file.id
@@ -51,7 +50,7 @@ export const getChangedFiles: FileCabinetChangesDetector = async (client, dateRa
 }
 
 export const getChangedFolders: FileCabinetChangesDetector = async (client, dateRange) => {
-  const [startDate, endDate] = formatSuiteQLDateRange(dateRange)
+  const [startDate, endDate] = dateRange.toSuiteQLRange()
 
   const results = await client.runSuiteQL(`
     SELECT appfolder, id

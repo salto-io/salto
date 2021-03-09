@@ -15,12 +15,11 @@
 */
 import { ObjectType, Element, ElemID, BuiltinTypes, CORE_ANNOTATIONS, InstanceElement, ReadOnlyElementsSource, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { NETSUITE, RECORDS_PATH, TYPES_PATH } from './constants'
+import { NETSUITE } from './constants'
 
 const log = logger(module)
 
-// The random suffix is to avoid collisions with netsuite types
-export const SERVER_TIME_TYPE_NAME = 'server_time5a2ca8777a7743c3814ec83e3c4f0147'
+export const SERVER_TIME_TYPE_NAME = 'server_time'
 
 
 export const createServerTimeElements = (time: Date): Element[] => {
@@ -34,14 +33,13 @@ export const createServerTimeElements = (time: Date): Element[] => {
     annotations: {
       [CORE_ANNOTATIONS.HIDDEN]: true,
     },
-    path: [NETSUITE, TYPES_PATH, SERVER_TIME_TYPE_NAME],
   })
 
   const instance = new InstanceElement(
     ElemID.CONFIG_NAME,
     type,
     { serverTime: time.toJSON() },
-    [NETSUITE, RECORDS_PATH, SERVER_TIME_TYPE_NAME],
+    undefined,
     { [CORE_ANNOTATIONS.HIDDEN]: true },
   )
 
@@ -54,15 +52,16 @@ export const getLastServerTime = async (elementsSource: ReadOnlyElementsSource):
   const serverTimeElement = await elementsSource.get(new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME))
 
   if (!isInstanceElement(serverTimeElement)) {
-    log.info('Server time not found in elements source')
+    log.warn('Server time not found in elements source')
     return undefined
   }
 
-  if (serverTimeElement.value.serverTime === undefined) {
-    log.info('serverTime value does not exists in server time instance')
+  const { serverTime } = serverTimeElement.value
+  if (serverTime === undefined) {
+    log.warn('serverTime value does not exists in server time instance')
     return undefined
   }
 
-  log.info(`Server time is ${serverTimeElement.value.serverTime}`)
-  return new Date(serverTimeElement.value.serverTime)
+  log.info(`Last server time is ${serverTime}`)
+  return new Date(serverTime)
 }

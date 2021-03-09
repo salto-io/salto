@@ -18,6 +18,7 @@ import { customRecordTypeDetector as detector } from '../../src/changes_detector
 import { Change } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
+import { createDateRange } from '../../src/changes_detector/date_range'
 
 describe('custom_record_type', () => {
   const runSuiteQLMock = jest.fn()
@@ -34,7 +35,7 @@ describe('custom_record_type', () => {
       runSuiteQLMock.mockResolvedValue([{ scriptid: 'a' }, { scriptid: 'b' }])
       results = await detector.getChanges(
         client,
-        { start: new Date('2021-01-11T18:55:17.949Z'), end: new Date('2021-02-22T18:55:17.949Z') }
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
       )
     })
     it('should return the changes', () => {
@@ -60,7 +61,7 @@ describe('custom_record_type', () => {
       runSuiteQLMock.mockResolvedValue([{ scriptid: 'a' }, { scriptid: 'b' }, { qqq: 'b' }, { scriptid: {} }])
       results = await detector.getChanges(
         client,
-        { start: new Date('2021-01-11T18:55:17.949Z'), end: new Date('2021-02-22T18:55:17.949Z') }
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
       )
     })
     it('should return the changes without the invalid results', () => {
@@ -73,7 +74,7 @@ describe('custom_record_type', () => {
   it('return nothing when query fails', async () => {
     runSuiteQLMock.mockResolvedValue(undefined)
     expect(
-      await detector.getChanges(client, { start: new Date(), end: new Date() })
+      await detector.getChanges(client, createDateRange(new Date(), new Date()))
     ).toHaveLength(0)
   })
 })

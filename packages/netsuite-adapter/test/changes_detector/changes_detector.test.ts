@@ -22,6 +22,7 @@ import scriptDetector from '../../src/changes_detector/changes_detectors/script'
 import { getChangedObjects } from '../../src/changes_detector/changes_detector'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
+import { createDateRange } from '../../src/changes_detector/date_range'
 
 describe('changes_detector', () => {
   const query = {
@@ -64,7 +65,7 @@ describe('changes_detector', () => {
     await getChangedObjects(
       client,
       query,
-      { start: new Date('2021-01-11T18:55:17.949Z'), end: new Date('2021-02-22T18:55:17.949Z') }
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
     )
     expect(getCustomRecordTypeChangesMock).toHaveBeenCalled()
     expect(getScriptChangesMock).not.toHaveBeenCalled()
@@ -74,7 +75,7 @@ describe('changes_detector', () => {
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
-      { start: new Date('2021-01-11T18:55:17.949Z'), end: new Date('2021-02-22T18:55:17.949Z') }
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
     )
     expect(changedObjectsQuery.isFileMatch('/path/to/file')).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/path/to/file2')).toBeFalsy()
@@ -96,7 +97,7 @@ describe('changes_detector', () => {
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
-      { start: new Date('2021-01-11T18:55:17.949Z'), end: new Date('2021-02-22T18:55:17.949Z') }
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
     )
     expect(changedObjectsQuery.isFileMatch('/path/to/file')).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/path/to/file2')).toBeTruthy()

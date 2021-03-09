@@ -31,6 +31,8 @@ export type Change = ChangedType | ChangedObject
 export type DateRange = {
   start: Date
   end: Date
+  toSuiteQLRange: () => [string, string]
+  toSavedSearchRange: () => [string, string]
 }
 
 export type TypeChangesDetector = {

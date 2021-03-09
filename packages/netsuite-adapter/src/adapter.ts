@@ -41,6 +41,7 @@ import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, n
 import { createServerTimeElements, getLastServerTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import NetsuiteClient from './client/client'
+import { createDateRange } from './changes_detector/date_range'
 
 const { makeArray } = collections.array
 
@@ -130,7 +131,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ? andQuery(changedObjectsQuery, fetchQuery)
       : fetchQuery
 
-    const isPartial = this.fetchTarget !== undefined || changedObjectsQuery !== undefined
+    const isPartial = this.fetchTarget !== undefined
 
     const getCustomObjectsResult = this.client.getCustomObjects(
       Object.keys(customTypes),
@@ -172,7 +173,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     Promise<{ serverTimeElements: Element[]; changedObjectsQuery?: NetsuiteQuery }> {
     const sysInfo = await this.client.getSystemInformation()
     if (sysInfo === undefined) {
-      log.debug('Failed to get sysInfo, skipping SuiteApp operations')
+      log.warn('Failed to get sysInfo, skipping SuiteApp operations')
       return { serverTimeElements: [] }
     }
 
@@ -189,7 +190,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const changedObjectsQuery = await getChangedObjects(
       this.client,
       fetchQuery,
-      { start: lastFetchTime, end: sysInfo.time }
+      createDateRange(lastFetchTime, sysInfo.time)
     )
 
     return { serverTimeElements: [], changedObjectsQuery }

@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { formatSavedSearchDateRange, formatSuiteQLDateRange } from '../formats'
 import { ChangedObject, TypeChangesDetector } from '../types'
 
 const log = logger(module)
@@ -78,7 +77,7 @@ const parsePermissionRolesChanges = (
 
 const changesDetector: TypeChangesDetector = {
   getChanges: async (client, dateRange) => {
-    const [startDate, endDate] = formatSuiteQLDateRange(dateRange)
+    const [startDate, endDate] = dateRange.toSuiteQLRange()
 
     const rolesChangesPromise = client.runSuiteQL(`
       SELECT role.scriptid, role.id
@@ -90,7 +89,7 @@ const changesDetector: TypeChangesDetector = {
     const permissionChangesPromise = client.runSavedSearchQuery({
       type: 'role',
       columns: ['internalid'],
-      filters: [['permchangedate', 'within', ...formatSavedSearchDateRange(dateRange)]],
+      filters: [['permchangedate', 'within', ...dateRange.toSavedSearchRange()]],
     })
 
     const allRolesPromise = client.runSuiteQL(`

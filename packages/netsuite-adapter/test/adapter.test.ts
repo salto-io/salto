@@ -600,10 +600,10 @@ describe('Adapter', () => {
         expect(getChangedObjectsMock).toHaveBeenCalledWith(
           expect.any(Object),
           expect.any(Object),
-          {
+          expect.objectContaining({
             start: new Date('1970-01-01T00:00:00.500Z'),
             end: new Date(1000),
-          },
+          }),
         )
       })
 

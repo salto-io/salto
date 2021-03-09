@@ -22,7 +22,6 @@ import scriptDetector from './changes_detectors/script'
 import roleDetector from './changes_detectors/role'
 import workflowDetector from './changes_detectors/workflow'
 import savedSearchDetector from './changes_detectors/savedsearch'
-import { formatSavedSearchDateRange } from './formats'
 import { ChangedType, DateRange } from './types'
 import NetsuiteClient from '../client/client'
 
@@ -38,7 +37,7 @@ export const DETECTORS = [
   savedSearchDetector,
 ]
 
-const SUPPORTED_TYPES = new Set(DETECTORS.map(detector => detector.getTypes()).flat())
+const SUPPORTED_TYPES = new Set(DETECTORS.flatMap(detector => detector.getTypes()))
 
 const getChangedInternalIds = async (client: NetsuiteClient, dateRange: DateRange):
 Promise<Set<number> | undefined> => {
@@ -49,7 +48,7 @@ Promise<Set<number> | undefined> => {
   const results = await client.runSavedSearchQuery({
     type: 'systemnote',
     filters: [
-      ['date', 'within', ...formatSavedSearchDateRange(dateRange)],
+      ['date', 'within', ...dateRange.toSavedSearchRange()],
     ],
     columns: ['recordid'],
   })

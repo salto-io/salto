@@ -18,6 +18,7 @@ import detector from '../../src/changes_detector/changes_detectors/workflow'
 import { Change } from '../../src/changes_detector/types'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
+import { createDateRange } from '../../src/changes_detector/date_range'
 
 describe('workflow', () => {
   const runSavedSearchQueryMock = jest.fn()
@@ -36,7 +37,7 @@ describe('workflow', () => {
         runSavedSearchQueryMock.mockResolvedValue([{ recordid: 'a' }])
         results = await detector.getChanges(
           client,
-          { start: new Date('2021-01-11T18:55:17.949Z'), end: new Date('2021-02-22T06:55:17.949Z') }
+          createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T06:55:17.949Z'))
         )
       })
       it('should return the type', () => {
@@ -65,7 +66,7 @@ describe('workflow', () => {
         runSavedSearchQueryMock.mockResolvedValue([])
         results = await detector.getChanges(
           client,
-          { start: new Date('2021-01-11T18:55:17.949Z'), end: new Date('2021-02-22T18:55:17.949Z') }
+          createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
         )
       })
       it('should return nothing', () => {
@@ -77,7 +78,7 @@ describe('workflow', () => {
   it('return nothing when query fails', async () => {
     runSavedSearchQueryMock.mockResolvedValue(undefined)
     expect(
-      await detector.getChanges(client, { start: new Date(), end: new Date() })
+      await detector.getChanges(client, createDateRange(new Date(), new Date()))
     ).toHaveLength(0)
   })
 })

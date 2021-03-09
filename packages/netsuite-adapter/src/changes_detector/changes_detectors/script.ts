@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { formatSuiteQLDateRange } from '../formats'
 import { ChangedObject, TypeChangesDetector } from '../types'
 
 const log = logger(module)
@@ -73,7 +72,7 @@ const hasFieldChanges = (changes?: Record<string, unknown>[]): boolean => {
 
 const changesDetector: TypeChangesDetector = {
   getChanges: async (client, dateRange) => {
-    const [startDate, endDate] = formatSuiteQLDateRange(dateRange)
+    const [startDate, endDate] = dateRange.toSuiteQLRange()
 
     const scriptChangesPromise = client.runSuiteQL(`
       SELECT script.scriptid, script.id

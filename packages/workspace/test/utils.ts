@@ -96,8 +96,10 @@ export const persistentMockCreateRemoteMap = (): RemoteMapCreator => {
       delete: async (key: K) => {
         delete maps[opts.namespace][key]
       },
-      deleteAll: async () => {
-        maps[opts.namespace] = {} as Record<K, string>
+      deleteAll: async (keys: collections.asynciterable.ThenableIterable<K>) => {
+        for await (const key of keys) {
+          delete maps[opts.namespace][key]
+        }
       },
       get,
       getMany: async (keys: K[]): Promise<(T | undefined)[]> => Promise.all(keys.map(get)),

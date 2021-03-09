@@ -371,4 +371,8 @@ export class EditorWorkspace {
   async getValue(id: ElemID): Promise<Value | undefined> {
     return this.workspace.getValue(id)
   }
+
+  async getSearchableNames(): Promise<string[]> {
+    return this.workspace.getSearchableNames()
+  }
 }

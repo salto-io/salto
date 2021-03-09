@@ -18,7 +18,6 @@ import { EditorWorkspace } from '../src/workspace'
 import { getQueryLocations, getQueryLocationsFuzzy, completeSaltoLocation } from '../src/location'
 import { mockWorkspace } from './workspace'
 
-// eslint-disable-next-line jest/no-disabled-tests
 describe('workspace query locations', () => {
   let workspace: EditorWorkspace
   const baseDir = path.resolve(`${__dirname}/../../test/test-nacls/`)
@@ -47,8 +46,7 @@ describe('workspace query locations', () => {
       const res = await getQueryLocations(workspace, 'nope')
       expect(res).toHaveLength(0)
     })
-    // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should find field elements', async () => {
+    it('should find field elements', async () => {
       const res = await getQueryLocationsFuzzy(workspace, 'person')
       expect(res.find(e => e.item.fullname === 'vs.person.field.age')).toBeDefined()
     })
@@ -73,8 +71,7 @@ describe('workspace query locations', () => {
       const res = await getQueryLocations(workspace, 'NOPe', false)
       expect(res).toHaveLength(0)
     })
-    // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should find field elements', async () => {
+    it('should find field elements', async () => {
       const res = await getQueryLocationsFuzzy(workspace, 'pErSon')
       expect(res.find(e => e.item.fullname === 'vs.person.field.age')).toBeDefined()
     })
@@ -82,14 +79,13 @@ describe('workspace query locations', () => {
   describe('fuzzy', () => {
     it('should find elements', async () => {
       const res = await getQueryLocationsFuzzy(workspace, 'perbon')
-      expect(res).toHaveLength(10)
+      expect(res).toHaveLength(12)
       expect(res[0].item.fullname).toBe('vs.person')
       expect(res[0].matches?.[0].indices).toHaveLength(2)
       expect(res[0].matches?.[0].indices[0]).toEqual([3, 5])
       expect(res[0].matches?.[0].indices[1]).toEqual([7, 8])
     })
-    // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should find field elements', async () => {
+    it('should find field elements', async () => {
       const res = await getQueryLocationsFuzzy(workspace, 'perbon')
       expect(res.find(e => e.item.fullname === 'vs.person.field.age')).toBeDefined()
     })

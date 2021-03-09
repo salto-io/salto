@@ -25,7 +25,7 @@ import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, promises } from '@salto-io/lowerdash'
+import { collections, promises, types } from '@salto-io/lowerdash'
 import { merger } from '@salto-io/workspace'
 import { StepEvents } from './deploy'
 import { getPlan, Plan, AdditionalResolveContext } from './plan'
@@ -230,7 +230,7 @@ type UpdatedConfig = {
 }
 
 const runPostFetch = async (
-  adapters: Record<string, AdapterOperations>,
+  adapters: Record<string, AadpterOperationsWithPostFetch>,
   serviceElements: Element[],
   stateElementsByAdapter: Record<string, ReadonlyArray<Element>>,
   partiallyFetchedAdapters: Set<string>,
@@ -261,17 +261,21 @@ const runPostFetch = async (
   )
   // only modifies elements in-place, done sequentially to avoid race conditions
   await promises.array.series(
-    Object.entries(adapters).map(([adapterName, adapter]) => () => {
-      if (adapter.postFetch !== undefined) {
-        return adapter.postFetch({
-          currentAdapterElements: serviceElementsByAdapter[adapterName],
-          elementsByAdapter,
-        })
-      }
-      return Promise.resolve({ changed: false })
-    })
+    Object.entries(adapters).map(([adapterName, adapter]) => async () => (
+      adapter.postFetch({
+        currentAdapterElements: serviceElementsByAdapter[adapterName],
+        elementsByAdapter,
+      })
+    ))
   )
 }
+
+type AadpterOperationsWithPostFetch = types.PickyRequired<AdapterOperations, 'postFetch'>
+const isAadpterOperationsWithPostFetch = (
+  v: AdapterOperations
+): v is AadpterOperationsWithPostFetch => (
+  v.postFetch !== undefined
+)
 
 const fetchAndProcessMergeErrors = async (
   adapters: Record<string, AdapterOperations>,
@@ -319,10 +323,10 @@ const fetchAndProcessMergeErrors = async (
 
     log.debug(`fetched ${serviceElements.length} elements from adapters`)
 
-    if (Object.values(adapters).some(adapter => adapter.postFetch !== undefined)) {
+    if (Object.values(adapters).some(isAadpterOperationsWithPostFetch)) {
       try {
         const stateElementsByAdapter = _.groupBy(stateElements, e => e.elemID.adapter)
-        const adaptersWithPostFetch = _.pickBy(adapters, adapter => adapter.postFetch !== undefined)
+        const adaptersWithPostFetch = _.pickBy(adapters, isAadpterOperationsWithPostFetch)
         // update elements based on fetch results from other services
         await runPostFetch(
           adaptersWithPostFetch,

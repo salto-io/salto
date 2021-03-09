@@ -31,7 +31,7 @@ const UNIQUE_ID_SEPARATOR = '%%'
 const DELETE_OPERATION = 1
 const SET_OPERATION = 0
 const GET_CONCURRENCY = 100
-type RocksDBValue = string | Buffer | undefined
+export type RocksDBValue = string | Buffer | undefined
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 const cache = new LRU<string, any>({ max: 5000 })
 

@@ -51,14 +51,14 @@ export type DeployOptions = {
 }
 
 export type PostFetchOptions = {
-  localElements: Element[]
-  elementsByAdapter: Record<string, ReadonlyArray<Readonly<Element>>>
+  currentAdapterElements: Element[]
+  elementsByAdapter: Readonly<Record<string, ReadonlyArray<Readonly<Element>>>>
 }
 
 export type AdapterOperations = {
   fetch: (opts: FetchOptions) => Promise<FetchResult>
   deploy: (opts: DeployOptions) => Promise<DeployResult>
-  postFetch?: (opts: PostFetchOptions) => Promise<boolean>
+  postFetch?: (opts: PostFetchOptions) => Promise<{ changed: boolean }>
 }
 
 export type AdapterOperationName = keyof AdapterOperations

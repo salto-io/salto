@@ -89,10 +89,13 @@ describe('filter utils', () => {
       expect(mockOnFetch2).toHaveBeenCalled()
       expect(mockOnFetch3).toHaveBeenCalled()
     })
-    it('should call onPostFetch for all nested filters in order', async () => {
+    it('should call onPostFetch for all nested filters', async () => {
       const p = makeResolvablePromise(3)
       const runner = filtersRunner({ get: jest.fn() }, { configVal: '123 ', promise: p.promise }, filters)
-      const onPostFetchRes = runner.onPostFetch({ elementsByAdapter: {}, localElements: [] })
+      const onPostFetchRes = runner.onPostFetch({
+        elementsByAdapter: {},
+        currentAdapterElements: [],
+      })
       await new Promise(resolve => setTimeout(resolve, 2))
       expect(mockOnPostFetch2).not.toHaveBeenCalled()
       expect(mockOnPostFetch3).not.toHaveBeenCalled()

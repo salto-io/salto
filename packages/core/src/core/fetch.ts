@@ -238,22 +238,19 @@ const runPostFetch = async (
   const serviceElementsByAdapter = _.groupBy(serviceElements, e => e.elemID.adapter)
 
   const getAdapterElements = (adapterName: string): ReadonlyArray<Element> => {
-    if (Object.keys(adapters).includes(adapterName)) {
-      if (partiallyFetchedAdapters.has(adapterName)) {
-        const fetchedIDs = new Set(
-          serviceElementsByAdapter[adapterName].map(e => e.elemID.getFullName())
-        )
-        const missingElements = workspaceElementsByAdapter[adapterName].filter(
-          e => !fetchedIDs.has(e.elemID.getFullName())
-        )
-        return [
-          ...serviceElementsByAdapter[adapterName],
-          ...missingElements,
-        ]
-      }
-      return serviceElementsByAdapter[adapterName]
+    if (!partiallyFetchedAdapters.has(adapterName)) {
+      return serviceElementsByAdapter[adapterName] ?? workspaceElementsByAdapter[adapterName]
     }
-    return workspaceElementsByAdapter[adapterName]
+    const fetchedIDs = new Set(
+      serviceElementsByAdapter[adapterName].map(e => e.elemID.getFullName())
+    )
+    const missingElements = workspaceElementsByAdapter[adapterName].filter(
+      e => !fetchedIDs.has(e.elemID.getFullName())
+    )
+    return [
+      ...serviceElementsByAdapter[adapterName],
+      ...missingElements,
+    ]
   }
 
   const elementsByAdapter = Object.fromEntries(
@@ -267,11 +264,11 @@ const runPostFetch = async (
     Object.entries(adapters).map(([adapterName, adapter]) => () => {
       if (adapter.postFetch !== undefined) {
         return adapter.postFetch({
-          localElements: serviceElementsByAdapter[adapterName],
+          currentAdapterElements: serviceElementsByAdapter[adapterName],
           elementsByAdapter,
         })
       }
-      return Promise.resolve(false)
+      return Promise.resolve({ changed: false })
     })
   )
 }
@@ -325,15 +322,15 @@ const fetchAndProcessMergeErrors = async (
 
     if (Object.values(adapters).some(adapter => adapter.postFetch !== undefined)) {
       try {
+        const adaptersWithPostFetch = _.pickBy(adapters, adapter => adapter.postFetch !== undefined)
         // update elements based on fetch results from other services
         await runPostFetch(
-          adapters,
+          adaptersWithPostFetch,
           serviceElements,
           workspaceElementsByAdapter,
           partiallyFetchedAdapters,
         )
-        log.debug('ran post-fetch in the following adapters: %s',
-          Object.keys(_.pickBy(adapters, adapter => adapter.postFetch !== undefined)))
+        log.debug('ran post-fetch in the following adapters: %s', Object.keys(adaptersWithPostFetch))
       } catch (e) {
         // failures in this step should never fail the fetch
         log.error(`failed to run postFetch: ${e}, stack: ${e.stack}`)

@@ -845,11 +845,11 @@ describe('fetch', () => {
       dummy: {
         fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
         deploy: mockFunction<AdapterOperations['deploy']>(),
-        postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue(true),
+        postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue({ changed: true }),
       },
     }
     describe('fetch is partial', () => {
-      it('should call postFetch with the workspace elements and service elements combined in elementsByAdapter, but only the fetched elements in localElements', async () => {
+      it('should call postFetch with the workspace elements and service elements combined in elementsByAdapter, but only the fetched elements in currentAdapterElements', async () => {
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
           { elements: [newTypeBaseModified], isPartial: true },
         )
@@ -861,7 +861,7 @@ describe('fetch', () => {
         )
         expect(fetchChangesResult.elements).toEqual([newTypeBaseModified, typeWithField])
         expect(mockAdapters.dummy.postFetch).toHaveBeenCalledWith({
-          localElements: expect.arrayContaining([
+          currentAdapterElements: expect.arrayContaining([
             newTypeBaseModified,
           ]),
           elementsByAdapter: {
@@ -886,7 +886,7 @@ describe('fetch', () => {
         )
         expect(fetchChangesResult.elements).toEqual([newTypeBaseModified])
         expect(mockAdapters.dummy.postFetch).toHaveBeenCalledWith({
-          localElements: expect.arrayContaining([
+          currentAdapterElements: expect.arrayContaining([
             newTypeBaseModified,
           ]),
           elementsByAdapter: {
@@ -913,12 +913,12 @@ describe('fetch', () => {
         dummy2: {
           fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy2Type1], isPartial: false }),
           deploy: mockFunction<AdapterOperations['deploy']>(),
-          postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue(true),
+          postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue({ changed: true }),
         },
         dummy3: {
           fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy3Type1], isPartial: false }),
           deploy: mockFunction<AdapterOperations['deploy']>(),
-          postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue(true),
+          postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue({ changed: true }),
         },
       }
       beforeEach(() => {
@@ -937,7 +937,7 @@ describe('fetch', () => {
           [],
         )
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
-          localElements: expect.arrayContaining([dummy2Type1]),
+          currentAdapterElements: expect.arrayContaining([dummy2Type1]),
           elementsByAdapter: {
             dummy1: expect.arrayContaining([dummy1, dummy1Type1]),
             dummy2: expect.arrayContaining([dummy2Type1]),
@@ -945,7 +945,7 @@ describe('fetch', () => {
           },
         })
         expect(adapters.dummy3.postFetch).toHaveBeenCalledWith({
-          localElements: expect.arrayContaining([dummy3Type1]),
+          currentAdapterElements: expect.arrayContaining([dummy3Type1]),
           elementsByAdapter: {
             dummy1: expect.arrayContaining([dummy1Type1, dummy1]),
             dummy2: expect.arrayContaining([dummy2Type1]),
@@ -965,7 +965,7 @@ describe('fetch', () => {
           [],
         )
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
-          localElements: expect.arrayContaining([dummy2Type1]),
+          currentAdapterElements: expect.arrayContaining([dummy2Type1]),
           elementsByAdapter: {
             // dummy1 is partial so it also includes elements from the workspace
             dummy1: expect.arrayContaining([dummy1Type1, dummy1]),

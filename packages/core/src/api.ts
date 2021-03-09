@@ -227,6 +227,7 @@ export const fetch: FetchFunc = async (
       adapters,
       filterElementsByServices(await workspace.elements(), fetchServices),
       filteredStateElements,
+      stateElementsNotCoveredByFetch,
       currentConfigs,
       progressEmitter,
     )

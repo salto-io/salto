@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element } from '@salto-io/adapter-api'
+import { Element, PostFetchOptions } from '@salto-io/adapter-api'
 import { types, promises } from '@salto-io/lowerdash'
 
 export type Filter = Partial<{
   onFetch(elements: Element[]): Promise<void>
+  onPostFetch(args: PostFetchOptions): Promise<boolean>
 }>
 
 export type FilterWith<M extends keyof Filter> = types.HasMember<Filter, M>
@@ -41,6 +42,12 @@ export const filtersRunner = <TClient, TContext>(
       await promises.array.series(
         filtersWith('onFetch').map(filter => () => filter.onFetch(elements))
       )
+    },
+    onPostFetch: async args => {
+      const results = await promises.array.series(
+        filtersWith('onPostFetch').map(filter => () => filter.onPostFetch(args))
+      )
+      return results.some(res => res === true)
     },
   }
 }

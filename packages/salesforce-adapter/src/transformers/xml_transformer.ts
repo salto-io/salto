@@ -23,7 +23,6 @@ import { Values, StaticFile, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { API_VERSION } from '../client/client'
-import { NESTED_DIR_NAMES_ANNOTATION, CONTENT_FILENAME_ANNOTATION } from '../filters/territory_deploy_pkg'
 import {
   INSTANCE_FULL_NAME_FIELD, IS_ATTRIBUTE, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX,
   RECORDS_PATH, INSTALLED_PACKAGES_PATH, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD,
@@ -34,14 +33,19 @@ import {
   toDeployableInstance,
 } from './transformer'
 
+
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
 
 const log = logger(module)
 
+export const NESTED_DIR_NAMES_ANNOTATION = 'nestedDirs'
+export const CONTENT_FILENAME_ANNOTATION = 'contentFileName'
+
 export const metadataTypesWithAttributes = [
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
 ]
+
 
 const PACKAGE = 'unpackaged'
 const HIDDEN_CONTENT_VALUE = '(hidden)'

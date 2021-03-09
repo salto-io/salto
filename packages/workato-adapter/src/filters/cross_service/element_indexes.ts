@@ -14,12 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 
-type ElemLookupMapping = Record<string, Record<string, Readonly<Element>[]>>
-
-export type SalesforceIndex = ElemLookupMapping
-export type NetsuiteIndex = ElemLookupMapping
+export type SalesforceIndex = Record<string, Record<string, Readonly<Element>[]>>
+export type NetsuiteIndex = Record<string, Readonly<Element>>
 
 // salesforce indexes
 
@@ -52,7 +50,7 @@ export const indexSalesforceByMetadataTypeAndApiName = (
 
   const groupByMetadataTypeAndApiName = (
     elements: ReadonlyArray<Readonly<Element>>
-  ): ElemLookupMapping => (
+  ): SalesforceIndex => (
     _.mapValues(
       _.groupBy(
         elements.filter(e => metadataType(e) !== undefined),
@@ -70,19 +68,9 @@ export const indexSalesforceByMetadataTypeAndApiName = (
 export const indexNetsuiteByTypeAndScriptId = (
   elements: ReadonlyArray<Readonly<Element>>
 ): NetsuiteIndex => {
-  const byType = _.groupBy(
-    elements.filter(isInstanceElement),
-    e => e.type.elemID.name,
-  )
-
   const toScriptId = (inst: Readonly<InstanceElement>): string | undefined => inst.value.scriptid
-
-  return _.mapValues(
-    byType,
-    // TODO check if guaranteed to be unique
-    groupedElements => _.groupBy(
-      groupedElements.filter(e => toScriptId(e) !== undefined),
-      e => toScriptId(e) as string
-    )
+  return _.keyBy(
+    elements.filter(isInstanceElement).filter(e => toScriptId(e) !== undefined),
+    e => toScriptId(e) as string,
   )
 }

@@ -26,6 +26,7 @@ import { FilterCreator } from '../../filter'
 import { FETCH_CONFIG } from '../../config'
 import { CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS } from '../../constants'
 import { indexSalesforceByMetadataTypeAndApiName, indexNetsuiteByTypeAndScriptId, NetsuiteIndex, SalesforceIndex } from './element_indexes'
+import { isNetsuiteBlock, isSalesforceBlock, NetsuiteBlock, SalesforceBlock } from './recipe_block_types'
 
 const log = logger(module)
 const { isDefined } = lowerdashValues
@@ -36,65 +37,10 @@ type MappedReference = {
   ref: ReferenceExpression
 }
 
-type RefListItem = {
-  label: string
-  value: string
-}
-
-type SalesforceBlock = {
-  provider: 'salesforce'
-  dynamicPickListSelection: {
-    sobject_name: string
-    field_list?: RefListItem[]
-    table_list?: RefListItem[]
-  }
-  input: {
-    sobject_name: string
-  }
-}
-type NetsuiteBlock = {
-  provider: 'netsuite'
-  dynamicPickListSelection: {
-    netsuite_object: string
-    custom_list?: RefListItem[]
-  }
-  input?: {
-    netsuite_object: string
-  }
-}
-
 type ReferenceFinder<T extends SalesforceBlock | NetsuiteBlock> = (
   value: T,
   path: ElemID,
 ) => MappedReference[]
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const isListItem = (value: any): value is RefListItem => (
-  _.isObjectLike(value) && _.isString(value.label) && _.isString(value.value)
-)
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const isSalesforceBlock = (value: any): value is SalesforceBlock => (
-  _.isObjectLike(value)
-  && value.provider === CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS.salesforce
-  && _.isObjectLike(value.dynamicPickListSelection)
-  && _.isString(value.dynamicPickListSelection.sobject_name)
-  && (value.dynamicPickListSelection.table_list ?? []).every(isListItem)
-  && (value.dynamicPickListSelection.field_list ?? []).every(isListItem)
-  && _.isObjectLike(value.input)
-  && _.isString(value.input.sobject_name)
-)
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const isNetsuiteBlock = (value: any): value is NetsuiteBlock => (
-  _.isObjectLike(value)
-  && value.provider === CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS.netsuite
-  && _.isObjectLike(value.dynamicPickListSelection)
-  && _.isString(value.dynamicPickListSelection.netsuite_object)
-  && (value.dynamicPickListSelection.custom_list ?? []).every(isListItem)
-  && _.isObjectLike(value.input)
-  && _.isString(value.input.netsuite_object)
-)
 
 const addReferencesForService = <T extends SalesforceBlock | NetsuiteBlock>(
   inst: InstanceElement,
@@ -242,34 +188,31 @@ const addNetsuiteRecipeReferences = (
 
     const { dynamicPickListSelection, input } = blockValue
 
-    const netsuiteObject = input?.netsuite_object
-    if (netsuiteObject !== undefined) {
-      if (_.isString(netsuiteObject) && netsuiteObject.split('@@').length === 2) {
-        const customRecordId = _.last(netsuiteObject.toLowerCase().split('@@'))
-        if (customRecordId !== undefined) {
-          // TODO check if need to extend to more types besides customrecordtype
-          const referencedInstanceFragments = indexedElements.customrecordtype?.[customRecordId]
-          if (!_.isEmpty(referencedInstanceFragments)) {
+    const addPotentialReference = (value: unknown, separator: string, nestedPath: ElemID): void => {
+      if (_.isString(value) && value.split(separator).length === 2) {
+        const recordId = _.last(value.toLowerCase().split(separator))
+        if (recordId !== undefined) {
+          const referencedInstance = indexedElements[recordId]
+          if (referencedInstance !== undefined) {
             references.push({
-              srcPath: path.createNestedID('input', 'netsuite_object'),
-              ref: new ReferenceExpression(referencedInstanceFragments[0].elemID),
+              srcPath: nestedPath,
+              ref: new ReferenceExpression(referencedInstance.elemID),
             })
           }
         }
       }
     }
 
+    const netsuiteObject = input?.netsuite_object
+    if (netsuiteObject !== undefined) {
+      addPotentialReference(netsuiteObject, '@@', path.createNestedID('input', 'netsuite_object'))
+    }
     (dynamicPickListSelection.custom_list ?? []).forEach(({ value }, idx) => {
-      if (_.isString(value) && value.split('@').length === 2) {
-        const [type, name] = value.toLowerCase().split('@')
-        const referencedInstanceFragments = indexedElements[type]?.[name]
-        if (!_.isEmpty(referencedInstanceFragments)) {
-          references.push({
-            srcPath: path.createNestedID('dynamicPickListSelection', 'custom_list', String(idx)),
-            ref: new ReferenceExpression(referencedInstanceFragments[0].elemID),
-          })
-        }
-      }
+      addPotentialReference(
+        value,
+        '@',
+        path.createNestedID('dynamicPickListSelection', 'custom_list', String(idx)),
+      )
     })
     return references
   }
@@ -357,18 +300,14 @@ const addReferencesForConnectionRecipes = (
   serviceElements: ReadonlyArray<Readonly<Element>>,
 ): boolean => {
   if (serviceName === CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS.salesforce) {
-    const index = indexSalesforceByMetadataTypeAndApiName(
-      serviceElements ?? []
-    )
+    const index = indexSalesforceByMetadataTypeAndApiName(serviceElements)
     const res = relevantRecipeCodes.map(
       inst => addSalesforceRecipeReferences(inst, index)
     )
     return res.some(t => t)
   }
   if (serviceName === CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS.netsuite) {
-    const index = indexNetsuiteByTypeAndScriptId(
-      serviceElements ?? []
-    )
+    const index = indexNetsuiteByTypeAndScriptId(serviceElements)
     const res = relevantRecipeCodes.map(
       inst => addNetsuiteRecipeReferences(inst, index)
     )
@@ -419,7 +358,7 @@ const filter: FilterCreator = ({ config }) => ({
       return addReferencesForConnectionRecipes(
         relevantRecipeCodes,
         serviceName,
-        elementsByAdapter[serviceName],
+        elementsByAdapter[serviceName] ?? [],
       )
     })
     return updateResults.some(t => t)

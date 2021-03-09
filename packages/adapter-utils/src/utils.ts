@@ -796,3 +796,19 @@ export const getAllReferencedIds = (element: Element, onlyAnnotations = false): 
 export const getParents = (instance: Element): Array<Value> => (
   collections.array.makeArray(instance.annotations[CORE_ANNOTATIONS.PARENT])
 )
+
+export const extendGeneratedDependencies = (
+  elem: Element,
+  newDependencies: ReferenceExpression[],
+): void => {
+  elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = _.sortedUniqBy(
+    _.sortBy(
+      [
+        ...collections.array.makeArray(elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]),
+        ...newDependencies,
+      ],
+      ref => ref.elemId.getFullName(),
+    ),
+    ref => ref.elemId.getFullName(),
+  )
+}

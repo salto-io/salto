@@ -132,7 +132,6 @@ export const convertToFolderCustomizationInfo = (xmlContent: string, path: strin
     { path }
   )
 
-
 export const convertToXmlContent = (customizationInfo: CustomizationInfo): string =>
   // eslint-disable-next-line new-cap
   new xmlParser.j2xParser({
@@ -179,11 +178,7 @@ export default class SdfClient {
     credentials,
     config,
   }: SdfClientOpts) {
-    this.credentials = {
-      ...credentials,
-      // accountId must be uppercased as decribed in https://github.com/oracle/netsuite-suitecloud-sdk/issues/140
-      accountId: credentials.accountId.toUpperCase().replace('-', '_'),
-    }
+    this.credentials = credentials
     this.fetchAllTypesAtOnce = config?.fetchAllTypesAtOnce ?? DEFAULT_FETCH_ALL_TYPES_AT_ONCE
     this.fetchTypeTimeoutInMinutes = config?.fetchTypeTimeoutInMinutes
       ?? DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES

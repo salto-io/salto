@@ -18,6 +18,7 @@ import detector, { SCRIPT_TYPES } from '../../src/changes_detector/changes_detec
 import { Change } from '../../src/changes_detector/types'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
+import { createDateRange } from '../../src/changes_detector/date_range'
 
 describe('script', () => {
   const runSuiteQLMock = jest.fn()
@@ -45,7 +46,7 @@ describe('script', () => {
 
       results = await detector.getChanges(
         client,
-        { start: new Date('2021-01-11T18:55:17.949Z'), end: new Date('2021-02-22T18:55:17.949Z') }
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
       )
     })
     it('should return the changes', () => {
@@ -75,7 +76,7 @@ describe('script', () => {
 
       results = await detector.getChanges(
         client,
-        { start: new Date('2021-01-11T18:55:17.949Z'), end: new Date('2021-02-22T18:55:17.949Z') }
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
       )
     })
     it('should return the changes', () => {
@@ -92,7 +93,7 @@ describe('script', () => {
       SELECT script.scriptid, script.id
       FROM script
       JOIN systemnote ON systemnote.recordid = script.id
-      WHERE systemnote.date BETWEEN '1/11/2021' AND '2/22/2021' AND systemnote.recordtypeid = -417
+      WHERE systemnote.date BETWEEN '1/11/2021' AND '2/23/2021' AND systemnote.recordtypeid = -417
     `)
 
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, `
@@ -100,13 +101,13 @@ describe('script', () => {
       FROM scriptdeployment 
       JOIN systemnote ON systemnote.recordid = scriptdeployment.primarykey
       JOIN script ON scriptdeployment.script = script.id
-      WHERE systemnote.date BETWEEN '1/11/2021' AND '2/22/2021' AND systemnote.recordtypeid = -418
+      WHERE systemnote.date BETWEEN '1/11/2021' AND '2/23/2021' AND systemnote.recordtypeid = -418
     `)
 
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, `
       SELECT internalid
       FROM customfield
-      WHERE fieldtype = 'SCRIPT' AND lastmodifieddate BETWEEN '1/11/2021' AND '2/22/2021'
+      WHERE fieldtype = 'SCRIPT' AND lastmodifieddate BETWEEN '1/11/2021' AND '2/23/2021'
     `)
     })
   })
@@ -114,7 +115,7 @@ describe('script', () => {
   it('return nothing when roles query fails', async () => {
     runSuiteQLMock.mockResolvedValue(undefined)
     expect(
-      await detector.getChanges(client, { start: new Date(), end: new Date() })
+      await detector.getChanges(client, createDateRange(new Date(), new Date()))
     ).toHaveLength(0)
   })
 })

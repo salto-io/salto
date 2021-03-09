@@ -18,6 +18,7 @@ import detector from '../../src/changes_detector/changes_detectors/savedsearch'
 import { Change } from '../../src/changes_detector/types'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
+import { createDateRange } from '../../src/changes_detector/date_range'
 
 describe('savedsearch', () => {
   const runSavedSearchQueryMock = jest.fn()
@@ -35,7 +36,7 @@ describe('savedsearch', () => {
       runSavedSearchQueryMock.mockResolvedValue([{ id: 'a' }, { id: 'b' }, { invalid: 0 }])
       results = await detector.getChanges(
         client,
-        { start: new Date('2021-01-11T18:55:17.949Z'), end: new Date('2021-02-22T18:55:17.949Z') }
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
       )
     })
     it('should return the changes', () => {
@@ -49,7 +50,7 @@ describe('savedsearch', () => {
       expect(runSavedSearchQueryMock).toHaveBeenCalledWith({
         type: 'savedsearch',
         columns: ['id'],
-        filters: [['datemodified', 'within', '1/11/2021 6:55 pm', '2/22/2021 6:55 pm']],
+        filters: [['datemodified', 'within', '1/11/2021 6:55 pm', '2/22/2021 6:56 pm']],
       })
     })
   })
@@ -57,7 +58,7 @@ describe('savedsearch', () => {
   it('return nothing when query fails', async () => {
     runSavedSearchQueryMock.mockResolvedValue(undefined)
     expect(
-      await detector.getChanges(client, { start: new Date(), end: new Date() })
+      await detector.getChanges(client, createDateRange(new Date(), new Date()))
     ).toHaveLength(0)
   })
 })

@@ -18,6 +18,7 @@ import { customFieldDetector as detector } from '../../src/changes_detector/chan
 import { Change } from '../../src/changes_detector/types'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
+import { createDateRange } from '../../src/changes_detector/date_range'
 
 describe('custom_field', () => {
   const runSuiteQLMock = jest.fn()
@@ -33,7 +34,7 @@ describe('custom_field', () => {
       runSuiteQLMock.mockResolvedValue([{ scriptid: 'a' }, { scriptid: 'b' }])
       results = await detector.getChanges(
         client,
-        { start: new Date('2021-01-11T18:55:17.949Z'), end: new Date('2021-02-22T18:55:17.949Z') }
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
       )
     })
     it('should return the changes', () => {
@@ -47,7 +48,7 @@ describe('custom_field', () => {
       expect(runSuiteQLMock).toHaveBeenCalledWith(`
       SELECT scriptid
       FROM customfield
-      WHERE lastmodifieddate BETWEEN '1/11/2021' AND '2/22/2021'
+      WHERE lastmodifieddate BETWEEN '1/11/2021' AND '2/23/2021'
     `)
     })
   })
@@ -59,7 +60,7 @@ describe('custom_field', () => {
       runSuiteQLMock.mockResolvedValue([{ scriptid: 'a' }, { scriptid: 'b' }, { qqq: 'b' }, { scriptid: {} }])
       results = await detector.getChanges(
         client,
-        { start: new Date('2021-01-11T18:55:17.949Z'), end: new Date('2021-02-22T18:55:17.949Z') }
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
       )
     })
     it('should return the changes without the invalid results', () => {
@@ -72,7 +73,7 @@ describe('custom_field', () => {
   it('return nothing when query fails', async () => {
     runSuiteQLMock.mockResolvedValue(undefined)
     expect(
-      await detector.getChanges(client, { start: new Date(), end: new Date() })
+      await detector.getChanges(client, createDateRange(new Date(), new Date()))
     ).toHaveLength(0)
   })
 })

@@ -48,7 +48,7 @@ describe('NetsuiteAdapter creator', () => {
     ElemID.CONFIG_NAME,
     adapter.authenticationMethods.basic.credentialsType,
     {
-      accountId: 'foo',
+      accountId: 'foo-a',
       tokenId: 'bar',
       tokenSecret: 'secret',
       suiteAppTokenId: '',
@@ -91,7 +91,7 @@ describe('NetsuiteAdapter creator', () => {
     it('should call validateCredentials with the correct credentials', async () => {
       await adapter.validateCredentials(credentials)
       expect(netsuiteValidateMock).toHaveBeenCalledWith(expect.objectContaining({
-        accountId: 'foo',
+        accountId: 'FOO_A',
         tokenId: 'bar',
         tokenSecret: 'secret',
       }))
@@ -110,13 +110,13 @@ describe('NetsuiteAdapter creator', () => {
 
       await adapter.validateCredentials(cred)
       expect(netsuiteValidateMock).toHaveBeenCalledWith(expect.objectContaining({
-        accountId: 'foo',
+        accountId: 'FOO_A',
         tokenId: 'bar',
         tokenSecret: 'secret',
       }))
 
       expect(suiteAppClientValidateMock).toHaveBeenCalledWith({
-        accountId: 'foo',
+        accountId: 'FOO_A',
         suiteAppTokenId: 'aaa',
         suiteAppTokenSecret: 'bbb',
       })
@@ -159,7 +159,7 @@ describe('NetsuiteAdapter creator', () => {
       })
       expect(SdfClient).toHaveBeenCalledWith({
         credentials: {
-          accountId: 'foo',
+          accountId: 'FOO_A',
           tokenId: 'bar',
           tokenSecret: 'secret',
           suiteAppTokenId: undefined,
@@ -195,7 +195,7 @@ describe('NetsuiteAdapter creator', () => {
       })
       expect(SuiteAppClient).toHaveBeenCalledWith({
         credentials: {
-          accountId: 'foo',
+          accountId: 'FOO_A',
           suiteAppTokenId: 'aaa',
           suiteAppTokenSecret: 'bbb',
         },
@@ -225,7 +225,7 @@ describe('NetsuiteAdapter creator', () => {
       })
       expect(SuiteAppClient).toHaveBeenCalledWith({
         credentials: {
-          accountId: 'foo',
+          accountId: 'FOO_A',
           suiteAppTokenId: 'aaa',
           suiteAppTokenSecret: 'bbb',
         },

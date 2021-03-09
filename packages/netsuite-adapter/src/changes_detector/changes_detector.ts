@@ -22,7 +22,6 @@ import scriptDetector from './changes_detectors/script'
 import roleDetector from './changes_detectors/role'
 import workflowDetector from './changes_detectors/workflow'
 import savedSearchDetector from './changes_detectors/savedsearch'
-import { formatSavedSearchDate } from './formats'
 import { ChangedType, DateRange } from './types'
 import NetsuiteClient from '../client/client'
 
@@ -38,6 +37,8 @@ export const DETECTORS = [
   savedSearchDetector,
 ]
 
+const SUPPORTED_TYPES = new Set(DETECTORS.flatMap(detector => detector.getTypes()))
+
 const getChangedInternalIds = async (client: NetsuiteClient, dateRange: DateRange):
 Promise<Set<number> | undefined> => {
   // Note that the internal id is NOT unique cross types and different instances
@@ -47,7 +48,7 @@ Promise<Set<number> | undefined> => {
   const results = await client.runSavedSearchQuery({
     type: 'systemnote',
     filters: [
-      ['date', 'within', formatSavedSearchDate(dateRange.start), formatSavedSearchDate(dateRange.end)],
+      ['date', 'within', ...dateRange.toSavedSearchRange()],
     ],
     columns: ['recordid'],
   })
@@ -118,10 +119,15 @@ export const getChangedObjects = async (
   const types = new Set(changedTypes.map(type => type.name))
 
   log.debug('Finished to look for changed objects')
+  log.debug(`${scriptIds.size} script ids changes were detected`)
+  log.debug(`${types.size} types changes were detected`)
+  log.debug(`${paths.size} paths changes were detected`)
 
   return {
     isTypeMatch: () => true,
-    isObjectMatch: objectID => scriptIds.has(objectID.scriptId) || types.has(objectID.type),
+    isObjectMatch: objectID => !SUPPORTED_TYPES.has(objectID.type)
+      || scriptIds.has(objectID.scriptId)
+      || types.has(objectID.type),
     isFileMatch: filePath => paths.has(filePath),
     areSomeFilesMatch: () => paths.size !== 0,
   }

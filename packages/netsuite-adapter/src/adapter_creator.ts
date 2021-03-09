@@ -133,7 +133,8 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
 
 const netsuiteCredentialsFromCredentials = (credentials: Readonly<InstanceElement>): Credentials =>
   ({
-    accountId: credentials.value.accountId,
+    // accountId must be uppercased as described in https://github.com/oracle/netsuite-suitecloud-sdk/issues/140
+    accountId: credentials.value.accountId.toUpperCase().replace('-', '_'),
     tokenId: credentials.value.tokenId,
     tokenSecret: credentials.value.tokenSecret,
     suiteAppTokenId: credentials.value.suiteAppTokenId === '' ? undefined : credentials.value.suiteAppTokenId,

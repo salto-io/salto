@@ -15,17 +15,18 @@
 */
 import { logger } from '@salto-io/logging'
 import NetsuiteClient from '../../client/client'
-import { formatSuiteQLDate } from '../formats'
 import { ChangedObject, DateRange, TypeChangesDetector } from '../types'
 
 const log = logger(module)
 
 const getChanges = async (type: string, client: NetsuiteClient, dateRange: DateRange):
   Promise<ChangedObject[]> => {
+  const [startDate, endDate] = dateRange.toSuiteQLRange()
+
   const results = await client.runSuiteQL(`
       SELECT scriptid
       FROM ${type}
-      WHERE lastmodifieddate BETWEEN '${formatSuiteQLDate(dateRange.start)}' AND '${formatSuiteQLDate(dateRange.end)}'
+      WHERE lastmodifieddate BETWEEN '${startDate}' AND '${endDate}'
     `)
 
   if (results === undefined) {

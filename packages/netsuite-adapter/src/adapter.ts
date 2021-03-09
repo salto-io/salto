@@ -20,16 +20,15 @@ import {
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import {
   createInstanceElement, getLookUpName, toCustomizationInfo,
 } from './transformer'
 import {
   customTypes, getAllTypes, fileCabinetTypes,
 } from './types'
-import {
-  TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS, INTEGRATION, FETCH_TARGET,
-  SKIP_LIST,
-} from './constants'
+import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS,
+  INTEGRATION, FETCH_TARGET, SKIP_LIST } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
@@ -38,10 +37,15 @@ import {
   getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
 } from './config'
 import { getAllReferencedInstances, getRequiredReferencedInstances } from './reference_dependencies'
-import { andQuery, buildNetsuiteQuery, NetsuiteQueryParameters, notQuery } from './query'
+import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery } from './query'
+import { createServerTimeElements, getLastServerTime } from './server_time'
+import { getChangedObjects } from './changes_detector/changes_detector'
 import NetsuiteClient from './client/client'
+import { createDateRange } from './changes_detector/date_range'
 
 const { makeArray } = collections.array
+
+const log = logger(module)
 
 export interface NetsuiteAdapterParams {
   client: NetsuiteClient
@@ -115,11 +119,19 @@ export default class NetsuiteAdapter implements AdapterOperations {
       filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
     })
 
-    const fetchQuery = [
+    let fetchQuery = [
       this.fetchTarget && buildNetsuiteQuery(this.fetchTarget),
       this.skipList && notQuery(buildNetsuiteQuery(this.skipList)),
       notQuery(deprecatedSkipList),
     ].filter(values.isDefined).reduce(andQuery)
+
+
+    const { serverTimeElements, changedObjectsQuery } = await this.runSuiteAppOperations(fetchQuery)
+    fetchQuery = changedObjectsQuery !== undefined
+      ? andQuery(changedObjectsQuery, fetchQuery)
+      : fetchQuery
+
+    const isPartial = this.fetchTarget !== undefined
 
     const getCustomObjectsResult = this.client.getCustomObjects(
       Object.keys(customTypes),
@@ -145,9 +157,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         ?? fileCabinetTypes[customizationInfo.typeName]
       return type ? createInstanceElement(customizationInfo, type, this.getElemIdFunc) : undefined
     }).filter(isInstanceElement)
-    const elements = [...getAllTypes(), ...instances]
-
-    const isPartial = this.fetchTarget !== undefined
+    const elements = [...getAllTypes(), ...instances, ...serverTimeElements]
 
     progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
     await this.runFiltersOnFetch(elements, this.elementsSource, isPartial)
@@ -159,6 +169,33 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return { elements, isPartial }
     }
     return { elements, updatedConfig, isPartial }
+  }
+
+  private async runSuiteAppOperations(fetchQuery: NetsuiteQuery):
+    Promise<{ serverTimeElements: Element[]; changedObjectsQuery?: NetsuiteQuery }> {
+    const sysInfo = await this.client.getSystemInformation()
+    if (sysInfo === undefined) {
+      log.warn('Failed to get sysInfo, skipping SuiteApp operations')
+      return { serverTimeElements: [] }
+    }
+
+    if (this.fetchTarget === undefined) {
+      return { serverTimeElements: createServerTimeElements(sysInfo.time) }
+    }
+
+    const lastFetchTime = await getLastServerTime(this.elementsSource)
+    if (lastFetchTime === undefined) {
+      log.debug('Failed to get last fetch time')
+      return { serverTimeElements: [] }
+    }
+
+    const changedObjectsQuery = await getChangedObjects(
+      this.client,
+      fetchQuery,
+      createDateRange(lastFetchTime, sysInfo.time)
+    )
+
+    return { serverTimeElements: [], changedObjectsQuery }
   }
 
   private getAllRequiredReferencedInstances(

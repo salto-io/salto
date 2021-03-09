@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { formatSavedSearchDate } from '../formats'
 import { TypeChangesDetector } from '../types'
 
 const log = logger(module)
@@ -26,7 +25,7 @@ const changesDetector: TypeChangesDetector = {
       filters: [
         ['recordtype', 'is', '-129'],
         'and',
-        ['date', 'within', formatSavedSearchDate(dateRange.start), formatSavedSearchDate(dateRange.end)],
+        ['date', 'within', ...dateRange.toSavedSearchRange()],
       ],
       columns: ['recordid'],
     })

@@ -18,6 +18,7 @@ import detector from '../../src/changes_detector/changes_detectors/role'
 import { Change } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
+import { createDateRange } from '../../src/changes_detector/date_range'
 
 describe('role', () => {
   const runSuiteQLMock = jest.fn()
@@ -45,7 +46,7 @@ describe('role', () => {
     runSavedSearchQueryMock.mockResolvedValue(undefined)
     expect(await detector.getChanges(
       client,
-      { start: new Date('2021-01-11T18:55:17.949Z'), end: new Date('2021-02-22T18:55:17.949Z') }
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
     )).toEqual([
       { type: 'object', externalId: 'a', internalId: 1 },
       { type: 'object', externalId: 'b', internalId: 2 },
@@ -76,7 +77,7 @@ describe('role', () => {
 
       results = await detector.getChanges(
         client,
-        { start: new Date('2021-01-11T18:55:17.949Z'), end: new Date('2021-02-22T18:55:17.949Z') }
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
       )
     })
     it('should return the changes', () => {
@@ -92,7 +93,7 @@ describe('role', () => {
       SELECT role.scriptid, role.id
       FROM role
       JOIN systemnote ON systemnote.recordid = role.id
-      WHERE systemnote.date BETWEEN '1/11/2021' AND '2/22/2021' AND systemnote.recordtypeid = -118
+      WHERE systemnote.date BETWEEN '1/11/2021' AND '2/23/2021' AND systemnote.recordtypeid = -118
     `)
 
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, `
@@ -103,7 +104,7 @@ describe('role', () => {
       expect(runSavedSearchQueryMock).toHaveBeenCalledWith({
         type: 'role',
         columns: ['internalid'],
-        filters: [['permchangedate', 'within', '1/11/2021 6:55 pm', '2/22/2021 6:55 pm']],
+        filters: [['permchangedate', 'within', '1/11/2021 6:55 pm', '2/22/2021 6:56 pm']],
       })
     })
   })
@@ -111,7 +112,7 @@ describe('role', () => {
   it('return nothing when roles query fails', async () => {
     runSuiteQLMock.mockResolvedValue(undefined)
     expect(
-      await detector.getChanges(client, { start: new Date(), end: new Date() })
+      await detector.getChanges(client, createDateRange(new Date(), new Date()))
     ).toHaveLength(0)
   })
 })

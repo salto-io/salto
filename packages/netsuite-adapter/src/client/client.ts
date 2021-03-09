@@ -15,12 +15,15 @@
 */
 
 import { AccountId } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { NetsuiteQuery } from '../query'
 import { Credentials } from './credentials'
 import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
-import { SavedSearchQuery } from './suiteapp_client/types'
+import { SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { CustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult } from './types'
+
+const log = logger(module)
 
 export default class NetsuiteClient {
   private sdfClient: SdfClient
@@ -29,6 +32,11 @@ export default class NetsuiteClient {
   constructor(sdfClient: SdfClient, suiteAppClient?: SuiteAppClient) {
     this.sdfClient = sdfClient
     this.suiteAppClient = suiteAppClient
+    if (this.suiteAppClient === undefined) {
+      log.debug('Salto SuiteApp not configured')
+    } else {
+      log.debug('Salto SuiteApp configured')
+    }
   }
 
   static async validateCredentials(credentials: Credentials): Promise<AccountId> {
@@ -75,5 +83,9 @@ export default class NetsuiteClient {
   public async runSavedSearchQuery(query: SavedSearchQuery):
     Promise<Record<string, unknown>[] | undefined> {
     return this.suiteAppClient?.runSavedSearchQuery(query)
+  }
+
+  public async getSystemInformation(): Promise<SystemInformation | undefined> {
+    return this.suiteAppClient?.getSystemInformation()
   }
 }

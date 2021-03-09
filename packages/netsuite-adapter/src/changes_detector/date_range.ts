@@ -13,10 +13,28 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const formatSuiteQLDate = (date: Date): string => `${date.getUTCMonth() + 1}/${date.getUTCDate()}/${date.getUTCFullYear()}`
+import { DateRange } from './types'
 
-export const formatSavedSearchDate = (date: Date): string => {
+const formatSuiteQLDate = (date: Date): string => `${date.getUTCMonth() + 1}/${date.getUTCDate()}/${date.getUTCFullYear()}`
+
+const formatSavedSearchDate = (date: Date): string => {
   const hour = date.getUTCHours() > 12 ? date.getUTCHours() - 12 : date.getUTCHours()
   const dayTime = date.getUTCHours() >= 12 ? 'pm' : 'am'
   return `${date.getUTCMonth() + 1}/${date.getUTCDate()}/${date.getUTCFullYear()} ${hour}:${date.getUTCMinutes()} ${dayTime}`
 }
+
+
+export const createDateRange = (start: Date, end: Date): DateRange => ({
+  start,
+  end,
+  toSuiteQLRange: () => {
+    const endDate = new Date(end)
+    endDate.setDate(endDate.getDate() + 1)
+    return [formatSuiteQLDate(start), formatSuiteQLDate(endDate)]
+  },
+  toSavedSearchRange: () => {
+    const endDate = new Date(end)
+    endDate.setMinutes(endDate.getMinutes() + 1)
+    return [formatSavedSearchDate(start), formatSavedSearchDate(endDate)]
+  },
+})

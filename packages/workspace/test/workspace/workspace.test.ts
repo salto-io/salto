@@ -273,6 +273,52 @@ describe('workspace', () => {
     })
   })
 
+  describe('getSearchableNames', () => {
+    let workspace: Workspace
+    const TOTAL_NUM_ELEMENETS = 54
+
+    it('Should return names of top level elemnts and fields', async () => {
+      workspace = await createWorkspace()
+      const searchableNames = await workspace.getSearchableNames()
+      expect(searchableNames.length).toEqual(TOTAL_NUM_ELEMENETS)
+    })
+
+    it('Should remove object and fields from list if removed', async () => {
+      workspace = await createWorkspace()
+      const accountIntSett = await workspace.getValue(new ElemID('salesforce', 'AccountIntelligenceSettings')) as ObjectType
+      const searchableNames = await workspace.getSearchableNames()
+      expect(searchableNames.includes(accountIntSett.elemID.getFullName())).toBeTruthy()
+      await workspace.updateNaclFiles([{
+        id: accountIntSett.elemID,
+        action: 'remove',
+        data: { before: accountIntSett },
+      }])
+      const numOfFields = Object.values(accountIntSett.fields).length
+      const searchableNamesAfter = await workspace.getSearchableNames()
+      expect(searchableNamesAfter.length).toEqual(TOTAL_NUM_ELEMENETS - (numOfFields + 1))
+      expect(searchableNamesAfter.includes(accountIntSett.elemID.getFullName())).toBeFalsy()
+      Object.values(accountIntSett.fields).forEach(field => {
+        expect(searchableNamesAfter.includes(field.elemID.getFullName())).toBeFalsy()
+      })
+    })
+
+    it('Should add object and fields to list if added', async () => {
+      workspace = await createWorkspace()
+      const newElemID = new ElemID('salesforce', 'new')
+      const newObject = new ObjectType({
+        elemID: newElemID,
+        fields: { aaa: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) } },
+      })
+      await workspace.updateNaclFiles([{
+        id: newElemID,
+        action: 'add',
+        data: { after: newObject },
+      }])
+      const searchableNamesAfter = await workspace.getSearchableNames()
+      expect(searchableNamesAfter.length).toEqual(TOTAL_NUM_ELEMENETS + 2)
+    })
+  })
+
   describe('errors', () => {
     it('should be empty when there are no errors', async () => {
       const workspace = await createWorkspace()

@@ -360,7 +360,7 @@ describe('fetch', () => {
               mockAdapters.dummy.fetch.mockResolvedValueOnce(
                 Promise.resolve({ elements: [dupTypeBase, dupTypeBase2] })
               )
-              await fetchChanges(mockAdapters, [], [], [dupTypeBase], [])
+              await fetchChanges(mockAdapters, [], [dupTypeBase], [], [])
               expect(false).toBeTruthy()
             } catch (e) {
               expect(e.message).toMatch(/.*duplicate annotation.*/)

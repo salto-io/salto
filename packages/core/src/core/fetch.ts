@@ -229,6 +229,13 @@ type UpdatedConfig = {
   message: string
 }
 
+type AadpterOperationsWithPostFetch = types.PickyRequired<AdapterOperations, 'postFetch'>
+const isAadpterOperationsWithPostFetch = (
+  v: AdapterOperations
+): v is AadpterOperationsWithPostFetch => (
+  v.postFetch !== undefined
+)
+
 const runPostFetch = async (
   adapters: Record<string, AadpterOperationsWithPostFetch>,
   serviceElements: Element[],
@@ -270,16 +277,10 @@ const runPostFetch = async (
   )
 }
 
-type AadpterOperationsWithPostFetch = types.PickyRequired<AdapterOperations, 'postFetch'>
-const isAadpterOperationsWithPostFetch = (
-  v: AdapterOperations
-): v is AadpterOperationsWithPostFetch => (
-  v.postFetch !== undefined
-)
-
 const fetchAndProcessMergeErrors = async (
   adapters: Record<string, AdapterOperations>,
-  stateElements: ReadonlyArray<Element>,
+  filteredStateElements: ReadonlyArray<Element>,
+  otherStateElements: ReadonlyArray<Element>,
   getChangesEmitter: StepEmitter,
   progressEmitter?: EventEmitter<FetchProgressEvents>
 ):
@@ -323,10 +324,13 @@ const fetchAndProcessMergeErrors = async (
 
     log.debug(`fetched ${serviceElements.length} elements from adapters`)
 
-    if (Object.values(adapters).some(isAadpterOperationsWithPostFetch)) {
+    const adaptersWithPostFetch = _.pickBy(adapters, isAadpterOperationsWithPostFetch)
+    if (!_.isEmpty(adaptersWithPostFetch)) {
       try {
-        const stateElementsByAdapter = _.groupBy(stateElements, e => e.elemID.adapter)
-        const adaptersWithPostFetch = _.pickBy(adapters, isAadpterOperationsWithPostFetch)
+        const stateElementsByAdapter = _.groupBy(
+          [...filteredStateElements, ...otherStateElements],
+          e => e.elemID.adapter,
+        )
         // update elements based on fetch results from other services
         await runPostFetch(
           adaptersWithPostFetch,
@@ -349,7 +353,7 @@ const fetchAndProcessMergeErrors = async (
     const processErrorsResult = processMergeErrors(
       elements,
       mergeErrors,
-      new Set(stateElements.map(e => e.elemID.getFullName()))
+      new Set(filteredStateElements.map(e => e.elemID.getFullName()))
     )
 
     const droppedElements = new Set(
@@ -455,7 +459,8 @@ export const fetchChanges = async (
     serviceElements, processErrorsResult, updatedConfigs, partiallyFetchedAdapters,
   } = await fetchAndProcessMergeErrors(
     adapters,
-    [...filteredStateElements, ...otherStateElements],
+    filteredStateElements,
+    otherStateElements,
     getChangesEmitter,
     progressEmitter
   )

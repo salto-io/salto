@@ -234,39 +234,37 @@ export const loadWorkspace = async (
     const updateSearchableNamesIndex = async (
       changes: Change[]
     ): Promise<void> => {
-      await awu(changes).forEach(async change => {
-        if (isAdditionChange(change)) {
-          const element = change.data.after
-          const fieldsNames = isObjectType(element)
-            ? getFieldsElemIDsFullName(element)
-            : []
-          await stateToBuild.searchableNamesIndex
-            .setAll(
-              [element.elemID.getFullName(), ...fieldsNames].map(e => ({ key: e, value: true })),
-            )
-        }
-        if (isRemovalChange(change)) {
-          const element = change.data.before
-          const fieldsNames = isObjectType(element)
-            ? getFieldsElemIDsFullName(element)
-            : []
-          await stateToBuild.searchableNamesIndex
-            .deleteAll(
-              [element.elemID.getFullName(), ...fieldsNames],
-            )
-        }
+      const getRelevantNamesFromChange = (change: Change): string[] => {
+        const element = getChangeElement(change)
+        const fieldsNames = isObjectType(element)
+          ? getFieldsElemIDsFullName(element)
+          : []
+        return [element.elemID.getFullName(), ...fieldsNames]
+      }
+      const [additions, removals] = _.partition(changes.flatMap(change => {
         if (isModificationChange(change)) {
           if (isObjectTypeChange(change)) {
-            const beforeFieldNames = getFieldsElemIDsFullName(change.data.before)
-            const afterFieldNames = getFieldsElemIDsFullName(change.data.after)
-            const additionFieldNames = afterFieldNames.filter(fn => !beforeFieldNames.includes(fn))
-            const removalFieldNames = beforeFieldNames.filter(fn => !afterFieldNames.includes(fn))
-            await stateToBuild.searchableNamesIndex
-              .setAll(additionFieldNames.map(fn => ({ key: fn, value: true })))
-            await stateToBuild.searchableNamesIndex.deleteAll(removalFieldNames)
+            const beforeFields = Object.values(change.data.before.fields)
+            const afterFields = Object.values(change.data.after.fields)
+            const additionFields = afterFields
+              .filter(field => !beforeFields.find(f => f.elemID.isEqual(field.elemID)))
+            const removalFields = beforeFields
+              .filter(field => !afterFields.find(f => f.elemID.isEqual(field.elemID)))
+            return [
+              ...additionFields.map(f => toChange({ after: f })),
+              ...removalFields.map(f => toChange({ before: f })),
+            ]
           }
         }
-      })
+        return change
+      }).filter(change => !isModificationChange(change)),
+      isAdditionChange)
+      const additionsNames = additions.flatMap(getRelevantNamesFromChange)
+      await stateToBuild.searchableNamesIndex
+        .setAll(additionsNames.map(name => ({ key: name, value: true })))
+      const removalNames = removals.flatMap(getRelevantNamesFromChange)
+      await stateToBuild.searchableNamesIndex
+        .deleteAll(removalNames)
     }
 
     const mergeData = await getAfterElements({

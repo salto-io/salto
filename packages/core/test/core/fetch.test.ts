@@ -116,7 +116,8 @@ describe('fetch', () => {
       it('should fail', async () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
-          { dummy: [] },
+          [],
+          [],
           [],
           [],
         )
@@ -131,7 +132,8 @@ describe('fetch', () => {
           )
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
-            { dummy: [newTypeBaseModified, typeWithField] },
+            [newTypeBaseModified, typeWithField],
+            [],
             [],
             [],
           )
@@ -144,8 +146,9 @@ describe('fetch', () => {
           )
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
-            { dummy: [] },
+            [],
             [newTypeBase, typeWithField],
+            [],
             [],
           )
           expect(fetchChangesResult.elements).toEqual([newTypeBaseModified, typeWithField])
@@ -158,7 +161,8 @@ describe('fetch', () => {
           )
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
-            { dummy: [newTypeBaseModified, typeWithField] },
+            [newTypeBaseModified, typeWithField],
+            [],
             [],
             [],
           )
@@ -173,8 +177,9 @@ describe('fetch', () => {
           )
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
-            { dummy: [] },
+            [],
             [newTypeBase, typeWithField],
+            [],
             [],
           )
           expect(fetchChangesResult.elements).toEqual([newTypeBaseModified])
@@ -214,8 +219,9 @@ describe('fetch', () => {
         )
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
-          { dummy: [beforeElement, workspaceReferencedElement] },
+          [beforeElement, workspaceReferencedElement],
           [beforeElement, stateReferencedElement],
+          [],
           [],
         )
 
@@ -252,10 +258,11 @@ describe('fetch', () => {
         it('should ignore deletions only for adapter with partial results', async () => {
           const fetchChangesResult = await fetchChanges(
             adapters,
-            {
-              dummy1: [new ObjectType({ elemID: new ElemID('dummy1', 'type') })],
-              dummy2: [new ObjectType({ elemID: new ElemID('dummy2', 'type') })],
-            },
+            [
+              new ObjectType({ elemID: new ElemID('dummy1', 'type') }),
+              new ObjectType({ elemID: new ElemID('dummy2', 'type') }),
+            ],
+            [],
             [],
             [],
           )
@@ -303,7 +310,7 @@ describe('fetch', () => {
       })
       it('should return config change plan when there is no current config', async () => {
         const fetchChangesResult = await fetchChanges(
-          mockAdapters, { dummy: [] }, [], [],
+          mockAdapters, [], [], [], [],
         )
         verifyPlan(
           fetchChangesResult.configChanges,
@@ -315,7 +322,8 @@ describe('fetch', () => {
       it('should return config change plan when there is current config', async () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
-          { dummy: [] },
+          [],
+          [],
           [],
           [currentInstanceConfig],
         )
@@ -328,7 +336,7 @@ describe('fetch', () => {
 
       it('should return empty plan when there is no change', async () => {
         const fetchChangesResult = await fetchChanges(
-          mockAdapters, { dummy: [] }, [], [configInstance],
+          mockAdapters, [], [], [], [configInstance],
         )
         expect([...fetchChangesResult.configChanges.itemsByEvalOrder()]).toHaveLength(0)
       })
@@ -352,7 +360,7 @@ describe('fetch', () => {
               mockAdapters.dummy.fetch.mockResolvedValueOnce(
                 Promise.resolve({ elements: [dupTypeBase, dupTypeBase2] })
               )
-              await fetchChanges(mockAdapters, { dummy: [] }, [dupTypeBase], [])
+              await fetchChanges(mockAdapters, [], [], [dupTypeBase], [])
               expect(false).toBeTruthy()
             } catch (e) {
               expect(e.message).toMatch(/.*duplicate annotation.*/)
@@ -373,7 +381,7 @@ describe('fetch', () => {
               { elements: [dupInstance, validInstance, dupTypeBase, dupTypeBase2, typeWithField] }
             )
           )
-          fetchChangesResult = await fetchChanges(mockAdapters, { dummy: [] }, [], [])
+          fetchChangesResult = await fetchChanges(mockAdapters, [], [], [], [])
         })
         it('should return errors', async () => {
           expect(fetchChangesResult.mergeErrors).toHaveLength(1)
@@ -403,8 +411,9 @@ describe('fetch', () => {
 
         const result = await fetchChanges(
           mockAdapters,
-          { dummy: [newTypeMerged, hiddenInstance] },
           [newTypeMerged, hiddenInstance],
+          [newTypeMerged, hiddenInstance],
+          [],
           [],
         )
         elements = result.elements
@@ -436,8 +445,9 @@ describe('fetch', () => {
 
         const result = await fetchChanges(
           mockAdapters,
-          { dummy: [typeWithField, hiddenInstance] },
           [typeWithField, hiddenInstance],
+          [typeWithField, hiddenInstance],
+          [],
           [],
         )
         changes = [...result.changes]
@@ -469,7 +479,8 @@ describe('fetch', () => {
           )
           const result = await fetchChanges(
             mockAdapters,
-            { dummy: [] },
+            [],
+            [],
             [],
             [],
             progressEmitter
@@ -490,7 +501,8 @@ describe('fetch', () => {
           })
           const result = await fetchChanges(
             mockAdapters,
-            { dummy: [] },
+            [],
+            [],
             [],
             [],
             progressEmitter
@@ -513,7 +525,8 @@ describe('fetch', () => {
         )
         const result = await fetchChanges(
           mockAdapters,
-          { dummy: [] },
+          [],
+          [],
           [],
           [],
         )
@@ -542,8 +555,9 @@ describe('fetch', () => {
             )
             const result = await fetchChanges(
               mockAdapters,
-              { dummy: [newTypeBaseWPath] },
               [newTypeBaseWPath],
+              [newTypeBaseWPath],
+              [],
               [],
             )
             changes = [...result.changes]
@@ -578,8 +592,9 @@ describe('fetch', () => {
             )
             const result = await fetchChanges(
               mockAdapters,
-              { dummy: [newTypeA] },
               [newTypeA],
+              [newTypeA],
+              [],
               [],
             )
             changes = [...result.changes]
@@ -602,8 +617,9 @@ describe('fetch', () => {
           )
           const result = await fetchChanges(
             mockAdapters,
-            { dummy: [typeWithFieldChange] },
+            [typeWithFieldChange],
             [typeWithField],
+            [],
             [],
           )
           changes = [...result.changes]
@@ -620,8 +636,9 @@ describe('fetch', () => {
           )
           const result = await fetchChanges(
             mockAdapters,
-            { dummy: [typeWithFieldConflict] },
+            [typeWithFieldConflict],
             [typeWithField],
+            [],
             [],
           )
           changes = [...result.changes]
@@ -638,8 +655,9 @@ describe('fetch', () => {
           )
           const result = await fetchChanges(
             mockAdapters,
-            { dummy: [] },
+            [],
             [typeWithField],
+            [],
             [],
           )
           changes = [...result.changes]
@@ -805,7 +823,8 @@ describe('fetch', () => {
         )
         const result = await fetchChanges(
           mockAdapters,
-          { dummy: [] },
+          [],
+          [],
           [],
           [],
         )
@@ -831,7 +850,8 @@ describe('fetch', () => {
         )
         await fetchChanges(
           mockAdapters,
-          { dummy: [] },
+          [],
+          [],
           [],
           [],
         )
@@ -849,14 +869,15 @@ describe('fetch', () => {
       },
     }
     describe('fetch is partial', () => {
-      it('should call postFetch with the workspace elements and service elements combined in elementsByAdapter, but only the fetched elements in currentAdapterElements', async () => {
+      it('should call postFetch with the state and service elements combined in elementsByAdapter, but only the fetched elements in currentAdapterElements', async () => {
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
           { elements: [newTypeBaseModified], isPartial: true },
         )
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
-          { dummy: [typeWithField] },
+          [typeWithField],
           [newTypeBase, typeWithField],
+          [],
           [],
         )
         expect(fetchChangesResult.elements).toEqual([newTypeBaseModified, typeWithField])
@@ -880,8 +901,9 @@ describe('fetch', () => {
         )
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
-          { dummy: [] },
+          [],
           [newTypeBase, typeWithField],
+          [],
           [],
         )
         expect(fetchChangesResult.elements).toEqual([newTypeBaseModified])
@@ -928,11 +950,8 @@ describe('fetch', () => {
       it('should call postFetch for all relevant adapters when all are fetched', async () => {
         await fetchChanges(
           adapters,
-          {
-            dummy1: [dummy1],
-            dummy2: [dummy2],
-            dummy3: [dummy3],
-          },
+          [],
+          [dummy1, dummy2, dummy3],
           [],
           [],
         )
@@ -956,14 +975,32 @@ describe('fetch', () => {
       it('should call postFetch only for fetched adapters (with postFetch defined) when not all are fetched', async () => {
         await fetchChanges(
           _.pick(adapters, ['dummy1', 'dummy2']),
-          {
-            dummy1: [dummy1],
-            dummy2: [dummy2],
-            dummy3: [dummy3],
-          },
           [],
+          [dummy1, dummy2],
+          [dummy3],
           [],
         )
+        expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
+          currentAdapterElements: expect.arrayContaining([dummy2Type1]),
+          elementsByAdapter: {
+            // dummy1 is partial so it also includes elements from the workspace
+            dummy1: expect.arrayContaining([dummy1Type1, dummy1]),
+            dummy2: expect.arrayContaining([dummy2Type1]),
+            // dummy3 was not fetched so it includes only elements from the workspace
+            dummy3: expect.arrayContaining([dummy3]),
+          },
+        })
+        expect(adapters.dummy3.postFetch).not.toHaveBeenCalled()
+      })
+      it('should not fail on errors', async () => {
+        adapters.dummy2.postFetch.mockImplementationOnce(() => { throw new Error(' failure') })
+        await expect(fetchChanges(
+          _.pick(adapters, ['dummy1', 'dummy2']),
+          [],
+          [dummy1, dummy2],
+          [dummy3],
+          [],
+        )).resolves.not.toThrow()
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
           currentAdapterElements: expect.arrayContaining([dummy2Type1]),
           elementsByAdapter: {

@@ -15,11 +15,11 @@
 */
 import _ from 'lodash'
 import {
-  Element, isObjectType, CORE_ANNOTATIONS, ReferenceExpression, ElementMap, ElemID,
+  Element, isObjectType, ReferenceExpression, ElementMap, ElemID,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { getAllReferencedIds } from '@salto-io/adapter-utils'
+import { getAllReferencedIds, extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { metadataType, apiName, isCustomObject } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
@@ -136,13 +136,7 @@ const addGeneratedDependencies = (elem: Element, refElemIDs: ElemID[]): void => 
     .map(elemId => new ReferenceExpression(elemId))
 
   if (newDependencies.length !== 0) {
-    elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = _.sortBy(
-      [
-        ...collections.array.makeArray(elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]),
-        ...newDependencies,
-      ],
-      ref => ref.elemId.getFullName(),
-    )
+    extendGeneratedDependencies(elem, newDependencies)
   }
 }
 

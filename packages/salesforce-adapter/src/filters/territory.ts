@@ -17,8 +17,9 @@ import _ from 'lodash'
 import { Element, isInstanceElement, InstanceElement, getChangeElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { isMetadataObjectType, metadataType, apiName } from '../transformers/transformer'
-import { NESTED_DIR_NAMES_ANNOTATION, CONTENT_FILENAME_ANNOTATION } from '../transformers/xml_transformer'
+import { CONTENT_FILENAME_OVERRIDE } from '../transformers/xml_transformer'
 import { TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE, TERRITORY2_RULE_TYPE } from '../constants'
+import { parentApiName } from './utils'
 
 const territory2TypesToNestedDirName: Record<string, string> = {
   [TERRITORY2_RULE_TYPE]: 'rules',
@@ -39,27 +40,19 @@ const removeCustomFieldsFromTypes = (elements: Element[], typeNames: string[]): 
     })
 }
 
-const contentFileNameAnnotate = (elements: InstanceElement[], typeNames: string[]): void => {
+const annotateInstances = (elements: InstanceElement[], typeNames: string[]): void => {
   const elementsOfTypes = elements.filter(elem => typeNames.includes(metadataType(elem)))
   elementsOfTypes.forEach(element => {
-    const nameWithoutModelPrefix = apiName(element).split('.').slice(1).join('.')
+    const nestedDirsNames = [parentApiName(element)]
     const { suffix } = element.type.annotations
-    const contentFileName = `${nameWithoutModelPrefix}${suffix === undefined ? '' : `.${suffix}`}`
-    element.annotate({ [CONTENT_FILENAME_ANNOTATION]: contentFileName })
-  })
-}
-
-const nestedDirsAnnotate = (elements: InstanceElement[], typeNames: string[]): void => {
-  const elementsOfTypes = elements.filter(elem => typeNames.includes(metadataType(elem)))
-  elementsOfTypes.forEach(element => {
-    const modelName = apiName(element).split('.')[0]
-    const nestedDirsNames = [modelName]
-
+    let name = apiName(element)
     if (territory2TypesToNestedDirName[metadataType(element)] !== undefined) {
       const nestedDirName = territory2TypesToNestedDirName[metadataType(element)]
       nestedDirsNames.push(nestedDirName)
+      name = apiName(element, true)
     }
-    element.annotate({ [NESTED_DIR_NAMES_ANNOTATION]: nestedDirsNames })
+    const contentFileName = `${name}${suffix === undefined ? '' : `.${suffix}`}`
+    element.annotate({ [CONTENT_FILENAME_OVERRIDE]: [...nestedDirsNames, contentFileName] })
   })
 }
 
@@ -70,17 +63,16 @@ const filterCreator: FilterCreator = () => ({
     // We remove the fields from the instances to avoid duplication
     removeCustomFieldsFromTypes(elements, [TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE])
   },
+
   // territory2 types require a special deploy pkg structure (SALTO-1200)
   preDeploy: async changes => {
     const instanceElements = changes.map(getChangeElement).filter(isInstanceElement)
-    contentFileNameAnnotate(instanceElements, Object.keys(territory2TypesToNestedDirName))
-    nestedDirsAnnotate(instanceElements,
+    annotateInstances(instanceElements,
       [...Object.keys(territory2TypesToNestedDirName), TERRITORY2_MODEL_TYPE])
   },
   onDeploy: async changes => {
     changes.map(getChangeElement).forEach(elem => {
-      elem.annotations = _.omit(elem.annotations,
-        [NESTED_DIR_NAMES_ANNOTATION, CONTENT_FILENAME_ANNOTATION])
+      elem.annotations = _.omit(elem.annotations, [CONTENT_FILENAME_OVERRIDE])
     })
     return []
   },

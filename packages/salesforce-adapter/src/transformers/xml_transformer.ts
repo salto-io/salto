@@ -39,8 +39,9 @@ const { makeArray } = collections.array
 
 const log = logger(module)
 
-export const NESTED_DIR_NAMES_ANNOTATION = 'nestedDirs'
-export const CONTENT_FILENAME_ANNOTATION = 'contentFileName'
+// if added to an instance, includes the content filename for the deploy package
+// and maybe more nesting levels
+export const CONTENT_FILENAME_OVERRIDE = 'deployPkgPartialPath'
 
 export const metadataTypesWithAttributes = [
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
@@ -412,9 +413,9 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
         const instanceContentPath = [
           PACKAGE,
           dirName,
-          ...instance.annotations[NESTED_DIR_NAMES_ANNOTATION] ?? [],
-          instance.annotations[CONTENT_FILENAME_ANNOTATION]
-            ?? `${instanceName}${suffix === undefined ? '' : `.${suffix}`}`,
+          // ...instance.annotations[CONTENT_FILENAME_OVERRIDE]
+          //  ??
+          `${instanceName}${suffix === undefined ? '' : `.${suffix}`}`,
         ].join('/')
         if (hasMetaFile) {
           zip.file(

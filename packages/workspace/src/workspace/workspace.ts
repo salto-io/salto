@@ -94,7 +94,7 @@ export type Workspace = {
   envOfFile(filename: string): string
   getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment>
   hasErrors(): Promise<boolean>
-  errors(validate?: boolean): Promise<Readonly<Errors>>
+  errors(): Promise<Readonly<Errors>>
   transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>>
   transformError: (error: SaltoError) => Promise<WorkspaceError<SaltoError>>
@@ -102,7 +102,7 @@ export type Workspace = {
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
-  setNaclFiles: (...naclFiles: NaclFile[]) => Promise<Change[]>
+  setNaclFiles: (naclFiles: NaclFile[], validate?: boolean) => Promise<Change[]>
   removeNaclFiles: (...names: string[]) => Promise<Change[]>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
@@ -176,10 +176,16 @@ export const loadWorkspace = async (
     currentEnv(), elementsSources.commonSourceName, remoteMapCreator)
   let workspaceState: Promise<WorkspaceState> | undefined
 
-  const buildWorkspaceState = async ({ workspaceChanges = [], env, stateOnlyChanges = [] }: {
+  const buildWorkspaceState = async ({
+    workspaceChanges = [],
+    env,
+    stateOnlyChanges = [],
+    validate = true,
+  }: {
     workspaceChanges?: Change<Element>[]
     env?: string
     stateOnlyChanges?: Change<Element>[]
+    validate?: boolean
   }): Promise<WorkspaceState> => {
     const actualEnv = env ?? currentEnv()
     const stateToBuild = workspaceState !== undefined && actualEnv === currentEnv()
@@ -347,25 +353,28 @@ export const loadWorkspace = async (
       .map(getChangeElement)
 
     const changeIDs = changes.map(getChangeElement).map(elem => elem.elemID)
+    if (validate) {
+      const {
+        errors: validationErrors,
+        validatedElementsIDs,
+      } = await validateElementsAndDependents(
+        changedElements,
+        stateToBuild.merged,
+        changeIDs,
+      )
+      const validationErrorsById = await awu(validationErrors)
+        .groupBy(err => err.elemID.createTopLevelParentID().parent.getFullName())
 
-    const { errors: validationErrors, validatedElementsIDs } = await validateElementsAndDependents(
-      changedElements,
-      stateToBuild.merged,
-      changeIDs,
-    )
-    const validationErrorsById = await awu(validationErrors)
-      .groupBy(err => err.elemID.createTopLevelParentID().parent.getFullName())
+      const errorsToUpdate = Object.entries(validationErrorsById)
+        .map(([elemID, errors]) => ({ key: elemID, value: errors }))
 
-    const errorsToUpdate = Object.entries(validationErrorsById)
-      .map(([elemID, errors]) => ({ key: elemID, value: errors }))
+      const errorsToDelete = validatedElementsIDs
+        .map(id => id.getFullName())
+        .filter(fullname => _.isEmpty(validationErrorsById[fullname]))
 
-    const errorsToDelete = validatedElementsIDs
-      .map(id => id.getFullName())
-      .filter(fullname => _.isEmpty(validationErrorsById[fullname]))
-
-    await stateToBuild.validationErrors.setAll(errorsToUpdate)
-    await stateToBuild.validationErrors.deleteAll(errorsToDelete)
-
+      await stateToBuild.validationErrors.setAll(errorsToUpdate)
+      await stateToBuild.validationErrors.deleteAll(errorsToDelete)
+    }
     return stateToBuild
   }
 
@@ -420,7 +429,8 @@ export const loadWorkspace = async (
 
   const updateNaclFiles = async (
     changes: DetailedChange[],
-    mode?: RoutingMode
+    mode?: RoutingMode,
+    validate = true
   ): Promise<void> => {
     const { visible: visibleChanges, hidden: hiddenChanges } = await handleHiddenChanges(
       changes,
@@ -430,13 +440,13 @@ export const loadWorkspace = async (
     const workspaceChanges = await (await getLoadedNaclFilesSource())
       .updateNaclFiles(visibleChanges, mode)
     const stateOnlyChanges = await getStateOnlyChanges(hiddenChanges)
-    workspaceState = buildWorkspaceState({ workspaceChanges, stateOnlyChanges })
+    workspaceState = buildWorkspaceState({ workspaceChanges, stateOnlyChanges, validate })
   }
 
 
-  const setNaclFiles = async (...naclFiles: NaclFile[]): Promise<Change[]> => {
+  const setNaclFiles = async (naclFiles: NaclFile[], validate = true): Promise<Change[]> => {
     const elementChanges = await (await getLoadedNaclFilesSource()).setNaclFiles(...naclFiles)
-    workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges })
+    workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })
     return elementChanges
   }
 
@@ -494,12 +504,10 @@ export const loadWorkspace = async (
     return { ...error, sourceFragments: [] }
   }
 
-  const errors = async (validate = true): Promise<Errors> => {
+  const errors = async (): Promise<Errors> => {
     const currentState = await getWorkspaceState()
     const errorsFromSource = await (await getLoadedNaclFilesSource()).getErrors()
-    const validationErrors = validate
-      ? await awu(currentState.validationErrors.values()).flat().toArray()
-      : []
+    const validationErrors = await awu(currentState.validationErrors.values()).flat().toArray()
     _(validationErrors)
       .groupBy(error => error.constructor.name)
       .entries()

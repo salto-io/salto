@@ -317,7 +317,7 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
     IllegalReferenceValidationError: v => (
       new IllegalReferenceValidationError({
         elemID: reviveElemID(v.elemID),
-        message: v.message,
+        reason: v.reason,
       })
     ),
     UnresolvedReferenceValidationError: v => (

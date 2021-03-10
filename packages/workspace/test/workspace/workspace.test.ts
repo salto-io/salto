@@ -499,9 +499,9 @@ describe('workspace', () => {
       workspace = await createWorkspace(naclFileStore)
       await workspace.elements()
       changes = (
-        await workspace.setNaclFiles(changedNaclFile, newNaclFile, emptyNaclFile)
+        await workspace.setNaclFiles([changedNaclFile, newNaclFile, emptyNaclFile])
       )
-      await workspace.setNaclFiles(changedNaclFile, newNaclFile, emptyNaclFile)
+      await workspace.setNaclFiles([changedNaclFile, newNaclFile, emptyNaclFile])
       elemMap = await getElemMap(await workspace.elements())
     })
 

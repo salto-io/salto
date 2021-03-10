@@ -23,7 +23,7 @@ import { createRefToElmWithValue, safeJsonStringify } from '@salto-io/adapter-ut
 import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl } from '../utils'
 
-import { serialize, deserialize, SALTO_CLASS_FIELD, deserializeMergeErrors } from '../../src/serializer/elements'
+import { serialize, deserialize, SALTO_CLASS_FIELD, deserializeMergeErrors, deserializeValidationErrors } from '../../src/serializer/elements'
 import { resolve } from '../../src/expressions'
 import { LazyStaticFile } from '../../src/workspace/static_files/source'
 import { SyncDirectoryStore } from '../../src/workspace/dir_store'
@@ -36,6 +36,8 @@ import {
 import { DuplicateInstanceKeyError } from '../../src/merger/internal/instances'
 import { MultiplePrimitiveTypesError } from '../../src/merger/internal/primitives'
 import { DuplicateVariableNameError } from '../../src/merger/internal/variables'
+import { CircularReferenceValidationError, IllegalReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError } from '../../src/validator'
+import { UnresolvedReferenceValidationError } from '../../src/errors'
 
 const { awu } = collections.asynciterable
 describe('State/cache serialization', () => {
@@ -426,6 +428,53 @@ describe('State/cache serialization', () => {
     })
     it('should throw error if trying to deserialize a non merge error object', async () => {
       await expect(deserializeMergeErrors(safeJsonStringify([{ test }]))).rejects.toThrow()
+    })
+  })
+
+  describe('validation errors', () => {
+    const validationErrors = _.sortBy([
+      // new InvalidStaticFileError({
+      //   elemID: new ElemID('salto', 'InvalidStaticFileError'),
+      //   value: new MissingStaticFile('invalid')
+      // }),
+      new CircularReferenceValidationError({
+        elemID: new ElemID('salto', 'CircularReferenceValidationError'),
+        ref: 'ref',
+      }),
+      new IllegalReferenceValidationError({
+        elemID: new ElemID('salto', 'IllegalReferenceValidationError'),
+        reason: 'reason',
+      }),
+      new UnresolvedReferenceValidationError({
+        elemID: new ElemID('salto', 'UnresolvedReferenceValidationError'),
+        target: new ElemID('salto', 'Target'),
+      }),
+      new MissingRequiredFieldValidationError({
+        elemID: new ElemID('salto', 'MissingRequiredFieldValidationError'),
+        fieldName: 'name',
+      }),
+      new RegexMismatchValidationError({
+        elemID: new ElemID('salto', 'RegexMismatchValidationError'),
+        fieldName: 'name',
+        regex: 'regex',
+        value: 'asd',
+      }),
+      new InvalidValueRangeValidationError({
+        elemID: new ElemID('salto', 'InvalidValueRangeValidationError'),
+        fieldName: 'name',
+        value: 12,
+        maxValue: 6,
+        minValue: 4,
+      }),
+    ], err => err.elemID.getFullName())
+
+    it('should serialize and deserialize correctly', async () => {
+      const serialized = serialize(validationErrors)
+      const deserialized = _.sortBy(
+        await deserializeValidationErrors(serialized),
+        err => err.elemID.getFullName()
+      )
+      expect(deserialized).toEqual(validationErrors)
     })
   })
 })

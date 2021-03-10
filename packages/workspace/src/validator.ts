@@ -30,11 +30,11 @@ import { IllegalReference } from './parser/parse'
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
-export abstract class ValidationError extends types.Bean<Readonly<{
+export abstract class ValidationError extends types.Bean<{
   elemID: ElemID
   error: string
   severity: SaltoErrorSeverity
-}>> implements SaltoElementError {
+}> implements SaltoElementError {
   get message(): string {
     return `Error validating "${this.elemID.getFullName()}": ${this.error}`
   }
@@ -187,20 +187,24 @@ export const isUnresolvedRefError = (
 
 
 export class IllegalReferenceValidationError extends ValidationError {
+  readonly reason: string
   constructor(
-    { elemID, message }:
-    { elemID: ElemID; message: string }
+    { elemID, reason }:
+    { elemID: ElemID; reason: string }
   ) {
-    super({ elemID, error: `illegal reference target, ${message}`, severity: 'Warning' })
+    super({ elemID, error: `illegal reference target, ${reason}`, severity: 'Warning' })
+    this.reason = reason
   }
 }
 
 export class CircularReferenceValidationError extends ValidationError {
+  readonly ref: string
   constructor(
     { elemID, ref }:
     { elemID: ElemID; ref: string }
   ) {
     super({ elemID, error: `circular reference ${ref}`, severity: 'Warning' })
+    this.ref = ref
   }
 }
 
@@ -361,7 +365,7 @@ const createReferenceValidationErrors = (elemID: ElemID, value: Value): Validati
     return [new UnresolvedReferenceValidationError({ elemID, target: value.target })]
   }
   if (value instanceof IllegalReference) {
-    return [new IllegalReferenceValidationError({ elemID, message: value.message })]
+    return [new IllegalReferenceValidationError({ elemID, reason: value.message })]
   }
   if (value instanceof CircularReference) {
     return [new CircularReferenceValidationError({ elemID, ref: value.ref })]
@@ -579,12 +583,3 @@ export const validateElements = async (
     return validateType(e as TypeElement, elementsSource)
   })
   .toArray()
-
-export const validateElementsAndDependents = async (
-  elements: ReadonlyArray<Element>,
-  elementsSource: ReadOnlyElementsSource
-): Promise<ValidationError[]> => {
-  const getElementsToValidate = (): ReadonlyArray<Element> => elements
-
-  return validateElements(getElementsToValidate(), elementsSource)
-}

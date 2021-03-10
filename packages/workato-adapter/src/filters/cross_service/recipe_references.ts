@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   Element, isInstanceElement, InstanceElement, ElemID, isReferenceExpression, ReferenceExpression,
-  PostFetchOptions, isObjectType, ObjectType, Field,
+  PostFetchOptions, isObjectType, ObjectType, Field, Value,
 } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { transformElement, TransformFunc, safeJsonStringify, setPath, extendGeneratedDependencies } from '@salto-io/adapter-utils'
@@ -45,8 +45,7 @@ type ReferenceFinder<T extends SalesforceBlock | NetsuiteBlock> = (
 const addReferencesForService = <T extends SalesforceBlock | NetsuiteBlock>(
   inst: InstanceElement,
   addReferences: ReferenceFinder<T>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  typeGuard: (value: any) => value is T,
+  typeGuard: (value: Value) => value is T,
 ): boolean => {
   const dependencyMapping: MappedReference[] = []
 
@@ -65,17 +64,17 @@ const addReferencesForService = <T extends SalesforceBlock | NetsuiteBlock>(
     element: inst,
     transformFunc: findReferences,
   })
-  if (dependencyMapping.length > 0) {
-    log.info('found the following references: %s', safeJsonStringify(dependencyMapping.map(dep => [dep.srcPath?.getFullName(), dep.ref.elemId.getFullName()])))
-    dependencyMapping.forEach(({ srcPath, ref }) => {
-      if (srcPath !== undefined) {
-        setPath(inst, srcPath, ref)
-      }
-    })
-    extendGeneratedDependencies(inst, dependencyMapping.map(dep => dep.ref))
-    return true
+  if (dependencyMapping.length === 0) {
+    return false
   }
-  return false
+  log.debug('found the following references: %s', safeJsonStringify(dependencyMapping.map(dep => [dep.srcPath?.getFullName(), dep.ref.elemId.getFullName()])))
+  dependencyMapping.forEach(({ srcPath, ref }) => {
+    if (srcPath !== undefined) {
+      setPath(inst, srcPath, ref)
+    }
+  })
+  extendGeneratedDependencies(inst, dependencyMapping.map(dep => dep.ref))
+  return true
 }
 
 const SALESFORCE_LABEL_ANNOTATION = 'label'
@@ -226,9 +225,8 @@ const getServiceConnectionIDs = (
   serviceConnectionNames: Record<string, string>,
   connectionInstances: InstanceElement[],
 ): Record<string, ElemID> => {
-  const supportedAdapters = Object.values(CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS)
   const unsupportedServiceNames = Object.keys(serviceConnectionNames).filter(
-    name => !supportedAdapters.includes(name)
+    name => !Object.keys(CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS).includes(name)
   )
   if (unsupportedServiceNames.length > 0) {
     log.error('the following services are not supported, and will be ignored: %s', unsupportedServiceNames)
@@ -238,7 +236,9 @@ const getServiceConnectionIDs = (
     inst => toKey(inst.value.application, inst.value.name)
   ))
   const missingConnections = Object.entries(serviceConnectionNames).filter(
-    ([adapterName, connectionName]) => !connections.has(toKey(adapterName, connectionName))
+    ([adapterName, connectionName]) => !connections.has(
+      toKey(CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS[adapterName] ?? '', connectionName)
+    )
   )
   if (missingConnections.length > 0) {
     log.error('the following services do not have any workato connections in the fetch results: %s', missingConnections)
@@ -248,7 +248,8 @@ const getServiceConnectionIDs = (
     _.mapValues(
       _.pickBy(
         serviceConnectionNames,
-        (_connectionName, adapterName) => supportedAdapters.includes(adapterName)
+        (_connectionName, adapterName) =>
+          Object.values(CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS).includes(adapterName)
       ),
       (connectionName, serviceName) => _.first(connectionInstances
         .filter(inst => inst.value.name === connectionName)
@@ -258,13 +259,6 @@ const getServiceConnectionIDs = (
     ),
     isDefined,
   )
-  const unresolvedConnectionNames = (
-    Object.entries(serviceConnectionNames)
-      .filter(([serviceName]) => serviceConnectionNames[serviceName] === undefined)
-  )
-  if (unresolvedConnectionNames.length > 0) {
-    log.error('the following connection names could not be resolved: %s', safeJsonStringify(unresolvedConnectionNames))
-  }
 
   return serviceConnectionIDs
 }
@@ -314,7 +308,6 @@ const addReferencesForConnectionRecipes = (
     return res.some(t => t)
   }
 
-  log.debug('unsupported service name %s, not resolving recipe references', serviceName)
   return false
 }
 

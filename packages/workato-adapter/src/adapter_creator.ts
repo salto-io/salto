@@ -15,10 +15,7 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import {
-  InstanceElement, Adapter, AdapterOperations, AdapterOperationsContext,
-} from '@salto-io/adapter-api'
-import { types } from '@salto-io/lowerdash'
+import { InstanceElement, Adapter } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import WorkatoAdapter from './adapter'
 import { Credentials, usernameTokenCredentialsType } from './auth'
@@ -68,9 +65,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   return adapterConfig
 }
 
-export const adapter: Omit<Adapter, 'operations'> & {
-  operations: (context: AdapterOperationsContext) => types.PickyRequired<AdapterOperations, 'postFetch'>
-} = {
+export const adapter: Adapter = {
   operations: context => {
     const config = adapterConfigFromConfig(context.config)
     const credentials = credentialsFromConfig(context.credentials)

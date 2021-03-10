@@ -16,8 +16,9 @@
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, ObjectType, ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, ObjectType, ElemID, CORE_ANNOTATIONS, AdapterOperations } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { types } from '@salto-io/lowerdash'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernameTokenCredentialsType } from '../src/auth'
@@ -315,12 +316,13 @@ describe('adapter', () => {
             }
           ),
           elementsSource: buildElementsSourceFromElements([]),
-        })
+        }) as types.PickyRequired<AdapterOperations, 'postFetch'>
 
         const fetchResult = await adapterOperations.fetch({
           progressReporter: { reportProgress: () => null },
         })
         const currentAdapterElements = fetchResult.elements
+        expect(adapterOperations.postFetch).toBeDefined()
         const postFetchRes = await adapterOperations.postFetch({
           currentAdapterElements,
           elementsByAdapter: {

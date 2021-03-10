@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { Element, isInstanceElement, InstanceElement, getChangeElement, Change, isInstanceChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { isMetadataObjectType, metadataType, apiName } from '../transformers/transformer'
@@ -22,9 +21,9 @@ import { TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE, TERRITORY2_RULE_TYPE } from '..
 import { isInstanceOfTypeChange, parentApiName } from './utils'
 
 // territory2Model does not require another nested dir
-const territory2TypesToNestedDirName: Record<string, string> = {
-  [TERRITORY2_RULE_TYPE]: 'rules',
-  [TERRITORY2_TYPE]: 'territories',
+const territory2TypesToNestedDirName: Record<string, string[]> = {
+  [TERRITORY2_RULE_TYPE]: ['rules'],
+  [TERRITORY2_TYPE]: ['territories'],
 }
 
 const territory2Types = [...Object.keys(territory2TypesToNestedDirName), TERRITORY2_MODEL_TYPE]
@@ -48,19 +47,15 @@ const isTerritoryRelatedChange = (change: Change): change is Change<InstanceElem
    && territory2Types.some(typeName => isInstanceOfTypeChange(typeName)(change))
 )
 
-const setTerritoryDeployPkgStructure = (elements: InstanceElement[]): void => {
-  elements.forEach(element => {
-    const nestedDirsNames = [parentApiName(element)]
-    const { suffix } = element.type.annotations
-    let name = apiName(element)
-    if (territory2TypesToNestedDirName[metadataType(element)] !== undefined) {
-      const nestedDirName = territory2TypesToNestedDirName[metadataType(element)]
-      nestedDirsNames.push(nestedDirName)
-      name = apiName(element, true)
-    }
-    const contentFileName = `${name}${suffix === undefined ? '' : `.${suffix}`}`
-    element.annotate({ [CONTENT_FILENAME_OVERRIDE]: [...nestedDirsNames, contentFileName] })
-  })
+const setTerritoryDeployPkgStructure = (element: InstanceElement): void => {
+  const { suffix } = element.type.annotations
+  const instanceName = apiName(element, true)
+  const contentPath = [
+    parentApiName(element),
+    ...territory2TypesToNestedDirName[metadataType(element)] ?? [],
+    `${instanceName}${suffix === undefined ? '' : `.${suffix}`}`,
+  ]
+  element.annotate({ [CONTENT_FILENAME_OVERRIDE]: contentPath })
 }
 
 const filterCreator: FilterCreator = () => ({
@@ -73,14 +68,18 @@ const filterCreator: FilterCreator = () => ({
 
   // territory2 types require a special deploy pkg structure (SALTO-1200)
   preDeploy: async changes => {
-    const territoryInstances = changes.filter(isTerritoryRelatedChange).map(getChangeElement)
-    setTerritoryDeployPkgStructure(territoryInstances)
+    changes
+      .filter(isTerritoryRelatedChange)
+      .map(getChangeElement)
+      .forEach(setTerritoryDeployPkgStructure)
   },
   onDeploy: async changes => {
-    const territoryInstances = changes.filter(isTerritoryRelatedChange).map(getChangeElement)
-    territoryInstances.forEach(elem => {
-      elem.annotations = _.omit(elem.annotations, [CONTENT_FILENAME_OVERRIDE])
-    })
+    changes
+      .filter(isTerritoryRelatedChange)
+      .map(getChangeElement)
+      .forEach(elem => {
+        delete elem.annotations[CONTENT_FILENAME_OVERRIDE]
+      })
     return []
   },
 })

@@ -46,7 +46,7 @@ describe('Test go to definitions', () => {
     )
   })
 
-  it('should give all instance usages of a type', async () => {
+  it('should give all instance and annotationType usages of a type', async () => {
     const token = { value: 'vs.loan', type: 'word' }
     const pos = {
       line: 60,
@@ -54,10 +54,10 @@ describe('Test go to definitions', () => {
     }
     const context = await getPositionContext(workspace, naclFileName, pos)
     const defs = await provideWorkspaceReferences(workspace, token, context)
-    expect(getRefLines(defs)).toEqual([60, 87, 107, 113, 151])
+    expect(getRefLines(defs)).toEqual([60, 87, 107, 113, 151, 203])
   })
 
-  it('should give all instance AND field usages of a type', async () => {
+  it('should give all instance, field and annotationType usages of a type', async () => {
     const token = { value: 'vs.person', type: 'word' }
     const pos = {
       line: 32,
@@ -65,7 +65,7 @@ describe('Test go to definitions', () => {
     }
     const context = await getPositionContext(workspace, naclFileName, pos)
     const defs = await provideWorkspaceReferences(workspace, token, context)
-    expect(getRefLines(defs)).toEqual([32, 47, 64, 75, 81, 127, 136, 193, 197])
+    expect(getRefLines(defs)).toEqual([32, 47, 64, 75, 81, 127, 136, 172, 193, 197])
   })
 
   it('should work on tokens which have no context element', async () => {
@@ -75,7 +75,7 @@ describe('Test go to definitions', () => {
       type: 'global',
     }
     const defs = await provideWorkspaceReferences(workspace, token, context)
-    expect(getRefLines(defs)).toEqual([32, 47, 64, 75, 81, 127, 136, 193, 197])
+    expect(getRefLines(defs)).toEqual([32, 47, 64, 75, 81, 127, 136, 172, 193, 197])
   })
 
   it('should give annotation attr usage for annotation def', async () => {

@@ -327,6 +327,35 @@ describe('Test elements.ts', () => {
       })
     })
 
+    describe('getTypeOrContainerTypeID', () => {
+      const elemID = new ElemID('adapter', 'typeName', 'type', 'name')
+      const newObjectType = new ObjectType({ elemID })
+      it('Should return the ElemID if non-container type', () => {
+        expect(ElemID.getTypeOrContainerTypeID(newObjectType.elemID).isEqual(elemID)).toBeTruthy()
+      })
+
+      it('Should return the innerType elemID for ListType elemID', () => {
+        const listType = new ListType(newObjectType)
+        expect(ElemID.getTypeOrContainerTypeID(listType.elemID).isEqual(elemID)).toBeTruthy()
+      })
+
+      it('Should return the innerType elemID for MapType elemID', () => {
+        const mapType = new MapType(newObjectType)
+        expect(ElemID.getTypeOrContainerTypeID(mapType.elemID).isEqual(elemID)).toBeTruthy()
+      })
+
+      it('Should return the deepInnerType elemID for list of map elemID', () => {
+        const listOfMapType = new ListType(new MapType(newObjectType))
+        expect(ElemID.getTypeOrContainerTypeID(listOfMapType.elemID).isEqual(elemID))
+          .toBeTruthy()
+      })
+
+      it('Should throw an error if <> structure is illegal in the elemID', () => {
+        const invalidElemID = new ElemID('', '<invalid>>')
+        expect(() => ElemID.getTypeOrContainerTypeID(invalidElemID)).toThrow()
+      })
+    })
+
     describe('nestingLevel', () => {
       describe('for config, types, instances and variables', () => {
         it('should be zero', () => {

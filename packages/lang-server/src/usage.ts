@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement, isReferenceExpression, isIndexPathPart, ElemID, isObjectType, getDeepInnerType, Value, isContainerType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, isReferenceExpression, ElemID, isObjectType, Value, isContainerType, placeholderReadonlyElementsSource } from '@salto-io/adapter-api'
 import { transformElement, TransformFuncArgs } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { getLocations, SaltoElemLocation, SaltoElemFileLocation } from './location'
@@ -27,25 +27,23 @@ const { awu } = collections.asynciterable
 const getElemIDUsages = async (
   element: Element,
   id: ElemID,
-  elementsSource: ReadOnlyElementsSource,
 ): Promise<string[]> => {
   const pathesToAdd = new Set<string>()
+  Object.entries(element.annotationRefTypes)
+    .filter(([_name, annoRefType]) =>
+      id.isEqual(ElemID.getTypeOrContainerTypeID(annoRefType.elemID)))
+    .forEach(([annoTypeName, _type]) => pathesToAdd.add(
+      new ElemID(element.elemID.adapter, element.elemID.typeName, 'annotation', annoTypeName).getFullName()
+    ))
   if (isObjectType(element)) {
-    await awu(Object.values(element.fields))
-      .filter(async f => {
-        const fieldType = await f.getType(elementsSource)
-        const nonGenericType = isContainerType(fieldType)
-          ? await getDeepInnerType(fieldType, elementsSource) : fieldType
-        return id.isEqual(nonGenericType.elemID)
-      }).forEach(f => pathesToAdd.add(f.elemID.getFullName()))
+    Object.values(element.fields)
+      .filter(field => id.isEqual(ElemID.getTypeOrContainerTypeID(field.refType.elemID)))
+      .forEach(field => pathesToAdd.add(field.elemID.getFullName()))
   }
   if (isInstanceElement(element) && element.refType.elemID.isEqual(id)) {
     pathesToAdd.add(element.elemID.getFullName())
   }
-  const transformFunc = ({ value, field, path }: TransformFuncArgs): Value => {
-    if (field?.elemID.isEqual(id) && path && !isIndexPathPart(path.name)) {
-      pathesToAdd.add(path.getFullName())
-    }
+  const transformFunc = ({ value, path }: TransformFuncArgs): Value => {
     if (isReferenceExpression(value) && path) {
       if (id.isEqual(value.elemID) || id.isParentOf(value.elemID)) {
         pathesToAdd.add(path.getFullName())
@@ -54,7 +52,9 @@ const getElemIDUsages = async (
     return value
   }
   if (!isContainerType(element)) {
-    await transformElement({ element, transformFunc, strict: false, elementsSource })
+    await transformElement(
+      { element, transformFunc, strict: false, elementsSource: placeholderReadonlyElementsSource },
+    )
   }
   return [...pathesToAdd]
 }
@@ -105,7 +105,7 @@ export const getUsageInFile = async (
   id: ElemID
 ): Promise<ElemID[]> =>
   awu(await workspace.getElements(filename))
-    .flatMap(async e => getElemIDUsages(e, id, await workspace.elements))
+    .flatMap(async e => getElemIDUsages(e, id))
     .map(fullname => ElemID.fromFullName(fullname))
     .toArray()
 

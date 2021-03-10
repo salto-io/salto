@@ -13,13 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, InstanceElement, toChange, Change } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/territory'
 import mockClient from '../client'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { createInstanceElement, MetadataInstanceElement } from '../../src/transformers/transformer'
-import { SALESFORCE, TERRITORY2_TYPE } from '../../src/constants'
+import { CONTENT_FILENAME_OVERRIDE } from '../../src/transformers/xml_transformer'
+import { SALESFORCE, TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE, CUSTOM_OBJECT } from '../../src/constants'
 
 const createMetadataTypeElement = (
   typeName: string,
@@ -34,7 +35,7 @@ const createMetadataTypeElement = (
 })
 
 describe('territory filter', () => {
-  let filter: FilterWith<'onFetch'>
+  let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   beforeEach(() => {
     filter = filterCreator({
       client: mockClient().client,
@@ -80,6 +81,122 @@ describe('territory filter', () => {
         'description',
         expect.objectContaining({ type: BuiltinTypes.STRING })
       )
+    })
+  })
+
+  describe('deploy pkg structure', () => {
+    let territoryType: ObjectType
+    let changes: Change[]
+    let beforeElenentTerritory: InstanceElement
+    let afterElementTerritory: InstanceElement
+    let beforeElementModel: InstanceElement
+    let afterElementModel: InstanceElement
+    let beforeRegularInstance: InstanceElement
+    let afterRegularInstance: InstanceElement
+    beforeAll(() => {
+      territoryType = createMetadataTypeElement(
+        TERRITORY2_TYPE,
+        {
+          fields: {
+            customFields: { type: new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') }) },
+            description: { type: BuiltinTypes.STRING },
+          },
+          annotations: {
+            suffix: 'territory2',
+            dirName: 'territory2Models',
+            metadataType: 'Territory2',
+          },
+        }
+      )
+      const territoryInstance = createInstanceElement(
+        {
+          fullName: 'TerModel.testTerritory',
+          description: 'Desc',
+        },
+        territoryType,
+      )
+      beforeElenentTerritory = territoryInstance
+      afterElementTerritory = territoryInstance.clone()
+      afterElementTerritory.value.description = 'Desc yay'
+
+      const modelType = createMetadataTypeElement(TERRITORY2_MODEL_TYPE,
+        {
+          fields: {
+            description: { type: BuiltinTypes.STRING },
+          },
+          annotations: {
+            suffix: 'territory2Model',
+            dirName: 'territory2Models',
+            metadataType: 'Territory2Model',
+          },
+        })
+
+      const modelInstance = createInstanceElement({ description: 'Desc', fullName: 'TerModel' }, modelType)
+      beforeElementModel = modelInstance
+      afterElementModel = modelInstance.clone()
+      afterElementModel.value.description = 'Desc yay'
+
+
+      const nonTerritoryType = createMetadataTypeElement(
+        CUSTOM_OBJECT,
+        {
+          fields: {
+            customFields: { type: new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') }) },
+            description: { type: BuiltinTypes.STRING },
+          },
+        }
+      )
+      const nonTerritoryInstance = createInstanceElement(
+        {
+          fullName: 'myCustomObject',
+          description: 'Desc',
+          customFields: [
+            { name: 'f__c', value: { 'attr_xsi:type': 'xsd:boolean', '#text': 'false' } },
+          ],
+        },
+        nonTerritoryType,
+      )
+      beforeRegularInstance = nonTerritoryInstance
+      afterRegularInstance = nonTerritoryInstance.clone()
+      afterRegularInstance.value.description = 'bla'
+
+      changes = [
+        toChange({ before: beforeElenentTerritory, after: afterElementTerritory }),
+        toChange({ before: beforeElementModel, after: afterElementModel }),
+        toChange({ before: beforeRegularInstance, after: afterRegularInstance }),
+      ]
+    })
+
+    describe('preDeploy filter', () => {
+      beforeEach(async () => {
+        await filter.preDeploy(changes)
+      })
+      it('should add contentFileName annotation Territory2 type', () => {
+        expect(afterElementTerritory.annotations).toHaveProperty(CONTENT_FILENAME_OVERRIDE)
+        expect(afterElementTerritory.annotations[CONTENT_FILENAME_OVERRIDE])
+          .toStrictEqual(['TerModel', 'territories', 'testTerritory.territory2'])
+      })
+      it('should add contentFileName annotation to Territory2Model type', () => {
+        expect(afterElementModel.annotations).toHaveProperty(CONTENT_FILENAME_OVERRIDE)
+        expect(afterElementModel.annotations[CONTENT_FILENAME_OVERRIDE])
+          .toStrictEqual(['TerModel', 'TerModel.territory2Model'])
+      })
+
+      it('should not annotate non-territory types', () => {
+        expect(afterRegularInstance.annotations).not.toHaveProperty(CONTENT_FILENAME_OVERRIDE)
+      })
+    })
+
+    describe('onDeploy filter', () => {
+      beforeEach(async () => {
+        await filter.preDeploy(changes)
+        await filter.onDeploy(changes)
+      })
+      it('should delete contentFileName annotation from all instances', () => {
+        expect(afterElementTerritory.annotations).not.toHaveProperty(CONTENT_FILENAME_OVERRIDE)
+        expect(afterElementModel.annotations).not.toHaveProperty(CONTENT_FILENAME_OVERRIDE)
+        expect(afterRegularInstance.annotations).not.toHaveProperty(CONTENT_FILENAME_OVERRIDE)
+      })
     })
   })
 })

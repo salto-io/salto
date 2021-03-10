@@ -33,14 +33,20 @@ import {
   toDeployableInstance,
 } from './transformer'
 
+
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
 
 const log = logger(module)
 
+// if added to an instance, includes the content filename for the deploy package
+// and maybe more nesting levels
+export const CONTENT_FILENAME_OVERRIDE = 'deployPkgPartialPath'
+
 export const metadataTypesWithAttributes = [
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE,
 ]
+
 
 const PACKAGE = 'unpackaged'
 const HIDDEN_CONTENT_VALUE = '(hidden)'
@@ -407,7 +413,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
         const instanceContentPath = [
           PACKAGE,
           dirName,
-          `${instanceName}${suffix === undefined ? '' : `.${suffix}`}`,
+          ...instance.annotations[CONTENT_FILENAME_OVERRIDE] ?? [`${instanceName}${suffix === undefined ? '' : `.${suffix}`}`],
         ].join('/')
         if (hasMetaFile) {
           zip.file(

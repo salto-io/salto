@@ -21,7 +21,7 @@ import _ from 'lodash'
 import JSZip from 'jszip'
 import xmlParser from 'fast-xml-parser'
 import { RetrieveResult, FileProperties } from 'jsforce'
-import { fromRetrieveResult, createDeployPackage, DeployPackage } from '../../src/transformers/xml_transformer'
+import { fromRetrieveResult, createDeployPackage, DeployPackage, CONTENT_FILENAME_OVERRIDE } from '../../src/transformers/xml_transformer'
 import { MetadataValues, createInstanceElement } from '../../src/transformers/transformer'
 import { API_VERSION } from '../../src/client/client'
 import { createEncodedZipContent } from '../utils'
@@ -255,6 +255,50 @@ describe('XML Transformer', () => {
         const manifest2 = xmlParser.parse(zipFiles[filePath])
         expect(manifest2).toHaveProperty('TestSettings.testField')
         expect(manifest2.TestSettings.testField).toEqual(true)
+      })
+    })
+    describe('content file name override for territory types', () => {
+      describe('Territory2Model type', () => {
+        beforeEach(async () => {
+          pkg.add(createInstanceElement(
+            { fullName: 'testTerModel' },
+            mockTypes.TerritoryModel,
+            undefined,
+            { [CONTENT_FILENAME_OVERRIDE]: ['testTerModel', 'testTerModel.territory2Model'] }
+          ))
+          zipFiles = await getZipFiles(pkg)
+        })
+        it('manifest should include Territory2Model and override path correctly', () => {
+          expect(zipFiles).toHaveProperty([addManifestPath])
+          const manifest = xmlParser.parse(zipFiles[addManifestPath])
+          expect(manifest).toHaveProperty('Package.types')
+          expect(manifest.Package.types).toMatchObject({ name: 'Territory2Model', members: 'testTerModel' })
+
+          const filePath = `${packageName}/territory2Models/testTerModel/testTerModel.territory2Model`
+          expect(zipFiles).toHaveProperty([filePath])
+        })
+      })
+
+      describe('Territory2Rule type', () => {
+        beforeEach(async () => {
+          pkg.add(createInstanceElement(
+            { fullName: 'testTerModel.testTerRule' },
+            mockTypes.TerritoryRule,
+            undefined,
+            { [CONTENT_FILENAME_OVERRIDE]: ['testTerModel', 'rules', 'testTerRule.territory2Rule'] }
+          ))
+          zipFiles = await getZipFiles(pkg)
+        })
+
+        it('manifest should include Territory2Rule and override path correctly', () => {
+          expect(zipFiles).toHaveProperty([addManifestPath])
+          const manifest = xmlParser.parse(zipFiles[addManifestPath])
+          expect(manifest).toHaveProperty('Package.types')
+          expect(manifest.Package.types).toMatchObject({ name: 'Territory2Rule', members: 'testTerModel.testTerRule' })
+
+          const filePath = `${packageName}/territory2Models/testTerModel/rules/testTerRule.territory2Rule`
+          expect(zipFiles).toHaveProperty([filePath])
+        })
       })
     })
   })

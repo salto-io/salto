@@ -19,6 +19,7 @@ export type ChangedObject = {
   type: 'object'
   externalId: string
   internalId?: number
+  time?: Date
 }
 
 export type ChangedType = {
@@ -42,4 +43,4 @@ export type TypeChangesDetector = {
 }
 
 export type FileCabinetChangesDetector = (client: NetsuiteClient, dateRange: DateRange) =>
-  Promise<Required<ChangedObject>[]>
+  Promise<(ChangedObject & { internalId: number })[]>

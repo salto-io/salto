@@ -18,7 +18,7 @@ import detector, { SCRIPT_TYPES } from '../../src/changes_detector/changes_detec
 import { Change } from '../../src/changes_detector/types'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
-import { createDateRange } from '../../src/changes_detector/date_range'
+import { createDateRange } from '../../src/changes_detector/date_formats'
 
 describe('script', () => {
   const runSuiteQLMock = jest.fn()
@@ -42,7 +42,9 @@ describe('script', () => {
         { scriptid: 'd', id: '4' },
         { invalid: 0 },
       ])
-      runSuiteQLMock.mockResolvedValueOnce([{}])
+      runSuiteQLMock.mockResolvedValueOnce([{
+        lastmodifieddate: '03/15/2021',
+      }])
 
       results = await detector.getChanges(
         client,

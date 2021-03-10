@@ -18,7 +18,7 @@ import detector from '../../src/changes_detector/changes_detectors/savedsearch'
 import { Change } from '../../src/changes_detector/types'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
-import { createDateRange } from '../../src/changes_detector/date_range'
+import { createDateRange } from '../../src/changes_detector/date_formats'
 
 describe('savedsearch', () => {
   const runSavedSearchQueryMock = jest.fn()
@@ -33,7 +33,10 @@ describe('savedsearch', () => {
     let results: Change[]
     beforeEach(async () => {
       runSavedSearchQueryMock.mockReset()
-      runSavedSearchQueryMock.mockResolvedValue([{ id: 'a' }, { id: 'b' }, { invalid: 0 }])
+      runSavedSearchQueryMock.mockResolvedValue([
+        { id: 'a', datemodified: '03/15/2021 03:04 pm' },
+        { id: 'b', datemodified: '03/15/2021 03:05 pm' },
+        { invalid: 0 }])
       results = await detector.getChanges(
         client,
         createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
@@ -41,8 +44,8 @@ describe('savedsearch', () => {
     })
     it('should return the changes', () => {
       expect(results).toEqual([
-        { type: 'object', externalId: 'a' },
-        { type: 'object', externalId: 'b' },
+        { type: 'object', externalId: 'a', time: new Date('2021-03-15T15:04:00.000Z') },
+        { type: 'object', externalId: 'b', time: new Date('2021-03-15T15:05:00.000Z') },
       ])
     })
 

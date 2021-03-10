@@ -34,11 +34,11 @@ import { FilterCreator } from '../src/filter'
 import { configType, getConfigFromConfigChanges } from '../src/config'
 import { mockFunction, mockGetElemIdFunc, MockInterface } from './utils'
 import * as referenceDependenciesModule from '../src/reference_dependencies'
-import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
-import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
-import * as changesDetector from '../src/changes_detector/changes_detector'
 import NetsuiteClient from '../src/client/client'
 import { FileCustomizationInfo, FolderCustomizationInfo } from '../src/client/types'
+import * as changesDetector from '../src/changes_detector/changes_detector'
+import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
+import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
 
 jest.mock('../src/config', () => ({
   ...jest.requireActual<{}>('../src/config'),
@@ -630,6 +630,7 @@ describe('Adapter', () => {
             start: new Date('1970-01-01T00:00:00.500Z'),
             end: new Date(1000),
           }),
+          expect.any(Object),
         )
       })
 

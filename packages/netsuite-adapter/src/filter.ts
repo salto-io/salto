@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { Element } from '@salto-io/adapter-api'
+import { LazyElementsSourceIndex } from './elements_source_index/types'
 
 export type OnFetchParameters = {
   elements: Element[]
-  elementsSource: ReadOnlyElementsSource
+  elementsSourceIndex: LazyElementsSourceIndex
   isPartial: boolean
 }
 

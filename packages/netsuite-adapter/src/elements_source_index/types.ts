@@ -13,15 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const CORE_ANNOTATIONS = {
-  DEFAULT: '_default',
-  REQUIRED: '_required',
-  RESTRICTION: '_restriction',
-  HIDDEN: '_hidden',
-  HIDDEN_VALUE: '_hidden_value',
-  DEPENDS_ON: '_depends_on',
-  PARENT: '_parent',
-  GENERATED_DEPENDENCIES: '_generated_dependencies',
-  SERVICE_URL: '_service_url',
-  LAST_FETCH_TIME: '_last_fetch_time',
+import { ElemID } from '@salto-io/adapter-api'
+
+export type ElementsSourceValue = {
+  lastFetchTime?: Date
+  elemID?: ElemID
+}
+
+export type LazyElementsSourceIndex = {
+  getIndex: () => Promise<Record<string, ElementsSourceValue>>
 }

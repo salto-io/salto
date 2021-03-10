@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
+import { convertSavedSearchStringToDate } from '../date_formats'
 import { TypeChangesDetector } from '../types'
 
 const log = logger(module)
@@ -32,8 +33,8 @@ const changesDetector: TypeChangesDetector = {
     }
 
     return results
-      .filter((res): res is { id: string } => {
-        if (typeof res.id !== 'string') {
+      .filter((res): res is { id: string; datemodified: string } => {
+        if ([res.id, res.datemodified].some(val => typeof val !== 'string')) {
           log.warn('Got invalid result from savedsearch query, %o', res)
           return false
         }
@@ -42,6 +43,7 @@ const changesDetector: TypeChangesDetector = {
       .map(res => ({
         type: 'object',
         externalId: res.id,
+        time: convertSavedSearchStringToDate(res.datemodified),
       }))
   },
   getTypes: () => ([

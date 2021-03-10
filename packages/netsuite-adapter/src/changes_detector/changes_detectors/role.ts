@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
+import { convertSavedSearchStringToDate } from '../date_formats'
 import { ChangedObject, TypeChangesDetector } from '../types'
 
 const log = logger(module)
@@ -62,17 +63,23 @@ const parsePermissionRolesChanges = (
   )
 
   const changesInternalIds = permissionChanges
-    .filter((res): res is { internalid: [{ value: string }] } => {
-      if (!Array.isArray(res.internalid) || typeof res.internalid[0] !== 'object' || typeof (res.internalid[0] as Record<string, unknown>).value !== 'string') {
+    .filter((res): res is { internalid: [{ value: string }]; permchangedate: string } => {
+      if (!Array.isArray(res.internalid)
+      || typeof res.internalid[0] !== 'object'
+      || typeof (res.internalid[0] as Record<string, unknown>).value !== 'string'
+      || typeof res.permchangedate !== 'string') {
         log.warn('Got invalid result from roles permission changes query, %o', res)
         return false
       }
       return true
-    }).map(res => parseInt(res.internalid[0].value, 10))
+    }).map(res => ({
+      id: parseInt(res.internalid[0].value, 10),
+      time: convertSavedSearchStringToDate(res.permchangedate),
+    }))
 
   return changesInternalIds
-    .filter(id => id in internalToExternalId)
-    .map(id => ({ type: 'object', externalId: internalToExternalId[id] }))
+    .filter(({ id }) => id in internalToExternalId)
+    .map(({ id, time }) => ({ type: 'object', externalId: internalToExternalId[id], time }))
 }
 
 const changesDetector: TypeChangesDetector = {

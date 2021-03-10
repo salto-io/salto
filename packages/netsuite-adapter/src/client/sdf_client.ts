@@ -31,7 +31,6 @@ import uuidv4 from 'uuid/v4'
 import AsyncLock from 'async-lock'
 import wu from 'wu'
 import {
-  SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME,
   FILE_CABINET_PATH_SEPARATOR,
 } from '../constants'
 import {
@@ -44,7 +43,7 @@ import {
   CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo,
   GetCustomObjectsResult, ImportFileCabinetResult, ImportObjectsResult, TemplateCustomTypeInfo,
 } from './types'
-import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './constants'
+import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME, fileCabinetTopLevelFolders } from './constants'
 import {
   isCustomTypeInfo, isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo,
   mergeTypeToInstances,
@@ -82,11 +81,7 @@ const SRC_DIR = 'src'
 const FILE_SEPARATOR = '.'
 const ALL = 'ALL'
 const ADDITIONAL_FILE_PATTERN = '.template.'
-export const fileCabinetTopLevelFolders = [
-  `${FILE_CABINET_PATH_SEPARATOR}${SUITE_SCRIPTS_FOLDER_NAME}`,
-  `${FILE_CABINET_PATH_SEPARATOR}${TEMPLATES_FOLDER_NAME}`,
-  `${FILE_CABINET_PATH_SEPARATOR}${WEB_SITE_HOSTING_FILES_FOLDER_NAME}`,
-]
+
 const MINUTE_IN_MILLISECONDS = 1000 * 60
 
 const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING', 'WMSSYSTEM', 'BILLINGACCOUNTS']

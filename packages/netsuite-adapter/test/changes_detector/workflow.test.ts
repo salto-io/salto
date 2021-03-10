@@ -18,7 +18,7 @@ import detector from '../../src/changes_detector/changes_detectors/workflow'
 import { Change } from '../../src/changes_detector/types'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
-import { createDateRange } from '../../src/changes_detector/date_range'
+import { createDateRange } from '../../src/changes_detector/date_formats'
 
 describe('workflow', () => {
   const runSavedSearchQueryMock = jest.fn()
@@ -54,7 +54,7 @@ describe('workflow', () => {
             'and',
             ['date', 'within', '1/11/2021 6:55 pm', '2/22/2021 6:56 am'],
           ],
-          columns: ['recordid'],
+          columns: ['internalid'],
         })
       })
     })

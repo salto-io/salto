@@ -413,9 +413,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
         const instanceContentPath = [
           PACKAGE,
           dirName,
-          // ...instance.annotations[CONTENT_FILENAME_OVERRIDE]
-          //  ??
-          `${instanceName}${suffix === undefined ? '' : `.${suffix}`}`,
+          ...instance.annotations[CONTENT_FILENAME_OVERRIDE] ?? [`${instanceName}${suffix === undefined ? '' : `.${suffix}`}`],
         ].join('/')
         if (hasMetaFile) {
           zip.file(

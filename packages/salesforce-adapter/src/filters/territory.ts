@@ -14,17 +14,20 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement, InstanceElement, getChangeElement } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, InstanceElement, getChangeElement, Change, isInstanceChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { isMetadataObjectType, metadataType, apiName } from '../transformers/transformer'
 import { CONTENT_FILENAME_OVERRIDE } from '../transformers/xml_transformer'
 import { TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE, TERRITORY2_RULE_TYPE } from '../constants'
-import { parentApiName } from './utils'
+import { isInstanceOfTypeChange, parentApiName } from './utils'
 
+// territory2Model does not require another nested dir
 const territory2TypesToNestedDirName: Record<string, string> = {
   [TERRITORY2_RULE_TYPE]: 'rules',
   [TERRITORY2_TYPE]: 'territories',
 }
+
+const territory2Types = [...Object.keys(territory2TypesToNestedDirName), TERRITORY2_MODEL_TYPE]
 
 const removeCustomFieldsFromTypes = (elements: Element[], typeNames: string[]): void => {
   const elementsOfTypes = elements.filter(elem => typeNames.includes(metadataType(elem)))
@@ -40,9 +43,13 @@ const removeCustomFieldsFromTypes = (elements: Element[], typeNames: string[]): 
     })
 }
 
-const annotateInstances = (elements: InstanceElement[], typeNames: string[]): void => {
-  const elementsOfTypes = elements.filter(elem => typeNames.includes(metadataType(elem)))
-  elementsOfTypes.forEach(element => {
+const isTerritoryRelatedChange = (change: Change): change is Change<InstanceElement> => (
+  isInstanceChange(change) && isAdditionOrModificationChange(change)
+   && territory2Types.some(typeName => isInstanceOfTypeChange(typeName)(change))
+)
+
+const setTerritoryDeployPkgStructure = (elements: InstanceElement[]): void => {
+  elements.forEach(element => {
     const nestedDirsNames = [parentApiName(element)]
     const { suffix } = element.type.annotations
     let name = apiName(element)
@@ -66,12 +73,12 @@ const filterCreator: FilterCreator = () => ({
 
   // territory2 types require a special deploy pkg structure (SALTO-1200)
   preDeploy: async changes => {
-    const instanceElements = changes.map(getChangeElement).filter(isInstanceElement)
-    annotateInstances(instanceElements,
-      [...Object.keys(territory2TypesToNestedDirName), TERRITORY2_MODEL_TYPE])
+    const territoryInstances = changes.filter(isTerritoryRelatedChange).map(getChangeElement)
+    setTerritoryDeployPkgStructure(territoryInstances)
   },
   onDeploy: async changes => {
-    changes.map(getChangeElement).forEach(elem => {
+    const territoryInstances = changes.filter(isTerritoryRelatedChange).map(getChangeElement)
+    territoryInstances.forEach(elem => {
       elem.annotations = _.omit(elem.annotations, [CONTENT_FILENAME_OVERRIDE])
     })
     return []

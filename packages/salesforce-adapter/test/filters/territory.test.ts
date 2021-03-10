@@ -35,23 +35,12 @@ const createMetadataTypeElement = (
 })
 
 describe('territory filter', () => {
-  let onFetchFilter: FilterWith<'onFetch'>
-  let preDeployFilter: FilterWith<'preDeploy'>
-  let onDeployFilter: FilterWith<'onDeploy'>
+  let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   beforeEach(() => {
-    onFetchFilter = filterCreator({
+    filter = filterCreator({
       client: mockClient().client,
       config: { fetchProfile: buildFetchProfile({}) },
-    }) as typeof onFetchFilter
-    preDeployFilter = filterCreator({
-      client: mockClient().client,
-      config: { fetchProfile: buildFetchProfile({}) },
-    }) as typeof preDeployFilter
-
-    onDeployFilter = filterCreator({
-      client: mockClient().client,
-      config: { fetchProfile: buildFetchProfile({}) },
-    }) as typeof onDeployFilter
+    }) as typeof filter
   })
   describe('onFetch', () => {
     let type: ObjectType
@@ -76,7 +65,7 @@ describe('territory filter', () => {
         },
         type,
       )
-      await onFetchFilter.onFetch([type, instance])
+      await filter.onFetch([type, instance])
     })
     it('should remove custom fields from instance', () => {
       expect(instance.value).not.toHaveProperty('customFields')
@@ -180,7 +169,7 @@ describe('territory filter', () => {
 
     describe('preDeploy filter', () => {
       beforeEach(async () => {
-        await preDeployFilter.preDeploy(changes)
+        await filter.preDeploy(changes)
       })
       it('should add contentFileName annotation Territory2 type', () => {
         expect(afterElementTerritory.annotations).toHaveProperty(CONTENT_FILENAME_OVERRIDE)
@@ -200,8 +189,8 @@ describe('territory filter', () => {
 
     describe('onDeploy filter', () => {
       beforeEach(async () => {
-        await preDeployFilter.preDeploy(changes)
-        await onDeployFilter.onDeploy(changes)
+        await filter.preDeploy(changes)
+        await filter.onDeploy(changes)
       })
       it('should delete contentFileName annotation from all instances', () => {
         expect(afterElementTerritory.annotations).not.toHaveProperty(CONTENT_FILENAME_OVERRIDE)

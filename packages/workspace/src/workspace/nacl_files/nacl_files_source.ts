@@ -104,39 +104,14 @@ const getRemoteMapNamespace = (
   namespace: string, name: string, cachePrefix?: string
 ): string => `naclFileSource-${name}-${namespace}-${cachePrefix}`
 
-const getInnerTypePrefixStartIndex = (fullName: string): number => {
-  const nestedMap = fullName.lastIndexOf('Map<')
-  const nestedList = fullName.lastIndexOf('List<')
-  if (nestedList > nestedMap) {
-    return nestedList + 'List<'.length
-  }
-  if (nestedMap > nestedList) {
-    return nestedMap + 'Map<'.length
-  }
-  return -1
-}
-// This assumes List</Map< will only be in container types' ElemID and that they have closing >
-const getTypeOrContainerTypeID = (elemID: ElemID): ElemID => {
-  const fullName = elemID.getFullName()
-  const deepInnerTypeStart = getInnerTypePrefixStartIndex(fullName)
-  const deepInnerTypeEnd = fullName.indexOf('>')
-  if (deepInnerTypeStart === -1 && deepInnerTypeEnd === -1) {
-    return elemID
-  }
-  if (deepInnerTypeStart === -1 || deepInnerTypeEnd < deepInnerTypeStart) {
-    throw new Error(`Invalid < > structure in ElemID - ${fullName}`)
-  }
-  return ElemID.fromFullName(fullName.slice(
-    deepInnerTypeStart,
-    deepInnerTypeEnd
-  ))
-}
 
 const getElementReferenced = async (element: Element): Promise<Set<string>> => {
   const referenced = new Set<string>()
   const transformFunc = ({ value, field, path }: TransformFuncArgs): Value => {
     if (field && path && !isIndexPathPart(path.name)) {
-      referenced.add(getTypeOrContainerTypeID(field.refType.elemID).getFullName())
+      referenced.add(
+        ElemID.getTypeOrContainerTypeID(field.refType.elemID).getFullName()
+      )
     }
     if (isReferenceExpression(value)) {
       const { parent, path: valueIDPath } = value.elemID.createTopLevelParentID()
@@ -152,14 +127,14 @@ const getElementReferenced = async (element: Element): Promise<Set<string>> => {
 
   if (isObjectType(element)) {
     Object.values(element.fields)
-      .map(field => getTypeOrContainerTypeID(field.refType.elemID))
+      .map(field => ElemID.getTypeOrContainerTypeID(field.refType.elemID))
       .forEach(id => referenced.add(id.getFullName()))
   }
   if (isInstanceElement(element)) {
     referenced.add(element.refType.elemID.getFullName())
   }
   Object.values(element.annotationRefTypes)
-    .map(anno => getTypeOrContainerTypeID(anno.elemID))
+    .map(anno => ElemID.getTypeOrContainerTypeID(anno.elemID))
     .forEach(id => referenced.add(id.getFullName()))
   if (!isContainerType(element) && !isVariable(element)) {
     await transformElement({

@@ -43,6 +43,18 @@ const getContainerPrefix = (fullName: string): {prefix: string; innerName: strin
   return undefined
 }
 
+const getInnerTypePrefixStartIndex = (fullName: string): number => {
+  const nestedMap = fullName.lastIndexOf(`${MAP_ID_PREFIX}${GENERIC_ID_PREFIX}`)
+  const nestedList = fullName.lastIndexOf(`${LIST_ID_PREFIX}${GENERIC_ID_PREFIX}`)
+  if (nestedList > nestedMap) {
+    return nestedList + `${LIST_ID_PREFIX}${GENERIC_ID_PREFIX}`.length
+  }
+  if (nestedMap > nestedList) {
+    return nestedMap + `${MAP_ID_PREFIX}${GENERIC_ID_PREFIX}`.length
+  }
+  return -1
+}
+
 export class ElemID {
   static readonly NAMESPACE_SEPARATOR = '.'
   static readonly NUM_ELEM_ID_NON_NAME_PARTS = 3
@@ -74,6 +86,23 @@ export class ElemID {
 
   static fromFullNameParts(nameParts: string[]): ElemID {
     return ElemID.fromFullName(nameParts.join(ElemID.NAMESPACE_SEPARATOR))
+  }
+
+  // This assumes List</Map< will only be in container types' ElemID and that they have closing >
+  static getTypeOrContainerTypeID = (elemID: ElemID): ElemID => {
+    const fullName = elemID.getFullName()
+    const deepInnerTypeStart = getInnerTypePrefixStartIndex(fullName)
+    const deepInnerTypeEnd = fullName.indexOf(GENERIC_ID_SUFFIX)
+    if (deepInnerTypeStart === -1 && deepInnerTypeEnd === -1) {
+      return elemID
+    }
+    if (deepInnerTypeStart === -1 || deepInnerTypeEnd < deepInnerTypeStart) {
+      throw new Error(`Invalid < > structure in ElemID - ${fullName}`)
+    }
+    return ElemID.fromFullName(fullName.slice(
+      deepInnerTypeStart,
+      deepInnerTypeEnd
+    ))
   }
 
   readonly adapter: string

@@ -141,6 +141,20 @@ export const mockTypes = {
     },
     isSettings: true,
   }),
+  TerritoryModel: createMetadataObjectType({
+    annotations: {
+      metadataType: 'Territory2Model',
+      suffix: 'territory2Model',
+      dirName: 'territory2Models',
+    },
+  }),
+  TerritoryRule: createMetadataObjectType({
+    annotations: {
+      metadataType: 'Territory2Rule',
+      suffix: 'territory2Rule',
+      dirName: 'territory2Models',
+    },
+  }),
 }
 
 export const lwcJsResourceContent = "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }"

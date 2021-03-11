@@ -110,13 +110,12 @@ export const shouldUpdateConfig = async (
 
 export const getApprovedChanges = async (
   changes: ReadonlyArray<FetchChange>,
-  interactive: boolean,
 ): Promise<ReadonlyArray<FetchChange>> => {
   const shouldApproveAll = (answers: inquirer.Answers): boolean => (
     _.values(answers).some(answer => answer === 'all')
   )
   const isConflict = (change: FetchChange): boolean => change.pendingChange !== undefined
-  const shouldAskForApproval = (change: FetchChange): boolean => isConflict(change) || interactive
+  const shouldAskForApproval = (change: FetchChange): boolean => isConflict(change)
 
   const [askForApproval, autoApproved] = _.partition(changes, shouldAskForApproval)
   if (_.isEmpty(askForApproval)) {

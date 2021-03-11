@@ -66,7 +66,6 @@ describe('restore command', () => {
         ...cliCommandArgs,
         input: {
           force: true,
-          interactive: false,
           dryRun: false,
           detailedPlan: false,
           listPlannedChanges: false,
@@ -92,7 +91,6 @@ describe('restore command', () => {
         ...cliCommandArgs,
         input: {
           force: true,
-          interactive: false,
           dryRun: false,
           detailedPlan: false,
           listPlannedChanges: false,
@@ -132,7 +130,6 @@ describe('restore command', () => {
         ...cliCommandArgs,
         input: {
           force: true,
-          interactive: false,
           dryRun: false,
           detailedPlan: false,
           listPlannedChanges: false,
@@ -149,7 +146,6 @@ describe('restore command', () => {
         ...cliCommandArgs,
         input: {
           force: true,
-          interactive: false,
           dryRun: false,
           detailedPlan: false,
           listPlannedChanges: false,
@@ -172,7 +168,6 @@ describe('restore command', () => {
         ...cliCommandArgs,
         input: {
           force: true,
-          interactive: false,
           dryRun: true,
           detailedPlan: false,
           listPlannedChanges: false,
@@ -212,7 +207,6 @@ describe('restore command', () => {
       ...cliCommandArgs,
       input: {
         force: true,
-        interactive: false,
         dryRun: false,
         detailedPlan: false,
         listPlannedChanges: false,
@@ -229,7 +223,6 @@ describe('restore command', () => {
         ...cliCommandArgs,
         input: {
           force: true,
-          interactive: false,
           dryRun: false,
           detailedPlan: false,
           listPlannedChanges: false,
@@ -246,7 +239,6 @@ describe('restore command', () => {
         ...cliCommandArgs,
         input: {
           force: false,
-          interactive: false,
           dryRun: false,
           detailedPlan: false,
           listPlannedChanges: false,

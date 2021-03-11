@@ -72,7 +72,6 @@ type ApplyChangesArgs = {
   changes: FetchChange[]
   cliTelemetry: CliTelemetry
   workspaceTags: Tags
-  interactive: boolean
   mode: nacl.RoutingMode
   force: boolean
   shouldCalcTotalSize: boolean
@@ -80,7 +79,6 @@ type ApplyChangesArgs = {
   output: CliOutput
   approveChangesCallback: (
     changes: ReadonlyArray<FetchChange>,
-    interactive: boolean
   ) => Promise<ReadonlyArray<FetchChange>>
 }
 
@@ -256,13 +254,13 @@ export const getWorkspaceTelemetryTags = async (ws: Workspace): Promise<Tags> =>
 )
 
 export const applyChangesToWorkspace = async ({
-  workspace, changes, cliTelemetry, workspaceTags, interactive, approveChangesCallback,
+  workspace, changes, cliTelemetry, workspaceTags, approveChangesCallback,
   mode, force, shouldCalcTotalSize, applyProgress, output,
 }: ApplyChangesArgs): Promise<boolean> => {
   // If the workspace starts empty there is no point in showing a huge amount of changes
   const changesToApply = force || (await workspace.isEmpty())
     ? changes
-    : await approveChangesCallback(changes, interactive)
+    : await approveChangesCallback(changes)
 
   cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
   const updatingWsEmitter = new StepEmitter()

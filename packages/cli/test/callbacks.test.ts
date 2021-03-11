@@ -43,20 +43,9 @@ describe('callbacks', () => {
 
   describe('getApprovedChanges', () => {
     const fetchChanges = dummyChanges.map(c => ({ change: c, serviceChange: c }))
-    it('should return all non conflict changes interactive=false', async () => {
-      const approved = await getApprovedChanges(fetchChanges, false)
+    it('should return all non conflict changes', async () => {
+      const approved = await getApprovedChanges(fetchChanges)
       expect(approved).toHaveLength(fetchChanges.length)
-    })
-
-    it('should return only approved changes interactive=true', async () => {
-      const approved = await getApprovedChanges(fetchChanges, true)
-      expect(approved).toHaveLength(1)
-    })
-
-    it('should ask for conflicts return only approved changes interactive=true', async () => {
-      const approved = await getApprovedChanges(fetchChanges
-        .map(c => ({ ...c, pendingChange: c.change })), false)
-      expect(approved).toHaveLength(1)
     })
   })
 })

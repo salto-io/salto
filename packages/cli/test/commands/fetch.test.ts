@@ -69,7 +69,6 @@ describe('fetch command', () => {
           ...cliCommandArgs,
           input: {
             force: true,
-            interactive: false,
             mode: 'default',
             services,
             stateOnly: false,
@@ -92,7 +91,6 @@ describe('fetch command', () => {
           ...cliCommandArgs,
           input: {
             force: true,
-            interactive: false,
             mode: 'default',
             services,
             stateOnly: false,
@@ -142,7 +140,6 @@ describe('fetch command', () => {
           await fetchCommand({
             workspace: mocks.mockWorkspace({}),
             force: true,
-            interactive: false,
             output,
             cliTelemetry,
             fetch: mockFetchWithEmitter,
@@ -171,7 +168,6 @@ describe('fetch command', () => {
           await fetchCommand({
             workspace,
             force: true,
-            interactive: false,
             output,
             services,
             cliTelemetry,
@@ -209,7 +205,6 @@ describe('fetch command', () => {
           fetchArgs = {
             workspace,
             force: false,
-            interactive: false,
             services,
             cliTelemetry,
             output,
@@ -254,7 +249,6 @@ describe('fetch command', () => {
             result = await fetchCommand({
               workspace,
               force: true,
-              interactive: false,
               services,
               cliTelemetry,
               output,
@@ -280,7 +274,6 @@ describe('fetch command', () => {
             result = await fetchCommand({
               workspace,
               force: true,
-              interactive: false,
               services,
               cliTelemetry,
               output,
@@ -306,7 +299,6 @@ describe('fetch command', () => {
             result = await fetchCommand({
               workspace,
               force: true,
-              interactive: false,
               services,
               cliTelemetry,
               output,
@@ -332,7 +324,6 @@ describe('fetch command', () => {
             result = await fetchCommand({
               workspace,
               force: true,
-              interactive: false,
               services,
               cliTelemetry,
               output,
@@ -356,7 +347,6 @@ describe('fetch command', () => {
             it('should throw an error', () => expect(fetchCommand({
               workspace: mocks.mockWorkspace({}),
               force: true,
-              interactive: false,
               services,
               cliTelemetry,
               output,
@@ -375,7 +365,6 @@ describe('fetch command', () => {
               result = await fetchCommand({
                 workspace,
                 force: true,
-                interactive: false,
                 services,
                 cliTelemetry,
                 output,
@@ -402,7 +391,6 @@ describe('fetch command', () => {
               result = await fetchCommand({
                 workspace,
                 force: true,
-                interactive: false,
                 services,
                 cliTelemetry,
                 output,
@@ -430,7 +418,6 @@ describe('fetch command', () => {
             await fetchCommand({
               workspace,
               force: false,
-              interactive: false,
               services,
               cliTelemetry,
               output,
@@ -458,7 +445,6 @@ describe('fetch command', () => {
               await fetchCommand({
                 workspace,
                 force: false,
-                interactive: false,
                 services,
                 cliTelemetry,
                 output,
@@ -487,7 +473,6 @@ describe('fetch command', () => {
               const res = await fetchCommand({
                 workspace,
                 force: false,
-                interactive: false,
                 services,
                 cliTelemetry,
                 output,
@@ -515,7 +500,6 @@ describe('fetch command', () => {
               const res = await fetchCommand({
                 workspace,
                 force: false,
-                interactive: false,
                 services,
                 cliTelemetry,
                 output,
@@ -534,7 +518,6 @@ describe('fetch command', () => {
               await fetchCommand({
                 workspace,
                 force: false,
-                interactive: false,
                 services,
                 cliTelemetry,
                 output,
@@ -574,7 +557,6 @@ describe('fetch command', () => {
           result = await fetchCommand({
             workspace,
             force: true,
-            interactive: false,
             cliTelemetry,
             output,
             fetch: mockFetchWithChanges,
@@ -623,7 +605,6 @@ describe('fetch command', () => {
         ...cliCommandArgs,
         input: {
           force: false,
-          interactive: false,
           mode: 'default',
           services,
           stateOnly: false,
@@ -644,7 +625,6 @@ describe('fetch command', () => {
         ...cliCommandArgs,
         input: {
           force: false,
-          interactive: false,
           mode: 'override',
           services,
           stateOnly: false,
@@ -664,7 +644,6 @@ describe('fetch command', () => {
         ...cliCommandArgs,
         input: {
           force: false,
-          interactive: false,
           mode: 'default',
           services,
           stateOnly: false,
@@ -683,7 +662,6 @@ describe('fetch command', () => {
         ...cliCommandArgs,
         input: {
           force: true,
-          interactive: false,
           mode: 'override',
           services,
           stateOnly: false,
@@ -706,7 +684,6 @@ describe('fetch command', () => {
         ...cliCommandArgs,
         input: {
           force: false,
-          interactive: false,
           mode: 'default',
           services,
           stateOnly: false,
@@ -726,7 +703,6 @@ describe('fetch command', () => {
         ...cliCommandArgs,
         input: {
           force: false,
-          interactive: false,
           mode: 'align',
           services,
           stateOnly: false,
@@ -746,7 +722,6 @@ describe('fetch command', () => {
         ...cliCommandArgs,
         input: {
           force: false,
-          interactive: false,
           mode: 'default',
           services,
           stateOnly: false,
@@ -771,7 +746,6 @@ describe('fetch command', () => {
         ...cliCommandArgs,
         input: {
           force: false,
-          interactive: false,
           mode: 'override',
           stateOnly: false,
         },
@@ -790,7 +764,6 @@ describe('fetch command', () => {
         ...cliCommandArgs,
         input: {
           force: true,
-          interactive: false,
           mode: 'default',
           services,
           stateOnly: false,
@@ -805,7 +778,6 @@ describe('fetch command', () => {
         ...cliCommandArgs,
         input: {
           force: true,
-          interactive: false,
           mode: 'default',
           services,
           stateOnly: false,
@@ -820,7 +792,6 @@ describe('fetch command', () => {
         ...cliCommandArgs,
         input: {
           force: false,
-          interactive: false,
           mode: 'default',
           services,
           stateOnly: false,

@@ -36,7 +36,6 @@ const { series } = promises.array
 
 type ApproveChangesFunc = (
   changes: ReadonlyArray<FetchChange>,
-  interactive: boolean
 ) => Promise<ReadonlyArray<FetchChange>>
 
 type ShouldUpdateConfigFunc = (
@@ -48,7 +47,6 @@ type ShouldUpdateConfigFunc = (
 export type FetchCommandArgs = {
   workspace: Workspace
   force: boolean
-  interactive: boolean
   mode: nacl.RoutingMode
   cliTelemetry: CliTelemetry
   output: CliOutput
@@ -62,7 +60,7 @@ export type FetchCommandArgs = {
 
 export const fetchCommand = async (
   {
-    workspace, force, interactive, mode,
+    workspace, force, mode,
     getApprovedChanges, shouldUpdateConfig, services,
     cliTelemetry, output, fetch, shouldCalcTotalSize,
     stateOnly,
@@ -175,7 +173,6 @@ export const fetchCommand = async (
       workspace,
       cliTelemetry,
       workspaceTags,
-      interactive,
       force,
       shouldCalcTotalSize,
       output,
@@ -210,7 +207,6 @@ const shouldRecommendAlignMode = async (
 
 type FetchArgs = {
   force: boolean
-  interactive: boolean
   stateOnly: boolean
   mode: nacl.RoutingMode
 } & ServicesArg & EnvArg
@@ -223,7 +219,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   spinnerCreator,
   workspace,
 }): Promise<CliExitCode> => {
-  const { force, interactive, stateOnly, services, mode } = input
+  const { force, stateOnly, services, mode } = input
   const { shouldCalcTotalSize } = config
   await validateAndSetEnv(workspace, input, output)
   const activeServices = getAndValidateActiveServices(workspace, services)
@@ -257,7 +253,6 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   return fetchCommand({
     workspace,
     force,
-    interactive,
     cliTelemetry,
     output,
     fetch: apiFetch,
@@ -280,13 +275,6 @@ const fetchDef = createWorkspaceCommand({
         alias: 'f',
         required: false,
         description: 'Do not warn on conflicts with local changes',
-        type: 'boolean',
-      },
-      {
-        name: 'interactive',
-        alias: 'i',
-        required: false,
-        description: 'Interactively approve every incoming change',
         type: 'boolean',
       },
       {

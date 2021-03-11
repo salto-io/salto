@@ -47,7 +47,6 @@ const printRestorePlan = (changes: LocalChange[], detailed: boolean, output: Cli
 type RestoreArgs = {
     elementSelectors?: string[]
     force: boolean
-    interactive: boolean
     dryRun: boolean
     detailedPlan: boolean
     listPlannedChanges: boolean
@@ -63,12 +62,11 @@ const applyLocalChangesToWorkspace = async (
   output: CliOutput,
   mode: nacl.RoutingMode,
   force: boolean,
-  interactive: boolean
 ): Promise<boolean> => {
   // If the workspace starts empty there is no point in showing a huge amount of changes
   const changesToApply = force || (await workspace.isEmpty())
     ? changes
-    : await getApprovedChanges(changes, interactive)
+    : await getApprovedChanges(changes)
 
   cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
   outputLine(EOL, output)
@@ -107,7 +105,7 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
   workspace,
 }): Promise<CliExitCode> => {
   const {
-    elementSelectors = [], force, interactive, dryRun,
+    elementSelectors = [], force, dryRun,
     detailedPlan, listPlannedChanges, services, mode,
   } = input
   const { validSelectors, invalidSelectors } = createElementSelectors(elementSelectors)
@@ -155,7 +153,6 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
     output,
     mode,
     force,
-    interactive,
   )
 
   if (updatingWsSucceeded) {
@@ -183,13 +180,6 @@ const restoreDef = createWorkspaceCommand({
         alias: 'f',
         required: false,
         description: 'Do not warn on conflicts with local changes',
-        type: 'boolean',
-      },
-      {
-        name: 'interactive',
-        alias: 'i',
-        required: false,
-        description: 'Interactively approve every incoming change',
         type: 'boolean',
       },
       {

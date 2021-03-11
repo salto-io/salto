@@ -305,7 +305,7 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
     InvalidStaticFileError: v => (
       new InvalidStaticFileError({
         elemID: reviveElemID(v.elemID),
-        value: v.value,
+        value: { message: v.error },
       })
     ),
     CircularReferenceValidationError: v => (

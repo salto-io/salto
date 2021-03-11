@@ -103,7 +103,7 @@ export type Workspace = {
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   setNaclFiles: (naclFiles: NaclFile[], validate?: boolean) => Promise<Change[]>
-  removeNaclFiles: (...names: string[]) => Promise<Change[]>
+  removeNaclFiles: (names: string[], validate?: boolean) => Promise<Change[]>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
@@ -217,9 +217,8 @@ export const loadWorkspace = async (
 
     const getElementsDependents = async (
       elemIDs: ElemID[],
-      elementSource: ReadOnlyElementsSource,
       addedIDs: Set<string>
-    ): Promise<Element[]> => {
+    ): Promise<ElemID[]> => {
       elemIDs.forEach(id => addedIDs.add(id.getFullName()))
       const filesWithDependencies = _.uniq(
         await awu(elemIDs)
@@ -236,14 +235,10 @@ export const loadWorkspace = async (
         id => id.getFullName()
       )
 
-      const dependents = await awu(dependentsIDs)
-        .map(id => elementSource.get(id))
-        .filter(values.isDefined)
-        .toArray()
 
-      return _.isEmpty(dependents)
-        ? dependents
-        : dependents.concat(await getElementsDependents(dependentsIDs, elementSource, addedIDs))
+      return _.isEmpty(dependentsIDs)
+        ? dependentsIDs
+        : dependentsIDs.concat(await getElementsDependents(dependentsIDs, addedIDs))
     }
 
     const validateElementsAndDependents = async (
@@ -254,7 +249,11 @@ export const loadWorkspace = async (
       errors: ValidationError[]
       validatedElementsIDs: ElemID[]
     }> => {
-      const dependents = await getElementsDependents(relevantElementIDs, elementSource, new Set())
+      const dependentsID = await getElementsDependents(relevantElementIDs, new Set())
+      const dependents = await awu(dependentsID)
+        .map(id => elementSource.get(id))
+        .filter(values.isDefined)
+        .toArray()
       const elementsToValidate = [...elements, ...dependents]
       return {
         errors: await validateElements(elementsToValidate, elementSource),
@@ -368,12 +367,12 @@ export const loadWorkspace = async (
       const errorsToUpdate = Object.entries(validationErrorsById)
         .map(([elemID, errors]) => ({ key: elemID, value: errors }))
 
-      const errorsToDelete = validatedElementsIDs
+      const elementsWithNoErrors = validatedElementsIDs
         .map(id => id.getFullName())
         .filter(fullname => _.isEmpty(validationErrorsById[fullname]))
 
       await stateToBuild.validationErrors.setAll(errorsToUpdate)
-      await stateToBuild.validationErrors.deleteAll(errorsToDelete)
+      await stateToBuild.validationErrors.deleteAll(elementsWithNoErrors)
     }
     return stateToBuild
   }
@@ -450,9 +449,9 @@ export const loadWorkspace = async (
     return elementChanges
   }
 
-  const removeNaclFiles = async (...names: string[]): Promise<Change[]> => {
+  const removeNaclFiles = async (names: string[], validate = true): Promise<Change[]> => {
     const elementChanges = await (await getLoadedNaclFilesSource()).removeNaclFiles(...names)
-    workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges })
+    workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })
     return elementChanges
   }
 

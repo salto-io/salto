@@ -36,8 +36,9 @@ import {
 import { DuplicateInstanceKeyError } from '../../src/merger/internal/instances'
 import { MultiplePrimitiveTypesError } from '../../src/merger/internal/primitives'
 import { DuplicateVariableNameError } from '../../src/merger/internal/variables'
-import { CircularReferenceValidationError, IllegalReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError } from '../../src/validator'
+import { CircularReferenceValidationError, IllegalReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, InvalidStaticFileError } from '../../src/validator'
 import { UnresolvedReferenceValidationError } from '../../src/errors'
+import { MissingStaticFile } from '../../src/workspace/static_files'
 
 const { awu } = collections.asynciterable
 describe('State/cache serialization', () => {
@@ -433,10 +434,10 @@ describe('State/cache serialization', () => {
 
   describe('validation errors', () => {
     const validationErrors = _.sortBy([
-      // new InvalidStaticFileError({
-      //   elemID: new ElemID('salto', 'InvalidStaticFileError'),
-      //   value: new MissingStaticFile('invalid')
-      // }),
+      new InvalidStaticFileError({
+        elemID: new ElemID('salto', 'InvalidStaticFileError'),
+        value: new MissingStaticFile('invalid'),
+      }),
       new CircularReferenceValidationError({
         elemID: new ElemID('salto', 'CircularReferenceValidationError'),
         ref: 'ref',

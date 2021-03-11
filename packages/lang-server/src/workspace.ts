@@ -222,10 +222,10 @@ export class EditorWorkspace {
       this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
       // We start by running all deleted
-      const removeChanges = (!_.isEmpty(opDeletes))
-        ? (await this.workspace.removeNaclFiles(...opDeletes))
-        : []
       const shouldCalcValidation = this.wsErrors === undefined
+      const removeChanges = (!_.isEmpty(opDeletes))
+        ? (await this.workspace.removeNaclFiles([...opDeletes], shouldCalcValidation))
+        : []
       // Now add the waiting changes
       const updateChanges = (!_.isEmpty(opUpdates))
         ? await this.workspace.setNaclFiles(Object.values(opUpdates), shouldCalcValidation)

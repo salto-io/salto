@@ -441,7 +441,7 @@ describe('workspace', () => {
     })
 
     it('should update elements to not include fields from removed Nacl files', async () => {
-      await workspace.removeNaclFiles(...removedPaths)
+      await workspace.removeNaclFiles(removedPaths)
       const elemMap = await getElemMap(await workspace.elements())
       expect(Object.keys(elemMap).sort())
         .toEqual(['salesforce.RenamedType1', 'salesforce.lead', 'multi.loc'].sort())
@@ -450,7 +450,7 @@ describe('workspace', () => {
     })
 
     it('should modify element to not include fields from removed Nacl files', async () => {
-      const changes = (await workspace.removeNaclFiles('subdir/file.nacl'))
+      const changes = (await workspace.removeNaclFiles(['subdir/file.nacl']))
       const elemMap = await getElemMap(await workspace.elements())
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(Object.keys(lead.fields)).not.toContain('ext_field')
@@ -459,14 +459,14 @@ describe('workspace', () => {
     })
 
     it('should remove from store', async () => {
-      await workspace.removeNaclFiles(...removedPaths)
+      await workspace.removeNaclFiles(removedPaths)
       const mockStoreDelete = dirStore.delete as jest.Mock
       expect(mockStoreDelete.mock.calls.map(c => c[0])).toEqual(removedPaths)
     })
 
     it('should also work if we do not call elements in advance', async () => {
       const newWorkspace = await createWorkspace(mockDirStore())
-      await newWorkspace.removeNaclFiles(...removedPaths)
+      await newWorkspace.removeNaclFiles(removedPaths)
       const elemMap = await getElemMap(await newWorkspace.elements())
       expect(Object.keys(elemMap).sort())
         .toEqual(['salesforce.RenamedType1', 'salesforce.lead', 'multi.loc'].sort())
@@ -1128,10 +1128,6 @@ describe('workspace', () => {
       expect(lead).toBeDefined()
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('foo')
       expect(lead.fields.new_field).toBeDefined()
-    })
-    // eslint-disable-next-line
-    it.skip('should not modify the changes object', () => {
-      expect(clonedChanges).toEqual(changes)
     })
 
     it('should update existing parsed Nacl files content', () => {

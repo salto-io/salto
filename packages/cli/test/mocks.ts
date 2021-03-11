@@ -304,7 +304,7 @@ export const mockWorkspace = ({
     currentEnv: mockFunction<Workspace['currentEnv']>().mockReturnValue(envs[0]),
     services: mockFunction<Workspace['services']>().mockReturnValue(services),
     servicesCredentials: mockFunction<Workspace['servicesCredentials']>().mockResolvedValue({}),
-    servicesConfig: mockFunction<Workspace['servicesConfig']>().mockResolvedValue({}),
+    serviceConfig: mockFunction<Workspace['serviceConfig']>().mockResolvedValue(undefined),
     isEmpty: mockFunction<Workspace['isEmpty']>().mockResolvedValue(false),
     hasElementsInServices: mockFunction<Workspace['hasElementsInServices']>().mockResolvedValue(true),
     hasElementsInEnv: mockFunction<Workspace['hasElementsInEnv']>().mockResolvedValue(false),

@@ -73,7 +73,7 @@ describe('adapters.ts', () => {
       const result = await getAdaptersCreatorConfigs(
         [serviceName],
         { [sfConfig.elemID.adapter]: sfConfig },
-        {},
+        async () => undefined,
         buildElementsSourceFromElements([])
       )
       expect(result[serviceName]).toEqual(
@@ -90,7 +90,7 @@ describe('adapters.ts', () => {
       const result = await getAdaptersCreatorConfigs(
         [serviceName],
         { [sfConfig.elemID.adapter]: sfConfig },
-        { [sfConfig.elemID.adapter]: sfConfig },
+        async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
         buildElementsSourceFromElements([]),
       )
       expect(result[serviceName]).toEqual(
@@ -108,7 +108,7 @@ describe('adapters.ts', () => {
       const result = await getAdaptersCreatorConfigs(
         [serviceName],
         { [sfConfig.elemID.adapter]: sfConfig },
-        { [sfConfig.elemID.adapter]: sfConfig },
+        async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
         buildElementsSourceFromElements([
           new ObjectType({ elemID: new ElemID(serviceName, 'type1') }),
           new ObjectType({ elemID: new ElemID('dummy', 'type2') }),

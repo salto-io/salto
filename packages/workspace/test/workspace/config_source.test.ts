@@ -30,6 +30,7 @@ describe('configSource', () => {
     const overrides: DetailedChange[] = [
       createConfigOverride('valid', ['val'], 2),
       createConfigOverride('valid', ['new'], { a: true }),
+      createConfigOverride('default', ['new'], 'new'),
     ]
     dirStore = mockDirStore(
       undefined,
@@ -90,6 +91,33 @@ describe('configSource', () => {
     })
     it('should fail if the config file has parse errors', async () => {
       await expect(source.get('error')).rejects.toThrow()
+    })
+    describe('with default value', () => {
+      let defaultValue: InstanceElement
+      beforeEach(() => {
+        defaultValue = new InstanceElement('default', new ObjectType({ elemID: new ElemID('test') }))
+      })
+      describe('with valid config', () => {
+        let inst: InstanceElement
+        beforeEach(async () => {
+          inst = await source.get('valid', defaultValue) as InstanceElement
+        })
+        it('should return the valid config', async () => {
+          expect(inst.value).toMatchObject({
+            other: 3,
+          })
+        })
+      })
+      describe('with empty file', () => {
+        let inst: InstanceElement
+        beforeEach(async () => {
+          inst = await source.get('noSuchFile', defaultValue) as InstanceElement
+        })
+        it('should return default value', () => {
+          expect(inst).toBeInstanceOf(InstanceElement)
+          expect(inst).toEqual(defaultValue)
+        })
+      })
     })
   })
   describe('set', () => {

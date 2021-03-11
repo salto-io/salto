@@ -16,11 +16,12 @@
 import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
-  Value, toChange, isRemovalChange, getChangeElement, isAdditionChange, isObjectType, ObjectType, isModificationChange, isObjectTypeChange } from '@salto-io/adapter-api'
+  Value, toChange, isRemovalChange, getChangeElement, isAdditionChange, isObjectType, ObjectType,
+  isModificationChange, isObjectTypeChange, ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { collections, promises } from '@salto-io/lowerdash'
 import { applyDetailedChanges, safeJsonStringify } from '@salto-io/adapter-utils'
-import { validateElements } from '../validator'
+import { collections, promises, values } from '@salto-io/lowerdash'
+import { ValidationError, validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
@@ -36,7 +37,7 @@ import { MergeError, mergeElements } from '../merger'
 import { RemoteElementSource, ElementsSource, mapReadOnlyElementsSource } from './elements_source'
 import { buildNewMergedElementsAndErrors, getAfterElements } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
-import { serialize, deserializeMergeErrors, deserializeSingleElement } from '../serializer/elements'
+import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
 
 const log = logger(module)
 
@@ -93,7 +94,7 @@ export type Workspace = {
   envOfFile(filename: string): string
   getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment>
   hasErrors(): Promise<boolean>
-  errors(validate?: boolean): Promise<Readonly<Errors>>
+  errors(): Promise<Readonly<Errors>>
   transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>>
   transformError: (error: SaltoError) => Promise<WorkspaceError<SaltoError>>
@@ -101,8 +102,8 @@ export type Workspace = {
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
-  setNaclFiles: (...naclFiles: NaclFile[]) => Promise<Change[]>
-  removeNaclFiles: (...names: string[]) => Promise<Change[]>
+  setNaclFiles: (naclFiles: NaclFile[], validate?: boolean) => Promise<Change[]>
+  removeNaclFiles: (names: string[], validate?: boolean) => Promise<Change[]>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
@@ -142,6 +143,7 @@ type WorkspaceState = {
   merged: ElementsSource
   errors: RemoteMap<MergeError[]>
   searchableNamesIndex: RemoteMap<boolean>
+  validationErrors: RemoteMap<ValidationError[]>
 }
 
 export const loadWorkspace = async (
@@ -174,10 +176,16 @@ export const loadWorkspace = async (
     currentEnv(), elementsSources.commonSourceName, remoteMapCreator)
   let workspaceState: Promise<WorkspaceState> | undefined
 
-  const buildWorkspaceState = async ({ workspaceChanges = [], env, stateOnlyChanges = [] }: {
+  const buildWorkspaceState = async ({
+    workspaceChanges = [],
+    env,
+    stateOnlyChanges = [],
+    validate = true,
+  }: {
     workspaceChanges?: Change<Element>[]
     env?: string
     stateOnlyChanges?: Change<Element>[]
+    validate?: boolean
   }): Promise<WorkspaceState> => {
     const actualEnv = env ?? currentEnv()
     const stateToBuild = workspaceState !== undefined && actualEnv === currentEnv()
@@ -200,7 +208,58 @@ export const loadWorkspace = async (
           serialize: b => safeJsonStringify(b),
           deserialize: async data => JSON.parse(data),
         }),
+        validationErrors: await remoteMapCreator<ValidationError[]>({
+          namespace: getRemoteMapNamespace('validationErrors', actualEnv),
+          serialize: validationErrors => serialize(validationErrors),
+          deserialize: async data => deserializeValidationErrors(data),
+        }),
       }
+
+    const getElementsDependents = async (
+      elemIDs: ElemID[],
+      addedIDs: Set<string>
+    ): Promise<ElemID[]> => {
+      elemIDs.forEach(id => addedIDs.add(id.getFullName()))
+      const filesWithDependencies = _.uniq(
+        await awu(elemIDs)
+          .flatMap(id => naclFilesSource.getElementReferencedFiles(id))
+          .toArray()
+      )
+
+      const dependentsIDs = _.uniqBy(
+        await awu(filesWithDependencies)
+          .map(filename => naclFilesSource.getParsedNaclFile(filename))
+          .flatMap(naclFile => naclFile?.elements.map(elem => elem.elemID) ?? [])
+          .filter(id => !addedIDs.has(id.getFullName()))
+          .toArray(),
+        id => id.getFullName()
+      )
+
+
+      return _.isEmpty(dependentsIDs)
+        ? dependentsIDs
+        : dependentsIDs.concat(await getElementsDependents(dependentsIDs, addedIDs))
+    }
+
+    const validateElementsAndDependents = async (
+      elements: ReadonlyArray<Element>,
+      elementSource: ReadOnlyElementsSource,
+      relevantElementIDs: ElemID[],
+    ): Promise<{
+      errors: ValidationError[]
+      validatedElementsIDs: ElemID[]
+    }> => {
+      const dependentsID = await getElementsDependents(relevantElementIDs, new Set())
+      const dependents = await awu(dependentsID)
+        .map(id => elementSource.get(id))
+        .filter(values.isDefined)
+        .toArray()
+      const elementsToValidate = [...elements, ...dependents]
+      return {
+        errors: await validateElements(elementsToValidate, elementSource),
+        validatedElementsIDs: elementsToValidate.map(elem => elem.elemID),
+      }
+    }
 
     // When we load the workspace with a clean cache from existings nacls, we need
     // to add hidden elements from the state since they will not be a part of the nacl
@@ -288,7 +347,33 @@ export const loadWorkspace = async (
       ...mergeData,
     })
     await updateSearchableNamesIndex(changes)
+    const changedElements = changes
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeElement)
 
+    const changeIDs = changes.map(getChangeElement).map(elem => elem.elemID)
+    if (validate) {
+      const {
+        errors: validationErrors,
+        validatedElementsIDs,
+      } = await validateElementsAndDependents(
+        changedElements,
+        stateToBuild.merged,
+        changeIDs,
+      )
+      const validationErrorsById = await awu(validationErrors)
+        .groupBy(err => err.elemID.createTopLevelParentID().parent.getFullName())
+
+      const errorsToUpdate = Object.entries(validationErrorsById)
+        .map(([elemID, errors]) => ({ key: elemID, value: errors }))
+
+      const elementsWithNoErrors = validatedElementsIDs
+        .map(id => id.getFullName())
+        .filter(fullname => _.isEmpty(validationErrorsById[fullname]))
+
+      await stateToBuild.validationErrors.setAll(errorsToUpdate)
+      await stateToBuild.validationErrors.deleteAll(elementsWithNoErrors)
+    }
     return stateToBuild
   }
 
@@ -343,7 +428,8 @@ export const loadWorkspace = async (
 
   const updateNaclFiles = async (
     changes: DetailedChange[],
-    mode?: RoutingMode
+    mode?: RoutingMode,
+    validate = true
   ): Promise<void> => {
     const { visible: visibleChanges, hidden: hiddenChanges } = await handleHiddenChanges(
       changes,
@@ -353,19 +439,19 @@ export const loadWorkspace = async (
     const workspaceChanges = await (await getLoadedNaclFilesSource())
       .updateNaclFiles(visibleChanges, mode)
     const stateOnlyChanges = await getStateOnlyChanges(hiddenChanges)
-    workspaceState = buildWorkspaceState({ workspaceChanges, stateOnlyChanges })
+    workspaceState = buildWorkspaceState({ workspaceChanges, stateOnlyChanges, validate })
   }
 
 
-  const setNaclFiles = async (...naclFiles: NaclFile[]): Promise<Change[]> => {
+  const setNaclFiles = async (naclFiles: NaclFile[], validate = true): Promise<Change[]> => {
     const elementChanges = await (await getLoadedNaclFilesSource()).setNaclFiles(...naclFiles)
-    workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges })
+    workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })
     return elementChanges
   }
 
-  const removeNaclFiles = async (...names: string[]): Promise<Change[]> => {
+  const removeNaclFiles = async (names: string[], validate = true): Promise<Change[]> => {
     const elementChanges = await (await getLoadedNaclFilesSource()).removeNaclFiles(...names)
-    workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges })
+    workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })
     return elementChanges
   }
 
@@ -417,16 +503,10 @@ export const loadWorkspace = async (
     return { ...error, sourceFragments: [] }
   }
 
-  const errors = async (validate = true): Promise<Errors> => {
-    const resolvedElements = await elements()
+  const errors = async (): Promise<Errors> => {
+    const currentState = await getWorkspaceState()
     const errorsFromSource = await (await getLoadedNaclFilesSource()).getErrors()
-
-    const validationErrors = validate
-      ? await validateElements(
-        await awu(await resolvedElements.merged.getAll()).toArray(),
-        resolvedElements.merged
-      ) : []
-
+    const validationErrors = await awu(currentState.validationErrors.values()).flat().toArray()
     _(validationErrors)
       .groupBy(error => error.constructor.name)
       .entries()
@@ -438,7 +518,7 @@ export const loadWorkspace = async (
       ...errorsFromSource,
       merge: [
         ...errorsFromSource.merge,
-        ...(await awu(resolvedElements.errors.values()).flat().toArray()),
+        ...(await awu(currentState.errors.values()).flat().toArray()),
       ],
       validation: validationErrors,
     })

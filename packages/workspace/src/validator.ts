@@ -30,11 +30,11 @@ import { IllegalReference } from './parser/parse'
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
-export abstract class ValidationError extends types.Bean<Readonly<{
+export abstract class ValidationError extends types.Bean<{
   elemID: ElemID
   error: string
   severity: SaltoErrorSeverity
-}>> implements SaltoElementError {
+}> implements SaltoElementError {
   get message(): string {
     return `Error validating "${this.elemID.getFullName()}": ${this.error}`
   }
@@ -43,6 +43,11 @@ export abstract class ValidationError extends types.Bean<Readonly<{
     return this.message
   }
 }
+
+export const isValidationError = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  value: any
+): value is ValidationError => value instanceof ValidationError
 
 const primitiveValidators = {
   [PrimitiveTypes.STRING]: _.isString,
@@ -182,20 +187,24 @@ export const isUnresolvedRefError = (
 
 
 export class IllegalReferenceValidationError extends ValidationError {
+  readonly reason: string
   constructor(
-    { elemID, message }:
-    { elemID: ElemID; message: string }
+    { elemID, reason }:
+    { elemID: ElemID; reason: string }
   ) {
-    super({ elemID, error: `illegal reference target, ${message}`, severity: 'Warning' })
+    super({ elemID, error: `illegal reference target, ${reason}`, severity: 'Warning' })
+    this.reason = reason
   }
 }
 
 export class CircularReferenceValidationError extends ValidationError {
+  readonly ref: string
   constructor(
     { elemID, ref }:
     { elemID: ElemID; ref: string }
   ) {
     super({ elemID, error: `circular reference ${ref}`, severity: 'Warning' })
+    this.ref = ref
   }
 }
 
@@ -339,11 +348,11 @@ const validateFieldAnnotations = async (
 
 export class InvalidValueTypeValidationError extends ValidationError {
   readonly value: Value
-  readonly type: TypeElement
-  constructor({ elemID, value, type }: { elemID: ElemID; value: Value; type: TypeElement }) {
+  readonly type: ElemID
+  constructor({ elemID, value, type }: { elemID: ElemID; value: Value; type: ElemID }) {
     super({
       elemID,
-      error: `Invalid value type for ${type.elemID.getFullName()}`,
+      error: `Invalid value type for ${type.getFullName()}`,
       severity: 'Warning',
     })
     this.value = value
@@ -356,7 +365,7 @@ const createReferenceValidationErrors = (elemID: ElemID, value: Value): Validati
     return [new UnresolvedReferenceValidationError({ elemID, target: value.target })]
   }
   if (value instanceof IllegalReference) {
-    return [new IllegalReferenceValidationError({ elemID, message: value.message })]
+    return [new IllegalReferenceValidationError({ elemID, reason: value.message })]
   }
   if (value instanceof CircularReference) {
     return [new CircularReferenceValidationError({ elemID, ref: value.ref })]
@@ -403,7 +412,7 @@ const validateValue = async (
 
   if (isPrimitiveType(type)) {
     if (!primitiveValidators[type.primitive](value)) {
-      return [new InvalidValueTypeValidationError({ elemID, value, type })]
+      return [new InvalidValueTypeValidationError({ elemID, value, type: type.elemID })]
     }
   }
 
@@ -418,7 +427,7 @@ const validateValue = async (
 
   if (isObjectType(type) || isMapType(type)) {
     if (!_.isObjectLike(value)) {
-      return [new InvalidValueTypeValidationError({ elemID, value, type })]
+      return [new InvalidValueTypeValidationError({ elemID, value, type: type.elemID })]
     }
     const objType = toObjectType(type, value)
     return awu(Object.keys(value)).filter(k => objType.fields[k] !== undefined).flatMap(

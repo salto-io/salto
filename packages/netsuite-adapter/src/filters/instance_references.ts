@@ -15,13 +15,13 @@
 */
 import {
   Element, isInstanceElement, Values, ObjectType, ElemID, ReferenceExpression, InstanceElement,
-  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import {
   transformElement,
   TransformFunc, transformValues,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
 import {
   SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME, SCRIPT_ID,
   PATH,
@@ -31,6 +31,7 @@ import {
 import { serviceId } from '../transformer'
 import { FilterCreator } from '../filter'
 import { isCustomType } from '../types'
+import { LazyElementsSourceIndex } from '../elements_source_index/types'
 
 // e.g. '[/Templates/filename.html]' & '[/SuiteScripts/script.js]'
 const pathReferenceRegex = new RegExp(`^\\[(?<${CAPTURE}>\\/(${TEMPLATES_FOLDER_NAME}|${SUITE_SCRIPTS_FOLDER_NAME}|${WEB_SITE_HOSTING_FILES_FOLDER_NAME})\\/.+)]$`)
@@ -78,7 +79,7 @@ const customTypeServiceIdsToElemIds = (instance: InstanceElement): Record<string
   return serviceIdsToElemIds
 }
 
-const getInstanceServiceIdRecords = (instance: InstanceElement): Record<string, ElemID> => (
+export const getInstanceServiceIdRecords = (instance: InstanceElement): Record<string, ElemID> => (
   isCustomType(instance.type)
     ? customTypeServiceIdsToElemIds(instance)
     : { [serviceId(instance)]: instance.elemID.createNestedID(PATH) }
@@ -123,38 +124,28 @@ const replaceReferenceValues = (
 }
 
 const createElementsSourceServiceIdToElemID = async (
-  elementsSource: ReadOnlyElementsSource,
+  elementsSourceIndex: LazyElementsSourceIndex,
   isPartial: boolean,
 ): Promise<Record<string, ElemID>> => {
-  let elementsSourceServiceIdToElemID: Record<string, ElemID> = {}
-
   if (!isPartial) {
-    return elementsSourceServiceIdToElemID
+    return {}
   }
 
-  // TODO: Replace this loop style with the same style that is
-  // used in generateServiceIdToElemID when ".map" and "".filter" for async iterables
-  // will be available in lowerdash.
-  for await (const element of await elementsSource.getAll()) {
-    if (isInstanceElement(element)) {
-      elementsSourceServiceIdToElemID = _.assign(
-        elementsSourceServiceIdToElemID,
-        getInstanceServiceIdRecords(element)
-      )
-    }
-  }
-  return elementsSourceServiceIdToElemID
+  return _(await elementsSourceIndex.getIndex())
+    .mapValues(val => val.elemID)
+    .pickBy(lowerdashValues.isDefined)
+    .value()
 }
 
 const filterCreator: FilterCreator = () => ({
   onFetch: async ({
     elements,
-    elementsSource,
+    elementsSourceIndex,
     isPartial,
   }): Promise<void> => {
     const fetchedElemenentsServiceIdToElemID = generateServiceIdToElemID(elements)
     const elementsSourceServiceIdToElemID = await createElementsSourceServiceIdToElemID(
-      elementsSource,
+      elementsSourceIndex,
       isPartial
     )
     elements.filter(isInstanceElement).forEach(instance => {

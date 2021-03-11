@@ -13,14 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { FILE_CABINET_PATH_SEPARATOR, SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME } from '../constants'
+import { ElemID } from '@salto-io/adapter-api'
 
+export type ElementsSourceValue = {
+  lastFetchTime?: Date
+  elemID?: ElemID
+}
 
-export const ATTRIBUTE_PREFIX = '@_'
-export const CDATA_TAG_NAME = '__cdata'
-
-export const fileCabinetTopLevelFolders = [
-  `${FILE_CABINET_PATH_SEPARATOR}${SUITE_SCRIPTS_FOLDER_NAME}`,
-  `${FILE_CABINET_PATH_SEPARATOR}${TEMPLATES_FOLDER_NAME}`,
-  `${FILE_CABINET_PATH_SEPARATOR}${WEB_SITE_HOSTING_FILES_FOLDER_NAME}`,
-]
+export type LazyElementsSourceIndex = {
+  getIndex: () => Promise<Record<string, ElementsSourceValue>>
+}

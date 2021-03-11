@@ -18,7 +18,7 @@ import { getChangedFiles, getChangedFolders } from '../../src/changes_detector/c
 import { Change } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
-import { createDateRange } from '../../src/changes_detector/date_range'
+import { createDateRange } from '../../src/changes_detector/date_formats'
 
 describe('file_cabinet', () => {
   const runSuiteQLMock = jest.fn()

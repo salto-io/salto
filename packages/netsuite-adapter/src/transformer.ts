@@ -23,11 +23,12 @@ import _ from 'lodash'
 import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
   SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
+  LAST_FETCH_TIME,
 } from './constants'
 import { fieldTypes } from './types/field_types'
 import { customTypes, fileCabinetTypes, isCustomType, isFileCabinetType } from './types'
-import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './client/types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo } from './client/utils'
+import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './client/types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
 
 
@@ -39,7 +40,7 @@ const XML_FALSE_VALUE = 'F'
 const removeDotPrefix = (name: string): string => name.replace(/^\.+/, '_')
 
 export const createInstanceElement = (customizationInfo: CustomizationInfo, type: ObjectType,
-  getElemIdFunc?: ElemIdGetter): InstanceElement => {
+  getElemIdFunc?: ElemIdGetter, fetchTime?: Date): InstanceElement => {
   const getInstanceName = (transformedValues: Values): string => {
     if (!isCustomType(type) && !isFileCabinetType(type)) {
       throw new Error(`Failed to getInstanceName for unknown type: ${type.elemID.name}`)
@@ -115,6 +116,10 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
     })
   }
 
+  const lastFetchTimeValue = fetchTime !== undefined ? {
+    [LAST_FETCH_TIME]: fetchTime.toJSON(),
+  } : {}
+
   const transformedValues = transformValues({
     values: valuesWithTransformedAttrs,
     type,
@@ -123,8 +128,11 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
   return new InstanceElement(
     instanceName,
     type,
-    transformedValues,
-    getInstancePath(instanceFileName)
+    {
+      ...transformedValues,
+      ...lastFetchTimeValue,
+    },
+    getInstancePath(instanceFileName),
   )
 }
 
@@ -228,6 +236,8 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
     }
     return { typeName, values, path } as FolderCustomizationInfo
   }
+
+  delete instance.value[LAST_FETCH_TIME]
 
   const scriptId = instance.value[SCRIPT_ID]
   // Template Custom Type

@@ -15,6 +15,7 @@
 */
 import { logger } from '@salto-io/logging'
 import NetsuiteClient from '../../client/client'
+import { convertSuiteQLStringToDate } from '../date_formats'
 import { ChangedObject, DateRange, TypeChangesDetector } from '../types'
 
 const log = logger(module)
@@ -24,7 +25,7 @@ const getChanges = async (type: string, client: NetsuiteClient, dateRange: DateR
   const [startDate, endDate] = dateRange.toSuiteQLRange()
 
   const results = await client.runSuiteQL(`
-      SELECT scriptid
+      SELECT scriptid, lastmodifieddate
       FROM ${type}
       WHERE lastmodifieddate BETWEEN '${startDate}' AND '${endDate}'
     `)
@@ -35,8 +36,8 @@ const getChanges = async (type: string, client: NetsuiteClient, dateRange: DateR
   }
 
   return results
-    .filter((res): res is { scriptid: string } => {
-      if (typeof res.scriptid !== 'string') {
+    .filter((res): res is { scriptid: string; lastmodifieddate: string } => {
+      if ([res.scriptid, res.lastmodifieddate].some(val => typeof val !== 'string')) {
         log.warn(`Got invalid result from ${type} query, %o`, res)
         return false
       }
@@ -45,6 +46,7 @@ const getChanges = async (type: string, client: NetsuiteClient, dateRange: DateR
     .map(res => ({
       type: 'object',
       externalId: res.scriptid,
+      time: convertSuiteQLStringToDate(res.lastmodifieddate),
     }))
 }
 

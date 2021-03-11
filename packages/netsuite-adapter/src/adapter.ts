@@ -15,7 +15,8 @@
 */
 import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
-  ElemIdGetter, Element, getChangeElement, InstanceElement, ReadOnlyElementsSource, FetchOptions,
+  ElemIdGetter, Element, getChangeElement, InstanceElement, ReadOnlyElementsSource,
+  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -28,7 +29,7 @@ import {
   customTypes, getAllTypes, fileCabinetTypes,
 } from './types'
 import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS,
-  INTEGRATION, FETCH_TARGET, SKIP_LIST } from './constants'
+  INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
@@ -41,7 +42,9 @@ import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, n
 import { createServerTimeElements, getLastServerTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import NetsuiteClient from './client/client'
-import { createDateRange } from './changes_detector/date_range'
+import { createDateRange } from './changes_detector/date_formats'
+import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
+import { LazyElementsSourceIndex } from './elements_source_index/types'
 
 const { makeArray } = collections.array
 
@@ -114,6 +117,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
    * Account credentials were given in the constructor.
    */
   public async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
+    const elementsSourceIndex = createElementsSourceIndex(this.elementsSource)
+
     const deprecatedSkipList = buildNetsuiteQuery({
       types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, ['.*']])),
       filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
@@ -126,10 +131,17 @@ export default class NetsuiteAdapter implements AdapterOperations {
     ].filter(values.isDefined).reduce(andQuery)
 
 
-    const { serverTimeElements, changedObjectsQuery } = await this.runSuiteAppOperations(fetchQuery)
+    const {
+      changedObjectsQuery,
+      serverTime,
+    } = await this.runSuiteAppOperations(fetchQuery, elementsSourceIndex)
     fetchQuery = changedObjectsQuery !== undefined
       ? andQuery(changedObjectsQuery, fetchQuery)
       : fetchQuery
+
+    const serverTimeElements = this.fetchTarget === undefined && serverTime !== undefined
+      ? createServerTimeElements(serverTime)
+      : []
 
     const isPartial = this.fetchTarget !== undefined
 
@@ -151,16 +163,29 @@ export default class NetsuiteAdapter implements AdapterOperations {
     } = await getCustomObjectsResult
     progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
 
+    _(Object.values(customTypes))
+      .concat(Object.values(fileCabinetTypes))
+      .forEach(type => {
+        type.fields[LAST_FETCH_TIME] = new Field(
+          type,
+          LAST_FETCH_TIME,
+          BuiltinTypes.STRING,
+          { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+        )
+      })
+
     const customizationInfos = [...customObjects, ...fileCabinetContent]
     const instances = customizationInfos.map(customizationInfo => {
       const type = customTypes[customizationInfo.typeName]
         ?? fileCabinetTypes[customizationInfo.typeName]
-      return type ? createInstanceElement(customizationInfo, type, this.getElemIdFunc) : undefined
+      return type
+        ? createInstanceElement(customizationInfo, type, this.getElemIdFunc, serverTime)
+        : undefined
     }).filter(isInstanceElement)
     const elements = [...getAllTypes(), ...instances, ...serverTimeElements]
 
     progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
-    await this.runFiltersOnFetch(elements, this.elementsSource, isPartial)
+    await this.runFiltersOnFetch(elements, elementsSourceIndex, isPartial)
     const updatedConfig = getConfigFromConfigChanges(
       failedToFetchAllAtOnce, failedFilePaths, failedTypeToInstances, this.userConfig
     )
@@ -171,31 +196,40 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return { elements, updatedConfig, isPartial }
   }
 
-  private async runSuiteAppOperations(fetchQuery: NetsuiteQuery):
-    Promise<{ serverTimeElements: Element[]; changedObjectsQuery?: NetsuiteQuery }> {
+  private async runSuiteAppOperations(
+    fetchQuery: NetsuiteQuery,
+    elementsSourceIndex: LazyElementsSourceIndex
+  ):
+    Promise<{
+      changedObjectsQuery?: NetsuiteQuery
+      serverTime?: Date
+    }> {
     const sysInfo = await this.client.getSystemInformation()
     if (sysInfo === undefined) {
       log.warn('Failed to get sysInfo, skipping SuiteApp operations')
-      return { serverTimeElements: [] }
+      return {}
     }
 
     if (this.fetchTarget === undefined) {
-      return { serverTimeElements: createServerTimeElements(sysInfo.time) }
+      return {
+        serverTime: sysInfo.time,
+      }
     }
 
     const lastFetchTime = await getLastServerTime(this.elementsSource)
     if (lastFetchTime === undefined) {
       log.debug('Failed to get last fetch time')
-      return { serverTimeElements: [] }
+      return { serverTime: sysInfo.time }
     }
 
     const changedObjectsQuery = await getChangedObjects(
       this.client,
       fetchQuery,
-      createDateRange(lastFetchTime, sysInfo.time)
+      createDateRange(lastFetchTime, sysInfo.time),
+      elementsSourceIndex,
     )
 
-    return { serverTimeElements: [], changedObjectsQuery }
+    return { changedObjectsQuery, serverTime: sysInfo.time }
   }
 
   private getAllRequiredReferencedInstances(
@@ -222,13 +256,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   private async runFiltersOnFetch(
     elements: Element[],
-    elementsSource: ReadOnlyElementsSource,
+    elementsSourceIndex: LazyElementsSourceIndex,
     isPartial: boolean
   ): Promise<void> {
     // Fetch filters order is important so they should run one after the other
     return this.filtersCreators.map(filterCreator => filterCreator()).reduce(
       (prevRes, filter) => prevRes.then(() =>
-        filter.onFetch({ elements, elementsSource, isPartial })),
+        filter.onFetch({ elements, elementsSourceIndex, isPartial })),
       Promise.resolve(),
     )
   }

@@ -18,7 +18,7 @@ import detector from '../../src/changes_detector/changes_detectors/role'
 import { Change } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
-import { createDateRange } from '../../src/changes_detector/date_range'
+import { createDateRange } from '../../src/changes_detector/date_formats'
 
 describe('role', () => {
   const runSuiteQLMock = jest.fn()
@@ -71,7 +71,7 @@ describe('role', () => {
       ])
 
       runSavedSearchQueryMock.mockResolvedValue([
-        { internalid: [{ value: '3' }] },
+        { internalid: [{ value: '3' }], permchangedate: '03/09/2021 03:04 pm' },
         { invalid: 0 },
       ])
 
@@ -84,7 +84,7 @@ describe('role', () => {
       expect(results).toEqual([
         { type: 'object', externalId: 'a', internalId: 1 },
         { type: 'object', externalId: 'b', internalId: 2 },
-        { type: 'object', externalId: 'c' },
+        { type: 'object', externalId: 'c', time: new Date('2021-03-09T15:05:00.000Z') },
       ])
     })
 

@@ -18,11 +18,12 @@ import { readFile, readDir, writeFile, mkdirp, rm } from '@salto-io/file'
 import osPath from 'path'
 import { buildNetsuiteQuery, notQuery } from '../../src/query'
 import mockClient, { DUMMY_CREDENTIALS } from './sdf_client'
-import SdfClient, { ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, COMMANDS, fileCabinetTopLevelFolders, FOLDER_ATTRIBUTES_FILE_SUFFIX } from '../../src/client/sdf_client'
 import {
   FILE_CABINET_PATH_SEPARATOR,
 } from '../../src/constants'
+import SdfClient, { ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, COMMANDS, FOLDER_ATTRIBUTES_FILE_SUFFIX } from '../../src/client/sdf_client'
 import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../../src/client/types'
+import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 
 
 const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')

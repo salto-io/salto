@@ -18,7 +18,7 @@ import { customRecordTypeDetector as detector } from '../../src/changes_detector
 import { Change } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
-import { createDateRange } from '../../src/changes_detector/date_range'
+import { createDateRange } from '../../src/changes_detector/date_formats'
 
 describe('custom_record_type', () => {
   const runSuiteQLMock = jest.fn()
@@ -32,7 +32,10 @@ describe('custom_record_type', () => {
     let results: Change[]
     beforeEach(async () => {
       runSuiteQLMock.mockReset()
-      runSuiteQLMock.mockResolvedValue([{ scriptid: 'a' }, { scriptid: 'b' }])
+      runSuiteQLMock.mockResolvedValue([
+        { scriptid: 'a', lastmodifieddate: '03/15/2021' },
+        { scriptid: 'b', lastmodifieddate: '03/16/2021' },
+      ])
       results = await detector.getChanges(
         client,
         createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
@@ -40,14 +43,14 @@ describe('custom_record_type', () => {
     })
     it('should return the changes', () => {
       expect(results).toEqual([
-        { type: 'object', externalId: 'a' },
-        { type: 'object', externalId: 'b' },
+        { type: 'object', externalId: 'a', time: new Date('2021-03-16T00:00:00.000Z') },
+        { type: 'object', externalId: 'b', time: new Date('2021-03-17T00:00:00.000Z') },
       ])
     })
 
     it('should make the right query', () => {
       expect(runSuiteQLMock).toHaveBeenCalledWith(`
-      SELECT scriptid
+      SELECT scriptid, lastmodifieddate
       FROM customrecordtype
       WHERE lastmodifieddate BETWEEN '1/11/2021' AND '2/23/2021'
     `)
@@ -58,7 +61,12 @@ describe('custom_record_type', () => {
     let results: Change[]
     beforeEach(async () => {
       runSuiteQLMock.mockReset()
-      runSuiteQLMock.mockResolvedValue([{ scriptid: 'a' }, { scriptid: 'b' }, { qqq: 'b' }, { scriptid: {} }])
+      runSuiteQLMock.mockResolvedValue([
+        { scriptid: 'a', lastmodifieddate: '03/15/2021' },
+        { scriptid: 'b', lastmodifieddate: '03/16/2021' },
+        { qqq: 'b' },
+        { scriptid: {} },
+      ])
       results = await detector.getChanges(
         client,
         createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
@@ -66,8 +74,8 @@ describe('custom_record_type', () => {
     })
     it('should return the changes without the invalid results', () => {
       expect(results).toEqual([
-        { type: 'object', externalId: 'a' },
-        { type: 'object', externalId: 'b' },
+        { type: 'object', externalId: 'a', time: new Date('2021-03-16T00:00:00.000Z') },
+        { type: 'object', externalId: 'b', time: new Date('2021-03-17T00:00:00.000Z') },
       ])
     })
   })

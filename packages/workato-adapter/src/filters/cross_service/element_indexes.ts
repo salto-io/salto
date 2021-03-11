@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement, ElemID } from '@salto-io/adapter-api'
 
 export type SalesforceIndex = Record<string, Record<string, Readonly<Element>[]>>
-export type NetsuiteIndex = Record<string, Readonly<Element>>
+export type NetsuiteIndex = Record<string, ElemID>
 
 // salesforce indexes
 
@@ -65,12 +65,46 @@ export const indexSalesforceByMetadataTypeAndApiName = (
 
 // netsuite index
 
+const CUSTOM_RECORD_TYPE = 'customrecordtype'
+const CUSTOM_RECORD_CUSTOM_FIELDS = 'customrecordcustomfields'
+const CUSTOM_RECORD_CUSTOM_FIELD = 'customrecordcustomfield'
+
 export const indexNetsuiteByTypeAndScriptId = (
   elements: ReadonlyArray<Readonly<Element>>
 ): NetsuiteIndex => {
   const toScriptId = (inst: Readonly<InstanceElement>): string | undefined => inst.value.scriptid
-  return _.keyBy(
-    elements.filter(isInstanceElement).filter(e => toScriptId(e) !== undefined),
-    e => toScriptId(e) as string,
+  const instances = elements.filter(isInstanceElement)
+
+  const elementIndex = _.mapValues(
+    _.keyBy(
+      instances.filter(e => toScriptId(e) !== undefined),
+      e => toScriptId(e) as string,
+    ),
+    e => e.elemID,
   )
+
+  const customRecordTypeInstances = instances.filter(
+    inst => inst.elemID.typeName === CUSTOM_RECORD_TYPE
+  )
+  const nestedFields = (
+    customRecordTypeInstances
+      .flatMap(inst => (
+        (inst.value[CUSTOM_RECORD_CUSTOM_FIELDS]?.[CUSTOM_RECORD_CUSTOM_FIELD] ?? [])
+          .map((f: { scriptid: string }, idx: number) => ({
+            scriptId: f.scriptid,
+            nestedPath: inst.elemID.createNestedID(
+              CUSTOM_RECORD_CUSTOM_FIELDS,
+              CUSTOM_RECORD_CUSTOM_FIELD,
+              String(idx),
+            ),
+          }))))
+  )
+  // TODO these should be replaced by maps or nested fields under custom objects - see SALTO-1078
+  const customRecordTypeNestedFieldIndex = Object.fromEntries(
+    nestedFields.map(f => [f.scriptId, f.nestedPath])
+  )
+  return {
+    ...elementIndex,
+    ...customRecordTypeNestedFieldIndex,
+  }
 }

@@ -42,8 +42,8 @@ describe('custom_field', () => {
     })
     it('should return the changes', () => {
       expect(results).toEqual([
-        { type: 'object', externalId: 'a', time: new Date('2021-03-15T00:00:00.000Z') },
-        { type: 'object', externalId: 'b', time: new Date('2021-03-16T00:00:00.000Z') },
+        { type: 'object', externalId: 'a', time: new Date('2021-03-16T00:00:00.000Z') },
+        { type: 'object', externalId: 'b', time: new Date('2021-03-17T00:00:00.000Z') },
       ])
     })
 
@@ -73,8 +73,8 @@ describe('custom_field', () => {
     })
     it('should return the changes without the invalid results', () => {
       expect(results).toEqual([
-        { type: 'object', externalId: 'a', time: new Date('2021-03-15T00:00:00.000Z') },
-        { type: 'object', externalId: 'b', time: new Date('2021-03-16T00:00:00.000Z') },
+        { type: 'object', externalId: 'a', time: new Date('2021-03-16T00:00:00.000Z') },
+        { type: 'object', externalId: 'b', time: new Date('2021-03-17T00:00:00.000Z') },
       ])
     })
   })

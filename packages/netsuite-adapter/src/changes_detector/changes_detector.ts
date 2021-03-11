@@ -148,7 +148,11 @@ export const getChangedObjects = async (
 
   const [changedTypes, changedObjects] = _.partition(changedInstances, (change): change is ChangedType => change.type === 'type')
 
-  const scriptIds = getChangedIds(changedObjects, idToLastFetchDate, systemNoteChanges)
+  const scriptIds = getChangedIds(
+    changedObjects.map(change => ({ ...change, externalId: change.externalId.toLowerCase() })),
+    idToLastFetchDate,
+    systemNoteChanges
+  )
   const paths = new Set([...getChangedIds(changedFiles, idToLastFetchDate, systemNoteChanges)]
     .filter(path =>
       fileCabinetTopLevelFolders.some(
@@ -163,7 +167,7 @@ export const getChangedObjects = async (
   log.debug(`${paths.size} paths changes were detected`)
 
   return {
-    isTypeMatch: () => true,
+    isTypeMatch: () => scriptIds.size !== 0,
     isObjectMatch: objectID => !SUPPORTED_TYPES.has(objectID.type)
       || scriptIds.has(objectID.scriptId)
       || types.has(objectID.type),

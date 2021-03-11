@@ -23,5 +23,4 @@ export const CORE_ANNOTATIONS = {
   PARENT: '_parent',
   GENERATED_DEPENDENCIES: '_generated_dependencies',
   SERVICE_URL: '_service_url',
-  LAST_FETCH_TIME: '_last_fetch_time',
 }

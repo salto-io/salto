@@ -84,7 +84,7 @@ describe('role', () => {
       expect(results).toEqual([
         { type: 'object', externalId: 'a', internalId: 1 },
         { type: 'object', externalId: 'b', internalId: 2 },
-        { type: 'object', externalId: 'c', time: new Date('2021-03-09T15:04:00.000Z') },
+        { type: 'object', externalId: 'c', time: new Date('2021-03-09T15:05:00.000Z') },
       ])
     })
 

@@ -45,6 +45,7 @@ export const FOLDER = 'folder'
 export const SCRIPT_ID = 'scriptid'
 export const PATH = 'path'
 export const RECORD_TYPE = 'recordType'
+export const LAST_FETCH_TIME = '_lastfetchtime'
 
 // Field Annotations
 export const IS_ATTRIBUTE = 'isAttribute'

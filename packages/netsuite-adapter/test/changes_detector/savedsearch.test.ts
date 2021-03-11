@@ -44,8 +44,8 @@ describe('savedsearch', () => {
     })
     it('should return the changes', () => {
       expect(results).toEqual([
-        { type: 'object', externalId: 'a', time: new Date('2021-03-15T15:04:00.000Z') },
-        { type: 'object', externalId: 'b', time: new Date('2021-03-15T15:05:00.000Z') },
+        { type: 'object', externalId: 'a', time: new Date('2021-03-15T15:05:00.000Z') },
+        { type: 'object', externalId: 'b', time: new Date('2021-03-15T15:06:00.000Z') },
       ])
     })
 

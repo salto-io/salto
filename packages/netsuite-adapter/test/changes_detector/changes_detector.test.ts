@@ -49,10 +49,10 @@ describe('changes_detector', () => {
   beforeEach(() => {
     jest.resetAllMocks()
     getCustomRecordTypeChangesMock.mockResolvedValue([
-      { type: 'object', externalId: 'a', internalId: 1 },
-      { type: 'object', externalId: 'b', time: new Date('03/15/2020 03:04 pm') },
-      { type: 'object', externalId: 'b', time: new Date('03/15/2023 03:04 pm') },
-      { type: 'object', externalId: 'c', internalId: 4 },
+      { type: 'object', externalId: 'A', internalId: 1 },
+      { type: 'object', externalId: 'B', time: new Date('03/15/2020 03:04 pm') },
+      { type: 'object', externalId: 'B', time: new Date('03/15/2023 03:04 pm') },
+      { type: 'object', externalId: 'C', internalId: 4 },
       { type: 'type', name: 'customrecordtype' },
     ])
     getChangedFilesMock.mockResolvedValue([
@@ -185,7 +185,7 @@ describe('changes_detector', () => {
     })
 
     getCustomRecordTypeChangesMock.mockResolvedValue([
-      { type: 'object', externalId: 'b', time: undefined },
+      { type: 'object', externalId: 'B', time: undefined },
     ])
     const changedObjectsQuery = await getChangedObjects(
       client,

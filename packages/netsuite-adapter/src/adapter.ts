@@ -15,7 +15,8 @@
 */
 import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
-  ElemIdGetter, Element, getChangeElement, InstanceElement, ReadOnlyElementsSource, FetchOptions,
+  ElemIdGetter, Element, getChangeElement, InstanceElement, ReadOnlyElementsSource,
+  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -28,7 +29,7 @@ import {
   customTypes, getAllTypes, fileCabinetTypes,
 } from './types'
 import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS,
-  INTEGRATION, FETCH_TARGET, SKIP_LIST } from './constants'
+  INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
@@ -161,6 +162,17 @@ export default class NetsuiteAdapter implements AdapterOperations {
       failedTypeToInstances,
     } = await getCustomObjectsResult
     progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
+
+    _(Object.values(customTypes))
+      .concat(Object.values(fileCabinetTypes))
+      .forEach(type => {
+        type.fields[LAST_FETCH_TIME] = new Field(
+          type,
+          LAST_FETCH_TIME,
+          BuiltinTypes.STRING,
+          { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+        )
+      })
 
     const customizationInfos = [...customObjects, ...fileCabinetContent]
     const instances = customizationInfos.map(customizationInfo => {

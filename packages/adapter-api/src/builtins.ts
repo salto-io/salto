@@ -94,7 +94,6 @@ export const InstanceAnnotationTypes: TypeMap = {
   [INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES]: new ListType(StandardBuiltinTypes.STRING),
   [INSTANCE_ANNOTATIONS.HIDDEN]: StandardBuiltinTypes.BOOLEAN,
   [INSTANCE_ANNOTATIONS.SERVICE_URL]: BuiltinTypes.HIDDEN_STRING,
-  [INSTANCE_ANNOTATIONS.LAST_FETCH_TIME]: BuiltinTypes.HIDDEN_STRING,
 }
 
 export const CoreAnnotationTypes: TypeMap = {

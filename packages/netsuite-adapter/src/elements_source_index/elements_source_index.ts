@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { INSTANCE_ANNOTATIONS, isInstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { isInstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { LAST_FETCH_TIME } from '../constants'
 import { getInstanceServiceIdRecords } from '../filters/instance_references'
 import { serviceId } from '../transformer'
 import { ElementsSourceValue, LazyElementsSourceIndex } from './types'
@@ -31,7 +32,7 @@ const createIndex = async (elementsSource: ReadOnlyElementsSource):
   for await (const element of await elementsSource.getAll()) {
     if (isInstanceElement(element)) {
       const idRecords = getInstanceServiceIdRecords(element)
-      const rawLastFetchTime = element.annotations[INSTANCE_ANNOTATIONS.LAST_FETCH_TIME]
+      const rawLastFetchTime = element.value[LAST_FETCH_TIME]
       const lastFetchTime = rawLastFetchTime && new Date(rawLastFetchTime)
 
       _.assign(

@@ -54,7 +54,7 @@ export const convertSuiteQLStringToDate = (rawDate: string): Date | undefined =>
   return new Date(Date.UTC(
     parseInt(match.groups.year, 10),
     parseInt(match.groups.month, 10) - 1,
-    parseInt(match.groups.day, 10),
+    parseInt(match.groups.day, 10) + 1,
   ))
 }
 
@@ -82,6 +82,6 @@ export const convertSavedSearchStringToDate = (rawDate: string): Date | undefine
     parseInt(match.groups.month, 10) - 1,
     parseInt(match.groups.day, 10),
     parseHour(match.groups),
-    parseInt(match.groups.minute, 10),
+    parseInt(match.groups.minute, 10) + 1,
   ))
 }

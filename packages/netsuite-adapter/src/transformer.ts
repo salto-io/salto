@@ -17,13 +17,13 @@ import {
   ElemID, Field, InstanceElement, isPrimitiveType, ObjectType, PrimitiveType,
   PrimitiveTypes, Values, isObjectType, isPrimitiveValue, StaticFile, ElemIdGetter,
   ADAPTER, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds, isInstanceElement,
-  INSTANCE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues, GetLookupNameFunc, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
   SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
+  LAST_FETCH_TIME,
 } from './constants'
 import { fieldTypes } from './types/field_types'
 import { customTypes, fileCabinetTypes, isCustomType, isFileCabinetType } from './types'
@@ -116,8 +116,8 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
     })
   }
 
-  const annotations = fetchTime !== undefined ? {
-    [INSTANCE_ANNOTATIONS.LAST_FETCH_TIME]: fetchTime.toJSON(),
+  const lastFetchTimeValue = fetchTime !== undefined ? {
+    [LAST_FETCH_TIME]: fetchTime.toJSON(),
   } : {}
 
   const transformedValues = transformValues({
@@ -128,9 +128,11 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
   return new InstanceElement(
     instanceName,
     type,
-    transformedValues,
+    {
+      ...transformedValues,
+      ...lastFetchTimeValue,
+    },
     getInstancePath(instanceFileName),
-    annotations
   )
 }
 
@@ -234,6 +236,8 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
     }
     return { typeName, values, path } as FolderCustomizationInfo
   }
+
+  delete instance.value[LAST_FETCH_TIME]
 
   const scriptId = instance.value[SCRIPT_ID]
   // Template Custom Type

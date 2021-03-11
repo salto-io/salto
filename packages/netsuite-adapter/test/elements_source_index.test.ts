@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, INSTANCE_ANNOTATIONS, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { NETSUITE, PATH } from '../src/constants'
+import { LAST_FETCH_TIME, NETSUITE, PATH } from '../src/constants'
 import { createElementsSourceIndex } from '../src/elements_source_index/elements_source_index'
 
 
@@ -42,9 +42,8 @@ describe('createElementsSourceIndex', () => {
       new InstanceElement(
         'name',
         new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') }),
-        { [PATH]: 'path' },
+        { [PATH]: 'path', [LAST_FETCH_TIME]: '2021-02-22T18:55:17.949Z' },
         [],
-        { [INSTANCE_ANNOTATIONS.LAST_FETCH_TIME]: '2021-02-22T18:55:17.949Z' }
       ),
     ]).getAll)
 

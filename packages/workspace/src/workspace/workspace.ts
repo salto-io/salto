@@ -269,7 +269,7 @@ export const loadWorkspace = async (
 
     const mergeData = await getAfterElements({
       src1Changes: workspaceChanges,
-      src1: stateToBuild.merged,
+      src1: await naclFilesSource.getElementsSource(),
       src2Changes: await completeStateOnlyChanges(stateOnlyChanges),
       src2: mapReadOnlyElementsSource(
         state(),

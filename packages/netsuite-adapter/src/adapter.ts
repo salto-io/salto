@@ -216,6 +216,15 @@ export default class NetsuiteAdapter implements AdapterOperations {
       }
     }
 
+    // When this.userConfig.useChangesDetection is undefined, we want to treat it as true an
+    // run the changes detection.Thus the "=== false" check
+    if (this.userConfig.useChangesDetection === false) {
+      log.debug('Changes detection is disabled')
+      return {
+        serverTime: sysInfo.time,
+      }
+    }
+
     const lastFetchTime = await getLastServerTime(this.elementsSource)
     if (lastFetchTime === undefined) {
       log.debug('Failed to get last fetch time')

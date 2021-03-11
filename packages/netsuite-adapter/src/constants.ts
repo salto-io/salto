@@ -70,6 +70,7 @@ export const CLIENT_CONFIG = 'client'
 export const SUITEAPP_CLIENT_CONFIG = 'suiteAppClient'
 export const FETCH_TARGET = 'fetchTarget'
 export const SKIP_LIST = 'skipList'
+export const USE_CHANGES_DETECTION = 'useChangesDetection'
 export const RAW_CONFIG = 'rawConfig'
 
 export const CAPTURE = 'capture'

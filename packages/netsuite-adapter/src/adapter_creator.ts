@@ -31,6 +31,7 @@ import {
   FETCH_ALL_TYPES_AT_ONCE,
   SKIP_LIST,
   SUITEAPP_CLIENT_CONFIG,
+  USE_CHANGES_DETECTION,
 } from './constants'
 import { validateParameters } from './query'
 import { Credentials } from './client/credentials'
@@ -118,6 +119,7 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
       [SUITEAPP_CLIENT_CONFIG]: config?.value?.[SUITEAPP_CLIENT_CONFIG],
       [FETCH_TARGET]: fetchTargetParameters,
       [SKIP_LIST]: skipListParameters,
+      [USE_CHANGES_DETECTION]: config?.value?.[USE_CHANGES_DETECTION],
     }
 
     Object.keys(config?.value ?? {})

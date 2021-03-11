@@ -24,6 +24,10 @@ workato {
       "recipes",
       "roles",
     ]
+    serviceConnectionNames = {
+      salesforce = "Salesforce sandbox 1 connection"
+      netsuite = "Netsuite sbx"
+    }
   }
 }
 ```
@@ -71,3 +75,4 @@ workato {
 |                                             |   "recipes",             |
 |                                             |   "roles",               |
 |                                             |  ]                       |
+| serviceConnectionNames                      |                          | Mapping from adapter name to workato connection name, which is used for resolving the relevant elements into references across multiple adapters in the same environment. Currently salesforce and netsuite are supported

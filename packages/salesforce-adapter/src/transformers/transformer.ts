@@ -50,7 +50,7 @@ import { defaultMissingFields } from './missing_fields'
 const { makeArray } = collections.array
 const { isDefined } = lowerDashValues
 
-export const metadataType = (element: Element): string => {
+export const metadataType = (element: Readonly<Element>): string => {
   if (isInstanceElement(element)) {
     return metadataType(element.type)
   }
@@ -61,7 +61,7 @@ export const metadataType = (element: Element): string => {
   return element.annotations[METADATA_TYPE] || 'unknown'
 }
 
-export const isCustomObject = (element: Element): element is ObjectType => (
+export const isCustomObject = (element: Readonly<Element>): element is ObjectType => (
   isObjectType(element)
   && metadataType(element) === CUSTOM_OBJECT
   // The last part is so we can tell the difference between a custom object
@@ -77,26 +77,26 @@ export const isFieldOfCustomObject = (field: Field): boolean =>
 // for instances of Lead, but it will not be true for Lead itself when it is still an instance
 // (before the custom objects filter turns it into a type).
 // To filter for instances like the Lead definition, use isInstanceOfType(CUSTOM_OBJECT) instead
-export const isInstanceOfCustomObject = (element: Element): element is InstanceElement =>
+export const isInstanceOfCustomObject = (element: Readonly<Element>): element is InstanceElement =>
   isInstanceElement(element) && isCustomObject(element.type)
 
 export const isCustom = (fullName: string): boolean =>
   fullName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
 
-export const isCustomSettings = (instance: InstanceElement): boolean =>
+export const isCustomSettings = (instance: Readonly<InstanceElement>): boolean =>
   instance.value[CUSTOM_SETTINGS_TYPE]
 
-export const isCustomSettingsObject = (obj: Element): boolean =>
+export const isCustomSettingsObject = (obj: Readonly<Element>): boolean =>
   obj.annotations[CUSTOM_SETTINGS_TYPE]
 
-export const defaultApiName = (element: Element): string => {
+export const defaultApiName = (element: Readonly<Element>): string => {
   const { name } = element.elemID
   return isCustom(name) || isInstanceElement(element)
     ? name
     : `${name}${SALESFORCE_CUSTOM_SUFFIX}`
 }
 
-const fullApiName = (elem: Element): string => {
+const fullApiName = (elem: Readonly<Element>): string => {
   if (isInstanceElement(elem)) {
     return isCustomObject(elem.type)
       ? elem.value[CUSTOM_OBJECT_ID_FIELD] : elem.value[INSTANCE_FULL_NAME_FIELD]
@@ -108,7 +108,7 @@ export const relativeApiName = (name: string): string => (
   _.last(name.split(API_NAME_SEPARATOR)) as string
 )
 
-export const apiName = (elem: Element, relative = false): string => {
+export const apiName = (elem: Readonly<Element>, relative = false): string => {
   const name = fullApiName(elem)
   return name && relative ? relativeApiName(name) : name
 }

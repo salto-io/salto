@@ -229,15 +229,16 @@ type UpdatedConfig = {
   message: string
 }
 
-type AadpterOperationsWithPostFetch = types.PickyRequired<AdapterOperations, 'postFetch'>
-const isAadpterOperationsWithPostFetch = (
+type AdapterOperationsWithPostFetch = types.PickyRequired<AdapterOperations, 'postFetch'>
+
+const isAdapterOperationsWithPostFetch = (
   v: AdapterOperations
-): v is AadpterOperationsWithPostFetch => (
+): v is AdapterOperationsWithPostFetch => (
   v.postFetch !== undefined
 )
 
 const runPostFetch = async (
-  adapters: Record<string, AadpterOperationsWithPostFetch>,
+  adapters: Record<string, AdapterOperationsWithPostFetch>,
   serviceElements: Element[],
   stateElementsByAdapter: Record<string, ReadonlyArray<Element>>,
   partiallyFetchedAdapters: Set<string>,
@@ -324,7 +325,7 @@ const fetchAndProcessMergeErrors = async (
 
     log.debug(`fetched ${serviceElements.length} elements from adapters`)
 
-    const adaptersWithPostFetch = _.pickBy(adapters, isAadpterOperationsWithPostFetch)
+    const adaptersWithPostFetch = _.pickBy(adapters, isAdapterOperationsWithPostFetch)
     if (!_.isEmpty(adaptersWithPostFetch)) {
       try {
         const stateElementsByAdapter = _.groupBy(

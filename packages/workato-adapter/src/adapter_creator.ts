@@ -15,9 +15,7 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import {
-  InstanceElement, Adapter,
-} from '@salto-io/adapter-api'
+import { InstanceElement, Adapter } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import WorkatoAdapter from './adapter'
 import { Credentials, usernameTokenCredentialsType } from './auth'
@@ -25,13 +23,13 @@ import changeValidator from './change_validator'
 import {
   configType, WorkatoConfig, CLIENT_CONFIG, FETCH_CONFIG, DEFAULT_TYPES, DEFAULT_ID_FIELDS,
   FIELDS_TO_OMIT,
+  validateFetchConfig,
 } from './config'
 import WorkatoClient from './client/client'
 import { createConnection } from './client/connection'
 
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
-const { validateDuckTypeFetchConfig } = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
   username: config.value.username,
@@ -59,7 +57,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   }
 
   validateClientConfig(CLIENT_CONFIG, adapterConfig.client)
-  validateDuckTypeFetchConfig(FETCH_CONFIG, adapterConfig.fetch, apiDefinitions)
+  validateFetchConfig(FETCH_CONFIG, adapterConfig.fetch, apiDefinitions)
 
   Object.keys(configValue)
     .filter(k => !Object.keys(adapterConfig).includes(k))

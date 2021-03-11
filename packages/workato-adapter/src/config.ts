@@ -14,12 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, CORE_ANNOTATIONS, MapType, BuiltinTypes } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
-import { WORKATO } from './constants'
+import { WORKATO, CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS } from './constants'
 
 const { createClientConfigType } = clientUtils
-const { createUserFetchConfigType, createDucktypeAdapterApiConfigType } = configUtils
+const {
+  createUserFetchConfigType, createDucktypeAdapterApiConfigType, validateDuckTypeFetchConfig,
+} = configUtils
 
 export const DEFAULT_ID_FIELDS = ['name']
 export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
@@ -36,7 +38,9 @@ export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
 export type WorkatoClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
-export type WorkatoFetchConfig = configUtils.UserFetchConfig
+export type WorkatoFetchConfig = configUtils.UserFetchConfig & {
+  serviceConnectionNames?: Record<string, string>
+}
 export type WorkatoApiConfig = configUtils.AdapterDuckTypeApiConfig
 
 export type WorkatoConfig = {
@@ -126,7 +130,10 @@ export const configType = new ObjectType({
       type: createClientConfigType(WORKATO),
     },
     [FETCH_CONFIG]: {
-      type: createUserFetchConfigType(WORKATO),
+      type: createUserFetchConfigType(
+        WORKATO,
+        { serviceConnectionNames: { type: new MapType(BuiltinTypes.STRING) } },
+      ),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.DEFAULT]: {
@@ -156,4 +163,23 @@ export const configType = new ObjectType({
 export type FilterContext = {
   [FETCH_CONFIG]: WorkatoFetchConfig
   [API_DEFINITIONS_CONFIG]: WorkatoApiConfig
+}
+
+
+export const validateFetchConfig = (
+  fetchConfigPath: string,
+  userFetchConfig: WorkatoFetchConfig,
+  adapterApiConfig: configUtils.AdapterApiConfig,
+): void => {
+  validateDuckTypeFetchConfig(fetchConfigPath, userFetchConfig, adapterApiConfig)
+  const supportedAdapters = Object.keys(CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS)
+  const { serviceConnectionNames } = userFetchConfig
+  if (serviceConnectionNames !== undefined) {
+    const unsupportedServices = Object.keys(serviceConnectionNames).filter(
+      adapterName => !supportedAdapters.includes(adapterName)
+    )
+    if (unsupportedServices.length > 0) {
+      throw Error(`Unsupported service names in ${fetchConfigPath}: ${unsupportedServices}. The supported services are: ${supportedAdapters}`)
+    }
+  }
 }

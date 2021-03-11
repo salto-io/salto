@@ -84,7 +84,7 @@ describe('adapter creator', () => {
     })).toBeInstanceOf(WorkatoAdapter)
   })
 
-  it('should throw error on invalid configuration', () => {
+  it('should throw error on inconsistent configuration between fetch and apiDefinitions', () => {
     expect(() => adapter.operations({
       credentials: new InstanceElement(WORKATO,
         adapter.authenticationMethods.basic.credentialsType),
@@ -111,6 +111,36 @@ describe('adapter creator', () => {
       ),
       elementsSource: buildElementsSourceFromElements([]),
     })).toThrow(new Error('Invalid type names in fetch: a,b'))
+  })
+
+  it('should throw error on invalid serviceConnectionNames configuration', () => {
+    expect(() => adapter.operations({
+      credentials: new InstanceElement(WORKATO,
+        adapter.authenticationMethods.basic.credentialsType),
+      config: new InstanceElement(
+        WORKATO,
+        adapter.configType as ObjectType,
+        {
+          fetch: {
+            includeTypes: [],
+            serviceConnectionNames: {
+              salesforce: 'abc',
+              unsupportedName: 'def',
+            },
+          },
+          apiDefinitions: {
+            types: {
+              c: {
+                request: {
+                  url: '/c',
+                },
+              },
+            },
+          },
+        },
+      ),
+      elementsSource: buildElementsSourceFromElements([]),
+    })).toThrow(new Error('Unsupported service names in fetch: unsupportedName. The supported services are: salesforce,netsuite'))
   })
 
   it('should validate credentials using createConnection', async () => {

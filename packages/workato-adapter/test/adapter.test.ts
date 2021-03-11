@@ -16,8 +16,9 @@
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, ObjectType, ElemID, CORE_ANNOTATIONS, AdapterOperations } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { types } from '@salto-io/lowerdash'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernameTokenCredentialsType } from '../src/auth'
@@ -50,8 +51,8 @@ describe('adapter', () => {
     mockAxiosAdapter.restore()
   })
 
-  describe('fetch', () => {
-    describe('full', () => {
+  describe('fetch and postFetch', () => {
+    describe('full fetch', () => {
       it('should generate the right elements on fetch', async () => {
         const { elements } = await adapter.operations({
           credentials: new InstanceElement(
@@ -280,6 +281,62 @@ describe('adapter', () => {
           'workato.connection.instance.dev2_sfdc_account@s',
           'workato.connection.instance.sfdev1',
         ])
+      })
+    })
+
+    describe('with postFetch', () => {
+      it('should have references in recipe__code instances', async () => {
+        const fishCustomObject = new ObjectType({
+          elemID: new ElemID('salesforce', 'Fish__c'),
+          fields: {},
+          annotations: {
+            metadataType: 'CustomObject',
+            apiName: 'Fish__c',
+            label: 'Fish',
+          },
+        })
+
+        const adapterOperations = adapter.operations({
+          credentials: new InstanceElement(
+            'config',
+            usernameTokenCredentialsType,
+            { username: 'user123', token: 'token456' },
+          ),
+          config: new InstanceElement(
+            'config',
+            configType,
+            {
+              [FETCH_CONFIG]: {
+                includeTypes: [...Object.keys(DEFAULT_TYPES)].sort(),
+                serviceConnectionNames: {
+                  salesforce: 'sfdev1',
+                  netsuite: 'Test NetSuite account',
+                },
+              },
+            }
+          ),
+          elementsSource: buildElementsSourceFromElements([]),
+        }) as types.PickyRequired<AdapterOperations, 'postFetch'>
+
+        const fetchResult = await adapterOperations.fetch({
+          progressReporter: { reportProgress: () => null },
+        })
+        const currentAdapterElements = fetchResult.elements
+        expect(adapterOperations.postFetch).toBeDefined()
+        const postFetchRes = await adapterOperations.postFetch({
+          currentAdapterElements,
+          elementsByAdapter: {
+            salesforce: [fishCustomObject],
+          },
+        })
+        expect(postFetchRes).toBeTruthy()
+        const recipeCodeWithRefs = currentAdapterElements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('workato.recipe__code.instance.pubsub_recipe_412'))
+        expect(recipeCodeWithRefs).toBeDefined()
+        const deps = recipeCodeWithRefs?.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
+        expect(deps).toBeDefined()
+        expect(deps).toHaveLength(1)
+        expect(deps[0]).toBeInstanceOf(ReferenceExpression)
+        expect(deps[0].elemId.getFullName()).toEqual('salesforce.Fish__c')
       })
     })
   })

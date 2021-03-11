@@ -42,10 +42,16 @@ type ReferenceFinder<T extends SalesforceBlock | NetsuiteBlock> = (
   path: ElemID,
 ) => MappedReference[]
 
+type FormulaReferenceFinder = (
+  value: string,
+  path: ElemID,
+) => MappedReference[]
+
 const addReferencesForService = <T extends SalesforceBlock | NetsuiteBlock>(
   inst: InstanceElement,
-  addReferences: ReferenceFinder<T>,
   typeGuard: (value: Value) => value is T,
+  addReferences: ReferenceFinder<T>,
+  addFormulaReferences?: FormulaReferenceFinder,
 ): boolean => {
   const dependencyMapping: MappedReference[] = []
 
@@ -55,6 +61,12 @@ const addReferencesForService = <T extends SalesforceBlock | NetsuiteBlock>(
         value,
         path ?? inst.elemID,
       ))
+    } else if (
+      addFormulaReferences !== undefined
+      && path !== undefined
+      && _.isString(value)
+    ) {
+      dependencyMapping.push(...addFormulaReferences(value, path))
     }
     return value
   }
@@ -63,6 +75,7 @@ const addReferencesForService = <T extends SalesforceBlock | NetsuiteBlock>(
   transformElement({
     element: inst,
     transformFunc: findReferences,
+    strict: false,
   })
   if (dependencyMapping.length === 0) {
     return false
@@ -175,7 +188,7 @@ const addSalesforceRecipeReferences = (
     return references
   }
 
-  return addReferencesForService<SalesforceBlock>(inst, referenceFinder, isSalesforceBlock)
+  return addReferencesForService<SalesforceBlock>(inst, isSalesforceBlock, referenceFinder)
 }
 
 const addNetsuiteRecipeReferences = (
@@ -191,11 +204,11 @@ const addNetsuiteRecipeReferences = (
       if (_.isString(value) && value.split(separator).length === 2) {
         const recordId = _.last(value.toLowerCase().split(separator))
         if (recordId !== undefined) {
-          const referencedInstance = indexedElements[recordId]
-          if (referencedInstance !== undefined) {
+          const referencedId = indexedElements[recordId]
+          if (referencedId !== undefined) {
             references.push({
               srcPath: nestedPath,
-              ref: new ReferenceExpression(referencedInstance.elemID),
+              ref: new ReferenceExpression(referencedId),
             })
           }
         }
@@ -216,7 +229,39 @@ const addNetsuiteRecipeReferences = (
     return references
   }
 
-  return addReferencesForService<NetsuiteBlock>(inst, referenceFinder, isNetsuiteBlock)
+  const formulaReferenceFinder: FormulaReferenceFinder = value => {
+    function *fieldMatcher(): Iterable<string> {
+      // note: for netsuite standard fields / salesforce fields we'd need to parse the block's id
+      // to know which object to look for the field under - but for custom fields we have
+      // the script id which is globally unique, so we can use it directly
+      const matcher = /#\{_\('data\.netsuite\.(?:\w+\.)custom_fields\.f_?(?:[0-9]+_)*(?<field>\w*)'\)\}/g
+      while (true) {
+        const match = matcher.exec(value)?.groups?.field
+        if (match === undefined || match === null) {
+          break
+        }
+        yield match
+      }
+    }
+    const potentialFields = [...fieldMatcher()]
+    return potentialFields.map(fieldNameScriptId => {
+      const referencedId = indexedElements[fieldNameScriptId]
+      if (referencedId !== undefined) {
+        return {
+          srcPath: undefined,
+          ref: new ReferenceExpression(referencedId),
+        }
+      }
+      return undefined
+    }).filter(isDefined)
+  }
+
+  return addReferencesForService<NetsuiteBlock>(
+    inst,
+    isNetsuiteBlock,
+    referenceFinder,
+    formulaReferenceFinder,
+  )
 }
 
 const toKey = (first: string, second: string): string => `${first}:${second}`
@@ -308,6 +353,7 @@ const addReferencesForConnectionRecipes = (
     return res.some(t => t)
   }
 
+  log.debug('unsupported service name %s, not resolving recipe references', serviceName)
   return false
 }
 

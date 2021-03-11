@@ -230,6 +230,8 @@ describe('Recipe references filter', () => {
       },
       input: {
         sobject_name: 'Opportunity',
+        // sets the value of Custom__c using netsuite custom fields
+        Custom__c: "some prefix to ignore #{_('data.netsuite.211cdf34.dateCreated')} #{_('data.netsuite.12345678.custom_fields.f_custrecordaccount_id')}#{_('data.netsuite.211cdf34.custom_fields.f_123_custrecord5')} ignore",
       },
       block: [
         {
@@ -466,6 +468,13 @@ describe('Recipe references filter', () => {
       {
         scriptid: 'customrecord16',
         recordname: 'my custom record',
+        customrecordcustomfields: {
+          customrecordcustomfield: [
+            { scriptid: 'custrecord5' },
+            { scriptid: 'somethingelse' },
+            { scriptid: 'custrecordaccount_id' },
+          ],
+        },
       }
     )
 
@@ -509,7 +518,7 @@ describe('Recipe references filter', () => {
         const recipeCode = currentAdapterElements.find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe1_code')
         expect(recipeCode).toBeDefined()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
-        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(9)
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(11)
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].every(
           isReferenceExpression
         )).toBeTruthy()
@@ -517,6 +526,8 @@ describe('Recipe references filter', () => {
           (ref: ReferenceExpression) => ref.elemId.getFullName()
         )).toEqual([
           'netsuite.customrecordtype.instance.customrecord16',
+          'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',
+          'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.2',
           'netsuite.othercustomfield.instance.custrecord2',
           'salesforce.MyCustom__c',
           'salesforce.MyCustom__c.field.customField__c',
@@ -606,7 +617,7 @@ describe('Recipe references filter', () => {
         const recipeCode = currentAdapterElements.find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe3_code')
         expect(recipeCode).toBeDefined()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
-        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(2)
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(4)
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].every(
           isReferenceExpression
         )).toBeTruthy()
@@ -614,6 +625,8 @@ describe('Recipe references filter', () => {
           (ref: ReferenceExpression) => ref.elemId.getFullName()
         )).toEqual([
           'netsuite.customrecordtype.instance.customrecord16',
+          'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',
+          'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.2',
           'netsuite.othercustomfield.instance.custrecord2',
         ])
       })
@@ -760,8 +773,12 @@ describe('Recipe references filter', () => {
           .map(e => e.elemId.getFullName())
       ).toEqual([
         'netsuite.customrecordtype.instance.customrecord16',
+        'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',
+        'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.2',
         'netsuite.othercustomfield.instance.custrecord2',
         'netsuite.customrecordtype.instance.customrecord16',
+        'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',
+        'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.2',
         'netsuite.othercustomfield.instance.custrecord2',
       ])
     })

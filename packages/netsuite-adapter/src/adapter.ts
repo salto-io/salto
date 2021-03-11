@@ -131,13 +131,16 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
 
     const {
-      serverTimeElements,
       changedObjectsQuery,
       serverTime,
     } = await this.runSuiteAppOperations(fetchQuery, elementsSourceIndex)
     fetchQuery = changedObjectsQuery !== undefined
       ? andQuery(changedObjectsQuery, fetchQuery)
       : fetchQuery
+
+    const serverTimeElements = this.fetchTarget === undefined && serverTime !== undefined
+      ? createServerTimeElements(serverTime)
+      : []
 
     const isPartial = this.fetchTarget !== undefined
 
@@ -186,19 +189,17 @@ export default class NetsuiteAdapter implements AdapterOperations {
     elementsSourceIndex: LazyElementsSourceIndex
   ):
     Promise<{
-      serverTimeElements: Element[]
       changedObjectsQuery?: NetsuiteQuery
       serverTime?: Date
     }> {
     const sysInfo = await this.client.getSystemInformation()
     if (sysInfo === undefined) {
       log.warn('Failed to get sysInfo, skipping SuiteApp operations')
-      return { serverTimeElements: [] }
+      return {}
     }
 
     if (this.fetchTarget === undefined) {
       return {
-        serverTimeElements: createServerTimeElements(sysInfo.time),
         serverTime: sysInfo.time,
       }
     }
@@ -206,7 +207,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const lastFetchTime = await getLastServerTime(this.elementsSource)
     if (lastFetchTime === undefined) {
       log.debug('Failed to get last fetch time')
-      return { serverTimeElements: [], serverTime: sysInfo.time }
+      return { serverTime: sysInfo.time }
     }
 
     const changedObjectsQuery = await getChangedObjects(
@@ -216,7 +217,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       elementsSourceIndex,
     )
 
-    return { serverTimeElements: [], changedObjectsQuery, serverTime: sysInfo.time }
+    return { changedObjectsQuery, serverTime: sysInfo.time }
   }
 
   private getAllRequiredReferencedInstances(

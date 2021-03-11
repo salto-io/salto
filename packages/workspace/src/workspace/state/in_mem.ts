@@ -22,11 +22,13 @@ import { State, StateData } from './state'
 const { awu } = collections.asynciterable
 const { toMD5 } = hash
 
-export const buildInMemState = (loadData: () => Promise<StateData>): State => {
+export const buildInMemState = (
+  getCurrentStateData: (currentStateData?: StateData) => Promise<StateData>,
+): State => {
   let innerStateData: Promise<StateData>
   const stateData = async (): Promise<StateData> => {
     if (innerStateData === undefined) {
-      innerStateData = loadData()
+      innerStateData = getCurrentStateData()
     }
     return innerStateData
   }
@@ -76,11 +78,12 @@ export const buildInMemState = (loadData: () => Promise<StateData>): State => {
       await currentStateData.saltoMetadata.clear()
     },
     flush: async () => {
-      const currentStateData = await stateData()
-      await currentStateData.elements.flush()
-      await currentStateData.pathIndex.flush()
-      await currentStateData.servicesUpdateDate.flush()
-      await currentStateData.saltoMetadata.flush()
+      // We first sync the stateData with to avoid uneeded sync on the next load
+      const syncedStateData = await getCurrentStateData(await innerStateData)
+      await syncedStateData.elements.flush()
+      await syncedStateData.pathIndex.flush()
+      await syncedStateData.servicesUpdateDate.flush()
+      await syncedStateData.saltoMetadata.flush()
     },
     rename: () => Promise.resolve(),
     getHash: async () => (await (await stateData()).saltoMetadata.get('hash'))

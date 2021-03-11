@@ -115,7 +115,7 @@ export const localState = (
     await stateData.servicesUpdateDate.setAll(awu(
       Object.entries(updateDatesByService).map(([key, value]) => ({ key, value }))
     ))
-    const currentVersion = semver.minSatisfying(versions, '*') || undefined
+    const currentVersion = semver.minSatisfying(versions, '*') ?? undefined
     if (currentVersion) {
       await stateData.saltoMetadata.set('version', currentVersion)
     }
@@ -142,8 +142,9 @@ export const localState = (
     // TODO fix?
     getHashFromContent((await Promise.all(filePaths.map(readTextFile))))
 
-  const loadStateData = async (): Promise<state.StateData> => {
-    const quickAccessStateData = await state.buildStateData(envName, remoteMapCreator)
+  const loadStateData = async (currentStateData?: state.StateData): Promise<state.StateData> => {
+    const quickAccessStateData = currentStateData
+      ?? await state.buildStateData(envName, remoteMapCreator)
     const filePaths = await getRelevantStateFiles()
     const stateFilesHash = await getHash(filePaths)
     const quickAccessHash = (await quickAccessStateData.saltoMetadata.get('hash'))
@@ -223,7 +224,6 @@ export const localState = (
       if (pathToClean !== '') {
         await rm(pathToClean)
       }
-      await inMemState.setHash(getHashFromContent(filePathToContent.map(e => e[1])))
       await inMemState.flush()
       log.debug('finish flushing state')
     },

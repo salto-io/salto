@@ -147,7 +147,7 @@ type WorkspaceState = {
 export const loadWorkspace = async (
   config: WorkspaceConfigSource,
   credentials: ConfigSource,
-  elementsSources: EnvironmentsSources,
+  enviormentsSources: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
   ignoreFileChanges = false,
 ): Promise<Workspace> => {
@@ -168,10 +168,10 @@ export const loadWorkspace = async (
     workspaceConfig.envs
   const services = (): string[] => makeArray(currentEnvConf().services)
   const state = (envName?: string): State => (
-    elementsSources.sources[envName ?? currentEnv()].state as State
+    enviormentsSources.sources[envName ?? currentEnv()].state as State
   )
-  let naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
-    currentEnv(), elementsSources.commonSourceName, remoteMapCreator)
+  let naclFilesSource = multiEnvSource(_.mapValues(enviormentsSources.sources, e => e.naclFiles),
+    currentEnv(), enviormentsSources.commonSourceName, remoteMapCreator)
   let workspaceState: Promise<WorkspaceState> | undefined
 
   const buildWorkspaceState = async ({ workspaceChanges = [], env, stateOnlyChanges = [] }: {
@@ -484,14 +484,14 @@ export const loadWorkspace = async (
       )) !== undefined
     ),
     hasElementsInEnv: async envName => {
-      const envSource = elementsSources.sources[envName]
+      const envSource = enviormentsSources.sources[envName]
       if (envSource === undefined) {
         return false
       }
       return !(await envSource.naclFiles.isEmpty())
     },
     envOfFile: filename => getSourceNameForFilename(
-      filename, envs() as string[], elementsSources.commonSourceName
+      filename, envs() as string[], enviormentsSources.commonSourceName
     ),
     // Returning the functions from the nacl file source directly (eg: promote: src.promote)
     // may seem better, but the setCurrentEnv method replaced the naclFileSource.
@@ -548,9 +548,9 @@ export const loadWorkspace = async (
       await currentWSState.searchableNamesIndex.flush()
     },
     clone: (): Promise<Workspace> => {
-      const sources = _.mapValues(elementsSources.sources, source =>
+      const sources = _.mapValues(enviormentsSources.sources, source =>
         ({ naclFiles: source.naclFiles.clone(), state: source.state }))
-      const envSources = { commonSourceName: elementsSources.commonSourceName, sources }
+      const envSources = { commonSourceName: enviormentsSources.commonSourceName, sources }
       return loadWorkspace(config, credentials, envSources, remoteMapCreator)
     },
     clear: async (args: Omit<WorkspaceComponents, 'serviceConfig'>) => {
@@ -605,18 +605,18 @@ export const loadWorkspace = async (
       // We assume here that all the credentials files sit under the credentials' env directory
       await credentials.delete(env)
 
-      const environmentSource = elementsSources.sources[env]
+      const environmentSource = enviormentsSources.sources[env]
       // ensure that the env is loaded
       await environmentSource.naclFiles.load({})
       if (environmentSource) {
         await environmentSource.naclFiles.clear()
         await environmentSource.state?.clear()
       }
-      delete elementsSources.sources[env]
+      delete enviormentsSources.sources[env]
       naclFilesSource = multiEnvSource(
-        _.mapValues(elementsSources.sources, e => e.naclFiles),
+        _.mapValues(enviormentsSources.sources, e => e.naclFiles),
         currentEnv(),
-        elementsSources.commonSourceName,
+        enviormentsSources.commonSourceName,
         remoteMapCreator,
       )
     },
@@ -640,17 +640,17 @@ export const loadWorkspace = async (
       }
       await config.setWorkspaceConfig(workspaceConfig)
       await credentials.rename(envName, newEnvName)
-      const environmentSource = elementsSources.sources[envName]
+      const environmentSource = enviormentsSources.sources[envName]
       if (environmentSource) {
         await environmentSource.naclFiles.rename(newEnvNaclPath || newEnvName)
         await environmentSource.state?.rename(newEnvName)
       }
-      elementsSources.sources[newEnvName] = environmentSource
-      delete elementsSources.sources[envName]
+      enviormentsSources.sources[newEnvName] = environmentSource
+      delete enviormentsSources.sources[envName]
       naclFilesSource = multiEnvSource(
-        _.mapValues(elementsSources.sources, e => e.naclFiles),
+        _.mapValues(enviormentsSources.sources, e => e.naclFiles),
         currentEnv(),
-        elementsSources.commonSourceName,
+        enviormentsSources.commonSourceName,
         remoteMapCreator,
       )
     },
@@ -663,9 +663,9 @@ export const loadWorkspace = async (
         await config.setWorkspaceConfig(workspaceConfig)
       }
       naclFilesSource = multiEnvSource(
-        _.mapValues(elementsSources.sources, e => e.naclFiles),
+        _.mapValues(enviormentsSources.sources, e => e.naclFiles),
         currentEnv(),
-        elementsSources.commonSourceName,
+        enviormentsSources.commonSourceName,
         remoteMapCreator,
       )
       workspaceState = undefined

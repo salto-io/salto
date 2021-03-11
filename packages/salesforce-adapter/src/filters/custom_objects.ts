@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { collections, strings, promises, multiIndex } from '@salto-io/lowerdash'
+import { collections, strings, multiIndex } from '@salto-io/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, TypeElement, isObjectType, isInstanceElement, ElemID,
   BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement, Values, ReadOnlyElementsSource,
@@ -63,7 +63,6 @@ import { WORKFLOW_FIELD_TO_TYPE, WORKFLOW_TYPE_TO_FIELD, WORKFLOW_DIR_NAME } fro
 
 const log = logger(module)
 const { makeArray } = collections.array
-const { series } = promises.array
 
 export const INSTANCE_REQUIRED_FIELD = 'required'
 export const INSTANCE_TYPE_FIELD = 'type'
@@ -550,15 +549,15 @@ const fixDependentInstancesPathAndSetParent = async (
     const objectID = metadataType(instance) === LEAD_CONVERT_SETTINGS_METADATA_TYPE
       ? apiNameToCustomObject.get('Lead')
       : apiNameToCustomObject.get(parentApiName(instance))
-    const object = objectID === undefined ? undefined : await referenceElements.get(objectID)
+    const object = objectID !== undefined ? await referenceElements.get(objectID) : undefined
     return isObjectType(object) ? object : undefined
   }
 
-  await series(
+  await Promise.all(
     elements
       .filter(isInstanceElement)
       .filter(hasCustomObjectParent)
-      .map(instance => async () => {
+      .map(async instance => {
         const customObj = await getDependentCustomObj(instance)
         if (_.isUndefined(customObj)) {
           return

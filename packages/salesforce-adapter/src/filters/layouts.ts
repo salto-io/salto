@@ -83,9 +83,9 @@ const filterCreator: FilterCreator = ({ config }) => ({
       layouts.map(layout => async () => {
         const [layoutObjName, layoutName] = layoutObjAndName(layout)
         const layoutObjId = apiNameToCustomObject.get(layoutObjName)
-        const layoutObj = layoutObjId === undefined
-          ? undefined
-          : await referenceElements.get(layoutObjId)
+        const layoutObj = layoutObjId !== undefined
+          ? await referenceElements.get(layoutObjId)
+          : undefined
         if (layoutObj === undefined || !isCustomObject(layoutObj)) {
           log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
           return

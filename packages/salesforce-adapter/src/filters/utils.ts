@@ -198,8 +198,8 @@ export const hasInternalId = (elem: Element): boolean => (
   getInternalId(elem) !== undefined && getInternalId(elem) !== ''
 )
 
-export const hasExternalId = (elem: Element): boolean => (
-  metadataType(elem) !== undefined && apiName(elem) !== undefined
+export const hasApiName = (elem: Element): boolean => (
+  apiName(elem) !== undefined
 )
 
 export const extractFlatCustomObjectFields = (elem: Element): Element[] => (

@@ -34,7 +34,7 @@ import {
   WORKFLOW_TASK_METADATA_TYPE, CPQ_LOOKUP_OBJECT_NAME, CPQ_RULE_LOOKUP_OBJECT_FIELD,
   QUICK_ACTION_METADATA_TYPE,
 } from '../constants'
-import { buildElementsSourceForFetch, extractFlatCustomObjectFields, hasExternalId } from './utils'
+import { buildElementsSourceForFetch, extractFlatCustomObjectFields, hasApiName } from './utils'
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
@@ -242,15 +242,13 @@ export const addReferences = async (
   const { elemLookup, elemByElemID } = await multiIndex.buildMultiIndex<Element>()
     .addIndex({
       name: 'elemLookup',
-      filter: hasExternalId,
+      filter: hasApiName,
       key: elem => [metadataType(elem), apiName(elem)],
-      map: elem => elem,
     })
     .addIndex({
       name: 'elemByElemID',
       filter: elem => !isField(elem),
       key: elem => [elem.elemID.getFullName()],
-      map: elem => elem,
     })
     .process(elementsWithFields)
 

@@ -214,9 +214,11 @@ export const makeFilter = (
     const customObjectTypeElements = elements.filter(isCustomObject)
 
     if (customObjectTypeElements.length > 0) {
-      const svsInstances = fetchedSVSInstances ?? await toArrayAsync(filterAsync(
-        await config.elementsSource.getAll(), isInstanceOfType(STANDARD_VALUE_SET),
-      ))
+      const svsInstances = fetchedSVSInstances !== undefined
+        ? fetchedSVSInstances
+        : await toArrayAsync(
+          filterAsync(await config.elementsSource.getAll(), isInstanceOfType(STANDARD_VALUE_SET))
+        )
       updateSVSReferences(customObjectTypeElements, svsInstances)
     }
 

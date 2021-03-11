@@ -23,7 +23,7 @@ import { values, collections, multiIndex } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { FOREIGN_KEY_DOMAIN } from '../constants'
 import { metadataType, apiName } from '../transformers/transformer'
-import { buildElementsSourceForFetch, extractFlatCustomObjectFields, hasExternalId } from './utils'
+import { buildElementsSourceForFetch, extractFlatCustomObjectFields, hasApiName } from './utils'
 
 const { makeArray } = collections.array
 const { flatMapAsync } = collections.asynciterable
@@ -32,11 +32,11 @@ const { flatMapAsync } = collections.asynciterable
  * Resolve references using the mapping generated from the Salesforce DescribeValueType API.
  *
  * @param instance                The current instance being modified
- * @param apiNameToElemIDs        Known element ids, mapped by API name and metadata type
+ * @param externalIDToElemIDs     Known element ids, mapped by API name and metadata type
  */
 const resolveReferences = (
   instance: InstanceElement,
-  apiNameToElemIDs: multiIndex.Index<[string, string], ElemID>,
+  externalIDToElemIDs: multiIndex.Index<[string, string], ElemID>,
 ): void => {
   const transformPrimitive: TransformFunc = ({ value, field }) => {
     if (field === undefined || value === undefined || !_.isString(value)) {
@@ -45,7 +45,7 @@ const resolveReferences = (
 
     const refTarget = makeArray(field.annotations[FOREIGN_KEY_DOMAIN])
       .filter(isReferenceExpression)
-      .map(ref => apiNameToElemIDs.get(ref.elemId.typeName, value))
+      .map(ref => externalIDToElemIDs.get(ref.elemId.typeName, value))
       .find(values.isDefined)
     return refTarget !== undefined ? new ReferenceExpression(refTarget) : value
   }
@@ -72,7 +72,7 @@ const filter: FilterCreator = ({ config }) => ({
     )
     const elementIndex = await multiIndex.keyByAsync({
       iter: elementsWithFields,
-      filter: hasExternalId,
+      filter: hasApiName,
       key: elem => [metadataType(elem), apiName(elem)],
       map: elem => elem.elemID,
     })

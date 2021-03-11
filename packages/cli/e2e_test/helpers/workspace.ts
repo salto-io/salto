@@ -171,6 +171,7 @@ export const runFetch = async (
   fetchOutputDir: string,
   isolated = false,
   inputEnvironment?: string,
+  configOverrides?: string[],
 ): Promise<void> => {
   const result = await runCommand({
     workspacePath: fetchOutputDir,
@@ -179,6 +180,7 @@ export const runFetch = async (
       '-f',
       ...inputEnvironment ? ['-e', inputEnvironment] : [],
       '-m', isolated ? 'isolated' : 'override',
+      ...(configOverrides ?? []).flatMap(override => ['-C', override]),
     ],
   })
   expect(result).toEqual(CliExitCode.Success)

@@ -46,10 +46,13 @@ const fieldSelectMapping = [
  */
 const toShortId = (longId: string): string => (longId.slice(0, -3))
 
+type GetRelevantFieldMappingParams = {
+  elementsSource: ReadOnlyElementsSource
+  key: (field: Field) => [string]
+  value: (field: Field) => string
+}
 const getRelevantFieldMapping = async (
-  elementsSource: ReadOnlyElementsSource,
-  key: (field: Field) => [string],
-  value: (field: Field) => string,
+  { elementsSource, key, value }: GetRelevantFieldMappingParams
 ): Promise<multiIndex.Index<[string], string>> => {
   const isReferencedCustomObject = (elem: Element): elem is ObjectType => (
     isCustomObject(elem)
@@ -118,30 +121,30 @@ const replaceInstancesValues = (
 const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
-    const idToApiNameLookUp = await getRelevantFieldMapping(
-      referenceElements,
-      field => [toShortId(getInternalId(field))],
-      apiName,
-    )
+    const idToApiNameLookUp = await getRelevantFieldMapping({
+      elementsSource: referenceElements,
+      key: field => [toShortId(getInternalId(field))],
+      value: apiName,
+    })
     replaceInstancesValues(elements, idToApiNameLookUp)
   },
   preDeploy: async (changes: ReadonlyArray<Change>): Promise<void> => {
-    const apiNameToIdLookup = await getRelevantFieldMapping(
-      config.elementsSource,
-      field => [apiName(field)],
-      field => toShortId(getInternalId(field)),
-    )
+    const apiNameToIdLookup = await getRelevantFieldMapping({
+      elementsSource: config.elementsSource,
+      key: field => [apiName(field)],
+      value: field => toShortId(getInternalId(field)),
+    })
     replaceInstancesValues(
       changes.map(getChangeElement),
       apiNameToIdLookup
     )
   },
   onDeploy: async changes => {
-    const idToApiNameLookUp = await getRelevantFieldMapping(
-      config.elementsSource,
-      field => [toShortId(getInternalId(field))],
-      apiName,
-    )
+    const idToApiNameLookUp = await getRelevantFieldMapping({
+      elementsSource: config.elementsSource,
+      key: field => [toShortId(getInternalId(field))],
+      value: apiName,
+    })
     replaceInstancesValues(
       changes.map(getChangeElement),
       idToApiNameLookUp

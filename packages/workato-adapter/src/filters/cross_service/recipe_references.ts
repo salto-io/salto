@@ -61,7 +61,8 @@ const addReferencesForService = <T extends SalesforceBlock | NetsuiteBlock>(
         value,
         path ?? inst.elemID,
       ))
-    } else if (
+    }
+    if (
       addFormulaReferences !== undefined
       && path !== undefined
       && _.isString(value)
@@ -202,9 +203,9 @@ const addNetsuiteRecipeReferences = (
 
     const addPotentialReference = (value: unknown, separator: string, nestedPath: ElemID): void => {
       if (_.isString(value) && value.split(separator).length === 2) {
-        const recordId = _.last(value.toLowerCase().split(separator))
-        if (recordId !== undefined) {
-          const referencedId = indexedElements[recordId]
+        const scriptId = _.last(value.toLowerCase().split(separator))
+        if (scriptId !== undefined) {
+          const referencedId = indexedElements[scriptId]
           if (referencedId !== undefined) {
             references.push({
               srcPath: nestedPath,

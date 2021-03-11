@@ -66,6 +66,8 @@ export const indexSalesforceByMetadataTypeAndApiName = (
 // netsuite index
 
 const CUSTOM_RECORD_TYPE = 'customrecordtype'
+const CUSTOM_RECORD_CUSTOM_FIELDS = 'customrecordcustomfields'
+const CUSTOM_RECORD_CUSTOM_FIELD = 'customrecordcustomfield'
 
 export const indexNetsuiteByTypeAndScriptId = (
   elements: ReadonlyArray<Readonly<Element>>
@@ -84,13 +86,17 @@ export const indexNetsuiteByTypeAndScriptId = (
   const customRecordTypeInstances = instances.filter(
     inst => inst.elemID.typeName === CUSTOM_RECORD_TYPE
   )
-  const nestedFields: { scriptId: string[]; nestedPath: ElemID }[] = (
+  const nestedFields = (
     customRecordTypeInstances
       .flatMap(inst => (
-        (inst.value.customrecordcustomfields?.customrecordcustomfield ?? [])
+        (inst.value[CUSTOM_RECORD_CUSTOM_FIELDS]?.[CUSTOM_RECORD_CUSTOM_FIELD] ?? [])
           .map((f: { scriptid: string }, idx: number) => ({
             scriptId: f.scriptid,
-            nestedPath: inst.elemID.createNestedID('customrecordcustomfields', 'customrecordcustomfield', String(idx)),
+            nestedPath: inst.elemID.createNestedID(
+              CUSTOM_RECORD_CUSTOM_FIELDS,
+              CUSTOM_RECORD_CUSTOM_FIELD,
+              String(idx),
+            ),
           }))))
   )
   // TODO these should be replaced by maps or nested fields under custom objects - see SALTO-1078

@@ -170,10 +170,9 @@ export class EditorWorkspace {
   }
 
   private async validateElements(ids: Set<string>): Promise<errors.ValidationError[]> {
-    const workspaceElements = await (await this.workspace.elements()).getAll()
-    const elementsToValidate = await awu(workspaceElements)
-      .filter(elem => ids.has(elem.elemID.getFullName()))
-      .toArray()
+    const elementsToValidate = (await Promise.all(
+      [...ids].map(async id => (await this.workspace.elements()).get(ElemID.fromFullName(id)))
+    )).filter(values.isDefined)
     return validateElements(elementsToValidate, await this.workspace.elements())
   }
 
@@ -223,19 +222,20 @@ export class EditorWorkspace {
       this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
       // We start by running all deleted
+      const shouldCalcValidation = this.wsErrors === undefined
       const removeChanges = (!_.isEmpty(opDeletes))
-        ? (await this.workspace.removeNaclFiles(...opDeletes))
+        ? (await this.workspace.removeNaclFiles([...opDeletes], shouldCalcValidation))
         : []
       // Now add the waiting changes
       const updateChanges = (!_.isEmpty(opUpdates))
-        ? await this.workspace.setNaclFiles(...Object.values(opUpdates))
+        ? await this.workspace.setNaclFiles(Object.values(opUpdates), shouldCalcValidation)
         : []
       if (this.wsErrors !== undefined) {
         const validation = await this.getValidationErrors(
           [...opDeletes, ...Object.keys(opUpdates)].filter(f => this.isWorkspaceFile(f)),
           [...removeChanges, ...updateChanges],
         )
-        const errorsWithoutValidation = await this.workspace.errors(false)
+        const errorsWithoutValidation = await this.workspace.errors()
         this.wsErrors = Promise.resolve(new errors.Errors({
           merge: errorsWithoutValidation.merge,
           parse: errorsWithoutValidation.parse,

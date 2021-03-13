@@ -35,7 +35,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   baseDir: string,
   storeName?: string,
   nameSuffix?: string,
-  encoding?: string,
+  encoding?: BufferEncoding,
   fileFilter?: string,
   directoryFilter?: (path: string) => boolean,
   initUpdated?: FileMap<T>,

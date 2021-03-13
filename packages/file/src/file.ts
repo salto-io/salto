@@ -114,7 +114,7 @@ export const appendTextFile = (
 export const replaceContents = async (
   filename: string,
   contents: Buffer | string,
-  encoding?: string,
+  encoding?: BufferEncoding,
 ): Promise<void> => {
   const tempFilename = `${filename}.tmp.${strings.insecureRandomString()}`
   await writeFile(tempFilename, contents, { encoding })

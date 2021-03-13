@@ -98,7 +98,8 @@ export type ZipFile = {
   content: string
 }
 
-export const createEncodedZipContent = async (files: ZipFile[], encoding = 'base64'):
+export const createEncodedZipContent = async (files: ZipFile[],
+  encoding: BufferEncoding = 'base64'):
   Promise<string> => {
   const zip = new JSZip()
   files.forEach(file => zip.file(file.path, file.content))

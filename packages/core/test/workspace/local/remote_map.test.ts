@@ -15,14 +15,13 @@
 */
 import _ from 'lodash'
 import leveldown from 'leveldown'
-import rocksdb from 'rocksdb'
 import { generateElements, defaultParams } from '@salto-io/dummy-adapter'
 import { Element, ObjectType, isObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { promisify } from 'util'
 import { serialization, remoteMap as rm, merger } from '@salto-io/workspace'
-
-import { createRemoteMapCreator } from '../../../src/local-workspace/remote_map'
+import rocksdb from 'rocksdb'
+import { createRemoteMapCreator, RocksDBValue } from '../../../src/local-workspace/remote_map'
 
 const { serialize, deserialize } = serialization
 const { awu } = collections.asynciterable
@@ -299,9 +298,9 @@ describe('full integration', () => {
           let done = false
           let keyVal = ''
           await new Promise<void>(resolve => {
-            tempValueIter.next((_err, key, _value) => {
+            tempValueIter.next((_err: unknown, key: RocksDBValue, _value: RocksDBValue) => {
               done = key === undefined
-              if (!done) {
+              if (!(key === undefined)) {
                 keyVal = key.toString()
               }
               resolve()

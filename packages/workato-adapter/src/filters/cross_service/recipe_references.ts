@@ -233,9 +233,9 @@ const addNetsuiteRecipeReferences = (
   const formulaReferenceFinder: FormulaReferenceFinder = value => {
     function *fieldMatcher(): Iterable<string> {
       // note: for netsuite standard fields / salesforce fields we'd need to parse the block's id
-      // to know which object to look for the field under - but for custom fields we have
-      // the script id which is globally unique, so we can use it directly
-      const matcher = /#\{_\('data\.netsuite\.(?:\w+\.)custom_fields\.f_?(?:[0-9]+_)*(?<field>\w*)'\)\}/g
+      // and (optional) object type to know which object to look for the field under - but
+      // for custom fields we have the script id which is globally unique, so we can use it directly
+      const matcher = /#\{_\('data\.netsuite\.(?:\w+\.)+custom_fields\.f_?(?:[0-9]+_)*(?<field>\w*)'\)\}/g
       while (true) {
         const match = matcher.exec(value)?.groups?.field
         if (match === undefined || match === null) {

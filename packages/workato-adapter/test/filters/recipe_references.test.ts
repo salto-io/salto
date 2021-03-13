@@ -231,7 +231,7 @@ describe('Recipe references filter', () => {
       input: {
         sobject_name: 'Opportunity',
         // sets the value of Custom__c using netsuite custom fields
-        Custom__c: "some prefix to ignore #{_('data.netsuite.211cdf34.dateCreated')} #{_('data.netsuite.12345678.custom_fields.f_custrecordaccount_id')}#{_('data.netsuite.211cdf34.custom_fields.f_123_custrecord5')} ignore",
+        Custom__c: "some prefix to ignore #{_('data.netsuite.211cdf34.dateCreated')} #{_('data.netsuite.12345678.custom_fields.f_custrecordaccount_id')}#{_('data.netsuite.211cdf34.custom_fields.f_123_custrecord5')} #{_('data.netsuite.44bf4bfd.Customers.first.custom_fields.f_126_custentitycustom_account_city')} ignore",
       },
       block: [
         {
@@ -491,7 +491,26 @@ describe('Recipe references filter', () => {
       }
     )
 
-    return [customRecordType, myCustomRecord, otherCustomFieldType, otherCustomFieldInst]
+    const entitycustomfieldType = new ObjectType({
+      elemID: new ElemID('netsuite', 'entitycustomfield'),
+      fields: {},
+    })
+    const entitycustomfieldInst = new InstanceElement(
+      'custentitycustom_account_city',
+      entitycustomfieldType,
+      {
+        scriptid: 'custentitycustom_account_city',
+        appliestocontact: false,
+        appliestocustomer: true,
+        appliestoemployee: false,
+      }
+    )
+
+    return [
+      customRecordType, myCustomRecord,
+      otherCustomFieldType, otherCustomFieldInst,
+      entitycustomfieldType, entitycustomfieldInst,
+    ]
   }
 
   describe('on post-fetch', () => {
@@ -518,7 +537,7 @@ describe('Recipe references filter', () => {
         const recipeCode = currentAdapterElements.find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe1_code')
         expect(recipeCode).toBeDefined()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
-        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(11)
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(12)
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].every(
           isReferenceExpression
         )).toBeTruthy()
@@ -528,6 +547,7 @@ describe('Recipe references filter', () => {
           'netsuite.customrecordtype.instance.customrecord16',
           'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',
           'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.2',
+          'netsuite.entitycustomfield.instance.custentitycustom_account_city',
           'netsuite.othercustomfield.instance.custrecord2',
           'salesforce.MyCustom__c',
           'salesforce.MyCustom__c.field.customField__c',
@@ -617,7 +637,7 @@ describe('Recipe references filter', () => {
         const recipeCode = currentAdapterElements.find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe3_code')
         expect(recipeCode).toBeDefined()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
-        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(4)
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(5)
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].every(
           isReferenceExpression
         )).toBeTruthy()
@@ -627,6 +647,7 @@ describe('Recipe references filter', () => {
           'netsuite.customrecordtype.instance.customrecord16',
           'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',
           'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.2',
+          'netsuite.entitycustomfield.instance.custentitycustom_account_city',
           'netsuite.othercustomfield.instance.custrecord2',
         ])
       })
@@ -775,10 +796,12 @@ describe('Recipe references filter', () => {
         'netsuite.customrecordtype.instance.customrecord16',
         'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',
         'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.2',
+        'netsuite.entitycustomfield.instance.custentitycustom_account_city',
         'netsuite.othercustomfield.instance.custrecord2',
         'netsuite.customrecordtype.instance.customrecord16',
         'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',
         'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.2',
+        'netsuite.entitycustomfield.instance.custentitycustom_account_city',
         'netsuite.othercustomfield.instance.custrecord2',
       ])
     })

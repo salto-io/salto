@@ -15,7 +15,6 @@
 */
 const path = require('path');
 const webpack = require('webpack');
-
 module.exports = {
   mode: 'development', // production minifaction results in bad error stacks
   target: 'node',
@@ -24,6 +23,7 @@ module.exports = {
     filename: 'bundle.js',
     path: path.resolve(__dirname, 'dist'),
   },
+  context: path.resolve(__dirname),
   module: {
     rules: [
       {
@@ -42,11 +42,11 @@ module.exports = {
       {
         test: /@oracle\/suitecloud-cli-localserver-command/i,
         use: 'null-loader'
-      }
+      },
     ],
   },
   node: {
-    __dirname: true,
+    __dirname: false,
     __filename: true,
   },
   stats: {

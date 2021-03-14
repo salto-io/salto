@@ -22,7 +22,11 @@ import { State, StateData } from './state'
 const { awu } = collections.asynciterable
 const { toMD5 } = hash
 
-export const buildInMemState = (loadData: () => Promise<StateData>): State => {
+type InMemoryState = State & {
+  setVersion(version: string): Promise<void>
+}
+
+export const buildInMemState = (loadData: () => Promise<StateData>): InMemoryState => {
   let innerStateData: Promise<StateData>
   const stateData = async (): Promise<StateData> => {
     if (innerStateData === undefined) {
@@ -87,5 +91,6 @@ export const buildInMemState = (loadData: () => Promise<StateData>): State => {
       || toMD5(safeJsonStringify([])),
     setHash: async (newHash: string) => (await stateData()).saltoMetadata.set('hash', newHash),
     getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
+    setVersion: async (version: string) => (await stateData()).saltoMetadata.set('version', version),
   }
 }

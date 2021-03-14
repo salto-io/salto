@@ -100,7 +100,7 @@ export type Workspace = {
   transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>>
   transformError: (error: SaltoError) => Promise<WorkspaceError<SaltoError>>
-  updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
+  updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<number>
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
@@ -214,12 +214,13 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
   const updateNaclFiles = async (
     changes: DetailedChange[],
     mode?: RoutingMode
-  ): Promise<void> => {
+  ): Promise<number> => {
     const changesAfterHiddenRemoved = await handleHiddenChanges(
       changes, state(), naclFilesSource.getAll,
     )
     const elementChanges = await naclFilesSource.updateNaclFiles(changesAfterHiddenRemoved, mode)
     workspaceState = buildWorkspaceState({ changes: elementChanges })
+    return elementChanges.length
   }
 
   const updateStateAndReturnChanges = async (elementChanges: Change[]):

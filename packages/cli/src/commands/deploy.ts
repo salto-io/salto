@@ -212,12 +212,12 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
   let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
   if (!_.isUndefined(result.changes)) {
     const changes = [...result.changes]
-    if (!await updateWorkspace({
+    if (!(await updateWorkspace({
       workspace,
       output,
       changes,
       force,
-    })) {
+    })).success) {
       cliExitCode = CliExitCode.AppError
     }
   }

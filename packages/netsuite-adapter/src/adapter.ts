@@ -206,7 +206,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }> {
     const sysInfo = await this.client.getSystemInformation()
     if (sysInfo === undefined) {
-      log.warn('Failed to get sysInfo, skipping SuiteApp operations')
+      log.debug('Did not get sysInfo, skipping SuiteApp operations')
       return {}
     }
 

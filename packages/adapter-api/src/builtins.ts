@@ -91,7 +91,7 @@ export const BuiltinTypes = {
 export const InstanceAnnotationTypes: TypeMap = {
   [INSTANCE_ANNOTATIONS.DEPENDS_ON]: new ListType(StandardBuiltinTypes.STRING),
   [INSTANCE_ANNOTATIONS.PARENT]: new ListType(StandardBuiltinTypes.STRING),
-  [INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES]: new ListType(StandardBuiltinTypes.STRING),
+  [INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES]: new ListType(StandardBuiltinTypes.UNKNOWN),
   [INSTANCE_ANNOTATIONS.HIDDEN]: StandardBuiltinTypes.BOOLEAN,
   [INSTANCE_ANNOTATIONS.SERVICE_URL]: BuiltinTypes.HIDDEN_STRING,
 }

@@ -154,7 +154,7 @@ jobs:
       - image: saltolabs/salto-e2e:latest
 
     resource_class: large
-    working_directory: /mnt/ramdisk/project
+    working_directory: ~/project
 
     steps:
       - attach_workspace:

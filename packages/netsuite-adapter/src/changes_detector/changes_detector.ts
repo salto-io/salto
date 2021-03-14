@@ -92,7 +92,6 @@ const getIdTime = (
   return _.maxBy(changes, change => change.time)?.time
 }
 
-
 const getChangedIds = (
   changes: ChangedObject[],
   idToLastFetchDate: Record<string, ElementsSourceValue>,
@@ -129,21 +128,18 @@ export const getChangedObjects = async (
       .map(detector => detector.getChanges(client, dateRange))
   ).then(output => output.flat())
 
-  const fileChangesPromise = Promise.all([
-    getChangedFiles(client, dateRange),
-    getChangedFolders(client, dateRange),
-  ]).then(output => output.flat())
-
   const idToLastFetchDate = await elementsSourceIndex.getIndex()
 
   const [
     systemNoteChanges,
     changedInstances,
     changedFiles,
+    changedFolders,
   ] = await Promise.all([
     getSystemNoteChanges(client, dateRange),
     instancesChangesPromise,
-    fileChangesPromise,
+    getChangedFiles(client, dateRange),
+    getChangedFolders(client, dateRange),
   ])
 
   const [changedTypes, changedObjects] = _.partition(changedInstances, (change): change is ChangedType => change.type === 'type')
@@ -153,25 +149,38 @@ export const getChangedObjects = async (
     idToLastFetchDate,
     systemNoteChanges
   )
-  const paths = new Set([...getChangedIds(changedFiles, idToLastFetchDate, systemNoteChanges)]
+
+  const filePaths = new Set([...getChangedIds(changedFiles, idToLastFetchDate, systemNoteChanges)]
     .filter(path =>
       fileCabinetTopLevelFolders.some(
         topLevelPath => path.startsWith(topLevelPath) && query.isFileMatch(path)
       )))
+
+  const folderPaths = [...getChangedIds(changedFolders, idToLastFetchDate, systemNoteChanges)]
+    .filter(path =>
+      fileCabinetTopLevelFolders.some(
+        topLevelPath => path.startsWith(topLevelPath) && query.isFileMatch(path)
+      ))
+
+  const unresolvedFolderPaths = folderPaths
+    .map(folder => `${folder}/`)
+    .filter(folder => Array.from(filePaths).every(file => !file.startsWith(folder)))
 
   const types = new Set(changedTypes.map(type => type.name))
 
   log.debug('Finished to look for changed objects')
   log.debug(`${scriptIds.size} script ids changes were detected`)
   log.debug(`${types.size} types changes were detected`)
-  log.debug(`${paths.size} paths changes were detected`)
+  log.debug(`${filePaths.size} file paths changes were detected`)
+  log.debug(`${folderPaths.length} folder paths changes were detected`)
 
   return {
     isTypeMatch: () => scriptIds.size !== 0,
     isObjectMatch: objectID => !SUPPORTED_TYPES.has(objectID.type)
       || scriptIds.has(objectID.scriptId)
       || types.has(objectID.type),
-    isFileMatch: filePath => paths.has(filePath),
-    areSomeFilesMatch: () => paths.size !== 0,
+    isFileMatch: filePath => filePaths.has(filePath)
+      || unresolvedFolderPaths.some(path => filePath.startsWith(path)),
+    areSomeFilesMatch: () => filePaths.size !== 0 || folderPaths.length !== 0,
   }
 }

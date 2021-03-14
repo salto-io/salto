@@ -94,7 +94,6 @@ describe('changes_detector', () => {
     )
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file2')).toBeFalsy()
-    expect(changedObjectsQuery.isFileMatch('/Templates/path/to')).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/notExists')).toBeFalsy()
     expect(changedObjectsQuery.isFileMatch('/other/path/to/file')).toBeFalsy()
 
@@ -111,6 +110,17 @@ describe('changes_detector', () => {
     expect(changedObjectsQuery.areSomeFilesMatch()).toBeTruthy()
   })
 
+  it('should match any file under a directory if not other file under the directory was changed', async () => {
+    getChangedFilesMock.mockResolvedValue([])
+    const changedObjectsQuery = await getChangedObjects(
+      client,
+      query,
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+      elementsSourceIndex,
+    )
+    expect(changedObjectsQuery.isFileMatch('/Templates/path/to/anyFile')).toBeTruthy()
+  })
+
   it('should return all the results of system note query failed', async () => {
     runSavedSearchQueryMock.mockResolvedValue(undefined)
     const changedObjectsQuery = await getChangedObjects(
@@ -121,7 +131,6 @@ describe('changes_detector', () => {
     )
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file2')).toBeTruthy()
-    expect(changedObjectsQuery.isFileMatch('/Templates/path/to')).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/notExists')).toBeFalsy()
 
     expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'a' })).toBeTruthy()
@@ -134,9 +143,18 @@ describe('changes_detector', () => {
   })
 
   it('should not return results that there last fetch time is later than the query return time', async () => {
+    runSavedSearchQueryMock.mockResolvedValue([
+      { recordid: '1', date: '03/15/2021 03:04 pm' },
+      { recordid: '2', date: '03/15/2021 03:04 am' },
+      { recordid: '5', date: '03/15/2023 03:04 pm' },
+      { recordid: '3', date: '03/15/2023 03:04 pm' },
+      { recordid: '6', date: '03/15/2023 03:04 pm' },
+      { invalid: {} },
+    ])
+
     getIndexMock.mockResolvedValue({
       '/Templates/path/to/file': { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
-      '/Templates/path/to': { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
+      '/Templates/path/to/file2': { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
       a: { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
       b: { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
     })
@@ -148,7 +166,7 @@ describe('changes_detector', () => {
     )
 
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeFalsy()
-    expect(changedObjectsQuery.isFileMatch('/Templates/path/to')).toBeTruthy()
+    expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file2')).toBeTruthy()
     expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'a' })).toBeFalsy()
     expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'b' })).toBeTruthy()
   })

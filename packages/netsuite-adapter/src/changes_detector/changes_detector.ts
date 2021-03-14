@@ -115,12 +115,17 @@ const getChangedIds = (
     .map(([id]) => id)
     .value())
 
+export type GetChangedObjectsResults = {
+  query: NetsuiteQuery
+  paths: string[]
+}
+
 export const getChangedObjects = async (
   client: NetsuiteClient,
   query: NetsuiteQuery,
   dateRange: DateRange,
   elementsSourceIndex: LazyElementsSourceIndex,
-): Promise<NetsuiteQuery> => {
+): Promise<GetChangedObjectsResults> => {
   log.debug('Starting to look for changed objects')
 
   const instancesChangesPromise = Promise.all(
@@ -167,11 +172,14 @@ export const getChangedObjects = async (
   log.debug(`${paths.size} paths changes were detected`)
 
   return {
-    isTypeMatch: () => scriptIds.size !== 0,
-    isObjectMatch: objectID => !SUPPORTED_TYPES.has(objectID.type)
-      || scriptIds.has(objectID.scriptId)
-      || types.has(objectID.type),
-    isFileMatch: filePath => paths.has(filePath),
-    areSomeFilesMatch: () => paths.size !== 0,
+    query: {
+      isTypeMatch: () => scriptIds.size !== 0,
+      isObjectMatch: objectID => !SUPPORTED_TYPES.has(objectID.type)
+        || scriptIds.has(objectID.scriptId)
+        || types.has(objectID.type),
+      isFileMatch: filePath => paths.has(filePath),
+      areSomeFilesMatch: () => paths.size !== 0,
+    },
+    paths: Array.from(paths),
   }
 }

@@ -518,10 +518,13 @@ describe('Adapter', () => {
 
       getChangedObjectsMock.mockReset()
       getChangedObjectsMock.mockResolvedValue({
-        isTypeMatch: () => true,
-        isObjectMatch: objectID => objectID.scriptId.startsWith('aa'),
-        isFileMatch: () => true,
-        areSomeFilesMatch: () => true,
+        query: {
+          isTypeMatch: () => true,
+          isObjectMatch: objectID => objectID.scriptId.startsWith('aa'),
+          isFileMatch: () => true,
+          areSomeFilesMatch: () => true,
+        },
+        paths: [],
       })
 
       getSystemInformationMock.mockReset()

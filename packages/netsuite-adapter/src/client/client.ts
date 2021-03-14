@@ -66,9 +66,9 @@ export default class NetsuiteClient {
     return this.sdfClient.getCustomObjects(typeNames, query)
   }
 
-  async importFileCabinetContent(query: NetsuiteQuery):
+  async importFileCabinetContent(query: NetsuiteQuery, paths?: string[]):
     Promise<ImportFileCabinetResult> {
-    return this.sdfClient.importFileCabinetContent(query)
+    return this.sdfClient.importFileCabinetContent(query, paths)
   }
 
   async deploy(customizationInfos: CustomizationInfo[]): Promise<void> {

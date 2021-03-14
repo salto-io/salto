@@ -541,7 +541,7 @@ export default class SdfClient {
   }
 
   @SdfClient.logDecorator
-  async importFileCabinetContent(query: NetsuiteQuery):
+  async importFileCabinetContent(query: NetsuiteQuery, paths?: string[]):
     Promise<ImportFileCabinetResult> {
     if (!query.areSomeFilesMatch()) {
       return {
@@ -581,8 +581,12 @@ export default class SdfClient {
       }))
 
     const project = await this.initProject()
-    const listFilesResults = await this.listFilePaths(project.executor)
-    const filePathsToImport = listFilesResults.listedPaths
+
+    const { listedPaths, failedPaths } = paths !== undefined
+      ? { listedPaths: paths, failedPaths: [] }
+      : await this.listFilePaths(project.executor)
+
+    const filePathsToImport = listedPaths
       .filter(path => query.isFileMatch(path))
     const importFilesResult = await this.importFiles(filePathsToImport, project.executor)
     // folder attributes file is returned multiple times
@@ -600,7 +604,7 @@ export default class SdfClient {
     await this.projectCleanup(project.projectName, project.authId)
     return {
       elements,
-      failedPaths: listFilesResults.failedPaths,
+      failedPaths,
     }
   }
 

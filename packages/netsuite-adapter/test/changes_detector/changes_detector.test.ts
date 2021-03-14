@@ -86,18 +86,19 @@ describe('changes_detector', () => {
   })
 
   it('should use the system note results to filter the changes', async () => {
-    const changedObjectsQuery = await getChangedObjects(
+    const { query: changedObjectsQuery, paths } = (await getChangedObjects(
       client,
       query,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
       elementsSourceIndex,
-    )
+    ))
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file2')).toBeFalsy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to')).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/notExists')).toBeFalsy()
     expect(changedObjectsQuery.isFileMatch('/other/path/to/file')).toBeFalsy()
 
+    expect(paths).toEqual(['/Templates/path/to/file', '/Templates/path/to'])
 
     expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'a' })).toBeTruthy()
     expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'b' })).toBeTruthy()
@@ -113,12 +114,12 @@ describe('changes_detector', () => {
 
   it('should return all the results of system note query failed', async () => {
     runSavedSearchQueryMock.mockResolvedValue(undefined)
-    const changedObjectsQuery = await getChangedObjects(
+    const changedObjectsQuery = (await getChangedObjects(
       client,
       query,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
       elementsSourceIndex,
-    )
+    )).query
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file2')).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to')).toBeTruthy()
@@ -140,12 +141,12 @@ describe('changes_detector', () => {
       a: { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
       b: { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
     })
-    const changedObjectsQuery = await getChangedObjects(
+    const changedObjectsQuery = (await getChangedObjects(
       client,
       query,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
       elementsSourceIndex,
-    )
+    )).query
 
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeFalsy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to')).toBeTruthy()
@@ -156,12 +157,12 @@ describe('changes_detector', () => {
   it('areSomeFilesMatch return false when no file changes were detected', async () => {
     getChangedFilesMock.mockResolvedValue([])
     getChangesFoldersMock.mockResolvedValue([])
-    const changedObjectsQuery = await getChangedObjects(
+    const changedObjectsQuery = (await getChangedObjects(
       client,
       query,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
       elementsSourceIndex,
-    )
+    )).query
     expect(changedObjectsQuery.areSomeFilesMatch()).toBeFalsy()
   })
 
@@ -169,12 +170,12 @@ describe('changes_detector', () => {
     runSavedSearchQueryMock.mockResolvedValue([
       { recordid: '1', date: 'invalid' },
     ])
-    const changedObjectsQuery = await getChangedObjects(
+    const changedObjectsQuery = (await getChangedObjects(
       client,
       query,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
       elementsSourceIndex,
-    )
+    )).query
     expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'a' })).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeFalsy()
   })
@@ -187,12 +188,12 @@ describe('changes_detector', () => {
     getCustomRecordTypeChangesMock.mockResolvedValue([
       { type: 'object', externalId: 'B', time: undefined },
     ])
-    const changedObjectsQuery = await getChangedObjects(
+    const changedObjectsQuery = (await getChangedObjects(
       client,
       query,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
       elementsSourceIndex,
-    )
+    )).query
     expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'b' })).toBeTruthy()
   })
 })

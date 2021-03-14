@@ -1003,7 +1003,52 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, deleteAuthIdCommandMatcher)
     })
 
-    it('should do nothing of no files are matched', async () => {
+    it('should not list paths if they are passed', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        const filesPathResult = [
+          MOCK_FILE_PATH,
+        ]
+        if (context.commandName === COMMANDS.LIST_FILES
+          && context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: filesPathResult,
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_FILES
+          && _.isEqual(context.arguments.paths, filesPathResult)) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: {
+              results: [
+                {
+                  path: MOCK_FILE_PATH,
+                  loaded: true,
+                },
+                {
+                  path: MOCK_FILE_ATTRS_PATH,
+                  loaded: true,
+                },
+              ],
+            },
+          })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+      const query = buildNetsuiteQuery({
+        filePaths: ['.*'],
+      })
+      const { elements, failedPaths } = await client.importFileCabinetContent(
+        query,
+        [MOCK_FILE_PATH]
+      )
+      expect(elements).toHaveLength(1)
+      expect(failedPaths).toHaveLength(0)
+      expect(mockExecuteAction).not.toHaveBeenCalledWith(listFilesCommandMatcher)
+      expect(readFileMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('should do nothing if no files are matched', async () => {
       const { elements, failedPaths } = await client.importFileCabinetContent(buildNetsuiteQuery({
         filePaths: [],
       }))

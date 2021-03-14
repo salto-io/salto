@@ -40,7 +40,7 @@ import {
 import { getAllReferencedInstances, getRequiredReferencedInstances } from './reference_dependencies'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery } from './query'
 import { createServerTimeElements, getLastServerTime } from './server_time'
-import { getChangedObjects } from './changes_detector/changes_detector'
+import { getChangedObjects, GetChangedObjectsResults } from './changes_detector/changes_detector'
 import NetsuiteClient from './client/client'
 import { createDateRange } from './changes_detector/date_formats'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
@@ -132,11 +132,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
 
     const {
-      changedObjectsQuery,
+      changedObjectsResults,
       serverTime,
     } = await this.runSuiteAppOperations(fetchQuery, elementsSourceIndex)
-    fetchQuery = changedObjectsQuery !== undefined
-      ? andQuery(changedObjectsQuery, fetchQuery)
+    fetchQuery = changedObjectsResults !== undefined
+      ? andQuery(changedObjectsResults.query, fetchQuery)
       : fetchQuery
 
     const serverTimeElements = this.fetchTarget === undefined && serverTime !== undefined
@@ -149,7 +149,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
       Object.keys(customTypes),
       fetchQuery
     )
-    const importFileCabinetResult = this.client.importFileCabinetContent(fetchQuery)
+    const importFileCabinetResult = this.client.importFileCabinetContent(
+      fetchQuery,
+      changedObjectsResults?.paths
+    )
     const {
       elements: fileCabinetContent,
       failedPaths: failedFilePaths,
@@ -201,7 +204,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     elementsSourceIndex: LazyElementsSourceIndex
   ):
     Promise<{
-      changedObjectsQuery?: NetsuiteQuery
+      changedObjectsResults?: GetChangedObjectsResults
       serverTime?: Date
     }> {
     const sysInfo = await this.client.getSystemInformation()
@@ -222,14 +225,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return { serverTime: sysInfo.time }
     }
 
-    const changedObjectsQuery = await getChangedObjects(
+    const changedObjectsResults = await getChangedObjects(
       this.client,
       fetchQuery,
       createDateRange(lastFetchTime, sysInfo.time),
       elementsSourceIndex,
     )
 
-    return { changedObjectsQuery, serverTime: sysInfo.time }
+    return { changedObjectsResults, serverTime: sysInfo.time }
   }
 
   private getAllRequiredReferencedInstances(

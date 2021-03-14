@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import { workspaceConfigSource as wcs,
   WorkspaceConfig, configSource } from '@salto-io/workspace'
-import { InstanceElement, DetailedChange } from '@salto-io/adapter-api'
+import { DetailedChange } from '@salto-io/adapter-api'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome, CONFIG_DIR_NAME } from '../app_config'
 import { WORKSPACE_CONFIG_NAME, ENVS_CONFIG_NAME, EnvsConfig,
@@ -80,10 +80,11 @@ export const workspaceConfigSource = async (
       await repoCs.set(WORKSPACE_CONFIG_NAME, workspaceMetadata)
       await localCs.set(USER_CONFIG_NAME, userData)
     },
-    getAdapter: (adapter: string): Promise<InstanceElement | undefined> =>
-      repoCs.get(path.join(ADAPTERS_CONFIG_NAME, adapter)),
-    setAdapter: async (adapter: string, config: Readonly<InstanceElement>): Promise<void> =>
+    getAdapter: (adapter, defaultValue) => (
+      repoCs.get(path.join(ADAPTERS_CONFIG_NAME, adapter), defaultValue)
+    ),
+    setAdapter: (adapter, config) => (
       repoCs.set(path.join(ADAPTERS_CONFIG_NAME, adapter), config)
-    ,
+    ),
   }
 }

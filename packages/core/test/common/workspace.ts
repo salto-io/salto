@@ -91,7 +91,7 @@ export const mockWorkspace = ({
       [mockService]: mockConfigInstance,
       [emptyMockService]: mockEmptyConfigInstance,
     }),
-    servicesConfig: jest.fn().mockResolvedValue({}),
+    serviceConfig: jest.fn().mockResolvedValue(undefined),
     getWorkspaceErrors: jest.fn().mockResolvedValue([]),
     addService: jest.fn(),
     updateServiceCredentials: jest.fn(),

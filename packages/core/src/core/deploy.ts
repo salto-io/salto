@@ -46,8 +46,8 @@ export class DeployError extends Error {
 
 export type ItemStatus = 'started' | 'finished' | 'error' | 'cancelled'
 
-export type StepEvents = {
-  completed: () => void
+export type StepEvents<T = void> = {
+  completed: (params: T) => void
   failed: (errorText?: string) => void
 }
 

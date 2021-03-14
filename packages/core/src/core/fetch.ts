@@ -56,13 +56,17 @@ export const toAddFetchChange = (elem: Element): FetchChange => {
 }
 
 
-export class StepEmitter extends EventEmitter<StepEvents> {}
+export class StepEmitter<T = void> extends EventEmitter<StepEvents<T>> {}
 
 export type FetchProgressEvents = {
   adaptersDidInitialize: () => void
   changesWillBeFetched: (stepProgress: StepEmitter, adapterNames: string[]) => void
   diffWillBeCalculated: (stepProgress: StepEmitter) => void
-  workspaceWillBeUpdated: (stepProgress: StepEmitter, changes: number, approved: number) => void
+  workspaceWillBeUpdated: (
+    stepProgress: StepEmitter<number>,
+    changes: number,
+    approved: number
+  ) => void
   stateWillBeUpdated: (stepProgress: StepEmitter, changes: number) => void
   adapterFetch: (adapterName: string, phase: string) => void
 } & AdapterEvents

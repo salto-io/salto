@@ -64,7 +64,11 @@ export type LoadWorkspaceOptions = {
 }
 
 type ApplyProgressEvents = {
-  workspaceWillBeUpdated: (stepProgress: StepEmitter, changes: number, approved: number) => void
+  workspaceWillBeUpdated: (
+    stepProgress: StepEmitter<number>,
+    changes: number,
+    approved: number
+  ) => void
 }
 
 type ApplyChangesArgs = {
@@ -227,10 +231,12 @@ export const updateWorkspace = async ({
   changes,
   force = false,
   mode = 'default',
-}: UpdateWorkspaceParams): Promise<boolean> => {
+}: UpdateWorkspaceParams): Promise<{ success: boolean; numberOfAppliedChanges: number }> => {
+  let numberOfAppliedChanges = 0
+
   if (changes.length > 0) {
     await logWorkspaceUpdates(workspace, changes)
-    await workspace.updateNaclFiles(
+    numberOfAppliedChanges = await workspace.updateNaclFiles(
       changes.map(c => c.change),
       mode
     )
@@ -243,12 +249,12 @@ export const updateWorkspace = async ({
       if (!shouldAbort) {
         await workspace.flush()
       }
-      return false
+      return { success: false, numberOfAppliedChanges: 0 }
     }
   }
   await workspace.flush()
   log.debug('finished updating workspace')
-  return true
+  return { success: true, numberOfAppliedChanges }
 }
 
 export const getWorkspaceTelemetryTags = async (ws: Workspace): Promise<Tags> => (
@@ -265,11 +271,12 @@ export const applyChangesToWorkspace = async ({
     : await approveChangesCallback(changes, interactive)
 
   cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
-  const updatingWsEmitter = new StepEmitter()
+  const updatingWsEmitter = new StepEmitter<number>()
   applyProgress.emit('workspaceWillBeUpdated', updatingWsEmitter, changes.length, changesToApply.length)
-  const success = await updateWorkspace({ workspace, output, changes: changesToApply, mode, force })
-  if (success) {
-    updatingWsEmitter.emit('completed')
+  const results = await updateWorkspace({ workspace, output, changes: changesToApply, mode, force })
+
+  if (results.success) {
+    updatingWsEmitter.emit('completed', results.numberOfAppliedChanges)
     if (shouldCalcTotalSize) {
       const totalSize = await workspace.getTotalSize()
       log.debug(`Total size of the workspace is ${totalSize} bytes`)

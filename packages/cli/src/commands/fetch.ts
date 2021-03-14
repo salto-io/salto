@@ -24,7 +24,7 @@ import { logger } from '@salto-io/logging'
 import { progressOutputer, outputLine, errorOutputLine } from '../outputer'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
-import { formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatFetchHeader, formatFetchFinish, formatStateChanges, formatStateRecencies } from '../formatter'
+import { formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatFetchHeader, formatFetchFinish, formatStateChanges, formatStateRecencies, formatAppliedChanges } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliShouldUpdateConfig, getChangeToAlignAction } from '../callbacks'
 import { getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
@@ -79,31 +79,34 @@ export const fetchCommand = async (
     numOfChanges: number
   ) => progressOutputer(
     formatStateChanges(numOfChanges),
-    Prompts.STATE_ONLY_UPDATE_END,
+    () => Prompts.STATE_ONLY_UPDATE_END,
     Prompts.STATE_ONLY_UPDATE_FAILED(numOfChanges),
     output
   )(progress))
 
   fetchProgress.on('changesWillBeFetched', (progress: StepEmitter, adapters: string[]) => progressOutputer(
     Prompts.FETCH_GET_CHANGES_START(adapters),
-    Prompts.FETCH_GET_CHANGES_FINISH(adapters),
+    () => Prompts.FETCH_GET_CHANGES_FINISH(adapters),
     Prompts.FETCH_GET_CHANGES_FAIL,
     output
   )(progress))
 
   fetchProgress.on('diffWillBeCalculated', progressOutputer(
     Prompts.FETCH_CALC_DIFF_START,
-    Prompts.FETCH_CALC_DIFF_FINISH,
+    () => Prompts.FETCH_CALC_DIFF_FINISH,
     Prompts.FETCH_CALC_DIFF_FAIL,
     output
   ))
-  fetchProgress.on('workspaceWillBeUpdated', (progress: StepEmitter, changes: number, approved: number) =>
+  fetchProgress.on('workspaceWillBeUpdated', (progress: StepEmitter, changes: number, approved: number) => {
+    log.debug(formatChangesSummary(changes, approved))
+
     progressOutputer(
-      formatChangesSummary(changes, approved),
-      Prompts.FETCH_UPDATE_WORKSPACE_SUCCESS,
+      Prompts.APPLYING_CHANGES,
+      formatAppliedChanges,
       Prompts.FETCH_UPDATE_WORKSPACE_FAIL,
       output
-    )(progress))
+    )(progress)
+  })
 
   const applyChangesToState = async (allChanges: readonly FetchChange[]): Promise<boolean> => {
     const updatingStateEmitter = new StepEmitter()

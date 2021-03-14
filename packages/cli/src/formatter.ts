@@ -409,10 +409,14 @@ export const formatChangesSummary = (changes: number, approved: number): string 
   if (changes === 0) {
     return Prompts.FETCH_NO_CHANGES
   }
-  if (approved === 0) {
-    return Prompts.FETCH_NOTHING_TO_UPDATE
-  }
   return Prompts.FETCH_CHANGES_TO_APPLY(approved)
+}
+
+export const formatAppliedChanges = (appliedChanges: number): string => {
+  if (appliedChanges === 0) {
+    return Prompts.FETCH_NO_CHANGES
+  }
+  return Prompts.FETCH_CHANGES_APPLIED(appliedChanges)
 }
 
 export const formatConfigFieldInput = (fieldName: string, message: string): string =>

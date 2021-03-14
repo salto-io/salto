@@ -29,17 +29,17 @@ export const errorOutputLine = (text: string, output: CliOutput): void => {
   output.stderr.write(`${text}\n`)
   log.debug(text)
 }
-export const progressOutputer = (
+export const progressOutputer = <T>(
   startText: string,
-  successText: string,
+  successCallback: (params: T) => string,
   defaultErrorText: string,
   output: CliOutput
-) => (progress: StepEmitter) => {
-  outputLine(EOL, output)
-  outputLine(formatStepStart(startText), output)
-  progress.on('completed', () => outputLine(formatStepCompleted(successText), output))
-  progress.on('failed', (errorText?: string) => {
-    outputLine(formatStepFailed(errorText ?? defaultErrorText), output)
+) => (progress: StepEmitter<T>) => {
     outputLine(EOL, output)
-  })
-}
+    outputLine(formatStepStart(startText), output)
+    progress.on('completed', (params: T) => outputLine(formatStepCompleted(successCallback(params)), output))
+    progress.on('failed', (errorText?: string) => {
+      outputLine(formatStepFailed(errorText ?? defaultErrorText), output)
+      outputLine(EOL, output)
+    })
+  }

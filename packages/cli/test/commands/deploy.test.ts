@@ -180,6 +180,7 @@ describe('deploy command', () => {
         workspace.errors.mockResolvedValueOnce(
           mocks.mockErrors([{ severity: 'Error', message: '' }])
         )
+        return 0
       })
       mockGetUserBooleanInput.mockReturnValue(true)
     })

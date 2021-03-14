@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { CommandConfig, LocalChange, restore, Tags } from '@salto-io/core'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
-import { header, formatDetailedChanges, formatInvalidFilters, formatStepStart, formatRestoreFinish, formatChangesSummary, formatStepCompleted, formatStepFailed, formatStateRecencies } from '../formatter'
+import { header, formatDetailedChanges, formatInvalidFilters, formatStepStart, formatRestoreFinish, formatStepCompleted, formatStepFailed, formatStateRecencies, formatAppliedChanges, formatChangesSummary } from '../formatter'
 import Prompts from '../prompts'
 import { getWorkspaceTelemetryTags, updateWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import { getApprovedChanges } from '../callbacks'
@@ -71,21 +71,23 @@ const applyLocalChangesToWorkspace = async (
     : await getApprovedChanges(changes, interactive)
 
   cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
+  log.debug(formatChangesSummary(changes.length, changesToApply.length))
+
   outputLine(EOL, output)
   outputLine(
-    formatStepStart(formatChangesSummary(changes.length, changesToApply.length)),
+    formatStepStart(Prompts.APPLYING_CHANGES),
     output,
   )
 
-  const success = await updateWorkspace({
+  const results = await updateWorkspace({
     workspace,
     output,
     changes: changesToApply,
     mode,
     force,
   })
-  if (success) {
-    outputLine(formatStepCompleted(Prompts.RESTORE_UPDATE_WORKSPACE_SUCCESS), output)
+  if (results.success) {
+    outputLine(formatStepCompleted(formatAppliedChanges(results.numberOfAppliedChanges)), output)
     if (config.shouldCalcTotalSize) {
       const totalSize = await workspace.getTotalSize()
       log.debug(`Total size of the workspace is ${totalSize} bytes`)

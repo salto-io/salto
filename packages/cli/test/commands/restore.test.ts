@@ -88,6 +88,8 @@ describe('restore command', () => {
     let workspace: Workspace
     beforeEach(async () => {
       workspace = mocks.mockWorkspace({})
+      jest.spyOn(workspace, 'updateNaclFiles').mockResolvedValue(2)
+
       result = await action({
         ...cliCommandArgs,
         input: {
@@ -121,7 +123,7 @@ describe('restore command', () => {
 
     it('should print deployment to console', () => {
       expect(output.stdout.content).toContain('Finished calculating the difference')
-      expect(output.stdout.content).toContain('Applying 2 changes to the local workspace')
+      expect(output.stdout.content).toContain('2 changes were applied to the local workspace')
       expect(output.stdout.content).toContain('Done!')
     })
   })
@@ -207,6 +209,7 @@ describe('restore command', () => {
       workspace.errors.mockResolvedValue(
         mocks.mockErrors([{ severity: 'Error', message: 'some error ' }])
       )
+      return 0
     })
     const result = await action({
       ...cliCommandArgs,

@@ -85,7 +85,6 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
   public static readonly FETCH_CALC_DIFF_START = 'Calculating the difference between local and remote'
   public static readonly FETCH_CALC_DIFF_FINISH = 'Finished calculating the difference between local and remote'
   public static readonly FETCH_CALC_DIFF_FAIL = 'Calculating diff failed!'
-  public static readonly FETCH_UPDATE_WORKSPACE_SUCCESS = 'Applied changes'
   public static readonly FETCH_SUCCESS_FINISHED = 'Done! Your workspace is now updated with the latest changes.'
   public static readonly FETCH_UPDATE_WORKSPACE_FAIL = 'Failed to apply changes to your local workspace'
   public static readonly FETCH_CHANGE_HEADER = (changeIdx: number, totalChanges: number): string => `Change ${changeIdx} of ${totalChanges}:`
@@ -93,10 +92,12 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
   public static readonly FETCH_CHANGE_REJECTED = 'The change will not be applied to your workspace'
   public static readonly FETCH_NO_CHANGES = 'No changes found, workspace is up to date'
   public static readonly FETCH_NOTHING_TO_UPDATE = 'No changes chosen, Leaving workspace unchanged'
-  public static readonly FETCH_CHANGES_TO_APPLY = (numChanges: number): string => `Applying ${numChanges} changes to the local workspace`
+  public static readonly FETCH_CHANGES_TO_APPLY = (numChanges: number): string => `Applying ${numChanges} semantic changes to the local workspace`
   public static readonly FETCH_CONFLICTING_CHANGE = 'This change conflicts with the following pending change from your workspace:'
   public static readonly FETCH_MERGE_ERRORS = 'These errors occurred as part of the fetch:'
   public static readonly FETCH_FATAL_MERGE_ERROR_PREFIX = 'Error occurred during fetch, cause:\n'
+  public static readonly FETCH_CHANGES_APPLIED = (appliedChanges: number): string => `${appliedChanges} changes were applied to the local workspace`
+  public static readonly APPLYING_CHANGES = 'Applying changes'
 
   public static readonly LOADING_WORKSPACE = 'Loading workspace...'
   public static readonly FINISHED_LOADING = 'Finished loading workspace'

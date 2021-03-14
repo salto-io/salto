@@ -130,7 +130,7 @@ describe('workspace', () => {
         output: cliOutput,
         changes: dummyChanges.map(change => ({ change, serviceChange: change })),
       })
-      expect(result).toBe(false)
+      expect(result.success).toBe(false)
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, 'default')
       expect(mockWs.flush).toHaveBeenCalledTimes(1)
     })

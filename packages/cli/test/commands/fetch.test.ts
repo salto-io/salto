@@ -482,6 +482,7 @@ describe('fetch command', () => {
                 workspace.errors.mockResolvedValue(
                   mocks.mockErrors([{ severity: 'Error', message: 'BLA Error' }])
                 )
+                return 0
               })
 
               const res = await fetchCommand({
@@ -510,6 +511,7 @@ describe('fetch command', () => {
                 workspace.errors.mockResolvedValue(
                   mocks.mockErrors([{ severity: 'Warning', message: 'BLA Error' }])
                 )
+                return 0
               })
 
               const res = await fetchCommand({

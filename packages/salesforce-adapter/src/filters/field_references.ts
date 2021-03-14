@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import {
-  Field, Element, isInstanceElement, Value, Values, isReferenceExpression,
-  ReferenceExpression, InstanceElement, ElemID, getField,
+  Field, Element, isInstanceElement, Value, Values, isReferenceExpression, isField,
+  ReferenceExpression, InstanceElement, ElemID, getField, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues, resolvePath, getParents } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { apiName, metadataType, isCustomObject } from '../transformers/transformer'
+import { values as lowerDashValues, collections, multiIndex } from '@salto-io/lowerdash'
+import { apiName, metadataType } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import {
   ReferenceSerializationStrategy, ExtendedReferenceTargetDefinition, ReferenceResolverFinder,
@@ -34,15 +34,15 @@ import {
   WORKFLOW_TASK_METADATA_TYPE, CPQ_LOOKUP_OBJECT_NAME, CPQ_RULE_LOOKUP_OBJECT_FIELD,
   QUICK_ACTION_METADATA_TYPE,
 } from '../constants'
+import { buildElementsSourceForFetch, extractFlatCustomObjectFields, hasApiName } from './utils'
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
-type ElemLookupMapping = Record<string, Record<string, Element>>
-type ElemIDToElemLookup = Record<string, Element>
+const { flatMapAsync } = collections.asynciterable
 type ContextValueMapperFunc = (val: string) => string | undefined
 type ContextFunc = ({ instance, elemByElemID, field, fieldPath }: {
   instance: InstanceElement
-  elemByElemID: ElemIDToElemLookup
+  elemByElemID: multiIndex.Index<[string], Element>
   field: Field
   fieldPath?: ElemID
 }) => string | undefined
@@ -74,7 +74,7 @@ const neighborContextFunc = ({
     const contextField = getField(instance.type, fieldPath.createTopLevelParentID().path)
     const refWithValue = new ReferenceExpression(
       context.elemId,
-      context.value ?? elemByElemID[context.elemId.getFullName()],
+      context.value ?? elemByElemID.get(context.elemId.getFullName()),
     )
     return getLookUpName({ ref: refWithValue, field: contextField, path })
   }
@@ -130,10 +130,11 @@ const ContextStrategyLookup: Record<
 > = {
   none: () => undefined,
   instanceParent: ({ instance, elemByElemID }) => {
-    const parent = getParents(instance)[0]
-    return (isReferenceExpression(parent)
-      ? apiName(elemByElemID[parent.elemId.getFullName()])
-      : undefined)
+    const parentRef = getParents(instance)[0]
+    const parent = isReferenceExpression(parentRef)
+      ? elemByElemID.get(parentRef.elemId.getFullName())
+      : undefined
+    return parent !== undefined ? apiName(parent) : undefined
   },
   neighborTypeLookup: neighborContextFunc({ contextFieldName: 'type' }),
   neighborTypeWorkflow: neighborContextFunc({ contextFieldName: 'type', contextValueMapper: workflowActionMapper }),
@@ -152,15 +153,15 @@ const ContextStrategyLookup: Record<
 const replaceReferenceValues = (
   instance: InstanceElement,
   resolverFinder: ReferenceResolverFinder,
-  elemLookupMap: ElemLookupMapping,
+  elemLookupMap: multiIndex.Index<[string, string], Element>,
   fieldsWithResolvedReferences: Set<string>,
-  elemByElemID: ElemIDToElemLookup,
+  elemByElemID: multiIndex.Index<[string], Element>,
 ): Values => {
   const getRefElem = (
     val: string, target: ExtendedReferenceTargetDefinition, field: Field, path?: ElemID
   ): Element | undefined => {
     const findElem = (value: string, targetType?: string): Element | undefined => (
-      targetType !== undefined ? elemLookupMap[targetType]?.[value] : undefined
+      targetType !== undefined ? elemLookupMap.get(targetType, value) : undefined
     )
 
     const parentContextFunc = ContextStrategyLookup[target.parentContext ?? 'none']
@@ -225,37 +226,33 @@ const replaceReferenceValues = (
   ) || instance.value
 }
 
-const mapApiNameToElem = (elements: Element[]): Record<string, Element> => (
-  _(elements)
-    .map(e => [apiName(e), e])
-    .fromPairs()
-    .value()
-)
-
-const toObjectsAndFields = (elements: Element[]): Element[] => (
-  elements.flatMap(e => (isCustomObject(e) ? [e, ...Object.values(e.fields)] : [e]))
-)
-
-const groupByMetadataTypeAndApiName = (elements: Element[]): ElemLookupMapping => (
-  _(toObjectsAndFields(elements))
-    .groupBy(metadataType)
-    .mapValues(mapApiNameToElem)
-    .value()
-)
-
-const mapElemIdToElem = (elements: Element[]): ElemIDToElemLookup => (
-  Object.fromEntries(toObjectsAndFields(elements)
-    .map(e => [e.elemID.getFullName(), e]))
-)
-
-export const addReferences = (
+export const addReferences = async (
   elements: Element[],
+  referenceElements: ReadOnlyElementsSource,
   defs?: FieldReferenceDefinition[]
-): void => {
+): Promise<void> => {
   const resolverFinder = generateReferenceResolverFinder(defs)
-  const elemLookup = groupByMetadataTypeAndApiName(elements)
+
+  const elementsWithFields = flatMapAsync(
+    await referenceElements.getAll(),
+    extractFlatCustomObjectFields,
+  )
+  // TODO - when transformValues becomes async the first index can be to elemID and not the whole
+  // element and we can use the element source directly instead of creating the second index
+  const { elemLookup, elemByElemID } = await multiIndex.buildMultiIndex<Element>()
+    .addIndex({
+      name: 'elemLookup',
+      filter: hasApiName,
+      key: elem => [metadataType(elem), apiName(elem)],
+    })
+    .addIndex({
+      name: 'elemByElemID',
+      filter: elem => !isField(elem),
+      key: elem => [elem.elemID.getFullName()],
+    })
+    .process(elementsWithFields)
+
   const fieldsWithResolvedReferences = new Set<string>()
-  const elemByElemID = mapElemIdToElem(elements)
   elements.filter(isInstanceElement).forEach(instance => {
     instance.value = replaceReferenceValues(
       instance,
@@ -272,9 +269,12 @@ export const addReferences = (
  * Convert field values into references, based on predefined rules.
  *
  */
-const filter: FilterCreator = () => ({
-  onFetch: async (elements: Element[]) => {
-    addReferences(elements)
+const filter: FilterCreator = ({ config }) => ({
+  onFetch: async elements => {
+    await addReferences(
+      elements,
+      buildElementsSourceForFetch(elements, config),
+    )
   },
 })
 

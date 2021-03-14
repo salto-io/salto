@@ -121,6 +121,7 @@ export const adapter: Adapter = {
       client: new SalesforceClient({ credentials, config: config[CLIENT_CONFIG] }),
       config,
       getElemIdFunc: context.getElemIdFunc,
+      elementsSource: context.elementsSource,
     })
 
     return {

@@ -181,6 +181,7 @@ describe('SalesforceAdapter creator', () => {
         },
         client: expect.any(Object),
         getElemIdFunc: undefined,
+        elementsSource: expect.any(Object),
       })
     })
 
@@ -588,6 +589,7 @@ describe('SalesforceAdapter creator', () => {
         },
         client: expect.any(Object),
         getElemIdFunc: undefined,
+        elementsSource: expect.any(Object),
       })
     })
 

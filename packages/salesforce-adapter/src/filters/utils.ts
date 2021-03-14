@@ -17,18 +17,19 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement, isField,
-  TypeElement, BuiltinTypes, ElemID, CoreAnnotationTypes, TypeMap, Value,
+  TypeElement, BuiltinTypes, ElemID, CoreAnnotationTypes, TypeMap, Value, ReadOnlyElementsSource,
   isReferenceExpression, ReferenceExpression, ChangeDataType, Change, ChangeData,
   isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeElement, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import { getParents } from '@salto-io/adapter-utils'
+import { getParents, buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION, CUSTOM_FIELD,
 } from '../constants'
 import { JSONBool, CustomObject } from '../client/types'
-import { isCustomObject, metadataType, apiName, defaultApiName, Types, isCustomSettingsObject } from '../transformers/transformer'
+import { metadataType, apiName, defaultApiName, Types, isCustomSettingsObject, isCustomObject } from '../transformers/transformer'
+import { FilterContext } from '../filter'
 
 const log = logger(module)
 
@@ -153,9 +154,6 @@ export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType
       .map(([name, type]) => ({ [name]: { type } }))) })
 }
 
-export const generateApiNameToCustomObject = (elements: Element[]): Map<string, ObjectType> =>
-  new Map(elements.filter(isCustomObject).map(obj => [apiName(obj), obj]))
-
 export const apiNameParts = (elem: Element): string[] =>
   apiName(elem).split(/\.|-/g)
 
@@ -196,18 +194,26 @@ export const setInternalId = (elem: Element, val: string): void => {
   }
 }
 
-// ApiName -> MetadataType -> ElemID
-export type ApiNameMapping = Record<string, Record<string, ElemID>>
+export const hasInternalId = (elem: Element): boolean => (
+  getInternalId(elem) !== undefined && getInternalId(elem) !== ''
+)
 
-const mapElemTypeToElemID = (elements: Element[]): Record<string, ElemID> =>
-  (Object.fromEntries(elements.map(e => [metadataType(e), e.elemID])))
+export const hasApiName = (elem: Element): boolean => (
+  apiName(elem) !== undefined
+)
 
-export const groupByAPIName = (elements: Element[]): ApiNameMapping => (
-  _(elements)
-    .flatMap(e => (isCustomObject(e) ? [e, ...Object.values(e.fields)] : [e]))
-    .groupBy(apiName)
-    .mapValues(mapElemTypeToElemID)
-    .value()
+export const extractFlatCustomObjectFields = (elem: Element): Element[] => (
+  isCustomObject(elem) ? [elem, ...Object.values(elem.fields)] : [elem]
+)
+
+export const buildElementsSourceForFetch = (
+  elements: ReadonlyArray<Element>,
+  config: Pick<FilterContext, 'fetchProfile' | 'elementsSource'>
+): ReadOnlyElementsSource => (
+  buildElementsSourceFromElements(
+    elements,
+    config.fetchProfile.metadataQuery.isPartialFetch() ? config.elementsSource : undefined,
+  )
 )
 
 export const getDataFromChanges = <T extends Change<unknown>>(

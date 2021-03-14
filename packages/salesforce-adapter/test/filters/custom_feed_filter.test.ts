@@ -24,6 +24,7 @@ import * as constants from '../../src/constants'
 import SalesforceClient from '../../src/client/client'
 import { apiName } from '../../src/transformers/transformer'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { defaultFilterContext } from '../utils'
 
 
 describe('Test CustomFeedFilter', () => {
@@ -33,6 +34,7 @@ describe('Test CustomFeedFilter', () => {
     {
       client,
       config: {
+        ...defaultFilterContext,
         fetchProfile: buildFetchProfile({
           metadata: {
             exclude: [

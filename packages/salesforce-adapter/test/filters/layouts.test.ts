@@ -14,33 +14,36 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression,
-  BuiltinTypes,
+  InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, BuiltinTypes,
 } from '@salto-io/adapter-api'
-import {
-  naclCase, pathNaclCase,
-} from '@salto-io/adapter-utils'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { mockTypes } from '../mock_elements'
+import { createCustomObjectType, createMetadataTypeElement, defaultFilterContext } from '../utils'
 import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { getObjectDirectoryPath } from '../../src/filters/custom_objects'
 
 describe('Test layout filter', () => {
-  const { client } = mockClient()
-
-  const mockSObject = new ObjectType({
-    elemID: new ElemID(constants.SALESFORCE, 'test'),
-    annotations: { [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT },
-  })
-
-  const filter = makeFilter({ client, config: { fetchProfile: buildFetchProfile({}) } }) as FilterWith<'onFetch'>
-
   describe('Test layout fetch', () => {
     const fetch = async (apiName: string, opts = { fixedName: true }): Promise<void> => {
-      const testSobjPath = [constants.SALESFORCE, constants.OBJECTS_PATH, 'test', 'standard']
-      const testSObj = mockSObject.clone()
-      testSObj.annotate({ [constants.API_NAME]: apiName })
+      const testSObj = createCustomObjectType(
+        apiName,
+        {
+          fields: {
+            foo: {
+              type: BuiltinTypes.STRING,
+              annotations: { apiName: [apiName, 'foo'].join(constants.API_NAME_SEPARATOR) },
+            },
+            bar: {
+              type: BuiltinTypes.STRING,
+              annotations: { apiName: [apiName, 'bar'].join(constants.API_NAME_SEPARATOR) },
+            },
+          },
+        }
+      )
+      const testSobjPath = [...getObjectDirectoryPath(testSObj), pathNaclCase(apiName)]
       testSObj.path = testSobjPath
 
       const shortName = 'Test Layout'
@@ -48,9 +51,7 @@ describe('Test layout filter', () => {
       const instName = naclCase(opts.fixedName ? shortName : fullName)
       const testLayout = new InstanceElement(
         instName,
-        new ObjectType({
-          elemID: LAYOUT_TYPE_ID,
-        }),
+        mockTypes.Layout,
         { [constants.INSTANCE_FULL_NAME_FIELD]: fullName,
           layoutSections: {
             layoutColumns: {
@@ -67,22 +68,8 @@ describe('Test layout filter', () => {
           } },
         [constants.RECORDS_PATH, 'Layout', instName]
       )
-      const standardFieldObj = new ObjectType({
-        elemID: testSObj.elemID,
-        path: [constants.SALESFORCE],
-        fields: { foo: { type: BuiltinTypes.STRING, annotations: { apiName: 'foo' } } },
-      })
-      const customFieldObj = new ObjectType({
-        elemID: testSObj.elemID,
-        path: [constants.SALESFORCE],
-        fields: { bar: { type: BuiltinTypes.STRING, annotations: { apiName: 'bar' } } },
-      })
 
-      const webLinkObj = new ObjectType({
-        elemID: new ElemID(constants.SALESFORCE, 'WebLink'),
-        path: [constants.SALESFORCE],
-        fields: {},
-      })
+      const webLinkObj = createMetadataTypeElement('WebLink', { path: [constants.SALESFORCE] })
 
       const webLinkInst = new InstanceElement(
         'link',
@@ -93,9 +80,11 @@ describe('Test layout filter', () => {
       )
 
       const elements = [
-        testSObj, testLayout, standardFieldObj, customFieldObj, webLinkObj, webLinkInst,
+        testSObj, testLayout, webLinkObj, webLinkInst,
       ]
 
+      const { client } = mockClient()
+      const filter = makeFilter({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
       await filter.onFetch(elements)
 
       const instance = elements[1] as InstanceElement

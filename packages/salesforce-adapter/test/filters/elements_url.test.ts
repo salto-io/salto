@@ -15,12 +15,12 @@
 */
 
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import createClient from '../client'
+import mockClient from '../client'
 import Connection from '../../src/client/jsforce'
 import SalesforceClient from '../../src/client/client'
 import { Filter } from '../../src/filter'
 import elementsUrlFilter from '../../src/filters/elements_url'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { defaultFilterContext } from '../utils'
 
 
 describe('elements url filter', () => {
@@ -30,8 +30,8 @@ describe('elements url filter', () => {
   let standardObject: ObjectType
 
   beforeEach(() => {
-    ({ connection, client } = createClient())
-    filter = elementsUrlFilter({ client, config: { fetchProfile: buildFetchProfile({}) } })
+    ({ connection, client } = mockClient())
+    filter = elementsUrlFilter({ client, config: defaultFilterContext })
     standardObject = new ObjectType({ elemID: new ElemID('salesforce', 'Account'), annotations: { apiName: 'Account', metadataType: 'CustomObject' } })
   })
 

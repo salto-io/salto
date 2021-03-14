@@ -20,6 +20,7 @@ import {
   ReferenceExpression, isListType, FieldDefinition, toChange, Change, ModificationChange,
   getChangeElement,
 } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import {
@@ -33,7 +34,7 @@ import {
   CUSTOM_TAB_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
 } from '../../src/constants'
 import mockAdapter from '../adapter'
-import { findElements, createValueSetEntry } from '../utils'
+import { findElements, createValueSetEntry, defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
 import filterCreator, {
   INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD, NESTED_INSTANCE_VALUE_TO_TYPE_NAME,
@@ -129,9 +130,9 @@ describe('Custom Objects filter', () => {
       filter = filterCreator({
         client,
         config: {
+          ...defaultFilterContext,
           unsupportedSystemFields: ['UnsupportedField'],
           systemFields: ['SystemField', 'NameSystemField'],
-          fetchProfile: buildFetchProfile({}),
         },
       }) as typeof filter
       customObjectType = generateCustomObjectType()
@@ -530,10 +531,7 @@ describe('Custom Objects filter', () => {
         )
         const elements: Element[] = [instance]
 
-        const newFilter = filterCreator({
-          client,
-          config: { fetchProfile: buildFetchProfile({}) },
-        }) as typeof filter
+        const newFilter = filterCreator({ client, config: defaultFilterContext }) as typeof filter
         await newFilter.onFetch(elements)
 
         const custom = elements.filter(o => o.elemID.name === 'Custom').pop() as ObjectType
@@ -1532,14 +1530,16 @@ describe('Custom Objects filter', () => {
         })
       })
 
+      const sharingRulesType = new ObjectType({
+        elemID: new ElemID(SALESFORCE, SHARING_RULES_TYPE),
+        annotations: { [METADATA_TYPE]: SHARING_RULES_TYPE },
+      })
+      const sharingRulesInstance = new InstanceElement(
+        'Lead',
+        sharingRulesType,
+        { [INSTANCE_FULL_NAME_FIELD]: 'Lead' }
+      )
       describe('SharingRules', () => {
-        const sharingRulesType = new ObjectType({
-          elemID: new ElemID(SALESFORCE, SHARING_RULES_TYPE),
-          annotations: { [METADATA_TYPE]: SHARING_RULES_TYPE },
-        })
-        const sharingRulesInstance = new InstanceElement('Lead',
-          sharingRulesType, { [INSTANCE_FULL_NAME_FIELD]: 'Lead' })
-
         beforeEach(async () => {
           await filter.onFetch([sharingRulesInstance, sharingRulesInstance, leadType])
         })
@@ -1552,6 +1552,32 @@ describe('Custom Objects filter', () => {
         it('should add PARENT annotation to instance', () => {
           expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.PARENT])
             .toContainEqual(new ReferenceExpression(leadType.elemID))
+        })
+      })
+
+      describe('in partial fetch', () => {
+        beforeEach(() => {
+          const elementsSource = buildElementsSourceFromElements([leadType])
+          filter = filterCreator({
+            client,
+            config: {
+              ...defaultFilterContext,
+              fetchProfile: buildFetchProfile({ target: ['SharingRules'] }),
+              elementsSource,
+            },
+          }) as typeof filter
+          filter.onFetch([sharingRulesType, sharingRulesInstance])
+        })
+        it('should set instance path', () => {
+          expect(sharingRulesInstance.path).toEqual(
+            [SALESFORCE, OBJECTS_PATH, 'Lead', SHARING_RULES_TYPE]
+          )
+        })
+
+        it('should add parent annotation to instance', () => {
+          expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.PARENT]).toContainEqual(
+            new ReferenceExpression(leadType.elemID)
+          )
         })
       })
     })
@@ -1597,10 +1623,7 @@ describe('Custom Objects filter', () => {
       let changes: Change[]
       let testFieldSet: InstanceElement
       beforeAll(async () => {
-        filter = filterCreator({
-          client,
-          config: { fetchProfile: buildFetchProfile({}) },
-        }) as typeof filter
+        filter = filterCreator({ client, config: defaultFilterContext }) as typeof filter
 
         testFieldSet = createInstanceElement(
           { fullName: 'Test__c.MyFieldSet', description: 'my field set' },
@@ -1651,10 +1674,7 @@ describe('Custom Objects filter', () => {
           undefined,
           parentAnnotation,
         )
-        filter = filterCreator({
-          client,
-          config: { fetchProfile: buildFetchProfile({}) },
-        }) as typeof filter
+        filter = filterCreator({ client, config: defaultFilterContext }) as typeof filter
         changes = [
           toChange({ before: testObject }),
           toChange({ before: sideEffectInst }),
@@ -1687,10 +1707,7 @@ describe('Custom Objects filter', () => {
       let changes: Change[]
       let afterObj: ObjectType
       beforeAll(() => {
-        filter = filterCreator({
-          client,
-          config: { fetchProfile: buildFetchProfile({}) },
-        }) as typeof filter
+        filter = filterCreator({ client, config: defaultFilterContext }) as typeof filter
         afterObj = testObject.clone()
         afterObj.annotations[LABEL] = 'New Label'
         changes = [

@@ -17,16 +17,17 @@ import {
   Element, ElemID, ObjectType, InstanceElement, isInstanceElement,
   Change, ChangeDataType, BuiltinTypes, ListType,
 } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/replace_instance_field_values'
-import mockAdapter from '../adapter'
+import createClient from '../client'
 import {
   SALESFORCE, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD,
   CUSTOM_OBJECT, INTERNAL_ID_FIELD, CUSTOM_FIELD, API_NAME,
 } from '../../src/constants'
 import { metadataType } from '../../src/transformers/transformer'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { defaultFilterContext } from '../utils'
 
 const FORECASTING_METADATA_TYPE = 'ForecastingSettings'
 const BEFORE_ID_1 = '00N4K000004woj7'
@@ -131,7 +132,6 @@ describe('replace instance field values filter', () => {
   let client: SalesforceClient
   let elements: Element[]
   let orjNumElements: number
-  let mockListMetadataObjects: jest.Mock
   let nonForecastingInstance: Element
   let forecastingElementWithIDs: InstanceElement
   let forecastingElementWithNames: InstanceElement
@@ -251,34 +251,10 @@ describe('replace instance field values filter', () => {
   }
 
   beforeAll(() => {
-    ({ client } = mockAdapter({
-      adapterParams: {
-      },
-    }))
+    ({ client } = createClient())
 
     forecastingElementWithIDs = createForecastingElement(true)
     forecastingElementWithNames = createForecastingElement(false)
-    mockListMetadataObjects = jest.fn()
-      .mockImplementation(async () => ({ result: [
-        {
-          id: `${BEFORE_ID_2}UAA`,
-          namespacePrefix: undefined,
-          fullName: AFTER_ID_2,
-        },
-        {
-          id: `${BEFORE_ID_1}UAA`,
-          fullName: AFTER_ID_1,
-          namespacePrefix: undefined,
-        },
-        // should not be looked up
-        {
-          id: 'should not be used',
-          fullName: 'Obj.standard',
-          namespacePrefix: undefined,
-        },
-      ] }))
-
-    SalesforceClient.prototype.listMetadataObjects = mockListMetadataObjects
   })
 
   describe('onFetch', () => {
@@ -291,10 +267,7 @@ describe('replace instance field values filter', () => {
       nonForecastingInstance = elements[elements.length - 1]
       orjNumElements = elements.length
       beforeNonForecastingInstance = nonForecastingInstance.clone()
-      filter = filterCreator({
-        client,
-        config: { fetchProfile: buildFetchProfile({}) },
-      }) as FilterType
+      filter = filterCreator({ client, config: defaultFilterContext }) as FilterType
       await filter.onFetch(elements)
 
       namesAfterFilter = []
@@ -337,7 +310,10 @@ describe('replace instance field values filter', () => {
     beforeAll(() => {
       filter = filterCreator({
         client,
-        config: { fetchProfile: buildFetchProfile({}) },
+        config: {
+          ...defaultFilterContext,
+          elementsSource: buildElementsSourceFromElements(elements),
+        },
       }) as FilterType
     })
 
@@ -434,7 +410,10 @@ describe('replace instance field values filter', () => {
       beforeAll(() => {
         filter = filterCreator({
           client,
-          config: { fetchProfile: buildFetchProfile({}) },
+          config: {
+            ...defaultFilterContext,
+            elementsSource: buildElementsSourceFromElements(elements),
+          },
         }) as FilterType
       })
 

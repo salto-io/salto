@@ -15,32 +15,38 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { values } from '@salto-io/lowerdash'
-import wu from 'wu'
+import { values, collections } from '@salto-io/lowerdash'
 import { ElementIDResolver, resolvers } from './lightining_url_resolvers'
 
 const log = logger(module)
 
-export type ElementsUrlRetreiver = {
-  retreiveUrl(element: Element): URL | undefined
+const { findAsync, mapAsync, toAsyncIterable } = collections.asynciterable
+
+export type ElementsUrlRetriever = {
+  retrieveUrl(element: Element): Promise<URL | undefined>
 }
 
 
-export const lightiningElementsUrlRetreiver = (baseUrl: URL, elementIDResolver: ElementIDResolver):
-  ElementsUrlRetreiver | undefined => {
+export const lightningElementsUrlRetriever = (baseUrl: URL, elementIDResolver: ElementIDResolver):
+  ElementsUrlRetriever | undefined => {
   const suffix = baseUrl.origin.match(/(my\.)?salesforce\.com$/)
   if (suffix === null) {
     log.error(`Received invalid salesforce url: '${baseUrl.origin}'`)
     return undefined
   }
-  const lightiningUrl = new URL(`${baseUrl.origin.substr(0, suffix.index)}lightning.force.com`)
+  const lightningUrl = new URL(`${baseUrl.origin.substr(0, suffix.index)}lightning.force.com`)
 
-  const retreiveUrl = (element: Element): URL | undefined =>
-    wu(resolvers)
-      .map(resolver => resolver(element, lightiningUrl, elementIDResolver))
-      .find(values.isDefined)
+  const retrieveUrl = (element: Element): Promise<URL | undefined> => (
+    findAsync(
+      mapAsync(
+        toAsyncIterable(resolvers),
+        resolver => resolver(element, lightningUrl, elementIDResolver)
+      ),
+      values.isDefined,
+    )
+  )
 
   return {
-    retreiveUrl,
+    retrieveUrl,
   }
 }

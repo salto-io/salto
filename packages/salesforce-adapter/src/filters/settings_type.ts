@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isObjectType, ObjectType, TypeElement } from '@salto-io/adapter-api'
+import { Element, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { createMetadataTypeElements, apiName } from '../transformers/transformer'
@@ -73,17 +73,13 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       client, SETTINGS_METADATA_TYPE, [], () => true
     )
 
-    // Use known types to avoid overriding existing types
-    const knownTypes = new Map(
-      elements.filter(isObjectType).map(e => [apiName(e), e])
-    )
-
     const settingsTypeInfos = settingsList.filter(
       info => (config.fetchProfile.metadataQuery)
         .isTypeMatch(getSettingsTypeName(info.fullName))
     )
 
     // Create settings types
+    const knownTypes = new Map()
     const settingsTypes = (await Promise.all(
       settingsTypeInfos
         .map(info => getSettingsTypeName(info.fullName))

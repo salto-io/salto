@@ -17,29 +17,17 @@ import { ObjectType, ElemID, BuiltinTypes, InstanceElement, toChange, Change } f
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/territory'
 import mockClient from '../client'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { createMetadataTypeElement, defaultFilterContext } from '../utils'
 import { createInstanceElement, MetadataInstanceElement } from '../../src/transformers/transformer'
 import { CONTENT_FILENAME_OVERRIDE } from '../../src/transformers/xml_transformer'
 import { SALESFORCE, TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE, CUSTOM_OBJECT } from '../../src/constants'
-
-const createMetadataTypeElement = (
-  typeName: string,
-  params: Partial<ConstructorParameters<typeof ObjectType>[0]>
-): ObjectType => new ObjectType({
-  ...params,
-  annotations: {
-    ...params.annotations,
-    metadataType: typeName,
-  },
-  elemID: new ElemID(SALESFORCE, typeName),
-})
 
 describe('territory filter', () => {
   let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   beforeEach(() => {
     filter = filterCreator({
       client: mockClient().client,
-      config: { fetchProfile: buildFetchProfile({}) },
+      config: defaultFilterContext,
     }) as typeof filter
   })
   describe('onFetch', () => {

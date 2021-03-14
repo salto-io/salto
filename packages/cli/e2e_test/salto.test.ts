@@ -24,10 +24,10 @@ import { Workspace, parser } from '@salto-io/workspace'
 // eslint-disable-next-line no-restricted-imports
 import {
   API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE, SALESFORCE_CUSTOM_SUFFIX,
-  API_NAME_SEPARATOR, OBJECTS_PATH, METADATA_TYPE,
+  API_NAME_SEPARATOR, OBJECTS_PATH, METADATA_TYPE, CUSTOM_FIELD,
 } from '@salto-io/salesforce-adapter/dist/src/constants'
 import {
-  BuiltinTypes, ObjectType,
+  BuiltinTypes, ObjectType, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import * as callbacksImpl from '../src/callbacks'
@@ -140,7 +140,7 @@ describe('cli e2e', () => {
       await client.delete(ROLE, newInstance2FullName)
     }
     await runSalesforceLogin(fetchOutputDir)
-    await runFetch(fetchOutputDir)
+    await runFetch(fetchOutputDir) // TODO:ORI - uncomment
   })
 
   afterAll(async () => {
@@ -316,6 +316,49 @@ describe('cli e2e', () => {
     })
     afterAll(async () => {
       await runEmptyPreview(fetchOutputDir)
+    })
+  })
+
+
+  describe('partial fetch', () => {
+    let fetchedObject: ObjectType
+    let fetchedRole: InstanceElement
+    beforeAll(async () => {
+      // Make two changes on salesforce, one in a custom object and one in a role
+      const updatedField = {
+        fullName: `${newObjectApiName}.Alpha__c`,
+        type: 'Text',
+        label: 'updated label',
+        length: 80,
+      }
+      await client.upsert(CUSTOM_FIELD, updatedField)
+
+      const updatedRole = {
+        fullName: newInstanceFullName,
+        name: 'Updated role name',
+      }
+      await client.upsert(ROLE, updatedRole)
+
+      // Run partial fetch only for custom object
+      await runFetch(
+        fetchOutputDir,
+        false,
+        undefined,
+        [`salesforce.fetch.target=["${CUSTOM_OBJECT}"]`]
+      )
+
+      const workspace = await loadValidWorkspace(fetchOutputDir)
+      fetchedObject = await workspace.getValue(new ElemID(SALESFORCE, newObjectElemName))
+      fetchedRole = await workspace.getValue(new ElemID(SALESFORCE, ROLE, 'instance', newInstanceElemName))
+    })
+    it('should update elements that were part of the partial fetch', () => {
+      expect(fetchedObject).toBeInstanceOf(ObjectType)
+      expect(fetchedObject.fields).toHaveProperty('Alpha')
+      expect(fetchedObject.fields.Alpha.annotations.label).toEqual('updated label')
+    })
+    it('should not update elements that were not part of the partial fetch', () => {
+      expect(fetchedRole).toBeInstanceOf(InstanceElement)
+      expect(fetchedRole.value.name).not.toEqual('Updated role name')
     })
   })
 

@@ -19,12 +19,12 @@ import {
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/add_missing_ids'
-import mockAdapter from '../adapter'
+import mockClient from '../client'
 import {
   SALESFORCE, API_NAME, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD,
 } from '../../src/constants'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { defaultFilterContext } from '../utils'
 
 describe('Internal IDs filter', () => {
   let client: SalesforceClient
@@ -86,14 +86,8 @@ describe('Internal IDs filter', () => {
   }
 
   beforeAll(() => {
-    ({ client } = mockAdapter({
-      adapterParams: {
-      },
-    }))
-    filter = filterCreator({
-      client,
-      config: { fetchProfile: buildFetchProfile({}) },
-    }) as FilterType
+    client = mockClient().client
+    filter = filterCreator({ client, config: defaultFilterContext }) as FilterType
   })
 
   describe('resolve internal ids', () => {

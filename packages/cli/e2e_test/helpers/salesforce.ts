@@ -23,6 +23,7 @@ import SalesforceAdapter, {
 } from '@salto-io/salesforce-adapter'
 import _ from 'lodash'
 import { InstanceElement, ElemID, ObjectType, ChangeGroup, getChangeElement } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 
 export const naclNameToSFName = (objName: string): string => `${objName}__c`
 export const objectExists = async (client: SalesforceClient, name: string, fields: string[] = [],
@@ -93,7 +94,9 @@ export const addElements = async <T extends InstanceElement | ObjectType>(
   client: SalesforceClient,
   elements: T[]
 ): Promise<T[]> => {
-  const adapter = new SalesforceAdapter({ client, config: {} })
+  const adapter = new SalesforceAdapter(
+    { client, config: {}, elementsSource: buildElementsSourceFromElements([]) }
+  )
   const changeGroup: ChangeGroup = {
     groupID: elements[0].elemID.getFullName(),
     changes: elements.map(e => ({ action: 'add', data: { after: e } })),
@@ -110,7 +113,9 @@ export const removeElements = async <T extends InstanceElement | ObjectType>(
   client: SalesforceClient,
   elements: T[]
 ): Promise<void> => {
-  const adapter = new SalesforceAdapter({ client, config: {} })
+  const adapter = new SalesforceAdapter(
+    { client, config: {}, elementsSource: buildElementsSourceFromElements([]) }
+  )
   const changeGroup: ChangeGroup = {
     groupID: elements[0].elemID.getFullName(),
     changes: elements.map(e => ({ action: 'remove', data: { before: e } })),

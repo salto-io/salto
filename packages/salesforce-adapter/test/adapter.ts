@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import Connection from '../src/client/jsforce'
 import SalesforceClient from '../src/client/client'
 import SalesforceAdapter, { SalesforceAdapterParams } from '../src/adapter'
@@ -31,7 +32,12 @@ export type Opts = {
 
 const mockAdapter = ({ adapterParams }: Opts = {}): Mocks => {
   const { connection, client } = createClient()
-  const adapter = new SalesforceAdapter({ client, config: {}, ...adapterParams || {} })
+  const adapter = new SalesforceAdapter({
+    client,
+    config: {},
+    elementsSource: buildElementsSourceFromElements([]),
+    ...adapterParams || {},
+  })
   return {
     connection, client, adapter,
   }

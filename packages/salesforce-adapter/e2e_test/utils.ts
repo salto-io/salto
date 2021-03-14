@@ -15,20 +15,18 @@
 */
 import _ from 'lodash'
 import { Value, ObjectType, ElemID, InstanceElement, Element, isObjectType, ChangeGroup, getChangeElement, DeployResult } from '@salto-io/adapter-api'
-import {
-  findElement,
-} from '@salto-io/adapter-utils'
+import { findElement } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { MetadataInfo } from 'jsforce'
 import { SalesforceRecord } from '../src/client/types'
 import { FilterContext, filtersRunner } from '../src/filter'
 import { SALESFORCE } from '../src/constants'
-import SalesforceAdapter, { DEFAULT_FILTERS, allSystemFields } from '../src/adapter'
+import SalesforceAdapter, { DEFAULT_FILTERS } from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import { createInstanceElement, metadataType, apiName, MetadataValues, isInstanceOfCustomObject } from '../src/transformers/transformer'
 import { ConfigChangeSuggestion } from '../src/types'
 import { fetchMetadataType } from '../src/fetch'
-import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
+import { defaultFilterContext } from '../test/utils'
 
 const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
@@ -231,11 +229,6 @@ export const removeElementAndVerify = async (adapter: SalesforceAdapter, client:
   } else {
     expect(await getMetadataFromElement(client, element)).toBeUndefined()
   }
-}
-
-const defaultFilterContext: FilterContext = {
-  systemFields: allSystemFields,
-  fetchProfile: buildFetchProfile({}),
 }
 
 export const runFiltersOnFetch = async (

@@ -19,7 +19,7 @@ import {
   CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
 import {
-  findElements as findElementsByID,
+  findElements as findElementsByID, buildElementsSourceFromElements,
 } from '@salto-io/adapter-utils'
 import JSZip from 'jszip'
 import * as constants from '../src/constants'
@@ -27,6 +27,9 @@ import {
   annotationsFileName, customFieldsFileName, standardFieldsFileName,
 } from '../src/filters/custom_object_split'
 import { getNamespaceFromString } from '../src/filters/utils'
+import { FilterContext } from '../src/filter'
+import { allSystemFields } from '../src/adapter'
+import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 
 export const findElements = (
   elements: ReadonlyArray<Element>,
@@ -48,6 +51,30 @@ export const createField = (parent: ObjectType, fieldType: TypeElement,
   parent.fields.field = newField
   return newField
 }
+
+export const createMetadataTypeElement = (
+  typeName: string,
+  params: Partial<ConstructorParameters<typeof ObjectType>[0]>
+): ObjectType => new ObjectType({
+  ...params,
+  annotations: {
+    ...params.annotations,
+    [constants.METADATA_TYPE]: typeName,
+  },
+  elemID: new ElemID(constants.SALESFORCE, typeName),
+})
+
+export const createCustomObjectType = (
+  typeName: string,
+  params: Partial<ConstructorParameters<typeof ObjectType>[0]>
+): ObjectType => new ObjectType({
+  ...params,
+  annotations: {
+    [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+    [constants.API_NAME]: typeName,
+  },
+  elemID: new ElemID(constants.SALESFORCE, typeName),
+})
 
 export const createValueSetEntry = (
   name: string,
@@ -257,4 +284,10 @@ export const createCustomSettingsObject = (
     : [constants.SALESFORCE, constants.OBJECTS_PATH, obj.elemID.name]
   obj.path = path
   return obj
+}
+
+export const defaultFilterContext: FilterContext = {
+  systemFields: allSystemFields,
+  fetchProfile: buildFetchProfile({}),
+  elementsSource: buildElementsSourceFromElements([]),
 }

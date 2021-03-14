@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, Element, ServiceIds, isInstanceElement } from '@salto-io/adapter-api'
-import { createCustomSettingsObject } from '../utils'
+import { createCustomSettingsObject, defaultFilterContext } from '../utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
@@ -83,14 +83,7 @@ describe('Custom settings filter', () => {
     const customSettingsObject = createCustomSettingsObject('configurationobj', LIST_CUSTOM_SETTINGS_TYPE)
     let elements: Element[]
     beforeEach(() => {
-      filter = filterCreator(
-        {
-          client,
-          config: {
-            fetchProfile: buildFetchProfile({}),
-          },
-        }
-      ) as FilterType
+      filter = filterCreator({ client, config: defaultFilterContext }) as FilterType
     })
 
     beforeEach(async () => {
@@ -132,6 +125,7 @@ describe('Custom settings filter', () => {
       filter = filterCreator({
         client,
         config: {
+          ...defaultFilterContext,
           fetchProfile: buildFetchProfile({ fetchAllCustomSettings: false }),
         },
       }) as FilterType
@@ -144,6 +138,7 @@ describe('Custom settings filter', () => {
       filter = filterCreator({
         client,
         config: {
+          ...defaultFilterContext,
           fetchProfile: buildFetchProfile({ fetchAllCustomSettings: true }),
         },
       }) as FilterType
@@ -155,9 +150,7 @@ describe('Custom settings filter', () => {
     it('Should not add instances if "fetchAllCustomSettings" is undefined', async () => {
       filter = filterCreator({
         client,
-        config: {
-          fetchProfile: buildFetchProfile({}),
-        },
+        config: defaultFilterContext,
       }) as FilterType
       await filter.onFetch(elements)
       expect(elements.filter(elm => isInstanceElement(elm)
@@ -169,14 +162,7 @@ describe('Custom settings filter', () => {
     const customSettingsObject = createCustomSettingsObject('configurationobj', 'Hierarchical')
     let elements: Element[]
     beforeEach(() => {
-      filter = filterCreator(
-        {
-          client,
-          config: {
-            fetchProfile: buildFetchProfile({}),
-          },
-        }
-      ) as FilterType
+      filter = filterCreator({ client, config: defaultFilterContext }) as FilterType
     })
 
     beforeEach(async () => {

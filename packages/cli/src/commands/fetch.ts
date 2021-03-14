@@ -24,7 +24,7 @@ import { logger } from '@salto-io/logging'
 import { progressOutputer, outputLine, errorOutputLine } from '../outputer'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
-import { formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatFetchHeader, formatFetchFinish, formatStateChanges, formatStateRecencies, formatAppliedChanges } from '../formatter'
+import { formatMergeErrors, formatFatalFetchError, formatFetchHeader, formatFetchFinish, formatStateChanges, formatStateRecencies, formatAppliedChanges } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliShouldUpdateConfig, getChangeToAlignAction } from '../callbacks'
 import { getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
@@ -97,8 +97,8 @@ export const fetchCommand = async (
     Prompts.FETCH_CALC_DIFF_FAIL,
     output
   ))
-  fetchProgress.on('workspaceWillBeUpdated', (progress: StepEmitter, changes: number, approved: number) => {
-    log.debug(formatChangesSummary(changes, approved))
+  fetchProgress.on('workspaceWillBeUpdated', (progress: StepEmitter, _changes: number, approved: number) => {
+    log.debug(`Applying ${approved} semantic changes to the local workspace`)
 
     progressOutputer(
       Prompts.APPLYING_CHANGES,

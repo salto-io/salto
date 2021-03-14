@@ -405,13 +405,6 @@ export const formatFetchChangeForApproval = (
   ].join('\n')
 }
 
-export const formatChangesSummary = (changes: number, approved: number): string => {
-  if (changes === 0) {
-    return Prompts.FETCH_NO_CHANGES
-  }
-  return Prompts.FETCH_CHANGES_TO_APPLY(approved)
-}
-
 export const formatAppliedChanges = (appliedChanges: number): string => {
   if (appliedChanges === 0) {
     return Prompts.FETCH_NO_CHANGES

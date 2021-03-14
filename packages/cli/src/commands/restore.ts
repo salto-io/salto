@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { CommandConfig, LocalChange, restore, Tags } from '@salto-io/core'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
-import { header, formatDetailedChanges, formatInvalidFilters, formatStepStart, formatRestoreFinish, formatStepCompleted, formatStepFailed, formatStateRecencies, formatAppliedChanges, formatChangesSummary } from '../formatter'
+import { header, formatDetailedChanges, formatInvalidFilters, formatStepStart, formatRestoreFinish, formatStepCompleted, formatStepFailed, formatStateRecencies, formatAppliedChanges } from '../formatter'
 import Prompts from '../prompts'
 import { getWorkspaceTelemetryTags, updateWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import { getApprovedChanges } from '../callbacks'
@@ -71,7 +71,7 @@ const applyLocalChangesToWorkspace = async (
     : await getApprovedChanges(changes, interactive)
 
   cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
-  log.debug(formatChangesSummary(changes.length, changesToApply.length))
+  log.debug(`Applying ${changesToApply.length} semantic changes to the local workspace`)
 
   outputLine(EOL, output)
   outputLine(

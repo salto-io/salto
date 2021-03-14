@@ -91,8 +91,6 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
   public static readonly FETCH_SHOULD_APPROVE_CHANGE = 'Would you like to update your workspace with this change?'
   public static readonly FETCH_CHANGE_REJECTED = 'The change will not be applied to your workspace'
   public static readonly FETCH_NO_CHANGES = 'No changes found, workspace is up to date'
-  public static readonly FETCH_NOTHING_TO_UPDATE = 'No changes chosen, Leaving workspace unchanged'
-  public static readonly FETCH_CHANGES_TO_APPLY = (numChanges: number): string => `Applying ${numChanges} semantic changes to the local workspace`
   public static readonly FETCH_CONFLICTING_CHANGE = 'This change conflicts with the following pending change from your workspace:'
   public static readonly FETCH_MERGE_ERRORS = 'These errors occurred as part of the fetch:'
   public static readonly FETCH_FATAL_MERGE_ERROR_PREFIX = 'Error occurred during fetch, cause:\n'

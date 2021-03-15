@@ -16,8 +16,10 @@
 import {
   ChangeError, getChangeElement, ChangeValidator, isAdditionOrModificationChange,
   isInstanceChange, Field, InstanceElement, isContainerType, ContainerType, ObjectType,
+  isListType, isObjectType,
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import _ from 'lodash'
 import { apiName, metadataType } from '../transformers/transformer'
 import { FieldReferenceDefinition, generateReferenceResolverFinder } from '../transformers/reference_mapping'
 
@@ -61,12 +63,26 @@ const getMultipleDefaultsErrors = (after: InstanceElement): ChangeError[] => {
     .filter(([fieldName]) => isContainerType(after.type.fields[fieldName]?.type))
     .forEach(([fieldName, fieldValues]) => {
       const fieldType = after.type.fields[fieldName].type as ContainerType
-      transformValues({
-        values: fieldValues,
-        type: fieldType,
-        transformFunc,
-        strict: false,
-      })
+      if (isListType(fieldType) && isObjectType(fieldType.innerType) && _.isArray(fieldValues)) {
+        const type = fieldType.innerType
+        fieldValues.forEach(val => {
+          transformValues({
+            values: val,
+            type,
+            transformFunc,
+            strict: false,
+            isTopLevel: false,
+          })
+        })
+      } else {
+        transformValues({
+          values: fieldValues,
+          type: fieldType,
+          transformFunc,
+          strict: false,
+          isTopLevel: false,
+        })
+      }
     })
   return errors
 }

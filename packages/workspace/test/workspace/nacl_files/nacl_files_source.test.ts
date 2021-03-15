@@ -29,6 +29,21 @@ import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_fi
 
 const { awu } = collections.asynciterable
 
+const createChange = (): DetailedChange => {
+  const newElemID = new ElemID('salesforce', 'new_elem')
+  const newElem = new ObjectType({
+    elemID: newElemID,
+    path: ['test', 'new'],
+  })
+  const change = {
+    id: newElemID,
+    action: 'add',
+    data: { after: newElem },
+    path: ['new', 'file'],
+  } as DetailedChange
+  return change
+}
+
 jest.mock('../../../src/workspace/nacl_files/nacl_file_update', () => ({
   ...jest.requireActual<{}>('../../../src/workspace/nacl_files/nacl_file_update'),
   getChangeLocations: (change: DetailedChange) => ({
@@ -259,17 +274,7 @@ describe('Nacl Files Source', () => {
   })
 
   describe('parse optimization', () => {
-    const newElemID = new ElemID('salesforce', 'new_elem')
-    const newElem = new ObjectType({
-      elemID: newElemID,
-      path: ['test', 'new'],
-    })
-    const change = {
-      id: newElemID,
-      action: 'add',
-      data: { after: newElem },
-      path: ['new', 'file'],
-    } as DetailedChange
+    const change = createChange()
     it('should not parse file when updating single add changes in a new file', async () => {
       const naclSrc = await naclFilesSource(
         '',
@@ -388,10 +393,11 @@ describe('Nacl Files Source', () => {
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
       await src.load({})
+      await src.updateNaclFiles([createChange()])
     })
 
     it('should list all elements', async () => {
-      expect(await awu(await src.list()).toArray()).toHaveLength(2)
+      expect(await awu(await src.list()).toArray()).toHaveLength(1)
     })
   })
 })

@@ -27,7 +27,7 @@ const changesDetector: TypeChangesDetector = {
         'and',
         ['date', 'within', ...dateRange.toSavedSearchRange()],
       ],
-      columns: ['internalid'],
+      columns: ['recordid'],
     })
 
     if (results === undefined) {

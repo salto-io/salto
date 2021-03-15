@@ -99,7 +99,7 @@ describe('script', () => {
     `)
 
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, `
-      SELECT script.scriptid, script.id
+      SELECT script.scriptid, scriptdeployment.primarykey AS id
       FROM scriptdeployment 
       JOIN systemnote ON systemnote.recordid = scriptdeployment.primarykey
       JOIN script ON scriptdeployment.script = script.id

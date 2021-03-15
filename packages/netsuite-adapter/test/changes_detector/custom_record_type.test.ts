@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
-import { customRecordTypeDetector as detector } from '../../src/changes_detector/changes_detectors/custom_type'
+import detector from '../../src/changes_detector/changes_detectors/custom_record_type'
 import { Change } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
@@ -33,8 +33,8 @@ describe('custom_record_type', () => {
     beforeEach(async () => {
       runSuiteQLMock.mockReset()
       runSuiteQLMock.mockResolvedValue([
-        { scriptid: 'a', lastmodifieddate: '03/15/2021' },
-        { scriptid: 'b', lastmodifieddate: '03/16/2021' },
+        { scriptid: 'customrecord_a', lastmodifieddate: '03/15/2021' },
+        { scriptid: 'customrecord_b', lastmodifieddate: '03/16/2021' },
       ])
       results = await detector.getChanges(
         client,
@@ -43,6 +43,8 @@ describe('custom_record_type', () => {
     })
     it('should return the changes', () => {
       expect(results).toEqual([
+        { type: 'object', externalId: 'customrecord_a', time: new Date('2021-03-16T00:00:00.000Z') },
+        { type: 'object', externalId: 'customrecord_b', time: new Date('2021-03-17T00:00:00.000Z') },
         { type: 'object', externalId: 'a', time: new Date('2021-03-16T00:00:00.000Z') },
         { type: 'object', externalId: 'b', time: new Date('2021-03-17T00:00:00.000Z') },
       ])
@@ -50,10 +52,10 @@ describe('custom_record_type', () => {
 
     it('should make the right query', () => {
       expect(runSuiteQLMock).toHaveBeenCalledWith(`
-      SELECT scriptid, lastmodifieddate
-      FROM customrecordtype
-      WHERE lastmodifieddate BETWEEN '1/11/2021' AND '2/23/2021'
-    `)
+        SELECT scriptid, lastmodifieddate
+        FROM customrecordtype
+        WHERE lastmodifieddate BETWEEN '1/11/2021' AND '2/23/2021'
+      `)
     })
   })
 
@@ -62,8 +64,8 @@ describe('custom_record_type', () => {
     beforeEach(async () => {
       runSuiteQLMock.mockReset()
       runSuiteQLMock.mockResolvedValue([
-        { scriptid: 'a', lastmodifieddate: '03/15/2021' },
-        { scriptid: 'b', lastmodifieddate: '03/16/2021' },
+        { scriptid: 'customrecord_a', lastmodifieddate: '03/15/2021' },
+        { scriptid: 'customrecord_b', lastmodifieddate: '03/16/2021' },
         { qqq: 'b' },
         { scriptid: {} },
       ])
@@ -74,6 +76,8 @@ describe('custom_record_type', () => {
     })
     it('should return the changes without the invalid results', () => {
       expect(results).toEqual([
+        { type: 'object', externalId: 'customrecord_a', time: new Date('2021-03-16T00:00:00.000Z') },
+        { type: 'object', externalId: 'customrecord_b', time: new Date('2021-03-17T00:00:00.000Z') },
         { type: 'object', externalId: 'a', time: new Date('2021-03-16T00:00:00.000Z') },
         { type: 'object', externalId: 'b', time: new Date('2021-03-17T00:00:00.000Z') },
       ])

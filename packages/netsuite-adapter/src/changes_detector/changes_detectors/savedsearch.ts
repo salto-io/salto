@@ -23,7 +23,7 @@ const changesDetector: TypeChangesDetector = {
   getChanges: async (client, dateRange) => {
     const results = await client.runSavedSearchQuery({
       type: 'savedsearch',
-      columns: ['id'],
+      columns: ['id', 'datemodified'],
       filters: [['datemodified', 'within', ...dateRange.toSavedSearchRange()]],
     })
 

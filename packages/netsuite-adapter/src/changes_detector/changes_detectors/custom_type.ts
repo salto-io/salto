@@ -50,11 +50,6 @@ const getChanges = async (type: string, client: NetsuiteClient, dateRange: DateR
     }))
 }
 
-export const customRecordTypeDetector: TypeChangesDetector = {
-  getChanges: async (client, dateRange) => getChanges('customrecordtype', client, dateRange),
-  getTypes: () => (['customrecordtype', 'customsegement']),
-}
-
 export const customListDetector: TypeChangesDetector = {
   getChanges: async (client, dateRange) => getChanges('customlist', client, dateRange),
   getTypes: () => (['customlist']),

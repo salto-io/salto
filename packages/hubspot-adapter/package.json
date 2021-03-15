@@ -34,14 +34,14 @@
     "@salto-io/adapter-utils": "0.2.7",
     "@salto-io/logging": "0.2.7",
     "@salto-io/lowerdash": "0.2.7",
-    "hubspot": "^2.3.8",
-    "lodash": "^4.17.19",
+    "hubspot": "^2.3.14",
+    "lodash": "^4.17.21",
     "request-promise": "^4.2.5",
     "requestretry": "^4.0.2"
   },
   "devDependencies": {
     "@types/jest": "^26.0.20",
-    "@types/lodash": "^4.14.133",
+    "@types/lodash": "^4.14.168",
     "@types/node": "^12.7.1",
     "@types/request-promise": "^4.1.45",
     "@typescript-eslint/eslint-plugin": "2.31.0",

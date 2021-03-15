@@ -32,7 +32,7 @@ import Prompts from './prompts'
 import { CliOutput, WriteStream } from './types'
 
 export const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
-  const question: inquirer.Question = {
+  const question: inquirer.InputQuestion = {
     name: 'userInput',
     message: `${prompt} (y/n)`,
     type: 'input',
@@ -45,7 +45,7 @@ export const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
 type YesNoCancelAnswer = 'yes' | 'no' | 'cancel operation'
 
 export const getUserYesNoCancelInput = async (prompt: string): Promise<YesNoCancelAnswer> => {
-  const question = {
+  const question: inquirer.ExpandQuestion = {
     type: 'expand',
     choices: [
       { key: 'y', value: 'yes' },
@@ -122,7 +122,7 @@ export const getApprovedChanges = async (
     return autoApproved
   }
 
-  const questions = askForApproval.map((change, idx): inquirer.Question => ({
+  const questions = askForApproval.map((change, idx): inquirer.ExpandQuestion => ({
     type: 'expand',
     choices: [
       { key: 'y', value: 'yes' },
@@ -187,15 +187,14 @@ export const getConfigWithHeader = async (output: WriteStream, credentialsType: 
 }
 
 export const getEnvName = async (currentName = 'env1'): Promise<string> => {
-  const questions: inquirer.Questions = [{
+  const question: inquirer.InputQuestion = {
     type: 'input',
-    mask: '*',
     message: 'Enter a name for the first environment in the workspace',
     name: currentName,
     default: currentName,
     validate: input => (input === '' ? 'Environment name cannot be empty' : true),
-  }]
-  return (await inquirer.prompt(questions))[currentName]
+  }
+  return (await inquirer.prompt(question))[currentName]
 }
 
 export const cliApproveIsolateBeforeMultiEnv = async (existingEnv: string): Promise<boolean> => (

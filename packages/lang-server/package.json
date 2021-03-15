@@ -37,7 +37,7 @@
     "@salto-io/lowerdash": "0.2.7",
     "@salto-io/workspace": "0.2.7",
     "fuse.js": "^6.4.1",
-    "lodash": "^4.17.19",
+    "lodash": "^4.17.21",
     "wu": "^2.1.0"
   },
   "devDependencies": {

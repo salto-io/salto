@@ -34,7 +34,7 @@
     "@salto-io/persistent-pool": "0.2.7",
     "easy-table": "^1.1.1",
     "humanize-duration": "^3.22.0",
-    "lodash": "^4.17.19",
+    "lodash": "^4.17.21",
     "wu": "^2.1.0",
     "yargs": "^13.3.0"
   },
@@ -42,7 +42,7 @@
     "@types/easy-table": "^0.0.32",
     "@types/humanize-duration": "^3.18.0",
     "@types/jest": "^26.0.20",
-    "@types/lodash": "^4.14.133",
+    "@types/lodash": "^4.14.168",
     "@types/node": "^12.7.1",
     "@types/yargs": "^13.0.4",
     "@typescript-eslint/eslint-plugin": "2.31.0",

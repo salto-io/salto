@@ -785,7 +785,6 @@ describe('pino based logger', () => {
           'foo',
           { inlineTag1: 'inlineTag1', inlineTag2: 'inlineTag2', inlineTag3: 'so many tags' },
           { extra: 'should be in log' },
-          () => 'shouldn\'t be in log '
         );
         [line] = consoleStream.contents().split(EOL)
         jsonLine = JSON.parse(line)
@@ -797,7 +796,6 @@ describe('pino based logger', () => {
           inlineTag2: 'inlineTag2',
           inlineTag3: 'so many tags',
           extra: 'should be in log',
-          arg2: '[Function]',
         })
       })
 

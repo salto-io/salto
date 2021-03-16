@@ -95,7 +95,7 @@ const changesDetector: TypeChangesDetector = {
 
     const permissionChangesPromise = client.runSavedSearchQuery({
       type: 'role',
-      columns: ['internalid'],
+      columns: ['internalid', 'permchangedate'],
       filters: [['permchangedate', 'within', ...dateRange.toSavedSearchRange()]],
     })
 

@@ -17,7 +17,8 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { NetsuiteQuery } from '../query'
 import { getChangedFiles, getChangedFolders } from './changes_detectors/file_cabinet'
-import { customRecordTypeDetector, customFieldDetector, customListDetector } from './changes_detectors/custom_type'
+import { customFieldDetector, customListDetector } from './changes_detectors/custom_type'
+import customRecordTypeDetector from './changes_detectors/custom_record_type'
 import scriptDetector from './changes_detectors/script'
 import roleDetector from './changes_detectors/role'
 import workflowDetector from './changes_detectors/workflow'
@@ -175,7 +176,7 @@ export const getChangedObjects = async (
   log.debug(`${folderPaths.length} folder paths changes were detected`)
 
   return {
-    isTypeMatch: () => scriptIds.size !== 0,
+    isTypeMatch: () => scriptIds.size !== 0 || types.size !== 0,
     isObjectMatch: objectID => !SUPPORTED_TYPES.has(objectID.type)
       || scriptIds.has(objectID.scriptId)
       || types.has(objectID.type),

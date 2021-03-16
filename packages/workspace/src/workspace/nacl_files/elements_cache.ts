@@ -13,17 +13,41 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Change, isEqualElements, toChange, ElemID, SaltoError, ReadOnlyElementsSource, getChangeElement, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { Element, Change, isEqualElements, toChange, ElemID, isContainerType, SaltoError, ReadOnlyElementsSource, getChangeElement, isAdditionOrModificationChange, isRemovalChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
+import { ThenableIterable } from '@salto-io/lowerdash/src/collections/asynciterable'
 
 import _ from 'lodash'
-import { MergeResult } from '../../merger'
+import { MergeError, MergeResult } from '../../merger'
 import { ElementsSource } from '../elements_source'
-import { RemoteMap } from '../remote_map'
+import { RemoteMap, RemoteMapEntry } from '../remote_map'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
+
+export const EMPTY_CHANGE_SET = { changes: [], cacheValid: true }
+
+export type CacheUpdate = {
+  src1Changes: Change<Element>[]
+  src2Changes: Change<Element>[]
+  src1: ReadOnlyElementsSource
+  src2: ReadOnlyElementsSource
+}
+
+export type ChangeSet<Change> = {
+  changes: Change[]
+  cacheValid: boolean
+  preChangeHash?: string
+  postChangeHash?: string
+}
+
+export type CacheChangeSetUpdate = {
+  src1Changes: ChangeSet<Change<Element>>
+  src2Changes: ChangeSet<Change<Element>>
+  src1: ElementsSource
+  src2: ElementsSource
+}
 
 export const buildNewMergedElementsAndErrors = async ({
   afterElements,
@@ -85,12 +109,7 @@ export const getAfterElements = async ({
   src2Changes,
   src1,
   src2,
-}: {
-  src1Changes: Change<Element>[]
-  src2Changes: Change<Element>[]
-  src1: ReadOnlyElementsSource
-  src2: ReadOnlyElementsSource
-}): Promise<{
+}: CacheUpdate): Promise<{
   afterElements: AsyncIterable<Element>
   relevantElementIDs: AsyncIterable<ElemID>
 }> => {
@@ -110,12 +129,10 @@ export const getAfterElements = async ({
     src2Changes,
     change => getChangeElement(change).elemID.getFullName()
   )
-
   const changeAfterElements = [...src1Changes, ...src2Changes]
     .filter(isAdditionOrModificationChange)
     .map(getChangeElement)
     .filter(values.isDefined)
-
   const unmodifiedFragments = awu(relevantElementIDs).map(async id => {
     const sr1Change = src1ChangesByID[id.getFullName()]
     const src2Change = src2ChangesByID[id.getFullName()]
@@ -130,4 +147,203 @@ export const getAfterElements = async ({
     afterElements: awu(changeAfterElements).concat(unmodifiedFragments),
     relevantElementIDs: awu(relevantElementIDs),
   }
+}
+
+export const applyChanges = async ({
+  mergedChanges,
+  mergeErrors,
+  noErrorMergeIds,
+  currentElements,
+  currentErrors,
+}: {
+  mergedChanges: ChangeSet<Change<Element>>
+  mergeErrors: AsyncIterable<RemoteMapEntry<MergeError[], string>>
+  noErrorMergeIds: string[]
+  currentElements: ElementsSource
+  currentErrors: RemoteMap<SaltoError[]>
+}): Promise<void> => {
+  if (!mergedChanges.cacheValid) {
+    currentErrors.clear()
+    currentElements.clear()
+  } else {
+    await currentElements.deleteAll(awu(mergedChanges.changes).filter(isRemovalChange)
+      .map(change => getChangeElement(change).elemID))
+    await currentErrors.deleteAll(awu(noErrorMergeIds))
+  }
+  await currentErrors.setAll(awu(mergeErrors))
+  await currentElements.setAll(awu(mergedChanges.changes).filter(isAdditionOrModificationChange)
+    .map(change => getChangeElement(change)))
+}
+
+const readSourceChanges = async (
+  srcChanges: ChangeSet<Change<Element>>,
+  idsExistingOnSecondSourceChanges: Set<string>,
+  otherSrcChanges: ReadOnlyElementsSource,
+  otherSrcCacheValid: boolean): Promise<Element[]> => {
+  const elementsToMerge: (Element | undefined)[] = []
+  await Promise.all(srcChanges.changes.map(async change => {
+    const element = getChangeElement(change)
+    const id = element.elemID
+    if (isAdditionOrModificationChange(change)) {
+      elementsToMerge.push(element)
+    }
+    if (!idsExistingOnSecondSourceChanges.has(id.getFullName())) {
+      const unmodifiedFragment = await otherSrcChanges.get(id)
+      if (unmodifiedFragment !== undefined) {
+        elementsToMerge.push(unmodifiedFragment)
+      }
+    }
+  }))
+  if (otherSrcChanges && otherSrcCacheValid) {
+    await awu(await otherSrcChanges.getAll()).forEach(element => {
+      if (element && !(idsExistingOnSecondSourceChanges.has(element.elemID.getFullName()))) {
+        elementsToMerge.push(element)
+      }
+    })
+  }
+  return elementsToMerge.filter(values.isDefined)
+}
+
+const calculateMergedChanges = async (
+  newMergedElementsResult: MergeResult,
+  currentElements: ReadOnlyElementsSource,
+): Promise<{
+    mergedChanges: Change[]
+    mergeErrors: RemoteMapEntry<MergeError[], string>[]
+    noErrorMergeIds: string[]
+  }> => {
+  const mergeErrors: RemoteMapEntry<MergeError[], string>[] = []
+  const sieve = new Set<string>()
+  const noErrorMergeIds: string[] = []
+  const mergedChanges = (await awu(newMergedElementsResult.merged.values()).map(async element => {
+    const id = element.elemID
+    const fullname = id.getFullName()
+    if (!sieve.has(fullname)) {
+      sieve.add(fullname)
+      const before = await currentElements.get(id)
+      if (!isEqualElements(before, element)) {
+        const relevantMergeError = await newMergedElementsResult.errors.get(fullname)
+        if (relevantMergeError) {
+          mergeErrors.push({ value: relevantMergeError, key: fullname })
+        } else {
+          noErrorMergeIds.push(fullname)
+        }
+        return toChange({ before, after: element })
+      }
+    }
+    return undefined
+  }).filter(values.isDefined)
+    .toArray())
+  return { mergedChanges, mergeErrors, noErrorMergeIds }
+}
+
+const createFreshChangeSet = async (
+  mergeResult: MergeResult,
+  preChangeHash: string | undefined,
+  postChangeHash: string | undefined,
+): Promise<{
+  mergedChanges: ChangeSet<Change>
+  mergeErrors: AsyncIterable<RemoteMapEntry<MergeError[], string>>
+  noErrorMergeIds: string[]
+}> => ({
+  mergedChanges: {
+    changes: await (Promise.all(await awu(mergeResult.merged.values())
+      .map(async element => toChange({ after: element }) as Change).toArray())),
+    preChangeHash,
+    postChangeHash,
+    cacheValid: false,
+  },
+  mergeErrors: awu(mergeResult.errors.entries()),
+  noErrorMergeIds: [],
+})
+
+export const getContainerTypeChanges = async (changes: Change<Element>[]): Promise<Element[]> =>
+  awu(changes).map(change => getChangeElement(change))
+    .filter(element => isContainerType(element)).toArray()
+
+export const mergeChanges = async ({
+  cacheUpdate,
+  currentElements,
+  cachePreChangeHash,
+  mergeFunc,
+}: {
+  cacheUpdate: CacheChangeSetUpdate
+  currentElements: ReadOnlyElementsSource
+  cachePreChangeHash: string | undefined
+  mergeFunc: (elements: AsyncIterable<Element>) => Promise<MergeResult>
+}): Promise<{
+  mergedChanges: ChangeSet<Change>
+  mergeErrors: AsyncIterable<RemoteMapEntry<MergeError[], string>>
+  noErrorMergeIds: string[]
+}> => {
+  const { src1Changes, src2Changes, src1, src2 } = cacheUpdate
+  const potentialDeletedIds: ElemID[] = []
+  const src1ChangeIDs = new Set<string>()
+  const preChangeHash = (((src1Changes.preChangeHash || '')
+    + (src2Changes.preChangeHash || '')))
+  const postChangeHash = ((src1Changes.postChangeHash || '')
+    + (src2Changes.postChangeHash || ''))
+  const cacheValid = (preChangeHash === cachePreChangeHash) && src1Changes
+    .cacheValid && src2Changes.cacheValid
+  let src1ElementsToMerge: ThenableIterable<Element>
+  let src2ElementsToMerge: ThenableIterable<Element>
+  if (cacheValid) {
+    src1Changes.changes.forEach(change => {
+      const id = getChangeElement(change).elemID
+      if (isRemovalChange(change)) {
+        potentialDeletedIds.push(id)
+      }
+      src1ChangeIDs.add(id.getFullName())
+    })
+    const src2ChangeIDs = new Set<string>()
+    src2Changes.changes.forEach(change => {
+      const id = getChangeElement(change).elemID
+      if (isRemovalChange(change)) {
+        potentialDeletedIds.push(id)
+      }
+      src2ChangeIDs.add(id.getFullName())
+    })
+    src1ElementsToMerge = await readSourceChanges(
+      src1Changes, src2ChangeIDs, src2, src2Changes.cacheValid
+    )
+    src2ElementsToMerge = await readSourceChanges(
+      src2Changes, src1ChangeIDs, src1, src1Changes.cacheValid
+    )
+  } else {
+    src1ElementsToMerge = src1 ? (awu(await src1.getAll()).concat(
+      await getContainerTypeChanges(src1Changes.changes)
+    )) : []
+    src2ElementsToMerge = src2 ? (awu(await src2.getAll()).concat(
+      await getContainerTypeChanges(src2Changes.changes)
+    )) : []
+  }
+  const elementsToMerge = awu(src1ElementsToMerge).concat(src2ElementsToMerge)
+  const newMergedElementsResult = await mergeFunc(elementsToMerge.filter(values.isDefined))
+  const deleteChanges = await awu(potentialDeletedIds).uniquify(id => id.getFullName())
+    .filter(async id => !(await newMergedElementsResult.merged.has(id.getFullName())))
+    .map(async id => {
+      const currentElement = await currentElements.get(id)
+      return currentElement ? toChange({ before: currentElement, after: undefined }) : undefined
+    })
+    .filter(values.isDefined)
+    .toArray()
+  const hasCurrentElements = !(await currentElements.isEmpty())
+  if (!hasCurrentElements || !cacheValid) {
+    const res = await createFreshChangeSet(
+      newMergedElementsResult, preChangeHash, postChangeHash
+    )
+    return res
+  }
+  const { mergedChanges, mergeErrors, noErrorMergeIds } = await calculateMergedChanges(
+    newMergedElementsResult,
+    currentElements,
+  )
+  return { mergeErrors: awu(mergeErrors),
+    mergedChanges: {
+      changes: mergedChanges.concat(deleteChanges),
+      preChangeHash: cachePreChangeHash,
+      cacheValid,
+      postChangeHash,
+    },
+    noErrorMergeIds }
 }

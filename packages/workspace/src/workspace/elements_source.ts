@@ -32,7 +32,9 @@ export interface ElementsSource {
   clear(): Promise<void>
   rename(name: string): Promise<void>
   set(element: Element): Promise<void>
+  setAll(elements: ThenableIterable<Element>): Promise<void>
   delete(id: ElemID): Promise<void>
+  deleteAll(ids: ThenableIterable<ElemID>): Promise<void>
   isEmpty(): Promise<boolean>
 }
 
@@ -106,6 +108,10 @@ export class RemoteElementSource implements ElementsSource {
 
   async delete(id: ElemID): Promise<void> {
     await this.elements.delete(id.getFullName())
+  }
+
+  async deleteAll(ids: ThenableIterable<ElemID>): Promise<void> {
+    await this.elements.deleteAll(awu(ids).map(id => id.getFullName()))
   }
 
   async setAll(elements: ThenableIterable<Element>): Promise<void> {

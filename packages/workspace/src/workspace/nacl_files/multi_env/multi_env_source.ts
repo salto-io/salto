@@ -18,7 +18,7 @@ import path from 'path'
 import wu from 'wu'
 
 import { Element, ElemID, getChangeElement, Value,
-  DetailedChange, Change } from '@salto-io/adapter-api'
+  DetailedChange, Change, ChangeDataType } from '@salto-io/adapter-api'
 import { promises, collections } from '@salto-io/lowerdash'
 import { applyInstanceDefaults } from '@salto-io/adapter-utils'
 import { RemoteMap, RemoteMapCreator, mapRemoteMapResult } from '../../remote_map'
@@ -29,12 +29,13 @@ import { mergeElements, MergeError } from '../../../merger'
 import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode, SourceLoadParams } from '../nacl_files_source'
 import { ParsedNaclFile } from '../parsed_nacl_file'
-import { buildNewMergedElementsAndErrors, getAfterElements } from '../elements_cache'
+import { applyChanges, mergeChanges, EMPTY_CHANGE_SET, ChangeSet } from '../elements_cache'
 import { Errors } from '../../errors'
 import { RemoteElementSource, ElementsSource } from '../../elements_source'
 import { serialize, deserializeSingleElement, deserializeMergeErrors } from '../../../serializer/elements'
 
 const { awu } = collections.asynciterable
+type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 const { series } = promises.array
 const { resolveValues, mapValuesAsync } = promises.object
 
@@ -69,14 +70,15 @@ export class UnsupportedNewEnvChangeError extends Error {
 }
 
 type SingleState = {
+  hash?: string
   elements: ElementsSource
   mergeErrors: RemoteMap<MergeError[]>
 }
 type MultiEnvState = Record<string, SingleState>
 
-export type EnvsChanges = Record<string, Change[]>
+export type EnvsChanges = Record<string, ChangeSet<Change>>
 
-export type MultiEnvSource = Omit<NaclFilesSource<EnvsChanges>, 'getAll' | 'getElementsSource'> & {
+export type MultiEnvSource = Omit<NaclFilesSource, 'getAll' | 'getElementsSource'> & {
   getAll: (env?: string) => Promise<AsyncIterable<Element>>
   promote: (ids: ElemID[]) => Promise<EnvsChanges>
   getElementIdsBySelectors: (selectors: ElementSelector[],
@@ -134,7 +136,6 @@ const buildMultiEnvSource = (
   }
 
   let state = initState
-
   const buildMultiEnvState = async ({ envChanges = {} }: { envChanges?: EnvsChanges }):
   Promise<{ state: MultiEnvState; changes: EnvsChanges }> => {
     const current = Object.fromEntries(
@@ -144,25 +145,26 @@ const buildMultiEnvSource = (
           ?? (await buildStateForSingleEnv(name))])
         .toArray()
     )
+    const preChangeHash = current.hash
     const changesInCommon = (envChanges[commonSourceName] ?? []).length > 0
     const relevantEnvs = Object.keys(sources)
       .filter(name =>
         (name !== commonSourceName)
         && (changesInCommon || (envChanges[name] ?? []).length > 0))
 
-    const getEnvMergedChanges = async (envName: string): Promise<Change[]> => {
+    const getEnvMergedChanges = async (
+      envName: string
+    ): Promise<{ state: MultiEnvState; changes: ChangeSet<Change<ChangeDataType>> }> => {
       const envState = current[envName]
-      const { afterElements: newElements, relevantElementIDs } = await getAfterElements({
-        src1Changes: envChanges[envName] ?? [],
-        src1: sources[envName],
-        src2Changes: envChanges[commonSourceName] ?? [],
-        src2: sources[commonSourceName],
-      })
-      return buildNewMergedElementsAndErrors({
-        afterElements: awu(newElements),
+      const changeResult = await mergeChanges({
+        cacheUpdate: {
+          src1Changes: envChanges[envName] ?? [],
+          src1: sources[envName],
+          src2Changes: envChanges[commonSourceName] ?? [],
+          src2: sources[commonSourceName],
+        },
         currentElements: envState.elements,
-        currentErrors: envState.mergeErrors,
-        relevantElementIDs: awu(relevantElementIDs),
+        cachePreChangeHash: preChangeHash,
         mergeFunc: async elements => {
           const plainResult = await mergeElements(elements)
           return {
@@ -182,6 +184,18 @@ const buildMultiEnvSource = (
           }
         },
       })
+      await applyChanges({
+        mergedChanges: changeResult.mergedChanges,
+        mergeErrors: changeResult.mergeErrors,
+        noErrorMergeIds: changeResult.noErrorMergeIds,
+        currentElements: envState.elements,
+        currentErrors: envState.mergeErrors,
+      })
+      envState.hash = changeResult.mergedChanges.postChangeHash
+      return {
+        state: envState,
+        changes: changeResult.mergedChanges,
+      }
     }
     const changes = Object.fromEntries(
       await awu(relevantEnvs)
@@ -238,12 +252,16 @@ const buildMultiEnvSource = (
   const applyRoutedChanges = async (routedChanges: RoutedChanges):
   Promise<EnvsChanges> => {
     const secondaryChanges = routedChanges.secondarySources || {}
-    return resolveValues({
-      [primarySourceName]: primarySource().updateNaclFiles(routedChanges.primarySource || []),
-      [commonSourceName]: commonSource().updateNaclFiles(routedChanges.commonSource || []),
-      ..._.mapValues(secondaryChanges, (changes, srcName) =>
-        secondarySources()[srcName].updateNaclFiles(changes)),
-    })
+    return {
+      ...(await resolveValues({
+        [primarySourceName]: primarySource()
+          .updateNaclFiles(routedChanges.primarySource || []),
+        [commonSourceName]: commonSource()
+          .updateNaclFiles(routedChanges.commonSource || []),
+        ..._.mapValues(secondaryChanges,
+          (changes, srcName) => secondarySources()[srcName].updateNaclFiles(changes)),
+      })),
+    }
   }
 
   const updateNaclFiles = async (
@@ -360,7 +378,12 @@ const buildMultiEnvSource = (
   )
 
   const load = async ({ ignoreFileChanges = false }: SourceLoadParams): Promise<EnvsChanges> => {
-    const changes = await mapValuesAsync(sources, src => src.load({ ignoreFileChanges }))
+    const changes = await mapValuesAsync(sources, async (src, name) => {
+      if (name === commonSourceName) {
+        return src.load({ ignoreFileChanges, cachePrefix: primarySourceName })
+      }
+      return src.load({ ignoreFileChanges })
+    })
     const buildResults = await buildMultiEnvState({ envChanges: changes })
     state = buildResults.state
     return buildResults.changes
@@ -425,8 +448,14 @@ const buildMultiEnvSource = (
     delete: async (id: ElemID): Promise<void> => (
       (await getState())[primarySourceName].elements.delete(id)
     ),
+    deleteAll: async (ids: ThenableIterable<ElemID>): Promise<void> => (
+      (await getState()).elements.deleteAll(ids)
+    ),
     set: async (elem: Element): Promise<void> => (
       (await getState())[primarySourceName].elements.set(elem)
+    ),
+    setAll: async (elements: ThenableIterable<Element>): Promise<void> => (
+      (await getState()).elements.setAll(elements)
     ),
     getAll: async (env?: string): Promise<AsyncIterable<Element>> =>
       (await getState())[env ?? primarySourceName].elements.getAll(),
@@ -445,16 +474,20 @@ const buildMultiEnvSource = (
       const envNameToNaclFiles = _.groupBy(
         naclFiles, naclFile => getSourceNameForNaclFile(naclFile.filename)
       )
-      const envNameToChanges = await mapValuesAsync(envNameToNaclFiles, (envNaclFiles, envName) => {
-        const naclFilesWithRelativePath = envNaclFiles.map(naclFile =>
-          ({
-            ...naclFile,
-            filename: getRelativePath(naclFile.filename, envName),
-          }))
-        return getSourceFromEnvName(envName).setNaclFiles(...naclFilesWithRelativePath)
-      })
+      const envNameToChanges = await mapValuesAsync(envNameToNaclFiles,
+        async (envNaclFiles, envName) => {
+          const naclFilesWithRelativePath = envNaclFiles.map(naclFile =>
+            ({
+              ...naclFile,
+              filename: getRelativePath(naclFile.filename, envName),
+            }))
+          return getSourceFromEnvName(envName)
+            .setNaclFiles(...naclFilesWithRelativePath)
+        })
       const buildRes = await buildMultiEnvState({ envChanges: envNameToChanges })
-      state = buildRes.state
+      if (Object.keys(envNameToChanges).includes(primarySourceName)) {
+        state = buildRes.state
+      }
       return buildRes.changes
     },
     removeNaclFiles: async (...names: string[]): Promise<EnvsChanges> => {
@@ -483,7 +516,6 @@ const buildMultiEnvSource = (
           filename: buildFullPath(prefix, sourceRange.filename),
         }))).toArray()
     ),
-
     getErrors,
     getParsedNaclFile: async (filename: string): Promise<ParsedNaclFile | undefined> => {
       const { source, relPath } = getSourceForNaclFile(filename)

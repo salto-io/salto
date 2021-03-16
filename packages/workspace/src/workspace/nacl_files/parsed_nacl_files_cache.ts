@@ -23,6 +23,7 @@ import { StaticFilesSource } from '../static_files'
 import { RemoteMapCreator, RemoteMap } from '../remote_map'
 import { ParsedNaclFile } from './parsed_nacl_file'
 
+const { toMD5 } = hash
 const { awu } = collections.asynciterable
 
 type FileCacheMetdata = {
@@ -49,6 +50,7 @@ export type ParsedNaclFileCache = {
   clone: () => ParsedNaclFileCache
   clear: () => Promise<void>
   rename: (name: string) => Promise<void>
+  getHash: () => Promise<string>
   list: () => Promise<string[]>
   delete: (filename: string) => Promise<void>
   deleteAll: (filenames: string[]) => Promise<void>
@@ -177,8 +179,10 @@ export const createParseResultCache = (
     staticFilesSource,
     persistent
   )
+  let cachedHash: string | undefined
   return {
     put: async (filename: string, value: ParsedNaclFile): Promise<void> => {
+      cachedHash = undefined
       const { metadata, errors, referenced, sourceMap, elements } = await cacheSources
       const fileErrors = await value.data.errors()
       if (fileErrors && fileErrors.length > 0) {
@@ -260,15 +264,30 @@ export const createParseResultCache = (
         filename,
       )
     },
-    delete: async (filename: string): Promise<void> =>
-      (awu(Object.values(await cacheSources)).forEach(async source => source.delete(filename))),
+    delete: async (filename: string): Promise<void> => {
+      cachedHash = undefined
+      return (awu(Object.values(await cacheSources))
+        .forEach(async source => source.delete(filename)))
+    },
     deleteAll: async (filenames: string[]): Promise<void> =>
       (awu(Object.values(await cacheSources)).forEach(async source => {
         source.deleteAll(filenames)
       })),
+    getHash: async () => {
+      if (!cachedHash) {
+        cachedHash = ''
+        await awu((await cacheSources).metadata.values()).forEach(value => {
+          cachedHash += value.hash
+        })
+        cachedHash = toMD5(cachedHash)
+      }
+      return cachedHash
+    },
     list: async () => awu((await cacheSources).metadata.keys()).toArray(),
-    clear: async () =>
-      awu(Object.values((await cacheSources))).forEach(async source => source.clear()),
+    clear: async () => {
+      cachedHash = undefined
+      return awu(Object.values((await cacheSources))).forEach(async source => source.clear())
+    },
     rename: async (newName: string) => {
       // Clearing leftover data in sources with the same name as the new one
       // Before copying the current cache data to it

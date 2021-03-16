@@ -35,7 +35,7 @@ import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_v
 import { WorkspaceConfigSource } from './workspace_config_source'
 import { MergeError, mergeElements } from '../merger'
 import { RemoteElementSource, ElementsSource, mapReadOnlyElementsSource } from './elements_source'
-import { buildNewMergedElementsAndErrors, getAfterElements } from './nacl_files/elements_cache'
+import { applyChanges, mergeChanges, ChangeSet, EMPTY_CHANGE_SET } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
 
@@ -47,6 +47,9 @@ const { awu } = collections.asynciterable
 export const ADAPTERS_CONFIGS_PATH = 'adapters'
 export const COMMON_ENV_PREFIX = ''
 const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
+const STATE_HASH_KEY = 'state_hash'
+const WORKSPACE_METADATA_NAMESPACE = 'workspace_metadata'
+
 
 export type SourceFragment = {
   sourceRange: SourceRange
@@ -143,6 +146,7 @@ export type EnvironmentsSources = {
 }
 
 type SingleState = {
+  metadata: RemoteMap<string>
   merged: ElementsSource
   errors: RemoteMap<MergeError[]>
   validationErrors: RemoteMap<ValidationError[]>
@@ -185,20 +189,24 @@ export const loadWorkspace = async (
   )
   let naclFilesSource = createNaclFilesSource()
   let workspaceState: Promise<WorkspaceState> | undefined
-
   const buildWorkspaceState = async ({
     workspaceChanges = {},
     stateOnlyChanges = {},
     validate = true,
   }: {
-    workspaceChanges?: Record<string, Change<Element>[]>
-    stateOnlyChanges?: Record<string, Change<Element>[]>
+    workspaceChanges?: Record<string, ChangeSet<Change>>
+    stateOnlyChanges?: Record<string, ChangeSet<Change>>
     validate?: boolean
   }): Promise<WorkspaceState> => {
     const stateToBuild = workspaceState !== undefined
       ? await workspaceState
       : Object.fromEntries(await awu(envs())
         .map(async envName => [envName, {
+          metadata: await remoteMapCreator<string>({
+            namespace: getRemoteMapNamespace(WORKSPACE_METADATA_NAMESPACE, envName),
+            serialize: st => st,
+            deserialize: async st => st,
+          }),
           merged: new RemoteElementSource(
             await remoteMapCreator<Element>({
               namespace: getRemoteMapNamespace('merged', envName),
@@ -221,6 +229,8 @@ export const loadWorkspace = async (
             persistent,
           }),
         }]).toArray())
+    const preChangeHashes = await stateToBuild.mapValues(v => await v
+      .metadata.get(WORKSPACE_METADATA_NAMESPACE))
     const updateWorkspace = async (envName: string): Promise<void> => {
       const source = createNaclFilesSource(envName)
       const getElementsDependents = async (
@@ -233,7 +243,6 @@ export const loadWorkspace = async (
             .flatMap(id => source.getElementReferencedFiles(id))
             .toArray()
         )
-
         const dependentsIDs = _.uniqBy(
           await awu(filesWithDependencies)
             .map(filename => source.getParsedNaclFile(filename))
@@ -243,12 +252,10 @@ export const loadWorkspace = async (
             .toArray(),
           id => id.getFullName()
         )
-
         return _.isEmpty(dependentsIDs)
           ? dependentsIDs
           : dependentsIDs.concat(await getElementsDependents(dependentsIDs, addedIDs))
       }
-
       const validateElementsAndDependents = async (
         elements: ReadonlyArray<Element>,
         elementSource: ReadOnlyElementsSource,
@@ -269,78 +276,96 @@ export const loadWorkspace = async (
           ),
         }
       }
+  }
+  // When we load the workspace with a clean cache from existings nacls, we need
+  // to add hidden elements from the state since they will not be a part of the nacl
+  // changes. In any other load - the state changes will be reflected by the workspace
+  // / hidden changes.
+  const completeStateOnlyChanges = async (
+    partialStateChanges: ChangeSet<Change<Element>>
+  ): Promise<ChangeSet<Change<Element>>> => {
+    // We identify a first nacl load when the state is empty, and all of the changes
+    // are visible (which indicates a nacl load and not a first 'fetch' in which the
+    // hidden changes won't be empty)
+    const isFirstInitFromNacls = _.isEmpty(partialStateChanges.changes)
+      && (await stateToBuild[envName].merged.isEmpty())
 
-      // When we load the workspace with a clean cache from existings nacls, we need
-      // to add hidden elements from the state since they will not be a part of the nacl
-      // changes. In any other load - the state changes will be reflected by the workspace
-      // / hidden changes.
-      const completeStateOnlyChanges = async (
-        partialStateChanges: Change<Element>[]
-      ): Promise<Change<Element>[]> => {
-        // We identify a first nacl load when the state is empty, and all of the changes
-        // are visible (which indicates a nacl load and not a first 'fetch' in which the
-        // hidden changes won't be empty)
-        const isFirstInitFromNacls = _.isEmpty(partialStateChanges)
-          && (await stateToBuild[envName].merged.isEmpty())
+    const initHiddenElementsChanges = isFirstInitFromNacls
+      ? await awu(await state(envName).getAll()).filter(element => isHidden(element, state()))
+        .map(elem => toChange({ after: elem })).toArray()
+      : []
 
-        const initHiddenElementsChanges = isFirstInitFromNacls
-          ? await awu(await state(envName).getAll()).filter(element => isHidden(element, state()))
-            .map(elem => toChange({ after: elem })).toArray()
-          : []
-
-        const stateRemovedElementChanges = (workspaceChanges[envName] ?? [])
-          .filter(change => isRemovalChange(change) && getChangeElement(change).elemID.isTopLevel())
-
-        return partialStateChanges
-          .concat(initHiddenElementsChanges)
-          .concat(stateRemovedElementChanges)
-      }
-      const mergeData = await getAfterElements({
-        src1Changes: workspaceChanges[envName] ?? [],
-        src1: await naclFilesSource.getElementsSource(envName),
-        src2Changes: await completeStateOnlyChanges(stateOnlyChanges[envName] ?? []),
-        src2: mapReadOnlyElementsSource(
+    const stateRemovedElementChanges = (workspaceChanges[envName] ?? EMPTY_CHANGE_SET)
+      .filter(change => isRemovalChange(change) && getChangeElement(change).elemID.isTopLevel())
+    return {
+      changes: partialStateChanges.changes
+        .concat(initHiddenElementsChanges)
+        .concat(stateRemovedElementChanges),
+      cacheValid: partialStateChanges.cacheValid,
+      preChangeHash: partialStateChanges.preChangeHash ?? await state().getHash(),
+      postChangeHash: await state().getHash(),
+    }
+  }
+  const changeResult = await mergeChanges({
+    cacheUpdate: {
+      src1Changes: workspaceChanges[envName] ?? EMPTY_CHANGE_SET,
+      src1: await naclFilesSource.getElementsSource(envName),
+      src2Changes: await completeStateOnlyChanges(stateOnlyChanges[envName]
+        ?? EMPTY_CHANGE_SET),
+      src2: mapReadOnlyElementsSource(
+        state(envName),
+        async element => getElementHiddenParts(
+          element,
           state(envName),
-          async element => getElementHiddenParts(
-            element,
-            state(envName),
-            await stateToBuild[envName].merged.get(element.elemID)
-          )
-        ),
-      })
-
-      const changes = await buildNewMergedElementsAndErrors({
-        currentElements: stateToBuild[envName].merged,
-        currentErrors: stateToBuild[envName].errors,
-        mergeFunc: elements => mergeElements(elements),
-        ...mergeData,
-      })
-      const changedElements = changes
-        .filter(isAdditionOrModificationChange)
-        .map(getChangeElement)
-
-      const changeIDs = changes.map(getChangeElement).map(elem => elem.elemID)
-      if (validate) {
-        const {
-          errors: validationErrors,
-          validatedElementsIDs,
-        } = await validateElementsAndDependents(
-          changedElements,
-          stateToBuild[envName].merged,
-          changeIDs,
+          await stateToBuild[envName].merged.get(element.elemID)
         )
-        const validationErrorsById = await awu(validationErrors)
-          .groupBy(err => err.elemID.createTopLevelParentID().parent.getFullName())
+      ),
+    },
+    currentElements: stateToBuild[envName].merged,
+    cachePreChangeHash: preChangeHash,
+    mergeFunc: elements => mergeElements(elements),
+  })
+  await applyChanges({
+    mergedChanges: changeResult.mergedChanges,
+    mergeErrors: changeResult.mergeErrors,
+    noErrorMergeIds: changeResult.noErrorMergeIds,
+    currentElements: stateToBuild[envName].merged,
+    currentErrors: stateToBuild[envName].errors,
+  })
+  if (!changeResult.mergedChanges.cacheValid) {
+    stateToBuild[envName].validationErrors.clear()
+  }
+  const { changes } = changeResult.mergedChanges
+  const changedElements = changes
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeElement)
+  stateToBuild[envName].metadata.set(STATE_HASH_KEY, await state().getHash())
+  const changeIDs = changes.map(getChangeElement).map(elem => elem.elemID)
+  if (validate) {
+    const {
+      errors: validationErrors,
+      validatedElementsIDs,
+    } = await validateElementsAndDependents(
+      changedElements,
+      stateToBuild[envName].merged,
+      changeIDs,
+    )
+    const validationErrorsById = await awu(validationErrors)
+      .groupBy(err => err.elemID.createTopLevelParentID().parent.getFullName())
 
-        const errorsToUpdate = Object.entries(validationErrorsById)
-          .map(([elemID, errors]) => ({ key: elemID, value: errors }))
+    const errorsToUpdate = Object.entries(validationErrorsById)
+      .map(([elemID, errors]) => ({ key: elemID, value: errors }))
 
-        const elementsWithNoErrors = validatedElementsIDs
-          .map(id => id.getFullName())
-          .filter(fullname => _.isEmpty(validationErrorsById[fullname]))
+    const elementsWithNoErrors = validatedElementsIDs
+      .map(id => id.getFullName())
+      .filter(fullname => _.isEmpty(validationErrorsById[fullname]))
 
         await stateToBuild[envName].validationErrors.setAll(errorsToUpdate)
         await stateToBuild[envName].validationErrors.deleteAll(elementsWithNoErrors)
+      }
+      if (changeResult.mergedChanges.postChangeHash) {
+        stateToBuild[envName].metadata.set(WORKSPACE_METADATA_NAMESPACE,
+          changeResult.mergedChanges.postChangeHash)
       }
     }
     const relevantEnvs = envs()
@@ -354,7 +379,9 @@ export const loadWorkspace = async (
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
     if (_.isUndefined(workspaceState)) {
       const workspaceChanges = await naclFilesSource.load({ ignoreFileChanges })
-      workspaceState = buildWorkspaceState({ workspaceChanges })
+      workspaceState = buildWorkspaceState({
+        workspaceChanges,
+      })
     }
     return workspaceState
   }
@@ -407,17 +434,22 @@ export const loadWorkspace = async (
       state(),
       (await getLoadedNaclFilesSource()).getAll,
     )
-    const workspaceChanges = await (await getLoadedNaclFilesSource())
-      .updateNaclFiles(visibleChanges, mode)
+    const workspaceChanges = await ((await getLoadedNaclFilesSource())
+      .updateNaclFiles(visibleChanges, mode))
+    const currentStateHash = workspaceState !== undefined
+      ? await (await workspaceState).metadata.get(STATE_HASH_KEY) : undefined
+    const loadedStateHash = await state(currentEnv()).getHash()
     const stateOnlyChanges = await getStateOnlyChanges(hiddenChanges)
-    workspaceState = buildWorkspaceState({
-      workspaceChanges,
-      stateOnlyChanges: { [currentEnv()]: stateOnlyChanges },
-      validate,
-    })
+    workspaceState = buildWorkspaceState({ workspaceChanges,
+      stateOnlyChanges: { [currentEnv()]: {
+        changes: stateOnlyChanges,
+        cacheValid: currentStateHash === loadedStateHash,
+        preChangeHash: currentStateHash,
+        postChangeHash: loadedStateHash,
+      }},
+      validate })
     return (Object.values(workspaceChanges).flat().length + stateOnlyChanges.length)
   }
-
   const setNaclFiles = async (naclFiles: NaclFile[], validate = true): Promise<EnvsChanges> => {
     const elementChanges = await (await getLoadedNaclFilesSource()).setNaclFiles(...naclFiles)
     workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })

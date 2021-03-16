@@ -17,20 +17,21 @@ import { ElemID, Element, Change, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { NaclFilesSource } from '../../src/workspace/nacl_files'
+import { NaclFilesSource, ChangeSet } from '../../src/workspace/nacl_files'
 import { Errors } from '../../src/workspace/errors'
 import { SourceRange } from '../../src/parser/internal/types'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { createAddChange } from '../../src/workspace/nacl_files/multi_env/projections'
 
 const { awu } = collections.asynciterable
+type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
 export const createMockNaclFileSource = (
   elements: Element[],
   naclFiles: Record<string, Element[]> = {},
   errors: Errors = new Errors({ merge: [], parse: [], validation: [] }),
   sourceRanges?: SourceRange[],
-  changes: Change[] = [],
+  changes: ChangeSet<Change> = { changes: [], cacheValid: true },
 ): NaclFilesSource => {
   const currentElements = elements
   const getElementNaclFiles = (elemID: ElemID): string[] =>
@@ -50,9 +51,11 @@ export const createMockNaclFileSource = (
       _.remove(currentElements, e => e.elemID.isEqual(element.elemID))
       currentElements.push(element)
     },
+    setAll: async (_elements: ThenableIterable<Element>) => Promise.resolve(undefined),
     delete: async (id: ElemID) => {
       _.remove(currentElements, e => e.elemID.isEqual(id))
     },
+    deleteAll: async (_ids: ThenableIterable<ElemID>) => Promise.resolve(undefined),
     getAll: async () => awu(currentElements),
     getElementsSource: async () => createInMemoryElementSource(currentElements),
     clear: jest.fn().mockImplementation(() => Promise.resolve()),

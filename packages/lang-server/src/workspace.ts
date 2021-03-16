@@ -225,11 +225,12 @@ export class EditorWorkspace {
       // We start by running all deleted
       const shouldCalcValidation = this.wsErrors === undefined
       const removeChanges = (!_.isEmpty(opDeletes))
-        ? (await this.workspace.removeNaclFiles([...opDeletes], shouldCalcValidation))
+        ? (await this.workspace.removeNaclFiles([...opDeletes], shouldCalcValidation)).changes
         : []
       // Now add the waiting changes
       const updateChanges = (!_.isEmpty(opUpdates))
-        ? await this.workspace.setNaclFiles(Object.values(opUpdates), shouldCalcValidation)
+        ? (await this.workspace.setNaclFiles(Object.values(opUpdates),
+          shouldCalcValidation)).changes
         : []
       if (this.wsErrors !== undefined) {
         const validation = await this.getValidationErrors(
@@ -322,12 +323,9 @@ export class EditorWorkspace {
   }
 
   private async validateFilesImpl(filenames: string[]): Promise<errors.Errors> {
-    if (_.isUndefined(this.wsErrors)) {
-      return this.errors()
-    }
     const relevantFilenames = filenames
       .filter(f => this.isWorkspaceFile(f))
-    const currentErrors = await this.wsErrors
+    const currentErrors = await this.errors()
     const elements = new Set(
       (await this.elementsInFiles(relevantFilenames)).map(e => e.getFullName())
     )

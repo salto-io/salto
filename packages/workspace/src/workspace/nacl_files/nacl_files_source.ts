@@ -30,7 +30,7 @@ import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
 import { StaticFilesSource } from '../static_files'
 import { getStaticFilesFunctions } from '../static_files/functions'
-import { buildNewMergedElementsAndErrors } from './elements_cache'
+import { buildNewMergedElementsAndErrors, ChangeSet } from './elements_cache'
 import { serialize, deserializeMergeErrors, deserializeSingleElement } from '../../serializer/elements'
 import { Functions } from '../../parser/functions'
 import { RemoteMap, RemoteMapCreator } from '../remote_map'
@@ -38,6 +38,7 @@ import { ParsedNaclFile } from './parsed_nacl_file'
 import { ParsedNaclFileCache, ParseResultKey, createParseResultCache } from './parsed_nacl_files_cache'
 
 const { awu, concatAsync } = collections.asynciterable
+type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 const { withLimitedConcurrency } = promises.array
 
 const log = logger(module)
@@ -61,7 +62,8 @@ export type SourceLoadParams = {
   cachePrefix?: string
   env?: string
 }
-export type NaclFilesSource<Changes=Change[]> = Omit<ElementsSource, 'clear'> & {
+
+export type NaclFilesSource<Changes=ChangeSet<Change>> = Omit<ElementsSource, 'clear'> & {
   updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<Changes>
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
@@ -193,7 +195,7 @@ export const getParsedNaclFiles = async (
   return parseNaclFiles(naclFiles, cache, functions)
 }
 
-type buildNaclFilesStateResult = { state: NaclFilesState; changes: Change[] }
+type buildNaclFilesStateResult = { state: NaclFilesState; changes: ChangeSet<Change> }
 
 const createNaclFilesState = async (
   remoteMapCreator: RemoteMapCreator,
@@ -238,8 +240,10 @@ const buildNaclFilesState = async ({
   newNaclFiles: ParsedNaclFile[]
   currentState: NaclFilesState
 }): Promise<buildNaclFilesStateResult> => {
+  const preChangeHash = await currentState.parsedNaclFiles.getHash()
   log.debug('building elements indices for %d NaCl files', newNaclFiles.length)
   const newParsed = _.keyBy(newNaclFiles, parsed => parsed.filename)
+  let sourceCacheValid = true
   const elementsIndexAdditions: Record<string, Set<string>> = {}
   const referencedIndexAdditions: Record<string, Set<string>> = {}
   const elementsIndexDeletions: Record<string, Set<string>> = {}
@@ -266,6 +270,19 @@ const buildNaclFilesState = async ({
     return index.setAll(awu(newEntries))
   }
 
+  const getNaclFileAndCheckValidity = async (file: ParsedNaclFile):
+    Promise<ParsedNaclFile | undefined> => {
+    // If the cache is already invalid, no need to make the extra test to invalidate it
+    const shouldInvalidateCache = !sourceCacheValid
+      || !(await currentState.parsedNaclFiles.hasValid(cacheResultKey(file)))
+    const res = await currentState.parsedNaclFiles.get(file.filename)
+    // If res is undefined, then the file isn't invalid, it just doesn't exist.
+    if (res !== undefined) {
+      sourceCacheValid = shouldInvalidateCache
+    }
+    return res
+  }
+
   const handleAdditionOrModification = async (naclFile: ParsedNaclFile): Promise<void> => {
     ((await naclFile.data.referenced()) ?? []).forEach((elementFullName: string) => {
       referencedIndexAdditions[elementFullName] = referencedIndexAdditions[elementFullName]
@@ -280,7 +297,7 @@ const buildNaclFilesState = async ({
     })
     relevantElementIDs.push(
       ...((await naclFile.elements()) ?? []).map(e => e.elemID),
-      ...(await (await currentState.parsedNaclFiles.get(naclFile.filename))?.elements() ?? [])
+      ...((await (await getNaclFileAndCheckValidity(naclFile))?.elements()) ?? [])
         .map(e => e.elemID),
     )
     const naclFileElements = await naclFile.elements()
@@ -295,7 +312,10 @@ const buildNaclFilesState = async ({
   }
 
   const handleDeletion = async (naclFile: ParsedNaclFile): Promise<void> => {
-    const oldNaclFile = await currentState.parsedNaclFiles.get(naclFile.filename)
+    const oldNaclFile = await getNaclFileAndCheckValidity(naclFile)
+    if (oldNaclFile === undefined) {
+      return
+    }
     const oldNaclFileReferenced = (await oldNaclFile.data.referenced())
     // If one of the properties of ParsedNaclFile is undefined it is considered as not exist
     if (oldNaclFileReferenced === undefined) {
@@ -354,15 +374,16 @@ const buildNaclFilesState = async ({
     ),
   ])
   const changes = await buildNewMergedElementsAndErrors({
-    afterElements: concatAsync(...newElementsToMerge, unmodifiedFragments),
+    afterElements: awu(concatAsync(...newElementsToMerge, awu(unmodifiedFragments))),
     relevantElementIDs: awu(relevantElementIDs),
     currentElements: currentState.mergedElements,
     currentErrors: currentState.mergeErrors,
     mergeFunc: elements => mergeElements(elements),
   }) as Change[]
+  const postChangeHash = await currentState.parsedNaclFiles.getHash()
   return {
     state: currentState,
-    changes,
+    changes: { changes, cacheValid: sourceCacheValid, preChangeHash, postChangeHash },
   }
 }
 
@@ -396,7 +417,7 @@ const buildNaclFilesSource = (
   const functions: Functions = getFunctions(staticFilesSource)
 
   let state = initState
-  let initChanges: Change[] | undefined
+  let initChanges: ChangeSet<Change> | undefined
 
   const getState = (): Promise<NaclFilesState> => {
     if (_.isUndefined(state)) {
@@ -415,31 +436,43 @@ const buildNaclFilesSource = (
       sourceName,
       cachePrefix
     )
+    const preChangeHash = await currentState.parsedNaclFiles.getHash()
     const modifiedNaclFiles: NaclFile[] = []
-
     if (!ignoreFileChanges) {
+      let wasCacheValid = true
       const cacheFilenames = await currentState.parsedNaclFiles.list()
       const naclFilenames = await naclFilesStore.list()
-      const fileNames = new Set([...cacheFilenames, ...naclFilenames])
-      await awu(fileNames).forEach(async filename => {
+      const fileNames = new Set()
+      await awu(cacheFilenames).forEach(async filename => {
         const naclFile = await naclFilesStore.get(filename) ?? { filename, buffer: '' }
         const validCache = await currentState.parsedNaclFiles.hasValid(cacheResultKey(naclFile))
         if (!validCache) {
           modifiedNaclFiles.push(naclFile)
+          wasCacheValid = false
         }
+        fileNames.add(filename)
+      })
+      await awu(naclFilenames).forEach(async filename => {
+        if (!fileNames.has(filename)) {
+          modifiedNaclFiles.push(await naclFilesStore.get(filename) ?? { filename, buffer: '' })
+        }
+        fileNames.add(filename)
       })
       const parsedModifiedFiles = await parseNaclFiles(
         modifiedNaclFiles,
         currentState.parsedNaclFiles,
         functions
       )
-      return buildNaclFilesState({
+      const result = await buildNaclFilesState({
         newNaclFiles: parsedModifiedFiles,
         currentState,
       })
+      result.changes.cacheValid = result.changes.cacheValid && wasCacheValid
+      result.changes.preChangeHash = preChangeHash
+      return result
     }
     return {
-      changes: [],
+      changes: { changes: [], cacheValid: true, preChangeHash, postChangeHash: preChangeHash },
       state: currentState,
     }
   }
@@ -540,7 +573,8 @@ const buildNaclFilesSource = (
     await awu(emptyNaclFiles).forEach(naclFile => naclFilesStore.delete(naclFile.filename))
   }
 
-  const updateNaclFiles = async (changes: DetailedChange[]): Promise<Change[]> => {
+  const updateNaclFiles = async (changes: DetailedChange[]): Promise<ChangeSet<Change>> => {
+    const preChangeHash = await (await state)?.parsedNaclFiles.getHash()
     const getNaclFileData = async (filename: string): Promise<string> => {
       const naclFile = await naclFilesStore.get(filename)
       return naclFile ? naclFile.buffer : ''
@@ -627,9 +661,14 @@ const buildNaclFilesSource = (
       )
       const res = await buildNaclFilesStateInner(updatedNaclFiles)
       state = Promise.resolve(res.state)
+      res.changes.preChangeHash = preChangeHash
+      res.changes.postChangeHash = await ((await state).parsedNaclFiles.getHash())
       return res.changes
     }
-    return []
+    return { changes: [],
+      cacheValid: true,
+      preChangeHash,
+      postChangeHash: await ((await state)?.parsedNaclFiles.getHash()) }
   }
 
   return {
@@ -637,7 +676,11 @@ const buildNaclFilesSource = (
       awu((await getState()).elementsIndex.keys()).map(name => ElemID.fromFullName(name)),
     has: async (id: ElemID): Promise<boolean> => (await getState()).mergedElements.has(id),
     delete: async (id: ElemID): Promise<void> => (await getState()).mergedElements.delete(id),
+    deleteAll: async (ids: ThenableIterable<ElemID>): Promise<void> => (await getState())
+      .mergedElements.deleteAll(ids),
     set: async (element: Element): Promise<void> => (await getState()).mergedElements.set(element),
+    setAll: async (elements: ThenableIterable<Element>): Promise<void> => (await getState())
+      .mergedElements.setAll(elements),
     get: async (id: ElemID): Promise<Element | Value> => {
       const currentState = await getState()
       const { parent, path } = id.createTopLevelParentID()
@@ -691,11 +734,13 @@ const buildNaclFilesSource = (
     },
 
     removeNaclFiles: async (...names: string[]) => {
+      const preChangeHash = await (await getState()).parsedNaclFiles.getHash()
       await awu(names).forEach(name => naclFilesStore.delete(name))
       const res = await buildNaclFilesStateInner(
         await parseNaclFiles(names.map(filename => ({ filename, buffer: '' })), (await getState()).parsedNaclFiles, functions),
       )
       state = Promise.resolve(res.state)
+      res.changes.preChangeHash = preChangeHash
       return res.changes
     },
 
@@ -759,11 +804,13 @@ const buildNaclFilesSource = (
     ),
     updateNaclFiles,
     setNaclFiles: async (...naclFiles) => {
+      const preChangeHash = (await getState()).parsedNaclFiles.getHash()
       await setNaclFiles(...naclFiles)
       const res = await buildNaclFilesStateInner(
         await parseNaclFiles(naclFiles, (await getState()).parsedNaclFiles, functions)
       )
       state = Promise.resolve(res.state)
+      res.changes.preChangeHash = await preChangeHash
       return res.changes
     },
     getSourceMap,

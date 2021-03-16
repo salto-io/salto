@@ -62,8 +62,8 @@ describe('workspace', () => {
     baseWs.hasErrors = jest.fn().mockResolvedValue(true)
     await workspace.setNaclFiles({ filename: 'error', buffer: 'error content' })
     await workspace.awaitAllUpdates()
-    expect(workspace.elements).toBeDefined()
-    expect(workspace.hasErrors()).toBeTruthy()
+    expect(await workspace.elements).toBeDefined()
+    expect(await workspace.hasErrors()).toBeTruthy()
     await validate(workspace, 18)
   })
 
@@ -90,6 +90,7 @@ describe('workspace', () => {
       }
       `
       await workspace.setNaclFiles({ filename: validation1FileName, buffer })
+      await workspace.validate()
       await workspace.awaitAllUpdates()
       expect((await workspace.errors()).validation).toHaveLength(0)
     })
@@ -212,6 +213,7 @@ describe('workspace', () => {
       await workspace.awaitAllUpdates()
     })
     it('should validate specific files correctly', async () => {
+      await workspace.validate()
       expect((await workspace.errors()).validation).toHaveLength(0)
       const newErrors = await workspace.validateFiles([validation2FileName])
       expect(newErrors.validation).toHaveLength(1)
@@ -219,16 +221,17 @@ describe('workspace', () => {
     })
 
     it('should validate all files correctly', async () => {
-      expect((await workspace.errors()).validation).toHaveLength(0)
+      expect((await workspace.errors()).validation).toHaveLength(1)
       const newErrors = await workspace.validate()
-      expect(newErrors.validation).toHaveLength(1)
+      expect(newErrors.validation).toHaveLength(0)
       expect(await workspace.errors()).toEqual(newErrors)
     })
 
     it('should validate file with element with error correctly', async () => {
       const baseWs = await mockWorkspace([validation1FileName, validation2FileName])
       const newWorkspace = new EditorWorkspace(workspaceBaseDir, baseWs)
-      await newWorkspace.errors()
+      const currentErrors = (await newWorkspace.errors()).validation
+      expect(currentErrors).toHaveLength(1)
       const buffer = `
         type vs.type {
           boolean field {}
@@ -236,8 +239,6 @@ describe('workspace', () => {
       `
       await newWorkspace.setNaclFiles({ filename: validation1FileName, buffer })
       await newWorkspace.awaitAllUpdates()
-      const currentErrors = (await newWorkspace.errors()).validation
-      expect(currentErrors).toHaveLength(1)
       const newErrors = await newWorkspace.validateFiles([validation2FileName])
       expect(newErrors.validation).toHaveLength(2)
       expect(await newWorkspace.errors()).toEqual(newErrors)
@@ -258,6 +259,7 @@ describe('workspace', () => {
       expect(errors.validation).toHaveLength(0)
       const buffer = ''
       await newWorkspace.setNaclFiles({ filename: splitted2FileName, buffer })
+      await workspace.validate()
       await newWorkspace.awaitAllUpdates()
       const newErrors = await newWorkspace.errors()
       expect(newErrors.validation).toHaveLength(1)
@@ -268,6 +270,7 @@ describe('workspace', () => {
       const newWorkspace = new EditorWorkspace(workspaceBaseDir, baseWs)
       const errors = await newWorkspace.errors()
       expect(errors.validation).toHaveLength(0)
+      workspace.validate()
       const newErrors = await workspace.validateFiles([inactiveFileName])
       expect(newErrors.validation).toHaveLength(0)
     })

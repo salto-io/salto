@@ -17,20 +17,21 @@ import { ElemID, Element, Change } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { NaclFilesSource } from '../../src/workspace/nacl_files'
+import { NaclFilesSource, ChangeSet } from '../../src/workspace/nacl_files'
 import { Errors } from '../../src/workspace/errors'
 import { SourceRange } from '../../src/parser/internal/types'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { createAddChange } from '../../src/workspace/nacl_files/multi_env/projections'
 
 const { awu } = collections.asynciterable
+type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
 export const createMockNaclFileSource = (
   elements: Element[],
   naclFiles: Record<string, Element[]> = {},
   errors: Errors = new Errors({ merge: [], parse: [], validation: [] }),
   sourceRanges?: SourceRange[],
-  changes: Change[] = [],
+  changes: ChangeSet<Change> = { changes: [], cacheValid: true },
 ): NaclFilesSource => {
   const getElementNaclFiles = (elemID: ElemID): string[] =>
     Object.entries(naclFiles).filter(([_filename, fileElements]) => fileElements.find(
@@ -46,7 +47,9 @@ export const createMockNaclFileSource = (
     },
     has: async (id: ElemID) => elements.find(e => e.elemID.isEqual(id)) !== undefined,
     set: async (_element: Element) => Promise.resolve(undefined),
+    setAll: async (_elements: ThenableIterable<Element>) => Promise.resolve(undefined),
     delete: async (_id: ElemID) => Promise.resolve(undefined),
+    deleteAll: async (_ids: ThenableIterable<ElemID>) => Promise.resolve(undefined),
     getAll: async () => awu(elements),
     getElementsSource: async () => createInMemoryElementSource(elements),
     clear: jest.fn().mockImplementation(() => Promise.resolve()),
@@ -77,6 +80,9 @@ export const createMockNaclFileSource = (
     getElementNaclFiles: jest.fn().mockImplementation(getElementNaclFiles),
     clone: jest.fn().mockImplementation(() => Promise.resolve()),
     getElementReferencedFiles: jest.fn().mockResolvedValue([]),
-    load: jest.fn().mockResolvedValue(elements.map(e => createAddChange(e, e.elemID))),
+    load: jest.fn().mockResolvedValue({
+      changes: elements.map(e => createAddChange(e, e.elemID)),
+      cacheValid: true,
+    }),
   })
 }

@@ -29,12 +29,13 @@ import { mergeElements, MergeError } from '../../../merger'
 import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode, SourceLoadParams } from '../nacl_files_source'
 import { ParsedNaclFile } from '../parsed_nacl_file'
-import { buildNewMergedElementsAndErrors, getAfterElements } from '../elements_cache'
+import { applyChanges, mergeChanges, EMPTY_CHANGE_SET, ChangeSet } from '../elements_cache'
 import { Errors } from '../../errors'
 import { RemoteElementSource, ElementsSource } from '../../elements_source'
 import { serialize, deserializeSingleElement, deserializeMergeErrors } from '../../../serializer/elements'
 
 const { awu } = collections.asynciterable
+type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 const { series } = promises.array
 const { resolveValues, mapValuesAsync } = promises.object
 
@@ -69,13 +70,15 @@ export class UnsupportedNewEnvChangeError extends Error {
 }
 
 type MultiEnvState = {
+  hash?: string
   elements: ElementsSource
   mergeErrors: RemoteMap<MergeError[]>
 }
 
-export type EnvsChanges = Record<string, Change[]>
+export type EnvsChanges = Record<string, ChangeSet<Change>>
 
-export type MultiEnvSource = Omit<NaclFilesSource<Change[]>, 'getAll' | 'getElementsSource'> & {
+export type MultiEnvSource = Omit<NaclFilesSource<ChangeSet<Change>>,
+  'getAll' | 'getElementsSource'> & {
   getAll: (env?: string) => Promise<AsyncIterable<Element>>
   promote: (ids: ElemID[]) => Promise<void>
   getElementIdsBySelectors: (selectors: ElementSelector[],
@@ -128,11 +131,10 @@ const buildMultiEnvSource = (
   }
 
   let state = initState
-
   const buildMultiEnvState = async ({ env, envChanges = {} }: {
     env?: string
     envChanges?: EnvsChanges
-  }): Promise<{ state: MultiEnvState; changes: Change[] }> => {
+  }): Promise<{ state: MultiEnvState; changes: ChangeSet<Change> }> => {
     const primaryEnv = env ?? primarySourceName
     const isReadingFromPrimaryEnv = primaryEnv === primarySourceName
 
@@ -142,19 +144,16 @@ const buildMultiEnvSource = (
     const current = (state !== undefined && isReadingFromPrimaryEnv)
       ? state
       : await buildState(env)
-
-    const { afterElements: newElements, relevantElementIDs } = await getAfterElements({
-      src1Changes: actualChanges[primaryEnv] ?? [],
-      src1: sources[primaryEnv],
-      src2Changes: actualChanges[commonSourceName] ?? [],
-      src2: sources[commonSourceName],
-    })
-
-    const mergeChanges = await buildNewMergedElementsAndErrors({
-      afterElements: awu(newElements),
+    const preChangeHash = current.hash
+    const changeResult = await mergeChanges({
+      cacheUpdate: {
+        src1Changes: actualChanges[primaryEnv] ?? EMPTY_CHANGE_SET,
+        src1: sources[primaryEnv],
+        src2Changes: actualChanges[commonSourceName] ?? EMPTY_CHANGE_SET,
+        src2: sources[commonSourceName],
+      },
       currentElements: current.elements,
-      currentErrors: current.mergeErrors,
-      relevantElementIDs: awu(relevantElementIDs),
+      cachePreChangeHash: preChangeHash,
       mergeFunc: async elements => {
         const plainResult = await mergeElements(elements)
         return {
@@ -174,9 +173,17 @@ const buildMultiEnvSource = (
         }
       },
     })
+    await applyChanges({
+      mergedChanges: changeResult.mergedChanges,
+      mergeErrors: changeResult.mergeErrors,
+      noErrorMergeIds: changeResult.noErrorMergeIds,
+      currentElements: current.elements,
+      currentErrors: current.mergeErrors,
+    })
+    current.hash = changeResult.mergedChanges.postChangeHash
     return {
       state: current,
-      changes: mergeChanges,
+      changes: changeResult.mergedChanges,
     }
   }
 
@@ -224,18 +231,22 @@ const buildMultiEnvSource = (
   const applyRoutedChanges = async (routedChanges: RoutedChanges):
   Promise<EnvsChanges> => {
     const secondaryChanges = routedChanges.secondarySources || {}
-    return resolveValues({
-      [primarySourceName]: primarySource().updateNaclFiles(routedChanges.primarySource || []),
-      [commonSourceName]: commonSource().updateNaclFiles(routedChanges.commonSource || []),
-      ..._.mapValues(secondaryChanges, (changes, srcName) =>
-        secondarySources()[srcName].updateNaclFiles(changes)),
-    })
+    return {
+      ...(await resolveValues({
+        [primarySourceName]: primarySource()
+          .updateNaclFiles(routedChanges.primarySource || []),
+        [commonSourceName]: commonSource()
+          .updateNaclFiles(routedChanges.commonSource || []),
+        ..._.mapValues(secondaryChanges,
+          (changes, srcName) => secondarySources()[srcName].updateNaclFiles(changes)),
+      })),
+    }
   }
 
   const updateNaclFiles = async (
     changes: DetailedChange[],
     mode: RoutingMode = 'default'
-  ): Promise<Change[]> => {
+  ): Promise<ChangeSet<Change>> => {
     const routedChanges = await routeChanges(
       changes,
       primarySource(),
@@ -331,8 +342,8 @@ const buildMultiEnvSource = (
   const load = async ({
     ignoreFileChanges = false,
     env,
-  }: SourceLoadParams): Promise<Change[]> => {
-    const changes = await mapValuesAsync(sources, (src, name) => {
+  }: SourceLoadParams): Promise<ChangeSet<Change>> => {
+    const changes = await mapValuesAsync(sources, async (src, name) => {
       if (name === commonSourceName) {
         return src.load({ ignoreFileChanges, cachePrefix: primarySourceName })
       }
@@ -401,8 +412,14 @@ const buildMultiEnvSource = (
     delete: async (id: ElemID): Promise<void> => (
       (await getState()).elements.delete(id)
     ),
+    deleteAll: async (ids: ThenableIterable<ElemID>): Promise<void> => (
+      (await getState()).elements.deleteAll(ids)
+    ),
     set: async (elem: Element): Promise<void> => (
       (await getState()).elements.set(elem)
+    ),
+    setAll: async (elements: ThenableIterable<Element>): Promise<void> => (
+      (await getState()).elements.setAll(elements)
     ),
     getAll: async (env?: string): Promise<AsyncIterable<Element>> => {
       if (env === undefined || env === primarySourceName) {
@@ -425,23 +442,27 @@ const buildMultiEnvSource = (
     getTotalSize: async (): Promise<number> => (
       _.sum(await Promise.all(Object.values(sources).map(s => s.getTotalSize())))
     ),
-    setNaclFiles: async (...naclFiles: NaclFile[]): Promise<Change[]> => {
+    setNaclFiles: async (...naclFiles: NaclFile[]): Promise<ChangeSet<Change>> => {
       const envNameToNaclFiles = _.groupBy(
         naclFiles, naclFile => getSourceNameForNaclFile(naclFile.filename)
       )
-      const envNameToChanges = await mapValuesAsync(envNameToNaclFiles, (envNaclFiles, envName) => {
-        const naclFilesWithRelativePath = envNaclFiles.map(naclFile =>
-          ({
-            ...naclFile,
-            filename: getRelativePath(naclFile.filename, envName),
-          }))
-        return getSourceFromEnvName(envName).setNaclFiles(...naclFilesWithRelativePath)
-      })
+      const envNameToChanges = await mapValuesAsync(envNameToNaclFiles,
+        async (envNaclFiles, envName) => {
+          const naclFilesWithRelativePath = envNaclFiles.map(naclFile =>
+            ({
+              ...naclFile,
+              filename: getRelativePath(naclFile.filename, envName),
+            }))
+          return getSourceFromEnvName(envName)
+            .setNaclFiles(...naclFilesWithRelativePath)
+        })
       const buildRes = await buildMultiEnvState({ envChanges: envNameToChanges })
-      state = buildRes.state
+      if (Object.keys(envNameToChanges).includes(primarySourceName)) {
+        state = buildRes.state
+      }
       return buildRes.changes
     },
-    removeNaclFiles: async (...names: string[]): Promise<Change[]> => {
+    removeNaclFiles: async (...names: string[]): Promise<ChangeSet<Change>> => {
       const envNameToFilesToRemove = _.groupBy(names, getSourceNameForNaclFile)
       const envNameToChanges = await mapValuesAsync(envNameToFilesToRemove, (files, envName) =>
         getSourceFromEnvName(envName)
@@ -467,7 +488,6 @@ const buildMultiEnvSource = (
           filename: buildFullPath(prefix, sourceRange.filename),
         }))).toArray()
     ),
-
     getErrors,
     getParsedNaclFile: async (filename: string): Promise<ParsedNaclFile | undefined> => {
       const { source, relPath } = getSourceForNaclFile(filename)

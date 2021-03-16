@@ -18,7 +18,8 @@ import wu from 'wu'
 import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
   Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
-  isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType, Value,
+  isObjectType, ContainerType, Change, AdditionChange, getChangeElement,
+  PrimitiveType, Value,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges, createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
@@ -27,7 +28,7 @@ import { collections } from '@salto-io/lowerdash'
 import { ValidationError } from '../../src/validator'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
 import { ConfigSource } from '../../src/workspace/config_source'
-import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
+import { naclFilesSource, NaclFilesSource, ChangeSet } from '../../src/workspace/nacl_files'
 import { State, buildInMemState } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
@@ -455,7 +456,7 @@ describe('workspace', () => {
       const elemMap = await getElemMap(await workspace.elements())
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(Object.keys(lead.fields)).not.toContain('ext_field')
-      expect(changes.map(getChangeElement).map(c => c.elemID.getFullName()).sort())
+      expect(changes.changes.map(getChangeElement).map(c => c.elemID.getFullName()).sort())
         .toEqual(['salesforce.lead', 'multi.loc'].sort())
     })
 
@@ -480,7 +481,7 @@ describe('workspace', () => {
     const naclFileStore = mockDirStore()
     let workspace: Workspace
     let elemMap: Record<string, Element>
-    let changes: Change<Element>[]
+    let changes: ChangeSet<Change<Element>>
     const newAddedObject = new ObjectType({ elemID: new ElemID('salesforce', 'new') })
     const salesforceLeadElemID = new ElemID('salesforce', 'lead')
     const salesforceText = new ObjectType({ elemID: new ElemID('salesforce', 'text') })
@@ -499,10 +500,7 @@ describe('workspace', () => {
     beforeAll(async () => {
       workspace = await createWorkspace(naclFileStore)
       await workspace.elements()
-      changes = (
-        await workspace.setNaclFiles([changedNaclFile, newNaclFile, emptyNaclFile])
-      )
-      await workspace.setNaclFiles([changedNaclFile, newNaclFile, emptyNaclFile])
+      changes = await workspace.setNaclFiles([changedNaclFile, newNaclFile, emptyNaclFile])
       elemMap = await getElemMap(await workspace.elements())
     })
 
@@ -530,10 +528,11 @@ describe('workspace', () => {
     })
 
     it('should return the correct changes', async () => {
-      expect(changes).toHaveLength(25)
-      expect((changes.find(c => c.action === 'add') as AdditionChange<Element>).data.after)
+      expect(changes.changes).toHaveLength(25)
+      expect((changes.changes.find(c => c.action === 'add') as AdditionChange<Element>).data.after)
         .toEqual(newAddedObject)
-      const multiLocChange = changes.find(c => getChangeElement(c).elemID.isEqual(multiLocElemID))
+      const multiLocChange = changes.changes
+        .find(c => getChangeElement(c).elemID.isEqual(multiLocElemID))
       expect(multiLocChange).toEqual({
         action: 'modify',
         data: {
@@ -1448,6 +1447,7 @@ describe('workspace', () => {
         flush: mockFlush,
         list: jest.fn().mockResolvedValue([]),
         getAll: jest.fn().mockResolvedValue([]),
+        getHash: jest.fn().mockResolvedValue(undefined),
       }
       const workspace = await createWorkspace(flushable as unknown as DirectoryStore<string>,
         flushable as unknown as State, undefined, undefined, undefined,
@@ -2206,7 +2206,6 @@ describe('workspace', () => {
     ] as DetailedChange[]
 
     let validationErrs: ReadonlyArray<ValidationError>
-
     beforeAll(async () => {
       workspace = await createWorkspace(naclFileStore)
       // Verify that the two errors we are starting with (that should be deleted in the update

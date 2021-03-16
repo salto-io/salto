@@ -50,17 +50,16 @@ export const defaultCredentialsType = new ObjectType({
   fields: {
     accountId: {
       type: BuiltinTypes.STRING,
-      // annotations: { message: 'Account ID' },
+      annotations: { message: 'Account ID' },
     },
     tokenId: {
       type: BuiltinTypes.STRING,
-      // annotations: { message: 'SDF Token ID' },
+      annotations: { message: 'SDF Token ID' },
     },
     tokenSecret: {
       type: BuiltinTypes.STRING,
-      // annotations: { message: 'SDF Token Secret' },
+      annotations: { message: 'SDF Token Secret' },
     },
-    /**
     suiteAppTokenId: {
       type: BuiltinTypes.STRING,
       annotations: {
@@ -73,7 +72,6 @@ export const defaultCredentialsType = new ObjectType({
         message: 'Salto SuiteApp Token Secret (empty if Salto SuiteApp is not installed)',
       },
     },
-     */
   },
   annotationTypes: {},
   annotations: {},

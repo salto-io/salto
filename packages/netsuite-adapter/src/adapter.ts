@@ -29,13 +29,14 @@ import {
   customTypes, getAllTypes, fileCabinetTypes,
 } from './types'
 import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS,
-  INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME } from './constants'
+  INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
 import { FilterCreator } from './filter'
 import {
   getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
+  DEFAULT_USE_CHANGES_DETECTION,
 } from './config'
 import { getAllReferencedInstances, getRequiredReferencedInstances } from './reference_dependencies'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery } from './query'
@@ -79,6 +80,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private getElemIdFunc?: ElemIdGetter
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly skipList?: NetsuiteQueryParameters
+  private readonly useChangesDetection: boolean
 
   public constructor({
     client,
@@ -110,6 +112,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.getElemIdFunc = getElemIdFunc
     this.fetchTarget = config[FETCH_TARGET]
     this.skipList = config[SKIP_LIST]
+    this.useChangesDetection = config[USE_CHANGES_DETECTION] ?? DEFAULT_USE_CHANGES_DETECTION
   }
 
   /**
@@ -211,6 +214,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
 
     if (this.fetchTarget === undefined) {
+      return {
+        serverTime: sysInfo.time,
+      }
+    }
+
+    if (!this.useChangesDetection) {
+      log.debug('Changes detection is disabled')
       return {
         serverTime: sysInfo.time,
       }

@@ -27,6 +27,7 @@ import {
   ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, TYPES_TO_SKIP,
   FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, DEPLOY_REFERENCED_ELEMENTS,
   FETCH_TYPE_TIMEOUT_IN_MINUTES, INTEGRATION, CLIENT_CONFIG, FETCH_TARGET, NETSUITE,
+  USE_CHANGES_DETECTION,
 } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import SdfClient, { convertToCustomTypeInfo } from '../src/client/sdf_client'
@@ -591,6 +592,8 @@ describe('Adapter', () => {
     })
 
     describe('getChangedObjects', () => {
+      let suiteAppClient: SuiteAppClient
+
       beforeEach(() => {
         getElementMock.mockResolvedValue(new InstanceElement(
           ElemID.CONFIG_NAME,
@@ -600,7 +603,7 @@ describe('Adapter', () => {
           }
         ))
 
-        const suiteAppClient = {
+        suiteAppClient = {
           getSystemInformation: getSystemInformationMock,
         } as unknown as SuiteAppClient
 
@@ -651,6 +654,28 @@ describe('Adapter', () => {
         ))
         await adapter.fetch(mockFetchOpts)
         expect(getElementMock).toHaveBeenCalledWith(new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME))
+        expect(getChangedObjectsMock).not.toHaveBeenCalled()
+      })
+
+      it('should not call getChangedObjects if useChangesDetection is false', async () => {
+        adapter = new NetsuiteAdapter({
+          client: new NetsuiteClient(client, suiteAppClient),
+          elementsSource,
+          filtersCreators: [firstDummyFilter, secondDummyFilter],
+          config: {
+            ...config,
+            [FETCH_TARGET]: {
+              types: {
+                workflow: ['.*'],
+              },
+              filePaths: [],
+            },
+            [USE_CHANGES_DETECTION]: false,
+          },
+          getElemIdFunc: mockGetElemIdFunc,
+        })
+
+        await adapter.fetch(mockFetchOpts)
         expect(getChangedObjectsMock).not.toHaveBeenCalled()
       })
     })

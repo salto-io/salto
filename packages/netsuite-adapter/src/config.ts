@@ -23,7 +23,7 @@ import {
   FETCH_ALL_TYPES_AT_ONCE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, NETSUITE,
   SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
   CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
-  SAVED_SEARCH, SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG,
+  SAVED_SEARCH, SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
 } from './constants'
 import { NetsuiteQueryParameters } from './query'
 import { mergeTypeToInstances } from './client/utils'
@@ -36,6 +36,7 @@ export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = false
 export const DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES = 4
 export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 40
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
+export const DEFAULT_USE_CHANGES_DETECTION = true
 
 const clientConfigType = new ObjectType({
   elemID: new ElemID(NETSUITE, 'clientConfig'),
@@ -154,6 +155,10 @@ export const configType = new ObjectType({
         },
       },
     },
+
+    [USE_CHANGES_DETECTION]: {
+      type: BuiltinTypes.BOOLEAN,
+    },
   },
 })
 
@@ -176,6 +181,7 @@ export type NetsuiteConfig = {
   [SUITEAPP_CLIENT_CONFIG]?: SuiteAppClientConfig
   [FETCH_TARGET]?: NetsuiteQueryParameters
   [SKIP_LIST]?: NetsuiteQueryParameters
+  [USE_CHANGES_DETECTION]?: boolean
 }
 
 export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from NetSuite.'

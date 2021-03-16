@@ -36,6 +36,7 @@ export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = false
 export const DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES = 4
 export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 40
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
+export const DEFAULT_USE_CHANGES_DETECTION = true
 
 const clientConfigType = new ObjectType({
   elemID: new ElemID(NETSUITE, 'clientConfig'),

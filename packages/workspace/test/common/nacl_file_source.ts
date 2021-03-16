@@ -18,7 +18,7 @@ import _ from 'lodash'
 import path from 'path'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { NaclFilesSource } from '../../src/workspace/nacl_files'
+import { NaclFilesSource, ChangeSet } from '../../src/workspace/nacl_files'
 import { Errors } from '../../src/workspace/errors'
 import { SourceRange } from '../../src/parser/internal/types'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
@@ -31,7 +31,7 @@ export const createMockNaclFileSource = (
   naclFiles: Record<string, Element[]> = {},
   errors: Errors = new Errors({ merge: [], parse: [], validation: [] }),
   sourceRanges?: SourceRange[],
-  changes: Change[] = [],
+  changes: ChangeSet<Change> = { changes: [], cacheValid: true },
 ): NaclFilesSource => ({
   list: async () => awu(elements.map(e => e.elemID)),
   isEmpty: async () => elements.length === 0,
@@ -76,5 +76,6 @@ export const createMockNaclFileSource = (
   getElementNaclFiles: jest.fn().mockImplementation(() => Promise.resolve([path.join('test', 'path.nacl')])),
   clone: jest.fn().mockImplementation(() => Promise.resolve()),
   getElementReferencedFiles: jest.fn().mockResolvedValue([]),
-  load: jest.fn().mockResolvedValue(elements.map(e => createAddChange(e, e.elemID))),
+  load: jest.fn().mockResolvedValue({ changes: elements.map(e => createAddChange(e, e.elemID)),
+    cacheValid: true }),
 })

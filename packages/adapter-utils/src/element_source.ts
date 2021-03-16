@@ -15,6 +15,34 @@
 */
 import { ReadOnlyElementsSource, Element, ElemID } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import wu from 'wu'
+
+export type RecursiveSource = {
+  isUpToDate: (signature: number) => boolean
+  getSignature: () => number
+  createSignature: () => Promise<void>
+  refreshValue: () => Promise<void>
+  getUpstreamSourcesBySignature: () => Map<number, RecursiveSource>
+}
+
+export const recursivelyValidateCache = async (source: RecursiveSource): Promise<number> => {
+  let shouldRefresh = false
+  const sourcesBySignature = source.getUpstreamSourcesBySignature()
+  // use map rather than "every" because every upstream source should get the chance to refresh.
+  await Promise.all(wu(sourcesBySignature.keys()).map(async signature => {
+    const upstreamSource = sourcesBySignature.get(signature)
+    if (upstreamSource) {
+      shouldRefresh = shouldRefresh && upstreamSource.isUpToDate(signature) && (
+        await recursivelyValidateCache(upstreamSource) === signature
+      )
+    }
+  }))
+  if (shouldRefresh) {
+    await source.refreshValue()
+    source.createSignature()
+  }
+  return source.getSignature()
+}
 
 export const buildElementsSourceFromElements = (elements: ReadonlyArray<Element>):
   ReadOnlyElementsSource => {

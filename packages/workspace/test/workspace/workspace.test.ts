@@ -17,8 +17,8 @@ import _ from 'lodash'
 import wu from 'wu'
 import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
-  Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
-  isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType,
+  Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes, Change,
+  isObjectType, ContainerType, AdditionChange, getChangeElement, PrimitiveType, ChangeDataType,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges, createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
@@ -27,7 +27,7 @@ import { collections } from '@salto-io/lowerdash'
 import { ValidationError } from '../../src/validator'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
 import { ConfigSource } from '../../src/workspace/config_source'
-import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
+import { naclFilesSource, NaclFilesSource, ChangeSet } from '../../src/workspace/nacl_files'
 import { State, buildInMemState } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
@@ -454,7 +454,7 @@ describe('workspace', () => {
       const elemMap = await getElemMap(await workspace.elements())
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(Object.keys(lead.fields)).not.toContain('ext_field')
-      expect(changes.map(getChangeElement).map(c => c.elemID.getFullName()).sort())
+      expect(changes.changes.map(getChangeElement).map(c => c.elemID.getFullName()).sort())
         .toEqual(['salesforce.lead', 'multi.loc'].sort())
     })
 
@@ -479,7 +479,7 @@ describe('workspace', () => {
     const naclFileStore = mockDirStore()
     let workspace: Workspace
     let elemMap: Record<string, Element>
-    let changes: Change<Element>[]
+    let changes: ChangeSet<Change<ChangeDataType>>
     const newAddedObject = new ObjectType({ elemID: new ElemID('salesforce', 'new') })
     const salesforceLeadElemID = new ElemID('salesforce', 'lead')
     const salesforceText = new ObjectType({ elemID: new ElemID('salesforce', 'text') })
@@ -529,10 +529,11 @@ describe('workspace', () => {
     })
 
     it('should return the correct changes', async () => {
-      expect(changes).toHaveLength(25)
-      expect((changes.find(c => c.action === 'add') as AdditionChange<Element>).data.after)
+      expect(changes.changes).toHaveLength(25)
+      expect((changes.changes.find(c => c.action === 'add') as AdditionChange<Element>).data.after)
         .toEqual(newAddedObject)
-      const multiLocChange = changes.find(c => getChangeElement(c).elemID.isEqual(multiLocElemID))
+      const multiLocChange = changes.changes
+        .find(c => getChangeElement(c).elemID.isEqual(multiLocElemID))
       expect(multiLocChange).toEqual({
         action: 'modify',
         data: {

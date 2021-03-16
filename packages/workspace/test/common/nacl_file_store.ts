@@ -256,4 +256,5 @@ export const mockParseCache = (): ParsedNaclFileCache => ({
   list: () => Promise.resolve([]),
   getAllErrors: () => Promise.resolve([]),
   hasValid: () => Promise.resolve(true),
+  getHash: () => Promise.resolve(''),
 })

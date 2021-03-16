@@ -19,7 +19,7 @@ import wu from 'wu'
 
 import { Element, ElemID, getChangeElement, Value,
   DetailedChange, Change } from '@salto-io/adapter-api'
-import { promises, collections } from '@salto-io/lowerdash'
+import { promises, collections, hash } from '@salto-io/lowerdash'
 import { applyInstanceDefaults } from '@salto-io/adapter-utils'
 import { RemoteMap, RemoteMapCreator, mapRemoteMapResult } from '../../remote_map'
 import { ElementSelector, selectElementIdsByTraversal } from '../../element_selector'
@@ -27,13 +27,14 @@ import { ValidationError } from '../../../validator'
 import { ParseError, SourceRange, SourceMap } from '../../../parser'
 import { mergeElements, MergeError } from '../../../merger'
 import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } from './routers'
-import { NaclFilesSource, NaclFile, RoutingMode, SourceLoadParams } from '../nacl_files_source'
+import { NaclFilesSource, NaclFile, RoutingMode, SourceLoadParams, ChangeSet } from '../nacl_files_source'
 import { ParsedNaclFile } from '../parsed_nacl_file'
 import { buildNewMergedElementsAndErrors, getAfterElements } from '../elements_cache'
 import { Errors } from '../../errors'
 import { RemoteElementSource, ElementsSource } from '../../elements_source'
 import { serialize, deserializeSingleElement, deserializeMergeErrors } from '../../../serializer/elements'
 
+const { toMD5 } = hash
 const { awu } = collections.asynciterable
 const { series } = promises.array
 const { resolveValues, mapValuesAsync } = promises.object
@@ -69,13 +70,15 @@ export class UnsupportedNewEnvChangeError extends Error {
 }
 
 type MultiEnvState = {
+  hash?: string
   elements: ElementsSource
   mergeErrors: RemoteMap<MergeError[]>
 }
 
-export type EnvsChanges = Record<string, Change[]>
+export type EnvsChanges = Record<string, ChangeSet<Change>>
 
-export type MultiEnvSource = Omit<NaclFilesSource<Change[]>, 'getAll' | 'getElementsSource'> & {
+export type MultiEnvSource = Omit<NaclFilesSource<ChangeSet<Change>>,
+  'getAll' | 'getElementsSource'> & {
   getAll: (env?: string) => Promise<AsyncIterable<Element>>
   promote: (ids: ElemID[]) => Promise<void>
   getElementIdsBySelectors: (selectors: ElementSelector[],
@@ -132,7 +135,7 @@ const buildMultiEnvSource = (
   const buildMultiEnvState = async ({ env, envChanges = {} }: {
     env?: string
     envChanges?: EnvsChanges
-  }): Promise<{ state: MultiEnvState; changes: Change[] }> => {
+  }): Promise<{ state: MultiEnvState; changes: ChangeSet<Change> }> => {
     const primaryEnv = env ?? primarySourceName
     const actualChanges = primaryEnv === primarySourceName
       ? envChanges
@@ -140,14 +143,25 @@ const buildMultiEnvSource = (
     const current = state !== undefined
       ? state
       : await buildState(env)
-
+    const preChangeHash = current.hash
     const { afterElements: newElements, relevantElementIDs } = await getAfterElements({
-      src1Changes: actualChanges[primaryEnv] ?? [],
+      src1Changes: actualChanges[primaryEnv]?.changes ?? [],
       src1: sources[primaryEnv],
-      src2Changes: actualChanges[commonSourceName] ?? [],
+      src2Changes: actualChanges[commonSourceName]?.changes ?? [],
       src2: sources[commonSourceName],
     })
-
+    let cacheValid = true
+    let newHash = ''
+    let multiSourcesPreChangeHash = ''
+    Object.keys(actualChanges).forEach(key => {
+      cacheValid = cacheValid && actualChanges[key].cacheValid
+      newHash += actualChanges[key].postChangeHash
+      multiSourcesPreChangeHash += actualChanges[key].preChangeHash
+    })
+    if (multiSourcesPreChangeHash === preChangeHash) {
+      // FOR ROII: Placeholder for the situation in which hash doesn't match
+    }
+    newHash = toMD5(newHash)
     const mergeChanges = await buildNewMergedElementsAndErrors({
       afterElements: awu(newElements),
       currentElements: current.elements,
@@ -172,9 +186,10 @@ const buildMultiEnvSource = (
         }
       },
     })
+    current.hash = newHash
     return {
       state: current,
-      changes: mergeChanges,
+      changes: { changes: mergeChanges, cacheValid, preChangeHash, postChangeHash: newHash },
     }
   }
 
@@ -207,7 +222,7 @@ const buildMultiEnvSource = (
     return { relPath: getRelativePath(fullName, prefix), source: getSourceFromEnvName(prefix) }
   }
 
-  const buidFullPath = (envName: string, relPath: string): string => (
+  const buildFullPath = (envName: string, relPath: string): string => (
     envName === commonSourceName
       ? path.join(envName, relPath)
       : path.join(ENVS_PREFIX, envName, relPath)
@@ -222,18 +237,22 @@ const buildMultiEnvSource = (
   const applyRoutedChanges = async (routedChanges: RoutedChanges):
   Promise<EnvsChanges> => {
     const secondaryChanges = routedChanges.secondarySources || {}
-    return resolveValues({
-      [primarySourceName]: primarySource().updateNaclFiles(routedChanges.primarySource || []),
-      [commonSourceName]: commonSource().updateNaclFiles(routedChanges.commonSource || []),
-      ..._.mapValues(secondaryChanges, (changes, srcName) =>
-        secondarySources()[srcName].updateNaclFiles(changes)),
-    })
+    return {
+      ...(await resolveValues({
+        [primarySourceName]: primarySource()
+          .updateNaclFiles(routedChanges.primarySource || []),
+        [commonSourceName]: commonSource()
+          .updateNaclFiles(routedChanges.commonSource || []),
+      })),
+      ...(await resolveValues(_.mapValues(secondaryChanges,
+        (changes, srcName) => secondarySources()[srcName].updateNaclFiles(changes)))),
+    }
   }
 
   const updateNaclFiles = async (
     changes: DetailedChange[],
     mode: RoutingMode = 'default'
-  ): Promise<Change[]> => {
+  ): Promise<ChangeSet<Change>> => {
     const routedChanges = await routeChanges(
       changes,
       primarySource(),
@@ -320,7 +339,7 @@ const buildMultiEnvSource = (
   const load = async ({
     ignoreFileChanges = false,
     env,
-  }: SourceLoadParams): Promise<Change[]> => {
+  }: SourceLoadParams): Promise<ChangeSet<Change>> => {
     const changes = await mapValuesAsync(sources, (src, name) => {
       if (name === commonSourceName) {
         return src.load({ ignoreFileChanges, cachePrefix: primarySourceName })
@@ -371,28 +390,30 @@ const buildMultiEnvSource = (
     listNaclFiles: async (): Promise<string[]> => (
       awu(Object.entries(getActiveSources()))
         .flatMap(async ([prefix, source]) => (
-          (await source.listNaclFiles()).map(p => buidFullPath(prefix, p)))).toArray()
+          (await source.listNaclFiles()).map(p => buildFullPath(prefix, p)))).toArray()
     ),
     getTotalSize: async (): Promise<number> => (
       _.sum(await Promise.all(Object.values(sources).map(s => s.getTotalSize())))
     ),
-    setNaclFiles: async (...naclFiles: NaclFile[]): Promise<Change[]> => {
+    setNaclFiles: async (...naclFiles: NaclFile[]): Promise<ChangeSet<Change>> => {
       const envNameToNaclFiles = _.groupBy(
         naclFiles, naclFile => getSourceNameForNaclFile(naclFile.filename)
       )
-      const envNameToChanges = await mapValuesAsync(envNameToNaclFiles, (envNaclFiles, envName) => {
-        const naclFilesWithRelativePath = envNaclFiles.map(naclFile =>
-          ({
-            ...naclFile,
-            filename: getRelativePath(naclFile.filename, envName),
-          }))
-        return getSourceFromEnvName(envName).setNaclFiles(...naclFilesWithRelativePath)
-      })
+      const envNameToChanges = await mapValuesAsync(envNameToNaclFiles,
+        async (envNaclFiles, envName) => {
+          const naclFilesWithRelativePath = envNaclFiles.map(naclFile =>
+            ({
+              ...naclFile,
+              filename: getRelativePath(naclFile.filename, envName),
+            }))
+          return getSourceFromEnvName(envName)
+            .setNaclFiles(...naclFilesWithRelativePath)
+        })
       const buildRes = await buildMultiEnvState({ envChanges: envNameToChanges })
       state = buildRes.state
       return buildRes.changes
     },
-    removeNaclFiles: async (...names: string[]): Promise<Change[]> => {
+    removeNaclFiles: async (...names: string[]): Promise<ChangeSet<Change>> => {
       const envNameToFilesToRemove = _.groupBy(names, getSourceNameForNaclFile)
       const envNameToChanges = await mapValuesAsync(envNameToFilesToRemove, (files, envName) =>
         getSourceFromEnvName(envName)
@@ -415,7 +436,7 @@ const buildMultiEnvSource = (
         .flatMap(async ([prefix, source]) => (
           await source.getSourceRanges(elemID)).map(sourceRange => ({
           ...sourceRange,
-          filename: buidFullPath(prefix, sourceRange.filename),
+          filename: buildFullPath(prefix, sourceRange.filename),
         }))).toArray()
     ),
     getErrors: async (): Promise<Errors> => {
@@ -428,11 +449,11 @@ const buildMultiEnvSource = (
               ...err,
               subject: {
                 ...err.subject,
-                filename: buidFullPath(prefix, err.subject.filename),
+                filename: buildFullPath(prefix, err.subject.filename),
               },
               context: err.context && {
                 ...err.context,
-                filename: buidFullPath(prefix, err.context.filename),
+                filename: buildFullPath(prefix, err.context.filename),
               },
             })),
           }
@@ -457,13 +478,13 @@ const buildMultiEnvSource = (
     getElementNaclFiles: async (id: ElemID): Promise<string[]> => (
       awu(Object.entries(getActiveSources()))
         .flatMap(async ([prefix, source]) => (
-          await source.getElementNaclFiles(id)).map(p => buidFullPath(prefix, p)))
+          await source.getElementNaclFiles(id)).map(p => buildFullPath(prefix, p)))
         .toArray()
     ),
     getElementReferencedFiles: async (id: ElemID): Promise<string[]> => _.flatten(
       await awu(Object.entries(getActiveSources()))
         .map(async ([prefix, source]) => (
-          await source.getElementReferencedFiles(id)).map(p => buidFullPath(prefix, p)))
+          await source.getElementReferencedFiles(id)).map(p => buildFullPath(prefix, p)))
         .toArray()
     ),
     clear: async (args = { nacl: true, staticResources: true, cache: true }) => {

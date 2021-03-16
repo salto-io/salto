@@ -25,7 +25,7 @@ import { ValidationError, validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
-import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
+import { NaclFilesSource, NaclFile, RoutingMode, ChangeSet } from './nacl_files/nacl_files_source'
 import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
 import { multiEnvSource, getSourceNameForFilename, MultiEnvSource } from './nacl_files/multi_env/multi_env_source'
 import { ElementSelector } from './element_selector'
@@ -47,6 +47,8 @@ const { awu } = collections.asynciterable
 export const ADAPTERS_CONFIGS_PATH = 'adapters'
 export const COMMON_ENV_PREFIX = ''
 const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
+
+const EMPTY_CHANGE_SET = { changes: [], cacheValid: true }
 
 export type WorkspaceError<T extends SaltoError> = Readonly<T & {
   sourceFragments: SourceFragment[]
@@ -102,8 +104,8 @@ export type Workspace = {
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
-  setNaclFiles: (naclFiles: NaclFile[], validate?: boolean) => Promise<Change[]>
-  removeNaclFiles: (names: string[], validate?: boolean) => Promise<Change[]>
+  setNaclFiles: (naclFiles: NaclFile[], validate?: boolean) => Promise<ChangeSet<Change>>
+  removeNaclFiles: (names: string[], validate?: boolean) => Promise<ChangeSet<Change>>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
@@ -140,6 +142,7 @@ export type EnvironmentsSources = {
 }
 
 type WorkspaceState = {
+  hash?: string
   merged: ElementsSource
   errors: RemoteMap<MergeError[]>
   searchableNamesIndex: RemoteMap<boolean>
@@ -177,14 +180,14 @@ export const loadWorkspace = async (
   let workspaceState: Promise<WorkspaceState> | undefined
 
   const buildWorkspaceState = async ({
-    workspaceChanges = [],
+    workspaceChanges = EMPTY_CHANGE_SET,
     env,
-    stateOnlyChanges = [],
+    stateOnlyChanges = EMPTY_CHANGE_SET,
     validate = true,
   }: {
-    workspaceChanges?: Change<Element>[]
+    workspaceChanges?: ChangeSet<Change<Element>>
     env?: string
-    stateOnlyChanges?: Change<Element>[]
+    stateOnlyChanges?: ChangeSet<Change<Element>>
     validate?: boolean
   }): Promise<WorkspaceState> => {
     const actualEnv = env ?? currentEnv()
@@ -279,7 +282,7 @@ export const loadWorkspace = async (
           .map(elem => toChange({ after: elem })).toArray()
         : []
 
-      const stateRemovedElementChanges = workspaceChanges
+      const stateRemovedElementChanges = workspaceChanges.changes
         .filter(change => isRemovalChange(change) && getChangeElement(change).elemID.isTopLevel())
 
       return partialStateChanges
@@ -327,9 +330,9 @@ export const loadWorkspace = async (
     }
 
     const mergeData = await getAfterElements({
-      src1Changes: workspaceChanges,
+      src1Changes: workspaceChanges.changes,
       src1: await naclFilesSource.getElementsSource(),
-      src2Changes: await completeStateOnlyChanges(stateOnlyChanges),
+      src2Changes: await completeStateOnlyChanges(stateOnlyChanges.changes),
       src2: mapReadOnlyElementsSource(
         state(),
         async element => getElementHiddenParts(
@@ -381,7 +384,9 @@ export const loadWorkspace = async (
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
     if (_.isUndefined(workspaceState)) {
       const workspaceChanges = await naclFilesSource.load({ ignoreFileChanges })
-      workspaceState = buildWorkspaceState({ workspaceChanges })
+      workspaceState = buildWorkspaceState({
+        workspaceChanges: workspaceChanges as ChangeSet<Change<Element>>,
+      })
     }
     return workspaceState
   }
@@ -439,17 +444,22 @@ export const loadWorkspace = async (
     const workspaceChanges = await (await getLoadedNaclFilesSource())
       .updateNaclFiles(visibleChanges, mode)
     const stateOnlyChanges = await getStateOnlyChanges(hiddenChanges)
-    workspaceState = buildWorkspaceState({ workspaceChanges, stateOnlyChanges, validate })
+    workspaceState = buildWorkspaceState({ workspaceChanges,
+      stateOnlyChanges: {
+        changes: stateOnlyChanges,
+        cacheValid: true,
+      },
+      validate })
   }
 
-
-  const setNaclFiles = async (naclFiles: NaclFile[], validate = true): Promise<Change[]> => {
+  const setNaclFiles = async (naclFiles: NaclFile[],
+    validate = true): Promise<ChangeSet<Change>> => {
     const elementChanges = await (await getLoadedNaclFilesSource()).setNaclFiles(...naclFiles)
     workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })
     return elementChanges
   }
 
-  const removeNaclFiles = async (names: string[], validate = true): Promise<Change[]> => {
+  const removeNaclFiles = async (names: string[], validate = true): Promise<ChangeSet<Change>> => {
     const elementChanges = await (await getLoadedNaclFilesSource()).removeNaclFiles(...names)
     workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })
     return elementChanges

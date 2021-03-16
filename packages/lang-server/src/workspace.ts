@@ -224,11 +224,12 @@ export class EditorWorkspace {
       // We start by running all deleted
       const shouldCalcValidation = this.wsErrors === undefined
       const removeChanges = (!_.isEmpty(opDeletes))
-        ? (await this.workspace.removeNaclFiles([...opDeletes], shouldCalcValidation))
+        ? (await this.workspace.removeNaclFiles([...opDeletes], shouldCalcValidation)).changes
         : []
       // Now add the waiting changes
       const updateChanges = (!_.isEmpty(opUpdates))
-        ? await this.workspace.setNaclFiles(Object.values(opUpdates), shouldCalcValidation)
+        ? (await this.workspace.setNaclFiles(Object.values(opUpdates),
+          shouldCalcValidation)).changes
         : []
       if (this.wsErrors !== undefined) {
         const validation = await this.getValidationErrors(

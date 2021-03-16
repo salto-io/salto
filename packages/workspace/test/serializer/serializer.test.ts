@@ -18,6 +18,8 @@ import {
   PrimitiveType, PrimitiveTypes, ElemID, isInstanceElement, ListType,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Variable,
   VariableExpression, StaticFile, MapType, BuiltinTypes, isContainerType, isObjectType,
+  Element,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { createRefToElmWithValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -476,6 +478,46 @@ describe('State/cache serialization', () => {
         err => err.elemID.getFullName()
       )
       expect(deserialized).toEqual(validationErrors)
+    })
+  })
+
+  describe('backward compatibility', () => {
+    const ser = ' [{"elemID":{"adapter":"salto","typeName":"obj","idType":"type","nameParts":[]},"annotations":{"str":{"elemId":{"adapter":"salto","typeName":"ref","idType":"type","nameParts":[]},"_salto_class":"ReferenceExpression"}},"annotationTypes":{"str":{"elemID":{"adapter":"","typeName":"string","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"primitive":0,"_salto_class":"PrimitiveType"}},"fields":{"list":{"elemID":{"adapter":"salto","typeName":"obj","idType":"field","nameParts":["list"]},"annotations":{},"annotationTypes":{},"parent":{"elemID":{"adapter":"salto","typeName":"obj","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"name":"list","type":{"elemID":{"adapter":"","typeName":"list<string>","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"innerType":{"elemID":{"adapter":"","typeName":"string","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"primitive":0,"_salto_class":"PrimitiveType"},"_salto_class":"ListType"},"_salto_class":"Field"},"map":{"elemID":{"adapter":"salto","typeName":"obj","idType":"field","nameParts":["map"]},"annotations":{},"annotationTypes":{},"parent":{"elemID":{"adapter":"salto","typeName":"obj","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"name":"map","type":{"elemID":{"adapter":"","typeName":"map<string>","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"innerType":{"elemID":{"adapter":"","typeName":"string","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"primitive":0,"_salto_class":"PrimitiveType"},"_salto_class":"MapType"},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"elemID":{"adapter":"salto","typeName":"obj","idType":"instance","nameParts":["inst"]},"annotations":{},"annotationTypes":{},"type":{"elemID":{"adapter":"salto","typeName":"obj","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{},"_salto_class":"InstanceElement"}]'
+    let des: Element[]
+    let desObj: ObjectType
+    let desInst: InstanceElement
+    beforeAll(async () => {
+      des = await deserialize(ser)
+      const foundObj = des.find(e => isObjectType(e))
+      if (foundObj !== undefined) {
+        desObj = foundObj as ObjectType
+      }
+      const foundInst = des.find(e => isInstanceElement(e))
+      if (foundInst !== undefined) {
+        desInst = foundInst as InstanceElement
+      }
+      expect(desInst).toBeDefined()
+      expect(desObj).toBeDefined()
+    })
+    it('should deserialize refTypes that were serialized as type', () => {
+      expect(desInst.refType).toBeDefined()
+      expect(desInst.refType.elemID).toBeDefined()
+      expect(desInst.refType.elemID.getFullName()).toEqual('salto.obj')
+      expect(desObj.fields.list.refType).toBeDefined()
+      expect(desObj.fields.list.refType.elemID).toBeDefined()
+      expect(desObj.fields.list.refType.elemID.getFullName()).toEqual('salto.obj')
+    })
+
+    it('should deserialize annotationRefTypes that were serialized as annotationTypes', () => {
+      expect(desObj.annotationRefTypes).toBeDefined()
+      expect(desObj.annotationRefTypes.str).toBeDefined()
+      expect(desObj.annotationRefTypes.str.elemID).toEqual(BuiltinTypes.STRING.elemID)
+    })
+
+    it('should deserialize references elemID attr that were serialized as elemId', () => {
+      expect(desObj.annotations.str).toBeDefined()
+      expect(desObj.annotations.elemID).toBeDefined()
+      expect(isReferenceExpression(desObj.annotations.str)).toBeTruthy()
     })
   })
 })

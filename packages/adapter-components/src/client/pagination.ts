@@ -49,7 +49,7 @@ export type GetAllItemsFunc = ({
  * to list the folders under parent_id. So for each item returned from /folder, we should make
  * a subsequent call to /folder?parent_id=<id>
  */
-const computeRecursiveArgs = (
+export const computeRecursiveArgs = (
   recursiveQueryParams: RecursiveQueryArgFunc,
   responses: ResponseValue[],
 ): Record<string, string>[] => (

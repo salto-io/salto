@@ -58,6 +58,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   recipe: {
     request: {
       url: '/recipes',
+      paginationField: 'since_id',
     },
     transformation: {
       fieldsToOmit: [
@@ -85,24 +86,28 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   api_collection: {
     request: {
       url: '/api_collections',
+      paginationField: 'page',
     },
   },
   // eslint-disable-next-line @typescript-eslint/camelcase
   api_endpoint: {
     request: {
       url: '/api_endpoints',
+      paginationField: 'page',
     },
   },
   // eslint-disable-next-line @typescript-eslint/camelcase
   api_client: {
     request: {
       url: '/api_clients',
+      paginationField: 'page',
     },
   },
   // eslint-disable-next-line @typescript-eslint/camelcase
   api_access_profile: {
     request: {
       url: '/api_access_profiles',
+      paginationField: 'page',
     },
   },
   role: {

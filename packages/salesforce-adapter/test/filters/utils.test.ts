@@ -19,6 +19,7 @@ import { SALESFORCE, LABEL, API_NAME, CUSTOM_FIELD, INSTANCE_FULL_NAME_FIELD, ME
 import { Types } from '../../src/transformers/transformer'
 import { CustomObject } from '../../src/client/types'
 import { mockTypes } from '../mock_elements'
+import { createCustomObjectType } from '../utils'
 
 describe('addDefaults', () => {
   describe('when called with instance', () => {
@@ -29,6 +30,17 @@ describe('addDefaults', () => {
     })
     it('should add api name', () => {
       expect(instance.value).toHaveProperty(INSTANCE_FULL_NAME_FIELD, 'test')
+    })
+  })
+  describe('when called with custom object instance', () => {
+    let instance: InstanceElement
+    beforeEach(() => {
+      const customObj = createCustomObjectType('test', {})
+      instance = new InstanceElement('test', customObj)
+      addDefaults(instance)
+    })
+    it('should not add api name', () => {
+      expect(instance.value).not.toHaveProperty(INSTANCE_FULL_NAME_FIELD)
     })
   })
   describe('when called with field', () => {

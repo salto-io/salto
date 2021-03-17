@@ -90,9 +90,9 @@ export const addMetadataType = (elem: ObjectType, metadataTypeValue = CUSTOM_OBJ
 }
 
 export const addDefaults = (element: ChangeDataType): void => {
-  const addInstanceDefaults = (elem: InstanceElement): void => {
-    if (elem.value[INSTANCE_FULL_NAME_FIELD] === undefined) {
-      elem.value[INSTANCE_FULL_NAME_FIELD] = defaultApiName(elem)
+  const addInstanceDefaults = (inst: InstanceElement): void => {
+    if (inst.value[INSTANCE_FULL_NAME_FIELD] === undefined && !isCustomObject(inst.type)) {
+      inst.value[INSTANCE_FULL_NAME_FIELD] = defaultApiName(inst)
     }
   }
 

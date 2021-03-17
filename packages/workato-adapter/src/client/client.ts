@@ -17,6 +17,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { createConnection } from './connection'
 import { WORKATO } from '../constants'
 import { Credentials } from '../auth'
+import { getMinSinceIdPagination } from './pagination'
 
 const {
   getWithPageOffsetPagination, DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
@@ -28,11 +29,22 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
   get: 10,
 }
 
-// not used for workato
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
-  get: 100,
+  get: 10,
 }
 
+export const paginate: clientUtils.GetAllItemsFunc = async function *paginate({
+  conn,
+  pageSize,
+  getParams,
+}) {
+  if (getParams?.paginationField === 'since_id') {
+    // special handling for endpoints that use descending ids, like the recipes endpoint
+    yield* getMinSinceIdPagination({ conn, pageSize, getParams })
+  } else {
+    yield* getWithPageOffsetPagination({ conn, pageSize, getParams })
+  }
+}
 export default class WorkatoClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
 > {
@@ -51,5 +63,5 @@ export default class WorkatoClient extends clientUtils.AdapterHTTPClient<
     )
   }
 
-  protected getAllItems = getWithPageOffsetPagination
+  protected getAllItems = paginate
 }

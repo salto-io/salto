@@ -107,6 +107,28 @@ describe('ducktype_instance_elements', () => {
       ))).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', '54775_some_other_name'])
     })
+    it('should convert number id fields to string', () => {
+      const inst = toInstance({
+        type,
+        transformationConfigByType: {
+          bla: {
+            idFields: ['name', 'id'],
+          },
+        },
+        transformationDefaultConfig: {
+          idFields: ['somethingElse'],
+        },
+        defaultName: 'abc',
+        entry,
+      })
+      expect(inst).toBeDefined()
+      expect(inst?.isEqual(new InstanceElement(
+        'some_other_name_54775@ssu',
+        type,
+        entry,
+      ))).toBeTruthy()
+      expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'some_other_name_54775'])
+    })
     it('should include parent name when nestName is true', () => {
       const parent = new InstanceElement('abc', type, {})
       const inst = toInstance({

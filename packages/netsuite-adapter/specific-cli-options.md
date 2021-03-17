@@ -36,3 +36,17 @@ salto fetch -C 'netsuite.fetchTarget.filePaths=["/path/to/dir/.*\.js"]'
 ```bash
 salto fetch -C 'netsuite.fetchTarget.types.emailtemplate=[".*"]' -C 'netsuite.fetchTarget.types.entryForm=[".*"]'
 ```
+
+## Changes Detection
+When using `fetchTarget`, given the Salto SuiteApp credentials, Salto will attempt to detect the elements that were changed in the service and fetch only them.
+
+| Name                           |  Description
+| -------------------------------| ------------------------| -----------
+| netsuite.useChangesDetection | Whether to fetch only changed elements when using `fetchTarget`
+
+### Examples
+Disable changes detection
+
+```bash
+salto fetch -C 'netsuite.fetchTarget.types.addressForm=[".*"]' -C 'netsuite.useChangesDetection=false'
+```

@@ -32,11 +32,21 @@ export type ClientGetParams = {
   paginationField?: string
 }
 
-export type GetAllItemsFunc = ({
-  conn,
+export type PaginationFunc = ({
+  responseData,
+  page,
   pageSize,
   getParams,
+  currentParams,
 }: {
+  responseData: unknown
+  page: ResponseValue[]
+  pageSize: number
+  getParams: ClientGetParams
+  currentParams: Record<string, string>
+}) => Record<string, string>[]
+
+export type GetAllItemsFunc = (args: {
   conn: APIConnection
   pageSize: number
   getParams: ClientGetParams
@@ -49,27 +59,26 @@ export type GetAllItemsFunc = ({
  * to list the folders under parent_id. So for each item returned from /folder, we should make
  * a subsequent call to /folder?parent_id=<id>
  */
-export const computeRecursiveArgs = (
-  recursiveQueryParams: RecursiveQueryArgFunc,
+const computeRecursiveArgs = (
   responses: ResponseValue[],
+  recursiveQueryParams?: RecursiveQueryArgFunc,
 ): Record<string, string>[] => (
-  responses
-    .map(res => _.pickBy(
-      _.mapValues(
-        recursiveQueryParams,
-        mapper => mapper(res),
-      ),
-      isDefined,
-    ))
-    .filter(args => Object.keys(args).length > 0)
+  (recursiveQueryParams !== undefined && Object.keys(recursiveQueryParams).length > 0)
+    ? responses
+      .map(res => _.pickBy(
+        _.mapValues(
+          recursiveQueryParams,
+          mapper => mapper(res),
+        ),
+        isDefined,
+      ))
+      .filter(args => Object.keys(args).length > 0)
+    : []
 )
 
-/**
- * Make paginated requests using the specified pagination field, assuming the
- * next page is prev+1 and first page is 1.
- * Also supports recursive queries (see example under computeRecursiveArgs).
- */
-export const getWithPageOffsetPagination: GetAllItemsFunc = async function *getWithOffset({
+export const traverseRequests: (
+  paginationFunc: PaginationFunc
+) => GetAllItemsFunc = paginationFunc => async function *getWithOffset({
   conn,
   pageSize,
   getParams,
@@ -112,18 +121,41 @@ export const getWithPageOffsetPagination: GetAllItemsFunc = async function *getW
     yield page
     numResults += page.length
 
-    if (paginationField !== undefined && page.length >= pageSize) {
-      requestQueryArgs.unshift({
-        ...additionalArgs,
-        [paginationField]: (additionalArgs[paginationField] ?? 1) + 1,
-      })
+    if (paginationField !== undefined) {
+      requestQueryArgs.unshift(...paginationFunc({
+        responseData: response.data,
+        page,
+        getParams,
+        pageSize,
+        currentParams: additionalArgs,
+      }))
     }
 
     if (recursiveQueryParams !== undefined && Object.keys(recursiveQueryParams).length > 0) {
-      requestQueryArgs.unshift(...computeRecursiveArgs(recursiveQueryParams, page))
+      requestQueryArgs.unshift(...computeRecursiveArgs(page, recursiveQueryParams))
     }
   }
+  // the number of results may be lower than actual if the instances are under a nested field
   log.info('Received %d results for endpoint %s', numResults, url)
+}
+
+/**
+ * Make paginated requests using the specified pagination field, assuming the
+ * next page is prev+1 and first page is 1.
+ * Also supports recursive queries (see example under computeRecursiveArgs).
+ */
+export const getWithPageOffsetPagination: GetAllItemsFunc = async function *getWithOffset(args) {
+  const nextPageFullPages: PaginationFunc = ({ page, getParams, currentParams, pageSize }) => {
+    const { paginationField } = getParams
+    if (paginationField !== undefined && page.length >= pageSize) {
+      return [{
+        ...currentParams,
+        [paginationField]: (currentParams[paginationField] ?? 1) + 1,
+      }]
+    }
+    return []
+  }
+  yield* traverseRequests(nextPageFullPages)(args)
 }
 
 /**
@@ -131,60 +163,21 @@ export const getWithPageOffsetPagination: GetAllItemsFunc = async function *getW
  * as either a full URL or just the path and query prameters.
  * Only supports next pages under the same endpoint (and uses the same host).
  */
-export const getWithCursorPagination: GetAllItemsFunc = async function *getWithCursor({
-  conn,
-  getParams,
-}) {
-  const { url, queryParams, paginationField } = getParams
-
-  let nextPageArgs: Record<string, string> = {}
-  let numResults = 0
-
-  const computeNextPageArgs = (
-    nextPagePath: string,
-    params: Record<string, string>,
-  ): Record<string, string> => {
-    const nextPage = new URL(nextPagePath, 'http://localhost')
-    if (nextPage.pathname !== url) {
-      log.error('unexpected next page received for endpoint %s params %o: %s', url, params, nextPage.pathname)
-      throw new Error(`unexpected next page received for endpoint ${url}: ${nextPage.pathname}`)
+export const getWithCursorPagination: GetAllItemsFunc = async function *getWithCursor(args) {
+  const nextPageCursorPages: PaginationFunc = ({
+    responseData, getParams, currentParams,
+  }) => {
+    const { paginationField, url } = getParams
+    const nextPagePath = paginationField ? _.get(responseData, paginationField) : undefined
+    if (nextPagePath !== undefined) {
+      const nextPage = new URL(nextPagePath, 'http://localhost')
+      if (nextPage.pathname !== url) {
+        log.error('unexpected next page received for endpoint %s params %o: %s', url, currentParams, nextPage.pathname)
+        throw new Error(`unexpected next page received for endpoint ${url}: ${nextPage.pathname}`)
+      }
+      return [{ ...currentParams, ...Object.fromEntries(nextPage.searchParams.entries()) }]
     }
-    return Object.fromEntries(nextPage.searchParams.entries())
+    return []
   }
-
-  while (true) {
-    const params = {
-      ...queryParams,
-      ...nextPageArgs,
-    }
-    // eslint-disable-next-line no-await-in-loop
-    const response = await conn.get(
-      url,
-      Object.keys(params).length > 0 ? { params } : undefined
-    )
-
-    log.debug('Full HTTP response for %s: %s', url, safeJsonStringify({
-      url, params, response: response.data,
-    }))
-
-    if (response.status !== 200 || response.data.success === false) {
-      log.error(`error getting result for ${url}: %s %o %o`, response.status, response.statusText, response.data)
-      break
-    }
-
-    const page = makeArray(response.data)
-    yield page
-    numResults += page.length
-
-    if (
-      paginationField === undefined
-      || response.data[paginationField] === undefined
-      || !_.isString(response.data[paginationField])
-    ) {
-      break
-    }
-    nextPageArgs = computeNextPageArgs(response.data[paginationField] as string, params)
-  }
-  // the number of results may be lower than actual if the instances are under a nested field
-  log.info('Received %d results for endpoint %s', numResults, url)
+  yield* traverseRequests(nextPageCursorPages)(args)
 }

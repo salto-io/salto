@@ -355,5 +355,31 @@ describe('client_pagination', () => {
       expect(conn.get).toHaveBeenCalledWith('/ep', { params: { arg1: 'val1' } })
       expect(conn.get).toHaveBeenCalledWith('/ep', { params: { page: 'p1', arg1: 'val1' } })
     })
+
+    it('should throw on wrong url', async () => {
+      conn.get.mockResolvedValueOnce(Promise.resolve({
+        data: {
+          products: ['a', 'b'],
+          nextPage: '/another_ep?page=p1',
+        },
+        status: 200,
+        statusText: 'OK',
+      })).mockResolvedValueOnce(Promise.resolve({
+        data: {},
+        status: 404,
+        statusText: 'Not Found',
+      }))
+      await expect(toArrayAsync(await getWithCursorPagination({
+        conn,
+        pageSize: 1,
+        getParams: {
+          url: '/ep',
+          paginationField: 'nextPage',
+          queryParams: {
+            arg1: 'val1',
+          },
+        },
+      }))).rejects.toThrow()
+    })
   })
 })

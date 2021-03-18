@@ -22,6 +22,7 @@ export type ElementSelector = {
   typeNameSelector: RegExp
   idTypeSelector: ElemIDType
   nameSelectors?: RegExp[]
+  caseInsensitive?: boolean
   origin: string
 }
 
@@ -46,7 +47,10 @@ const match = (elemId: ElemID, selector: ElementSelector): boolean =>
   && testNames(elemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
     selector.nameSelectors)
 
-const createRegex = (selector: string): RegExp => new RegExp(`^${selector.replace(/\*/g, '[^\\.]*')}$`)
+
+const createRegex = (selector: string, caseInSensitive: boolean): RegExp => new RegExp(
+  `^${selector.replace(/\*/g, '[^\\.]*')}$`, caseInSensitive ? 'i' : undefined
+)
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 function isElementContainer(value: any): value is ElementIDContainer {
@@ -85,10 +89,11 @@ export const selectElementsBySelectors = <T extends ElementIDContainer | ElemID>
 }
 
 const getIDType = (adapterSelector: string, idTypeSelector?: string): ElemIDType =>
-  (idTypeSelector ? idTypeSelector as ElemIDType : ElemID
+  (idTypeSelector ? idTypeSelector.toLowerCase() as ElemIDType : ElemID
     .getDefaultIdType(adapterSelector))
 
-export const createElementSelector = (selector: string): ElementSelector => {
+export const createElementSelector = (selector: string,
+  caseInSensitive = false): ElementSelector => {
   const [adapterSelector, typeNameSelector, idTypeSelector, ...nameSelectors] = selector
     .split(ElemID.NAMESPACE_SEPARATOR)
   if (!adapterSelector) {
@@ -97,15 +102,17 @@ export const createElementSelector = (selector: string): ElementSelector => {
   if (!typeNameSelector) {
     throw new Error(`Illegal element selector does not contain type name: "${selector}"`)
   }
-  if (idTypeSelector && !(ElemIDTypes.includes(idTypeSelector))) {
+  if (idTypeSelector && !(ElemIDTypes.includes(idTypeSelector.toLowerCase()))) {
     throw new Error(`Illegal element selector includes illegal type name: "${idTypeSelector}". Full selector is: "${selector}"`)
   }
   return {
-    adapterSelector: createRegex(adapterSelector),
-    typeNameSelector: createRegex(typeNameSelector),
+    adapterSelector: createRegex(adapterSelector, caseInSensitive),
+    typeNameSelector: createRegex(typeNameSelector, caseInSensitive),
     idTypeSelector: getIDType(adapterSelector, idTypeSelector),
     origin: selector,
-    nameSelectors: nameSelectors.length > 0 ? nameSelectors.map(createRegex) : undefined,
+    caseInsensitive: caseInSensitive,
+    nameSelectors: nameSelectors.length > 0 ? nameSelectors.map(s => createRegex(s,
+      caseInSensitive)) : undefined,
   }
 }
 
@@ -118,12 +125,16 @@ const isValidSelector = (selector: string): boolean => {
   }
 }
 
-export const createElementSelectors = (selectors: string[]):
+export const createElementSelectors = (selectors: string[], caseInSensitive = false):
   {validSelectors: ElementSelector[]; invalidSelectors: string[]} => {
   const [validSelectors, invalidSelectors] = _.partition(selectors, isValidSelector)
   const [wildcardSelectors, determinedSelectors] = _.partition(validSelectors, selector => selector.includes('*'))
   const orderedSelectors = determinedSelectors.concat(wildcardSelectors)
-  return { validSelectors: orderedSelectors.map(createElementSelector), invalidSelectors }
+  return {
+    validSelectors: orderedSelectors
+      .map(s => createElementSelector(s, caseInSensitive)),
+    invalidSelectors,
+  }
 }
 
 const isTopLevelSelector = (selector: ElementSelector): boolean =>
@@ -136,6 +147,7 @@ const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
       idTypeSelector: selector.idTypeSelector,
       typeNameSelector: selector.typeNameSelector,
       nameSelectors: selector.nameSelectors?.slice(0, 1),
+      caseInsensitive: selector.caseInsensitive,
       origin: selector.origin.split(ElemID.NAMESPACE_SEPARATOR).slice(0,
         ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1).join(ElemID.NAMESPACE_SEPARATOR),
     }
@@ -146,6 +158,7 @@ const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
     adapterSelector: selector.adapterSelector,
     idTypeSelector: idType,
     typeNameSelector: selector.typeNameSelector,
+    caseInsensitive: selector.caseInsensitive,
     origin: [selector.adapterSelector.source, selector
       .typeNameSelector.source, idType].join(ElemID.NAMESPACE_SEPARATOR),
   }
@@ -153,7 +166,7 @@ const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
 
 const createSameDepthSelector = (selector: ElementSelector, elemID: ElemID): ElementSelector =>
   createElementSelector(selector.origin.split(ElemID.NAMESPACE_SEPARATOR).slice(0,
-    elemID.getFullNameParts().length).join(ElemID.NAMESPACE_SEPARATOR))
+    elemID.getFullNameParts().length).join(ElemID.NAMESPACE_SEPARATOR), selector.caseInsensitive)
 
 const isElementPossiblyParentOfSearchedElement = (
   selectors: ElementSelector[], testId: ElemID

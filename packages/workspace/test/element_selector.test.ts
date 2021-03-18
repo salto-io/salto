@@ -82,8 +82,10 @@ const mockInstance = new InstanceElement(
 )
 
 describe('element selector', () => {
-  const selectElements = (elements: ElemID[], selectors: string[]): ElemID[] =>
-    selectElementsBySelectors(elements, createElementSelectors(selectors).validSelectors).elements
+  const selectElements = (elements: ElemID[], selectors: string[],
+    caseInsensitive = false): ElemID[] =>
+    selectElementsBySelectors(elements, createElementSelectors(selectors, caseInsensitive)
+      .validSelectors).elements
   it('should handle asterisks in adapter and type', () => {
     const elements = [
       new ElemID('salesforce', 'sometype'),
@@ -181,6 +183,20 @@ describe('element selector', () => {
     ]
     const selectedElements = selectElements(elements, ['salesforce.*', 'salesforce.value'])
     expect(selectedElements).toEqual([elements[0]])
+  })
+
+  it('should use case insensitive selectors when specified', () => {
+    const elements = [
+      new ElemID('salesfOrce', 'valUe', 'instance', 'heLlo', 'woRld'),
+      new ElemID('salesfOrce', 'valUe', 'instance', 'heLlo', 'universe'),
+      new ElemID('netsuite', 'dontinclude'),
+      new ElemID('NetSuite', 'Value'),
+      new ElemID('hubsPot', 'value', 'attr', 'sOmetHing'),
+      new ElemID('hubspot', 'value', 'attr', 'other'),
+    ]
+    const selectedElements = selectElements(elements,
+      ['salesforce.v*ue.INSTANCE.hellO.World', 'netsuitE.v*', 'Hubspot.V*.attR.Something'], true)
+    expect(selectedElements).toEqual([elements[0], elements[3], elements[4]])
   })
 
   it('should throw error when invalid selector is given', () => {

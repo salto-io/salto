@@ -18,7 +18,7 @@ import wu from 'wu'
 import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
   Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
-  isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType,
+  isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType, Value,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges, createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
@@ -42,7 +42,7 @@ import { mockDirStore } from '../common/nacl_file_store'
 import { EnvConfig } from '../../src/workspace/config/workspace_config_types'
 import { resolve } from '../../src/expressions'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
-import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
+import { InMemoryRemoteMap, RemoteMapCreator, RemoteMap, CreateRemoteMapParams } from '../../src/workspace/remote_map'
 
 const { awu } = collections.asynciterable
 
@@ -98,8 +98,9 @@ const createWorkspace = async (
   credentials?: ConfigSource,
   staticFilesSource?: StaticFilesSource,
   elementSources?: Record<string, EnvironmentSource>,
+  remoteMapCreator?: RemoteMapCreator
 ): Promise<Workspace> => {
-  const persMockCreateRemoteMap = persistentMockCreateRemoteMap()
+  const mapCreator = remoteMapCreator ?? persistentMockCreateRemoteMap()
   const actualStaticFilesSource = staticFilesSource || mockStaticFilesSource()
   return loadWorkspace(
     configSource || mockWorkspaceConfigSource(),
@@ -112,7 +113,7 @@ const createWorkspace = async (
             '',
             dirStore || mockDirStore(),
             actualStaticFilesSource,
-            persMockCreateRemoteMap,
+            mapCreator,
           ),
         },
         default: {
@@ -121,7 +122,7 @@ const createWorkspace = async (
         },
       },
     },
-    persMockCreateRemoteMap,
+    mapCreator,
   )
 }
 
@@ -1427,6 +1428,20 @@ describe('workspace', () => {
   })
 
   describe('flush', () => {
+    const mapFlushCounter: Record<string, number> = {}
+    const mapCreator = persistentMockCreateRemoteMap()
+    const mapCreatorWrapper = async (
+      params: CreateRemoteMapParams<Value>
+    ): Promise<RemoteMap<Value>> => {
+      const m = await mapCreator(params)
+      return {
+        ...m,
+        flush: async () => {
+          await m.flush()
+          mapFlushCounter[params.namespace] = (mapFlushCounter[params.namespace] ?? 0) + 1
+        },
+      } as unknown as RemoteMap<Value>
+    }
     it('should flush all data sources', async () => {
       const mockFlush = jest.fn()
       const flushable = {
@@ -1435,9 +1450,14 @@ describe('workspace', () => {
         getAll: jest.fn().mockResolvedValue([]),
       }
       const workspace = await createWorkspace(flushable as unknown as DirectoryStore<string>,
-        flushable as unknown as State)
+        flushable as unknown as State, undefined, undefined, undefined,
+        undefined, mapCreatorWrapper as RemoteMapCreator)
       await workspace.flush()
       expect(mockFlush).toHaveBeenCalledTimes(2)
+      expect(mapFlushCounter['workspace-default-merged']).toEqual(1)
+      expect(mapFlushCounter['workspace-default-errors']).toEqual(1)
+      expect(mapFlushCounter['workspace-default-searchableNamesIndex']).toEqual(1)
+      expect(mapFlushCounter['workspace-default-validationErrors']).toEqual(1)
     })
   })
 

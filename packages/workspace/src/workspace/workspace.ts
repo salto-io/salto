@@ -619,6 +619,7 @@ export const loadWorkspace = async (
       await currentWSState.merged.flush()
       await currentWSState.errors.flush()
       await currentWSState.searchableNamesIndex.flush()
+      await currentWSState.validationErrors.flush()
     },
     clone: (): Promise<Workspace> => {
       const sources = _.mapValues(elementsSources.sources, source =>
@@ -631,6 +632,11 @@ export const loadWorkspace = async (
         if (args.staticResources && !(args.state && args.cache && args.nacl)) {
           throw new Error('Cannot clear static resources without clearing the state, cache and nacls')
         }
+        const currentWSState = await getWorkspaceState()
+        await currentWSState.merged.clear()
+        await currentWSState.errors.clear()
+        await currentWSState.searchableNamesIndex.clear()
+        await currentWSState.validationErrors.clear()
         await (await getLoadedNaclFilesSource()).clear(args)
       }
       if (args.state) {

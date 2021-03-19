@@ -16,26 +16,26 @@
 import {
   ChangeError, getChangeElement, ChangeValidator, isAdditionOrModificationChange,
   isInstanceChange, Field, InstanceElement, isContainerType, ContainerType, ObjectType,
-  isListType, isObjectType,
+  isListType, isObjectType, Element, isFieldChange,
 } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { apiName, metadataType } from '../transformers/transformer'
+import { apiName, isFieldOfCustomObject, metadataType } from '../transformers/transformer'
 import { FieldReferenceDefinition, generateReferenceResolverFinder } from '../transformers/reference_mapping'
 
 
 const fieldSelectMapping: FieldReferenceDefinition[] = [
   {
-    src: { field: 'default', parentTypes: ['ProfileApplicationVisibility', 'ProfileRecordTypeVisibility', 'StandardValue'] },
+    src: { field: 'default', parentTypes: ['ProfileApplicationVisibility', 'ProfileRecordTypeVisibility', 'StandardValue', 'CustomValue'] },
   },
 ]
 
-const createChangeError = (parentType: ObjectType, instance: InstanceElement): ChangeError =>
+const createChangeError = (parentType: ObjectType, element: Element): ChangeError =>
   ({
-    elemID: instance.elemID,
+    elemID: element.elemID,
     severity: 'Warning',
-    message: `There cannot be more than one 'default' field set to 'true' in instance: ${apiName(instance)} of type: ${metadataType(instance)}.`,
-    detailedMessage: `There is more than one 'default' field set to 'true' in instance: ${apiName(instance)} of type: ${metadataType(instance)}. Field type: ${metadataType(parentType)}.`,
+    message: `There cannot be more than one 'default' field set to 'true'. In element: ${apiName(element)} of type: ${metadataType(element)}. Parent field type: ${metadataType(parentType)}`,
+    detailedMessage: `There is more than one 'default' field set to 'true'. In element: ${apiName(element)} of type: ${metadataType(element)}. Parent field type: ${metadataType(parentType)}.`,
   })
 
 const isDefaultField = (field: Field): boolean => {
@@ -43,25 +43,28 @@ const isDefaultField = (field: Field): boolean => {
   return resolverFinder(field).length > 0
 }
 
-const getMultipleDefaultsErrors = (after: InstanceElement): ChangeError[] => {
-  const defaultValues: boolean[] = []
-  const errors: ChangeError[] = []
-  // TODO: name of transform func
-  // TODO: design of transform func
-  const transformFunc: TransformFunc = ({ value, field }) => {
-    if (field !== undefined && isDefaultField(field) && value) {
-      if (defaultValues.length === 0) {
-        defaultValues.push(value)
-      } else if (errors.length === 0) {
-        errors.push(createChangeError(field.parent, after))
-      }
-    }
-    return value
-  }
+const getInstancesMultipleDefaultsErrors = (after: InstanceElement): ChangeError[] => {
+// there could be more than one invalid valueset per instance
+// - create exactly one error per parent field type
+  const errorsByParentFieldType: Record<string, ChangeError> = {}
 
   Object.entries(after.value)
     .filter(([fieldName]) => isContainerType(after.type.fields[fieldName]?.type))
     .forEach(([fieldName, fieldValues]) => {
+      const defaultValues: boolean[] = []
+
+      const createErrorIfMultipleDefaults: TransformFunc = ({ value, field }) => {
+        if (field !== undefined && isDefaultField(field) && value) {
+          if (defaultValues.length === 0) {
+            defaultValues.push(value)
+          }
+          errorsByParentFieldType[metadataType(field.parent)] = errorsByParentFieldType[
+            metadataType(field.parent)]
+            ?? createChangeError(field.parent, after)
+        }
+        return value
+      }
+
       const fieldType = after.type.fields[fieldName].type as ContainerType
       if (isListType(fieldType) && isObjectType(fieldType.innerType) && _.isArray(fieldValues)) {
         const type = fieldType.innerType
@@ -69,7 +72,7 @@ const getMultipleDefaultsErrors = (after: InstanceElement): ChangeError[] => {
           transformValues({
             values: val,
             type,
-            transformFunc,
+            transformFunc: createErrorIfMultipleDefaults,
             strict: false,
             isTopLevel: false,
           })
@@ -78,24 +81,46 @@ const getMultipleDefaultsErrors = (after: InstanceElement): ChangeError[] => {
         transformValues({
           values: fieldValues,
           type: fieldType,
-          transformFunc,
+          transformFunc: createErrorIfMultipleDefaults,
           strict: false,
           isTopLevel: false,
         })
       }
     })
-  return errors
+  return Object.values(errorsByParentFieldType)
+}
+
+const getPicklistMultipleDefaultsErrors = (field: Field): ChangeError[] => {
+  if (_.isArray(field.annotations.valueSet)) {
+    return field.annotations.valueSet
+      .map(value => value.default)
+      .filter(Boolean).length > 1
+      ? [createChangeError(field.parent, field)]
+      : []
+  }
+  return []
 }
 
 /**
    * It is forbidden to set more than 'default' field as 'true' for some types.
    */
-const changeValidator: ChangeValidator = async changes => (
-  changes
+const changeValidator: ChangeValidator = async changes => {
+  const instanceChangesErrors = changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(getChangeElement)
-    .flatMap(getMultipleDefaultsErrors)
-)
+    .flatMap(getInstancesMultipleDefaultsErrors)
+
+  // special treatment for picklist & multipicklist valueSets
+  const picklistChangesErrors = changes
+    .filter(isAdditionOrModificationChange)
+    .filter(isFieldChange)
+    .map(getChangeElement)
+    .filter(isFieldOfCustomObject)
+    .filter(field => field.annotations.valueSet !== undefined)
+    .flatMap(getPicklistMultipleDefaultsErrors)
+
+  return [...instanceChangesErrors, ...picklistChangesErrors]
+}
 
 export default changeValidator

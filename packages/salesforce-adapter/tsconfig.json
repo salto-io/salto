@@ -19,7 +19,6 @@
         "index.ts"
     ],
     "references": [
-        { "path": "../persistent-pool" },
         { "path": "../adapter-api" },
         { "path": "../adapter-components" },
         { "path": "../adapter-utils" },

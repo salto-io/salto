@@ -45,11 +45,9 @@ describe('tree map', () => {
   it('should set non existing complex key even if it is an inherited property', () => {
     const sourceMap = new TreeMap([], separator)
     const value = ['new_value']
-    const key = 'toString'
-    expect(Object.keys(_.get(sourceMap, 'data.children'))).toEqual([])
+    const key = 'a|toString|b'
     expect(sourceMap.get(key)).toBeUndefined()
     sourceMap.set(key, value)
-    expect(Object.keys(_.get(sourceMap, 'data.children'))).toEqual(['toString'])
     expect(sourceMap.get(key)).toEqual(value)
   })
   it('should return proper has value', () => {

@@ -94,7 +94,7 @@ AsyncIterable<remoteMap.RemoteMapEntry<string>> {
 
 const dbConnections: Record<string, Promise<rocksdb>> = {}
 
-export const createRemoteMapCreator = (location: string):
+export const createRemoteMapCreator = (location: string, readOnly = false):
 remoteMap.RemoteMapCreator => async <T, K extends string = string>(
   { namespace, batchInterval = 1000, serialize, deserialize }:
   remoteMap.CreateRemoteMapParams<T>
@@ -252,20 +252,36 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
 
   const getOpebDBConnection = async (loc: string): Promise<rocksdb> => {
     const newDb = rocksdbImpl(loc)
-    await promisify(newDb.open.bind(newDb))()
+    await promisify(newDb.open.bind(newDb, { readOnly }))()
     return newDb
   }
 
-  const createDBIfNotCreated = async (loc: string): Promise<void> => {
-    if (!(loc in dbConnections)) {
-      dbConnections[loc] = getOpebDBConnection(loc)
-      db = await dbConnections[loc]
-      await clearImpl(TEMP_PREFIX)
-    } else {
-      db = await dbConnections[loc]
+  const createDBIfNotExist = async (loc: string): Promise<void> => {
+    const newDb: rocksdb = rocksdbImpl(loc)
+    try {
+      await promisify(newDb.open.bind(newDb, { readOnly: true }))()
+      await promisify(newDb.close.bind(newDb))()
+    } catch (e) {
+      if (newDb.status === 'new') {
+        await promisify(newDb.open.bind(newDb))()
+        await promisify(newDb.close.bind(newDb))()
+      }
     }
   }
-  await createDBIfNotCreated(location)
+
+  const createDBConnections = async (loc: string): Promise<void> => {
+    if (loc in dbConnections) {
+      db = await dbConnections[loc]
+      return
+    }
+    await createDBIfNotExist(loc)
+    dbConnections[loc] = getOpebDBConnection(loc)
+    db = await dbConnections[loc]
+    if (!readOnly) {
+      await clearImpl(TEMP_PREFIX)
+    }
+  }
+  await createDBConnections(location)
   return {
     get: getImpl,
     getMany: async (keys: string[]): Promise<(T | undefined)[]> =>
@@ -303,7 +319,10 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       await clearImpl(keyToDBKey(key), keyToDBKey(key))
       await clearImpl(keyToTempDBKey(key), keyToTempDBKey(key))
     },
-    close: () => promisify(db.close.bind(db))(),
+    close: async () => {
+      await promisify(db.close.bind(db))()
+      delete dbConnections[location]
+    },
 
     has: async (key: string): Promise<boolean> => {
       if (cache.has(keyToTempDBKey(key))) {

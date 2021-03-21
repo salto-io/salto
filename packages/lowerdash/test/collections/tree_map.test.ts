@@ -34,7 +34,7 @@ describe('tree map', () => {
     expect(sourceMap.size).toEqual(5)
   })
 
-  it('should set non exsiting coplex key', () => {
+  it('should set non existing complex key', () => {
     const sourceMap = new TreeMap([], separator)
     const value = ['new_value']
     const key = 'a|b|c'
@@ -42,6 +42,16 @@ describe('tree map', () => {
     expect(sourceMap.get(key)).toEqual(value)
   })
 
+  it('should set non existing complex key even if it is an inherited property', () => {
+    const sourceMap = new TreeMap([], separator)
+    const value = ['new_value']
+    const key = 'toString'
+    expect(Object.keys(_.get(sourceMap, 'data.children'))).toEqual([])
+    expect(sourceMap.get(key)).toBeUndefined()
+    sourceMap.set(key, value)
+    expect(Object.keys(_.get(sourceMap, 'data.children'))).toEqual(['toString'])
+    expect(sourceMap.get(key)).toEqual(value)
+  })
   it('should return proper has value', () => {
     const sourceMap = new TreeMap([], separator)
     const value = ['new_value']

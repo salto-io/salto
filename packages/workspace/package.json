@@ -50,8 +50,6 @@
     "@types/moo": "^0.5.0",
     "@types/nearley": "^2.11.0",
     "@types/node": "^12.7.1",
-    "@types/supertest": "^2.0.4",
-    "@types/tmp": "^0.1.0",
     "@types/wu": "^2.1.40",
     "@typescript-eslint/eslint-plugin": "2.31.0",
     "@typescript-eslint/parser": "2.31.0",
@@ -67,7 +65,6 @@
     "jest-circus": "^26.6.3",
     "jest-each": "^26.6.2",
     "jest-junit": "^12.0.0",
-    "nock": "^12.0.1",
     "tsc-watch": "^2.2.1",
     "typescript": "3.9.3"
   }

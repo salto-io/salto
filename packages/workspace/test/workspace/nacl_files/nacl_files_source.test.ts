@@ -26,7 +26,6 @@ import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../util
 import * as parser from '../../../src/parser'
 import { InMemoryRemoteMap, RemoteMapCreator, RemoteMap, CreateRemoteMapParams } from '../../../src/workspace/remote_map'
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
-import { toParsedNaclFile } from '../../../src/workspace/nacl_files/nacl_files_source'
 
 const { awu } = collections.asynciterable
 
@@ -53,10 +52,11 @@ const validateParsedNaclFile = async (
   elements: Element[],
   errors: SaltoError[],
 ): Promise<void> => {
+  expect(parsed).toBeDefined()
   if (parsed) {
-    const parsedElements = await awu(parsed.elements).toArray()
+    const parsedElements = await awu((await parsed.elements()) ?? []).toArray()
     expect(parsedElements).toEqual(elements)
-    expect(parsed.data.errors).toEqual(errors)
+    expect(await parsed.data.errors()).toEqual(errors)
     expect(parsed.filename).toEqual(filename)
   }
 }
@@ -316,12 +316,12 @@ describe('Nacl Files Source', () => {
       const parsedFiles = [
         {
           filename,
-          elements,
+          elements: () => Promise.resolve(elements),
           buffer: '',
           data: {
-            errors: [],
-            timestamp: 0,
-            referenced: [],
+            errors: () => Promise.resolve([]),
+            timestamp: () => Promise.resolve(0),
+            referenced: () => Promise.resolve([]),
           },
         },
       ]
@@ -335,7 +335,7 @@ describe('Nacl Files Source', () => {
       const parsed = await (await naclSource).getParsedNaclFile(filename)
       expect(parsed).toBeDefined()
       expect(
-        (parsed as ParsedNaclFile).elements
+        await (parsed as ParsedNaclFile).elements()
       ).toEqual([elem])
     })
   })
@@ -351,17 +351,16 @@ describe('Nacl Files Source', () => {
         mockedStaticFilesSource,
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
-      await naclSource.load({})
     })
 
     it('should return undefined if file doenst exist', async () => {
-      expect(await naclSource.getParsedNaclFile('nonExistentFile')).toBeUndefined()
+      await naclSource.load({})
+      expect(await (await naclSource.getParsedNaclFile('nonExistentFile'))?.elements()).toBeUndefined()
     })
-    it('should return parseResult when parse cache is not updated', async () => {
+    it('should return parseResult when state is undefined', async () => {
       const elemID = new ElemID('dummy', 'elem')
       const elem = new ObjectType({ elemID, path: ['test', 'new'] })
-      const elements = [elem]
-      jest.spyOn(mockCache, 'get').mockResolvedValueOnce(undefined);
+      const elements = [elem];
       (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData)
       mockParse.mockResolvedValueOnce({ elements, errors: [], filename: mockFileData.filename })
       await validateParsedNaclFile(
@@ -371,29 +370,9 @@ describe('Nacl Files Source', () => {
         [],
       )
     })
-    it('should return cached result if updated', async () => {
-      mockParse.mockClear()
-      const elemID = new ElemID('dummy', 'elem')
-      const elem = new ObjectType({ elemID, path: ['test', 'new'] })
-      const elements = [elem];
-      (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData)
-      await mockCache.put(
-        mockFileData.filename,
-        await toParsedNaclFile(
-          mockFileData,
-          {
-            elements,
-            errors: [],
-          }
-        )
-      )
-      await validateParsedNaclFile(
-        await naclSource.getParsedNaclFile(mockFileData.filename),
-        mockFileData.filename,
-        elements,
-        [],
-      )
-      expect(mockParse).not.toHaveBeenCalled()
+    it('should return undefined if state is undefined and file does not exist', async () => {
+      (mockDirStore.get as jest.Mock).mockResolvedValue(undefined)
+      expect(await naclSource.getParsedNaclFile(mockFileData.filename)).toEqual(undefined)
     })
   })
 

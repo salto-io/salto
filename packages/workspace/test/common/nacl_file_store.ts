@@ -247,7 +247,15 @@ export const mockDirStore = (
 
 export const mockParseCache = (): ParsedNaclFileCache => ({
   put: () => Promise.resolve(),
-  get: () => Promise.resolve(undefined),
+  get: () => Promise.resolve({
+    elements: () => Promise.resolve([]),
+    filename: '',
+    data: {
+      errors: () => Promise.resolve([]),
+      referenced: () => Promise.resolve([]),
+      timestamp: () => Promise.resolve(0),
+    },
+  }),
   flush: () => Promise.resolve(undefined),
   clear: () => Promise.resolve(),
   rename: () => Promise.resolve(),

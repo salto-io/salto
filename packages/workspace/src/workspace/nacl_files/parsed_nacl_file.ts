@@ -20,15 +20,15 @@ import { SourceMap, ParseError } from '../../parser'
 export type ParsedNaclFileDataKeys = 'errors' | 'timestamp' | 'referenced'
 
 export type ParsedNaclFileData = {
-  errors: ParseError[]
-  timestamp: number
-  referenced: string[]
+  errors: () => Promise<ParseError[] | undefined>
+  timestamp: () => Promise<number | undefined>
+  referenced: () => Promise<string[] | undefined>
 }
 
 export type ParsedNaclFile = {
   filename: string
-  elements: Element[]
+  elements: () => Promise<Element[] | undefined>
   data: ParsedNaclFileData
   buffer?: string
-  sourceMap?: SourceMap
+  sourceMap?: () => Promise<SourceMap | undefined>
 }

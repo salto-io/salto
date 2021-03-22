@@ -15,7 +15,7 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { hash, collections, values } from '@salto-io/lowerdash'
+import { hash, collections } from '@salto-io/lowerdash'
 import { SourceMap, ParseError } from '../../parser'
 import { ContentType } from '../dir_store'
 import { serialize, deserialize } from '../../serializer/elements'
@@ -51,7 +51,7 @@ export type ParsedNaclFileCache = {
   rename: (name: string) => Promise<void>
   list: () => Promise<string[]>
   delete: (filename: string) => Promise<void>
-  get(filename: string): Promise<ParsedNaclFile | undefined>
+  get(filename: string): Promise<ParsedNaclFile>
   put(filename: string, value: ParsedNaclFile): Promise<void>
   hasValid(key: ParseResultKey): Promise<boolean>
   getAllErrors(): Promise<ParseError[]> // TEMP
@@ -77,13 +77,13 @@ const parseNaclFileFromCacheSources = async (
   filename: string
 ): Promise<ParsedNaclFile> => ({
   filename,
-  elements: await cacheSources.elements.get(filename) ?? [],
+  elements: () => cacheSources.elements.get(filename),
   data: {
-    errors: await cacheSources.errors.get(filename) ?? [],
-    referenced: await cacheSources.referenced.get(filename) ?? [],
-    timestamp: (await cacheSources.metadata.get(filename))?.timestamp ?? Date.now(),
+    errors: () => cacheSources.errors.get(filename),
+    referenced: () => cacheSources.referenced.get(filename),
+    timestamp: async () => (await cacheSources.metadata.get(filename))?.timestamp,
   },
-  sourceMap: await cacheSources.sourceMap.get(filename),
+  sourceMap: () => cacheSources.sourceMap.get(filename),
 })
 
 const getRemoteMapCacheNamespace = (
@@ -168,17 +168,18 @@ export const createParseResultCache = (
   return {
     put: async (filename: string, value: ParsedNaclFile): Promise<void> => {
       const { metadata, errors, referenced, sourceMap, elements } = await cacheSources
-      await errors.set(value.filename, value.data.errors)
-      await referenced.set(value.filename, value.data.referenced)
-      if (value.sourceMap !== undefined) {
-        await sourceMap.set(value.filename, value.sourceMap)
+      await errors.set(value.filename, (await value.data.errors()) ?? [])
+      await referenced.set(value.filename, (await value.data.referenced()) ?? [])
+      const sourceMapValue = await value.sourceMap?.()
+      if (sourceMapValue !== undefined) {
+        await sourceMap.set(value.filename, sourceMapValue)
       } else {
         await sourceMap.delete(value.filename)
       }
-      await elements.set(value.filename, value.elements)
+      await elements.set(value.filename, (await value.elements()) ?? [])
       await metadata.set(filename, {
         hash: hash.toMD5(value.buffer ?? ''),
-        timestamp: value.data.timestamp,
+        timestamp: (await value.data.timestamp()) ?? Date.now(),
       })
     },
     hasValid: async (key: ParseResultKey): Promise<boolean> => {
@@ -190,11 +191,8 @@ export const createParseResultCache = (
     },
     getAllErrors: async (): Promise<ParseError[]> =>
       (await awu((await cacheSources).errors.values()).toArray()).flat(),
-    get: async (filename: string): Promise<ParsedNaclFile | undefined> => {
+    get: async (filename: string): Promise<ParsedNaclFile> => {
       const sources = await cacheSources
-      if (!values.isDefined(await sources.metadata.get(filename))) {
-        return undefined
-      }
       return parseNaclFileFromCacheSources(
         sources,
         filename,

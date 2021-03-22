@@ -281,8 +281,10 @@ const buildNaclFilesState = async ({
       ...(await (await currentState.parsedNaclFiles.get(naclFile.filename))?.elements() ?? [])
         .map(e => e.elemID),
     )
-
-    newElementsToMerge.push(awu((await naclFile.elements() ?? [])))
+    const naclFileElements = await naclFile.elements()
+    if (!_.isEmpty(naclFileElements)) {
+      newElementsToMerge.push(awu(naclFileElements as Element[]))
+    }
     // This is temp and should be removed when we change the init flow
     // This happens now cause we get here with ParsedNaclFiles that originate from the cache
     if (values.isDefined(naclFile.buffer)) {
@@ -292,8 +294,9 @@ const buildNaclFilesState = async ({
 
   const handleDeletion = async (naclFile: ParsedNaclFile): Promise<void> => {
     const oldNaclFile = await currentState.parsedNaclFiles.get(naclFile.filename)
-    const oldNaclFileReferenced = oldNaclFile ? (await oldNaclFile.data.referenced()) : undefined
-    if (oldNaclFile === undefined || oldNaclFileReferenced === undefined) {
+    const oldNaclFileReferenced = (await oldNaclFile.data.referenced())
+    // If one of the properties of ParsedNaclFile is undefined it is considered as not exist
+    if (oldNaclFileReferenced === undefined) {
       return
     }
     oldNaclFileReferenced.forEach((elementFullName: string) => {
@@ -489,7 +492,7 @@ const buildNaclFilesSource = (
     // Need to check if need an extra hasValid check here
     const parsedNaclFile = await (await getState()).parsedNaclFiles.get(filename)
     const naclFileSourceMap = await parsedNaclFile.sourceMap?.()
-    if (naclFileSourceMap) {
+    if (values.isDefined(naclFileSourceMap)) {
       return naclFileSourceMap
     }
     const naclFile = (await naclFilesStore.get(filename))

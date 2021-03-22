@@ -229,7 +229,7 @@ export const loadWorkspace = async (
       const dependentsIDs = _.uniqBy(
         await awu(filesWithDependencies)
           .map(filename => naclFilesSource.getParsedNaclFile(filename))
-          .flatMap(naclFile => naclFile?.elements.map(elem => elem.elemID) ?? [])
+          .flatMap(async naclFile => ((await naclFile?.elements()) ?? []).map(elem => elem.elemID))
           .filter(id => !addedIDs.has(id.getFullName()))
           .toArray(),
         id => id.getFullName()

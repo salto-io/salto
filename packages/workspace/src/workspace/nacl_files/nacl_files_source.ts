@@ -152,14 +152,14 @@ export const toParsedNaclFile = async (
   parseResult: ParseResult
 ): Promise<ParsedNaclFile> => ({
   filename: naclFile.filename,
-  elements: await awu(parseResult.elements).toArray(),
+  elements: () => awu(parseResult.elements).toArray(),
   data: {
-    timestamp: naclFile.timestamp ?? Date.now(),
-    errors: parseResult.errors,
-    referenced: await awu(parseResult.elements).flatMap(getElementReferenced).toArray(),
+    timestamp: () => Promise.resolve(naclFile.timestamp),
+    errors: () => Promise.resolve(parseResult.errors),
+    referenced: () => awu(parseResult.elements).flatMap(getElementReferenced).toArray(),
   },
   buffer: naclFile.buffer,
-  sourceMap: parseResult.sourceMap,
+  sourceMap: () => Promise.resolve(parseResult.sourceMap),
 })
 
 const parseNaclFile = async (
@@ -265,24 +265,26 @@ const buildNaclFilesState = async ({
   }
 
   const handleAdditionOrModification = async (naclFile: ParsedNaclFile): Promise<void> => {
-    (naclFile.data.referenced ?? []).forEach((elementFullName: string) => {
+    ((await naclFile.data.referenced()) ?? []).forEach((elementFullName: string) => {
       referencedIndexAdditions[elementFullName] = referencedIndexAdditions[elementFullName]
         ?? new Set<string>()
       referencedIndexAdditions[elementFullName].add(naclFile.filename)
     })
-    await awu(naclFile.elements).forEach(element => {
+    await awu((await naclFile.elements()) ?? []).forEach(element => {
       const elementFullName = element.elemID.getFullName()
       elementsIndexAdditions[elementFullName] = elementsIndexAdditions[elementFullName]
         ?? new Set<string>()
       elementsIndexAdditions[elementFullName].add(naclFile.filename)
     })
     relevantElementIDs.push(
-      ...naclFile.elements.map(e => e.elemID),
-      ...(await currentState.parsedNaclFiles.get(naclFile.filename))?.elements
-        .map(e => e.elemID) ?? [],
+      ...((await naclFile.elements()) ?? []).map(e => e.elemID),
+      ...(await (await currentState.parsedNaclFiles.get(naclFile.filename))?.elements() ?? [])
+        .map(e => e.elemID),
     )
-
-    newElementsToMerge.push(awu(naclFile.elements))
+    const naclFileElements = await naclFile.elements()
+    if (!_.isEmpty(naclFileElements)) {
+      newElementsToMerge.push(awu(naclFileElements as Element[]))
+    }
     // This is temp and should be removed when we change the init flow
     // This happens now cause we get here with ParsedNaclFiles that originate from the cache
     if (values.isDefined(naclFile.buffer)) {
@@ -292,27 +294,31 @@ const buildNaclFilesState = async ({
 
   const handleDeletion = async (naclFile: ParsedNaclFile): Promise<void> => {
     const oldNaclFile = await currentState.parsedNaclFiles.get(naclFile.filename)
-    if (oldNaclFile === undefined) {
+    const oldNaclFileReferenced = (await oldNaclFile.data.referenced())
+    // If one of the properties of ParsedNaclFile is undefined it is considered as not exist
+    if (oldNaclFileReferenced === undefined) {
       return
     }
-    (oldNaclFile.data.referenced ?? []).forEach((elementFullName: string) => {
+    oldNaclFileReferenced.forEach((elementFullName: string) => {
       referencedIndexDeletions[elementFullName] = referencedIndexDeletions[elementFullName]
         ?? new Set<string>()
       referencedIndexDeletions[elementFullName].add(oldNaclFile.filename)
     })
-    await awu(oldNaclFile.elements).forEach(element => {
+    const oldNaclFileElements = await oldNaclFile.elements() ?? []
+    await awu(oldNaclFileElements).forEach(element => {
       const elementFullName = element.elemID.getFullName()
       elementsIndexDeletions[elementFullName] = elementsIndexDeletions[elementFullName]
         ?? new Set<string>()
       elementsIndexDeletions[elementFullName].add(oldNaclFile.filename)
     })
-    relevantElementIDs.push(...oldNaclFile.elements.map(e => e.elemID))
+    relevantElementIDs.push(...oldNaclFileElements.map(e => e.elemID))
     await currentState.parsedNaclFiles.delete(naclFile.filename)
   }
 
   // Add data from new additions
   await awu(Object.values(newParsed)).forEach(async naclFile => {
-    const isDeletion = _.isEmpty(naclFile.elements) && _.isEmpty(naclFile.data.errors)
+    const isDeletion = _.isEmpty(await naclFile.elements())
+      && _.isEmpty(await naclFile.data.errors())
     if (isDeletion) {
       await handleDeletion(naclFile)
     } else {
@@ -329,8 +335,9 @@ const buildNaclFilesState = async ({
 
       return awu(unmodifiedFilesWithElem)
         .map(async filename =>
-          (await currentState.parsedNaclFiles.get(filename))?.elements.find(
-            e => e.elemID.isEqual(elemID)))
+          ((await (await currentState.parsedNaclFiles.get(filename)).elements()) ?? []).find(
+            e => e.elemID.isEqual(elemID)
+          ))
     }).filter(values.isDefined) as AsyncIterable<Element>
 
   await updateIndex(
@@ -461,7 +468,7 @@ const buildNaclFilesSource = (
     }
     const naclFile = await getNaclFile(filename)
     if (naclFile === undefined) return undefined
-    return (await parseNaclFiles([naclFile], (await getState()).parsedNaclFiles, functions))[0]
+    return toParsedNaclFile(naclFile, await parseNaclFile(naclFile, functions))
   }
 
   const getElementNaclFiles = async (elemID: ElemID): Promise<string[]> => {
@@ -470,9 +477,9 @@ const buildNaclFilesSource = (
       topLevelID.parent.getFullName()
     ) ?? []
     return (await Promise.all(topLevelFiles.map(async filename => {
-      const fragments = (await getParsedNaclFile(filename))?.elements ?? []
+      const fragments = await (await (await getState()).parsedNaclFiles.get(filename)).elements()
       return values.isDefined(
-        await awu(fragments).find(fragment => resolvePath(fragment, elemID) !== undefined)
+        await awu(fragments ?? []).find(fragment => resolvePath(fragment, elemID) !== undefined)
       ) ? filename : undefined
     }))).filter(values.isDefined)
   }
@@ -484,8 +491,9 @@ const buildNaclFilesSource = (
   const getSourceMap = async (filename: string): Promise<SourceMap> => {
     // Need to check if need an extra hasValid check here
     const parsedNaclFile = await (await getState()).parsedNaclFiles.get(filename)
-    if (values.isDefined(parsedNaclFile) && values.isDefined(parsedNaclFile.sourceMap)) {
-      return parsedNaclFile.sourceMap
+    const naclFileSourceMap = await parsedNaclFile.sourceMap?.()
+    if (values.isDefined(naclFileSourceMap)) {
+      return naclFileSourceMap
     }
     const naclFile = (await naclFilesStore.get(filename))
     if (_.isUndefined(naclFile)) {
@@ -508,11 +516,11 @@ const buildNaclFilesSource = (
     ]
     const parsed = {
       filename,
-      elements,
+      elements: () => Promise.resolve(elements),
       data: {
-        timestamp: Date.now(),
-        errors: [],
-        referenced: await awu(elements).flatMap(getElementReferenced).toArray(),
+        timestamp: () => Promise.resolve(Date.now()),
+        errors: () => Promise.resolve([]),
+        referenced: () => awu(elements).flatMap(getElementReferenced).toArray(),
       },
       buffer: fileData,
     }
@@ -594,7 +602,7 @@ const buildNaclFilesSource = (
                 { filename, buffer },
                 await parseNaclFile({ filename, buffer }, functions),
               )
-            if ((parsed.data.errors ?? []).length > 0) {
+            if (((await parsed.data.errors()) ?? []).length > 0) {
               logNaclFileUpdateErrorContext(filename, fileChanges, naclFileData, buffer)
             }
             await removeDanglingStaticFiles(fileChanges)

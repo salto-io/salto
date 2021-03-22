@@ -98,14 +98,27 @@ describe('ParsedNaclFileCache', () => {
     return parsedWithoutBuff
   }
 
+  const fileExistsInCache = async (filename: string):
+  Promise<boolean> => (await (await cache.get(filename)).elements()) !== undefined
+
+  const validateParsedNaclFileEquals = async (p1: ParsedNaclFile, p2: ParsedNaclFile):
+  Promise<void> => {
+    expect(await p1.elements()).toEqual(await p2.elements())
+    expect(p1.filename).toEqual(p2.filename)
+    expect(await p1.sourceMap?.()).toEqual(await p2.sourceMap?.())
+    expect(await p1.data.errors()).toEqual(await p2.data.errors())
+    expect(await p1.data.referenced()).toEqual(await p2.data.referenced())
+    expect(await p1.data.timestamp()).toEqual(await p2.data.timestamp())
+  }
+
   beforeAll(async () => {
     jest.spyOn(Date, 'now').mockImplementation(() => someDateTimestamp)
     parsedDummy = await toParsedNaclFile(
-      dummyParsedKey,
+      { ...dummyParsedKey, timestamp: dummyParsedKey.lastModified },
       parseResultWithoutMD5
     )
     parsedToDelete = await toParsedNaclFile(
-      toDeleteKey,
+      { ...toDeleteKey, timestamp: toDeleteKey.lastModified },
       toDeleteParseResult
     )
   })
@@ -124,7 +137,10 @@ describe('ParsedNaclFileCache', () => {
         dummyFilename,
         parsedDummy,
       )
-      expect(await cache.get(dummyFilename)).toEqual(parsedWithoutBuffer(parsedDummy))
+      await validateParsedNaclFileEquals(
+        await cache.get(dummyFilename),
+        parsedWithoutBuffer(parsedDummy),
+      )
     })
   })
 
@@ -165,11 +181,11 @@ describe('ParsedNaclFileCache', () => {
       )
     })
     it('Should get value if exists', async () => {
-      expect(await cache.get(dummyFilename)).toBeDefined()
+      expect(await fileExistsInCache(dummyFilename)).toEqual(true)
     })
 
     it('Should return undefined if file was not inserted', async () => {
-      expect(await cache.get('lala/noexist.nacl')).toBeUndefined()
+      expect(await fileExistsInCache('lala/noexist.nacl')).toEqual(false)
     })
   })
 
@@ -179,9 +195,9 @@ describe('ParsedNaclFileCache', () => {
         toDeleteFilename,
         parsedToDelete,
       )
-      expect(await cache.get(toDeleteFilename)).toBeDefined()
+      expect(await fileExistsInCache(toDeleteFilename)).toEqual(true)
       await cache.delete(toDeleteKey.filename)
-      expect(await cache.get(toDeleteFilename)).toBeUndefined()
+      expect(await fileExistsInCache(toDeleteFilename)).toEqual(false)
     })
   })
 
@@ -214,8 +230,8 @@ describe('ParsedNaclFileCache', () => {
         parsedToDelete,
       )
       await cache.clear()
-      expect(await cache.get(dummyFilename)).toBeUndefined()
-      expect(await cache.get(toDeleteFilename)).toBeUndefined()
+      expect(await fileExistsInCache(dummyFilename)).toEqual(false)
+      expect(await fileExistsInCache(toDeleteFilename)).toEqual(false)
     })
   })
 
@@ -230,16 +246,24 @@ describe('ParsedNaclFileCache', () => {
         toDeleteFilename,
         parsedToDelete,
       )
-      expect(await cache.get(dummyFilename)).toEqual(parsedWithoutBuffer(parsedDummy))
-      expect(await cache.get(toDeleteFilename)).toEqual(parsedWithoutBuffer(parsedToDelete))
+      await validateParsedNaclFileEquals(
+        await cache.get(dummyFilename), parsedWithoutBuffer(parsedDummy)
+      )
+      await validateParsedNaclFileEquals(
+        await cache.get(toDeleteFilename), parsedWithoutBuffer(parsedToDelete)
+      )
       clearFnsBeforeRename = Object.values(remoteMaps).map(remoteMap =>
         jest.spyOn(remoteMap, 'clear'))
       await cache.rename('newName')
     })
 
     it('Should return the same values before and after rename', async () => {
-      expect(await cache.get(dummyFilename)).toEqual(parsedWithoutBuffer(parsedDummy))
-      expect(await cache.get(toDeleteFilename)).toEqual(parsedWithoutBuffer(parsedToDelete))
+      await validateParsedNaclFileEquals(
+        await cache.get(dummyFilename), parsedWithoutBuffer(parsedDummy)
+      )
+      await validateParsedNaclFileEquals(
+        await cache.get(toDeleteFilename), parsedWithoutBuffer(parsedToDelete)
+      )
     })
 
     // This is impl specific but we need to check we cleared the old remoteMaps

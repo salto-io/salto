@@ -92,7 +92,7 @@ const separateChangeByFiles = async (
   const isEmptyChangeElm = isEmptyChangeElement(getChangeElement(change))
   return (await awu(await source.getElementNaclFiles(change.id))
     .map(async filename => {
-      const fileElements = (await source.getParsedNaclFile(filename))?.elements ?? []
+      const fileElements = await (await source.getParsedNaclFile(filename))?.elements() ?? []
       const filteredChange = await applyFunctionToChangeData(
         change,
         changeData => filterByFile(change.id, changeData, fileElements),

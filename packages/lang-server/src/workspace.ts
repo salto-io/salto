@@ -112,9 +112,10 @@ export class EditorWorkspace {
 
   private async elementsInFiles(filenames: string[]): Promise<ElemID[]> {
     return awu(filenames)
-      .map(f => this.workspace.getParsedNaclFile(this.workspaceFilename(f)))
+      .map(async f =>
+        (await this.workspace.getParsedNaclFile(this.workspaceFilename(f)))?.elements())
       .filter(values.isDefined)
-      .flatMap(parsed => parsed.elements)
+      .flat()
       .map(e => e.elemID)
       .toArray()
   }
@@ -123,7 +124,7 @@ export class EditorWorkspace {
   Promise<errors.UnresolvedReferenceValidationError[]> {
     const fileElements = (await (await this.workspace.getParsedNaclFile(
       this.workspaceFilename(filename)
-    ))?.elements) ?? awu([])
+    ))?.elements()) ?? awu([])
     const validationErrors: errors.UnresolvedReferenceValidationError[] = []
     const getReferenceExpressions: TransformFunc = ({ value, path: elemPath }): Value => {
       if (isReferenceExpression(value) && elemPath) {
@@ -270,9 +271,9 @@ export class EditorWorkspace {
   }
 
   async getElements(filename: string): Promise<AsyncIterable<Element>> {
-    const elements = (
+    const elements = await (
       await this.workspace.getParsedNaclFile(this.workspaceFilename(filename))
-      )?.elements ?? []
+      )?.elements() ?? []
     return awu(elements)
   }
 

@@ -1992,13 +1992,6 @@
   resolved "https://registry.yarnpkg.com/@types/moo/-/moo-0.5.3.tgz#d034ae641728c473d367e7b7afd991123b8bdecb"
   integrity sha512-PJJ/jvb5Gor8DWvXN3e75njfQyYNRz0PaFSZ3br9GfHM9N2FxvuJ/E/ytcQePJOLzHlvgFSsIJIvfUMUxWTbnA==
 
-"@types/moxios@^0.4.10":
-  version "0.4.10"
-  resolved "https://registry.yarnpkg.com/@types/moxios/-/moxios-0.4.10.tgz#0762de3157714f8078a3c79ba65dcec4da701bfe"
-  integrity sha512-OGXB0kvKJT4KAdy4OzdGkBhNJ3f1x3FsqUq6elUBLcaBsVMy09hErlyhq2+zwEwcNbv1DGmksASW06XRISnxUQ==
-  dependencies:
-    axios "^0.21.1"
-
 "@types/nearley@^2.11.0":
   version "2.11.1"
   resolved "https://registry.yarnpkg.com/@types/nearley/-/nearley-2.11.1.tgz#6ac3f57c00ca28071a1774ec72d2e45750f21420"

@@ -34,6 +34,7 @@ export type OAuthMethod = AuthMethod & {
 export type AdapterAuthentication = {
   basic: AuthMethod
   oauth?: OAuthMethod
+  limited?: AuthMethod
 }
 
 export type OauthAccessTokenResponse = {

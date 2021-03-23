@@ -18,6 +18,7 @@ Currently, Salto supports the following services:
 - [NetSuite](https://github.com/salto-io/salto/tree/master/packages/netsuite-adapter)
 - [HubSpot](https://github.com/salto-io/salto/tree/master/packages/hubspot-adapter)
 - [Workato](https://github.com/salto-io/salto/tree/master/packages/workato-adapter)
+- [Zuora Billing](https://github.com/salto-io/salto/tree/master/packages/zuora-billing-adapter)
 
 Support for other services is in the works.
 

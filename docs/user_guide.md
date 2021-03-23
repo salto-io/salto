@@ -16,6 +16,7 @@ Currently, Salto supports the following business applications:
 - [NetSuite](https://github.com/salto-io/salto/tree/master/packages/netsuite-adapter)
 - [HubSpot](https://github.com/salto-io/salto/tree/master/packages/hubspot-adapter)
 - [Workato](https://github.com/salto-io/salto/tree/master/packages/workato-adapter)
+- [Zuora Billing](https://github.com/salto-io/salto/tree/master/packages/zuora-billing-adapter)
 
 Support for other business applications is in the works.
 

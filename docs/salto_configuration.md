@@ -48,6 +48,7 @@ Each configuration file holds information that is relevant to the specific adapt
 [Salesforce](../packages/salesforce-adapter/config_doc.md)
 [NetSuite](../packages/netsuite-adapter/config_doc.md)
 [Workato](../packages/workato-adapter/config_doc.md)
+[Zuora Billing](../packages/zuora-billing-adapter/config_doc.md)
 
 ## Global Salto configuration
 

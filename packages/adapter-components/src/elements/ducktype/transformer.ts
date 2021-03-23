@@ -18,43 +18,18 @@ import { Element, Values } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { ClientGetParams, HTTPClientInterface } from '../../client'
+import { HTTPClientInterface } from '../../client'
 import { generateType } from './type_elements'
 import { toInstance } from './instance_elements'
-import { RequestConfig, TypeConfig } from '../../config'
+import { TypeConfig } from '../../config'
 import { FindNestedFieldFunc } from '../field_finder'
 import { TypeDuckTypeDefaultsConfig, TypeDuckTypeConfig } from '../../config/ducktype'
+import { ComputeGetArgsFunc } from '../request_parameters'
 
 const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
 const { isDefined } = lowerdashValues
 const log = logger(module)
-
-type ComputeGetArgsFunc = (
-  request: RequestConfig,
-  contextElements?: Record<string, Element[]>,
-) => ClientGetParams[]
-
-/**
- * Convert an endpoint's request details into get argumets.
- * Supports recursive queries (subsequent queries to the same endpoint based on response data).
- */
-export const simpleGetArgs: ComputeGetArgsFunc = (
-  {
-    url,
-    queryParams,
-    recursiveQueryByResponseField,
-    paginationField,
-  },
-) => {
-  const recursiveQueryParams = recursiveQueryByResponseField !== undefined
-    ? _.mapValues(
-      recursiveQueryByResponseField,
-      val => ((entry: Values): string => entry[val])
-    )
-    : undefined
-  return [{ url, queryParams, recursiveQueryParams, paginationField }]
-}
 
 /**
  * Given a type and the corresponding endpoint definition, make the relevant HTTP requests and
@@ -95,6 +70,8 @@ export const getTypeAndInstances = async ({
   const transformationDefaultConfig = typeDefaultConfig.transformation
 
   const requestWithDefaults = _.defaults({}, request, typeDefaultConfig.request ?? {})
+  // TODO apply the config recursively in instances
+
   const getEntries = async (): Promise<Values[]> => {
     const getArgs = computeGetArgs(requestWithDefaults, contextElements)
     return (await Promise.all(

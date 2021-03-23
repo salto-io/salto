@@ -33,7 +33,7 @@ type TypeNameOverrideConfig = {
   newName: string
 }
 
-type AdditionalTypeConfig = {
+export type AdditionalTypeConfig = {
   typeName: string
   cloneFrom: string
 }

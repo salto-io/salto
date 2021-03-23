@@ -14,9 +14,15 @@
 * limitations under the License.
 */
 import * as ducktype from './ducktype'
+import * as swagger from './swagger'
+import { computeGetArgs, simpleGetArgs } from './request_parameters'
 import { RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH } from './constants'
+import { returnFullEntry, FindNestedFieldFunc } from './field_finder'
 
 export {
   ducktype,
+  swagger,
+  computeGetArgs, simpleGetArgs,
+  returnFullEntry, FindNestedFieldFunc,
   RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH,
 }

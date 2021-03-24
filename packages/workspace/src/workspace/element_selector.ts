@@ -35,17 +35,22 @@ type ElementIDContainer = {
   elemID: ElemID
 }
 
-const testNames = (nameArray: readonly string[], nameSelectors?: RegExp[]): boolean =>
-  (nameSelectors ? (nameArray.length === nameSelectors.length
+const testNames = (
+  nameArray: readonly string[], nameSelectors?: RegExp[], includeNested = false
+): boolean =>
+  (nameSelectors ? ((nameArray.length === nameSelectors.length || includeNested)
     && nameSelectors.every((regex, i) => regex.test(nameArray[i])))
     : nameArray.length === 0)
 
-const match = (elemId: ElemID, selector: ElementSelector): boolean =>
+const match = (elemId: ElemID, selector: ElementSelector, includeNested = false): boolean =>
   selector.adapterSelector.test(elemId.adapter)
   && selector.typeNameSelector.test(elemId.typeName)
   && (selector.idTypeSelector === elemId.idType)
-  && testNames(elemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
-    selector.nameSelectors)
+  && testNames(
+    elemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
+    selector.nameSelectors,
+    includeNested
+  )
 
 
 const createRegex = (selector: string, caseInSensitive: boolean): RegExp => new RegExp(
@@ -68,8 +73,12 @@ export const validateSelectorsMatches = (selectors: ElementSelector[],
   }
 }
 
-export const selectElementsBySelectors = <T extends ElementIDContainer | ElemID>
-  (elementIds: Iterable<T>, selectors: ElementSelector[], validateSelectors = true):
+export const selectElementsBySelectors = <T extends ElementIDContainer | ElemID>(
+  elementIds: Iterable<T>,
+  selectors: ElementSelector[],
+  validateSelectors = true,
+  includeNested = false
+):
     { elements: T[]; matches: Record<string, boolean> } => {
   const matches: Record<string, boolean> = { }
   if (selectors.length === 0) {
@@ -77,7 +86,11 @@ export const selectElementsBySelectors = <T extends ElementIDContainer | ElemID>
   }
   const elements = Array.from(elementIds).filter(obj => selectors.some(
     selector => {
-      const result = match(isElementContainer(obj) ? obj.elemID : obj as ElemID, selector)
+      const result = match(
+        isElementContainer(obj) ? obj.elemID : obj as ElemID,
+        selector,
+        includeNested
+      )
       matches[selector.origin] = matches[selector.origin] || result
       return result
     }
@@ -164,15 +177,10 @@ const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
   }
 }
 
-const createSameDepthSelector = (selector: ElementSelector, elemID: ElemID): ElementSelector =>
-  createElementSelector(selector.origin.split(ElemID.NAMESPACE_SEPARATOR).slice(0,
-    elemID.getFullNameParts().length).join(ElemID.NAMESPACE_SEPARATOR), selector.caseInsensitive)
-
 const isElementPossiblyParentOfSearchedElement = (
   selectors: ElementSelector[], testId: ElemID
-): boolean => (
-  selectors.some(selector => match(testId, createSameDepthSelector(selector, testId)))
-)
+): boolean =>
+  selectors.some(selector => match(testId, selector, true))
 
 export const selectElementIdsByTraversal = (
   selectors: ElementSelector[], elements: ElementIDToValue[],

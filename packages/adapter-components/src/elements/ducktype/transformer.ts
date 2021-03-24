@@ -116,7 +116,7 @@ export const getTypeAndInstances = async ({
     hasDynamicFields: hasDynamicFields === true,
   })
   // find the field and type containing the actual instances
-  const nestedFieldDetails = await nestedFieldFinder(type, topLevelFieldsToOmit, keepOriginal)
+  const nestedFieldDetails = await nestedFieldFinder(type, fieldsToOmit, dataField)
 
   const instances = await awu(naclEntries).flatMap(async (entry, index) => {
     if (nestedFieldDetails !== undefined) {
@@ -134,7 +134,6 @@ export const getTypeAndInstances = async ({
 
     log.info(`storing full entry for ${type.elemID.name}`)
     return [await toInstance({
-      adapterName,
       entry,
       type,
       transformationConfigByType,

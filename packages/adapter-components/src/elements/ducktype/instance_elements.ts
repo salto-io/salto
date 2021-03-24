@@ -27,7 +27,7 @@ import { toBasicInstance, InstanceCreationParams } from '../instance_elements'
 export const toInstance = async (args: InstanceCreationParams & {
   hasDynamicFields?: boolean
 }): Promise<InstanceElement | undefined> => {
-  const inst = toBasicInstance({
+  const inst = await toBasicInstance({
     ...args,
     entry: args.hasDynamicFields ? { value: args.entry } : args.entry,
   })

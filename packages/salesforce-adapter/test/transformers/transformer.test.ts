@@ -1445,33 +1445,33 @@ describe('transformer', () => {
     })
     it('should keep existing fields', () => {
       expect(baseType.fields).toHaveProperty(
-        'normal', expect.objectContaining({ type: BuiltinTypes.STRING })
+        'normal', expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) })
       )
       expect(complexType.fields).toHaveProperty(
-        'compField', expect.objectContaining({ type: BuiltinTypes.STRING })
+        'compField', expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) })
       )
     })
     it('should add missing fields with builtin types', () => {
       expect(baseType.fields).toHaveProperty(
-        'str', expect.objectContaining({ type: BuiltinTypes.STRING })
+        'str', expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) })
       )
       expect(baseType.fields).toHaveProperty(
-        'num', expect.objectContaining({ type: BuiltinTypes.NUMBER })
+        'num', expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.NUMBER) })
       )
     })
     it('should add missing boolean fields', () => {
       expect(baseType.fields).toHaveProperty(
-        'bool1', expect.objectContaining({ type: BuiltinTypes.BOOLEAN })
+        'bool1', expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) })
       )
       expect(baseType.fields).toHaveProperty(
-        'bool2', expect.objectContaining({ type: BuiltinTypes.BOOLEAN })
+        'bool2', expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) })
       )
     })
     it('should add missing enum fields', () => {
       expect(baseType.fields).toHaveProperty(
         'enum',
         expect.objectContaining({
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: expect.objectContaining({
             [CORE_ANNOTATIONS.RESTRICTION]: expect.objectContaining(
               createRestriction({ values: ['v1', 'v2'] }),
@@ -1485,7 +1485,7 @@ describe('transformer', () => {
         expect.stringMatching(/.*ComplexType$/)
       )
       expect(complexType.fields).toHaveProperty(
-        'str', expect.objectContaining({ type: BuiltinTypes.STRING })
+        'str', expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) })
       )
     })
     it('should add complex fields even when describe on them is empty', () => {
@@ -1493,7 +1493,7 @@ describe('transformer', () => {
         expect.stringMatching(/.*ComplexTypeEmpty$/)
       )
       expect(emptyComplexType.fields).toHaveProperty(
-        'str', expect.objectContaining({ type: BuiltinTypes.STRING })
+        'str', expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) })
       )
     })
   })

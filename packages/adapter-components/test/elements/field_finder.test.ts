@@ -29,8 +29,8 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, MapType, ListType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { findDataField, returnFullEntry } from '../../src/elements/ducktype'
-import { createRefToElmWithValue } from '../../../src/utils'
 
 const ADAPTER_NAME = 'myAdapter'
 
@@ -56,11 +56,11 @@ const sampleType = new ObjectType({
 
 describe('ducktype_field_finder', () => {
   describe('findDataField', () => {
-    it('should return undefined when more than one field satisfies the requirements', () => {
+    it('should return undefined when more than one field satisfies the requirements', async () => {
       const fieldDetails = await findDataField(sampleType)
       expect(fieldDetails).toBeUndefined()
     })
-    it('should return field type when the matching field is an object', () => {
+    it('should return field type when the matching field is an object', async () => {
       const fieldDetails = await findDataField(sampleType, [
         { fieldName: 'str', fieldType: 'string' },
         { fieldName: 'nestedMap' },
@@ -116,7 +116,7 @@ describe('ducktype_field_finder', () => {
   })
 
   describe('returnFullEntry', async () => {
-    it('should return always return undefined', () => {
+    it('should return always return undefined', async () => {
       expect(await returnFullEntry(sampleType)).toBeUndefined()
       expect(await returnFullEntry(sampleType, [
         { fieldName: 'str', fieldType: 'string' },

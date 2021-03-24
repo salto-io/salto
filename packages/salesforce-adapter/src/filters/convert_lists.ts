@@ -30,60 +30,60 @@ const { awu } = collections.asynciterable
 
 type OrderFunc = (value: Value) => number
 export type UnorderedList = {
-  elemId: ElemID
+  elemID: ElemID
   orderBy: string | string[] | OrderFunc
 }
 
 const fieldsToSort: ReadonlyArray<UnorderedList> = [
   {
-    elemId: new ElemID(SALESFORCE, 'CleanDataService', 'field', 'cleanRules'),
+    elemID: new ElemID(SALESFORCE, 'CleanDataService', 'field', 'cleanRules'),
     orderBy: 'developerName',
   },
   {
-    elemId: new ElemID(SALESFORCE, 'CleanRule', 'field', 'fieldMappings'),
+    elemID: new ElemID(SALESFORCE, 'CleanRule', 'field', 'fieldMappings'),
     orderBy: 'developerName',
   },
   {
-    elemId: new ElemID(SALESFORCE, 'FieldMapping', 'field', 'fieldMappingRows'),
+    elemID: new ElemID(SALESFORCE, 'FieldMapping', 'field', 'fieldMappingRows'),
     orderBy: 'fieldName',
   },
   {
-    elemId: new ElemID(SALESFORCE, 'FieldMappingRow', 'field', 'fieldMappingFields'),
+    elemID: new ElemID(SALESFORCE, 'FieldMappingRow', 'field', 'fieldMappingFields'),
     orderBy: 'dataServiceField',
   },
   {
-    elemId: new ElemID(SALESFORCE, 'DuplicateRule', 'field', 'duplicateRuleMatchRules'),
+    elemID: new ElemID(SALESFORCE, 'DuplicateRule', 'field', 'duplicateRuleMatchRules'),
     orderBy: 'matchingRule',
   },
   {
-    elemId: new ElemID(SALESFORCE, 'DuplicateRuleMatchRule', 'field', 'objectMapping'),
+    elemID: new ElemID(SALESFORCE, 'DuplicateRuleMatchRule', 'field', 'objectMapping'),
     orderBy: ['inputObject', 'outputObject'],
   },
   {
-    elemId: new ElemID(SALESFORCE, 'LeadConvertSettings', 'field', 'objectMapping'),
+    elemID: new ElemID(SALESFORCE, 'LeadConvertSettings', 'field', 'objectMapping'),
     orderBy: ['inputObject', 'outputObject'],
   },
   {
-    elemId: new ElemID(SALESFORCE, 'ObjectMapping', 'field', 'mappingFields'),
+    elemID: new ElemID(SALESFORCE, 'ObjectMapping', 'field', 'mappingFields'),
     orderBy: ['inputField', 'outputField'],
   },
   {
-    elemId: new ElemID(SALESFORCE, 'BusinessProcess', 'field', 'values'),
+    elemID: new ElemID(SALESFORCE, 'BusinessProcess', 'field', 'values'),
     orderBy: 'fullName',
   },
   {
-    elemId: new ElemID(SALESFORCE, 'PlatformActionList', 'field', 'platformActionListItems'),
+    elemID: new ElemID(SALESFORCE, 'PlatformActionList', 'field', 'platformActionListItems'),
     orderBy: val => Number(val.sortOrder),
   },
   {
-    elemId: new ElemID(SALESFORCE, 'QuickActionList', 'field', 'quickActionListItems'),
+    elemID: new ElemID(SALESFORCE, 'QuickActionList', 'field', 'quickActionListItems'),
     orderBy: 'quickActionName',
   },
 ]
 
 const annotationsToSort: ReadonlyArray<UnorderedList> = [
   {
-    elemId: new ElemID(SALESFORCE, 'MacroInstruction', 'field', 'Target', 'valueSet'),
+    elemID: new ElemID(SALESFORCE, 'MacroInstruction', 'field', 'Target', 'valueSet'),
     orderBy: 'fullName',
   },
 ]
@@ -109,7 +109,7 @@ const castListRecursively = async (
   unorderedLists: ReadonlyArray<UnorderedList> = [],
 ): Promise<void> => {
   const listOrders = _.fromPairs(
-    unorderedLists.map(sortDef => [sortDef.elemId.getFullName(), sortDef.orderBy]),
+    unorderedLists.map(sortDef => [sortDef.elemID.getFullName(), sortDef.orderBy]),
   )
   // Cast all lists to list
   const castLists = async (field: Field, value: Value): Promise<Value> => {
@@ -143,7 +143,7 @@ const markHardcodedLists = async (
 
 const sortAnnotations = (type: ObjectType,
   unorderedLists: ReadonlyArray<UnorderedList> = []): void => {
-  unorderedLists.forEach(({ elemId, orderBy }) => {
+  unorderedLists.forEach(({ elemID: elemId, orderBy }) => {
     const parentId = elemId.createParentID()
     const parent = resolvePath(type, parentId)
     const parentValues = isElement(parent) ? parent.annotations : parent
@@ -214,7 +214,7 @@ export const makeFilter = (
     const mapFieldIds = await getMapFieldIds(objectTypes, config.useOldProfiles)
     const knownListIds = new Set([
       ...hardcodedLists,
-      ...unorderedListFields.map(sortDef => sortDef.elemId.getFullName()),
+      ...unorderedListFields.map(sortDef => sortDef.elemID.getFullName()),
     ].filter(id => !mapFieldIds.has(id)))
 
     await awu(objectTypes).forEach(t => markHardcodedLists(t, knownListIds))

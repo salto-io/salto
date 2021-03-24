@@ -29,10 +29,10 @@
 * limitations under the License.
 */
 import { ObjectType, Values, ElemID, BuiltinTypes, MapType, ListType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line
 import { generateType, toNestedTypeName } from '../../../src/elements/ducktype'
 import { TYPES_PATH, SUBTYPES_PATH } from '../../../src/elements'
-import { createRefToElmWithValue } from '../../../src/utils'
 
 /* eslint-disable @typescript-eslint/camelcase */
 const ADAPTER_NAME = 'myAdapter'

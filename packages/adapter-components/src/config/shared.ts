@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType, MapType,
-} from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType, MapType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { RequestConfig, RequestDefaultConfig } from './request'
 import { TransformationConfig, TransformationDefaultConfig } from './transformation'
 
@@ -58,9 +57,9 @@ export const createAdapterApiConfigType = ({
   const typeDefaultsConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'typeDefaultsConfig'),
     fields: {
-      request: { type: new MapType(requestTypes.requestDefault) },
+      request: { refType: createRefToElmWithValue(new MapType(requestTypes.requestDefault)) },
       transformation: {
-        type: new MapType(transformationTypes.transformationDefault),
+        refType: createRefToElmWithValue(new MapType(transformationTypes.transformationDefault)),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
@@ -71,8 +70,8 @@ export const createAdapterApiConfigType = ({
   const typesConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'typesConfig'),
     fields: {
-      request: { type: requestTypes.request },
-      transformation: { type: transformationTypes.transformation },
+      request: { refType: createRefToElmWithValue(requestTypes.request) },
+      transformation: { refType: createRefToElmWithValue(transformationTypes.transformation) },
     },
   })
 
@@ -80,19 +79,19 @@ export const createAdapterApiConfigType = ({
     elemID: new ElemID(adapter, 'adapterApiConfig'),
     fields: {
       types: {
-        type: new MapType(typesConfigType),
+        refType: createRefToElmWithValue(new MapType(typesConfigType)),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
       typeDefaults: {
-        type: typeDefaultsConfigType,
+        refType: createRefToElmWithValue(typeDefaultsConfigType),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
       apiVersion: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       ...additionalFields,
     },
@@ -107,7 +106,7 @@ export const createUserFetchConfigType = (
   new ObjectType({
     elemID: new ElemID(adapter, 'userFetchConfig'),
     fields: {
-      includeTypes: { type: new ListType(BuiltinTypes.STRING) },
+      includeTypes: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
       ...additionalFields,
     },
   })

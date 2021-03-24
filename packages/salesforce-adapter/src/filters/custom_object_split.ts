@@ -30,13 +30,15 @@ export const standardFieldsFileName = (objectName: string): string => `${pathNac
 export const customFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}CustomFields`
 
 const createCustomFieldsObjects = async (customObject: ObjectType): Promise<ObjectType[]> => {
-  const createCustomFieldObject = (fields: Record<string, Field>, namespace?: string): ObjectType =>
+  const createCustomFieldObject = async (
+    fields: Record<string, Field>, namespace?: string,
+  ): Promise<ObjectType> =>
     (new ObjectType(
       {
         elemID: customObject.elemID,
         fields,
         path: [
-          ...getObjectDirectoryPath(customObject, namespace),
+          ...await getObjectDirectoryPath(customObject, namespace),
           customFieldsFileName(customObject.elemID.name),
         ],
       }
@@ -49,7 +51,7 @@ const createCustomFieldsObjects = async (customObject: ObjectType): Promise<Obje
   // When there's an object namespace, all the custom fields are in the same object
   const objNamespace = await getNamespace(customObject)
   if (!_.isUndefined(objNamespace) && !_.isEmpty(customFields)) {
-    return [createCustomFieldObject(customFields, objNamespace)]
+    return [await createCustomFieldObject(customFields, objNamespace)]
   }
 
   const getFieldDefNamespace = (f: Field): string | undefined => (
@@ -63,13 +65,13 @@ const createCustomFieldsObjects = async (customObject: ObjectType): Promise<Obje
   )
 
   // Custom fields that belong to a package go in a separate element
-  const customFieldsObjects = Object.entries(namespaceToFields)
-    .map(([fieldNamespace, packageFields]) =>
-      createCustomFieldObject(packageFields, fieldNamespace))
+  const customFieldsObjects = await awu(Object.entries(namespaceToFields))
+    .map(async ([fieldNamespace, packageFields]) =>
+      createCustomFieldObject(packageFields, fieldNamespace)).toArray()
 
   if (!_.isEmpty(regularCustomFields)) {
     // Custom fields that has no namespace go in a separate element
-    const customPart = createCustomFieldObject(regularCustomFields)
+    const customPart = await createCustomFieldObject(regularCustomFields)
     customFieldsObjects.push(customPart)
   }
   return customFieldsObjects
@@ -81,7 +83,7 @@ const customObjectToSplittedElements = async (customObject: ObjectType): Promise
     annotationRefsOrTypes: customObject.annotationRefTypes,
     annotations: customObject.annotations,
     path: [
-      ...getObjectDirectoryPath(customObject),
+      ...await getObjectDirectoryPath(customObject),
       annotationsFileName(customObject.elemID.name),
     ],
   })
@@ -89,7 +91,7 @@ const customObjectToSplittedElements = async (customObject: ObjectType): Promise
     elemID: customObject.elemID,
     fields: _.pickBy(customObject.fields, f => !isCustom(f.elemID.getFullName())),
     path: [
-      ...getObjectDirectoryPath(customObject),
+      ...await getObjectDirectoryPath(customObject),
       standardFieldsFileName(customObject.elemID.name),
     ],
   })

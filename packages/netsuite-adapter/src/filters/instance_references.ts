@@ -20,9 +20,8 @@ import {
   transformElement,
   TransformFunc, transformValues,
 } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { values as lowerdashValues } from '@salto-io/lowerdash'
+import { values as lowerdashValues, collections } from '@salto-io/lowerdash'
 import {
   SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME, SCRIPT_ID,
   PATH,

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement, ListType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/field_references'
 import WorkatoClient from '../../src/client/client'
@@ -51,39 +52,39 @@ describe('Field references filter', () => {
   const apiClientType = new ObjectType({
     elemID: new ElemID(WORKATO, 'api_client'),
     fields: {
-      id: { type: BuiltinTypes.NUMBER },
+      id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
     },
   })
   const apiCollectionType = new ObjectType({
     elemID: new ElemID(WORKATO, 'api_collection'),
     fields: {
-      id: { type: BuiltinTypes.NUMBER },
+      id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
       // eslint-disable-next-line @typescript-eslint/camelcase
-      api_client_id: { type: BuiltinTypes.NUMBER },
+      api_client_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
     },
   })
   const folderType = new ObjectType({
     elemID: new ElemID(WORKATO, 'folder'),
     fields: {
-      id: { type: BuiltinTypes.NUMBER },
+      id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
       // eslint-disable-next-line @typescript-eslint/camelcase
-      parent_id: { type: BuiltinTypes.NUMBER },
+      parent_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
     },
   })
   const apiAccessProfileType = new ObjectType({
     elemID: new ElemID(WORKATO, 'api_access_profile'),
     fields: {
       // eslint-disable-next-line @typescript-eslint/camelcase
-      api_client_id: { type: BuiltinTypes.NUMBER },
+      api_client_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
       // eslint-disable-next-line @typescript-eslint/camelcase
-      api_collection_ids: { type: new ListType(BuiltinTypes.NUMBER) },
+      api_collection_ids: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)) },
     },
   })
   const apiEndpointType = new ObjectType({
     elemID: new ElemID(WORKATO, 'api_endpoint'),
     fields: {
       // eslint-disable-next-line @typescript-eslint/camelcase
-      flow_id: { type: BuiltinTypes.NUMBER },
+      flow_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
     },
   })
 
@@ -118,25 +119,25 @@ describe('Field references filter', () => {
 
     it('should resolve field values when referenced element exists', () => {
       const prof = elements.filter(
-        e => isInstanceElement(e) && e.type.elemID.name === 'api_access_profile'
+        e => isInstanceElement(e) && e.refType.elemID.name === 'api_access_profile'
       )[0] as InstanceElement
       expect(prof.value.api_client_id).toBeInstanceOf(ReferenceExpression)
-      expect(prof.value.api_client_id?.elemId.getFullName()).toEqual('workato.api_client.instance.cli123')
+      expect(prof.value.api_client_id?.elemID.getFullName()).toEqual('workato.api_client.instance.cli123')
       expect(prof.value.api_collection_ids).toHaveLength(1)
       expect(prof.value.api_collection_ids[0]).toBeInstanceOf(ReferenceExpression)
-      expect(prof.value.api_collection_ids[0].elemId.getFullName()).toEqual('workato.api_collection.instance.collection456')
+      expect(prof.value.api_collection_ids[0].elemID.getFullName()).toEqual('workato.api_collection.instance.collection456')
 
       const folders = elements.filter(
-        e => isInstanceElement(e) && e.type.elemID.name === 'folder'
+        e => isInstanceElement(e) && e.refType.elemID.name === 'folder'
       ) as InstanceElement[]
       expect(folders).toHaveLength(2)
       expect(folders[1].value.parent_id).toBeInstanceOf(ReferenceExpression)
-      expect(folders[1].value.parent_id.elemId.getFullName()).toEqual('workato.folder.instance.folder11')
+      expect(folders[1].value.parent_id.elemID.getFullName()).toEqual('workato.folder.instance.folder11')
     })
 
     it('should not resolve fields in unexpected types even if field name matches', () => {
       const collections = elements.filter(
-        e => isInstanceElement(e) && e.type.elemID.name === 'api_collection'
+        e => isInstanceElement(e) && e.refType.elemID.name === 'api_collection'
       ) as InstanceElement[]
       expect(collections).toHaveLength(2)
       expect(collections[1].value.api_client_id).not.toBeInstanceOf(ReferenceExpression)
@@ -145,7 +146,7 @@ describe('Field references filter', () => {
 
     it('should not resolve if referenced element does not exist', () => {
       const folders = elements.filter(
-        e => isInstanceElement(e) && e.type.elemID.name === 'folder'
+        e => isInstanceElement(e) && e.refType.elemID.name === 'folder'
       ) as InstanceElement[]
       expect(folders).toHaveLength(2)
       expect(folders[0].value.parent_id).not.toBeInstanceOf(ReferenceExpression)

@@ -20,13 +20,10 @@ import { Element, ElemID, AdapterOperations, ReferenceMap, Values, ServiceIds, B
 import { applyInstancesDefaults, resolvePath, flattenElementStr } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger, elementSource } from '@salto-io/workspace'
-import { collections, values, promises, types } from '@salto-io/lowerdash'
+import { collections, promises, types } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
-import {
-  AdapterEvents,
-  createAdapterProgressReporter,
-} from './adapters/progress'
+import { AdapterEvents, createAdapterProgressReporter } from './adapters/progress'
 import { IDFilter } from './plan/plan'
 
 const { awu } = collections.asynciterable
@@ -274,7 +271,7 @@ const runPostFetch = async (
 
 const fetchAndProcessMergeErrors = async (
   adapters: Record<string, AdapterOperations>,
-  filteredStateElements: ReadonlyArray<Element>,
+  filteredStateElements: elementSource.ElementsSource,
   otherStateElements: ReadonlyArray<Element>,
   getChangesEmitter: StepEmitter,
   progressEmitter?: EventEmitter<FetchProgressEvents>
@@ -323,7 +320,8 @@ const fetchAndProcessMergeErrors = async (
     if (!_.isEmpty(adaptersWithPostFetch)) {
       try {
         const stateElementsByAdapter = _.groupBy(
-          [...filteredStateElements, ...otherStateElements],
+          // TODO: Fix this in the next iteration
+          [...await awu(await filteredStateElements.getAll()).toArray(), ...otherStateElements],
           e => e.elemID.adapter,
         )
         // update elements based on fetch results from other services
@@ -340,15 +338,22 @@ const fetchAndProcessMergeErrors = async (
       }
     }
 
-    const { errors: mergeErrors, merged: elements } = mergeElements(serviceElements)
-    applyInstancesDefaults(elements.filter(isInstanceElement))
-    log.debug(`got ${serviceElements.length} from merge results and elements and to ${elements.length} elements [errors=${
-      mergeErrors.length}]`)
+    const { errors: mergeErrors, merged: elements } = await mergeElements(awu(serviceElements))
+    // applyInstancesDefaults(elements.filter(isInstanceElement))
+    // log.debug(`got ${serviceElements.length} from merge results and
+    // elements and to ${elements.length} elements [errors=${
+    //   mergeErrors.length}]`)
 
-    const processErrorsResult = processMergeErrors(
-      elements,
-      mergeErrors,
-      new Set(filteredStateElements.map(e => e.elemID.getFullName()))
+    // We need to think about printing the size of it :/
+    // log.debug(`got ${serviceElements.length} from merge
+    // results and elements and to ${elements.length}
+    // elements [errors=${
+    //   mergeErrors.length}]`)
+    const mergeErrorsArr = await awu(mergeErrors.values()).flat().toArray()
+    const processErrorsResult = await processMergeErrors(
+      applyInstancesDefaults(elements.values()),
+      mergeErrorsArr,
+      filteredStateElements,
     )
 
     const droppedElements = new Set(
@@ -395,36 +400,25 @@ const calcFetchChanges = async (
   workspaceElements: elementSource.ElementsSource,
   partiallyFetchedAdapters: Set<string>,
 ): Promise<Iterable<FetchChange>> => {
-  const serviceElementsIds = new Set(wu(serviceElements)
-    .filter(e => partiallyFetchedAdapters.has(e.elemID.adapter))
-    .map(e => e.elemID.getFullName()))
-
-  const shouldConsiderElementInPlan = (e: Element): boolean =>
-    (!partiallyFetchedAdapters.has(e.elemID.adapter)
-      || serviceElementsIds.has(e.elemID.getFullName()))
-
-  const filteredWorkspaceElements = workspaceElements.filter(shouldConsiderElementInPlan)
-  const filteredStateElements = stateElements.filter(shouldConsiderElementInPlan)
-
   const paritalFetchFilter: IDFilter = id => (
     !partiallyFetchedAdapters.has(id.adapter) || mergedServiceElements.has(id)
   )
 
   const serviceChanges = [...await log.time(() =>
     getDetailedChanges(
-      filteredStateElements,
+      stateElements,
       mergedServiceElements,
       [paritalFetchFilter]
     ),
   'finished to calculate service-state changes')]
   const pendingChanges = await log.time(() => getChangeMap(
-    filteredStateElements,
-    filteredWorkspaceElements,
+    stateElements,
+    workspaceElements,
     [paritalFetchFilter]
   ), 'finished to calculate pending changes')
 
   const workspaceToServiceChanges = await log.time(() => getChangeMap(
-    filteredWorkspaceElements,
+    workspaceElements,
     mergedServiceElements,
     [paritalFetchFilter]
   ), 'finished to calculate service-workspace changes')

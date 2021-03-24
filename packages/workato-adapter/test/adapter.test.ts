@@ -167,15 +167,9 @@ describe('adapter', () => {
           id: 300507,
           name: 'f1_nested1',
           // eslint-disable-next-line @typescript-eslint/camelcase
-          parent_id: {
-            elemId: {
-              adapter: 'workato',
-              typeName: 'folder',
-              idType: 'instance',
-              nameParts: ['basedir1'],
-            },
-          },
+          parent_id: expect.any(ReferenceExpression),
         })
+        expect(folder?.value.parent_id.elemID.getFullName()).toEqual('workato.folder.instance.basedir1')
 
         const recipe = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'workato.recipe.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets@dssssssssssssss')
         expect(recipe).toBeDefined()
@@ -218,7 +212,7 @@ describe('adapter', () => {
         })
         const recipeCodeReference = recipe?.value.code
         expect(recipeCodeReference).toBeInstanceOf(ReferenceExpression)
-        expect((recipeCodeReference as ReferenceExpression).elemId.getFullName()).toEqual('workato.recipe__code.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_dssssssssssssss__updated_custom_object@uuuuuuuuuuuuuuumuuuu')
+        expect((recipeCodeReference as ReferenceExpression).elemID.getFullName()).toEqual('workato.recipe__code.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_dssssssssssssss__updated_custom_object@uuuuuuuuuuuuuuumuuuu')
         const recipeCode = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_dssssssssssssss__updated_custom_object@uuuuuuuuuuuuuuumuuuu')
         expect(recipeCode).toBeDefined()
         expect(recipeCode?.value).toEqual({
@@ -327,26 +321,24 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }) as types.PickyRequired<AdapterOperations, 'postFetch'>
-
         const fetchResult = await adapterOperations.fetch({
           progressReporter: { reportProgress: () => null },
         })
         const currentAdapterElements = fetchResult.elements
         expect(adapterOperations.postFetch).toBeDefined()
-        const postFetchRes = await adapterOperations.postFetch({
+        await adapterOperations.postFetch({
           currentAdapterElements,
           elementsByAdapter: {
             salesforce: [fishCustomObject],
           },
         })
-        expect(postFetchRes).toBeTruthy()
         const recipeCodeWithRefs = currentAdapterElements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('workato.recipe__code.instance.pubsub_recipe_412'))
         expect(recipeCodeWithRefs).toBeDefined()
         const deps = recipeCodeWithRefs?.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
         expect(deps).toBeDefined()
         expect(deps).toHaveLength(1)
         expect(deps[0]).toBeInstanceOf(ReferenceExpression)
-        expect(deps[0].elemId.getFullName()).toEqual('salesforce.Fish__c')
+        expect(deps[0].elemID.getFullName()).toEqual('salesforce.Fish__c')
       })
     })
   })

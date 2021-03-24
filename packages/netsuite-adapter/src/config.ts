@@ -83,7 +83,7 @@ const suiteAppClientConfigType = new ObjectType({
   elemID: new ElemID(NETSUITE, 'suiteAppClientConfig'),
   fields: {
     [SUITEAPP_CONCURRENCY_LIMIT]: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_CONCURRENCY,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -145,7 +145,7 @@ export const configType = new ObjectType({
     },
 
     [SUITEAPP_CLIENT_CONFIG]: {
-      type: suiteAppClientConfigType,
+      refType: createRefToElmWithValue(suiteAppClientConfigType),
     },
 
     [FETCH_TARGET]: {

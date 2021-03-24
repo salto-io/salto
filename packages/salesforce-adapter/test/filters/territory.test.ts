@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, InstanceElement, toChange, Change } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/territory'
 import mockClient from '../client'
@@ -38,8 +39,10 @@ describe('territory filter', () => {
         TERRITORY2_TYPE,
         {
           fields: {
-            customFields: { type: new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') }) },
-            description: { type: BuiltinTypes.STRING },
+            customFields: {
+              refType: createRefToElmWithValue(new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') })),
+            },
+            description: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
           },
         }
       )
@@ -67,7 +70,7 @@ describe('territory filter', () => {
     it('should keep other fields on type', () => {
       expect(type.fields).toHaveProperty(
         'description',
-        expect.objectContaining({ type: BuiltinTypes.STRING })
+        expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) })
       )
     })
   })
@@ -86,8 +89,10 @@ describe('territory filter', () => {
         TERRITORY2_TYPE,
         {
           fields: {
-            customFields: { type: new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') }) },
-            description: { type: BuiltinTypes.STRING },
+            customFields: {
+              refType: createRefToElmWithValue(new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') })),
+            },
+            description: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
           },
           annotations: {
             suffix: 'territory2',
@@ -110,7 +115,9 @@ describe('territory filter', () => {
       const modelType = createMetadataTypeElement(TERRITORY2_MODEL_TYPE,
         {
           fields: {
-            description: { type: BuiltinTypes.STRING },
+            description: {
+              refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            },
           },
           annotations: {
             suffix: 'territory2Model',
@@ -129,8 +136,12 @@ describe('territory filter', () => {
         CUSTOM_OBJECT,
         {
           fields: {
-            customFields: { type: new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') }) },
-            description: { type: BuiltinTypes.STRING },
+            customFields: {
+              refType: createRefToElmWithValue(new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') })),
+            },
+            description: {
+              refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            },
           },
         }
       )

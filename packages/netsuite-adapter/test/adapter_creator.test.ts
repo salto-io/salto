@@ -19,6 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import * as cli from '@salto-io/suitecloud-cli'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import Bottleneck from 'bottleneck'
 import { adapter } from '../src/adapter_creator'
 import SdfClient from '../src/client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
@@ -166,6 +167,7 @@ describe('NetsuiteAdapter creator', () => {
           suiteAppTokenSecret: undefined,
         },
         config: clientConfig,
+        globalLimiter: expect.any(Bottleneck),
       })
     })
   })
@@ -199,6 +201,7 @@ describe('NetsuiteAdapter creator', () => {
           suiteAppTokenId: 'aaa',
           suiteAppTokenSecret: 'bbb',
         },
+        globalLimiter: expect.any(Bottleneck),
       })
     })
 
@@ -232,6 +235,7 @@ describe('NetsuiteAdapter creator', () => {
         config: {
           [SUITEAPP_CONCURRENCY_LIMIT]: 5,
         },
+        globalLimiter: expect.any(Bottleneck),
       })
     })
   })

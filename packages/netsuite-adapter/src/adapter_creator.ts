@@ -21,10 +21,11 @@ import { collections, regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { SdkDownloadService } from '@salto-io/suitecloud-cli'
+import Bottleneck from 'bottleneck'
 import changeValidator from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import NetsuiteAdapter from './adapter'
-import { configType, NetsuiteConfig } from './config'
+import { configType, DEFAULT_CONCURRENCY, NetsuiteConfig } from './config'
 import {
   NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS, CLIENT_CONFIG,
   FETCH_TARGET,
@@ -32,6 +33,7 @@ import {
   SKIP_LIST,
   SUITEAPP_CLIENT_CONFIG,
   USE_CHANGES_DETECTION,
+  CONCURRENCY_LIMIT,
 } from './constants'
 import { validateParameters } from './query'
 import { Credentials } from './client/credentials'
@@ -112,6 +114,7 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
     const netsuiteConfig: { [K in keyof Required<NetsuiteConfig>]: NetsuiteConfig[K] } = {
       [TYPES_TO_SKIP]: config?.value?.[TYPES_TO_SKIP] && makeArray(config?.value?.[TYPES_TO_SKIP]),
       [DEPLOY_REFERENCED_ELEMENTS]: config?.value?.[DEPLOY_REFERENCED_ELEMENTS],
+      [CONCURRENCY_LIMIT]: config?.value?.[CONCURRENCY_LIMIT],
       [FILE_PATHS_REGEX_SKIP_LIST]: filePathsRegexSkipList,
       [CLIENT_CONFIG]: config?.value?.[CLIENT_CONFIG],
       [SUITEAPP_CLIENT_CONFIG]: config?.value?.[SUITEAPP_CLIENT_CONFIG],
@@ -144,6 +147,14 @@ const netsuiteCredentialsFromCredentials = (credentials: Readonly<InstanceElemen
 const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperations => {
   const adapterConfig = netsuiteConfigFromConfig(context.config)
   const credentials = netsuiteCredentialsFromCredentials(context.credentials)
+
+  const globalLimiter = new Bottleneck({
+    maxConcurrent: adapterConfig.concurrencyLimit
+      ?? Math.max(
+        adapterConfig.client?.sdfConcurrencyLimit ?? DEFAULT_CONCURRENCY,
+        adapterConfig.suiteAppClient?.suiteAppConcurrencyLimit ?? DEFAULT_CONCURRENCY
+      ),
+  })
   const suiteAppClient = credentials.suiteAppTokenId && credentials.suiteAppTokenSecret
     ? new SuiteAppClient({
       credentials: {
@@ -152,10 +163,15 @@ const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperati
         suiteAppTokenSecret: credentials.suiteAppTokenSecret,
       },
       config: adapterConfig[SUITEAPP_CLIENT_CONFIG],
+      globalLimiter,
     })
     : undefined
 
-  const sdfClient = new SdfClient({ credentials, config: adapterConfig[CLIENT_CONFIG] })
+  const sdfClient = new SdfClient({
+    credentials,
+    config: adapterConfig[CLIENT_CONFIG],
+    globalLimiter,
+  })
 
   return new NetsuiteAdapter({
     client: new NetsuiteClient(sdfClient, suiteAppClient),

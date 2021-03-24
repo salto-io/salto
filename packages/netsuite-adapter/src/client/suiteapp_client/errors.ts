@@ -13,24 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import Bottleneck from 'bottleneck'
-import SdfClient from '../../src/client/sdf_client'
-import { SdfClientConfig } from '../../src/config'
+export class ReadFileError extends Error {}
 
-const DUMMY_ACCOUNT_ID = 'tstdrv123456-sb'
-const DUMMY_TOKEN_ID = 'dummyTokenId'
-const DUMMY_TOKEN_SECRET = 'dummyTokenSecret'
-
-export const DUMMY_CREDENTIALS = {
-  accountId: DUMMY_ACCOUNT_ID,
-  tokenId: DUMMY_TOKEN_ID,
-  tokenSecret: DUMMY_TOKEN_SECRET,
-}
-const mockSdfClient = (config?: SdfClientConfig): SdfClient =>
-  new SdfClient({
-    credentials: DUMMY_CREDENTIALS,
-    config,
-    globalLimiter: new Bottleneck(),
-  })
-
-export default mockSdfClient
+export class ReadFileEncodingError extends Error {}

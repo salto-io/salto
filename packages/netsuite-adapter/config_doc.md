@@ -11,11 +11,15 @@ netsuite {
     ]
   }
   deployReferencedElements = false
+  concurrencyLimit = 5
   client = {
     fetchAllTypesAtOnce = false
     fetchTypeTimeoutInMinutes = 4
     maxItemsInImportObjectsRequest = 40
     sdfConcurrencyLimit = 4
+  }
+  suiteAppClient = {
+   suiteAppConcurrencyLimit = 4 
   }
 }
 ```
@@ -26,9 +30,11 @@ netsuite {
 | ----------------------------------------------------| ------------------------| -----------
 | [skipList](#skip-list-configuration-options)        | {} (skip nothing)       | Specified items to skip when fetching from the service
 | deployReferencedElements                            | false                   | Deployment of a certain configuration element will include all elements referred by it
-| [client](#client-configuration-options)             | {} (no overrides)       | Configuration relating to the client used to interact with netsuite
+| [client](#sdf-client-configuration-options)         | {} (no overrides)       | Configuration relating to the SDF client used to interact with netsuite
+| [suiteAppClient](#salto-suiteapp-client-configuration-options)             | {} (no overrides)       | Configuration relating to the Salto SuiteApp client used to interact with netsuite
+| concurrencyLimit                                    | The higher value between `suiteAppConcurrencyLimit` and `sdfConcurrencyLimit`                    | Limits the max number of concurrent API calls (Both SDF calls and Salto SuiteApp calls). The number should not exceed the concurrency limit enforced by the upstream service.
 
-### Client configuration options
+### SDF Client configuration options
 
 | Name                           | Default when undefined  | Description
 | -------------------------------| ------------------------| -----------
@@ -36,6 +42,13 @@ netsuite {
 | fetchTypeTimeoutInMinutes      | 4                       | The max number of minutes a single type's chunk fetch can run
 | maxItemsInImportObjectsRequest | 40                      | Limits the max number of requested items a single import-objects request
 | sdfConcurrencyLimit            | 4                       | Limits the max number of concurrent SDF API calls. The number should not exceed the concurrency limit enforced by the upstream service.
+
+### Salto SuiteApp client configuration options
+
+| Name                           | Default when undefined  | Description
+| -------------------------------| ------------------------| -----------
+| suiteAppConcurrencyLimit            | 4                       | Limits the max number of concurrent Salto SuiteApp API calls. The number should not exceed the concurrency limit enforced by the upstream service.
+
 
 ### Skip list configuration options
 | Name                           | Default when undefined  | Description

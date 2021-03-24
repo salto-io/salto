@@ -101,7 +101,7 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
       + customizationInfo.path.join(FILE_CABINET_PATH_SEPARATOR)
     if (isFileCustomizationInfo(customizationInfo)) {
       valuesWithTransformedAttrs[(fileContentField as Field).name] = new StaticFile({
-        filepath: `${NETSUITE}/${FILE_CABINET_PATH}/${customizationInfo.path.join('/')}`,
+        filepath: `${NETSUITE}/${FILE_CABINET_PATH}/${customizationInfo.path.map(removeDotPrefix).join('/')}`,
         content: customizationInfo.fileContent,
       })
     }

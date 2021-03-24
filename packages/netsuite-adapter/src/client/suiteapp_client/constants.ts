@@ -13,24 +13,5 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import Bottleneck from 'bottleneck'
-import SdfClient from '../../src/client/sdf_client'
-import { SdfClientConfig } from '../../src/config'
-
-const DUMMY_ACCOUNT_ID = 'tstdrv123456-sb'
-const DUMMY_TOKEN_ID = 'dummyTokenId'
-const DUMMY_TOKEN_SECRET = 'dummyTokenSecret'
-
-export const DUMMY_CREDENTIALS = {
-  accountId: DUMMY_ACCOUNT_ID,
-  tokenId: DUMMY_TOKEN_ID,
-  tokenSecret: DUMMY_TOKEN_SECRET,
-}
-const mockSdfClient = (config?: SdfClientConfig): SdfClient =>
-  new SdfClient({
-    credentials: DUMMY_CREDENTIALS,
-    config,
-    globalLimiter: new Bottleneck(),
-  })
-
-export default mockSdfClient
+export const CONSUMER_KEY = '3db2f2ec0bd98c4eee526ea0b8da876d1d739597e50ee593c67c0f2c34294073'
+export const CONSUMER_SECRET = '4c8399c03043f4ff2889610d260fc76037d126c840f83b3e6a4e6f4ddf3b0b79'

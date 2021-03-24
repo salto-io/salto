@@ -16,10 +16,12 @@
 
 import { AccountId } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { decorators } from '@salto-io/lowerdash'
 import { NetsuiteQuery } from '../query'
 import { Credentials } from './credentials'
 import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
+import * as suiteAppFileCabinet from '../suiteapp_file_cabinet'
 import { SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { CustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult } from './types'
 
@@ -39,6 +41,7 @@ export default class NetsuiteClient {
     }
   }
 
+  @NetsuiteClient.logDecorator
   static async validateCredentials(credentials: Credentials): Promise<AccountId> {
     if (credentials.suiteAppTokenId && credentials.suiteAppTokenSecret) {
       try {
@@ -61,16 +64,23 @@ export default class NetsuiteClient {
     }
   }
 
+  @NetsuiteClient.logDecorator
   async getCustomObjects(typeNames: string[], query: NetsuiteQuery):
     Promise<GetCustomObjectsResult> {
     return this.sdfClient.getCustomObjects(typeNames, query)
   }
 
+  @NetsuiteClient.logDecorator
   async importFileCabinetContent(query: NetsuiteQuery):
     Promise<ImportFileCabinetResult> {
+    if (this.suiteAppClient !== undefined) {
+      return suiteAppFileCabinet.importFileCabinet(this.suiteAppClient, query)
+    }
+
     return this.sdfClient.importFileCabinetContent(query)
   }
 
+  @NetsuiteClient.logDecorator
   async deploy(customizationInfos: CustomizationInfo[]): Promise<void> {
     return this.sdfClient.deploy(customizationInfos)
   }
@@ -88,4 +98,18 @@ export default class NetsuiteClient {
   public async getSystemInformation(): Promise<SystemInformation | undefined> {
     return this.suiteAppClient?.getSystemInformation()
   }
+
+  private static logDecorator = decorators.wrapMethodWith(
+    async (
+      { call, name }: decorators.OriginalCall,
+    ): Promise<unknown> => {
+      const desc = `client.${name}`
+      try {
+        return await log.time(call, desc)
+      } catch (e) {
+        log.error('failed to run Netsuite client command on: %o', e)
+        throw e
+      }
+    }
+  )
 }

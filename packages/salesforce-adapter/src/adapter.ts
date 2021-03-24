@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeElement, Change, Element,
+  TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeElement, Change,
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
 } from '@salto-io/adapter-api'
 import { logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'

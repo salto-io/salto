@@ -29,42 +29,43 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ListType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { createTransformationConfigTypes, validateTransoformationConfig } from '../../src/config'
 
 describe('config_transformation', () => {
   describe('createTransformationConfigTypes', () => {
-    it('should return default config type when no custom fields were added', () => {
+    it('should return default config type when no custom fields were added', async () => {
       const { transformation, transformationDefault } = createTransformationConfigTypes('myAdapter')
       expect(Object.keys(transformation.fields)).toHaveLength(6)
       expect(Object.keys(transformation.fields).sort()).toEqual(['dataField', 'fieldTypeOverrides', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
       expect(transformation.fields.idFields.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeUndefined()
-      const idFieldsType = transformation.fields.idFields.type as ListType
+      const idFieldsType = await transformation.fields.idFields.getType() as ListType
       expect(idFieldsType).toBeInstanceOf(ListType)
-      const idFieldsTypeInner = idFieldsType.innerType
-      expect(idFieldsTypeInner).toEqual(BuiltinTypes.STRING)
+      expect(idFieldsType.refInnerType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
 
       expect(Object.keys(transformationDefault.fields)).toHaveLength(6)
       expect(Object.keys(transformationDefault.fields).sort()).toEqual(['dataField', 'fieldTypeOverrides', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
       expect(transformationDefault.fields.idFields.annotations[CORE_ANNOTATIONS.REQUIRED]).toEqual(
         true
       )
-      const idFieldsDefaultType = transformationDefault.fields.idFields.type as ListType
+      const idFieldsDefaultType = await transformationDefault.fields.idFields.getType() as ListType
       expect(idFieldsDefaultType).toBeInstanceOf(ListType)
-      const idFieldsTypeDefaultInner = idFieldsType.innerType
-      expect(idFieldsTypeDefaultInner).toEqual(BuiltinTypes.STRING)
+      expect(idFieldsType.refInnerType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
     })
 
     it('should include additional fields when added', () => {
       const { transformation, transformationDefault } = createTransformationConfigTypes(
         'myAdapter',
-        { a: { type: BuiltinTypes.STRING } },
+        { a: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
       )
       expect(Object.keys(transformation.fields)).toHaveLength(7)
       expect(Object.keys(transformation.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
-      expect(transformation.fields.a.type).toEqual(BuiltinTypes.STRING)
+      expect(transformation.fields.a.refType.elemID.isEqual(BuiltinTypes.STRING.elemID))
+        .toBeTruthy()
       expect(Object.keys(transformationDefault.fields)).toHaveLength(7)
       expect(Object.keys(transformationDefault.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
-      expect(transformationDefault.fields.a.type).toEqual(BuiltinTypes.STRING)
+      expect(transformationDefault.fields.a.refType.elemID.isEqual(BuiltinTypes.STRING.elemID))
+        .toBeTruthy()
     })
   })
 

@@ -252,9 +252,14 @@ describe('select elements recursively', () => {
   const testElements = [mockInstance, mockType]
   const testElementIds = testElements.map(element => element.elemID)
   const testSelect = async (selectors: ElementSelector[],
-    compact = false): Promise<ElemID[]> =>
-    awu(await selectElementIdsByTraversal(selectors,
-      awu(testElementIds), createInMemoryElementSource(testElements), compact)).toArray()
+    compact = false, validateDeterminedSelectors = false): Promise<ElemID[]> =>
+    awu(await selectElementIdsByTraversal(
+      selectors,
+      awu(testElementIds),
+      createInMemoryElementSource(testElements),
+      compact,
+      validateDeterminedSelectors
+    )).toArray()
   it('finds subElements one and two layers deep', async () => {
     const selectors = createElementSelectors(['mockAdapter.*', 'mockAdapter.*.instance.*',
       'mockAdapter.*.field.*',
@@ -320,12 +325,8 @@ describe('select elements recursively', () => {
     const selectors = createElementSelectors([
       'mockAdapter.test.instance.mockInstance.thispropertydoesntexist',
     ]).validSelectors
-    const elementIds = (await selectElementIdsByTraversal(selectors,
-      [mockInstance, mockType].map(element => ({
-        elemID: element.elemID,
-        element,
-      }))))
-    expect(elementIds).toEqual([ElemID
+    const selected = await testSelect(selectors, false, false)
+    expect(selected).toEqual([ElemID
       .fromFullName('mockAdapter.test.instance.mockInstance.thispropertydoesntexist')])
   })
   it('should not return non-existant element id if validateDeterminedSelectors is true', async () => {
@@ -333,11 +334,7 @@ describe('select elements recursively', () => {
       'mockAdapter.test.instance.mockInstance.thispropertydoesntexist',
       'mockAdapter.test.field.strMap',
     ]).validSelectors
-    const elementIds = (await selectElementIdsByTraversal(selectors,
-      [mockInstance, mockType].map(element => ({
-        elemID: element.elemID,
-        element,
-      })), false, true))
+    const elementIds = await testSelect(selectors, false, true)
     expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
   })
 })

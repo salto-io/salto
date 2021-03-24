@@ -18,7 +18,7 @@ import { types, promises } from '@salto-io/lowerdash'
 
 export type Filter = Partial<{
   onFetch(elements: Element[]): Promise<void>
-  onPostFetch(args: PostFetchOptions): Promise<boolean>
+  onPostFetch(args: PostFetchOptions): Promise<void>
 }>
 
 export type FilterWith<M extends keyof Filter> = types.HasMember<Filter, M>
@@ -44,10 +44,9 @@ export const filtersRunner = <TClient, TContext>(
       )
     },
     onPostFetch: async args => {
-      const results = await promises.array.series(
+      await promises.array.series(
         filtersWith('onPostFetch').map(filter => () => filter.onPostFetch(args))
       )
-      return results.some(res => res === true)
     },
   }
 }

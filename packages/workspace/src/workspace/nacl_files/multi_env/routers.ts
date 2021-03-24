@@ -90,20 +90,18 @@ const separateChangeByFiles = async (
   source: NaclFilesSource
 ): Promise<DetailedChange[]> => {
   const isEmptyChangeElm = isEmptyChangeElement(getChangeElement(change))
-  return (await Promise.all(
-    (await source.getElementNaclFiles(change.id))
-      .map(async filename => {
-        const fileElements = (await source.getParsedNaclFile(filename))?.elements ?? []
-        const filteredChange = await applyFunctionToChangeData(
-          change,
-          changeData => filterByFile(change.id, changeData, fileElements),
-        )
-        if (!isEmptyChangeElm && isEmptyChangeElement(getChangeElement(filteredChange))) {
-          return undefined
-        }
-        return { ...filteredChange, path: toPathHint(filename) }
-      })
-  )).filter(values.isDefined)
+  return (await awu(await source.getElementNaclFiles(change.id))
+    .map(async filename => {
+      const fileElements = (await source.getParsedNaclFile(filename))?.elements ?? []
+      const filteredChange = await applyFunctionToChangeData(
+        change,
+        changeData => filterByFile(change.id, changeData, fileElements),
+      )
+      if (!isEmptyChangeElm && isEmptyChangeElement(getChangeElement(filteredChange))) {
+        return undefined
+      }
+      return { ...filteredChange, path: toPathHint(filename) }
+    }).toArray()).filter(values.isDefined)
 }
 
 const createUpdateChanges = async (

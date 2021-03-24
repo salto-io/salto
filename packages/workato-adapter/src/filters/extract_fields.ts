@@ -14,12 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, ObjectType,
-  Element,
-} from '@salto-io/adapter-api'
+import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, ObjectType, Element } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { values as lowerdashValues } from '@salto-io/lowerdash'
+import { values as lowerdashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { WORKATO } from '../constants'
 import { FilterCreator } from '../filter'
@@ -27,6 +25,7 @@ import { API_DEFINITIONS_CONFIG } from '../config'
 
 const log = logger(module)
 const { isDefined } = lowerdashValues
+const { awu } = collections.asynciterable
 const { generateType, toInstance, toNestedTypeName } = elementUtils.ducktype
 
 const convertStringToObject = (
@@ -57,7 +56,7 @@ const convertStringToObject = (
   })
 }
 
-const addFieldTypeAndInstances = ({
+const addFieldTypeAndInstances = async ({
   typeName,
   fieldName,
   type,
@@ -71,7 +70,7 @@ const addFieldTypeAndInstances = ({
   instances: InstanceElement[]
   transformationConfigByType: Record<string, configUtils.TransformationConfig>
   transformationDefaultConfig: configUtils.TransformationDefaultConfig
-}): Element[] => {
+}): Promise<Element[]> => {
   if (type.fields[fieldName] === undefined) {
     log.info('type %s field %s does not exist (maybe it is not populated by any of the instances), not extracting field', type.elemID.name, fieldName)
     return []
@@ -90,11 +89,11 @@ const addFieldTypeAndInstances = ({
     hasDynamicFields: false,
     isSubType: true,
   })
-  type.fields[fieldName].type = fieldType.type
+  type.fields[fieldName].refType = createRefToElmWithValue(fieldType.type)
   elements.push(fieldType.type, ...fieldType.nestedTypes)
 
-  instancesWithValues.forEach((inst, index) => {
-    const fieldInstance = toInstance({
+  await awu(instancesWithValues).forEach(async (inst, index) => {
+    const fieldInstance = await toInstance({
       entry: inst.value[fieldName],
       type: fieldType.type,
       defaultName: `unnamed_${index}`, // TODO improve
@@ -114,7 +113,7 @@ const addFieldTypeAndInstances = ({
   return elements
 }
 
-const extractFields = ({
+const extractFields = async ({
   elements,
   transformationConfigByType,
   transformationDefaultConfig,
@@ -122,11 +121,11 @@ const extractFields = ({
   elements: Element[]
   transformationConfigByType: Record<string, configUtils.TransformationConfig>
   transformationDefaultConfig: configUtils.TransformationDefaultConfig
-}): Element[] => {
+}): Promise<Element[]> => {
   const allTypes = _.keyBy(elements.filter(isObjectType), e => e.elemID.name)
   const allInstancesbyType = _.groupBy(
     elements.filter(isInstanceElement),
-    e => e.type.elemID.getFullName()
+    e => e.refType.elemID.getFullName()
   )
 
   const newElements: Element[] = []
@@ -139,30 +138,31 @@ const extractFields = ({
     standaloneFields => !_.isEmpty(standaloneFields),
   ) as Record<string, configUtils.StandaloneFieldConfigType[]>
 
-  Object.entries(typesWithStandaloneFields).forEach(([typeName, standaloneFields]) => {
-    const type = allTypes[typeName]
-    if (type === undefined) {
-      log.error('could not find type %s', typeName)
-      return
-    }
-    const instances = allInstancesbyType[type.elemID.getFullName()] ?? []
+  await awu(Object.entries(typesWithStandaloneFields))
+    .forEach(async ([typeName, standaloneFields]) => {
+      const type = allTypes[typeName]
+      if (type === undefined) {
+        log.error('could not find type %s', typeName)
+        return
+      }
+      const instances = allInstancesbyType[type.elemID.getFullName()] ?? []
 
-    // first convert the fields to the right structure
-    instances.forEach(inst => convertStringToObject(inst, standaloneFields))
+      // first convert the fields to the right structure
+      instances.forEach(inst => convertStringToObject(inst, standaloneFields))
 
-    // now extract the field data to its own type and instances, and replace the original
-    // value with a reference to the newly-generate instance
-    standaloneFields.forEach(fieldDef => {
-      newElements.push(...addFieldTypeAndInstances({
-        typeName,
-        fieldName: fieldDef.fieldName,
-        type,
-        instances,
-        transformationConfigByType,
-        transformationDefaultConfig,
-      }))
+      // now extract the field data to its own type and instances, and replace the original
+      // value with a reference to the newly-generate instance
+      await awu(standaloneFields).forEach(async fieldDef => {
+        newElements.push(...await addFieldTypeAndInstances({
+          typeName,
+          fieldName: fieldDef.fieldName,
+          type,
+          instances,
+          transformationConfigByType,
+          transformationDefaultConfig,
+        }))
+      })
     })
-  })
   return newElements
 }
 
@@ -179,11 +179,11 @@ const filter: FilterCreator = ({ config }) => ({
     )
     const transformationDefaultConfig = config[API_DEFINITIONS_CONFIG].typeDefaults.transformation
 
-    const allNewElements = extractFields({
+    const allNewElements = await extractFields({
       elements,
       transformationConfigByType,
       transformationDefaultConfig,
-    }).flat()
+    })
     elements.push(...allNewElements)
   },
 })

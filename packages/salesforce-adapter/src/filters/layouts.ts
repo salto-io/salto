@@ -47,13 +47,13 @@ const layoutObjAndName = async (layout: InstanceElement): Promise<[string, strin
   return [specialLayoutObjects.get(obj) ?? obj, name.join('-')]
 }
 
-const fixLayoutPath = (
+const fixLayoutPath = async (
   layout: InstanceElement,
   customObject: ObjectType,
   layoutName: string,
-): void => {
+): Promise<void> => {
   layout.path = [
-    ...getObjectDirectoryPath(customObject),
+    ...await getObjectDirectoryPath(customObject),
     layout.elemID.typeName,
     pathNaclCase(naclCase(layoutName)),
   ]
@@ -83,7 +83,7 @@ const filterCreator: FilterCreator = () => ({
       }
 
       addObjectParentReference(layout, layoutObj)
-      fixLayoutPath(layout, layoutObj, layoutName)
+      await fixLayoutPath(layout, layoutObj, layoutName)
     })
   },
 })

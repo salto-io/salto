@@ -31,13 +31,13 @@
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { simpleGetArgs, getTypeAndInstances, getAllElements, returnFullEntry, findDataField } from '../../../src/elements/ducktype'
 import * as typeElements from '../../../src/elements/ducktype/type_elements'
 import * as instanceElements from '../../../src/elements/ducktype/instance_elements'
 import * as transformer from '../../../src/elements/ducktype/transformer'
 import { HTTPClientInterface } from '../../../src/client'
 import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/config'
-import { createRefToElmWithValue } from '../../../src/utils'
 
 describe('ducktype_transformer', () => {
   describe('simpleGetArgs', () => {

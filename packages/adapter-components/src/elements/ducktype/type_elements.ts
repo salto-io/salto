@@ -17,9 +17,8 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, BuiltinTypes, Values, MapType, PrimitiveType, ListType, isObjectType,
 } from '@salto-io/adapter-api'
-import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
+import { pathNaclCase, naclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { TYPES_PATH, SUBTYPES_PATH } from '../constants'
-import { createRefToElmWithValue } from '../../utils'
 
 const ID_SEPARATOR = '__'
 

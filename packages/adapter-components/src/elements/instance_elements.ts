@@ -42,7 +42,7 @@ export type InstanceCreationParams = {
  * - The elem id is determined based on the name field, with a fallback
  *    to a default name that might not be multienv-friendly.
  */
-export const toBasicInstance = ({
+export const toBasicInstance = async ({
   entry,
   type,
   transformationConfigByType,
@@ -50,7 +50,7 @@ export const toBasicInstance = ({
   nestName,
   parent,
   defaultName,
-}: InstanceCreationParams): InstanceElement => {
+}: InstanceCreationParams): Promise<InstanceElement> => {
   const omitFields: TransformFunc = ({ value, field }) => {
     if (field !== undefined) {
       const parentType = field.parent.elemID.name
@@ -59,7 +59,7 @@ export const toBasicInstance = ({
         ?? transformationDefaultConfig.fieldsToOmit
       )?.find(({ fieldName, fieldType }) => (
         fieldName === field.name
-        && (fieldType === undefined || fieldType === field.type.elemID.name)
+        && (fieldType === undefined || fieldType === field.refType.elemID.name)
       ))
       if (shouldOmit) {
         return undefined
@@ -67,7 +67,7 @@ export const toBasicInstance = ({
     }
     return value
   }
-  const entryData = transformValues({
+  const entryData = await transformValues({
     values: entry,
     type,
     transformFunc: omitFields,
@@ -100,7 +100,7 @@ export const toBasicInstance = ({
   return new InstanceElement(
     naclName,
     type,
-    transformValues({
+    await transformValues({
       values: entryData,
       type,
       // omit nulls from returned value

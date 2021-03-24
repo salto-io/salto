@@ -58,7 +58,7 @@ export type PostFetchOptions = {
 export type AdapterOperations = {
   fetch: (opts: FetchOptions) => Promise<FetchResult>
   deploy: (opts: DeployOptions) => Promise<DeployResult>
-  postFetch?: (opts: PostFetchOptions) => Promise<{ changed: boolean }>
+  postFetch?: (opts: PostFetchOptions) => Promise<void>
 }
 
 export type AdapterOperationName = keyof AdapterOperations

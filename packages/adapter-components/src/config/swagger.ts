@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { AdapterApiConfig, createAdapterApiConfigType, TypeConfig, TypeDefaultsConfig } from './shared'
 import { createRequestConfigs, validateRequestConfig } from './request'
@@ -61,13 +62,13 @@ const createSwaggerDefinitionsBaseConfigType = (
     elemID: new ElemID(adapter, 'typeNameOverrideConfig'),
     fields: {
       originalName: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
       newName: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
@@ -79,13 +80,13 @@ const createSwaggerDefinitionsBaseConfigType = (
     elemID: new ElemID(adapter, 'additionalTypeConfig'),
     fields: {
       typeName: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
       cloneFrom: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
@@ -97,16 +98,16 @@ const createSwaggerDefinitionsBaseConfigType = (
     elemID: new ElemID(adapter, 'swaggerDefinitionBaseConfig'),
     fields: {
       url: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
       typeNameOverrides: {
-        type: new ListType(typeNameOverrideConfig),
+        refType: createRefToElmWithValue(new ListType(typeNameOverrideConfig)),
       },
       additionalTypes: {
-        type: new ListType(additionalTypeConfig),
+        refType: createRefToElmWithValue(new ListType(additionalTypeConfig)),
       },
     },
   })
@@ -135,7 +136,9 @@ export const createSwaggerAdapterApiConfigType = ({
     transformationTypes,
     additionalFields: {
       ...additionalFields,
-      swagger: { type: createSwaggerDefinitionsBaseConfigType(adapter) },
+      swagger: {
+        refType: createRefToElmWithValue(createSwaggerDefinitionsBaseConfigType(adapter)),
+      },
     },
   })
 }

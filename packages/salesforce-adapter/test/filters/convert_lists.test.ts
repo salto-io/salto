@@ -219,7 +219,7 @@ describe('convert lists filter', () => {
 
   const unorderedListFields: ReadonlyArray<UnorderedList> = [
     {
-      elemId: mockType.fields.unordered.elemID,
+      elemID: mockType.fields.unordered.elemID,
       orderBy: mockFieldType.fields.key.name,
     },
   ]
@@ -234,22 +234,22 @@ describe('convert lists filter', () => {
 
   const unorderedListAnnotations: ReadonlyArray<UnorderedList> = [
     {
-      elemId: new ElemID(constants.SALESFORCE, mockType.elemID.typeName,
+      elemID: new ElemID(constants.SALESFORCE, mockType.elemID.typeName,
         'field', 'fieldWithAnnotations', 'annotationToSort'),
       orderBy: 'sortByMe',
     },
     {
-      elemId: new ElemID(constants.SALESFORCE, mockType.elemID.typeName,
+      elemID: new ElemID(constants.SALESFORCE, mockType.elemID.typeName,
         'attr', 'objAnnotationToSort'),
       orderBy: 'sortByMe',
     },
     {
-      elemId: new ElemID(constants.SALESFORCE, mockType.elemID.typeName,
+      elemID: new ElemID(constants.SALESFORCE, mockType.elemID.typeName,
         'field', 'fieldWithAnnotations', 'nestedAnnoToSort', 'nested'),
       orderBy: 'sortByMe',
     },
     {
-      elemId: new ElemID(constants.SALESFORCE, mockType.elemID.typeName,
+      elemID: new ElemID(constants.SALESFORCE, mockType.elemID.typeName,
         'attr', 'nestedObjAnnoToSort', 'nested'),
       orderBy: 'sortByMe',
     },

@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, ListType, CORE_ANNOTATIONS, isReferenceExpression } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/cross_service/recipe_references'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
@@ -65,9 +66,9 @@ describe('Recipe references filter', () => {
     const connectionType = new ObjectType({
       elemID: new ElemID(WORKATO, 'connection'),
       fields: {
-        id: { type: BuiltinTypes.NUMBER },
-        application: { type: BuiltinTypes.STRING },
-        name: { type: BuiltinTypes.STRING },
+        id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+        application: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
     })
 
@@ -121,30 +122,30 @@ describe('Recipe references filter', () => {
     const labelValueType = new ObjectType({
       elemID: new ElemID(WORKATO, 'labelValue'),
       fields: {
-        label: { type: BuiltinTypes.STRING },
-        value: { type: BuiltinTypes.STRING },
+        label: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        value: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
     })
 
     const dynamicPickListSelectionType = new ObjectType({
       elemID: new ElemID(WORKATO, 'recipe__code__dynamicPickListSelection'),
       fields: {
-        sobject_name: { type: BuiltinTypes.STRING },
-        netsuite_object: { type: BuiltinTypes.STRING },
-        topic_id: { type: BuiltinTypes.STRING },
-        table_list: { type: new ListType(labelValueType) },
-        field_list: { type: new ListType(labelValueType) },
+        sobject_name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        netsuite_object: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        topic_id: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        table_list: { refType: createRefToElmWithValue(new ListType(labelValueType)) },
+        field_list: { refType: createRefToElmWithValue(new ListType(labelValueType)) },
       },
     })
 
     const inputType = new ObjectType({
       elemID: new ElemID(WORKATO, 'recipe__code__input'),
       fields: {
-        sobject_name: { type: BuiltinTypes.STRING },
-        netsuite_object: { type: BuiltinTypes.STRING },
-        topic_id: { type: BuiltinTypes.STRING },
-        table_list: { type: new ListType(labelValueType) },
-        field_list: { type: new ListType(labelValueType) },
+        sobject_name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        netsuite_object: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        topic_id: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        table_list: { refType: createRefToElmWithValue(new ListType(labelValueType)) },
+        field_list: { refType: createRefToElmWithValue(new ListType(labelValueType)) },
       },
     })
 
@@ -153,68 +154,124 @@ describe('Recipe references filter', () => {
     const nestedBlockTypeInner = new ObjectType({
       elemID: new ElemID(WORKATO, 'recipe__code__block__block__block'),
       fields: {
-        provider: { type: BuiltinTypes.STRING },
-        name: { type: BuiltinTypes.STRING },
-        dynamicPickListSelection: { type: dynamicPickListSelectionType },
-        input: { type: inputType },
-        as: { type: BuiltinTypes.STRING },
+        provider: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        name: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        dynamicPickListSelection: {
+          refType: createRefToElmWithValue(dynamicPickListSelectionType),
+        },
+        input: {
+          refType: createRefToElmWithValue(inputType),
+        },
+        as : {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING)
+        }
       },
     })
 
     const nestedBlockType = new ObjectType({
       elemID: new ElemID(WORKATO, 'recipe__code__block__block'),
       fields: {
-        provider: { type: BuiltinTypes.STRING },
-        name: { type: BuiltinTypes.STRING },
-        dynamicPickListSelection: { type: dynamicPickListSelectionType },
-        input: { type: inputType },
-        block: { type: new ListType(nestedBlockTypeInner) },
-        as: { type: BuiltinTypes.STRING },
+        provider: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        name: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        dynamicPickListSelection: {
+          refType: createRefToElmWithValue(dynamicPickListSelectionType),
+        },
+        input: {
+          refType: createRefToElmWithValue(inputType),
+        },
+        block: {
+          refType: createRefToElmWithValue(new ListType(nestedBlockTypeInner)),
+        },
+        as : {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING)
+        }
       },
     })
 
     const blockType = new ObjectType({
       elemID: new ElemID(WORKATO, 'recipe__code__block'),
       fields: {
-        provider: { type: BuiltinTypes.STRING },
-        name: { type: BuiltinTypes.STRING },
-        dynamicPickListSelection: { type: dynamicPickListSelectionType },
-        input: { type: inputType },
-        block: { type: new ListType(nestedBlockType) },
-        as: { type: BuiltinTypes.STRING },
+        provider: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        name: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        dynamicPickListSelection: {
+          refType: createRefToElmWithValue(dynamicPickListSelectionType),
+        },
+        input: {
+          refType: createRefToElmWithValue(inputType),
+        },
+        block: {
+          refType: createRefToElmWithValue(new ListType(nestedBlockType)),
+        },
+        as : {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING)
+        }
       },
     })
 
     const codeType = new ObjectType({
       elemID: new ElemID(WORKATO, 'recipe__code'),
       fields: {
-        provider: { type: BuiltinTypes.STRING },
-        name: { type: BuiltinTypes.STRING },
-        dynamicPickListSelection: { type: dynamicPickListSelectionType },
-        input: { type: inputType },
-        block: { type: new ListType(blockType) },
-        as: { type: BuiltinTypes.STRING },
+        provider: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        name: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        dynamicPickListSelection: {
+          refType: createRefToElmWithValue(dynamicPickListSelectionType),
+        },
+        input: {
+          refType: createRefToElmWithValue(inputType),
+        },
+        block: {
+          refType: createRefToElmWithValue(new ListType(blockType)),
+        },
+        as : {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING)
+        }
       },
     })
 
     const recipeConfigType = new ObjectType({
       elemID: new ElemID(WORKATO, 'recipe__config'),
       fields: {
-        name: { type: BuiltinTypes.STRING },
-        provider: { type: BuiltinTypes.STRING },
-        account_id: { type: BuiltinTypes.NUMBER },
-        keyword: { type: BuiltinTypes.STRING },
+        name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        provider: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        account_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+        keyword: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
     })
 
     const recipeType = new ObjectType({
       elemID: new ElemID(WORKATO, 'recipe'),
       fields: {
-        code: { type: codeType },
-        config: { type: recipeConfigType },
-        applications: { type: new ListType(BuiltinTypes.STRING) },
-        trigger_application: { type: BuiltinTypes.STRING },
-        action_applications: { type: new ListType(BuiltinTypes.STRING) },
+        code: {
+          refType: createRefToElmWithValue(codeType),
+        },
+        config: {
+          refType: createRefToElmWithValue(recipeConfigType),
+        },
+        applications: {
+          refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+        },
+        trigger_application: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+        action_applications: {
+          refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+        },
       },
     })
 
@@ -304,7 +361,11 @@ describe('Recipe references filter', () => {
       ],
     }
 
-    const recipe1code = new InstanceElement('recipe1_code', codeType, _.cloneDeep(sharedRecipeCode))
+    const recipe1code = new InstanceElement(
+      'recipe1_code',
+      codeType,
+      _.cloneDeep(sharedRecipeCode),
+    )
     const recipe1 = new InstanceElement('recipe1', recipeType, {
       config: [
         {
@@ -542,43 +603,43 @@ describe('Recipe references filter', () => {
       elemID: new ElemID('salesforce', 'Opportunity'),
       fields: {
         Id: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             apiName: 'Opportunity.Id',
           },
         },
         Custom__c: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             apiName: 'Opportunity.Custom__c',
           },
         },
         Name: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             apiName: 'Opportunity.Name',
           },
         },
         FormulaRef1__c: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             apiName: 'Opportunity.FormulaRef1__c',
           },
         },
         FormulaRef2__c: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             apiName: 'Opportunity.FormulaRef2__c',
           },
         },
         FormulaRef3__c: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             apiName: 'Opportunity.FormulaRef3__c',
           },
         },
         FormulaRef4__c: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             apiName: 'Opportunity.FormulaRef4__c',
           },
@@ -594,19 +655,19 @@ describe('Recipe references filter', () => {
       elemID: new ElemID('salesforce', 'User'),
       fields: {
         Field111__c: {
-          type: BuiltinTypes.NUMBER,
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
           annotations: {
             apiName: 'User.Field111__c',
           },
         },
         Field222__c: {
-          type: BuiltinTypes.NUMBER,
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
           annotations: {
             apiName: 'User.Field222__c',
           },
         },
         Name__c: {
-          type: BuiltinTypes.STRING,
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             apiName: 'User.Name__c',
           },
@@ -620,7 +681,7 @@ describe('Recipe references filter', () => {
     const myCustom = new ObjectType({
       elemID: new ElemID('salesforce', 'MyCustom__c'),
       fields: {
-        customField__c: { type: BuiltinTypes.NUMBER },
+        customField__c: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
       },
       annotations: {
         metadataType: 'CustomObject',
@@ -741,7 +802,7 @@ describe('Recipe references filter', () => {
           isReferenceExpression
         )).toBeTruthy()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
-          (ref: ReferenceExpression) => ref.elemId.getFullName()
+          (ref: ReferenceExpression) => ref.elemID.getFullName()
         )).toEqual([
           'netsuite.customrecordtype.instance.customrecord16',
           'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',
@@ -773,11 +834,11 @@ describe('Recipe references filter', () => {
         expect(recipeCode.value.input.sobject_name).toBeInstanceOf(
           ReferenceExpression
         )
-        expect(recipeCode.value.input.sobject_name.elemId.getFullName()).toEqual('salesforce.Opportunity')
+        expect(recipeCode.value.input.sobject_name.elemID.getFullName()).toEqual('salesforce.Opportunity')
         expect(recipeCode.value.dynamicPickListSelection.sobject_name).toBeInstanceOf(
           ReferenceExpression
         )
-        expect(recipeCode.value.dynamicPickListSelection.sobject_name.elemId.getFullName()).toEqual('salesforce.Opportunity')
+        expect(recipeCode.value.dynamicPickListSelection.sobject_name.elemID.getFullName()).toEqual('salesforce.Opportunity')
         expect(recipeCode.value.dynamicPickListSelection.field_list).toHaveLength(5)
         // some, but not all, references are resolved
         expect(
@@ -786,11 +847,11 @@ describe('Recipe references filter', () => {
         expect(
           recipeCode.value.dynamicPickListSelection.field_list.some(isReferenceExpression)
         ).toBeTruthy()
-        expect(recipeCode.value.dynamicPickListSelection.field_list[0].elemId.getFullName()).toEqual('salesforce.Opportunity.field.Id')
+        expect(recipeCode.value.dynamicPickListSelection.field_list[0].elemID.getFullName()).toEqual('salesforce.Opportunity.field.Id')
         expect(recipeCode.value.dynamicPickListSelection.field_list[1]).toEqual({ label: 'Account ID', value: 'AccountId' })
-        expect(recipeCode.value.dynamicPickListSelection.field_list[2].elemId.getFullName()).toEqual('salesforce.Opportunity.field.Name')
-        expect(recipeCode.value.dynamicPickListSelection.field_list[3].elemId.getFullName()).toEqual('salesforce.Opportunity.field.Custom__c')
-        expect(recipeCode.value.dynamicPickListSelection.field_list[4].elemId.getFullName()).toEqual('salesforce.User.field.Field111__c')
+        expect(recipeCode.value.dynamicPickListSelection.field_list[2].elemID.getFullName()).toEqual('salesforce.Opportunity.field.Name')
+        expect(recipeCode.value.dynamicPickListSelection.field_list[3].elemID.getFullName()).toEqual('salesforce.Opportunity.field.Custom__c')
+        expect(recipeCode.value.dynamicPickListSelection.field_list[4].elemID.getFullName()).toEqual('salesforce.User.field.Field111__c')
         expect(recipeCode.value.dynamicPickListSelection.table_list).toHaveLength(3)
         // some, but not all, references are resolved
         expect(
@@ -800,7 +861,7 @@ describe('Recipe references filter', () => {
           recipeCode.value.dynamicPickListSelection.table_list.some(isReferenceExpression)
         ).toBeTruthy()
         expect(recipeCode.value.dynamicPickListSelection.table_list[0]).toEqual({ label: 'Price Book', value: 'Pricebook2' })
-        expect(recipeCode.value.dynamicPickListSelection.table_list[1].elemId.getFullName()).toEqual('salesforce.User')
+        expect(recipeCode.value.dynamicPickListSelection.table_list[1].elemID.getFullName()).toEqual('salesforce.User')
         expect(recipeCode.value.dynamicPickListSelection.table_list[2]).toEqual({ label: 'Account', value: 'Account' })
       })
       it('should resolve references in-place in nested blocks', () => {
@@ -812,12 +873,12 @@ describe('Recipe references filter', () => {
         expect(block1.input.netsuite_object).toBeInstanceOf(
           ReferenceExpression
         )
-        expect(block1.input.netsuite_object.elemId.getFullName()).toEqual('netsuite.customrecordtype.instance.customrecord16')
+        expect(block1.input.netsuite_object.elemID.getFullName()).toEqual('netsuite.customrecordtype.instance.customrecord16')
         const block2 = block1.block[0]
         expect(block2.input.sobject_name).toBeInstanceOf(
           ReferenceExpression
         )
-        expect(block2.input.sobject_name.elemId.getFullName()).toEqual('salesforce.MyCustom__c')
+        expect(block2.input.sobject_name.elemID.getFullName()).toEqual('salesforce.MyCustom__c')
       })
     })
 
@@ -849,7 +910,7 @@ describe('Recipe references filter', () => {
           isReferenceExpression
         )).toBeTruthy()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
-          (ref: ReferenceExpression) => ref.elemId.getFullName()
+          (ref: ReferenceExpression) => ref.elemID.getFullName()
         )).toEqual([
           'netsuite.customrecordtype.instance.customrecord16',
           'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',
@@ -885,7 +946,7 @@ describe('Recipe references filter', () => {
         expect(block1.input.netsuite_object).toBeInstanceOf(
           ReferenceExpression
         )
-        expect(block1.input.netsuite_object.elemId.getFullName()).toEqual('netsuite.customrecordtype.instance.customrecord16')
+        expect(block1.input.netsuite_object.elemID.getFullName()).toEqual('netsuite.customrecordtype.instance.customrecord16')
       })
     })
 
@@ -922,7 +983,7 @@ describe('Recipe references filter', () => {
           isReferenceExpression
         )).toBeTruthy()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
-          (ref: ReferenceExpression) => ref.elemId.getFullName()
+          (ref: ReferenceExpression) => ref.elemID.getFullName()
         )).toEqual([
           'salesforce.MyCustom__c',
           'salesforce.MyCustom__c.field.customField__c',
@@ -1023,7 +1084,7 @@ describe('Recipe references filter', () => {
       expect(
         elements
           .flatMap(e => e.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] ?? [])
-          .map(e => e.elemId.getFullName())
+          .map(e => e.elemID.getFullName())
       ).toEqual([
         'netsuite.customrecordtype.instance.customrecord16',
         'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',
@@ -1093,7 +1154,7 @@ describe('Recipe references filter', () => {
           isReferenceExpression
         )).toBeTruthy()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
-          (ref: ReferenceExpression) => ref.elemId.getFullName()
+          (ref: ReferenceExpression) => ref.elemID.getFullName()
         )).toEqual([
           'netsuite.customrecordtype.instance.customrecord16',
           'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',

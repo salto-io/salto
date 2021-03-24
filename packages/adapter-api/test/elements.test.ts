@@ -110,11 +110,11 @@ describe('Test elements.ts', () => {
         elemID: otID,
         fields: {
           // eslint-disable-next-line @typescript-eslint/camelcase
-          num_field: { type: primNum },
+          num_field: { refType: new ReferenceExpression(primNum.elemID, primNum) },
           // eslint-disable-next-line @typescript-eslint/camelcase
-          str_field: { type: primStr },
+          str_field: { refType: new ReferenceExpression(primStr.elemID, primStr) },
         },
-        annotationTypes: {},
+        annotationRefsOrTypes: {},
         annotations: {},
         path: ['a', 'b', 'c', 'd'],
       })

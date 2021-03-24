@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ObjectType, BuiltinTypes, FieldDefinition } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { AdapterApiConfig, createAdapterApiConfigType, UserFetchConfig, TypeConfig, TypeDefaultsConfig } from './shared'
 import { TransformationConfig, TransformationDefaultConfig, createTransformationConfigTypes } from './transformation'
 import { createRequestConfigs } from './request'
@@ -46,7 +47,7 @@ export const createDucktypeAdapterApiConfigType = ({
 }): ObjectType => {
   const requestTypes = createRequestConfigs(adapter, additionalRequestFields)
   const transformationTypes = createTransformationConfigTypes(adapter, {
-    hasDynamicFields: { type: BuiltinTypes.BOOLEAN },
+    hasDynamicFields: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
     ...additionalTransformationFields,
   })
   return createAdapterApiConfigType({

@@ -13,11 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, isInstanceElement,
-  ReferenceExpression,
-} from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
 import filterCreator from '../../src/filters/extract_fields'
@@ -33,16 +31,16 @@ describe('Extract fields filter', () => {
     const recipeType = new ObjectType({
       elemID: new ElemID(WORKATO, 'recipe'),
       fields: {
-        name: { type: BuiltinTypes.STRING },
-        code: { type: BuiltinTypes.STRING },
+        name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        code: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
     })
     const connectionType = new ObjectType({
       elemID: new ElemID(WORKATO, 'connection'),
       fields: {
-        name: { type: BuiltinTypes.STRING },
-        application: { type: BuiltinTypes.STRING },
-        code: { type: BuiltinTypes.STRING },
+        name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        application: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        code: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
     })
     const instances = [
@@ -155,20 +153,20 @@ describe('Extract fields filter', () => {
     it('should add two types and two instances', () => {
       expect(elements.length).toEqual(numElements + 4)
     })
-    it('should modify the recipe type', () => {
+    it('should modify the recipe type', async () => {
       const recipeType = elements[0] as ObjectType
-      expect(recipeType.fields.code.type).toBeInstanceOf(ObjectType)
-      const codeType = recipeType.fields.code.type as ObjectType
+      expect(await recipeType.fields.code.getType()).toBeInstanceOf(ObjectType)
+      const codeType = await recipeType.fields.code.getType() as ObjectType
       expect(codeType.isEqual(new ObjectType({
         elemID: new ElemID(WORKATO, 'recipe__code'),
         fields: {
-          flat: { type: BuiltinTypes.STRING },
-          nested: { type: new ObjectType({
+          flat: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          nested: { refType: createRefToElmWithValue(new ObjectType({
             elemID: new ElemID(WORKATO, 'recipe__code__nested'),
             fields: {
-              inner: { type: BuiltinTypes.STRING },
+              inner: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
             },
-          }) },
+          })) },
         },
       }))).toBeTruthy()
     })
@@ -189,8 +187,8 @@ describe('Extract fields filter', () => {
 
       expect(Object.keys(recipeCode.fields)).toEqual(['flat', 'nested'])
       expect(Object.keys(recipeCodeNested.fields)).toEqual(['inner', 'other'])
-      expect(recipe123Code.type).toEqual(recipeCode)
-      expect(recipe456Code.type).toEqual(recipeCode)
+      expect(recipe123Code.refType.elemID.isEqual(recipeCode.elemID)).toBeTruthy()
+      expect(recipe456Code.refType.elemID.isEqual(recipeCode.elemID)).toBeTruthy()
 
       const origRecipe123 = origInstances[0]
       const origRecipe456 = origInstances[1]
@@ -200,17 +198,18 @@ describe('Extract fields filter', () => {
 
       expect(recipe123.value.code).toBeInstanceOf(ReferenceExpression)
       expect(recipe456.value.code).toBeInstanceOf(ReferenceExpression)
-      expect((recipe123.value.code as ReferenceExpression).elemId.getFullName()).toEqual(
+      expect((recipe123.value.code as ReferenceExpression).elemID.getFullName()).toEqual(
         recipe123Code.elemID.getFullName()
       )
-      expect((recipe456.value.code as ReferenceExpression).elemId.getFullName()).toEqual(
+      expect((recipe456.value.code as ReferenceExpression).elemID.getFullName()).toEqual(
         recipe456Code.elemID.getFullName()
       )
     })
 
     it('should not modify the connection type', () => {
       const connectionType = elements[1] as ObjectType
-      expect(connectionType.fields.code.type).toEqual(BuiltinTypes.STRING)
+      expect(connectionType.fields.code.refType.elemID.isEqual(BuiltinTypes.STRING.elemID))
+        .toBeTruthy()
     })
   })
 
@@ -229,20 +228,20 @@ describe('Extract fields filter', () => {
     it('should add two types and two instances', () => {
       expect(elements.length).toEqual(numElements + 4)
     })
-    it('should modify the recipe type', () => {
+    it('should modify the recipe type', async () => {
       const recipeType = elements[0] as ObjectType
-      expect(recipeType.fields.code.type).toBeInstanceOf(ObjectType)
-      const codeType = recipeType.fields.code.type as ObjectType
+      expect(await recipeType.fields.code.getType()).toBeInstanceOf(ObjectType)
+      const codeType = await recipeType.fields.code.getType() as ObjectType
       expect(codeType.isEqual(new ObjectType({
         elemID: new ElemID(WORKATO, 'recipe__code'),
         fields: {
-          flat: { type: BuiltinTypes.STRING },
-          nested: { type: new ObjectType({
+          flat: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          nested: { refType: createRefToElmWithValue(new ObjectType({
             elemID: new ElemID(WORKATO, 'recipe__code__nested'),
             fields: {
-              inner: { type: BuiltinTypes.STRING },
+              inner: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
             },
-          }) },
+          })) },
         },
       }))).toBeTruthy()
     })
@@ -263,8 +262,8 @@ describe('Extract fields filter', () => {
 
       expect(Object.keys(recipeCode.fields)).toEqual(['flat', 'nested'])
       expect(Object.keys(recipeCodeNested.fields)).toEqual(['inner', 'other'])
-      expect(recipe123Code.type).toEqual(recipeCode)
-      expect(recipe456Code.type).toEqual(recipeCode)
+      expect(recipe123Code.refType.elemID.isEqual(recipeCode.elemID)).toBeTruthy()
+      expect(recipe456Code.refType.elemID.isEqual(recipeCode.elemID)).toBeTruthy()
 
       const origRecipe123 = origInstances[0]
       const origRecipe456 = origInstances[1]
@@ -274,17 +273,18 @@ describe('Extract fields filter', () => {
 
       expect(recipe123.value.code).toBeInstanceOf(ReferenceExpression)
       expect(recipe456.value.code).toBeInstanceOf(ReferenceExpression)
-      expect((recipe123.value.code as ReferenceExpression).elemId.getFullName()).toEqual(
+      expect((recipe123.value.code as ReferenceExpression).elemID.getFullName()).toEqual(
         recipe123Code.elemID.getFullName()
       )
-      expect((recipe456.value.code as ReferenceExpression).elemId.getFullName()).toEqual(
+      expect((recipe456.value.code as ReferenceExpression).elemID.getFullName()).toEqual(
         recipe456Code.elemID.getFullName()
       )
     })
 
     it('should not modify the connection type', () => {
       const connectionType = elements[1] as ObjectType
-      expect(connectionType.fields.code.type).toEqual(BuiltinTypes.STRING)
+      expect(connectionType.fields.code.refType.elemID.isEqual(BuiltinTypes.STRING.elemID))
+        .toBeTruthy()
     })
   })
 
@@ -307,7 +307,7 @@ describe('Extract fields filter', () => {
     })
     it('should not modify the recipe type', () => {
       const recipeType = elements[0] as ObjectType
-      expect(recipeType.fields.code.type).toEqual(BuiltinTypes.STRING)
+      expect(recipeType.fields.code.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
       expect(elements[2]).toEqual(origInstances[0])
       expect(elements[3]).toEqual(origInstances[1])
       expect(elements[4]).toEqual(origInstances[2])
@@ -333,7 +333,7 @@ describe('Extract fields filter', () => {
     })
     it('should not modify the recipe type', () => {
       const recipeType = elements[0] as ObjectType
-      expect(recipeType.fields.code.type).toEqual(BuiltinTypes.STRING)
+      expect(recipeType.fields.code.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
       expect(elements[2]).toEqual(origInstances[0])
       expect(elements[3]).toEqual(origInstances[1])
       expect(elements[4]).toEqual(origInstances[2])

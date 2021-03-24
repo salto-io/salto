@@ -14,56 +14,68 @@
 * limitations under the License.
 */
 import { ObjectType, BuiltinTypes, MapType, ListType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { createRequestConfigs, validateRequestConfig } from '../../src/config'
 
 describe('config_request', () => {
   describe('createRequestConfigs', () => {
-    it('should return default config type when no custom fields were added', () => {
+    it('should return default config type when no custom fields were added', async () => {
       const { request, requestDefault } = createRequestConfigs('myAdapter')
       expect(Object.keys(request.fields)).toHaveLength(5)
       expect(Object.keys(request.fields).sort()).toEqual(['dependsOn', 'paginationField', 'queryParams', 'recursiveQueryByResponseField', 'url'])
-      expect(request.fields.url.type).toEqual(BuiltinTypes.STRING)
-      expect(request.fields.paginationField.type).toEqual(BuiltinTypes.STRING)
-      const dependsOnType = request.fields.dependsOn.type as ListType
+      expect(request.fields.url.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
+      expect(request.fields.paginationField.refType.elemID.isEqual(BuiltinTypes.STRING.elemID))
+        .toBeTruthy()
+      const dependsOnType = await request.fields.dependsOn.getType() as ListType
       expect(dependsOnType).toBeInstanceOf(ListType)
-      const dependsOnTypeInner = dependsOnType.innerType as ObjectType
+      const dependsOnTypeInner = await dependsOnType.getInnerType() as ObjectType
       expect(dependsOnTypeInner).toBeInstanceOf(ObjectType)
       expect(Object.keys(dependsOnTypeInner.fields).sort()).toEqual(['from', 'pathParam'])
-      const queryParamsType = request.fields.queryParams.type as MapType
+      const queryParamsType = await request.fields.queryParams.getType() as MapType
       expect(queryParamsType).toBeInstanceOf(MapType)
-      expect(queryParamsType.innerType).toEqual(BuiltinTypes.STRING)
-      const recursiveQueryByResponseFieldType = request.fields.queryParams.type as MapType
+      expect(queryParamsType.refInnerType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
+      const recursiveQueryByResponseFieldType = await request.fields.queryParams
+        .getType() as MapType
       expect(recursiveQueryByResponseFieldType).toBeInstanceOf(MapType)
-      expect(recursiveQueryByResponseFieldType.innerType).toEqual(BuiltinTypes.STRING)
+      expect(
+        recursiveQueryByResponseFieldType.refInnerType.elemID.isEqual(BuiltinTypes.STRING.elemID)
+      ).toBeTruthy()
 
       expect(Object.keys(requestDefault.fields)).toHaveLength(4)
       expect(Object.keys(requestDefault.fields).sort()).toEqual(['dependsOn', 'paginationField', 'queryParams', 'recursiveQueryByResponseField'])
-      expect(requestDefault.fields.paginationField.type).toEqual(BuiltinTypes.STRING)
-      const dependsOnDefaultType = requestDefault.fields.dependsOn.type as ListType
+      expect(
+        requestDefault.fields.paginationField.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)
+      ).toBeTruthy()
+      const dependsOnDefaultType = await requestDefault.fields.dependsOn.getType() as ListType
       expect(dependsOnDefaultType).toBeInstanceOf(ListType)
-      const dependsOnDefaultTypeInner = dependsOnType.innerType as ObjectType
+      const dependsOnDefaultTypeInner = await dependsOnType.getInnerType() as ObjectType
       expect(dependsOnDefaultTypeInner).toBeInstanceOf(ObjectType)
       expect(Object.keys(dependsOnDefaultTypeInner.fields).sort()).toEqual(['from', 'pathParam'])
-      const queryParamsDefaultType = requestDefault.fields.queryParams.type as MapType
+      const queryParamsDefaultType = await requestDefault.fields.queryParams.getType() as MapType
       expect(queryParamsDefaultType).toBeInstanceOf(MapType)
-      expect(queryParamsDefaultType.innerType).toEqual(BuiltinTypes.STRING)
+      expect(queryParamsDefaultType.refInnerType.elemID.isEqual(BuiltinTypes.STRING.elemID))
+        .toBeTruthy()
       const recursiveQueryByResponseFieldDefaultType = (
-        requestDefault.fields.queryParams.type as MapType)
+        await requestDefault.fields.queryParams.getType() as MapType)
       expect(recursiveQueryByResponseFieldDefaultType).toBeInstanceOf(MapType)
-      expect(recursiveQueryByResponseFieldDefaultType.innerType).toEqual(BuiltinTypes.STRING)
+      expect(
+        recursiveQueryByResponseFieldDefaultType.refInnerType.elemID
+          .isEqual(BuiltinTypes.STRING.elemID)
+      ).toBeTruthy()
     })
 
     it('should include additional fields when added', () => {
       const { request, requestDefault } = createRequestConfigs(
         'myAdapter',
-        { a: { type: BuiltinTypes.STRING } },
+        { a: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
       )
       expect(Object.keys(request.fields)).toHaveLength(6)
       expect(Object.keys(request.fields).sort()).toEqual(['a', 'dependsOn', 'paginationField', 'queryParams', 'recursiveQueryByResponseField', 'url'])
-      expect(request.fields.a.type).toEqual(BuiltinTypes.STRING)
+      expect(request.fields.a.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
       expect(Object.keys(requestDefault.fields)).toHaveLength(5)
       expect(Object.keys(requestDefault.fields).sort()).toEqual(['a', 'dependsOn', 'paginationField', 'queryParams', 'recursiveQueryByResponseField'])
-      expect(requestDefault.fields.a.type).toEqual(BuiltinTypes.STRING)
+      expect(requestDefault.fields.a.refType.elemID.isEqual(BuiltinTypes.STRING.elemID))
+        .toBeTruthy()
     })
   })
 

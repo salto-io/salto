@@ -169,7 +169,7 @@ describe('adapter', () => {
           // eslint-disable-next-line @typescript-eslint/camelcase
           parent_id: expect.any(ReferenceExpression),
         })
-        expect(folder?.value.parent_id.elemId.getFullName()).toEqual('workato.folder.instance.basedir1_257262')
+        expect(folder?.value.parent_id.elemID.getFullName()).toEqual('workato.folder.instance.basedir1_257262')
 
         const recipe = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'workato.recipe.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_1209425@dssssssssssssssu')
         expect(recipe).toBeDefined()
@@ -212,7 +212,7 @@ describe('adapter', () => {
         })
         const recipeCodeReference = recipe?.value.code
         expect(recipeCodeReference).toBeInstanceOf(ReferenceExpression)
-        expect((recipeCodeReference as ReferenceExpression).elemId.getFullName()).toEqual('workato.recipe__code.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_1209425_dssssssssssssssu__updated_custom_object@uuuuuuuuuuuuuuuumuuuu')
+        expect((recipeCodeReference as ReferenceExpression).elemID.getFullName()).toEqual('workato.recipe__code.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_1209425_dssssssssssssssu__updated_custom_object@uuuuuuuuuuuuuuuumuuuu')
         const recipeCode = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.New_updated_record_in_Salesforce_will_add_a_new_row_in_a_sheet_in_Google_Sheets_1209425_dssssssssssssssu__updated_custom_object@uuuuuuuuuuuuuuuumuuuu')
         expect(recipeCode).toBeDefined()
         expect(recipeCode?.value).toEqual({
@@ -321,7 +321,6 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }) as types.PickyRequired<AdapterOperations, 'postFetch'>
-
         const fetchResult = await adapterOperations.fetch({
           progressReporter: { reportProgress: () => null },
         })
@@ -340,7 +339,7 @@ describe('adapter', () => {
         expect(deps).toBeDefined()
         expect(deps).toHaveLength(1)
         expect(deps[0]).toBeInstanceOf(ReferenceExpression)
-        expect(deps[0].elemId.getFullName()).toEqual('salesforce.Fish__c')
+        expect(deps[0].elemID.getFullName()).toEqual('salesforce.Fish__c')
       })
     })
   })

@@ -14,61 +14,66 @@
 * limitations under the License.
 */
 import { ObjectType, BuiltinTypes, MapType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { createDucktypeAdapterApiConfigType, createUserFetchConfigType, validateDuckTypeFetchConfig } from '../../src/config'
 
 describe('config_ducktype', () => {
   describe('createAdapterApiConfigType', () => {
-    it('should return default config type when no custom fields were added', () => {
+    it('should return default config type when no custom fields were added', async () => {
       const configType = createDucktypeAdapterApiConfigType({ adapter: 'myAdapter' })
       expect(Object.keys(configType.fields)).toHaveLength(3)
       expect(configType.fields.types).toBeDefined()
       expect(configType.fields.typeDefaults).toBeDefined()
       expect(configType.fields.apiVersion).toBeDefined()
-      const types = configType.fields.types.type as MapType
+      const types = await configType.fields.types.getType() as MapType
       expect(types).toBeInstanceOf(MapType)
-      const typesInner = types.innerType as ObjectType
+      const typesInner = await types.getInnerType() as ObjectType
       expect(typesInner).toBeInstanceOf(ObjectType)
       expect(new Set(Object.keys(typesInner.fields))).toEqual(new Set(['request', 'transformation']))
-      const request = typesInner.fields.request.type as ObjectType
-      const transformation = typesInner.fields.transformation.type as ObjectType
+      const request = await typesInner.fields.request.getType() as ObjectType
+      const transformation = await typesInner.fields.transformation.getType() as ObjectType
       expect(request).toBeInstanceOf(ObjectType)
       expect(transformation).toBeInstanceOf(ObjectType)
-      const typeDefaults = configType.fields.typeDefaults.type as ObjectType
+      const typeDefaults = await configType.fields.typeDefaults.getType() as ObjectType
       expect(typeDefaults).toBeInstanceOf(ObjectType)
       expect(new Set(Object.keys(typeDefaults.fields))).toEqual(new Set(['request', 'transformation']))
-      const requestDefaults = typesInner.fields.request.type as ObjectType
-      const transformationDefaults = typesInner.fields.transformation.type as ObjectType
+      const requestDefaults = await typesInner.fields.request.getType() as ObjectType
+      const transformationDefaults = await typesInner.fields.transformation.getType() as ObjectType
       expect(requestDefaults).toBeInstanceOf(ObjectType)
       expect(transformationDefaults).toBeInstanceOf(ObjectType)
     })
 
-    it('should include additional fields when added', () => {
+    it('should include additional fields when added', async () => {
       const configType = createDucktypeAdapterApiConfigType({
         adapter: 'myAdapter',
-        additionalRequestFields: { a: { type: BuiltinTypes.STRING } },
-        additionalTransformationFields: { b: { type: BuiltinTypes.NUMBER } },
+        additionalRequestFields: {
+          a: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        },
+        additionalTransformationFields: {
+          b: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+        },
       })
       expect(Object.keys(configType.fields)).toHaveLength(3)
       expect(configType.fields.types).toBeDefined()
       expect(configType.fields.typeDefaults).toBeDefined()
       expect(configType.fields.apiVersion).toBeDefined()
-      const types = configType.fields.types.type as MapType
+      const types = await configType.fields.types.getType() as MapType
       expect(types).toBeInstanceOf(MapType)
-      const typesInner = types.innerType as ObjectType
+      const typesInner = await types.getInnerType() as ObjectType
       expect(typesInner).toBeInstanceOf(ObjectType)
       expect(new Set(Object.keys(typesInner.fields))).toEqual(new Set(['request', 'transformation']))
-      const request = typesInner.fields.request.type as ObjectType
-      const transformation = typesInner.fields.transformation.type as ObjectType
+      const request = await typesInner.fields.request.getType() as ObjectType
+      const transformation = await typesInner.fields.transformation.getType() as ObjectType
       expect(request).toBeInstanceOf(ObjectType)
       expect(transformation).toBeInstanceOf(ObjectType)
       expect(request.fields.a).toBeDefined()
       expect(transformation.fields.b).toBeDefined()
       expect(transformation.fields.a).toBeUndefined()
-      const typeDefaults = configType.fields.typeDefaults.type as ObjectType
+      const typeDefaults = await configType.fields.typeDefaults.getType() as ObjectType
       expect(typeDefaults).toBeInstanceOf(ObjectType)
       expect(new Set(Object.keys(typeDefaults.fields))).toEqual(new Set(['request', 'transformation']))
-      const requestDefaults = typesInner.fields.request.type as ObjectType
-      const transformationDefaults = typesInner.fields.transformation.type as ObjectType
+      const requestDefaults = await typesInner.fields.request.getType() as ObjectType
+      const transformationDefaults = await typesInner.fields.transformation.getType() as ObjectType
       expect(requestDefaults).toBeInstanceOf(ObjectType)
       expect(transformationDefaults).toBeInstanceOf(ObjectType)
       expect(requestDefaults.fields.a).toBeDefined()

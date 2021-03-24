@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line
 import { toInstance } from '../../../src/elements/ducktype'
 import { RECORDS_PATH } from '../../../src/elements/constants'
@@ -26,9 +27,11 @@ const type = new ObjectType({
   elemID: new ElemID(ADAPTER_NAME, 'bla'),
   // not exhaustive - only has the field ids that are needed for the tests
   fields: {
-    id: { type: BuiltinTypes.NUMBER },
-    api_collection_id: { type: BuiltinTypes.NUMBER },
-    field_with_complex_type: { type: BuiltinTypes.UNKNOWN }, // incorrect type
+    id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+    api_collection_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+    field_with_complex_type: {
+      refType: createRefToElmWithValue(BuiltinTypes.UNKNOWN),
+    }, // incorrect type
   },
 })
 
@@ -47,7 +50,7 @@ describe('ducktype_instance_elements', () => {
         },
       },
     }
-    it('should generate instance based on response', () => {
+    it('should generate instance based on response', async () => {
       const inst = await toInstance({
         type,
         transformationConfigByType: {
@@ -69,7 +72,7 @@ describe('ducktype_instance_elements', () => {
       ))).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'some_other_name'])
     })
-    it('should use fileNameFields for path when available', () => {
+    it('should use fileNameFields for path when available', async () => {
       const inst = await toInstance({
         type,
         transformationConfigByType: {
@@ -114,7 +117,7 @@ describe('ducktype_instance_elements', () => {
       ))).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'some_other_name_54775'])
     })
-    it('should include parent name when nestName is true', () => {
+    it('should include parent name when nestName is true', async () => {
       const parent = new InstanceElement('abc', type, {})
       const inst = await toInstance({
         type,
@@ -143,7 +146,7 @@ describe('ducktype_instance_elements', () => {
       ))).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'abc__some_other_name'])
     })
-    it('should omit fields from the top level', () => {
+    it('should omit fields from the top level', async () => {
       const inst = await toInstance({
         type,
         transformationConfigByType: {

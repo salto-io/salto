@@ -255,8 +255,7 @@ const buildMultiEnvSource = (
     commonOnly = false,
     validateDeterminedSelectors = false,
   ): Promise<AsyncIterable<ElemID>> => {
-    const relevantSource = commonOnly ? await awu(await getElementsFromSource(commonOnly
-      ? commonSource() : primarySource())).toArray()
+    const relevantSource = commonOnly ? commonSource() : primarySource()
     const elementsFromSource = await getElementsFromSource(relevantSource)
     return selectElementIdsByTraversal(
       selectors,

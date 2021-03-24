@@ -31,7 +31,7 @@ const createIndex = async (elementsSource: ReadOnlyElementsSource):
 
   for await (const element of await elementsSource.getAll()) {
     if (isInstanceElement(element)) {
-      const idRecords = getInstanceServiceIdRecords(element)
+      const idRecords = await getInstanceServiceIdRecords(element)
       const rawLastFetchTime = element.value[LAST_FETCH_TIME]
       const lastFetchTime = rawLastFetchTime && new Date(rawLastFetchTime)
 

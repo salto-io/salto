@@ -80,7 +80,7 @@ describe('workspace query locations', () => {
   describe('fuzzy', () => {
     it('should find elements', async () => {
       const res = await getQueryLocationsFuzzy(workspace, 'perbon')
-      expect(res).toHaveLength(12)
+      expect(res).toHaveLength(10)
       expect(res[0].item.fullname).toBe('vs.person')
       expect(res[0].matches?.[0].indices).toHaveLength(2)
       expect(res[0].matches?.[0].indices[0]).toEqual([3, 5])

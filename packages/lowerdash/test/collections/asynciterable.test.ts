@@ -22,7 +22,7 @@ const {
   findAsync, mapAsync, toArrayAsync, toAsyncIterable, concatAsync,
   filterAsync, flattenAsync, awu, isEmptyAsync, peekAsync, takeAsync,
   zipSortedAsync, someAsync, everyAsync, forEachAsync, groupByAsync,
-  keyByAsync, iterateTogether,
+  keyByAsync, iterateTogether, flatMapAsync,
 } = asynciterable
 type BeforeAfter<T> = collections.asynciterable.BeforeAfter<T>
 
@@ -118,6 +118,43 @@ describe('asynciterable', () => {
 
     it('should return nothing on an empty iterator', async () => {
       expect(await toArrayAsync(takeAsync([], 4))).toEqual([])
+    })
+  })
+
+  describe('flatMapAsync', () => {
+    let iterable: AsyncIterable<number>
+    beforeEach(() => {
+      iterable = toAsyncIterable([1, 2, 3])
+    })
+    describe('when func is sync', () => {
+      it('should return flat async iterable', async () => {
+        const result = await toArrayAsync(
+          flatMapAsync(iterable, num => [num, num])
+        )
+        expect(result).toEqual([1, 1, 2, 2, 3, 3])
+      })
+      it('should only flatten one level of iterable', async () => {
+        const result = await toArrayAsync(
+          flatMapAsync(iterable, num => [[num, num]])
+        )
+        expect(result).toEqual([[1, 1], [2, 2], [3, 3]])
+      })
+    })
+    describe('when func is async', () => {
+      it('should return flat async iterable', async () => {
+        const result = await toArrayAsync(
+          flatMapAsync(iterable, async num => [num, num])
+        )
+        expect(result).toEqual([1, 1, 2, 2, 3, 3])
+      })
+    })
+    describe('when func returns async iterable', () => {
+      it('should return flat async iterable', async () => {
+        const result = await toArrayAsync(
+          flatMapAsync(iterable, num => toAsyncIterable([num, num]))
+        )
+        expect(result).toEqual([1, 1, 2, 2, 3, 3])
+      })
     })
   })
 

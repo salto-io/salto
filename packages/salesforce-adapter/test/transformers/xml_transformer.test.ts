@@ -260,7 +260,7 @@ describe('XML Transformer', () => {
     describe('content file name override for territory types', () => {
       describe('Territory2Model type', () => {
         beforeEach(async () => {
-          pkg.add(createInstanceElement(
+          await pkg.add(createInstanceElement(
             { fullName: 'testTerModel' },
             mockTypes.TerritoryModel,
             undefined,
@@ -281,7 +281,7 @@ describe('XML Transformer', () => {
 
       describe('Territory2Rule type', () => {
         beforeEach(async () => {
-          pkg.add(createInstanceElement(
+          await pkg.add(createInstanceElement(
             { fullName: 'testTerModel.testTerRule' },
             mockTypes.TerritoryRule,
             undefined,

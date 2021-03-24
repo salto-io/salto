@@ -90,21 +90,21 @@ const filterRelevantRecipeCodes = (
         connectionConfig => (
           _.isPlainObject(connectionConfig)
           && isReferenceExpression(connectionConfig.account_id)
-          && connectionID.isEqual(connectionConfig.account_id.elemId)
+          && connectionID.isEqual(connectionConfig.account_id.elemID)
         )
       ))
   )
   return relevantRecipes.map(
-    recipe => recipeCodeInstances[recipe.value.code.elemId.getFullName()]
+    recipe => recipeCodeInstances[recipe.value.code.elemID.getFullName()]
   )
 }
 
-const addReferencesForConnectionRecipes = (
+const addReferencesForConnectionRecipes = async (
   relevantRecipeCodes: InstanceElement[],
   appName: string,
   serviceName: string,
   serviceElements: ReadonlyArray<Readonly<Element>>,
-): void => {
+): Promise<void> => {
   if (serviceName === SALESFORCE) {
     const index = indexSalesforceByMetadataTypeAndApiName(serviceElements)
     relevantRecipeCodes.forEach(
@@ -137,17 +137,17 @@ const filter: FilterCreator = ({ config }) => ({
       serviceConnectionNames,
       currentAdapterElements
         .filter(isInstanceElement)
-        .filter(inst => inst.type.elemID.name === 'connection'),
+        .filter(inst => inst.refType.elemID.name === 'connection'),
     )
     const recipeInstances = (
       currentAdapterElements
         .filter(isInstanceElement)
-        .filter(inst => inst.type.elemID.name === 'recipe')
+        .filter(inst => inst.refType.elemID.name === 'recipe')
     )
     const recipeCodeInstancesByElemID = _.keyBy(
       currentAdapterElements
         .filter(isInstanceElement)
-        .filter(inst => inst.type.elemID.name === toNestedTypeName('recipe', 'code')),
+        .filter(inst => inst.refType.elemID.name === toNestedTypeName('recipe', 'code')),
       inst => inst.elemID.getFullName()
     )
 

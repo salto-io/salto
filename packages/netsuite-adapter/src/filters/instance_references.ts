@@ -21,9 +21,8 @@ import {
   transformElement,
   TransformFunc,
 } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { values as lowerdashValues } from '@salto-io/lowerdash'
+import { values as lowerdashValues, collections } from '@salto-io/lowerdash'
 import {
   SCRIPT_ID,
   PATH,

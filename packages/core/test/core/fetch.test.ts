@@ -330,7 +330,11 @@ describe('fetch', () => {
       })
       it('should return config change plan when there is no current config', async () => {
         const fetchChangesResult = await fetchChanges(
-          mockAdapters, [], [], [], [],
+          mockAdapters,
+          createElementSource([]),
+          createElementSource([]),
+          [],
+          [],
         )
         verifyPlan(
           fetchChangesResult.configChanges,
@@ -345,8 +349,8 @@ describe('fetch', () => {
       it('should return config change plan when there is current config', async () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
-          [],
-          [],
+          createElementSource([]),
+          createElementSource([]),
           [],
           [currentInstanceConfig],
         )
@@ -362,7 +366,11 @@ describe('fetch', () => {
 
       it('should return empty plan when there is no change', async () => {
         const fetchChangesResult = await fetchChanges(
-          mockAdapters, [], [], [], [configInstance],
+          mockAdapters,
+          createElementSource([]),
+          createElementSource([]),
+          [],
+          [configInstance],
         )
         expect([...fetchChangesResult.configChanges.itemsByEvalOrder()]).toHaveLength(0)
       })
@@ -379,6 +387,28 @@ describe('fetch', () => {
         fields: {},
         annotations: { bla: 'blu' },
       })
+      describe('when state', () => {
+        describe('contains elements with errored elem ids', () => {
+          it('should throw an exception', async () => {
+            try {
+              mockAdapters.dummy.fetch.mockResolvedValueOnce(
+                Promise.resolve({ elements: [dupTypeBase, dupTypeBase2] })
+              )
+              await fetchChanges(
+                mockAdapters,
+                createElementSource([]),
+                createElementSource([dupTypeBase]),
+                [],
+                []
+              )
+              expect(false).toBeTruthy()
+            } catch (e) {
+              expect(e.message).toMatch(/.*duplicate annotation.*/)
+              expect(e.message).toMatch(/.*bla.*/)
+            }
+          })
+        })
+      })
       describe('when instance type has merge error', () => {
         let fetchChangesResult: FetchChangesResult
         let dupInstance: InstanceElement
@@ -391,7 +421,13 @@ describe('fetch', () => {
               { elements: [dupInstance, validInstance, dupTypeBase, dupTypeBase2, typeWithField] }
             )
           )
-          fetchChangesResult = await fetchChanges(mockAdapters, [], [], [], [])
+          fetchChangesResult = await fetchChanges(
+            mockAdapters,
+            createElementSource([]),
+            createElementSource([]),
+            [],
+            [],
+          )
         })
         it('should return errors', async () => {
           expect(fetchChangesResult.mergeErrors).toHaveLength(1)
@@ -916,8 +952,8 @@ describe('fetch', () => {
         )
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
-          [typeWithField],
-          [newTypeBase, typeWithField],
+          createElementSource([typeWithField]),
+          createElementSource([newTypeBase, typeWithField]),
           [],
           [],
         )
@@ -943,8 +979,8 @@ describe('fetch', () => {
         )
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
-          [],
-          [newTypeBase, typeWithField],
+          createElementSource([]),
+          createElementSource([newTypeBase, typeWithField]),
           [],
           [],
         )
@@ -993,8 +1029,8 @@ describe('fetch', () => {
       it('should call postFetch for all relevant adapters when all are fetched', async () => {
         await fetchChanges(
           adapters,
-          [],
-          [dummy1, dummy2, dummy3],
+          createElementSource([]),
+          createElementSource([dummy1, dummy2, dummy3]),
           [],
           [],
         )
@@ -1020,8 +1056,8 @@ describe('fetch', () => {
       it('should call postFetch only for fetched adapters (with postFetch defined) when not all are fetched', async () => {
         await fetchChanges(
           _.pick(adapters, ['dummy1', 'dummy2']),
-          [],
-          [dummy1, dummy2],
+          createElementSource([]),
+          createElementSource([dummy1, dummy2]),
           [dummy3],
           [],
         )
@@ -1042,8 +1078,8 @@ describe('fetch', () => {
         adapters.dummy2.postFetch.mockImplementationOnce(() => { throw new Error(' failure') })
         await expect(fetchChanges(
           _.pick(adapters, ['dummy1', 'dummy2']),
-          [],
-          [dummy1, dummy2],
+          createElementSource([]),
+          createElementSource([dummy1, dummy2]),
           [dummy3],
           [],
         )).resolves.not.toThrow()

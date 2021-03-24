@@ -18,25 +18,30 @@ import fsExtra from 'fs-extra'
 import path from 'path'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const extractAndRequire = (externalsLocation: string, module: string): any => {
-  // eslint-disable-next-line @typescript-eslint/camelcase
-  if (typeof __non_webpack_require__ !== 'undefined') {
-    const extractedModuleLocation = path.join(externalsLocation, module)
-    rimraf.sync(externalsLocation)
-    // eslint-disable-next-line no-undef, @typescript-eslint/camelcase
-    fsExtra.copySync(path.dirname(__non_webpack_require__.resolve(module)), extractedModuleLocation,
-      { dereference: true })
-    // eslint-disable-next-line no-undef
-    const result = __non_webpack_require__(extractedModuleLocation)
-    try {
+const requireOrExtract = (externalsLocation: string): any => {
+  try {
+    // eslint-disable-next-line global-require
+    return require('rocksdb')
+  } catch {
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    if (typeof __non_webpack_require__ !== 'undefined') {
+      const extractedModuleLocation = path.join(externalsLocation, 'rocksdb')
       rimraf.sync(externalsLocation)
-    } catch {
-      // Do nothing. Deleting will fail on required native code on Windows.
+      // eslint-disable-next-line no-undef, @typescript-eslint/camelcase
+      fsExtra.copySync(path.dirname(__non_webpack_require__.resolve('rocksdb')), extractedModuleLocation,
+        { dereference: true })
+      // eslint-disable-next-line no-undef
+      const result = __non_webpack_require__(extractedModuleLocation)
+      try {
+        rimraf.sync(externalsLocation)
+      } catch {
+        // Do nothing. Deleting will fail on required native code on Windows.
+      }
+      return result
     }
-    return result
   }
-  // eslint-disable-next-line global-require, import/no-dynamic-require
-  return require(module)
+  // require failed, hope you don't actually need it but rather you're in a test environment
+  return undefined
 }
 
-export default extractAndRequire(path.join(__dirname, '.externals'), 'rocksdb')
+export default requireOrExtract(path.join(__dirname, '.externals'))

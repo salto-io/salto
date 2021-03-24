@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, MapType, ListType } from '@salto-io/adapter-api'
-import { findDataField, returnFullEntry } from '../../src/elements/field_finder'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { findDataField, returnFullEntry } from '../../src/elements/field_finder'
 
 const ADAPTER_NAME = 'myAdapter'
 

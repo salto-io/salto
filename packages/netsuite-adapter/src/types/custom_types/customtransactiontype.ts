@@ -294,7 +294,7 @@ export const customtransactiontype = new ObjectType({
       },
     }, /* Original description: The default value is F. */
     cancloseorder: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */

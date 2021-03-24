@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType,
-} from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { types } from '@salto-io/lowerdash'
 import { findDuplicates } from './validation_utils'
 
@@ -68,8 +67,8 @@ export const createTransformationConfigTypes = (
   const standaloneFieldConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'standaloneFieldConfig'),
     fields: {
-      fieldName: { type: BuiltinTypes.STRING },
-      parseJSON: { type: BuiltinTypes.BOOLEAN },
+      fieldName: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      parseJSON: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
     },
   })
 
@@ -77,25 +76,25 @@ export const createTransformationConfigTypes = (
     elemID: new ElemID(adapter, 'fieldToAdjustConfig'),
     fields: {
       fieldName: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
-      fieldType: { type: BuiltinTypes.STRING },
+      fieldType: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     },
   })
   const fieldTypeOverrideConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'fieldTypeOverrideConfig'),
     fields: {
       fieldName: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
       fieldType: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
@@ -104,18 +103,30 @@ export const createTransformationConfigTypes = (
   })
 
   const sharedTransformationFields: Record<string, FieldDefinition> = {
-    fieldTypeOverrides: { type: new ListType(fieldTypeOverrideConfigType) },
-    fieldsToOmit: { type: new ListType(fieldToAdjustConfigType) },
-    fieldsToHide: { type: new ListType(fieldToAdjustConfigType) },
-    standaloneFields: { type: new ListType(standaloneFieldConfigType) },
-    dataField: { type: BuiltinTypes.STRING },
-    fileNameFields: { type: new ListType(BuiltinTypes.STRING) },
+    fieldTypeOverrides: {
+      refType: createRefToElmWithValue(new ListType(fieldTypeOverrideConfigType)),
+    },
+    fieldsToOmit: {
+      refType: createRefToElmWithValue(new ListType(fieldToAdjustConfigType)),
+    },
+    fieldsToHide: {
+      refType: createRefToElmWithValue(new ListType(fieldToAdjustConfigType)),
+    },
+    standaloneFields: {
+      refType: createRefToElmWithValue(new ListType(standaloneFieldConfigType)),
+    },
+    dataField: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    fileNameFields: {
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+    },
     ...additionalFields,
   }
   const transformationConfigType = new ObjectType({
     elemID: new ElemID(adapter, 'transformationConfig'),
     fields: {
-      idFields: { type: new ListType(BuiltinTypes.STRING) },
+      idFields: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
       ...sharedTransformationFields,
     },
   })
@@ -124,7 +135,7 @@ export const createTransformationConfigTypes = (
     elemID: new ElemID(adapter, 'transformationDefaultConfig'),
     fields: {
       idFields: {
-        type: new ListType(BuiltinTypes.STRING),
+        refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },

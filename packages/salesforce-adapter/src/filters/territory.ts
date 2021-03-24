@@ -14,11 +14,15 @@
 * limitations under the License.
 */
 import { Element, isInstanceElement, InstanceElement, getChangeElement, Change, isInstanceChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { collections, values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { isMetadataObjectType, metadataType, apiName } from '../transformers/transformer'
 import { CONTENT_FILENAME_OVERRIDE } from '../transformers/xml_transformer'
 import { TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE, TERRITORY2_RULE_TYPE } from '../constants'
 import { isInstanceOfTypeChange, parentApiName } from './utils'
+
+const { awu } = collections.asynciterable
+const { isDefined } = values
 
 // territory2Model does not require another nested dir
 const territory2TypesToNestedDirName: Record<string, string[]> = {
@@ -28,8 +32,12 @@ const territory2TypesToNestedDirName: Record<string, string[]> = {
 
 const territory2Types = [...Object.keys(territory2TypesToNestedDirName), TERRITORY2_MODEL_TYPE]
 
-const removeCustomFieldsFromTypes = (elements: Element[], typeNames: string[]): void => {
-  const elementsOfTypes = elements.filter(elem => typeNames.includes(metadataType(elem)))
+const removeCustomFieldsFromTypes = async (
+  elements: Element[],
+  typeNames: string[],
+): Promise<void> => {
+  const elementsOfTypes = elements
+    .filter(async elem => typeNames.includes(await metadataType(elem)))
   elementsOfTypes
     .filter(isMetadataObjectType)
     .forEach(type => {
@@ -42,17 +50,21 @@ const removeCustomFieldsFromTypes = (elements: Element[], typeNames: string[]): 
     })
 }
 
-const isTerritoryRelatedChange = (change: Change): change is Change<InstanceElement> => (
-  isInstanceChange(change) && isAdditionOrModificationChange(change)
-   && territory2Types.some(typeName => isInstanceOfTypeChange(typeName)(change))
+const isTerritoryRelatedChange = async (
+  change: Change,
+): Promise<Change<InstanceElement> | undefined> => (
+  (isInstanceChange(change) && isAdditionOrModificationChange(change)
+   && await awu(territory2Types).some(typeName => isInstanceOfTypeChange(typeName)(change)))
+    ? change
+    : undefined
 )
 
-const setTerritoryDeployPkgStructure = (element: InstanceElement): void => {
-  const { suffix } = element.type.annotations
-  const instanceName = apiName(element, true)
+const setTerritoryDeployPkgStructure = async (element: InstanceElement): Promise<void> => {
+  const { suffix } = (await element.getType()).annotations
+  const instanceName = await apiName(element, true)
   const contentPath = [
-    parentApiName(element),
-    ...territory2TypesToNestedDirName[metadataType(element)] ?? [],
+    await parentApiName(element),
+    ...territory2TypesToNestedDirName[await metadataType(element)] ?? [],
     `${instanceName}${suffix === undefined ? '' : `.${suffix}`}`,
   ]
   element.annotate({ [CONTENT_FILENAME_OVERRIDE]: contentPath })
@@ -63,19 +75,21 @@ const filterCreator: FilterCreator = () => ({
     // Territory2 and Territory2Model support custom fields - these are returned
     // in a CustomObject with the appropriate name and also in each instance of these types
     // We remove the fields from the instances to avoid duplication
-    removeCustomFieldsFromTypes(elements, [TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE])
+    await removeCustomFieldsFromTypes(elements, [TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE])
   },
 
   // territory2 types require a special deploy pkg structure (SALTO-1200)
   preDeploy: async changes => {
-    changes
-      .filter(isTerritoryRelatedChange)
+    await awu(changes)
+      .map(isTerritoryRelatedChange)
+      .filter(isDefined)
       .map(getChangeElement)
-      .forEach(setTerritoryDeployPkgStructure)
+      .forEach(async elm => setTerritoryDeployPkgStructure(elm))
   },
   onDeploy: async changes => {
-    changes
-      .filter(isTerritoryRelatedChange)
+    await awu(changes)
+      .map(isTerritoryRelatedChange)
+      .filter(isDefined)
       .map(getChangeElement)
       .forEach(elem => {
         delete elem.annotations[CONTENT_FILENAME_OVERRIDE]

@@ -40,14 +40,13 @@ const replacePath = async (
   profile: InstanceElement,
   profileInternalIdToName: Map<string, string>
 ): Promise<void> => {
-  const name = await apiName(profile) === 'PlatformPortal'
+  const name = (await apiName(profile) === 'PlatformPortal')
     // Both 'PlatformPortal' & 'AuthenticatedWebsite' profiles have 'Authenticated Website'
     // display name in SF UI. Since we wouldn't like them to be placed under the same nacl,
     // We modify 'PlatformPortal' filename manually so we'll have Authenticated_Website and
     // Authenticated_Website2 nacls.
     ? 'Authenticated Website2'
     : profileInternalIdToName.get(getInternalId(profile))
-
   if (name !== undefined && profile.path) {
     profile.path = [
       ...profile.path.slice(0, -1),
@@ -61,7 +60,8 @@ const replacePath = async (
  */
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
-    const profiles = elements.filter(isInstanceOfType(PROFILE_METADATA_TYPE))
+    const profiles = await awu(elements)
+      .filter(async e => isInstanceOfType(PROFILE_METADATA_TYPE)(e)).toArray()
     if (profiles.length > 0) {
       const profileInternalIdToName = await generateProfileInternalIdToName(client)
       await awu(profiles)

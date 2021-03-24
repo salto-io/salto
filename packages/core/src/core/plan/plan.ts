@@ -376,8 +376,6 @@ type GetPlanParameters = {
   changeValidators?: Record<string, ChangeValidator>
   dependencyChangers?: ReadonlyArray<DependencyChanger>
   customGroupIdFunctions?: Record<string, ChangeGroupIdFunction>
-  beforeSource: ReadOnlyElementsSource
-  afterSource: ReadOnlyElementsSource
   additionalResolveContext?: ReadonlyArray<Element>
   topLevelFilters?: IDFilter[]
 }

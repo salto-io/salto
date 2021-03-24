@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, BuiltinTypes, FieldDefinition, createRestriction, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '../utils'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 
 /* Client config */
 

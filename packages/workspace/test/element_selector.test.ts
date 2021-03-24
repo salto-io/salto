@@ -330,9 +330,14 @@ describe('select elements recursively', () => {
   const testElements = [mockInstance, mockType]
   const testElementIds = testElements.map(element => element.elemID)
   const testSelect = async (selectors: ElementSelector[],
-    compact = false): Promise<ElemID[]> =>
-    awu(await selectElementIdsByTraversal(selectors,
-      awu(testElementIds), createInMemoryElementSource(testElements), compact)).toArray()
+    compact = false, validateDeterminedSelectors = false): Promise<ElemID[]> =>
+    awu(await selectElementIdsByTraversal(
+      selectors,
+      awu(testElementIds),
+      createInMemoryElementSource(testElements),
+      compact,
+      validateDeterminedSelectors
+    )).toArray()
   it('finds subElements one and two layers deep', async () => {
     const selectors = createElementSelectors([
       'mockAdapter.*',

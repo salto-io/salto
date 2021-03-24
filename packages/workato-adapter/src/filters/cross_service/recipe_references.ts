@@ -21,7 +21,7 @@ import {
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { transformElement, TransformFunc, safeJsonStringify, setPath, extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { values as lowerdashValues } from '@salto-io/lowerdash'
+import { values as lowerdashValues, collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { FETCH_CONFIG } from '../../config'
 import { CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS } from '../../constants'
@@ -30,6 +30,7 @@ import { isNetsuiteBlock, isSalesforceBlock, NetsuiteBlock, SalesforceBlock } fr
 
 const log = logger(module)
 const { isDefined } = lowerdashValues
+const { awu } = collections.asynciterable
 const { toNestedTypeName } = elementUtils.ducktype
 
 type MappedReference = {
@@ -47,12 +48,12 @@ type FormulaReferenceFinder = (
   path: ElemID,
 ) => MappedReference[]
 
-const addReferencesForService = <T extends SalesforceBlock | NetsuiteBlock>(
+const addReferencesForService = async <T extends SalesforceBlock | NetsuiteBlock>(
   inst: InstanceElement,
   typeGuard: (value: Value) => value is T,
   addReferences: ReferenceFinder<T>,
   addFormulaReferences?: FormulaReferenceFinder,
-): boolean => {
+): Promise<boolean> => {
   const dependencyMapping: MappedReference[] = []
 
   const findReferences: TransformFunc = ({ value, path }) => {
@@ -73,7 +74,7 @@ const addReferencesForService = <T extends SalesforceBlock | NetsuiteBlock>(
   }
 
   // used for traversal, the transform result is ignored
-  transformElement({
+  await transformElement({
     element: inst,
     transformFunc: findReferences,
     strict: false,
@@ -81,7 +82,7 @@ const addReferencesForService = <T extends SalesforceBlock | NetsuiteBlock>(
   if (dependencyMapping.length === 0) {
     return false
   }
-  log.debug('found the following references: %s', safeJsonStringify(dependencyMapping.map(dep => [dep.srcPath?.getFullName(), dep.ref.elemId.getFullName()])))
+  log.debug('found the following references: %s', safeJsonStringify(dependencyMapping.map(dep => [dep.srcPath?.getFullName(), dep.ref.elemID.getFullName()])))
   dependencyMapping.forEach(({ srcPath, ref }) => {
     if (srcPath !== undefined) {
       setPath(inst, srcPath, ref)
@@ -93,10 +94,10 @@ const addReferencesForService = <T extends SalesforceBlock | NetsuiteBlock>(
 
 const SALESFORCE_LABEL_ANNOTATION = 'label'
 
-const addSalesforceRecipeReferences = (
+const addSalesforceRecipeReferences = async (
   inst: InstanceElement,
   indexedElements: SalesforceIndex,
-): boolean => {
+): Promise<boolean> => {
   const getObjectDetails = (objectName: string): {
     id: ElemID
     fields: Record<string, Readonly<Field>>
@@ -192,10 +193,10 @@ const addSalesforceRecipeReferences = (
   return addReferencesForService<SalesforceBlock>(inst, isSalesforceBlock, referenceFinder)
 }
 
-const addNetsuiteRecipeReferences = (
+const addNetsuiteRecipeReferences = async (
   inst: InstanceElement,
   indexedElements: NetsuiteIndex,
-): boolean => {
+): Promise<boolean> => {
   const referenceFinder: ReferenceFinder<NetsuiteBlock> = (blockValue, path) => {
     const references: MappedReference[] = []
 
@@ -325,37 +326,30 @@ const filterRelevantRecipeCodes = (
         connectionConfig => (
           _.isObjectLike(connectionConfig)
           && isReferenceExpression(connectionConfig.account_id)
-          && connectionID.isEqual(connectionConfig.account_id.elemId)
+          && connectionID.isEqual(connectionConfig.account_id.elemID)
         )
       ))
   )
   return relevantRecipes.map(
-    recipe => recipeCodeInstances[recipe.value.code.elemId.getFullName()]
+    recipe => recipeCodeInstances[recipe.value.code.elemID.getFullName()]
   )
 }
 
-const addReferencesForConnectionRecipes = (
+const addReferencesForConnectionRecipes = async (
   relevantRecipeCodes: InstanceElement[],
   serviceName: string,
   serviceElements: ReadonlyArray<Readonly<Element>>,
-): boolean => {
+): Promise<void> => {
   if (serviceName === CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS.salesforce) {
     const index = indexSalesforceByMetadataTypeAndApiName(serviceElements)
-    const res = relevantRecipeCodes.map(
-      inst => addSalesforceRecipeReferences(inst, index)
-    )
-    return res.some(t => t)
+    await awu(relevantRecipeCodes).forEach(async rc => addSalesforceRecipeReferences(rc, index))
   }
   if (serviceName === CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS.netsuite) {
     const index = indexNetsuiteByTypeAndScriptId(serviceElements)
-    const res = relevantRecipeCodes.map(
-      inst => addNetsuiteRecipeReferences(inst, index)
-    )
-    return res.some(t => t)
+    await awu(relevantRecipeCodes).forEach(async rc => addNetsuiteRecipeReferences(rc, index))
   }
 
   log.debug('unsupported service name %s, not resolving recipe references', serviceName)
-  return false
 }
 
 /**
@@ -365,43 +359,43 @@ const filter: FilterCreator = ({ config }) => ({
   onPostFetch: async ({
     currentAdapterElements,
     elementsByAdapter,
-  }: PostFetchOptions): Promise<boolean> => {
+  }: PostFetchOptions): Promise<void> => {
     const { serviceConnectionNames } = config[FETCH_CONFIG]
     if (serviceConnectionNames === undefined || _.isEmpty(serviceConnectionNames)) {
-      return false
+      return
     }
 
     const serviceConnections = getServiceConnectionIDs(
       serviceConnectionNames,
       currentAdapterElements
         .filter(isInstanceElement)
-        .filter(inst => inst.type.elemID.name === 'connection'),
+        .filter(inst => inst.refType.elemID.name === 'connection'),
     )
     const recipeInstances = (
       currentAdapterElements
         .filter(isInstanceElement)
-        .filter(inst => inst.type.elemID.name === 'recipe')
+        .filter(inst => inst.refType.elemID.name === 'recipe')
     )
     const recipeCodeInstancesByElemID = _.keyBy(
       currentAdapterElements
         .filter(isInstanceElement)
-        .filter(inst => inst.type.elemID.name === toNestedTypeName('recipe', 'code')),
+        .filter(inst => inst.refType.elemID.name === toNestedTypeName('recipe', 'code')),
       inst => inst.elemID.getFullName()
     )
 
-    const updateResults = Object.entries(serviceConnections).map(([serviceName, connectionID]) => {
-      const relevantRecipeCodes = filterRelevantRecipeCodes(
-        connectionID,
-        recipeInstances,
-        recipeCodeInstancesByElemID,
-      )
-      return addReferencesForConnectionRecipes(
-        relevantRecipeCodes,
-        serviceName,
-        elementsByAdapter[serviceName] ?? [],
-      )
-    })
-    return updateResults.some(t => t)
+    await awu(Object.entries(serviceConnections))
+      .forEach(async ([serviceName, connectionID]) => {
+        const relevantRecipeCodes = filterRelevantRecipeCodes(
+          connectionID,
+          recipeInstances,
+          recipeCodeInstancesByElemID,
+        )
+        await addReferencesForConnectionRecipes(
+          relevantRecipeCodes,
+          serviceName,
+          elementsByAdapter[serviceName] ?? [],
+        )
+      })
   },
 })
 

@@ -51,9 +51,9 @@ export const findDataField: FindNestedFieldFunc = async (type, fieldsToIgnore, d
       && (fieldType === undefined || fieldType === field.refType.elemID.name)
     ))
   )
-  const isObjectTypeDeep = (fieldType: TypeElement): boolean => (
+  const isObjectTypeDeep = async (fieldType: TypeElement): Promise<boolean> => (
     isObjectType(fieldType)
-    || (isListType(fieldType) && isObjectTypeDeep(fieldType.innerType))
+    || (isListType(fieldType) && isObjectTypeDeep(await fieldType.getInnerType()))
   )
 
   const potentialFields = (
@@ -61,7 +61,7 @@ export const findDataField: FindNestedFieldFunc = async (type, fieldsToIgnore, d
       ? [type.fields[dataField]]
       : (
         Object.values(type.fields)
-          .filter(field => isObjectTypeDeep(field.type))
+          .filter(async field => isObjectTypeDeep(await field.getType()))
           .filter(field => !shouldIgnoreField(field))
       )
   )

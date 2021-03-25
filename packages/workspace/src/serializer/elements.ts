@@ -21,8 +21,9 @@ import {
   ReferenceExpression, TemplateExpression, VariableExpression,
   isReferenceExpression, Variable, StaticFile, isStaticFile,
   isInstanceElement, isPrimitiveType,
-  FieldDefinition, isObjectType, Values,
+  FieldDefinition, isObjectType, Values, Value, TypeRefMap,
 } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { DuplicateAnnotationError, MergeError, isMergeError } from '../merger/internal/common'
 import { DuplicateInstanceKeyError } from '../merger/internal/instances'
 import { DuplicateAnnotationFieldDefinitionError, ConflictingFieldTypesError,
@@ -190,10 +191,36 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
     new ElemID(v.adapter, v.typeName, v.idType, ...v.nameParts)
   )
 
+  const reviveReferenceExpression = (v: Value): ReferenceExpression => {
+    const elemID = v.elemID ?? v.elemId
+    return new ReferenceExpression(reviveElemID(elemID))
+  }
+
+  const reviveRefType = (v: Value): ReferenceExpression => {
+    if (v.refType) {
+      return v.refType
+    }
+    return createRefToElmWithValue(v.type)
+  }
+
+  const reviveAnnotationRefTypes = (v: Value): TypeRefMap => {
+    if (v.annotationRefTypes) {
+      return v.annotationRefTypes
+    }
+    return v.annotationTypes
+  }
+
+  const reviveRefInnerType = (v: Value): ReferenceExpression => {
+    if (v.refInnerType) {
+      return new ReferenceExpression(v.refInnerType.elemID)
+    }
+    return createRefToElmWithValue(v.innerType)
+  }
+
   const revivers: ReviverMap = {
     InstanceElement: v => new InstanceElement(
       reviveElemID(v.elemID).name,
-      v.refType,
+      reviveRefType(v),
       v.value,
       undefined,
       v.annotations,
@@ -202,7 +229,7 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
       const r = new ObjectType({
         elemID: reviveElemID(v.elemID),
         fields: v.fields,
-        annotationRefsOrTypes: v.annotationRefTypes,
+        annotationRefsOrTypes: reviveAnnotationRefTypes(v),
         annotations: v.annotations,
         isSettings: v.isSettings,
       })
@@ -214,27 +241,21 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
     PrimitiveType: v => new PrimitiveType({
       elemID: reviveElemID(v.elemID),
       primitive: v.primitive,
-      annotationRefsOrTypes: v.annotationRefTypes,
+      annotationRefsOrTypes: reviveAnnotationRefTypes(v),
       annotations: v.annotations,
     }),
-    ListType: v => new ListType(
-      new ReferenceExpression(v.refInnerType.elemID),
-    ),
-    MapType: v => new MapType(
-      new ReferenceExpression(v.refInnerType.elemID),
-    ),
+    ListType: v => new ListType(reviveRefInnerType(v)),
+    MapType: v => new MapType(reviveRefInnerType(v)),
     Field: v => ({
-      refType: new ReferenceExpression(v.refType.elemID),
+      refType: reviveRefType(v),
       annotations: v.annotations,
     }),
     TemplateExpression: v => (
       new TemplateExpression({ parts: v.parts })
     ),
-    ReferenceExpression: v => (
-      new ReferenceExpression(reviveElemID(v.elemID))
-    ),
+    ReferenceExpression: reviveReferenceExpression,
     VariableExpression: v => (
-      new VariableExpression(reviveElemID(v.elemID))
+      new VariableExpression(reviveElemID(v.elemID ?? v.elemId))
     ),
     StaticFile: v => {
       const staticFile = new StaticFile(

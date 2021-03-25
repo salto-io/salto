@@ -19,6 +19,8 @@ import { collections, hash } from '@salto-io/lowerdash'
 import { updatePathIndex, overridePathIndex, PathIndex } from '../path_index'
 import { State, StateData } from './state'
 
+type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
+
 const { awu } = collections.asynciterable
 const { toMD5 } = hash
 
@@ -36,7 +38,11 @@ export const buildInMemState = (loadData: () => Promise<StateData>): State => {
     get: async (id: ElemID): Promise<Element | undefined> => (await stateData()).elements.get(id),
     has: async (id: ElemID): Promise<boolean> => (await stateData()).elements.has(id),
     delete: async (id: ElemID): Promise<void> => (await stateData()).elements.delete(id),
+    deleteAll: async (ids: ThenableIterable<ElemID>): Promise<void> => (
+      await stateData()).elements.deleteAll(ids),
     set: async (element: Element): Promise<void> => (await stateData()).elements.set(element),
+    setAll: async (elements: ThenableIterable<Element>): Promise<void> => (
+      await stateData()).elements.setAll(elements),
     remove: async (id: ElemID): Promise<void> => (await stateData()).elements.delete(id),
     isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
     override: async (elements: AsyncIterable<Element>, services?: string[]): Promise<void> => {

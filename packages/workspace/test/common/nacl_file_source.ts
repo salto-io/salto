@@ -25,6 +25,7 @@ import { createInMemoryElementSource } from '../../src/workspace/elements_source
 import { createAddChange } from '../../src/workspace/nacl_files/multi_env/projections'
 
 const { awu } = collections.asynciterable
+type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
 export const createMockNaclFileSource = (
   elements: Element[],
@@ -42,7 +43,9 @@ export const createMockNaclFileSource = (
   },
   has: async (id: ElemID) => elements.find(e => e.elemID.isEqual(id)) !== undefined,
   set: async (_element: Element) => Promise.resolve(undefined),
+  setAll: async (_elements: ThenableIterable<Element>) => Promise.resolve(undefined),
   delete: async (_id: ElemID) => Promise.resolve(undefined),
+  deleteAll: async (_ids: ThenableIterable<ElemID>) => Promise.resolve(undefined),
   getAll: async () => awu(elements),
   getElementsSource: async () => createInMemoryElementSource(elements),
   clear: jest.fn().mockImplementation(() => Promise.resolve()),

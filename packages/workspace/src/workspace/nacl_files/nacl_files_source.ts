@@ -30,7 +30,7 @@ import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
 import { StaticFilesSource } from '../static_files'
 import { getStaticFilesFunctions } from '../static_files/functions'
-import { buildNewMergedElementsAndErrors } from './elements_cache'
+import { buildNewMergedElementsAndErrors, ChangeSet } from './elements_cache'
 import { serialize, deserializeMergeErrors, deserializeSingleElement } from '../../serializer/elements'
 import { Functions } from '../../parser/functions'
 import { RemoteMap, RemoteMapCreator } from '../remote_map'
@@ -38,6 +38,7 @@ import { ParsedNaclFile } from './parsed_nacl_file'
 import { ParsedNaclFileCache, ParseResultKey, createParseResultCache } from './parsed_nacl_files_cache'
 
 const { awu, concatAsync } = collections.asynciterable
+type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 const { withLimitedConcurrency } = promises.array
 
 const log = logger(module)
@@ -59,13 +60,6 @@ export type SourceLoadParams = {
   ignoreFileChanges?: boolean
   cachePrefix?: string
   env?: string
-}
-
-export type ChangeSet<Change> = {
-  changes: Change[]
-  cacheValid: boolean
-  preChangeHash?: string
-  postChangeHash?: string
 }
 
 export type NaclFilesSource<Changes=ChangeSet<Change>> = Omit<ElementsSource, 'clear'> & {
@@ -302,7 +296,6 @@ const buildNaclFilesState = async ({
       ...(await getNaclFileAndCheckValidity(naclFile))?.elements
         .map(e => e.elemID) ?? [],
     )
-
     newElementsToMerge.push(awu(naclFile.elements))
     // This is temp and should be removed when we change the init flow
     // This happens now cause we get here with ParsedNaclFiles that originate from the cache
@@ -365,7 +358,7 @@ const buildNaclFilesState = async ({
     referencedIndexDeletions
   )
   const changes = await buildNewMergedElementsAndErrors({
-    afterElements: concatAsync(...newElementsToMerge, unmodifiedFragments),
+    afterElements: awu(concatAsync(...newElementsToMerge, awu(unmodifiedFragments))),
     relevantElementIDs: awu(relevantElementIDs),
     currentElements: currentState.mergedElements,
     currentErrors: currentState.mergeErrors,
@@ -668,7 +661,11 @@ const buildNaclFilesSource = (
 
     has: async (id: ElemID): Promise<boolean> => (await getState()).mergedElements.has(id),
     delete: async (id: ElemID): Promise<void> => (await getState()).mergedElements.delete(id),
+    deleteAll: async (ids: ThenableIterable<ElemID>): Promise<void> => (await getState())
+      .mergedElements.deleteAll(ids),
     set: async (element: Element): Promise<void> => (await getState()).mergedElements.set(element),
+    setAll: async (elements: ThenableIterable<Element>): Promise<void> => (await getState())
+      .mergedElements.setAll(elements),
     get: async (id: ElemID): Promise<Element | Value> => {
       const currentState = await getState()
       const { parent, path } = id.createTopLevelParentID()

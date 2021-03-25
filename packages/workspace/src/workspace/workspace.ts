@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
   Value, toChange, isRemovalChange, getChangeElement, isAdditionChange, isObjectType, ObjectType,
-  isModificationChange, isObjectTypeChange, ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+  isModificationChange, isObjectTypeChange, ReadOnlyElementsSource, isAdditionOrModificationChange, ChangeDataType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { applyDetailedChanges, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
@@ -25,7 +25,7 @@ import { ValidationError, validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
-import { NaclFilesSource, NaclFile, RoutingMode, ChangeSet } from './nacl_files/nacl_files_source'
+import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
 import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
 import { multiEnvSource, getSourceNameForFilename, MultiEnvSource } from './nacl_files/multi_env/multi_env_source'
 import { ElementSelector } from './element_selector'
@@ -35,7 +35,7 @@ import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_v
 import { WorkspaceConfigSource } from './workspace_config_source'
 import { MergeError, mergeElements } from '../merger'
 import { RemoteElementSource, ElementsSource, mapReadOnlyElementsSource } from './elements_source'
-import { buildNewMergedElementsAndErrors, getAfterElements } from './nacl_files/elements_cache'
+import { applyChanges, mergeChanges, ChangeSet, EMPTY_CHANGE_SET } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
 
@@ -47,8 +47,6 @@ const { awu } = collections.asynciterable
 export const ADAPTERS_CONFIGS_PATH = 'adapters'
 export const COMMON_ENV_PREFIX = ''
 const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
-
-const EMPTY_CHANGE_SET = { changes: [], cacheValid: true }
 
 export type WorkspaceError<T extends SaltoError> = Readonly<T & {
   sourceFragments: SourceFragment[]
@@ -217,7 +215,7 @@ export const loadWorkspace = async (
           deserialize: async data => deserializeValidationErrors(data),
         }),
       }
-
+    const preChangeHash = stateToBuild.hash
     const getElementsDependents = async (
       elemIDs: ElemID[],
       addedIDs: Set<string>
@@ -283,8 +281,7 @@ export const loadWorkspace = async (
         : []
 
       const stateRemovedElementChanges = workspaceChanges.changes
-        .filter(change => isRemovalChange(change) && getChangeElement(change).elemID.isTopLevel())
-
+        .filter(change => isRemovalChange(change) && getChangeElement(change).elemID?.isTopLevel())
       return partialStateChanges
         .concat(initHiddenElementsChanges)
         .concat(stateRemovedElementChanges)
@@ -328,11 +325,15 @@ export const loadWorkspace = async (
       await stateToBuild.searchableNamesIndex
         .deleteAll(removalNames)
     }
-
-    const mergeData = await getAfterElements({
-      src1Changes: workspaceChanges.changes,
+    const changeResult = await mergeChanges({
+      src1Changes: workspaceChanges,
       src1: await naclFilesSource.getElementsSource(),
-      src2Changes: await completeStateOnlyChanges(stateOnlyChanges.changes),
+      src2Changes: {
+        changes: await completeStateOnlyChanges(stateOnlyChanges.changes),
+        cacheValid: stateOnlyChanges.cacheValid,
+        preChangeHash: stateOnlyChanges.preChangeHash,
+        postChangeHash: stateOnlyChanges.postChangeHash,
+      },
       src2: mapReadOnlyElementsSource(
         state(),
         async element => getElementHiddenParts(
@@ -341,14 +342,19 @@ export const loadWorkspace = async (
           await stateToBuild.merged.get(element.elemID)
         )
       ),
+      currentElements: stateToBuild.merged,
+      cachePreChangeHash: preChangeHash,
+      mergeFunc: elements => mergeElements(elements),
     })
 
-    const changes = await buildNewMergedElementsAndErrors({
+    await applyChanges({
+      mergedChanges: changeResult.mergedChanges,
+      mergeErrors: changeResult.mergeErrors,
       currentElements: stateToBuild.merged,
       currentErrors: stateToBuild.errors,
-      mergeFunc: elements => mergeElements(elements),
-      ...mergeData,
     })
+    const changes = changeResult.mergedChanges
+      .changes.map(change => change as Change<ChangeDataType>)
     await updateSearchableNamesIndex(changes)
     const changedElements = changes
       .filter(isAdditionOrModificationChange)
@@ -373,7 +379,6 @@ export const loadWorkspace = async (
       const elementsWithNoErrors = validatedElementsIDs
         .map(id => id.getFullName())
         .filter(fullname => _.isEmpty(validationErrorsById[fullname]))
-
       await stateToBuild.validationErrors.setAll(errorsToUpdate)
       await stateToBuild.validationErrors.deleteAll(elementsWithNoErrors)
     }
@@ -441,8 +446,8 @@ export const loadWorkspace = async (
       state(),
       (await getLoadedNaclFilesSource()).getAll,
     )
-    const workspaceChanges = await (await getLoadedNaclFilesSource())
-      .updateNaclFiles(visibleChanges, mode)
+    const workspaceChanges = await ((await getLoadedNaclFilesSource())
+      .updateNaclFiles(visibleChanges, mode))
     const stateOnlyChanges = await getStateOnlyChanges(hiddenChanges)
     workspaceState = buildWorkspaceState({ workspaceChanges,
       stateOnlyChanges: {

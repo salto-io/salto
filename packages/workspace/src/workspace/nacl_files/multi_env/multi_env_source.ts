@@ -18,8 +18,8 @@ import path from 'path'
 import wu from 'wu'
 
 import { Element, ElemID, getChangeElement, Value,
-  DetailedChange, Change } from '@salto-io/adapter-api'
-import { promises, collections, hash } from '@salto-io/lowerdash'
+  DetailedChange, Change, ChangeDataType } from '@salto-io/adapter-api'
+import { promises, collections } from '@salto-io/lowerdash'
 import { applyInstanceDefaults } from '@salto-io/adapter-utils'
 import { RemoteMap, RemoteMapCreator, mapRemoteMapResult } from '../../remote_map'
 import { ElementSelector, selectElementIdsByTraversal } from '../../element_selector'
@@ -27,15 +27,15 @@ import { ValidationError } from '../../../validator'
 import { ParseError, SourceRange, SourceMap } from '../../../parser'
 import { mergeElements, MergeError } from '../../../merger'
 import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } from './routers'
-import { NaclFilesSource, NaclFile, RoutingMode, SourceLoadParams, ChangeSet } from '../nacl_files_source'
+import { NaclFilesSource, NaclFile, RoutingMode, SourceLoadParams } from '../nacl_files_source'
 import { ParsedNaclFile } from '../parsed_nacl_file'
-import { buildNewMergedElementsAndErrors, getAfterElements } from '../elements_cache'
+import { applyChanges, mergeChanges, EMPTY_CHANGE_SET, ChangeSet } from '../elements_cache'
 import { Errors } from '../../errors'
 import { RemoteElementSource, ElementsSource } from '../../elements_source'
 import { serialize, deserializeSingleElement, deserializeMergeErrors } from '../../../serializer/elements'
 
-const { toMD5 } = hash
 const { awu } = collections.asynciterable
+type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 const { series } = promises.array
 const { resolveValues, mapValuesAsync } = promises.object
 
@@ -144,29 +144,13 @@ const buildMultiEnvSource = (
       ? state
       : await buildState(env)
     const preChangeHash = current.hash
-    const { afterElements: newElements, relevantElementIDs } = await getAfterElements({
-      src1Changes: actualChanges[primaryEnv]?.changes ?? [],
+    const changeResult = await mergeChanges({
+      src1Changes: actualChanges[primaryEnv] ?? EMPTY_CHANGE_SET,
       src1: sources[primaryEnv],
-      src2Changes: actualChanges[commonSourceName]?.changes ?? [],
+      src2Changes: actualChanges[commonSourceName] ?? EMPTY_CHANGE_SET,
       src2: sources[commonSourceName],
-    })
-    let cacheValid = true
-    let newHash = ''
-    let multiSourcesPreChangeHash = ''
-    Object.keys(actualChanges).forEach(key => {
-      cacheValid = cacheValid && actualChanges[key].cacheValid
-      newHash += actualChanges[key].postChangeHash
-      multiSourcesPreChangeHash += actualChanges[key].preChangeHash
-    })
-    if (multiSourcesPreChangeHash === preChangeHash) {
-      // FOR ROII: Placeholder for the situation in which hash doesn't match
-    }
-    newHash = toMD5(newHash)
-    const mergeChanges = await buildNewMergedElementsAndErrors({
-      afterElements: awu(newElements),
       currentElements: current.elements,
-      currentErrors: current.mergeErrors,
-      relevantElementIDs: awu(relevantElementIDs),
+      cachePreChangeHash: preChangeHash,
       mergeFunc: async elements => {
         const plainResult = await mergeElements(elements)
         return {
@@ -186,10 +170,20 @@ const buildMultiEnvSource = (
         }
       },
     })
-    current.hash = newHash
+    await applyChanges({
+      mergedChanges: changeResult.mergedChanges,
+      mergeErrors: changeResult.mergeErrors,
+      currentElements: current.elements,
+      currentErrors: current.mergeErrors,
+    })
     return {
       state: current,
-      changes: { changes: mergeChanges, cacheValid, preChangeHash, postChangeHash: newHash },
+      changes: {
+        changes: changeResult.mergedChanges.changes as Change<ChangeDataType>[],
+        postChangeHash: changeResult.mergedChanges.postChangeHash,
+        preChangeHash: changeResult.mergedChanges.preChangeHash,
+        cacheValid: changeResult.mergedChanges.cacheValid,
+      },
     }
   }
 
@@ -371,8 +365,14 @@ const buildMultiEnvSource = (
     delete: async (id: ElemID): Promise<void> => (
       (await getState()).elements.delete(id)
     ),
+    deleteAll: async (ids: ThenableIterable<ElemID>): Promise<void> => (
+      (await getState()).elements.deleteAll(ids)
+    ),
     set: async (elem: Element): Promise<void> => (
       (await getState()).elements.set(elem)
+    ),
+    setAll: async (elements: ThenableIterable<Element>): Promise<void> => (
+      (await getState()).elements.setAll(elements)
     ),
     getAll: async (env?: string): Promise<AsyncIterable<Element>> => {
       if (env === undefined || env === primarySourceName) {

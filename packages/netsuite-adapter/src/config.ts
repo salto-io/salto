@@ -119,19 +119,9 @@ export const configType = new ObjectType({
   fields: {
     [TYPES_TO_SKIP]: {
       refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: [
-          SAVED_SEARCH, // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch.
-          // Although the SAVED_SEARCH is not editable since it's encrypted, there still might be
-          // a value for specific customers to use it for moving between envs, backup etc.
-        ],
-      },
     },
     [FILE_PATHS_REGEX_SKIP_LIST]: {
       refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: [],
-      },
     },
     [DEPLOY_REFERENCED_ELEMENTS]: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),

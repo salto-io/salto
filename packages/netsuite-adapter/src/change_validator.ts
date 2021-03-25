@@ -19,6 +19,7 @@ import removeCustomizationValidator from './change_validators/remove_customizati
 import removeListItemValidator from './change_validators/remove_list_item'
 import instanceChangesValidator from './change_validators/instance_changes'
 import serviceIdsChangesValidator from './change_validators/service_ids_changes'
+import fileValidator from './change_validators/file_changes'
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
 
 
@@ -27,6 +28,7 @@ const changeValidators: ChangeValidator[] = [
   instanceChangesValidator,
   serviceIdsChangesValidator,
   removeListItemValidator,
+  fileValidator,
 ]
 
 /**

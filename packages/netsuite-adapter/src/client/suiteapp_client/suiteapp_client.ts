@@ -262,7 +262,7 @@ export default class SuiteAppClient {
 
   // This function should be used for files which are bigger than 10 mb,
   // otherwise readFiles should be used
-  public async readFile(id: number): Promise<Buffer | Error> {
+  public async readLargeFile(id: number): Promise<Buffer | Error> {
     try {
       return await this.soapClient.readFile(id)
     } catch (e) {

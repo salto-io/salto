@@ -396,7 +396,7 @@ describe('SuiteAppClient', () => {
     })
   })
 
-  describe('readFile', () => {
+  describe('readLargeFile', () => {
     const readFileMock = jest.spyOn(SoapClient.prototype, 'readFile')
     beforeEach(() => {
       readFileMock.mockReset()
@@ -404,13 +404,13 @@ describe('SuiteAppClient', () => {
 
     it('Should return the SOAP client results', async () => {
       readFileMock.mockResolvedValue(Buffer.from('aaa'))
-      expect(await client.readFile(1)).toEqual(Buffer.from('aaa'))
+      expect(await client.readLargeFile(1)).toEqual(Buffer.from('aaa'))
       expect(readFileMock).toHaveBeenCalledWith(1)
     })
 
     it('Should return the SOAP client error', async () => {
       readFileMock.mockRejectedValue(new Error('bbb'))
-      expect(await client.readFile(1)).toEqual(new Error('bbb'))
+      expect(await client.readLargeFile(1)).toEqual(new Error('bbb'))
     })
   })
 })

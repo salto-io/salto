@@ -135,7 +135,7 @@ describe('suiteapp_file_cabinet', () => {
   const mockSuiteAppClient = {
     runSuiteQL: jest.fn(),
     readFiles: jest.fn(),
-    readFile: jest.fn(),
+    readLargeFile: jest.fn(),
   }
 
   const suiteAppClient = mockSuiteAppClient as unknown as SuiteAppClient
@@ -181,12 +181,12 @@ describe('suiteapp_file_cabinet', () => {
     mockSuiteAppClient.readFiles.mockImplementation(
       async (ids: string[]) => ids.map(id => filesContentWithError[id])
     )
-    mockSuiteAppClient.readFile.mockResolvedValue(filesContent[2])
+    mockSuiteAppClient.readLargeFile.mockResolvedValue(filesContent[2])
 
     const { elements } = await importFileCabinet(suiteAppClient, query)
     expect(elements).toEqual(expectedResults)
-    expect(mockSuiteAppClient.readFile).toHaveBeenCalledWith(2)
-    expect(mockSuiteAppClient.readFile).toHaveBeenCalledTimes(1)
+    expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledWith(2)
+    expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledTimes(1)
   })
 
   it('should use SOAP for big files', async () => {
@@ -216,7 +216,7 @@ describe('suiteapp_file_cabinet', () => {
       throw new Error(`Unexpected query: ${suiteQlQuery}`)
     })
 
-    mockSuiteAppClient.readFile.mockResolvedValue(Buffer.from('someContent'))
+    mockSuiteAppClient.readLargeFile.mockResolvedValue(Buffer.from('someContent'))
 
     const { elements } = await importFileCabinet(suiteAppClient, query)
     expect(elements).toEqual([
@@ -235,8 +235,8 @@ describe('suiteapp_file_cabinet', () => {
         },
       },
     ])
-    expect(mockSuiteAppClient.readFile).toHaveBeenCalledWith(6)
-    expect(mockSuiteAppClient.readFile).toHaveBeenCalledTimes(1)
+    expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledWith(6)
+    expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledTimes(1)
   })
 
   it('should return failed paths', async () => {
@@ -247,7 +247,7 @@ describe('suiteapp_file_cabinet', () => {
     mockSuiteAppClient.readFiles.mockImplementation(
       async (ids: string[]) => ids.map(id => filesContentWithError[id])
     )
-    mockSuiteAppClient.readFile.mockResolvedValue(new ReadFileError())
+    mockSuiteAppClient.readLargeFile.mockResolvedValue(new ReadFileError())
 
     const { failedPaths } = await importFileCabinet(suiteAppClient, query)
     expect(failedPaths).toEqual([

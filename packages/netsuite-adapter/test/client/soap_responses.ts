@@ -17,21 +17,21 @@
 export const READ_SUCCESS_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
-        <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2017_1.platform.webservices.netsuite.com">
+        <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
             <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_032420211672409845160737639_5a9a98</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>
         <getResponse xmlns="">
-            <platformMsgs:readResponse xmlns:platformMsgs="urn:messages_2017_1.platform.webservices.netsuite.com">
-                <platformCore:status isSuccess="true" xmlns:platformCore="urn:core_2017_1.platform.webservices.netsuite.com"/>
-                <platformMsgs:record internalId="5846" xsi:type="docFileCab:File" xmlns:docFileCab="urn:filecabinet_2017_1.documents.webservices.netsuite.com">
+            <platformMsgs:readResponse xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
+                <platformCore:status isSuccess="true" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com"/>
+                <platformMsgs:record internalId="5846" xsi:type="docFileCab:File" xmlns:docFileCab="urn:filecabinet_2020_2.documents.webservices.netsuite.com">
                     <docFileCab:name>demo2.txt</docFileCab:name>
                     <docFileCab:mediaTypeName>Other Binary File</docFileCab:mediaTypeName>
                     <docFileCab:fileType>_MISCBINARY</docFileCab:fileType>
                     <docFileCab:content>ZGVtbwoK
 </docFileCab:content>
-                    <docFileCab:folder internalId="-6" xmlns:platformCore="urn:core_2017_1.platform.webservices.netsuite.com">
+                    <docFileCab:folder internalId="-6" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com">
                         <platformCore:name>Templates : E-mail Templates</platformCore:name>
                     </docFileCab:folder>
                     <docFileCab:fileSize>6.0</docFileCab:fileSize>
@@ -52,11 +52,11 @@ export const READ_SUCCESS_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
                     <docFileCab:siteCategoryList>
                         <docFileCab:siteCategory>
                             <docFileCab:isDefault>true</docFileCab:isDefault>
-                            <docFileCab:category internalId="-101" xmlns:platformCore="urn:core_2017_1.platform.webservices.netsuite.com">
+                            <docFileCab:category internalId="-101" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com">
                                 <platformCore:name>Home</platformCore:name>
                             </docFileCab:category>
                             <docFileCab:categoryDescription>&lt;table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot;&gt; &lt;tbody&gt; &lt;tr</docFileCab:categoryDescription>
-                            <docFileCab:website internalId="1" xmlns:platformCore="urn:core_2017_1.platform.webservices.netsuite.com">
+                            <docFileCab:website internalId="1" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com">
                                 <platformCore:name>Ramsey Inc.</platformCore:name>
                             </docFileCab:website>
                         </docFileCab:siteCategory>
@@ -70,20 +70,20 @@ export const READ_SUCCESS_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
 export const READ_SUCCESS_RESPONSE_NO_CONTENT = `<?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
-        <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2017_1.platform.webservices.netsuite.com">
+        <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
             <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_032420211672409845160737639_5a9a98</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>
         <getResponse xmlns="">
-            <platformMsgs:readResponse xmlns:platformMsgs="urn:messages_2017_1.platform.webservices.netsuite.com">
-                <platformCore:status isSuccess="true" xmlns:platformCore="urn:core_2017_1.platform.webservices.netsuite.com"/>
-                <platformMsgs:record internalId="5846" xsi:type="docFileCab:File" xmlns:docFileCab="urn:filecabinet_2017_1.documents.webservices.netsuite.com">
+            <platformMsgs:readResponse xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
+                <platformCore:status isSuccess="true" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com"/>
+                <platformMsgs:record internalId="5846" xsi:type="docFileCab:File" xmlns:docFileCab="urn:filecabinet_2020_2.documents.webservices.netsuite.com">
                     <docFileCab:name>demo2.txt</docFileCab:name>
                     <docFileCab:mediaTypeName>Other Binary File</docFileCab:mediaTypeName>
                     <docFileCab:fileType>_MISCBINARY</docFileCab:fileType>
                     <docFileCab:content></docFileCab:content>
-                    <docFileCab:folder internalId="-6" xmlns:platformCore="urn:core_2017_1.platform.webservices.netsuite.com">
+                    <docFileCab:folder internalId="-6" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com">
                         <platformCore:name>Templates : E-mail Templates</platformCore:name>
                     </docFileCab:folder>
                     <docFileCab:fileSize>6.0</docFileCab:fileSize>
@@ -104,11 +104,11 @@ export const READ_SUCCESS_RESPONSE_NO_CONTENT = `<?xml version="1.0" encoding="U
                     <docFileCab:siteCategoryList>
                         <docFileCab:siteCategory>
                             <docFileCab:isDefault>true</docFileCab:isDefault>
-                            <docFileCab:category internalId="-101" xmlns:platformCore="urn:core_2017_1.platform.webservices.netsuite.com">
+                            <docFileCab:category internalId="-101" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com">
                                 <platformCore:name>Home</platformCore:name>
                             </docFileCab:category>
                             <docFileCab:categoryDescription>&lt;table border=&quot;0&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; width=&quot;100%&quot;&gt; &lt;tbody&gt; &lt;tr</docFileCab:categoryDescription>
-                            <docFileCab:website internalId="1" xmlns:platformCore="urn:core_2017_1.platform.webservices.netsuite.com">
+                            <docFileCab:website internalId="1" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com">
                                 <platformCore:name>Ramsey Inc.</platformCore:name>
                             </docFileCab:website>
                         </docFileCab:siteCategory>
@@ -122,14 +122,14 @@ export const READ_SUCCESS_RESPONSE_NO_CONTENT = `<?xml version="1.0" encoding="U
 export const READ_FAILURE_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
-        <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2017_1.platform.webservices.netsuite.com">
+        <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
             <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_0324202116735338402072580352_3a3eb</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>
         <getResponse xmlns="">
-            <platformMsgs:readResponse xmlns:platformMsgs="urn:messages_2017_1.platform.webservices.netsuite.com">
-                <platformCore:status isSuccess="false" xmlns:platformCore="urn:core_2017_1.platform.webservices.netsuite.com">
+            <platformMsgs:readResponse xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
+                <platformCore:status isSuccess="false" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com">
                     <platformCore:statusDetail type="ERROR">
                         <platformCore:code>FILE_NOT_DOWNLOADABLE</platformCore:code>
                         <platformCore:message>Illegal request for a file that isn't downloadable</platformCore:message>
@@ -143,15 +143,15 @@ export const READ_FAILURE_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
 export const READ_INVALID_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
-        <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2017_1.platform.webservices.netsuite.com">
+        <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
             <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_032420211672409845160737639_5a9a98</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>
         <getResponse xmlns="">
-            <platformMsgs:readResponse xmlns:platformMsgs="urn:messages_2017_1.platform.webservices.netsuite.com">
-                <platformCore:status isSuccess="true" xmlns:platformCore="urn:core_2017_1.platform.webservices.netsuite.com"/>
-                <platformMsgs:record internalId="5846" xsi:type="docFileCab:File" xmlns:docFileCab="urn:filecabinet_2017_1.documents.webservices.netsuite.com">
+            <platformMsgs:readResponse xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
+                <platformCore:status isSuccess="true" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com"/>
+                <platformMsgs:record internalId="5846" xsi:type="docFileCab:File" xmlns:docFileCab="urn:filecabinet_2020_2.documents.webservices.netsuite.com">
                 </platformMsgs:record>
             </platformMsgs:readResponse>
         </getResponse>

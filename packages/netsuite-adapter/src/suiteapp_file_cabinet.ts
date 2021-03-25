@@ -167,7 +167,7 @@ Promise<ImportFileCabinetResult> => {
       isinactive: folder.isinactive,
       isprivate: folder.isprivate,
     },
-  })).filter(file => query.isFileMatch(`/${file.path.join('/')}`))
+  })).filter(folder => query.isFileMatch(`/${folder.path.join('/')}`))
 
   const filesCustomizationInfoWithoutContent = filesResults.map(file => ({
     path: [...getFullPath(idToFolder[file.folder], idToFolder), file.name],
@@ -196,7 +196,7 @@ Promise<ImportFileCabinetResult> => {
         if (fileChunk[0].size > FILES_CHUNK_SIZE) {
           const id = parseInt(fileChunk[0].id, 10)
           log.debug(`File with id ${id} is too big to fetch via Restlet (${fileChunk[0].size}), using SOAP API`)
-          return suiteAppClient.readFile(id)
+          return suiteAppClient.readLargeFile(id)
         }
 
         const results = await suiteAppClient.readFiles(fileChunk.map(f => parseInt(f.id, 10)))
@@ -212,7 +212,7 @@ Promise<ImportFileCabinetResult> => {
 
           const id = parseInt(fileChunk[index].id, 10)
           log.debug(`Received file encoding error for id ${id}. Fallback to SOAP request`)
-          return suiteAppClient.readFile(id)
+          return suiteAppClient.readLargeFile(id)
         }))
       }
     )

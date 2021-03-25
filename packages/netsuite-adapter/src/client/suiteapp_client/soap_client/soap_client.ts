@@ -35,7 +35,7 @@ export default class SoapClient {
   constructor(credentials: SuiteAppCredentials, callsLimiter: CallsLimiter) {
     this.credentials = credentials
     this.callsLimiter = callsLimiter
-    this.soapUrl = new URL(`https://${credentials.accountId.replace('_', '-')}.suitetalk.api.netsuite.com/services/NetSuitePort_2017_1`)
+    this.soapUrl = new URL(`https://${credentials.accountId.replace('_', '-')}.suitetalk.api.netsuite.com/services/NetSuitePort_2020_2`)
     this.ajv = new Ajv({ allErrors: true, strict: false })
   }
 
@@ -44,7 +44,7 @@ export default class SoapClient {
       get: {
         _attributes: {
           'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-          'xmlns:platformCore': 'urn:core_2017_1.platform.webservices.netsuite.com',
+          'xmlns:platformCore': 'urn:core_2020_2.platform.webservices.netsuite.com',
         },
         baseRef: {
           _attributes: {

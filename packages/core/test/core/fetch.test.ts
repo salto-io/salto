@@ -133,7 +133,6 @@ describe('fetch', () => {
           createElementSource([]),
           createElementSource([]),
           [],
-          [],
         )
         expect(fetchChangesResult.mergeErrors).toHaveLength(1)
       })
@@ -149,7 +148,6 @@ describe('fetch', () => {
             createInMemoryElementSource([newTypeBaseModified, typeWithField]),
             createInMemoryElementSource([]),
             [],
-            [],
           )
           expect(Array.from(fetchChangesResult.changes).length).toBe(0)
         })
@@ -162,7 +160,6 @@ describe('fetch', () => {
             mockAdapters,
             createInMemoryElementSource([]),
             createInMemoryElementSource([newTypeBase, typeWithField]),
-            [],
             [],
           )
           expect(fetchChangesResult.elements).toEqual([newTypeBaseModified, typeWithField])
@@ -178,7 +175,6 @@ describe('fetch', () => {
             createInMemoryElementSource([newTypeBaseModified, typeWithField]),
             createInMemoryElementSource([]),
             [],
-            [],
           )
           const resultChanges = Array.from(fetchChangesResult.changes)
           expect(resultChanges.length).toBe(1)
@@ -193,7 +189,6 @@ describe('fetch', () => {
             mockAdapters,
             createInMemoryElementSource([]),
             createInMemoryElementSource([newTypeBase, typeWithField]),
-            [],
             [],
           )
           expect(fetchChangesResult.elements).toEqual([newTypeBaseModified])
@@ -236,7 +231,6 @@ describe('fetch', () => {
           createInMemoryElementSource([beforeElement, workspaceReferencedElement]),
           createInMemoryElementSource([beforeElement, stateReferencedElement]),
           [],
-          [],
         )
 
         const resultChanges = Array.from(fetchChangesResult.changes)
@@ -277,7 +271,6 @@ describe('fetch', () => {
               new ObjectType({ elemID: new ElemID('dummy2', 'type') }),
             ]),
             createInMemoryElementSource([]),
-            [],
             [],
           )
           const resultChanges = Array.from(fetchChangesResult.changes)
@@ -334,7 +327,6 @@ describe('fetch', () => {
           createElementSource([]),
           createElementSource([]),
           [],
-          [],
         )
         verifyPlan(
           fetchChangesResult.configChanges,
@@ -351,7 +343,6 @@ describe('fetch', () => {
           mockAdapters,
           createElementSource([]),
           createElementSource([]),
-          [],
           [currentInstanceConfig],
         )
         verifyPlan(
@@ -369,7 +360,6 @@ describe('fetch', () => {
           mockAdapters,
           createElementSource([]),
           createElementSource([]),
-          [],
           [configInstance],
         )
         expect([...fetchChangesResult.configChanges.itemsByEvalOrder()]).toHaveLength(0)
@@ -398,7 +388,6 @@ describe('fetch', () => {
                 mockAdapters,
                 createElementSource([]),
                 createElementSource([dupTypeBase]),
-                [],
                 []
               )
               expect(false).toBeTruthy()
@@ -425,7 +414,6 @@ describe('fetch', () => {
             mockAdapters,
             createElementSource([]),
             createElementSource([]),
-            [],
             [],
           )
         })
@@ -460,7 +448,6 @@ describe('fetch', () => {
           createElementSource([newTypeMerged, hiddenInstance]),
           createElementSource([newTypeMerged, hiddenInstance]),
           [],
-          [],
         )
         elements = result.elements
         changes = [...result.changes]
@@ -493,7 +480,6 @@ describe('fetch', () => {
           mockAdapters,
           createElementSource([typeWithField, hiddenInstance]),
           createElementSource([typeWithField, hiddenInstance]),
-          [],
           [],
         )
         changes = [...result.changes]
@@ -528,7 +514,6 @@ describe('fetch', () => {
             elementSource.createInMemoryElementSource([]),
             elementSource.createInMemoryElementSource([]),
             [],
-            [],
             progressEmitter
           )
           changes = [...result.changes]
@@ -549,7 +534,6 @@ describe('fetch', () => {
             mockAdapters,
             elementSource.createInMemoryElementSource([]),
             elementSource.createInMemoryElementSource([]),
-            [],
             [],
             progressEmitter
           )
@@ -573,7 +557,6 @@ describe('fetch', () => {
           mockAdapters,
           createElementSource([]),
           createElementSource([]),
-          [],
           [],
         )
         changes = [...result.changes]
@@ -603,7 +586,6 @@ describe('fetch', () => {
               mockAdapters,
               createElementSource([newTypeBaseWPath]),
               createElementSource([newTypeBaseWPath]),
-              [],
               [],
             )
             changes = [...result.changes]
@@ -641,7 +623,6 @@ describe('fetch', () => {
               createElementSource([newTypeA]),
               createElementSource([newTypeA]),
               [],
-              [],
             )
             changes = [...result.changes]
           })
@@ -666,7 +647,6 @@ describe('fetch', () => {
             createElementSource([typeWithFieldChange]),
             createElementSource([typeWithField]),
             [],
-            [],
           )
           changes = [...result.changes]
         })
@@ -685,7 +665,6 @@ describe('fetch', () => {
             createElementSource([typeWithFieldConflict]),
             createElementSource([typeWithField]),
             [],
-            [],
           )
           changes = [...result.changes]
         })
@@ -703,7 +682,6 @@ describe('fetch', () => {
             mockAdapters,
             createElementSource([]),
             createElementSource([typeWithField]),
-            [],
             [],
           )
           changes = [...result.changes]
@@ -897,7 +875,6 @@ describe('fetch', () => {
           createElementSource([]),
           createElementSource([]),
           [],
-          [],
         )
         changes = [...result.changes]
       })
@@ -930,7 +907,6 @@ describe('fetch', () => {
           createElementSource([]),
           createElementSource([]),
           [],
-          [],
         )
         expect(await awu(instancesPassed).toArray()).toEqual([hiddenInstance])
       })
@@ -954,7 +930,6 @@ describe('fetch', () => {
           mockAdapters,
           createElementSource([typeWithField]),
           createElementSource([newTypeBase, typeWithField]),
-          [],
           [],
         )
         expect(fetchChangesResult.elements).toEqual([newTypeBaseModified, typeWithField])
@@ -980,7 +955,6 @@ describe('fetch', () => {
           mockAdapters,
           createElementSource([]),
           createElementSource([newTypeBase, typeWithField]),
-          [],
           [],
         )
         expect(fetchChangesResult.elements).toEqual([newTypeBaseModified])
@@ -1030,7 +1004,6 @@ describe('fetch', () => {
           createElementSource([]),
           createElementSource([dummy1, dummy2, dummy3]),
           [],
-          [],
         )
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
           currentAdapterElements: expect.arrayContaining([dummy2Type1]),
@@ -1053,8 +1026,7 @@ describe('fetch', () => {
         await fetchChanges(
           _.pick(adapters, ['dummy1', 'dummy2']),
           createElementSource([]),
-          createElementSource([dummy1, dummy2]),
-          [dummy3],
+          createElementSource([dummy1, dummy2, dummy3]),
           [],
         )
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
@@ -1074,8 +1046,7 @@ describe('fetch', () => {
         await expect(fetchChanges(
           _.pick(adapters, ['dummy1', 'dummy2']),
           createElementSource([]),
-          createElementSource([dummy1, dummy2]),
-          [dummy3],
+          createElementSource([dummy1, dummy2, dummy3]),
           [],
         )).resolves.not.toThrow()
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({

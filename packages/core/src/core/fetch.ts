@@ -227,11 +227,15 @@ const isAdapterOperationsWithPostFetch = (
 const runPostFetch = async (
   adapters: Record<string, AdapterOperationsWithPostFetch>,
   serviceElements: Element[],
-  stateElementsByAdapter: Record<string, ReadonlyArray<Element>>,
+  stateElements: elementSource.ElementsSource,
   partiallyFetchedAdapters: Set<string>,
 ): Promise<void> => {
   const serviceElementsByAdapter = _.groupBy(serviceElements, e => e.elemID.adapter)
-
+  // TODO: We should keep using ElementsSource at this stage
+  const stateElementsByAdapter = _.groupBy(
+    await awu(await stateElements.getAll()).toArray(),
+    e => e.elemID.adapter,
+  )
   const getAdapterElements = (adapterName: string): ReadonlyArray<Element> => {
     if (!partiallyFetchedAdapters.has(adapterName)) {
       return serviceElementsByAdapter[adapterName] ?? stateElementsByAdapter[adapterName]
@@ -247,7 +251,6 @@ const runPostFetch = async (
       ...missingElements,
     ]
   }
-
   const elementsByAdapter = Object.fromEntries(
     [...new Set([
       ...Object.keys(stateElementsByAdapter),
@@ -267,8 +270,7 @@ const runPostFetch = async (
 
 const fetchAndProcessMergeErrors = async (
   adapters: Record<string, AdapterOperations>,
-  filteredStateElements: elementSource.ElementsSource,
-  otherStateElements: ReadonlyArray<Element>,
+  stateElements: elementSource.ElementsSource,
   getChangesEmitter: StepEmitter,
   progressEmitter?: EventEmitter<FetchProgressEvents>
 ):
@@ -315,16 +317,11 @@ const fetchAndProcessMergeErrors = async (
     const adaptersWithPostFetch = _.pickBy(adapters, isAdapterOperationsWithPostFetch)
     if (!_.isEmpty(adaptersWithPostFetch)) {
       try {
-        const stateElementsByAdapter = _.groupBy(
-          // TODO: Fix this in the next iteration
-          [...await awu(await filteredStateElements.getAll()).toArray(), ...otherStateElements],
-          e => e.elemID.adapter,
-        )
         // update elements based on fetch results from other services
         await runPostFetch(
           adaptersWithPostFetch,
           serviceElements,
-          stateElementsByAdapter,
+          stateElements,
           partiallyFetchedAdapters,
         )
         log.debug('ran post-fetch in the following adapters: %s', Object.keys(adaptersWithPostFetch))
@@ -349,7 +346,7 @@ const fetchAndProcessMergeErrors = async (
     const processErrorsResult = await processMergeErrors(
       applyInstancesDefaults(elements.values()),
       mergeErrorsArr,
-      filteredStateElements,
+      stateElements,
     )
 
     const droppedElements = new Set(
@@ -434,7 +431,6 @@ export const fetchChanges = async (
   adapters: Record<string, AdapterOperations>,
   workspaceElements: elementSource.ElementsSource,
   stateElements: elementSource.ElementsSource,
-  otherStateElements: ReadonlyArray<Element>,
   currentConfigs: InstanceElement[],
   progressEmitter?: EventEmitter<FetchProgressEvents>
 ): Promise<FetchChangesResult> => {
@@ -448,7 +444,6 @@ export const fetchChanges = async (
   } = await fetchAndProcessMergeErrors(
     adapters,
     stateElements,
-    otherStateElements,
     getChangesEmitter,
     progressEmitter
   )
@@ -466,10 +461,9 @@ export const fetchChanges = async (
     getChangesEmitter.emit('completed')
     progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
   }
-
-  const isFirstFetch = await awu(await workspaceElements.getAll())
-    .concat(await stateElements.getAll())
-    .filter(e => !e.elemID.isConfig())
+  const isFirstFetch = await awu(await workspaceElements.list())
+    .concat(await stateElements.list())
+    .filter(e => !e.isConfig())
     .isEmpty()
   const changes = isFirstFetch
     ? serviceElements.map(toAddFetchChange)
@@ -479,7 +473,7 @@ export const fetchChanges = async (
       // When we init a new env, state will be empty. We fallback to the workspace
       // elements since they should be considered a part of the env and the diff
       // should be calculated with them in mind.
-      await awu(await stateElements.getAll()).isEmpty() ? workspaceElements : stateElements,
+      await awu(await stateElements.list()).isEmpty() ? workspaceElements : stateElements,
       workspaceElements,
       partiallyFetchedAdapters
     )

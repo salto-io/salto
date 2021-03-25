@@ -214,7 +214,6 @@ export const fetch: FetchFunc = async (
       adapters,
       await workspace.elements(),
       workspace.state(),
-      stateElementsNotCoveredByFetch,
       currentConfigs,
       progressEmitter,
     )

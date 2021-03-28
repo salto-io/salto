@@ -660,9 +660,13 @@ const buildNaclFilesSource = (
 
     getErrors: async (): Promise<Errors> => {
       const currentState = await getState()
+      const [parse, merge] = await Promise.all([
+        currentState.parsedNaclFiles.getAllErrors(),
+        awu(currentState.mergeErrors.values()).flat().toArray()
+      ])
       return new Errors({
-        parse: await currentState.parsedNaclFiles.getAllErrors(),
-        merge: [...await awu(currentState.mergeErrors.values()).flat().toArray()],
+        parse,
+        merge,
         validation: [],
       })
     },

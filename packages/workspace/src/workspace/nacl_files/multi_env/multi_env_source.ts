@@ -341,6 +341,46 @@ const buildMultiEnvSource = (
     return buildResults.changes
   }
 
+  const getErrors = async (): Promise<Errors> => {
+
+    const rebaseSrcErrorsPaths = (prefix: string, errors: Errors): Errors => new Errors({
+        ...errors,
+        parse: errors.parse.map(err => ({
+          ...err,
+          subject: {
+            ...err.subject,
+            filename: buidFullPath(prefix, err.subject.filename),
+          },
+          context: err.context && {
+            ...err.context,
+            filename: buidFullPath(prefix, err.context.filename),
+          },
+        })
+      )
+    })
+    
+    const currentState = await getState()
+    const [srcErrors, mergeErrors] = await Promise.all([
+      Promise.all(
+        _.entries(getActiveSources()).map(async ([prefix, source]) => rebaseSrcErrorsPaths(
+          prefix,
+          await source.getErrors(),
+        )
+      )),
+      awu(currentState.mergeErrors.values()).flat().toArray()
+    ])
+    return new Errors(_.reduce(srcErrors, (acc, errors) => ({
+      ...acc,
+      parse: [...acc.parse, ...errors.parse],
+      merge: [...acc.merge, ...errors.merge],
+    }),
+    {
+      merge: mergeErrors,
+      parse: [] as ParseError[],
+      validation: [] as ValidationError[],
+    }))
+  }
+
   return {
     getNaclFile,
     updateNaclFiles,
@@ -427,38 +467,8 @@ const buildMultiEnvSource = (
           filename: buidFullPath(prefix, sourceRange.filename),
         }))).toArray()
     ),
-    getErrors: async (): Promise<Errors> => {
-      const srcErrors = await awu(_.entries(getActiveSources()))
-        .map(async ([prefix, source]) => {
-          const errors = await source.getErrors()
-          return {
-            ...errors,
-            parse: errors.parse.map(err => ({
-              ...err,
-              subject: {
-                ...err.subject,
-                filename: buidFullPath(prefix, err.subject.filename),
-              },
-              context: err.context && {
-                ...err.context,
-                filename: buidFullPath(prefix, err.context.filename),
-              },
-            })),
-          }
-        })
-        .toArray()
-      const { mergeErrors } = await getState()
-      return new Errors(_.reduce(srcErrors, (acc, errors) => ({
-        ...acc,
-        parse: [...acc.parse, ...errors.parse],
-        merge: [...acc.merge, ...errors.merge],
-      }),
-      {
-        merge: await awu(mergeErrors.values()).flat().toArray(),
-        parse: [] as ParseError[],
-        validation: [] as ValidationError[],
-      }))
-    },
+
+    getErrors,
     getParsedNaclFile: async (filename: string): Promise<ParsedNaclFile | undefined> => {
       const { source, relPath } = getSourceForNaclFile(filename)
       return source.getParsedNaclFile(relPath)

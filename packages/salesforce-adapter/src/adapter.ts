@@ -419,13 +419,12 @@ export default class SalesforceAdapter implements AdapterOperations {
   ): Promise<FetchElements<InstanceElement[]>> {
     const readInstances = async (metadataTypesToRead: ObjectType[]):
       Promise<FetchElements<InstanceElement[]>> => {
-      const result = await awu(metadataTypesToRead)
+      const result = await Promise.all(metadataTypesToRead
         // Just fetch metadata instances of the types that we receive from the describe call
         .filter(
           async type => !this.metadataTypesOfInstancesFetchedInFilters
             .includes(await apiName(type))
-        ).map(type => this.createMetadataInstances(type))
-        .toArray()
+        ).map(type => this.createMetadataInstances(type)))
       return {
         elements: _.flatten(result.map(r => r.elements)),
         configChanges: _.flatten(result.map(r => r.configChanges)),

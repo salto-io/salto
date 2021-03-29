@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, isInstanceElement, ObjectType, TypeElement, ElemID} from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement, ObjectType, TypeElement, ElemID, ReadOnlyElementsSource} from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { file, folder } from './types/file_cabinet_types'
 import { addressForm, addressFormInnerTypes } from './types/custom_types/addressForm'
 import { advancedpdftemplate, advancedpdftemplateInnerTypes } from './types/custom_types/advancedpdftemplate'
@@ -77,6 +78,7 @@ import { workflowactionscript, workflowactionscriptInnerTypes } from './types/cu
 import { fieldTypes } from './types/field_types'
 import { enums } from './types/enums'
 
+const { awu } = collections.asynciterable
 
 export type CustomType = 'addressForm' | 'advancedpdftemplate' | 'bankstatementparserplugin' | 'bundleinstallationscript' | 'center' | 'centercategory' | 'centerlink' | 'centertab' | 'clientscript' | 'cmscontenttype' | 'crmcustomfield' | 'customglplugin' | 'customlist' | 'customrecordactionscript' | 'customrecordtype' | 'customsegment' | 'customtransactiontype' | 'dataset' | 'datasetbuilderplugin' | 'emailcaptureplugin' | 'emailtemplate' | 'entitycustomfield' | 'entryForm' | 'ficonnectivityplugin' | 'fiparserplugin' | 'integration' | 'itemcustomfield' | 'itemnumbercustomfield' | 'itemoptioncustomfield' | 'kpiscorecard' | 'mapreducescript' | 'massupdatescript' | 'othercustomfield' | 'pluginimplementation' | 'plugintype' | 'portlet' | 'promotionsplugin' | 'publisheddashboard' | 'restlet' | 'role' | 'savedcsvimport' | 'savedsearch' | 'scheduledscript' | 'sdfinstallationscript' | 'secret' | 'sspapplication' | 'sublist' | 'subtab' | 'suitelet' | 'transactionForm' | 'transactionbodycustomfield' | 'transactioncolumncustomfield' | 'translationcollection' | 'usereventscript' | 'workbook' | 'workbookbuilderplugin' | 'workflow' | 'workflowactionscript'
 
@@ -269,3 +271,16 @@ export const FIELD_TYPES = [
   'crmcustomfield',
   'customfield',
 ]
+export const typesElementSourceWrapper = (
+): ReadOnlyElementsSource => {
+  const typesByKey = _.keyBy(
+    getAllTypes(),
+    type => type.elemID.getFullName()
+  )
+  return {
+    get: async elemID => typesByKey[elemID.getFullName()],
+    getAll: async () => awu(Object.values(typesByKey)),
+    has: async elemID => typesByKey[elemID.getFullName()] !== undefined,
+    list: async () => awu(Object.keys(typesByKey).map(ElemID.fromFullName)),
+  }
+}

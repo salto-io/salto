@@ -17,6 +17,7 @@ import os from 'os'
 import chalk from 'chalk'
 import { logger } from '@salto-io/logging'
 import { streams } from '@salto-io/lowerdash'
+import { closeAllRemoteMaps } from '@salto-io/core'
 import { CliInput, CliOutput, CliExitCode, SpinnerCreator, CliError } from './types'
 import { CommandOrGroupDef } from './command_builder'
 import { registerCommands, createProgramCommand, COMMANDER_ERROR_NAME, VERSION_CODE, HELP_DISPLAYED_CODE } from './command_register'
@@ -73,6 +74,7 @@ export default async (
     errorStream.write(os.EOL)
     return CliExitCode.AppError
   } finally {
+    await closeAllRemoteMaps()
     log.info('ran "%s" in %d ms', input.args.join(' '), (new Date().getTime()) - startTime.getTime())
   }
 }

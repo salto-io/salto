@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import wu from 'wu'
 import { getChangeElement, isInstanceElement } from '@salto-io/adapter-api'
-import { fetch as apiFetch, FetchFunc, FetchChange, FetchProgressEvents, StepEmitter, PlanItem, closeAllRemoteMaps } from '@salto-io/core'
+import { fetch as apiFetch, FetchFunc, FetchChange, FetchProgressEvents, StepEmitter, PlanItem } from '@salto-io/core'
 import { Workspace, nacl, StateRecency } from '@salto-io/workspace'
 import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
@@ -254,7 +254,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
     log.info('Not changing fetch mode based on user input')
   }
 
-  const exitCode = await fetchCommand({
+  return fetchCommand({
     workspace,
     force,
     interactive,
@@ -268,8 +268,6 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
     shouldCalcTotalSize,
     stateOnly,
   })
-  await closeAllRemoteMaps()
-  return exitCode
 }
 
 const fetchDef = createWorkspaceCommand({

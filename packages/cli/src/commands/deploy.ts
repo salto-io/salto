@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { EOL } from 'os'
 import { promises } from '@salto-io/lowerdash'
-import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy, closeAllRemoteMaps } from '@salto-io/core'
+import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
@@ -168,11 +168,6 @@ const deployPlan = async (
   return result
 }
 
-const closeAndReturnExitCode = async (exitCode: CliExitCode): Promise<CliExitCode> => {
-  await closeAllRemoteMaps()
-  return exitCode
-}
-
 export const action: WorkspaceCommandAction<DeployArgs> = async ({
   input,
   cliTelemetry,
@@ -193,14 +188,14 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     { workspace, cliOutput: output, spinnerCreator, force }
   )
   if (!validWorkspace) {
-    return closeAndReturnExitCode(CliExitCode.AppError)
+    return CliExitCode.AppError
   }
 
   // Validate state recencies
   const stateSaltoVersion = await workspace.state().getStateSaltoVersion()
   const invalidRecencies = stateRecencies.filter(recency => recency.status !== 'Valid')
   if (!force && await shouldRecommendFetch(stateSaltoVersion, invalidRecencies, output)) {
-    return closeAndReturnExitCode(CliExitCode.AppError)
+    return CliExitCode.AppError
   }
 
   const actionPlan = await preview(workspace, actualServices)
@@ -226,7 +221,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
       cliExitCode = CliExitCode.AppError
     }
   }
-  return closeAndReturnExitCode(cliExitCode)
+  return cliExitCode
 }
 
 const deployDef = createWorkspaceCommand({

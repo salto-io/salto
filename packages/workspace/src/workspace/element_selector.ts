@@ -38,8 +38,10 @@ type ElementIDContainer = {
 const testNames = (
   nameArray: readonly string[], nameSelectors?: RegExp[], includeNested = false
 ): boolean =>
-  (nameSelectors ? ((nameArray.length === nameSelectors.length || includeNested)
-    && nameSelectors.every((regex, i) => regex.test(nameArray[i])))
+  (nameSelectors
+    ? ((nameArray.length === nameSelectors.length
+      || (includeNested && nameArray.length > nameSelectors.length))
+      && nameSelectors.every((regex, i) => regex.test(nameArray[i])))
     : nameArray.length === 0)
 
 const match = (elemId: ElemID, selector: ElementSelector, includeNested = false): boolean =>
@@ -74,10 +76,14 @@ export const validateSelectorsMatches = (selectors: ElementSelector[],
 }
 
 export const selectElementsBySelectors = <T extends ElementIDContainer | ElemID>(
-  elementIds: Iterable<T>,
-  selectors: ElementSelector[],
-  validateSelectors = true,
-  includeNested = false
+  {
+    elementIds, selectors, validateSelectors = true, includeNested = false,
+  }: {
+    elementIds: Iterable<T>
+    selectors: ElementSelector[]
+    validateSelectors?: boolean
+    includeNested?: boolean
+  }
 ):
     { elements: T[]; matches: Record<string, boolean> } => {
   const matches: Record<string, boolean> = { }
@@ -177,10 +183,14 @@ const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
   }
 }
 
+const createSameDepthSelector = (selector: ElementSelector, elemID: ElemID): ElementSelector =>
+  createElementSelector(selector.origin.split(ElemID.NAMESPACE_SEPARATOR).slice(0,
+    elemID.getFullNameParts().length).join(ElemID.NAMESPACE_SEPARATOR), selector.caseInsensitive)
+
 const isElementPossiblyParentOfSearchedElement = (
   selectors: ElementSelector[], testId: ElemID
 ): boolean =>
-  selectors.some(selector => match(testId, selector, true))
+  selectors.some(selector => match(testId, createSameDepthSelector(selector, testId)))
 
 export const selectElementIdsByTraversal = (
   selectors: ElementSelector[], elements: ElementIDToValue[],
@@ -197,16 +207,18 @@ export const selectElementIdsByTraversal = (
   const [topLevelSelectors, subElementSelectors] = _.partition(selectorsToDetermine,
     isTopLevelSelector)
   if (topLevelSelectors.length !== 0) {
-    const { elements: topLevelElements } = selectElementsBySelectors(elements,
-      topLevelSelectors, false)
+    const { elements: topLevelElements } = selectElementsBySelectors({
+      elementIds: elements, selectors: topLevelSelectors, validateSelectors: false,
+    })
     topLevelElements.forEach(element => ids.add(element.elemID.getFullName()))
     if (subElementSelectors.length === 0) {
       return [...ids].map(id => ElemID.fromFullName(id))
     }
   }
   const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)
-  const possibleParentElements = selectElementsBySelectors(elements, possibleParentSelectors,
-    false).elements
+  const possibleParentElements = selectElementsBySelectors({
+    elementIds: elements, selectors: possibleParentSelectors, validateSelectors: false,
+  }).elements
   const stillRelevantElements = compact ? possibleParentElements
     .filter(id => !ids.has(id.elemID.getFullName())) : possibleParentElements
   if (stillRelevantElements.length === 0) {

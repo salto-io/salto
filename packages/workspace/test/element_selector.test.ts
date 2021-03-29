@@ -90,12 +90,12 @@ describe('element selector', () => {
     caseInsensitive?: boolean
     includeNested?: boolean
   }): ElemID[] =>
-    selectElementsBySelectors(
-      elements,
-      createElementSelectors(selectors, caseInsensitive).validSelectors,
-      true,
-      includeNested
-    ).elements
+    selectElementsBySelectors({
+      elementIds: elements,
+      selectors: createElementSelectors(selectors, caseInsensitive).validSelectors,
+      validateSelectors: true,
+      includeNested,
+    }).elements
 
   it('should handle asterisks in adapter and type', () => {
     const elements = [
@@ -166,9 +166,9 @@ describe('element selector', () => {
       new ElemID('salesforce', 'othertype', 'instance', 'NotA', 'B'),
     ]
     const selectedElements = selectElements(
-      { elements, selectors: ['salesforce.*.instance.*.B'], includeNested: false }
+      { elements, selectors: ['salesforce.*.instance.A.*'], includeNested: false }
     )
-    expect(selectedElements).toEqual([elements[1], elements[3]])
+    expect(selectedElements).toEqual([elements[1]])
   })
 
   it('should select also nested elements when includeNested is true and name selectors length is 2', () => {
@@ -179,9 +179,9 @@ describe('element selector', () => {
       new ElemID('salesforce', 'othertype', 'instance', 'NotA', 'B'),
     ]
     const selectedElements = selectElements(
-      { elements, selectors: ['salesforce.*.instance.*.B'], includeNested: true }
+      { elements, selectors: ['salesforce.*.instance.A.*'], includeNested: true }
     )
-    expect(selectedElements).toEqual([elements[1], elements[2], elements[3]])
+    expect(selectedElements).toEqual([elements[1], elements[2]])
   })
 
   it('should handle asterisks alongside partial names in type', () => {
@@ -331,24 +331,30 @@ describe('element selector', () => {
 })
 describe('select elements recursively', () => {
   it('finds subElements one and two layers deep', async () => {
-    const selectors = createElementSelectors(['mockAdapter.*', 'mockAdapter.*.instance.*',
+    const selectors = createElementSelectors([
+      'mockAdapter.*',
+      'mockAdapter.*.instance.*',
       'mockAdapter.*.field.*',
       'mockAdapter.*.field.*.*',
-      'mockAdapter.*.attr.testAnno']).validSelectors
+      'mockAdapter.*.attr.testAnno',
+    ]).validSelectors
     const elementIds = (await selectElementIdsByTraversal(selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
       })))).sort((e1,
       e2) => e1.getFullName().localeCompare(e2.getFullName()))
-    const expectedElements = [mockInstance.elemID, mockType.elemID,
+    const expectedElements = [
+      mockInstance.elemID,
+      mockType.elemID,
       ElemID.fromFullName('mockAdapter.test.field.bool'),
       ElemID.fromFullName('mockAdapter.test.field.strMap'),
       ElemID.fromFullName('mockAdapter.test.field.strMap._required'),
       ElemID.fromFullName('mockAdapter.test.field.obj'),
       ElemID.fromFullName('mockAdapter.test.field.num'),
       ElemID.fromFullName('mockAdapter.test.field.strArray'),
-      ElemID.fromFullName('mockAdapter.test.attr.testAnno')].sort((e1,
+      ElemID.fromFullName('mockAdapter.test.attr.testAnno'),
+    ].sort((e1,
       e2) => e1.getFullName().localeCompare(e2.getFullName()))
     expect(elementIds).toEqual(expectedElements)
   })

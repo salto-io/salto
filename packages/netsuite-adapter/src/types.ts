@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, TypeElement, ElemID } from '@salto-io/adapter-api'
+import { ObjectType, TypeElement, ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { file, folder } from './types/file_cabinet_types'
 import { addressForm, addressFormInnerTypes } from './types/custom_types/addressForm'
 import { advancedpdftemplate, advancedpdftemplateInnerTypes } from './types/custom_types/advancedpdftemplate'
@@ -77,6 +78,7 @@ import { workflowactionscript, workflowactionscriptInnerTypes } from './types/cu
 import { fieldTypes } from './types/field_types'
 import { enums } from './types/enums'
 
+const { awu } = collections.asynciterable
 
 /**
 * generated using types_generator.py as Netsuite don't expose a metadata API for them.
@@ -221,3 +223,17 @@ export const getAllTypes = (): TypeElement[] => [
   ...Object.values(fileCabinetTypes),
   ...Object.values(fieldTypes),
 ]
+
+export const typesElementSourceWrapper = (
+): ReadOnlyElementsSource => {
+  const typesByKey = _.keyBy(
+    getAllTypes(),
+    type => type.elemID.getFullName()
+  )
+  return {
+    get: async elemID => typesByKey[elemID.getFullName()],
+    getAll: async () => awu(Object.values(typesByKey)),
+    has: async elemID => typesByKey[elemID.getFullName()] !== undefined,
+    list: async () => awu(Object.keys(typesByKey).map(ElemID.fromFullName)),
+  }
+}

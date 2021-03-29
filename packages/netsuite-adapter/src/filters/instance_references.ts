@@ -30,7 +30,7 @@ import {
 } from '../constants'
 import { serviceId } from '../transformer'
 import { FilterCreator } from '../filter'
-import { isCustomType } from '../types'
+import { isCustomType, typesElementSourceWrapper } from '../types'
 import { LazyElementsSourceIndex } from '../elements_source_index/types'
 
 const { awu } = collections.asynciterable
@@ -48,7 +48,7 @@ const captureServiceId = (value: string): string | undefined =>
     ?? value.match(scriptIdReferenceRegex)?.groups?.[CAPTURE]
 
 const customTypeServiceIdsToElemIds = async (
-  instance: InstanceElement
+  instance: InstanceElement,
 ): Promise<Record<string, ElemID>> => {
   const serviceIdsToElemIds: Record<string, ElemID> = {}
   const parentElemIdFullNameToServiceId: Record<string, string> = {}
@@ -78,6 +78,7 @@ const customTypeServiceIdsToElemIds = async (
     element: instance,
     transformFunc: addFullServiceIdsCallback,
     strict: true,
+    elementsSource: typesElementSourceWrapper(),
   })
   return serviceIdsToElemIds
 }
@@ -90,7 +91,9 @@ export const getInstanceServiceIdRecords = async (
     : { [serviceId(instance)]: instance.elemID.createNestedID(PATH) }
 )
 
-const generateServiceIdToElemID = async (elements: Element[]): Promise<Record<string, ElemID>> =>
+const generateServiceIdToElemID = async (
+  elements: Element[],
+): Promise<Record<string, ElemID>> =>
   _.assign(
     {},
     ...await awu(elements).filter(isInstanceElement)

@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { InstanceElement } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/consistent_values'
 import { customTypes } from '../../src/types'
 import { ENTITY_CUSTOM_FIELD, ENTRY_FORM, TRANSACTION_FORM, RECORD_TYPE } from '../../src/constants'
@@ -34,7 +33,7 @@ describe('consistent_values filter', () => {
 
     onFetchParameters = {
       elements: [instance],
-      elementsSource: buildElementsSourceFromElements([]),
+      elementsSourceIndex: { getIndex: () => Promise.resolve({}) },
       isPartial: false,
     }
   })

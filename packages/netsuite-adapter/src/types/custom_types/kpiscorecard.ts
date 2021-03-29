@@ -247,11 +247,11 @@ const kpiscorecard_kpis_kpi = new ObjectType({
       },
     }, /* Original description: The default value is F. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING) /* Original type was single-select list */,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
-    }, /* Original description: This field value can be up to 99 characters long. */
+    }, /* Original description: This field value can be up to 99 characters long.   This field accepts references to the string custom type. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
 })
@@ -310,11 +310,11 @@ const kpiscorecard_ranges_range = new ObjectType({
       },
     }, /* Original description: The default value is F. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING) /* Original type was single-select list */,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
-    }, /* Original description: This field value can be up to 99 characters long. */
+    }, /* Original description: This field value can be up to 99 characters long.   This field accepts references to the string custom type. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
 })
@@ -354,12 +354,12 @@ export const kpiscorecard = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custkpiscorecard’. */
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING) /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 25,
       },
-    }, /* Original description: This field value can be up to 25 characters long. */
+    }, /* Original description: This field value can be up to 25 characters long.   This field accepts references to the string custom type. */
     useperiods: {
       refType: createRefToElmWithValue(enums.kpiscorecards_useperiods),
       annotations: {
@@ -367,11 +367,11 @@ export const kpiscorecard = new ObjectType({
       },
     }, /* Original description: For information about possible values, see kpiscorecards_useperiods. */
     description: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING) /* Original type was single-select list */,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    }, /* Original description: This field value can be up to 999 characters long. */
+    }, /* Original description: This field value can be up to 999 characters long.   This field accepts references to the string custom type. */
     audience: {
       refType: createRefToElmWithValue(kpiscorecard_audience),
       annotations: {

@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, TypeElement, ElemID } from '@salto-io/adapter-api'
+import { ObjectType, TypeElement, ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { file, folder } from './types/file_cabinet_types'
 import { addressForm, addressFormInnerTypes } from './types/custom_types/addressForm'
 import { advancedpdftemplate, advancedpdftemplateInnerTypes } from './types/custom_types/advancedpdftemplate'
@@ -22,6 +23,7 @@ import { bankstatementparserplugin, bankstatementparserpluginInnerTypes } from '
 import { bundleinstallationscript, bundleinstallationscriptInnerTypes } from './types/custom_types/bundleinstallationscript'
 import { center, centerInnerTypes } from './types/custom_types/center'
 import { centercategory, centercategoryInnerTypes } from './types/custom_types/centercategory'
+import { centerlink, centerlinkInnerTypes } from './types/custom_types/centerlink'
 import { centertab, centertabInnerTypes } from './types/custom_types/centertab'
 import { clientscript, clientscriptInnerTypes } from './types/custom_types/clientscript'
 import { cmscontenttype, cmscontenttypeInnerTypes } from './types/custom_types/cmscontenttype'
@@ -59,6 +61,7 @@ import { savedcsvimport, savedcsvimportInnerTypes } from './types/custom_types/s
 import { savedsearch, savedsearchInnerTypes } from './types/custom_types/savedsearch'
 import { scheduledscript, scheduledscriptInnerTypes } from './types/custom_types/scheduledscript'
 import { sdfinstallationscript, sdfinstallationscriptInnerTypes } from './types/custom_types/sdfinstallationscript'
+import { secret, secretInnerTypes } from './types/custom_types/secret'
 import { sspapplication, sspapplicationInnerTypes } from './types/custom_types/sspapplication'
 import { sublist, sublistInnerTypes } from './types/custom_types/sublist'
 import { subtab, subtabInnerTypes } from './types/custom_types/subtab'
@@ -75,6 +78,7 @@ import { workflowactionscript, workflowactionscriptInnerTypes } from './types/cu
 import { fieldTypes } from './types/field_types'
 import { enums } from './types/enums'
 
+const { awu } = collections.asynciterable
 
 /**
 * generated using types_generator.py as Netsuite don't expose a metadata API for them.
@@ -86,6 +90,7 @@ export const customTypes: Readonly<Record<string, ObjectType>> = {
   bundleinstallationscript,
   center,
   centercategory,
+  centerlink,
   centertab,
   clientscript,
   cmscontenttype,
@@ -123,6 +128,7 @@ export const customTypes: Readonly<Record<string, ObjectType>> = {
   savedsearch,
   scheduledscript,
   sdfinstallationscript,
+  secret,
   sspapplication,
   sublist,
   subtab,
@@ -145,6 +151,7 @@ const innerCustomTypes: ObjectType[] = [
   ...bundleinstallationscriptInnerTypes,
   ...centerInnerTypes,
   ...centercategoryInnerTypes,
+  ...centerlinkInnerTypes,
   ...centertabInnerTypes,
   ...clientscriptInnerTypes,
   ...cmscontenttypeInnerTypes,
@@ -182,6 +189,7 @@ const innerCustomTypes: ObjectType[] = [
   ...savedsearchInnerTypes,
   ...scheduledscriptInnerTypes,
   ...sdfinstallationscriptInnerTypes,
+  ...secretInnerTypes,
   ...sspapplicationInnerTypes,
   ...sublistInnerTypes,
   ...subtabInnerTypes,
@@ -215,3 +223,17 @@ export const getAllTypes = (): TypeElement[] => [
   ...Object.values(fileCabinetTypes),
   ...Object.values(fieldTypes),
 ]
+
+export const typesElementSourceWrapper = (
+): ReadOnlyElementsSource => {
+  const typesByKey = _.keyBy(
+    getAllTypes(),
+    type => type.elemID.getFullName()
+  )
+  return {
+    get: async elemID => typesByKey[elemID.getFullName()],
+    getAll: async () => awu(Object.values(typesByKey)),
+    has: async elemID => typesByKey[elemID.getFullName()] !== undefined,
+    list: async () => awu(Object.keys(typesByKey).map(ElemID.fromFullName)),
+  }
+}

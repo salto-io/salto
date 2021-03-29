@@ -1,0 +1,4 @@
+[{"elemID":{"adapter":"salesforce","typeName":"test","idType":"instance","nameParts":["ClsName"]},"annotations":{},"annotationRefTypes":{},"refType":{"elemID":{"adapter":"salesforce","typeName":"test","idType":"type","nameParts":[]},"_salto_class":"ReferenceExpression"},"value":{"file":{"filepath":"some/path.ext","encoding":"binary","hash":"hash","dirStore":{},"_salto_class":"StaticFile"}},"_salto_class":"InstanceElement"}]
+[{"elemID":{"adapter":"salesforce","typeName":"test","idType":"instance","nameParts":["ClsName"]},"annotations":{},"annotationRefTypes":{},"refType":{"elemID":{"adapter":"salesforce","typeName":"test","idType":"type","nameParts":[]},"_salto_class":"ReferenceExpression"},"value":{"file":{"filepath":"some/path.ext","encoding":"binary","hash":"hash","dirStore":{},"_salto_class":"StaticFile"}}}]
+
+

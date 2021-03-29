@@ -37,6 +37,7 @@ export const DATA_CONFIGURATION = 'data'
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
 export const DATA_MANAGEMENT = 'dataManagement'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
+export const SHOULD_FETCH_ALL_CUSTOM_SETTINGS = 'fetchAllCustomSettings'
 
 
 export type MetadataInstance = {
@@ -55,6 +56,7 @@ export type MetadataParams = {
 export type FetchParameters = {
   metadata?: MetadataParams
   data?: DataManagementConfig
+  fetchAllCustomSettings?: boolean
 }
 
 export type DeprecatedMetadataParams = {
@@ -375,6 +377,7 @@ const fetchConfigType = new ObjectType({
   fields: {
     [METADATA_CONFIG]: { refType: createRefToElmWithValue(metadataConfigType) },
     [DATA_CONFIGURATION]: { refType: createRefToElmWithValue(dataManagementType) },
+    [SHOULD_FETCH_ALL_CUSTOM_SETTINGS]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
   },
 })
 
@@ -402,11 +405,7 @@ export const configType = new ObjectType({
               { metadataType: 'Profile' },
               { metadataType: 'PermissionSet' },
               { metadataType: 'SiteDotCom' },
-              {
-                metadataType: 'EmailTemplate',
-                name: 'Marketo.*',
-                namespace: '',
-              },
+              { metadataType: 'EmailTemplate' },
               {
                 metadataType: 'StandardValueSet',
                 name: '^(AddressCountryCode)|(AddressStateCode)$',
@@ -414,6 +413,7 @@ export const configType = new ObjectType({
               },
             ],
           },
+          [SHOULD_FETCH_ALL_CUSTOM_SETTINGS]: false,
         },
       },
     },

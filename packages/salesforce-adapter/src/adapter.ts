@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import {
-  TypeElement, ObjectType, InstanceElement, isAdditionChange, Element, getChangeElement,
-  FetchOptions, DeployOptions, ElemIdGetter, FetchResult, AdapterOperations, DeployResult, Change,
+  TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeElement, Change,
+  ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
 } from '@salto-io/adapter-api'
 import { logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { MetadataObject } from 'jsforce'
@@ -36,7 +36,6 @@ import customObjectsInstancesFilter from './filters/custom_objects_instances'
 import profilePermissionsFilter from './filters/profile_permissions'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
-import missingFieldsFilter from './filters/missing_fields'
 import removeFieldsAndValuesFilter from './filters/remove_fields_and_values'
 import standardValueSetFilter from './filters/standard_value_sets'
 import flowFilter from './filters/flow'
@@ -63,6 +62,7 @@ import replaceFieldValuesFilter from './filters/replace_instance_field_values'
 import valueToStaticFileFilter from './filters/value_to_static_file'
 import convertMapsFilter from './filters/convert_maps'
 import elementsUrlFilter from './filters/elements_url'
+import territoryFilter from './filters/territory'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
@@ -78,10 +78,8 @@ const { partition } = promises.array
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
-  // should run before missingFieldsFilter
   settingsFilter,
   customFeedFilterFilter,
-  missingFieldsFilter,
   // should run before customObjectsFilter
   workflowFilter,
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
@@ -112,6 +110,7 @@ export const DEFAULT_FILTERS = [
   staticResourceFileExtFilter,
   xmlAttributesFilter,
   profilePathsFilter,
+  territoryFilter,
   elementsUrlFilter,
   // The following filters should remain last in order to make sure they fix all elements
   convertListsFilter,
@@ -130,9 +129,6 @@ export const DEFAULT_FILTERS = [
 ]
 
 export interface SalesforceAdapterParams {
-  // Metadata types that we want to fetch that exist in the SOAP API but not in the metadata API
-  metadataAdditionalTypes?: string[]
-
   // Max items to fetch in one retrieve request
   maxItemsInRetrieveRequest?: number
 
@@ -227,7 +223,6 @@ export const allSystemFields = [
 export default class SalesforceAdapter implements AdapterOperations {
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]
-  private metadataAdditionalTypes: string[]
   private metadataTypesOfInstancesFetchedInFilters: string[]
   private nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>
   private filtersRunner: Required<Filter>
@@ -239,35 +234,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     metadataTypesOfInstancesFetchedInFilters = [CUSTOM_FEED_FILTER_METADATA_TYPE],
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = metadataToRetrieveAndDeploy,
-    metadataAdditionalTypes = [
-      'ProfileUserPermission',
-      'WorkflowAlert',
-      'WorkflowFieldUpdate',
-      'WorkflowFlowAction',
-      'WorkflowKnowledgePublish',
-      'WorkflowOutboundMessage',
-      'WorkflowTask',
-      'KnowledgeCaseFieldsSettings',
-      'KnowledgeCaseField',
-      'KnowledgeWorkOrderFieldsSettings',
-      'KnowledgeWorkOrderField',
-      'KnowledgeWorkOrderLineItemFieldsSettings',
-      'KnowledgeWorkOrderLineItemField',
-      'PermissionSetApplicationVisibility',
-      'PermissionSetApexClassAccess',
-      'PermissionSetCustomMetadataTypeAccess',
-      'PermissionSetCustomPermissions',
-      'PermissionSetCustomSettingAccesses',
-      'PermissionSetExternalDataSourceAccess',
-      'PermissionSetFieldPermissions',
-      'PermissionSetObjectPermissions',
-      'PermissionSetApexPageAccess',
-      'PermissionSetRecordTypeVisibility',
-      'PermissionSetTabSetting',
-      'PermissionSetUserPermission',
-      'KnowledgeSitesSettings',
-      'EntitlementProcessMilestoneItem',
-    ],
     nestedMetadataTypes = {
       CustomLabels: {
         nestedInstanceFields: ['labels'],
@@ -321,7 +287,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
     this.metadataToRetrieve = metadataToRetrieve
     this.userConfig = config
-    this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypesOfInstancesFetchedInFilters = metadataTypesOfInstancesFetchedInFilters
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
@@ -350,27 +315,32 @@ export default class SalesforceAdapter implements AdapterOperations {
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch salesforce account configuration..')
     const fieldTypes = Types.getAllFieldTypes()
-    const missingTypes = Types.getAllMissingTypes()
-    const annotationTypes = Types.getAnnotationTypes()
-    const metadataTypeInfos = this.listMetadataTypes()
-    const metadataTypes = this.fetchMetadataTypes(
-      metadataTypeInfos,
-      annotationTypes,
+    const hardCodedTypes = [
+      ...Types.getAllMissingTypes(),
+      ...Types.getAnnotationTypes(),
+    ]
+    const metadataTypeInfosPromise = this.listMetadataTypes()
+    const metadataTypesPromise = this.fetchMetadataTypes(
+      metadataTypeInfosPromise,
+      hardCodedTypes,
     )
-    const metadataInstances = this.fetchMetadataInstances(metadataTypeInfos, metadataTypes)
+    const metadataInstancesPromise = this.fetchMetadataInstances(
+      metadataTypeInfosPromise,
+      metadataTypesPromise
+    )
 
-    const elements = [
-      ...annotationTypes, ...fieldTypes, ...missingTypes, ...(await metadataTypes),
-    ] as Element[]
+    const metadataTypes = await metadataTypesPromise
     progressReporter.reportProgress({ message: 'Finished fetching types. Fetching instances' })
 
     const {
       elements: metadataInstancesElements,
       configChanges: metadataInstancesConfigInstances,
-    } = await metadataInstances
-    elements.push(...metadataInstancesElements)
-
+    } = await metadataInstancesPromise
     progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
+
+    const elements = [
+      ...fieldTypes, ...hardCodedTypes, ...metadataTypes, ...metadataInstancesElements,
+    ]
     const filtersConfigChanges = (
       await this.filtersRunner.onFetch(elements)
     ) as ConfigChangeSuggestion[]
@@ -418,17 +388,8 @@ export default class SalesforceAdapter implements AdapterOperations {
   }
 
   private async listMetadataTypes(): Promise<MetadataObject[]> {
-    return [
-      ...await this.client.listMetadataTypes(),
-      ...this.metadataAdditionalTypes.map(xmlName => ({
-        xmlName,
-        childXmlNames: [],
-        directoryName: '',
-        inFolder: false,
-        metaFile: false,
-        suffix: '',
-      })),
-    ].filter(info => this.fetchProfile.metadataQuery.isTypeMatch(info.xmlName))
+    return (await this.client.listMetadataTypes())
+      .filter(info => this.fetchProfile.metadataQuery.isTypeMatch(info.xmlName))
   }
 
   @logDuration('fetching metadata types')
@@ -458,14 +419,12 @@ export default class SalesforceAdapter implements AdapterOperations {
   ): Promise<FetchElements<InstanceElement[]>> {
     const readInstances = async (metadataTypesToRead: ObjectType[]):
       Promise<FetchElements<InstanceElement[]>> => {
-      const result = await awu(metadataTypesToRead)
+      const result = await Promise.all(metadataTypesToRead
         // Just fetch metadata instances of the types that we receive from the describe call
-        .filter(async type => !this.metadataAdditionalTypes.includes(await apiName(type)))
         .filter(
           async type => !this.metadataTypesOfInstancesFetchedInFilters
             .includes(await apiName(type))
-        ).map(type => this.createMetadataInstances(type))
-        .toArray()
+        ).map(type => this.createMetadataInstances(type)))
       return {
         elements: _.flatten(result.map(r => r.elements)),
         configChanges: _.flatten(result.map(r => r.configChanges)),

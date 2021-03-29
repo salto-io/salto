@@ -26,7 +26,8 @@ import {
 describe('config', () => {
   const skipList: NetsuiteQueryParameters = {
     types: {
-      test1: ['.*'],
+      testAll: ['.*'],
+      testExistingPartial: ['scriptid1', 'scriptid2'],
     },
     filePaths: ['SomeRegex'],
   }
@@ -40,20 +41,25 @@ describe('config', () => {
     },
   }
   const newFailedFilePath = '/path/to/file'
+  const suggestedSkipListTypes = {
+    testExistingPartial: ['scriptid3', 'scriptid4'],
+    testNew: ['scriptid5', 'scriptid6'],
+  }
 
   it('should return undefined when having no currentConfig suggestions', () => {
-    expect(getConfigFromConfigChanges(false, [], currentConfig)).toBeUndefined()
+    expect(getConfigFromConfigChanges(false, [], {}, currentConfig)).toBeUndefined()
   })
 
   it('should return updated currentConfig with defined values when having suggestions and the currentConfig is empty', () => {
     const configFromConfigChanges = getConfigFromConfigChanges(true,
-      [newFailedFilePath], {})?.config as InstanceElement
+      [newFailedFilePath], suggestedSkipListTypes, {})?.config as InstanceElement
     expect(configFromConfigChanges.isEqual(new InstanceElement(
       ElemID.CONFIG_NAME,
       configType,
       {
         [SKIP_LIST]: {
           filePaths: [_.escapeRegExp(newFailedFilePath)],
+          types: suggestedSkipListTypes,
         },
         [CLIENT_CONFIG]: {
           [FETCH_ALL_TYPES_AT_ONCE]: false,
@@ -65,8 +71,12 @@ describe('config', () => {
   it('should return updated currentConfig when having suggestions and the currentConfig has values', () => {
     const newSkipList = _.cloneDeep(skipList)
     newSkipList.filePaths.push(_.escapeRegExp(newFailedFilePath))
+    newSkipList.types.testExistingPartial.push('scriptid3', 'scriptid4')
+    newSkipList.types.testNew = ['scriptid5', 'scriptid6']
 
-    const configChange = getConfigFromConfigChanges(true, [newFailedFilePath], currentConfig)
+    const configChange = getConfigFromConfigChanges(
+      true, [newFailedFilePath], suggestedSkipListTypes, currentConfig
+    )
     expect(configChange?.config)
       .toEqual(new InstanceElement(
         ElemID.CONFIG_NAME,
@@ -99,11 +109,7 @@ describe('config', () => {
       [FILE_PATHS_REGEX_SKIP_LIST]: ['someRegex1', '^someRegex2', 'someRegex3$', '^someRegex4$'],
     }
 
-    const configChange = getConfigFromConfigChanges(
-      false,
-      [],
-      config
-    )
+    const configChange = getConfigFromConfigChanges(false, [], {}, config)
     expect(configChange?.config)
       .toEqual(new InstanceElement(
         ElemID.CONFIG_NAME,
@@ -132,11 +138,7 @@ describe('config', () => {
       [FILE_PATHS_REGEX_SKIP_LIST]: ['someRegex'],
     }
 
-    const configChange = getConfigFromConfigChanges(
-      false,
-      ['someFailedFile'],
-      config
-    )
+    const configChange = getConfigFromConfigChanges(false, ['someFailedFile'], {}, config)
 
     expect(configChange?.message).toBe(`${STOP_MANAGING_ITEMS_MSG} In addition, ${UPDATE_TO_SKIP_LIST_MSG}`)
   })

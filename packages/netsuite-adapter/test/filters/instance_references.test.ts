@@ -16,7 +16,6 @@
 import {
   ElemID, InstanceElement, ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/instance_references'
 import { customTypes, fileCabinetTypes } from '../../src/types'
 import { FILE, PATH, SCRIPT_ID, WORKFLOW } from '../../src/constants'
@@ -28,7 +27,16 @@ describe('instance_references filter', () => {
     let instanceInElementsSource: InstanceElement
     let workflowInstance: InstanceElement
     let instanceWithRefs: InstanceElement
+
+    const getIndexMock = jest.fn()
+    const elementsSourceIndex = {
+      getIndex: getIndexMock,
+    }
+
     beforeEach(async () => {
+      getIndexMock.mockReset()
+      getIndexMock.mockResolvedValue({})
+
       fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
         [PATH]: '/Templates/file.name',
       })
@@ -79,7 +87,7 @@ describe('instance_references filter', () => {
     it('should replace path references', async () => {
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
-        elementsSource: buildElementsSourceFromElements([]),
+        elementsSourceIndex,
         isPartial: false,
       })
 
@@ -90,7 +98,7 @@ describe('instance_references filter', () => {
     it('should replace scriptid references', async () => {
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
-        elementsSource: buildElementsSourceFromElements([]),
+        elementsSourceIndex,
         isPartial: false,
       })
 
@@ -101,7 +109,7 @@ describe('instance_references filter', () => {
     it('should replace scriptid with 1 nesting level references', async () => {
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
-        elementsSource: buildElementsSourceFromElements([]),
+        elementsSourceIndex,
         isPartial: false,
       })
 
@@ -112,7 +120,7 @@ describe('instance_references filter', () => {
     it('should replace scriptid with 2 nesting level references', async () => {
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
-        elementsSource: buildElementsSourceFromElements([]),
+        elementsSourceIndex,
         isPartial: false,
       })
 
@@ -123,7 +131,7 @@ describe('instance_references filter', () => {
     it('should replace inner scriptid references', async () => {
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
-        elementsSource: buildElementsSourceFromElements([]),
+        elementsSourceIndex,
         isPartial: false,
       })
 
@@ -135,7 +143,7 @@ describe('instance_references filter', () => {
     it('should not replace scriptid references for unresolved ref', async () => {
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
-        elementsSource: buildElementsSourceFromElements([]),
+        elementsSourceIndex,
         isPartial: false,
       })
 
@@ -146,7 +154,7 @@ describe('instance_references filter', () => {
     it('should not replace path references for unresolved ref', async () => {
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
-        elementsSource: buildElementsSourceFromElements([]),
+        elementsSourceIndex,
         isPartial: false,
       })
 
@@ -155,9 +163,12 @@ describe('instance_references filter', () => {
     })
 
     it('should use elements source for creating the references with fetch is partial', async () => {
+      getIndexMock.mockResolvedValue({
+        '/Templates/instanceInElementsSource': { elemID: instanceInElementsSource.elemID.createNestedID(PATH) },
+      })
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
-        elementsSource: buildElementsSourceFromElements([instanceInElementsSource]),
+        elementsSourceIndex,
         isPartial: true,
       })
 
@@ -166,9 +177,12 @@ describe('instance_references filter', () => {
     })
 
     it('should not use elements source for creating the references when fetch is not partial', async () => {
+      getIndexMock.mockResolvedValue({
+        '/Templates/instanceInElementsSource': { elemID: instanceInElementsSource.elemID.createNestedID(PATH) },
+      })
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
-        elementsSource: buildElementsSourceFromElements([instanceInElementsSource]),
+        elementsSourceIndex,
         isPartial: false,
       })
 

@@ -15,14 +15,13 @@
 */
 import {
   Element, isInstanceElement, Values, ObjectType, ElemID, ReferenceExpression, InstanceElement,
-  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import {
   transformElement,
   TransformFunc, transformValues,
 } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { values as lowerdashValues, collections } from '@salto-io/lowerdash'
 import {
   SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME, SCRIPT_ID,
   PATH,
@@ -31,7 +30,8 @@ import {
 } from '../constants'
 import { serviceId } from '../transformer'
 import { FilterCreator } from '../filter'
-import { isCustomType } from '../types'
+import { isCustomType, typesElementSourceWrapper } from '../types'
+import { LazyElementsSourceIndex } from '../elements_source_index/types'
 
 const { awu } = collections.asynciterable
 // e.g. '[/Templates/filename.html]' & '[/SuiteScripts/script.js]'
@@ -48,7 +48,7 @@ const captureServiceId = (value: string): string | undefined =>
     ?? value.match(scriptIdReferenceRegex)?.groups?.[CAPTURE]
 
 const customTypeServiceIdsToElemIds = async (
-  instance: InstanceElement
+  instance: InstanceElement,
 ): Promise<Record<string, ElemID>> => {
   const serviceIdsToElemIds: Record<string, ElemID> = {}
   const parentElemIdFullNameToServiceId: Record<string, string> = {}
@@ -78,19 +78,22 @@ const customTypeServiceIdsToElemIds = async (
     element: instance,
     transformFunc: addFullServiceIdsCallback,
     strict: true,
+    elementsSource: typesElementSourceWrapper(),
   })
   return serviceIdsToElemIds
 }
 
-const getInstanceServiceIdRecords = async (
-  instance: InstanceElement
+export const getInstanceServiceIdRecords = async (
+  instance: InstanceElement,
 ): Promise<Record<string, ElemID>> => (
   isCustomType(instance.refType.elemID)
     ? customTypeServiceIdsToElemIds(instance)
     : { [serviceId(instance)]: instance.elemID.createNestedID(PATH) }
 )
 
-const generateServiceIdToElemID = async (elements: Element[]): Promise<Record<string, ElemID>> =>
+const generateServiceIdToElemID = async (
+  elements: Element[],
+): Promise<Record<string, ElemID>> =>
   _.assign(
     {},
     ...await awu(elements).filter(isInstanceElement)
@@ -129,38 +132,28 @@ const replaceReferenceValues = async (
 }
 
 const createElementsSourceServiceIdToElemID = async (
-  elementsSource: ReadOnlyElementsSource,
+  elementsSourceIndex: LazyElementsSourceIndex,
   isPartial: boolean,
 ): Promise<Record<string, ElemID>> => {
-  let elementsSourceServiceIdToElemID: Record<string, ElemID> = {}
-
   if (!isPartial) {
-    return elementsSourceServiceIdToElemID
+    return {}
   }
 
-  // TODO: Replace this loop style with the same style that is
-  // used in generateServiceIdToElemID when ".map" and "".filter" for async iterables
-  // will be available in lowerdash.
-  for await (const element of await elementsSource.getAll()) {
-    if (isInstanceElement(element)) {
-      elementsSourceServiceIdToElemID = _.assign(
-        elementsSourceServiceIdToElemID,
-        await getInstanceServiceIdRecords(element)
-      )
-    }
-  }
-  return elementsSourceServiceIdToElemID
+  return _(await elementsSourceIndex.getIndex())
+    .mapValues(val => val.elemID)
+    .pickBy(lowerdashValues.isDefined)
+    .value()
 }
 
 const filterCreator: FilterCreator = () => ({
   onFetch: async ({
     elements,
-    elementsSource,
+    elementsSourceIndex,
     isPartial,
   }): Promise<void> => {
     const fetchedElemenentsServiceIdToElemID = await generateServiceIdToElemID(elements)
     const elementsSourceServiceIdToElemID = await createElementsSourceServiceIdToElemID(
-      elementsSource,
+      elementsSourceIndex,
       isPartial
     )
     await awu(elements).filter(isInstanceElement).forEach(async instance => {

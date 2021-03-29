@@ -38,13 +38,14 @@ import {
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
+import { defaultMissingFields } from './missing_fields'
 
 const { mapValuesAsync, pickAsync } = promises.object
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 const { isDefined } = lowerDashValues
 
-export const metadataType = async (element: Element): Promise<string> => {
+export const metadataType = async (element: Readonly<Element>): Promise<string> => {
   if (isInstanceElement(element)) {
     return metadataType(await element.getType())
   }
@@ -55,7 +56,7 @@ export const metadataType = async (element: Element): Promise<string> => {
   return element.annotations[METADATA_TYPE] || 'unknown'
 }
 
-export const isCustomObject = async (element: Element): Promise<boolean> => {
+export const isCustomObject = async (element: Readonly<Element>): Promise<boolean> => {
   const res = isObjectType(element)
   && await metadataType(element) === CUSTOM_OBJECT
   // The last part is so we can tell the difference between a custom object
@@ -72,26 +73,26 @@ export const isFieldOfCustomObject = async (field: Field): Promise<boolean> =>
 // for instances of Lead, but it will not be true for Lead itself when it is still an instance
 // (before the custom objects filter turns it into a type).
 // To filter for instances like the Lead definition, use isInstanceOfType(CUSTOM_OBJECT) instead
-export const isInstanceOfCustomObject = async (element: Element): Promise<boolean> =>
+export const isInstanceOfCustomObject = async (element: Readonly<Element>): Promise<boolean> =>
   isInstanceElement(element) && isCustomObject(await element.getType())
 
 export const isCustom = (fullName: string): boolean =>
   fullName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
 
-export const isCustomSettings = (instance: InstanceElement): boolean =>
+export const isCustomSettings = (instance: Readonly<InstanceElement>): boolean =>
   instance.value[CUSTOM_SETTINGS_TYPE]
 
-export const isCustomSettingsObject = (obj: Element): boolean =>
+export const isCustomSettingsObject = (obj: Readonly<Element>): boolean =>
   obj.annotations[CUSTOM_SETTINGS_TYPE]
 
-export const defaultApiName = (element: Element): string => {
+export const defaultApiName = (element: Readonly<Element>): string => {
   const { name } = element.elemID
   return isCustom(name) || isInstanceElement(element)
     ? name
     : `${name}${SALESFORCE_CUSTOM_SUFFIX}`
 }
 
-const fullApiName = async (elem: Element): Promise<string> => {
+const fullApiName = async (elem: Readonly<Element>): Promise<string> => {
   if (isInstanceElement(elem)) {
     return (await isCustomObject(await elem.getType()))
       ? elem.value[CUSTOM_OBJECT_ID_FIELD] : elem.value[INSTANCE_FULL_NAME_FIELD]
@@ -103,7 +104,7 @@ export const relativeApiName = (name: string): string => (
   _.last(name.split(API_NAME_SEPARATOR)) as string
 )
 
-export const apiName = async (elem: Element, relative = false): Promise<string> => {
+export const apiName = async (elem: Readonly<Element>, relative = false): Promise<string> => {
   const name = await fullApiName(elem)
   return name && relative ? relativeApiName(name) : name
 }
@@ -175,6 +176,8 @@ export const METADATA_TYPES_TO_RENAME: Map<string, string> = new Map([
   ['FlexiPage', 'LightningPage'],
   ['FlexiPageRegion', 'LightningPageRegion'],
   ['FlexiPageTemplateInstance', 'LightningPageTemplateInstance'],
+  ['Territory2', 'Territory2Metadata'],
+  ['Territory2Model', 'Territory2ModelMetadata'],
 ])
 
 export class Types {
@@ -185,7 +188,17 @@ export class Types {
     elemID: Types.filterItemElemID,
     fields: {
       [FILTER_ITEM_FIELDS.FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      [FILTER_ITEM_FIELDS.OPERATION]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [FILTER_ITEM_FIELDS.OPERATION]: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            values: [
+              'contains', 'equals', 'excludes', 'greaterOrEqual', 'greaterThan', 'includes',
+              'lessOrEqual', 'lessThan', 'notContain', 'notEqual', 'startsWith', 'within',
+            ],
+          }),
+        },
+      },
       [FILTER_ITEM_FIELDS.VALUE_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       [FILTER_ITEM_FIELDS.VALUE]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     },
@@ -740,6 +753,7 @@ export class Types {
     int: BuiltinTypes.NUMBER,
     integer: BuiltinTypes.NUMBER,
     boolean: BuiltinTypes.BOOLEAN,
+    unknown: BuiltinTypes.UNKNOWN, // only relevant for missing fields
   }
 
   static setElemIdGetter(getElemIdFunc: ElemIdGetter): void {
@@ -773,7 +787,9 @@ export class Types {
   }
 
   public static getElemId(name: string, customObject: boolean, serviceIds?: ServiceIds): ElemID {
-    const updatedName = METADATA_TYPES_TO_RENAME.get(name) ?? name
+    const updatedName = customObject
+      ? name
+      : METADATA_TYPES_TO_RENAME.get(name) ?? name
     return (customObject && this.getElemIdFunc && serviceIds)
       ? this.getElemIdFunc(SALESFORCE, serviceIds, naclCase(updatedName))
       : new ElemID(SALESFORCE, naclCase(updatedName))
@@ -1386,10 +1402,11 @@ type CreateMetadataTypeParams = {
   client: SalesforceClient
   isSettings?: boolean
   annotations?: Partial<MetadataTypeAnnotations>
+  missingFields?: Record<string, ValueTypeField[]>
 }
 export const createMetadataTypeElements = async ({
   name, fields, knownTypes = new Map(), baseTypeNames, childTypeNames, client,
-  isSettings = false, annotations = {},
+  isSettings = false, annotations = {}, missingFields = defaultMissingFields(),
 }: CreateMetadataTypeParams): Promise<MetadataObjectType[]> => {
   if (knownTypes.has(name)) {
     // Already created this type, no new types to return here
@@ -1416,7 +1433,8 @@ export const createMetadataTypeElements = async ({
     && element.fields[INTERNAL_ID_FIELD] === undefined
   )
 
-  if (!fields || _.isEmpty(fields)) {
+  const allFields = fields.concat(missingFields[name] ?? [])
+  if (_.isEmpty(allFields)) {
     if (shouldCreateIdField()) {
       createIdField(element)
     }
@@ -1443,18 +1461,17 @@ export const createMetadataTypeElements = async ({
   // We need to create embedded types BEFORE creating this element's fields
   // in order to make sure all internal types we may need are updated in the
   // knownTypes map
-  const enrichedFields = await Promise.all(fields.map(async field => {
+  const enrichedFields = await Promise.all(allFields.map(async field => {
     if (shouldEnrichFieldValue(field)) {
       const innerFields = await client.describeMetadataType(field.soapType)
-      return { ...field,
-        fields: innerFields.valueTypeFields }
+      return { ...field, fields: innerFields.valueTypeFields }
     }
     return field
   }))
 
   const embeddedTypes = await Promise.all(enrichedFields
     .filter(field => !baseTypeNames.has(field.soapType))
-    .filter(field => !_.isEmpty(field.fields))
+    .filter(field => !_.isEmpty(field.fields.concat(missingFields[field.soapType] ?? [])))
     .flatMap(field => createMetadataTypeElements({
       name: field.soapType,
       fields: makeArray(field.fields),
@@ -1462,6 +1479,7 @@ export const createMetadataTypeElements = async ({
       baseTypeNames,
       childTypeNames,
       client,
+      missingFields,
     })))
 
   // Enum fields sometimes show up with a type name that is not primitive but also does not

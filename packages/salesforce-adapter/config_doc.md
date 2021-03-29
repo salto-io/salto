@@ -61,7 +61,6 @@ salesforce {
         },
         {
           metadataType = "EmailTemplate"
-          name = "MarketoEmailTemplates.*"
         },
         {
           metadataType = "StandardValueSet"
@@ -102,6 +101,7 @@ salesforce {
         ]
       }
     }
+    fetchAllCustomSettings = false
   }
 }
 ```
@@ -120,6 +120,7 @@ salesforce {
 | ------------------------------------------------------------| -------------------------------------------------| -----------
 | [metadata](#metadata-configuration-options)                 | Fetch all metdata                                | Specified the metadata fetch
 | [data](#data-management-configuration-options) | {} (do not manage data)       | Data management configuration object names will not be fetched in case they are matched in includeObjects
+| fetchAllCustomSettings                                      | true                                             | Whether to fetch all the custom settings instances. When false, it is still possible to choose specific custom settings instances via the `data` option
 
 ## Metadata configuration options
 

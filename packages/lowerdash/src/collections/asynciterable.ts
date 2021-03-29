@@ -30,15 +30,6 @@ const isIterable = <T>(
   itr: any
 ): itr is Iterable<T> => itr[Symbol.iterator] !== undefined
 
-export const toAsyncIterable = <T>(i: Iterable<T>): AsyncIterable<T> => {
-  const iter = i[Symbol.iterator]()
-  return {
-    [Symbol.asyncIterator]: (): AsyncIterator<T> => ({
-      next: async () => iter.next(),
-    }),
-  }
-}
-
 export const findAsync = async <T>(
   i: ThenableIterable<T>,
   pred: (value: T, index: number) => Thenable<unknown>,
@@ -64,6 +55,20 @@ export async function *mapAsync<T, U>(
   }
 }
 
+export async function *flatMapAsync<T, U>(
+  itr: AsyncIterable<T>,
+  mapFunc: (t: T, index: number) => Iterable<U> | AsyncIterable<U> | Promise<Iterable<U>>
+): AsyncIterable<U> {
+  let index = 0
+  for await (const curr of itr) {
+    const res = await mapFunc(curr, index)
+    index += 1
+    for await (const nextRes of res) {
+      yield nextRes
+    }
+  }
+}
+
 export const forEachAsync = async <T>(
   itr: ThenableIterable<T>,
   mapFunc: (t: T, index: number) => Thenable<unknown>,
@@ -72,6 +77,12 @@ export const forEachAsync = async <T>(
   for await (const curr of itr) {
     await mapFunc(curr, index)
     index += 1
+  }
+}
+
+export async function *toAsyncIterable<T>(iterable: Iterable<T>): AsyncIterable<T> {
+  for (const item of iterable) {
+    yield item
   }
 }
 

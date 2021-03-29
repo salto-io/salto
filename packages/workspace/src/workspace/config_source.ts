@@ -27,7 +27,7 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 export interface ConfigSource {
-  get(name: string): Promise<InstanceElement | undefined>
+  get(name: string, defaultValue?: InstanceElement): Promise<InstanceElement | undefined>
   set(name: string, config: Readonly<InstanceElement>): Promise<void>
   delete(name: string): Promise<void>
   rename(name: string, newName: string): Promise<void>
@@ -102,8 +102,8 @@ export const configSource = (
   }
 
   return {
-    get: async (name: string): Promise<InstanceElement | undefined> => {
-      const conf = await getConfigWithoutOverrides(name)
+    get: async (name, defaultValue) => {
+      const conf = await getConfigWithoutOverrides(name) ?? defaultValue
       if (conf === undefined) {
         return undefined
       }

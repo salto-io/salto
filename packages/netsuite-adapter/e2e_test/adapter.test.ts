@@ -17,10 +17,9 @@ import { collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import {
   toChange, FetchResult, InstanceElement, ReferenceExpression, isReferenceExpression,
-  isInstanceElement, DeployResult, Values, isStaticFile, StaticFile,
+  isInstanceElement, DeployResult, Values, isStaticFile, StaticFile, FetchOptions,
 } from '@salto-io/adapter-api'
 import { findElement, naclCase } from '@salto-io/adapter-utils'
-import { Credentials } from '../src/client/client'
 import NetsuiteAdapter from '../src/adapter'
 import { credsLease, realAdapter } from './adapter'
 import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
@@ -31,6 +30,8 @@ import {
   TRANSACTION_COLUMN_CUSTOM_FIELD, TYPES_TO_SKIP, WORKFLOW,
 } from '../src/constants'
 import { mockDefaultValues } from './mock_elements'
+import { Credentials } from '../src/client/credentials'
+import { MockInterface } from '../test/utils'
 
 const { makeArray } = collections.array
 
@@ -200,7 +201,10 @@ describe('Netsuite adapter E2E with real account', () => {
 
   describe('Fetch after creation', () => {
     beforeAll(async () => {
-      fetchResult = await adapter.fetch()
+      const mockFetchOpts: MockInterface<FetchOptions> = {
+        progressReporter: { reportProgress: jest.fn() },
+      }
+      fetchResult = await adapter.fetch(mockFetchOpts)
       fetchedInstances = fetchResult.elements.filter(isInstanceElement)
     })
 

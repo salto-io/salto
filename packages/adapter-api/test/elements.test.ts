@@ -105,6 +105,23 @@ describe('Test elements.ts', () => {
       expect(isEqualElements(ot, otDiff)).toBeFalsy()
     })
 
+    it('should use the same path when cloning object types', () => {
+      const obj = new ObjectType({
+        elemID: otID,
+        fields: {
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          num_field: { refType: new ReferenceExpression(primNum.elemID, primNum) },
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          str_field: { refType: new ReferenceExpression(primStr.elemID, primStr) },
+        },
+        annotationRefsOrTypes: {},
+        annotations: {},
+        path: ['a', 'b', 'c', 'd'],
+      })
+      const newObj = obj.clone()
+      expect(newObj.path).toEqual(['a', 'b', 'c', 'd'])
+    })
+
     it('should identify equal fields', () => {
       expect(isEqualElements(strField, _.cloneDeep(strField))).toBeTruthy()
     })

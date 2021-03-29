@@ -409,6 +409,7 @@ export class ObjectType extends Element {
       annotationRefsOrTypes: this.annotationRefTypes,
       annotations: clonedAnnotations,
       isSettings,
+      path: this.path !== undefined ? [...this.path] : undefined,
     })
 
     res.annotate(additionalAnnotations)

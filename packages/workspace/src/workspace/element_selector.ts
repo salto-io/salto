@@ -163,18 +163,21 @@ export const selectElementIdsByTraversal = async (
   selectors: ElementSelector[],
   elementIds: AsyncIterable<ElemID>,
   source: ElementsSource,
-  compact = false
+  compact = false,
+  validateDeterminedSelectors = false,
 ): Promise<AsyncIterable<ElemID>> => {
-  const [wildcardSelectors, determinedSelectors] = _.partition(selectors,
-    selector => selector.origin.includes('*'))
+  const [selectorsToDetermine, determinedSelectors] = validateDeterminedSelectors ? [selectors, []]
+    : _.partition(selectors, selector => selector.origin.includes('*'))
   const determinedIds = determinedSelectors.map(selector => selector.origin)
   let currentIds = determinedIds
   let idsIterable = awu(determinedIds).map(id => ElemID.fromFullName(id))
-  if (wildcardSelectors.length === 0) {
+  if (selectorsToDetermine.length === 0) {
     return awu(idsIterable).uniquify(id => id.getFullName())
   }
-  const [topLevelSelectors, subElementSelectors] = _.partition(wildcardSelectors,
-    isTopLevelSelector)
+  const [topLevelSelectors, subElementSelectors] = _.partition(
+    selectorsToDetermine,
+    isTopLevelSelector,
+  )
   if (topLevelSelectors.length !== 0) {
     const topLevelElements = selectElementsBySelectors(elementIds, topLevelSelectors)
     if (subElementSelectors.length === 0) {
@@ -187,8 +190,9 @@ export const selectElementIdsByTraversal = async (
   }
   const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)
   const possibleParentElements = selectElementsBySelectors(elementIds, possibleParentSelectors)
-  const stillRelevantElements = compact ? awu(possibleParentElements)
-    .filter(id => !currentIds.includes(id.getFullName())) : possibleParentElements
+  const stillRelevantElements = compact
+    ? awu(possibleParentElements).filter(id => !currentIds.includes(id.getFullName()))
+    : possibleParentElements
   const subElements: ElemID[] = []
   const selectFromSubElements: TransformFunc = ({ path, value }) => {
     if (path === undefined) {
@@ -201,7 +205,7 @@ export const selectElementIdsByTraversal = async (
         return undefined
       }
     }
-    const stillRelevantSelectors = wildcardSelectors.filter(selector => selector
+    const stillRelevantSelectors = selectorsToDetermine.filter(selector => selector
       .origin.split(ElemID.NAMESPACE_SEPARATOR).length > testId.getFullNameParts().length)
     if (stillRelevantSelectors.length === 0) {
       return undefined

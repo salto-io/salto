@@ -41,7 +41,7 @@ const centercategory_links_link = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
-    }, /* Original description: This field is mandatory when the linkid value is not defined.   This field accepts references to the following custom types:   workflowactionscript   usereventscript   scriptdeployment   suitelet   scheduledscript   savedsearch   restlet   portlet   massupdatescript   mapreducescript   customtransactiontype   customrecordtype   clientscript   centertab   bundleinstallationscript */
+    }, /* Original description: This field is mandatory when the linkid value is not defined.   This field accepts references to the following custom types:   workflowactionscript   usereventscript   scriptdeployment   suitelet   scheduledscript   savedsearch   restlet   portlet   massupdatescript   mapreducescript   customtransactiontype   customrecordtype   clientscript   centertab   centerlink   bundleinstallationscript */
     linktasktype: {
       refType: createRefToElmWithValue(enums.centercategory_tasktype),
       annotations: {
@@ -51,7 +51,7 @@ const centercategory_links_link = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     shortlist: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {

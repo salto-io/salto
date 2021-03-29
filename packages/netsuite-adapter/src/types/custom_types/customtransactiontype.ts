@@ -293,6 +293,11 @@ export const customtransactiontype = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    cancloseorder: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
     accounting: {
       refType: createRefToElmWithValue(customtransactiontype_accounting),
       annotations: {

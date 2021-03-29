@@ -47,6 +47,7 @@ Located inside the workspace directory in `salto.config/adapters/<adapter_name>.
 Each configuration file holds information that is relevant to the specific adapter:
 [Salesforce](../packages/salesforce-adapter/config_doc.md)
 [NetSuite](../packages/netsuite-adapter/config_doc.md)
+[Workato](../packages/workato-adapter/config_doc.md)
 
 ## Global Salto configuration
 

@@ -16,9 +16,9 @@
 
 import _ from 'lodash'
 import {
-  Element, ObjectType, isContainerType, MapType, ListType, InstanceElement, isInstanceElement,
+  Element, ObjectType, isContainerType, MapType, ListType, InstanceElement,
   Values, isAdditionOrModificationChange, isInstanceChange, getChangeElement, Change, isMapType,
-  isListType,
+  isListType, isInstanceElement,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { naclCase, applyFunctionToChangeData, createRefToElmWithValue } from '@salto-io/adapter-utils'

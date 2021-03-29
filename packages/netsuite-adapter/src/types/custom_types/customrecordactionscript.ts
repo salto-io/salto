@@ -492,6 +492,16 @@ const customrecordactionscript_scriptdeployments_scriptdeployment = new ObjectTy
       annotations: {
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
+    showbutton: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    actionlabel: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      annotations: {
+      },
+    }, /* Original description: This field accepts references to the string custom type. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordactionscriptElemID.name],
 })
@@ -536,7 +546,7 @@ export const customrecordactionscript = new ObjectType({
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    }, /* Original description: This field value can be up to 40 characters long. */
+    }, /* Original description: This field value can be up to 40 characters long.   This field accepts references to the string custom type. */
     scriptfile: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
       annotations: {
@@ -548,7 +558,7 @@ export const customrecordactionscript = new ObjectType({
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    }, /* Original description: This field value can be up to 999 characters long. */
+    }, /* Original description: This field value can be up to 999 characters long.   This field accepts references to the string custom type. */
     isinactive: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {

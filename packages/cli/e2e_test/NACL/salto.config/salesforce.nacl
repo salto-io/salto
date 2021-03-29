@@ -21,7 +21,6 @@ salesforce {
       },
       {
         metadataType = "EmailTemplate"
-        name = "MarketoEmailTemplates.*"
       },
     ]
   }

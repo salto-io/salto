@@ -60,6 +60,23 @@ describe('NetsuiteQuery', () => {
           expect(query.isObjectMatch({ scriptId: 'cccccc', type: 'addressForm' })).toBeFalsy()
         })
       })
+
+      describe('areSomeFilesMatch', () => {
+        it('when has files match should return true', () => {
+          expect(query.areSomeFilesMatch()).toBeTruthy()
+        })
+
+        it('when does not` has files match should return false', () => {
+          const q = buildNetsuiteQuery({
+            types: {
+              addressForm: ['aaa.*', 'bbb.*'],
+              advancedpdftemplate: ['ccc.*', 'ddd.*'],
+            },
+            filePaths: [],
+          })
+          expect(q.areSomeFilesMatch()).toBeFalsy()
+        })
+      })
     })
   })
 
@@ -146,6 +163,10 @@ describe('NetsuiteQuery', () => {
       expect(bothQuery.isObjectMatch({ scriptId: 'aaacccc', type: 'addressForm' })).toBeTruthy()
       expect(bothQuery.isObjectMatch({ scriptId: 'aaa', type: 'addressForm' })).toBeFalsy()
       expect(bothQuery.isObjectMatch({ scriptId: 'aaa', type: 'advancedpdftemplate' })).toBeFalsy()
+    })
+
+    it('should return whether both queries has some files match', () => {
+      expect(bothQuery.areSomeFilesMatch()).toBeTruthy()
     })
   })
 

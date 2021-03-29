@@ -64,7 +64,7 @@ export const dataset = new ObjectType({
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 50,
       },
-    }, /* Original description: This field value can be up to 50 characters long. */
+    }, /* Original description: This field value can be up to 50 characters long.   This field accepts references to the string custom type. */
     definition: {
       refType: createRefToElmWithValue(fieldTypes.cdata),
       annotations: {

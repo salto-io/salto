@@ -33,6 +33,7 @@ export type NetsuiteQuery = {
   isTypeMatch: (typeName: string) => boolean
   isObjectMatch: (objectID: ObjectID) => boolean
   isFileMatch: (filePath: string) => boolean
+  areSomeFilesMatch: () => boolean
 }
 
 export const validateParameters = ({ types = {}, filePaths = [] }:
@@ -71,6 +72,7 @@ export const buildNetsuiteQuery = (
     },
     isFileMatch: filePath =>
       parameters.filePaths.some(reg => new RegExp(`^${reg}$`).test(filePath)),
+    areSomeFilesMatch: () => parameters.filePaths.length !== 0,
   }
 }
 
@@ -81,10 +83,12 @@ export const andQuery = (firstQuery: NetsuiteQuery, secondQuery: NetsuiteQuery):
     firstQuery.isObjectMatch(objectID) && secondQuery.isObjectMatch(objectID),
   isFileMatch: filePath =>
     firstQuery.isFileMatch(filePath) && secondQuery.isFileMatch(filePath),
+  areSomeFilesMatch: () => firstQuery.areSomeFilesMatch() && secondQuery.areSomeFilesMatch(),
 })
 
 export const notQuery = (query: NetsuiteQuery): NetsuiteQuery => ({
   isTypeMatch: typeName => !query.isTypeMatch(typeName),
   isObjectMatch: objectID => !query.isObjectMatch(objectID),
   isFileMatch: filePath => !query.isFileMatch(filePath),
+  areSomeFilesMatch: () => true,
 })

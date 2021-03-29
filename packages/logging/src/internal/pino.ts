@@ -168,6 +168,13 @@ const formatJsonLog = (object: FormatterBaseInput): Record<string, unknown> => {
         Object.assign(formattedExcessArgs, { [key]: formatJsonStringValue(value) })
         return
       }
+      if (value instanceof Error) {
+        Object.assign(formattedExcessArgs, { [key]: Object.fromEntries(
+          Object.entries(Object.getOwnPropertyDescriptors(value))
+            .map(([k, v]) => [k, v.value])
+        ) })
+        return
+      }
       Object.assign(formattedExcessArgs, { [key]: value })
     })
   return { ...logJson, ...formattedExcessArgs }

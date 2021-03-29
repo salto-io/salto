@@ -63,10 +63,9 @@ const main = async (): Promise<CliExitCode> => {
     })
     return ret
   } finally {
-    await Promise.all([
-      telemetry.stop(EVENTS_FLUSH_WAIT_TIME),
-      logger.end(),
-    ])
+    // Telemetry emits a log when stopping so it must be stopped before the logger
+    await telemetry.stop(EVENTS_FLUSH_WAIT_TIME)
+    await logger.end()
   }
 }
 // eslint-disable-next-line @typescript-eslint/no-floating-promises

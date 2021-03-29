@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { InstanceElement } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { customTypes } from '../../src/types'
 import { DATASET, ENTITY_CUSTOM_FIELD, SAVED_CSV_IMPORT } from '../../src/constants'
 import filterCreator from '../../src/filters/convert_lists'
@@ -35,7 +34,7 @@ describe('convert_lists filter', () => {
       })
     onFetchParameters = {
       elements: [instance],
-      elementsSource: buildElementsSourceFromElements([]),
+      elementsSourceIndex: { getIndex: () => Promise.resolve({}) },
       isPartial: false,
     }
   })

@@ -23,16 +23,18 @@ import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import {
   FETCH_ALL_TYPES_AT_ONCE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, NETSUITE,
   SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
-  CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST, SAVED_SEARCH,
+  CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
+  SAVED_SEARCH, SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG,
 } from './constants'
 import { NetsuiteQueryParameters } from './query'
+import { mergeTypeToInstances } from './client/utils'
 
 const { makeArray } = collections.array
 
 // in small Netsuite accounts the concurrency limit per integration can be between 1-4
-export const DEFAULT_SDF_CONCURRENCY = 4
+export const DEFAULT_CONCURRENCY = 4
 export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = false
-export const DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES = 8
+export const DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES = 4
 export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 40
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 
@@ -66,7 +68,23 @@ const clientConfigType = new ObjectType({
     [SDF_CONCURRENCY_LIMIT]: {
       refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_SDF_CONCURRENCY,
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_CONCURRENCY,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          min: 1,
+          max: 50,
+        }),
+      },
+    },
+  },
+})
+
+const suiteAppClientConfigType = new ObjectType({
+  elemID: new ElemID(NETSUITE, 'suiteAppClientConfig'),
+  fields: {
+    [SUITEAPP_CONCURRENCY_LIMIT]: {
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_CONCURRENCY,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           min: 1,
           max: 50,
@@ -101,19 +119,9 @@ export const configType = new ObjectType({
   fields: {
     [TYPES_TO_SKIP]: {
       refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: [
-          SAVED_SEARCH, // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch.
-          // Although the SAVED_SEARCH is not editable since it's encrypted, there still might be
-          // a value for specific customers to use it for moving between envs, backup etc.
-        ],
-      },
     },
     [FILE_PATHS_REGEX_SKIP_LIST]: {
       refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: [],
-      },
     },
     [DEPLOY_REFERENCED_ELEMENTS]: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
@@ -123,6 +131,10 @@ export const configType = new ObjectType({
     },
     [CLIENT_CONFIG]: {
       refType: createRefToElmWithValue(clientConfigType),
+    },
+
+    [SUITEAPP_CLIENT_CONFIG]: {
+      refType: createRefToElmWithValue(suiteAppClientConfigType),
     },
 
     [FETCH_TARGET]: {
@@ -146,18 +158,23 @@ export const configType = new ObjectType({
   },
 })
 
-export type NetsuiteClientConfig = {
+export type SdfClientConfig = {
   [FETCH_ALL_TYPES_AT_ONCE]?: boolean
   [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]?: number
   [FETCH_TYPE_TIMEOUT_IN_MINUTES]?: number
   [SDF_CONCURRENCY_LIMIT]?: number
 }
 
+export type SuiteAppClientConfig = {
+  [SUITEAPP_CONCURRENCY_LIMIT]?: number
+}
+
 export type NetsuiteConfig = {
   [TYPES_TO_SKIP]?: string[]
   [FILE_PATHS_REGEX_SKIP_LIST]?: string[]
   [DEPLOY_REFERENCED_ELEMENTS]?: boolean
-  [CLIENT_CONFIG]?: NetsuiteClientConfig
+  [CLIENT_CONFIG]?: SdfClientConfig
+  [SUITEAPP_CLIENT_CONFIG]?: SuiteAppClientConfig
   [FETCH_TARGET]?: NetsuiteQueryParameters
   [SKIP_LIST]?: NetsuiteQueryParameters
 }
@@ -167,16 +184,23 @@ export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from Ne
 
 export const UPDATE_TO_SKIP_LIST_MSG = 'The configuration options "typeToSkip" and "filePathRegexSkipList" are deprecated.'
   + ' To skip items in fetch, please use the "skipList" option.'
-  + ' The following configuration will update the deprected fields to the "skipList" field.'
+  + ' The following configuration will update the deprecated fields to the "skipList" field.'
 
 const toConfigSuggestions = (
   failedToFetchAllAtOnce: boolean,
-  failedFilePaths: string[]
-): Partial<Record<keyof Omit<NetsuiteConfig, 'client'> | keyof NetsuiteClientConfig, Value>> => ({
+  failedFilePaths: NetsuiteQueryParameters['filePaths'],
+  failedTypeToInstances: NetsuiteQueryParameters['types']
+): Partial<Record<keyof Omit<NetsuiteConfig, 'client'> | keyof SdfClientConfig, Value>> => ({
   ...(failedToFetchAllAtOnce ? { [FETCH_ALL_TYPES_AT_ONCE]: false } : {}),
-  ...(!_.isEmpty(failedFilePaths)
-    ? { [FILE_PATHS_REGEX_SKIP_LIST]: failedFilePaths.map(_.escapeRegExp) }
+  ...(!_.isEmpty(failedFilePaths) || !_.isEmpty(failedTypeToInstances)
+    ? {
+      skipList: {
+        filePaths: failedFilePaths.map(_.escapeRegExp),
+        types: failedTypeToInstances,
+      },
+    }
     : {}),
+
 })
 
 
@@ -184,30 +208,32 @@ const convertDeprecatedFilePathRegex = (filePathRegex: string): string => {
   let newPathRegex = filePathRegex
   newPathRegex = newPathRegex.startsWith('^')
     ? newPathRegex.substring(1)
-    : newPathRegex = `.*${newPathRegex}`
+    : `.*${newPathRegex}`
 
   newPathRegex = newPathRegex.endsWith('$')
-    ? newPathRegex = newPathRegex.substring(0, newPathRegex.length - 1)
-    : newPathRegex = `${newPathRegex}.*`
+    ? newPathRegex.substring(0, newPathRegex.length - 1)
+    : `${newPathRegex}.*`
 
   return newPathRegex
 }
 
-
 const updateConfigFromFailures = (
   failedToFetchAllAtOnce: boolean,
-  failedFilePaths: string[],
+  failedFilePaths: NetsuiteQueryParameters['filePaths'],
+  failedTypeToInstances: NetsuiteQueryParameters['types'],
   configToUpdate: InstanceElement,
 ): boolean => {
-  const suggestions = toConfigSuggestions(failedToFetchAllAtOnce, failedFilePaths)
+  const suggestions = toConfigSuggestions(
+    failedToFetchAllAtOnce, failedFilePaths, failedTypeToInstances
+  )
   if (_.isEmpty(suggestions)) {
     return false
   }
 
-  if (suggestions[FETCH_ALL_TYPES_AT_ONCE] !== undefined) {
+  if (suggestions.fetchAllTypesAtOnce !== undefined) {
     configToUpdate.value[CLIENT_CONFIG] = _.pickBy({
       ...(configToUpdate.value[CLIENT_CONFIG] ?? {}),
-      [FETCH_ALL_TYPES_AT_ONCE]: suggestions[FETCH_ALL_TYPES_AT_ONCE],
+      [FETCH_ALL_TYPES_AT_ONCE]: suggestions.fetchAllTypesAtOnce,
     }, values.isDefined)
   }
 
@@ -216,14 +242,16 @@ const updateConfigFromFailures = (
     ? _.cloneDeep(currentSkipList)
     : {}
 
-  if (!_.isEmpty(suggestions[FILE_PATHS_REGEX_SKIP_LIST])) {
-    if (newSkipList.filePaths === undefined) {
-      newSkipList.filePaths = []
-    }
+  const suggestedSkipList: NetsuiteQueryParameters = suggestions.skipList
+  if (suggestedSkipList.filePaths.length > 0) {
     newSkipList.filePaths = [
       ...makeArray(newSkipList.filePaths),
-      ...suggestions[FILE_PATHS_REGEX_SKIP_LIST],
+      ...suggestedSkipList.filePaths,
     ]
+  }
+
+  if (!_.isEmpty(suggestedSkipList.types)) {
+    newSkipList.types = mergeTypeToInstances(newSkipList.types ?? {}, suggestedSkipList.types)
   }
   configToUpdate.value[SKIP_LIST] = newSkipList
   return true
@@ -273,7 +301,8 @@ const updateConfigSkipListFormat = (
 
 export const getConfigFromConfigChanges = (
   failedToFetchAllAtOnce: boolean,
-  failedFilePaths: string[],
+  failedFilePaths: NetsuiteQueryParameters['filePaths'],
+  failedTypeToInstances: NetsuiteQueryParameters['types'],
   currentConfig: NetsuiteConfig
 ): { config: InstanceElement; message: string } | undefined => {
   const conf = new InstanceElement(
@@ -285,6 +314,7 @@ export const getConfigFromConfigChanges = (
   const didUpdateFromFailures = updateConfigFromFailures(
     failedToFetchAllAtOnce,
     failedFilePaths,
+    failedTypeToInstances,
     conf
   )
   const didUpdateSkipListFormat = updateConfigSkipListFormat(conf)

@@ -35,18 +35,3 @@ export const toChangeGroup = (...params: ChangeParams<ChangeDataType>[]): Change
     changes,
   }
 }
-
-export type Resolvable<T> = {
-  promise: Promise<T>
-  resolve: () => void
-}
-
-export const makeResolvablePromise = <T>(resolveValue: T): Resolvable<T> => {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  let resolve: () => void = () => {}
-  // Unsafe assumption - promise constructor calls the paramter function synchronously
-  const promise = new Promise<T>(resolveFunc => {
-    resolve = () => resolveFunc(resolveValue)
-  })
-  return { promise, resolve }
-}

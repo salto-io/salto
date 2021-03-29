@@ -19,8 +19,9 @@ import { pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { isCustomObject, isCustom, relativeApiName } from '../transformers/transformer'
 import { FilterWith } from '../filter'
-import { SALESFORCE, INSTALLED_PACKAGES_PATH, OBJECTS_PATH, API_NAME } from '../constants'
+import { API_NAME } from '../constants'
 import { getNamespace, getNamespaceFromString } from './utils'
+import { getObjectDirectoryPath } from './custom_objects'
 
 const { awu } = collections.asynciterable
 
@@ -28,35 +29,29 @@ export const annotationsFileName = (objectName: string): string => `${pathNaclCa
 export const standardFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}StandardFields`
 export const customFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}CustomFields`
 
-const getObjectDirectoryPath = (obj: ObjectType, namespace?: string): string[] => {
-  const elemFileName = pathNaclCase(obj.elemID.name)
-  if (namespace) {
-    return [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, elemFileName]
-  }
-  return [SALESFORCE, OBJECTS_PATH, elemFileName]
-}
-
-const createCustomFieldsObjects = (
-  customObject: ObjectType,
-  objNamespace?: string
-): ObjectType[] => {
-  const createCustomFieldObject = (fields: Record<string, Field>, namespace?: string): ObjectType =>
+const createCustomFieldsObjects = async (customObject: ObjectType): Promise<ObjectType[]> => {
+  const createCustomFieldObject = async (
+    fields: Record<string, Field>, namespace?: string,
+  ): Promise<ObjectType> =>
     (new ObjectType(
       {
         elemID: customObject.elemID,
         fields,
-        path: [...getObjectDirectoryPath(customObject, namespace),
-          customFieldsFileName(customObject.elemID.name)],
+        path: [
+          ...await getObjectDirectoryPath(customObject, namespace),
+          customFieldsFileName(customObject.elemID.name),
+        ],
       }
     ))
   const customFields = _.pickBy(
     customObject.fields,
-    (f: Field) => isCustom(f.elemID.getFullName())
-  ) as Record<string, Field>
+    f => isCustom(f.elemID.getFullName())
+  )
 
   // When there's an object namespace, all the custom fields are in the same object
+  const objNamespace = await getNamespace(customObject)
   if (!_.isUndefined(objNamespace) && !_.isEmpty(customFields)) {
-    return [createCustomFieldObject(customFields, objNamespace)]
+    return [await createCustomFieldObject(customFields, objNamespace)]
   }
 
   const getFieldDefNamespace = (f: Field): string | undefined => (
@@ -70,34 +65,37 @@ const createCustomFieldsObjects = (
   )
 
   // Custom fields that belong to a package go in a separate element
-  const customFieldsObjects = Object.entries(namespaceToFields)
-    .map(([fieldNamespace, packageFields]) =>
-      createCustomFieldObject(packageFields, fieldNamespace))
+  const customFieldsObjects = await awu(Object.entries(namespaceToFields))
+    .map(async ([fieldNamespace, packageFields]) =>
+      createCustomFieldObject(packageFields, fieldNamespace)).toArray()
 
   if (!_.isEmpty(regularCustomFields)) {
     // Custom fields that has no namespace go in a separate element
-    const customPart = createCustomFieldObject(regularCustomFields)
+    const customPart = await createCustomFieldObject(regularCustomFields)
     customFieldsObjects.push(customPart)
   }
   return customFieldsObjects
 }
 
 const customObjectToSplittedElements = async (customObject: ObjectType): Promise<ObjectType[]> => {
-  const namespace = await getNamespace(customObject)
   const annotationsObject = new ObjectType({
     elemID: customObject.elemID,
     annotationRefsOrTypes: customObject.annotationRefTypes,
     annotations: customObject.annotations,
-    path: [...getObjectDirectoryPath(customObject, namespace),
-      annotationsFileName(customObject.elemID.name)],
+    path: [
+      ...await getObjectDirectoryPath(customObject),
+      annotationsFileName(customObject.elemID.name),
+    ],
   })
   const standardFieldsObject = new ObjectType({
     elemID: customObject.elemID,
-    fields: _.pickBy(customObject.fields, (f: Field) => !isCustom(f.elemID.getFullName())),
-    path: [...getObjectDirectoryPath(customObject, namespace),
-      standardFieldsFileName(customObject.elemID.name)],
+    fields: _.pickBy(customObject.fields, f => !isCustom(f.elemID.getFullName())),
+    path: [
+      ...await getObjectDirectoryPath(customObject),
+      standardFieldsFileName(customObject.elemID.name),
+    ],
   })
-  const customFieldsObjects = createCustomFieldsObjects(customObject, namespace)
+  const customFieldsObjects = await createCustomFieldsObjects(customObject)
   return [...customFieldsObjects, standardFieldsObject, annotationsObject]
 }
 

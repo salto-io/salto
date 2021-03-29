@@ -27,6 +27,9 @@ import {
   addObjectParentReference, generateApiNameToCustomObject,
 } from './utils'
 import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
+import { getObjectDirectoryPath } from './custom_objects'
+
+const { awu } = collections.asynciterable
 
 const { awu } = collections.asynciterable
 
@@ -46,16 +49,13 @@ const layoutObjAndName = async (layout: InstanceElement): Promise<[string, strin
   return [specialLayoutObjects.get(obj) ?? obj, name.join('-')]
 }
 
-const fixLayoutPath = (
+const fixLayoutPath = async (
   layout: InstanceElement,
-  { path: objectPath }: ObjectType,
+  customObject: ObjectType,
   layoutName: string,
-): void => {
-  if (objectPath === undefined) {
-    return
-  }
+): Promise<void> => {
   layout.path = [
-    ...objectPath.slice(0, -1),
+    ...await getObjectDirectoryPath(customObject),
     layout.elemID.typeName,
     pathNaclCase(naclCase(layoutName)),
   ]
@@ -85,7 +85,7 @@ const filterCreator: FilterCreator = () => ({
       }
 
       addObjectParentReference(layout, layoutObj)
-      fixLayoutPath(layout, layoutObj, layoutName)
+      await fixLayoutPath(layout, layoutObj, layoutName)
     })
   },
 })

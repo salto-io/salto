@@ -30,7 +30,7 @@ import {
   findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath, ResolveValuesFunc,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
-  transformElement, toObjectType, getParents, createRefToElmWithValue,
+  transformElement, toObjectType, getParents, extendGeneratedDependencies, createRefToElmWithValue,
 } from '../src/utils'
 import { mockFunction, MockFunction } from './common'
 
@@ -2021,6 +2021,153 @@ describe('Test utils.ts', () => {
       const instRef = createRefToElmWithValue(inst)
       expect(instRef.elemID).toEqual(inst.elemID)
       expect(instRef.value).toEqual(inst)
+    })
+  })
+
+  describe('extendGeneratedDependencies', () => {
+    it('should create the _generated_dependencies annotation if it does not exist', () => {
+      const type = new ObjectType({
+        elemID: mockElem,
+        annotationRefsOrTypes: {
+          testAnno: mockStrType,
+        },
+        annotations: {
+          testAnno: 'TEST ANNO',
+        },
+        fields: {
+          f1: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        },
+      })
+      const inst = new InstanceElement('something', mockType, {})
+
+      const refs = [new ReferenceExpression(new ElemID('adapter', 'type123'))]
+
+      extendGeneratedDependencies(type, refs)
+      expect(type.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
+      expect(type.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(refs)
+
+      extendGeneratedDependencies(inst, refs)
+      expect(inst.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
+      expect(inst.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(refs)
+
+      expect(type.fields.f1.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
+      extendGeneratedDependencies(type.fields.f1, refs)
+      expect(type.fields.f1.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
+      expect(type.fields.f1.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(refs)
+    })
+    it('should extend the _generated_dependencies annotation if it already exists', () => {
+      const oldRefs = [
+        new ReferenceExpression(new ElemID('adapter', 'type123')),
+      ]
+      const type = new ObjectType({
+        elemID: mockElem,
+        annotationRefsOrTypes: {
+          testAnno: mockStrType,
+        },
+        annotations: {
+          testAnno: 'TEST ANNO',
+          [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [...oldRefs],
+        },
+        fields: {
+          f1: {
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            annotations: { [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [...oldRefs] },
+          },
+        },
+      })
+      const inst = new InstanceElement(
+        'something',
+        mockType,
+        {},
+        undefined,
+        { [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [...oldRefs] },
+      )
+
+      const newRefs = [new ReferenceExpression(new ElemID('adapter', 'type456'))]
+
+      extendGeneratedDependencies(type, newRefs)
+      expect(type.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
+      expect(type.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
+        [...oldRefs, ...newRefs]
+      )
+
+      extendGeneratedDependencies(inst, newRefs)
+      expect(inst.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
+      expect(inst.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
+        [...oldRefs, ...newRefs]
+      )
+
+      expect(type.fields.f1.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
+      extendGeneratedDependencies(type.fields.f1, newRefs)
+      expect(type.fields.f1.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
+      expect(type.fields.f1.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(
+        [...oldRefs, ...newRefs]
+      )
+    })
+    it('should keep annotations sorted by elem id and avoid duplicates', () => {
+      const oldRefs = [
+        new ReferenceExpression(new ElemID('adapter', 'type123')),
+        new ReferenceExpression(new ElemID('adapter', 'type456')),
+      ]
+      const type = new ObjectType({
+        elemID: mockElem,
+        annotationRefsOrTypes: {
+          testAnno: mockStrType,
+        },
+        annotations: {
+          testAnno: 'TEST ANNO',
+          [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [...oldRefs],
+        },
+        fields: {
+          f1: {
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            annotations: { [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [...oldRefs] },
+          },
+        },
+      })
+      const inst = new InstanceElement(
+        'something',
+        mockType,
+        {},
+        undefined,
+        { [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [...oldRefs] },
+      )
+
+      const newRefs = [
+        new ReferenceExpression(new ElemID('adapter', 'type456', 'instance', 'inst456')),
+        new ReferenceExpression(new ElemID('adapter', 'type123')),
+        new ReferenceExpression(new ElemID('adapter', 'aaa')),
+      ]
+
+      extendGeneratedDependencies(type, newRefs)
+      expect(type.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
+        (e: ReferenceExpression) => e.elemID.getFullName()
+      )).toEqual([
+        'adapter.aaa',
+        'adapter.type123',
+        'adapter.type456',
+        'adapter.type456.instance.inst456',
+      ])
+
+      extendGeneratedDependencies(inst, newRefs)
+      expect(inst.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
+        (e: ReferenceExpression) => e.elemID.getFullName()
+      )).toEqual([
+        'adapter.aaa',
+        'adapter.type123',
+        'adapter.type456',
+        'adapter.type456.instance.inst456',
+      ])
+
+      extendGeneratedDependencies(type.fields.f1, newRefs)
+      expect(type.fields.f1.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
+        (e: ReferenceExpression) => e.elemID.getFullName()
+      )).toEqual([
+        'adapter.aaa',
+        'adapter.type123',
+        'adapter.type456',
+        'adapter.type456.instance.inst456',
+      ])
     })
   })
 })

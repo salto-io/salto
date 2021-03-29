@@ -25,6 +25,9 @@ const lightningComponentBundleObjectType = new ObjectType({
   fields: {
     object: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
   },
+  annotations: {
+    [METADATA_TYPE]: 'LightningComponentBundleObject',
+  },
   path: [...subTypesPath, 'LightningComponentBundleObject'],
 })
 
@@ -106,6 +109,9 @@ const lightningComponentBundlePropertyType = new ObjectType({
       },
     },
   },
+  annotations: {
+    [METADATA_TYPE]: 'LightningComponentBundleProperty',
+  },
   path: [...subTypesPath, 'LightningComponentBundleProperty'],
 })
 
@@ -121,6 +127,9 @@ const lightningComponentBundleSupportedFormFactorType = new ObjectType({
       },
     },
   },
+  annotations: {
+    [METADATA_TYPE]: 'LightningComponentBundleSupportedFormFactor',
+  },
   path: [...subTypesPath, 'LightningComponentBundleSupportedFormFactor'],
 })
 
@@ -132,6 +141,9 @@ const lightningComponentBundleSupportedFormFactorsType = new ObjectType({
         new ListType(lightningComponentBundleSupportedFormFactorType)
       ),
     },
+  },
+  annotations: {
+    [METADATA_TYPE]: 'LightningComponentBundleSupportedFormFactors',
   },
   path: [...subTypesPath, 'LightningComponentBundleSupportedFormFactors'],
 })
@@ -161,6 +173,9 @@ const lightningComponentBundleTargetConfigType = new ObjectType({
     supportedFormFactors: {
       refType: createRefToElmWithValue(lightningComponentBundleSupportedFormFactorsType),
     },
+  },
+  annotations: {
+    [METADATA_TYPE]: 'LightningComponentBundleTargetConfig',
   },
   path: [...subTypesPath, 'LightningComponentBundleTargetConfig'],
 })
@@ -216,20 +231,15 @@ export const allMissingSubTypes = [
     path: [...subTypesPath, 'Holidays'],
   }),
   new ObjectType({
-    elemID: new ElemID(SALESFORCE, 'OrganizationSettingsDetail'),
-    fields: {
-      settingName: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      settingValue: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-    },
-    path: [...subTypesPath, 'OrganizationSettingsDetail'],
-  }),
-  new ObjectType({
     // taken from https://developer.salesforce.com/docs/component-library/documentation/en/lwc/lwc.reference_configuration_tags
     elemID: new ElemID(SALESFORCE, 'TargetConfigs'),
     fields: {
       targetConfig: {
         refType: createRefToElmWithValue(new ListType(lightningComponentBundleTargetConfigType)),
       },
+    },
+    annotations: {
+      [METADATA_TYPE]: 'TargetConfigs',
     },
     path: [...subTypesPath, 'TargetConfigs'],
   }),

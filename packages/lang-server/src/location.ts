@@ -33,6 +33,7 @@ export interface SaltoElemLocation {
 
 export type SaltoElemFileLocation = Omit<SaltoElemLocation, 'range'>
 
+export const FUSE_SEARCH_THRESHOLD = 0.3
 const MAX_LOCATION_SEARCH_RESULT = 20
 
 const createFileLocations = async (
@@ -139,13 +140,9 @@ export const getQueryLocations = async (
     .toArray()
 }
 
-export const getQueryLocationsFuzzy = async (
-  workspace: EditorWorkspace,
-  query: string,
-): Promise<Fuse.FuseResult<SaltoElemFileLocation>[]> => {
-  const elementIds = await workspace.getSearchableNames()
-  const fuse = new Fuse(
-    elementIds,
+export const createFuzzyFilter = (items: string[]): Fuse<string> =>
+  new Fuse(
+    items,
     {
       includeMatches: true,
       ignoreLocation: true,
@@ -157,8 +154,18 @@ export const getQueryLocationsFuzzy = async (
         const bItem = b.item as unknown as string
         return aItem.length - bItem.length
       },
+      threshold: FUSE_SEARCH_THRESHOLD,
+      minMatchCharLength: 2,
+      useExtendedSearch: true,
     }
   )
+
+export const getQueryLocationsFuzzy = async (
+  workspace: EditorWorkspace,
+  query: string,
+): Promise<Fuse.FuseResult<SaltoElemFileLocation>[]> => {
+  const elementIds = await workspace.getSearchableNames()
+  const fuse = createFuzzyFilter(elementIds)
   const fuseSearchResult = fuse.search(query)
   const topFuzzyResults = fuseSearchResult
     .slice(0, MAX_LOCATION_SEARCH_RESULT)

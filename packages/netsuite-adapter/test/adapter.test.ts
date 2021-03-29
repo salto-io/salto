@@ -15,26 +15,30 @@
 */
 
 import {
-  ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult, getChangeElement,
+  ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult, getChangeElement, FetchOptions,
+  ObjectType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import createClient from './client/client'
+import createClient from './client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
 import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
 import {
   ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, TYPES_TO_SKIP,
   FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, DEPLOY_REFERENCED_ELEMENTS,
-  FETCH_TYPE_TIMEOUT_IN_MINUTES, INTEGRATION, CLIENT_CONFIG, FETCH_TARGET,
+  FETCH_TYPE_TIMEOUT_IN_MINUTES, INTEGRATION, CLIENT_CONFIG, FETCH_TARGET, NETSUITE,
 } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
-import {
-  convertToCustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo,
-} from '../src/client/client'
+import SdfClient, { convertToCustomTypeInfo } from '../src/client/sdf_client'
 import { FilterCreator } from '../src/filter'
 import { configType, getConfigFromConfigChanges } from '../src/config'
-import { mockGetElemIdFunc } from './utils'
+import { mockFunction, mockGetElemIdFunc, MockInterface } from './utils'
 import * as referenceDependenciesModule from '../src/reference_dependencies'
+import NetsuiteClient from '../src/client/client'
+import { FileCustomizationInfo, FolderCustomizationInfo } from '../src/client/types'
+import * as changesDetector from '../src/changes_detector/changes_detector'
+import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
+import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
 
 jest.mock('../src/config', () => ({
   ...jest.requireActual<{}>('../src/config'),
@@ -45,6 +49,8 @@ const getAllReferencedInstancesMock = referenceDependenciesModule
   .getAllReferencedInstances as jest.Mock
 getAllReferencedInstancesMock
   .mockImplementation((sourceInstances: ReadonlyArray<InstanceElement>) => sourceInstances)
+
+jest.mock('../src/changes_detector/changes_detector')
 
 const getRequiredReferencedInstancesMock = referenceDependenciesModule
   .getRequiredReferencedInstances as jest.Mock
@@ -73,25 +79,32 @@ describe('Adapter', () => {
     },
   }
   const netsuiteAdapter = new NetsuiteAdapter({
-    client,
+    client: new NetsuiteClient(client),
     elementsSource: buildElementsSourceFromElements([]),
     filtersCreators: [firstDummyFilter, secondDummyFilter],
     config,
     getElemIdFunc: mockGetElemIdFunc,
   })
 
+  const mockFetchOpts: MockInterface<FetchOptions> = {
+    progressReporter: { reportProgress: jest.fn() },
+  }
+
   beforeEach(() => {
     jest.clearAllMocks()
-    client.listInstances = jest.fn().mockResolvedValue([])
-    client.getCustomObjects = jest.fn().mockResolvedValue({
-      elements: [],
-      failedTypes: [],
-      failedToFetchAllAtOnce: false,
-    })
-    client.importFileCabinetContent = jest.fn().mockResolvedValue({
-      elements: [],
-      failedPaths: [],
-    })
+    client.listInstances = mockFunction<SdfClient['listInstances']>()
+      .mockResolvedValue([])
+    client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
+      .mockResolvedValue({
+        elements: [],
+        failedTypeToInstances: {},
+        failedToFetchAllAtOnce: false,
+      })
+    client.importFileCabinetContent = mockFunction<NetsuiteClient['importFileCabinetContent']>()
+      .mockResolvedValue({
+        elements: [],
+        failedPaths: [],
+      })
   })
 
   describe('fetch', () => {
@@ -115,16 +128,18 @@ describe('Adapter', () => {
         + '  <label>elementName</label>'
         + '</entitycustomfield>'
       const customTypeInfo = convertToCustomTypeInfo(xmlContent, 'custentity_my_script_id')
-      client.importFileCabinetContent = jest.fn()
+      client.importFileCabinetContent = mockFunction<NetsuiteClient['importFileCabinetContent']>()
         .mockResolvedValue({
           elements: [folderCustomizationInfo, fileCustomizationInfo],
           failedPaths: [],
         })
-      client.getCustomObjects = jest.fn().mockResolvedValue({
-        elements: [customTypeInfo],
-        failedToFetchAllAtOnce: false,
-      })
-      const { elements, isPartial } = await netsuiteAdapter.fetch()
+      client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
+        .mockResolvedValue({
+          elements: [customTypeInfo],
+          failedToFetchAllAtOnce: false,
+          failedTypeToInstances: {},
+        })
+      const { elements, isPartial } = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(isPartial).toBeFalsy()
       const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
       const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION]
@@ -171,7 +186,7 @@ describe('Adapter', () => {
         },
       }
       const adapter = new NetsuiteAdapter({
-        client,
+        client: new NetsuiteClient(client),
         elementsSource: buildElementsSourceFromElements([]),
         filtersCreators: [firstDummyFilter, secondDummyFilter],
         config: conf,
@@ -179,12 +194,12 @@ describe('Adapter', () => {
       })
 
       it('isPartial should be true', async () => {
-        const { isPartial } = await adapter.fetch()
+        const { isPartial } = await adapter.fetch(mockFetchOpts)
         expect(isPartial).toBeTruthy()
       })
 
       it('should match the types that match fetchTarget and not in typesToSkip', async () => {
-        await adapter.fetch()
+        await adapter.fetch(mockFetchOpts)
 
         const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
         expect(customObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
@@ -193,7 +208,7 @@ describe('Adapter', () => {
       })
 
       it('should match the files that match fetchTarget and not in filePathRegexSkipList', async () => {
-        await adapter.fetch()
+        await adapter.fetch(mockFetchOpts)
 
         const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
         expect(fileCabinetQuery.isFileMatch('Some/File/Regex')).toBeFalsy()
@@ -206,14 +221,14 @@ describe('Adapter', () => {
       client.getCustomObjects = jest.fn().mockImplementation(async () => {
         throw new Error('Dummy error')
       })
-      await expect(netsuiteAdapter.fetch()).rejects.toThrow()
+      await expect(netsuiteAdapter.fetch(mockFetchOpts)).rejects.toThrow()
     })
 
     it('should fail when importFileCabinetContent fails', async () => {
       client.importFileCabinetContent = jest.fn().mockImplementation(async () => {
         throw new Error('Dummy error')
       })
-      await expect(netsuiteAdapter.fetch()).rejects.toThrow()
+      await expect(netsuiteAdapter.fetch(mockFetchOpts)).rejects.toThrow()
     })
 
     it('should ignore instances of unknown type', async () => {
@@ -221,22 +236,24 @@ describe('Adapter', () => {
         + '  <label>elementName</label>'
         + '</unknowntype>'
       const customTypeInfo = convertToCustomTypeInfo(xmlContent, 'unknown')
-      client.getCustomObjects = jest.fn().mockResolvedValue({
-        elements: [customTypeInfo],
-        failedToFetchAllAtOnce: false,
-      })
-      const { elements } = await netsuiteAdapter.fetch()
+      client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
+        .mockResolvedValue({
+          elements: [customTypeInfo],
+          failedToFetchAllAtOnce: false,
+          failedTypeToInstances: {},
+        })
+      const { elements } = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(elements).toHaveLength(getAllTypes().length)
     })
 
     it('should call filters by their order', async () => {
-      await netsuiteAdapter.fetch()
+      await netsuiteAdapter.fetch(mockFetchOpts)
       expect(onFetchMock).toHaveBeenNthCalledWith(1, 1)
       expect(onFetchMock).toHaveBeenNthCalledWith(2, 2)
     })
 
     it('should call getCustomObjects with query that only matches types that are not in typesToSkip', async () => {
-      await netsuiteAdapter.fetch()
+      await netsuiteAdapter.fetch(mockFetchOpts)
       const query = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
       expect(query.isTypeMatch(ENTITY_CUSTOM_FIELD)).toBeTruthy()
       expect(query.isTypeMatch(SAVED_SEARCH)).toBeFalsy()
@@ -245,35 +262,54 @@ describe('Adapter', () => {
     it('should return only the elements when having no config changes', async () => {
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       getConfigFromConfigChangesMock.mockReturnValue(undefined)
-      const fetchResult = await netsuiteAdapter.fetch()
-      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, [], config)
+      const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
+      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, [], {}, config)
       expect(fetchResult.updatedConfig).toBeUndefined()
     })
 
     it('should call getConfigFromConfigChanges with failed file paths', async () => {
-      client.importFileCabinetContent = jest.fn().mockResolvedValue({
-        elements: [],
-        failedPaths: ['/path/to/file'],
-        failedToFetchAllAtOnce: false,
-      })
+      client.importFileCabinetContent = mockFunction<NetsuiteClient['importFileCabinetContent']>()
+        .mockResolvedValue({
+          elements: [],
+          failedPaths: ['/path/to/file'],
+        })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue({ config: updatedConfig, message: '' })
-      const fetchResult = await netsuiteAdapter.fetch()
-      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, ['/path/to/file'], config)
+      const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
+      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, ['/path/to/file'], {}, config)
+      expect(fetchResult.updatedConfig?.config.isEqual(updatedConfig)).toBe(true)
+    })
+
+    it('should call getConfigFromConfigChanges with failedTypeToInstances', async () => {
+      const failedTypeToInstances = { testType: ['scriptid1', 'scriptid1'] }
+      client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
+        .mockResolvedValue({
+          elements: [],
+          failedToFetchAllAtOnce: false,
+          failedTypeToInstances,
+        })
+      const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
+      const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
+      getConfigFromConfigChangesMock.mockReturnValue({ config: updatedConfig, message: '' })
+      const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
+      expect(getConfigFromConfigChanges)
+        .toHaveBeenCalledWith(false, [], failedTypeToInstances, config)
       expect(fetchResult.updatedConfig?.config.isEqual(updatedConfig)).toBe(true)
     })
 
     it('should call getConfigFromConfigChanges with false for fetchAllAtOnce', async () => {
-      client.getCustomObjects = jest.fn().mockResolvedValue({
-        elements: [],
-        failedToFetchAllAtOnce: true,
-      })
+      client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
+        .mockResolvedValue({
+          elements: [],
+          failedToFetchAllAtOnce: true,
+          failedTypeToInstances: {},
+        })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue({ config: updatedConfig, message: '' })
-      const fetchResult = await netsuiteAdapter.fetch()
-      expect(getConfigFromConfigChangesMock).toHaveBeenCalledWith(true, [], config)
+      const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
+      expect(getConfigFromConfigChangesMock).toHaveBeenCalledWith(true, [], {}, config)
       expect(fetchResult.updatedConfig?.config.isEqual(updatedConfig)).toBe(true)
     })
   })
@@ -449,7 +485,7 @@ describe('Adapter', () => {
         [DEPLOY_REFERENCED_ELEMENTS]: true,
       }
       const netsuiteAdapterWithDeployReferencedElements = new NetsuiteAdapter({
-        client,
+        client: new NetsuiteClient(client),
         elementsSource: buildElementsSourceFromElements([]),
         filtersCreators: [firstDummyFilter, secondDummyFilter],
         config: configWithDeployReferencedElements,
@@ -471,6 +507,160 @@ describe('Adapter', () => {
       await adapterAdd(instance)
       expect(getRequiredReferencedInstancesMock).toHaveBeenCalledTimes(1)
       expect(getAllReferencedInstancesMock).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('SuiteAppClient', () => {
+    const getSystemInformationMock = jest.fn().mockResolvedValue({
+      time: new Date(1000),
+      appVersion: [0, 1, 0],
+    })
+    let adapter: NetsuiteAdapter
+
+    const elementsSource = buildElementsSourceFromElements([])
+    const getElementMock = jest.spyOn(elementsSource, 'get')
+    const getChangedObjectsMock = jest.spyOn(changesDetector, 'getChangedObjects')
+
+    beforeEach(() => {
+      getElementMock.mockReset()
+
+      getChangedObjectsMock.mockReset()
+      getChangedObjectsMock.mockResolvedValue({
+        isTypeMatch: () => true,
+        isObjectMatch: objectID => objectID.scriptId.startsWith('aa'),
+        isFileMatch: () => true,
+        areSomeFilesMatch: () => true,
+      })
+
+      getSystemInformationMock.mockReset()
+      getSystemInformationMock.mockResolvedValue({
+        time: new Date(1000),
+        appVersion: [0, 1, 0],
+      })
+
+      const suiteAppClient = {
+        getSystemInformation: getSystemInformationMock,
+      } as unknown as SuiteAppClient
+
+      adapter = new NetsuiteAdapter({
+        client: new NetsuiteClient(client, suiteAppClient),
+        elementsSource,
+        filtersCreators: [firstDummyFilter, secondDummyFilter],
+        config,
+        getElemIdFunc: mockGetElemIdFunc,
+      })
+    })
+
+    it('should not create serverTime elements when getSystemInformation returns undefined', async () => {
+      getSystemInformationMock.mockResolvedValue(undefined)
+
+      const { elements } = await adapter.fetch(mockFetchOpts)
+      expect(elements.filter(
+        e => e.elemID.getFullName().includes(SERVER_TIME_TYPE_NAME)
+      )).toHaveLength(0)
+    })
+
+    it('should not create serverTime elements when fetchTarget parameter was passed', async () => {
+      const suiteAppClient = {
+        getSystemInformation: getSystemInformationMock,
+      } as unknown as SuiteAppClient
+
+      adapter = new NetsuiteAdapter({
+        client: new NetsuiteClient(client, suiteAppClient),
+        elementsSource,
+        filtersCreators: [firstDummyFilter, secondDummyFilter],
+        config: {
+          ...config,
+          [FETCH_TARGET]: {
+            types: {},
+            filePaths: [],
+          },
+        },
+        getElemIdFunc: mockGetElemIdFunc,
+      })
+
+      const { elements } = await adapter.fetch(mockFetchOpts)
+      expect(elements.filter(
+        e => e.elemID.getFullName().includes(SERVER_TIME_TYPE_NAME)
+      )).toHaveLength(0)
+    })
+    it('should create the serverTime elements when getSystemInformation returns the time', async () => {
+      const { elements } = await adapter.fetch(mockFetchOpts)
+      expect(elements.filter(
+        e => e.elemID.getFullName().includes(SERVER_TIME_TYPE_NAME)
+      )).toHaveLength(2)
+
+      const serverTimeInstance = elements.find(
+        e => e.elemID.isEqual(new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME))
+      )
+      expect((serverTimeInstance as InstanceElement)?.value?.serverTime)
+        .toEqual(new Date(1000).toJSON())
+      expect(getChangedObjectsMock).not.toHaveBeenCalled()
+    })
+
+    describe('getChangedObjects', () => {
+      beforeEach(() => {
+        getElementMock.mockResolvedValue(new InstanceElement(
+          ElemID.CONFIG_NAME,
+          new ObjectType({ elemID: new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME) }),
+          {
+            serverTime: '1970-01-01T00:00:00.500Z',
+          }
+        ))
+
+        const suiteAppClient = {
+          getSystemInformation: getSystemInformationMock,
+        } as unknown as SuiteAppClient
+
+        adapter = new NetsuiteAdapter({
+          client: new NetsuiteClient(client, suiteAppClient),
+          elementsSource,
+          filtersCreators: [firstDummyFilter, secondDummyFilter],
+          config: {
+            ...config,
+            [FETCH_TARGET]: {
+              types: {
+                workflow: ['.*'],
+              },
+              filePaths: [],
+            },
+          },
+          getElemIdFunc: mockGetElemIdFunc,
+        })
+      })
+      it('should call getChangedObjects with the right date range', async () => {
+        await adapter.fetch(mockFetchOpts)
+        expect(getElementMock).toHaveBeenCalledWith(new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME))
+        expect(getChangedObjectsMock).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.any(Object),
+          expect.objectContaining({
+            start: new Date('1970-01-01T00:00:00.500Z'),
+            end: new Date(1000),
+          }),
+          expect.any(Object),
+        )
+      })
+
+      it('should pass the received query to the client', async () => {
+        const getCustomObjectsMock = jest.spyOn(client, 'getCustomObjects')
+        await adapter.fetch(mockFetchOpts)
+
+        const passedQuery = getCustomObjectsMock.mock.calls[0][1]
+        expect(passedQuery.isObjectMatch({ scriptId: 'aaaa', type: 'workflow' })).toBeTruthy()
+        expect(passedQuery.isObjectMatch({ scriptId: 'bbbb', type: 'workflow' })).toBeFalsy()
+      })
+
+      it('should not call getChangedObjectsMock if server time instance is invalid', async () => {
+        getElementMock.mockResolvedValue(new InstanceElement(
+          ElemID.CONFIG_NAME,
+          new ObjectType({ elemID: new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME) }),
+          {}
+        ))
+        await adapter.fetch(mockFetchOpts)
+        expect(getElementMock).toHaveBeenCalledWith(new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME))
+        expect(getChangedObjectsMock).not.toHaveBeenCalled()
+      })
     })
   })
 })

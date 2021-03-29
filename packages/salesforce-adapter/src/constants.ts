@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { client as clientUtils } from '@salto-io/adapter-utils'
+import { client as clientUtils } from '@salto-io/adapter-components'
 
 export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
@@ -311,6 +311,9 @@ export const WORKFLOW_TASK_METADATA_TYPE = 'WorkflowTask'
 export const WEBLINK_METADATA_TYPE = 'WebLink'
 export const BUSINESS_HOURS_METADATA_TYPE = 'BusinessHoursSettings'
 export const SETTINGS_METADATA_TYPE = 'Settings'
+export const TERRITORY2_TYPE = 'Territory2'
+export const TERRITORY2_MODEL_TYPE = 'Territory2Model'
+export const TERRITORY2_RULE_TYPE = 'Territory2Rule'
 
 // Retrieve constants
 export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/

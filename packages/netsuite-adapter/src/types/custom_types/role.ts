@@ -140,38 +140,23 @@ export const role = new ObjectType({
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customrole[0-9a-z_]+' }),
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customrole’. */
-    name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    },
     centertype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING) /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the center custom type.   For information about other possible values, see role_centertype. */
-    issalesrole: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+    name: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING) /* Original type was single-select list */,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    }, /* Original description: This field accepts references to the string custom type. */
+    tfaduration: {
+      refType: createRefToElmWithValue(enums.tfaduration),
       annotations: {
       },
-    }, /* Original description: The default value is F. */
-    issupportrole: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-      annotations: {
-      },
-    }, /* Original description: The default value is F. */
-    iswebserviceonlyrole: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-      annotations: {
-      },
-    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the WEBSERVICES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. WEBSERVICES must be enabled for this field to appear in your account. */
-    restrictip: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-      annotations: {
-      },
-    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the IPADDRESSRULES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. IPADDRESSRULES must be enabled for this field to appear in your account. */
+    }, /* Original description: This field is mandatory when the tfarequired value is not equal to OFF.   For information about possible values, see tfaduration.   The default value is '0'. */
     employeerestriction: {
       refType: createRefToElmWithValue(enums.role_fullrestrictions),
       annotations: {
@@ -182,16 +167,76 @@ export const role = new ObjectType({
       annotations: {
       },
     }, /* Original description: This field is available when the employeerestriction value is not equal to any of the following lists or values: DEFAULTTOOWN, NONE.   The default value is F. */
+    ispartnerrole: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    issalesrole: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    issupportrole: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    issuerole: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      annotations: {
+      },
+    }, /* Original description: If this field appears in the project, you must reference the ISSUEDB feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ISSUEDB must be enabled for this field to appear in your account. */
     restricttimeandexpenses: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    employeeselectionunrestricted: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    isinactive: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    subsidiaryviewingallowed: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the SUBSIDIARIES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. SUBSIDIARIES must be enabled for this field to appear in your account. */
+    subsidiaryoption: {
+      refType: createRefToElmWithValue(enums.rolesubsidiaryoption),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see rolesubsidiaryoption.   The default value is 'ALL'.   If this field appears in the project, you must reference the SUBSIDIARIES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. SUBSIDIARIES must be enabled for this field to appear in your account. */
+    issinglesignononly: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    iswebserviceonlyrole: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the WEBSERVICES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. WEBSERVICES must be enabled for this field to appear in your account. */
     restrictbydevice: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    restrictip: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the IPADDRESSRULES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. IPADDRESSRULES must be enabled for this field to appear in your account. */
+    tfarequired: {
+      refType: createRefToElmWithValue(enums.tfarequired),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see tfarequired.   The default value is 'OFF'. */
     permissions: {
       refType: createRefToElmWithValue(role_permissions),
       annotations: {

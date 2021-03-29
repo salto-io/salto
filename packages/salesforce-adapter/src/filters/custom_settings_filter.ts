@@ -38,8 +38,12 @@ const logInvalidCustomSettings = async (
     (log.debug(`Did not fetch instances for Custom Setting - ${await apiName(settings.objectType)} cause ${settings.invalidIdFields} do not exist or are not queryable`)))
 )
 
-const filterCreator: FilterCreator = ({ client }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
+    if (!config.fetchProfile.shouldFetchAllCustomSettings()) {
+      return []
+    }
+
     const customSettingsObjects = elements
       .filter(isObjectType)
       .filter(isListCustomSettingsObject)

@@ -149,7 +149,7 @@ export const getApprovedChanges = async (
 
 // TODO: SALTO-770 CLI should mask secret credentials based on adapter definition
 const isPasswordInputType = (fieldName: string): boolean =>
-  ['token', 'password', 'tokenId', 'tokenSecret', 'consumerKey'].includes(fieldName)
+  ['token', 'password', 'tokenId', 'tokenSecret', 'consumerKey', 'suiteAppTokenId', 'suiteAppTokenSecret'].includes(fieldName)
 
 export const getFieldInputType = (fieldType: TypeElement, fieldName: string): string => {
   if (!isPrimitiveType(fieldType) || fieldType.primitive === PrimitiveTypes.UNKNOWN) {

@@ -364,8 +364,8 @@ def login(username, password, secret_key_2fa):
 
     # generate 2FA token and submit
     token2fa = pyotp.TOTP(secret_key_2fa).now()
-    webpage.find_element_by_xpath('//*[@id="n-id-component-17"]').send_keys(token2fa)
-    webpage.find_element_by_xpath('//*[@id="n-id-component-43"]').click()
+    webpage.find_element_by_xpath('//*[@id="n-id-component-20"]').send_keys(token2fa)
+    webpage.find_element_by_xpath('//*[@id="n-id-component-41"]').click()
     time.sleep(1)
 
 

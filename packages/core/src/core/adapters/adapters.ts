@@ -92,37 +92,41 @@ const filterElementsSourceAdapter = (
   has: async id => (id.adapter === adapter ? elementsSource.has(id) : false),
 })
 
+type AdapterConfigGetter = (
+  adapter: string, defaultValue?: InstanceElement
+) => Promise<InstanceElement | undefined>
+
 export const getAdaptersCreatorConfigs = async (
   adapters: ReadonlyArray<string>,
   credentials: Readonly<Record<string, InstanceElement>>,
-  config: Readonly<Record<string, InstanceElement>>,
+  getConfig: AdapterConfigGetter,
   workspaceElementsSource: ReadOnlyElementsSource,
   elemIdGetter?: ElemIdGetter,
 ): Promise<Record<string, AdapterOperationsContext>> => (
-  _.fromPairs(await Promise.all(adapters.map(
-    async adapter => {
-      const adapterConfig = config[adapter]
-      return ([adapter, {
+  Object.fromEntries(await Promise.all(adapters.map(
+    async adapter => [
+      adapter,
+      {
         credentials: credentials[adapter],
-        config: adapterConfig ?? await getDefaultAdapterConfig(adapter),
+        config: await getConfig(adapter, await getDefaultAdapterConfig(adapter)),
         elementsSource: filterElementsSourceAdapter(workspaceElementsSource, adapter),
         getElemIdFunc: elemIdGetter,
-      }])
-    }
+      },
+    ]
   )))
 )
 
 export const getAdapters = async (
   adapters: ReadonlyArray<string>,
   credentials: Readonly<Record<string, InstanceElement>>,
-  config: Readonly<Record<string, InstanceElement>>,
+  getConfig: AdapterConfigGetter,
   workspaceElementsSource: ReadOnlyElementsSource,
   elemIdGetter?: ElemIdGetter,
 ): Promise<Record<string, AdapterOperations>> =>
   initAdapters(await getAdaptersCreatorConfigs(
     adapters,
     credentials,
-    config,
+    getConfig,
     workspaceElementsSource,
     elemIdGetter
   ))

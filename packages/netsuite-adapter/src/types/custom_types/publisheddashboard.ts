@@ -145,6 +145,47 @@ const publisheddashboard_dashboards_dashboard_centercolumn_calendar = new Object
 
 publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_calendar)
 
+const publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters_parameterElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters_parameter')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters_parameter = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters_parameterElemID,
+  annotations: {
+  },
+  fields: {
+    id: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING) /* Original type was single-select list */,
+      annotations: {
+      },
+    }, /* Original description: This field accepts references to the scriptcustomfield custom type. */
+    value: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      annotations: {
+      },
+    }, /* Original description: This field accepts values of the custom field type specified in the id. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters_parameter)
+
+const publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parametersElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parametersElemID,
+  annotations: {
+  },
+  fields: {
+    parameter: {
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters_parameter)),
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters)
+
 const publisheddashboard_dashboards_dashboard_centercolumn_customportletElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_customportlet')
 
 const publisheddashboard_dashboards_dashboard_centercolumn_customportlet = new ObjectType({
@@ -162,6 +203,11 @@ const publisheddashboard_dashboards_dashboard_centercolumn_customportlet = new O
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    parameters: {
+      refType: createRefToElmWithValue(publisheddashboard_dashboards_dashboard_centercolumn_customportlet_parameters),
+      annotations: {
+      },
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -222,6 +268,129 @@ const publisheddashboard_dashboards_dashboard_centercolumn_customsearch = new Ob
 })
 
 publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_customsearch)
+
+const publisheddashboard_dashboards_dashboard_centercolumn_enhsnapshotsElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_enhsnapshots')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_enhsnapshots = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_enhsnapshotsElemID,
+  annotations: {
+  },
+  fields: {
+    isminimized: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    snapshot: {
+      refType: createRefToElmWithValue(enums.portlet_reportsnapshot_snapshot),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_snapshot. */
+    charttype: {
+      refType: createRefToElmWithValue(enums.portlet_reportsnapshot_charttype),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_charttype. */
+    backgroundtype: {
+      refType: createRefToElmWithValue(enums.portlet_reportsnapshot_backgroundtype),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_backgroundtype. */
+    hierarchylevel: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      annotations: {
+      },
+    },
+    charttheme: {
+      refType: createRefToElmWithValue(enums.portlet_reportsnapshot_charttheme),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_charttheme. */
+    periodrange: {
+      refType: createRefToElmWithValue(enums.portlet_reportsnapshot_reportperiodrange),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_reportperiodrange. */
+    daterange: {
+      refType: createRefToElmWithValue(enums.portlet_reportsnapshot_daterange),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_daterange. */
+    topx: {
+      refType: createRefToElmWithValue(enums.portlet_reportsnapshot_topx),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_topx. */
+    isgraph: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      annotations: {
+      },
+    },
+    compareperiodrange: {
+      refType: createRefToElmWithValue(enums.portlet_reportsnapshot_reportperiodrange),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_reportperiodrange. */
+    comparedaterange: {
+      refType: createRefToElmWithValue(enums.portlet_reportsnapshot_daterange),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_daterange. */
+    isnewdaterange: {
+      refType: createRefToElmWithValue(enums.portlet_reportsnapshot_daterange),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_daterange. */
+    custom: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      annotations: {
+      },
+    },
+    listtopx: {
+      refType: createRefToElmWithValue(enums.portlet_reportsnapshot_topx),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_topx. */
+    graphlayout: {
+      refType: createRefToElmWithValue(enums.portlet_reportsnapshot_graphlayout),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_graphlayout. */
+    orderby: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      annotations: {
+      },
+    },
+    orderdesc: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      annotations: {
+      },
+    },
+    color: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      annotations: {
+      },
+    },
+    customsnapshot: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      annotations: {
+      },
+    },
+    comparedranges: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      annotations: {
+      },
+    },
+    comparedaterange2: {
+      refType: createRefToElmWithValue(enums.portlet_reportsnapshot_daterange),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see portlet_reportsnapshot_daterange. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_enhsnapshots)
 
 const publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpiElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpi')
 
@@ -405,6 +574,159 @@ const publisheddashboard_dashboards_dashboard_centercolumn_kpireport = new Objec
 })
 
 publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_kpireport)
+
+const publisheddashboard_dashboards_dashboard_centercolumn_lastloginElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_lastlogin')
+
+const publisheddashboard_dashboards_dashboard_centercolumn_lastlogin = new ObjectType({
+  elemID: publisheddashboard_dashboards_dashboard_centercolumn_lastloginElemID,
+  annotations: {
+  },
+  fields: {
+    isminimized: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F. */
+    showlastlogin: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showlastotherservicelogin: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showlastuilogin: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showlastloginip: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showlastuiloginip: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showcurrentuilogin: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showcurrentuiloginip: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showsuccesstoday: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showsuccessthisweek: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showsuccessthismonth: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showlastfailuretime: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showlastfailureip: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showfailurestoday: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showfailuresthisweek: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showfailuresthismonth: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showpasswordchanged: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showpasswordexpiration: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showlastmobilelogin: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showlastmobileloginip: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showmobiletoday: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showmobilethisweek: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showmobilethismonth: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showlastwebservicelogin: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showlastwebserviceloginip: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showwebservicetoday: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showwebservicethisweek: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+    showwebservicethismonth: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
+})
+
+publisheddashboardInnerTypes.push(publisheddashboard_dashboards_dashboard_centercolumn_lastlogin)
 
 const publisheddashboard_dashboards_dashboard_centercolumn_listElemID = new ElemID(constants.NETSUITE, 'publisheddashboard_dashboards_dashboard_centercolumn_list')
 
@@ -920,6 +1242,11 @@ const publisheddashboard_dashboards_dashboard_centercolumn = new ObjectType({
       annotations: {
       },
     },
+    enhsnapshots: {
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_enhsnapshots)),
+      annotations: {
+      },
+    },
     keyperformanceindicators: {
       refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators)),
       annotations: {
@@ -932,6 +1259,11 @@ const publisheddashboard_dashboards_dashboard_centercolumn = new ObjectType({
     },
     kpireport: {
       refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_kpireport)),
+      annotations: {
+      },
+    },
+    lastlogin: {
+      refType: createRefToElmWithValue(new ListType(publisheddashboard_dashboards_dashboard_centercolumn_lastlogin)),
       annotations: {
       },
     },
@@ -1140,12 +1472,12 @@ export const publisheddashboard = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custpubdashboard’. */
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING) /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 30,
       },
-    }, /* Original description: This field value can be up to 30 characters long. */
+    }, /* Original description: This field value can be up to 30 characters long.   This field accepts references to the string custom type. */
     center: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
@@ -1163,11 +1495,11 @@ export const publisheddashboard = new ObjectType({
       },
     }, /* Original description: The default value is F. */
     notes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING) /* Original type was single-select list */,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 4000,
       },
-    }, /* Original description: This field value can be up to 4000 characters long. */
+    }, /* Original description: This field value can be up to 4000 characters long.   This field accepts references to the string custom type. */
     dashboards: {
       refType: createRefToElmWithValue(publisheddashboard_dashboards),
       annotations: {

@@ -17,7 +17,7 @@ import {
   createEnvUtils, CredsSpec, SaltoE2EJestEnvironment, JestEnvironmentConstructorArgs,
 } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
-import { Credentials } from '../src/client/client'
+import { Credentials } from '../src/client/credentials'
 
 
 const log = logger(module)

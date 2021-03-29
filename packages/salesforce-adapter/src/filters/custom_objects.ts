@@ -151,10 +151,14 @@ const annotationTypesForObject = (typesFromInstance: TypesFromInstance,
   return annotationTypes
 }
 
-const getObjectDirectoryPath = (obj: ObjectType, namespace?: string): string[] => {
+export const getObjectDirectoryPath = async (
+  obj: ObjectType,
+  namespace?: string,
+): Promise<string[]> => {
   const objFileName = pathNaclCase(obj.elemID.name)
-  if (namespace) {
-    return [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, objFileName]
+  const objNamespace = namespace ?? await getNamespace(obj)
+  if (objNamespace) {
+    return [SALESFORCE, INSTALLED_PACKAGES_PATH, objNamespace, OBJECTS_PATH, objFileName]
   }
   return [SALESFORCE, OBJECTS_PATH, objFileName]
 }
@@ -412,10 +416,7 @@ const createObjectType = async ({
   addApiName(object, name)
   addMetadataType(object)
   addLabel(object, label)
-  object.path = [
-    ...getObjectDirectoryPath(object, await getNamespace(object)),
-    pathNaclCase(object.elemID.name),
-  ]
+  object.path = [...await getObjectDirectoryPath(object), pathNaclCase(object.elemID.name)]
   if (!_.isUndefined(fields)) {
     const getCompoundTypeName = (nestedFields: SObjField[], compoundName: string): string => {
       if (compoundName === COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME) {
@@ -540,23 +541,23 @@ const hasCustomObjectParent = async (instance: InstanceElement): Promise<boolean
   dependentMetadataTypes.has(await metadataType(instance))
 
 const fixDependentInstancesPathAndSetParent = async (elements: Element[]): Promise<void> => {
-  const setDependingInstancePath = async (instance: InstanceElement, customObject: ObjectType):
-    Promise<void> => {
-    if (customObject.path) {
-      instance.path = [
-        ...customObject.path.slice(0, -1),
-        ...(workflowDependentMetadataTypes.has(instance.elemID.typeName)
-          ? [WORKFLOW_DIR_NAME,
-            pathNaclCase(
-              strings.capitalizeFirstLetter(
-                WORKFLOW_TYPE_TO_FIELD[instance.elemID.typeName] ?? instance.elemID.typeName
-              )
-            )]
-          : [pathNaclCase(instance.elemID.typeName)]),
-        ...((await apiNameParts(instance)).length > 1
-          ? [pathNaclCase(instance.elemID.name)] : []),
-      ]
-    }
+  const setDependingInstancePath = async (
+    instance: InstanceElement,
+    customObject: ObjectType,
+  ): Promise<void> => {
+    instance.path = [
+      ...await getObjectDirectoryPath(customObject),
+      ...(workflowDependentMetadataTypes.has(instance.elemID.typeName)
+        ? [WORKFLOW_DIR_NAME,
+          pathNaclCase(
+            strings.capitalizeFirstLetter(
+              WORKFLOW_TYPE_TO_FIELD[instance.elemID.typeName] ?? instance.elemID.typeName
+            )
+          )]
+        : [pathNaclCase(instance.elemID.typeName)]),
+      ...((await apiNameParts(instance)).length > 1
+        ? [pathNaclCase(instance.elemID.name)] : []),
+    ]
   }
 
   const apiNameToCustomObject = await generateApiNameToCustomObject(elements)

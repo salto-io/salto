@@ -16,4 +16,4 @@
 export { default } from './src/adapter'
 export { adapter } from './src/adapter_creator'
 export { credsLease } from './e2e_test/adapter'
-export { Credentials } from './src/client/client'
+export { Credentials } from './src/client/credentials'

@@ -173,12 +173,12 @@ export const workbook = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custworkbook’. */
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING) /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 50,
       },
-    }, /* Original description: This field value can be up to 50 characters long. */
+    }, /* Original description: This field value can be up to 50 characters long.   This field accepts references to the string custom type. */
     definition: {
       refType: createRefToElmWithValue(fieldTypes.cdata),
       annotations: {

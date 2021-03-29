@@ -111,7 +111,7 @@ export const deploy = async (
   const adapters = await getAdapters(
     services,
     await workspace.servicesCredentials(services),
-    await workspace.servicesConfig(services),
+    workspace.serviceConfig.bind(workspace),
     await workspace.elements()
   )
 
@@ -192,7 +192,7 @@ export const fetch: FetchFunc = async (
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
     await workspace.servicesCredentials(services),
-    await workspace.servicesConfig(services),
+    workspace.serviceConfig.bind(workspace),
     await workspace.elements(),
     await createElemIdGetter(
       await workspace.state().getAll(),
@@ -214,6 +214,7 @@ export const fetch: FetchFunc = async (
       adapters,
       await workspace.elements(),
       workspace.state(),
+      stateElementsNotCoveredByFetch,
       currentConfigs,
       progressEmitter,
     )
@@ -323,7 +324,7 @@ export const addAdapter = async (
   const adapter = getAdapterCreator(adapterName)
   await workspace.addService(adapterName)
 
-  if (_.isUndefined((await workspace.servicesConfig([adapterName]))[adapterName])) {
+  if (_.isUndefined((await workspace.serviceConfig(adapterName)))) {
     const defaultConfig = await getDefaultAdapterConfig(adapterName)
     if (!_.isUndefined(defaultConfig)) {
       await workspace.updateServiceConfig(adapterName, defaultConfig)

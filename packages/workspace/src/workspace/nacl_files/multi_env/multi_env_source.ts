@@ -79,7 +79,7 @@ export type MultiEnvSource = Omit<NaclFilesSource<Change[]>, 'getAll' | 'getElem
   getAll: (env?: string) => Promise<AsyncIterable<Element>>
   promote: (ids: ElemID[]) => Promise<void>
   getElementIdsBySelectors: (selectors: ElementSelector[],
-    commonOnly?: boolean) => Promise<AsyncIterable<ElemID>>
+    commonOnly?: boolean, validateDeterminedSelectors?: boolean) => Promise<AsyncIterable<ElemID>>
   demote: (ids: ElemID[]) => Promise<void>
   demoteAll: () => Promise<void>
   copyTo: (ids: ElemID[], targetEnvs?: string[]) => Promise<void>
@@ -250,11 +250,20 @@ const buildMultiEnvSource = (
   const getElementsFromSource = async (source: NaclFilesSource):
     Promise<AsyncIterable<ElemID>> => awu((await source.list()))
 
-  const getElementIdsBySelectors = async (selectors: ElementSelector[],
-    commonOnly = false): Promise<AsyncIterable<ElemID>> => {
+  const getElementIdsBySelectors = async (
+    selectors: ElementSelector[],
+    commonOnly = false,
+    validateDeterminedSelectors = false,
+  ): Promise<AsyncIterable<ElemID>> => {
     const relevantSource = commonOnly ? commonSource() : primarySource()
     const elementsFromSource = await getElementsFromSource(relevantSource)
-    return selectElementIdsByTraversal(selectors, elementsFromSource, relevantSource)
+    return selectElementIdsByTraversal(
+      selectors,
+      elementsFromSource,
+      relevantSource,
+      false,
+      validateDeterminedSelectors,
+    )
   }
 
   const promote = async (ids: ElemID[]): Promise<void> => {

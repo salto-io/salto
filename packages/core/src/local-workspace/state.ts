@@ -115,7 +115,7 @@ export const localState = (
     await stateData.servicesUpdateDate.setAll(awu(
       Object.entries(updateDatesByService).map(([key, value]) => ({ key, value }))
     ))
-    const currentVersion = semver.minSatisfying(versions, '*') || undefined
+    const currentVersion = semver.minSatisfying(versions, '*') ?? undefined
     if (currentVersion) {
       await stateData.saltoMetadata.set('version', currentVersion)
     }
@@ -224,6 +224,7 @@ export const localState = (
         await rm(pathToClean)
       }
       await inMemState.setHash(getHashFromContent(filePathToContent.map(e => e[1])))
+      await inMemState.setVersion(version)
       await inMemState.flush()
       log.debug('finish flushing state')
     },

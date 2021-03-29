@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
 import {
   ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, AdapterOperations, Element,
@@ -132,6 +133,7 @@ describe('fetch', () => {
           createElementSource([]),
           createElementSource([]),
           [],
+          [],
         )
         expect(fetchChangesResult.mergeErrors).toHaveLength(1)
       })
@@ -147,6 +149,7 @@ describe('fetch', () => {
             createInMemoryElementSource([newTypeBaseModified, typeWithField]),
             createInMemoryElementSource([]),
             [],
+            [],
           )
           expect(Array.from(fetchChangesResult.changes).length).toBe(0)
         })
@@ -159,6 +162,7 @@ describe('fetch', () => {
             mockAdapters,
             createInMemoryElementSource([]),
             createInMemoryElementSource([newTypeBase, typeWithField]),
+            [],
             [],
           )
           expect(fetchChangesResult.elements).toEqual([newTypeBaseModified, typeWithField])
@@ -174,13 +178,14 @@ describe('fetch', () => {
             createInMemoryElementSource([newTypeBaseModified, typeWithField]),
             createInMemoryElementSource([]),
             [],
+            [],
           )
           const resultChanges = Array.from(fetchChangesResult.changes)
           expect(resultChanges.length).toBe(1)
           expect(resultChanges[0].change.action).toBe('remove')
         })
 
-        it('should return the only the service elements', async () => {
+        it('should return only the service elements', async () => {
           mockAdapters.dummy.fetch.mockResolvedValueOnce(
             { elements: [newTypeBaseModified], isPartial: false },
           )
@@ -188,6 +193,7 @@ describe('fetch', () => {
             mockAdapters,
             createInMemoryElementSource([]),
             createInMemoryElementSource([newTypeBase, typeWithField]),
+            [],
             [],
           )
           expect(fetchChangesResult.elements).toEqual([newTypeBaseModified])
@@ -230,6 +236,7 @@ describe('fetch', () => {
           createInMemoryElementSource([beforeElement, workspaceReferencedElement]),
           createInMemoryElementSource([beforeElement, stateReferencedElement]),
           [],
+          [],
         )
 
         const resultChanges = Array.from(fetchChangesResult.changes)
@@ -270,6 +277,7 @@ describe('fetch', () => {
               new ObjectType({ elemID: new ElemID('dummy2', 'type') }),
             ]),
             createInMemoryElementSource([]),
+            [],
             [],
           )
           const resultChanges = Array.from(fetchChangesResult.changes)
@@ -322,7 +330,11 @@ describe('fetch', () => {
       })
       it('should return config change plan when there is no current config', async () => {
         const fetchChangesResult = await fetchChanges(
-          mockAdapters, createElementSource([]), createElementSource([]), [],
+          mockAdapters,
+          createElementSource([]),
+          createElementSource([]),
+          [],
+          [],
         )
         verifyPlan(
           fetchChangesResult.configChanges,
@@ -339,6 +351,7 @@ describe('fetch', () => {
           mockAdapters,
           createElementSource([]),
           createElementSource([]),
+          [],
           [currentInstanceConfig],
         )
         verifyPlan(
@@ -353,7 +366,11 @@ describe('fetch', () => {
 
       it('should return empty plan when there is no change', async () => {
         const fetchChangesResult = await fetchChanges(
-          mockAdapters, createElementSource([]), createElementSource([]), [configInstance],
+          mockAdapters,
+          createElementSource([]),
+          createElementSource([]),
+          [],
+          [configInstance],
         )
         expect([...fetchChangesResult.configChanges.itemsByEvalOrder()]).toHaveLength(0)
       })
@@ -381,6 +398,7 @@ describe('fetch', () => {
                 mockAdapters,
                 createElementSource([]),
                 createElementSource([dupTypeBase]),
+                [],
                 []
               )
               expect(false).toBeTruthy()
@@ -406,7 +424,9 @@ describe('fetch', () => {
           fetchChangesResult = await fetchChanges(
             mockAdapters,
             createElementSource([]),
-            createElementSource([]), []
+            createElementSource([]),
+            [],
+            [],
           )
         })
         it('should return errors', async () => {
@@ -439,6 +459,7 @@ describe('fetch', () => {
           mockAdapters,
           createElementSource([newTypeMerged, hiddenInstance]),
           createElementSource([newTypeMerged, hiddenInstance]),
+          [],
           [],
         )
         elements = result.elements
@@ -473,6 +494,7 @@ describe('fetch', () => {
           createElementSource([typeWithField, hiddenInstance]),
           createElementSource([typeWithField, hiddenInstance]),
           [],
+          [],
         )
         changes = [...result.changes]
       })
@@ -506,6 +528,7 @@ describe('fetch', () => {
             elementSource.createInMemoryElementSource([]),
             elementSource.createInMemoryElementSource([]),
             [],
+            [],
             progressEmitter
           )
           changes = [...result.changes]
@@ -526,6 +549,7 @@ describe('fetch', () => {
             mockAdapters,
             elementSource.createInMemoryElementSource([]),
             elementSource.createInMemoryElementSource([]),
+            [],
             [],
             progressEmitter
           )
@@ -549,6 +573,7 @@ describe('fetch', () => {
           mockAdapters,
           createElementSource([]),
           createElementSource([]),
+          [],
           [],
         )
         changes = [...result.changes]
@@ -578,6 +603,7 @@ describe('fetch', () => {
               mockAdapters,
               createElementSource([newTypeBaseWPath]),
               createElementSource([newTypeBaseWPath]),
+              [],
               [],
             )
             changes = [...result.changes]
@@ -615,6 +641,7 @@ describe('fetch', () => {
               createElementSource([newTypeA]),
               createElementSource([newTypeA]),
               [],
+              [],
             )
             changes = [...result.changes]
           })
@@ -639,6 +666,7 @@ describe('fetch', () => {
             createElementSource([typeWithFieldChange]),
             createElementSource([typeWithField]),
             [],
+            [],
           )
           changes = [...result.changes]
         })
@@ -657,6 +685,7 @@ describe('fetch', () => {
             createElementSource([typeWithFieldConflict]),
             createElementSource([typeWithField]),
             [],
+            [],
           )
           changes = [...result.changes]
         })
@@ -674,6 +703,7 @@ describe('fetch', () => {
             mockAdapters,
             createElementSource([]),
             createElementSource([typeWithField]),
+            [],
             [],
           )
           changes = [...result.changes]
@@ -867,6 +897,7 @@ describe('fetch', () => {
           createElementSource([]),
           createElementSource([]),
           [],
+          [],
         )
         changes = [...result.changes]
       })
@@ -899,8 +930,165 @@ describe('fetch', () => {
           createElementSource([]),
           createElementSource([]),
           [],
+          [],
         )
         expect(await awu(instancesPassed).toArray()).toEqual([hiddenInstance])
+      })
+    })
+  })
+
+  describe('fetchChanges with postFetch', () => {
+    const mockAdapters = {
+      dummy: {
+        fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
+        deploy: mockFunction<AdapterOperations['deploy']>(),
+        postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue(),
+      },
+    }
+    describe('fetch is partial', () => {
+      it('should call postFetch with the state and service elements combined in elementsByAdapter, but only the fetched elements in currentAdapterElements', async () => {
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          { elements: [newTypeBaseModified], isPartial: true },
+        )
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters,
+          createElementSource([typeWithField]),
+          createElementSource([newTypeBase, typeWithField]),
+          [],
+          [],
+        )
+        expect(fetchChangesResult.elements).toEqual([newTypeBaseModified, typeWithField])
+        expect(mockAdapters.dummy.postFetch).toHaveBeenCalledWith({
+          currentAdapterElements: expect.arrayContaining([
+            newTypeBaseModified,
+          ]),
+          elementsByAdapter: {
+            dummy: expect.arrayContaining([
+              newTypeBaseModified,
+              typeWithField,
+            ]),
+          },
+        })
+      })
+    })
+    describe('fetch is not partial', () => {
+      it('should call postFetch with only the service elements', async () => {
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          { elements: [newTypeBaseModified], isPartial: false },
+        )
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters,
+          createElementSource([]),
+          createElementSource([newTypeBase, typeWithField]),
+          [],
+          [],
+        )
+        expect(fetchChangesResult.elements).toEqual([newTypeBaseModified])
+        expect(mockAdapters.dummy.postFetch).toHaveBeenCalledWith({
+          currentAdapterElements: expect.arrayContaining([
+            newTypeBaseModified,
+          ]),
+          elementsByAdapter: {
+            dummy: expect.arrayContaining([
+              newTypeBaseModified,
+            ]),
+          },
+        })
+      })
+    })
+
+    describe('multiple adapters', () => {
+      const dummy1 = new ObjectType({ elemID: new ElemID('dummy1', 'type') })
+      const dummy2 = new ObjectType({ elemID: new ElemID('dummy2', 'type') })
+      const dummy3 = new ObjectType({ elemID: new ElemID('dummy3', 'type') })
+      const dummy1Type1 = new ObjectType({ elemID: new ElemID('dummy1', 'd1t1'), fields: {} })
+      const dummy2Type1 = new ObjectType({ elemID: new ElemID('dummy2', 'd2t1'), fields: {} })
+      const dummy3Type1 = new ObjectType({ elemID: new ElemID('dummy3', 'd3t1'), fields: {} })
+      const adapters = {
+        dummy1: {
+          fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy1Type1], isPartial: true }),
+          deploy: mockFunction<AdapterOperations['deploy']>(),
+        },
+        dummy2: {
+          fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy2Type1], isPartial: false }),
+          deploy: mockFunction<AdapterOperations['deploy']>(),
+          postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue(),
+        },
+        dummy3: {
+          fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy3Type1], isPartial: false }),
+          deploy: mockFunction<AdapterOperations['deploy']>(),
+          postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue(),
+        },
+      }
+      beforeEach(() => {
+        jest.clearAllMocks()
+      })
+
+      it('should call postFetch for all relevant adapters when all are fetched', async () => {
+        await fetchChanges(
+          adapters,
+          createElementSource([]),
+          createElementSource([dummy1, dummy2, dummy3]),
+          [],
+          [],
+        )
+        expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
+          currentAdapterElements: expect.arrayContaining([dummy2Type1]),
+          elementsByAdapter: {
+            dummy1: expect.arrayContaining([dummy1, dummy1Type1]),
+            dummy2: expect.arrayContaining([dummy2Type1]),
+            dummy3: expect.arrayContaining([dummy3Type1]),
+          },
+        })
+        expect(adapters.dummy3.postFetch).toHaveBeenCalledWith({
+          currentAdapterElements: expect.arrayContaining([dummy3Type1]),
+          elementsByAdapter: {
+            dummy1: expect.arrayContaining([dummy1Type1, dummy1]),
+            dummy2: expect.arrayContaining([dummy2Type1]),
+            dummy3: expect.arrayContaining([dummy3Type1]),
+          },
+        })
+      })
+      it('should call postFetch only for fetched adapters (with postFetch defined) when not all are fetched', async () => {
+        await fetchChanges(
+          _.pick(adapters, ['dummy1', 'dummy2']),
+          createElementSource([]),
+          createElementSource([dummy1, dummy2]),
+          [dummy3],
+          [],
+        )
+        expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
+          currentAdapterElements: expect.arrayContaining([dummy2Type1]),
+          elementsByAdapter: {
+            // dummy1 is partial so it also includes elements from the workspace
+            dummy1: expect.arrayContaining([dummy1Type1, dummy1]),
+            dummy2: expect.arrayContaining([dummy2Type1]),
+            // dummy3 was not fetched so it includes only elements from the workspace
+            dummy3: expect.arrayContaining([dummy3]),
+          },
+        })
+        expect(adapters.dummy3.postFetch).not.toHaveBeenCalled()
+      })
+      it('should not fail on errors', async () => {
+        adapters.dummy2.postFetch.mockImplementationOnce(() => { throw new Error(' failure') })
+        await expect(fetchChanges(
+          _.pick(adapters, ['dummy1', 'dummy2']),
+          createElementSource([]),
+          createElementSource([dummy1, dummy2]),
+          [dummy3],
+          [],
+        )).resolves.not.toThrow()
+        expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
+          currentAdapterElements: expect.arrayContaining([dummy2Type1]),
+          elementsByAdapter: {
+            // dummy1 is partial so it also includes elements from the workspace
+            dummy1: expect.arrayContaining([dummy1Type1, dummy1]),
+            dummy2: expect.arrayContaining([dummy2Type1]),
+            // dummy3 was not fetched so it includes only elements from the workspace
+            dummy3: expect.arrayContaining([dummy3]),
+          },
+        })
+        expect(adapters.dummy3.postFetch).not.toHaveBeenCalled()
       })
     })
   })

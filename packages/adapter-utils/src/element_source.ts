@@ -16,28 +16,45 @@
 import { ReadOnlyElementsSource, Element, ElemID } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
-export const buildElementsSourceFromElements = (elements: ReadonlyArray<Element>):
-  ReadOnlyElementsSource => {
+export const buildElementsSourceFromElements = (
+  elements: ReadonlyArray<Element>,
+  fallbackSource?: ReadOnlyElementsSource
+): ReadOnlyElementsSource => {
   const elementsMap = _.keyBy(elements, e => e.elemID.getFullName())
+  const isIDInElementsMap = (id: ElemID): boolean => id.getFullName() in elementsMap
+
+  async function *getIds(): AsyncIterable<ElemID> {
+    for (const element of elements) {
+      yield element.elemID
+    }
+    if (fallbackSource === undefined) {
+      return
+    }
+    for await (const elemID of await fallbackSource.list()) {
+      if (!isIDInElementsMap(elemID)) {
+        yield elemID
+      }
+    }
+  }
+
+  async function *getElements(): AsyncIterable<Element> {
+    for (const element of elements) {
+      yield element
+    }
+    if (fallbackSource === undefined) {
+      return
+    }
+    for await (const element of await fallbackSource.getAll()) {
+      if (!isIDInElementsMap(element.elemID)) {
+        yield element
+      }
+    }
+  }
 
   return {
-    getAll: async () => {
-      async function *getElements(): AsyncIterable<Element> {
-        for (const element of elements) {
-          yield element
-        }
-      }
-      return getElements()
-    },
-    get: async id => elementsMap[id.getFullName()],
-    list: async () => {
-      async function *getIds(): AsyncIterable<ElemID> {
-        for (const element of elements) {
-          yield element.elemID
-        }
-      }
-      return getIds()
-    },
-    has: async id => id.getFullName() in elementsMap,
+    getAll: async () => getElements(),
+    get: async id => elementsMap[id.getFullName()] ?? fallbackSource?.get(id),
+    list: async () => getIds(),
+    has: async id => isIDInElementsMap(id) || (fallbackSource?.has(id) ?? false),
   }
 }

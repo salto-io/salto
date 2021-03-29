@@ -60,7 +60,6 @@ describe('SalesforceAdapter fetch', () => {
     ({ connection, adapter } = mockAdapter({
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
-        metadataAdditionalTypes: [],
         config: {
           fetch: {
             metadata: {
@@ -959,7 +958,6 @@ public class MyClass${index} {
         const { connection: connectionMock, adapter: adapterMock } = mockAdapter({
           adapterParams: {
             getElemIdFunc: mockGetElemIdFunc,
-            metadataAdditionalTypes: [],
             config: {},
           },
         })

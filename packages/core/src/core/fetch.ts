@@ -20,18 +20,14 @@ import { Element, ElemID, AdapterOperations, ReferenceMap, Values, ServiceIds, B
 import { applyInstancesDefaults, resolvePath, flattenElementStr } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger, elementSource } from '@salto-io/workspace'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises, types } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
-import {
-  AdapterEvents,
-  createAdapterProgressReporter,
-} from './adapters/progress'
+import { AdapterEvents, createAdapterProgressReporter } from './adapters/progress'
 import { IDFilter } from './plan/plan'
 
 const { awu } = collections.asynciterable
 const { mergeElements } = merger
-
 const log = logger(module)
 
 export type FetchChange = {
@@ -220,9 +216,59 @@ type UpdatedConfig = {
   message: string
 }
 
+type AdapterOperationsWithPostFetch = types.PickyRequired<AdapterOperations, 'postFetch'>
+
+const isAdapterOperationsWithPostFetch = (
+  v: AdapterOperations
+): v is AdapterOperationsWithPostFetch => (
+  v.postFetch !== undefined
+)
+
+const runPostFetch = async (
+  adapters: Record<string, AdapterOperationsWithPostFetch>,
+  serviceElements: Element[],
+  stateElementsByAdapter: Record<string, ReadonlyArray<Element>>,
+  partiallyFetchedAdapters: Set<string>,
+): Promise<void> => {
+  const serviceElementsByAdapter = _.groupBy(serviceElements, e => e.elemID.adapter)
+
+  const getAdapterElements = (adapterName: string): ReadonlyArray<Element> => {
+    if (!partiallyFetchedAdapters.has(adapterName)) {
+      return serviceElementsByAdapter[adapterName] ?? stateElementsByAdapter[adapterName]
+    }
+    const fetchedIDs = new Set(
+      serviceElementsByAdapter[adapterName].map(e => e.elemID.getFullName())
+    )
+    const missingElements = stateElementsByAdapter[adapterName].filter(
+      e => !fetchedIDs.has(e.elemID.getFullName())
+    )
+    return [
+      ...serviceElementsByAdapter[adapterName],
+      ...missingElements,
+    ]
+  }
+
+  const elementsByAdapter = Object.fromEntries(
+    [...new Set([
+      ...Object.keys(stateElementsByAdapter),
+      ...Object.keys(serviceElementsByAdapter),
+    ])].map(adapterName => [adapterName, getAdapterElements(adapterName)])
+  )
+  // only modifies elements in-place, done sequentially to avoid race conditions
+  await promises.array.series(
+    Object.entries(adapters).map(([adapterName, adapter]) => async () => (
+      adapter.postFetch({
+        currentAdapterElements: serviceElementsByAdapter[adapterName],
+        elementsByAdapter,
+      })
+    ))
+  )
+}
+
 const fetchAndProcessMergeErrors = async (
   adapters: Record<string, AdapterOperations>,
-  stateElements: elementSource.ElementsSource,
+  filteredStateElements: elementSource.ElementsSource,
+  otherStateElements: ReadonlyArray<Element>,
   getChangesEmitter: StepEmitter,
   progressEmitter?: EventEmitter<FetchProgressEvents>
 ):
@@ -252,6 +298,7 @@ const fetchAndProcessMergeErrors = async (
           }
         })
     )
+
     const serviceElements = _.flatten(fetchResults.map(res => res.elements))
     const updatedConfigs = fetchResults
       .map(res => res.updatedConfig)
@@ -264,7 +311,35 @@ const fetchAndProcessMergeErrors = async (
     )
 
     log.debug(`fetched ${serviceElements.length} elements from adapters`)
+
+    const adaptersWithPostFetch = _.pickBy(adapters, isAdapterOperationsWithPostFetch)
+    if (!_.isEmpty(adaptersWithPostFetch)) {
+      try {
+        const stateElementsByAdapter = _.groupBy(
+          // TODO: Fix this in the next iteration
+          [...await awu(await filteredStateElements.getAll()).toArray(), ...otherStateElements],
+          e => e.elemID.adapter,
+        )
+        // update elements based on fetch results from other services
+        await runPostFetch(
+          adaptersWithPostFetch,
+          serviceElements,
+          stateElementsByAdapter,
+          partiallyFetchedAdapters,
+        )
+        log.debug('ran post-fetch in the following adapters: %s', Object.keys(adaptersWithPostFetch))
+      } catch (e) {
+        // failures in this step should never fail the fetch
+        log.error(`failed to run postFetch: ${e}, stack: ${e.stack}`)
+      }
+    }
+
     const { errors: mergeErrors, merged: elements } = await mergeElements(awu(serviceElements))
+    // applyInstancesDefaults(elements.filter(isInstanceElement))
+    // log.debug(`got ${serviceElements.length} from merge results and
+    // elements and to ${elements.length} elements [errors=${
+    //   mergeErrors.length}]`)
+
     // We need to think about printing the size of it :/
     // log.debug(`got ${serviceElements.length} from merge
     // results and elements and to ${elements.length}
@@ -274,7 +349,7 @@ const fetchAndProcessMergeErrors = async (
     const processErrorsResult = await processMergeErrors(
       applyInstancesDefaults(elements.values()),
       mergeErrorsArr,
-      stateElements
+      filteredStateElements,
     )
 
     const droppedElements = new Set(
@@ -359,6 +434,7 @@ export const fetchChanges = async (
   adapters: Record<string, AdapterOperations>,
   workspaceElements: elementSource.ElementsSource,
   stateElements: elementSource.ElementsSource,
+  otherStateElements: ReadonlyArray<Element>,
   currentConfigs: InstanceElement[],
   progressEmitter?: EventEmitter<FetchProgressEvents>
 ): Promise<FetchChangesResult> => {
@@ -372,6 +448,7 @@ export const fetchChanges = async (
   } = await fetchAndProcessMergeErrors(
     adapters,
     stateElements,
+    otherStateElements,
     getChangesEmitter,
     progressEmitter
   )

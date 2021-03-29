@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import {
   CORE_ANNOTATIONS, Element, isInstanceElement, isType, TypeElement, getField, DetailedChange,
   isRemovalChange, ElemID, isObjectType, ObjectType, Values, isRemovalOrModificationChange,
-  isAdditionOrModificationChange, isElement, isField,
+  isAdditionOrModificationChange, isElement, isField, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc, transformValues, applyFunctionToChangeData, elementAnnotationTypes } from '@salto-io/adapter-utils'
 import { mergeElements, MergeResult } from '../merger'
@@ -427,6 +427,10 @@ const filterOutHiddenChanges = async (
       if (isHiddenField(changeType, changePath, isInstanceElement(baseElem))) {
         // The change is inside a hidden field value, omit the change
         return undefined
+      }
+
+      if (isReferenceExpression(change.data.after)) {
+        return change
       }
 
       const fieldType = changeType && getField(changeType, changePath)?.type

@@ -342,32 +342,30 @@ const buildMultiEnvSource = (
   }
 
   const getErrors = async (): Promise<Errors> => {
-
     const rebaseSrcErrorsPaths = (prefix: string, errors: Errors): Errors => new Errors({
-        ...errors,
-        parse: errors.parse.map(err => ({
-          ...err,
-          subject: {
-            ...err.subject,
-            filename: buidFullPath(prefix, err.subject.filename),
-          },
-          context: err.context && {
-            ...err.context,
-            filename: buidFullPath(prefix, err.context.filename),
-          },
-        })
-      )
+      ...errors,
+      parse: errors.parse.map(err => ({
+        ...err,
+        subject: {
+          ...err.subject,
+          filename: buidFullPath(prefix, err.subject.filename),
+        },
+        context: err.context && {
+          ...err.context,
+          filename: buidFullPath(prefix, err.context.filename),
+        },
+      })),
     })
-    
+
     const currentState = await getState()
     const [srcErrors, mergeErrors] = await Promise.all([
       Promise.all(
         _.entries(getActiveSources()).map(async ([prefix, source]) => rebaseSrcErrorsPaths(
           prefix,
           await source.getErrors(),
-        )
-      )),
-      awu(currentState.mergeErrors.values()).flat().toArray()
+        ))
+      ),
+      awu(currentState.mergeErrors.values()).flat().toArray(),
     ])
     return new Errors(_.reduce(srcErrors, (acc, errors) => ({
       ...acc,

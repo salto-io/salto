@@ -507,11 +507,11 @@ export const loadWorkspace = async (
     const currentState = await getWorkspaceState()
     const loadNaclFileSource = await getLoadedNaclFilesSource()
     // It is important to make sure these are obtain using Promise.all in order to allow
-    // the SaaS UI to debouce the DB accesses. 
+    // the SaaS UI to debouce the DB accesses.
     const [errorsFromSource, validationErrors, mergeErrors] = await Promise.all([
       loadNaclFileSource.getErrors(),
       awu(currentState.validationErrors.values()).flat().toArray(),
-      awu(currentState.errors.values()).flat().toArray()
+      awu(currentState.errors.values()).flat().toArray(),
     ])
     _(validationErrors)
       .groupBy(error => error.constructor.name)

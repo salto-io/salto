@@ -96,6 +96,14 @@ const MAX_CONNECTIONS = 1000
 const dbConnections: Record<string, Promise<rocksdb>> = {}
 let currnetConnectionsCount = 0
 
+export const closeAllRemoteMaps = async (): Promise<void> => {
+  Object.entries(dbConnections).map(async ([loc, connection]) => {
+    const dbConnection = await connection
+    await promisify(dbConnection.close.bind(dbConnection))()
+    delete dbConnections[loc]
+  })
+}
+
 export const createRemoteMapCreator = (location: string, readOnly = false):
 remoteMap.RemoteMapCreator => async <T, K extends string = string>(
   { namespace, batchInterval = 1000, serialize, deserialize }:
@@ -252,6 +260,16 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
     }
   })
 
+  const closeImpl = async (): Promise<void> => {
+    if (db.status === 'open') {
+      await promisify(db.close.bind(db))()
+      if (!readOnly) {
+        delete dbConnections[location]
+      }
+      currnetConnectionsCount -= 1
+    }
+  }
+
   const getOpebDBConnection = async (loc: string): Promise<rocksdb> => {
     const newDb = rocksdbImpl(loc)
     await promisify(newDb.open.bind(newDb, { readOnly }))()
@@ -326,15 +344,7 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       await clearImpl(keyToDBKey(key), keyToDBKey(key))
       await clearImpl(keyToTempDBKey(key), keyToTempDBKey(key))
     },
-    close: async () => {
-      if (db.status === 'open') {
-        await promisify(db.close.bind(db))()
-        if (!readOnly) {
-          delete dbConnections[location]
-        }
-        currnetConnectionsCount -= 1
-      }
-    },
+    close: closeImpl,
 
     has: async (key: string): Promise<boolean> => {
       if (cache.has(keyToTempDBKey(key))) {

@@ -132,7 +132,7 @@ export default class SuiteAppClient {
 
   public async readFiles(ids: number[]): Promise<(Buffer | Error)[] | undefined> {
     try {
-      const results = await this.sendRestletRequest('file', { actions: ids.map(id => ({ action: 'read', id })) })
+      const results = await this.sendRestletRequest('readFile', { ids })
 
       if (!this.ajv.validate<ReadResults>(
         FILES_READ_SCHEMA,

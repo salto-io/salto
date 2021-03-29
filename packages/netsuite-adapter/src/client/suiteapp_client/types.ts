@@ -179,6 +179,6 @@ type ReadFailure = {
 
 export type ReadResults = (ReadSuccess | ReadFailure)[]
 
-export type RestletOperation = 'search' | 'sysInfo' | 'file'
+export type RestletOperation = 'search' | 'sysInfo' | 'readFile'
 
 export type CallsLimiter = <T>(fn: () => Promise<T>) => Promise<T>

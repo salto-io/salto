@@ -365,9 +365,9 @@ describe('SuiteAppClient', () => {
       expect(postMock).toHaveBeenCalledWith(
         'https://account-id.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet',
         {
-          operation: 'file',
+          operation: 'readFile',
           args: {
-            actions: [{ action: 'read', id: 1 }, { action: 'read', id: 2 }, { action: 'read', id: 3 }, { action: 'read', id: 4 }],
+            ids: [1, 2, 3, 4],
           },
         },
         {

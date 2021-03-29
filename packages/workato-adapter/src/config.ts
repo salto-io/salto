@@ -61,6 +61,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       paginationField: 'since_id',
     },
     transformation: {
+      idFields: ['name', 'id'], // not multienv-friendly - see SALTO-1241
       fieldsToOmit: [
         ...FIELDS_TO_OMIT,
         { fieldName: 'last_run_at' },
@@ -80,6 +81,9 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
         parent_id: 'id',
       },
       paginationField: 'page',
+    },
+    transformation: {
+      idFields: ['name', 'parent_id'], // not multienv-friendly - see SALTO-1241
     },
   },
   // eslint-disable-next-line @typescript-eslint/camelcase

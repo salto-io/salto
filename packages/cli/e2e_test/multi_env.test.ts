@@ -389,12 +389,12 @@ describe('multi env tests', () => {
         await runDeploy({ workspacePath: baseDir })
       })
       // eslint-disable-next-line
-      it.skip('should have a non empty preview for the target enviornment', () => {
+      it('should have a non empty preview for the target enviornment', () => {
         expect(afterOtherEnvFetchPlan?.size).toBeGreaterThan(0)
       })
 
       // eslint-disable-next-line
-      it.skip('should create the element in the target env', async () => {
+      it('should create the element in the target env', async () => {
         expect(await objectExists(
           env2Client,
           naclNameToSFName(objToSyncFromServiceName)
@@ -450,12 +450,12 @@ describe('multi env tests', () => {
       })
 
       // eslint-disable-next-line
-      it.skip('should have a non empty preview for the target enviornment', () => {
+      it('should have a non empty preview for the target enviornment', () => {
         expect(afterDeleteOtherEnvFetchPlan?.size).toBeGreaterThan(0)
       })
 
       // eslint-disable-next-line
-      it.skip('should delete the elements in the target env', async () => {
+      it('should delete the elements in the target env', async () => {
         expect(await objectExists(
           env2Client,
           naclNameToSFName(objToSyncFromServiceName)
@@ -466,7 +466,7 @@ describe('multi env tests', () => {
     })
   })
   // eslint-disable-next-line
-  describe.skip('handle changes that originated in the NaCL files', () => {
+  describe('handle changes that originated in the NaCL files', () => {
     const commonNaclFileObjectName = `CommonObjectNacl${tempID}`
     const env1NaclFileObjectName = `Env1ObjectNacl${tempID}`
     const env2NaclFileObjectName = `Env2ObjectNacl${tempID}`

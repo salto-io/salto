@@ -618,8 +618,8 @@ describe('pino based logger', () => {
     describe('when a partial config is specified', () => {
       beforeEach(async () => {
         logger = createLogger()
-        repo.setMinLevel('debug')
-        await logLine({ level: 'debug' })
+        repo.setMinLevel('trace')
+        await logLine({ level: 'trace' })
       })
 
       it('should update the existing logger', () => {

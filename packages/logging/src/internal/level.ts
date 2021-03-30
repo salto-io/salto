@@ -16,12 +16,12 @@
 import { validateOneOf } from './common'
 import { byName as colorsByName } from './colors'
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error'
 
 export const LOG_LEVELS: ReadonlyArray<LogLevel> = Object.freeze([
   // I don't know a way to prevent duplication of LogLevel without installing some pre-processor
   // Also, these need to be in increasing order of importance
-  'debug', 'info', 'warn', 'error',
+  'trace', 'debug', 'info', 'warn', 'error',
 ])
 
 export const validateLogLevel = (
@@ -32,6 +32,7 @@ const longestLevel = Math.max(...LOG_LEVELS.map(l => l.length))
 export const pad = (l: LogLevel): string => l.padEnd(longestLevel)
 
 const levelColors: Record<LogLevel, string> = Object.freeze({
+  trace: colorsByName.Blue,
   debug: colorsByName.Grey,
   info: colorsByName.Aqua,
   warn: colorsByName.Yellow,

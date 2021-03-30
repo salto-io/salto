@@ -35,17 +35,24 @@ type ElementIDContainer = {
   elemID: ElemID
 }
 
-const testNames = (nameArray: readonly string[], nameSelectors?: RegExp[]): boolean =>
-  (nameSelectors ? (nameArray.length === nameSelectors.length
-    && nameSelectors.every((regex, i) => regex.test(nameArray[i])))
+const testNames = (
+  nameArray: readonly string[], nameSelectors?: RegExp[], includeNested = false
+): boolean =>
+  (nameSelectors
+    ? ((nameArray.length === nameSelectors.length
+      || (includeNested && nameArray.length > nameSelectors.length))
+      && nameSelectors.every((regex, i) => regex.test(nameArray[i])))
     : nameArray.length === 0)
 
-const match = (elemId: ElemID, selector: ElementSelector): boolean =>
+const match = (elemId: ElemID, selector: ElementSelector, includeNested = false): boolean =>
   selector.adapterSelector.test(elemId.adapter)
   && selector.typeNameSelector.test(elemId.typeName)
   && (selector.idTypeSelector === elemId.idType)
-  && testNames(elemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
-    selector.nameSelectors)
+  && testNames(
+    elemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
+    selector.nameSelectors,
+    includeNested
+  )
 
 
 const createRegex = (selector: string, caseInSensitive: boolean): RegExp => new RegExp(
@@ -68,8 +75,16 @@ export const validateSelectorsMatches = (selectors: ElementSelector[],
   }
 }
 
-export const selectElementsBySelectors = <T extends ElementIDContainer | ElemID>
-  (elementIds: Iterable<T>, selectors: ElementSelector[], validateSelectors = true):
+export const selectElementsBySelectors = <T extends ElementIDContainer | ElemID>(
+  {
+    elementIds, selectors, validateSelectors = true, includeNested = false,
+  }: {
+    elementIds: Iterable<T>
+    selectors: ElementSelector[]
+    validateSelectors?: boolean
+    includeNested?: boolean
+  }
+):
     { elements: T[]; matches: Record<string, boolean> } => {
   const matches: Record<string, boolean> = { }
   if (selectors.length === 0) {
@@ -77,7 +92,11 @@ export const selectElementsBySelectors = <T extends ElementIDContainer | ElemID>
   }
   const elements = Array.from(elementIds).filter(obj => selectors.some(
     selector => {
-      const result = match(isElementContainer(obj) ? obj.elemID : obj as ElemID, selector)
+      const result = match(
+        isElementContainer(obj) ? obj.elemID : obj as ElemID,
+        selector,
+        includeNested
+      )
       matches[selector.origin] = matches[selector.origin] || result
       return result
     }
@@ -170,9 +189,8 @@ const createSameDepthSelector = (selector: ElementSelector, elemID: ElemID): Ele
 
 const isElementPossiblyParentOfSearchedElement = (
   selectors: ElementSelector[], testId: ElemID
-): boolean => (
+): boolean =>
   selectors.some(selector => match(testId, createSameDepthSelector(selector, testId)))
-)
 
 export const selectElementIdsByTraversal = (
   selectors: ElementSelector[], elements: ElementIDToValue[],
@@ -189,16 +207,18 @@ export const selectElementIdsByTraversal = (
   const [topLevelSelectors, subElementSelectors] = _.partition(selectorsToDetermine,
     isTopLevelSelector)
   if (topLevelSelectors.length !== 0) {
-    const { elements: topLevelElements } = selectElementsBySelectors(elements,
-      topLevelSelectors, false)
+    const { elements: topLevelElements } = selectElementsBySelectors({
+      elementIds: elements, selectors: topLevelSelectors, validateSelectors: false,
+    })
     topLevelElements.forEach(element => ids.add(element.elemID.getFullName()))
     if (subElementSelectors.length === 0) {
       return [...ids].map(id => ElemID.fromFullName(id))
     }
   }
   const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)
-  const possibleParentElements = selectElementsBySelectors(elements, possibleParentSelectors,
-    false).elements
+  const possibleParentElements = selectElementsBySelectors({
+    elementIds: elements, selectors: possibleParentSelectors, validateSelectors: false,
+  }).elements
   const stillRelevantElements = compact ? possibleParentElements
     .filter(id => !ids.has(id.elemID.getFullName())) : possibleParentElements
   if (stillRelevantElements.length === 0) {

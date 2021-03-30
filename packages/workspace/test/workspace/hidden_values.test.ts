@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeElement, Element, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeElement, Element, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { MergeResult } from '../../src/merger'
 import { handleHiddenChanges, mergeWithHidden } from '../../src/workspace/hidden_values'
 import { mockState } from '../common/state'
@@ -231,6 +231,74 @@ describe('handleHiddenChanges', () => {
       )
 
       expect(result.length).toBe(0)
+    })
+  })
+
+  describe('reference expression', () => {
+    let instance: InstanceElement
+    beforeEach(() => {
+      const refTargetType = new ObjectType({ elemID: new ElemID('test', 'refTarget') })
+      instance = new InstanceElement(
+        'instance',
+        new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          fields: {
+            val: { type: refTargetType },
+            ref: { type: refTargetType },
+          },
+        }),
+        { val: 'asd' },
+      )
+    })
+
+    describe('when adding a reference expression', () => {
+      let result: DetailedChange[]
+      let filteredValue: unknown
+      beforeEach(async () => {
+        const change: DetailedChange = {
+          id: instance.elemID.createNestedID('ref'),
+          action: 'add',
+          data: {
+            after: new ReferenceExpression(new ElemID('a', 'b')),
+          },
+        }
+
+        result = await handleHiddenChanges(
+          [change],
+          mockState([instance]),
+          mockFunction<() => Promise<Element[]>>().mockResolvedValue([])
+        )
+        expect(result).toHaveLength(1)
+        filteredValue = getChangeElement(result[0])
+      })
+      it('should keep the reference expression as-is', () => {
+        expect(filteredValue).toBeInstanceOf(ReferenceExpression)
+      })
+    })
+    describe('when converting a value to a reference expression', () => {
+      let result: DetailedChange[]
+      let filteredValue: unknown
+      beforeEach(async () => {
+        const change: DetailedChange = {
+          id: instance.elemID.createNestedID('val'),
+          action: 'modify',
+          data: {
+            before: 'asd',
+            after: new ReferenceExpression(new ElemID('a', 'b')),
+          },
+        }
+
+        result = await handleHiddenChanges(
+          [change],
+          mockState([instance]),
+          mockFunction<() => Promise<Element[]>>().mockResolvedValue([])
+        )
+        expect(result).toHaveLength(1)
+        filteredValue = getChangeElement(result[0])
+      })
+      it('should keep the updated value as a reference expression', () => {
+        expect(filteredValue).toBeInstanceOf(ReferenceExpression)
+      })
     })
   })
 })

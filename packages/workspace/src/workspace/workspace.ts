@@ -505,8 +505,14 @@ export const loadWorkspace = async (
 
   const errors = async (): Promise<Errors> => {
     const currentState = await getWorkspaceState()
-    const errorsFromSource = await (await getLoadedNaclFilesSource()).getErrors()
-    const validationErrors = await awu(currentState.validationErrors.values()).flat().toArray()
+    const loadNaclFileSource = await getLoadedNaclFilesSource()
+    // It is important to make sure these are obtain using Promise.all in order to allow
+    // the SaaS UI to debouce the DB accesses.
+    const [errorsFromSource, validationErrors, mergeErrors] = await Promise.all([
+      loadNaclFileSource.getErrors(),
+      awu(currentState.validationErrors.values()).flat().toArray(),
+      awu(currentState.errors.values()).flat().toArray(),
+    ])
     _(validationErrors)
       .groupBy(error => error.constructor.name)
       .entries()
@@ -518,7 +524,7 @@ export const loadWorkspace = async (
       ...errorsFromSource,
       merge: [
         ...errorsFromSource.merge,
-        ...(await awu(currentState.errors.values()).flat().toArray()),
+        ...mergeErrors,
       ],
       validation: validationErrors,
     })

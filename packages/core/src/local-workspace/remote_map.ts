@@ -275,9 +275,10 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       return
     }
     await createDBIfNotExist(loc)
-    dbConnections[loc] = getOpebDBConnection(loc)
-    db = await dbConnections[loc]
+    const connection = getOpebDBConnection(loc)
+    db = await connection
     if (!readOnly) {
+      dbConnections[loc] = connection
       await clearImpl(TEMP_PREFIX)
     }
   }

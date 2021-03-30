@@ -92,7 +92,9 @@ AsyncIterable<remoteMap.RemoteMapEntry<string>> {
   }
 }
 
+const MAX_CONNECTIONS = 1000
 const dbConnections: Record<string, Promise<rocksdb>> = {}
+let currnetConnectionsCount = 0
 
 export const createRemoteMapCreator = (location: string, readOnly = false):
 remoteMap.RemoteMapCreator => async <T, K extends string = string>(
@@ -274,9 +276,13 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       db = await dbConnections[loc]
       return
     }
+    if (currnetConnectionsCount > MAX_CONNECTIONS) {
+      throw new Error('Failed to open rocksdb connection - too much open connections already')
+    }
     await createDBIfNotExist(loc)
     const connection = getOpebDBConnection(loc)
     db = await connection
+    currnetConnectionsCount += 1
     if (!readOnly) {
       dbConnections[loc] = connection
       await clearImpl(TEMP_PREFIX)
@@ -321,8 +327,13 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       await clearImpl(keyToTempDBKey(key), keyToTempDBKey(key))
     },
     close: async () => {
-      await promisify(db.close.bind(db))()
-      delete dbConnections[location]
+      if (db.status === 'open') {
+        await promisify(db.close.bind(db))()
+        if (!readOnly) {
+          delete dbConnections[location]
+        }
+        currnetConnectionsCount -= 1
+      }
     },
 
     has: async (key: string): Promise<boolean> => {

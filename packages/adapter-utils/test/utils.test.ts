@@ -21,6 +21,7 @@ import {
   Element, isReferenceExpression, isPrimitiveValue, CORE_ANNOTATIONS, FieldMap, AdditionChange,
   RemovalChange, ModificationChange, isInstanceElement, isObjectType, MapType, isMapType,
   ContainerType,
+  VariableExpression,
 } from '@salto-io/adapter-api'
 import { AdditionDiff, RemovalDiff, ModificationDiff } from '@salto-io/dag'
 import {
@@ -444,7 +445,6 @@ describe('Test utils.ts', () => {
         })
       })
 
-
       describe('when called with type map', () => {
         let origValue: Values
         let typeMap: TypeMap
@@ -512,6 +512,36 @@ describe('Test utils.ts', () => {
         })
         it('should keep all defined fields values', () => {
           expect(origValue).toMatchObject(resp)
+        })
+      })
+
+      describe('when called with value as top level', () => {
+        let refResult: Values | undefined
+        let staticFileResult: Values | undefined
+        let varResult: Values | undefined
+        beforeEach(() => {
+          refResult = transformValues({
+            values: new ReferenceExpression(mockInstance.elemID),
+            type: mockType,
+            transformFunc,
+          })
+          staticFileResult = transformValues({
+            values: new StaticFile({ content: Buffer.from('asd'), filepath: 'a' }),
+            type: mockType,
+            transformFunc,
+          })
+          varResult = transformValues({
+            values: new VariableExpression(
+              new ElemID(ElemID.VARIABLES_NAMESPACE, 'myVar', 'var')
+            ),
+            type: mockType,
+            transformFunc,
+          })
+        })
+        it('should keep the value type', () => {
+          expect(refResult).toBeInstanceOf(ReferenceExpression)
+          expect(staticFileResult).toBeInstanceOf(StaticFile)
+          expect(varResult).toBeInstanceOf(VariableExpression)
         })
       })
     })

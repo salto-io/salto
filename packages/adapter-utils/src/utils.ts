@@ -194,6 +194,9 @@ export const transformValues = (
   const fieldMapper = fieldMapperGenerator(type, values)
 
   const newVal = isTopLevel ? transformFunc({ value: values, path: pathID }) : values
+  if (!_.isPlainObject(newVal)) {
+    return newVal
+  }
   const result = _(newVal)
     .mapValues((value, key) => transformValue(value, pathID?.createNestedID(key), fieldMapper(key)))
     .omitBy(_.isUndefined)

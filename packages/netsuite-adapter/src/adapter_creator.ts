@@ -59,13 +59,13 @@ export const defaultCredentialsType = new ObjectType({
       annotations: { message: 'SDF Token Secret' },
     },
     suiteAppTokenId: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         message: 'Salto SuiteApp Token ID (empty if Salto SuiteApp is not installed)',
       },
     },
     suiteAppTokenSecret: {
-      type: BuiltinTypes.STRING,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         message: 'Salto SuiteApp Token Secret (empty if Salto SuiteApp is not installed)',
       },

@@ -253,15 +253,17 @@ export const addReferences = async (
     .process(elementsWithFields)
 
   const fieldsWithResolvedReferences = new Set<string>()
-  awu(elements).filter(isInstanceElement).forEach(async instance => {
-    instance.value = await replaceReferenceValues(
-      instance,
-      resolverFinder,
-      elemLookup,
-      fieldsWithResolvedReferences,
-      elemByElemID,
-    )
-  })
+  await awu(elements)
+    .filter(isInstanceElement)
+    .forEach(async instance => {
+      instance.value = await replaceReferenceValues(
+        instance,
+        resolverFinder,
+        elemLookup,
+        fieldsWithResolvedReferences,
+        elemByElemID,
+      )
+    })
   log.debug('added references in the following fields: %s', [...fieldsWithResolvedReferences])
 }
 

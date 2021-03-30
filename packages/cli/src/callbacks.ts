@@ -124,18 +124,19 @@ export const getApprovedChanges = async (
     return autoApproved
   }
 
-  const questions = await awu(askForApproval).map(async (change, idx): Promise<inquirer.ExpandQuestion> => ({
-    type: 'expand',
-    choices: [
-      { key: 'y', value: 'yes' },
-      { key: 'n', value: 'no' },
-      { key: 'a', value: 'all' },
-    ],
-    default: 0,
-    name: idx.toString(),
-    message: await formatFetchChangeForApproval(change, idx, askForApproval.length),
-    when: answers => !shouldApproveAll(answers),
-  })).toArray()
+  const questions = await awu(askForApproval)
+    .map(async (change, idx): Promise<inquirer.ExpandQuestion> => ({
+      type: 'expand',
+      choices: [
+        { key: 'y', value: 'yes' },
+        { key: 'n', value: 'no' },
+        { key: 'a', value: 'all' },
+      ],
+      default: 0,
+      name: idx.toString(),
+      message: await formatFetchChangeForApproval(change, idx, askForApproval.length),
+      when: answers => !shouldApproveAll(answers),
+    })).toArray()
 
   const answers = await inquirer.prompt(questions)
   if (shouldApproveAll(answers)) {

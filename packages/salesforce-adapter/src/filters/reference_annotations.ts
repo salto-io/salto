@@ -37,11 +37,11 @@ const isMetadataTypeOrCustomObject = async (elem: Element): Promise<boolean> => 
  * @param elements      The fetched elements
  * @param typeToElemID  Known element ids by metadata type
  */
-const convertAnnotationsToReferences = (
+const convertAnnotationsToReferences = async (
   elements: Element[],
   typeToElemID: multiIndex.Index<[string, string], ElemID>,
   annotationNames: string[],
-): void => {
+): Promise<void> => {
   const resolveTypeReference = (ref: string | ReferenceExpression):
     string | ReferenceExpression => {
     if (_.isString(ref)) {
@@ -54,7 +54,7 @@ const convertAnnotationsToReferences = (
     return ref
   }
 
-  awu(elements)
+  await awu(elements)
     .filter(isObjectType)
     .filter(isMetadataTypeOrCustomObject)
     .flatMap((obj: ObjectType) => Object.values(obj.fields))
@@ -78,7 +78,7 @@ const filter: FilterCreator = ({ config }) => ({
       key: async obj => [await metadataType(obj), await apiName(obj)],
       map: obj => obj.elemID,
     })
-    convertAnnotationsToReferences(elements, typeToElemID, [REFERENCE_TO, FOREIGN_KEY_DOMAIN])
+    await convertAnnotationsToReferences(elements, typeToElemID, [REFERENCE_TO, FOREIGN_KEY_DOMAIN])
   },
 })
 

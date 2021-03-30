@@ -23,7 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import { getParents, buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
-import { collections, promises } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION, CUSTOM_FIELD,
@@ -34,7 +34,6 @@ import { metadataType, apiName, defaultApiName, Types, isCustomSettingsObject, i
 import { FilterContext } from '../filter'
 
 const { awu } = collections.asynciterable
-const { mapValuesAsync } = promises.object
 const log = logger(module)
 
 export const id = (elem: Element): string => elem.elemID.getFullName()

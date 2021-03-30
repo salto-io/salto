@@ -31,7 +31,7 @@ const log = logger(module)
 
 const STANDARD_ENTITY_TYPES = ['StandardEntity', 'User']
 
-// temporary workaorund for SALTO-1162 until we switch to using bulk api v2 -
+// temporary workaround for SALTO-1162 until we switch to using bulk api v2 -
 // there is a max of 2000 entries returned per query, so we separate the heavy
 // types to their own queries to increase the limit (may extend / make this dynamic in the future)
 const REFERENCING_TYPES_TO_FETCH_INDIVIDUALLY = ['Layout', 'Flow', 'ApexClass', 'ApexPage', 'CustomField']
@@ -147,7 +147,7 @@ const addExtraReferences = async (
       : undefined
   }
 
-  await awu(groupedDeps).forEach(edge => async () => {
+  await awu(groupedDeps).forEach(async edge => {
     const elemId = getElemId(edge.from)
     if (elemId === undefined) {
       log.debug(

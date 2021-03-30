@@ -593,10 +593,10 @@ const fixDependentInstancesPathAndSetParent = async (
     return isObjectType(object) ? object : undefined
   }
 
-  awu(elements)
+  await awu(elements)
     .filter(isInstanceElement)
     .filter(hasCustomObjectParent)
-    .map(async instance => {
+    .forEach(async instance => {
       const customObj = await getDependentCustomObj(instance)
       if (_.isUndefined(customObj)) {
         return
@@ -827,7 +827,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
     onFetch: async (elements: Element[]): Promise<void> => {
       const customObjectInstances = await keyByAsync(
         await awu(elements).filter(isInstanceOfType(CUSTOM_OBJECT)).toArray(),
-        instance => apiName(instance),
+        async instance => apiName(instance),
       ) as Record<string, InstanceElement>
 
       const sObjects = await fetchSObjects(client, customObjectInstances).catch(e => {

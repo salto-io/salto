@@ -13,9 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Element, ObjectType, Field, ReferenceExpression, ElemID,
-} from '@salto-io/adapter-api'
+import { Element, ObjectType, Field, ReferenceExpression, ElemID, isObjectType } from '@salto-io/adapter-api'
 import { multiIndex } from '@salto-io/lowerdash'
 import { FilterWith, FilterCreator } from '../filter'
 import { VALUE_SET_FIELDS } from '../constants'
@@ -61,7 +59,7 @@ const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
       key: async inst => [await apiName(inst)],
       map: inst => inst.elemID,
     })
-    const customObjects = elements.filter(isCustomObject)
+    const customObjects = elements.filter(isObjectType).filter(isCustomObject)
     customObjects.forEach(object => addGlobalValueSetRefToObject(object, valueSetNameToRef))
   },
 })

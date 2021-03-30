@@ -40,11 +40,6 @@
     "@types/easy-table": "^0.0.32",
     "@types/humanize-duration": "^3.18.0",
     "@types/jest": "^26.0.20",
-<<<<<<< HEAD
-    "@types/node": "^12.7.1",
-=======
-    "@types/lodash": "^4.14.133",
->>>>>>> fix build (#1872)
     "@types/yargs": "^13.0.4",
     "@typescript-eslint/eslint-plugin": "2.31.0",
     "@typescript-eslint/parser": "2.31.0",

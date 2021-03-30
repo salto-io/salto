@@ -260,7 +260,6 @@ describe('element selector', () => {
     expect(selectedElements).toEqual([elements[0]])
   })
 
-  // TODO: Removed the disabled part so see if still relevant
   // Since element selection is now asynchronous, validation has been removed for now
   // This comment kept as reminder of that possibility
   it('should use case insensitive selectors when specified', () => {
@@ -280,19 +279,19 @@ describe('element selector', () => {
     expect(selectedElements).toEqual([elements[0], elements[3], elements[4]])
   })
 
-  it('should throw error when invalid selector is given', () => {
-    const invalidFilters = ['salesforce.Account.*', 'salesforce', '']
-    expect(() => {
-      createElementSelector('salesforce.Account.*')
-    }).toThrow(new Error('Illegal element selector includes illegal type name: "*". Full selector is: "salesforce.Account.*"'))
-    expect(() => {
-      createElementSelector('salesforce')
-    }).toThrow(new Error('Illegal element selector does not contain type name: "salesforce"'))
-    expect(() => {
-      createElementSelector('')
-    }).toThrow(new Error('Illegal element selector does not contain adapter expression: ""'))
-    expect(createElementSelectors(invalidFilters).invalidSelectors).toEqual(invalidFilters)
-  })
+    it('should throw error when invalid selector is given', () => {
+      const invalidFilters = ['salesforce.Account.*', 'salesforce', '']
+      expect(() => {
+        createElementSelector('salesforce.Account.*')
+      }).toThrow(new Error('Illegal element selector includes illegal type name: "*". Full selector is: "salesforce.Account.*"'))
+      expect(() => {
+        createElementSelector('salesforce')
+      }).toThrow(new Error('Illegal element selector does not contain type name: "salesforce"'))
+      expect(() => {
+        createElementSelector('')
+      }).toThrow(new Error('Illegal element selector does not contain adapter expression: ""'))
+      expect(createElementSelectors(invalidFilters).invalidSelectors).toEqual(invalidFilters)
+    })
 
     it('should throw error if exact element id filter matches nothing', async () => {
       const elements = [

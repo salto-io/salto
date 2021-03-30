@@ -160,7 +160,7 @@ const findStandardValueSetType = async (elements: Element[]): Promise<ObjectType
   ) as Promise<ObjectType | undefined>
 
 const updateSVSReferences = async (
-  objects: AsyncIterable<ObjectType>,
+  objects: ObjectType[],
   svsInstances: InstanceElement[],
 ): Promise<void> => {
   const svsValuesToName = svsValuesToRef(svsInstances)
@@ -219,16 +219,18 @@ export const makeFilter = (
       fetchedSVSInstances = svsInstances.elements
     }
 
-    const customObjectTypeElements = awu(elements)
+    const customObjectTypeElements = await awu(elements)
       .filter(isObjectType)
       .filter(isCustomObject)
+      .toArray()
 
-    if (!await customObjectTypeElements.isEmpty()) {
+    if (customObjectTypeElements.length > 0) {
       const svsInstances = fetchedSVSInstances !== undefined
         ? fetchedSVSInstances
         : await awu(await config.elementsSource.getAll())
           .filter(isInstanceElement)
-          .filter(isInstanceOfType(STANDARD_VALUE_SET)).toArray()
+          .filter(isInstanceOfType(STANDARD_VALUE_SET))
+          .toArray()
       await updateSVSReferences(customObjectTypeElements, svsInstances)
     }
 

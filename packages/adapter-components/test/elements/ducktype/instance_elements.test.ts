@@ -110,8 +110,8 @@ describe('ducktype_instance_elements', () => {
       ))).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', '54775_some_other_name'])
     })
-    it('should convert number id fields to string', () => {
-      const inst = toInstance({
+    it('should convert number id fields to string', async () => {
+      const inst = await toInstance({
         type,
         transformationConfigByType: {
           bla: {

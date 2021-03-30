@@ -17,8 +17,8 @@ import { logger } from '@salto-io/logging'
 import {
   Element, InstanceElement, ObjectType, ElemID, isInstanceElement,
 } from '@salto-io/adapter-api'
-import { naclCase, pathNaclCase, findInstances } from '@salto-io/adapter-utils'
-import { promises, multiIndex, collections } from '@salto-io/lowerdash'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { multiIndex, collections } from '@salto-io/lowerdash'
 import { apiName, isCustomObject } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { addObjectParentReference, isInstanceOfType, buildElementsSourceForFetch } from './utils'
@@ -28,7 +28,6 @@ import { getObjectDirectoryPath } from './custom_objects'
 const { awu } = collections.asynciterable
 
 const log = logger(module)
-const { series } = promises.array
 
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE)
 export const WEBLINK_TYPE_ID = new ElemID(SALESFORCE, WEBLINK_METADATA_TYPE)
@@ -68,10 +67,11 @@ const filterCreator: FilterCreator = ({ config }) => ({
    * @param elements the already fetched elements
    */
   onFetch: async (elements: Element[]): Promise<void> => {
-    const layouts = awu(elements)
+    const layouts = await awu(elements)
       .filter(isInstanceElement)
       .filter(isInstanceOfType(LAYOUT_TYPE_ID_METADATA_TYPE))
-    if (await layouts.isEmpty()) {
+      .toArray()
+    if (layouts.length === 0) {
       return
     }
 
@@ -94,13 +94,13 @@ const filterCreator: FilterCreator = ({ config }) => ({
       map: obj => obj.elemID,
     })
 
-    awu(layouts).map(layout => async () => {
+    await awu(layouts).forEach(async layout => {
       const [layoutObjName, layoutName] = await layoutObjAndName(layout)
       const layoutObjId = apiNameToCustomObject.get(layoutObjName)
       const layoutObj = layoutObjId !== undefined
         ? await referenceElements.get(layoutObjId)
         : undefined
-      if (layoutObj === undefined || !isCustomObject(layoutObj)) {
+      if (layoutObj === undefined || !(await isCustomObject(layoutObj))) {
         log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
         return
       }

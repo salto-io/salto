@@ -158,7 +158,7 @@ export const configType = new ObjectType({
     },
 
     [USE_CHANGES_DETECTION]: {
-      type: BuiltinTypes.BOOLEAN,
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
     },
   },
 })

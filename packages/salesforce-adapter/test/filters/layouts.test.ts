@@ -41,7 +41,7 @@ describe('Test layout filter', () => {
           },
         }
       )
-      const testSobjPath = [...getObjectDirectoryPath(testSObj), pathNaclCase(apiName)]
+      const testSobjPath = [...await getObjectDirectoryPath(testSObj), pathNaclCase(apiName)]
       testSObj.path = testSobjPath
 
       const shortName = 'Test Layout'

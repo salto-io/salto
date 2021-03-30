@@ -21,7 +21,7 @@ import {
   ReferenceExpression, TemplateExpression, VariableExpression,
   isReferenceExpression, Variable, StaticFile, isStaticFile,
   isInstanceElement, isPrimitiveType,
-  FieldDefinition, isObjectType, Values, Value, TypeRefMap,
+  FieldDefinition, isObjectType, Values, Value, TypeRefMap, isMapType, isVariable,
 } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { DuplicateAnnotationError, MergeError, isMergeError } from '../merger/internal/common'
@@ -152,7 +152,7 @@ export const serialize = <T = Element>(
   )
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const replacer = (v: any, k: any): any => {
+  const generalReplacer = (v: any, k: any): any => {
     if (k !== undefined) {
       if (isType(v) && !isContainerType(v)) {
         return saltoClassReplacer(resolveCircles(v))
@@ -164,15 +164,100 @@ export const serialize = <T = Element>(
         return staticFileReplacer(v)
       }
       if (isSaltoSerializable(v)) {
-        return saltoClassReplacer(_.cloneDeepWith(v, replacer))
+        return saltoClassReplacer(_.cloneDeepWith(v, generalReplacer))
       }
     }
     return undefined
   }
-  const cloneElements = elements.map(element => {
-    const clone = _.cloneDeepWith(element, replacer)
-    return isSaltoSerializable(element) ? saltoClassReplacer(clone) : clone
-  })
+
+  const replaceValues = (value: Value): Value => {
+    if (_.isPlainObject(value)) {
+      return _.mapValues(value, replaceValues)
+    }
+    if (_.isArray(value)) {
+      return value.map(replaceValues)
+    }
+    if (isReferenceExpression(value)) {
+      return referenceExpressionReplacer(value)
+    }
+    if (isStaticFile(value)) {
+      return staticFileReplacer(value)
+    }
+    if (isSaltoSerializable(value)) {
+      const r = saltoClassReplacer(value)
+      return r
+    }
+    return value
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const replaceTopLevelElement = (element: Element): any => {
+    const clonedAnnotations = replaceValues(element.annotations)
+    const annotationRefTypes = _.mapValues(
+      element.annotationRefTypes,
+      annoType => saltoClassReplacer(annoType.createWithValue(undefined))
+    )
+    if (isInstanceElement(element)) {
+      return saltoClassReplacer(new InstanceElement(
+        element.elemID.name,
+        saltoClassReplacer(element.refType.createWithValue(undefined)),
+        replaceValues(element.value),
+        element.path,
+        clonedAnnotations
+      ))
+    }
+    if (isObjectType(element)) {
+      const clonedFieldsData = _.mapValues(
+        element.fields,
+        field => ({
+          refType: saltoClassReplacer(field.refType.createWithValue(undefined)),
+          annotations: replaceValues(field.annotations),
+        })
+      )
+      const o = new ObjectType({
+        elemID: element.elemID,
+        annotations: clonedAnnotations,
+        annotationRefsOrTypes: annotationRefTypes,
+        isSettings: element.isSettings,
+        path: element.path,
+      })
+      return {
+        ...saltoClassReplacer(o),
+        fields: clonedFieldsData,
+      }
+    }
+    if (isPrimitiveType(element)) {
+      return saltoClassReplacer(new PrimitiveType({
+        elemID: element.elemID,
+        primitive: element.primitive,
+        annotationRefsOrTypes: annotationRefTypes,
+        annotations: clonedAnnotations,
+        path: element.path,
+      }))
+    }
+    if (isMapType(element)) {
+      return saltoClassReplacer(new MapType(referenceExpressionReplacer(element.refInnerType)))
+    }
+    if (isContainerType(element)) {
+      return saltoClassReplacer(new ListType(referenceExpressionReplacer(element.refInnerType)))
+    }
+    if (isVariable(element)) {
+      return saltoClassReplacer(element)
+    }
+    throw new Error('attempted to serialized unsupported element')
+  }
+
+  const replaceTopLevel = (value: Value): Value => {
+    if (isElement(value)) {
+      return replaceTopLevelElement(value)
+    }
+    if (isSaltoSerializable(value)) {
+      return saltoClassReplacer(_.cloneDeepWith(value, generalReplacer))
+    }
+    return value
+  }
+
+  const cloneElements = elements.map(replaceTopLevel)
   const sortedElements = _.sortBy(cloneElements, e => e.elemID.getFullName())
   // We don't use safeJsonStringify to save some time, because we know  we made sure there aren't
   // circles

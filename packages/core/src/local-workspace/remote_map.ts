@@ -96,13 +96,13 @@ const MAX_CONNECTIONS = 1000
 const dbConnections: Record<string, Promise<rocksdb>> = {}
 let currnetConnectionsCount = 0
 
-export const closeAllRemoteMaps = async (): Promise<void> => {
-  Object.entries(dbConnections).forEach(async ([loc, connection]) => {
+export const closeAllRemoteMaps = async (): Promise<void> => (
+  awu(Object.entries(dbConnections)).forEach(async ([loc, connection]) => {
     const dbConnection = await connection
     await promisify(dbConnection.close.bind(dbConnection))()
     delete dbConnections[loc]
   })
-}
+)
 
 export const createRemoteMapCreator = (location: string, readOnly = false):
 remoteMap.RemoteMapCreator => async <T, K extends string = string>(

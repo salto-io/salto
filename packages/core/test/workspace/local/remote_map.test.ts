@@ -72,6 +72,7 @@ describe('test operations on remote db', () => {
   })
   afterEach(async () => {
     await remoteMap.revert()
+    await remoteMap.close()
   })
 
   it('finds an item after it is set', async () => {
@@ -320,6 +321,7 @@ describe('full integration', () => {
     }
     expect(ids).toEqual(elements.map(elem => 'integration::'
       .concat(elem.elemID.getFullName())).sort())
+    await promisify(db.close.bind(db))()
   })
 })
 afterAll(async () => {

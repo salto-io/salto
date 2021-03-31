@@ -221,7 +221,6 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
       cliExitCode = CliExitCode.AppError
     }
   }
-
   return cliExitCode
 }
 

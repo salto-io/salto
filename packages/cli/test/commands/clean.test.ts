@@ -88,7 +88,7 @@ describe('clean command', () => {
         ...cliCommandArgs,
         input: {
           force: false,
-          nacl: false,
+          nacl: true,
           state: false,
           cache: false,
           staticResources: false,
@@ -120,12 +120,12 @@ describe('clean command', () => {
       expect(output.stderr.content.search('Cannot clear static resources without clearing the state, cache and nacls')).toBeGreaterThanOrEqual(0)
     })
 
-    it('should fail if combining regenerating the cache with other clean operations', async () => {
+    it('should fail if attempting to regenerate and clean the cache at the same time', async () => {
       expect(await action({
         ...cliCommandArgs,
         input: {
           force: false,
-          nacl: true,
+          nacl: false,
           state: false,
           cache: true,
           staticResources: false,
@@ -136,7 +136,7 @@ describe('clean command', () => {
         workspace: mocks.mockWorkspace({}),
       })).toBe(CliExitCode.UserInputError)
       expect(callbacks.getUserBooleanInput).not.toHaveBeenCalled()
-      expect(output.stderr.content.search('Cannot re-generate the cache and clear parts of the workspace in the same operation')).toBeGreaterThanOrEqual(0)
+      expect(output.stderr.content.search('Cannot re-generate and clear the cache in the same operation')).toBeGreaterThanOrEqual(0)
     })
     it('should prompt user and continue if yes', async () => {
       const workspace = mocks.mockWorkspace({})
@@ -167,7 +167,7 @@ describe('clean command', () => {
       expect(output.stdout.content.search('Starting to clean')).toBeGreaterThan(0)
       expect(output.stdout.content.search('Finished cleaning')).toBeGreaterThan(0)
     })
-    it('should prompt user and continue if yes (regenerate-cache), cleaning the cache', async () => {
+    it('should prompt user and continue if yes (regenerate-cache)', async () => {
       const workspace = mocks.mockWorkspace({})
       expect(await action({
         ...cliCommandArgs,

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { EOL } from 'os'
 import { cleanWorkspace } from '@salto-io/core'
 import { WorkspaceComponents } from '@salto-io/workspace'
@@ -30,20 +31,25 @@ type CleanArgs = {
 } & WorkspaceComponents
 
 export const action: WorkspaceCommandAction<CleanArgs> = async ({
-  input: { force, regenerateCache, ...cleanArgs },
+  input: { force, ...allCleanArgs },
   output,
   workspace,
 }): Promise<CliExitCode> => {
-  const shouldCleanAnything = Object.values(cleanArgs).some(shouldClean => shouldClean)
-  if (!shouldCleanAnything && !regenerateCache) {
+  const shouldCleanAnything = Object.values(allCleanArgs).some(shouldClean => shouldClean)
+  if (!shouldCleanAnything) {
     outputLine(header(Prompts.EMPTY_PLAN), output)
     outputLine(EOL, output)
     return CliExitCode.UserInputError
   }
-  if (regenerateCache && shouldCleanAnything) {
-    errorOutputLine('Cannot re-generate the cache and clear parts of the workspace in the same operation', output)
+  if (allCleanArgs.regenerateCache && allCleanArgs.cache) {
+    errorOutputLine('Cannot re-generate and clear the cache in the same operation', output)
     outputLine(EOL, output)
     return CliExitCode.UserInputError
+  }
+  const cleanArgs = {
+    ..._.omit(allCleanArgs, 'regenerateCache', 'cache'),
+    // should still clear the cache before re-generating it
+    cache: allCleanArgs.cache || allCleanArgs.regenerateCache,
   }
   if (cleanArgs.staticResources && !(cleanArgs.state && cleanArgs.cache && cleanArgs.nacl)) {
     errorOutputLine('Cannot clear static resources without clearing the state, cache and nacls', output)
@@ -52,7 +58,7 @@ export const action: WorkspaceCommandAction<CleanArgs> = async ({
   }
 
   outputLine(header(
-    formatCleanWorkspace({ ...cleanArgs, regenerateCache })
+    formatCleanWorkspace(allCleanArgs)
   ), output)
   if (!(force || await getUserBooleanInput(Prompts.SHOULD_EXECUTE_PLAN))) {
     outputLine(formatCancelCommand, output)
@@ -62,14 +68,10 @@ export const action: WorkspaceCommandAction<CleanArgs> = async ({
   outputLine(formatStepStart(Prompts.CLEAN_STARTED), output)
 
   try {
-    if (regenerateCache) {
-      // clear the existing cache
-      await cleanWorkspace(workspace, { ...cleanArgs, cache: true })
-      // generate the new cache
+    await cleanWorkspace(workspace, cleanArgs)
+    if (allCleanArgs.regenerateCache) {
       await validateWorkspace(workspace)
       await workspace.flush()
-    } else {
-      await cleanWorkspace(workspace, cleanArgs)
     }
   } catch (e) {
     errorOutputLine(formatStepFailed(Prompts.CLEAN_FAILED(e.toString())), output)

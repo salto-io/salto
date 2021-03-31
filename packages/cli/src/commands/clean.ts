@@ -22,19 +22,26 @@ import { formatCleanWorkspace, formatCancelCommand, header, formatStepStart, for
 import Prompts from '../prompts'
 import { CliExitCode } from '../types'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
+import { validateWorkspace } from '../workspace/workspace'
 
 type CleanArgs = {
   force: boolean
+  regenerateCache: boolean
 } & WorkspaceComponents
 
 export const action: WorkspaceCommandAction<CleanArgs> = async ({
-  input: { force, ...cleanArgs },
+  input: { force, regenerateCache, ...cleanArgs },
   output,
   workspace,
 }): Promise<CliExitCode> => {
   const shouldCleanAnything = Object.values(cleanArgs).some(shouldClean => shouldClean)
-  if (!shouldCleanAnything) {
+  if (!shouldCleanAnything && !regenerateCache) {
     outputLine(header(Prompts.EMPTY_PLAN), output)
+    outputLine(EOL, output)
+    return CliExitCode.UserInputError
+  }
+  if (regenerateCache && shouldCleanAnything) {
+    errorOutputLine('Cannot re-generate the cache and clear parts of the workspace in the same operation', output)
     outputLine(EOL, output)
     return CliExitCode.UserInputError
   }
@@ -45,7 +52,7 @@ export const action: WorkspaceCommandAction<CleanArgs> = async ({
   }
 
   outputLine(header(
-    formatCleanWorkspace(cleanArgs)
+    formatCleanWorkspace({ ...cleanArgs, regenerateCache })
   ), output)
   if (!(force || await getUserBooleanInput(Prompts.SHOULD_EXECUTE_PLAN))) {
     outputLine(formatCancelCommand, output)
@@ -55,7 +62,15 @@ export const action: WorkspaceCommandAction<CleanArgs> = async ({
   outputLine(formatStepStart(Prompts.CLEAN_STARTED), output)
 
   try {
-    await cleanWorkspace(workspace, cleanArgs)
+    if (regenerateCache) {
+      // clear the existing cache
+      await cleanWorkspace(workspace, { ...cleanArgs, cache: true })
+      // generate the new cache
+      await validateWorkspace(workspace)
+      await workspace.flush()
+    } else {
+      await cleanWorkspace(workspace, cleanArgs)
+    }
   } catch (e) {
     errorOutputLine(formatStepFailed(Prompts.CLEAN_FAILED(e.toString())), output)
     return CliExitCode.AppError
@@ -116,6 +131,13 @@ const cleanDef = createWorkspaceCommand({
         name: 'serviceConfig',
         alias: 'g',
         description: 'Restore service configuration to default',
+        type: 'boolean',
+        default: false,
+      },
+      {
+        name: 'regenerateCache',
+        alias: 'x',
+        description: 'Regenerate the cache',
         type: 'boolean',
         default: false,
       },

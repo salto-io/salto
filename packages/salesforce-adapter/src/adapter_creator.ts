@@ -28,6 +28,8 @@ import { validateFetchParameters } from './fetch_profile/fetch_profile'
 import { ConfigValidationError } from './config_validation'
 import { updateDeprecatedConfiguration } from './deprecated_config'
 import { ConfigChange } from './config_change'
+import changeValidator from './change_validator'
+import { getChangeGroupIds } from './group_changes'
 
 const log = logger(module)
 
@@ -130,7 +132,10 @@ export const adapter: Adapter = {
       },
 
       deploy: salesforceAdapter.deploy.bind(salesforceAdapter),
-      deployModifiers: salesforceAdapter.deployModifiers,
+      deployModifiers: {
+        changeValidator,
+        getChangeGroupIds,
+      },
     }
   },
   validateCredentials: async config => validateCredentials(credentialsFromConfig(config)),

@@ -17,7 +17,6 @@ import {
   TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeElement,
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
   ReadOnlyElementsSource,
-  DeployModifiers,
 } from '@salto-io/adapter-api'
 import { logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { MetadataObject } from 'jsforce'
@@ -72,8 +71,6 @@ import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from 
 import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
-import changeValidator from './change_validator'
-import { getChangeGroupIds } from './group_changes'
 
 const log = logger(module)
 
@@ -478,14 +475,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     return {
       elements: instances.elements,
       configChanges: [...instances.configChanges, ...configChanges],
-    }
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  public get deployModifiers(): DeployModifiers {
-    return {
-      changeValidator,
-      getChangeGroupIds,
     }
   }
 }

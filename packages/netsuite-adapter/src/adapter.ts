@@ -16,7 +16,7 @@
 import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
   ElemIdGetter, Element, getChangeElement, InstanceElement, ReadOnlyElementsSource,
-  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS,
+  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS, DeployModifiers,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -46,6 +46,8 @@ import NetsuiteClient from './client/client'
 import { createDateRange } from './changes_detector/date_formats'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
 import { LazyElementsSourceIndex } from './elements_source_index/types'
+import changeValidator from './change_validator'
+import { getChangeGroupIds } from './group_changes'
 
 const { makeArray } = collections.array
 
@@ -275,5 +277,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
         filter.onFetch({ elements, elementsSourceIndex, isPartial })),
       Promise.resolve(),
     )
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public get deployModifiers(): DeployModifiers {
+    return {
+      changeValidator,
+      getChangeGroupIds,
+    }
   }
 }

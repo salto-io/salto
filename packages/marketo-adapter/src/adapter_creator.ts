@@ -18,7 +18,6 @@ import {
 } from '@salto-io/adapter-api'
 import MarketoClient from './client/client'
 import MarketoAdapter from './adapter'
-import changeValidator from './change_validator'
 import { Credentials } from './client/types'
 
 const configID = new ElemID('marketo')
@@ -54,8 +53,5 @@ export const adapter: Adapter = {
     basic: {
       credentialsType,
     },
-  },
-  deployModifiers: {
-    changeValidator,
   },
 }

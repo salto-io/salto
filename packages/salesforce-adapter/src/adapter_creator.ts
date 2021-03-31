@@ -19,8 +19,6 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import SalesforceClient, { validateCredentials } from './client/client'
-import changeValidator from './change_validator'
-import { getChangeGroupIds } from './group_changes'
 import SalesforceAdapter from './adapter'
 import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
   isAccessTokenConfig, SalesforceConfig, accessTokenCredentialsType,
@@ -30,6 +28,8 @@ import { validateFetchParameters } from './fetch_profile/fetch_profile'
 import { ConfigValidationError } from './config_validation'
 import { updateDeprecatedConfiguration } from './deprecated_config'
 import { ConfigChange } from './config_change'
+import changeValidator from './change_validator'
+import { getChangeGroupIds } from './group_changes'
 
 const log = logger(module)
 
@@ -132,6 +132,10 @@ export const adapter: Adapter = {
       },
 
       deploy: salesforceAdapter.deploy.bind(salesforceAdapter),
+      deployModifiers: {
+        changeValidator,
+        getChangeGroupIds,
+      },
     }
   },
   validateCredentials: async config => validateCredentials(credentialsFromConfig(config)),
@@ -151,8 +155,4 @@ export const adapter: Adapter = {
     },
   },
   configType,
-  deployModifiers: {
-    changeValidator,
-    getChangeGroupIds,
-  },
 }

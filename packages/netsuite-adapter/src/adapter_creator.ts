@@ -21,8 +21,6 @@ import { collections, regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { SdkDownloadService } from '@salto-io/suitecloud-cli'
-import changeValidator from './change_validator'
-import { getChangeGroupIds } from './group_changes'
 import NetsuiteAdapter from './adapter'
 import { configType, NetsuiteConfig } from './config'
 import {
@@ -177,10 +175,6 @@ export const adapter: Adapter = {
     },
   },
   configType,
-  deployModifiers: {
-    changeValidator,
-    getChangeGroupIds,
-  },
   install: async (): Promise<AdapterInstallResult> => {
     try {
       return await SdkDownloadService.download()

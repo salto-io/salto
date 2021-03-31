@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
-  Adapter, AdapterAuthentication, Element, ReadOnlyElementsSource,
+  Adapter, AdapterAuthentication, Element, ReadOnlyElementsSource, GLOBAL_ADAPTER,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -67,30 +67,34 @@ export const getDefaultAdapterConfig = async (
 const filterElementsSourceAdapter = (
   elementsSource: ReadOnlyElementsSource,
   adapter: string
-): ReadOnlyElementsSource => ({
-  getAll: async () => {
-    async function *getElements(): AsyncIterable<Element> {
-      for await (const element of await elementsSource.getAll()) {
-        if (element.elemID.adapter === adapter) {
-          yield element
+): ReadOnlyElementsSource => {
+  const isRelevantID = (elemID: ElemID): boolean =>
+    (elemID.adapter === adapter || elemID.adapter === GLOBAL_ADAPTER)
+  return {
+    getAll: async () => {
+      async function *getElements(): AsyncIterable<Element> {
+        for await (const element of await elementsSource.getAll()) {
+          if (isRelevantID(element.elemID)) {
+            yield element
+          }
         }
       }
-    }
-    return getElements()
-  },
-  get: async id => (id.adapter === adapter ? elementsSource.get(id) : undefined),
-  list: async () => {
-    async function *getIds(): AsyncIterable<ElemID> {
-      for await (const element of await elementsSource.getAll()) {
-        if (element.elemID.adapter === adapter) {
-          yield element.elemID
+      return getElements()
+    },
+    get: async id => (isRelevantID(id) ? elementsSource.get(id) : undefined),
+    list: async () => {
+      async function *getIds(): AsyncIterable<ElemID> {
+        for await (const element of await elementsSource.getAll()) {
+          if (isRelevantID(element.elemID)) {
+            yield element.elemID
+          }
         }
       }
-    }
-    return getIds()
-  },
-  has: async id => (id.adapter === adapter ? elementsSource.has(id) : false),
-})
+      return getIds()
+    },
+    has: async id => (isRelevantID(id) ? elementsSource.has(id) : false),
+  }
+}
 
 type AdapterConfigGetter = (
   adapter: string, defaultValue?: InstanceElement
@@ -100,7 +104,7 @@ export const getAdaptersCreatorConfigs = async (
   adapters: ReadonlyArray<string>,
   credentials: Readonly<Record<string, InstanceElement>>,
   getConfig: AdapterConfigGetter,
-  workspaceElementsSource: ReadOnlyElementsSource,
+  elementsSource: ReadOnlyElementsSource,
   elemIdGetter?: ElemIdGetter,
 ): Promise<Record<string, AdapterOperationsContext>> => (
   Object.fromEntries(await Promise.all(adapters.map(
@@ -109,7 +113,7 @@ export const getAdaptersCreatorConfigs = async (
       {
         credentials: credentials[adapter],
         config: await getConfig(adapter, await getDefaultAdapterConfig(adapter)),
-        elementsSource: filterElementsSourceAdapter(workspaceElementsSource, adapter),
+        elementsSource: filterElementsSourceAdapter(elementsSource, adapter),
         getElemIdFunc: elemIdGetter,
       },
     ]

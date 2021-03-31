@@ -32,7 +32,9 @@ import {
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
   transformElement, toObjectType, getParents, extendGeneratedDependencies, createRefToElmWithValue,
+  resolveTypeShallow,
 } from '../src/utils'
+import { buildElementsSourceFromElements } from '../src/element_source'
 import { mockFunction, MockFunction } from './common'
 
 const { awu } = collections.asynciterable
@@ -2198,6 +2200,91 @@ describe('Test utils.ts', () => {
         'adapter.type456',
         'adapter.type456.instance.inst456',
       ])
+    })
+  })
+  describe('resolveTypeShallow', () => {
+    const cloneAndAddField = (objectType: ObjectType): ObjectType => {
+      const clonedObj = objectType.clone()
+      clonedObj.fields.newField = new Field(
+        objectType,
+        'newField',
+        BuiltinTypes.STRING,
+      )
+      return clonedObj
+    }
+    const fieldType = new ObjectType(
+      { elemID: new ElemID('ad', 'fieldType') },
+    )
+    const fieldTypeWithAdditionalField = cloneAndAddField(fieldType)
+    const annoType = new ObjectType(
+      { elemID: new ElemID('ad', 'annoType') },
+    )
+    const annoTypeWithAdditionalField = cloneAndAddField(annoType)
+    const objWithResolved = new ObjectType({
+      elemID: new ElemID('ad', 'withResolved'),
+      fields: {
+        a: { refType: createRefToElmWithValue(fieldType) },
+      },
+      annotationRefsOrTypes: {
+        annoA: createRefToElmWithValue(annoType),
+      },
+    })
+    const objWithResolvedWithAdditionalField = cloneAndAddField(objWithResolved)
+    const objWithUnresolved = new ObjectType({
+      elemID: new ElemID('ad', 'withResolved'),
+      fields: {
+        a: { refType: new ReferenceExpression(fieldType.elemID) },
+      },
+      annotationRefsOrTypes: {
+        annoA: new ReferenceExpression(annoType.elemID),
+      },
+    })
+    const instWithResolvedType = new InstanceElement(
+      'resolved',
+      objWithResolved,
+      {
+        a: 'does not matter',
+      }
+    )
+    const instWithUnresolvedType = new InstanceElement(
+      'resolved',
+      new ReferenceExpression(objWithResolved.elemID),
+      {
+        a: 'does not matter',
+      }
+    )
+    const elementsSource = buildElementsSourceFromElements(
+      [
+        fieldTypeWithAdditionalField, annoTypeWithAdditionalField, instWithUnresolvedType,
+        objWithResolvedWithAdditionalField, instWithResolvedType,
+      ],
+    )
+
+    it('Should keep an ObjectType with resolved field types as is', async () => {
+      const clonedObj = objWithResolved.clone()
+      await resolveTypeShallow(clonedObj, elementsSource)
+      expect(clonedObj).toEqual(objWithResolved)
+    })
+
+    it('Should resolve ObjectType fields types according to elementsSource', async () => {
+      const clonedObj = objWithUnresolved.clone()
+      expect(clonedObj.fields.a.refType.value).toBeUndefined()
+      await resolveTypeShallow(clonedObj, elementsSource)
+      expect(await clonedObj.fields.a.getType()).toEqual(fieldTypeWithAdditionalField)
+      expect((await clonedObj.getAnnotationTypes()).annoA).toEqual(annoTypeWithAdditionalField)
+    })
+
+    it('Should keep an InstanceElement with a resolved type as is', async () => {
+      const clonedInst = instWithResolvedType.clone()
+      await resolveTypeShallow(clonedInst, elementsSource)
+      expect(clonedInst).toEqual(instWithResolvedType)
+    })
+
+    it('Should resolve the type of the InstanceElement according to elementSource', async () => {
+      const clonedInst = instWithUnresolvedType.clone()
+      expect(clonedInst.refType.value).toBeUndefined()
+      await resolveTypeShallow(clonedInst, elementsSource)
+      expect(await clonedInst.getType()).toEqual(objWithResolvedWithAdditionalField)
     })
   })
 })

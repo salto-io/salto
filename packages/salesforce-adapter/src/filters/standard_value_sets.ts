@@ -18,6 +18,7 @@ import { FileProperties } from 'jsforce-types'
 import {
   Element, ObjectType, InstanceElement, Field, ReferenceExpression, isObjectType, isInstanceElement,
 } from '@salto-io/adapter-api'
+import { resolveTypeShallow } from '@salto-io/adapter-utils'
 import { collections, promises } from '@salto-io/lowerdash'
 
 import { FilterCreator } from '../filter'
@@ -229,6 +230,11 @@ export const makeFilter = (
         ? fetchedSVSInstances
         : await awu(await config.elementsSource.getAll())
           .filter(isInstanceElement)
+          .map(async inst => {
+            const clone = inst.clone()
+            await resolveTypeShallow(clone, config.elementsSource)
+            return clone
+          })
           .filter(isInstanceOfType(STANDARD_VALUE_SET))
           .toArray()
       await updateSVSReferences(customObjectTypeElements, svsInstances)

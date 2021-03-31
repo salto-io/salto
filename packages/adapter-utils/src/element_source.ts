@@ -15,6 +15,7 @@
 */
 import { ReadOnlyElementsSource, Element, ElemID } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { resolveTypeShallow } from './utils'
 
 export const buildElementsSourceFromElements = (
   elements: ReadonlyArray<Element>,
@@ -22,6 +23,8 @@ export const buildElementsSourceFromElements = (
 ): ReadOnlyElementsSource => {
   const elementsMap = _.keyBy(elements, e => e.elemID.getFullName())
   const isIDInElementsMap = (id: ElemID): boolean => id.getFullName() in elementsMap
+
+  let self: ReadOnlyElementsSource
 
   async function *getIds(): AsyncIterable<ElemID> {
     for (const element of elements) {
@@ -46,15 +49,18 @@ export const buildElementsSourceFromElements = (
     }
     for await (const element of await fallbackSource.getAll()) {
       if (!isIDInElementsMap(element.elemID)) {
-        yield element
+        const clonedElement = element.clone()
+        await resolveTypeShallow(clonedElement, self)
+        yield clonedElement
       }
     }
   }
 
-  return {
+  self = {
     getAll: async () => getElements(),
     get: async id => elementsMap[id.getFullName()] ?? fallbackSource?.get(id),
     list: async () => getIds(),
     has: async id => isIDInElementsMap(id) || (fallbackSource?.has(id) ?? false),
   }
+  return self
 }

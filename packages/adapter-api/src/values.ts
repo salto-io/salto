@@ -115,7 +115,7 @@ export class ReferenceExpression {
     }
     const value = (await elementsSource?.get(this.elemID)) ?? this.value
     // When there's no value in the ElementSource & in the Ref
-    // Fallback to a placeholder Type. This resembles the behaviour
+    // Fallback to a placeholder Type. This resembles the behavior
     // before the RefType change.
     if (value === undefined) {
       return new ObjectType({

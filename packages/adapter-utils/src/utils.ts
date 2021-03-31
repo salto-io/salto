@@ -399,7 +399,7 @@ export const transformElement = async <T extends Element>(
   }
 
   if (strict) {
-    throw new Error('unsupported subtype yhingy')
+    throw new Error('unsupported subtype thingy')
   }
 
   return element
@@ -808,7 +808,7 @@ export const mapKeysRecursive = (obj: Values, func: MapKeyFunc, pathID?: ElemID)
 
 const createDefaultValuesFromType = async (
   type: TypeElement,
-  elementsSrouce?: ReadOnlyElementsSource,
+  elementsSource?: ReadOnlyElementsSource,
 ): Promise<Values> => {
   const createDefaultValuesFromObjectType = async (object: ObjectType): Promise<Values> =>
     _.pickBy(
@@ -816,10 +816,10 @@ const createDefaultValuesFromType = async (
         if (field.annotations[CORE_ANNOTATIONS.DEFAULT] !== undefined) {
           return field.annotations[CORE_ANNOTATIONS.DEFAULT]
         }
-        if ((await field.getType(elementsSrouce))
+        if ((await field.getType(elementsSource))
           .annotations[CORE_ANNOTATIONS.DEFAULT] !== undefined
-            && !isContainerType(field.getType(elementsSrouce))) {
-          return createDefaultValuesFromType(await field.getType(elementsSrouce))
+            && !isContainerType(field.getType(elementsSource))) {
+          return createDefaultValuesFromType(await field.getType(elementsSource))
         }
         return undefined
       }),
@@ -904,4 +904,35 @@ export const extendGeneratedDependencies = (
     ),
     ref => ref.elemID.getFullName(),
   )
+}
+
+const getResolvedRef = async (
+  ref: ReferenceExpression,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<ReferenceExpression> => {
+  if (ref.value !== undefined) {
+    return ref
+  }
+  const sourceVal = await elementsSource.get(ref.elemID)
+  if (sourceVal === undefined) {
+    throw Error(`ElemID ${ref.elemID.getFullName()} does not exist on the refType and elementsSource`)
+  }
+  return createRefToElmWithValue(sourceVal)
+}
+
+export const resolveTypeShallow = async (
+  element: Element,
+  elementsSource: ReadOnlyElementsSource,
+): Promise<void> => {
+  element.annotationRefTypes = await mapValuesAsync(
+    element.annotationRefTypes,
+    async annotationRefType => getResolvedRef(annotationRefType, elementsSource),
+  )
+  if (isInstanceElement(element) || isField(element)) {
+    element.refType = await getResolvedRef(element.refType, elementsSource)
+  }
+  if (isObjectType(element)) {
+    await awu(Object.values(element.fields)).forEach(async field =>
+      resolveTypeShallow(field, elementsSource))
+  }
 }

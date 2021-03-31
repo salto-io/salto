@@ -55,10 +55,18 @@ export type PostFetchOptions = {
   elementsByAdapter: Readonly<Record<string, ReadonlyArray<Readonly<Element>>>>
 }
 
+
+export type DeployModifiers = {
+  changeValidator?: ChangeValidator
+  dependencyChanger?: DependencyChanger
+  getChangeGroupIds?: ChangeGroupIdFunction
+}
+
 export type AdapterOperations = {
   fetch: (opts: FetchOptions) => Promise<FetchResult>
   deploy: (opts: DeployOptions) => Promise<DeployResult>
   postFetch?: (opts: PostFetchOptions) => Promise<{ changed: boolean }>
+  deployModifiers?: DeployModifiers
 }
 
 export type AdapterOperationName = keyof AdapterOperations
@@ -89,11 +97,6 @@ export type Adapter = {
   validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
   authenticationMethods: AdapterAuthentication
   configType?: ObjectType
-  deployModifiers?: {
-    changeValidator?: ChangeValidator
-    dependencyChanger?: DependencyChanger
-    getChangeGroupIds?: ChangeGroupIdFunction
-  }
   install?: () => Promise<AdapterInstallResult>
 }
 

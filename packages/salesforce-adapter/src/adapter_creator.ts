@@ -19,8 +19,6 @@ import {
   Values,
 } from '@salto-io/adapter-api'
 import SalesforceClient, { validateCredentials } from './client/client'
-import changeValidator from './change_validator'
-import { getChangeGroupIds } from './group_changes'
 import SalesforceAdapter from './adapter'
 import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
   isAccessTokenConfig, SalesforceConfig, accessTokenCredentialsType,
@@ -132,6 +130,7 @@ export const adapter: Adapter = {
       },
 
       deploy: salesforceAdapter.deploy.bind(salesforceAdapter),
+      deployModifiers: salesforceAdapter.deployModifiers,
     }
   },
   validateCredentials: async config => validateCredentials(credentialsFromConfig(config)),
@@ -151,8 +150,4 @@ export const adapter: Adapter = {
     },
   },
   configType,
-  deployModifiers: {
-    changeValidator,
-    getChangeGroupIds,
-  },
 }

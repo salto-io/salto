@@ -19,7 +19,7 @@ import {
   DeployOptions,
   DeployResult,
   Element, ObjectType, Change,
-  ChangeDataType, isObjectType, isField, FieldMap, Values,
+  ChangeDataType, isObjectType, isField, FieldMap, Values, DeployModifiers,
 } from '@salto-io/adapter-api'
 import MarketoClient from './client/client'
 import {
@@ -36,6 +36,7 @@ import {
   UPDATE_ONLY,
   API_NAME, STATE, APPROVED_STATE,
 } from './constants'
+import changeValidator from './change_validator'
 
 
 export interface MarketoAdapterParams {
@@ -239,6 +240,13 @@ export default class MarketoAdapter implements AdapterOperations {
   private async approveCustomObjectIfNeeded(annotations: Values): Promise<void> {
     if (annotations[STATE] === APPROVED_STATE) {
       await this.client.approveCustomObject(annotations[API_NAME])
+    }
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public get deployModifiers(): DeployModifiers {
+    return {
+      changeValidator,
     }
   }
 }

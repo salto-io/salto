@@ -13,29 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Adapter, ObjectType, ElemID, DependencyChanger, dependencyChange,
+import { ObjectType, ElemID, DependencyChanger, dependencyChange,
   DependencyChange, ChangeEntry, AdapterOperations, toChange } from '@salto-io/adapter-api'
 import { getAdapterDependencyChangers } from '../../../src/core/adapters'
 import { mockFunction } from '../../common/helpers'
 
 describe('getAdapterDependencyChangers', () => {
-  const mockAdapter = (dependencyChanger?: DependencyChanger): Adapter => ({
-    authenticationMethods: { basic: {
-      credentialsType: new ObjectType({ elemID: new ElemID('test') }),
-    } },
-    configType: new ObjectType({ elemID: new ElemID('test') }),
-    operations: mockFunction<Adapter['operations']>().mockReturnValue({
-      fetch: mockFunction<AdapterOperations['fetch']>(),
-      deploy: mockFunction<AdapterOperations['deploy']>(),
-    }),
-    validateCredentials: mockFunction<Adapter['validateCredentials']>(),
+  const mockAdapter = (dependencyChanger?: DependencyChanger): AdapterOperations => ({
+    fetch: mockFunction<AdapterOperations['fetch']>(),
+    deploy: mockFunction<AdapterOperations['deploy']>(),
     deployModifiers: {
       dependencyChanger,
     },
   })
 
   const mockDepChanges = [dependencyChange('add', 1, 2)]
-  const mockCreators: Record<string, Adapter> = {
+  const mockCreators: Record<string, AdapterOperations> = {
     withDepChanger: mockAdapter(
       mockFunction<DependencyChanger>().mockResolvedValue(mockDepChanges)
     ),

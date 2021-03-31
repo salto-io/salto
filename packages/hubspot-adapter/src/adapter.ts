@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   Element, InstanceElement, ObjectType, FetchResult, AdapterOperations,
-  DeployOptions, DeployResult,
+  DeployOptions, DeployResult, DeployModifiers,
 } from '@salto-io/adapter-api'
 import {
   restoreValues, deployInstance, resolveValues,
@@ -33,6 +33,8 @@ import { FilterCreator } from './filter'
 import formFieldFilter from './filters/form_field'
 import useridentifierFilter from './filters/useridentifier'
 import instanceTransformFilter from './filters/instance_transform'
+import changeValidator from './change_validator'
+
 
 const validateFormGuid = (
   before: InstanceElement,
@@ -173,5 +175,12 @@ export default class HubspotAdapter implements AdapterOperations {
       (prevRes, filter) => prevRes.then(() => filter.onFetch(elements)),
       Promise.resolve(),
     )
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public get deployModifiers(): DeployModifiers {
+    return {
+      changeValidator,
+    }
   }
 }

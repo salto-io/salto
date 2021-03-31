@@ -90,8 +90,8 @@ const createTemplateExpressions = (
 
 const trimToken = (token: Required<Token>): Required<Token> => ({
   ...token,
-  text: trimEnd(token.text),
-  value: trimEnd(token.value),
+  text: trimEnd(token.text, '\r\n'),
+  value: trimEnd(token.value, '\r\n'),
 })
 
 const createStringValue = (

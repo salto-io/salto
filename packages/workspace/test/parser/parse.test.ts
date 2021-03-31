@@ -175,9 +175,14 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
         Give me some 
         OK?
         '''
+        withTrailingNewline = '''
+        This has 
+        a trailing line with spaces
+  
+        '''
         withQuotes = '''
           "I can see Russia from my house!"
-        '''
+'''
       }
 
       type salesforce.stringAttr {
@@ -624,9 +629,13 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
         expect(multilineObject.annotations).toHaveProperty('data')
         expect(multilineObject.annotations.data).toEqual('        This\n        is\n        Multiline')
       })
-      it('should preserve end of line spaces', () => {
+      it('should preserve end of line spaces without inserting a newline', () => {
         expect(multilineObject.annotations).toHaveProperty('withSpaces')
         expect(multilineObject.annotations.withSpaces).toEqual('        Give me some \n        OK?')
+      })
+      it('should preserve end of line spaces on new line', () => {
+        expect(multilineObject.annotations).toHaveProperty('withTrailingNewline')
+        expect(multilineObject.annotations.withTrailingNewline).toEqual('        This has \n        a trailing line with spaces\n  ')
       })
       it('should handle qoutation marks inside the multiline string', () => {
         expect(multilineObject.annotations).toHaveProperty('withQuotes')

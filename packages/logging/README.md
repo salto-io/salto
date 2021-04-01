@@ -35,6 +35,7 @@ const log = logger('my.namespace')   // namespace set explicitly
 #### Explicit log levels
 
 ```typescript
+log.trace('Detailed message')
 log.debug('My debug message')
 log.info('My object: %o', { hello: 'world' })
 log.warn(new Error('oops'))
@@ -102,7 +103,7 @@ Variables containing empty string values are treated as undefined.
 
 All the loggers share a single configuration with the following properties:
 
-### `minLevel: 'info' | 'debug' | 'warn' | 'error' | 'none'`
+### `minLevel: 'info' | 'debug' | 'trace' | 'warn' | 'error' | 'none'`
 
 Environment variable:
 

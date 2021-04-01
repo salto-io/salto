@@ -36,7 +36,7 @@
     "@salto-io/file": "0.2.9",
     "@salto-io/logging": "0.2.9",
     "@salto-io/lowerdash": "0.2.9",
-    "@salto-io/suitecloud-cli": "1.1.2-salto-4",
+    "@salto-io/suitecloud-cli": "1.1.2-salto-5",
     "ajv": "^7.1.1",
     "async-lock": "^1.2.4",
     "axios": "^0.21.1",

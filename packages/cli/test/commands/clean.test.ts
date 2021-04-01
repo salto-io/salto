@@ -54,6 +54,7 @@ describe('clean command', () => {
           staticResources: false,
           credentials: false,
           serviceConfig: false,
+          regenerateCache: false,
         },
         workspace: mocks.mockWorkspace({}),
       })).toBe(CliExitCode.UserInputError)
@@ -74,13 +75,32 @@ describe('clean command', () => {
           staticResources: true,
           credentials: true,
           serviceConfig: true,
+          regenerateCache: false,
         },
         workspace: mocks.mockWorkspace({}),
       })).toBe(CliExitCode.Success)
       expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith('Do you want to perform these actions?')
       expect(output.stdout.content.search('Canceling...')).toBeGreaterThan(0)
     })
-
+    it('should prompt user and exit if no (regenerate-cache)', async () => {
+      jest.spyOn(callbacks, 'getUserBooleanInput').mockImplementationOnce(() => Promise.resolve(false))
+      expect(await action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          nacl: true,
+          state: false,
+          cache: false,
+          staticResources: false,
+          credentials: false,
+          serviceConfig: false,
+          regenerateCache: true,
+        },
+        workspace: mocks.mockWorkspace({}),
+      })).toBe(CliExitCode.Success)
+      expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith('Do you want to perform these actions?')
+      expect(output.stdout.content.search('Canceling...')).toBeGreaterThan(0)
+    })
     it('should fail if trying to clean static resources without all dependent components', async () => {
       expect(await action({
         ...cliCommandArgs,
@@ -92,6 +112,7 @@ describe('clean command', () => {
           staticResources: true,
           credentials: true,
           serviceConfig: true,
+          regenerateCache: false,
         },
         workspace: mocks.mockWorkspace({}),
       })).toBe(CliExitCode.UserInputError)
@@ -99,6 +120,24 @@ describe('clean command', () => {
       expect(output.stderr.content.search('Cannot clear static resources without clearing the state, cache and nacls')).toBeGreaterThanOrEqual(0)
     })
 
+    it('should fail if attempting to regenerate and clean the cache at the same time', async () => {
+      expect(await action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          nacl: false,
+          state: false,
+          cache: true,
+          staticResources: false,
+          credentials: false,
+          serviceConfig: false,
+          regenerateCache: true,
+        },
+        workspace: mocks.mockWorkspace({}),
+      })).toBe(CliExitCode.UserInputError)
+      expect(callbacks.getUserBooleanInput).not.toHaveBeenCalled()
+      expect(output.stderr.content.search('Cannot re-generate and clear the cache in the same operation')).toBeGreaterThanOrEqual(0)
+    })
     it('should prompt user and continue if yes', async () => {
       const workspace = mocks.mockWorkspace({})
       expect(await action({
@@ -111,6 +150,7 @@ describe('clean command', () => {
           staticResources: true,
           credentials: true,
           serviceConfig: true,
+          regenerateCache: false,
         },
         workspace,
       })).toBe(CliExitCode.Success)
@@ -127,7 +167,38 @@ describe('clean command', () => {
       expect(output.stdout.content.search('Starting to clean')).toBeGreaterThan(0)
       expect(output.stdout.content.search('Finished cleaning')).toBeGreaterThan(0)
     })
+    it('should prompt user and continue if yes (regenerate-cache)', async () => {
+      const workspace = mocks.mockWorkspace({})
+      expect(await action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          nacl: false,
+          state: false,
+          cache: false,
+          staticResources: false,
+          credentials: false,
+          serviceConfig: false,
+          regenerateCache: true,
+        },
+        workspace,
+      })).toBe(CliExitCode.Success)
+      expect(callbacks.getUserBooleanInput).toHaveBeenCalledWith('Do you want to perform these actions?')
+      expect(core.cleanWorkspace).toHaveBeenCalledWith(workspace, {
+        nacl: false,
+        state: false,
+        cache: true,
+        staticResources: false,
+        credentials: false,
+        serviceConfig: false,
+      })
+      expect(workspace.errors).toHaveBeenCalledTimes(1)
+      // expecting 1 because there is no call from the mocked cleanWorkspace
+      expect(workspace.flush).toHaveBeenCalledTimes(1)
 
+      expect(output.stdout.content.search('Starting to clean')).toBeGreaterThan(0)
+      expect(output.stdout.content.search('Finished cleaning')).toBeGreaterThan(0)
+    })
     it('should exit cleanly on error', async () => {
       jest.spyOn(core, 'cleanWorkspace').mockImplementationOnce(
         () => { throw new Error('something bad happened') }
@@ -142,6 +213,7 @@ describe('clean command', () => {
           staticResources: true,
           credentials: true,
           serviceConfig: true,
+          regenerateCache: false,
         },
         workspace: mocks.mockWorkspace({}),
       })).toBe(CliExitCode.AppError)
@@ -167,6 +239,7 @@ describe('clean command', () => {
           staticResources: true,
           credentials: true,
           serviceConfig: true,
+          regenerateCache: false,
         },
         workspace,
       })).toBe(CliExitCode.Success)

@@ -20,7 +20,6 @@ import uuidv4 from 'uuid/v4'
 import { remoteMap } from '@salto-io/workspace'
 import { collections, promises } from '@salto-io/lowerdash'
 import type rocksdb from 'rocksdb'
-import rocksdbImpl from './rocksdb'
 
 const { asynciterable } = collections
 const { awu } = asynciterable
@@ -270,14 +269,25 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
     }
   }
 
-  const getOpebDBConnection = async (loc: string): Promise<rocksdb> => {
-    const newDb = rocksdbImpl(loc)
-    await promisify(newDb.open.bind(newDb, { readOnly }))()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let rocksdbImpl: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const getRemoteDbImpl = (): any => {
+    if (rocksdbImpl === undefined) {
+      // eslint-disable-next-line global-require
+      rocksdbImpl = require('./rocksdb').default
+    }
+    return rocksdbImpl
+  }
+
+  const getOpenDBConnection = async (loc: string): Promise<rocksdb> => {
+    const newDb = getRemoteDbImpl()(loc)
+    await promisify(newDb.open.bind(newDb))()
     return newDb
   }
 
   const createDBIfNotExist = async (loc: string): Promise<void> => {
-    const newDb: rocksdb = rocksdbImpl(loc)
+    const newDb: rocksdb = getRemoteDbImpl()(loc)
     try {
       await promisify(newDb.open.bind(newDb, { readOnly: true }))()
       await promisify(newDb.close.bind(newDb))()
@@ -298,7 +308,7 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       throw new Error('Failed to open rocksdb connection - too much open connections already')
     }
     await createDBIfNotExist(loc)
-    const connection = getOpebDBConnection(loc)
+    const connection = getOpenDBConnection(loc)
     db = await connection
     currnetConnectionsCount += 1
     if (!readOnly) {

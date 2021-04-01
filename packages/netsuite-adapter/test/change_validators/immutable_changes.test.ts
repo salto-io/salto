@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, toChange } from '@salto-io/adapter-api'
-import serviceIdsChangesValidator from '../../src/change_validators/service_ids_changes'
+import { CORE_ANNOTATIONS, InstanceElement, toChange } from '@salto-io/adapter-api'
+import immutableChangesValidator from '../../src/change_validators/immutable_changes'
 import { customTypes, fileCabinetTypes } from '../../src/types'
 import { ENTITY_CUSTOM_FIELD, FILE, PATH, SCRIPT_ID } from '../../src/constants'
 
@@ -27,7 +27,7 @@ describe('customization type change validator', () => {
       })
     const after = entityCustomFieldInstance.clone()
     after.value[SCRIPT_ID] = 'modified'
-    const changeErrors = await serviceIdsChangesValidator(
+    const changeErrors = await immutableChangesValidator(
       [toChange({ before: entityCustomFieldInstance, after })]
     )
     expect(changeErrors).toHaveLength(1)
@@ -41,7 +41,21 @@ describe('customization type change validator', () => {
     })
     const after = fileInstance.clone()
     after.value[PATH] = 'Templates/modified.html'
-    const changeErrors = await serviceIdsChangesValidator(
+    const changeErrors = await immutableChangesValidator(
+      [toChange({ before: fileInstance, after })]
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].elemID).toEqual(fileInstance.elemID)
+  })
+
+  it('should have change error if file cabinet type parent has been modified', async () => {
+    const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {}, undefined, {
+      parent: 'Templates/content',
+    })
+    const after = fileInstance.clone()
+    after.annotations[CORE_ANNOTATIONS.PARENT] = 'Templates/modified'
+    const changeErrors = await immutableChangesValidator(
       [toChange({ before: fileInstance, after })]
     )
     expect(changeErrors).toHaveLength(1)
@@ -57,7 +71,7 @@ describe('customization type change validator', () => {
       })
     const after = entityCustomFieldInstance.clone()
     after.value.label = 'modified'
-    const changeErrors = await serviceIdsChangesValidator(
+    const changeErrors = await immutableChangesValidator(
       [toChange({ before: entityCustomFieldInstance, after })]
     )
     expect(changeErrors).toHaveLength(0)
@@ -70,7 +84,7 @@ describe('customization type change validator', () => {
     })
     const after = fileInstance.clone()
     after.value.content = 'modified'
-    const changeErrors = await serviceIdsChangesValidator(
+    const changeErrors = await immutableChangesValidator(
       [toChange({ before: fileInstance, after })]
     )
     expect(changeErrors).toHaveLength(0)

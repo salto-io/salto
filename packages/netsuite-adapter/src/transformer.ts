@@ -228,6 +228,7 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
   if (isFileCabinetType(instance.type)) {
     const path = values[PATH].split(FILE_CABINET_PATH_SEPARATOR).slice(1)
     delete values[PATH]
+    delete values.parent
     if (instance.type.elemID.isEqual(fileCabinetTypes[FILE].elemID)) {
       const contentFieldName = (fileContentField as Field).name
       const fileContent = values[contentFieldName]

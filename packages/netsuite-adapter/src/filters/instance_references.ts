@@ -155,6 +155,13 @@ const filterCreator: FilterCreator = () => ({
         fetchedElemenentsServiceIdToElemID,
         elementsSourceServiceIdToElemID
       )
+
+      instance.annotations = replaceReferenceValues(
+        instance.annotations,
+        instance.type,
+        fetchedElemenentsServiceIdToElemID,
+        elementsSourceServiceIdToElemID
+      )
     })
   },
 })

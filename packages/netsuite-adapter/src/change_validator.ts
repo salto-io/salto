@@ -18,14 +18,14 @@ import { createChangeValidator } from '@salto-io/adapter-utils'
 import removeCustomizationValidator from './change_validators/remove_customization'
 import removeListItemValidator from './change_validators/remove_list_item'
 import instanceChangesValidator from './change_validators/instance_changes'
-import serviceIdsChangesValidator from './change_validators/service_ids_changes'
+import immutableChangesValidator from './change_validators/immutable_changes'
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
 
 
 const changeValidators: ChangeValidator[] = [
   removeCustomizationValidator,
   instanceChangesValidator,
-  serviceIdsChangesValidator,
+  immutableChangesValidator,
   removeListItemValidator,
 ]
 

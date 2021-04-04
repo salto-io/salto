@@ -519,6 +519,7 @@ inner_types_to_export = {
     'suitelet_scriptdeployments',
     'usereventscript_scriptdeployments',
     'workflowactionscript_scriptdeployments',
+    'customrecordtype_permissions_permission',
 }
 
 should_not_be_required = {

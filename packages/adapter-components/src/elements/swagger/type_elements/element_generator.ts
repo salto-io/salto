@@ -19,11 +19,11 @@ import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { TYPES_PATH, SUBTYPES_PATH } from '../../constants'
-import { TypeSwaggerConfig, AdapterSwaggerApiConfig } from '../../../config/swagger'
+import { RequestableTypeSwaggerConfig, AdapterSwaggerApiConfig } from '../../../config/swagger'
 import {
   getParsedDefs, isReferenceObject, toNormalizedRefName, ReferenceObject, SchemaObject,
   extractAllOf, ADDITIONAL_PROPERTIES_FIELD, toPrimitiveType, toTypeName, SwaggerRefs,
-  SchemaOrReference, SWAGGER_ARRAY, SWAGGER_OBJECT,
+  SchemaOrReference, SWAGGER_ARRAY, SWAGGER_OBJECT, isArraySchemaObject,
 } from './swagger_parser'
 import { fixTypes, defineAdditionalTypes } from './type_config_override'
 
@@ -52,24 +52,20 @@ const typeAdder = ({
   toUpdatedResourceName: (origResourceName: string) => string
   getResponseSchemas: Record<string, SchemaOrReference>
   definedTypes: Record<string, ObjectType>
-  parsedConfigs: Record<string, TypeSwaggerConfig>
+  parsedConfigs: Record<string, RequestableTypeSwaggerConfig>
   refs: SwaggerRefs
 }): TypeAdderType => {
   // keep track of the top-level schemas, so that even if they are reached from another
   // endpoint before being reached directly, they will be treated as top-level
   // (alternatively, we could create a DAG if we knew there are no cyclic dependencies)
-  const endpointRootSchemaRefs = _.mapValues(
-    _.groupBy(Object.entries(_.pickBy(
-      _.mapValues(getResponseSchemas, schema => (
-        isReferenceObject(schema)
-          ? toNormalizedRefName(schema)
-          : undefined
-      )),
-      isDefined,
-    )).map(([endpointName, refName]) => ({ refName, endpointName })),
-    ({ refName }) => toUpdatedResourceName(refName)),
-    val => val.map(({ endpointName }) => endpointName)
-  )
+  const endpointRootSchemaRefs = _(getResponseSchemas)
+    .pickBy(isReferenceObject)
+    .mapValues(toNormalizedRefName)
+    .entries()
+    .map(([endpointName, refName]) => ({ endpointName, refName }))
+    .groupBy(({ refName }) => toUpdatedResourceName(refName))
+    .mapValues(val => val.map(({ endpointName }) => endpointName))
+    .value()
 
   /**
    * Helper for adding a nested type for a field.
@@ -78,10 +74,8 @@ const typeAdder = ({
     schemaDef: SchemaOrReference,
     nestedName: string,
   ): ObjectType | ListType | PrimitiveType => {
-    if (
-      !isReferenceObject(schemaDef)
-    ) {
-      if (schemaDef.type === SWAGGER_ARRAY && schemaDef.items !== undefined) {
+    if (!isReferenceObject(schemaDef)) {
+      if (isArraySchemaObject(schemaDef)) {
         // eslint-disable-next-line @typescript-eslint/no-use-before-define
         return new ListType(addType(
           schemaDef.items,
@@ -127,7 +121,7 @@ const typeAdder = ({
         : [adapterName, TYPES_PATH, SUBTYPES_PATH,
           pathNaclCase(naclObjName), pathNaclCase(naclObjName)],
     })
-    definedTypes[objName] = type
+    definedTypes[naclObjName] = type
 
     const { allProperties, additionalProperties } = extractAllOf(schemaDef, refs)
 
@@ -148,29 +142,26 @@ const typeAdder = ({
 
     Object.assign(
       type.fields,
-      _.pickBy(
-        Object.fromEntries(Object.entries(allProperties).map(([fieldName, fieldSchema]) => {
-          const toNestedTypeName = ({ allOf }: SchemaObject): string => {
-            if (allOf?.every(isReferenceObject)) {
-              if (allOf.length === 1) {
-                return toNormalizedRefName(allOf[0] as ReferenceObject)
-              }
-              return `allof_${(allOf as ReferenceObject[]).map(toNormalizedRefName).sort().join('_')}`
+      _.mapValues(allProperties, (fieldSchema, fieldName) => {
+        const toNestedTypeName = ({ allOf }: SchemaObject): string => {
+          if (allOf?.every(isReferenceObject)) {
+            if (allOf.length === 1) {
+              return toNormalizedRefName(allOf[0] as ReferenceObject)
             }
-            return `${objName}_${fieldName}`
+            return `allof_${(allOf as ReferenceObject[]).map(toNormalizedRefName).sort().join('_')}`
           }
+          return `${objName}_${fieldName}`
+        }
 
-          return [fieldName, new Field(
-            type,
-            fieldName,
-            createNestedType(
-              fieldSchema,
-              toNestedTypeName(fieldSchema),
-            ),
-          )]
-        })),
-        isDefined,
-      ),
+        return new Field(
+          type,
+          fieldName,
+          createNestedType(
+            fieldSchema,
+            toNestedTypeName(fieldSchema),
+          ),
+        )
+      }),
     )
     if (endpoints !== undefined && endpoints.length > 0) {
       if (endpoints.length > 1) {
@@ -194,7 +185,9 @@ const typeAdder = ({
         ...(endpointRootSchemaRefs[typeName] ?? []),
       ].filter(isDefined))
 
-      if (definedTypes[objName] === undefined) {
+      const naclObjName = naclCase(objName)
+
+      if (definedTypes[naclObjName] === undefined) {
         createAndAssignObjectType({
           schemaDef,
           objName,
@@ -202,7 +195,7 @@ const typeAdder = ({
           refs,
         })
       }
-      return definedTypes[objName]
+      return definedTypes[naclObjName]
     }
 
     if (isReferenceObject(schema)) {
@@ -244,7 +237,7 @@ export const generateTypes = async (
   }: AdapterSwaggerApiConfig,
 ): Promise<{
   allTypes: TypeMap
-  parsedConfigs: Record<string, TypeSwaggerConfig>
+  parsedConfigs: Record<string, RequestableTypeSwaggerConfig>
 }> => {
   // TODO persist swagger locally, add update mechanism and strategies
 
@@ -255,7 +248,7 @@ export const generateTypes = async (
   )?.newName ?? origResourceName
 
   const definedTypes: Record<string, ObjectType> = {}
-  const parsedConfigs: Record<string, TypeSwaggerConfig> = {}
+  const parsedConfigs: Record<string, RequestableTypeSwaggerConfig> = {}
 
   const { schemas: getResponseSchemas, refs } = await getParsedDefs(swagger.url)
 

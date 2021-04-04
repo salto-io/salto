@@ -18,19 +18,29 @@ import { InstanceElement, ObjectType, isListType, isMapType, isObjectType, Value
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { HTTPClientInterface, UnauthorizedError } from '../../client'
-import { UserFetchConfig, AdapterSwaggerApiConfig, TypeSwaggerConfig, TypeSwaggerDefaultConfig } from '../../config'
+import { UserFetchConfig, RequestableAdapterSwaggerApiConfig, RequestableTypeSwaggerConfig, TypeSwaggerDefaultConfig } from '../../config'
 import { generateInstancesForType } from './instance_elements'
 import { ADDITIONAL_PROPERTIES_FIELD } from './type_elements/swagger_parser'
 import { findDataField, FindNestedFieldFunc } from '../field_finder'
 import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../request_parameters'
+import { getElementsWithContext } from '../element_getter'
 
 const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
 const { isDefined } = lowerdashValues
 const log = logger(module)
 
+const isItemsOnlyObjectType = (type: ObjectType): boolean => (
+  _.isEqual(Object.keys(type.fields), ['items'])
+)
+
+const isAdditionalPropertiesOnlyObjectType = (type: ObjectType): boolean => (
+  Object.keys(type.fields).length === 1
+  && type.fields[ADDITIONAL_PROPERTIES_FIELD] !== undefined
+)
+
 const normalizeType = (type: ObjectType | undefined): ObjectType | undefined => {
-  if (type !== undefined && _.isEqual(Object.keys(type.fields), ['items'])) {
+  if (type !== undefined && isItemsOnlyObjectType(type)) {
     const itemsType = type.fields.items.type
     if (isListType(itemsType) && isObjectType(itemsType.innerType)) {
       return itemsType.innerType
@@ -57,7 +67,7 @@ const getInstancesForType = async ({
   typeName: string
   client: HTTPClientInterface
   objectTypes: Record<string, ObjectType>
-  typesConfig: Record<string, TypeSwaggerConfig>
+  typesConfig: Record<string, RequestableTypeSwaggerConfig>
   typeDefaultConfig: TypeSwaggerDefaultConfig
   contextElements?: Record<string, InstanceElement[]>
   nestedFieldFinder: FindNestedFieldFunc
@@ -68,13 +78,7 @@ const getInstancesForType = async ({
     // should never happen
     throw new Error(`could not find type ${typeName}`)
   }
-  const adapterName = type.elemID.adapter
-
   const { request, transformation } = typesConfig[typeName]
-  if (request === undefined) {
-    // should never happen - we verify that in the caller
-    throw new Error(`Invalid type config - type ${adapterName}.${typeName} has no request config`)
-  }
 
   const {
     fieldsToOmit, dataField,
@@ -93,11 +97,7 @@ const getInstancesForType = async ({
 
       const dataFieldType = nestedFieldDetails.field.type
 
-      if (
-        isObjectType(dataFieldType)
-        && Object.keys(dataFieldType.fields).length === 1
-        && dataFieldType.fields[ADDITIONAL_PROPERTIES_FIELD] !== undefined
-      ) {
+      if (isObjectType(dataFieldType) && isAdditionalPropertiesOnlyObjectType(dataFieldType)) {
         const propsType = dataFieldType.fields[ADDITIONAL_PROPERTIES_FIELD].type
         if (isMapType(propsType) && isObjectType(propsType.innerType)) {
           return {
@@ -106,12 +106,12 @@ const getInstancesForType = async ({
           }
         }
       }
-      return {
-        // guaranteed to be an ObjectType by the way we choose the data fields
-        objType: (isListType(dataFieldType)
-          ? dataFieldType.innerType
-          : dataFieldType) as ObjectType,
+
+      const fieldType = isListType(dataFieldType) ? dataFieldType.innerType : dataFieldType
+      if (!isObjectType(fieldType)) {
+        throw new Error(`data field type ${fieldType.elemID.getFullName()} must be an object type`)
       }
+      return { objType: fieldType }
     }
 
     const { objType, extractValues } = getType()
@@ -125,11 +125,12 @@ const getInstancesForType = async ({
 
       const entries = (results
         .flatMap(result => (nestedFieldDetails !== undefined
-          ? makeArray(result[nestedFieldDetails.field.name] ?? []) as Values[]
+          ? makeArray(result[nestedFieldDetails.field.name])
           : makeArray(result)))
-        .flatMap(result => (extractValues
+        .flatMap(result => (extractValues && _.isPlainObject(result)
           ? Object.values(result as Values)
-          : makeArray(result ?? []))))
+          : makeArray(result))))
+
       return entries
     }
 
@@ -167,27 +168,13 @@ export const getAllInstances = async ({
   computeGetArgs = defaultComputeGetArgs,
 }: {
   client: HTTPClientInterface
-  apiConfig: AdapterSwaggerApiConfig
+  apiConfig: RequestableAdapterSwaggerApiConfig
   fetchConfig: UserFetchConfig
   objectTypes: Record<string, ObjectType>
   nestedFieldFinder?: FindNestedFieldFunc
   computeGetArgs?: ComputeGetArgsFunc
 }): Promise<InstanceElement[]> => {
   const { types, typeDefaults } = apiConfig
-
-  // for now assuming flat dependencies for simplicity.
-  // will replace with a DAG (with support for concurrency) when needed
-  const [independentResources, dependentResources] = _.partition(
-    fetchConfig.includeTypes,
-    typeName => _.isEmpty(apiConfig.types[typeName]?.request?.dependsOn)
-  ).map(list => new Set(list))
-
-  // some type requests need to extract context and parameters from other types -
-  // if these types are not listed in the includeTypes, they will be fetched but not persisted
-  const additionalContextTypes: string[] = [...dependentResources]
-    .flatMap(typeName => apiConfig.types[typeName].request?.dependsOn?.map(({ from }) => from.type))
-    .filter(isDefined)
-    .filter(typeName => !independentResources.has(typeName))
 
   const elementGenerationParams = {
     client,
@@ -197,36 +184,13 @@ export const getAllInstances = async ({
     nestedFieldFinder,
     computeGetArgs,
   }
-  const contextElements: Record<string, {
-    instances: InstanceElement[]
-    // if the type is only fetched as context for another type, do not persist it
-    doNotPersist?: boolean
-  }> = Object.fromEntries(
-    await Promise.all(
-      [...independentResources, ...additionalContextTypes].map(async typeName =>
-        [
-          typeName,
-          {
-            instances: await getInstancesForType({
-              ...elementGenerationParams,
-              typeName,
-            }),
-            doNotPersist: !independentResources.has(typeName),
-          },
-        ])
-    )
-  )
-  const dependentElements = await Promise.all(
-    [...dependentResources].map(async typeName => getInstancesForType({
-      ...elementGenerationParams,
-      typeName,
-      contextElements: _.mapValues(contextElements, val => val.instances),
-    }))
-  )
 
-  return [
-    ...Object.values(contextElements)
-      .flatMap(({ doNotPersist, instances }) => (doNotPersist ? [] : instances)),
-    ...dependentElements.flat(),
-  ]
+  return getElementsWithContext({
+    includeTypes: fetchConfig.includeTypes,
+    types: apiConfig.types,
+    typeElementGetter: args => getInstancesForType({
+      ...elementGenerationParams,
+      ...args,
+    }),
+  })
 }

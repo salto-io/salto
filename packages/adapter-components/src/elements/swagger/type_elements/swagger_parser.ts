@@ -74,8 +74,9 @@ export const isReferenceObject = (value: any): value is ReferenceObject => (
   value?.$ref !== undefined
 )
 
+// TODO generalize return type to include v2
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const isArraySchemaObject = (schema: any): schema is OpenAPIV3.ArraySchemaObject => (
+export const isArraySchemaObject = (schema: any): schema is OpenAPIV3.ArraySchemaObject => (
   schema.type === SWAGGER_ARRAY && schema.items !== undefined
 )
 
@@ -137,7 +138,8 @@ type HasAllOf = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const allOfCompatible = (val: any): val is HasAllOf => (
-  val.allOf === undefined || allOfCompatible(val.allOf)
+  val.allOf === undefined
+  || (Array.isArray(val.allOf) && allOfCompatible(val.allOf))
 )
 
 /**
@@ -176,15 +178,15 @@ export const extractAllOf = (schemaDefObj: SchemaObject, refs: SwaggerRefs): {
     ),
   })
 
-  const flattenAllOfAddlProps = (schemaDef: SchemaObject): ExtendedSchema[] => (
+  const flattenAllOfAdditionalProps = (schemaDef: SchemaObject): ExtendedSchema[] => (
     [
       schemaDef.additionalProperties,
       ...(allOfCompatible(schemaDef) ? recursiveAllOf(schemaDef) : []).flatMap(nested => (
         isReferenceObject(nested)
-          ? flattenAllOfAddlProps(refs.get(nested.$ref))
+          ? flattenAllOfAdditionalProps(refs.get(nested.$ref))
           : [
             nested.additionalProperties,
-            ...flattenAllOfAddlProps(nested.properties ?? {}),
+            ...flattenAllOfAdditionalProps(nested.properties ?? {}),
           ]
       )),
     ].map(p => (p === false ? undefined : p))
@@ -199,7 +201,7 @@ export const extractAllOf = (schemaDefObj: SchemaObject, refs: SwaggerRefs): {
     }
   }
 
-  const additionalProperties = flattenAllOfAddlProps(schemaDefObj)
+  const additionalProperties = flattenAllOfAdditionalProps(schemaDefObj)
   if (additionalProperties.length > 1) {
     log.error('too many additionalProperties found in allOf - using first')
   }

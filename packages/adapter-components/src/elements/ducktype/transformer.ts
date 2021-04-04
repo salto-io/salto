@@ -25,6 +25,7 @@ import { TypeConfig } from '../../config'
 import { FindNestedFieldFunc } from '../field_finder'
 import { TypeDuckTypeDefaultsConfig, TypeDuckTypeConfig } from '../../config/ducktype'
 import { ComputeGetArgsFunc } from '../request_parameters'
+import { getElementsWithContext } from '../element_getter'
 
 const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
@@ -56,7 +57,7 @@ export const getTypeAndInstances = async ({
 }): Promise<Element[]> => {
   const { request, transformation } = typesConfig[typeName]
   if (request === undefined) {
-    // should never happen - we verify that in the caller
+    // a type with no request config cannot be fetched
     throw new Error(`Invalid type config - type ${adapterName}.${typeName} has no request config`)
   }
   const {
@@ -147,14 +148,8 @@ export const getAllElements = async ({
   computeGetArgs: ComputeGetArgsFunc
   typeDefaults: TypeDuckTypeDefaultsConfig
 }): Promise<Element[]> => {
-  // for now assuming flat dependencies for simplicity.
-  // will replace with a DAG (with support for concurrency) when needed
   const allTypesWithRequestEndpoints = includeTypes.filter(
     typeName => types[typeName].request?.url !== undefined
-  )
-  const [independentEndpoints, dependentEndpoints] = _.partition(
-    allTypesWithRequestEndpoints,
-    typeName => _.isEmpty(types[typeName].request?.dependsOn)
   )
 
   const elementGenerationParams = {
@@ -165,25 +160,13 @@ export const getAllElements = async ({
     typesConfig: types,
     typeDefaultConfig: typeDefaults,
   }
-  const contextElements = Object.fromEntries(await Promise.all(independentEndpoints.map(
-    async (typeName): Promise<[string, Element[]]> => [
-      typeName,
-      await getTypeAndInstances({
-        ...elementGenerationParams,
-        typeName,
-      }),
-    ]
-  )))
-  const dependentElements = await Promise.all(
-    dependentEndpoints.map(typeName => getTypeAndInstances({
-      ...elementGenerationParams,
-      typeName,
-      contextElements,
-    }))
-  )
 
-  return [
-    ...Object.values(contextElements).flat(),
-    ...dependentElements.flat(),
-  ]
+  return getElementsWithContext({
+    includeTypes: allTypesWithRequestEndpoints,
+    types,
+    typeElementGetter: args => getTypeAndInstances({
+      ...elementGenerationParams,
+      ...args,
+    }),
+  })
 }

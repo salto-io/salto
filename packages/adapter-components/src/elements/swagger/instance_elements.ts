@@ -76,27 +76,28 @@ const extractStandaloneFields = (
     }
     const fieldExtractionDef = standaloneFields.find(def => def.fieldName === field.name)
 
-    if (fieldExtractionDef !== undefined && !isReferenceExpression(value)) {
-      const refType = isListType(field.type) ? field.type.innerType : field.type
-      if (!isObjectType(refType)) {
-        log.error(`unexpected type encountered when extracting nested fields - skipping path ${path} for instance ${inst.elemID.getFullName()}`)
-        return value
-      }
+    if (fieldExtractionDef === undefined || isReferenceExpression(value)) {
+      return value
+    }
 
-      if (Array.isArray(value)) {
-        return value.map(val => replaceWithReference({
-          value: val,
-          parent: inst,
-          objType: refType,
-        }))
-      }
-      return replaceWithReference({
-        value,
+    const refType = isListType(field.type) ? field.type.innerType : field.type
+    if (!isObjectType(refType)) {
+      log.error(`unexpected type encountered when extracting nested fields - skipping path ${path} for instance ${inst.elemID.getFullName()}`)
+      return value
+    }
+
+    if (Array.isArray(value)) {
+      return value.map(val => replaceWithReference({
+        value: val,
         parent: inst,
         objType: refType,
-      })
+      }))
     }
-    return value
+    return replaceWithReference({
+      value,
+      parent: inst,
+      objType: refType,
+    })
   }
 
   const updatedInst = transformElement({
@@ -129,12 +130,10 @@ const normalizeElementValues = (instance: InstanceElement): InstanceElement => {
       return value
     }
 
-    const additionalProps = _.pickBy(value, (_val, key) => (
-      !(
-        Object.keys(fieldType.fields).includes(key)
-        || Object.keys(fieldType.annotationTypes).includes(key)
-      )
-    ))
+    const additionalProps = _.pickBy(
+      value,
+      (_val, key) => !Object.keys(fieldType.fields).includes(key),
+    )
     return {
       ..._.omit(value, Object.keys(additionalProps)),
       [ADDITIONAL_PROPERTIES_FIELD]: additionalProps,

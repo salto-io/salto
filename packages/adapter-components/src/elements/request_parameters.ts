@@ -55,36 +55,37 @@ const computeDependsOnURLs = (
   }: RequestConfig,
   contextElements?: Record<string, Element[]>,
 ): string[] => {
-  if (url.includes('{')) {
-    if (contextElements === undefined || dependsOn === undefined || _.isEmpty(dependsOn)) {
-      throw new Error(`cannot resolve endpoint ${url} - missing context`)
-    }
-
-    const urlParams = url.match(ARG_PLACEHOLDER_MATCHER)
-    if (urlParams === null) {
-      // TODO catch earlier in the validation
-      throw new Error(`invalid endpoint definition ${url}`)
-    }
-    if (urlParams.length > 1) {
-      // not needed yet (when it is, we will need to decide which combinations to use)
-      throw new Error(`too many variables in endpoint ${url}`)
-    }
-    const argName = urlParams[0].slice(1, -1)
-    const referenceDetails = dependsOn.find(({ pathParam }) => pathParam === argName)
-    if (referenceDetails === undefined) {
-      log.error('could not resolve path param %s in url %s with dependsOn config %s', argName, url, safeJsonStringify(dependsOn))
-      throw new Error(`could not resolve path param ${argName} in url ${url}`)
-    }
-    const contextInstances = (contextElements[referenceDetails.from.type] ?? []).filter(
-      isInstanceElement
-    )
-    if (!contextInstances) {
-      throw new Error(`no instances found for ${referenceDetails.from.type}, cannot call endpoint ${url}`)
-    }
-    const potentialParams = contextInstances.map(e => e.value[referenceDetails.from.field])
-    return potentialParams.map(p => url.replace(ARG_PLACEHOLDER_MATCHER, p))
+  if (!url.includes('{')) {
+    return [url]
   }
-  return [url]
+
+  if (contextElements === undefined || dependsOn === undefined || _.isEmpty(dependsOn)) {
+    throw new Error(`cannot resolve endpoint ${url} - missing context`)
+  }
+
+  const urlParams = url.match(ARG_PLACEHOLDER_MATCHER)
+  if (urlParams === null) {
+    // TODO catch earlier in the validation
+    throw new Error(`invalid endpoint definition ${url}`)
+  }
+  if (urlParams.length > 1) {
+    // not needed yet (when it is, we will need to decide which combinations to use)
+    throw new Error(`too many variables in endpoint ${url}`)
+  }
+  const argName = urlParams[0].slice(1, -1)
+  const referenceDetails = dependsOn.find(({ pathParam }) => pathParam === argName)
+  if (referenceDetails === undefined) {
+    log.error('could not resolve path param %s in url %s with dependsOn config %s', argName, url, safeJsonStringify(dependsOn))
+    throw new Error(`could not resolve path param ${argName} in url ${url}`)
+  }
+  const contextInstances = (contextElements[referenceDetails.from.type] ?? []).filter(
+    isInstanceElement
+  )
+  if (!contextInstances) {
+    throw new Error(`no instances found for ${referenceDetails.from.type}, cannot call endpoint ${url}`)
+  }
+  const potentialParams = contextInstances.map(e => e.value[referenceDetails.from.field])
+  return potentialParams.map(p => url.replace(ARG_PLACEHOLDER_MATCHER, p))
 }
 
 export const computeGetArgs: ComputeGetArgsFunc = (

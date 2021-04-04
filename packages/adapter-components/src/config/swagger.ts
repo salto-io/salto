@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType } from '@salto-io/adapter-api'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { types, values as lowerDashValues } from '@salto-io/lowerdash'
 import { AdapterApiConfig, createAdapterApiConfigType, TypeConfig, TypeDefaultsConfig } from './shared'
 import { createRequestConfigs, validateRequestConfig } from './request'
 import { createTransformationConfigTypes, validateTransoformationConfig } from './transformation'
@@ -48,10 +48,14 @@ export type SwaggerDefinitionBaseConfig = {
 }
 
 export type TypeSwaggerConfig = TypeConfig
+export type RequestableTypeSwaggerConfig = types.PickyRequired<TypeSwaggerConfig, 'request'>
 export type TypeSwaggerDefaultConfig = TypeDefaultsConfig
 
 export type AdapterSwaggerApiConfig = AdapterApiConfig & {
   swagger: SwaggerDefinitionBaseConfig
+}
+export type RequestableAdapterSwaggerApiConfig = AdapterSwaggerApiConfig & {
+  types: Record<string, RequestableTypeSwaggerConfig>
 }
 
 const createSwaggerDefinitionsBaseConfigType = (

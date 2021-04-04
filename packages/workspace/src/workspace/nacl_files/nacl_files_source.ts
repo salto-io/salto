@@ -253,8 +253,11 @@ const buildNaclFilesState = async ({
     deletions: Record<string, Set<T>>,
   ): Promise<void> => {
     const changedKeys = _.uniq(Object.keys(additions).concat(Object.keys(deletions)))
+    const keyToValue = Object.fromEntries(
+      _.zip(changedKeys, await index.getMany(changedKeys))
+    ) as Record<string, T[] | undefined>
     return index.setAll(awu(changedKeys).map(async key => {
-      const currentValues = (await index.get(key)) ?? []
+      const currentValues = keyToValue[key] ?? []
       const keyDeletionsSet = deletions[key] ?? new Set()
       const keyAdditions = Array.from(additions[key]?.values() ?? [])
       const newValues = currentValues
@@ -326,7 +329,6 @@ const buildNaclFilesState = async ({
     }
   })
 
-
   const unmodifiedFragments = awu(_.uniqBy(relevantElementIDs, e => e.getFullName()))
     .flatMap(async elemID => {
       const unmodifiedFilesWithElem = (
@@ -340,16 +342,18 @@ const buildNaclFilesState = async ({
           ))
     }).filter(values.isDefined) as AsyncIterable<Element>
 
-  await updateIndex(
-    currentState.elementsIndex,
-    elementsIndexAdditions,
-    elementsIndexDeletions
-  )
-  await updateIndex(
-    currentState.referencedIndex,
-    referencedIndexAdditions,
-    referencedIndexDeletions
-  )
+  await Promise.all([
+    updateIndex(
+      currentState.elementsIndex,
+      elementsIndexAdditions,
+      elementsIndexDeletions
+    ),
+    updateIndex(
+      currentState.referencedIndex,
+      referencedIndexAdditions,
+      referencedIndexDeletions
+    ),
+  ])
   const changes = await buildNewMergedElementsAndErrors({
     afterElements: concatAsync(...newElementsToMerge, unmodifiedFragments),
     relevantElementIDs: awu(relevantElementIDs),

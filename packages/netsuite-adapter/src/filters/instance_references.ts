@@ -15,6 +15,7 @@
 */
 import {
   Element, isInstanceElement, Values, ObjectType, ElemID, ReferenceExpression, InstanceElement,
+  InstanceAnnotationTypes, TypeMap,
 } from '@salto-io/adapter-api'
 import {
   transformElement,
@@ -94,7 +95,7 @@ const generateServiceIdToElemID = (elements: Element[]): Record<string, ElemID> 
 
 const replaceReferenceValues = (
   values: Values,
-  refElement: ObjectType,
+  refElement: ObjectType| TypeMap,
   fetchedElementsServiceIdToElemID: Record<string, ElemID>,
   elementsSourceServiceIdToElemID: Record<string, ElemID>,
 ): Values => {
@@ -152,6 +153,13 @@ const filterCreator: FilterCreator = () => ({
       instance.value = replaceReferenceValues(
         instance.value,
         instance.type,
+        fetchedElemenentsServiceIdToElemID,
+        elementsSourceServiceIdToElemID
+      )
+
+      instance.annotations = replaceReferenceValues(
+        instance.annotations,
+        InstanceAnnotationTypes,
         fetchedElemenentsServiceIdToElemID,
         elementsSourceServiceIdToElemID
       )

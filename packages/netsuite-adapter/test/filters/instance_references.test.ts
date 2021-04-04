@@ -81,6 +81,11 @@ describe('instance_references filter', () => {
           refToNonExistingPath: '[/Templates/non.existing]',
           refToInstanceInElementSourcePath: '[/Templates/instanceInElementsSource]',
         },
+        undefined,
+        {
+          refToFilePath: '[/Templates/file.name]',
+          refToScriptId: '[scriptid=top_level]',
+        }
       )
     })
 
@@ -103,6 +108,19 @@ describe('instance_references filter', () => {
       })
 
       expect(instanceWithRefs.value.refToScriptId)
+        .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID)))
+    })
+
+    it('should replace annotations references', async () => {
+      await filterCreator().onFetch({
+        elements: [fileInstance, workflowInstance, instanceWithRefs],
+        elementsSourceIndex,
+        isPartial: false,
+      })
+
+      expect(instanceWithRefs.annotations.refToFilePath)
+        .toEqual(new ReferenceExpression(fileInstance.elemID.createNestedID(PATH)))
+      expect(instanceWithRefs.annotations.refToScriptId)
         .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID)))
     })
 

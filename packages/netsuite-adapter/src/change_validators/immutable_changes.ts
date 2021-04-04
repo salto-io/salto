@@ -14,11 +14,13 @@
 * limitations under the License.
 */
 import {
-  BuiltinTypes, ChangeError,
-  ChangeValidator, getChangeElement, InstanceElement, isInstanceChange, isModificationChange,
+  BuiltinTypes, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeElement, InstanceElement,
+  isInstanceChange, isModificationChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { isCustomType, isFileCabinetType } from '../types'
+
+const getReferenceValue = (val: unknown): unknown => (isReferenceExpression(val) ? val.value : val)
 
 const changeValidator: ChangeValidator = async changes => (
   _.flatten(changes
@@ -31,14 +33,24 @@ const changeValidator: ChangeValidator = async changes => (
     .map(change => {
       const before = change.data.before as InstanceElement
       const after = change.data.after as InstanceElement
-      const modifiedServiceIdsFields = Object.values(after.type.fields)
+
+      // service ids fields
+      const modifiedImmutableFields = Object.values(after.type.fields)
         .filter(field => field.type === BuiltinTypes.SERVICE_ID)
         .filter(field => before.value[field.name] !== after.value[field.name])
-      return modifiedServiceIdsFields.map(modifiedServiceIdsField => ({
+        .map(field => field.name)
+
+      // parent annotations in file cabinet instances
+      if (isFileCabinetType(after.type)
+        && getReferenceValue(before.annotations[CORE_ANNOTATIONS.PARENT])
+          !== getReferenceValue(after.annotations[CORE_ANNOTATIONS.PARENT])) {
+        modifiedImmutableFields.push(CORE_ANNOTATIONS.PARENT)
+      }
+      return modifiedImmutableFields.map(modifiedField => ({
         elemID: after.elemID,
         severity: 'Error',
-        message: 'Fields of type serviceId are immutable',
-        detailedMessage: `Field (${modifiedServiceIdsField.name}) is immutable`,
+        message: 'Attempting to modify an immutable field',
+        detailedMessage: `Field (${modifiedField}) is immutable`,
       } as ChangeError))
     }))
 )

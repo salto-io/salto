@@ -78,6 +78,8 @@ describe('Nacl Files Source', () => {
       setAll: jest.fn(),
       clear: jest.fn(),
       isEmpty: jest.fn().mockResolvedValue(true),
+      get: jest.fn().mockResolvedValue(undefined),
+      getMany: jest.fn().mockImplementation((keys: string[]) => keys.map(_k => undefined)),
     }
     createdMaps[namespace] = mockMap as unknown as RemoteMap<Value>
     return createdMaps[namespace] as RemoteMap<T, K>

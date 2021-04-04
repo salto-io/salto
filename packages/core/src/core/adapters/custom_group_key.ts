@@ -15,11 +15,12 @@
 */
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
-import { ChangeGroupIdFunction } from '@salto-io/adapter-api'
-import adapterCreators from './creators'
+import { AdapterOperations, ChangeGroupIdFunction } from '@salto-io/adapter-api'
 
-export const getAdapterChangeGroupIdFunctions = (): Record<string, ChangeGroupIdFunction> =>
-  _(adapterCreators)
+export const getAdapterChangeGroupIdFunctions = (
+  adapters: Record<string, AdapterOperations>
+): Record<string, ChangeGroupIdFunction> =>
+  _(adapters)
     .mapValues(adapter => adapter.deployModifiers?.getChangeGroupIds)
     .pickBy(values.isDefined)
     .value()

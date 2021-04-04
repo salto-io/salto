@@ -93,11 +93,11 @@ const addFieldTypeAndInstances = ({
   type.fields[fieldName].type = fieldType.type
   elements.push(fieldType.type, ...fieldType.nestedTypes)
 
-  instancesWithValues.forEach((inst, index) => {
+  instancesWithValues.forEach(inst => {
     const fieldInstance = toInstance({
       entry: inst.value[fieldName],
       type: fieldType.type,
-      defaultName: `unnamed_${index}`, // TODO improve
+      defaultName: 'unnamed',
       parent: inst,
       nestName: true,
       transformationConfigByType,

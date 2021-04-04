@@ -22,9 +22,6 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { SdkDownloadService } from '@salto-io/suitecloud-cli'
 import Bottleneck from 'bottleneck'
-import changeValidator from './change_validator'
-import { getChangeGroupIds } from './group_changes'
-import NetsuiteAdapter from './adapter'
 import { configType, DEFAULT_CONCURRENCY, NetsuiteConfig } from './config'
 import {
   NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS, CLIENT_CONFIG,
@@ -40,6 +37,7 @@ import { Credentials } from './client/credentials'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import SdfClient from './client/sdf_client'
 import NetsuiteClient from './client/client'
+import NetsuiteAdapter from './adapter'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -193,10 +191,6 @@ export const adapter: Adapter = {
     },
   },
   configType,
-  deployModifiers: {
-    changeValidator,
-    getChangeGroupIds,
-  },
   install: async (): Promise<AdapterInstallResult> => {
     try {
       return await SdkDownloadService.download()

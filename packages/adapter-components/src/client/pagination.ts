@@ -103,7 +103,8 @@ export const traverseRequests: (
       Object.keys(params).length > 0 ? { params } : undefined
     )
 
-    log.debug('Full HTTP response for %s: %s', url, safeJsonStringify({
+    log.debug('Received response for %s (%s)', url, safeJsonStringify({ url, params }))
+    log.trace('Full HTTP response for %s: %s', url, safeJsonStringify({
       url, params, response: response.data,
     }))
 

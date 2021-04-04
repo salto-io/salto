@@ -97,12 +97,18 @@ export const preview = async (
   services = workspace.services(),
 ): Promise<Plan> => {
   const stateElements = await workspace.state().getAll()
+  const adapters = await getAdapters(
+    services,
+    await workspace.servicesCredentials(services),
+    workspace.serviceConfig.bind(workspace),
+    buildElementsSourceFromElements(await workspace.elements())
+  )
   return getPlan({
     before: filterElementsByServices(stateElements, services),
     after: filterElementsByServices(await workspace.elements(), services),
-    changeValidators: getAdapterChangeValidators(),
-    dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers()),
-    customGroupIdFunctions: getAdapterChangeGroupIdFunctions(),
+    changeValidators: getAdapterChangeValidators(adapters),
+    dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
+    customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
   })
 }
 

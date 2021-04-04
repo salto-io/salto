@@ -19,7 +19,6 @@ import { InstanceElement, Adapter } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import WorkatoAdapter from './adapter'
 import { Credentials, usernameTokenCredentialsType } from './auth'
-import changeValidator from './change_validator'
 import {
   configType, WorkatoConfig, CLIENT_CONFIG, FETCH_CONFIG, DEFAULT_TYPES, DEFAULT_ID_FIELDS,
   FIELDS_TO_OMIT,
@@ -89,7 +88,4 @@ export const adapter: Adapter = {
     },
   },
   configType,
-  deployModifiers: {
-    changeValidator,
-  },
 }

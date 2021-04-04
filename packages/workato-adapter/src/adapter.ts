@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  FetchResult, AdapterOperations, DeployResult, Element, PostFetchOptions,
+  FetchResult, AdapterOperations, DeployResult, Element, PostFetchOptions, DeployModifiers,
 } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
@@ -26,6 +26,7 @@ import extractFieldsFilter from './filters/extract_fields'
 import fieldReferencesFilter from './filters/field_references'
 import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
 import { WORKATO } from './constants'
+import changeValidator from './change_validator'
 
 const log = logger(module)
 const {
@@ -106,5 +107,12 @@ export default class WorkatoAdapter implements AdapterOperations {
   // eslint-disable-next-line class-methods-use-this
   async deploy(): Promise<DeployResult> {
     throw new Error('Not implemented.')
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public get deployModifiers(): DeployModifiers {
+    return {
+      changeValidator,
+    }
   }
 }

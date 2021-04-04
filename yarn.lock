@@ -1596,36 +1596,13 @@
     requirejs "2.3.6"
     xml2js "0.4.19"
 
-"@salto-io/logging@0.1.35-master.b11f0d71":
-  version "0.1.35-master.b11f0d71"
-  resolved "https://registry.yarnpkg.com/@salto-io/logging/-/logging-0.1.35-master.b11f0d71.tgz#19bdcbee6094ee56ea8f940bfd7a8cf9512d250a"
-  integrity sha512-vqu17smNiGPo3WxIq4nLGGxetxJf4VOd2VdmDT8WpqPSwGfcRi06l6CqaD9gYEVPcglXhIU80W9S9/pEBRI4sw==
-  dependencies:
-    "@salto-io/lowerdash" "0.1.35-master.b11f0d71"
-    chalk "^2.4.2"
-    fast-safe-stringify "^2.0.7"
-    lodash "^4.17.19"
-    logform "^2.1.2"
-    minimatch "^3.0.4"
-    pino "^6.3.2"
-    wu "^2.1.0"
-
-"@salto-io/lowerdash@0.1.35-master.b11f0d71":
-  version "0.1.35-master.b11f0d71"
-  resolved "https://registry.yarnpkg.com/@salto-io/lowerdash/-/lowerdash-0.1.35-master.b11f0d71.tgz#081b7728fe94697e84eed5ef38d35b7557553e3d"
-  integrity sha512-EyjO/eRzx5wHfR7J5ygZfoXTG22Mk5Q0J6s2Ljq/GIYOZUwYi9L1hLX2Bopcqo80r0Y+1ZHiaZan32HMlO92TQ==
-  dependencies:
-    lodash "^4.17.19"
-    stacktrace-parser "^0.1.9"
-    wu "^2.1.0"
-
-"@salto-io/suitecloud-cli@1.1.2-salto-4":
-  version "1.1.2-salto-4"
-  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.1.2-salto-4.tgz#d4528eb4cfa2e7bf07a4a35c36142f3a116e6fae"
-  integrity sha512-NRMBtoHDbgxpJyN/gb3fDjlyg2JMlh8OlntVtCpZSeCCguBZbhWA4IYxyWgvzNebiRIn8MAE3cpgE1j5NJWVjw==
+"@salto-io/suitecloud-cli@1.1.2-salto-5":
+  version "1.1.2-salto-5"
+  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.1.2-salto-5.tgz#6d5efc43122c95cadc264ac65d1f53e84aa23d5a"
+  integrity sha512-o1ApSpzFfCt3dOmiuAk2p1oOEyxbrfge9YPHe+Ljr74wmG+hIuJ1N8jt8eAP3IIhJCocJMtJrl1itnbnKwEfsA==
   dependencies:
     "@oracle/suitecloud-cli-localserver-command" "^1.1.1"
-    "@salto-io/logging" "0.1.35-master.b11f0d71"
+    "@salto-io/logging" "^0.2.8"
     chalk "^4.0.0"
     cli-spinner "^0.2.10"
     commander "^5.1.0"
@@ -3515,11 +3492,6 @@ colorette@^1.2.1:
   resolved "https://registry.yarnpkg.com/colorette/-/colorette-1.2.1.tgz#4d0b921325c14faf92633086a536db6e89564b1b"
   integrity sha512-puCDz0CzydiSYOrnXpz/PKd69zRrribezjtE9yd4zvytoRc8+RY/KJPvtPFKZS3E3wP6neGyMe0vOTlHO5L3Pw==
 
-colors@^1.2.1:
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/colors/-/colors-1.4.0.tgz#c50491479d4c1bdaed2c9ced32cf7c7dc2360f78"
-  integrity sha512-a+UqTh4kgZg/SlGvfbzDHpgRu7AAQOmmqRHJnxhRZICKFUT91brVhNNt58CMWU9PsBbv3PDCZUHbVxuDiH2mtA==
-
 columnify@^1.5.4:
   version "1.5.4"
   resolved "https://registry.yarnpkg.com/columnify/-/columnify-1.5.4.tgz#4737ddf1c7b69a8a7c340570782e947eec8e78bb"
@@ -5078,7 +5050,7 @@ fast-redact@^2.0.0:
   resolved "https://registry.yarnpkg.com/fast-redact/-/fast-redact-2.0.0.tgz#17bb8f5e1f56ecf4a38c8455985e5eab4c478431"
   integrity sha512-zxpkULI9W9MNTK2sJ3BpPQrTEXFNESd2X6O1tXMFpK/XM0G5c5Rll2EVYZH2TqI3xRGK/VaJ+eEOt7pnENJpeA==
 
-fast-safe-stringify@^2.0.4, fast-safe-stringify@^2.0.7:
+fast-safe-stringify@^2.0.7:
   version "2.0.7"
   resolved "https://registry.yarnpkg.com/fast-safe-stringify/-/fast-safe-stringify-2.0.7.tgz#124aa885899261f68aedb42a7c080de9da608743"
   integrity sha512-Utm6CdzT+6xsDk2m8S6uL8VHxNwI6Jub+e9NYTcAms28T84pTa25GJQV9j0CY0N1rM8hK4x6grpF2BQf+2qwVA==
@@ -5131,11 +5103,6 @@ fd-slicer@~1.1.0:
   integrity sha1-JcfInLH5B3+IkbvmHY85Dq4lbx4=
   dependencies:
     pend "~1.2.0"
-
-fecha@^2.3.3:
-  version "2.3.3"
-  resolved "https://registry.yarnpkg.com/fecha/-/fecha-2.3.3.tgz#948e74157df1a32fd1b12c3a3c3cdcb6ec9d96cd"
-  integrity sha512-lUGBnIamTAwk4znq5BcqsDaxSmZ9nDVJaij6NvRt/Tg4R69gERA+otPKbS86ROw9nxVMw2/mp1fnaiWqbs6Sdg==
 
 figgy-pudding@^3.4.1, figgy-pudding@^3.5.1:
   version "3.5.2"
@@ -7620,17 +7587,6 @@ log-symbols@^3.0.0:
   integrity sha512-dSkNGuI7iG3mfvDzUuYZyvk5dD9ocYCYzNU6CYDE6+Xqd+gwme6Z00NS3dUh8mq/73HaEtT7m6W+yUPtU6BZnQ==
   dependencies:
     chalk "^2.4.2"
-
-logform@^2.1.2:
-  version "2.1.2"
-  resolved "https://registry.yarnpkg.com/logform/-/logform-2.1.2.tgz#957155ebeb67a13164069825ce67ddb5bb2dd360"
-  integrity sha512-+lZh4OpERDBLqjiwDLpAWNQu6KMjnlXH2ByZwCuSqVPJletw0kTWJf5CgSNAUKn1KUkv3m2cUz/LK8zyEy7wzQ==
-  dependencies:
-    colors "^1.2.1"
-    fast-safe-stringify "^2.0.4"
-    fecha "^2.3.3"
-    ms "^2.1.1"
-    triple-beam "^1.3.0"
 
 loose-envify@^1.4.0:
   version "1.4.0"
@@ -11095,11 +11051,6 @@ trim-repeated@^1.0.0:
   integrity sha1-42RqLqTokTEr9+rObPsFOAvAHCE=
   dependencies:
     escape-string-regexp "^1.0.2"
-
-triple-beam@^1.3.0:
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/triple-beam/-/triple-beam-1.3.0.tgz#a595214c7298db8339eeeee083e4d10bd8cb8dd9"
-  integrity sha512-XrHUvV5HpdLmIj4uVMxHggLbFSZYIn7HEWsqePZcI50pco+MPqJ50wMGY794X7AOOhxOBAjbkqfAbEe/QMp2Lw==
 
 "true-case-path@^1.0.2":
   version "1.0.3"

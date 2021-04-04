@@ -16,8 +16,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
-import { DependencyChanger, getChangeElement, Adapter } from '@salto-io/adapter-api'
-import adapterCreators from './creators'
+import { DependencyChanger, getChangeElement, AdapterOperations } from '@salto-io/adapter-api'
 
 type AdapterDependencyChanger = (name: string, changer: DependencyChanger) => DependencyChanger
 const adapterDependencyChanger: AdapterDependencyChanger = (name, changer) => (changes, deps) => {
@@ -34,9 +33,9 @@ const adapterDependencyChanger: AdapterDependencyChanger = (name, changer) => (c
 }
 
 export const getAdapterDependencyChangers = (
-  creators: Record<string, Adapter> = adapterCreators,
+  adapters: Record<string, AdapterOperations>
 ): ReadonlyArray<DependencyChanger> => (
-  _(creators)
+  _(adapters)
     .mapValues(({ deployModifiers }) => deployModifiers?.dependencyChanger)
     .pickBy(values.isDefined)
     .mapValues((changer, name) => adapterDependencyChanger(name, changer))

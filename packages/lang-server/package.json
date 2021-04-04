@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/lang-server",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "license": "Apache-2.0",
   "description": "Salto lang server",
   "repository": {
@@ -31,10 +31,10 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.2.8",
-    "@salto-io/adapter-utils": "0.2.8",
-    "@salto-io/lowerdash": "0.2.8",
-    "@salto-io/workspace": "0.2.8",
+    "@salto-io/adapter-api": "0.2.9",
+    "@salto-io/adapter-utils": "0.2.9",
+    "@salto-io/lowerdash": "0.2.9",
+    "@salto-io/workspace": "0.2.9",
     "fuse.js": "^6.4.1",
     "lodash": "^4.17.21",
     "wu": "^2.1.0"

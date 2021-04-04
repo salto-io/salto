@@ -635,7 +635,9 @@ export const formatInvalidElementCommand = (command: string): string => [
   emptyLine(),
 ].join('\n')
 
-export const formatCleanWorkspace = (cleanArgs: WorkspaceComponents): string => {
+export const formatCleanWorkspace = (
+  cleanArgs: WorkspaceComponents & { regenerateCache: boolean }
+): string => {
   const componentsToClean = Object.entries(cleanArgs)
     .filter(([_comp, shouldClean]) => shouldClean)
     .map(([comp]) => _.startCase(comp).toLowerCase())

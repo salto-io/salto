@@ -79,7 +79,7 @@ is running the `init` command.
 | -----------------------| ----------------------------| -----------
 | SALTO\_HOME             | ~/.salto                    | determines default the location of workspace local configs, credentials and cache
 | SALTO\_LOG\_FILE         | null (write to stdout)      | Path of the file to write log messages to
-| SALTO\_LOG\_LEVEL        | none                        | Log level (possible values: info, debug, warn, error, none)
+| SALTO\_LOG\_LEVEL        | none                        | Log level (possible values: info, debug, warn, error, trace, none)
 | SALTO\_LOG\_FORMAT       | text                        | Control the log format (possible values: text, json)
 | SALTO\_LOG\_NS           | undefined (no filtering)    | If a string is specified, it is parsed as a glob - only logs having matching namespaces will be written
 | SALTO\_LOG\_COLOR        | null (colorize if writing to stdout and the stream supports color) | Override colorization in output

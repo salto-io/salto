@@ -15,11 +15,12 @@
 */
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
-import { ChangeValidator } from '@salto-io/adapter-api'
-import adapterCreators from './creators'
+import { AdapterOperations, ChangeValidator } from '@salto-io/adapter-api'
 
-export const getAdapterChangeValidators = (): Record<string, ChangeValidator> =>
-  _(adapterCreators)
+export const getAdapterChangeValidators = (
+  adapters: Record<string, AdapterOperations>
+): Record<string, ChangeValidator> =>
+  _(adapters)
     .mapValues(adapter => adapter.deployModifiers?.changeValidator)
     .pickBy(values.isDefined)
     .value()

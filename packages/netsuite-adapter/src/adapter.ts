@@ -33,6 +33,7 @@ import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS,
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
+import addParentFolder from './filters/add_parent_folder'
 import { FilterCreator } from './filter'
 import {
   getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
@@ -88,6 +89,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     client,
     elementsSource,
     filtersCreators = [
+      // addParentFolder must run before replaceInstanceReferencesFilter
+      addParentFolder,
       convertLists,
       consistentValues,
       replaceInstanceReferencesFilter,

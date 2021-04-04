@@ -282,7 +282,7 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
 
   const getOpenDBConnection = async (loc: string): Promise<rocksdb> => {
     const newDb = getRemoteDbImpl()(loc)
-    await promisify(newDb.open.bind(newDb))()
+    await promisify(newDb.open.bind(newDb, { readOnly }))()
     return newDb
   }
 

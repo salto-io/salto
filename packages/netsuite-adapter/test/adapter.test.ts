@@ -40,6 +40,7 @@ import { FileCustomizationInfo, FolderCustomizationInfo } from '../src/client/ty
 import * as changesDetector from '../src/changes_detector/changes_detector'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
+import * as suiteAppFileCabinet from '../src/suiteapp_file_cabinet'
 
 jest.mock('../src/config', () => ({
   ...jest.requireActual<{}>('../src/config'),
@@ -91,6 +92,8 @@ describe('Adapter', () => {
     progressReporter: { reportProgress: jest.fn() },
   }
 
+  const suiteAppImportFileCabinetMock = jest.spyOn(suiteAppFileCabinet, 'importFileCabinet')
+
   beforeEach(() => {
     jest.clearAllMocks()
     client.listInstances = mockFunction<SdfClient['listInstances']>()
@@ -106,6 +109,8 @@ describe('Adapter', () => {
         elements: [],
         failedPaths: [],
       })
+
+    suiteAppImportFileCabinetMock.mockResolvedValue({ elements: [], failedPaths: [] })
   })
 
   describe('fetch', () => {
@@ -164,6 +169,8 @@ describe('Adapter', () => {
       expect(elements).toContainEqual(
         createInstanceElement(folderCustomizationInfo, fileCabinetTypes[FOLDER], mockGetElemIdFunc)
       )
+
+      expect(suiteAppImportFileCabinetMock).not.toHaveBeenCalled()
     })
 
     describe('fetchTarget', () => {
@@ -542,6 +549,11 @@ describe('Adapter', () => {
         config,
         getElemIdFunc: mockGetElemIdFunc,
       })
+    })
+
+    it('should use suiteapp_file_cabinet importFileCabinet', async () => {
+      await adapter.fetch(mockFetchOpts)
+      expect(suiteAppImportFileCabinetMock).toHaveBeenCalled()
     })
 
     it('should not create serverTime elements when getSystemInformation returns undefined', async () => {

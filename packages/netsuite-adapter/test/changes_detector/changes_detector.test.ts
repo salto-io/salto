@@ -95,7 +95,7 @@ describe('changes_detector', () => {
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file2')).toBeFalsy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/notExists')).toBeFalsy()
-    expect(changedObjectsQuery.isFileMatch('/other/path/to/file')).toBeFalsy()
+    expect(changedObjectsQuery.isFileMatch('/other/path/to/file')).toBeTruthy()
 
 
     expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'a' })).toBeTruthy()

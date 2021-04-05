@@ -13,24 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import Bottleneck from 'bottleneck'
-import SdfClient from '../../src/client/sdf_client'
-import { SdfClientConfig } from '../../src/config'
+export const weightedChunks = <T>(
+  values: T[],
+  size: number,
+  weightFunc: (val: T) => number
+): T[][] => {
+  const chunks: T[][] = [[]]
 
-const DUMMY_ACCOUNT_ID = 'tstdrv123456-sb'
-const DUMMY_TOKEN_ID = 'dummyTokenId'
-const DUMMY_TOKEN_SECRET = 'dummyTokenSecret'
+  values.reduce((chunkWeight, val) => {
+    const valWeight = weightFunc(val)
 
-export const DUMMY_CREDENTIALS = {
-  accountId: DUMMY_ACCOUNT_ID,
-  tokenId: DUMMY_TOKEN_ID,
-  tokenSecret: DUMMY_TOKEN_SECRET,
+    if (valWeight + chunkWeight > size) {
+      chunks.push([val])
+      return valWeight
+    }
+
+    chunks[chunks.length - 1].push(val)
+    return valWeight + chunkWeight
+  }, 0)
+  return chunks
 }
-const mockSdfClient = (config?: SdfClientConfig): SdfClient =>
-  new SdfClient({
-    credentials: DUMMY_CREDENTIALS,
-    config,
-    globalLimiter: new Bottleneck(),
-  })
-
-export default mockSdfClient

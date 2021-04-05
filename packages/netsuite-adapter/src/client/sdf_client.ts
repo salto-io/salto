@@ -57,6 +57,7 @@ const log = logger(module)
 export type SdfClientOpts = {
   credentials: SdfCredentials
   config?: SdfClientConfig
+  globalLimiter: Bottleneck
 }
 
 export const COMMANDS = {
@@ -166,13 +167,16 @@ export default class SdfClient {
   private readonly maxItemsInImportObjectsRequest: number
   private readonly sdfConcurrencyLimit: number
   private readonly sdfCallsLimiter: Bottleneck
+  private readonly globalLimiter: Bottleneck
   private readonly setupAccountLock: AsyncLock
   private readonly baseCommandExecutor: CommandActionExecutor
 
   constructor({
     credentials,
     config,
+    globalLimiter,
   }: SdfClientOpts) {
+    this.globalLimiter = globalLimiter
     this.credentials = credentials
     this.fetchAllTypesAtOnce = config?.fetchAllTypesAtOnce ?? DEFAULT_FETCH_ALL_TYPES_AT_ONCE
     this.fetchTypeTimeoutInMinutes = config?.fetchTypeTimeoutInMinutes
@@ -187,7 +191,7 @@ export default class SdfClient {
 
   @SdfClient.logDecorator
   static async validateCredentials(credentials: SdfCredentials): Promise<AccountId> {
-    const netsuiteClient = new SdfClient({ credentials })
+    const netsuiteClient = new SdfClient({ credentials, globalLimiter: new Bottleneck() })
     const { projectName, authId } = await netsuiteClient.initProject()
     await netsuiteClient.projectCleanup(projectName, authId)
     return Promise.resolve(netsuiteClient.credentials.accountId)
@@ -204,13 +208,11 @@ export default class SdfClient {
 
   private static logDecorator = decorators.wrapMethodWith(
     async (
-      { call, name }: decorators.OriginalCall,
+      { call }: decorators.OriginalCall,
     ): Promise<unknown> => {
-      const desc = `client.${name}`
       try {
-        return await log.time(call, desc)
+        return await call()
       } catch (e) {
-        log.error('failed to run Netsuite client command on: %o', e)
         throw _.isObject(e) ? e : new Error(String(e))
       }
     }
@@ -243,16 +245,18 @@ export default class SdfClient {
     projectCommandActionExecutor: CommandActionExecutor,
     timeoutInMinutes?: number
   ): Promise<ActionResult> {
-    const actionResult = await this.sdfCallsLimiter.schedule(() => {
-      const actionResultPromise = projectCommandActionExecutor.executeAction({
-        commandName,
-        runInInteractiveMode: false,
-        arguments: commandArguments,
+    const actionResult = await this.globalLimiter.schedule(
+      () => this.sdfCallsLimiter.schedule(() => {
+        const actionResultPromise = projectCommandActionExecutor.executeAction({
+          commandName,
+          runInInteractiveMode: false,
+          arguments: commandArguments,
+        })
+        return timeoutInMinutes !== undefined
+          ? withTimeout(actionResultPromise, timeoutInMinutes * MINUTE_IN_MILLISECONDS)
+          : actionResultPromise
       })
-      return timeoutInMinutes !== undefined
-        ? withTimeout(actionResultPromise, timeoutInMinutes * MINUTE_IN_MILLISECONDS)
-        : actionResultPromise
-    })
+    )
     SdfClient.verifySuccessfulAction(actionResult, commandName)
     return actionResult
   }

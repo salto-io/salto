@@ -24,6 +24,7 @@ import {
   SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
   CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
   SAVED_SEARCH, SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
+  CONCURRENCY_LIMIT,
 } from './constants'
 import { NetsuiteQueryParameters } from './query'
 import { mergeTypeToInstances } from './client/utils'
@@ -129,6 +130,15 @@ export const configType = new ObjectType({
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
       },
     },
+    [CONCURRENCY_LIMIT]: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          min: 1,
+          max: 50,
+        }),
+      },
+    },
     [CLIENT_CONFIG]: {
       type: clientConfigType,
     },
@@ -177,6 +187,7 @@ export type NetsuiteConfig = {
   [TYPES_TO_SKIP]?: string[]
   [FILE_PATHS_REGEX_SKIP_LIST]?: string[]
   [DEPLOY_REFERENCED_ELEMENTS]?: boolean
+  [CONCURRENCY_LIMIT]?: number
   [CLIENT_CONFIG]?: SdfClientConfig
   [SUITEAPP_CLIENT_CONFIG]?: SuiteAppClientConfig
   [FETCH_TARGET]?: NetsuiteQueryParameters

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import * as collections from './collections'
+import * as chunks from './chunks'
 import * as decorators from './decorators'
 import * as functions from './functions'
 import * as hash from './hash'
@@ -30,6 +31,7 @@ import * as values from './values'
 
 export {
   collections,
+  chunks,
   decorators,
   functions,
   hash,

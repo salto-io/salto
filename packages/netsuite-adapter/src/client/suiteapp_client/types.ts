@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { Values } from '@salto-io/adapter-api'
+import Bottleneck from 'bottleneck'
 import { SuiteAppClientConfig } from '../../config'
 import { SuiteAppCredentials } from '../credentials'
 
@@ -89,6 +90,7 @@ export type HttpMethod = 'POST' | 'GET'
 export type SuiteAppClientParameters = {
   credentials: SuiteAppCredentials
   config?: SuiteAppClientConfig
+  globalLimiter: Bottleneck
 }
 
 export type SavedSearchQuery = {
@@ -116,4 +118,67 @@ export type SystemInformation = {
   appVersion: number[]
 }
 
-export type RestletOperation = 'search' | 'sysInfo'
+export const FILES_READ_SCHEMA = {
+  items: {
+    anyOf: [
+      {
+        properties: {
+          content: {
+            type: 'string',
+          },
+          status: {
+            enum: [
+              'success',
+            ],
+            type: 'string',
+          },
+          type: {
+            type: 'string',
+          },
+        },
+        required: [
+          'content',
+          'status',
+          'type',
+        ],
+        type: 'object',
+      },
+      {
+        properties: {
+          error: {
+            type: 'object',
+          },
+          status: {
+            enum: [
+              'error',
+            ],
+            type: 'string',
+          },
+        },
+        required: [
+          'error',
+          'status',
+        ],
+        type: 'object',
+      },
+    ],
+  },
+  type: 'array',
+}
+
+type ReadSuccess = {
+  status: 'success'
+  type: string
+  content: string
+}
+
+type ReadFailure = {
+  status: 'error'
+  error: Error
+}
+
+export type ReadResults = (ReadSuccess | ReadFailure)[]
+
+export type RestletOperation = 'search' | 'sysInfo' | 'readFile'
+
+export type CallsLimiter = <T>(fn: () => Promise<T>) => Promise<T>

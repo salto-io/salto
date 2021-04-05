@@ -17,6 +17,7 @@
 import { logger } from '@salto-io/logging'
 import { creds, CredsLease } from '@salto-io/e2e-credentials-store'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import Bottleneck from 'bottleneck'
 import { Credentials } from '../src/client/credentials'
 import SdfClient from '../src/client/sdf_client'
 import NetsuiteAdapter, { NetsuiteAdapterParams } from '../src/adapter'
@@ -40,6 +41,7 @@ export const realAdapter = ({ adapterParams, credentials }: Opts, config?: Netsu
     || new NetsuiteClient(new SdfClient({
       credentials,
       config: config?.[CLIENT_CONFIG],
+      globalLimiter: new Bottleneck(),
     }))
   const adapter = new NetsuiteAdapter({
     client,

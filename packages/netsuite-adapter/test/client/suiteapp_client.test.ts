@@ -14,7 +14,10 @@
 * limitations under the License.
 */
 import axios from 'axios'
+import Bottleneck from 'bottleneck'
 import _ from 'lodash'
+import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client'
+import { ReadFileEncodingError, ReadFileError } from '../../src/client/suiteapp_client/errors'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 
 jest.mock('axios')
@@ -30,6 +33,7 @@ describe('SuiteAppClient', () => {
         suiteAppTokenId: 'tokenId',
         suiteAppTokenSecret: 'tokenSecret',
       },
+      globalLimiter: new Bottleneck(),
     })
   })
 
@@ -315,6 +319,98 @@ describe('SuiteAppClient', () => {
         suiteAppTokenId: 'tokenId',
         suiteAppTokenSecret: 'tokenSecret',
       })).resolves.toBeUndefined()
+    })
+  })
+
+  describe('readFiles', () => {
+    it('should return the right results', async () => {
+      postMock.mockResolvedValue({
+        data: {
+          status: 'success',
+          results: [
+            {
+              status: 'success',
+              type: 'PLAINTEXT',
+              content: 'someText1',
+            },
+            {
+              status: 'success',
+              type: 'bin',
+              content: Buffer.from('someText2').toString('base64'),
+            },
+            {
+              status: 'error',
+              error: {
+                name: 'INVALID_FILE_ENCODING',
+              },
+            },
+            {
+              status: 'error',
+              error: {
+                name: 'OTHER_ERROR',
+              },
+            },
+          ],
+        },
+      })
+
+      const results = await client.readFiles([1, 2, 3, 4])
+      expect(results).toEqual([
+        Buffer.from('someText1'),
+        Buffer.from('someText2'),
+        expect.any(ReadFileEncodingError),
+        expect.any(ReadFileError),
+      ])
+
+      expect(postMock).toHaveBeenCalledWith(
+        'https://account-id.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet',
+        {
+          operation: 'readFile',
+          args: {
+            ids: [1, 2, 3, 4],
+          },
+        },
+        {
+          headers: {
+            Authorization: expect.any(String),
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+    })
+
+    it('Invalid response should return undefined', async () => {
+      postMock.mockResolvedValue({
+        data: {
+          status: 'success',
+          results: { invalid: 1 },
+        },
+      })
+
+      expect(await client.readFiles([1, 2, 3, 4])).toBeUndefined()
+    })
+
+    it('When exception is thrown should return undefined', async () => {
+      postMock.mockRejectedValue(new Error())
+      expect(await client.readFiles([1, 2, 3, 4])).toBeUndefined()
+    })
+  })
+
+  describe('readLargeFile', () => {
+    const readFileMock = jest.spyOn(SoapClient.prototype, 'readFile')
+    beforeEach(() => {
+      readFileMock.mockReset()
+    })
+
+    it('Should return the SOAP client results', async () => {
+      readFileMock.mockResolvedValue(Buffer.from('aaa'))
+      expect(await client.readLargeFile(1)).toEqual(Buffer.from('aaa'))
+      expect(readFileMock).toHaveBeenCalledWith(1)
+    })
+
+    it('Should return the SOAP client error', async () => {
+      readFileMock.mockRejectedValue(new Error('bbb'))
+      expect(await client.readLargeFile(1)).toEqual(new Error('bbb'))
     })
   })
 })

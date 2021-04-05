@@ -47,7 +47,8 @@
     "lodash": "^4.17.21",
     "oauth-1.0a": "^2.2.6",
     "uuid": "^3.3.3",
-    "wu": "^2.1.0"
+    "wu": "^2.1.0",
+    "xml-js": "^1.6.11"
   },
   "devDependencies": {
     "@types/async-lock": "^1.1.2",

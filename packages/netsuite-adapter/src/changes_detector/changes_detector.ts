@@ -27,7 +27,6 @@ import { ChangedObject, ChangedType, DateRange } from './types'
 import NetsuiteClient from '../client/client'
 import { convertSavedSearchStringToDate } from './date_formats'
 import { ElementsSourceValue, LazyElementsSourceIndex } from '../elements_source_index/types'
-import { fileCabinetTopLevelFolders } from '../client/constants'
 
 const log = logger(module)
 
@@ -152,16 +151,10 @@ export const getChangedObjects = async (
   )
 
   const filePaths = new Set([...getChangedIds(changedFiles, idToLastFetchDate, systemNoteChanges)]
-    .filter(path =>
-      fileCabinetTopLevelFolders.some(
-        topLevelPath => path.startsWith(topLevelPath) && query.isFileMatch(path)
-      )))
+    .filter(query.isFileMatch))
 
   const folderPaths = [...getChangedIds(changedFolders, idToLastFetchDate, systemNoteChanges)]
-    .filter(path =>
-      fileCabinetTopLevelFolders.some(
-        topLevelPath => path.startsWith(topLevelPath) && query.isFileMatch(path)
-      ))
+    .filter(query.isFileMatch)
 
   const unresolvedFolderPaths = folderPaths
     .map(folder => `${folder}/`)

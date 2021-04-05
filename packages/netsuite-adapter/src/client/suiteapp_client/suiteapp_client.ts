@@ -21,38 +21,56 @@ import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { HttpMethod, isError, RestletOperation, RestletResults, RESTLET_RESULTS_SCHEMA,
-  SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA, SuiteAppClientParameters,
-  SuiteQLResults, SUITE_QL_RESULTS_SCHEMA, SystemInformation, SYSTEM_INFORMATION_SCHEME } from './types'
+import { CallsLimiter, FILES_READ_SCHEMA, HttpMethod, isError, ReadResults, RestletOperation,
+  RestletResults, RESTLET_RESULTS_SCHEMA, SavedSearchQuery, SavedSearchResults,
+  SAVED_SEARCH_RESULTS_SCHEMA, SuiteAppClientParameters, SuiteQLResults, SUITE_QL_RESULTS_SCHEMA,
+  SystemInformation, SYSTEM_INFORMATION_SCHEME } from './types'
 import { SuiteAppCredentials } from '../credentials'
 import { DEFAULT_CONCURRENCY } from '../../config'
+import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
+import SoapClient from './soap_client/soap_client'
+import { ReadFileEncodingError, ReadFileError } from './errors'
 
-
-const CONSUMER_KEY = '3db2f2ec0bd98c4eee526ea0b8da876d1d739597e50ee593c67c0f2c34294073'
-const CONSUMER_SECRET = '4c8399c03043f4ff2889610d260fc76037d126c840f83b3e6a4e6f4ddf3b0b79'
 const PAGE_SIZE = 1000
 
 const log = logger(module)
 
+const NON_BINARY_FILETYPES = new Set([
+  'CSV',
+  'HTMLDOC',
+  'JAVASCRIPT',
+  'MESSAGERFC',
+  'PLAINTEXT',
+  'POSTSCRIPT',
+  'RTF',
+  'SMS',
+  'STYLESHEET',
+  'XMLDOC',
+])
+
 
 export default class SuiteAppClient {
   private credentials: SuiteAppCredentials
-  private callsLimiter: Bottleneck
+  private callsLimiter: CallsLimiter
   private suiteQLUrl: URL
   private restletUrl: URL
   private ajv: Ajv
+  private soapClient: SoapClient
 
   constructor(params: SuiteAppClientParameters) {
     this.credentials = params.credentials
-    this.callsLimiter = new Bottleneck({
+
+    const limiter = new Bottleneck({
       maxConcurrent: params.config?.suiteAppConcurrencyLimit ?? DEFAULT_CONCURRENCY,
     })
+    this.callsLimiter = fn => params.globalLimiter.schedule(() => limiter.schedule(fn))
 
     const accountIdUrl = params.credentials.accountId.replace('_', '-')
     this.suiteQLUrl = new URL(`https://${accountIdUrl}.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql`)
     this.restletUrl = new URL(`https://${accountIdUrl}.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet`)
 
     this.ajv = new Ajv({ allErrors: true, strict: false })
+    this.soapClient = new SoapClient(this.credentials, this.callsLimiter)
   }
 
   public async runSuiteQL(query: string):
@@ -112,8 +130,36 @@ export default class SuiteAppClient {
     }
   }
 
+  public async readFiles(ids: number[]): Promise<(Buffer | Error)[] | undefined> {
+    try {
+      const results = await this.sendRestletRequest('readFile', { ids })
+
+      if (!this.ajv.validate<ReadResults>(
+        FILES_READ_SCHEMA,
+        results
+      )) {
+        log.error(`readFiles failed. Got invalid results: ${this.ajv.errorsText()}`)
+        return undefined
+      }
+
+      return results.map(file => {
+        if (file.status === 'error') {
+          if (file.error.name === 'INVALID_FILE_ENCODING') {
+            return new ReadFileEncodingError(`Received file encoding error: ${JSON.stringify(file.error, undefined, 2)}`)
+          }
+          log.warn(`Received file read error: ${JSON.stringify(file.error, undefined, 2)}`)
+          return new ReadFileError(`Received an error while tried to read file: ${JSON.stringify(file.error, undefined, 2)}`)
+        }
+        return NON_BINARY_FILETYPES.has(file.type) ? Buffer.from(file.content) : Buffer.from(file.content, 'base64')
+      })
+    } catch (error) {
+      log.error('error was thrown in readFiles', { error })
+      return undefined
+    }
+  }
+
   public static async validateCredentials(credentials: SuiteAppCredentials): Promise<void> {
-    const client = new SuiteAppClient({ credentials })
+    const client = new SuiteAppClient({ credentials, globalLimiter: new Bottleneck() })
     await client.sendRestletRequest('sysInfo')
   }
 
@@ -127,7 +173,7 @@ export default class SuiteAppClient {
       ...this.generateHeaders(url, 'POST'),
       prefer: 'transient',
     }
-    const response = await this.callsLimiter.schedule(() => axios.post(
+    const response = await this.callsLimiter(() => axios.post(
       url.href,
       { q: query },
       { headers },
@@ -144,7 +190,7 @@ export default class SuiteAppClient {
     operation: RestletOperation,
     args: Record<string, unknown> = {}
   ): Promise<unknown> {
-    const response = await this.callsLimiter.schedule(() => axios.post(
+    const response = await this.callsLimiter(() => axios.post(
       this.restletUrl.href,
       {
         operation,
@@ -212,5 +258,15 @@ export default class SuiteAppClient {
     }
 
     return oauth.toHeader(oauth.authorize(requestData, token))
+  }
+
+  // This function should be used for files which are bigger than 10 mb,
+  // otherwise readFiles should be used
+  public async readLargeFile(id: number): Promise<Buffer | Error> {
+    try {
+      return await this.soapClient.readFile(id)
+    } catch (e) {
+      return e
+    }
   }
 }

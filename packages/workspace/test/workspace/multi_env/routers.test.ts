@@ -1053,6 +1053,21 @@ describe('track', () => {
     },
   })
 
+  const onlyInCommon = new ObjectType({
+    elemID: new ElemID('salto', 'onlyInCommonObj'),
+    fields: {
+      str: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      num: {
+        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      },
+    },
+    annotations: {
+      str: 'STR',
+    },
+  })
+
   const multiFileInstaceDefault = new InstanceElement('split', onlyInEnvObj, {
     default: 'DEFAULT',
   })
@@ -1071,7 +1086,7 @@ describe('track', () => {
     mergedOnlyInEnvObject, splitObjEnv, multiFileInstace, inSecObject,
   ]
   const secondaryElements = [inSecObject]
-  const commonElements = [splitObjCommon]
+  const commonElements = [splitObjCommon, onlyInCommon]
 
   const primarySrc = createMockNaclFileSource(
     primaryElements,
@@ -1182,7 +1197,7 @@ describe('track', () => {
     ])
   })
 
-  it('should delete the elements in all secondrary envs as when promoted apps exist there', async () => {
+  it('should delete the elements in all secondary envs as when promoted apps exist there', async () => {
     const changes = await routePromote(
       [inSecObject.elemID],
       primarySrc,
@@ -1203,6 +1218,18 @@ describe('track', () => {
     expect(changes.primarySource).toHaveLength(2)
     expect(changes.commonSource).toHaveLength(3)
     expect(changes.secondarySources?.sec).toHaveLength(1)
+  })
+
+  it('should do nothing if only exists in common', async () => {
+    const changes = await routePromote(
+      [onlyInCommon.elemID],
+      primarySrc,
+      commonSrc,
+      secondarySources,
+    )
+    expect(changes.primarySource).toHaveLength(0)
+    expect(changes.commonSource).toHaveLength(0)
+    expect(changes.secondarySources?.sec).toHaveLength(0)
   })
 })
 

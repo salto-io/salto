@@ -303,8 +303,8 @@ const addToSource = async ({
     const topLevelGid = gids[0].createTopLevelParentID().parent
     const topLevelElement = valuesOverrides[topLevelGid.getFullName()]
       ?? await originSource.get(topLevelGid)
-    const before = await targetSource.get(topLevelElement.elemID)
-    if (before === undefined) {
+    const before = await targetSource.get(topLevelGid)
+    if (!values.isDefined(before)) {
       // If there is no top level element to merge into, we best let the nacl file source
       // handle the nested changes
       return awu(gids).map(async id => createAddChange(
@@ -312,7 +312,10 @@ const addToSource = async ({
         id
       ))
     }
-    if (topLevelElement === undefined) {
+    if (!values.isDefined(topLevelElement)) {
+      if (values.isDefined(before)) {
+        return []
+      }
       throw new Error(`ElemID ${gids[0].getFullName()} does not exist in origin`)
     }
     const topLevelIds = gids.filter(id => id.isTopLevel())
@@ -325,7 +328,7 @@ const addToSource = async ({
         })),
         topLevelElement
       )
-    if (before === undefined) {
+    if (!values.isDefined(before)) {
       return [createAddChange(wrappedElement, topLevelElement.elemID)]
     }
     if (overrideTargetElements) {

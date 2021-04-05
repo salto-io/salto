@@ -243,6 +243,7 @@ describe('SalesforceAdapter fetch', () => {
       ).length
         + 2 /* LookupFilter & filter items */
         + 1 /* rollup summary operation */
+        + 1 /* rollup summary filter type */
         + 3
         + 2 /* mask char & type */
         + 1 /* security classification */

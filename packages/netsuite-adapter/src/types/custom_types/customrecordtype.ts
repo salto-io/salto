@@ -489,7 +489,7 @@ customrecordtypeInnerTypes.push(customrecordtype_links)
 
 const customrecordtype_permissions_permissionElemID = new ElemID(constants.NETSUITE, 'customrecordtype_permissions_permission')
 
-const customrecordtype_permissions_permission = new ObjectType({
+export const customrecordtype_permissions_permission = new ObjectType({
   elemID: customrecordtype_permissions_permissionElemID,
   annotations: {
   },

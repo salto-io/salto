@@ -44,6 +44,7 @@ export const FOLDER = 'folder'
 // Fields
 export const SCRIPT_ID = 'scriptid'
 export const PATH = 'path'
+export const PERMITTED_ROLE = 'permittedrole'
 export const RECORD_TYPE = 'recordType'
 export const LAST_FETCH_TIME = '_lastfetchtime'
 

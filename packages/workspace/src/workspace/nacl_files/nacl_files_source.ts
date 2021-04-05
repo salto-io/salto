@@ -49,6 +49,7 @@ const PARSE_CONCURRENCY = 100
 const DUMP_CONCURRENCY = 100
 // TODO: this should moved into cache implemenation
 const CACHE_READ_CONCURRENCY = 100
+const UPDATE_INDEX_CONCURRENCY = 100
 
 export type NaclFile = {
   buffer: string
@@ -253,18 +254,16 @@ const buildNaclFilesState = async ({
     deletions: Record<string, Set<T>>,
   ): Promise<void> => {
     const changedKeys = _.uniq(Object.keys(additions).concat(Object.keys(deletions)))
-    const keyToValue = Object.fromEntries(
-      _.zip(changedKeys, await index.getMany(changedKeys))
-    ) as Record<string, T[] | undefined>
-    return index.setAll(awu(changedKeys).map(async key => {
-      const currentValues = keyToValue[key] ?? []
+    const newEntries = await withLimitedConcurrency(changedKeys.map(key => async () => {
+      const currentValues = (await index.get(key)) ?? []
       const keyDeletionsSet = deletions[key] ?? new Set()
       const keyAdditions = Array.from(additions[key]?.values() ?? [])
       const newValues = currentValues
         .filter(value => !keyDeletionsSet.has(value))
         .concat(keyAdditions)
       return { key, value: _.uniq(newValues) }
-    }))
+    }), UPDATE_INDEX_CONCURRENCY)
+    return index.setAll(awu(newEntries))
   }
 
   const handleAdditionOrModification = async (naclFile: ParsedNaclFile): Promise<void> => {

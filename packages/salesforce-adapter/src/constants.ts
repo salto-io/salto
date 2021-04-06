@@ -186,6 +186,7 @@ export const FIELD_ANNOTATIONS = {
   QUERYABLE: 'queryable',
   // when true, the field should not be deployed to the service
   LOCAL_ONLY: 'localOnly',
+  ROLLUP_SUMMARY_FILTER_OPERATION: 'rollupSummaryFilterOperation',
 }
 
 export const VALUE_SET_FIELDS = {

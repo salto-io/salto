@@ -41,9 +41,11 @@ export const buildNewMergedElementsAndErrors = async ({
   log.info('going to merge new elements to the existing elements')
   const changes: Change[] = []
   const newMergedElementsResult = await mergeFunc(afterElements)
-  const hasCurrentElements = !(await currentElements.isEmpty())
-  const hasCurrentErrors = !(await currentErrors.isEmpty())
-  if (!hasCurrentElements && !hasCurrentErrors) {
+
+  const [noCurrentElements, noCurrentErrors] = await Promise.all(
+    [currentElements.isEmpty(), currentErrors.isEmpty()]
+  )
+  if (noCurrentElements && noCurrentErrors) {
     await awu(newMergedElementsResult.merged.values()).forEach(async element => {
       changes.push(toChange({ after: element }) as Change)
       await currentElements.set(element)
@@ -57,8 +59,10 @@ export const buildNewMergedElementsAndErrors = async ({
     const fullname = id.getFullName()
     if (!sieve.has(fullname)) {
       sieve.add(fullname)
-      const before = await currentElements.get(id)
-      const mergedItem = await newMergedElementsResult.merged.get(fullname)
+      const [before, mergedItem] = await Promise.all([
+        currentElements.get(id),
+        newMergedElementsResult.merged.get(fullname),
+      ])
       if (!isEqualElements(before, mergedItem)) {
         if (mergedItem !== undefined) {
           await currentElements.set(mergedItem)

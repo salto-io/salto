@@ -943,6 +943,7 @@
             "default": false
           }
         },
+        "additionalProperties": false,
         "xml": {
           "name": "Order"
         }
@@ -963,39 +964,72 @@
         }
       },
       "User": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "username": {
+                "type": "string"
+              },
+              "firstName": {
+                "type": "string"
+              },
+              "lastName": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "password": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              },
+              "userStatus": {
+                "type": "integer",
+                "description": "User Status",
+                "format": "int32"
+              }
+            }
           },
-          "username": {
-            "type": "string"
+          {
+            "$ref": "#/components/schemas/UserAdditional1"
           },
-          "firstName": {
-            "type": "string"
-          },
-          "lastName": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string"
-          },
-          "password": {
-            "type": "string"
-          },
-          "phone": {
-            "type": "string"
-          },
-          "userStatus": {
-            "type": "integer",
-            "description": "User Status",
-            "format": "int32"
+          {
+            "$ref": "#/components/schemas/UserAdditional2"
           }
+        ]
+      },
+      "UserAdditional1": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/Order"
         },
-        "xml": {
-          "name": "User"
+        "properties": {
+          "middleName": {
+            "type": "string"
+          }
         }
+      },
+      "UserAdditional2": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/Order"
+        },
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "middleName2": {
+                "type": "string"
+              }
+            }
+          }
+        ]
       },
       "Tag": {
         "type": "object",

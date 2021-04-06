@@ -1,0 +1,5 @@
+openapi: 4.0.1
+info:
+  version: 1.0.0
+tags:
+paths:

@@ -34,6 +34,7 @@ export type InstanceCreationParams = {
   defaultName: string
   nestName?: boolean
   parent?: InstanceElement
+  normalized?: boolean
 }
 
 /**

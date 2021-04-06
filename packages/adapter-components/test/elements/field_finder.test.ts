@@ -55,12 +55,16 @@ describe('ducktype_field_finder', () => {
         type: nestedType,
       })
     })
-    it('should return undefined when keepOriginal is true', () => {
+    it('should return undefined when the specified data field is the entire object (".")', () => {
       const fieldDetails = findDataField(sampleType, [
         { fieldName: 'str', fieldType: 'string' },
         { fieldName: 'nestedMap' },
         { fieldName: 'nestedList' },
       ], '.')
+      expect(fieldDetails).toBeUndefined()
+    })
+    it('should return undefined when the specified data field is not an object type', () => {
+      const fieldDetails = findDataField(sampleType, undefined, 'str')
       expect(fieldDetails).toBeUndefined()
     })
     it('should return inner type when the matching field is a list', () => {

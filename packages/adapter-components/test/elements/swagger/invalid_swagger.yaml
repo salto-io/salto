@@ -1,0 +1,22 @@
+swagger: '1.0'
+info:
+  version: 1.0.0
+host: 127.0.0.1
+basePath: /v2
+tags:
+schemes:
+  - https
+  - http
+paths:
+  /ignore:
+    get:
+      tags:
+        - a
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            properties:
+              a:
+                type: integer
+definitions:

@@ -30,7 +30,10 @@ const getContainerForType = (typeName: string): {
   container: 'list' | 'map'
   typeNameSubstring: string
 } | undefined => {
-  if (typeName.startsWith(`${LIST_ID_PREFIX}${GENERIC_ID_PREFIX}`) && typeName.endsWith(GENERIC_ID_SUFFIX)) {
+  if (
+    typeName.toLowerCase().startsWith(`${LIST_ID_PREFIX.toLowerCase()}${GENERIC_ID_PREFIX}`)
+    && typeName.endsWith(GENERIC_ID_SUFFIX)
+  ) {
     return {
       container: 'list',
       typeNameSubstring: typeName.substring(
@@ -39,7 +42,10 @@ const getContainerForType = (typeName: string): {
       ),
     }
   }
-  if (typeName.startsWith(MAP_ID_PREFIX) && typeName.endsWith(GENERIC_ID_SUFFIX)) {
+  if (
+    typeName.toLowerCase().startsWith(MAP_ID_PREFIX.toLowerCase())
+    && typeName.endsWith(GENERIC_ID_SUFFIX)
+  ) {
     return {
       container: 'map',
       typeNameSubstring: typeName.substring(
@@ -73,7 +79,7 @@ export const defineAdditionalTypes = (
       })
       definedTypes[typeName] = additionalType
       // the request should be defined directly in the type configuration
-      if (typeConfig[typeName].request?.url === undefined) {
+      if (typeConfig[typeName]?.request?.url === undefined) {
         log.error('Missing request url for cloned type %s', typeName)
       }
     }

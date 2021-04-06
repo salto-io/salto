@@ -26,7 +26,7 @@ const { makeArray } = collections.array
 const log = logger(module)
 
 export type ReferenceObject = OpenAPIV2.ReferenceObject | OpenAPIV3.ReferenceObject
-export type SchemaObject = OpenAPIV2.SchemaObject | OpenAPIV3.SchemaObject
+export type SchemaObject = OpenAPIV2.SchemaObject | OpenAPIV3.SchemaObject | IJsonSchema
 export type SwaggerRefs = SwaggerParser.$Refs
 
 export type SchemaOrReference = ReferenceObject | SchemaObject
@@ -74,9 +74,12 @@ export const isReferenceObject = (value: any): value is ReferenceObject => (
   value?.$ref !== undefined
 )
 
-// TODO generalize return type to include v2
+type ArraySchemaObject = {
+  items: ReferenceObject | SchemaObject
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isArraySchemaObject = (schema: any): schema is OpenAPIV3.ArraySchemaObject => (
+export const isArraySchemaObject = (schema: any): schema is ArraySchemaObject => (
   schema.type === SWAGGER_ARRAY && schema.items !== undefined
 )
 
@@ -91,28 +94,37 @@ export const toNormalizedRefName = (ref: ReferenceObject): string => (
   pathNaclCase(naclCase(_.last(ref.$ref.split('/'))))
 )
 
+const isV2 = (doc: OpenAPI.Document): doc is OpenAPIV2.Document => {
+  const version = _.get(doc, 'swagger')
+  return _.isString(version) && version.startsWith('2.')
+}
+const isV3 = (doc: OpenAPI.Document): doc is OpenAPIV3.Document => {
+  const version = _.get(doc, 'openapi')
+  return _.isString(version) && version.startsWith('3.')
+}
+
 export const getParsedDefs = async (swaggerPath: string):
   Promise<{
-  // TODO add better handling for v2 vs. v3, add safeties
   schemas: Record<string, SchemaOrReference>
   refs: SwaggerRefs
 }> => {
   const parser = new SwaggerParser()
   const parsedSwagger: OpenAPI.Document = await parser.bundle(swaggerPath)
-  const getDefs: Record<string, OpenAPIV2.OperationObject> = _.pickBy(
-    _.mapValues(parsedSwagger.paths, def => def.get),
-    isDefined,
+
+  const toSchemaV2 = (def?: OpenAPIV2.OperationObject): (undefined | OpenAPIV2.Schema) => (
+    def?.responses?.[200]?.schema
   )
-  const toSchema = (def: OpenAPIV2.OperationObject): (
-    undefined | OpenAPIV2.Schema | OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject) => {
-    // v2
-    if (def.responses?.[200]?.schema !== undefined) {
-      return def.responses?.[200]?.schema
+
+  const toSchemaV3 = (
+    def?: OpenAPIV3.OperationObject
+  ): undefined | OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject => {
+    const response = def?.responses?.[200]
+    if (isReferenceObject(response)) {
+      return response
     }
-    // v3
-    const { content } = def.responses?.[200] ?? {}
-    if (content) {
-      const mediaType = _.first(Object.values(content))
+
+    if (response?.content) {
+      const mediaType = _.first(Object.values(response.content))
       if (isDefined(mediaType) && _.isObjectLike(mediaType)) {
         return (mediaType as OpenAPIV3.MediaTypeObject).schema
       }
@@ -120,8 +132,13 @@ export const getParsedDefs = async (swaggerPath: string):
     return undefined
   }
 
+  if (!(isV2(parsedSwagger) || isV3(parsedSwagger))) {
+    // unreachable because of the swagger-parser validations
+    throw new Error(`unsupported swagger version ${_.get(parsedSwagger, 'swagger') ?? _.get(parsedSwagger, 'openapi')}`)
+  }
+  const toSchema = isV2(parsedSwagger) ? toSchemaV2 : toSchemaV3
   const responseSchemas = _.pickBy(
-    _.mapValues(getDefs, toSchema),
+    _.mapValues(parsedSwagger.paths, def => toSchema(def.get)),
     isDefined,
   )
   return {
@@ -130,10 +147,8 @@ export const getParsedDefs = async (swaggerPath: string):
   }
 }
 
-type ExtendedSchema = IJsonSchema | SchemaObject
-
 type HasAllOf = {
-  allOf?: ExtendedSchema[]
+  allOf?: SchemaObject[]
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -146,13 +161,13 @@ const allOfCompatible = (val: any): val is HasAllOf => (
  * Extract the nested fields for the specified schema that are defined in its allOf nested schemas,
  * including additionalProperties.
  */
-export const extractAllOf = (schemaDefObj: SchemaObject, refs: SwaggerRefs): {
+export const extractProperties = (schemaDefObj: SchemaObject, refs: SwaggerRefs): {
   allProperties: Record<string, SchemaObject>
-  additionalProperties?: ExtendedSchema
+  additionalProperties?: SchemaObject
 } => {
   const recursiveAllOf = (
     { allOf }: HasAllOf
-  ): ExtendedSchema[] => {
+  ): SchemaObject[] => {
     if (allOf === undefined) {
       return []
     }
@@ -178,7 +193,7 @@ export const extractAllOf = (schemaDefObj: SchemaObject, refs: SwaggerRefs): {
     ),
   })
 
-  const flattenAllOfAdditionalProps = (schemaDef: SchemaObject): ExtendedSchema[] => (
+  const flattenAllOfAdditionalProps = (schemaDef: SchemaObject): SchemaObject[] => (
     [
       schemaDef.additionalProperties,
       ...(allOfCompatible(schemaDef) ? recursiveAllOf(schemaDef) : []).flatMap(nested => (
@@ -189,9 +204,15 @@ export const extractAllOf = (schemaDefObj: SchemaObject, refs: SwaggerRefs): {
             ...flattenAllOfAdditionalProps(nested.properties ?? {}),
           ]
       )),
-    ].map(p => (p === false ? undefined : p))
-      .map(p => (p === true ? {} : p))
-      .filter(isDefined)
+    ].map(p => {
+      if (p === undefined || p === true) {
+        return {}
+      }
+      if (p === false) {
+        return undefined
+      }
+      return _.omit(p, 'description')
+    }).filter(isDefined)
   )
 
   if (isArraySchemaObject(schemaDefObj)) {
@@ -201,13 +222,18 @@ export const extractAllOf = (schemaDefObj: SchemaObject, refs: SwaggerRefs): {
     }
   }
 
-  const additionalProperties = flattenAllOfAdditionalProps(schemaDefObj)
-  if (additionalProperties.length > 1) {
-    log.error('too many additionalProperties found in allOf - using first')
+  const allAdditionalProperties = flattenAllOfAdditionalProps(schemaDefObj)
+  if (allAdditionalProperties.filter(p => !_.isEmpty(p)).length > 1) {
+    log.debug('too many additionalProperties found in allOf - using first non-empty')
   }
+  const additionalProperties = (
+    allAdditionalProperties.find(isReferenceObject)
+    ?? allAdditionalProperties.find(p => Object.keys(p).length > 0)
+    ?? allAdditionalProperties[0]
+  )
 
   return {
     allProperties: flattenAllOfProps(schemaDefObj),
-    additionalProperties: additionalProperties[0],
+    additionalProperties,
   }
 }

@@ -58,16 +58,15 @@ const computeDependsOnURLs = (
   if (!url.includes('{')) {
     return [url]
   }
+  const urlParams = url.match(ARG_PLACEHOLDER_MATCHER)
+  if (urlParams === null) {
+    throw new Error(`invalid endpoint definition ${url}`)
+  }
 
   if (contextElements === undefined || dependsOn === undefined || _.isEmpty(dependsOn)) {
     throw new Error(`cannot resolve endpoint ${url} - missing context`)
   }
 
-  const urlParams = url.match(ARG_PLACEHOLDER_MATCHER)
-  if (urlParams === null) {
-    // TODO catch earlier in the validation
-    throw new Error(`invalid endpoint definition ${url}`)
-  }
   if (urlParams.length > 1) {
     // not needed yet (when it is, we will need to decide which combinations to use)
     throw new Error(`too many variables in endpoint ${url}`)
@@ -81,7 +80,7 @@ const computeDependsOnURLs = (
   const contextInstances = (contextElements[referenceDetails.from.type] ?? []).filter(
     isInstanceElement
   )
-  if (!contextInstances) {
+  if (contextInstances.length === 0) {
     throw new Error(`no instances found for ${referenceDetails.from.type}, cannot call endpoint ${url}`)
   }
   const potentialParams = contextInstances.map(e => e.value[referenceDetails.from.field])

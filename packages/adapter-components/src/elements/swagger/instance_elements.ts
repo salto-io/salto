@@ -16,14 +16,25 @@
 import _ from 'lodash'
 import {
   InstanceElement, Values, ObjectType, isObjectType, ReferenceExpression, isReferenceExpression,
-  isListType,
+  isListType, isMapType,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ADDITIONAL_PROPERTIES_FIELD } from './type_elements/swagger_parser'
 import { InstanceCreationParams, toBasicInstance } from '../instance_elements'
-import { TransformationConfig, TransformationDefaultConfig } from '../../config/transformation'
+import { HTTPClientInterface, UnauthorizedError } from '../../client'
+import {
+  UserFetchConfig, TypeSwaggerDefaultConfig, TransformationConfig, TransformationDefaultConfig,
+  AdapterSwaggerApiConfig, TypeSwaggerConfig,
+} from '../../config'
+import { findDataField, FindNestedFieldFunc } from '../field_finder'
+import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../request_parameters'
+import { getElementsWithContext } from '../element_getter'
 
+const { makeArray } = collections.array
+const { toArrayAsync } = collections.asynciterable
+const { isDefined } = lowerdashValues
 const log = logger(module)
 
 /**
@@ -44,22 +55,23 @@ const extractStandaloneFields = (
   }
   const additionalInstances: InstanceElement[] = []
 
-  const replaceWithReference = ({ value, parent, objType }: {
-    value: Values
+  const replaceWithReference = ({ values, parent, objType }: {
+    values: Values[]
     parent: InstanceElement
     objType: ObjectType
-  }): ReferenceExpression => {
+  }): ReferenceExpression[] => {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    const [refInst] = generateInstancesForType({
-      entries: [value],
+    const refInstances = generateInstancesForType({
+      entries: values,
       objType,
       nestName: true,
       parent,
       transformationConfigByType,
       transformationDefaultConfig,
+      normalized: true,
     })
-    additionalInstances.push(refInst)
-    return new ReferenceExpression(refInst.elemID)
+    additionalInstances.push(...refInstances)
+    return refInstances.map(refInst => new ReferenceExpression(refInst.elemID))
   }
 
   const extractFields: TransformFunc = ({ value, field, path }) => {
@@ -87,17 +99,17 @@ const extractStandaloneFields = (
     }
 
     if (Array.isArray(value)) {
-      return value.map(val => replaceWithReference({
-        value: val,
+      return replaceWithReference({
+        values: value,
         parent: inst,
         objType: refType,
-      }))
+      })
     }
     return replaceWithReference({
-      value,
+      values: [value],
       parent: inst,
       objType: refType,
-    })
+    })[0]
   }
 
   const updatedInst = transformElement({
@@ -109,23 +121,18 @@ const extractStandaloneFields = (
 }
 
 /**
- * Normalize the element's values:
- * - omit nulls
- * - nest additionalProperties under the additionalProperties field in order to align with the type
+ * Normalize the element's values, by nesting swagger additionalProperties under the
+ * additionalProperties field in order to align with the type.
  *
  * Note: The reverse will need to be done pre-deploy (not implemented for fetch-only)
  */
 const normalizeElementValues = (instance: InstanceElement): InstanceElement => {
   const transformAdditionalProps: TransformFunc = ({ value, field, path }) => {
-    // removing nulls since they're not handled correctly in nacls
-    if (value === null) {
-      return undefined
-    }
-
     const fieldType = path?.isEqual(instance.elemID) ? instance.type : field?.type
     if (
       !isObjectType(fieldType)
       || fieldType.fields[ADDITIONAL_PROPERTIES_FIELD] === undefined
+      || !isMapType(fieldType.fields[ADDITIONAL_PROPERTIES_FIELD].type)
     ) {
       return value
     }
@@ -148,20 +155,21 @@ const normalizeElementValues = (instance: InstanceElement): InstanceElement => {
 }
 
 const toInstance = (args: InstanceCreationParams): InstanceElement => (
-  normalizeElementValues(toBasicInstance(args))
+  args.normalized ? toBasicInstance(args) : normalizeElementValues(toBasicInstance(args))
 )
 
 /**
  * Generate instances for the specified types based on the entries from the API responses,
  * using the endpoint's specific config and the adapter's defaults.
  */
-export const generateInstancesForType = ({
+const generateInstancesForType = ({
   entries,
   objType,
   nestName,
   parent,
   transformationConfigByType,
   transformationDefaultConfig,
+  normalized,
 }: {
   entries: Values[]
   objType: ObjectType
@@ -169,6 +177,7 @@ export const generateInstancesForType = ({
   parent?: InstanceElement
   transformationConfigByType: Record<string, TransformationConfig>
   transformationDefaultConfig: TransformationDefaultConfig
+  normalized?: boolean
 }): InstanceElement[] => {
   const standaloneFields = transformationConfigByType[objType.elemID.name]?.standaloneFields
   return entries
@@ -179,6 +188,7 @@ export const generateInstancesForType = ({
       parent,
       transformationConfigByType,
       transformationDefaultConfig,
+      normalized,
       defaultName: `unnamed_${index}`, // TODO improve
     }))
     .flatMap(inst => (
@@ -189,4 +199,177 @@ export const generateInstancesForType = ({
           transformationDefaultConfig,
         })
     ))
+}
+
+const isItemsOnlyObjectType = (type: ObjectType): boolean => (
+  _.isEqual(Object.keys(type.fields), ['items'])
+)
+
+const isAdditionalPropertiesOnlyObjectType = (type: ObjectType): boolean => (
+  _.isEqual(Object.keys(type.fields), [ADDITIONAL_PROPERTIES_FIELD])
+)
+
+const normalizeType = (type: ObjectType | undefined): ObjectType | undefined => {
+  if (type !== undefined && isItemsOnlyObjectType(type)) {
+    const itemsType = type.fields.items.type
+    if (isListType(itemsType) && isObjectType(itemsType.innerType)) {
+      return itemsType.innerType
+    }
+  }
+  return type
+}
+
+/**
+ * Fetch all instances for the specified type, generating the needed API requests
+ * based on the endpoint configuration. For endpoints that depend on other endpoints,
+ * use the already-fetched elements as context in order to determine the right requests.
+ */
+const getInstancesForType = async ({
+  typeName,
+  client,
+  typesConfig,
+  typeDefaultConfig,
+  objectTypes,
+  contextElements,
+  nestedFieldFinder,
+  computeGetArgs,
+}: {
+  typeName: string
+  client: HTTPClientInterface
+  objectTypes: Record<string, ObjectType>
+  typesConfig: Record<string, TypeSwaggerConfig>
+  typeDefaultConfig: TypeSwaggerDefaultConfig
+  contextElements?: Record<string, InstanceElement[]>
+  nestedFieldFinder: FindNestedFieldFunc
+  computeGetArgs: ComputeGetArgsFunc
+}): Promise<InstanceElement[]> => {
+  const type = normalizeType(objectTypes[typeName])
+  const typeConfig = typesConfig[typeName]
+  if (type === undefined || typeConfig === undefined) {
+    // should never happen
+    throw new Error(`could not find type ${typeName}`)
+  }
+  const { request, transformation } = typeConfig
+  if (request === undefined) {
+    // a type with no request config cannot be fetched
+    throw new Error(`Invalid type config - type ${type.elemID.adapter}.${typeName} has no request config`)
+  }
+
+  const {
+    fieldsToOmit, dataField,
+  } = _.defaults({}, transformation, typeDefaultConfig.transformation)
+
+  try {
+    const nestedFieldDetails = nestedFieldFinder(type, fieldsToOmit, dataField)
+
+    const getType = (): { objType: ObjectType; extractValues?: boolean } => {
+      if (nestedFieldDetails === undefined) {
+        return {
+          objType: type,
+        }
+      }
+
+      const dataFieldType = nestedFieldDetails.field.type
+
+      // special case - should probably move to adapter-specific filter if does not recur
+      if (
+        dataField !== undefined
+        && isObjectType(dataFieldType)
+        && isAdditionalPropertiesOnlyObjectType(dataFieldType)
+      ) {
+        const propsType = dataFieldType.fields[ADDITIONAL_PROPERTIES_FIELD].type
+        if (isMapType(propsType) && isObjectType(propsType.innerType)) {
+          return {
+            objType: propsType.innerType,
+            extractValues: true,
+          }
+        }
+      }
+
+      const fieldType = isListType(dataFieldType) ? dataFieldType.innerType : dataFieldType
+      if (!isObjectType(fieldType)) {
+        throw new Error(`data field type ${fieldType.elemID.getFullName()} must be an object type`)
+      }
+      return { objType: fieldType }
+    }
+
+    const { objType, extractValues } = getType()
+
+    const getEntries = async (): Promise<Values[]> => {
+      const args = computeGetArgs(request, contextElements)
+
+      const results = (await Promise.all(
+        args.map(async getArgs => ((await toArrayAsync(await client.get(getArgs))).flat()))
+      )).flatMap(makeArray)
+
+      const entries = (results
+        .flatMap(result => (nestedFieldDetails !== undefined
+          ? makeArray(result[nestedFieldDetails.field.name])
+          : makeArray(result)))
+        .flatMap(result => (extractValues && _.isPlainObject(result)
+          ? Object.values(result as Values)
+          : makeArray(result))))
+
+      return entries
+    }
+
+    const transformationConfigByType = _.pickBy(
+      _.mapValues(typesConfig, def => def.transformation),
+      isDefined,
+    )
+    const transformationDefaultConfig = typeDefaultConfig.transformation
+
+    const entries = await getEntries()
+    return generateInstancesForType({
+      entries,
+      objType,
+      transformationConfigByType,
+      transformationDefaultConfig,
+    })
+  } catch (e) {
+    log.error(`Could not fetch ${type.elemID.name}: ${e}. %s`, e.stack)
+    if (e instanceof UnauthorizedError) {
+      throw e
+    }
+    return []
+  }
+}
+
+/**
+ * Get all instances from all types included in the fetch configuration.
+ */
+export const getAllInstances = async ({
+  client,
+  apiConfig,
+  fetchConfig,
+  objectTypes,
+  nestedFieldFinder = findDataField,
+  computeGetArgs = defaultComputeGetArgs,
+}: {
+  client: HTTPClientInterface
+  apiConfig: AdapterSwaggerApiConfig
+  fetchConfig: UserFetchConfig
+  objectTypes: Record<string, ObjectType>
+  nestedFieldFinder?: FindNestedFieldFunc
+  computeGetArgs?: ComputeGetArgsFunc
+}): Promise<InstanceElement[]> => {
+  const { types, typeDefaults } = apiConfig
+
+  const elementGenerationParams = {
+    client,
+    typesConfig: types,
+    objectTypes,
+    typeDefaultConfig: typeDefaults,
+    nestedFieldFinder,
+    computeGetArgs,
+  }
+
+  return getElementsWithContext({
+    includeTypes: fetchConfig.includeTypes,
+    types: apiConfig.types,
+    typeElementGetter: args => getInstancesForType({
+      ...elementGenerationParams,
+      ...args,
+    }),
+  })
 }

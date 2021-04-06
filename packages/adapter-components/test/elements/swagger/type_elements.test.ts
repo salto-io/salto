@@ -14,17 +14,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, ListType } from '@salto-io/adapter-api'
-import { generateTypes } from '../../../src/elements/swagger'
+import _ from 'lodash'
+import { ObjectType, ElemID, ListType, TypeElement, BuiltinTypes, MapType } from '@salto-io/adapter-api'
+import { generateTypes, toPrimitiveType } from '../../../src/elements/swagger'
+import { RequestableTypeSwaggerConfig } from '../../../src/config'
 
 const ADAPTER_NAME = 'myAdapter'
 const BASE_DIR = __dirname.replace('/dist', '')
 
-// TODO check all variants, add special cases
-
 describe('swagger_type_elements', () => {
   describe('generateTypes', () => {
-    // TODO add full elements
     const expectedTypes = ['Category', 'Order', 'Pet', 'Tag', 'User', 'pet__findByStatus', 'pet__findByTags', 'store__inventory']
     const expectedParsedConfigs = {
       Order: { request: { url: '/store/order/{orderId}' } },
@@ -46,13 +45,22 @@ describe('swagger_type_elements', () => {
             swagger: { url: `${BASE_DIR}/petstore_swagger.v2.yaml` },
             typeDefaults: { transformation: { idFields: ['name'] } },
             types: {},
-          }
+          },
         )
         expect(Object.keys(allTypes).sort()).toEqual(expectedTypes)
         expect(parsedConfigs).toEqual(expectedParsedConfigs)
         // regular response type with reference
-        const pet = allTypes.Pet
-        expect(Object.keys((pet as ObjectType).fields).sort()).toEqual(['category', 'id', 'name', 'photoUrls', 'status', 'tags'])
+        const pet = allTypes.Pet as ObjectType
+        expect(pet).toBeInstanceOf(ObjectType)
+        expect(_.mapValues(pet.fields, f => f.type.elemID.getFullName())).toEqual({
+          additionalProperties: 'map<unknown>',
+          category: 'myAdapter.Category',
+          id: 'number',
+          name: 'string',
+          photoUrls: 'list<string>',
+          status: 'string',
+          tags: 'list<myAdapter.Tag>',
+        })
 
         // array response type
         const petArray = allTypes.pet__findByStatus
@@ -63,6 +71,27 @@ describe('swagger_type_elements', () => {
           },
           path: [ADAPTER_NAME, 'Types', 'pet__findByStatus'],
         }))
+
+        // field with allOf
+        const user = allTypes.User as ObjectType
+        expect(user).toBeInstanceOf(ObjectType)
+        expect(_.mapValues(user.fields, f => f.type.elemID.getFullName())).toEqual({
+          // directly listed
+          email: 'string',
+          firstName: 'string',
+          id: 'number',
+          lastName: 'string',
+          password: 'string',
+          phone: 'string',
+          userStatus: 'number',
+          username: 'string',
+          // ref to UserAdditional1 in swagger
+          middleName: 'string',
+          // ref to UserAdditional2 in swagger
+          middleName2: 'string',
+          // additional properties
+          additionalProperties: 'map<myAdapter.Order>',
+        })
       })
       it('should generate the right types for swagger v2 json', async () => {
         const { allTypes, parsedConfigs } = await generateTypes(
@@ -101,6 +130,136 @@ describe('swagger_type_elements', () => {
         expect(parsedConfigs).toEqual(expectedParsedConfigs)
       })
     })
-    // TODO continue, override config, check with sample allOf and recursion
+
+    describe('with config overrides', () => {
+      let allTypes: Record<string, TypeElement>
+      let parsedConfigs: Record<string, RequestableTypeSwaggerConfig>
+      beforeAll(async () => {
+        const res = await generateTypes(
+          ADAPTER_NAME,
+          {
+            swagger: {
+              url: `${BASE_DIR}/petstore_swagger.v2.yaml`,
+              additionalTypes: [
+                { typeName: 'Pet2', cloneFrom: 'Pet__new' },
+                { typeName: 'Pet3', cloneFrom: 'Pet__new' },
+              ],
+              typeNameOverrides: [
+                { originalName: 'pet__findByTags', newName: 'PetByTag' },
+                { originalName: 'Pet', newName: 'Pet__new' },
+              ],
+            },
+            typeDefaults: { transformation: { idFields: ['name'] } },
+            types: {
+              Order: {
+                transformation: {
+                  fieldTypeOverrides: [
+                    { fieldName: 'petId', fieldType: 'list<number>' },
+                    { fieldName: 'shipDate', fieldType: 'Category' },
+                    { fieldName: 'quantity', fieldType: 'map<Category>' },
+                    { fieldName: 'newField', fieldType: 'map<Category>' },
+                  ],
+                },
+              },
+              NewType: {
+                transformation: {
+                  fieldTypeOverrides: [
+                    { fieldName: 'id', fieldType: 'string' },
+                  ],
+                },
+              },
+            },
+          },
+        )
+        allTypes = res.allTypes
+        parsedConfigs = res.parsedConfigs
+      })
+      it('should generate the right types', () => {
+        const updatedExpectedTypes = ['Category', 'Order', 'Pet2', 'Pet3', 'PetByTag', 'Pet__new', 'Tag', 'User', 'pet__findByStatus', 'store__inventory']
+        expect(Object.keys(allTypes).sort()).toEqual(updatedExpectedTypes)
+        // no Pet2 because it does not have a request config
+        const updatedExpectedParsedConfigs = {
+          Order: { request: { url: '/store/order/{orderId}' } },
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          Pet__new: { request: { url: '/pet/{petId}' } },
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          pet__findByStatus: { request: { url: '/pet/findByStatus' } },
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          PetByTag: { request: { url: '/pet/findByTags' } },
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          store__inventory: { request: { url: '/store/inventory' } },
+          User: { request: { url: '/user/{username}' } },
+        }
+        expect(parsedConfigs).toEqual(updatedExpectedParsedConfigs)
+        // regular response type with reference
+        const pet = allTypes.Pet__new
+        expect(Object.keys((pet as ObjectType).fields).sort()).toEqual(['additionalProperties', 'category', 'id', 'name', 'photoUrls', 'status', 'tags'])
+      })
+
+      it('should not have anything under the original typenames', () => {
+        expect(allTypes.Pet).toBeUndefined()
+        expect(allTypes.pet__findByTags).toBeUndefined()
+      })
+
+      it('should override field types', () => {
+        const order = allTypes.Order as ObjectType
+        expect(order).toBeInstanceOf(ObjectType)
+        expect(order.fields.petId.type).toBeInstanceOf(ListType)
+        expect((order.fields.petId.type as ListType).innerType).toEqual(BuiltinTypes.NUMBER)
+        expect(order.fields.shipDate.type).toEqual(allTypes.Category)
+        expect(order.fields.quantity.type).toBeInstanceOf(MapType)
+        expect((order.fields.quantity.type as MapType).innerType).toEqual(allTypes.Category)
+      })
+      it('should not add fields that did not already exist', () => {
+        const order = allTypes.Order as ObjectType
+        expect(order).toBeInstanceOf(ObjectType)
+        expect(order.fields.newField).toBeUndefined()
+      })
+      it('should not add types that did not already exist', () => {
+        const order = allTypes.NewType as ObjectType
+        expect(order).toBeUndefined()
+      })
+    })
+
+    describe('invalid versions', () => {
+      it('should fail on invalid swagger version (v2)', async () => {
+        await expect(() => generateTypes(
+          ADAPTER_NAME,
+          {
+            swagger: { url: `${BASE_DIR}/invalid_swagger.yaml` },
+            typeDefaults: { transformation: { idFields: ['name'] } },
+            types: {},
+          }
+        )).rejects.toThrow(new Error('Unrecognized Swagger version: 1.0. Expected 2.0'))
+      })
+      it('should fail on invalid swagger version (v3)', async () => {
+        await expect(() => generateTypes(
+          ADAPTER_NAME,
+          {
+            swagger: { url: `${BASE_DIR}/invalid_openapi.yaml` },
+            typeDefaults: { transformation: { idFields: ['name'] } },
+            types: {},
+          }
+        )).rejects.toThrow(new Error('Unsupported OpenAPI version: 4.0.1. Swagger Parser only supports versions 3.0.0, 3.0.1, 3.0.2, 3.0.3'))
+      })
+    })
+  })
+
+  describe('toPrimitiveType', () => {
+    it('should return the right primitive type when one is specified', () => {
+      expect(toPrimitiveType('string')).toEqual(BuiltinTypes.STRING)
+      expect(toPrimitiveType('byte')).toEqual(BuiltinTypes.STRING)
+      expect(toPrimitiveType('number')).toEqual(BuiltinTypes.NUMBER)
+      expect(toPrimitiveType('date')).toEqual(BuiltinTypes.STRING)
+    })
+    it('should return unknown when type is not known', () => {
+      expect(toPrimitiveType('bla')).toEqual(BuiltinTypes.UNKNOWN)
+    })
+    it('should return correct type when multiple types that map to the same builtin are specified', () => {
+      expect(toPrimitiveType(['string', 'byte'])).toEqual(BuiltinTypes.STRING)
+    })
+    it('should return unknown when multiple conflicting types are specified', () => {
+      expect(toPrimitiveType(['string', 'number'])).toEqual(BuiltinTypes.UNKNOWN)
+    })
   })
 })

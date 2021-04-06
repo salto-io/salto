@@ -22,7 +22,7 @@ import { TYPES_PATH, SUBTYPES_PATH } from '../../constants'
 import { RequestableTypeSwaggerConfig, AdapterSwaggerApiConfig } from '../../../config/swagger'
 import {
   getParsedDefs, isReferenceObject, toNormalizedRefName, ReferenceObject, SchemaObject,
-  extractAllOf, ADDITIONAL_PROPERTIES_FIELD, toPrimitiveType, toTypeName, SwaggerRefs,
+  extractProperties, ADDITIONAL_PROPERTIES_FIELD, toPrimitiveType, toTypeName, SwaggerRefs,
   SchemaOrReference, SWAGGER_ARRAY, SWAGGER_OBJECT, isArraySchemaObject,
 } from './swagger_parser'
 import { fixTypes, defineAdditionalTypes } from './type_config_override'
@@ -83,9 +83,12 @@ const typeAdder = ({
         ))
       }
       if (
-        schemaDef.type === SWAGGER_OBJECT
-        && schemaDef.properties === undefined
-        && schemaDef.additionalProperties === undefined
+        _.isEmpty(schemaDef)
+        || (
+          schemaDef.type === SWAGGER_OBJECT
+          && schemaDef.properties === undefined
+          && schemaDef.additionalProperties === undefined
+        )
       ) {
         return BuiltinTypes.UNKNOWN
       }
@@ -108,8 +111,7 @@ const typeAdder = ({
     schemaDef: SchemaObject
     objName: string
     endpoints?: string[]
-    refs: SwaggerRefs
-  }): ObjectType => {
+  }): void => {
     const naclObjName = naclCase(objName)
 
     // first add an empty type, to avoid endless recursion in cyclic references from fields
@@ -123,22 +125,7 @@ const typeAdder = ({
     })
     definedTypes[naclObjName] = type
 
-    const { allProperties, additionalProperties } = extractAllOf(schemaDef, refs)
-
-    if (additionalProperties !== undefined) {
-      Object.assign(
-        type.fields,
-        { [ADDITIONAL_PROPERTIES_FIELD]: new Field(
-          type,
-          ADDITIONAL_PROPERTIES_FIELD,
-          new MapType(createNestedType(
-            additionalProperties as SchemaOrReference,
-            // fallback type name when no name is provided in the swagger def
-            `${objName}_${ADDITIONAL_PROPERTIES_FIELD}`,
-          )),
-        ) },
-      )
-    }
+    const { allProperties, additionalProperties } = extractProperties(schemaDef, refs)
 
     Object.assign(
       type.fields,
@@ -163,13 +150,41 @@ const typeAdder = ({
         )
       }),
     )
+
+    if (additionalProperties !== undefined) {
+      if (type.fields[ADDITIONAL_PROPERTIES_FIELD] !== undefined) {
+        log.error('type %s has both a standard %s field and allows additionalProperties - overriding with an additionalProperties field of type unknown',
+          type.elemID.name, ADDITIONAL_PROPERTIES_FIELD)
+        Object.assign(
+          type.fields,
+          { [ADDITIONAL_PROPERTIES_FIELD]: new Field(
+            type,
+            ADDITIONAL_PROPERTIES_FIELD,
+            new MapType(BuiltinTypes.UNKNOWN),
+          ) },
+        )
+      } else {
+        Object.assign(
+          type.fields,
+          { [ADDITIONAL_PROPERTIES_FIELD]: new Field(
+            type,
+            ADDITIONAL_PROPERTIES_FIELD,
+            new MapType(createNestedType(
+              additionalProperties,
+              // fallback type name when no name is provided in the swagger def
+              `${objName}_${ADDITIONAL_PROPERTIES_FIELD}`,
+            )),
+          ) },
+        )
+      }
+    }
+
     if (endpoints !== undefined && endpoints.length > 0) {
       if (endpoints.length > 1) {
         log.warn('found %d endpoints for type %s (%s) - using %s', endpoints.length, type.elemID.name, endpoints, endpoints[0])
       }
       parsedConfigs[type.elemID.name] = { request: { url: endpoints[0] } }
     }
-    return type
   }
 
   const addType: TypeAdderType = (schema, origTypeName, endpointName) => {
@@ -192,7 +207,6 @@ const typeAdder = ({
           schemaDef,
           objName,
           endpoints,
-          refs,
         })
       }
       return definedTypes[naclObjName]
@@ -207,13 +221,19 @@ const typeAdder = ({
     }
     // TODO add support for oneOf / anyOf / not (only in OpenAPI v3)
     if (!_.isString(schema.type)) {
-      log.error('unexpected schema type %s', schema.type)
+      log.info('unexpected schema type %s for type %s', schema.type, typeName)
     }
-    if (
-      schema.type === SWAGGER_OBJECT || schema.type === SWAGGER_ARRAY
-      || schema.properties !== undefined
-      || schema.allOf !== undefined
-    ) {
+
+    const isObjectSchema = (schemaObj: SchemaObject): boolean => (
+      schemaObj.type === SWAGGER_OBJECT || schemaObj.type === SWAGGER_ARRAY
+      || schemaObj.properties !== undefined
+      || (
+        Array.isArray(schemaObj.allOf)
+        && schemaObj.allOf.some((s: SchemaObject) => isObjectSchema(s) || isReferenceObject(s))
+      )
+    )
+
+    if (isObjectSchema(schema)) {
       return toObjectType(
         schema,
         typeName,
@@ -239,7 +259,7 @@ export const generateTypes = async (
   allTypes: TypeMap
   parsedConfigs: Record<string, RequestableTypeSwaggerConfig>
 }> => {
-  // TODO persist swagger locally, add update mechanism and strategies
+  // TODO SALTO-1252 - persist swagger locally
 
   const toUpdatedResourceName = (
     origResourceName: string

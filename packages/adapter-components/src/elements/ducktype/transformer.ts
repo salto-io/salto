@@ -55,11 +55,17 @@ export const getTypeAndInstances = async ({
   typeDefaultConfig: TypeDuckTypeDefaultsConfig
   contextElements?: Record<string, Element[]>
 }): Promise<Element[]> => {
-  const { request, transformation } = typesConfig[typeName]
+  const typeConfig = typesConfig[typeName]
+  if (typeConfig === undefined) {
+    // should never happen
+    throw new Error(`could not find type ${typeName}`)
+  }
+  const { request, transformation } = typeConfig
   if (request === undefined) {
     // a type with no request config cannot be fetched
     throw new Error(`Invalid type config - type ${adapterName}.${typeName} has no request config`)
   }
+
   const {
     fieldsToOmit, hasDynamicFields, dataField,
   } = _.defaults({}, transformation, typeDefaultConfig.transformation)
@@ -71,7 +77,6 @@ export const getTypeAndInstances = async ({
   const transformationDefaultConfig = typeDefaultConfig.transformation
 
   const requestWithDefaults = _.defaults({}, request, typeDefaultConfig.request ?? {})
-  // TODO apply the config recursively in instances
 
   const getEntries = async (): Promise<Values[]> => {
     const getArgs = computeGetArgs(requestWithDefaults, contextElements)
@@ -82,7 +87,7 @@ export const getTypeAndInstances = async ({
 
   const entries = await getEntries()
 
-  // escape "field" names with '.'
+  // escape "field" names that contain '.'
   const naclEntries = entries.map(e => _.mapKeys(e, (_val, key) => naclCase(key)))
 
   // types with dynamic fields will be associated with the dynamic_keys type

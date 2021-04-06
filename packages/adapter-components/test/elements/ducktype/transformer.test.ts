@@ -266,6 +266,59 @@ describe('ducktype_transformer', () => {
         defaultName: 'unnamed_1_0',
       })
     })
+
+    it('should fail if type is missing from config', async () => {
+      mockClient = {
+        get: jest.fn().mockImplementation(async function *get() {
+          yield [{ someNested: { name: 'bla1' } }]
+          yield [{ someNested: [{ missing: 'something' }] }]
+        }),
+      }
+      await expect(() => getTypeAndInstances({
+        adapterName: 'something',
+        client: mockClient,
+        computeGetArgs: simpleGetArgs,
+        typeName: 'myType',
+        typesConfig: {
+          myType: {},
+        },
+        typeDefaultConfig: {
+          transformation: {
+            idFields: ['name'],
+            fileNameFields: ['also_name'],
+          },
+        },
+        nestedFieldFinder: findDataField,
+      })).rejects.toThrow(new Error('Invalid type config - type something.myType has no request config'))
+    })
+    it('should fail if type does not have request details', async () => {
+      mockClient = {
+        get: jest.fn().mockImplementation(async function *get() {
+          yield [{ someNested: { name: 'bla1' } }]
+          yield [{ someNested: [{ missing: 'something' }] }]
+        }),
+      }
+      await expect(() => getTypeAndInstances({
+        adapterName: 'something',
+        client: mockClient,
+        computeGetArgs: simpleGetArgs,
+        typeName: 'missing',
+        typesConfig: {
+          myType: {
+            request: {
+              url: 'url',
+            },
+          },
+        },
+        typeDefaultConfig: {
+          transformation: {
+            idFields: ['name'],
+            fileNameFields: ['also_name'],
+          },
+        },
+        nestedFieldFinder: findDataField,
+      })).rejects.toThrow(new Error('could not find type missing'))
+    })
   })
 
   describe('getAllElements', () => {

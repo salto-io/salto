@@ -284,7 +284,6 @@ describe('dependency changers', () => {
       testParent = new InstanceElement(
         'parent',
         testType,
-        {},
       )
       testInstance = new InstanceElement(
         'test',
@@ -351,8 +350,10 @@ describe('dependency changers', () => {
         ])
         dependencyChanges = [...await addReferencesDependency(inputChanges, new Map())]
       })
-      it('should not add dependency', () => {
-        expect(dependencyChanges).toHaveLength(0)
+      it('should add dependency to the element that contains the target', () => {
+        expect(dependencyChanges).toEqual([
+          { action: 'add', dependency: { source: 1, target: 0 } },
+        ])
       })
     })
     describe('when reference source is a type', () => {

@@ -18,13 +18,15 @@ import { collections } from '@salto-io/lowerdash'
 import {
   getChangeElement, isReferenceExpression, ChangeDataType, Change, ChangeEntry, DependencyChange,
   addReferenceDependency, addParentDependency, isDependentAction, DependencyChanger, isObjectType,
+  ElemID,
 } from '@salto-io/adapter-api'
 import {
   getAllReferencedIds, getParents,
 } from '@salto-io/adapter-utils'
 
 const getParentIds = (elem: ChangeDataType): Set<string> => new Set(
-  getParents(elem).filter(isReferenceExpression).map(ref => ref.elemId.getFullName())
+  getParents(elem).filter(isReferenceExpression)
+    .map(ref => ref.elemId.createBaseID().parent.getFullName())
 )
 
 const getChangeElemId = (change: Change<ChangeDataType>): string => (
@@ -45,6 +47,7 @@ export const addReferencesDependency: DependencyChanger = async changes => {
     // references from the annotations
     const onlyAnnotations = isObjectType(elem)
     return (wu(getAllReferencedIds(elem, onlyAnnotations))
+      .map(targetId => ElemID.fromFullName(targetId).createBaseID().parent.getFullName())
       .filter(targetId => targetId !== elemId) // Ignore self references
       .map(targetId => changesById.get(targetId) ?? [])
       .flatten(true) as wu.WuIterable<ChangeEntry>)

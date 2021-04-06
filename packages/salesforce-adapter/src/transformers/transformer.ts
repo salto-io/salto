@@ -290,6 +290,20 @@ export class Types {
     },
   })
 
+  private static rollupSummaryFilterItemOperationType = new PrimitiveType({
+    elemID: new ElemID(SALESFORCE, FIELD_ANNOTATIONS.ROLLUP_SUMMARY_FILTER_OPERATION),
+    primitive: PrimitiveTypes.STRING,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+        values: [
+          'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual',
+          'greaterOrEqual', 'contains', 'notContain', 'startsWith',
+          'includes', 'excludes', 'within',
+        ],
+      }),
+    },
+  })
+
   private static rollupSummaryFilterItemsElemID = new ElemID(SALESFORCE,
     FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS)
 
@@ -300,16 +314,7 @@ export class Types {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       [FILTER_ITEM_FIELDS.OPERATION]: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
-        annotations: {
-          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-            values: [
-              'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual',
-              'greaterOrEqual', 'contains', 'notContain', 'startsWith',
-              'includes', 'excludes', 'within',
-            ],
-          }),
-        },
+        refType: createRefToElmWithValue(Types.rollupSummaryFilterItemOperationType),
       },
       [FILTER_ITEM_FIELDS.VALUE]: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -805,7 +810,7 @@ export class Types {
 
   static getAnnotationTypes(): TypeElement[] {
     return [Types.fieldDependencyType, Types.rollupSummaryOperationType,
-      Types.rollupSummaryFilterItemsType,
+      Types.rollupSummaryFilterItemsType, Types.rollupSummaryFilterItemOperationType,
       Types.valueSettingsType, Types.lookupFilterType, Types.filterItemType,
       Types.encryptedTextMaskCharType, Types.encryptedTextMaskTypeType,
       Types.BusinessStatusType, Types.SecurityClassificationType, Types.valueSetType,

@@ -277,6 +277,7 @@ describe('dependency changers', () => {
             type: BuiltinTypes.STRING,
             annotations: { fieldRef: new ReferenceExpression(fieldRefType.elemID) },
           },
+          someField: { type: BuiltinTypes.STRING },
         },
         annotations: { annoRef: new ReferenceExpression(testAnnoType.elemID) },
         annotationTypes: { annoRef: testAnnoType },
@@ -284,14 +285,16 @@ describe('dependency changers', () => {
       testParent = new InstanceElement(
         'parent',
         testType,
-        {},
+        {
+          someField: 'someValue',
+        },
       )
       testInstance = new InstanceElement(
         'test',
         testType,
         { ref: new ReferenceExpression(testTypeId) },
         undefined,
-        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(testParent.elemID)] }
+        { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(testParent.elemID.createNestedID('someField'))] }
       )
     })
 
@@ -351,8 +354,10 @@ describe('dependency changers', () => {
         ])
         dependencyChanges = [...await addReferencesDependency(inputChanges, new Map())]
       })
-      it('should not add dependency', () => {
-        expect(dependencyChanges).toHaveLength(0)
+      it('should add dependency', () => {
+        expect(dependencyChanges).toEqual([
+          { action: 'add', dependency: { source: 1, target: 0 } },
+        ])
       })
     })
     describe('when reference source is a type', () => {

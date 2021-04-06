@@ -18,11 +18,14 @@ import Ajv from 'ajv'
 import axios from 'axios'
 import crypto from 'crypto'
 import xmlConvert from 'xml-js'
+import { collections } from '@salto-io/lowerdash'
+import path from 'path'
 import { SuiteAppCredentials } from '../../credentials'
 import { CONSUMER_KEY, CONSUMER_SECRET } from '../constants'
 import { ReadFileError } from '../errors'
-import { CallsLimiter } from '../types'
-import { GetResult, GET_RESULTS_SCHEMA, isGetSuccess } from './types'
+import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails } from '../types'
+import { AddListResults, GetResult, isAddListSuccess, isGetSuccess, isUpdateListSuccess, isWriteResponseSuccess, UpdateListResults } from './types'
+import { ADD_LIST_SCHEMA, GET_RESULTS_SCHEMA, UPDATE_LIST_SCHEMA } from './schemas'
 
 const log = logger(module)
 
@@ -41,19 +44,16 @@ export default class SoapClient {
 
   public async readFile(id: number): Promise<Buffer> {
     const body = {
-      get: {
+      _attributes: {
+        'xmlns:platformCore': 'urn:core_2020_2.platform.webservices.netsuite.com',
+      },
+      baseRef: {
         _attributes: {
-          'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-          'xmlns:platformCore': 'urn:core_2020_2.platform.webservices.netsuite.com',
+          internalId: id,
+          type: 'file',
+          'xsi:type': 'platformCore:RecordRef',
         },
-        baseRef: {
-          _attributes: {
-            internalId: id,
-            type: 'file',
-            'xsi:type': 'platformCore:RecordRef',
-          },
-          'platformCore:name': {},
-        },
+        'platformCore:name': {},
       },
     }
     const response = await this.sendSoapRequest('get', body)
@@ -82,6 +82,184 @@ export default class SoapClient {
     return b64content !== undefined ? Buffer.from(b64content, 'base64') : Buffer.from('')
   }
 
+  private static convertToFileRecord(file: FileDetails): object {
+    const internalIdEntry = file.id !== undefined ? { internalId: file.id.toString() } : {}
+    return {
+      _attributes: {
+        'xsi:type': 'q1:File',
+        'xmlns:q1': 'urn:filecabinet_2020_2.documents.webservices.netsuite.com',
+        ...internalIdEntry,
+      },
+      'q1:name': {
+        _text: path.basename(file.path),
+      },
+      'q1:attachFrom': {
+        _text: '_computer',
+      },
+      'q1:content': {
+        _text: file.content.toString('base64'),
+      },
+      'q1:folder': {
+        _attributes: {
+          internalId: file.folder.toString(),
+        },
+      },
+      'q1:description': {
+        _text: file.description,
+      },
+      'q1:bundleable': {
+        _text: file.bundleable,
+      },
+      'q1:isInactive': {
+        _text: file.isInactive,
+      },
+      'q1:isOnline': {
+        _text: file.isOnline,
+      },
+      'q1:hideInBundle': {
+        _text: file.hideInBundle,
+      },
+    }
+  }
+
+  private static convertToFolderRecord(folder: FolderDetails): object {
+    const parentEntry = folder.parent !== undefined
+      ? {
+        'q1:parent': {
+          _attributes: {
+            internalId: folder.parent.toString(),
+          },
+        },
+      }
+      : {}
+
+    const internalIdEntry = folder.id !== undefined ? { internalId: folder.id.toString() } : {}
+
+    return {
+      _attributes: {
+        'xsi:type': 'q1:Folder',
+        'xmlns:q1': 'urn:filecabinet_2020_2.documents.webservices.netsuite.com',
+        ...internalIdEntry,
+      },
+      'q1:name': {
+        _text: path.basename(folder.path),
+      },
+      'q1:description': {
+        _text: folder.description,
+      },
+      'q1:bundleable': {
+        _text: folder.bundleable,
+      },
+      'q1:isInactive': {
+        _text: folder.isInactive,
+      },
+      'q1:isOnline': {
+        _text: folder.isOnline,
+      },
+      'q1:hideInBundle': {
+        _text: folder.hideInBundle,
+      },
+      ...parentEntry,
+    }
+  }
+
+  private static convertToFileCabinetRecord(fileCabinetInstance: FileCabinetInstanceDetails):
+    object {
+    return fileCabinetInstance.type === 'file'
+      ? SoapClient.convertToFileRecord(fileCabinetInstance)
+      : SoapClient.convertToFolderRecord(fileCabinetInstance)
+  }
+
+  public async addFileCabinetInstances(fileCabinetInstances:
+    (FileCabinetInstanceDetails)[]): Promise<(number | Error)[]> {
+    const body = {
+      _attributes: {
+        xmlns: 'urn:messages_2020_2.platform.webservices.netsuite.com',
+      },
+      record: fileCabinetInstances.map(SoapClient.convertToFileCabinetRecord),
+    }
+
+    const response = await this.sendSoapRequest('addList', body)
+    if (!this.ajv.validate<AddListResults>(
+      ADD_LIST_SCHEMA,
+      response
+    )) {
+      log.error(`Got invalid response from addList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`Got invalid response from addList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    }
+
+    if (!isAddListSuccess(response)) {
+      const details = response['soapenv:Envelope']['soapenv:Body'].addListResponse.writeResponseList['platformCore:status']['platformCore:statusDetail']
+      // eslint-disable-next-line no-underscore-dangle
+      const code = details['platformCore:code']._text
+      // eslint-disable-next-line no-underscore-dangle
+      const message = details['platformCore:message']._text
+
+      log.error(`Failed to addList: error code: ${code}, error message: ${message}`)
+      throw new Error(`Failed to addList: error code: ${code}, error message: ${message}`)
+    }
+
+    return collections.array.makeArray(response['soapenv:Envelope']['soapenv:Body'].addListResponse.writeResponseList.writeResponse).map((writeResponse, index) => {
+      if (!isWriteResponseSuccess(writeResponse)) {
+        const details = writeResponse['platformCore:status']['platformCore:statusDetail']
+        // eslint-disable-next-line no-underscore-dangle
+        const code = details['platformCore:code']._text
+        // eslint-disable-next-line no-underscore-dangle
+        const message = details['platformCore:message']._text
+
+        log.error(`SOAP api call to add file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`)
+        return new Error(`SOAP api call to add file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`)
+      }
+      // eslint-disable-next-line no-underscore-dangle
+      return parseInt(writeResponse.baseRef._attributes.internalId, 10)
+    })
+  }
+
+  public async updateFileCabinet(fileCabinetInstances:
+    ExistingFileCabinetInstanceDetails[]): Promise<(number | Error)[]> {
+    const body = {
+      _attributes: {
+        xmlns: 'urn:messages_2020_2.platform.webservices.netsuite.com',
+      },
+      record: fileCabinetInstances.map(SoapClient.convertToFileCabinetRecord),
+    }
+
+    const response = await this.sendSoapRequest('updateList', body)
+    if (!this.ajv.validate<UpdateListResults>(
+      UPDATE_LIST_SCHEMA,
+      response
+    )) {
+      log.error(`Got invalid response from updateList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`Got invalid response from updateList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    }
+
+    if (!isUpdateListSuccess(response)) {
+      const details = response['soapenv:Envelope']['soapenv:Body'].updateListResponse.writeResponseList['platformCore:status']['platformCore:statusDetail']
+      // eslint-disable-next-line no-underscore-dangle
+      const code = details['platformCore:code']._text
+      // eslint-disable-next-line no-underscore-dangle
+      const message = details['platformCore:message']._text
+
+      log.error(`Failed to updateList: error code: ${code}, error message: ${message}`)
+      throw new Error(`Failed to updateList: error code: ${code}, error message: ${message}`)
+    }
+
+    return collections.array.makeArray(response['soapenv:Envelope']['soapenv:Body'].updateListResponse.writeResponseList.writeResponse).map((writeResponse, index) => {
+      if (!isWriteResponseSuccess(writeResponse)) {
+        const details = writeResponse['platformCore:status']['platformCore:statusDetail']
+        // eslint-disable-next-line no-underscore-dangle
+        const code = details['platformCore:code']._text
+        // eslint-disable-next-line no-underscore-dangle
+        const message = details['platformCore:message']._text
+
+        log.error(`SOAP api call to update file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`)
+        return Error(`SOAP api call to update file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`)
+      }
+      // eslint-disable-next-line no-underscore-dangle
+      return parseInt(writeResponse.baseRef._attributes.internalId, 10)
+    })
+  }
+
   private async sendSoapRequest(operation: string, body: object): Promise<unknown> {
     const headers = {
       'Content-Type': 'text/xml',
@@ -89,7 +267,7 @@ export default class SoapClient {
     }
     const response = await this.callsLimiter(() => axios.post(
       this.soapUrl.href,
-      this.generateSoapPayload(body),
+      this.generateSoapPayload({ [operation]: body }),
       { headers },
     ))
 
@@ -98,12 +276,13 @@ export default class SoapClient {
 
   private generateSoapPayload(body: object): string {
     return xmlConvert.js2xml({
-      'soap-env:Envelope': {
+      'soap:Envelope': {
         _attributes: {
-          'xmlns:soap-env': 'http://schemas.xmlsoap.org/soap/envelope/',
+          'xmlns:soap': 'http://www.w3.org/2003/05/soap-envelope',
+          'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
         },
-        'soap-env:Header': this.generateSoapHeader(),
-        'soap-env:Body': body,
+        'soap:Header': this.generateSoapHeader(),
+        'soap:Body': body,
       },
     }, { compact: true })
   }

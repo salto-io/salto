@@ -182,3 +182,32 @@ export type ReadResults = (ReadSuccess | ReadFailure)[]
 export type RestletOperation = 'search' | 'sysInfo' | 'readFile'
 
 export type CallsLimiter = <T>(fn: () => Promise<T>) => Promise<T>
+
+export type FileDetails = {
+  type: 'file'
+  path: string
+  id?: number
+  folder: number
+  bundleable: boolean
+  isInactive: boolean
+  isOnline: boolean
+  hideInBundle: boolean
+  content: Buffer
+  description: string
+}
+
+export type FolderDetails = {
+  type: 'folder'
+  path: string
+  id?: number
+  parent?: number
+  bundleable: boolean
+  isInactive: boolean
+  isOnline: boolean
+  hideInBundle: boolean
+  description: string
+}
+
+export type FileCabinetInstanceDetails = FileDetails | FolderDetails
+
+export type ExistingFileCabinetInstanceDetails = FileCabinetInstanceDetails & { id: number }

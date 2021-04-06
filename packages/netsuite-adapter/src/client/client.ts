@@ -14,16 +14,20 @@
 * limitations under the License.
 */
 
-import { AccountId } from '@salto-io/adapter-api'
+import { AccountId, Change, ChangeGroup, DeployResult, getChangeElement, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators } from '@salto-io/lowerdash'
+import { resolveValues } from '@salto-io/adapter-utils'
 import { NetsuiteQuery } from '../query'
 import { Credentials } from './credentials'
 import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import * as suiteAppFileCabinet from '../suiteapp_file_cabinet'
 import { SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
-import { CustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult } from './types'
+import { GetCustomObjectsResult, ImportFileCabinetResult } from './types'
+import { getAllReferencedInstances, getRequiredReferencedInstances } from '../reference_dependencies'
+import { getLookUpName, toCustomizationInfo } from '../transformer'
+import { SDF_GROUPS, SUITEAPP_CREATING_FILES } from '../group_changes'
 
 const log = logger(module)
 
@@ -80,9 +84,51 @@ export default class NetsuiteClient {
     return this.sdfClient.importFileCabinetContent(query)
   }
 
+  private static getAllRequiredReferencedInstances(
+    changedInstances: ReadonlyArray<InstanceElement>,
+    deployReferencedElements: boolean,
+  ): ReadonlyArray<InstanceElement> {
+    if (deployReferencedElements) {
+      return getAllReferencedInstances(changedInstances)
+    }
+    return getRequiredReferencedInstances(changedInstances)
+  }
+
+  private async sdfDeploy(
+    changes: ReadonlyArray<Change<InstanceElement>>,
+    deployReferencedElements: boolean
+  ): Promise<DeployResult> {
+    const changedInstances = changes.map(getChangeElement)
+    const customizationInfos = NetsuiteClient.getAllRequiredReferencedInstances(
+      changedInstances,
+      deployReferencedElements
+    ).map(instance => resolveValues(instance, getLookUpName))
+      .map(toCustomizationInfo)
+
+    const sdfDeployPromise = this.sdfClient.deploy(customizationInfos)
+
+    try {
+      await sdfDeployPromise
+      return { errors: [], appliedChanges: changes }
+    } catch (e) {
+      return { errors: [e], appliedChanges: [] }
+    }
+  }
+
   @NetsuiteClient.logDecorator
-  async deploy(customizationInfos: CustomizationInfo[]): Promise<void> {
-    return this.sdfClient.deploy(customizationInfos)
+  async deploy(changeGroup: ChangeGroup, deployReferencedElements: boolean):
+    Promise<DeployResult> {
+    const instancesChanges = changeGroup.changes.filter((change):
+      change is Change<InstanceElement> =>
+      isInstanceElement(getChangeElement(change)))
+
+    if (SDF_GROUPS.includes(changeGroup.groupID)) {
+      return this.sdfDeploy(instancesChanges, deployReferencedElements)
+    }
+
+    return this.suiteAppClient !== undefined
+      ? suiteAppFileCabinet.deploy(this.suiteAppClient, instancesChanges, changeGroup.groupID === SUITEAPP_CREATING_FILES ? 'add' : 'update')
+      : { errors: [], appliedChanges: [] }
   }
 
   public async runSuiteQL(query: string):
@@ -97,6 +143,10 @@ export default class NetsuiteClient {
 
   public async getSystemInformation(): Promise<SystemInformation | undefined> {
     return this.suiteAppClient?.getSystemInformation()
+  }
+
+  public isSuiteAppConfigured(): boolean {
+    return this.suiteAppClient !== undefined
   }
 
   private static logDecorator = decorators.wrapMethodWith(

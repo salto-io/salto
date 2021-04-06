@@ -13,16 +13,32 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+type StatusSuccess = {
+  _attributes: {
+    isSuccess: 'true'
+  }
+}
+
+type StatusError = {
+  _attributes: {
+    isSuccess: 'false'
+  }
+  'platformCore:statusDetail': {
+    'platformCore:code': {
+      _text: string
+    }
+    'platformCore:message': {
+      _text: string
+    }
+  }
+}
+
 export type GetSuccess = {
   'soapenv:Envelope': {
     'soapenv:Body': {
       getResponse: {
         'platformMsgs:readResponse': {
-          'platformCore:status': {
-            _attributes: {
-              isSuccess: 'true'
-            }
-          }
+          'platformCore:status': StatusSuccess
           'platformMsgs:record': {
             'docFileCab:content': {
               _text?: string
@@ -39,19 +55,7 @@ export type GetError = {
     'soapenv:Body': {
       getResponse: {
         'platformMsgs:readResponse': {
-          'platformCore:status': {
-            _attributes: {
-              isSuccess: 'false'
-            }
-            'platformCore:statusDetail': {
-              'platformCore:code': {
-                _text: string
-              }
-              'platformCore:message': {
-                _text: string
-              }
-            }
-          }
+          'platformCore:status': StatusError
         }
       }
     }
@@ -64,180 +68,85 @@ export const isGetSuccess = (result: GetResult): result is GetSuccess =>
   // eslint-disable-next-line no-underscore-dangle
   result['soapenv:Envelope']['soapenv:Body'].getResponse['platformMsgs:readResponse']['platformCore:status']._attributes.isSuccess === 'true'
 
-export const GET_RESULTS_SCHEMA = {
-  anyOf: [
-    {
-      properties: {
-        'soapenv:Envelope': {
-          properties: {
-            'soapenv:Body': {
-              properties: {
-                getResponse: {
-                  properties: {
-                    'platformMsgs:readResponse': {
-                      properties: {
-                        'platformCore:status': {
-                          properties: {
-                            _attributes: {
-                              properties: {
-                                isSuccess: {
-                                  enum: [
-                                    'true',
-                                  ],
-                                  type: 'string',
-                                },
-                              },
-                              required: [
-                                'isSuccess',
-                              ],
-                              type: 'object',
-                            },
-                          },
-                          required: [
-                            '_attributes',
-                          ],
-                          type: 'object',
-                        },
-                        'platformMsgs:record': {
-                          properties: {
-                            'docFileCab:content': {
-                              properties: {
-                                _text: {
-                                  type: 'string',
-                                },
-                              },
-                              type: 'object',
-                            },
-                          },
-                          required: [
-                            'docFileCab:content',
-                          ],
-                          type: 'object',
-                        },
-                      },
-                      required: [
-                        'platformCore:status',
-                        'platformMsgs:record',
-                      ],
-                      type: 'object',
-                    },
-                  },
-                  required: [
-                    'platformMsgs:readResponse',
-                  ],
-                  type: 'object',
-                },
-              },
-              required: [
-                'getResponse',
-              ],
-              type: 'object',
-            },
-          },
-          required: [
-            'soapenv:Body',
-          ],
-          type: 'object',
-        },
-      },
-      required: [
-        'soapenv:Envelope',
-      ],
-      type: 'object',
-    },
-    {
-      properties: {
-        'soapenv:Envelope': {
-          properties: {
-            'soapenv:Body': {
-              properties: {
-                getResponse: {
-                  properties: {
-                    'platformMsgs:readResponse': {
-                      properties: {
-                        'platformCore:status': {
-                          properties: {
-                            _attributes: {
-                              properties: {
-                                isSuccess: {
-                                  enum: [
-                                    'false',
-                                  ],
-                                  type: 'string',
-                                },
-                              },
-                              required: [
-                                'isSuccess',
-                              ],
-                              type: 'object',
-                            },
-                            'platformCore:statusDetail': {
-                              properties: {
-                                'platformCore:code': {
-                                  properties: {
-                                    _text: {
-                                      type: 'string',
-                                    },
-                                  },
-                                  required: [
-                                    '_text',
-                                  ],
-                                  type: 'object',
-                                },
-                                'platformCore:message': {
-                                  properties: {
-                                    _text: {
-                                      type: 'string',
-                                    },
-                                  },
-                                  required: [
-                                    '_text',
-                                  ],
-                                  type: 'object',
-                                },
-                              },
-                              required: [
-                                'platformCore:code',
-                                'platformCore:message',
-                              ],
-                              type: 'object',
-                            },
-                          },
-                          required: [
-                            '_attributes',
-                            'platformCore:statusDetail',
-                          ],
-                          type: 'object',
-                        },
-                      },
-                      required: [
-                        'platformCore:status',
-                      ],
-                      type: 'object',
-                    },
-                  },
-                  required: [
-                    'platformMsgs:readResponse',
-                  ],
-                  type: 'object',
-                },
-              },
-              required: [
-                'getResponse',
-              ],
-              type: 'object',
-            },
-          },
-          required: [
-            'soapenv:Body',
-          ],
-          type: 'object',
-        },
-      },
-      required: [
-        'soapenv:Envelope',
-      ],
-      type: 'object',
-    },
-  ],
+export type WriteResponseSuccess = {
+  'platformCore:status': StatusSuccess
+  baseRef: {
+    _attributes: {
+      internalId: string
+    }
+  }
 }
+
+export type WriteResponseError = {
+  'platformCore:status': StatusError
+}
+
+export type WriteResponse = WriteResponseSuccess | WriteResponseError
+
+export const isWriteResponseSuccess = (result: WriteResponse): result is WriteResponseSuccess =>
+  // eslint-disable-next-line no-underscore-dangle
+  result['platformCore:status']._attributes.isSuccess === 'true'
+
+
+export type UpdateListSuccess = {
+  'soapenv:Envelope': {
+    'soapenv:Body': {
+      updateListResponse: {
+        writeResponseList: {
+          'platformCore:status': StatusSuccess
+          writeResponse: WriteResponse[] | WriteResponse
+        }
+      }
+    }
+  }
+}
+
+export type UpdateListError = {
+  'soapenv:Envelope': {
+    'soapenv:Body': {
+      updateListResponse: {
+        writeResponseList: {
+          'platformCore:status': StatusError
+        }
+      }
+    }
+  }
+}
+
+export type UpdateListResults = UpdateListError | UpdateListSuccess
+
+export const isUpdateListSuccess = (result: UpdateListResults): result is UpdateListSuccess =>
+  // eslint-disable-next-line no-underscore-dangle
+  result['soapenv:Envelope']['soapenv:Body'].updateListResponse.writeResponseList['platformCore:status']._attributes.isSuccess === 'true'
+
+
+export type AddListSuccess = {
+  'soapenv:Envelope': {
+    'soapenv:Body': {
+      addListResponse: {
+        writeResponseList: {
+          'platformCore:status': StatusSuccess
+          writeResponse: WriteResponse[] | WriteResponse
+        }
+      }
+    }
+  }
+}
+
+export type AddListError = {
+  'soapenv:Envelope': {
+    'soapenv:Body': {
+      addListResponse: {
+        writeResponseList: {
+          'platformCore:status': StatusError
+        }
+      }
+    }
+  }
+}
+
+export type AddListResults = AddListError | AddListSuccess
+
+export const isAddListSuccess = (result: AddListResults): result is AddListSuccess =>
+  // eslint-disable-next-line no-underscore-dangle
+  result['soapenv:Envelope']['soapenv:Body'].addListResponse.writeResponseList['platformCore:status']._attributes.isSuccess === 'true'

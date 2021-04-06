@@ -157,3 +157,148 @@ export const READ_INVALID_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
         </getResponse>
     </soapenv:Body>
 </soapenv:Envelope>`
+
+export const UPDATE_FILE_CABINET_SUCCESS_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <soapenv:Header>
+        <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
+            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_040420211679021275384972772_5a58ea</platformMsgs:nsId>
+        </platformMsgs:documentInfo>
+    </soapenv:Header>
+    <soapenv:Body>
+        <updateListResponse xmlns="">
+            <writeResponseList xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
+                <platformCore:status isSuccess="true" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com"/>
+                <writeResponse>
+                    <platformCore:status isSuccess="true" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com">
+                        <platformCore:statusDetail>
+                            <platformCore:afterSubmitFailed>false</platformCore:afterSubmitFailed>
+                        </platformCore:statusDetail>
+                    </platformCore:status>
+                    <baseRef internalId="6233" type="file" xsi:type="platformCore:RecordRef" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com"/>
+                </writeResponse>
+                <writeResponse>
+                    <platformCore:status isSuccess="false" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com">
+                        <platformCore:statusDetail type="ERROR">
+                            <platformCore:code>MEDIA_NOT_FOUND</platformCore:code>
+                            <platformCore:message>Media item not found 62330</platformCore:message>
+                        </platformCore:statusDetail>
+                    </platformCore:status>
+                    <baseRef internalId="62330" type="file" xsi:type="platformCore:RecordRef" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com"/>
+                </writeResponse>
+            </writeResponseList>
+        </updateListResponse>
+    </soapenv:Body>
+</soapenv:Envelope>`
+
+export const UPDATE_FILE_CABINET_ERROR_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <soapenv:Header>
+        <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
+            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_040420211679021275384972772_5a58ea</platformMsgs:nsId>
+        </platformMsgs:documentInfo>
+    </soapenv:Header>
+    <soapenv:Body>
+        <updateListResponse xmlns="">
+            <writeResponseList xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
+              <platformCore:status isSuccess="false" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com">
+                <platformCore:statusDetail type="ERROR">
+                  <platformCore:code>SOME_ERROR</platformCore:code>
+                  <platformCore:message>SOME_ERROR</platformCore:message>
+                </platformCore:statusDetail>
+              </platformCore:status>
+            </writeResponseList>
+        </updateListResponse>
+    </soapenv:Body>
+</soapenv:Envelope>`
+
+export const UPDATE_FILE_CABINET_INVALID_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <soapenv:Header>
+        <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
+            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_040420211679021275384972772_5a58ea</platformMsgs:nsId>
+        </platformMsgs:documentInfo>
+    </soapenv:Header>
+    <soapenv:Body>
+        <updateListResponse xmlns="">
+            <writeResponseList xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
+                <platformCore:status isSuccess="true" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com"/>
+                <writeResponse>
+                    <platformCore:status isSuccess="false" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com">
+                    </platformCore:status>
+                    <baseRef internalId="62330" type="file" xsi:type="platformCore:RecordRef" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com"/>
+                </writeResponse>
+            </writeResponseList>
+        </updateListResponse>
+    </soapenv:Body>
+</soapenv:Envelope>`
+
+export const ADD_FILE_CABINET_SUCCESS_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <soapenv:Header>
+        <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
+            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_0404202116668635922013689574_7ac6b</platformMsgs:nsId>
+        </platformMsgs:documentInfo>
+    </soapenv:Header>
+    <soapenv:Body>
+        <addListResponse xmlns="urn:messages_2020_2.platform.webservices.netsuite.com">
+            <writeResponseList>
+                <platformCore:status isSuccess="true" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com"/>
+                <writeResponse>
+                    <platformCore:status isSuccess="true" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com">
+                        <platformCore:statusDetail>
+                            <platformCore:afterSubmitFailed>false</platformCore:afterSubmitFailed>
+                        </platformCore:statusDetail>
+                    </platformCore:status>
+                    <baseRef internalId="6334" type="file" xsi:type="platformCore:RecordRef" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com"/>
+                </writeResponse>
+                <writeResponse>
+                    <platformCore:status isSuccess="false" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com">
+                        <platformCore:statusDetail type="ERROR">
+                            <platformCore:code>INVALID_KEY_OR_REF</platformCore:code>
+                            <platformCore:message>Invalid folder reference key -600.</platformCore:message>
+                        </platformCore:statusDetail>
+                    </platformCore:status>
+                </writeResponse>
+            </writeResponseList>
+        </addListResponse>
+    </soapenv:Body>
+</soapenv:Envelope>`
+
+export const ADD_FILE_CABINET_ERROR_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <soapenv:Header>
+        <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
+            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_0404202116668635922013689574_7ac6b</platformMsgs:nsId>
+        </platformMsgs:documentInfo>
+    </soapenv:Header>
+    <soapenv:Body>
+        <addListResponse xmlns="urn:messages_2020_2.platform.webservices.netsuite.com">
+          <writeResponseList xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
+            <platformCore:status isSuccess="false" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com">
+              <platformCore:statusDetail type="ERROR">
+                <platformCore:code>SOME_ERROR</platformCore:code>
+                <platformCore:message>SOME_ERROR</platformCore:message>
+              </platformCore:statusDetail>
+            </platformCore:status>
+          </writeResponseList>
+        </addListResponse>
+    </soapenv:Body>
+</soapenv:Envelope>`
+
+export const ADD_FILE_CABINET_INVALID_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <soapenv:Header>
+        <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
+            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_0404202116668635922013689574_7ac6b</platformMsgs:nsId>
+        </platformMsgs:documentInfo>
+    </soapenv:Header>
+    <soapenv:Body>
+        <addListResponse xmlns="urn:messages_2020_2.platform.webservices.netsuite.com">
+          <writeResponseList xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
+            <platformCore:status isSuccess="false" xmlns:platformCore="urn:core_2020_2.platform.webservices.netsuite.com">
+            </platformCore:status>
+          </writeResponseList>
+        </addListResponse>
+    </soapenv:Body>
+</soapenv:Envelope>`

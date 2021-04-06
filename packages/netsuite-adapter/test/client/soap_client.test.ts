@@ -16,7 +16,7 @@
 import axios from 'axios'
 import { ReadFileError } from '../../src/client/suiteapp_client/errors'
 import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client'
-import { READ_FAILURE_RESPONSE, READ_INVALID_RESPONSE, READ_SUCCESS_RESPONSE, READ_SUCCESS_RESPONSE_NO_CONTENT } from './soap_responses'
+import { ADD_FILE_CABINET_ERROR_RESPONSE, ADD_FILE_CABINET_INVALID_RESPONSE, ADD_FILE_CABINET_SUCCESS_RESPONSE, READ_FAILURE_RESPONSE, READ_INVALID_RESPONSE, READ_SUCCESS_RESPONSE, READ_SUCCESS_RESPONSE_NO_CONTENT, UPDATE_FILE_CABINET_ERROR_RESPONSE, UPDATE_FILE_CABINET_INVALID_RESPONSE, UPDATE_FILE_CABINET_SUCCESS_RESPONSE } from './soap_responses'
 
 
 describe('soap_client', () => {
@@ -61,6 +61,192 @@ describe('soap_client', () => {
         data: READ_INVALID_RESPONSE,
       })
       await expect(client.readFile(1)).rejects.toThrow(Error)
+    })
+  })
+  describe('updateFileCabinet', () => {
+    it('should return the id is success and the error if fails', async () => {
+      postMock.mockResolvedValue({
+        data: UPDATE_FILE_CABINET_SUCCESS_RESPONSE,
+      })
+      expect(await client.updateFileCabinet([
+        {
+          type: 'file',
+          path: 'somePath',
+          id: 6233,
+          folder: -6,
+          bundleable: true,
+          isInactive: false,
+          isOnline: false,
+          hideInBundle: true,
+          content: Buffer.from('aaa'),
+          description: 'desc',
+        },
+        {
+          type: 'folder',
+          path: 'somePath2',
+          id: 62330,
+          bundleable: true,
+          isInactive: false,
+          isOnline: false,
+          hideInBundle: true,
+          description: 'desc',
+        },
+      ])).toEqual([
+        6233,
+        new Error('SOAP api call to update file cabinet instance somePath2 failed. error code: MEDIA_NOT_FOUND, error message: Media item not found 62330'),
+      ])
+    })
+
+    it('should throw an error if request fails', async () => {
+      postMock.mockResolvedValue({
+        data: UPDATE_FILE_CABINET_ERROR_RESPONSE,
+      })
+      await expect(client.updateFileCabinet([
+        {
+          type: 'file',
+          path: 'somePath',
+          id: 6233,
+          folder: -6,
+          bundleable: true,
+          isInactive: false,
+          isOnline: false,
+          hideInBundle: true,
+          content: Buffer.from('aaa'),
+          description: 'desc',
+        },
+        {
+          type: 'folder',
+          path: 'somePath2',
+          id: 62330,
+          bundleable: true,
+          isInactive: false,
+          isOnline: false,
+          hideInBundle: true,
+          description: 'desc',
+        },
+      ])).rejects.toThrow('Failed to updateList: error code: SOME_ERROR, error message: SOME_ERROR')
+    })
+
+    it('should throw an error if received invalid response', async () => {
+      postMock.mockResolvedValue({
+        data: UPDATE_FILE_CABINET_INVALID_RESPONSE,
+      })
+      await expect(client.updateFileCabinet([
+        {
+          type: 'file',
+          path: 'somePath',
+          id: 6233,
+          folder: -6,
+          bundleable: true,
+          isInactive: false,
+          isOnline: false,
+          hideInBundle: true,
+          content: Buffer.from('aaa'),
+          description: 'desc',
+        },
+        {
+          type: 'folder',
+          path: 'somePath2',
+          id: 62330,
+          bundleable: true,
+          isInactive: false,
+          isOnline: false,
+          hideInBundle: true,
+          description: 'desc',
+        },
+      ])).rejects.toThrow('Got invalid response from updateList request. Errors:')
+    })
+  })
+
+  describe('addFileCabinetInstances', () => {
+    it('should return the id is success and the error if fails', async () => {
+      postMock.mockResolvedValue({
+        data: ADD_FILE_CABINET_SUCCESS_RESPONSE,
+      })
+      expect(await client.addFileCabinetInstances([
+        {
+          type: 'file',
+          path: 'addedFile',
+          folder: -6,
+          bundleable: true,
+          isInactive: false,
+          isOnline: false,
+          hideInBundle: true,
+          content: Buffer.from('aaa'),
+          description: 'desc',
+        },
+        {
+          type: 'folder',
+          path: 'addedFile2',
+          parent: -600,
+          bundleable: true,
+          isInactive: false,
+          isOnline: false,
+          hideInBundle: true,
+          description: 'desc',
+        },
+      ])).toEqual([
+        6334,
+        new Error('SOAP api call to add file cabinet instance addedFile2 failed. error code: INVALID_KEY_OR_REF, error message: Invalid folder reference key -600.'),
+      ])
+    })
+
+    it('should throw an error if request fails', async () => {
+      postMock.mockResolvedValue({
+        data: ADD_FILE_CABINET_ERROR_RESPONSE,
+      })
+      await expect(client.addFileCabinetInstances([
+        {
+          type: 'file',
+          path: 'addedFile',
+          folder: -6,
+          bundleable: true,
+          isInactive: false,
+          isOnline: false,
+          hideInBundle: true,
+          content: Buffer.from('aaa'),
+          description: 'desc',
+        },
+        {
+          type: 'folder',
+          path: 'addedFile2',
+          parent: -600,
+          bundleable: true,
+          isInactive: false,
+          isOnline: false,
+          hideInBundle: true,
+          description: 'desc',
+        },
+      ])).rejects.toThrow('Failed to addList: error code: SOME_ERROR, error message: SOME_ERROR')
+    })
+
+    it('should throw an error if received invalid response', async () => {
+      postMock.mockResolvedValue({
+        data: ADD_FILE_CABINET_INVALID_RESPONSE,
+      })
+      await expect(client.addFileCabinetInstances([
+        {
+          type: 'file',
+          path: 'addedFile',
+          folder: -6,
+          bundleable: true,
+          isInactive: false,
+          isOnline: false,
+          hideInBundle: true,
+          content: Buffer.from('aaa'),
+          description: 'desc',
+        },
+        {
+          type: 'folder',
+          path: 'addedFile2',
+          parent: -600,
+          bundleable: true,
+          isInactive: false,
+          isOnline: false,
+          hideInBundle: true,
+          description: 'desc',
+        },
+      ])).rejects.toThrow('Got invalid response from addList request. Errors:')
     })
   })
 })

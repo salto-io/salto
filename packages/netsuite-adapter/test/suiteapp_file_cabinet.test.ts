@@ -13,10 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { Change, InstanceElement, toChange } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { NetsuiteQuery } from '../src/query'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
-import { importFileCabinet } from '../src/suiteapp_file_cabinet'
+import { deploy, importFileCabinet, isChangeDeployable } from '../src/suiteapp_file_cabinet'
 import { ReadFileEncodingError, ReadFileError } from '../src/client/suiteapp_client/errors'
+import { fileCabinetTypes } from '../src/types'
+import { FILE } from '../src/constants'
+import { customtransactiontype } from '../src/types/custom_types/customtransactiontype'
+import { file, folder } from '../src/types/file_cabinet_types'
+import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from '../src/client/suiteapp_client/types'
 
 describe('suiteapp_file_cabinet', () => {
   const filesQueryResponse = [{
@@ -136,6 +143,8 @@ describe('suiteapp_file_cabinet', () => {
     runSuiteQL: jest.fn(),
     readFiles: jest.fn(),
     readLargeFile: jest.fn(),
+    updateFileCabinet: jest.fn(),
+    addFileCabinetInstances: jest.fn(),
   }
 
   const suiteAppClient = mockSuiteAppClient as unknown as SuiteAppClient
@@ -168,169 +177,411 @@ describe('suiteapp_file_cabinet', () => {
     )
   })
 
-  it('should return all the files', async () => {
-    const { elements } = await importFileCabinet(suiteAppClient, query)
-    expect(elements).toEqual(expectedResults)
-  })
-
-  it('should use SOAP if ReadFileEncodingError was thrown', async () => {
-    const filesContentWithError: Record<string, Buffer | Error> = {
-      ...filesContent,
-      2: new ReadFileEncodingError(),
-    }
-    mockSuiteAppClient.readFiles.mockImplementation(
-      async (ids: string[]) => ids.map(id => filesContentWithError[id])
-    )
-    mockSuiteAppClient.readLargeFile.mockResolvedValue(filesContent[2])
-
-    const { elements } = await importFileCabinet(suiteAppClient, query)
-    expect(elements).toEqual(expectedResults)
-    expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledWith(2)
-    expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledTimes(1)
-  })
-
-  it('should use SOAP for big files', async () => {
-    const filesQueryResponseWithBigFile = [
-      ...filesQueryResponse,
-      {
-        addtimestamptourl: 'T',
-        bundleable: 'F',
-        filesize: (10 * 1024 * 1024).toString(),
-        folder: '4',
-        hideinbundle: 'T',
-        id: '6',
-        isinactive: 'F',
-        isonline: 'T',
-        name: 'file6',
-      },
-    ]
-
-    mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
-      if (suiteQlQuery.includes('FROM file')) {
-        return filesQueryResponseWithBigFile
-      }
-
-      if (suiteQlQuery.includes('FROM mediaitemfolder')) {
-        return foldersQueryResponse
-      }
-      throw new Error(`Unexpected query: ${suiteQlQuery}`)
+  describe('importFileCabinet', () => {
+    it('should return all the files', async () => {
+      const { elements } = await importFileCabinet(suiteAppClient, query)
+      expect(elements).toEqual(expectedResults)
     })
 
-    mockSuiteAppClient.readLargeFile.mockResolvedValue(Buffer.from('someContent'))
+    it('should use SOAP if ReadFileEncodingError was thrown', async () => {
+      const filesContentWithError: Record<string, Buffer | Error> = {
+        ...filesContent,
+        2: new ReadFileEncodingError(),
+      }
+      mockSuiteAppClient.readFiles.mockImplementation(
+        async (ids: string[]) => ids.map(id => filesContentWithError[id])
+      )
+      mockSuiteAppClient.readLargeFile.mockResolvedValue(filesContent[2])
 
-    const { elements } = await importFileCabinet(suiteAppClient, query)
-    expect(elements).toEqual([
-      ...expectedResults,
-      {
-        path: ['folder5', 'folder4', 'file6'],
-        typeName: 'file',
-        fileContent: Buffer.from('someContent'),
-        values: {
-          availablewithoutlogin: 'T',
-          isinactive: 'F',
+      const { elements } = await importFileCabinet(suiteAppClient, query)
+      expect(elements).toEqual(expectedResults)
+      expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledWith(2)
+      expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledTimes(1)
+    })
+
+    it('should use SOAP for big files', async () => {
+      const filesQueryResponseWithBigFile = [
+        ...filesQueryResponse,
+        {
+          addtimestamptourl: 'T',
           bundleable: 'F',
-          description: '',
-          generateurltimestamp: 'T',
+          filesize: (10 * 1024 * 1024).toString(),
+          folder: '4',
           hideinbundle: 'T',
+          id: '6',
+          isinactive: 'F',
+          isonline: 'T',
+          name: 'file6',
         },
-      },
-    ])
-    expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledWith(6)
-    expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledTimes(1)
-  })
+      ]
 
-  it('should return failed paths', async () => {
-    const filesContentWithError: Record<string, Buffer | Error> = {
-      1: new ReadFileError(),
-      2: new ReadFileEncodingError(),
-    }
-    mockSuiteAppClient.readFiles.mockImplementation(
-      async (ids: string[]) => ids.map(id => filesContentWithError[id])
-    )
-    mockSuiteAppClient.readLargeFile.mockResolvedValue(new ReadFileError())
+      mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
+        if (suiteQlQuery.includes('FROM file')) {
+          return filesQueryResponseWithBigFile
+        }
 
-    const { failedPaths } = await importFileCabinet(suiteAppClient, query)
-    expect(failedPaths).toEqual([
-      '/folder5/folder3/file1',
-      '/folder5/folder4/file2',
-    ])
-  })
+        if (suiteQlQuery.includes('FROM mediaitemfolder')) {
+          return foldersQueryResponse
+        }
+        throw new Error(`Unexpected query: ${suiteQlQuery}`)
+      })
 
-  it('should filter files with query', async () => {
-    mockQuery.isFileMatch.mockImplementation(path => path !== '/folder5/folder4' && path !== '/folder5/folder3/file1')
-    const { elements } = await importFileCabinet(suiteAppClient, query)
-    expect(elements).toEqual([expectedResults[0], expectedResults[2], expectedResults[4]])
-  })
+      mockSuiteAppClient.readLargeFile.mockResolvedValue(Buffer.from('someContent'))
 
-  it('should not run queries of no files are matched', async () => {
-    mockQuery.areSomeFilesMatch.mockReturnValue(false)
-    const { elements } = await importFileCabinet(suiteAppClient, query)
-    expect(elements).toEqual([])
-    expect(suiteAppClient.runSuiteQL).not.toHaveBeenCalled()
-  })
-
-  it('throw an error when files query fails', async () => {
-    mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
-      if (suiteQlQuery.includes('FROM file')) {
-        return undefined
-      }
-
-      if (suiteQlQuery.includes('FROM mediaitemfolder')) {
-        return foldersQueryResponse
-      }
-      throw new Error(`Unexpected query: ${suiteQlQuery}`)
+      const { elements } = await importFileCabinet(suiteAppClient, query)
+      expect(elements).toEqual([
+        ...expectedResults,
+        {
+          path: ['folder5', 'folder4', 'file6'],
+          typeName: 'file',
+          fileContent: Buffer.from('someContent'),
+          values: {
+            availablewithoutlogin: 'T',
+            isinactive: 'F',
+            bundleable: 'F',
+            description: '',
+            generateurltimestamp: 'T',
+            hideinbundle: 'T',
+          },
+        },
+      ])
+      expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledWith(6)
+      expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledTimes(1)
     })
 
-    await expect(importFileCabinet(suiteAppClient, query)).rejects.toThrow()
-  })
-
-  it('throw an error when files query returns invalid results', async () => {
-    mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
-      if (suiteQlQuery.includes('FROM file')) {
-        return [{ invalid: 1 }]
+    it('should return failed paths', async () => {
+      const filesContentWithError: Record<string, Buffer | Error> = {
+        1: new ReadFileError(),
+        2: new ReadFileEncodingError(),
       }
+      mockSuiteAppClient.readFiles.mockImplementation(
+        async (ids: string[]) => ids.map(id => filesContentWithError[id])
+      )
+      mockSuiteAppClient.readLargeFile.mockResolvedValue(new ReadFileError())
 
-      if (suiteQlQuery.includes('FROM mediaitemfolder')) {
-        return foldersQueryResponse
-      }
-      throw new Error(`Unexpected query: ${suiteQlQuery}`)
+      const { failedPaths } = await importFileCabinet(suiteAppClient, query)
+      expect(failedPaths).toEqual([
+        '/folder5/folder3/file1',
+        '/folder5/folder4/file2',
+      ])
     })
 
-    await expect(importFileCabinet(suiteAppClient, query)).rejects.toThrow()
-  })
-
-  it('throw an error when readFiles failed', async () => {
-    mockSuiteAppClient.readFiles.mockResolvedValue(undefined)
-    await expect(importFileCabinet(suiteAppClient, query)).rejects.toThrow()
-  })
-
-  it('throw an error when folders query fails', async () => {
-    mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
-      if (suiteQlQuery.includes('FROM file')) {
-        return filesQueryResponse
-      }
-
-      if (suiteQlQuery.includes('FROM mediaitemfolder')) {
-        return undefined
-      }
-      throw new Error(`Unexpected query: ${suiteQlQuery}`)
+    it('should filter files with query', async () => {
+      mockQuery.isFileMatch.mockImplementation(path => path !== '/folder5/folder4' && path !== '/folder5/folder3/file1')
+      const { elements } = await importFileCabinet(suiteAppClient, query)
+      expect(elements).toEqual([expectedResults[0], expectedResults[2], expectedResults[4]])
     })
 
-    await expect(importFileCabinet(suiteAppClient, query)).rejects.toThrow()
-  })
-
-  it('throw an error when folders query returns invalid results', async () => {
-    mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
-      if (suiteQlQuery.includes('FROM file')) {
-        return filesQueryResponse
-      }
-
-      if (suiteQlQuery.includes('FROM mediaitemfolder')) {
-        return [{ invalid: 1 }]
-      }
-      throw new Error(`Unexpected query: ${suiteQlQuery}`)
+    it('should not run queries of no files are matched', async () => {
+      mockQuery.areSomeFilesMatch.mockReturnValue(false)
+      const { elements } = await importFileCabinet(suiteAppClient, query)
+      expect(elements).toEqual([])
+      expect(suiteAppClient.runSuiteQL).not.toHaveBeenCalled()
     })
 
-    await expect(importFileCabinet(suiteAppClient, query)).rejects.toThrow()
+    it('throw an error when files query fails', async () => {
+      mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
+        if (suiteQlQuery.includes('FROM file')) {
+          return undefined
+        }
+
+        if (suiteQlQuery.includes('FROM mediaitemfolder')) {
+          return foldersQueryResponse
+        }
+        throw new Error(`Unexpected query: ${suiteQlQuery}`)
+      })
+
+      await expect(importFileCabinet(suiteAppClient, query)).rejects.toThrow()
+    })
+
+    it('throw an error when files query returns invalid results', async () => {
+      mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
+        if (suiteQlQuery.includes('FROM file')) {
+          return [{ invalid: 1 }]
+        }
+
+        if (suiteQlQuery.includes('FROM mediaitemfolder')) {
+          return foldersQueryResponse
+        }
+        throw new Error(`Unexpected query: ${suiteQlQuery}`)
+      })
+
+      await expect(importFileCabinet(suiteAppClient, query)).rejects.toThrow()
+    })
+
+    it('throw an error when readFiles failed', async () => {
+      mockSuiteAppClient.readFiles.mockResolvedValue(undefined)
+      await expect(importFileCabinet(suiteAppClient, query)).rejects.toThrow()
+    })
+
+    it('throw an error when folders query fails', async () => {
+      mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
+        if (suiteQlQuery.includes('FROM file')) {
+          return filesQueryResponse
+        }
+
+        if (suiteQlQuery.includes('FROM mediaitemfolder')) {
+          return undefined
+        }
+        throw new Error(`Unexpected query: ${suiteQlQuery}`)
+      })
+
+      await expect(importFileCabinet(suiteAppClient, query)).rejects.toThrow()
+    })
+
+    it('throw an error when folders query returns invalid results', async () => {
+      mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
+        if (suiteQlQuery.includes('FROM file')) {
+          return filesQueryResponse
+        }
+
+        if (suiteQlQuery.includes('FROM mediaitemfolder')) {
+          return [{ invalid: 1 }]
+        }
+        throw new Error(`Unexpected query: ${suiteQlQuery}`)
+      })
+
+      await expect(importFileCabinet(suiteAppClient, query)).rejects.toThrow()
+    })
+  })
+
+  describe('isChangeDeployable', () => {
+    it('not deployable should return false', () => {
+      const undeployableInstances = [
+        new InstanceElement(
+          'invalid1',
+          fileCabinetTypes[FILE],
+          {
+            path: '/Templates/invalid1',
+            content: { content: Buffer.from('a'.repeat(11 * 1024 * 1024)) },
+          }
+        ),
+        new InstanceElement(
+          'invalid2',
+          fileCabinetTypes[FILE],
+          {
+            path: '/Templates/invalid2',
+            generateurltimestamp: true,
+            content: { content: Buffer.from('aaa') },
+          }
+        ),
+        new InstanceElement(
+          'invalid3',
+          customtransactiontype,
+          {}
+        ),
+        customtransactiontype,
+      ]
+
+      expect(
+        undeployableInstances
+          .map(instance => toChange({ after: instance }))
+          .some(isChangeDeployable)
+      ).toBeFalsy()
+    })
+
+    it('deployable should return true', () => {
+      const deployableInstance = new InstanceElement(
+        'valid1',
+        fileCabinetTypes[FILE],
+        {
+          path: '/Templates/valid1',
+          content: { content: Buffer.from('aaa') },
+        }
+      )
+
+      expect(isChangeDeployable(toChange({ after: deployableInstance }))).toBeTruthy()
+    })
+  })
+
+  describe('deploy', () => {
+    let changes: Change<InstanceElement>[]
+    beforeEach(() => {
+      mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
+        if (suiteQlQuery.includes('FROM file')) {
+          return [{
+            id: '101',
+            isinactive: 'F',
+            isprivate: 'F',
+            name: 'instance101',
+            bundleable: 'F',
+            folder: '1',
+            addtimestamptourl: 'F',
+            filesize: '3',
+            isonline: 'F',
+            hideinbundle: 'F',
+          }]
+        }
+
+        if (suiteQlQuery.includes('FROM mediaitemfolder')) {
+          return Array.from(Array(100).keys()).map(id => ({
+            id: id.toString(),
+            isinactive: 'F',
+            isprivate: 'F',
+            name: `instance${id}`,
+            bundleable: 'F',
+          }))
+        }
+        throw new Error(`Unexpected query: ${suiteQlQuery}`)
+      })
+
+      mockSuiteAppClient.updateFileCabinet.mockImplementation(
+        async fileCabinetInstances => fileCabinetInstances.map(({ id }: { id: number }) => id)
+      )
+      mockSuiteAppClient.addFileCabinetInstances.mockImplementation(
+        async fileCabinetInstances => fileCabinetInstances
+          .map(() => _.random(101, 200))
+      )
+
+      changes = Array.from(Array(100).keys()).map(id => toChange({
+        before: new InstanceElement(
+          `instance${id}`,
+          folder,
+          {
+            path: `/instance${id}`,
+          }
+        ),
+        after: new InstanceElement(
+          `instance${id}`,
+          folder,
+          {
+            path: `/instance${id}`,
+            description: 'aaa',
+          }
+        ),
+      }))
+    })
+
+    describe('modifications', () => {
+      it('should return only error if api calls fails', async () => {
+        mockSuiteAppClient.updateFileCabinet.mockRejectedValue(new Error('someError'))
+        const { appliedChanges, errors } = await deploy(suiteAppClient, [changes[0]], 'update')
+        expect(errors).toEqual([new Error('someError')])
+        expect(appliedChanges).toHaveLength(0)
+      })
+
+      it('should return applied changes for successful updates and errors for others', async () => {
+        mockSuiteAppClient.updateFileCabinet.mockResolvedValue([0, new Error('someError')])
+        const { appliedChanges, errors } = await deploy(suiteAppClient, changes.slice(0, 2), 'update')
+        expect(errors).toEqual([new Error('someError')])
+        expect(appliedChanges).toHaveLength(1)
+      })
+
+      it('should return an error if the id of the file is not found', async () => {
+        const change = toChange({
+          before: new InstanceElement(
+            'instance10000',
+            folder,
+            {
+              path: '/instance10000',
+            }
+          ),
+          after: new InstanceElement(
+            'instance10000',
+            folder,
+            {
+              path: '/instance10000',
+              description: 'aaa',
+            }
+          ),
+        })
+
+        const { appliedChanges, errors } = await deploy(suiteAppClient, [change], 'update')
+        expect(errors).toEqual([new Error('Failed to find the internal id of the file /instance10000')])
+        expect(appliedChanges).toHaveLength(0)
+      })
+
+      it('should return an error if file parent is not found', async () => {
+        const change = toChange({
+          before: new InstanceElement(
+            'instance1',
+            folder,
+            {
+              path: '/someFolder/instance1',
+            }
+          ),
+          after: new InstanceElement(
+            'instance1',
+            folder,
+            {
+              path: '/someFolder/instance1',
+              description: 'aaa',
+            }
+          ),
+        })
+
+        const { appliedChanges, errors } = await deploy(suiteAppClient, [change], 'update')
+        expect(errors).toEqual([new Error('Directory /someFolder was not found when attempting to deploy a file with path /someFolder/instance1')])
+        expect(appliedChanges).toHaveLength(0)
+      })
+      it('should deploy in chunks', async () => {
+        const { appliedChanges, errors } = await deploy(suiteAppClient, changes, 'update')
+        expect(errors).toHaveLength(0)
+        expect(appliedChanges).toEqual(changes)
+        expect(mockSuiteAppClient.updateFileCabinet.mock.calls[0][0]
+          .map((details: ExistingFileCabinetInstanceDetails) => details.id))
+          .toEqual(Array.from(Array(50).keys()))
+        expect(mockSuiteAppClient.updateFileCabinet.mock.calls[1][0]
+          .map((details: ExistingFileCabinetInstanceDetails) => details.id))
+          .toEqual(Array.from(Array(100).keys()).slice(50))
+      })
+    })
+
+    describe('additions', () => {
+      it('should split by depths', async () => {
+        changes = [
+          toChange({
+            after: new InstanceElement(
+              'newInstance1',
+              file,
+              {
+                path: '/instance1/newInstance1',
+                content: Buffer.from('aaa'),
+                bundleable: true,
+                isInactive: false,
+                isOnline: false,
+                hideInBundle: false,
+              }
+            ),
+          }),
+          toChange({
+            after: new InstanceElement(
+              'newInstance3',
+              file,
+              {
+                path: '/instance1/newInstance2/newInstance3',
+                description: 'aaa',
+                content: Buffer.from('aaa'),
+              }
+            ),
+          }),
+          toChange({
+            after: new InstanceElement(
+              'newInstance2',
+              folder,
+              {
+                path: '/instance1/newInstance2',
+                bundleable: true,
+                isInactive: false,
+                isOnline: false,
+                hideInBundle: false,
+              }
+            ),
+          }),
+        ]
+
+        const { appliedChanges, errors } = await deploy(suiteAppClient, changes, 'add')
+        expect(errors).toHaveLength(0)
+        expect(appliedChanges).toHaveLength(3)
+
+        expect(mockSuiteAppClient.addFileCabinetInstances.mock.calls[0][0]
+          .map((details: FileCabinetInstanceDetails) => details.path))
+          .toEqual(['/instance1/newInstance1', '/instance1/newInstance2'])
+
+        expect(mockSuiteAppClient.addFileCabinetInstances.mock.calls[1][0]
+          .map((details: FileCabinetInstanceDetails) => details.path))
+          .toEqual(['/instance1/newInstance2/newInstance3'])
+      })
+    })
   })
 })

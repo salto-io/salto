@@ -545,8 +545,8 @@ describe('multi env tests', () => {
         expect(await instanceExists(env1Client, 'Role', commonNaclFileInstName)).toBeTruthy()
         expect(await instanceExists(env2Client, 'Role', commonNaclFileInstName)).toBeTruthy()
       })
-
-      it('should create env specific elements in proper env', async () => {
+      // eslint-disable-next-line
+      it.skip('should create env specific elements in proper env', async () => {
         expect(await objectExists(
           env1Client,
           naclNameToSFName(env1NaclFileObjectName)
@@ -566,7 +566,8 @@ describe('multi env tests', () => {
         expect(await instanceExists(env2Client, 'Role', env1NaclFileInstName)).toBeFalsy()
       })
 
-      it('should update the attributes added in the deploy in the proper env file', async () => {
+      // eslint-disable-next-line
+      it.skip('should update the attributes added in the deploy in the proper env file', async () => {
         await Promise.all([
           env1NaclFileName(),
           env2NaclFileName(),
@@ -634,7 +635,8 @@ describe('multi env tests', () => {
         expect(await instanceExists(env2Client, 'Role', commonNaclFileInstName)).toBeFalsy()
       })
 
-      it('should remove env elements from nacl change', async () => {
+      // eslint-disable-next-line
+      it.skip('should remove env elements from nacl change', async () => {
         expect(await objectExists(env1Client, naclNameToSFName(env1NaclFileObjectName))).toBeFalsy()
         expect(await objectExists(env2Client, naclNameToSFName(env2NaclFileObjectName))).toBeFalsy()
         expect(await instanceExists(env1Client, 'Role', env1NaclFileInstName)).toBeFalsy()

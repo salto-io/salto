@@ -290,11 +290,8 @@ export class Types {
     },
   })
 
-  private static rollupSummaryFilterOperationTypeElemID = new ElemID(SALESFORCE,
-    FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS, 'type', FILTER_ITEM_FIELDS.OPERATION)
-
-  private static rollupSummaryFilterOperationTypeType = new PrimitiveType({
-    elemID: Types.rollupSummaryFilterOperationTypeElemID,
+  private static rollupSummaryFilterItemOperationType = new PrimitiveType({
+    elemID: new ElemID(SALESFORCE, FIELD_ANNOTATIONS.ROLLUP_SUMMARY_FILTER_OPERATION),
     primitive: PrimitiveTypes.STRING,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -317,7 +314,7 @@ export class Types {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
       [FILTER_ITEM_FIELDS.OPERATION]: {
-        refType: createRefToElmWithValue(Types.rollupSummaryFilterOperationTypeType),
+        refType: createRefToElmWithValue(Types.rollupSummaryFilterItemOperationType),
       },
       [FILTER_ITEM_FIELDS.VALUE]: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -614,7 +611,7 @@ export class Types {
         // todo: currently SUMMARIZED_FIELD && SUMMARY_FOREIGN_KEY are populated with the referenced
         //  field's API name should be modified to elemID reference once we'll use HIL
         [FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: BuiltinTypes.STRING,
-        [FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: Types.rollupSummaryFilterItemsType,
+        [FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: new ListType(Types.rollupSummaryFilterItemsType),
         [FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.SUMMARY_OPERATION]: Types.rollupSummaryOperationType,
       },
@@ -813,6 +810,7 @@ export class Types {
 
   static getAnnotationTypes(): TypeElement[] {
     return [Types.fieldDependencyType, Types.rollupSummaryOperationType,
+      Types.rollupSummaryFilterItemsType, Types.rollupSummaryFilterItemOperationType,
       Types.valueSettingsType, Types.lookupFilterType, Types.filterItemType,
       Types.encryptedTextMaskCharType, Types.encryptedTextMaskTypeType,
       Types.BusinessStatusType, Types.SecurityClassificationType, Types.valueSetType,

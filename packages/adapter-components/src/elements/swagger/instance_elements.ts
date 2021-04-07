@@ -21,7 +21,7 @@ import {
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { ADDITIONAL_PROPERTIES_FIELD } from './type_elements/swagger_parser'
+import { ADDITIONAL_PROPERTIES_FIELD, ARRAY_ITEMS_FIELD } from './type_elements/swagger_parser'
 import { InstanceCreationParams, toBasicInstance } from '../instance_elements'
 import { HTTPClientInterface, UnauthorizedError } from '../../client'
 import {
@@ -202,7 +202,7 @@ const generateInstancesForType = ({
 }
 
 const isItemsOnlyObjectType = (type: ObjectType): boolean => (
-  _.isEqual(Object.keys(type.fields), ['items'])
+  _.isEqual(Object.keys(type.fields), [ARRAY_ITEMS_FIELD])
 )
 
 const isAdditionalPropertiesOnlyObjectType = (type: ObjectType): boolean => (

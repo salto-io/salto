@@ -33,6 +33,7 @@ export type SchemaOrReference = ReferenceObject | SchemaObject
 
 // field to use for swagger additionalProperties
 export const ADDITIONAL_PROPERTIES_FIELD = 'additionalProperties'
+export const ARRAY_ITEMS_FIELD = 'items'
 
 export const SWAGGER_OBJECT = 'object'
 export const SWAGGER_ARRAY = 'array'
@@ -217,7 +218,7 @@ export const extractProperties = (schemaDefObj: SchemaObject, refs: SwaggerRefs)
 
   if (isArraySchemaObject(schemaDefObj)) {
     return {
-      allProperties: { items: schemaDefObj },
+      allProperties: { [ARRAY_ITEMS_FIELD]: schemaDefObj },
       additionalProperties: undefined,
     }
   }

@@ -26,6 +26,7 @@ type Resolver<T> = (
   elementsSource: ReadOnlyElementsSource,
   resolvedElements: Record<string, Element>,
   visited?: Set<string>,
+  resolvedSet?: Set<string>
 ) => Promise<Value>
 
 export class UnresolvedReference {
@@ -37,9 +38,26 @@ export class CircularReference {
 }
 
 const getResolvedElement = async (
-  elemID: ElemID, elementsSource: ReadOnlyElementsSource, resolvedElements: Record<string, Element>
-): Promise<Element | undefined> =>
-  (resolvedElements[elemID.getFullName()] ?? elementsSource.get(elemID))
+  elemID: ElemID,
+  elementsSource: ReadOnlyElementsSource,
+  resolvedElements: Record<string, Element>,
+  resolvedSet: Set<string>,
+): Promise<Element | undefined> => {
+  if (resolvedElements[elemID.getFullName()]) {
+    return resolvedElements[elemID.getFullName()]
+  }
+  const resValue = await elementsSource.get(elemID)
+  if (resValue !== undefined) {
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    return resolveElement(
+      resValue,
+      elementsSource,
+      resolvedElements,
+      resolvedSet
+    )
+  }
+  return resValue
+}
 
 let resolveTemplateExpression: Resolver<TemplateExpression>
 
@@ -48,21 +66,29 @@ const resolveMaybeExpression: Resolver<Value> = async (
   elementsSource: ReadOnlyElementsSource,
   resolvedElements: Record<string, Element>,
   visited: Set<string> = new Set<string>(),
+  resolvedSet: Set<string> = new Set<string>(),
 ): Promise<Value> => {
   if (isReferenceExpression(value)) {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    return resolveReferenceExpression(value, elementsSource, resolvedElements, visited)
+    return resolveReferenceExpression(
+      value,
+      elementsSource,
+      resolvedElements,
+      visited,
+      resolvedSet
+    )
   }
 
   if (value instanceof TemplateExpression) {
-    return resolveTemplateExpression(value, elementsSource, resolvedElements, visited)
+    return resolveTemplateExpression(value, elementsSource, resolvedElements, visited, resolvedSet)
   }
   // We do not want to recurse into elements because we can assume they will also be resolved
   // at some point (because we are calling resolve on all elements), so if we encounter an element
   // all we need to do is make it point to the element from the context. If the element is not in
   // the context or the source - we'll keep it as it is.
   if (isElement(value)) {
-    return (await getResolvedElement(value.elemID, elementsSource, resolvedElements)) ?? value
+    return (await getResolvedElement(value.elemID, elementsSource, resolvedElements, resolvedSet))
+      ?? value
   }
   return value
 }
@@ -72,6 +98,7 @@ export const resolveReferenceExpression = async (
   elementsSource: ReadOnlyElementsSource,
   resolvedElements: Record<string, Element>,
   visited: Set<string> = new Set<string>(),
+  resolvedSet: Set<string> = new Set<string>()
 ): Promise<ReferenceExpression> => {
   const { traversalParts } = expression
   const traversal = traversalParts.join(ElemID.NAMESPACE_SEPARATOR)
@@ -108,13 +135,15 @@ export const resolveReferenceExpression = async (
         value.value,
         elementsSource,
         resolvedElements,
-        visited
+        visited,
+        resolvedSet
       ) ?? value.value,
       rootElement,
     )
   }
   return (expression as ReferenceExpression).createWithValue(
-    await resolveMaybeExpression(value, elementsSource, resolvedElements, visited) ?? value,
+    await resolveMaybeExpression(value, elementsSource, resolvedElements, visited, resolvedSet)
+      ?? value,
     rootElement,
   )
 }
@@ -124,9 +153,12 @@ resolveTemplateExpression = async (
   elementsSource: ReadOnlyElementsSource,
   resolvedElements: Record<string, Element>,
   visited: Set<string> = new Set<string>(),
+  resolvedSet: Set<string> = new Set<string>()
 ): Promise<Value> => (await awu(expression.parts)
   .map(async p => {
-    const res = await resolveMaybeExpression(p, elementsSource, resolvedElements, visited)
+    const res = await resolveMaybeExpression(
+      p, elementsSource, resolvedElements, visited, resolvedSet
+    )
     return res ? res?.value ?? res : p
   }).toArray())
   .join('')
@@ -143,12 +175,14 @@ const resolveElement = async (
   const contextedElementsGetter: ReadOnlyElementsSource = {
     ...elementsSource,
     get: id =>
-      (getResolvedElement(id, elementsSource, resolvedElements)),
+      (getResolvedElement(id, elementsSource, resolvedElements, resolvedSet)),
   }
   const referenceCloner: TransformFunc = ({ value }) => resolveMaybeExpression(
     value,
     elementsSource,
-    resolvedElements
+    resolvedElements,
+    undefined,
+    resolvedSet
   )
 
   if (resolvedSet.has(element.elemID.getFullName())) {

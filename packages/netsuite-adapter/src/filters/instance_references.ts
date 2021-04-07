@@ -113,8 +113,7 @@ const replaceReferenceValues = (
       return value
     }
 
-
-    if (path?.isAttrID() && path?.name === CORE_ANNOTATIONS.PARENT) {
+    if (path?.isAttrID() && path.createParentID().name === CORE_ANNOTATIONS.PARENT) {
       return new ReferenceExpression(elemID.createBaseID().parent)
     }
 

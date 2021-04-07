@@ -51,10 +51,10 @@ describe('customization type change validator', () => {
 
   it('should have change error if file cabinet type parent has been modified', async () => {
     const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {}, undefined, {
-      [CORE_ANNOTATIONS.PARENT]: '[/Templates/content]',
+      [CORE_ANNOTATIONS.PARENT]: ['[/Templates/content]'],
     })
     const after = fileInstance.clone()
-    after.annotations[CORE_ANNOTATIONS.PARENT] = '[/Templates/modified]'
+    after.annotations[CORE_ANNOTATIONS.PARENT] = ['[/Templates/modified]']
     const changeErrors = await immutableChangesValidator(
       [toChange({ before: fileInstance, after })]
     )
@@ -87,10 +87,10 @@ describe('customization type change validator', () => {
       },
       undefined,
       {
-        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(
           new ElemID('netsuite', 'someType', 'instance', 'someInstance'),
           new InstanceElement('someInstance', new ObjectType({ elemID: new ElemID('netsuite', 'someType') })),
-        ),
+        )],
       }
     )
     const after = fileInstance.clone()

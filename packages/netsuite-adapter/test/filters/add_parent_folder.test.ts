@@ -39,7 +39,7 @@ describe('add_parent_folder filter', () => {
   it('should add parent field to file', async () => {
     instance.value[PATH] = '/aa/bb/cc.txt'
     await filterCreator().onFetch(onFetchParameters)
-    expect(instance.annotations[CORE_ANNOTATIONS.PARENT]).toEqual('[/aa/bb]')
+    expect(instance.annotations[CORE_ANNOTATIONS.PARENT]).toEqual(['[/aa/bb]'])
   })
 
   it('should not add parent if file is top level', async () => {

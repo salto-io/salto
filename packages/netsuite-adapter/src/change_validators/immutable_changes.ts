@@ -17,6 +17,7 @@ import {
   BuiltinTypes, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeElement, InstanceElement,
   isInstanceChange, isModificationChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
+import { getParents } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isCustomType, isFileCabinetType } from '../types'
 
@@ -47,8 +48,10 @@ const changeValidator: ChangeValidator = async changes => (
 
       // parent annotations in file cabinet instances
       if (isFileCabinetType(after.type)
-        && getReferenceIdentifier(before.annotations[CORE_ANNOTATIONS.PARENT])
-          !== getReferenceIdentifier(after.annotations[CORE_ANNOTATIONS.PARENT])) {
+        && !_.isEqual(
+          getParents(before).map(getReferenceIdentifier),
+          getParents(after).map(getReferenceIdentifier),
+        )) {
         modifiedImmutableFields.push(CORE_ANNOTATIONS.PARENT)
       }
       return modifiedImmutableFields.map(modifiedField => ({

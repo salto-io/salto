@@ -86,7 +86,7 @@ describe('instance_references filter', () => {
         {
           refToFilePath: '[/Templates/file.name]',
           refToScriptId: '[scriptid=top_level]',
-          [CORE_ANNOTATIONS.PARENT]: '[/Templates/file.name]',
+          [CORE_ANNOTATIONS.PARENT]: ['[/Templates/file.name]'],
         }
       )
     })
@@ -134,7 +134,7 @@ describe('instance_references filter', () => {
       })
 
       expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.PARENT])
-        .toEqual(new ReferenceExpression(fileInstance.elemID))
+        .toEqual([new ReferenceExpression(fileInstance.elemID)])
     })
 
     it('should replace scriptid with 1 nesting level references', async () => {

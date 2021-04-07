@@ -14,26 +14,25 @@
 * limitations under the License.
 */
 import {
-  isInstanceElement, ChangeValidator, getChangeElement,
+  ChangeValidator, getChangeElement, Change,
 } from '@salto-io/adapter-api'
 import { fileCabinetTopLevelFolders } from '../client/constants'
-import { isFileCabinetType } from '../types'
+import { isFileCabinetInstance } from '../types'
 import * as suiteAppFileCabinet from '../suiteapp_file_cabinet'
+
+const isChangeSupported = (change: Change): boolean => {
+  const element = getChangeElement(change)
+  if (!isFileCabinetInstance(element)) {
+    return true
+  }
+
+  return suiteAppFileCabinet.isChangeDeployable(change) || fileCabinetTopLevelFolders.some(folder => element.value.path.startsWith(`${folder}/`))
+}
+
 
 const changeValidator: ChangeValidator = async changes => (
   changes
-    .filter(change => {
-      const element = getChangeElement(change)
-      if (!isInstanceElement(element) || !isFileCabinetType(element.type)) {
-        return false
-      }
-
-      if (suiteAppFileCabinet.isChangeDeployable(change) || fileCabinetTopLevelFolders.some(folder => element.value.path.startsWith(`${folder}/`))) {
-        return false
-      }
-
-      return true
-    })
+    .filter(change => !isChangeSupported(change))
     .map(getChangeElement)
     .map(inst => ({
       elemID: inst.elemID,

@@ -20,14 +20,24 @@ import {
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import * as suiteAppFileCabinet from './suiteapp_file_cabinet'
-import { customTypes, fileCabinetTypes, isFileCabinetType } from './types'
+import { customTypes, fileCabinetTypes, isFileCabinetInstance } from './types'
 
 export const SDF_CHANGE_GROUP_ID = 'SDF'
+export const RECORDS_CHANGE_GROUP_ID = 'Records'
+export const SDF_FILE_CABINET_CHANGE_GROUP_ID = 'SDF - File Cabinet'
+export const SUITEAPP_CREATING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Creating Files'
+export const SUITEAPP_UPDATING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Updating Files'
 
-export const SDF_GROUPS = [SDF_CHANGE_GROUP_ID, 'Records', 'SDF - File Cabinet']
+export const SDF_GROUPS = [
+  SDF_CHANGE_GROUP_ID,
+  RECORDS_CHANGE_GROUP_ID,
+  SDF_FILE_CABINET_CHANGE_GROUP_ID,
+]
 
-export const SUITEAPP_CREATING_FILES = 'Salto SuiteApp - File Cabinet - Creating Files'
-export const SUITEAPP_GROUPS = [SUITEAPP_CREATING_FILES, 'Salto SuiteApp - File Cabinet - Updating Files']
+export const SUITEAPP_GROUPS = [
+  SUITEAPP_CREATING_FILES_GROUP_ID,
+  SUITEAPP_UPDATING_FILES_GROUP_ID,
+]
 
 const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes => {
   const isSdfChange = (change: Change): boolean => {
@@ -52,32 +62,29 @@ const getChangeGroupIdsWithSuiteApp: ChangeGroupIdFunction = async changes => {
 
   const isSuiteAppFileCabinetModification = (change: Change): boolean => {
     const changeElement = getChangeElement(change)
-    return isInstanceElement(changeElement)
-    && isFileCabinetType(changeElement.type)
+    return isFileCabinetInstance(changeElement)
     && suiteAppFileCabinet.isChangeDeployable(change)
     && isModificationChange(change)
   }
 
   const isSuiteAppFileCabinetAddition = (change: Change): boolean => {
     const changeElement = getChangeElement(change)
-    return isInstanceElement(changeElement)
-    && isFileCabinetType(changeElement.type)
+    return isFileCabinetInstance(changeElement)
     && suiteAppFileCabinet.isChangeDeployable(change)
     && isAdditionChange(change)
   }
 
   const isSdfFileCabinetChange = (change: Change): boolean => {
     const changeElement = getChangeElement(change)
-    return isInstanceElement(changeElement)
-    && isFileCabinetType(changeElement.type)
+    return isFileCabinetInstance(changeElement)
     && !suiteAppFileCabinet.isChangeDeployable(change)
   }
 
   const conditionsToGroups = [
-    { condition: isRecordChange, group: 'Records' },
-    { condition: isSuiteAppFileCabinetAddition, group: SUITEAPP_CREATING_FILES },
-    { condition: isSuiteAppFileCabinetModification, group: 'Salto SuiteApp - File Cabinet - Updating Files' },
-    { condition: isSdfFileCabinetChange, group: 'SDF - File Cabinet' },
+    { condition: isRecordChange, group: RECORDS_CHANGE_GROUP_ID },
+    { condition: isSuiteAppFileCabinetAddition, group: SUITEAPP_CREATING_FILES_GROUP_ID },
+    { condition: isSuiteAppFileCabinetModification, group: SUITEAPP_UPDATING_FILES_GROUP_ID },
+    { condition: isSdfFileCabinetChange, group: SDF_FILE_CABINET_CHANGE_GROUP_ID },
   ]
 
   return new Map(

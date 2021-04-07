@@ -13,6 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+/* eslint-disable no-underscore-dangle */
+
 import { logger } from '@salto-io/logging'
 import Ajv from 'ajv'
 import axios from 'axios'
@@ -68,16 +70,13 @@ export default class SoapClient {
 
     if (!isGetSuccess(response)) {
       const result = response['soapenv:Envelope']['soapenv:Body'].getResponse['platformMsgs:readResponse']
-      // eslint-disable-next-line no-underscore-dangle
       const code = result['platformCore:status']['platformCore:statusDetail']['platformCore:code']._text
-      // eslint-disable-next-line no-underscore-dangle
       const message = result['platformCore:status']['platformCore:statusDetail']['platformCore:message']._text
 
       log.error(`Failed to read file with id ${id}: error code: ${code}, error message: ${message}`)
       throw new ReadFileError(`Failed to read file with id ${id}: error code: ${code}, error message: ${message}`)
     }
 
-    // eslint-disable-next-line no-underscore-dangle
     const b64content = response['soapenv:Envelope']['soapenv:Body'].getResponse['platformMsgs:readResponse']['platformMsgs:record']['docFileCab:content']._text
     return b64content !== undefined ? Buffer.from(b64content, 'base64') : Buffer.from('')
   }
@@ -190,9 +189,7 @@ export default class SoapClient {
 
     if (!isAddListSuccess(response)) {
       const details = response['soapenv:Envelope']['soapenv:Body'].addListResponse.writeResponseList['platformCore:status']['platformCore:statusDetail']
-      // eslint-disable-next-line no-underscore-dangle
       const code = details['platformCore:code']._text
-      // eslint-disable-next-line no-underscore-dangle
       const message = details['platformCore:message']._text
 
       log.error(`Failed to addList: error code: ${code}, error message: ${message}`)
@@ -202,15 +199,12 @@ export default class SoapClient {
     return collections.array.makeArray(response['soapenv:Envelope']['soapenv:Body'].addListResponse.writeResponseList.writeResponse).map((writeResponse, index) => {
       if (!isWriteResponseSuccess(writeResponse)) {
         const details = writeResponse['platformCore:status']['platformCore:statusDetail']
-        // eslint-disable-next-line no-underscore-dangle
         const code = details['platformCore:code']._text
-        // eslint-disable-next-line no-underscore-dangle
         const message = details['platformCore:message']._text
 
         log.error(`SOAP api call to add file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`)
         return new Error(`SOAP api call to add file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`)
       }
-      // eslint-disable-next-line no-underscore-dangle
       return parseInt(writeResponse.baseRef._attributes.internalId, 10)
     })
   }
@@ -235,9 +229,7 @@ export default class SoapClient {
 
     if (!isUpdateListSuccess(response)) {
       const details = response['soapenv:Envelope']['soapenv:Body'].updateListResponse.writeResponseList['platformCore:status']['platformCore:statusDetail']
-      // eslint-disable-next-line no-underscore-dangle
       const code = details['platformCore:code']._text
-      // eslint-disable-next-line no-underscore-dangle
       const message = details['platformCore:message']._text
 
       log.error(`Failed to updateList: error code: ${code}, error message: ${message}`)
@@ -247,15 +239,12 @@ export default class SoapClient {
     return collections.array.makeArray(response['soapenv:Envelope']['soapenv:Body'].updateListResponse.writeResponseList.writeResponse).map((writeResponse, index) => {
       if (!isWriteResponseSuccess(writeResponse)) {
         const details = writeResponse['platformCore:status']['platformCore:statusDetail']
-        // eslint-disable-next-line no-underscore-dangle
         const code = details['platformCore:code']._text
-        // eslint-disable-next-line no-underscore-dangle
         const message = details['platformCore:message']._text
 
         log.error(`SOAP api call to update file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`)
         return Error(`SOAP api call to update file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`)
       }
-      // eslint-disable-next-line no-underscore-dangle
       return parseInt(writeResponse.baseRef._attributes.internalId, 10)
     })
   }

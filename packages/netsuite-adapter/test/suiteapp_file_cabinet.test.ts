@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, InstanceElement, toChange } from '@salto-io/adapter-api'
+import { Change, InstanceElement, StaticFile, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { NetsuiteQuery } from '../src/query'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
@@ -353,7 +353,7 @@ describe('suiteapp_file_cabinet', () => {
           fileCabinetTypes[FILE],
           {
             path: '/Templates/invalid1',
-            content: { content: Buffer.from('a'.repeat(11 * 1024 * 1024)) },
+            content: new StaticFile({ filepath: 'somePath', content: Buffer.from('a'.repeat(11 * 1024 * 1024)) }),
           }
         ),
         new InstanceElement(
@@ -362,7 +362,7 @@ describe('suiteapp_file_cabinet', () => {
           {
             path: '/Templates/invalid2',
             generateurltimestamp: true,
-            content: { content: Buffer.from('aaa') },
+            content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
           }
         ),
         new InstanceElement(
@@ -371,6 +371,14 @@ describe('suiteapp_file_cabinet', () => {
           {}
         ),
         customtransactiontype,
+        new InstanceElement(
+          'invalid4',
+          fileCabinetTypes[FILE],
+          {
+            path: '/Templates/invalid1',
+            content: 'a'.repeat(11 * 1024 * 1024),
+          }
+        ),
       ]
 
       expect(
@@ -386,7 +394,7 @@ describe('suiteapp_file_cabinet', () => {
         fileCabinetTypes[FILE],
         {
           path: '/Templates/valid1',
-          content: { content: Buffer.from('aaa') },
+          content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
         }
       )
 

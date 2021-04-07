@@ -27,7 +27,7 @@ import { SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { GetCustomObjectsResult, ImportFileCabinetResult } from './types'
 import { getAllReferencedInstances, getRequiredReferencedInstances } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
-import { SDF_GROUPS, SUITEAPP_CREATING_FILES } from '../group_changes'
+import { SDF_GROUPS, SUITEAPP_CREATING_FILES_GROUP_ID } from '../group_changes'
 
 const log = logger(module)
 
@@ -127,7 +127,7 @@ export default class NetsuiteClient {
     }
 
     return this.suiteAppClient !== undefined
-      ? suiteAppFileCabinet.deploy(this.suiteAppClient, instancesChanges, changeGroup.groupID === SUITEAPP_CREATING_FILES ? 'add' : 'update')
+      ? suiteAppFileCabinet.deploy(this.suiteAppClient, instancesChanges, changeGroup.groupID === SUITEAPP_CREATING_FILES_GROUP_ID ? 'add' : 'update')
       : { errors: [], appliedChanges: [] }
   }
 

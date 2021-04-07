@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, toChange } from '@salto-io/adapter-api'
+import { InstanceElement, StaticFile, toChange } from '@salto-io/adapter-api'
 import { customtransactiontype } from '../../src/types/custom_types/customtransactiontype'
 import fileValidator from '../../src/change_validators/file_changes'
 import { file } from '../../src/types/file_cabinet_types'
@@ -27,7 +27,7 @@ describe('file changes validator', () => {
       file,
       {
         path: '/Templates/valid',
-        content: { content: BigBuffer },
+        content: new StaticFile({ filepath: 'somePath', content: BigBuffer }),
       },
     )
 
@@ -37,7 +37,7 @@ describe('file changes validator', () => {
       {
         path: '/Templates/valid',
         description: 'aaa',
-        content: { content: BigBuffer },
+        content: new StaticFile({ filepath: 'somePath', content: BigBuffer }),
       },
     )
 
@@ -47,7 +47,7 @@ describe('file changes validator', () => {
       {
         path: '/Templates/valid2',
         generateurltimestamp: false,
-        content: { content: Buffer.from('aaa') },
+        content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
       },
     )
 
@@ -57,7 +57,7 @@ describe('file changes validator', () => {
       {
         path: '/Templates/valid2',
         generateurltimestamp: true,
-        content: { content: Buffer.from('aaa') },
+        content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
       },
     )
 
@@ -66,7 +66,7 @@ describe('file changes validator', () => {
       file,
       {
         path: '/Images/valid3',
-        content: { content: Buffer.from('aaa') },
+        content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
       },
     )
 
@@ -76,7 +76,7 @@ describe('file changes validator', () => {
       {
         path: '/Images/valid3',
         description: 'aaa',
-        content: { content: Buffer.from('aaa') },
+        content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
       },
     )
 
@@ -100,7 +100,7 @@ describe('file changes validator', () => {
       {
         path: '/Images/valid5',
         generateurltimestamp: false,
-        content: { content: Buffer.from('aaa') },
+        content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
       },
     )
 
@@ -123,7 +123,7 @@ describe('file changes validator', () => {
       file,
       {
         path: '/Templates/valid1',
-        content: { content: BigBuffer },
+        content: new StaticFile({ filepath: 'somePath', content: BigBuffer }),
       },
     )
 
@@ -133,7 +133,7 @@ describe('file changes validator', () => {
       {
         path: '/Images/invalid1',
         description: 'aaa',
-        content: { content: BigBuffer },
+        content: new StaticFile({ filepath: 'somePath', content: BigBuffer }),
       },
     )
 
@@ -143,7 +143,7 @@ describe('file changes validator', () => {
       {
         path: '/Images/invalid2',
         generateurltimestamp: false,
-        content: { content: Buffer.from('aaa') },
+        content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
       },
     )
 
@@ -153,7 +153,7 @@ describe('file changes validator', () => {
       {
         path: '/Images/invalid2',
         generateurltimestamp: true,
-        content: { content: Buffer.from('aaa') },
+        content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
       },
     )
 
@@ -163,7 +163,7 @@ describe('file changes validator', () => {
       {
         path: '/Images/invalid3',
         generateurltimestamp: true,
-        content: { content: Buffer.from('aaa') },
+        content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
       },
     )
 

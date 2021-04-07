@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, Change } from '@salto-io/adapter-api'
+import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, Change, StaticFile } from '@salto-io/adapter-api'
 import { getChangeGroupIdsFunc, SDF_CHANGE_GROUP_ID } from '../src/group_changes'
 import { customTypes, fileCabinetTypes } from '../src/types'
 import { ENTITY_CUSTOM_FIELD, FILE, NETSUITE } from '../src/constants'
@@ -66,7 +66,7 @@ describe('Group Changes with Salto suiteApp', () => {
     fileCabinetTypes[FILE],
     {
       path: '/Images/file',
-      content: { content: Buffer.from('aaa') },
+      content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
     }
   )
 
@@ -75,7 +75,7 @@ describe('Group Changes with Salto suiteApp', () => {
     fileCabinetTypes[FILE],
     {
       path: '/Templates/file',
-      content: { content: Buffer.from('aaa') },
+      content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
     }
   )
 
@@ -84,7 +84,7 @@ describe('Group Changes with Salto suiteApp', () => {
     fileCabinetTypes[FILE],
     {
       path: '/Images/file3',
-      content: { content: Buffer.from('aaa') },
+      content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
     }
   )
 
@@ -94,7 +94,7 @@ describe('Group Changes with Salto suiteApp', () => {
     {
       path: '/Images/file3',
       description: 'aa',
-      content: { content: Buffer.from('aaa') },
+      content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
     }
   )
 
@@ -103,7 +103,7 @@ describe('Group Changes with Salto suiteApp', () => {
     fileCabinetTypes[FILE],
     {
       path: '/Templates/file',
-      content: { content: Buffer.from('a'.repeat(11 * 1024 * 1024)) },
+      content: new StaticFile({ filepath: 'somePath', content: Buffer.from('a'.repeat(11 * 1024 * 1024)) }),
     }
   )
   const sdfFileInstance2 = new InstanceElement(
@@ -112,7 +112,7 @@ describe('Group Changes with Salto suiteApp', () => {
     {
       path: '/Templates/file',
       generateurltimestamp: true,
-      content: { content: Buffer.from('aaa') },
+      content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
     }
   )
 

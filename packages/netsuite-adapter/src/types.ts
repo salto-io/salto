@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, TypeElement } from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { file, folder } from './types/file_cabinet_types'
 import { addressForm, addressFormInnerTypes } from './types/custom_types/addressForm'
@@ -213,6 +213,9 @@ export const isCustomType = (type: ObjectType): boolean =>
 
 export const isFileCabinetType = (type: ObjectType): boolean =>
   !_.isUndefined(fileCabinetTypes[type.elemID.name])
+
+export const isFileCabinetInstance = (element: Element): element is InstanceElement =>
+  isInstanceElement(element) && isFileCabinetType(element.type)
 
 export const getAllTypes = (): TypeElement[] => [
   ...Object.values(customTypes),

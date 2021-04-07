@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, DeployResult, getChangeElement, InstanceElement, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import { Change, DeployResult, getChangeElement, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange, StaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { chunks, values } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
@@ -241,7 +241,7 @@ Promise<ImportFileCabinetResult> => {
 
   return {
     elements: [...foldersCustomizationInfo, ...filesCustomizationInfo].filter(file => query.isFileMatch(`/${file.path.join('/')}`)),
-    failedPaths: failedPaths.map(filePath => `/${filePath.join('/')}`),
+    failedPaths: failedPaths.map(fileCabinetPath => `/${fileCabinetPath.join('/')}`),
   }
 }
 
@@ -255,6 +255,9 @@ const generatePathToIdMap = async (suiteAppClient: SuiteAppClient):
     ...folders.map(folder => [`/${getFullPath(folder, idToFolder).join('/')}`, parseInt(folder.id, 10)]),
   ])
 }
+
+const getContent = (content: string | StaticFile): Buffer | undefined =>
+  (content instanceof StaticFile ? content.content : Buffer.from(content))
 
 const convertToFileCabinetDetails = (
   change: Change<InstanceElement>,
@@ -275,7 +278,7 @@ const convertToFileCabinetDetails = (
       isInactive: element.value.isInactive ?? false,
       isOnline: element.value.isOnline ?? false,
       hideInBundle: element.value.hideInBundle ?? false,
-      content: element.value.content.content,
+      content: getContent(element.value.content) ?? Buffer.from(''),
       description: element.value.description ?? '',
     }
     : {
@@ -365,22 +368,15 @@ const deployChanges = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   pathToId: Record<string, number>,
   type: 'add' | 'update'): Promise<DeployResult> => {
-  const errors: Error[] = []
-  const appliedChanges = _(await Promise.all(_(changes)
-    .chunk(DEPLOY_CHUNK_SIZE)
-    .map(async chunk => {
-      const {
-        appliedChanges: appliedChunkChanges,
-        errors: chunkErrors,
-      } = await deployChunk(suiteAppClient, chunk, pathToId, type)
-      errors.push(...chunkErrors)
-      return appliedChunkChanges
-    })
-    .value()))
-    .flatten()
-    .value()
-
-  return { appliedChanges, errors }
+  const deployChunkResults = await Promise.all(
+    _.chunk(changes, DEPLOY_CHUNK_SIZE)
+      .map(chunk => deployChunk(suiteAppClient, chunk, pathToId, type))
+  )
+  return {
+    appliedChanges: deployChunkResults
+      .flatMap(deployChunkResult => deployChunkResult.appliedChanges),
+    errors: deployChunkResults.flatMap(deployChunkResult => deployChunkResult.errors),
+  }
 }
 
 const deployAdditions = async (
@@ -434,7 +430,7 @@ export const isChangeDeployable = (
   }
 
   // SuiteApp can't modify files bigger than 10mb
-  if (changedElement.type.elemID.name === 'file' && changedElement.value.content.content.length > MAX_DEPLOYABLE_FILE_SIZE) {
+  if (isAdditionOrModificationChange(change) && changedElement.type.elemID.name === 'file' && (getContent(changedElement.value.content)?.length ?? 0) > MAX_DEPLOYABLE_FILE_SIZE) {
     return false
   }
 

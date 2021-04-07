@@ -14,22 +14,31 @@
 * limitations under the License.
 */
 import {
-  isInstanceElement, ChangeValidator, getChangeElement,
+  ChangeValidator, getChangeElement, Change,
 } from '@salto-io/adapter-api'
 import { fileCabinetTopLevelFolders } from '../client/constants'
-import { isFileCabinetType } from '../types'
+import { isFileCabinetInstance } from '../types'
+import * as suiteAppFileCabinet from '../suiteapp_file_cabinet'
+
+const isChangeSupported = (change: Change): boolean => {
+  const element = getChangeElement(change)
+  if (!isFileCabinetInstance(element)) {
+    return true
+  }
+
+  return suiteAppFileCabinet.isChangeDeployable(change) || fileCabinetTopLevelFolders.some(folder => element.value.path.startsWith(`${folder}/`))
+}
+
 
 const changeValidator: ChangeValidator = async changes => (
   changes
+    .filter(change => !isChangeSupported(change))
     .map(getChangeElement)
-    .filter(isInstanceElement)
-    .filter(inst => isFileCabinetType(inst.type))
-    .filter(inst => fileCabinetTopLevelFolders.every(folder => !inst.value.path.startsWith(`${folder}/`)))
     .map(inst => ({
       elemID: inst.elemID,
       severity: 'Error',
-      message: 'Changing files is not supported for the changed file path',
-      detailedMessage: `Changing files is only supported for files under the folders ${fileCabinetTopLevelFolders.join(', ')}. Attempted to change file in ${inst.value.path}`,
+      message: 'File change is not supported',
+      detailedMessage: `Salto does not support deploying changes to files above 10 MB and to the generateurltimestamp field for files outside the folders ${fileCabinetTopLevelFolders.join(', ')}.`,
     }))
 )
 

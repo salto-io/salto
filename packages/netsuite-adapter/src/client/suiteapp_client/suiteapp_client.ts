@@ -21,10 +21,11 @@ import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { CallsLimiter, FILES_READ_SCHEMA, HttpMethod, isError, ReadResults, RestletOperation,
-  RestletResults, RESTLET_RESULTS_SCHEMA, SavedSearchQuery, SavedSearchResults,
-  SAVED_SEARCH_RESULTS_SCHEMA, SuiteAppClientParameters, SuiteQLResults, SUITE_QL_RESULTS_SCHEMA,
-  SystemInformation, SYSTEM_INFORMATION_SCHEME } from './types'
+import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails,
+  FILES_READ_SCHEMA, HttpMethod, isError, ReadResults, RestletOperation, RestletResults,
+  RESTLET_RESULTS_SCHEMA, SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA,
+  SuiteAppClientParameters, SuiteQLResults, SUITE_QL_RESULTS_SCHEMA, SystemInformation,
+  SYSTEM_INFORMATION_SCHEME } from './types'
 import { SuiteAppCredentials } from '../credentials'
 import { DEFAULT_CONCURRENCY } from '../../config'
 import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
@@ -268,5 +269,15 @@ export default class SuiteAppClient {
     } catch (e) {
       return e
     }
+  }
+
+  public async updateFileCabinet(fileCabinetInstances:
+    ExistingFileCabinetInstanceDetails[]): Promise<(number | Error)[]> {
+    return this.soapClient.updateFileCabinet(fileCabinetInstances)
+  }
+
+  public async addFileCabinetInstances(fileCabinetInstances:
+    (FileCabinetInstanceDetails)[]): Promise<(number | Error)[]> {
+    return this.soapClient.addFileCabinetInstances(fileCabinetInstances)
   }
 }

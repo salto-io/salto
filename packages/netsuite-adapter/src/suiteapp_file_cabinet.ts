@@ -13,14 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { Change, DeployResult, getChangeElement, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange, StaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { chunks, values } from '@salto-io/lowerdash'
+import { chunks, promises, values } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
 import _ from 'lodash'
+import path from 'path'
 import { ReadFileEncodingError } from './client/suiteapp_client/errors'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
+import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './client/suiteapp_client/types'
 import { ImportFileCabinetResult } from './client/types'
 import { NetsuiteQuery } from './query'
+import { isFileCabinetType, isFileInstance } from './types'
 
 const log = logger(module)
 
@@ -100,6 +104,8 @@ type FileResult = {
 }
 
 const FILES_CHUNK_SIZE = 5 * 1024 * 1024
+const MAX_DEPLOYABLE_FILE_SIZE = 10 * 1024 * 1024
+const DEPLOY_CHUNK_SIZE = 50
 
 
 const queryFolders = async (suiteAppClient: SuiteAppClient):
@@ -235,6 +241,204 @@ Promise<ImportFileCabinetResult> => {
 
   return {
     elements: [...foldersCustomizationInfo, ...filesCustomizationInfo].filter(file => query.isFileMatch(`/${file.path.join('/')}`)),
-    failedPaths: failedPaths.map(path => `/${path.join('/')}`),
+    failedPaths: failedPaths.map(fileCabinetPath => `/${fileCabinetPath.join('/')}`),
   }
+}
+
+const generatePathToIdMap = async (suiteAppClient: SuiteAppClient):
+  Promise<Record<string, number>> => {
+  const files = await queryFiles(suiteAppClient)
+  const folders = await queryFolders(suiteAppClient)
+  const idToFolder = _.keyBy(folders, folder => folder.id)
+  return Object.fromEntries([
+    ...files.map(file => [`/${[...getFullPath(idToFolder[file.folder], idToFolder), file.name].join('/')}`, parseInt(file.id, 10)]),
+    ...folders.map(folder => [`/${getFullPath(folder, idToFolder).join('/')}`, parseInt(folder.id, 10)]),
+  ])
+}
+
+const getContent = (content: string | StaticFile): Buffer =>
+  (content instanceof StaticFile ? content.content : Buffer.from(content)) ?? Buffer.from('')
+
+const convertToFileCabinetDetails = (
+  change: Change<InstanceElement>,
+  pathToId: Record<string, number>
+): FileCabinetInstanceDetails | Error => {
+  const instance = getChangeElement(change)
+  const dirname = path.dirname(instance.value.path)
+  if (dirname !== '/' && !(dirname in pathToId)) {
+    return new Error(`Directory ${dirname} was not found when attempting to deploy a file with path ${instance.value.path}`)
+  }
+
+  return isFileInstance(instance)
+    ? {
+      type: 'file',
+      path: instance.value.path,
+      folder: pathToId[dirname],
+      bundleable: instance.value.bundleable ?? false,
+      isInactive: instance.value.isinactive ?? false,
+      isOnline: instance.value.availablewithoutlogin ?? false,
+      hideInBundle: instance.value.hideinbundle ?? false,
+      content: getContent(instance.value.content),
+      description: instance.value.description ?? '',
+    }
+    : {
+      type: 'folder',
+      path: instance.value.path,
+      parent: dirname !== '/' ? pathToId[dirname] : undefined,
+      bundleable: instance.value.bundleable ?? false,
+      isInactive: instance.value.isinactive ?? false,
+      isPrivate: instance.value.isprivate ?? false,
+      description: instance.value.description ?? '',
+    }
+}
+
+const convertToExistingFileCabinetDetails = (
+  change: Change<InstanceElement>,
+  pathToId: Record<string, number>
+): ExistingFileCabinetInstanceDetails | Error => {
+  const details = convertToFileCabinetDetails(change, pathToId)
+  if (details instanceof Error) {
+    return details
+  }
+  const instance = getChangeElement(change)
+  if (pathToId[instance.value.path] === undefined) {
+    log.warn(`Failed to find the internal id of the file ${instance.value.path}`)
+    return new Error(`Failed to find the internal id of the file ${instance.value.path}`)
+  }
+  return { ...details, id: pathToId[instance.value.path] }
+}
+
+const deployChunk = async (
+  suiteAppClient: SuiteAppClient,
+  chunk: ReadonlyArray<Change<InstanceElement>>,
+  pathToId: Record<string, number>,
+  type: 'add' | 'update'
+): Promise<DeployResult> => {
+  log.debug(`Deploying chunk of ${chunk.length} files`)
+
+  try {
+    const instancesDetails = chunk.map(
+      change => ({
+        details: type === 'add' ? convertToFileCabinetDetails(change, pathToId) : convertToExistingFileCabinetDetails(change, pathToId),
+        change,
+      })
+    )
+
+    const [errorsInstances, validInstances] = _.partition(
+      instancesDetails,
+      ({ details }) => details instanceof Error,
+    )
+
+    const deployResults = type === 'add'
+      ? await suiteAppClient.addFileCabinetInstances(
+        validInstances.map(({ details }) => details as FileCabinetInstanceDetails)
+      )
+      : await suiteAppClient.updateFileCabinet(
+        validInstances.map(
+          ({ details }) => details as ExistingFileCabinetInstanceDetails
+        )
+      )
+
+    log.debug(`Deployed chunk of ${chunk.length} files`)
+
+    const [deployErrors, deployChanges] = _(deployResults)
+      .map((res, index) => ({ res, change: validInstances[index].change }))
+      .partition(({ res }) => res instanceof Error)
+      .value()
+
+    deployChanges.forEach(deployedChange => {
+      pathToId[getChangeElement(deployedChange.change).value.path] = deployedChange.res as number
+    })
+
+    return {
+      errors: [
+        ...deployErrors.map(({ res }) => res as Error),
+        ...errorsInstances.map(({ details }) => details as Error),
+      ],
+      appliedChanges: deployChanges.map(({ change }) => change),
+    }
+  } catch (e) {
+    return { errors: [e], appliedChanges: [] }
+  }
+}
+
+const deployChanges = async (
+  suiteAppClient: SuiteAppClient,
+  changes: ReadonlyArray<Change<InstanceElement>>,
+  pathToId: Record<string, number>,
+  type: 'add' | 'update'): Promise<DeployResult> => {
+  const deployChunkResults = await Promise.all(
+    _.chunk(changes, DEPLOY_CHUNK_SIZE)
+      .map(chunk => deployChunk(suiteAppClient, chunk, pathToId, type))
+  )
+  return {
+    appliedChanges: deployChunkResults
+      .flatMap(deployChunkResult => deployChunkResult.appliedChanges),
+    errors: deployChunkResults.flatMap(deployChunkResult => deployChunkResult.errors),
+  }
+}
+
+const deployAdditions = async (
+  suiteAppClient: SuiteAppClient,
+  changes: ReadonlyArray<Change<InstanceElement>>,
+  pathToId: Record<string, number>,
+): Promise<DeployResult> => {
+  const changesGroups = _(changes)
+    .groupBy(change => getChangeElement(change).value.path.split('/').length)
+    .entries()
+    .sortBy(([depth]) => depth)
+    .value()
+
+  const deployResults = await promises.array.series(changesGroups
+    .map(([depth, group]) => () => {
+      log.debug(`Deploying ${group.length} new files with depth of ${depth}`)
+      return deployChanges(suiteAppClient, group, pathToId, 'add')
+    }))
+  return {
+    appliedChanges: deployResults.flatMap(deployResult => deployResult.appliedChanges),
+    errors: deployResults.flatMap(deployResult => deployResult.errors),
+  }
+}
+
+export const deploy = async (
+  suiteAppClient: SuiteAppClient,
+  changes: ReadonlyArray<Change<InstanceElement>>,
+  type: 'add' | 'update'
+): Promise<DeployResult> => {
+  const pathToId = await generatePathToIdMap(suiteAppClient)
+  const [modifications, additions] = _.partition(changes, isModificationChange)
+
+  return type === 'add'
+    ? deployAdditions(suiteAppClient, additions, pathToId)
+    : deployChanges(suiteAppClient, modifications, pathToId, 'update')
+}
+
+export const isChangeDeployable = (
+  change: Change
+): boolean => {
+  if (!isInstanceChange(change)) {
+    return false
+  }
+
+  const changedElement = getChangeElement(change)
+  if (!isFileCabinetType(changedElement.type)) {
+    return false
+  }
+
+  // SuiteApp can't modify files bigger than 10mb
+  if (isAdditionOrModificationChange(change)
+    && isFileInstance(changedElement)
+    && getContent(changedElement.value.content).toString('base64').length > MAX_DEPLOYABLE_FILE_SIZE) {
+    return false
+  }
+
+  // SuiteApp can't change generateurltimestamp.
+  if (change.action === 'add' && change.data.after.value.generateurltimestamp === true) {
+    return false
+  }
+  if (change.action === 'modify' && change.data.before.value.generateurltimestamp !== change.data.after.value.generateurltimestamp) {
+    return false
+  }
+
+  return true
 }

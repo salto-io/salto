@@ -15,15 +15,14 @@
 */
 import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
-  ElemIdGetter, Element, getChangeElement, InstanceElement, ReadOnlyElementsSource,
+  ElemIdGetter, Element, ReadOnlyElementsSource,
   FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS, DeployModifiers,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
-import { resolveValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import {
-  createInstanceElement, getLookUpName, toCustomizationInfo,
+  createInstanceElement,
 } from './transformer'
 import {
   customTypes, getAllTypes, fileCabinetTypes,
@@ -39,7 +38,6 @@ import {
   getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
   DEFAULT_USE_CHANGES_DETECTION,
 } from './config'
-import { getAllReferencedInstances, getRequiredReferencedInstances } from './reference_dependencies'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery } from './query'
 import { createServerTimeElements, getLastServerTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
@@ -48,7 +46,7 @@ import { createDateRange } from './changes_detector/date_formats'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
 import { LazyElementsSourceIndex } from './elements_source_index/types'
 import changeValidator from './change_validator'
-import { getChangeGroupIds } from './group_changes'
+import { getChangeGroupIdsFunc } from './group_changes'
 
 const { makeArray } = collections.array
 
@@ -247,26 +245,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return { changedObjectsQuery, serverTime: sysInfo.time }
   }
 
-  private getAllRequiredReferencedInstances(
-    changedInstances: ReadonlyArray<InstanceElement>
-  ): ReadonlyArray<InstanceElement> {
-    if (this.deployReferencedElements) {
-      return getAllReferencedInstances(changedInstances)
-    }
-    return getRequiredReferencedInstances(changedInstances)
-  }
-
   public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
-    const customizationInfosToDeploy = this.getAllRequiredReferencedInstances(changedInstances)
-      .map(instance => resolveValues(instance, getLookUpName))
-      .map(toCustomizationInfo)
-    try {
-      await this.client.deploy(customizationInfosToDeploy)
-    } catch (e) {
-      return { errors: [e], appliedChanges: [] }
-    }
-    return { errors: [], appliedChanges: changeGroup.changes }
+    return this.client.deploy(changeGroup, this.deployReferencedElements)
   }
 
   private async runFiltersOnFetch(
@@ -282,11 +262,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
     )
   }
 
-  // eslint-disable-next-line class-methods-use-this
   public get deployModifiers(): DeployModifiers {
     return {
       changeValidator,
-      getChangeGroupIds,
+      getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
     }
   }
 }

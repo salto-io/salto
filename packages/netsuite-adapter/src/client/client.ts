@@ -105,10 +105,8 @@ export default class NetsuiteClient {
     ).map(instance => resolveValues(instance, getLookUpName))
       .map(toCustomizationInfo)
 
-    const sdfDeployPromise = this.sdfClient.deploy(customizationInfos)
-
     try {
-      await sdfDeployPromise
+      await this.sdfClient.deploy(customizationInfos)
       return { errors: [], appliedChanges: changes }
     } catch (e) {
       return { errors: [e], appliedChanges: [] }
@@ -128,7 +126,7 @@ export default class NetsuiteClient {
 
     return this.suiteAppClient !== undefined
       ? suiteAppFileCabinet.deploy(this.suiteAppClient, instancesChanges, changeGroup.groupID === SUITEAPP_CREATING_FILES_GROUP_ID ? 'add' : 'update')
-      : { errors: [], appliedChanges: [] }
+      : { errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${changeGroup.groupID}" cannot be deployed`)], appliedChanges: [] }
   }
 
   public async runSuiteQL(query: string):

@@ -24,7 +24,7 @@ import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './client/suiteapp_client/types'
 import { ImportFileCabinetResult } from './client/types'
 import { NetsuiteQuery } from './query'
-import { isFileCabinetType } from './types'
+import { isFileCabinetType, isFileInstance } from './types'
 
 const log = logger(module)
 
@@ -256,40 +256,40 @@ const generatePathToIdMap = async (suiteAppClient: SuiteAppClient):
   ])
 }
 
-const getContent = (content: string | StaticFile): Buffer | undefined =>
-  (content instanceof StaticFile ? content.content : Buffer.from(content))
+const getContent = (content: string | StaticFile): Buffer =>
+  (content instanceof StaticFile ? content.content : Buffer.from(content)) ?? Buffer.from('')
 
 const convertToFileCabinetDetails = (
   change: Change<InstanceElement>,
   pathToId: Record<string, number>
 ): FileCabinetInstanceDetails | Error => {
-  const element = getChangeElement(change)
-  const dirname = path.dirname(element.value.path)
+  const instance = getChangeElement(change)
+  const dirname = path.dirname(instance.value.path)
   if (dirname !== '/' && !(dirname in pathToId)) {
-    return new Error(`Directory ${dirname} was not found when attempting to deploy a file with path ${element.value.path}`)
+    return new Error(`Directory ${dirname} was not found when attempting to deploy a file with path ${instance.value.path}`)
   }
 
-  return element.type.elemID.name === 'file'
+  return isFileInstance(instance)
     ? {
       type: 'file',
-      path: element.value.path,
+      path: instance.value.path,
       folder: pathToId[dirname],
-      bundleable: element.value.bundleable ?? false,
-      isInactive: element.value.isInactive ?? false,
-      isOnline: element.value.isOnline ?? false,
-      hideInBundle: element.value.hideInBundle ?? false,
-      content: getContent(element.value.content) ?? Buffer.from(''),
-      description: element.value.description ?? '',
+      bundleable: instance.value.bundleable ?? false,
+      isInactive: instance.value.isInactive ?? false,
+      isOnline: instance.value.isOnline ?? false,
+      hideInBundle: instance.value.hideInBundle ?? false,
+      content: getContent(instance.value.content),
+      description: instance.value.description ?? '',
     }
     : {
       type: 'folder',
-      path: element.value.path,
-      parent: path.dirname(element.value.path) !== '/' ? pathToId[path.dirname(element.value.path)] : undefined,
-      bundleable: element.value.bundleable ?? false,
-      isInactive: element.value.isInactive ?? false,
-      isOnline: element.value.isOnline ?? false,
-      hideInBundle: element.value.hideInBundle ?? false,
-      description: element.value.description ?? '',
+      path: instance.value.path,
+      parent: dirname !== '/' ? pathToId[dirname] : undefined,
+      bundleable: instance.value.bundleable ?? false,
+      isInactive: instance.value.isInactive ?? false,
+      isOnline: instance.value.isOnline ?? false,
+      hideInBundle: instance.value.hideInBundle ?? false,
+      description: instance.value.description ?? '',
     }
 }
 
@@ -301,12 +301,12 @@ const convertToExistingFileCabinetDetails = (
   if (details instanceof Error) {
     return details
   }
-  const element = getChangeElement(change)
-  if (pathToId[element.value.path] === undefined) {
-    log.warn(`Failed to find the internal id of the file ${element.value.path}`)
-    return new Error(`Failed to find the internal id of the file ${element.value.path}`)
+  const instance = getChangeElement(change)
+  if (pathToId[instance.value.path] === undefined) {
+    log.warn(`Failed to find the internal id of the file ${instance.value.path}`)
+    return new Error(`Failed to find the internal id of the file ${instance.value.path}`)
   }
-  return { ...details, id: pathToId[element.value.path] }
+  return { ...details, id: pathToId[instance.value.path] }
 }
 
 const deployChunk = async (
@@ -318,8 +318,6 @@ const deployChunk = async (
   log.debug(`Deploying chunk of ${chunk.length} files`)
 
   try {
-    const errors: Error[] = []
-
     const instancesDetails = chunk.map(
       change => ({
         details: type === 'add' ? convertToFileCabinetDetails(change, pathToId) : convertToExistingFileCabinetDetails(change, pathToId),
@@ -331,8 +329,6 @@ const deployChunk = async (
       instancesDetails,
       ({ details }) => details instanceof Error,
     )
-
-    errors.push(...errorsInstances.map(({ details }) => details as Error))
 
     const deployResults = type === 'add'
       ? await suiteAppClient.addFileCabinetInstances(
@@ -351,13 +347,17 @@ const deployChunk = async (
       .partition(({ res }) => res instanceof Error)
       .value()
 
-    errors.push(...deployErrors.map(({ res }) => res as Error))
-
     deployChanges.forEach(deployedChange => {
       pathToId[getChangeElement(deployedChange.change).value.path] = deployedChange.res as number
     })
 
-    return { errors, appliedChanges: deployChanges.map(({ change }) => change) }
+    return {
+      errors: [
+        ...deployErrors.map(({ res }) => res as Error),
+        ...errorsInstances.map(({ details }) => details as Error),
+      ],
+      appliedChanges: deployChanges.map(({ change }) => change),
+    }
   } catch (e) {
     return { errors: [e], appliedChanges: [] }
   }
@@ -427,7 +427,9 @@ export const isChangeDeployable = (
   }
 
   // SuiteApp can't modify files bigger than 10mb
-  if (isAdditionOrModificationChange(change) && changedElement.type.elemID.name === 'file' && (getContent(changedElement.value.content)?.length ?? 0) > MAX_DEPLOYABLE_FILE_SIZE) {
+  if (isAdditionOrModificationChange(change)
+    && isFileInstance(changedElement)
+    && getContent(changedElement.value.content).length > MAX_DEPLOYABLE_FILE_SIZE) {
     return false
   }
 

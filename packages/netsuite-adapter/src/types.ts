@@ -217,6 +217,10 @@ export const isFileCabinetType = (type: ObjectType): boolean =>
 export const isFileCabinetInstance = (element: Element): element is InstanceElement =>
   isInstanceElement(element) && isFileCabinetType(element.type)
 
+export const isFileInstance = (element: Element): boolean =>
+  isInstanceElement(element) && element.type.elemID.name === 'file'
+
+
 export const getAllTypes = (): TypeElement[] => [
   ...Object.values(customTypes),
   ...innerCustomTypes,

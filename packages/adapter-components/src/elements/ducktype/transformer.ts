@@ -18,43 +18,19 @@ import { Element, Values } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { ClientGetParams, HTTPClientInterface } from '../../client'
+import { HTTPClientInterface } from '../../client'
 import { generateType } from './type_elements'
 import { toInstance } from './instance_elements'
-import { RequestConfig, TypeConfig } from '../../config'
+import { TypeConfig } from '../../config'
 import { FindNestedFieldFunc } from '../field_finder'
 import { TypeDuckTypeDefaultsConfig, TypeDuckTypeConfig } from '../../config/ducktype'
+import { ComputeGetArgsFunc } from '../request_parameters'
+import { getElementsWithContext } from '../element_getter'
 
 const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
 const { isDefined } = lowerdashValues
 const log = logger(module)
-
-type ComputeGetArgsFunc = (
-  request: RequestConfig,
-  contextElements?: Record<string, Element[]>,
-) => ClientGetParams[]
-
-/**
- * Convert an endpoint's request details into get argumets.
- * Supports recursive queries (subsequent queries to the same endpoint based on response data).
- */
-export const simpleGetArgs: ComputeGetArgsFunc = (
-  {
-    url,
-    queryParams,
-    recursiveQueryByResponseField,
-    paginationField,
-  },
-) => {
-  const recursiveQueryParams = recursiveQueryByResponseField !== undefined
-    ? _.mapValues(
-      recursiveQueryByResponseField,
-      val => ((entry: Values): string => entry[val])
-    )
-    : undefined
-  return [{ url, queryParams, recursiveQueryParams, paginationField }]
-}
 
 /**
  * Given a type and the corresponding endpoint definition, make the relevant HTTP requests and
@@ -79,11 +55,17 @@ export const getTypeAndInstances = async ({
   typeDefaultConfig: TypeDuckTypeDefaultsConfig
   contextElements?: Record<string, Element[]>
 }): Promise<Element[]> => {
-  const { request, transformation } = typesConfig[typeName]
+  const typeConfig = typesConfig[typeName]
+  if (typeConfig === undefined) {
+    // should never happen
+    throw new Error(`could not find type ${typeName}`)
+  }
+  const { request, transformation } = typeConfig
   if (request === undefined) {
-    // should never happen - we verify that in the caller
+    // a type with no request config cannot be fetched
     throw new Error(`Invalid type config - type ${adapterName}.${typeName} has no request config`)
   }
+
   const {
     fieldsToOmit, hasDynamicFields, dataField,
   } = _.defaults({}, transformation, typeDefaultConfig.transformation)
@@ -95,6 +77,7 @@ export const getTypeAndInstances = async ({
   const transformationDefaultConfig = typeDefaultConfig.transformation
 
   const requestWithDefaults = _.defaults({}, request, typeDefaultConfig.request ?? {})
+
   const getEntries = async (): Promise<Values[]> => {
     const getArgs = computeGetArgs(requestWithDefaults, contextElements)
     return (await Promise.all(
@@ -104,7 +87,7 @@ export const getTypeAndInstances = async ({
 
   const entries = await getEntries()
 
-  // escape "field" names with '.'
+  // escape "field" names that contain '.'
   const naclEntries = entries.map(e => _.mapKeys(e, (_val, key) => naclCase(key)))
 
   // types with dynamic fields will be associated with the dynamic_keys type
@@ -170,14 +153,8 @@ export const getAllElements = async ({
   computeGetArgs: ComputeGetArgsFunc
   typeDefaults: TypeDuckTypeDefaultsConfig
 }): Promise<Element[]> => {
-  // for now assuming flat dependencies for simplicity.
-  // will replace with a DAG (with support for concurrency) when needed
   const allTypesWithRequestEndpoints = includeTypes.filter(
     typeName => types[typeName].request?.url !== undefined
-  )
-  const [independentEndpoints, dependentEndpoints] = _.partition(
-    allTypesWithRequestEndpoints,
-    typeName => _.isEmpty(types[typeName].request?.dependsOn)
   )
 
   const elementGenerationParams = {
@@ -188,25 +165,13 @@ export const getAllElements = async ({
     typesConfig: types,
     typeDefaultConfig: typeDefaults,
   }
-  const contextElements = Object.fromEntries(await Promise.all(independentEndpoints.map(
-    async (typeName): Promise<[string, Element[]]> => [
-      typeName,
-      await getTypeAndInstances({
-        ...elementGenerationParams,
-        typeName,
-      }),
-    ]
-  )))
-  const dependentElements = await Promise.all(
-    dependentEndpoints.map(typeName => getTypeAndInstances({
-      ...elementGenerationParams,
-      typeName,
-      contextElements,
-    }))
-  )
 
-  return [
-    ...Object.values(contextElements).flat(),
-    ...dependentElements.flat(),
-  ]
+  return getElementsWithContext({
+    includeTypes: allTypesWithRequestEndpoints,
+    types,
+    typeElementGetter: args => getTypeAndInstances({
+      ...elementGenerationParams,
+      ...args,
+    }),
+  })
 }

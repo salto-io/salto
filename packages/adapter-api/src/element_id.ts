@@ -19,6 +19,10 @@ import { CORE_ANNOTATIONS } from './core_annotations'
 export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation' | 'var'
 export const ElemIDTypes = ['type', 'field', 'instance', 'attr', 'annotation', 'var'] as ReadonlyArray<string>
 export const isElemIDType = (v: string): v is ElemIDType => ElemIDTypes.includes(v)
+export const MAP_ID_PREFIX = 'Map'
+export const LIST_ID_PREFIX = 'List'
+export const GENERIC_ID_PREFIX = '<'
+export const GENERIC_ID_SUFFIX = '>'
 
 export const INSTANCE_ANNOTATIONS = {
   DEPENDS_ON: CORE_ANNOTATIONS.DEPENDS_ON,

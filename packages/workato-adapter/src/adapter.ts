@@ -29,9 +29,8 @@ import { WORKATO } from './constants'
 import changeValidator from './change_validator'
 
 const log = logger(module)
-const {
-  returnFullEntry, simpleGetArgs, getAllElements,
-} = elementUtils.ducktype
+const { returnFullEntry, simpleGetArgs } = elementUtils
+const { getAllElements } = elementUtils.ducktype
 
 export const DEFAULT_FILTERS = [
   extractFieldsFilter,

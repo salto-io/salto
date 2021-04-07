@@ -13,6 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { toInstance } from './instance_elements'
-export { getAllElements, getTypeAndInstances } from './transformer'
-export { generateType, toNestedTypeName } from './type_elements'
+export { getAllInstances } from './instance_elements'
+export { generateTypes } from './type_elements/element_generator'
+export { toPrimitiveType, ADDITIONAL_PROPERTIES_FIELD } from './type_elements/swagger_parser'

@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Connection, ConnectionCreator, createRetryOptions, createClientConnection, ResponseValue } from './http_connection'
 import { AdapterClientBase } from './base'
@@ -104,42 +103,6 @@ export abstract class AdapterHTTPClient<
     } catch (e) {
       log.error(`failed to get ${getParams.url}: ${e}, stack: ${e.stack}`)
       throw new Error(`Failed to get ${getParams.url} with error: ${e}`)
-    }
-  }
-
-  /**
-   * Get a single response
-   */
-  @throttle<TRateLimitConfig>('get', ['url', 'queryParams'])
-  @logDecorator(['url', 'queryParams'])
-  @requiresLogin()
-  public async getSingle({ url, queryParams }: {
-    url: string
-    queryParams?: Record<string, string>
-  }): Promise<ResponseValue | ResponseValue[]> {
-    if (this.apiClient === undefined) {
-      // initialized by requiresLogin (through ensureLoggedIn in this case)
-      throw new Error(`uninitialized ${this.clientName} client`)
-    }
-
-    try {
-      const response = await this.apiClient.get(
-        url,
-        queryParams !== undefined && Object.keys(queryParams).length > 0
-          ? { params: queryParams }
-          : undefined,
-      )
-      log.debug('Full HTTP response for %s: %s', url, safeJsonStringify({
-        url, queryParams, response: response.data,
-      }))
-      if (response.status < 200 || response.status > 299) {
-        log.error(`error getting result for ${url}: %s %o %o`, response.status, response.statusText, response.data)
-        throw new Error(`Unexpected response status ${response.status}`)
-      }
-      return response.data
-    } catch (e) {
-      log.error(`failed to get ${url} ${queryParams}: ${e}, stack: ${e.stack}`)
-      throw new Error(`Failed to get ${url} with error: ${e}`)
     }
   }
 }

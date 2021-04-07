@@ -20,7 +20,8 @@ import {
 import _ from 'lodash'
 import { isCustomType, isFileCabinetType } from '../types'
 
-const getReferenceValue = (val: unknown): unknown => (isReferenceExpression(val) ? val.value : val)
+const getReferenceValue = (val: unknown): unknown =>
+  (isReferenceExpression(val) ? val.elemId.getFullName() : val)
 
 const changeValidator: ChangeValidator = async changes => (
   _.flatten(changes

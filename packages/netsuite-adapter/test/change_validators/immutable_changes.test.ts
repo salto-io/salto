@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, InstanceElement, toChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import immutableChangesValidator from '../../src/change_validators/immutable_changes'
 import { customTypes, fileCabinetTypes } from '../../src/types'
 import { ENTITY_CUSTOM_FIELD, FILE, PATH, SCRIPT_ID } from '../../src/constants'
@@ -51,10 +51,10 @@ describe('customization type change validator', () => {
 
   it('should have change error if file cabinet type parent has been modified', async () => {
     const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {}, undefined, {
-      parent: 'Templates/content',
+      [CORE_ANNOTATIONS.PARENT]: '[/Templates/content]',
     })
     const after = fileInstance.clone()
-    after.annotations[CORE_ANNOTATIONS.PARENT] = 'Templates/modified'
+    after.annotations[CORE_ANNOTATIONS.PARENT] = '[/Templates/modified]'
     const changeErrors = await immutableChangesValidator(
       [toChange({ before: fileInstance, after })]
     )
@@ -78,10 +78,21 @@ describe('customization type change validator', () => {
   })
 
   it('should not have change error if file cabinet type regular field has been modified', async () => {
-    const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
-      [PATH]: 'Templates/content.html',
-      content: 'original',
-    })
+    const fileInstance = new InstanceElement(
+      'fileInstance',
+      fileCabinetTypes[FILE],
+      {
+        [PATH]: 'Templates/content.html',
+        content: 'original',
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(
+          new ElemID('netsuite', 'someType', 'instance', 'someInstance'),
+          new InstanceElement('someInstance', new ObjectType({ elemID: new ElemID('netsuite', 'someType') })),
+        ),
+      }
+    )
     const after = fileInstance.clone()
     after.value.content = 'modified'
     const changeErrors = await immutableChangesValidator(

@@ -15,7 +15,7 @@
 */
 import {
   Element, isInstanceElement, Values, ObjectType, ElemID, ReferenceExpression, InstanceElement,
-  InstanceAnnotationTypes, TypeMap,
+  InstanceAnnotationTypes, TypeMap, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import {
   transformElement,
@@ -99,7 +99,7 @@ const replaceReferenceValues = (
   fetchedElementsServiceIdToElemID: Record<string, ElemID>,
   elementsSourceServiceIdToElemID: Record<string, ElemID>,
 ): Values => {
-  const replacePrimitive: TransformFunc = ({ value }) => {
+  const replacePrimitive: TransformFunc = ({ field, value }) => {
     if (!_.isString(value)) {
       return value
     }
@@ -113,6 +113,12 @@ const replaceReferenceValues = (
     if (_.isUndefined(elemID)) {
       return value
     }
+
+
+    if (field?.name === CORE_ANNOTATIONS.PARENT) {
+      return new ReferenceExpression(elemID.createBaseID().parent)
+    }
+
     return new ReferenceExpression(elemID)
   }
 

@@ -471,18 +471,14 @@ const buildMultiEnvSource = (
       const { source, relPath } = getSourceForNaclFile(filename)
       return source.getParsedNaclFile(relPath)
     },
-    getElementNaclFiles: async (id: ElemID): Promise<string[]> => (
-      awu(Object.entries(getActiveSources()))
-        .flatMap(async ([prefix, source]) => (
-          await source.getElementNaclFiles(id)).map(p => buildFullPath(prefix, p)))
-        .toArray()
-    ),
-    getElementReferencedFiles: async (id: ElemID): Promise<string[]> => _.flatten(
-      await awu(Object.entries(getActiveSources()))
+    getElementNaclFiles: async (id: ElemID): Promise<string[]> =>
+      _.flatten(await Promise.all(Object.entries(getActiveSources())
         .map(async ([prefix, source]) => (
-          await source.getElementReferencedFiles(id)).map(p => buildFullPath(prefix, p)))
-        .toArray()
-    ),
+          await source.getElementNaclFiles(id)).map(p => buildFullPath(prefix, p))))),
+    getElementReferencedFiles: async (id: ElemID): Promise<string[]> =>
+      _.flatten(await Promise.all(Object.entries(getActiveSources())
+        .map(async ([prefix, source]) => (
+          await source.getElementReferencedFiles(id)).map(p => buildFullPath(prefix, p))))),
     clear: async (args = { nacl: true, staticResources: true, cache: true }) => {
       // We use loop here since we don't want to perform too much delete operation concurrently
       await awu([primarySource(), commonSource(), ...Object.values(secondarySources())])

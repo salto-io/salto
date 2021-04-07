@@ -20,7 +20,11 @@ import {
 import _ from 'lodash'
 import { isCustomType, isFileCabinetType } from '../types'
 
-const getReferenceValue = (val: unknown): unknown =>
+// In netsuite, a reference can be either a ReferenceExpression
+// or a string of the form [/some/path] or [scriptid=someid] if no reference was found.
+// In the case of ReferenceExpression, we would want to compare using the elemID,
+// otherwise we can use the string.
+const getReferenceIdentifier = (val: unknown): unknown =>
   (isReferenceExpression(val) ? val.elemId.getFullName() : val)
 
 const changeValidator: ChangeValidator = async changes => (
@@ -43,8 +47,8 @@ const changeValidator: ChangeValidator = async changes => (
 
       // parent annotations in file cabinet instances
       if (isFileCabinetType(after.type)
-        && getReferenceValue(before.annotations[CORE_ANNOTATIONS.PARENT])
-          !== getReferenceValue(after.annotations[CORE_ANNOTATIONS.PARENT])) {
+        && getReferenceIdentifier(before.annotations[CORE_ANNOTATIONS.PARENT])
+          !== getReferenceIdentifier(after.annotations[CORE_ANNOTATIONS.PARENT])) {
         modifiedImmutableFields.push(CORE_ANNOTATIONS.PARENT)
       }
       return modifiedImmutableFields.map(modifiedField => ({

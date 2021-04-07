@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import {
-  Element, isInstanceElement, Values, ObjectType, ElemID, ReferenceExpression, InstanceElement,
-  InstanceAnnotationTypes, TypeMap, CORE_ANNOTATIONS,
+  Element, isInstanceElement, ElemID, ReferenceExpression, InstanceElement,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import {
   transformElement,
-  TransformFunc, transformValues,
+  TransformFunc,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
@@ -94,12 +94,11 @@ const generateServiceIdToElemID = (elements: Element[]): Record<string, ElemID> 
   )
 
 const replaceReferenceValues = (
-  values: Values,
-  refElement: ObjectType| TypeMap,
+  instance: InstanceElement,
   fetchedElementsServiceIdToElemID: Record<string, ElemID>,
   elementsSourceServiceIdToElemID: Record<string, ElemID>,
-): Values => {
-  const replacePrimitive: TransformFunc = ({ field, value }) => {
+): InstanceElement => {
+  const replacePrimitive: TransformFunc = ({ path, value }) => {
     if (!_.isString(value)) {
       return value
     }
@@ -115,19 +114,18 @@ const replaceReferenceValues = (
     }
 
 
-    if (field?.name === CORE_ANNOTATIONS.PARENT) {
+    if (path?.isAttrID() && path?.name === CORE_ANNOTATIONS.PARENT) {
       return new ReferenceExpression(elemID.createBaseID().parent)
     }
 
     return new ReferenceExpression(elemID)
   }
 
-  return transformValues({
-    values,
-    type: refElement,
+  return transformElement({
+    element: instance,
     transformFunc: replacePrimitive,
     strict: false,
-  }) || values
+  })
 }
 
 const createElementsSourceServiceIdToElemID = async (
@@ -150,25 +148,19 @@ const filterCreator: FilterCreator = () => ({
     elementsSourceIndex,
     isPartial,
   }): Promise<void> => {
-    const fetchedElemenentsServiceIdToElemID = generateServiceIdToElemID(elements)
+    const fetchedElementsServiceIdToElemID = generateServiceIdToElemID(elements)
     const elementsSourceServiceIdToElemID = await createElementsSourceServiceIdToElemID(
       elementsSourceIndex,
       isPartial
     )
     elements.filter(isInstanceElement).forEach(instance => {
-      instance.value = replaceReferenceValues(
-        instance.value,
-        instance.type,
-        fetchedElemenentsServiceIdToElemID,
+      const newInstance = replaceReferenceValues(
+        instance,
+        fetchedElementsServiceIdToElemID,
         elementsSourceServiceIdToElemID
       )
-
-      instance.annotations = replaceReferenceValues(
-        instance.annotations,
-        InstanceAnnotationTypes,
-        fetchedElemenentsServiceIdToElemID,
-        elementsSourceServiceIdToElemID
-      )
+      instance.value = newInstance.value
+      instance.annotations = newInstance.annotations
     })
   },
 })

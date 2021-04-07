@@ -88,7 +88,7 @@ export const buildInMemState = (loadData: () => Promise<StateData>): InMemorySta
     },
     rename: () => Promise.resolve(),
     getHash: async () => (await (await stateData()).saltoMetadata.get('hash'))
-      || toMD5(safeJsonStringify([])),
+      ?? toMD5(safeJsonStringify([])),
     setHash: async (newHash: string) => (await stateData()).saltoMetadata.set('hash', newHash),
     getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
     setVersion: async (version: string) => (await stateData()).saltoMetadata.set('version', version),

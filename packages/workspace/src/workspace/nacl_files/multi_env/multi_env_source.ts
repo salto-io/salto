@@ -53,16 +53,16 @@ string => {
       isContained(relativeFilename, path.join(ENVS_PREFIX, srcPrefix))) ?? common
 }
 
-export class UnknownEnviornmentError extends Error {
+export class UnknownEnvironmentError extends Error {
   constructor(envName: string) {
-    super(`Unknown enviornment ${envName}`)
+    super(`Unknown environment ${envName}`)
   }
 }
 
 export class UnsupportedNewEnvChangeError extends Error {
   constructor(change: DetailedChange) {
     const changeElemID = getChangeElement(change).elemID.getFullName()
-    const message = 'Adding a new enviornment only support add changes.'
+    const message = 'Adding a new environment only support add changes.'
       + `Received change of type ${change.action} for ${changeElemID}`
     super(message)
   }
@@ -207,7 +207,7 @@ const buildMultiEnvSource = (
     return { relPath: getRelativePath(fullName, prefix), source: getSourceFromEnvName(prefix) }
   }
 
-  const buidFullPath = (envName: string, relPath: string): string => (
+  const buildFullPath = (envName: string, relPath: string): string => (
     envName === commonSourceName
       ? path.join(envName, relPath)
       : path.join(ENVS_PREFIX, envName, relPath)
@@ -313,8 +313,8 @@ const buildMultiEnvSource = (
     await awu([
       primarySource(),
       commonSource(),
-      ..._.values(secondarySources()),
-    ]).forEach(src => src.flush())
+      ...Object.values(secondarySources()),
+    ]).forEach(async src => src.flush())
     const currentState = await getState()
     await currentState.elements.flush()
     await currentState.mergeErrors.flush()
@@ -348,11 +348,11 @@ const buildMultiEnvSource = (
         ...err,
         subject: {
           ...err.subject,
-          filename: buidFullPath(prefix, err.subject.filename),
+          filename: buildFullPath(prefix, err.subject.filename),
         },
         context: err.context && {
           ...err.context,
-          filename: buidFullPath(prefix, err.context.filename),
+          filename: buildFullPath(prefix, err.context.filename),
         },
       })),
     })
@@ -418,7 +418,7 @@ const buildMultiEnvSource = (
     listNaclFiles: async (): Promise<string[]> => (
       awu(Object.entries(getActiveSources()))
         .flatMap(async ([prefix, source]) => (
-          (await source.listNaclFiles()).map(p => buidFullPath(prefix, p)))).toArray()
+          (await source.listNaclFiles()).map(p => buildFullPath(prefix, p)))).toArray()
     ),
     getTotalSize: async (): Promise<number> => (
       _.sum(await Promise.all(Object.values(sources).map(s => s.getTotalSize())))
@@ -462,7 +462,7 @@ const buildMultiEnvSource = (
         .flatMap(async ([prefix, source]) => (
           await source.getSourceRanges(elemID)).map(sourceRange => ({
           ...sourceRange,
-          filename: buidFullPath(prefix, sourceRange.filename),
+          filename: buildFullPath(prefix, sourceRange.filename),
         }))).toArray()
     ),
 
@@ -474,23 +474,25 @@ const buildMultiEnvSource = (
     getElementNaclFiles: async (id: ElemID): Promise<string[]> => (
       awu(Object.entries(getActiveSources()))
         .flatMap(async ([prefix, source]) => (
-          await source.getElementNaclFiles(id)).map(p => buidFullPath(prefix, p)))
+          await source.getElementNaclFiles(id)).map(p => buildFullPath(prefix, p)))
         .toArray()
     ),
     getElementReferencedFiles: async (id: ElemID): Promise<string[]> => _.flatten(
       await awu(Object.entries(getActiveSources()))
         .map(async ([prefix, source]) => (
-          await source.getElementReferencedFiles(id)).map(p => buidFullPath(prefix, p)))
+          await source.getElementReferencedFiles(id)).map(p => buildFullPath(prefix, p)))
         .toArray()
     ),
     clear: async (args = { nacl: true, staticResources: true, cache: true }) => {
-      // We use series here since we don't want to perform too much delete operation concurrently
-      await series([primarySource(), commonSource(), ...Object.values(secondarySources())]
-        .map(f => async () => {
-          await f.load({})
-          return f.clear(args)
-        }))
-      state = undefined
+      // We use loop here since we don't want to perform too much delete operation concurrently
+      await awu([primarySource(), commonSource(), ...Object.values(secondarySources())])
+        .forEach(async s => {
+          await s.load({})
+          await s.clear(args)
+        })
+      const currentState = await getState()
+      await currentState.elements.clear()
+      await currentState.mergeErrors.clear()
     },
     rename: async (name: string): Promise<void> => {
       await series([primarySource(), commonSource(), ...Object.values(secondarySources())]

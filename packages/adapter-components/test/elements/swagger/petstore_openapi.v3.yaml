@@ -593,6 +593,34 @@ paths:
         404:
           description: User not found
           content: {}
+  /foodDetails:
+    get:
+      responses:
+        200:
+          description: successful operation
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FoodAndCategory'
+  /food/{foodId}:
+    get:
+      parameters:
+      - name: foodId
+        in: path
+        description: ID of food to return
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: successful operation
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Food'
 components:
   schemas:
     Order:
@@ -633,6 +661,21 @@ components:
           type: string
       xml:
         name: Category
+    Food:
+      allOf:
+      - type: object
+        properties:
+          id:
+            type: integer
+            format: int64
+          brand:
+            type: string
+          additionalProperties:
+            $ref: '#/components/schemas/Category'
+    FoodAndCategory:
+      allOf:
+      - $ref: '#/components/schemas/Food'
+      - $ref: '#/components/schemas/Category'
     User:
       allOf:
       - type: object
@@ -659,12 +702,12 @@ components:
       - $ref: '#/components/schemas/UserAdditional1'
       - $ref: '#/components/schemas/UserAdditional2'
     UserAdditional1:
-      additionalProperties:
-        $ref: '#/components/schemas/Order'
       type: object
       properties:
         middleName:
           type: string
+      additionalProperties:
+        $ref: '#/components/schemas/Order'
     UserAdditional2:
       additionalProperties:
         $ref: '#/components/schemas/Order'

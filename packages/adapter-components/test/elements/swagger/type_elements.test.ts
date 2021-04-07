@@ -24,7 +24,7 @@ const BASE_DIR = __dirname.replace('/dist', '')
 
 describe('swagger_type_elements', () => {
   describe('generateTypes', () => {
-    const expectedTypes = ['Category', 'Order', 'Pet', 'Tag', 'User', 'pet__findByStatus', 'pet__findByTags', 'store__inventory']
+    const expectedTypes = ['Category', 'Food', 'FoodAndCategory', 'Order', 'Pet', 'Tag', 'User', 'foodDetails', 'pet__findByStatus', 'pet__findByTags', 'store__inventory']
     const expectedParsedConfigs = {
       Order: { request: { url: '/store/order/{orderId}' } },
       Pet: { request: { url: '/pet/{petId}' } },
@@ -35,14 +35,16 @@ describe('swagger_type_elements', () => {
       // eslint-disable-next-line @typescript-eslint/camelcase
       store__inventory: { request: { url: '/store/inventory' } },
       User: { request: { url: '/user/{username}' } },
+      Food: { request: { url: '/food/{foodId}' } },
+      foodDetails: { request: { url: '/foodDetails' } },
     }
 
     describe('no config overrides', () => {
-      it('should generate the right types for swagger v2 yaml', async () => {
+      const validate = async (url: string): Promise<void> => {
         const { allTypes, parsedConfigs } = await generateTypes(
           ADAPTER_NAME,
           {
-            swagger: { url: `${BASE_DIR}/petstore_swagger.v2.yaml` },
+            swagger: { url },
             typeDefaults: { transformation: { idFields: ['name'] } },
             types: {},
           },
@@ -92,42 +94,28 @@ describe('swagger_type_elements', () => {
           // additional properties
           additionalProperties: 'map<myAdapter.Order>',
         })
+
+        // additionalProperties explicit property combined with enabled additionalProperties
+        // should be undefined
+        const food = allTypes.Food as ObjectType
+        expect(food).toBeInstanceOf(ObjectType)
+        expect(_.mapValues(food.fields, f => f.type.elemID.getFullName())).toEqual({
+          brand: 'string',
+          id: 'number',
+          additionalProperties: 'map<unknown>',
+        })
+      }
+      it('should generate the right types for swagger v2 yaml', async () => {
+        await validate(`${BASE_DIR}/petstore_swagger.v2.yaml`)
       })
       it('should generate the right types for swagger v2 json', async () => {
-        const { allTypes, parsedConfigs } = await generateTypes(
-          ADAPTER_NAME,
-          {
-            swagger: { url: `${BASE_DIR}/petstore_swagger.v2.json` },
-            typeDefaults: { transformation: { idFields: ['name'] } },
-            types: {},
-          }
-        )
-        expect(Object.keys(allTypes).sort()).toEqual(expectedTypes)
-        expect(parsedConfigs).toEqual(expectedParsedConfigs)
+        await validate(`${BASE_DIR}/petstore_swagger.v2.json`)
       })
       it('should generate the right types for swagger v3 yaml', async () => {
-        const { allTypes, parsedConfigs } = await generateTypes(
-          ADAPTER_NAME,
-          {
-            swagger: { url: `${BASE_DIR}/petstore_openapi.v3.yaml` },
-            typeDefaults: { transformation: { idFields: ['name'] } },
-            types: {},
-          }
-        )
-        expect(Object.keys(allTypes).sort()).toEqual(expectedTypes)
-        expect(parsedConfigs).toEqual(expectedParsedConfigs)
+        await validate(`${BASE_DIR}/petstore_openapi.v3.yaml`)
       })
       it('should generate the right types for swagger v3 json', async () => {
-        const { allTypes, parsedConfigs } = await generateTypes(
-          ADAPTER_NAME,
-          {
-            swagger: { url: `${BASE_DIR}/petstore_openapi.v3.json` },
-            typeDefaults: { transformation: { idFields: ['name'] } },
-            types: {},
-          }
-        )
-        expect(Object.keys(allTypes).sort()).toEqual(expectedTypes)
-        expect(parsedConfigs).toEqual(expectedParsedConfigs)
+        await validate(`${BASE_DIR}/petstore_openapi.v3.json`)
       })
     })
 
@@ -175,7 +163,7 @@ describe('swagger_type_elements', () => {
         parsedConfigs = res.parsedConfigs
       })
       it('should generate the right types', () => {
-        const updatedExpectedTypes = ['Category', 'Order', 'Pet2', 'Pet3', 'PetByTag', 'Pet__new', 'Tag', 'User', 'pet__findByStatus', 'store__inventory']
+        const updatedExpectedTypes = ['Category', 'Food', 'FoodAndCategory', 'Order', 'Pet2', 'Pet3', 'PetByTag', 'Pet__new', 'Tag', 'User', 'foodDetails', 'pet__findByStatus', 'store__inventory']
         expect(Object.keys(allTypes).sort()).toEqual(updatedExpectedTypes)
         // no Pet2 because it does not have a request config
         const updatedExpectedParsedConfigs = {
@@ -189,6 +177,8 @@ describe('swagger_type_elements', () => {
           // eslint-disable-next-line @typescript-eslint/camelcase
           store__inventory: { request: { url: '/store/inventory' } },
           User: { request: { url: '/user/{username}' } },
+          Food: { request: { url: '/food/{foodId}' } },
+          foodDetails: { request: { url: '/foodDetails' } },
         }
         expect(parsedConfigs).toEqual(updatedExpectedParsedConfigs)
         // regular response type with reference

@@ -201,12 +201,12 @@ const generateInstancesForType = ({
     ))
 }
 
-const isItemsOnlyObjectType = (type: ObjectType): boolean => (
-  _.isEqual(Object.keys(type.fields), [ARRAY_ITEMS_FIELD])
-)
-
 const isAdditionalPropertiesOnlyObjectType = (type: ObjectType): boolean => (
   _.isEqual(Object.keys(type.fields), [ADDITIONAL_PROPERTIES_FIELD])
+)
+
+const isItemsOnlyObjectType = (type: ObjectType): boolean => (
+  _.isEqual(Object.keys(type.fields), [ARRAY_ITEMS_FIELD])
 )
 
 const normalizeType = (type: ObjectType | undefined): ObjectType | undefined => {
@@ -307,7 +307,7 @@ const getInstancesForType = async ({
           ? makeArray(result[nestedFieldDetails.field.name])
           : makeArray(result)))
         .flatMap(result => (extractValues && _.isPlainObject(result)
-          ? Object.values(result as Values)
+          ? Object.values(result as object)
           : makeArray(result))))
 
       return entries

@@ -154,8 +154,7 @@ type HasAllOf = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const allOfCompatible = (val: any): val is HasAllOf => (
-  val.allOf === undefined
-  || (Array.isArray(val.allOf) && allOfCompatible(val.allOf))
+  val.allOf === undefined || Array.isArray(val.allOf)
 )
 
 /**
@@ -205,31 +204,37 @@ export const extractProperties = (schemaDefObj: SchemaObject, refs: SwaggerRefs)
             ...flattenAllOfAdditionalProps(nested.properties ?? {}),
           ]
       )),
-    ].map(p => {
-      if (p === undefined || p === true) {
-        return {}
-      }
-      if (p === false) {
-        return undefined
-      }
-      return _.omit(p, 'description')
-    }).filter(isDefined)
+    ].filter(p => p !== false)
+      .map(p => {
+        if (p === undefined || _.isBoolean(p)) {
+          return {}
+        }
+        return p
+      }).filter(isDefined)
   )
 
   if (isArraySchemaObject(schemaDefObj)) {
+    // this is a top-level array object - create a nested `items` field and disallow
+    // additional properties
     return {
       allProperties: { [ARRAY_ITEMS_FIELD]: schemaDefObj },
       additionalProperties: undefined,
     }
   }
 
+  const hasNonEmptyDefinition = (s: SchemaObject): boolean => (
+    s.properties !== undefined
+    || !_.isEmpty(s.type)
+    || !_.isEmpty(s.allOf)
+  )
+
   const allAdditionalProperties = flattenAllOfAdditionalProps(schemaDefObj)
-  if (allAdditionalProperties.filter(p => !_.isEmpty(p)).length > 1) {
+  if (allAdditionalProperties.filter(p => hasNonEmptyDefinition(p)).length > 1) {
     log.debug('too many additionalProperties found in allOf - using first non-empty')
   }
   const additionalProperties = (
     allAdditionalProperties.find(isReferenceObject)
-    ?? allAdditionalProperties.find(p => Object.keys(p).length > 0)
+    ?? allAdditionalProperties.find(hasNonEmptyDefinition)
     ?? allAdditionalProperties[0]
   )
 

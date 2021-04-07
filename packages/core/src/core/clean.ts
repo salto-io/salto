@@ -15,9 +15,11 @@
 */
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { promises } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { Workspace, WorkspaceComponents } from '@salto-io/workspace'
 import { getDefaultAdapterConfig } from './adapters'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -26,16 +28,16 @@ export const cleanWorkspace = async (
   cleanArgs: WorkspaceComponents,
 ): Promise<void> => {
   await workspace.clear(_.omit(cleanArgs, 'serviceConfig'))
-  if (cleanArgs.serviceConfig) {
-    await promises.array.series(workspace.services().map(service => (async () => {
+  if (cleanArgs.serviceConfig === true) {
+    await awu(workspace.services()).forEach(async service => {
       const defaultConfig = await getDefaultAdapterConfig(service)
       if (defaultConfig === undefined) {
         // some services, like hubspot, don't have configs to restore
         log.info('Cannot restore config for service %s', service)
-        return undefined
+        return
       }
-      return workspace.updateServiceConfig(service, defaultConfig)
-    })))
+      await workspace.updateServiceConfig(service, defaultConfig)
+    })
   }
   await workspace.flush()
 }

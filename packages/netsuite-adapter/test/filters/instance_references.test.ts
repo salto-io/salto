@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import {
+  CORE_ANNOTATIONS,
   ElemID, InstanceElement, ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/instance_references'
@@ -85,6 +86,7 @@ describe('instance_references filter', () => {
         {
           refToFilePath: '[/Templates/file.name]',
           refToScriptId: '[scriptid=top_level]',
+          [CORE_ANNOTATIONS.PARENT]: '[/Templates/file.name]',
         }
       )
     })
@@ -122,6 +124,17 @@ describe('instance_references filter', () => {
         .toEqual(new ReferenceExpression(fileInstance.elemID.createNestedID(PATH)))
       expect(instanceWithRefs.annotations.refToScriptId)
         .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID)))
+    })
+
+    it('parent should reference the element itself', async () => {
+      await filterCreator().onFetch({
+        elements: [fileInstance, workflowInstance, instanceWithRefs],
+        elementsSourceIndex,
+        isPartial: false,
+      })
+
+      expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.PARENT])
+        .toEqual(new ReferenceExpression(fileInstance.elemID))
     })
 
     it('should replace scriptid with 1 nesting level references', async () => {

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, ChangeGroup, DeployResult, getChangeElement, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { AccountId, Change, ChangeGroup, DeployResult, getChangeElement, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -116,9 +116,7 @@ export default class NetsuiteClient {
   @NetsuiteClient.logDecorator
   async deploy(changeGroup: ChangeGroup, deployReferencedElements: boolean):
     Promise<DeployResult> {
-    const instancesChanges = changeGroup.changes.filter((change):
-      change is Change<InstanceElement> =>
-      isInstanceElement(getChangeElement(change)))
+    const instancesChanges = changeGroup.changes.filter(isInstanceChange)
 
     if (SDF_CHANGE_GROUP_ID === changeGroup.groupID) {
       return this.sdfDeploy(instancesChanges, deployReferencedElements)

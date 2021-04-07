@@ -275,9 +275,9 @@ const convertToFileCabinetDetails = (
       path: instance.value.path,
       folder: pathToId[dirname],
       bundleable: instance.value.bundleable ?? false,
-      isInactive: instance.value.isInactive ?? false,
-      isOnline: instance.value.isOnline ?? false,
-      hideInBundle: instance.value.hideInBundle ?? false,
+      isInactive: instance.value.isinactive ?? false,
+      isOnline: instance.value.availablewithoutlogin ?? false,
+      hideInBundle: instance.value.hideinbundle ?? false,
       content: getContent(instance.value.content),
       description: instance.value.description ?? '',
     }
@@ -286,9 +286,8 @@ const convertToFileCabinetDetails = (
       path: instance.value.path,
       parent: dirname !== '/' ? pathToId[dirname] : undefined,
       bundleable: instance.value.bundleable ?? false,
-      isInactive: instance.value.isInactive ?? false,
-      isOnline: instance.value.isOnline ?? false,
-      hideInBundle: instance.value.hideInBundle ?? false,
+      isInactive: instance.value.isinactive ?? false,
+      isPrivate: instance.value.isprivate ?? false,
       description: instance.value.description ?? '',
     }
 }
@@ -429,7 +428,7 @@ export const isChangeDeployable = (
   // SuiteApp can't modify files bigger than 10mb
   if (isAdditionOrModificationChange(change)
     && isFileInstance(changedElement)
-    && getContent(changedElement.value.content).length > MAX_DEPLOYABLE_FILE_SIZE) {
+    && getContent(changedElement.value.content).toString('base64').length > MAX_DEPLOYABLE_FILE_SIZE) {
     return false
   }
 

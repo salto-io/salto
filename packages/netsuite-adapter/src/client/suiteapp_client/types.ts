@@ -203,8 +203,7 @@ export type FolderDetails = {
   parent?: number
   bundleable: boolean
   isInactive: boolean
-  isOnline: boolean
-  hideInBundle: boolean
+  isPrivate: boolean
   description: string
 }
 

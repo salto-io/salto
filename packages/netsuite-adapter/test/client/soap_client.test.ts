@@ -87,8 +87,7 @@ describe('soap_client', () => {
           id: 62330,
           bundleable: true,
           isInactive: false,
-          isOnline: false,
-          hideInBundle: true,
+          isPrivate: false,
           description: 'desc',
         },
       ])).toEqual([
@@ -120,8 +119,7 @@ describe('soap_client', () => {
           id: 62330,
           bundleable: true,
           isInactive: false,
-          isOnline: false,
-          hideInBundle: true,
+          isPrivate: false,
           description: 'desc',
         },
       ])).rejects.toThrow('Failed to updateList: error code: SOME_ERROR, error message: SOME_ERROR')
@@ -150,8 +148,7 @@ describe('soap_client', () => {
           id: 62330,
           bundleable: true,
           isInactive: false,
-          isOnline: false,
-          hideInBundle: true,
+          isPrivate: false,
           description: 'desc',
         },
       ])).rejects.toThrow('Got invalid response from updateList request. Errors:')
@@ -181,8 +178,7 @@ describe('soap_client', () => {
           parent: -600,
           bundleable: true,
           isInactive: false,
-          isOnline: false,
-          hideInBundle: true,
+          isPrivate: false,
           description: 'desc',
         },
       ])).toEqual([
@@ -213,8 +209,7 @@ describe('soap_client', () => {
           parent: -600,
           bundleable: true,
           isInactive: false,
-          isOnline: false,
-          hideInBundle: true,
+          isPrivate: false,
           description: 'desc',
         },
       ])).rejects.toThrow('Failed to addList: error code: SOME_ERROR, error message: SOME_ERROR')
@@ -242,8 +237,7 @@ describe('soap_client', () => {
           parent: -600,
           bundleable: true,
           isInactive: false,
-          isOnline: false,
-          hideInBundle: true,
+          isPrivate: false,
           description: 'desc',
         },
       ])).rejects.toThrow('Got invalid response from addList request. Errors:')

@@ -152,11 +152,8 @@ export default class SoapClient {
       'q1:isInactive': {
         _text: folder.isInactive,
       },
-      'q1:isOnline': {
-        _text: folder.isOnline,
-      },
-      'q1:hideInBundle': {
-        _text: folder.hideInBundle,
+      'q1:isPrivate': {
+        _text: folder.isPrivate,
       },
       ...parentEntry,
     }

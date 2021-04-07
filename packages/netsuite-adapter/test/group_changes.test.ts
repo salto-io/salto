@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, Change, StaticFile } from '@salto-io/adapter-api'
-import { getChangeGroupIdsFunc, SDF_CHANGE_GROUP_ID } from '../src/group_changes'
+import { getChangeGroupIdsFunc, SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../src/group_changes'
 import { customTypes, fileCabinetTypes } from '../src/types'
 import { ENTITY_CUSTOM_FIELD, FILE, NETSUITE } from '../src/constants'
 
@@ -137,28 +137,28 @@ describe('Group Changes with Salto suiteApp', () => {
 
   it('should set correct group id for custom types instances', () => {
     expect(changeGroupIds.get(customFieldInstance.elemID.getFullName()))
-      .toEqual('Records')
+      .toEqual(SDF_CHANGE_GROUP_ID)
   })
 
   it('should set correct group id for new suiteApp file instances', () => {
     expect(changeGroupIds.get(suiteAppFileInstance1.elemID.getFullName()))
-      .toEqual('Salto SuiteApp - File Cabinet - Creating Files')
+      .toEqual(SUITEAPP_CREATING_FILES_GROUP_ID)
 
     expect(changeGroupIds.get(suiteAppFileInstance2.elemID.getFullName()))
-      .toEqual('Salto SuiteApp - File Cabinet - Creating Files')
+      .toEqual(SUITEAPP_CREATING_FILES_GROUP_ID)
   })
 
   it('should set correct group id for existing suiteApp file instances', () => {
     expect(changeGroupIds.get(suiteAppFileInstance3Before.elemID.getFullName()))
-      .toEqual('Salto SuiteApp - File Cabinet - Updating Files')
+      .toEqual(SUITEAPP_UPDATING_FILES_GROUP_ID)
   })
 
   it('should set correct group id for SDF file instances', () => {
     expect(changeGroupIds.get(sdfFileInstance1.elemID.getFullName()))
-      .toEqual('SDF - File Cabinet')
+      .toEqual(SDF_CHANGE_GROUP_ID)
 
     expect(changeGroupIds.get(sdfFileInstance2.elemID.getFullName()))
-      .toEqual('SDF - File Cabinet')
+      .toEqual(SDF_CHANGE_GROUP_ID)
   })
 
   it('should not set group id for non SDF types instances', () => {

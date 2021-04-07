@@ -15,7 +15,7 @@
 */
 import { Change, DeployResult, getChangeElement, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange, StaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { chunks, values } from '@salto-io/lowerdash'
+import { chunks, promises, values } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
 import _ from 'lodash'
 import path from 'path'
@@ -390,18 +390,15 @@ const deployAdditions = async (
     .sortBy(([depth]) => depth)
     .value()
 
-  const appliedChanges: Change[] = []
-  const errors: Error[] = []
-
-  for (const [depth, group] of changesGroups) {
-    log.debug(`Deploying ${group.length} new files with depth of ${depth}`)
-    // eslint-disable-next-line no-await-in-loop
-    const deployResult = await deployChanges(suiteAppClient, group, pathToId, 'add')
-    appliedChanges.push(...deployResult.appliedChanges)
-    errors.push(...deployResult.errors)
+  const deployResults = await promises.array.series(changesGroups
+    .map(([depth, group]) => () => {
+      log.debug(`Deploying ${group.length} new files with depth of ${depth}`)
+      return deployChanges(suiteAppClient, group, pathToId, 'add')
+    }))
+  return {
+    appliedChanges: deployResults.flatMap(deployResult => deployResult.appliedChanges),
+    errors: deployResults.flatMap(deployResult => deployResult.errors),
   }
-
-  return { appliedChanges, errors }
 }
 
 export const deploy = async (

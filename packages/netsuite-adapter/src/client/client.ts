@@ -27,7 +27,7 @@ import { SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { GetCustomObjectsResult, ImportFileCabinetResult } from './types'
 import { getAllReferencedInstances, getRequiredReferencedInstances } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
-import { SDF_GROUPS, SUITEAPP_CREATING_FILES_GROUP_ID } from '../group_changes'
+import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID } from '../group_changes'
 
 const log = logger(module)
 
@@ -122,7 +122,7 @@ export default class NetsuiteClient {
       change is Change<InstanceElement> =>
       isInstanceElement(getChangeElement(change)))
 
-    if (SDF_GROUPS.includes(changeGroup.groupID)) {
+    if (SDF_CHANGE_GROUP_ID === changeGroup.groupID) {
       return this.sdfDeploy(instancesChanges, deployReferencedElements)
     }
 

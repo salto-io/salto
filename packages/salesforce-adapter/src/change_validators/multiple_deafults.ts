@@ -86,7 +86,7 @@ const getInstancesMultipleDefaultsErrors = (after: InstanceElement): ChangeError
 }
 
 /**
- * It is forbidden to set more than 'default' field as 'true' for some types.
+ * It is forbidden to set more than one 'default' field as 'true' for some types.
  */
 const changeValidator: ChangeValidator = async changes => {
   const instanceChangesErrors = changes

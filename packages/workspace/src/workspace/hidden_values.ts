@@ -356,7 +356,9 @@ const isHiddenField = (
       || isHiddenField(baseType, fieldPath.slice(0, -1), hiddenValue)
 }
 
-const filterOutHiddenChanges = async (
+// Avoid using this function from out of this file. This filters out only the hidden changes but not
+// their side effects like done in handleHiddenChanges.
+export const filterOutHiddenChanges = async (
   changes: DetailedChange[],
   state: State
 ): Promise<DetailedChange[]> => {

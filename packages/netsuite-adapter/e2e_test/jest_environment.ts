@@ -22,13 +22,15 @@ import { Credentials } from '../src/client/credentials'
 
 const log = logger(module)
 
-export const credsSpec = (envName?: string): CredsSpec<Credentials> => {
+export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> => {
   const addEnvName = (varName: string): string => (envName === undefined
     ? varName
     : [varName, envName].join('_'))
   const accountIdEnvVarName = addEnvName('NS_ACCOUNT_ID')
   const tokenIdEnvVarName = addEnvName('NS_TOKEN_ID')
   const tokenSecretEnvVarName = addEnvName('NS_TOKEN_SECRET')
+  const suiteAppTokenIdEnvVarName = addEnvName('NS_SUITE_APP_TOKEN_ID')
+  const suiteAppTokenSecretEnvVarName = addEnvName('NS_SUITE_APP_TOKEN_SECRET')
   return {
     envHasCreds: env => accountIdEnvVarName in env,
     fromEnv: env => {
@@ -37,6 +39,8 @@ export const credsSpec = (envName?: string): CredsSpec<Credentials> => {
         accountId: envUtils.required(accountIdEnvVarName),
         tokenId: envUtils.required(tokenIdEnvVarName),
         tokenSecret: envUtils.required(tokenSecretEnvVarName),
+        suiteAppTokenId: envUtils.required(suiteAppTokenIdEnvVarName),
+        suiteAppTokenSecret: envUtils.required(suiteAppTokenSecretEnvVarName),
       }
     },
     validate: async (_credentials: Credentials): Promise<void> => {

@@ -22,27 +22,41 @@ import { Credentials } from '../src/client/credentials'
 import SdfClient from '../src/client/sdf_client'
 import NetsuiteAdapter, { NetsuiteAdapterParams } from '../src/adapter'
 import { NetsuiteConfig } from '../src/config'
-import { CLIENT_CONFIG } from '../src/constants'
+import { CLIENT_CONFIG, SUITEAPP_CLIENT_CONFIG } from '../src/constants'
 import { mockGetElemIdFunc } from '../test/utils'
 import { credsSpec } from './jest_environment'
 import NetsuiteClient from '../src/client/client'
+import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 
 
 const log = logger(module)
 
 type Opts = {
   adapterParams?: Partial<NetsuiteAdapterParams>
-  credentials: Credentials
+  credentials: Required<Credentials>
+  withSuiteApp: boolean
 }
 
-export const realAdapter = ({ adapterParams, credentials }: Opts, config?: NetsuiteConfig):
-  { client: NetsuiteClient; adapter: NetsuiteAdapter } => {
+export const realAdapter = (
+  { adapterParams, credentials, withSuiteApp }: Opts,
+  config?: NetsuiteConfig
+): { client: NetsuiteClient; adapter: NetsuiteAdapter } => {
+  const netsuiteCredentials = {
+    ...credentials,
+    accountId: credentials.accountId.toUpperCase().replace('-', '_'),
+  }
+  const globalLimiter = new Bottleneck({ maxConcurrent: 4 })
   const client = (adapterParams && adapterParams.client)
     || new NetsuiteClient(new SdfClient({
-      credentials,
+      credentials: netsuiteCredentials,
       config: config?.[CLIENT_CONFIG],
-      globalLimiter: new Bottleneck(),
-    }))
+      globalLimiter,
+    }),
+    withSuiteApp ? new SuiteAppClient({
+      credentials: netsuiteCredentials,
+      config: config?.[SUITEAPP_CLIENT_CONFIG],
+      globalLimiter,
+    }) : undefined)
   const adapter = new NetsuiteAdapter({
     client,
     elementsSource: buildElementsSourceFromElements([]),
@@ -52,4 +66,4 @@ export const realAdapter = ({ adapterParams, credentials }: Opts, config?: Netsu
   return { client, adapter }
 }
 
-export const credsLease = (): Promise<CredsLease<Credentials>> => creds(credsSpec(), log)
+export const credsLease = (): Promise<CredsLease<Required<Credentials>>> => creds(credsSpec(), log)

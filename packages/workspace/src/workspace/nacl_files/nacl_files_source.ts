@@ -103,7 +103,7 @@ const cacheResultKey = (naclFile: { filename: string; timestamp?: number; buffer
 
 const getRemoteMapNamespace = (
   namespace: string, name: string, cachePrefix?: string
-): string => `naclFileSource-${name}-${namespace}-${cachePrefix}`
+): string => `naclFileSource-${name}-${namespace}${cachePrefix ? `-${cachePrefix}` : ''}`
 
 
 const getElementReferenced = async (element: Element): Promise<Set<string>> => {

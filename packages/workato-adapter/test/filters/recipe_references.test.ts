@@ -15,9 +15,10 @@
 */
 import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, ListType, CORE_ANNOTATIONS, isReferenceExpression } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/cross_service/recipe_references'
 import WorkatoClient from '../../src/client/client'
+import { paginate } from '../../src/client/pagination'
 import { DEFAULT_TYPES, DEFAULT_ID_FIELDS } from '../../src/config'
 import { WORKATO } from '../../src/constants'
 
@@ -34,6 +35,10 @@ describe('Recipe references filter', () => {
     })
     filter = filterCreator({
       client,
+      paginator: clientUtils.createPaginator({
+        client,
+        paginationFunc: paginate,
+      }),
       config: {
         fetch: {
           includeTypes: ['connection', 'recipe'],
@@ -725,6 +730,10 @@ describe('Recipe references filter', () => {
 
       const otherFilter = filterCreator({
         client,
+        paginator: clientUtils.createPaginator({
+          client,
+          paginationFunc: paginate,
+        }),
         config: {
           fetch: {
             includeTypes: ['connection', 'recipe'],
@@ -757,6 +766,10 @@ describe('Recipe references filter', () => {
 
       const otherFilter = filterCreator({
         client,
+        paginator: clientUtils.createPaginator({
+          client,
+          paginationFunc: paginate,
+        }),
         config: {
           fetch: {
             includeTypes: ['connection', 'recipe'],

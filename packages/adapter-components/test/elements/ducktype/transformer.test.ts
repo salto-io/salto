@@ -21,21 +21,20 @@ import { returnFullEntry, findDataField } from '../../../src/elements/field_find
 import * as typeElements from '../../../src/elements/ducktype/type_elements'
 import * as instanceElements from '../../../src/elements/ducktype/instance_elements'
 import * as transformer from '../../../src/elements/ducktype/transformer'
-import { HTTPClientInterface } from '../../../src/client'
+import { Paginator } from '../../../src/client'
 import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/config'
 import { simpleGetArgs } from '../../../src/elements/request_parameters'
+import { mockFunction } from '../../common'
 
 describe('ducktype_transformer', () => {
   describe('getTypeAndInstances', () => {
-    let mockClient: HTTPClientInterface
+    let mockPaginator: Paginator
 
     beforeEach(() => {
-      mockClient = {
-        get: jest.fn().mockImplementationOnce(async function *get() {
-          yield [{ name: 'bla1' }]
-          yield [{ missing: 'something' }]
-        }),
-      }
+      mockPaginator = mockFunction<Paginator>().mockImplementationOnce(async function *get() {
+        yield [{ name: 'bla1' }]
+        yield [{ missing: 'something' }]
+      })
       jest.spyOn(typeElements, 'generateType').mockImplementation(({ adapterName, name }) => {
         const someNested = new ObjectType({ elemID: new ElemID(adapterName, `${name}__some_nested`) })
         const anotherNested = new ObjectType({ elemID: new ElemID(adapterName, `${name}__another_nested`) })
@@ -69,7 +68,7 @@ describe('ducktype_transformer', () => {
     it('should return the type, nested types and instances', async () => {
       const res = await getTypeAndInstances({
         adapterName: 'something',
-        client: mockClient,
+        paginator: mockPaginator,
         computeGetArgs: simpleGetArgs,
         typeName: 'myType',
         typesConfig: {
@@ -95,8 +94,8 @@ describe('ducktype_transformer', () => {
         'something.myType.instance.bla1',
         'something.myType.instance.bla',
       ])
-      expect(mockClient.get).toHaveBeenCalledTimes(1)
-      expect(mockClient.get).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(mockPaginator).toHaveBeenCalledTimes(1)
+      expect(mockPaginator).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
       expect(typeElements.generateType).toHaveBeenCalledTimes(1)
       expect(typeElements.generateType).toHaveBeenCalledWith({
         adapterName: 'something',
@@ -130,7 +129,7 @@ describe('ducktype_transformer', () => {
     it('should omit fieldsToOmit from instances but not from type', async () => {
       const res = await getTypeAndInstances({
         adapterName: 'something',
-        client: mockClient,
+        paginator: mockPaginator,
         computeGetArgs: simpleGetArgs,
         typeName: 'myType',
         typesConfig: {
@@ -159,8 +158,8 @@ describe('ducktype_transformer', () => {
         'something.myType.instance.bla1',
         'something.myType.instance.bla',
       ])
-      expect(mockClient.get).toHaveBeenCalledTimes(1)
-      expect(mockClient.get).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(mockPaginator).toHaveBeenCalledTimes(1)
+      expect(mockPaginator).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
       expect(typeElements.generateType).toHaveBeenCalledTimes(1)
       expect(typeElements.generateType).toHaveBeenCalledWith({
         adapterName: 'something',
@@ -200,16 +199,14 @@ describe('ducktype_transformer', () => {
     })
 
     it('should return nested instances when nestedFieldFinder returns a specific field\'s details', async () => {
-      mockClient = {
-        get: jest.fn().mockImplementation(async function *get() {
-          yield [{ someNested: { name: 'bla1' } }]
-          yield [{ someNested: [{ missing: 'something' }] }]
-        }),
-      }
+      mockPaginator = mockFunction<Paginator>().mockImplementation(async function *get() {
+        yield [{ someNested: { name: 'bla1' } }]
+        yield [{ someNested: [{ missing: 'something' }] }]
+      })
 
       const res = await getTypeAndInstances({
         adapterName: 'something',
-        client: mockClient,
+        paginator: mockPaginator,
         computeGetArgs: simpleGetArgs,
         typeName: 'myType',
         typesConfig: {
@@ -235,8 +232,8 @@ describe('ducktype_transformer', () => {
         'something.myType__some_nested.instance.bla1',
         'something.myType__some_nested.instance.bla',
       ])
-      expect(mockClient.get).toHaveBeenCalledTimes(1)
-      expect(mockClient.get).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(mockPaginator).toHaveBeenCalledTimes(1)
+      expect(mockPaginator).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
       expect(typeElements.generateType).toHaveBeenCalledTimes(1)
       expect(typeElements.generateType).toHaveBeenCalledWith({
         adapterName: 'something',
@@ -268,15 +265,13 @@ describe('ducktype_transformer', () => {
     })
 
     it('should fail if type is missing from config', async () => {
-      mockClient = {
-        get: jest.fn().mockImplementation(async function *get() {
-          yield [{ someNested: { name: 'bla1' } }]
-          yield [{ someNested: [{ missing: 'something' }] }]
-        }),
-      }
+      mockPaginator = mockFunction<Paginator>().mockImplementation(async function *get() {
+        yield [{ someNested: { name: 'bla1' } }]
+        yield [{ someNested: [{ missing: 'something' }] }]
+      })
       await expect(() => getTypeAndInstances({
         adapterName: 'something',
-        client: mockClient,
+        paginator: mockPaginator,
         computeGetArgs: simpleGetArgs,
         typeName: 'myType',
         typesConfig: {
@@ -292,15 +287,13 @@ describe('ducktype_transformer', () => {
       })).rejects.toThrow(new Error('Invalid type config - type something.myType has no request config'))
     })
     it('should fail if type does not have request details', async () => {
-      mockClient = {
-        get: jest.fn().mockImplementation(async function *get() {
-          yield [{ someNested: { name: 'bla1' } }]
-          yield [{ someNested: [{ missing: 'something' }] }]
-        }),
-      }
+      mockPaginator = mockFunction<Paginator>().mockImplementation(async function *get() {
+        yield [{ someNested: { name: 'bla1' } }]
+        yield [{ someNested: [{ missing: 'something' }] }]
+      })
       await expect(() => getTypeAndInstances({
         adapterName: 'something',
-        client: mockClient,
+        paginator: mockPaginator,
         computeGetArgs: simpleGetArgs,
         typeName: 'missing',
         typesConfig: {
@@ -322,12 +315,12 @@ describe('ducktype_transformer', () => {
   })
 
   describe('getAllElements', () => {
-    const mockClient: HTTPClientInterface = {
-      get: jest.fn().mockImplementation(async function *get() {
+    const mockPaginator: Paginator = mockFunction<Paginator>().mockImplementation(
+      async function *get() {
         yield [{ name: 'bla1' }]
         yield [{ missing: 'something' }]
-      }),
-    }
+      }
+    )
 
     const typesConfig: Record<string, TypeDuckTypeConfig> = {
       folder: {
@@ -394,7 +387,7 @@ describe('ducktype_transformer', () => {
     it('should return the type, nested types and instances', async () => {
       const res = await getAllElements({
         adapterName: 'something',
-        client: mockClient,
+        paginator: mockPaginator,
         includeTypes: ['folder', 'file', 'permission'],
         computeGetArgs: simpleGetArgs,
         nestedFieldFinder: returnFullEntry,
@@ -414,7 +407,7 @@ describe('ducktype_transformer', () => {
       expect(transformer.getTypeAndInstances).toHaveBeenCalledWith({
         adapterName: 'something',
         typeName: 'folder',
-        client: mockClient,
+        paginator: mockPaginator,
         nestedFieldFinder: returnFullEntry,
         computeGetArgs: simpleGetArgs,
         typesConfig,
@@ -423,7 +416,7 @@ describe('ducktype_transformer', () => {
       expect(transformer.getTypeAndInstances).toHaveBeenCalledWith({
         adapterName: 'something',
         typeName: 'file',
-        client: mockClient,
+        paginator: mockPaginator,
         nestedFieldFinder: returnFullEntry,
         computeGetArgs: simpleGetArgs,
         typesConfig,
@@ -436,7 +429,7 @@ describe('ducktype_transformer', () => {
       expect(transformer.getTypeAndInstances).toHaveBeenCalledWith({
         adapterName: 'something',
         typeName: 'permission',
-        client: mockClient,
+        paginator: mockPaginator,
         nestedFieldFinder: returnFullEntry,
         computeGetArgs: simpleGetArgs,
         typesConfig,

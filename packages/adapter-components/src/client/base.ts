@@ -23,7 +23,7 @@ export abstract class AdapterClientBase<TRateLimitConfig extends ClientRateLimit
   protected isLoggedIn = false
   protected readonly config?: ClientBaseConfig<TRateLimitConfig>
   protected readonly rateLimiters: BottleneckBuckets<TRateLimitConfig>
-  protected getPageSize: number
+  protected getPageSizeInner: number
   protected apiClient?: APIConnection
   protected loginPromise?: Promise<APIConnection>
 
@@ -42,9 +42,13 @@ export abstract class AdapterClientBase<TRateLimitConfig extends ClientRateLimit
       _.defaults({}, config?.rateLimit, defaults.rateLimit),
       this.clientName,
     )
-    this.getPageSize = (
+    this.getPageSizeInner = (
       this.config?.pageSize?.get
       ?? defaults.pageSize.get
     )
+  }
+
+  getPageSize(): number {
+    return this.getPageSizeInner
   }
 }

@@ -16,7 +16,7 @@
 import { collections } from '@salto-io/lowerdash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { getMinSinceIdPagination } from '../../src/client/pagination'
-import { MockFunction } from '../utils'
+import { MockFunction, mockFunction } from '../utils'
 
 const { toArrayAsync } = collections.asynciterable
 
@@ -28,13 +28,16 @@ type MockInterface<T extends {}> = {
 
 describe('client_pagination', () => {
   describe('getMinSinceIdPagination', () => {
-    const conn: MockInterface<clientUtils.APIConnection> = { get: jest.fn() }
+    const client: MockInterface<clientUtils.HTTPClientInterface> = {
+      getSinglePage: mockFunction<clientUtils.HTTPClientInterface['getSinglePage']>(),
+      getPageSize: mockFunction<clientUtils.HTTPClientInterface['getPageSize']>(),
+    }
     beforeEach(() => {
-      conn.get.mockReset()
+      client.getSinglePage.mockReset()
     })
 
     it('should query a single page if paginationField is not specified', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
         },
@@ -42,19 +45,19 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       const result = (await toArrayAsync(await getMinSinceIdPagination({
-        conn,
+        client,
         pageSize: 123,
         getParams: {
           url: '/ep',
         },
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
-      expect(conn.get).toHaveBeenCalledTimes(1)
-      expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
+      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
     })
 
     it('should use query args', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
         },
@@ -62,7 +65,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       const result = (await toArrayAsync(await getMinSinceIdPagination({
-        conn,
+        client,
         pageSize: 123,
         getParams: {
           url: '/ep',
@@ -73,12 +76,12 @@ describe('client_pagination', () => {
         },
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
-      expect(conn.get).toHaveBeenCalledTimes(1)
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { arg1: 'val1', arg2: 'val2' } })
+      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1', arg2: 'val2' } })
     })
 
     it('should use recursive query args', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [
             { a: 'a1', id: 123 },
@@ -112,7 +115,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       const result = (await toArrayAsync(await getMinSinceIdPagination({
-        conn,
+        client,
         pageSize: 5,
         getParams: {
           url: '/ep',
@@ -127,21 +130,21 @@ describe('client_pagination', () => {
         { a: 'a1', id: 789 },
         { a: 'a4', id: 789 },
       ])
-      expect(conn.get).toHaveBeenCalledTimes(4)
-      expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { parentId: 123 } })
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { parentId: 456 } })
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { parentId: 789 } })
+      expect(client.getSinglePage).toHaveBeenCalledTimes(4)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 123 } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 456 } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 789 } })
     })
 
     it('should query a single page if data is empty', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: [],
         status: 200,
         statusText: 'OK',
       }))
       const result = (await toArrayAsync(getMinSinceIdPagination({
-        conn,
+        client,
         pageSize: 123,
         getParams: {
           url: '/ep',
@@ -149,12 +152,12 @@ describe('client_pagination', () => {
         },
       }))).flat()
       expect(result).toEqual([])
-      expect(conn.get).toHaveBeenCalledTimes(1)
-      expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
+      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
     })
 
     it('should query multiple pages if response has items', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{
             a: 'a1',
@@ -190,7 +193,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       const result = (await toArrayAsync(await getMinSinceIdPagination({
-        conn,
+        client,
         pageSize: 1,
         getParams: {
           url: '/ep',
@@ -198,18 +201,18 @@ describe('client_pagination', () => {
         },
       }))).flat()
       expect(result).toEqual([{ a: 'a1', id: 150 }, { a: 'a2', b: 'b2', id: 140 }, { a: 'a3', id: 130 }])
-      expect(conn.get).toHaveBeenCalledTimes(4)
-      expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
+      expect(client.getSinglePage).toHaveBeenCalledTimes(4)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
       // eslint-disable-next-line @typescript-eslint/camelcase
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { since_id: '150' } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '150' } })
       // eslint-disable-next-line @typescript-eslint/camelcase
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { since_id: '140' } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '140' } })
       // eslint-disable-next-line @typescript-eslint/camelcase
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { since_id: '130' } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '130' } })
     })
 
     it('should fail gracefully on HTTP errors', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{
             a: 'a1',
@@ -224,7 +227,7 @@ describe('client_pagination', () => {
         statusText: 'Not Found',
       }))
       const result = (await toArrayAsync(await getMinSinceIdPagination({
-        conn,
+        client,
         pageSize: 1,
         getParams: {
           url: '/ep',
@@ -235,14 +238,14 @@ describe('client_pagination', () => {
         },
       }))).flat()
       expect(result).toEqual([{ a: 'a1', id: 150 }])
-      expect(conn.get).toHaveBeenCalledTimes(2)
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { arg1: 'val1' } })
+      expect(client.getSinglePage).toHaveBeenCalledTimes(2)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
       // eslint-disable-next-line @typescript-eslint/camelcase
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { since_id: '150', arg1: 'val1' } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '150', arg1: 'val1' } })
     })
 
     it('should stop pagination if min id does not decrease', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{
             a: 'a1',
@@ -278,7 +281,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       const result = (await toArrayAsync(await getMinSinceIdPagination({
-        conn,
+        client,
         pageSize: 1,
         getParams: {
           url: '/ep',
@@ -286,15 +289,15 @@ describe('client_pagination', () => {
         },
       }))).flat()
       expect(result).toEqual([{ a: 'a1', id: 150 }, { a: 'a2', b: 'b2', id: 140 }, { a: 'a3', id: 140 }])
-      expect(conn.get).toHaveBeenCalledTimes(3)
-      expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
+      expect(client.getSinglePage).toHaveBeenCalledTimes(3)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
       // eslint-disable-next-line @typescript-eslint/camelcase
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { since_id: '150' } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '150' } })
       // eslint-disable-next-line @typescript-eslint/camelcase
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { since_id: '140' } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '140' } })
     })
     it('should stop pagination if non-numerical id values are found', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{
             a: 'a1',
@@ -315,7 +318,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       const result = (await toArrayAsync(await getMinSinceIdPagination({
-        conn,
+        client,
         pageSize: 1,
         getParams: {
           url: '/ep',
@@ -323,10 +326,10 @@ describe('client_pagination', () => {
         },
       }))).flat()
       expect(result).toEqual([{ a: 'a1', id: 150 }, { a: 'a2', b: 'b2', id: '140' }])
-      expect(conn.get).toHaveBeenCalledTimes(2)
-      expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
+      expect(client.getSinglePage).toHaveBeenCalledTimes(2)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
       // eslint-disable-next-line @typescript-eslint/camelcase
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { since_id: '150' } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '150' } })
     })
   })
 })

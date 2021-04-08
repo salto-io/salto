@@ -18,7 +18,7 @@ import { Element, Values } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { HTTPClientInterface } from '../../client'
+import { Paginator } from '../../client'
 import { generateType } from './type_elements'
 import { toInstance } from './instance_elements'
 import { TypeConfig } from '../../config'
@@ -39,7 +39,7 @@ const log = logger(module)
 export const getTypeAndInstances = async ({
   adapterName,
   typeName,
-  client,
+  paginator,
   nestedFieldFinder,
   computeGetArgs,
   typesConfig,
@@ -48,7 +48,7 @@ export const getTypeAndInstances = async ({
 }: {
   adapterName: string
   typeName: string
-  client: HTTPClientInterface
+  paginator: Paginator
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
   typesConfig: Record<string, TypeDuckTypeConfig>
@@ -81,7 +81,7 @@ export const getTypeAndInstances = async ({
   const getEntries = async (): Promise<Values[]> => {
     const getArgs = computeGetArgs(requestWithDefaults, contextElements)
     return (await Promise.all(
-      getArgs.map(async args => (await toArrayAsync(await client.get(args))).flat())
+      getArgs.map(async args => (await toArrayAsync(await paginator(args))).flat())
     )).flat()
   }
 
@@ -140,7 +140,7 @@ export const getAllElements = async ({
   adapterName,
   includeTypes,
   types,
-  client,
+  paginator,
   nestedFieldFinder,
   computeGetArgs,
   typeDefaults,
@@ -148,7 +148,7 @@ export const getAllElements = async ({
   adapterName: string
   includeTypes: string[]
   types: Record<string, TypeConfig>
-  client: HTTPClientInterface
+  paginator: Paginator
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
   typeDefaults: TypeDuckTypeDefaultsConfig
@@ -159,7 +159,7 @@ export const getAllElements = async ({
 
   const elementGenerationParams = {
     adapterName,
-    client,
+    paginator,
     nestedFieldFinder,
     computeGetArgs,
     typesConfig: types,

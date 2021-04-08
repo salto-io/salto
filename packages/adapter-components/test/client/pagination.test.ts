@@ -14,20 +14,23 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { APIConnection, getWithCursorPagination, getWithPageOffsetPagination } from '../../src/client'
-import { MockInterface } from '../common'
+import { getWithCursorPagination, getWithPageOffsetPagination, HTTPClientInterface, createPaginator, GetAllItemsFunc } from '../../src/client'
+import { MockInterface, mockFunction } from '../common'
 
 const { toArrayAsync } = collections.asynciterable
 
 describe('client_pagination', () => {
   describe('getWithPageOffsetPagination', () => {
-    const conn: MockInterface<APIConnection> = { get: jest.fn() }
+    const client: MockInterface<HTTPClientInterface> = {
+      getSinglePage: mockFunction<HTTPClientInterface['getSinglePage']>(),
+      getPageSize: mockFunction<HTTPClientInterface['getPageSize']>(),
+    }
     beforeEach(() => {
-      conn.get.mockReset()
+      client.getSinglePage.mockReset()
     })
 
     it('should query a single page if paginationField is not specified', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
         },
@@ -35,19 +38,19 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       const result = (await toArrayAsync(await getWithPageOffsetPagination({
-        conn,
+        client,
         pageSize: 123,
         getParams: {
           url: '/ep',
         },
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
-      expect(conn.get).toHaveBeenCalledTimes(1)
-      expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
+      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
     })
 
     it('should use query args', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
         },
@@ -55,7 +58,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       const result = (await toArrayAsync(await getWithPageOffsetPagination({
-        conn,
+        client,
         pageSize: 123,
         getParams: {
           url: '/ep',
@@ -66,12 +69,12 @@ describe('client_pagination', () => {
         },
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
-      expect(conn.get).toHaveBeenCalledTimes(1)
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { arg1: 'val1', arg2: 'val2' } })
+      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1', arg2: 'val2' } })
     })
 
     it('should use recursive query args', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [
             { a: 'a1', id: 123 },
@@ -105,7 +108,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       const result = (await toArrayAsync(await getWithPageOffsetPagination({
-        conn,
+        client,
         pageSize: 5,
         getParams: {
           url: '/ep',
@@ -120,15 +123,15 @@ describe('client_pagination', () => {
         { a: 'a1', id: 789 },
         { a: 'a4', id: 789 },
       ])
-      expect(conn.get).toHaveBeenCalledTimes(4)
-      expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { parentId: 123 } })
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { parentId: 456 } })
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { parentId: 789 } })
+      expect(client.getSinglePage).toHaveBeenCalledTimes(4)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 123 } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 456 } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 789 } })
     })
 
     it('should query a single page if data has less items than page size', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
         },
@@ -136,7 +139,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       const result = (await toArrayAsync(await getWithPageOffsetPagination({
-        conn,
+        client,
         pageSize: 123,
         getParams: {
           url: '/ep',
@@ -144,12 +147,12 @@ describe('client_pagination', () => {
         },
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
-      expect(conn.get).toHaveBeenCalledTimes(1)
-      expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
+      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
     })
 
     it('should query multiple pages if response has more items than page size (or equal)', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{
             a: 'a1',
@@ -184,7 +187,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       const result = (await toArrayAsync(await getWithPageOffsetPagination({
-        conn,
+        client,
         pageSize: 1,
         getParams: {
           url: '/ep',
@@ -192,15 +195,15 @@ describe('client_pagination', () => {
         },
       }))).flat()
       expect(result).toEqual([{ a: 'a1' }, { a: 'a2', b: 'b2' }, { a: 'a3' }])
-      expect(conn.get).toHaveBeenCalledTimes(4)
-      expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { page: 2 } })
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { page: 3 } })
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { page: 4 } })
+      expect(client.getSinglePage).toHaveBeenCalledTimes(4)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: 2 } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: 3 } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: 4 } })
     })
 
     it('should fail gracefully on HTTP errors', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{
             a: 'a1',
@@ -214,7 +217,7 @@ describe('client_pagination', () => {
         statusText: 'Not Found',
       }))
       const result = (await toArrayAsync(await getWithPageOffsetPagination({
-        conn,
+        client,
         pageSize: 1,
         getParams: {
           url: '/ep',
@@ -225,20 +228,23 @@ describe('client_pagination', () => {
         },
       }))).flat()
       expect(result).toEqual([{ a: 'a1' }])
-      expect(conn.get).toHaveBeenCalledTimes(2)
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { arg1: 'val1' } })
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { page: 2, arg1: 'val1' } })
+      expect(client.getSinglePage).toHaveBeenCalledTimes(2)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: 2, arg1: 'val1' } })
     })
   })
 
   describe('getWithCursorPagination', () => {
-    const conn: MockInterface<APIConnection> = { get: jest.fn() }
+    const client: MockInterface<HTTPClientInterface> = {
+      getSinglePage: mockFunction<HTTPClientInterface['getSinglePage']>(),
+      getPageSize: mockFunction<HTTPClientInterface['getPageSize']>(),
+    }
     beforeEach(() => {
-      conn.get.mockReset()
+      client.getSinglePage.mockReset()
     })
 
     it('should query a single page if paginationField is not specified', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           products: ['a', 'b'],
         },
@@ -246,19 +252,19 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       const result = (await toArrayAsync(await getWithCursorPagination({
-        conn,
+        client,
         pageSize: 123,
         getParams: {
           url: '/ep',
         },
       }))).flat()
       expect(result).toEqual([{ products: ['a', 'b'] }])
-      expect(conn.get).toHaveBeenCalledTimes(1)
-      expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
+      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
     })
 
     it('should use query args', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
         },
@@ -266,7 +272,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       const result = (await toArrayAsync(await getWithCursorPagination({
-        conn,
+        client,
         pageSize: 123,
         getParams: {
           url: '/ep',
@@ -278,12 +284,12 @@ describe('client_pagination', () => {
         },
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
-      expect(conn.get).toHaveBeenCalledTimes(1)
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { arg1: 'val1', arg2: 'val2' } })
+      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1', arg2: 'val2' } })
     })
 
     it('should query multiple pages if paginationField is found in response', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           products: ['a', 'b'],
           nextPage: '/ep?page=p1',
@@ -298,7 +304,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       const result = (await toArrayAsync(await getWithCursorPagination({
-        conn,
+        client,
         pageSize: 123,
         getParams: {
           url: '/ep',
@@ -306,13 +312,13 @@ describe('client_pagination', () => {
         },
       }))).flat()
       expect(result).toEqual([{ products: ['a', 'b'], nextPage: '/ep?page=p1' }, { products: ['c', 'd'] }])
-      expect(conn.get).toHaveBeenCalledTimes(2)
-      expect(conn.get).toHaveBeenCalledWith('/ep', undefined)
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { page: 'p1' } })
+      expect(client.getSinglePage).toHaveBeenCalledTimes(2)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: 'p1' } })
     })
 
     it('should fail gracefully on HTTP errors', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           products: ['a', 'b'],
           nextPage: '/ep?page=p1',
@@ -325,7 +331,7 @@ describe('client_pagination', () => {
         statusText: 'Not Found',
       }))
       const result = (await toArrayAsync(await getWithCursorPagination({
-        conn,
+        client,
         pageSize: 1,
         getParams: {
           url: '/ep',
@@ -336,13 +342,13 @@ describe('client_pagination', () => {
         },
       }))).flat()
       expect(result).toEqual([{ products: ['a', 'b'], nextPage: '/ep?page=p1' }])
-      expect(conn.get).toHaveBeenCalledTimes(2)
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { arg1: 'val1' } })
-      expect(conn.get).toHaveBeenCalledWith('/ep', { params: { page: 'p1', arg1: 'val1' } })
+      expect(client.getSinglePage).toHaveBeenCalledTimes(2)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: 'p1', arg1: 'val1' } })
     })
 
     it('should throw on wrong url', async () => {
-      conn.get.mockResolvedValueOnce(Promise.resolve({
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           products: ['a', 'b'],
           nextPage: '/another_ep?page=p1',
@@ -355,7 +361,7 @@ describe('client_pagination', () => {
         statusText: 'Not Found',
       }))
       await expect(toArrayAsync(await getWithCursorPagination({
-        conn,
+        client,
         pageSize: 1,
         getParams: {
           url: '/ep',
@@ -365,6 +371,26 @@ describe('client_pagination', () => {
           },
         },
       }))).rejects.toThrow()
+    })
+  })
+
+  describe('createPaginator', () => {
+    const client: MockInterface<HTTPClientInterface> = {
+      getSinglePage: mockFunction<HTTPClientInterface['getSinglePage']>(),
+      getPageSize: mockFunction<HTTPClientInterface['getPageSize']>().mockReturnValueOnce(3),
+    }
+
+    it('should call the pagination function with the right paramters', () => {
+      const paginationFunc: GetAllItemsFunc = mockFunction<GetAllItemsFunc>()
+      const paginator = createPaginator({ client, paginationFunc })
+      const params = { url: 'url', queryParams: { a: 'b' }, paginationField: 'abc' }
+      paginator(params)
+      expect(paginationFunc).toHaveBeenCalledTimes(1)
+      expect(paginationFunc).toHaveBeenLastCalledWith({
+        client,
+        pageSize: 3,
+        getParams: params,
+      })
     })
   })
 })

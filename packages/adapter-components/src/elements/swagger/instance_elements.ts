@@ -23,7 +23,7 @@ import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ADDITIONAL_PROPERTIES_FIELD, ARRAY_ITEMS_FIELD } from './type_elements/swagger_parser'
 import { InstanceCreationParams, toBasicInstance } from '../instance_elements'
-import { HTTPClientInterface, UnauthorizedError } from '../../client'
+import { UnauthorizedError, Paginator } from '../../client'
 import {
   UserFetchConfig, TypeSwaggerDefaultConfig, TransformationConfig, TransformationDefaultConfig,
   AdapterSwaggerApiConfig, TypeSwaggerConfig,
@@ -226,7 +226,7 @@ const normalizeType = (type: ObjectType | undefined): ObjectType | undefined => 
  */
 const getInstancesForType = async ({
   typeName,
-  client,
+  paginator,
   typesConfig,
   typeDefaultConfig,
   objectTypes,
@@ -235,7 +235,7 @@ const getInstancesForType = async ({
   computeGetArgs,
 }: {
   typeName: string
-  client: HTTPClientInterface
+  paginator: Paginator
   objectTypes: Record<string, ObjectType>
   typesConfig: Record<string, TypeSwaggerConfig>
   typeDefaultConfig: TypeSwaggerDefaultConfig
@@ -299,7 +299,7 @@ const getInstancesForType = async ({
       const args = computeGetArgs(request, contextElements)
 
       const results = (await Promise.all(
-        args.map(async getArgs => ((await toArrayAsync(await client.get(getArgs))).flat()))
+        args.map(async getArgs => ((await toArrayAsync(await paginator(getArgs))).flat()))
       )).flatMap(makeArray)
 
       const entries = (results
@@ -339,14 +339,14 @@ const getInstancesForType = async ({
  * Get all instances from all types included in the fetch configuration.
  */
 export const getAllInstances = async ({
-  client,
+  paginator,
   apiConfig,
   fetchConfig,
   objectTypes,
   nestedFieldFinder = findDataField,
   computeGetArgs = defaultComputeGetArgs,
 }: {
-  client: HTTPClientInterface
+  paginator: Paginator
   apiConfig: AdapterSwaggerApiConfig
   fetchConfig: UserFetchConfig
   objectTypes: Record<string, ObjectType>
@@ -356,7 +356,7 @@ export const getAllInstances = async ({
   const { types, typeDefaults } = apiConfig
 
   const elementGenerationParams = {
-    client,
+    paginator,
     typesConfig: types,
     objectTypes,
     typeDefaultConfig: typeDefaults,

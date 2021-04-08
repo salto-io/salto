@@ -17,7 +17,8 @@ import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values as lowerfashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { APIConnection, ResponseValue } from './http_connection'
+import { ResponseValue } from './http_connection'
+import { ClientGetParams, HTTPClientInterface } from './http_client'
 
 const { isDefined } = lowerfashValues
 const { makeArray } = collections.array
@@ -25,12 +26,17 @@ const log = logger(module)
 
 type RecursiveQueryArgFunc = Record<string, (entry: ResponseValue) => string>
 
-export type ClientGetParams = {
-  url: string
-  queryParams?: Record<string, string>
+export type ClientGetWithPaginationParams = ClientGetParams & {
   recursiveQueryParams?: RecursiveQueryArgFunc
   paginationField?: string
 }
+
+export type GetAllItemsFunc = (args: {
+  client: HTTPClientInterface
+  pageSize: number
+  getParams: ClientGetWithPaginationParams
+}) => AsyncIterable<ResponseValue[]>
+
 
 export type PaginationFunc = ({
   responseData,
@@ -42,15 +48,9 @@ export type PaginationFunc = ({
   responseData: unknown
   page: ResponseValue[]
   pageSize: number
-  getParams: ClientGetParams
+  getParams: ClientGetWithPaginationParams
   currentParams: Record<string, string>
 }) => Record<string, string>[]
-
-export type GetAllItemsFunc = (args: {
-  conn: APIConnection
-  pageSize: number
-  getParams: ClientGetParams
-}) => AsyncIterable<ResponseValue[]>
 
 /**
  * Helper function for generating individual recursive queries based on past responses.
@@ -79,7 +79,7 @@ const computeRecursiveArgs = (
 export const traverseRequests: (
   paginationFunc: PaginationFunc
 ) => GetAllItemsFunc = paginationFunc => async function *getWithOffset({
-  conn,
+  client,
   pageSize,
   getParams,
 }) {
@@ -98,15 +98,10 @@ export const traverseRequests: (
     usedParams.add(serializedArgs)
     const params = { ...queryParams, ...additionalArgs }
     // eslint-disable-next-line no-await-in-loop
-    const response = await conn.get(
+    const response = await client.getSinglePage({
       url,
-      Object.keys(params).length > 0 ? { params } : undefined
-    )
-
-    log.debug('Received response for %s (%s)', url, safeJsonStringify({ url, params }))
-    log.trace('Full HTTP response for %s: %s', url, safeJsonStringify({
-      url, params, response: response.data,
-    }))
+      queryParams: Object.keys(params).length > 0 ? params : undefined,
+    })
 
     if (response.status !== 200) {
       log.error(`error getting result for ${url}: %s %o %o`, response.status, response.statusText, response.data)
@@ -114,7 +109,7 @@ export const traverseRequests: (
     }
 
     const page: ResponseValue[] = (
-      (_.isObjectLike(response.data) && Array.isArray(response.data.items))
+      (!Array.isArray(response.data) && Array.isArray(response.data.items))
         ? response.data.items
         : makeArray(response.data)
     )
@@ -182,3 +177,15 @@ export const getWithCursorPagination: GetAllItemsFunc = async function *getWithC
   }
   yield* traverseRequests(nextPageCursorPages)(args)
 }
+
+export type Paginator = (params: ClientGetWithPaginationParams) => AsyncIterable<ResponseValue[]>
+
+/**
+ * Wrap a pagination function for use by the adapter
+ */
+export const createPaginator = ({ paginationFunc, client }: {
+  paginationFunc: GetAllItemsFunc
+  client: HTTPClientInterface
+}): Paginator => (
+  params => paginationFunc({ client, pageSize: client.getPageSize(), getParams: params })
+)

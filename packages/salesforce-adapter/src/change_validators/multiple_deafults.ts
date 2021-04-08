@@ -19,6 +19,7 @@ import {
   isInstanceChange, Field, InstanceElement,
   Element, isFieldChange, isListType, TypeElement, isMapType, Value, isReferenceExpression,
 } from '@salto-io/adapter-api'
+import { values } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { LABEL } from '../constants'
@@ -100,7 +101,7 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(isFieldChange)
     .map(getChangeElement)
     .filter(isFieldOfCustomObject)
-    .filter(field => field.annotations.valueSet !== undefined)
+    .filter(field => values.isDefined(field.annotations.valueSet))
     .flatMap(getPicklistMultipleDefaultsErrors)
 
   return [...instanceChangesErrors, ...picklistChangesErrors]

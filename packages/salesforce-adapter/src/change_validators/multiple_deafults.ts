@@ -13,92 +13,76 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 import {
   ChangeError, getChangeElement, ChangeValidator, isAdditionOrModificationChange,
-  isInstanceChange, Field, InstanceElement, isContainerType, ContainerType,
-  Element, isFieldChange, isListType, isObjectType,
+  isInstanceChange, Field, InstanceElement,
+  Element, isFieldChange, isListType, TypeElement, isMapType, Value, isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { apiName, isFieldOfCustomObject, metadataType } from '../transformers/transformer'
-import { FieldReferenceDefinition, generateReferenceResolverFinder } from '../transformers/reference_mapping'
+import { LABEL } from '../constants'
+import { apiName, isFieldOfCustomObject } from '../transformers/transformer'
 
-
-const fieldSelectMapping: FieldReferenceDefinition[] = [
-  {
-    src: { field: 'default', parentTypes: ['ProfileApplicationVisibility', 'ProfileRecordTypeVisibility', 'StandardValue', 'CustomValue'] },
-  },
-]
-
-const createChangeError = (fieldName: string, element: Element): ChangeError =>
-  ({
-    elemID: element.elemID,
-    severity: 'Warning',
-    message: `There cannot be more than one 'default' field set to 'true'. In element: ${apiName(element)} of type: ${metadataType(element)}. Field name: ${fieldName}`,
-    detailedMessage: `There is more than one 'default' field set to 'true'. In element: ${apiName(element)} of type: ${metadataType(element)}.  Field name: ${fieldName}.`,
-  })
-
-const getInstancesMultipleDefaultsErrors = (after: InstanceElement): ChangeError[] => {
-  const isDefaultField = (field: Field): boolean => {
-    const resolverFinder = generateReferenceResolverFinder(fieldSelectMapping)
-    return resolverFinder(field).length > 0
-  }
-
-  const errors: ChangeError[] = []
-
-  Object.entries(after.value)
-    .filter(([fieldName]) => isContainerType(after.type.fields[fieldName]?.type))
-    .forEach(([fieldName, fieldValues]) => {
-      const defaultValues: boolean[] = []
-      const findMultipleDefaults: TransformFunc = ({ value, field }) => {
-        if (field !== undefined && isDefaultField(field) && _.isBoolean(value) && value) {
-          // default = true
-          if (defaultValues.length === 0) {
-            defaultValues.push(value)
-          } else {
-            throw new Error('More than one default value')
-          }
-        }
-        return value
-      }
-
-      const fieldType = after.type.fields[fieldName].type as ContainerType
-
-      try {
-        if (isListType(fieldType) && _.isArray(fieldValues) && isObjectType(fieldType.innerType)) {
-          const { innerType } = fieldType
-          fieldValues.forEach(val => {
-            transformValues({
-              values: val,
-              type: innerType,
-              transformFunc: findMultipleDefaults,
-              strict: false,
-              isTopLevel: false,
-            })
-          })
-        } else { // MapType
-          transformValues({
-            values: fieldValues,
-            type: fieldType,
-            transformFunc: findMultipleDefaults,
-            strict: false,
-            isTopLevel: false,
-          })
-        }
-      } catch {
-        errors.push(createChangeError(fieldName, after))
-      }
-    })
-  return errors
+const fieldNameToInnerContextField: Record<string, string> = {
+  applicationVisibilities: 'application',
+  recordTypeVisibilities: 'recordType',
+  standardValue: 'label',
+  customValue: 'label',
 }
 
-const getPicklistMultipleDefaultsErrors = (field: Field): ChangeError[] => (
-  (_.isArray(field.annotations.valueSet)) && (field.annotations.valueSet
-    .map(value => value.default)
-    .filter(Boolean).length > 1)
-    ? [createChangeError(field.name, field)]
-    : []
-)
+const formatContext = (context: Value): string => {
+  if (isReferenceExpression(context)) {
+    return context.elemId.getFullName()
+  } if (_.isString(context)) {
+    return context
+  } return safeJsonStringify(context)
+}
+
+const createChangeError = (fieldName: string, element: Element, contexts: string[]):
+  ChangeError => ({
+  elemID: element.elemID,
+  severity: 'Warning',
+  message: `There cannot be more than one 'default' field set to 'true'. In element: ${apiName(element)} field name: ${fieldName}`,
+  detailedMessage: `There cannot be more than one 'default' field set to 'true'. In element: ${apiName(element)} field name: ${fieldName}.
+    The 'default = true' are where the ${fieldNameToInnerContextField[fieldName] ?? LABEL}s are: ${contexts}`,
+})
+
+const getPicklistMultipleDefaultsErrors = (field: Field): ChangeError[] => {
+  if (_.isArray(field.annotations.valueSet)) {
+    const contexts = field.annotations.valueSet
+      .filter(obj => obj.default)
+      .map(obj => obj[LABEL])
+      .map(formatContext)
+    return contexts.length > 1 ? [createChangeError(field.name, field, contexts)] : []
+  }
+  return []
+}
+
+const getInstancesMultipleDefaultsErrors = (after: InstanceElement): ChangeError[] => {
+  const getDefaultObjectsList = (val: Value, type: TypeElement): Value[] => {
+    if (isMapType(type)) {
+      return Object.values(val).flatMap(inner => getDefaultObjectsList(inner, type.innerType))
+    }
+    if (isListType(type) && _.isArray(val)) {
+      return val.flatMap(inner => getDefaultObjectsList(inner, type.innerType))
+    }
+    return val
+  }
+
+  const errors: ChangeError[] = Object.entries(after.value)
+    .filter(([fieldName]) => Object.keys(fieldNameToInnerContextField).includes(fieldName))
+    .flatMap(([fieldName, value]) => {
+      const defaultObjects = getDefaultObjectsList(value, after.type.fields[fieldName].type)
+      const contexts = defaultObjects
+        .filter(val => val.default)
+        .map(obj => obj[fieldNameToInnerContextField[fieldName]])
+        .map(formatContext)
+      return contexts.length > 1 ? [createChangeError(fieldName, after, contexts)] : []
+    })
+
+  return errors
+}
 
 /**
  * It is forbidden to set more than 'default' field as 'true' for some types.

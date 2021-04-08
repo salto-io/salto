@@ -148,13 +148,17 @@ export const getParsedDefs = async (swaggerPath: string):
   }
 }
 
-type HasAllOf = {
-  allOf?: SchemaObject[]
+type HasXOf = {
+  allOf?: SchemaOrReference[]
+  anyOf?: SchemaOrReference[]
+  oneOf?: SchemaOrReference[]
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const allOfCompatible = (val: any): val is HasAllOf => (
-  val.allOf === undefined || Array.isArray(val.allOf)
+const xOfCompatible = (val: any): val is HasXOf => (
+  (val.allOf === undefined || Array.isArray(val.allOf))
+  && (val.anyOf === undefined || Array.isArray(val.anyOf))
+  && (val.oneOf === undefined || Array.isArray(val.oneOf))
 )
 
 /**
@@ -165,43 +169,44 @@ export const extractProperties = (schemaDefObj: SchemaObject, refs: SwaggerRefs)
   allProperties: Record<string, SchemaObject>
   additionalProperties?: SchemaObject
 } => {
-  const recursiveAllOf = (
-    { allOf }: HasAllOf
-  ): SchemaObject[] => {
-    if (allOf === undefined) {
-      return []
-    }
-    return [
-      ...allOf,
-      ...allOf.filter(allOfCompatible).flatMap(recursiveAllOf),
-    ]
-  }
+  const recursiveXOf = (
+    { allOf, anyOf, oneOf }: HasXOf
+  ): SchemaOrReference[] => (
+    [allOf, anyOf, oneOf].filter(isDefined).flatMap(
+      xOf => [
+        ...xOf,
+        ...xOf
+          .filter(x => xOfCompatible(x) || isReferenceObject(x))
+          .flatMap(nested => (isReferenceObject(nested) ? [nested] : recursiveXOf(nested))),
+      ]
+    )
+  )
 
-  const flattenAllOfProps = (schemaDef: SchemaObject): Record<string, SchemaObject> => ({
+  const flattenXOfProps = (schemaDef: SchemaObject): Record<string, SchemaObject> => ({
     ...schemaDef.properties,
     ...Object.assign(
       {},
       // TODO check if need handling for arrays as nested allOf (edge case?)
-      ...(recursiveAllOf(schemaDef)).flatMap(nested => (
+      ...(recursiveXOf(schemaDef)).flatMap(nested => (
         isReferenceObject(nested)
-          ? flattenAllOfProps(refs.get(nested.$ref))
+          ? flattenXOfProps(refs.get(nested.$ref))
           : {
             ...nested.properties,
-            ...flattenAllOfProps(nested.properties ?? {}),
+            ...flattenXOfProps(nested.properties ?? {}),
           }
       )),
     ),
   })
 
-  const flattenAllOfAdditionalProps = (schemaDef: SchemaObject): SchemaObject[] => (
+  const flattenXOfAdditionalProps = (schemaDef: SchemaObject): SchemaObject[] => (
     [
       schemaDef.additionalProperties,
-      ...(allOfCompatible(schemaDef) ? recursiveAllOf(schemaDef) : []).flatMap(nested => (
+      ...(xOfCompatible(schemaDef) ? recursiveXOf(schemaDef) : []).flatMap(nested => (
         isReferenceObject(nested)
-          ? flattenAllOfAdditionalProps(refs.get(nested.$ref))
+          ? flattenXOfAdditionalProps(refs.get(nested.$ref))
           : [
             nested.additionalProperties,
-            ...flattenAllOfAdditionalProps(nested.properties ?? {}),
+            ...flattenXOfAdditionalProps(nested.properties ?? {}),
           ]
       )),
     ].filter(p => p !== false)
@@ -228,9 +233,10 @@ export const extractProperties = (schemaDefObj: SchemaObject, refs: SwaggerRefs)
     || !_.isEmpty(s.allOf)
   )
 
-  const allAdditionalProperties = flattenAllOfAdditionalProps(schemaDefObj)
+  const allAdditionalProperties = flattenXOfAdditionalProps(schemaDefObj)
   if (allAdditionalProperties.filter(p => hasNonEmptyDefinition(p)).length > 1) {
-    log.debug('too many additionalProperties found in allOf - using first non-empty')
+    // TODO change when we have validations on these (SALTO-1259) to cover anyOf and oneOf correctly
+    log.debug('too many additionalProperties found in allOf / anyOf / oneOf - using first non-empty')
   }
   const additionalProperties = (
     allAdditionalProperties.find(isReferenceObject)
@@ -239,7 +245,7 @@ export const extractProperties = (schemaDefObj: SchemaObject, refs: SwaggerRefs)
   )
 
   return {
-    allProperties: flattenAllOfProps(schemaDefObj),
+    allProperties: flattenXOfProps(schemaDefObj),
     additionalProperties,
   }
 }

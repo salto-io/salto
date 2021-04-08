@@ -604,6 +604,28 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/FoodAndCategory'
+  /foodOrCategory:
+    get:
+      responses:
+        200:
+          description: successful operation
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FoodOrCategory'
+  /foodXorCategory:
+    get:
+      responses:
+        200:
+          description: successful operation
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FoodXorCategory'
   /food/{foodId}:
     get:
       parameters:
@@ -621,6 +643,22 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/Food'
+  /location/{locationName}:
+    get:
+      parameters:
+      - name: locationName
+        in: path
+        description: Name of location
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/Location'
 components:
   schemas:
     Order:
@@ -674,6 +712,14 @@ components:
             $ref: '#/components/schemas/Category'
     FoodAndCategory:
       allOf:
+      - $ref: '#/components/schemas/Food'
+      - $ref: '#/components/schemas/Category'
+    FoodOrCategory:
+      anyOf:
+      - $ref: '#/components/schemas/Food'
+      - $ref: '#/components/schemas/Category'
+    FoodXorCategory:
+      oneOf:
       - $ref: '#/components/schemas/Food'
       - $ref: '#/components/schemas/Category'
     User:
@@ -773,6 +819,27 @@ components:
           type: string
         message:
           type: string
+    Address:
+      type: object
+      properties:
+        city:
+          type: string
+        country:
+          type: string
+        street:
+          type: string
+        zip:
+          type: number
+    Location:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          anyOf:
+            - type: string
+            - $ref: "#/components/schemas/Address"
+
   securitySchemes:
     petstore_auth:
       type: oauth2

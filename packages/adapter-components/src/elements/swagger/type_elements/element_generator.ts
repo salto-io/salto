@@ -130,12 +130,13 @@ const typeAdder = ({
     Object.assign(
       type.fields,
       _.mapValues(allProperties, (fieldSchema, fieldName) => {
-        const toNestedTypeName = ({ allOf }: SchemaObject): string => {
-          if (allOf?.every(isReferenceObject)) {
-            if (allOf.length === 1) {
-              return toNormalizedRefName(allOf[0] as ReferenceObject)
+        const toNestedTypeName = ({ allOf, anyOf, oneOf }: SchemaObject): string => {
+          const xOf = [allOf, anyOf, oneOf].filter(isDefined).flat()
+          if (xOf.length > 0 && xOf.every(isReferenceObject)) {
+            if (xOf.length === 1) {
+              return toNormalizedRefName(xOf[0] as ReferenceObject)
             }
-            return `allof_${(allOf as ReferenceObject[]).map(toNormalizedRefName).sort().join('_')}`
+            return `combined_${(xOf as ReferenceObject[]).map(toNormalizedRefName).sort().join('_')}`
           }
           return `${objName}_${fieldName}`
         }
@@ -219,17 +220,17 @@ const typeAdder = ({
         endpointName,
       )
     }
-    // TODO add support for oneOf / anyOf / not (only in OpenAPI v3)
+
     if (!_.isString(schema.type)) {
-      log.info('unexpected schema type %s for type %s', schema.type, typeName)
+      log.debug('unexpected schema type %s for type %s', schema.type, typeName)
     }
 
     const isObjectSchema = (schemaObj: SchemaObject): boolean => (
       schemaObj.type === SWAGGER_OBJECT || schemaObj.type === SWAGGER_ARRAY
       || schemaObj.properties !== undefined
-      || (
-        Array.isArray(schemaObj.allOf)
-        && schemaObj.allOf.some((s: SchemaObject) => isObjectSchema(s) || isReferenceObject(s))
+      || ([schemaObj.allOf, schemaObj.oneOf, schemaObj.anyOf].some(xOf =>
+        Array.isArray(xOf)
+        && xOf.every((s: SchemaObject) => isObjectSchema(s) || isReferenceObject(s)))
       )
     )
 

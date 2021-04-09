@@ -101,6 +101,10 @@ export const getTypeAndInstances = async ({
   // find the field and type containing the actual instances
   const nestedFieldDetails = nestedFieldFinder(type, fieldsToOmit, dataField)
 
+  if (nestedFieldDetails === undefined) {
+    log.debug(`storing full entries for ${type.elemID.name}`)
+  }
+
   const instances = naclEntries.flatMap((entry, index) => {
     if (nestedFieldDetails !== undefined) {
       return makeArray(entry[nestedFieldDetails.field.name]).map(
@@ -115,7 +119,6 @@ export const getTypeAndInstances = async ({
       ).filter(isDefined)
     }
 
-    log.info(`storing full entry for ${type.elemID.name}`)
     return toInstance({
       entry,
       type,

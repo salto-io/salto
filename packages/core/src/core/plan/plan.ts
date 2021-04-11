@@ -184,7 +184,7 @@ const addDifferentElements = (
     elem: ChangeDataType,
     action: Change['action'] & ('add' | 'remove')
   ): void => {
-    outputGraph.addNode(changeId(elem, action), [], toChange(elem.clone(), action))
+    outputGraph.addNode(changeId(elem, action), [], toChange(elem, action))
   }
 
   const addNodeIfDifferent = async (

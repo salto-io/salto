@@ -181,11 +181,9 @@ const resolveElement = async (
     workingSetElements,
     undefined,
   )
-
   if (workingSetElements[element.elemID.getFullName()]?.resolved) {
     return workingSetElements[element.elemID.getFullName()].element
   }
-
   if (workingSetElements[element.elemID.getFullName()] === undefined) {
     workingSetElements[element.elemID.getFullName()] = { element }
   }
@@ -219,7 +217,6 @@ const resolveElement = async (
       )
     )
   }
-
 
   if (isInstanceElement(element) || isField(element)) {
     element.refType = createRefToElmWithValue(

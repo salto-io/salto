@@ -32,8 +32,8 @@ const splitChangeByPath = async (
   }
   return Promise.all(changeHints.map(async hint => {
     const filterByPathHint = async (id: ElemID): Promise<boolean> => {
-      const idHint = await pathIndex.getFromPathIndex(id, index)
-      return _.isEqual(idHint, hint)
+      const idHints = await pathIndex.getFromPathIndex(id, index)
+      return _.some(idHints, idHint => _.isEqual(idHint, hint))
     }
     const filteredChange = await applyFunctionToChangeData(
       change,
@@ -59,7 +59,7 @@ export const createRestoreChanges = async (
     elementSelectors,
     [id => (services?.includes(id.adapter) ?? true) || id.adapter === ElemID.VARIABLES_NAMESPACE]
   )
-  const detailedChanges = awu(changes)
+  const detailedChanges = await awu(changes)
     .flatMap(change => splitChangeByPath(change, index))
     .toArray()
   return detailedChanges

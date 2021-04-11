@@ -17,13 +17,14 @@
 import {
   ChangeError, getChangeElement, ChangeValidator, isAdditionOrModificationChange,
   isInstanceChange, Field, InstanceElement,
-  Element, isFieldChange, isListType, TypeElement, isMapType, Value, isReferenceExpression,
+  isFieldChange, isListType, TypeElement, isMapType, Value, isReferenceExpression,
+  // isAdditionChange, isObjectTypeChange,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { LABEL } from '../constants'
-import { apiName, isFieldOfCustomObject } from '../transformers/transformer'
+import { isFieldOfCustomObject } from '../transformers/transformer'
 
 const fieldNameToInnerContextField: Record<string, string> = {
   applicationVisibilities: 'application',
@@ -35,17 +36,19 @@ const fieldNameToInnerContextField: Record<string, string> = {
 const formatContext = (context: Value): string => {
   if (isReferenceExpression(context)) {
     return context.elemId.getFullName()
-  } if (_.isString(context)) {
+  }
+  if (_.isString(context)) {
     return context
-  } return safeJsonStringify(context)
+  }
+  return safeJsonStringify(context)
 }
 
-const createChangeError = (fieldName: string, element: Element, contexts: string[]):
+const createChangeError = (fieldName: string, field: Field, contexts: string[]):
   ChangeError => ({
-  elemID: element.elemID,
+  elemID: field.elemID,
   severity: 'Warning',
-  message: `There cannot be more than one 'default' field set to 'true'. In element: ${apiName(element)} field name: ${fieldName}`,
-  detailedMessage: `There cannot be more than one 'default' field set to 'true'. In element: ${apiName(element)} field name: ${fieldName}.
+  message: `There cannot be more than one 'default' field set to 'true'. Field name: ${field.name} in ${field.parent.elemID.name}`,
+  detailedMessage: `There cannot be more than one 'default' field set to 'true'. Field name: ${field.name} in ${field.parent.elemID.name}.
     The 'default = true' are where the ${fieldNameToInnerContextField[fieldName] ?? LABEL}s are: ${contexts}`,
 })
 
@@ -79,7 +82,9 @@ const getInstancesMultipleDefaultsErrors = (after: InstanceElement): ChangeError
         .filter(val => val.default)
         .map(obj => obj[fieldNameToInnerContextField[fieldName]])
         .map(formatContext)
-      return contexts.length > 1 ? [createChangeError(fieldName, after, contexts)] : []
+      return contexts.length > 1
+        ? [createChangeError(fieldName, after.type.fields[fieldName], contexts)]
+        : []
     })
 
   return errors
@@ -96,10 +101,16 @@ const changeValidator: ChangeValidator = async changes => {
     .flatMap(getInstancesMultipleDefaultsErrors)
 
   // special treatment for picklist & multipicklist valueSets
-  const picklistChangesErrors = changes
+  const picklistChangesErrors = [...changes
     .filter(isAdditionOrModificationChange)
     .filter(isFieldChange)
-    .map(getChangeElement)
+    .map(getChangeElement),
+  // ...changes
+  //   .filter(isAdditionChange)
+  //   .filter(isObjectTypeChange)
+  //   .map(getChangeElement)
+  //   .flatMap(change => Object.values(change.fields)),
+  ]
     .filter(isFieldOfCustomObject)
     .filter(field => values.isDefined(field.annotations.valueSet))
     .flatMap(getPicklistMultipleDefaultsErrors)

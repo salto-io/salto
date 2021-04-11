@@ -1065,7 +1065,7 @@ describe('workspace', () => {
       // elements and set them along with the hidden types as the state elements
       const stateElements = await awu(
         await resolve(
-          await (await helperWorkspace.elements()).getAll(),
+          await awu(await (await helperWorkspace.elements()).getAll()).toArray(),
           await helperWorkspace.elements()
         )
       ).toArray()

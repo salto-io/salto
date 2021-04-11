@@ -168,7 +168,7 @@ describe('Test Salto Expressions', () => {
 
     beforeAll(async () => {
       resolved = await awu(
-        await resolve(awu(elements), createInMemoryElementSource(elements))
+        await resolve(elements, createInMemoryElementSource(elements))
       ).toArray()
     })
 
@@ -275,7 +275,7 @@ describe('Test Salto Expressions', () => {
       firstRef.value.test = refTo(secondRef, 'test')
       secondRef.value.test = refTo(firstRef, 'test')
       const chained = [firstRef, secondRef]
-      const inst = (await awu(await resolve(awu(chained), createInMemoryElementSource([
+      const inst = (await awu(await resolve(chained, createInMemoryElementSource([
         ...chained,
         simpleRefType,
         ...await getFieldsAndAnnoTypes(simpleRefType),
@@ -289,7 +289,7 @@ describe('Test Salto Expressions', () => {
         test: refTo(firstRef, 'test'),
       })
       const bad = [firstRef, secondRef]
-      const res = (await awu(await resolve(awu(bad), createInMemoryElementSource([
+      const res = (await awu(await resolve(bad, createInMemoryElementSource([
         ...bad,
         simpleRefType,
         ...await getFieldsAndAnnoTypes(simpleRefType),
@@ -304,7 +304,7 @@ describe('Test Salto Expressions', () => {
         simpleRefType,
         { test: new ReferenceExpression(target) },
       )
-      const bad = awu([firstRef])
+      const bad = [firstRef]
       const res = (await awu(await resolve(bad, createInMemoryElementSource([
         firstRef,
         simpleRefType,
@@ -321,7 +321,7 @@ describe('Test Salto Expressions', () => {
         simpleRefType,
         { test: refTo(context) },
       )
-      const bad = awu([firstRef])
+      const bad = [firstRef]
       const res = (await awu(await resolve(bad, createInMemoryElementSource([
         firstRef,
         simpleRefType,
@@ -349,7 +349,7 @@ describe('Test Salto Expressions', () => {
         { test: new VariableExpression(context.elemID) },
       )
       const contextElements = [context, inst]
-      const res = (await awu(await resolve(awu([refInst]), createInMemoryElementSource([
+      const res = (await awu(await resolve([refInst], createInMemoryElementSource([
         refInst,
         simpleRefType,
         ...await getFieldsAndAnnoTypes(simpleRefType),
@@ -368,7 +368,7 @@ describe('Test Salto Expressions', () => {
         { test: new VariableExpression(context.elemID) },
       )
       const elementsToResolve = [refInst, inputElem]
-      const res = (await awu(await resolve(awu([refInst, inputElem]), createInMemoryElementSource([
+      const res = (await awu(await resolve([refInst, inputElem], createInMemoryElementSource([
         ...elementsToResolve,
         simpleRefType,
         ...await getFieldsAndAnnoTypes(simpleRefType),
@@ -389,7 +389,7 @@ describe('Test Salto Expressions', () => {
       const inst = new InstanceElement('test', newObjType, { f: 1 })
       const elems = [inst, newObjType, primType]
       const all = (await awu(await resolve(
-        awu(elems),
+        elems,
         createInMemoryElementSource(
           [
             ...elems,
@@ -431,7 +431,7 @@ describe('Test Salto Expressions', () => {
       )
       const elements = [firstRef, secondRef]
       const element = (await awu(
-        await resolve(awu(elements), createInMemoryElementSource(
+        await resolve(elements, createInMemoryElementSource(
           [
             firstRef,
             secondRef,

@@ -275,8 +275,8 @@ const resolveNodeElements = (
       afterItemsToResolve.push(change.data.after)
     }
   })
-  await resolve(awu(beforeItemsToResolve), before, true)
-  await resolve(awu(afterItemsToResolve), after, true)
+  await resolve(beforeItemsToResolve, before, true)
+  await resolve(afterItemsToResolve, after, true)
   return graph
 }
 

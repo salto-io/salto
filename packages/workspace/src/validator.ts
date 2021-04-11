@@ -571,8 +571,8 @@ const validateVariable = (element: Variable): ValidationError[] => validateVaria
 )
 
 export const validateElements = async (
-  elements: ReadonlyArray<Element>, elementsSource: ReadOnlyElementsSource,
-): Promise<ValidationError[]> => awu(await resolve(awu(elements), elementsSource))
+  elements: Element[], elementsSource: ReadOnlyElementsSource,
+): Promise<ValidationError[]> => awu(await resolve(elements, elementsSource))
   .flatMap(e => {
     if (isInstanceElement(e)) {
       return validateInstanceElements(e, elementsSource)

@@ -20,11 +20,16 @@ import { collections, promises } from '@salto-io/lowerdash'
 
 const { mapValuesAsync } = promises.object
 
+type WorkingSetElement = {
+  element: Element
+  resolved: boolean
+}
+
 const { awu } = collections.asynciterable
 type Resolver<T> = (
   v: T,
   elementsSource: ReadOnlyElementsSource,
-  resolvedElements: Record<string, Element>,
+  workingSetElements: Record<string, WorkingSetElement>,
   visited?: Set<string>,
   resolvedSet?: Set<string>
 ) => Promise<Value>
@@ -40,23 +45,24 @@ export class CircularReference {
 const getResolvedElement = async (
   elemID: ElemID,
   elementsSource: ReadOnlyElementsSource,
-  resolvedElements: Record<string, Element>,
-  resolvedSet: Set<string>,
+  workingSetElements: Record<string, WorkingSetElement>,
 ): Promise<Element | undefined> => {
-  if (resolvedElements[elemID.getFullName()]) {
-    return resolvedElements[elemID.getFullName()]
+  if (workingSetElements[elemID.getFullName()]?.resolved) {
+    return workingSetElements[elemID.getFullName()].element
   }
-  const resValue = await elementsSource.get(elemID)
-  if (resValue !== undefined) {
+  const unresolvedElement = workingSetElements[elemID.getFullName()]?.element
+     ?? await elementsSource.get(elemID)
+
+  if (unresolvedElement !== undefined) {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
     return resolveElement(
-      resValue,
+      unresolvedElement,
       elementsSource,
-      resolvedElements,
-      resolvedSet
+      workingSetElements,
     )
   }
-  return resValue
+
+  return undefined
 }
 
 let resolveTemplateExpression: Resolver<TemplateExpression>
@@ -64,30 +70,28 @@ let resolveTemplateExpression: Resolver<TemplateExpression>
 const resolveMaybeExpression: Resolver<Value> = async (
   value: Value,
   elementsSource: ReadOnlyElementsSource,
-  resolvedElements: Record<string, Element>,
+  workingSetElements: Record<string, WorkingSetElement>,
   visited: Set<string> = new Set<string>(),
-  resolvedSet: Set<string> = new Set<string>(),
 ): Promise<Value> => {
   if (isReferenceExpression(value)) {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
     return resolveReferenceExpression(
       value,
       elementsSource,
-      resolvedElements,
+      workingSetElements,
       visited,
-      resolvedSet
     )
   }
 
   if (value instanceof TemplateExpression) {
-    return resolveTemplateExpression(value, elementsSource, resolvedElements, visited, resolvedSet)
+    return resolveTemplateExpression(value, elementsSource, workingSetElements, visited)
   }
   // We do not want to recurse into elements because we can assume they will also be resolved
   // at some point (because we are calling resolve on all elements), so if we encounter an element
   // all we need to do is make it point to the element from the context. If the element is not in
   // the context or the source - we'll keep it as it is.
   if (isElement(value)) {
-    return (await getResolvedElement(value.elemID, elementsSource, resolvedElements, resolvedSet))
+    return (await getResolvedElement(value.elemID, elementsSource, workingSetElements))
       ?? value
   }
   return value
@@ -96,9 +100,8 @@ const resolveMaybeExpression: Resolver<Value> = async (
 export const resolveReferenceExpression = async (
   expression: ReferenceExpression,
   elementsSource: ReadOnlyElementsSource,
-  resolvedElements: Record<string, Element>,
+  workingSetElements: Record<string, WorkingSetElement>,
   visited: Set<string> = new Set<string>(),
-  resolvedSet: Set<string> = new Set<string>()
 ): Promise<ReferenceExpression> => {
   const { traversalParts } = expression
   const traversal = traversalParts.join(ElemID.NAMESPACE_SEPARATOR)
@@ -111,7 +114,8 @@ export const resolveReferenceExpression = async (
   const fullElemID = ElemID.fromFullName(traversal)
   const { parent } = fullElemID.createTopLevelParentID()
   // Validation should throw an error if there is no match
-  const rootElement = resolvedElements[parent.getFullName()] ?? await elementsSource.get(parent)
+  const rootElement = workingSetElements[parent.getFullName()]?.element
+    ?? await elementsSource.get(parent)
 
   if (!rootElement) {
     return expression.createWithValue(new UnresolvedReference(fullElemID))
@@ -134,15 +138,14 @@ export const resolveReferenceExpression = async (
       await resolveMaybeExpression(
         value.value,
         elementsSource,
-        resolvedElements,
+        workingSetElements,
         visited,
-        resolvedSet
       ) ?? value.value,
       rootElement,
     )
   }
   return (expression as ReferenceExpression).createWithValue(
-    await resolveMaybeExpression(value, elementsSource, resolvedElements, visited, resolvedSet)
+    await resolveMaybeExpression(value, elementsSource, workingSetElements, visited)
       ?? value,
     rootElement,
   )
@@ -151,13 +154,12 @@ export const resolveReferenceExpression = async (
 resolveTemplateExpression = async (
   expression: TemplateExpression,
   elementsSource: ReadOnlyElementsSource,
-  resolvedElements: Record<string, Element>,
+  workingSetElements: Record<string, WorkingSetElement>,
   visited: Set<string> = new Set<string>(),
-  resolvedSet: Set<string> = new Set<string>()
 ): Promise<Value> => (await awu(expression.parts)
   .map(async p => {
     const res = await resolveMaybeExpression(
-      p, elementsSource, resolvedElements, visited, resolvedSet
+      p, elementsSource, workingSetElements, visited
     )
     return res ? res?.value ?? res : p
   }).toArray())
@@ -166,8 +168,7 @@ resolveTemplateExpression = async (
 const resolveElement = async (
   element: Element,
   elementsSource: ReadOnlyElementsSource,
-  resolvedElements: Record<string, Element>,
-  resolvedSet = new Set<string>()
+  workingSetElements: Record<string, WorkingSetElement>,
 ): Promise<Element> => {
   // Create a ReadonlyElementSource (ElementsGetter) with the proper context
   // to be used to resolve types. If it was already resolved use the reolsved and if not
@@ -175,26 +176,26 @@ const resolveElement = async (
   const contextedElementsGetter: ReadOnlyElementsSource = {
     ...elementsSource,
     get: id =>
-      (getResolvedElement(id, elementsSource, resolvedElements, resolvedSet)),
+      (getResolvedElement(id, elementsSource, workingSetElements)),
   }
   const referenceCloner: TransformFunc = ({ value }) => resolveMaybeExpression(
     value,
     elementsSource,
-    resolvedElements,
+    workingSetElements,
     undefined,
-    resolvedSet
   )
 
-  if (resolvedSet.has(element.elemID.getFullName())) {
+  if (workingSetElements[element.elemID.getFullName()] !== undefined) {
     return element
   }
-  resolvedSet.add(element.elemID.getFullName())
+  // Mark this as resolved before resolving to prevent cycles
+  workingSetElements[element.elemID.getFullName()] = { element, resolved: true }
 
   const elementAnnoTypes = await element.getAnnotationTypes(contextedElementsGetter)
   element.annotationRefTypes = await mapValuesAsync(
     elementAnnoTypes,
     async type => createRefToElmWithValue(
-      await resolveElement(type, elementsSource, resolvedElements, resolvedSet)
+      await resolveElement(type, elementsSource, workingSetElements)
     )
   )
 
@@ -212,8 +213,7 @@ const resolveElement = async (
       await resolveElement(
         await element.getInnerType(contextedElementsGetter),
         elementsSource,
-        resolvedElements,
-        resolvedSet,
+        workingSetElements,
       )
     )
   }
@@ -224,8 +224,7 @@ const resolveElement = async (
       await resolveElement(
         await element.getType(contextedElementsGetter),
         elementsSource,
-        resolvedElements,
-        resolvedSet
+        workingSetElements,
       )
     )
   }
@@ -245,35 +244,35 @@ const resolveElement = async (
     await awu(Object.values(element.fields)).forEach(field => resolveElement(
       field,
       elementsSource,
-      resolvedElements,
-      resolvedSet,
+      workingSetElements,
     ))
   }
 
   if (isVariable(element)) {
-    element.value = await resolveMaybeExpression(element.value, elementsSource, resolvedElements)
+    element.value = await resolveMaybeExpression(element.value, elementsSource, workingSetElements)
   }
 
-  resolvedElements[element.elemID.getFullName()] = element
   return element
 }
 
 export const resolve = async (
-  elements: AsyncIterable<Element>,
+  elements: Element[],
   elementsSource: ReadOnlyElementsSource,
   inPlace = false
-): Promise<AsyncIterable<Element>> => {
+): Promise<Element[]> => {
   // intentionally shallow clone because in resolve element we replace only top level properties
   const elementsToResolve = inPlace
     ? elements
     : await awu(elements).map(_.clone).toArray()
-  const resolvedElements = await awu(elementsToResolve).keyBy(
-    elm => elm.elemID.getFullName()
-  )
+  const resolvedElements = await awu(elementsToResolve)
+    .map(element => ({ element, resolved: false }))
+    .keyBy(
+      workingSetElement => workingSetElement.element.elemID.getFullName()
+    )
   await awu(elementsToResolve).forEach(e => resolveElement(
     e,
     elementsSource,
     resolvedElements
   ))
-  return awu(elementsToResolve)
+  return elementsToResolve
 }

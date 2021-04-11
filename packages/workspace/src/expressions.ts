@@ -22,7 +22,7 @@ const { mapValuesAsync } = promises.object
 
 type WorkingSetElement = {
   element: Element
-  resolved: boolean
+  resolved?: boolean
 }
 
 const { awu } = collections.asynciterable
@@ -31,7 +31,6 @@ type Resolver<T> = (
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
   visited?: Set<string>,
-  resolvedSet?: Set<string>
 ) => Promise<Value>
 
 export class UnresolvedReference {
@@ -47,9 +46,6 @@ const getResolvedElement = async (
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
 ): Promise<Element | undefined> => {
-  if (workingSetElements[elemID.getFullName()]?.resolved) {
-    return workingSetElements[elemID.getFullName()].element
-  }
   const unresolvedElement = workingSetElements[elemID.getFullName()]?.element
      ?? await elementsSource.get(elemID)
 
@@ -62,7 +58,7 @@ const getResolvedElement = async (
     )
   }
 
-  return undefined
+  return unresolvedElement
 }
 
 let resolveTemplateExpression: Resolver<TemplateExpression>
@@ -173,6 +169,7 @@ const resolveElement = async (
   // Create a ReadonlyElementSource (ElementsGetter) with the proper context
   // to be used to resolve types. If it was already resolved use the reolsved and if not
   // fallback to the elementsSource
+
   const contextedElementsGetter: ReadOnlyElementsSource = {
     ...elementsSource,
     get: id =>
@@ -185,11 +182,16 @@ const resolveElement = async (
     undefined,
   )
 
-  if (workingSetElements[element.elemID.getFullName()] !== undefined) {
-    return element
+  if (workingSetElements[element.elemID.getFullName()]?.resolved) {
+    return workingSetElements[element.elemID.getFullName()].element
+  }
+
+  if (workingSetElements[element.elemID.getFullName()] === undefined) {
+    workingSetElements[element.elemID.getFullName()] = { element }
   }
   // Mark this as resolved before resolving to prevent cycles
-  workingSetElements[element.elemID.getFullName()] = { element, resolved: true }
+  workingSetElements[element.elemID.getFullName()].resolved = true
+
 
   const elementAnnoTypes = await element.getAnnotationTypes(contextedElementsGetter)
   element.annotationRefTypes = await mapValuesAsync(
@@ -265,7 +267,7 @@ export const resolve = async (
     ? elements
     : await awu(elements).map(_.clone).toArray()
   const resolvedElements = await awu(elementsToResolve)
-    .map(element => ({ element, resolved: false }))
+    .map(element => ({ element }))
     .keyBy(
       workingSetElement => workingSetElement.element.elemID.getFullName()
     )

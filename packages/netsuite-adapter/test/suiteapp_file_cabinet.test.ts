@@ -145,6 +145,7 @@ describe('suiteapp_file_cabinet', () => {
     readLargeFile: jest.fn(),
     updateFileCabinet: jest.fn(),
     addFileCabinetInstances: jest.fn(),
+    deleteFileCabinetInstances: jest.fn(),
   }
 
   const suiteAppClient = mockSuiteAppClient as unknown as SuiteAppClient
@@ -399,6 +400,7 @@ describe('suiteapp_file_cabinet', () => {
       )
 
       expect(isChangeDeployable(toChange({ after: deployableInstance }))).toBeTruthy()
+      expect(isChangeDeployable(toChange({ before: deployableInstance }))).toBeTruthy()
     })
   })
 
@@ -439,6 +441,9 @@ describe('suiteapp_file_cabinet', () => {
       mockSuiteAppClient.addFileCabinetInstances.mockImplementation(
         async fileCabinetInstances => fileCabinetInstances
           .map(() => _.random(101, 200))
+      )
+      mockSuiteAppClient.deleteFileCabinetInstances.mockImplementation(
+        async fileCabinetInstances => fileCabinetInstances.map(({ id }: { id: number }) => id)
       )
 
       changes = Array.from(Array(100).keys()).map(id => toChange({
@@ -546,9 +551,9 @@ describe('suiteapp_file_cabinet', () => {
                 path: '/instance1/newInstance1',
                 content: Buffer.from('aaa'),
                 bundleable: true,
-                isInactive: false,
-                isOnline: false,
-                hideInBundle: false,
+                isinactive: false,
+                isonline: false,
+                hideinbundle: false,
               }
             ),
           }),
@@ -570,9 +575,9 @@ describe('suiteapp_file_cabinet', () => {
               {
                 path: '/instance1/newInstance2',
                 bundleable: true,
-                isInactive: false,
-                isOnline: false,
-                hideInBundle: false,
+                isinactive: false,
+                isonline: false,
+                hideinbundle: false,
               }
             ),
           }),
@@ -589,6 +594,67 @@ describe('suiteapp_file_cabinet', () => {
         expect(mockSuiteAppClient.addFileCabinetInstances.mock.calls[1][0]
           .map((details: FileCabinetInstanceDetails) => details.path))
           .toEqual(['/instance1/newInstance2/newInstance3'])
+      })
+    })
+
+    describe('deletions', () => {
+      it('should split by depths', async () => {
+        changes = [
+          toChange({
+            before: new InstanceElement(
+              'deletedInstance1',
+              file,
+              {
+                path: '/instance1/instance101',
+                content: Buffer.from('aaa'),
+                bundleable: true,
+                isinactive: false,
+                isonline: false,
+                hideinbundle: false,
+              }
+            ),
+          }),
+          toChange({
+            before: new InstanceElement(
+              'deletedInstance2',
+              file,
+              {
+                path: '/instance1',
+                content: Buffer.from('aaa'),
+                bundleable: true,
+                isinactive: false,
+                isonline: false,
+                hideinbundle: false,
+              }
+            ),
+          }),
+          toChange({
+            before: new InstanceElement(
+              'deletedInstance3',
+              file,
+              {
+                path: '/instance0',
+                content: Buffer.from('aaa'),
+                bundleable: true,
+                isinactive: false,
+                isonline: false,
+                hideinBundle: false,
+              }
+            ),
+          }),
+        ]
+
+        const { appliedChanges, errors } = await deploy(suiteAppClient, changes, 'delete')
+        expect(errors).toHaveLength(0)
+        expect(appliedChanges).toHaveLength(3)
+
+        expect(mockSuiteAppClient.deleteFileCabinetInstances.mock.calls[0][0]
+          .map((details: FileCabinetInstanceDetails) => details.path))
+          .toEqual(['/instance1/instance101'])
+
+        expect(mockSuiteAppClient.deleteFileCabinetInstances.mock.calls[1][0]
+          .map((details: { path: string }) => details.path))
+          .toEqual(['/instance1', '/instance0'])
       })
     })
   })

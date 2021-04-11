@@ -280,4 +280,9 @@ export default class SuiteAppClient {
     (FileCabinetInstanceDetails)[]): Promise<(number | Error)[]> {
     return this.soapClient.addFileCabinetInstances(fileCabinetInstances)
   }
+
+  public async deleteFileCabinetInstances(fileCabinetInstances:
+    { id: number; type: 'file' | 'folder'; path: string }[]): Promise<(number | Error)[]> {
+    return this.soapClient.deleteFileCabinetInstances(fileCabinetInstances)
+  }
 }

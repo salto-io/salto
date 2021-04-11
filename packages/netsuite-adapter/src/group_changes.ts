@@ -17,6 +17,7 @@ import wu from 'wu'
 import {
   Change, ChangeGroupIdFunction, ChangeId, getChangeElement, isAdditionChange, isInstanceElement,
   isModificationChange,
+  isRemovalChange,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import * as suiteAppFileCabinet from './suiteapp_file_cabinet'
@@ -25,10 +26,12 @@ import { customTypes, fileCabinetTypes, isFileCabinetInstance } from './types'
 export const SDF_CHANGE_GROUP_ID = 'SDF'
 export const SUITEAPP_CREATING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Creating Files'
 export const SUITEAPP_UPDATING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Updating Files'
+export const SUITEAPP_DELETING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Deleting Files'
 
 export const SUITEAPP_GROUPS = [
   SUITEAPP_CREATING_FILES_GROUP_ID,
   SUITEAPP_UPDATING_FILES_GROUP_ID,
+  SUITEAPP_DELETING_FILES_GROUP_ID,
 ]
 
 const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes => {
@@ -60,6 +63,13 @@ const getChangeGroupIdsWithSuiteApp: ChangeGroupIdFunction = async changes => {
     && isAdditionChange(change)
   }
 
+  const isSuiteAppFileCabinetDeletion = (change: Change): boolean => {
+    const changeElement = getChangeElement(change)
+    return isFileCabinetInstance(changeElement)
+    && suiteAppFileCabinet.isChangeDeployable(change)
+    && isRemovalChange(change)
+  }
+
   const isSdfChange = (change: Change): boolean => {
     const changeElement = getChangeElement(change)
     return Object.keys(customTypes).includes(changeElement.elemID.typeName)
@@ -70,6 +80,7 @@ const getChangeGroupIdsWithSuiteApp: ChangeGroupIdFunction = async changes => {
   const conditionsToGroups = [
     { condition: isSuiteAppFileCabinetAddition, group: SUITEAPP_CREATING_FILES_GROUP_ID },
     { condition: isSuiteAppFileCabinetModification, group: SUITEAPP_UPDATING_FILES_GROUP_ID },
+    { condition: isSuiteAppFileCabinetDeletion, group: SUITEAPP_DELETING_FILES_GROUP_ID },
     { condition: isSdfChange, group: SDF_CHANGE_GROUP_ID },
   ]
 

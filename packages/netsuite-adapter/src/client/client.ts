@@ -27,9 +27,16 @@ import { SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { GetCustomObjectsResult, ImportFileCabinetResult } from './types'
 import { getAllReferencedInstances, getRequiredReferencedInstances } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
-import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID } from '../group_changes'
+import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
+import { DeployType } from '../suiteapp_file_cabinet'
 
 const log = logger(module)
+
+const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
+  [SUITEAPP_CREATING_FILES_GROUP_ID]: 'add',
+  [SUITEAPP_UPDATING_FILES_GROUP_ID]: 'update',
+  [SUITEAPP_DELETING_FILES_GROUP_ID]: 'delete',
+}
 
 export default class NetsuiteClient {
   private sdfClient: SdfClient
@@ -123,7 +130,11 @@ export default class NetsuiteClient {
     }
 
     return this.suiteAppClient !== undefined
-      ? suiteAppFileCabinet.deploy(this.suiteAppClient, instancesChanges, changeGroup.groupID === SUITEAPP_CREATING_FILES_GROUP_ID ? 'add' : 'update')
+      ? suiteAppFileCabinet.deploy(
+        this.suiteAppClient,
+        instancesChanges,
+        GROUP_TO_DEPLOY_TYPE[changeGroup.groupID]
+      )
       : { errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${changeGroup.groupID}" cannot be deployed`)], appliedChanges: [] }
   }
 

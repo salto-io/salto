@@ -45,7 +45,7 @@ import NetsuiteClient from './client/client'
 import { createDateRange } from './changes_detector/date_formats'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
 import { LazyElementsSourceIndex } from './elements_source_index/types'
-import changeValidator from './change_validator'
+import getChangeValidator from './change_validator'
 import { getChangeGroupIdsFunc } from './group_changes'
 
 const { makeArray } = collections.array
@@ -264,7 +264,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   public get deployModifiers(): DeployModifiers {
     return {
-      changeValidator,
+      changeValidator: getChangeValidator(this.client.isSuiteAppConfigured()),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
     }
   }

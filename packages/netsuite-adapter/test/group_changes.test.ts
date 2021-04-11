@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, Change, StaticFile } from '@salto-io/adapter-api'
-import { getChangeGroupIdsFunc, SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../src/group_changes'
+import { getChangeGroupIdsFunc, SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../src/group_changes'
 import { customTypes, fileCabinetTypes } from '../src/types'
 import { ENTITY_CUSTOM_FIELD, FILE, NETSUITE } from '../src/constants'
 
@@ -98,6 +98,16 @@ describe('Group Changes with Salto suiteApp', () => {
     }
   )
 
+  const deletedSuiteAppFileInstance = new InstanceElement(
+    'deletedInstance4',
+    fileCabinetTypes[FILE],
+    {
+      path: '/Images/file4',
+      description: 'aa',
+      content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
+    }
+  )
+
   const sdfFileInstance1 = new InstanceElement(
     'fileInstance4',
     fileCabinetTypes[FILE],
@@ -130,6 +140,10 @@ describe('Group Changes with Salto suiteApp', () => {
         suiteAppFileInstance3Before.elemID.getFullName(),
         toChange({ before: suiteAppFileInstance3Before, after: suiteAppFileInstance3After }),
       ],
+      [
+        deletedSuiteAppFileInstance.elemID.getFullName(),
+        toChange({ before: deletedSuiteAppFileInstance }),
+      ],
       [sdfFileInstance1.elemID.getFullName(), toChange({ after: sdfFileInstance1 })],
       [sdfFileInstance2.elemID.getFullName(), toChange({ after: sdfFileInstance2 })],
     ]))
@@ -151,6 +165,11 @@ describe('Group Changes with Salto suiteApp', () => {
   it('should set correct group id for existing suiteApp file instances', () => {
     expect(changeGroupIds.get(suiteAppFileInstance3Before.elemID.getFullName()))
       .toEqual(SUITEAPP_UPDATING_FILES_GROUP_ID)
+  })
+
+  it('should set correct group id for removed suiteApp file instances', () => {
+    expect(changeGroupIds.get(deletedSuiteAppFileInstance.elemID.getFullName()))
+      .toEqual(SUITEAPP_DELETING_FILES_GROUP_ID)
   })
 
   it('should set correct group id for SDF file instances', () => {

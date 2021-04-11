@@ -16,7 +16,7 @@
 import axios from 'axios'
 import { ReadFileError } from '../../src/client/suiteapp_client/errors'
 import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client'
-import { ADD_FILE_CABINET_ERROR_RESPONSE, ADD_FILE_CABINET_INVALID_RESPONSE, ADD_FILE_CABINET_SUCCESS_RESPONSE, READ_FAILURE_RESPONSE, READ_INVALID_RESPONSE, READ_SUCCESS_RESPONSE, READ_SUCCESS_RESPONSE_NO_CONTENT, UPDATE_FILE_CABINET_ERROR_RESPONSE, UPDATE_FILE_CABINET_INVALID_RESPONSE, UPDATE_FILE_CABINET_SUCCESS_RESPONSE } from './soap_responses'
+import { ADD_FILE_CABINET_ERROR_RESPONSE, ADD_FILE_CABINET_INVALID_RESPONSE, ADD_FILE_CABINET_SUCCESS_RESPONSE, DELETE_FILE_CABINET_ERROR_RESPONSE, DELETE_FILE_CABINET_INVALID_RESPONSE, DELETE_FILE_CABINET_SUCCESS_RESPONSE, READ_FAILURE_RESPONSE, READ_INVALID_RESPONSE, READ_SUCCESS_RESPONSE, READ_SUCCESS_RESPONSE_NO_CONTENT, UPDATE_FILE_CABINET_ERROR_RESPONSE, UPDATE_FILE_CABINET_INVALID_RESPONSE, UPDATE_FILE_CABINET_SUCCESS_RESPONSE } from './soap_responses'
 
 
 describe('soap_client', () => {
@@ -241,6 +241,65 @@ describe('soap_client', () => {
           description: 'desc',
         },
       ])).rejects.toThrow('Got invalid response from addList request. Errors:')
+    })
+  })
+
+  describe('deleteFileCabinetInstances', () => {
+    it('should return the id is success and the error if fails', async () => {
+      postMock.mockResolvedValue({
+        data: DELETE_FILE_CABINET_SUCCESS_RESPONSE,
+      })
+      expect(await client.deleteFileCabinetInstances([
+        {
+          type: 'file',
+          id: 7148,
+          path: 'somePath1',
+        },
+        {
+          type: 'folder',
+          id: 99999,
+          path: 'somePath2',
+        },
+      ])).toEqual([
+        7148,
+        new Error('SOAP api call to delete file cabinet instance somePath2 failed. error code: MEDIA_NOT_FOUND, error message: Media item not found 99999'),
+      ])
+    })
+
+    it('should throw an error if request fails', async () => {
+      postMock.mockResolvedValue({
+        data: DELETE_FILE_CABINET_ERROR_RESPONSE,
+      })
+      await expect(client.deleteFileCabinetInstances([
+        {
+          type: 'file',
+          id: 7148,
+          path: 'somePath1',
+        },
+        {
+          type: 'folder',
+          id: 99999,
+          path: 'somePath2',
+        },
+      ])).rejects.toThrow('Failed to deleteList: error code: SOME_ERROR, error message: SOME_ERROR')
+    })
+
+    it('should throw an error if received invalid response', async () => {
+      postMock.mockResolvedValue({
+        data: DELETE_FILE_CABINET_INVALID_RESPONSE,
+      })
+      await expect(client.deleteFileCabinetInstances([
+        {
+          type: 'file',
+          id: 7148,
+          path: 'somePath1',
+        },
+        {
+          type: 'folder',
+          id: 99999,
+          path: 'somePath2',
+        },
+      ])).rejects.toThrow('Got invalid response from deleteList request. Errors:')
     })
   })
 })

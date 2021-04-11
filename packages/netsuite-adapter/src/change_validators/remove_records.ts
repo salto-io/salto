@@ -14,18 +14,18 @@
 * limitations under the License.
 */
 import { isInstanceElement, ChangeValidator, isRemovalChange, getChangeElement } from '@salto-io/adapter-api'
-import { isCustomType, isFileCabinetType } from '../types'
+import { isCustomType } from '../types'
 
 const changeValidator: ChangeValidator = async changes => (
   changes
     .filter(isRemovalChange)
     .map(getChangeElement)
     .filter(isInstanceElement)
-    .filter(inst => isCustomType(inst.type) || isFileCabinetType(inst.type))
+    .filter(inst => isCustomType(inst.type))
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',
-      message: 'Remove operation is not supported via Salto',
+      message: 'Removal of records is not supported via Salto',
       detailedMessage: `${elemID.name} cannot be removed`,
     }))
 )

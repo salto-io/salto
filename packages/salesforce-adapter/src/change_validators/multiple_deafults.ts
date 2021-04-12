@@ -101,16 +101,10 @@ const changeValidator: ChangeValidator = async changes => {
     .flatMap(getInstancesMultipleDefaultsErrors)
 
   // special treatment for picklist & multipicklist valueSets
-  const picklistChangesErrors = [...changes
+  const picklistChangesErrors = changes
     .filter(isAdditionOrModificationChange)
     .filter(isFieldChange)
-    .map(getChangeElement),
-  // ...changes
-  //   .filter(isAdditionChange)
-  //   .filter(isObjectTypeChange)
-  //   .map(getChangeElement)
-  //   .flatMap(change => Object.values(change.fields)),
-  ]
+    .map(getChangeElement)
     .filter(isFieldOfCustomObject)
     .filter(field => values.isDefined(field.annotations.valueSet))
     .flatMap(getPicklistMultipleDefaultsErrors)

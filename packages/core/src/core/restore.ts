@@ -33,7 +33,7 @@ const splitChangeByPath = async (
   return Promise.all(changeHints.map(async hint => {
     const filterByPathHint = async (id: ElemID): Promise<boolean> => {
       const idHints = await pathIndex.getFromPathIndex(id, index)
-      return _.some(idHints, idHint => _.isEqual(idHint, hint))
+      return idHints.some(idHint => _.isEqual(idHint, hint))
     }
     const filteredChange = await applyFunctionToChangeData(
       change,

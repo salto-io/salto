@@ -262,7 +262,7 @@ export const resolve = async (
   // intentionally shallow clone because in resolve element we replace only top level properties
   const elementsToResolve = inPlace
     ? elements
-    : await awu(elements).map(_.clone).toArray()
+    : elements.map(_.clone)
   const resolvedElements = await awu(elementsToResolve)
     .map(element => ({ element }))
     .keyBy(

@@ -692,6 +692,9 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
       type salesforce.string string {}
       `
       const result = await parse(Buffer.from(body), 'none', functions)
+      if (result.errors === undefined) {
+        throw new Error('Resulting error should be defined')
+      }
       expect(result.errors).not.toHaveLength(0)
       const expectedErrMsg = useLegacyParser
         ? 'expected keyword is. found string'
@@ -706,6 +709,9 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
       }
       `
       const result = await parse(Buffer.from(body), 'none', functions)
+      if (result.errors === undefined) {
+        throw new Error('Resulting error should be defined')
+      }
       expect(result.errors).not.toHaveLength(0)
       const expectedErrMsg = useLegacyParser
         ? 'Unexpected token: :'
@@ -726,6 +732,9 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
       }
       `
       const result = await parse(Buffer.from(body), 'none', functions)
+      if (result.errors === undefined) {
+        throw new Error('Resulting error should be defined')
+      }
       expect(result.errors).not.toHaveLength(0)
       const expectedErrMsg = useLegacyParser
         ? 'Unexpected token: {'
@@ -743,6 +752,9 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
       }
       `
       const result = await parse(Buffer.from(body), 'none', functions)
+      if (result.errors === undefined) {
+        throw new Error('Resulting error should be defined')
+      }
       expect(result.errors).not.toHaveLength(0)
       const expectedErrMsg = useLegacyParser
         ? 'Unexpected token: ]'
@@ -756,6 +768,9 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
         a = {
           {`
       const result = await parse(Buffer.from(body), 'none', functions)
+      if (result.errors === undefined) {
+        throw new Error('Resulting error should be defined')
+      }
       expect(result.errors).not.toHaveLength(0)
       const expectedErrMsg = useLegacyParser
         ? 'Unexpected end of file'

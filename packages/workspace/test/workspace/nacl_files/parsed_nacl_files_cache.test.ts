@@ -55,7 +55,7 @@ describe('ParsedNaclFileCache', () => {
   sourceMap.push(new ElemID('salesforce', 'dummy').getFullName(), mockSourceRange)
   const parseResultWithoutMD5 = {
     elements: [dummyObjectType],
-    errors: [],
+    errors: undefined,
     sourceMap,
   }
   const dummyParsedKey = {
@@ -82,7 +82,7 @@ describe('ParsedNaclFileCache', () => {
   })
   const toDeleteParseResult = {
     elements: [toDeleteObjectType],
-    errors: [],
+    errors: undefined,
     sourceMap,
   }
   const toDeleteKey = {

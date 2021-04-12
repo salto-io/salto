@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
-import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
+import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange, isAdditionChange, isRemovalChange, isModificationChange } from '@salto-io/adapter-api'
 import { merger, pathIndex, remoteMap } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { createRestoreChanges } from '../../src/core/restore'
@@ -135,14 +135,14 @@ describe('restore', () => {
     singlePathObjMerged = allElement[2].clone()
     multiPathInstMerged = allElement[3].clone()
     singlePathInstMerged = allElement[4].clone()
-    index = new remoteMap.InMemoryRemoteMap(await getElementsPathHints(elementfragments))
+    index = new remoteMap.InMemoryRemoteMap(getElementsPathHints(elementfragments))
   })
 
   describe('with no changes', () => {
     it('should not create changes ws and the state are the same', async () => {
       const changes = await createRestoreChanges(
-        await createElementSource(allElement),
-        await createElementSource(allElement),
+        createElementSource(allElement),
+        createElementSource(allElement),
         index
       )
       expect(changes).toHaveLength(0)
@@ -172,8 +172,8 @@ describe('restore', () => {
       let changes: DetailedChange[]
       beforeAll(async () => {
         changes = await createRestoreChanges(
-          await createElementSource([...wsElements, nestedType]),
-          await createElementSource([...stateElements, nestedType]),
+          createElementSource([...wsElements, nestedType]),
+          createElementSource([...stateElements, nestedType]),
           index
         )
       })
@@ -183,21 +183,25 @@ describe('restore', () => {
       })
 
       it('should create add changes for elements which are only in the state with proper path', () => {
-        const addChanges = changes.filter(c => c.action === 'add')
+        const addChanges = changes.filter(isAdditionChange)
         expect(addChanges).toHaveLength(2)
-        addChanges.forEach(change => expect(change.id).toEqual(multiPathObjMerged.elemID))
+        addChanges.forEach(change => {
+          expect(change.id).toEqual(multiPathObjMerged.elemID)
+          expect(change.data.after.elemID).toEqual(change.id)
+        })
         const changePaths = addChanges.map(change => change.path)
         expect(changePaths).toContainEqual(['salto', 'obj', 'multi', 'anno'])
         expect(changePaths).toContainEqual(['salto', 'obj', 'multi', 'fields'])
       })
       it('should create remove changes for elements which are only in the workspace with proper path', () => {
-        const removeChange = changes.find(c => c.action === 'remove')
+        const removeChange = changes.find(isRemovalChange)
         expect(removeChange).toBeDefined()
         expect(removeChange?.id).toEqual(singlePathObjMerged.elemID)
+        expect(removeChange?.data.before.elemID).toEqual(removeChange?.id)
         expect(removeChange?.path).toBeUndefined()
       })
       it('should create modify changes for elements which have different values in the state and ws with proper path', () => {
-        const modifyChange = changes.find(c => c.action === 'modify')
+        const modifyChange = changes.find(isModificationChange)
         expect(modifyChange).toBeDefined()
         expect(modifyChange?.id).toEqual(singlePathInstMergedAfter.elemID
           .createNestedID('nested').createNestedID('str'))

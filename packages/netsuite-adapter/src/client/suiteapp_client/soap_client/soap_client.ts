@@ -218,7 +218,8 @@ export default class SoapClient {
     })
   }
 
-  public async deleteFileCabinetInstances(instances: { id: number; type: 'file' | 'folder'; path: string }[]): Promise<(number | Error)[]> {
+  public async deleteFileCabinetInstances(instances: ExistingFileCabinetInstanceDetails[]):
+  Promise<(number | Error)[]> {
     const body = {
       _attributes: {
         xmlns: 'urn:messages_2020_2.platform.webservices.netsuite.com',
@@ -257,7 +258,7 @@ export default class SoapClient {
     })
   }
 
-  public async updateFileCabinet(fileCabinetInstances:
+  public async updateFileCabinetInstances(fileCabinetInstances:
     ExistingFileCabinetInstanceDetails[]): Promise<(number | Error)[]> {
     const body = {
       _attributes: {

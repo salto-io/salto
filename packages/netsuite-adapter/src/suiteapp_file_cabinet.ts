@@ -310,6 +310,24 @@ const convertToExistingFileCabinetDetails = (
   return { ...details, id: pathToId[instance.value.path] }
 }
 
+const deployInstances = async (
+  instances: FileCabinetInstanceDetails[],
+  type: DeployType,
+  suiteAppClient: SuiteAppClient,
+): Promise<(number | Error)[]> => {
+  if (type === 'add') {
+    return suiteAppClient.addFileCabinetInstances(instances)
+  }
+  if (type === 'delete') {
+    return suiteAppClient.deleteFileCabinetInstances(
+      instances as ExistingFileCabinetInstanceDetails[]
+    )
+  }
+  return suiteAppClient.updateFileCabinetInstances(
+    instances as ExistingFileCabinetInstanceDetails[]
+  )
+}
+
 const deployChunk = async (
   suiteAppClient: SuiteAppClient,
   chunk: ReadonlyArray<Change<InstanceElement>>,
@@ -331,24 +349,9 @@ const deployChunk = async (
       ({ details }) => details instanceof Error,
     )
 
-    let deployResults
-    if (type === 'add') {
-      deployResults = await suiteAppClient.addFileCabinetInstances(
-        validInstances.map(({ details }) => details as FileCabinetInstanceDetails)
-      )
-    } else if (type === 'delete') {
-      deployResults = await suiteAppClient.deleteFileCabinetInstances(
-        validInstances.map(
-          ({ details }) => details as ExistingFileCabinetInstanceDetails
-        )
-      )
-    } else {
-      deployResults = await suiteAppClient.updateFileCabinet(
-        validInstances.map(
-          ({ details }) => details as ExistingFileCabinetInstanceDetails
-        )
-      )
-    }
+    const deployResults = await deployInstances(validInstances.map(
+      ({ details }) => details as FileCabinetInstanceDetails
+    ), type, suiteAppClient)
 
     log.debug(`Deployed chunk of ${chunk.length} file changes`)
 
@@ -389,10 +392,11 @@ const deployChanges = async (
   }
 }
 
-const deployAdditions = async (
+const deployAdditionsOrDeletions = async (
   suiteAppClient: SuiteAppClient,
   changes: ReadonlyArray<Change<InstanceElement>>,
   pathToId: Record<string, number>,
+  type: 'add' | 'delete'
 ): Promise<DeployResult> => {
   const changesGroups = _(changes)
     .groupBy(change => getChangeElement(change).value.path.split('/').length)
@@ -400,33 +404,17 @@ const deployAdditions = async (
     .sortBy(([depth]) => depth)
     .value()
 
-  const deployResults = await promises.array.series(changesGroups
-    .map(([depth, group]) => () => {
-      log.debug(`Deploying ${group.length} new files with depth of ${depth}`)
-      return deployChanges(suiteAppClient, group, pathToId, 'add')
-    }))
-  return {
-    appliedChanges: deployResults.flatMap(deployResult => deployResult.appliedChanges),
-    errors: deployResults.flatMap(deployResult => deployResult.errors),
-  }
-}
+  const orderedChangesGroups = type === 'delete' ? changesGroups.reverse() : changesGroups
 
-const deployDeletions = async (
-  suiteAppClient: SuiteAppClient,
-  changes: ReadonlyArray<Change<InstanceElement>>,
-  pathToId: Record<string, number>,
-): Promise<DeployResult> => {
-  const changesGroups = _(changes)
-    .groupBy(change => getChangeElement(change).value.path.split('/').length)
-    .entries()
-    .sortBy(([depth]) => depth)
-    .reverse()
-    .value()
-
-  const deployResults = await promises.array.series(changesGroups
+  const deployResults = await promises.array.series(orderedChangesGroups
     .map(([depth, group]) => () => {
-      log.debug(`Deleting ${group.length} files with depth of ${depth}`)
-      return deployChanges(suiteAppClient, group, pathToId, 'delete')
+      if (type === 'delete') {
+        log.debug(`Deleting ${group.length} files with depth of ${depth}`)
+      } else {
+        log.debug(`Deploying ${group.length} new files with depth of ${depth}`)
+      }
+
+      return deployChanges(suiteAppClient, group, pathToId, type)
     }))
   return {
     appliedChanges: deployResults.flatMap(deployResult => deployResult.appliedChanges),
@@ -441,13 +429,9 @@ export const deploy = async (
 ): Promise<DeployResult> => {
   const pathToId = await generatePathToIdMap(suiteAppClient)
 
-  if (type === 'add') {
-    return deployAdditions(suiteAppClient, changes, pathToId)
-  }
-  if (type === 'delete') {
-    return deployDeletions(suiteAppClient, changes, pathToId)
-  }
-  return deployChanges(suiteAppClient, changes, pathToId, 'update')
+  return type === 'update'
+    ? deployChanges(suiteAppClient, changes, pathToId, 'update')
+    : deployAdditionsOrDeletions(suiteAppClient, changes, pathToId, type)
 }
 
 export const isChangeDeployable = (

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import axios from 'axios'
+import { ExistingFileCabinetInstanceDetails } from '../../src/client/suiteapp_client/types'
 import { ReadFileError } from '../../src/client/suiteapp_client/errors'
 import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client'
 import { ADD_FILE_CABINET_ERROR_RESPONSE, ADD_FILE_CABINET_INVALID_RESPONSE, ADD_FILE_CABINET_SUCCESS_RESPONSE, DELETE_FILE_CABINET_ERROR_RESPONSE, DELETE_FILE_CABINET_INVALID_RESPONSE, DELETE_FILE_CABINET_SUCCESS_RESPONSE, READ_FAILURE_RESPONSE, READ_INVALID_RESPONSE, READ_SUCCESS_RESPONSE, READ_SUCCESS_RESPONSE_NO_CONTENT, UPDATE_FILE_CABINET_ERROR_RESPONSE, UPDATE_FILE_CABINET_INVALID_RESPONSE, UPDATE_FILE_CABINET_SUCCESS_RESPONSE } from './soap_responses'
@@ -63,12 +64,12 @@ describe('soap_client', () => {
       await expect(client.readFile(1)).rejects.toThrow(Error)
     })
   })
-  describe('updateFileCabinet', () => {
+  describe('updateFileCabinetInstances', () => {
     it('should return the id is success and the error if fails', async () => {
       postMock.mockResolvedValue({
         data: UPDATE_FILE_CABINET_SUCCESS_RESPONSE,
       })
-      expect(await client.updateFileCabinet([
+      expect(await client.updateFileCabinetInstances([
         {
           type: 'file',
           path: 'somePath',
@@ -100,7 +101,7 @@ describe('soap_client', () => {
       postMock.mockResolvedValue({
         data: UPDATE_FILE_CABINET_ERROR_RESPONSE,
       })
-      await expect(client.updateFileCabinet([
+      await expect(client.updateFileCabinetInstances([
         {
           type: 'file',
           path: 'somePath',
@@ -129,7 +130,7 @@ describe('soap_client', () => {
       postMock.mockResolvedValue({
         data: UPDATE_FILE_CABINET_INVALID_RESPONSE,
       })
-      await expect(client.updateFileCabinet([
+      await expect(client.updateFileCabinetInstances([
         {
           type: 'file',
           path: 'somePath',
@@ -260,7 +261,7 @@ describe('soap_client', () => {
           id: 99999,
           path: 'somePath2',
         },
-      ])).toEqual([
+      ] as ExistingFileCabinetInstanceDetails[])).toEqual([
         7148,
         new Error('SOAP api call to delete file cabinet instance somePath2 failed. error code: MEDIA_NOT_FOUND, error message: Media item not found 99999'),
       ])
@@ -281,7 +282,7 @@ describe('soap_client', () => {
           id: 99999,
           path: 'somePath2',
         },
-      ])).rejects.toThrow('Failed to deleteList: error code: SOME_ERROR, error message: SOME_ERROR')
+      ] as ExistingFileCabinetInstanceDetails[])).rejects.toThrow('Failed to deleteList: error code: SOME_ERROR, error message: SOME_ERROR')
     })
 
     it('should throw an error if received invalid response', async () => {
@@ -299,7 +300,7 @@ describe('soap_client', () => {
           id: 99999,
           path: 'somePath2',
         },
-      ])).rejects.toThrow('Got invalid response from deleteList request. Errors:')
+      ] as ExistingFileCabinetInstanceDetails[])).rejects.toThrow('Got invalid response from deleteList request. Errors:')
     })
   })
 })

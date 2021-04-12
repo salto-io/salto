@@ -25,7 +25,7 @@ const changeValidator: ChangeValidator = async changes => (
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',
-      message: 'Removal of records is not supported via Salto',
+      message: 'Removal of custom types instances is not supported via Salto',
       detailedMessage: `${elemID.name} cannot be removed`,
     }))
 )

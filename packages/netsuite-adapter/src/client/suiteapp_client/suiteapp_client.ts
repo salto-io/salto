@@ -271,9 +271,9 @@ export default class SuiteAppClient {
     }
   }
 
-  public async updateFileCabinet(fileCabinetInstances:
+  public async updateFileCabinetInstances(fileCabinetInstances:
     ExistingFileCabinetInstanceDetails[]): Promise<(number | Error)[]> {
-    return this.soapClient.updateFileCabinet(fileCabinetInstances)
+    return this.soapClient.updateFileCabinetInstances(fileCabinetInstances)
   }
 
   public async addFileCabinetInstances(fileCabinetInstances:
@@ -282,7 +282,7 @@ export default class SuiteAppClient {
   }
 
   public async deleteFileCabinetInstances(fileCabinetInstances:
-    { id: number; type: 'file' | 'folder'; path: string }[]): Promise<(number | Error)[]> {
+    ExistingFileCabinetInstanceDetails[]): Promise<(number | Error)[]> {
     return this.soapClient.deleteFileCabinetInstances(fileCabinetInstances)
   }
 }

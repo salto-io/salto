@@ -143,7 +143,7 @@ describe('suiteapp_file_cabinet', () => {
     runSuiteQL: jest.fn(),
     readFiles: jest.fn(),
     readLargeFile: jest.fn(),
-    updateFileCabinet: jest.fn(),
+    updateFileCabinetInstances: jest.fn(),
     addFileCabinetInstances: jest.fn(),
     deleteFileCabinetInstances: jest.fn(),
   }
@@ -435,7 +435,7 @@ describe('suiteapp_file_cabinet', () => {
         throw new Error(`Unexpected query: ${suiteQlQuery}`)
       })
 
-      mockSuiteAppClient.updateFileCabinet.mockImplementation(
+      mockSuiteAppClient.updateFileCabinetInstances.mockImplementation(
         async fileCabinetInstances => fileCabinetInstances.map(({ id }: { id: number }) => id)
       )
       mockSuiteAppClient.addFileCabinetInstances.mockImplementation(
@@ -467,14 +467,14 @@ describe('suiteapp_file_cabinet', () => {
 
     describe('modifications', () => {
       it('should return only error if api calls fails', async () => {
-        mockSuiteAppClient.updateFileCabinet.mockRejectedValue(new Error('someError'))
+        mockSuiteAppClient.updateFileCabinetInstances.mockRejectedValue(new Error('someError'))
         const { appliedChanges, errors } = await deploy(suiteAppClient, [changes[0]], 'update')
         expect(errors).toEqual([new Error('someError')])
         expect(appliedChanges).toHaveLength(0)
       })
 
       it('should return applied changes for successful updates and errors for others', async () => {
-        mockSuiteAppClient.updateFileCabinet.mockResolvedValue([0, new Error('someError')])
+        mockSuiteAppClient.updateFileCabinetInstances.mockResolvedValue([0, new Error('someError')])
         const { appliedChanges, errors } = await deploy(suiteAppClient, changes.slice(0, 2), 'update')
         expect(errors).toEqual([new Error('someError')])
         expect(appliedChanges).toHaveLength(1)
@@ -531,10 +531,10 @@ describe('suiteapp_file_cabinet', () => {
         const { appliedChanges, errors } = await deploy(suiteAppClient, changes, 'update')
         expect(errors).toHaveLength(0)
         expect(appliedChanges).toEqual(changes)
-        expect(mockSuiteAppClient.updateFileCabinet.mock.calls[0][0]
+        expect(mockSuiteAppClient.updateFileCabinetInstances.mock.calls[0][0]
           .map((details: ExistingFileCabinetInstanceDetails) => details.id))
           .toEqual(Array.from(Array(50).keys()))
-        expect(mockSuiteAppClient.updateFileCabinet.mock.calls[1][0]
+        expect(mockSuiteAppClient.updateFileCabinetInstances.mock.calls[1][0]
           .map((details: ExistingFileCabinetInstanceDetails) => details.id))
           .toEqual(Array.from(Array(100).keys()).slice(50))
       })

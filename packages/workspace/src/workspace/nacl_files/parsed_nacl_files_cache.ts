@@ -169,7 +169,7 @@ export const createParseResultCache = (
     put: async (filename: string, value: ParsedNaclFile): Promise<void> => {
       const { metadata, errors, referenced, sourceMap, elements } = await cacheSources
       const fileErrors = await value.data.errors()
-      if (fileErrors) {
+      if (fileErrors && fileErrors.length > 0) {
         await errors.set(value.filename, fileErrors)
       } else {
         await errors.delete(value.filename)

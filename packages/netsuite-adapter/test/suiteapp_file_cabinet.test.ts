@@ -143,8 +143,9 @@ describe('suiteapp_file_cabinet', () => {
     runSuiteQL: jest.fn(),
     readFiles: jest.fn(),
     readLargeFile: jest.fn(),
-    updateFileCabinet: jest.fn(),
+    updateFileCabinetInstances: jest.fn(),
     addFileCabinetInstances: jest.fn(),
+    deleteFileCabinetInstances: jest.fn(),
   }
 
   const suiteAppClient = mockSuiteAppClient as unknown as SuiteAppClient
@@ -399,6 +400,7 @@ describe('suiteapp_file_cabinet', () => {
       )
 
       expect(isChangeDeployable(toChange({ after: deployableInstance }))).toBeTruthy()
+      expect(isChangeDeployable(toChange({ before: deployableInstance }))).toBeTruthy()
     })
   })
 
@@ -433,12 +435,15 @@ describe('suiteapp_file_cabinet', () => {
         throw new Error(`Unexpected query: ${suiteQlQuery}`)
       })
 
-      mockSuiteAppClient.updateFileCabinet.mockImplementation(
+      mockSuiteAppClient.updateFileCabinetInstances.mockImplementation(
         async fileCabinetInstances => fileCabinetInstances.map(({ id }: { id: number }) => id)
       )
       mockSuiteAppClient.addFileCabinetInstances.mockImplementation(
         async fileCabinetInstances => fileCabinetInstances
           .map(() => _.random(101, 200))
+      )
+      mockSuiteAppClient.deleteFileCabinetInstances.mockImplementation(
+        async fileCabinetInstances => fileCabinetInstances.map(({ id }: { id: number }) => id)
       )
 
       changes = Array.from(Array(100).keys()).map(id => toChange({
@@ -462,14 +467,14 @@ describe('suiteapp_file_cabinet', () => {
 
     describe('modifications', () => {
       it('should return only error if api calls fails', async () => {
-        mockSuiteAppClient.updateFileCabinet.mockRejectedValue(new Error('someError'))
+        mockSuiteAppClient.updateFileCabinetInstances.mockRejectedValue(new Error('someError'))
         const { appliedChanges, errors } = await deploy(suiteAppClient, [changes[0]], 'update')
         expect(errors).toEqual([new Error('someError')])
         expect(appliedChanges).toHaveLength(0)
       })
 
       it('should return applied changes for successful updates and errors for others', async () => {
-        mockSuiteAppClient.updateFileCabinet.mockResolvedValue([0, new Error('someError')])
+        mockSuiteAppClient.updateFileCabinetInstances.mockResolvedValue([0, new Error('someError')])
         const { appliedChanges, errors } = await deploy(suiteAppClient, changes.slice(0, 2), 'update')
         expect(errors).toEqual([new Error('someError')])
         expect(appliedChanges).toHaveLength(1)
@@ -526,10 +531,10 @@ describe('suiteapp_file_cabinet', () => {
         const { appliedChanges, errors } = await deploy(suiteAppClient, changes, 'update')
         expect(errors).toHaveLength(0)
         expect(appliedChanges).toEqual(changes)
-        expect(mockSuiteAppClient.updateFileCabinet.mock.calls[0][0]
+        expect(mockSuiteAppClient.updateFileCabinetInstances.mock.calls[0][0]
           .map((details: ExistingFileCabinetInstanceDetails) => details.id))
           .toEqual(Array.from(Array(50).keys()))
-        expect(mockSuiteAppClient.updateFileCabinet.mock.calls[1][0]
+        expect(mockSuiteAppClient.updateFileCabinetInstances.mock.calls[1][0]
           .map((details: ExistingFileCabinetInstanceDetails) => details.id))
           .toEqual(Array.from(Array(100).keys()).slice(50))
       })
@@ -546,9 +551,9 @@ describe('suiteapp_file_cabinet', () => {
                 path: '/instance1/newInstance1',
                 content: Buffer.from('aaa'),
                 bundleable: true,
-                isInactive: false,
-                isOnline: false,
-                hideInBundle: false,
+                isinactive: false,
+                isonline: false,
+                hideinbundle: false,
               }
             ),
           }),
@@ -570,9 +575,9 @@ describe('suiteapp_file_cabinet', () => {
               {
                 path: '/instance1/newInstance2',
                 bundleable: true,
-                isInactive: false,
-                isOnline: false,
-                hideInBundle: false,
+                isinactive: false,
+                isonline: false,
+                hideinbundle: false,
               }
             ),
           }),
@@ -589,6 +594,67 @@ describe('suiteapp_file_cabinet', () => {
         expect(mockSuiteAppClient.addFileCabinetInstances.mock.calls[1][0]
           .map((details: FileCabinetInstanceDetails) => details.path))
           .toEqual(['/instance1/newInstance2/newInstance3'])
+      })
+    })
+
+    describe('deletions', () => {
+      it('should split by depths', async () => {
+        changes = [
+          toChange({
+            before: new InstanceElement(
+              'deletedInstance1',
+              file,
+              {
+                path: '/instance1/instance101',
+                content: Buffer.from('aaa'),
+                bundleable: true,
+                isinactive: false,
+                isonline: false,
+                hideinbundle: false,
+              }
+            ),
+          }),
+          toChange({
+            before: new InstanceElement(
+              'deletedInstance2',
+              file,
+              {
+                path: '/instance1',
+                content: Buffer.from('aaa'),
+                bundleable: true,
+                isinactive: false,
+                isonline: false,
+                hideinbundle: false,
+              }
+            ),
+          }),
+          toChange({
+            before: new InstanceElement(
+              'deletedInstance3',
+              file,
+              {
+                path: '/instance0',
+                content: Buffer.from('aaa'),
+                bundleable: true,
+                isinactive: false,
+                isonline: false,
+                hideinBundle: false,
+              }
+            ),
+          }),
+        ]
+
+        const { appliedChanges, errors } = await deploy(suiteAppClient, changes, 'delete')
+        expect(errors).toHaveLength(0)
+        expect(appliedChanges).toHaveLength(3)
+
+        expect(mockSuiteAppClient.deleteFileCabinetInstances.mock.calls[0][0]
+          .map((details: FileCabinetInstanceDetails) => details.path))
+          .toEqual(['/instance1/instance101'])
+
+        expect(mockSuiteAppClient.deleteFileCabinetInstances.mock.calls[1][0]
+          .map((details: { path: string }) => details.path))
+          .toEqual(['/instance1', '/instance0'])
       })
     })
   })

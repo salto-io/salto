@@ -26,8 +26,8 @@ import { SuiteAppCredentials } from '../../credentials'
 import { CONSUMER_KEY, CONSUMER_SECRET } from '../constants'
 import { ReadFileError } from '../errors'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails } from '../types'
-import { AddListResults, GetResult, isAddListSuccess, isGetSuccess, isUpdateListSuccess, isWriteResponseSuccess, UpdateListResults } from './types'
-import { ADD_LIST_SCHEMA, GET_RESULTS_SCHEMA, UPDATE_LIST_SCHEMA } from './schemas'
+import { AddListResults, DeleteListResults, GetResult, isAddListSuccess, isDeleteListSuccess, isGetSuccess, isUpdateListSuccess, isWriteResponseSuccess, UpdateListResults } from './types'
+import { ADD_LIST_SCHEMA, DELETE_LIST_SCHEMA, GET_RESULTS_SCHEMA, UPDATE_LIST_SCHEMA } from './schemas'
 
 const log = logger(module)
 
@@ -166,6 +166,18 @@ export default class SoapClient {
       : SoapClient.convertToFolderRecord(fileCabinetInstance)
   }
 
+  private static convertToDeletionFileCabinetRecord(fileCabinetInstance:
+    { id: number; type: 'file' | 'folder' }): object {
+    return {
+      _attributes: {
+        type: fileCabinetInstance.type,
+        internalId: fileCabinetInstance.id,
+        'xsi:type': 'q1:RecordRef',
+        'xmlns:q1': 'urn:core_2020_2.platform.webservices.netsuite.com',
+      },
+    }
+  }
+
   public async addFileCabinetInstances(fileCabinetInstances:
     (FileCabinetInstanceDetails)[]): Promise<(number | Error)[]> {
     const body = {
@@ -206,7 +218,47 @@ export default class SoapClient {
     })
   }
 
-  public async updateFileCabinet(fileCabinetInstances:
+  public async deleteFileCabinetInstances(instances: ExistingFileCabinetInstanceDetails[]):
+  Promise<(number | Error)[]> {
+    const body = {
+      _attributes: {
+        xmlns: 'urn:messages_2020_2.platform.webservices.netsuite.com',
+      },
+      baseRef: instances.map(SoapClient.convertToDeletionFileCabinetRecord),
+    }
+
+    const response = await this.sendSoapRequest('deleteList', body)
+    if (!this.ajv.validate<DeleteListResults>(
+      DELETE_LIST_SCHEMA,
+      response
+    )) {
+      log.error(`Got invalid response from deleteList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`Got invalid response from deleteList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    }
+
+    if (!isDeleteListSuccess(response)) {
+      const details = response['soapenv:Envelope']['soapenv:Body'].deleteListResponse.writeResponseList['platformCore:status']['platformCore:statusDetail']
+      const code = details['platformCore:code']._text
+      const message = details['platformCore:message']._text
+
+      log.error(`Failed to deleteList: error code: ${code}, error message: ${message}`)
+      throw new Error(`Failed to deleteList: error code: ${code}, error message: ${message}`)
+    }
+
+    return collections.array.makeArray(response['soapenv:Envelope']['soapenv:Body'].deleteListResponse.writeResponseList.writeResponse).map((writeResponse, index) => {
+      if (!isWriteResponseSuccess(writeResponse)) {
+        const details = writeResponse['platformCore:status']['platformCore:statusDetail']
+        const code = details['platformCore:code']._text
+        const message = details['platformCore:message']._text
+
+        log.error(`SOAP api call to delete file cabinet instance ${instances[index].path} failed. error code: ${code}, error message: ${message}`)
+        return Error(`SOAP api call to delete file cabinet instance ${instances[index].path} failed. error code: ${code}, error message: ${message}`)
+      }
+      return parseInt(writeResponse.baseRef._attributes.internalId, 10)
+    })
+  }
+
+  public async updateFileCabinetInstances(fileCabinetInstances:
     ExistingFileCabinetInstanceDetails[]): Promise<(number | Error)[]> {
     const body = {
       _attributes: {

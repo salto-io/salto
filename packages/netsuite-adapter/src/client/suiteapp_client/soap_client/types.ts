@@ -150,3 +150,34 @@ export type AddListResults = AddListError | AddListSuccess
 export const isAddListSuccess = (result: AddListResults): result is AddListSuccess =>
   // eslint-disable-next-line no-underscore-dangle
   result['soapenv:Envelope']['soapenv:Body'].addListResponse.writeResponseList['platformCore:status']._attributes.isSuccess === 'true'
+
+export type DeleteListSuccess = {
+  'soapenv:Envelope': {
+    'soapenv:Body': {
+      deleteListResponse: {
+        writeResponseList: {
+          'platformCore:status': StatusSuccess
+          writeResponse: WriteResponse[] | WriteResponse
+        }
+      }
+    }
+  }
+}
+
+export type DeleteListError = {
+  'soapenv:Envelope': {
+    'soapenv:Body': {
+      deleteListResponse: {
+        writeResponseList: {
+          'platformCore:status': StatusError
+        }
+      }
+    }
+  }
+}
+
+export type DeleteListResults = DeleteListError | DeleteListSuccess
+
+export const isDeleteListSuccess = (result: DeleteListResults): result is DeleteListSuccess =>
+// eslint-disable-next-line no-underscore-dangle
+  result['soapenv:Envelope']['soapenv:Body'].deleteListResponse.writeResponseList['platformCore:status']._attributes.isSuccess === 'true'

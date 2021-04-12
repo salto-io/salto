@@ -239,7 +239,6 @@ export const elementAnnotationTypes = async (
   if (isInstanceElement(element)) {
     return InstanceAnnotationTypes
   }
-
   return {
     ...InstanceAnnotationTypes,
     ...CoreAnnotationTypes,

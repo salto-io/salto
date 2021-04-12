@@ -184,7 +184,7 @@ const addDifferentElements = (
     elem: ChangeDataType,
     action: Change['action'] & ('add' | 'remove')
   ): void => {
-    outputGraph.addNode(changeId(elem, action), [], toChange(elem.clone(), action))
+    outputGraph.addNode(changeId(elem, action), [], toChange(elem, action))
   }
 
   const addNodeIfDifferent = async (
@@ -275,8 +275,8 @@ const resolveNodeElements = (
       afterItemsToResolve.push(change.data.after)
     }
   })
-  await resolve(awu(beforeItemsToResolve), before, true)
-  await resolve(awu(afterItemsToResolve), after, true)
+  await resolve(beforeItemsToResolve, before, true)
+  await resolve(afterItemsToResolve, after, true)
   return graph
 }
 

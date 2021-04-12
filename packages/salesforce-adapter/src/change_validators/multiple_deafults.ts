@@ -18,7 +18,6 @@ import {
   ChangeError, getChangeElement, ChangeValidator, isAdditionOrModificationChange,
   isInstanceChange, Field, InstanceElement,
   isFieldChange, isListType, TypeElement, isMapType, Value, isReferenceExpression,
-  // isAdditionChange, isObjectTypeChange,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'

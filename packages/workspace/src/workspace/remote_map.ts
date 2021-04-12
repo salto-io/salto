@@ -20,9 +20,10 @@ import { AwuIterable } from '@salto-io/lowerdash/src/collections/asynciterable'
 const { toAsyncIterable, awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
-export type IterationOpts = {
+export type IterationOpts<T = string> = {
   first?: number
   after?: string
+  keyFilter?: (key: T) => boolean
 }
 
 export type RemoteMapEntry<T, K extends string = string> = { key: K; value: T }
@@ -44,9 +45,9 @@ export type RemoteMap<T, K extends string = string> = {
   set(key: K, value: T): Promise<void>
   setAll(values: ThenableIterable<RemoteMapEntry<T, K>>): Promise<void>
   deleteAll(keys: ThenableIterable<K>): Promise<void>
-  entries(opts?: IterationOpts): AsyncIterable<RemoteMapEntry<T, K>>
-  keys(opts?: IterationOpts): AsyncIterable<K>
-  values(opts?: IterationOpts): AsyncIterable<T>
+  entries(opts?: IterationOpts<K>): AsyncIterable<RemoteMapEntry<T, K>>
+  keys(opts?: IterationOpts<K>): AsyncIterable<K>
+  values(opts?: IterationOpts<K>): AsyncIterable<T>
   flush: () => Promise<boolean>
   revert: () => Promise<void>
   clear(): Promise<void>
@@ -100,19 +101,21 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
     this.data = new Map()
   }
 
-  getSortedEntries = (): AwuIterable<[K, T]> => awu(_.sortBy(Array
+  getSortedEntries = (opts?: IterationOpts<K>): AwuIterable<[K, T]> => awu(_.sortBy(Array
     .from(this.data.entries()), [e => e[0]]))
+    .filter(entry => opts?.keyFilter === undefined || opts.keyFilter(entry[0]))
 
-  entries(): AsyncIterable<RemoteMapEntry<T, K>> {
-    return this.getSortedEntries().map(e => ({ key: e[0], value: e[1] }))
+  entries(opts?: IterationOpts<K>): AsyncIterable<RemoteMapEntry<T, K>> {
+    return this.getSortedEntries(opts).map(e => ({ key: e[0], value: e[1] }))
   }
 
-  keys(): AsyncIterable<K> {
-    return toAsyncIterable(Array.from(this.data.keys()).sort())
+  keys(opts?: IterationOpts<K>): AsyncIterable<K> {
+    return awu(toAsyncIterable(Array.from(this.data.keys()).sort()))
+      .filter(key => opts?.keyFilter === undefined || opts.keyFilter(key))
   }
 
-  values(): AsyncIterable<T> {
-    return this.getSortedEntries().map(e => e[1])
+  values(opts?: IterationOpts<K>): AsyncIterable<T> {
+    return this.getSortedEntries(opts).map(e => e[1])
   }
 
   // eslint-disable-next-line class-methods-use-this

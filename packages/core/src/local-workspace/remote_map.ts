@@ -213,6 +213,9 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
     const tempIter = createTempIterator(opts)
     const iter = createPersistentIterator(opts)
     return awu(aggregatedIterable([tempIter, iter]))
+      .filter(entry => (
+        iterationOpts?.keyFilter === undefined || iterationOpts?.keyFilter(entry.key)
+      ))
       .map(async entry => ({ key: entry.key as K, value: await deserialize(entry.value) }))
   }
 

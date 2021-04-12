@@ -40,7 +40,7 @@ const { resolve, resolveReferenceExpression } = expressions
 
 const log = logger(module)
 
-export type IDFilter = (id: ElemID) => boolean | Promise<boolean>
+export type IDFilter = (id: ElemID) => boolean
 /**
  * Check if 2 nodes in the DAG are equals or not
  */
@@ -246,6 +246,7 @@ const addDifferentElements = (
       _.every(await Promise.all(
         topLevelFilters.map(filter => filter(elem.elemID))
       )))) as AsyncIterable<ChangeDataType>
+
   const cmp = (e1: ChangeDataType, e2: ChangeDataType): number => {
     if (e1.elemID.getFullName() < e2.elemID.getFullName()) {
       return -1

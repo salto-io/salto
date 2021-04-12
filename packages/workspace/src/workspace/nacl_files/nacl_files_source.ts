@@ -61,7 +61,8 @@ export type SourceLoadParams = {
   cachePrefix?: string
   env?: string
 }
-export type NaclFilesSource<Changes=Change[]> = Omit<ElementsSource, 'clear'> & {
+export type NaclFilesSource<Changes=Change[]> = Omit<ElementsSource, 'clear' | 'getAll'> & {
+  getAll: () => Promise<AsyncIterable<Element>>
   updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<Changes>
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>

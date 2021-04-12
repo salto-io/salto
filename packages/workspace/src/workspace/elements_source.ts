@@ -27,7 +27,7 @@ export interface ElementsSource {
   list(): Promise<AsyncIterable<ElemID>>
   has(id: ElemID): Promise<boolean>
   get(id: ElemID): Promise<Element | Value>
-  getAll(): Promise<AsyncIterable<Element>>
+  getAll(filter?: (id: ElemID) => boolean): Promise<AsyncIterable<Element>>
   flush(): Promise<void>
   clear(): Promise<void>
   rename(name: string): Promise<void>
@@ -81,8 +81,10 @@ export class RemoteElementSource implements ElementsSource {
     return awu(this.elements.keys()).map(fullname => ElemID.fromFullName(fullname))
   }
 
-  async getAll(): Promise<AsyncIterable<Element>> {
-    return this.elements.values()
+  async getAll(filter?: (id: ElemID) => boolean): Promise<AsyncIterable<Element>> {
+    return this.elements.values({
+      keyFilter: key => filter === undefined || filter(ElemID.fromFullName(key))
+    })
   }
 
   async get(id: ElemID): Promise<Value | undefined> {

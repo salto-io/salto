@@ -168,7 +168,12 @@ export const createParseResultCache = (
   return {
     put: async (filename: string, value: ParsedNaclFile): Promise<void> => {
       const { metadata, errors, referenced, sourceMap, elements } = await cacheSources
-      await errors.set(value.filename, (await value.data.errors()) ?? [])
+      const fileErrors = await value.data.errors()
+      if (fileErrors) {
+        await errors.set(value.filename, fileErrors)
+      } else {
+        await errors.delete(value.filename)
+      }
       await referenced.set(value.filename, (await value.data.referenced()) ?? [])
       const sourceMapValue = await value.sourceMap?.()
       if (sourceMapValue !== undefined) {

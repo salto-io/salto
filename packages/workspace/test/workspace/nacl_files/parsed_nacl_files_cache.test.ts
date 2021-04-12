@@ -349,6 +349,20 @@ describe('ParsedNaclFileCache', () => {
       expect(errors.includes(errorA)).toBeTruthy()
       expect(errors.includes(errorB)).toBeTruthy()
     })
+
+    it('Should unset errors when none exist', async () => {
+      await cache.put(toDeleteFilename, await toParsedNaclFile(
+        toDeleteKey,
+        {
+          elements: [toDeleteObjectType],
+          errors: [],
+          sourceMap,
+        },
+      ))
+      const errors = await cache.getAllErrors()
+      expect(errors.includes(errorA)).toBeTruthy()
+      expect(errors.includes(errorB)).toBeFalsy()
+    })
   })
 
   afterEach(async () => {

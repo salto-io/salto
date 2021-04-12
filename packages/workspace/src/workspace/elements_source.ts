@@ -83,7 +83,7 @@ export class RemoteElementSource implements ElementsSource {
 
   async getAll(filter?: (id: ElemID) => boolean): Promise<AsyncIterable<Element>> {
     return this.elements.values({
-      keyFilter: key => filter === undefined || filter(ElemID.fromFullName(key))
+      keyFilter: key => filter === undefined || filter(ElemID.fromFullName(key)),
     })
   }
 

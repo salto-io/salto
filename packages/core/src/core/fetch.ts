@@ -405,9 +405,19 @@ const calcFetchChanges = async (
   workspaceElements: elementSource.ElementsSource,
   partiallyFetchedAdapters: Set<string>,
 ): Promise<Iterable<FetchChange>> => {
-  const paritalFetchFilter: IDFilter = id => (
-    !partiallyFetchedAdapters.has(id.adapter) || mergedServiceElements.has(id)
-  )
+  const createPartialFetchFilter = async (): Promise<IDFilter> => {
+    if (partiallyFetchedAdapters.size === 0) {
+      return () => true
+    }
+    const idsFromPartialFetch = new Set([...await awu(await mergedServiceElements.list())
+      .filter(id => partiallyFetchedAdapters.has(id.adapter))
+      .map(id => id.getFullName())
+      .toArray()])
+
+    return id => !partiallyFetchedAdapters.has(id.adapter)
+      || idsFromPartialFetch.has(id.getFullName())
+  }
+  const paritalFetchFilter = await createPartialFetchFilter()
 
   const serviceChanges = [...await log.time(() =>
     getDetailedChanges(

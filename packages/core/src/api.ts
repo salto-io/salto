@@ -146,10 +146,15 @@ export const deploy = async (
   // Add workspace elements as an additional context for resolve so that we can resolve
   // variable expressions. Adding only variables is not enough for the case of a variable
   // with the value of a reference.
+  const changedElementsIDsSet = new Set([
+    ...await awu(await changedElements.list())
+      .map(id => id.getFullName())
+      .toArray(),
+  ])
   const changes = await awu(await getDetailedChanges(
     await workspace.elements(),
     changedElements,
-    [id => changedElements.has(id)]
+    [id => changedElementsIDsSet.has(id.getFullName())]
   )).map(change => ({ change, serviceChange: change }))
     .flatMap(toChangesWithPath(
       async name => collections.array.makeArray(await changedElements.get(name))

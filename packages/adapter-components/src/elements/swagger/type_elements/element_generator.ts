@@ -16,18 +16,19 @@
 import _ from 'lodash'
 import { ObjectType, PrimitiveType, ElemID, BuiltinTypes, Field, MapType, ListType, TypeMap } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { values as lowerdashValues } from '@salto-io/lowerdash'
+import { types as lowerdashTypes, values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { TYPES_PATH, SUBTYPES_PATH } from '../../constants'
 import { RequestableTypeSwaggerConfig, AdapterSwaggerApiConfig } from '../../../config/swagger'
 import {
-  getParsedDefs, isReferenceObject, toNormalizedRefName, ReferenceObject, SchemaObject,
+  getParsedDefs, isReferenceObject, toNormalizedRefName, SchemaObject,
   extractProperties, ADDITIONAL_PROPERTIES_FIELD, toPrimitiveType, toTypeName, SwaggerRefs,
   SchemaOrReference, SWAGGER_ARRAY, SWAGGER_OBJECT, isArraySchemaObject,
 } from './swagger_parser'
 import { fixTypes, defineAdditionalTypes } from './type_config_override'
 
 const { isDefined } = lowerdashValues
+const { isArrayOfType } = lowerdashTypes
 const log = logger(module)
 
 type TypeAdderType = (
@@ -130,12 +131,13 @@ const typeAdder = ({
     Object.assign(
       type.fields,
       _.mapValues(allProperties, (fieldSchema, fieldName) => {
-        const toNestedTypeName = ({ allOf }: SchemaObject): string => {
-          if (allOf?.every(isReferenceObject)) {
-            if (allOf.length === 1) {
-              return toNormalizedRefName(allOf[0] as ReferenceObject)
+        const toNestedTypeName = ({ allOf, anyOf, oneOf }: SchemaObject): string => {
+          const xOf = [allOf, anyOf, oneOf].filter(isDefined).flat()
+          if (xOf.length > 0 && isArrayOfType(xOf, isReferenceObject)) {
+            if (xOf.length === 1) {
+              return toNormalizedRefName(xOf[0])
             }
-            return `allof_${(allOf as ReferenceObject[]).map(toNormalizedRefName).sort().join('_')}`
+            return `combined_${(xOf).map(toNormalizedRefName).sort().join('_')}`
           }
           return `${objName}_${fieldName}`
         }
@@ -219,17 +221,13 @@ const typeAdder = ({
         endpointName,
       )
     }
-    // TODO add support for oneOf / anyOf / not (only in OpenAPI v3)
-    if (!_.isString(schema.type)) {
-      log.info('unexpected schema type %s for type %s', schema.type, typeName)
-    }
 
     const isObjectSchema = (schemaObj: SchemaObject): boolean => (
       schemaObj.type === SWAGGER_OBJECT || schemaObj.type === SWAGGER_ARRAY
       || schemaObj.properties !== undefined
-      || (
-        Array.isArray(schemaObj.allOf)
-        && schemaObj.allOf.some((s: SchemaObject) => isObjectSchema(s) || isReferenceObject(s))
+      || ([schemaObj.allOf, schemaObj.oneOf, schemaObj.anyOf].some(xOf =>
+        Array.isArray(xOf)
+        && xOf.every((s: SchemaObject) => isObjectSchema(s) || isReferenceObject(s)))
       )
     )
 

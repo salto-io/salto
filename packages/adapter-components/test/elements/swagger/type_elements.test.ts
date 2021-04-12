@@ -40,7 +40,11 @@ describe('swagger_type_elements', () => {
     }
 
     describe('no config overrides', () => {
-      const validate = async (url: string): Promise<void> => {
+      const validateV2 = async (
+        url: string,
+        extraTypes: string[] = [],
+        extraConfig: Record<string, RequestableTypeSwaggerConfig> = {},
+      ): ReturnType<typeof generateTypes> => {
         const { allTypes, parsedConfigs } = await generateTypes(
           ADAPTER_NAME,
           {
@@ -49,8 +53,8 @@ describe('swagger_type_elements', () => {
             types: {},
           },
         )
-        expect(Object.keys(allTypes).sort()).toEqual(expectedTypes)
-        expect(parsedConfigs).toEqual(expectedParsedConfigs)
+        expect(Object.keys(allTypes).sort()).toEqual([...expectedTypes, ...extraTypes].sort())
+        expect(parsedConfigs).toEqual({ ...expectedParsedConfigs, ...extraConfig })
         // regular response type with reference
         const pet = allTypes.Pet as ObjectType
         expect(pet).toBeInstanceOf(ObjectType)
@@ -104,18 +108,65 @@ describe('swagger_type_elements', () => {
           id: 'number',
           additionalProperties: 'map<unknown>',
         })
+
+        return { allTypes, parsedConfigs }
       }
+
+      const validateV3 = async (
+        url: string,
+      ): ReturnType<typeof generateTypes> => {
+        const { allTypes, parsedConfigs } = await validateV2(
+          url,
+          ['foodOrCategory', 'foodXorCategory', 'FoodOrCategory', 'FoodXorCategory', 'Location'],
+          {
+            foodOrCategory: { request: { url: '/foodOrCategory' } },
+            foodXorCategory: { request: { url: '/foodXorCategory' } },
+            Location: { request: { url: '/location/{locationName}' } },
+          },
+        )
+
+        const food = allTypes.Food as ObjectType
+        const category = allTypes.Category as ObjectType
+        const foodOrCategory = allTypes.FoodOrCategory as ObjectType
+        const foodXorCategory = allTypes.FoodOrCategory as ObjectType
+        expect(food).toBeInstanceOf(ObjectType)
+        expect(category).toBeInstanceOf(ObjectType)
+        expect(foodOrCategory).toBeInstanceOf(ObjectType)
+        expect(foodXorCategory).toBeInstanceOf(ObjectType)
+        // anyOf
+        expect(_.mapValues(foodOrCategory.fields, f => f.type.elemID.name)).toEqual({
+          ..._.mapValues(food.fields, f => f.type.elemID.name),
+          ..._.mapValues(category.fields, f => f.type.elemID.name),
+        })
+        // oneOf
+        expect(_.mapValues(foodXorCategory.fields, f => f.type.elemID.name)).toEqual({
+          ..._.mapValues(food.fields, f => f.type.elemID.name),
+          ..._.mapValues(category.fields, f => f.type.elemID.name),
+        })
+
+        const location = allTypes.Location as ObjectType
+        expect(location).toBeInstanceOf(ObjectType)
+        expect(_.mapValues(location.fields, f => f.type.elemID.name)).toEqual({
+          additionalProperties: 'map<unknown>',
+          name: 'string',
+          // address is defined as anyOf combining primitive and object - should use unknown
+          address: 'unknown',
+        })
+
+        return { allTypes, parsedConfigs }
+      }
+
       it('should generate the right types for swagger v2 yaml', async () => {
-        await validate(`${BASE_DIR}/petstore_swagger.v2.yaml`)
+        await validateV2(`${BASE_DIR}/petstore_swagger.v2.yaml`)
       })
       it('should generate the right types for swagger v2 json', async () => {
-        await validate(`${BASE_DIR}/petstore_swagger.v2.json`)
+        await validateV2(`${BASE_DIR}/petstore_swagger.v2.json`)
       })
       it('should generate the right types for swagger v3 yaml', async () => {
-        await validate(`${BASE_DIR}/petstore_openapi.v3.yaml`)
+        await validateV3(`${BASE_DIR}/petstore_openapi.v3.yaml`)
       })
       it('should generate the right types for swagger v3 json', async () => {
-        await validate(`${BASE_DIR}/petstore_openapi.v3.json`)
+        await validateV3(`${BASE_DIR}/petstore_openapi.v3.json`)
       })
     })
 

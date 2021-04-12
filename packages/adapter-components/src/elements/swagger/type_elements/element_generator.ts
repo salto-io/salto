@@ -16,18 +16,19 @@
 import _ from 'lodash'
 import { ObjectType, PrimitiveType, ElemID, BuiltinTypes, Field, MapType, ListType, TypeMap } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { values as lowerdashValues } from '@salto-io/lowerdash'
+import { types as lowerdashTypes, values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { TYPES_PATH, SUBTYPES_PATH } from '../../constants'
 import { RequestableTypeSwaggerConfig, AdapterSwaggerApiConfig } from '../../../config/swagger'
 import {
-  getParsedDefs, isReferenceObject, toNormalizedRefName, ReferenceObject, SchemaObject,
+  getParsedDefs, isReferenceObject, toNormalizedRefName, SchemaObject,
   extractProperties, ADDITIONAL_PROPERTIES_FIELD, toPrimitiveType, toTypeName, SwaggerRefs,
   SchemaOrReference, SWAGGER_ARRAY, SWAGGER_OBJECT, isArraySchemaObject,
 } from './swagger_parser'
 import { fixTypes, defineAdditionalTypes } from './type_config_override'
 
 const { isDefined } = lowerdashValues
+const { isArrayOfType } = lowerdashTypes
 const log = logger(module)
 
 type TypeAdderType = (
@@ -35,10 +36,6 @@ type TypeAdderType = (
   origTypeName: string,
   endpointName?: string,
 ) => PrimitiveType | ObjectType
-
-const isReferenceObjectArray = (array: unknown[]): array is ReferenceObject[] => (
-  array.every(isReferenceObject)
-)
 
 /**
  * Helper function for creating type elements for the given swagger definitions.
@@ -136,7 +133,7 @@ const typeAdder = ({
       _.mapValues(allProperties, (fieldSchema, fieldName) => {
         const toNestedTypeName = ({ allOf, anyOf, oneOf }: SchemaObject): string => {
           const xOf = [allOf, anyOf, oneOf].filter(isDefined).flat()
-          if (xOf.length > 0 && isReferenceObjectArray(xOf)) {
+          if (xOf.length > 0 && isArrayOfType(xOf, isReferenceObject)) {
             if (xOf.length === 1) {
               return toNormalizedRefName(xOf[0])
             }

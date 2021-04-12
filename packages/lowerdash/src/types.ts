@@ -75,3 +75,10 @@ export class _Bean<T> {
 
 export type Bean<T> = _Bean<T> & T
 export const Bean = _Bean as new <T>(props: T) => Bean<T>
+
+export const isArrayOfType = <T>(
+  array: unknown[],
+  typeGuard: TypeGuard<unknown, T>,
+): array is T[] => (
+    array.every(typeGuard)
+  )

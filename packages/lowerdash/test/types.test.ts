@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
-  AtLeastOne, RequiredMember, hasMember, filterHasMember, ValueOf,
-  Bean,
+  AtLeastOne, RequiredMember, hasMember, filterHasMember, ValueOf, Bean, isArrayOfType, TypeGuard,
 } from '../src/types'
 
 // Note: some of the tests here are compile-time, so the actual assertions may look weird.
@@ -104,6 +104,27 @@ describe('types', () => {
       const m = new MyBean({ p1: 'astring', p2: 12 })
       expect(m.p1).toBe('astring')
       expect(m.p2).toBe(12)
+    })
+  })
+
+  describe('isArrayOfType', () => {
+    type MyType = { a: string }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    type Guard = TypeGuard<unknown, MyType>
+
+    it('should return true if the type guard returns true for all items', () => {
+      const truthy: Guard = (_t: unknown): _t is MyType => true
+      expect(isArrayOfType([{ a: 'b' }, { c: 'd' }], truthy)).toBeTruthy()
+    })
+    it('should return false if the type guard returns false for any item', () => {
+      const falsy: Guard = (_t: unknown): _t is MyType => false
+      expect(isArrayOfType([{ a: 'b' }, { c: 'd' }], falsy)).toBeFalsy()
+      const actual: Guard = (t: unknown): t is MyType => _.isString(_.get(t, 'a'))
+      expect(isArrayOfType([{ a: 'b' }, { c: 'd' }], actual)).toBeFalsy()
+    })
+    it('should return true if the array is empty', () => {
+      const falsy: Guard = (_t: unknown): _t is MyType => false
+      expect(isArrayOfType([], falsy)).toBeTruthy()
     })
   })
 })

@@ -65,7 +65,7 @@ export const listUnresolvedReferences = async (
   }
 
   const getUnresolvedElemIDs = async (
-    elements: ReadonlyArray<Element>,
+    elements: Element[],
   ): Promise<ElemID[]> => _.uniqBy(
     (await validateElements(elements, await workspace.elements()))
       .filter(isUnresolvedRefError).map(e => e.target),

@@ -204,7 +204,7 @@ describe('State/cache serialization', () => {
     // TemplateExpressions are discarded
     const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
     const resolved = await resolve(
-      awu(elementsToSerialize),
+      elementsToSerialize,
       createInMemoryElementSource(elementsToSerialize)
     )
     const serialized = serialize(await awu(resolved).toArray(), 'keepRef')
@@ -238,7 +238,7 @@ describe('State/cache serialization', () => {
     const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
     const serialized = serialize(
       await awu(await resolve(
-        awu(elementsToSerialize),
+        elementsToSerialize,
         createInMemoryElementSource(elementsToSerialize)
       )).toArray()
     )

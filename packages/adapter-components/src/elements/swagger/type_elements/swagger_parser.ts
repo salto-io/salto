@@ -154,13 +154,6 @@ type HasXOf = {
   oneOf?: SchemaOrReference[]
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const xOfCompatible = (val: any): val is HasXOf => (
-  (val.allOf === undefined || Array.isArray(val.allOf))
-  && (val.anyOf === undefined || Array.isArray(val.anyOf))
-  && (val.oneOf === undefined || Array.isArray(val.oneOf))
-)
-
 /**
  * Extract the nested fields for the specified schema that are defined in its allOf nested schemas,
  * including additionalProperties.
@@ -176,7 +169,6 @@ export const extractProperties = (schemaDefObj: SchemaObject, refs: SwaggerRefs)
       xOf => [
         ...xOf,
         ...xOf
-          .filter(x => xOfCompatible(x) || isReferenceObject(x))
           .flatMap(nested => (isReferenceObject(nested) ? [nested] : recursiveXOf(nested))),
       ]
     )
@@ -201,7 +193,7 @@ export const extractProperties = (schemaDefObj: SchemaObject, refs: SwaggerRefs)
   const flattenXOfAdditionalProps = (schemaDef: SchemaObject): SchemaObject[] => (
     [
       schemaDef.additionalProperties,
-      ...(xOfCompatible(schemaDef) ? recursiveXOf(schemaDef) : []).flatMap(nested => (
+      ...recursiveXOf(schemaDef).flatMap(nested => (
         isReferenceObject(nested)
           ? flattenXOfAdditionalProps(refs.get(nested.$ref))
           : [

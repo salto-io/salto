@@ -36,6 +36,10 @@ type TypeAdderType = (
   endpointName?: string,
 ) => PrimitiveType | ObjectType
 
+const isReferenceObjectArray = (array: unknown[]): array is ReferenceObject[] => (
+  array.every(isReferenceObject)
+)
+
 /**
  * Helper function for creating type elements for the given swagger definitions.
  * Keeps track of already-generated subtypes to reuse existing elements and avoid duplications.
@@ -132,11 +136,11 @@ const typeAdder = ({
       _.mapValues(allProperties, (fieldSchema, fieldName) => {
         const toNestedTypeName = ({ allOf, anyOf, oneOf }: SchemaObject): string => {
           const xOf = [allOf, anyOf, oneOf].filter(isDefined).flat()
-          if (xOf.length > 0 && xOf.every(isReferenceObject)) {
+          if (xOf.length > 0 && isReferenceObjectArray(xOf)) {
             if (xOf.length === 1) {
-              return toNormalizedRefName(xOf[0] as ReferenceObject)
+              return toNormalizedRefName(xOf[0])
             }
-            return `combined_${(xOf as ReferenceObject[]).map(toNormalizedRefName).sort().join('_')}`
+            return `combined_${(xOf).map(toNormalizedRefName).sort().join('_')}`
           }
           return `${objName}_${fieldName}`
         }
@@ -219,10 +223,6 @@ const typeAdder = ({
         toNormalizedRefName(schema),
         endpointName,
       )
-    }
-
-    if (!_.isString(schema.type)) {
-      log.debug('unexpected schema type %s for type %s', schema.type, typeName)
     }
 
     const isObjectSchema = (schemaObj: SchemaObject): boolean => (

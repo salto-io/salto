@@ -27,6 +27,7 @@ describe('client_pagination', () => {
     }
     beforeEach(() => {
       client.getSinglePage.mockReset()
+      client.getPageSize.mockReset()
     })
 
     it('should query a single page if paginationField is not specified', async () => {
@@ -241,6 +242,7 @@ describe('client_pagination', () => {
     }
     beforeEach(() => {
       client.getSinglePage.mockReset()
+      client.getPageSize.mockReset()
     })
 
     it('should query a single page if paginationField is not specified', async () => {

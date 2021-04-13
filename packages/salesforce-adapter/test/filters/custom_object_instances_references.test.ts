@@ -30,13 +30,11 @@ describe('Custom Object Instances References filter', () => {
   type FilterType = FilterWith<'onFetch'>
   let filter: FilterType
 
-  const refFromName = 'refFrom'
-  const refToName = 'refToName'
-  const masterName = 'masterName'
   const stringType = new PrimitiveType({
     elemID: new ElemID(SALESFORCE, 'string'),
     primitive: PrimitiveTypes.STRING,
   })
+  const masterName = 'masterName'
   const masterElemID = new ElemID(SALESFORCE, masterName)
   const masterObj = new ObjectType({
     elemID: masterElemID,
@@ -55,6 +53,7 @@ describe('Custom Object Instances References filter', () => {
       },
     },
   })
+  const refToName = 'refToName'
   const refToElemID = new ElemID(SALESFORCE, refToName)
   const refToObj = new ObjectType({
     elemID: refToElemID,
@@ -73,6 +72,7 @@ describe('Custom Object Instances References filter', () => {
       },
     },
   })
+  const refFromName = 'refFrom'
   const refFromElemID = new ElemID(SALESFORCE, refFromName)
   const refFromObj = new ObjectType(
     {
@@ -161,22 +161,67 @@ describe('Custom Object Instances References filter', () => {
         Id: 'masterToId',
       },
     )
-    const originalElements = [
+    const duplicateInstName = 'duplicateInstance'
+    const firstDupInst = new InstanceElement(
+      duplicateInstName,
+      refToObj,
+      {
+        Id: 'duplicateId-1',
+      },
+    )
+    const secondDupInst = new InstanceElement(
+      duplicateInstName,
+      refToObj,
+      {
+        Id: 'duplicateId-2',
+      },
+    )
+    const refFromToDupName = 'refFromToDuplicateInstance'
+    const refFromToDupInst = new InstanceElement(
+      refFromToDupName,
+      refFromObj,
+      {
+        Id: 'toDuplicate',
+        LookupExample: 'duplicateId-1',
+        MasterDetailExample: 'duplicateId-2',
+      }
+    )
+    const refFromToRefToDupName = 'refFromToRefToDupInstance'
+    const refFromToRefToDupInst = new InstanceElement(
+      refFromToRefToDupName,
+      refFromObj,
+      {
+        Id: 'toToDuplicate',
+        LookupExample: 'toDuplicate',
+      }
+    )
+    const objects = [
       refFromObj,
       refToObj,
       masterObj,
+    ]
+    const legalInstances = [
       refToInstance,
       refFromInstance,
       masterToInstance,
+    ]
+    const illegalInstances = [
       refFromEmptyRefsInstance,
+      firstDupInst,
+      secondDupInst,
+      refFromToDupInst,
+      refFromToRefToDupInst,
+    ]
+    const allElements = [
+      ...objects, ...legalInstances, ...illegalInstances,
     ]
     beforeAll(async () => {
-      elements = originalElements.map(e => e.clone())
+      elements = allElements.map(e => e.clone())
       await filter.onFetch(elements)
     })
 
-    it('should not change # of elements, the objects and the ref to instances', () => {
-      expect(elements.length).toEqual(originalElements.length)
+    it('Should drop the illegal instances and not change the objects and the ref to instances', () => {
+      expect(elements.length).toEqual(objects.length + legalInstances.length)
 
       // object types
       expect(elements.find(e => e.elemID.isEqual(refFromElemID))).toMatchObject(refFromObj)
@@ -200,16 +245,34 @@ describe('Custom Object Instances References filter', () => {
         .toEqual(new ReferenceExpression(masterToInstance.elemID))
     })
 
-    it('should keep the value if "empty" ref (no instance with this id)', () => {
+    it('should drop the referencing instance if ref is to non existing instance', () => {
       const afterFilterEmptyRefToInst = elements.find(
         e => e.elemID.isEqual(refFromEmptyRefsInstance.elemID)
       )
-      expect(afterFilterEmptyRefToInst).toBeDefined()
-      expect(isInstanceElement(afterFilterEmptyRefToInst)).toBeTruthy()
-      expect((afterFilterEmptyRefToInst as InstanceElement).value.LookupExample)
-        .toEqual(refFromEmptyRefsValues.LookupExample)
-      expect((afterFilterEmptyRefToInst as InstanceElement).value.MasterDetailExample)
-        .toEqual(refFromEmptyRefsValues.MasterDetailExample)
+      expect(afterFilterEmptyRefToInst).toBeUndefined()
+    })
+
+    it('should drop instances with duplicate elemIDs', () => {
+      const afterFilterFirstDup = elements.find(
+        e => e.elemID.isEqual(firstDupInst.elemID)
+      )
+      const afterFilterSecondDup = elements.find(
+        e => e.elemID.isEqual(secondDupInst.elemID)
+      )
+      expect(afterFilterFirstDup).toBeUndefined()
+      expect(afterFilterSecondDup).toBeUndefined()
+    })
+    it('should drop instances with ref to instances that have elemID duplications', () => {
+      const afterFilterRefFromToDup = elements.find(
+        e => e.elemID.isEqual(refFromToDupInst.elemID)
+      )
+      expect(afterFilterRefFromToDup).toBeUndefined()
+    })
+    it('should drop instances with ref to instances that have refs to inst with elemID duplications', () => {
+      const afterFilterRefFromToRefToDup = elements.find(
+        e => e.elemID.isEqual(refFromToRefToDupInst.elemID)
+      )
+      expect(afterFilterRefFromToRefToDup).toBeUndefined()
     })
   })
 })

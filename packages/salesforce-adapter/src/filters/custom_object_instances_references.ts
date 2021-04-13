@@ -144,7 +144,7 @@ const filter: FilterCreator = () => ({
       elements,
       element =>
         (isInstanceOfCustomObject(element)
-        && !invalidInstances.has(serializeInstanceInternalID(element))),
+        && invalidInstances.has(serializeInstanceInternalID(element))),
     )
   },
 })

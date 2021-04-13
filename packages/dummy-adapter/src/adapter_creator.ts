@@ -22,12 +22,15 @@ import { GeneratorParams, DUMMY_ADAPTER, defaultParams } from './generator'
 
 export const configType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER),
-  fields: _.mapValues(defaultParams, defValue => ({
-    type: _.isBoolean(defValue) ? BuiltinTypes.BOOLEAN : BuiltinTypes.NUMBER,
-    annotations: {
-      [CORE_ANNOTATIONS.DEFAULT]: defValue,
-    },
-  })),
+  fields: {
+    ..._.mapValues(defaultParams, defValue => ({
+      type: _.isBoolean(defValue) ? BuiltinTypes.BOOLEAN : BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: defValue,
+      },
+    })),
+    extraNaclPath: { type: BuiltinTypes.STRING },
+  },
 })
 
 export const adapter: Adapter = {

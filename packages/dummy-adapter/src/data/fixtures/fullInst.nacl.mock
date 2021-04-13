@@ -1,0 +1,4 @@
+dummy.Full FullInst1 {
+    strField = "STR1"
+    numField = 111
+}

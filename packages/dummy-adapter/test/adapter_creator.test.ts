@@ -22,7 +22,7 @@ import DummyAdapter from '../src/adapter'
 describe('adapter creator', () => {
   it('should return a config containing all of the generator params', () => {
     const config = adapter.configType as ObjectType
-    expect(Object.keys(config?.fields)).toEqual(Object.keys(defaultParams))
+    expect(Object.keys(config?.fields)).toEqual([...Object.keys(defaultParams), 'extraNaclPath'])
   })
   it('should return an empty creds type', () => {
     expect(Object.keys(adapter.authenticationMethods.basic.credentialsType.fields)).toHaveLength(0)

@@ -15,12 +15,9 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { collections } from '@salto-io/lowerdash'
 import { ClientRateLimitConfig } from '../../src/client/config'
-import { AdapterHTTPClient, ClientOpts, ConnectionCreator, GetAllItemsFunc, UnauthorizedError } from '../../src/client'
+import { AdapterHTTPClient, ClientOpts, ConnectionCreator, UnauthorizedError } from '../../src/client'
 import { createConnection, Credentials } from './common'
-
-const { toArrayAsync } = collections.asynciterable
 
 describe('client_http_client', () => {
   let mockAxiosAdapter: MockAdapter
@@ -32,35 +29,28 @@ describe('client_http_client', () => {
     mockAxiosAdapter.restore()
   })
 
-  describe('get', () => {
-    const getPage: GetAllItemsFunc = jest.fn(async function *x() {
-      await new Promise(resolve => setTimeout(resolve, 10))
-      yield []
-    })
+  const mockCreateConnection: ConnectionCreator<Credentials> = jest.fn(createConnection)
 
-    const mockCreateConnection: ConnectionCreator<Credentials> = jest.fn(createConnection)
-
-    class MyCustomClient extends AdapterHTTPClient<
-      Credentials, ClientRateLimitConfig
-    > {
-      constructor(
-        clientOpts: ClientOpts<Credentials, ClientRateLimitConfig>,
-      ) {
-        super(
-          'MyCustom',
-          clientOpts,
-          mockCreateConnection,
-          {
-            pageSize: { get: 123 },
-            rateLimit: { total: -1, get: 3 },
-            retry: { maxAttempts: 3, retryDelay: 123 },
-          }
-        )
-      }
-
-      protected getAllItems = getPage
+  class MyCustomClient extends AdapterHTTPClient<
+    Credentials, ClientRateLimitConfig
+  > {
+    constructor(
+      clientOpts: ClientOpts<Credentials, ClientRateLimitConfig>,
+    ) {
+      super(
+        'MyCustom',
+        clientOpts,
+        mockCreateConnection,
+        {
+          pageSize: { get: 123 },
+          rateLimit: { total: -1, get: 3 },
+          retry: { maxAttempts: 3, retryDelay: 123 },
+        }
+      )
     }
+  }
 
+  describe('getSinglePage', () => {
     it('should make the right request', async () => {
       expect(mockCreateConnection).not.toHaveBeenCalled()
       const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
@@ -69,22 +59,13 @@ describe('client_http_client', () => {
       mockAxiosAdapter.onGet('/users/me').reply(200, {
         accountId: 'ACCOUNT_ID',
       })
+      mockAxiosAdapter.onGet('/ep').replyOnce(200, { a: 'b' })
+      mockAxiosAdapter.onGet('/ep2', { a: 'AAA' }).replyOnce(200, { c: 'd' })
 
-      const getRes = client.get({ url: '/ep' })
-      // should not call getPage until auth succeeds
-      expect(getPage).toHaveBeenCalledTimes(0)
-      await toArrayAsync(await getRes)
-      await toArrayAsync(await client.get({ url: '/ep2', paginationField: 'page', queryParams: { a: 'AAA' } }))
-      expect(getPage).toHaveBeenCalledTimes(2)
-      expect(getPage).toHaveBeenCalledWith({
-        conn: expect.anything(), pageSize: 123, getParams: { url: '/ep' },
-      })
-      expect(getPage).toHaveBeenCalledWith({
-        conn: expect.anything(),
-        pageSize: 123,
-        getParams: { url: '/ep2', paginationField: 'page', queryParams: { a: 'AAA' } },
-      })
-      expect(mockCreateConnection).toHaveBeenCalledTimes(1)
+      const getRes = await client.getSinglePage({ url: '/ep' })
+      const getRes2 = await client.getSinglePage({ url: '/ep2', queryParams: { a: 'AAA' } })
+      expect(getRes).toEqual({ data: { a: 'b' }, status: 200 })
+      expect(getRes2).toEqual({ data: { c: 'd' }, status: 200 })
     })
 
     it('should throw Unauthorized on login 401', async () => {
@@ -92,7 +73,26 @@ describe('client_http_client', () => {
       mockAxiosAdapter.onGet('/users/me').reply(401, {
         accountId: 'ACCOUNT_ID',
       })
-      await expect(client.get({ url: '/ep' })).rejects.toThrow(UnauthorizedError)
+      await expect(client.getSinglePage({ url: '/ep' })).rejects.toThrow(UnauthorizedError)
+    })
+  })
+
+  describe('getPageSize', () => {
+    it('should return the default when no pageSize is specified in config', () => {
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      expect(client.getPageSize()).toEqual(123)
+    })
+
+    it('should return the provided value when specified', () => {
+      const client = new MyCustomClient({
+        credentials: { username: 'user', password: 'password' },
+        config: {
+          pageSize: {
+            get: 55,
+          },
+        },
+      })
+      expect(client.getPageSize()).toEqual(55)
     })
   })
 })

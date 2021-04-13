@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 
-const { traverseRequests } = clientUtils
+const { getWithPageOffsetPagination, traverseRequests } = clientUtils
 const log = logger(module)
 
 /**
@@ -52,4 +52,17 @@ export const getMinSinceIdPagination: clientUtils.GetAllItemsFunc = async functi
     }]
   }
   yield* traverseRequests(nextPage)(args)
+}
+
+export const paginate: clientUtils.GetAllItemsFunc = async function *paginate({
+  client,
+  pageSize,
+  getParams,
+}) {
+  if (getParams?.paginationField === 'since_id') {
+    // special handling for endpoints that use descending ids, like the recipes endpoint
+    yield* getMinSinceIdPagination({ client, pageSize, getParams })
+  } else {
+    yield* getWithPageOffsetPagination({ client, pageSize, getParams })
+  }
 }

@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { Connection, ConnectionCreator, createRetryOptions, createClientConnection, ResponseValue } from './http_connection'
+import { Connection, ConnectionCreator, createRetryOptions, createClientConnection, ResponseValue, GetResponse } from './http_connection'
 import { AdapterClientBase } from './base'
-import { GetAllItemsFunc, ClientGetParams } from './pagination'
 import { ClientRetryConfig, ClientRateLimitConfig, ClientPageSizeConfig, ClientBaseConfig } from './config'
 import { requiresLogin, logDecorator } from './decorators'
 import { throttle } from './rate_limit'
@@ -33,8 +33,15 @@ export type ClientOpts<
   credentials: TCredentials
 }
 
+export type ClientGetParams = {
+  url: string
+  queryParams?: Record<string, string>
+}
+
 export interface HTTPClientInterface {
-  get(params: ClientGetParams): AsyncIterable<ResponseValue[]>
+  getSinglePage(params: ClientGetParams): Promise<GetResponse<ResponseValue | ResponseValue[]>>
+
+  getPageSize(): number
 }
 
 export abstract class AdapterHTTPClient<
@@ -67,8 +74,6 @@ export abstract class AdapterHTTPClient<
     this.credentials = credentials
   }
 
-  protected abstract getAllItems: GetAllItemsFunc
-
   protected async ensureLoggedIn(): Promise<void> {
     if (!this.isLoggedIn) {
       if (this.loginPromise === undefined) {
@@ -83,26 +88,37 @@ export abstract class AdapterHTTPClient<
   }
 
   /**
-   * Fetch instances of a specific type
+   * Get a single response
    */
-  @throttle<TRateLimitConfig>('get', ['url', 'queryParams', 'recursiveQueryParams'])
-  @logDecorator(['url', 'queryParams', 'recursiveQueryParams'])
+  @throttle<TRateLimitConfig>('get', ['url', 'queryParams'])
+  @logDecorator(['url', 'queryParams'])
   @requiresLogin()
-  public async *get(getParams: ClientGetParams): AsyncIterable<ResponseValue[]> {
+  public async getSinglePage({
+    url, queryParams,
+  }: ClientGetParams): Promise<GetResponse<ResponseValue | ResponseValue[]>> {
     if (this.apiClient === undefined) {
       // initialized by requiresLogin (through ensureLoggedIn in this case)
       throw new Error(`uninitialized ${this.clientName} client`)
     }
 
     try {
-      yield* await this.getAllItems({
-        conn: this.apiClient,
-        pageSize: this.getPageSize,
-        getParams,
-      })
+      const { data, status } = await this.apiClient.get(
+        url,
+        queryParams !== undefined && Object.keys(queryParams).length > 0
+          ? { params: queryParams }
+          : undefined,
+      )
+      log.debug('Received response for %s (%s) with status %d', url, safeJsonStringify({ url, queryParams }), status)
+      log.trace('Full HTTP response for %s: %s', url, safeJsonStringify({
+        url, queryParams, response: data,
+      }))
+      return {
+        data,
+        status,
+      }
     } catch (e) {
-      log.error(`failed to get ${getParams.url}: ${e}, stack: ${e.stack}`)
-      throw new Error(`Failed to get ${getParams.url} with error: ${e}`)
+      log.error(`failed to get ${url} ${queryParams}: ${e}, stack: ${e.stack}`)
+      throw new Error(`Failed to get ${url} with error: ${e}`)
     }
   }
 }

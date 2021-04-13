@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { Element, Values, isInstanceElement } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { ClientGetParams } from '../client'
+import { ClientGetWithPaginationParams } from '../client'
 import { RequestConfig, ARG_PLACEHOLDER_MATCHER } from '../config/request'
 
 const log = logger(module)
@@ -25,7 +25,7 @@ const log = logger(module)
 export type ComputeGetArgsFunc = (
   request: RequestConfig,
   contextElements?: Record<string, Element[]>,
-) => ClientGetParams[]
+) => ClientGetWithPaginationParams[]
 
 /**
  * Convert an endpoint's request details into get argumets.

@@ -15,6 +15,7 @@
 */
 import { Element, PostFetchOptions } from '@salto-io/adapter-api'
 import { types, promises } from '@salto-io/lowerdash'
+import { Paginator } from './client'
 
 export type Filter = Partial<{
   onFetch(elements: Element[]): Promise<void>
@@ -24,15 +25,16 @@ export type Filter = Partial<{
 export type FilterWith<M extends keyof Filter> = types.HasMember<Filter, M>
 
 export type FilterCreator<TClient, TContext> = (
-  opts: { client: TClient; config: TContext }
+  opts: { client: TClient; paginator: Paginator; config: TContext }
 ) => Filter
 
 export const filtersRunner = <TClient, TContext>(
   client: TClient,
+  paginator: Paginator,
   config: TContext,
   filterCreators: ReadonlyArray<FilterCreator<TClient, TContext>>,
 ): Required<Filter> => {
-  const allFilters = filterCreators.map(f => f({ client, config }))
+  const allFilters = filterCreators.map(f => f({ client, config, paginator }))
 
   const filtersWith = <M extends keyof Filter>(m: M): FilterWith<M>[] =>
     types.filterHasMember<Filter, M>(m, allFilters)

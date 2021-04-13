@@ -17,8 +17,9 @@ import {
   ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, isInstanceElement,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import WorkatoClient from '../../src/client/client'
+import { paginate } from '../../src/client/pagination'
 import filterCreator from '../../src/filters/extract_fields'
 import { DEFAULT_TYPES, DEFAULT_ID_FIELDS } from '../../src/config'
 import { WORKATO } from '../../src/constants'
@@ -82,6 +83,10 @@ describe('Extract fields filter', () => {
     })
     filter = filterCreator({
       client,
+      paginator: clientUtils.createPaginator({
+        client,
+        paginationFunc: paginate,
+      }),
       config: {
         fetch: {
           includeTypes: ['connection', 'recipe'],

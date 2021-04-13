@@ -16,7 +16,7 @@
 import {
   FetchResult, AdapterOperations, DeployResult, Element, PostFetchOptions, DeployModifiers,
 } from '@salto-io/adapter-api'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import WorkatoClient from './client/client'
@@ -27,8 +27,10 @@ import fieldReferencesFilter from './filters/field_references'
 import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
 import { WORKATO } from './constants'
 import changeValidator from './change_validator'
+import { paginate } from './client/pagination'
 
 const log = logger(module)
+const { createPaginator } = clientUtils
 const { returnFullEntry, simpleGetArgs } = elementUtils
 const { getAllElements } = elementUtils.ducktype
 
@@ -47,6 +49,7 @@ export interface WorkatoAdapterParams {
 export default class WorkatoAdapter implements AdapterOperations {
   private filtersRunner: Required<Filter>
   private client: WorkatoClient
+  private paginator: clientUtils.Paginator
   private userConfig: WorkatoConfig
 
   public constructor({
@@ -56,8 +59,13 @@ export default class WorkatoAdapter implements AdapterOperations {
   }: WorkatoAdapterParams) {
     this.userConfig = config
     this.client = client
+    this.paginator = createPaginator({
+      client: this.client,
+      paginationFunc: paginate,
+    })
     this.filtersRunner = filtersRunner(
       this.client,
+      this.paginator,
       {
         fetch: config.fetch,
         apiDefinitions: config.apiDefinitions,
@@ -72,7 +80,7 @@ export default class WorkatoAdapter implements AdapterOperations {
       adapterName: WORKATO,
       types: this.userConfig.apiDefinitions.types,
       includeTypes: this.userConfig.fetch.includeTypes,
-      client: this.client,
+      paginator: this.paginator,
       nestedFieldFinder: returnFullEntry,
       computeGetArgs: simpleGetArgs,
       typeDefaults: this.userConfig.apiDefinitions.typeDefaults,

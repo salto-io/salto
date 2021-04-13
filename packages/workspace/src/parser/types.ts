@@ -24,6 +24,6 @@ export type ParseError = HclParseError & SaltoError
 
 export type ParseResult = {
   elements: ThenableIterable<Element>
-  errors: ParseError[] | undefined
+  errors: ParseError[]
   sourceMap?: SourceMap
 }

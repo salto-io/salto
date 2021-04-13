@@ -38,9 +38,6 @@ describe('parsing errors', () => {
       })
 
       it('should raise an error', () => {
-        if (res.errors === undefined) {
-          throw new Error('Resulting error should be defined')
-        }
         expect(res.errors).toHaveLength(2)
         expect(res.errors[0].subject).toEqual({
           start: { byte: 7, col: 7, line: 2 },
@@ -71,9 +68,6 @@ describe('parsing errors', () => {
       })
 
       it('should raise an error', () => {
-        if (res.errors === undefined) {
-          throw new Error('Resulting error should be defined')
-        }
         expect(res.errors).toHaveLength(4)
         expect(res.errors[0].subject).toEqual({
           start: { byte: 12, col: 12, line: 2 },
@@ -104,9 +98,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should throw an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors[0].subject).toEqual({
             start: { byte: 13, col: 13, line: 2 },
             end: { byte: 42, col: 42, line: 2 },
@@ -132,9 +123,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should create an error', async () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].message)
             .toBe('Expected a primitive type definition.')
@@ -158,9 +146,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should create errors', async () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(2)
           expect(res.errors[0].subject).toEqual({
             start: { byte: 9, col: 9, line: 2 },
@@ -195,9 +180,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should create an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { byte: 11, col: 11, line: 2 },
@@ -228,9 +210,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should create an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { byte: 40, col: 40, line: 2 },
@@ -264,9 +243,6 @@ describe('parsing errors', () => {
         res = await parse(Buffer.from(nacl), 'file.nacl', {})
       })
       it('should raise an error', () => {
-        if (res.errors === undefined) {
-          throw new Error('Resulting error should be defined')
-        }
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
           start: { byte: 30, col: 30, line: 2 },
@@ -298,9 +274,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should show an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { line: 4, col: 13, byte: 58 },
@@ -327,9 +300,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should show an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { line: 3, col: 13, byte: 30 },
@@ -357,9 +327,6 @@ describe('parsing errors', () => {
         res = await parse(Buffer.from(nacl), 'file.nacl', {})
       })
       it('should show an error', () => {
-        if (res.errors === undefined) {
-          throw new Error('Resulting error should be defined')
-        }
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
           start: { line: 3, col: 9, byte: 22 },
@@ -388,9 +355,6 @@ describe('parsing errors', () => {
         res = await parse(Buffer.from(nacl), 'file.nacl', {})
       })
       it('should show an error', () => {
-        if (res.errors === undefined) {
-          throw new Error('Resulting error should be defined')
-        }
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
           start: { line: 3, col: 9, byte: 22 },
@@ -420,9 +384,6 @@ describe('parsing errors', () => {
         res = await parse(Buffer.from(nacl), 'file.nacl', {})
       })
       it('should show an error', () => {
-        if (res.errors === undefined) {
-          throw new Error('Resulting error should be defined')
-        }
         expect(res.errors).toHaveLength(2)
         expect(res.errors[0].subject).toEqual({
           start: { line: 3, col: 9, byte: 22 },
@@ -454,9 +415,6 @@ describe('parsing errors', () => {
         res = await parse(Buffer.from(nacl), 'file.nacl', {})
       })
       it('should create an error', () => {
-        if (res.errors === undefined) {
-          throw new Error('Resulting error should be defined')
-        }
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
           start: { byte: 44, col: 22, line: 3 },
@@ -488,9 +446,6 @@ describe('parsing errors', () => {
         res = await parse(Buffer.from(nacl), 'file.nacl', {})
       })
       it('should create an error', () => {
-        if (res.errors === undefined) {
-          throw new Error('Resulting error should be defined')
-        }
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
           start: { byte: 45, col: 23, line: 3 },
@@ -525,9 +480,6 @@ describe('parsing errors', () => {
         res = await parse(Buffer.from(nacl), 'file.nacl', {})
       })
       it('should create an error', () => {
-        if (res.errors === undefined) {
-          throw new Error('Resulting error should be defined')
-        }
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
           start: { byte: 122, col: 23, line: 7 },
@@ -561,9 +513,6 @@ describe('parsing errors', () => {
         res = await parse(Buffer.from(nacl), 'file.nacl', {})
       })
       it('should create an error', () => {
-        if (res.errors === undefined) {
-          throw new Error('Resulting error should be defined')
-        }
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
           start: { byte: 81, col: 22, line: 6 },
@@ -593,9 +542,6 @@ describe('parsing errors', () => {
         res = await parse(Buffer.from(nacl), 'file.nacl', {})
       })
       it('should create an error', () => {
-        if (res.errors === undefined) {
-          throw new Error('Resulting error should be defined')
-        }
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
           start: { byte: 59, col: 9, line: 4 },
@@ -627,9 +573,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should show an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { line: 3, col: 11, byte: 33 },
@@ -659,9 +602,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should show an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { line: 3, col: 11, byte: 33 },
@@ -691,9 +631,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should show an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { line: 3, col: 11, byte: 33 },
@@ -720,9 +657,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should show an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { line: 3, col: 11, byte: 33 },
@@ -748,9 +682,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should show an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { line: 3, col: 11, byte: 33 },
@@ -783,9 +714,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should show an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { line: 5, col: 16, byte: 86 },
@@ -816,9 +744,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should show an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { line: 5, col: 13, byte: 83 },
@@ -850,9 +775,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should show an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { line: 5, col: 13, byte: 83 },
@@ -884,9 +806,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should show an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { line: 5, col: 18, byte: 88 },
@@ -922,9 +841,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should show an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { line: 4, col: 28, byte: 71 },
@@ -959,9 +875,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should show an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { line: 3, col: 34, byte: 58 },
@@ -994,9 +907,6 @@ describe('parsing errors', () => {
           res = await parse(Buffer.from(nacl), 'file.nacl', {})
         })
         it('should show an error', () => {
-          if (res.errors === undefined) {
-            throw new Error('Resulting error should be defined')
-          }
           expect(res.errors).toHaveLength(1)
           expect(res.errors[0].subject).toEqual({
             start: { line: 3, col: 35, byte: 59 },
@@ -1032,9 +942,6 @@ describe('parsing errors', () => {
         res = await parse(Buffer.from(nacl), 'file.nacl', {})
       })
       it('should throw an error', () => {
-        if (res.errors === undefined) {
-          throw new Error('Resulting error should be defined')
-        }
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
           start: { line: 3, col: 19, byte: 44 },
@@ -1060,9 +967,6 @@ describe('parsing errors', () => {
         res = await parse(Buffer.from(nacl), 'file.nacl', {})
       })
       it('should throw an error', () => {
-        if (res.errors === undefined) {
-          throw new Error('Resulting error should be defined')
-        }
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
           start: { line: 2, col: 21, byte: 21 },
@@ -1091,9 +995,6 @@ describe('parsing errors', () => {
         res = await parse(Buffer.from(nacl), 'file.nacl', {})
       })
       it('should throw an error', () => {
-        if (res.errors === undefined) {
-          throw new Error('Resulting error should be defined')
-        }
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
           start: { line: 3, col: 28, byte: 53 },
@@ -1122,9 +1023,6 @@ describe('parsing errors', () => {
         res = await parse(Buffer.from(nacl), 'file.nacl', {})
       })
       it('should throw an error', () => {
-        if (res.errors === undefined) {
-          throw new Error('Resulting error should be defined')
-        }
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
           start: { line: 3, col: 15, byte: 37 },
@@ -1152,9 +1050,6 @@ describe('parsing errors', () => {
         })
       })
       it('should throw an error', () => {
-        if (res.errors === undefined) {
-          throw new Error('Resulting error should be defined')
-        }
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
           start: { line: 3, col: 30, byte: 52 },
@@ -1202,9 +1097,6 @@ describe('parsing errors', () => {
     })
 
     it('should throw an error', () => {
-      if (res.errors === undefined) {
-        throw new Error('Resulting error should be defined')
-      }
       expect(res.errors).toHaveLength(1)
       expect(res.errors[0].message).toEqual('Unexpected end of file')
       expect(res.errors[0].summary).toEqual('Unexpected end of file')

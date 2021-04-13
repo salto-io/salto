@@ -30,7 +30,7 @@ export type ResponseValue = {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type GetResponse<T = any> = {
+export type GetResponse<T> = {
   data: T
   status: number
   statusText?: string

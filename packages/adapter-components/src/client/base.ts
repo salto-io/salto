@@ -23,9 +23,9 @@ export abstract class AdapterClientBase<TRateLimitConfig extends ClientRateLimit
   protected isLoggedIn = false
   protected readonly config?: ClientBaseConfig<TRateLimitConfig>
   protected readonly rateLimiters: BottleneckBuckets<TRateLimitConfig>
-  protected getPageSizeInner: number
   protected apiClient?: APIConnection
   protected loginPromise?: Promise<APIConnection>
+  private getPageSizeInner: number
 
   constructor(
     clientName: string,

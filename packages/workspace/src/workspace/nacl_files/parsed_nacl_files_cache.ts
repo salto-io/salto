@@ -79,7 +79,7 @@ const parseNaclFileFromCacheSources = async (
   filename,
   elements: () => cacheSources.elements.get(filename),
   data: {
-    errors: () => cacheSources.errors.get(filename),
+    errors: async () => (await cacheSources.errors.get(filename) ?? []),
     referenced: () => cacheSources.referenced.get(filename),
     timestamp: async () => (await cacheSources.metadata.get(filename))?.timestamp,
   },

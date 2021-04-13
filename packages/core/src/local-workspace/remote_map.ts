@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 import { promisify } from 'util'
-import * as fileUtils from '@salto-io/file'
+import AsyncLock from 'async-lock'
 import LRU from 'lru-cache'
 import uuidv4 from 'uuid/v4'
+import * as fileUtils from '@salto-io/file'
 import { remoteMap } from '@salto-io/workspace'
 import { collections, promises } from '@salto-io/lowerdash'
 import type rocksdb from 'rocksdb'
@@ -102,6 +103,11 @@ export const closeAllRemoteMaps = async (): Promise<void> => (
     delete dbConnections[loc]
   })
 )
+
+const creatorLock = new AsyncLock()
+const withCreatorLock = async (fn: (() => Promise<void>)): Promise<void> => {
+  await creatorLock.acquire('createInProgress', fn)
+}
 
 export const createRemoteMapCreator = (location: string, readOnly = false):
 remoteMap.RemoteMapCreator => async <T, K extends string = string>(
@@ -293,8 +299,10 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       await promisify(newDb.close.bind(newDb))()
     } catch (e) {
       if (newDb.status === 'new') {
-        await promisify(newDb.open.bind(newDb))()
-        await promisify(newDb.close.bind(newDb))()
+        await withCreatorLock(async () => {
+          await promisify(newDb.open.bind(newDb))()
+          await promisify(newDb.close.bind(newDb))()
+        })
       }
     }
   }

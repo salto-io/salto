@@ -264,15 +264,15 @@ export const loadWorkspace = async (
     // When we load the workspace with a clean cache from existings nacls, we need
     // to add hidden elements from the state since they will not be a part of the nacl
     // changes. In any other load - the state changes will be reflected by the workspace
-    // / hiden changes.
+    // / hidden changes.
     const completeStateOnlyChanges = async (
       partialStateChanges: Change<Element>[]
     ): Promise<Change<Element>[]> => {
       // We identify a first nacl load when the state is empty, and all of the changes
       // are visible (which indicates a nacl load and not a first 'fetch' in which the
       // hidden changes won't be empty)
-      const isFirstInitFromNacls = await awu(await stateToBuild.merged.getAll()).isEmpty()
-        && _.isEmpty(partialStateChanges)
+      const isFirstInitFromNacls = _.isEmpty(partialStateChanges)
+        && (await stateToBuild.merged.isEmpty())
 
       const initHiddenElementsChanges = isFirstInitFromNacls
         ? await awu(await state().getAll()).filter(element => isHidden(element, state()))

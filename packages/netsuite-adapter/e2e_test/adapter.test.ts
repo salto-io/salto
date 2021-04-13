@@ -198,6 +198,8 @@ describe('Netsuite adapter E2E with real account', () => {
       ].map((instanceToCreate, index) => [index.toString(), toChange({ after: instanceToCreate })]))
 
       const folderToModifyBefore = folderToModify.clone()
+      // Modified the description here just so the before won't be the same as the after
+      // The after should be with the `randomString` value
       folderToModifyBefore.value.description = ''
       changes.set(
         changes.size.toString(),

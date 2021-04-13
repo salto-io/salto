@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { Connection, ConnectionCreator, createRetryOptions, createClientConnection, ResponseValue, GetResponse } from './http_connection'
+import { Connection, ConnectionCreator, createRetryOptions, createClientConnection, ResponseValue, Response } from './http_connection'
 import { AdapterClientBase } from './base'
 import { ClientRetryConfig, ClientRateLimitConfig, ClientPageSizeConfig, ClientBaseConfig } from './config'
 import { requiresLogin, logDecorator } from './decorators'
@@ -39,7 +39,7 @@ export type ClientGetParams = {
 }
 
 export interface HTTPClientInterface {
-  getSinglePage(params: ClientGetParams): Promise<GetResponse<ResponseValue | ResponseValue[]>>
+  getSinglePage(params: ClientGetParams): Promise<Response<ResponseValue | ResponseValue[]>>
 
   getPageSize(): number
 }
@@ -95,7 +95,7 @@ export abstract class AdapterHTTPClient<
   @requiresLogin()
   public async getSinglePage({
     url, queryParams,
-  }: ClientGetParams): Promise<GetResponse<ResponseValue | ResponseValue[]>> {
+  }: ClientGetParams): Promise<Response<ResponseValue | ResponseValue[]>> {
     if (this.apiClient === undefined) {
       // initialized by requiresLogin (through ensureLoggedIn in this case)
       throw new Error(`uninitialized ${this.clientName} client`)

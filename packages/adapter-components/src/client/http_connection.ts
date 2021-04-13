@@ -30,23 +30,24 @@ export type ResponseValue = {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type GetResponse<T> = {
+export type Response<T> = {
   data: T
   status: number
   statusText?: string
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type APIConnection<T = any> = {
+export type APIConnection<T = any, S = any> = {
   // based on https://github.com/axios/axios/blob/f472e5da5fe76c72db703d6a0f5190e4ad31e642/index.d.ts#L140
-  get: (url: string, config?: { params: Record<string, unknown> }) => Promise<GetResponse<T>>
+  get: (url: string, config?: { params: Record<string, unknown> }) => Promise<Response<T>>
+  post: (url: string, data: S, config?: { params: Record<string, unknown> }) => Promise<Response<T>>
 }
 
 type AuthenticatedAPIConnection = APIConnection & {
   accountId: AccountId
 }
 
-type RetryOptions = {
+export type RetryOptions = {
   retries: number
   retryDelay?: (retryCount: number, error: AxiosError) => number
 }
@@ -101,10 +102,10 @@ export const validateCredentials = async <TCredentials>(
 
 type AxiosConnectionParams<TCredentials> = {
   retryOptions: RetryOptions
-  authParamsFunc: (creds: TCredentials) => {
+  authParamsFunc: (creds: TCredentials) => Promise<{
     auth?: AxiosBasicCredentials
     headers?: Record<string, unknown>
-  }
+  }>
   baseURLFunc: (creds: TCredentials) => string
   credValidateFunc: (creds: TCredentials, conn: APIConnection) => Promise<AccountId>
 }
@@ -120,7 +121,7 @@ export const axiosConnection = <TCredentials>({
   ): Promise<AuthenticatedAPIConnection> => {
     const httpClient = axios.create({
       baseURL: baseURLFunc(creds),
-      ...authParamsFunc(creds),
+      ...await authParamsFunc(creds),
     })
     axiosRetry(httpClient, retryOptions)
 

@@ -38,7 +38,8 @@
     "axios": "^0.21.1",
     "axios-retry": "^3.1.9",
     "bottleneck": "^2.19.5",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "qs": "^6.10.1"
   },
   "devDependencies": {
     "@types/jest": "^26.0.20",

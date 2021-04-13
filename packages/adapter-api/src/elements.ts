@@ -114,9 +114,9 @@ export type ContainerType = ListType | MapType
 export type TypeElement = PrimitiveType | ObjectType | ContainerType
 export type TypeMap = Record<string, TypeElement>
 
-export class ListType extends Element {
+export class ListType<Inner extends TypeElement = TypeElement> extends Element {
   public constructor(
-   public innerType: TypeElement
+   public innerType: Inner
   ) {
     super({
       elemID: new ElemID('', `list<${innerType.elemID.getFullName()}>`),
@@ -135,7 +135,7 @@ export class ListType extends Element {
     )
   }
 
-  setInnerType(innerType: TypeElement): void {
+  setInnerType(innerType: Inner): void {
     if (innerType.elemID.isEqual(this.innerType.elemID)) {
       this.innerType = innerType
       this.annotations = innerType.annotations
@@ -219,8 +219,8 @@ export type FieldMap = Record<string, Field>
 /**
  * Defines a type that represents a primitive value (This comment WAS NOT auto generated)
  */
-export class PrimitiveType extends Element {
-  primitive: PrimitiveTypes
+export class PrimitiveType<Primitive extends PrimitiveTypes = PrimitiveTypes> extends Element {
+  primitive: Primitive
   constructor({
     elemID,
     primitive,
@@ -229,7 +229,7 @@ export class PrimitiveType extends Element {
     path = undefined,
   }: {
     elemID: ElemID
-    primitive: PrimitiveTypes
+    primitive: Primitive
     annotationTypes?: TypeMap
     annotations?: Values
     path?: ReadonlyArray<string>

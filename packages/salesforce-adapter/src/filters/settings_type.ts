@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { createMetadataTypeElements, apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { ConfigChangeSuggestion } from '../types'
+import { FilterResult } from '../types'
 import { SETTINGS_METADATA_TYPE } from '../constants'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 
@@ -65,7 +65,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
    *
    * @param elements
    */
-  onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
+  onFetch: async (elements: Element[]): Promise<FilterResult> => {
     // Fetch list of all settings types
     const {
       elements: settingsList, configChanges: listObjectsConfigChanges,
@@ -104,7 +104,9 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const instancesConfigChanges = settingsInstanceCreateResults.flatMap(res => res.configChanges)
     elements.push(...settingsInstances)
 
-    return [...instancesConfigChanges, ...listObjectsConfigChanges]
+    return {
+      configSuggestions: [...instancesConfigChanges, ...listObjectsConfigChanges],
+    }
   },
 
   // after onFetch, the settings types have annotations.metadataType === '<name>Settings',

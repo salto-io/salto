@@ -28,7 +28,7 @@ import {
 import { FilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
 import { getNamespace, isMasterDetailField, isLookupField } from './utils'
-import { ConfigChangeSuggestion } from '../types'
+import { ConfigChangeSuggestion, FilterResult } from '../types'
 import { DataManagement } from '../fetch_profile/data_management'
 
 const { mapValuesAsync } = promises.object
@@ -433,10 +433,10 @@ export const getCustomObjectsFetchSettings = (
 }
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
-  onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
+  onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const { dataManagement } = config.fetchProfile
     if (dataManagement === undefined) {
-      return []
+      return {}
     }
     const customObjects = elements.filter(isCustomObject)
     const customObjectFetchSetting = getCustomObjectsFetchSettings(
@@ -463,7 +463,9 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
           apiName(setting.objectType),
           makeArray(setting.invalidIdFields),
         ))
-    return [...invalidFieldSuggestions, ...configChangeSuggestions]
+    return {
+      configSuggestions: [...invalidFieldSuggestions, ...configChangeSuggestions],
+    }
   },
 })
 

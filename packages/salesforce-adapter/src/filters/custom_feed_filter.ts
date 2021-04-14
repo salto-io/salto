@@ -17,7 +17,7 @@ import { FileProperties } from 'jsforce-types'
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { findObjectType } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-import { ConfigChangeSuggestion } from '../types'
+import { FilterResult } from '../types'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 import { SALESFORCE } from '../constants'
 
@@ -31,12 +31,12 @@ const fixCustomFeedFullName = (props: FileProperties): FileProperties => ({
 })
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
-  onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
+  onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const customFeedFilterType = findObjectType(
       elements, CUSTOM_FEED_FILTER_METADATA_TYPE_ID
     )
     if (customFeedFilterType === undefined) {
-      return []
+      return {}
     }
     const { elements: fileProps, configChanges } = await listMetadataObjects(
       client, CUSTOM_FEED_FILTER_METADATA_TYPE, [],
@@ -48,7 +48,9 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       metadataQuery: config.fetchProfile.metadataQuery,
     })
     instances.elements.forEach(e => elements.push(e))
-    return [...instances.configChanges, ...configChanges]
+    return {
+      configSuggestions: [...instances.configChanges, ...configChanges],
+    }
   },
 })
 

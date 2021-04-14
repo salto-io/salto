@@ -15,10 +15,13 @@
 */
 import { Element, Change, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { SaveResult, UpsertResult } from 'jsforce-types'
-import { types, promises, values } from '@salto-io/lowerdash'
+import { types, promises, objects, values } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
-import { ConfigChangeSuggestion } from './types'
+import { FilterResult } from './types'
 import { FetchProfile } from './fetch_profile/fetch_profile'
+
+const { concatObjects } = objects
+const { isDefined } = values
 
 // Filters run in a specific order and get a mutable list as input which they may modify
 // to affect the overall result as well as the input for subsequent filters.
@@ -31,7 +34,7 @@ import { FetchProfile } from './fetch_profile/fetch_profile'
 // Note that it cannot store context between onFetch and the other callbacks since these run in
 // separate commands
 export type Filter = Partial<{
-  onFetch(elements: Element[]): Promise<ConfigChangeSuggestion[] | void>
+  onFetch(elements: Element[]): Promise<FilterResult | void>
   preDeploy(changes: Change[]): Promise<void>
   onDeploy(changes: Change[]): Promise<(SaveResult | UpsertResult)[]>
 }>
@@ -61,10 +64,10 @@ export const filtersRunner = (client: SalesforceClient,
 
   return {
     onFetch: async elements => {
-      const configChanges = await promises.array.series(
+      const filterResults = (await promises.array.series(
         filtersWith('onFetch').map(filter => () => filter.onFetch(elements))
-      )
-      return configChanges.filter(values.isDefined).flat()
+      )).filter(isDefined)
+      return concatObjects(filterResults)
     },
     preDeploy: async changes => {
       await promises.array.series(filtersWith('preDeploy').reverse().map(filter => () => filter.preDeploy(changes)))

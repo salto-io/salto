@@ -62,7 +62,7 @@ import valueToStaticFileFilter from './filters/value_to_static_file'
 import convertMapsFilter from './filters/convert_maps'
 import elementsUrlFilter from './filters/elements_url'
 import territoryFilter from './filters/territory'
-import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
+import { FetchElements, SalesforceConfig, FilterResult } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { addDefaults } from './filters/utils'
@@ -342,16 +342,19 @@ export default class SalesforceAdapter implements AdapterOperations {
     const elements = [
       ...fieldTypes, ...hardCodedTypes, ...metadataTypes, ...metadataInstancesElements,
     ]
-    const filtersConfigChanges = (
+    const onFetchFilterResult = (
       await this.filtersRunner.onFetch(elements)
-    ) as ConfigChangeSuggestion[]
-    const configChangeSuggestions = [...metadataInstancesConfigInstances, ...filtersConfigChanges]
+    ) as FilterResult
+    const configChangeSuggestions = [
+      ...metadataInstancesConfigInstances, ...(onFetchFilterResult.configSuggestions ?? []),
+    ]
     const updatedConfig = getConfigFromConfigChanges(
       configChangeSuggestions,
       this.userConfig,
     )
     return {
       elements,
+      errors: onFetchFilterResult.errors ?? [],
       updatedConfig,
       isPartial: this.userConfig.fetch?.target !== undefined,
     }

@@ -17,7 +17,7 @@ import wu from 'wu'
 import {
   Adapter, Element, InstanceElement, ObjectType, ElemID, AccountId, getChangeElement, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult, isAdapterSuccessInstallResult,
-  AdapterSuccessInstallResult, AdapterAuthentication,
+  AdapterSuccessInstallResult, AdapterAuthentication, SaltoError,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -187,6 +187,7 @@ export type FillConfigFunc = (configType: ObjectType) => Promise<InstanceElement
 export type FetchResult = {
   changes: Iterable<FetchChange>
   mergeErrors: MergeErrorWithElements[]
+  fetchErrors: SaltoError[]
   success: boolean
   configChanges?: Plan
   adapterNameToConfigMessage?: Record<string, string>
@@ -230,7 +231,8 @@ export const fetch: FetchFunc = async (
   }
   try {
     const {
-      changes, elements, mergeErrors, configChanges, adapterNameToConfigMessage, unmergedElements,
+      changes, elements, mergeErrors, errors,
+      configChanges, adapterNameToConfigMessage, unmergedElements,
     } = await fetchChanges(
       adapters,
       filterElementsByServices(await workspace.elements(), fetchServices),
@@ -246,6 +248,7 @@ export const fetch: FetchFunc = async (
     log.debug(`finish to override state with ${elements.length} elements`)
     return {
       changes,
+      fetchErrors: errors,
       mergeErrors,
       success: true,
       configChanges,
@@ -255,6 +258,7 @@ export const fetch: FetchFunc = async (
     if (error instanceof FatalFetchMergeError) {
       return {
         changes: [],
+        fetchErrors: [],
         mergeErrors: error.causes,
         success: false,
       }

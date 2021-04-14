@@ -428,7 +428,6 @@ const buildNaclFilesSource = (
           modifiedNaclFiles.push(naclFile)
         }
       })
-
       const parsedModifiedFiles = await parseNaclFiles(
         modifiedNaclFiles,
         currentState.parsedNaclFiles,
@@ -635,8 +634,7 @@ const buildNaclFilesSource = (
 
   return {
     list: async (): Promise<AsyncIterable<ElemID>> =>
-      awu(Object.keys((await getState()).elementsIndex)).map(name => ElemID.fromFullName(name)),
-
+      awu((await getState()).elementsIndex.keys()).map(name => ElemID.fromFullName(name)),
     has: async (id: ElemID): Promise<boolean> => (await getState()).mergedElements.has(id),
     delete: async (id: ElemID): Promise<void> => (await getState()).mergedElements.delete(id),
     set: async (element: Element): Promise<void> => (await getState()).mergedElements.set(element),

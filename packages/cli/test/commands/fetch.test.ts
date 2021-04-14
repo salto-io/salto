@@ -557,6 +557,7 @@ describe('fetch command', () => {
         const mockFetchWithChanges = mocks.mockFunction<FetchFunc>().mockResolvedValue(
           {
             changes: [],
+            fetchErrors: [],
             mergeErrors: [
               {
                 elements: mocks.elements().slice(0, 2),

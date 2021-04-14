@@ -19,7 +19,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, AdapterOperations, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
-  ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange,
+  ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
@@ -163,6 +163,7 @@ const toFetchChanges = (
 export type FetchChangesResult = {
   changes: Iterable<FetchChange>
   elements: Element[]
+  errors: SaltoError[]
   unmergedElements: Element[]
   mergeErrors: MergeErrorWithElements[]
   configChanges: Plan
@@ -291,6 +292,7 @@ const fetchAndProcessMergeErrors = async (
 ):
   Promise<{
     serviceElements: Element[]
+    errors: SaltoError[]
     processErrorsResult: ProcessMergeErrorsResult
     updatedConfigs: UpdatedConfig[]
     partiallyFetchedAdapters: Set<string>
@@ -304,9 +306,10 @@ const fetchAndProcessMergeErrors = async (
           })
           // We need to flatten the elements string to avoid a memory leak. See docs
           // of the flattenElementStr method for more details.
-          const { updatedConfig } = fetchResult
+          const { updatedConfig, errors } = fetchResult
           return {
             elements: fetchResult.elements.map(flattenElementStr),
+            errors: errors ?? [],
             updatedConfig: updatedConfig
               ? { config: flattenElementStr(updatedConfig.config), message: updatedConfig.message }
               : undefined,
@@ -317,6 +320,7 @@ const fetchAndProcessMergeErrors = async (
     )
 
     const serviceElements = _.flatten(fetchResults.map(res => res.elements))
+    const fetchErrors = fetchResults.flatMap(res => res.errors)
     const updatedConfigs = fetchResults
       .map(res => res.updatedConfig)
       .filter(c => !_.isUndefined(c)) as UpdatedConfig[]
@@ -373,6 +377,7 @@ const fetchAndProcessMergeErrors = async (
       mergeErrors.length}]`)
     return {
       serviceElements: validServiceElements,
+      errors: fetchErrors,
       processErrorsResult,
       updatedConfigs,
       partiallyFetchedAdapters,
@@ -461,7 +466,7 @@ export const fetchChanges = async (
     progressEmitter.emit('changesWillBeFetched', getChangesEmitter, adapterNames)
   }
   const {
-    serviceElements, processErrorsResult, updatedConfigs, partiallyFetchedAdapters,
+    serviceElements, errors, processErrorsResult, updatedConfigs, partiallyFetchedAdapters,
   } = await fetchAndProcessMergeErrors(
     adapters,
     filteredStateElements,
@@ -519,6 +524,7 @@ export const fetchChanges = async (
   return {
     changes,
     elements,
+    errors,
     unmergedElements: serviceElements,
     mergeErrors: processErrorsResult.errorsWithDroppedElements,
     configChanges,

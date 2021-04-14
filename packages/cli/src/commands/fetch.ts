@@ -24,7 +24,7 @@ import { logger } from '@salto-io/logging'
 import { progressOutputer, outputLine, errorOutputLine } from '../outputer'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
-import { formatMergeErrors, formatFatalFetchError, formatFetchHeader, formatFetchFinish, formatStateChanges, formatStateRecencies, formatAppliedChanges } from '../formatter'
+import { formatMergeErrors, formatFatalFetchError, formatFetchHeader, formatFetchFinish, formatStateChanges, formatStateRecencies, formatAppliedChanges, formatFetchWarnings } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliShouldUpdateConfig, getChangeToAlignAction } from '../callbacks'
 import { getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
@@ -186,6 +186,13 @@ export const fetchCommand = async (
       approveChangesCallback: getApprovedChanges,
       applyProgress: fetchProgress,
     })
+  if (!_.isEmpty(fetchResult.fetchErrors)) {
+    // We currently assume all fetchErrors are warnings
+    log.debug(`fetch had ${fetchResult.fetchErrors.length} warnings`)
+    bindedOutputline(
+      formatFetchWarnings(fetchResult.fetchErrors.map(fetchError => fetchError.message))
+    )
+  }
   if (updatingWsSucceeded) {
     bindedOutputline(formatFetchFinish())
     return CliExitCode.Success

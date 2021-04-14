@@ -25,7 +25,7 @@ import {
   metadataType, apiName, isCustomObject, Types, isCustom,
 } from '../transformers/transformer'
 import { extractFullNamesFromValueList, isInstanceOfType } from './utils'
-import { ConfigChangeSuggestion } from '../types'
+import { ConfigChangeSuggestion, FilterResult } from '../types'
 import { fetchMetadataInstances } from '../fetch'
 
 const { makeArray } = collections.array
@@ -194,7 +194,7 @@ export const makeFilter = (
    *
    * @param elements the already fetched elements
    */
-  onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
+  onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const svsMetadataType: ObjectType | undefined = findStandardValueSetType(elements)
     let configChanges: ConfigChangeSuggestion[] = []
     let fetchedSVSInstances: InstanceElement[] | undefined
@@ -222,7 +222,9 @@ export const makeFilter = (
       updateSVSReferences(customObjectTypeElements, svsInstances)
     }
 
-    return configChanges
+    return {
+      configSuggestions: configChanges,
+    }
   },
 })
 

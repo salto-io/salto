@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { isCustomSettingsObject, apiName } from '../transformers/transformer'
-import { ConfigChangeSuggestion } from '../types'
+import { FilterResult } from '../types'
 import { getAllInstances, getCustomObjectsFetchSettings, CustomObjectFetchSetting } from './custom_objects_instances'
 import { CUSTOM_SETTINGS_TYPE, LIST_CUSTOM_SETTINGS_TYPE } from '../constants'
 import { buildDataManagement } from '../fetch_profile/data_management'
@@ -35,9 +35,9 @@ const logInvalidCustomSettings = (invalidCustomSettings: CustomObjectFetchSettin
 )
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
-  onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
+  onFetch: async (elements: Element[]): Promise<FilterResult> => {
     if (!config.fetchProfile.shouldFetchAllCustomSettings()) {
-      return []
+      return {}
     }
 
     const customSettingsObjects = elements
@@ -62,7 +62,9 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const customSettingsMap = _.keyBy(validFetchSettings, obj => apiName(obj.objectType))
     const { instances, configChangeSuggestions } = await getAllInstances(client, customSettingsMap)
     elements.push(...instances)
-    return [...configChangeSuggestions]
+    return {
+      configSuggestions: [...configChangeSuggestions],
+    }
   },
 })
 

@@ -24,7 +24,7 @@ import { SALESFORCE } from '../src/constants'
 import SalesforceAdapter, { DEFAULT_FILTERS } from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import { createInstanceElement, metadataType, apiName, MetadataValues, isInstanceOfCustomObject } from '../src/transformers/transformer'
-import { ConfigChangeSuggestion } from '../src/types'
+import { FilterResult } from '../src/types'
 import { fetchMetadataType } from '../src/fetch'
 import { defaultFilterContext } from '../test/utils'
 
@@ -236,5 +236,5 @@ export const runFiltersOnFetch = async (
   context: Partial<FilterContext>,
   elements: Element[],
   filterCreators = DEFAULT_FILTERS
-): Promise<void | ConfigChangeSuggestion[]> =>
+): Promise<void | FilterResult> =>
   filtersRunner(client, { ...defaultFilterContext, ...context }, filterCreators).onFetch(elements)

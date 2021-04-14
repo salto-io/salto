@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement, ServiceIds, BuiltinTypes } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion, isDataManagementConfigSuggestions } from '../../src/types'
+import { ConfigChangeSuggestion, isDataManagementConfigSuggestions, FilterResult } from '../../src/types'
 import { getNamespaceFromString } from '../../src/filters/utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
@@ -618,7 +618,7 @@ describe('Custom Object Instances filter', () => {
         expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField FROM ${refToObjectName} WHERE Id IN ('hijklmn','abcdefg')`)
       })
 
-      it('should qeuery all namespaced/included objects not by id', () => {
+      it('should query all namespaced/included objects not by id', () => {
         expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField FROM ${refToFromNamespaceObjectName}`)
         expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField,Parent,Pricebook2Id FROM ${namespacedRefFromName}`)
         expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Id,Name,TestField,Parent,Pricebook2Id FROM ${refFromAndToObjectName}`)
@@ -812,7 +812,8 @@ describe('Custom Object Instances filter', () => {
         pricebookEntryObject, SBQQCustomActionObject, refFromObject, refToObject,
         badIdFieldsObject, notQueryableIdFieldsObject,
       ]
-      changeSuggestions = ((await filter.onFetch(elements)) ?? []) as ConfigChangeSuggestion[]
+      changeSuggestions = (((await filter.onFetch(elements))
+        ?? { configSuggestions: [], errors: [] }) as FilterResult).configSuggestions ?? []
     })
 
     it('should add instances per configured object', () => {

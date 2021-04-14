@@ -447,6 +447,11 @@ export const formatMergeErrors = (mergeErrors: FetchResult['mergeErrors']): stri
     }`
   ).join('\n')}`
 
+export const formatFetchWarnings = (warnings: string[]): string => [
+  emptyLine(),
+  `${Prompts.FETCH_WARNINGS}\n${warnings.join('\n\n')}`,
+].join('\n')
+
 export const formatFatalFetchError = (mergeErrors: FetchResult['mergeErrors']): string =>
   formatSimpleError(`${Prompts.FETCH_FATAL_MERGE_ERROR_PREFIX}${
     mergeErrors.map(c => `Error: ${c.error.message}, Elements: ${c.elements.map(e => e.elemID.getFullName()).join(', ')}\n`)

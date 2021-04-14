@@ -28,17 +28,17 @@ const getUpdateErrorsForNonUpdateableFields = (
   before: InstanceElement,
   after: InstanceElement
 ): ReadonlyArray<ChangeError> => {
-  const beforeResoleved = resolveValues(before, getLookUpName)
+  const beforeResolved = resolveValues(before, getLookUpName)
   const afterResolved = resolveValues(after, getLookUpName)
   return Object.values(afterResolved.type.fields)
     .filter(field => !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE])
     .map(field => {
-      if (afterResolved.value[field.name] !== beforeResoleved.value[field.name]) {
+      if (afterResolved.value[field.name] !== beforeResolved.value[field.name]) {
         return {
-          elemID: beforeResoleved.elemID,
+          elemID: beforeResolved.elemID,
           severity: 'Warning',
           message: `Unable to edit ${afterResolved.elemID.typeName}.${field.name} because it is a non-updateable field.`,
-          detailedMessage: `Unable to edit ${field.name} inside ${beforeResoleved.elemID.getFullName()} because it is a non-updateable field.`,
+          detailedMessage: `Unable to edit ${field.name} inside ${beforeResolved.elemID.getFullName()} because it is a non-updateable field.`,
         } as ChangeError
       }
       return undefined

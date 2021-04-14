@@ -130,6 +130,7 @@ describe('api.ts', () => {
     beforeAll(() => {
       mockFetchChanges.mockResolvedValue({
         changes: [],
+        errors: [],
         configChanges: mockPlan.createPlan([[]]),
         unmergedElements: fetchedElements,
         elements: fetchedElements,

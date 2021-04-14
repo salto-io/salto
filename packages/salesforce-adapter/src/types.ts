@@ -17,6 +17,7 @@ import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import {
   ElemID, ObjectType, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
   FieldDefinition,
+  SaltoError,
 } from '@salto-io/adapter-api'
 import * as constants from './constants'
 import { SALESFORCE } from './constants'
@@ -136,6 +137,11 @@ export type SalesforceConfig = {
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [USE_OLD_PROFILES]?: boolean
   [CLIENT_CONFIG]?: SalesforceClientConfig
+}
+
+export type FilterResult = {
+  configSuggestions?: ConfigChangeSuggestion[]
+  errors?: SaltoError[]
 }
 
 export type ConfigChangeSuggestion = DataManagementConfigSuggestions | MetadataConfigSuggestion

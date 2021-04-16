@@ -215,9 +215,13 @@ describe('Custom Object Instances References filter', () => {
     const allElements = [
       ...objects, ...legalInstances, ...illegalInstances,
     ]
+    let warnings: string[]
     beforeAll(async () => {
       elements = allElements.map(e => e.clone())
-      await filter.onFetch(elements)
+      const fetchResult = await filter.onFetch(elements)
+      if (fetchResult) {
+        warnings = fetchResult.warnings ?? []
+      }
     })
 
     it('Should drop the illegal instances and not change the objects and the ref to instances', () => {
@@ -273,6 +277,15 @@ describe('Custom Object Instances References filter', () => {
         e => e.elemID.isEqual(refFromToRefToDupInst.elemID)
       )
       expect(afterFilterRefFromToRefToDup).toBeUndefined()
+    })
+    it('Should have warnings that include all illegal instances names/Ids', () => {
+      expect(warnings).toBeDefined()
+      illegalInstances.forEach(instance => {
+        const warningsIncludeNameOrId = warnings.some(
+          warning => warning.includes(instance.elemID.name)
+        ) || warnings.some(warning => warning.includes(instance.value.Id))
+        expect(warningsIncludeNameOrId).toBeTruthy()
+      })
     })
   })
 })

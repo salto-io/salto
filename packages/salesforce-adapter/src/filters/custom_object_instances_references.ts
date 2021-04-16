@@ -14,14 +14,16 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import wu from 'wu'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
+import { transformValues, TransformFunc, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Element, Values, Field, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { apiName, isInstanceOfCustomObject } from '../transformers/transformer'
 import { FIELD_ANNOTATIONS, CUSTOM_OBJECT_ID_FIELD } from '../constants'
 import { isLookupField, isMasterDetailField } from './utils'
+import { FilterResult } from '../types'
 
 const { makeArray } = collections.array
 const { isDefined } = lowerdashValues
@@ -29,11 +31,77 @@ const { DefaultMap } = collections.map
 
 const log = logger(module)
 
+type refOrigin = { type: string; id: string; field?: string }
+
+const internalIDSeparator = '$'
+
 const serializeInternalID = (typeName: string, id: string): string =>
-  (`${typeName}&${id}`)
+  (`${typeName}${internalIDSeparator}${id}`)
 
 const serializeInstanceInternalID = (instance: InstanceElement): string =>
   serializeInternalID(apiName(instance.type, true), instance.value[CUSTOM_OBJECT_ID_FIELD])
+
+const deserializeInternalID = (internalID: string): refOrigin => {
+  const splitInternalID = internalID.split(internalIDSeparator)
+  if (splitInternalID.length !== 2) {
+    throw Error(`Invalid Custom Object Instance internalID - ${internalID}`)
+  }
+  return {
+    type: splitInternalID[0], id: splitInternalID[1],
+  }
+}
+
+// TODO: Improve this
+// This is a very initial implementation
+const createWarnings = (
+  instancesWithDuplicateElemID: InstanceElement[],
+  typeToEmptyRefOrigins: collections.map.DefaultMap<string, Set<refOrigin>>,
+  illegalRefSources: Set<string>,
+): string[] => {
+  const typeToElemIDtoInstances = _.mapValues(
+    _.groupBy(instancesWithDuplicateElemID, instance => apiName(instance.type, true)),
+    instances => _.groupBy(instances, instance => instance.elemID.getFullName())
+  )
+
+  const duplicationWarnings = Object.entries(typeToElemIDtoInstances)
+    .map(([type, elemIDtoInstances]) => {
+      const numInstances = Object.values(elemIDtoInstances)
+        .flat().length
+      const header = `Dropped ${numInstances} instances of type ${type} due to SaltoID conflicts`
+      const duplicatesMsgs = Object.entries(elemIDtoInstances)
+        .map(([elemID, instances]) => `Conflicting SaltoID ${elemID} for instances with values - 
+          ${instances.map(instance => safeJsonStringify(instance.value, undefined, 2)).join('\n')}`)
+      return [
+        header,
+        ...duplicatesMsgs,
+      ].join('\n')
+    })
+
+  const emptyRefsWarnings = wu(typeToEmptyRefOrigins.entries()).toArray()
+    .map(([type, origins]) => {
+      const originsArr = [...(origins as Set<refOrigin>)] // Not sure why needed
+      return `Type ${type} has references to instances that does not exist from:
+        ${originsArr.map(origin => `* Instance of type ${origin.type} with Id ${origin.id}, from field ${origin.field}`).join('\n')}
+      `
+    })
+
+  const typeToIDsSources = _.mapValues(
+    _.groupBy([...illegalRefSources].map(deserializeInternalID), source => source.type),
+    sources => sources.map(source => source.id),
+  )
+
+  const illegalOriginsWarnings = Object.entries(typeToIDsSources)
+    .map(([type, ids]) =>
+      `Type ${type} dropped instances with the following Ids due to references to other dropped instances -
+          ${(ids).map(id => `* ${id}`).join('\n')}
+    `)
+
+  return [
+    ...duplicationWarnings,
+    ...emptyRefsWarnings,
+    ...illegalOriginsWarnings,
+  ]
+}
 
 const createInternalToInstance = (instances: InstanceElement[]): Record<string, InstanceElement> =>
   (_.keyBy(instances, serializeInstanceInternalID))
@@ -47,10 +115,10 @@ const replaceLookupsWithReferencesAndCreateRefMap = (
   internalToInstance: Record<string, InstanceElement>,
 ): {
   reverseRefsMap: collections.map.DefaultMap<string, Set<string>>
-  referenceToNothing: Set<InstanceElement>
+  typeToEmptyRefOrigins: collections.map.DefaultMap<string, Set<refOrigin>>
 } => {
   const internalToReferencedFrom = new DefaultMap<string, Set<string>>(() => new Set())
-  const referenceToNothing = new Set<InstanceElement>()
+  const typeToEmptyRefOrigins = new DefaultMap<string, Set<refOrigin>>(() => new Set())
   const replaceLookups = (
     instance: InstanceElement
   ): Values => {
@@ -64,7 +132,12 @@ const replaceLookupsWithReferencesAndCreateRefMap = (
         .filter(isDefined)
         .pop()
       if (refTarget === undefined) {
-        referenceToNothing.add(instance)
+        refTo.forEach(targetName =>
+          typeToEmptyRefOrigins.get(targetName).add({
+            type: apiName(instance.type, true),
+            id: instance.value[CUSTOM_OBJECT_ID_FIELD],
+            field: field.name,
+          }))
         return value
       }
       internalToReferencedFrom.get(serializeInstanceInternalID(refTarget))
@@ -89,55 +162,65 @@ const replaceLookupsWithReferencesAndCreateRefMap = (
     }
   })
   return {
-    reverseRefsMap: internalToReferencedFrom, referenceToNothing,
+    reverseRefsMap: internalToReferencedFrom, typeToEmptyRefOrigins,
   }
 }
 
-const getIllegalRefsFrom = (
-  referencesToNothing: Set<InstanceElement>,
-  duplicates: InstanceElement[],
+const getIllegalRefSources = (
+  initialIllegalRefTargets: Set<string>,
   reverseRefsMap: collections.map.DefaultMap<string, Set<string>>,
 ): Set<string> => {
-  const illegalRefsFromSet = new Set<string>()
-  const illegalRefsTargets = [
-    ...[...referencesToNothing].flatMap(serializeInstanceInternalID),
-    ...duplicates.flatMap(serializeInstanceInternalID),
+  const illegalRefSources = new Set<string>()
+  const illegalRefTargets = [
+    ...initialIllegalRefTargets,
   ]
-  while (illegalRefsTargets.length > 0) {
-    const currentBrokenRef = illegalRefsTargets.pop()
+  while (illegalRefTargets.length > 0) {
+    const currentBrokenRef = illegalRefTargets.pop()
     if (currentBrokenRef === undefined) {
       break
     }
     const refsToCurrentIllegal = [...reverseRefsMap.get(currentBrokenRef)]
-    refsToCurrentIllegal.filter(r => !illegalRefsFromSet.has(r))
+    refsToCurrentIllegal.filter(r => !illegalRefSources.has(r))
       .forEach(newIllegalRefFrom => {
-        illegalRefsTargets.push(newIllegalRefFrom)
-        illegalRefsFromSet.add(newIllegalRefFrom)
+        illegalRefTargets.push(newIllegalRefFrom)
+        illegalRefSources.add(newIllegalRefFrom)
       })
   }
-  return illegalRefsFromSet
+  return illegalRefSources
 }
 
 const filter: FilterCreator = () => ({
-  onFetch: async (elements: Element[]) => {
+  onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const customObjectInstances = elements.filter(isInstanceOfCustomObject)
     const internalToInstance = createInternalToInstance(customObjectInstances)
-    const { reverseRefsMap, referenceToNothing } = replaceLookupsWithReferencesAndCreateRefMap(
+    const { reverseRefsMap, typeToEmptyRefOrigins } = replaceLookupsWithReferencesAndCreateRefMap(
       customObjectInstances,
       internalToInstance,
     )
     const instancesWithDuplicateElemID = Object
-      .values(_.groupBy(customObjectInstances, instance => instance.elemID.getFullName()))
+      .values(_.groupBy(
+        customObjectInstances,
+        instance => serializeInternalID(apiName(instance.type, true), instance.elemID.getFullName())
+      ))
       .filter(instances => instances.length > 1)
       .flat()
-    const illegalRefsFrom = getIllegalRefsFrom(
-      referenceToNothing, instancesWithDuplicateElemID, reverseRefsMap,
+    const emptyRefOriginInternalIDs = new Set(wu(typeToEmptyRefOrigins.entries()).toArray()
+      .flatMap(([_type, origins]) =>
+        [...origins]
+          .map(origin => serializeInternalID(origin.type, origin.id))))
+    const instWithDupElemIDInterIDs = new Set(
+      instancesWithDuplicateElemID.flatMap(serializeInstanceInternalID)
     )
+    const illegalRefTargets = new Set(
+      [
+        ...emptyRefOriginInternalIDs, ...instWithDupElemIDInterIDs,
+      ]
+    )
+    const illegalRefSources = getIllegalRefSources(illegalRefTargets, reverseRefsMap)
     const invalidInstances = new Set(
       [
-        ...illegalRefsFrom,
-        ...[...referenceToNothing].flatMap(serializeInstanceInternalID),
-        ...instancesWithDuplicateElemID.flatMap(serializeInstanceInternalID),
+        ...illegalRefSources,
+        ...illegalRefTargets,
       ]
     )
     _.remove(
@@ -146,6 +229,13 @@ const filter: FilterCreator = () => ({
         (isInstanceOfCustomObject(element)
         && invalidInstances.has(serializeInstanceInternalID(element))),
     )
+    return {
+      warnings: createWarnings(
+        instancesWithDuplicateElemID,
+        typeToEmptyRefOrigins,
+        illegalRefSources,
+      ),
+    }
   },
 })
 

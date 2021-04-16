@@ -198,6 +198,9 @@ describe('swagger_type_elements', () => {
                     { fieldName: 'quantity', fieldType: 'map<Category>' },
                     { fieldName: 'newField', fieldType: 'map<Category>' },
                   ],
+                  fieldsToHide: [
+                    { fieldName: 'petId' },
+                  ],
                 },
               },
               NewType: {
@@ -250,6 +253,12 @@ describe('swagger_type_elements', () => {
         expect(order.fields.shipDate.type).toEqual(allTypes.Category)
         expect(order.fields.quantity.type).toBeInstanceOf(MapType)
         expect((order.fields.quantity.type as MapType).innerType).toEqual(allTypes.Category)
+      })
+      it('should annotate fields from fieldsToHide with _hidden_value=true', () => {
+        const order = allTypes.Order as ObjectType
+        expect(order).toBeInstanceOf(ObjectType)
+        // eslint-disable-next-line no-underscore-dangle
+        expect((order.fields.petId.annotations?._hidden_value)).toBeTruthy()
       })
       it('should not add fields that did not already exist', () => {
         const order = allTypes.Order as ObjectType

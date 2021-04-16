@@ -252,6 +252,7 @@ export const generateTypes = async (
   {
     swagger,
     types,
+    typeDefaults,
   }: AdapterSwaggerApiConfig,
 ): Promise<{
   allTypes: TypeMap
@@ -290,7 +291,7 @@ export const generateTypes = async (
   if (swagger.additionalTypes !== undefined) {
     defineAdditionalTypes(adapterName, swagger.additionalTypes, definedTypes, types)
   }
-  fixTypes(definedTypes, types)
+  fixTypes(definedTypes, types, typeDefaults)
 
   return {
     allTypes: definedTypes,

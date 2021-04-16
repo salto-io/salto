@@ -102,6 +102,11 @@ describe('ducktype_transformer', () => {
         name: 'myType',
         entries: [{ name: 'bla1' }, { missing: 'something' }],
         hasDynamicFields: false,
+        transformationConfigByType: {},
+        transformationDefaultConfig: {
+          idFields: ['name'],
+          fileNameFields: ['also_name'],
+        },
       })
       expect(instanceElements.toInstance).toHaveBeenCalledTimes(2)
       expect(instanceElements.toInstance).toHaveBeenCalledWith({
@@ -166,6 +171,15 @@ describe('ducktype_transformer', () => {
         name: 'myType',
         entries: [{ name: 'bla1' }, { missing: 'something' }],
         hasDynamicFields: false,
+        transformationConfigByType: {
+          myType: {
+            fieldsToOmit: [{ fieldName: 'missing' }],
+          },
+        },
+        transformationDefaultConfig: {
+          idFields: ['name'],
+          fileNameFields: ['also_name'],
+        },
       })
       expect(instanceElements.toInstance).toHaveBeenCalledTimes(2)
       expect(instanceElements.toInstance).toHaveBeenCalledWith({
@@ -240,6 +254,11 @@ describe('ducktype_transformer', () => {
         name: 'myType',
         entries: [{ someNested: { name: 'bla1' } }, { someNested: [{ missing: 'something' }] }],
         hasDynamicFields: false,
+        transformationConfigByType: {},
+        transformationDefaultConfig: {
+          idFields: ['name'],
+          fileNameFields: ['also_name'],
+        },
       })
       expect(instanceElements.toInstance).toHaveBeenCalledTimes(2)
       expect(instanceElements.toInstance).toHaveBeenCalledWith({

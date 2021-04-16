@@ -26,11 +26,12 @@ export type StandaloneFieldConfigType = {
   fieldName: string
   parseJSON?: boolean
 }
-
-export type FieldToOmitType = {
+type FieldToAdjustType = {
   fieldName: string
   fieldType?: string
 }
+export type FieldToOmitType = FieldToAdjustType
+export type FieldToHideType = FieldToAdjustType
 export type FieldTypeOverrideType = {
   fieldName: string
   fieldType: string
@@ -46,6 +47,11 @@ export type TransformationConfig = {
   fileNameFields?: string[]
   // fields whose values will be omitted if they are of the specified type
   fieldsToOmit?: FieldToOmitType[]
+  // fields whose values are env-specific and should be hidden
+  // *WARNING*: this should be used carefully - it can cause workspace
+  // errors when used on types that exist inside arrays, since the merge between the state
+  // element and the workspace element will result in duplicates
+  fieldsToHide?: FieldToHideType[]
   // fields to convert into their instances (and reference from the parent)
   standaloneFields?: StandaloneFieldConfigType[]
 
@@ -67,8 +73,8 @@ export const createTransformationConfigTypes = (
     },
   })
 
-  const fieldToOmitConfigType = new ObjectType({
-    elemID: new ElemID(adapter, 'fieldToOmitConfig'),
+  const fieldToAdjustConfigType = new ObjectType({
+    elemID: new ElemID(adapter, 'fieldToAdjustConfig'),
     fields: {
       fieldName: {
         type: BuiltinTypes.STRING,
@@ -99,7 +105,8 @@ export const createTransformationConfigTypes = (
 
   const sharedTransformationFields: Record<string, FieldDefinition> = {
     fieldTypeOverrides: { type: new ListType(fieldTypeOverrideConfigType) },
-    fieldsToOmit: { type: new ListType(fieldToOmitConfigType) },
+    fieldsToOmit: { type: new ListType(fieldToAdjustConfigType) },
+    fieldsToHide: { type: new ListType(fieldToAdjustConfigType) },
     standaloneFields: { type: new ListType(standaloneFieldConfigType) },
     dataField: { type: BuiltinTypes.STRING },
     fileNameFields: { type: new ListType(BuiltinTypes.STRING) },
@@ -170,6 +177,11 @@ export const validateTransoformationConfig = (
     'fieldsToOmit',
     defaultConfig.fieldsToOmit,
     _.mapValues(configMap, c => c.fieldsToOmit),
+  )
+  findNestedFieldDups(
+    'fieldsToHide',
+    defaultConfig.fieldsToHide,
+    _.mapValues(configMap, c => c.fieldsToHide),
   )
   findNestedFieldDups(
     'standaloneFields',

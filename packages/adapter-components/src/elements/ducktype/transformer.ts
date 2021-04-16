@@ -97,6 +97,8 @@ export const getTypeAndInstances = async ({
     name: typeName,
     entries: naclEntries,
     hasDynamicFields: hasDynamicFields === true,
+    transformationConfigByType,
+    transformationDefaultConfig,
   })
   // find the field and type containing the actual instances
   const nestedFieldDetails = nestedFieldFinder(type, fieldsToOmit, dataField)

@@ -17,4 +17,4 @@ export { createDucktypeAdapterApiConfigType, AdapterDuckTypeApiConfig, TypeDuckT
 export { createRequestConfigs, validateRequestConfig, RequestConfig } from './request'
 export { createAdapterApiConfigType, createUserFetchConfigType, AdapterApiConfig, UserFetchConfig, TypeConfig } from './shared'
 export { createSwaggerAdapterApiConfigType, AdapterSwaggerApiConfig, RequestableAdapterSwaggerApiConfig, TypeSwaggerConfig, RequestableTypeSwaggerConfig, TypeSwaggerDefaultConfig, validateApiDefinitionConfig as validateSwaggerApiDefinitionConfig } from './swagger'
-export { createTransformationConfigTypes, validateTransoformationConfig, TransformationDefaultConfig, TransformationConfig, StandaloneFieldConfigType, FieldToOmitType } from './transformation'
+export { createTransformationConfigTypes, validateTransoformationConfig, TransformationDefaultConfig, TransformationConfig, StandaloneFieldConfigType, FieldToOmitType, FieldToHideType } from './transformation'

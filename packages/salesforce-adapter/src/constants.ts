@@ -150,6 +150,7 @@ export const BUSINESS_OWNER_GROUP = 'businessOwnerGroup'
 export const BUSINESS_STATUS = 'businessStatus'
 export const SECURITY_CLASSIFICATION = 'securityClassification'
 export const COMPLIANCE_GROUP = 'complianceGroup'
+export const VALUE_SET = 'valueSet'
 
 export const FIELD_ANNOTATIONS = {
   UNIQUE: 'unique',
@@ -177,7 +178,7 @@ export const FIELD_ANNOTATIONS = {
   SUMMARY_FOREIGN_KEY: 'summaryForeignKey',
   SUMMARY_OPERATION: 'summaryOperation',
   RESTRICTED: 'restricted',
-  VALUE_SET: 'valueSet',
+  VALUE_SET,
   DEFAULT_VALUE: 'defaultValue',
   FORMULA_TREAT_BLANKS_AS: 'formulaTreatBlanksAs',
   CREATABLE: 'createable',

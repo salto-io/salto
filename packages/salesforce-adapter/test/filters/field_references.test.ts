@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, Value, CORE_ANNOTATIONS, isInstanceElement, Field, isObjectType, ListType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, Value, CORE_ANNOTATIONS, isInstanceElement, Field, isObjectType, ListType, TypeElement } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import filterCreator, { addReferences } from '../../src/filters/field_references'
@@ -55,7 +55,7 @@ const generateObjectAndInstance = ({
   contextFieldValue?: string
 }): Element[] => {
   const addFields = (obj: ObjectType): void => {
-    const createField = (name: string, fieldType = BuiltinTypes.STRING): Field => (
+    const createField = (name: string, fieldType: TypeElement = BuiltinTypes.STRING): Field => (
       new Field(obj, name, fieldType, { [API_NAME]: [type, name].join(API_NAME_SEPARATOR) })
     )
     obj.fields = {

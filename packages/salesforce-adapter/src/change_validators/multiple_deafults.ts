@@ -61,7 +61,7 @@ const createChangeError = (field: Field, contexts: string[], instanceName?: stri
   elemID: field.elemID,
   severity: 'Warning',
   message: `There cannot be more than one 'default' field set to 'true'. Field name: ${field.name} in${instanceName ? ` instance: ${instanceName}` : ''} type ${field.parent.elemID.name}.`,
-  detailedMessage: `There cannot be more than one 'default' field set to 'true'. Field name: ${field.name} in${instanceName ? ` instance: ${instanceName}` : ''} type ${field.parent.elemID.name}. The 'default = true' are where the ${fieldNameToInnerContextField[field.name] ?? LABEL}s are: ${contexts}`,
+  detailedMessage: `There cannot be more than one 'default' ${field.name} in${instanceName ? ` instance: ${instanceName}` : ''} type ${field.parent.elemID.name}. The following ${fieldNameToInnerContextField[field.name] ?? LABEL}s are set to default: ${contexts}`,
 })
 
 const getPicklistMultipleDefaultsErrors = (field: FieldWithValueSet): ChangeError[] => {

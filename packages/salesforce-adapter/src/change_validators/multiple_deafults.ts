@@ -19,10 +19,9 @@ import {
   isInstanceChange, Field, InstanceElement,
   isFieldChange, isListType, TypeElement, isMapType, Value, Values, isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { LABEL, VALUE_SET } from '../constants'
+import { FIELD_ANNOTATIONS, LABEL } from '../constants'
 import { isFieldOfCustomObject } from '../transformers/transformer'
 
 const fieldNameToInnerContextField: Record<string, string> = {
@@ -43,6 +42,10 @@ type FieldWithValueSet = Field & {
   }
 }
 
+const isFieldWithValueSet = (field: Field): field is FieldWithValueSet => (
+  _.isArray(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])
+)
+
 const formatContext = (context: Value): string => {
   if (isReferenceExpression(context)) {
     return context.elemId.getFullName()
@@ -62,7 +65,7 @@ const createChangeError = (field: Field, contexts: string[], instanceName?: stri
 })
 
 const getPicklistMultipleDefaultsErrors = (field: FieldWithValueSet): ChangeError[] => {
-  const contexts = field.annotations[VALUE_SET]
+  const contexts = field.annotations.valueSet
     .filter(obj => obj.default)
     .map(obj => obj[LABEL])
     .map(formatContext)
@@ -112,8 +115,7 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(isFieldChange)
     .map(getChangeElement)
     .filter(isFieldOfCustomObject)
-    .filter(field => values.isDefined(field.annotations.valueSet))
-    .map(field => field as FieldWithValueSet)
+    .filter(isFieldWithValueSet)
     .flatMap(getPicklistMultipleDefaultsErrors)
 
   return [...instanceChangesErrors, ...picklistChangesErrors]

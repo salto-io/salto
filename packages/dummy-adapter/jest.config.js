@@ -28,8 +28,8 @@ module.exports = deepMerge(
       'global': {
         branches: 74,
         functions: 94,
-        lines: 95,
-        statements: 95,
+        lines: 94,
+        statements: 94,
       },
     },
   },

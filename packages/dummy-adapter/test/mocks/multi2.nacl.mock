@@ -1,0 +1,8 @@
+type dummy.multiFilesObj {
+    annotations {
+        string anno {
+        }
+    }
+
+    anno : "Anno"
+}

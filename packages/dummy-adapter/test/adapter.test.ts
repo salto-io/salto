@@ -39,7 +39,7 @@ describe('dummy adapter', () => {
       const mockReporter = { reportProgress: jest.fn() }
       const fetchResult = await adapter.fetch({ progressReporter: mockReporter })
       expect(fetchResult)
-        .toEqual({ elements: generator.generateElements(testParams, mockReporter) })
+        .toEqual({ elements: await generator.generateElements(testParams, mockReporter) })
     })
     it('should report fetch progress', async () => {
       await adapter.fetch({ progressReporter: progressReportMock })

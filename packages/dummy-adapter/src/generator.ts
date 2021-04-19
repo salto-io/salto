@@ -24,7 +24,10 @@ import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
 import { collections } from '@salto-io/lowerdash'
 import fs from 'fs'
+import path from 'path'
 import seedrandom from 'seedrandom'
+import readdirp from 'readdirp'
+import { parser } from '@salto-io/workspace'
 
 const { arrayOf } = collections.array
 
@@ -60,9 +63,10 @@ export type GeneratorParams = {
     listLengthMean: number
     listLengthStd: number
     useOldProfiles: boolean
+    extraNaclPath?: string
 }
 
-export const defaultParams: GeneratorParams = {
+export const defaultParams: Omit<GeneratorParams, 'extraNaclPath'> = {
   seed: 123456,
   numOfRecords: 522,
   numOfPrimitiveTypes: 44,
@@ -96,6 +100,7 @@ export const defaultParams: GeneratorParams = {
   useOldProfiles: false,
 }
 
+const MOCK_NACL_SUFFIX = 'nacl.mock'
 export const DUMMY_ADAPTER = 'dummy'
 
 const defaultObj = new ObjectType({
@@ -144,10 +149,10 @@ const profileType = new ObjectType({
   path: [DUMMY_ADAPTER, 'Default', 'Profile'],
 })
 
-export const generateElements = (
+export const generateElements = async (
   params: GeneratorParams,
   progressReporter: ProgressReporter
-): Element[] => {
+): Promise<Element[]> => {
   seedrandom(params.seed.toString(), { global: true })
   const elementRanks: Record<string, number> = {}
   const primitiveByRank: PrimitiveType[][] = arrayOf(defaultParams.maxRank + 1, () => [])
@@ -169,7 +174,7 @@ export const generateElements = (
       s = u * u + v * v
     } while (s >= 1 || s === 0)
     s = Math.sqrt(-2.0 * (Math.log(s) / s))
-    return Math.floor(mean + (stdDev * u * s))
+    return Math.max(Math.floor(mean + (stdDev * u * s)), 0)
   }
 
   const weightedRandomSelect = <T>(items: T[], weights?: number[]): T => {
@@ -190,7 +195,8 @@ export const generateElements = (
 
   const getFieldType = (allowContainers = false): TypeElement => {
     const fieldTypeOptions = [
-      Object.values(BuiltinTypes).filter(type => type !== BuiltinTypes.UNKNOWN),
+      Object.values(BuiltinTypes).filter(type => type !== BuiltinTypes.UNKNOWN
+        && type !== BuiltinTypes.HIDDEN_STRING),
       weightedRandomSelect(primitiveByRank.slice(0, -1)) || [],
       weightedRandomSelect(objByRank.slice(0, -1)) || [],
     ]
@@ -247,7 +253,7 @@ export const generateElements = (
     }
   }
 
-  const getListLength = (): number => normalRandom(params.listLengthMean, params.listLengthStd)
+  const getListLength = (): number => normalRandom(params.listLengthMean, params.listLengthStd) + 1
 
   const getSingleLine = (): string => (
     stringLinesOpts[Math.floor(Math.random() * stringLinesOpts.length)]
@@ -308,14 +314,14 @@ export const generateElements = (
   const generateAnnotations = (annoTypes: TypeMap, hidden = false): Values => {
     const anno = _.mapValues(annoTypes, type => generateValue(type))
     if (hidden) {
-      anno[CORE_ANNOTATIONS.HIDDEN] = true
+      anno[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
     }
     return anno
   }
 
   const generateFields = (): Record<string, FieldDefinition> => Object.fromEntries(
     arrayOf(
-      normalRandom(defaultParams.fieldsNumMean, defaultParams.fieldsNumStd),
+      normalRandom(defaultParams.fieldsNumMean, defaultParams.fieldsNumStd) + 1,
       () => {
         const name = getName()
         const fieldType = getFieldType(true)
@@ -350,7 +356,7 @@ export const generateElements = (
         PrimitiveTypes.NUMBER,
       ]),
       annotationTypes,
-      annotations: generateAnnotations(annotationTypes, true),
+      annotations: generateAnnotations(annotationTypes, false),
       path: [DUMMY_ADAPTER, 'Types', name],
     })
     updateElementRank(element)
@@ -520,6 +526,106 @@ export const generateElements = (
       }
     ).flat()
   }
+
+  const generateEnvElements = (): Element[] => {
+    const envID = process.env.SALTO_ENV
+    if (envID === undefined) return []
+    const PrimWithHiddenAnnos = new PrimitiveType({
+      elemID: new ElemID('dummy', 'PrimWithAnnos'),
+      primitive: PrimitiveTypes.STRING,
+      annotationTypes: {
+        SharedHidden: BuiltinTypes.HIDDEN_STRING,
+        DiffHidden: BuiltinTypes.HIDDEN_STRING,
+      },
+      path: [DUMMY_ADAPTER, 'EnvStuff', 'PrimWithAnnos'],
+    })
+
+    const sharedObj = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, 'EnvObj'),
+      fields: {
+        SharedField: {
+          type: BuiltinTypes.STRING,
+        },
+        SharedButDiffField: {
+          type: BuiltinTypes.STRING,
+        },
+        [`${envID}Field`]: {
+          type: BuiltinTypes.STRING,
+        },
+        [`${envID}FieldWithHidden`]: {
+          type: PrimWithHiddenAnnos,
+          annotations: {
+            SharedHidden: 'HIDDEN!',
+            DiffHidden: `${envID}-HIDDENNNN!!!!`,
+          },
+        },
+      },
+      annotationTypes: {
+        ShardAnno: BuiltinTypes.STRING,
+        SharedButDiffAnno: BuiltinTypes.STRING,
+        [`${envID}Anno`]: BuiltinTypes.STRING,
+        SharedHidden: BuiltinTypes.HIDDEN_STRING,
+        DiffHidden: BuiltinTypes.HIDDEN_STRING,
+      },
+      annotations: {
+        SharedAnno: 'AnnoValue',
+        SharedButDiffAnno: `${envID}AnnoValue`,
+        [`${envID}Anno`]: 'AnnoValue',
+        SharedHidden: 'HIDDEN!',
+        DiffHidden: `${envID}-HIDDENNNN!!!!`,
+      },
+      path: [DUMMY_ADAPTER, 'EnvStuff', 'EnvObj'],
+    })
+    const sharedInst = new InstanceElement(
+      'EnvInst',
+      sharedObj,
+      {
+        SharedField: 'FieldValue',
+        SharedButDiffField: `${envID}FieldValue`,
+        [`${envID}Field`]: 'FieldValue',
+      },
+      [DUMMY_ADAPTER, 'EnvStuff', 'EnvInst'],
+      {
+        [CORE_ANNOTATIONS.SERVICE_URL]: `http://www.somthing.com/${envID}`,
+      }
+    )
+    const envSpecificObj = new ObjectType({
+      elemID: new ElemID(DUMMY_ADAPTER, `${envID}EnvObj`),
+      fields: {
+        Field: {
+          type: BuiltinTypes.STRING,
+        },
+      },
+      path: [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvObj`],
+    })
+    const envSpecificInst = new InstanceElement(
+      `${envID}EnvInst`,
+      envSpecificObj,
+      { Field: 'FieldValue' },
+      [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvInst`]
+    )
+    const res = [envSpecificInst, sharedObj, sharedInst, PrimWithHiddenAnnos]
+    if (!process.env.SALTO_OMIT) {
+      res.push(envSpecificObj)
+    }
+    return res
+  }
+
+  const generateExtraElements = async (naclDir: string): Promise<Element[]> => {
+    const allNaclMocks = await readdirp.promise(naclDir, {
+      fileFilter: [`*.${MOCK_NACL_SUFFIX}`],
+    })
+    return (await Promise.all(allNaclMocks.map(async file => {
+      const content = fs.readFileSync(file.fullPath, 'utf8')
+      const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {})
+      parsedNaclFile.elements.forEach(elem => {
+        elem.path = [DUMMY_ADAPTER, 'extra', file.basename.replace(new RegExp(`.${MOCK_NACL_SUFFIX}$`), '')]
+      })
+      return parsedNaclFile.elements
+    }))).flat()
+  }
+
+
   const defaultTypes = [defaultObj, permissionsType, profileType]
   progressReporter.reportProgress({ message: 'Generating primitive types' })
   const primtiveTypes = generatePrimitiveTypes()
@@ -532,6 +638,11 @@ export const generateElements = (
   progressReporter.reportProgress({ message: 'Generating profile likes' })
   const profiles = generateProfileLike(params.useOldProfiles)
   progressReporter.reportProgress({ message: 'Generation done' })
+  const envObjects = generateEnvElements()
+  const extraElements = params.extraNaclPath
+    ? await generateExtraElements(params.extraNaclPath)
+    : []
+  const defaultExtraElements = await generateExtraElements(path.join(__dirname, 'data', 'fixtures'))
   return [
     ...defaultTypes,
     ...primtiveTypes,
@@ -540,5 +651,8 @@ export const generateElements = (
     ...objects,
     ...profiles,
     new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER, 'noPath'), fields: {} }),
+    ...envObjects,
+    ...extraElements,
+    ...defaultExtraElements,
   ]
 }

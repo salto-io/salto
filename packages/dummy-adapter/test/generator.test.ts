@@ -15,28 +15,29 @@
 */
 import { isObjectType, isInstanceElement, isPrimitiveType, isMapType, isContainerType } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import path from 'path'
 import { generateElements } from '../src/generator'
 import testParams from './test_params'
 
 const mockProgressReporter = { reportProgress: jest.fn() }
-
+const EXTRA_NACL_PATH = path.join(__dirname, '../../test/mocks')
 describe('elements generator', () => {
   describe('consistency', () => {
-    it('should create the same set of elements when invoked with the same seed and params', () => {
-      const run1 = generateElements(testParams, mockProgressReporter)
-      const run2 = generateElements(testParams, mockProgressReporter)
+    it('should create the same set of elements when invoked with the same seed and params', async () => {
+      const run1 = await generateElements(testParams, mockProgressReporter)
+      const run2 = await generateElements(testParams, mockProgressReporter)
       expect(run1).toEqual(run2)
     })
-    it('should create different results when invoked with different seeds', () => {
-      const run1 = generateElements(testParams, mockProgressReporter)
-      const run2 = generateElements({
+    it('should create different results when invoked with different seeds', async () => {
+      const run1 = await generateElements(testParams, mockProgressReporter)
+      const run2 = await generateElements({
         ...testParams,
         seed: 3.14,
       }, mockProgressReporter)
       expect(run1).not.toEqual(run2)
     })
-    it('should create the amount of elements as the params specified', () => {
-      const elements = generateElements(testParams, mockProgressReporter)
+    it('should create the amount of elements as the params specified', async () => {
+      const elements = await generateElements(testParams, mockProgressReporter)
       const primitives = elements.filter(isPrimitiveType)
       const [types, objects] = _.partition(
         elements.filter(isObjectType),
@@ -50,20 +51,20 @@ describe('elements generator', () => {
       expect(types).toHaveLength(testParams.numOfTypes)
       expect(
         _.uniq(objects.map(obj => obj.elemID.getFullName()))
-      ).toHaveLength(testParams.numOfObjs + 4) // 3 default types + 1 additional type
+      ).toHaveLength(testParams.numOfObjs + 6) // 5 default types + 1 additional type
       expect(profiles).toHaveLength(testParams.numOfProfiles * 4)
       expect(_.uniq(profiles.map(p => p.elemID.getFullName()))).toHaveLength(
         testParams.numOfProfiles
       )
-      expect(records).toHaveLength(testParams.numOfRecords)
+      expect(records).toHaveLength(testParams.numOfRecords + 4) // 4 default instance fragments
     })
-    it('should create list and map types', () => {
-      const run1 = generateElements({
+    it('should create list and map types', async () => {
+      const run1 = await generateElements({
         ...testParams,
         listFieldFreq: 1,
         mapFieldFreq: 0,
       }, mockProgressReporter)
-      const run2 = generateElements({
+      const run2 = await generateElements({
         ...testParams,
         listFieldFreq: 0,
         mapFieldFreq: 1,
@@ -77,8 +78,8 @@ describe('elements generator', () => {
       expect(lists.length).toBeGreaterThan(0)
       expect(maps.length).toBeGreaterThan(0)
     })
-    it('should support old profiles', () => {
-      const elements = generateElements({
+    it('should support old profiles', async () => {
+      const elements = await generateElements({
         ...testParams,
         useOldProfiles: true,
       }, mockProgressReporter)
@@ -86,6 +87,37 @@ describe('elements generator', () => {
         e => e.path !== undefined && e.path[2] === 'Profile'
       )
       expect(profiles).toHaveLength(testParams.numOfProfiles)
+    })
+
+    it('should return elements in the extra nacl dir', async () => {
+      const elements = await generateElements({
+        ...testParams,
+        extraNaclPath: EXTRA_NACL_PATH,
+      }, mockProgressReporter)
+      const singleFileObj = elements.find(e => e.elemID.getFullName() === 'dummy.singleFileObj')
+      const multiFilesObj = elements.filter(e => e.elemID.getFullName() === 'dummy.multiFilesObj')
+      expect(singleFileObj).toBeDefined()
+      expect(multiFilesObj).toHaveLength(2)
+      expect(singleFileObj?.path).toEqual(['dummy', 'extra', 'single'])
+      expect(multiFilesObj.map(e => e.path)).toEqual([
+        ['dummy', 'extra', 'multi1'],
+        ['dummy', 'extra', 'multi2'],
+      ])
+    })
+
+    it('should generate a set of fixture elements', async () => {
+      const elements = await generateElements(testParams, mockProgressReporter)
+      const expectedFixtures = [
+        { fullName: 'dummy.Full.instance.FullInst1', numOfFragments: 1 },
+        { fullName: 'dummy.Full.instance.FullInst2', numOfFragments: 1 },
+        { fullName: 'dummy.Full', numOfFragments: 1 },
+        { fullName: 'dummy.Partial', numOfFragments: 2 },
+        { fullName: 'dummy.Partial.instance.PartialInst', numOfFragments: 2 },
+      ]
+      expectedFixtures.forEach(fixture => {
+        const fragments = elements.filter(e => e.elemID.getFullName() === fixture.fullName)
+        expect(fragments).toHaveLength(fixture.numOfFragments)
+      })
     })
   })
 })

@@ -1,0 +1,5 @@
+dummy.Full FullInst2 {
+    strField = "STR2"
+    numField = 222
+    _parent = dummy.Full
+}

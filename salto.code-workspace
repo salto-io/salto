@@ -93,12 +93,12 @@
 			"path": "packages/graph-exporter"
 		},
 		{
-			"name": "workato-adapter",
-			"path": "packages/workato-adapter"
-		},
-		{
 			"name": "zuora-billing-adapter",
 			"path": "packages/zuora-billing-adapter"
+		},
+		{
+			"name": "stripe-adapter",
+			"path": "packages/stripe-adapter"
 		}
 	],
 	"settings": {

@@ -18,6 +18,7 @@ import { customTypes } from '../../src/types'
 import { DATASET, ENTITY_CUSTOM_FIELD, SAVED_CSV_IMPORT } from '../../src/constants'
 import filterCreator from '../../src/filters/convert_lists'
 import { OnFetchParameters } from '../../src/filter'
+import NetsuiteClient from '../../src/client/client'
 
 describe('convert_lists filter', () => {
   const instanceName = 'instanceName'
@@ -34,6 +35,7 @@ describe('convert_lists filter', () => {
       })
     onFetchParameters = {
       elements: [instance],
+      client: {} as NetsuiteClient,
       elementsSourceIndex: { getIndex: () => Promise.resolve({}) },
       isPartial: false,
     }

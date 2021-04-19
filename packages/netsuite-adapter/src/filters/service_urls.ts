@@ -13,21 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element } from '@salto-io/adapter-api'
-import NetsuiteClient from './client/client'
-import { LazyElementsSourceIndex } from './elements_source_index/types'
+import { FilterCreator } from '../filter'
+import setFileCabinetUrls from '../service_url/file_cabinet'
 
-export type OnFetchParameters = {
-  elements: Element[]
-  client: NetsuiteClient
-  elementsSourceIndex: LazyElementsSourceIndex
-  isPartial: boolean
-}
+const SERVICE_URL_SETTERS = [
+  setFileCabinetUrls,
+]
 
-// Filter interface, filters will be activated upon adapter fetch operations.
-// The filter will be responsible for specific business logic.
-export type OnFetchFilter = {
-  onFetch(parameters: OnFetchParameters): Promise<void>
-}
+const filterCreator: FilterCreator = () => ({
+  onFetch: async ({ elements, client }) => {
+    if (!client.isSuiteAppConfigured()) {
+      return
+    }
+    await Promise.all(SERVICE_URL_SETTERS.map(setter => setter(elements, client)))
+  },
+})
 
-export type FilterCreator = () => OnFetchFilter
+export default filterCreator

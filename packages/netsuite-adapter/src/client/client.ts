@@ -22,13 +22,12 @@ import { NetsuiteQuery } from '../query'
 import { Credentials } from './credentials'
 import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
-import * as suiteAppFileCabinet from '../suiteapp_file_cabinet'
+import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from '../suiteapp_file_cabinet'
 import { SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { GetCustomObjectsResult, ImportFileCabinetResult } from './types'
 import { getAllReferencedInstances, getRequiredReferencedInstances } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
 import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
-import { DeployType } from '../suiteapp_file_cabinet'
 
 const log = logger(module)
 
@@ -41,6 +40,8 @@ const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
 export default class NetsuiteClient {
   private sdfClient: SdfClient
   private suiteAppClient?: SuiteAppClient
+  private suiteAppFileCabinet?: SuiteAppFileCabinetOperations
+  public readonly url: URL
 
   constructor(sdfClient: SdfClient, suiteAppClient?: SuiteAppClient) {
     this.sdfClient = sdfClient
@@ -48,8 +49,11 @@ export default class NetsuiteClient {
     if (this.suiteAppClient === undefined) {
       log.debug('Salto SuiteApp not configured')
     } else {
+      this.suiteAppFileCabinet = createSuiteAppFileCabinetOperations(this.suiteAppClient)
       log.debug('Salto SuiteApp configured')
     }
+
+    this.url = new URL(`https://${this.sdfClient.getCredentials().accountId.replace('_', '-')}.app.netsuite.com`)
   }
 
   @NetsuiteClient.logDecorator
@@ -84,8 +88,8 @@ export default class NetsuiteClient {
   @NetsuiteClient.logDecorator
   async importFileCabinetContent(query: NetsuiteQuery):
     Promise<ImportFileCabinetResult> {
-    if (this.suiteAppClient !== undefined) {
-      return suiteAppFileCabinet.importFileCabinet(this.suiteAppClient, query)
+    if (this.suiteAppFileCabinet !== undefined) {
+      return this.suiteAppFileCabinet.importFileCabinet(query)
     }
 
     return this.sdfClient.importFileCabinetContent(query)
@@ -129,9 +133,8 @@ export default class NetsuiteClient {
       return this.sdfDeploy(instancesChanges, deployReferencedElements)
     }
 
-    return this.suiteAppClient !== undefined
-      ? suiteAppFileCabinet.deploy(
-        this.suiteAppClient,
+    return this.suiteAppFileCabinet !== undefined
+      ? this.suiteAppFileCabinet.deploy(
         instancesChanges,
         GROUP_TO_DEPLOY_TYPE[changeGroup.groupID]
       )
@@ -154,6 +157,11 @@ export default class NetsuiteClient {
 
   public isSuiteAppConfigured(): boolean {
     return this.suiteAppClient !== undefined
+  }
+
+  public async getPathInternalId(path: string): Promise<number | undefined> {
+    const pathToId = await this.suiteAppFileCabinet?.getPathToIdMap() ?? {}
+    return pathToId[path]
   }
 
   private static logDecorator = decorators.wrapMethodWith(

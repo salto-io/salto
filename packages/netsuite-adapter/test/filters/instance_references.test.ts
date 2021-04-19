@@ -20,6 +20,7 @@ import {
 import filterCreator from '../../src/filters/instance_references'
 import { customTypes, fileCabinetTypes } from '../../src/types'
 import { FILE, PATH, SCRIPT_ID, WORKFLOW } from '../../src/constants'
+import NetsuiteClient from '../../src/client/client'
 
 
 describe('instance_references filter', () => {
@@ -94,6 +95,7 @@ describe('instance_references filter', () => {
     it('should replace path references', async () => {
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
+        client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
       })
@@ -105,6 +107,7 @@ describe('instance_references filter', () => {
     it('should replace scriptid references', async () => {
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
+        client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
       })
@@ -116,6 +119,7 @@ describe('instance_references filter', () => {
     it('should replace annotations references', async () => {
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
+        client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
       })
@@ -129,6 +133,7 @@ describe('instance_references filter', () => {
     it('parent should reference the element itself', async () => {
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
+        client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
       })
@@ -140,6 +145,7 @@ describe('instance_references filter', () => {
     it('should replace scriptid with 1 nesting level references', async () => {
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
+        client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
       })
@@ -151,6 +157,7 @@ describe('instance_references filter', () => {
     it('should replace scriptid with 2 nesting level references', async () => {
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
+        client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
       })
@@ -162,6 +169,7 @@ describe('instance_references filter', () => {
     it('should replace inner scriptid references', async () => {
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
+        client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
       })
@@ -174,6 +182,7 @@ describe('instance_references filter', () => {
     it('should not replace scriptid references for unresolved ref', async () => {
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
+        client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
       })
@@ -185,6 +194,7 @@ describe('instance_references filter', () => {
     it('should not replace path references for unresolved ref', async () => {
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
+        client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
       })
@@ -199,6 +209,7 @@ describe('instance_references filter', () => {
       })
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
+        client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: true,
       })
@@ -213,6 +224,7 @@ describe('instance_references filter', () => {
       })
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
+        client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
       })

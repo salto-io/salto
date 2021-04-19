@@ -33,6 +33,7 @@ import replaceInstanceReferencesFilter from './filters/instance_references'
 import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
 import addParentFolder from './filters/add_parent_folder'
+import serviceUrls from './filters/service_urls'
 import { FilterCreator } from './filter'
 import {
   getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
@@ -92,6 +93,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       convertLists,
       consistentValues,
       replaceInstanceReferencesFilter,
+      serviceUrls,
     ],
     typesToSkip = [
       INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard
@@ -257,7 +259,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     // Fetch filters order is important so they should run one after the other
     return this.filtersCreators.map(filterCreator => filterCreator()).reduce(
       (prevRes, filter) => prevRes.then(() =>
-        filter.onFetch({ elements, elementsSourceIndex, isPartial })),
+        filter.onFetch({ elements, client: this.client, elementsSourceIndex, isPartial })),
       Promise.resolve(),
     )
   }

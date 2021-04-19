@@ -79,13 +79,6 @@ describe('Netsuite adapter E2E with real account', () => {
     ['without SuiteApp', false],
     ['with SuiteApp', true],
   ]).describe('%s', (_text, withSuiteApp) => {
-    beforeAll(async () => {
-      const adapterAttr = realAdapter(
-        { credentials: credentialsLease.value, withSuiteApp },
-      )
-      adapter = adapterAttr.adapter
-    })
-
     let fetchResult: FetchResult
     let fetchedInstances: InstanceElement[]
 
@@ -208,6 +201,11 @@ describe('Netsuite adapter E2E with real account', () => {
 
       let deployResult: DeployResult
       beforeAll(async () => {
+        const adapterAttr = realAdapter(
+          { credentials: credentialsLease.value, withSuiteApp },
+        )
+        adapter = adapterAttr.adapter
+
         const idToGroup = (await adapter?.deployModifiers
           ?.getChangeGroupIds?.(changes)) as Map<ChangeId, ChangeGroupId>
         const changesGroups = _(changes)
@@ -258,6 +256,11 @@ describe('Netsuite adapter E2E with real account', () => {
 
     describe('Fetch after creation', () => {
       beforeAll(async () => {
+        const adapterAttr = realAdapter(
+          { credentials: credentialsLease.value, withSuiteApp },
+        )
+        adapter = adapterAttr.adapter
+
         const mockFetchOpts: MockInterface<FetchOptions> = {
           progressReporter: { reportProgress: jest.fn() },
         }

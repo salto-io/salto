@@ -17,7 +17,7 @@ import { Change, InstanceElement, StaticFile, toChange } from '@salto-io/adapter
 import _ from 'lodash'
 import { NetsuiteQuery } from '../src/query'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
-import { deploy, importFileCabinet, isChangeDeployable } from '../src/suiteapp_file_cabinet'
+import { createSuiteAppFileCabinetOperations, isChangeDeployable } from '../src/suiteapp_file_cabinet'
 import { ReadFileEncodingError, ReadFileError } from '../src/client/suiteapp_client/errors'
 import { fileCabinetTypes } from '../src/types'
 import { FILE } from '../src/constants'
@@ -180,7 +180,8 @@ describe('suiteapp_file_cabinet', () => {
 
   describe('importFileCabinet', () => {
     it('should return all the files', async () => {
-      const { elements } = await importFileCabinet(suiteAppClient, query)
+      const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query)
       expect(elements).toEqual(expectedResults)
     })
 
@@ -194,7 +195,8 @@ describe('suiteapp_file_cabinet', () => {
       )
       mockSuiteAppClient.readLargeFile.mockResolvedValue(filesContent[2])
 
-      const { elements } = await importFileCabinet(suiteAppClient, query)
+      const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query)
       expect(elements).toEqual(expectedResults)
       expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledWith(2)
       expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledTimes(1)
@@ -229,7 +231,8 @@ describe('suiteapp_file_cabinet', () => {
 
       mockSuiteAppClient.readLargeFile.mockResolvedValue(Buffer.from('someContent'))
 
-      const { elements } = await importFileCabinet(suiteAppClient, query)
+      const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query)
       expect(elements).toEqual([
         ...expectedResults,
         {
@@ -260,7 +263,8 @@ describe('suiteapp_file_cabinet', () => {
       )
       mockSuiteAppClient.readLargeFile.mockResolvedValue(new ReadFileError())
 
-      const { failedPaths } = await importFileCabinet(suiteAppClient, query)
+      const { failedPaths } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query)
       expect(failedPaths).toEqual([
         '/folder5/folder3/file1',
         '/folder5/folder4/file2',
@@ -269,13 +273,15 @@ describe('suiteapp_file_cabinet', () => {
 
     it('should filter files with query', async () => {
       mockQuery.isFileMatch.mockImplementation(path => path !== '/folder5/folder4' && path !== '/folder5/folder3/file1')
-      const { elements } = await importFileCabinet(suiteAppClient, query)
+      const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query)
       expect(elements).toEqual([expectedResults[0], expectedResults[2], expectedResults[4]])
     })
 
     it('should not run queries of no files are matched', async () => {
       mockQuery.areSomeFilesMatch.mockReturnValue(false)
-      const { elements } = await importFileCabinet(suiteAppClient, query)
+      const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query)
       expect(elements).toEqual([])
       expect(suiteAppClient.runSuiteQL).not.toHaveBeenCalled()
     })
@@ -292,7 +298,8 @@ describe('suiteapp_file_cabinet', () => {
         throw new Error(`Unexpected query: ${suiteQlQuery}`)
       })
 
-      await expect(importFileCabinet(suiteAppClient, query)).rejects.toThrow()
+      await expect(createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query)).rejects.toThrow()
     })
 
     it('throw an error when files query returns invalid results', async () => {
@@ -307,12 +314,14 @@ describe('suiteapp_file_cabinet', () => {
         throw new Error(`Unexpected query: ${suiteQlQuery}`)
       })
 
-      await expect(importFileCabinet(suiteAppClient, query)).rejects.toThrow()
+      await expect(createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query)).rejects.toThrow()
     })
 
     it('throw an error when readFiles failed', async () => {
       mockSuiteAppClient.readFiles.mockResolvedValue(undefined)
-      await expect(importFileCabinet(suiteAppClient, query)).rejects.toThrow()
+      await expect(createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query)).rejects.toThrow()
     })
 
     it('throw an error when folders query fails', async () => {
@@ -327,7 +336,8 @@ describe('suiteapp_file_cabinet', () => {
         throw new Error(`Unexpected query: ${suiteQlQuery}`)
       })
 
-      await expect(importFileCabinet(suiteAppClient, query)).rejects.toThrow()
+      await expect(createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query)).rejects.toThrow()
     })
 
     it('throw an error when folders query returns invalid results', async () => {
@@ -342,7 +352,8 @@ describe('suiteapp_file_cabinet', () => {
         throw new Error(`Unexpected query: ${suiteQlQuery}`)
       })
 
-      await expect(importFileCabinet(suiteAppClient, query)).rejects.toThrow()
+      await expect(createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query)).rejects.toThrow()
     })
   })
 
@@ -468,14 +479,16 @@ describe('suiteapp_file_cabinet', () => {
     describe('modifications', () => {
       it('should return only error if api calls fails', async () => {
         mockSuiteAppClient.updateFileCabinetInstances.mockRejectedValue(new Error('someError'))
-        const { appliedChanges, errors } = await deploy(suiteAppClient, [changes[0]], 'update')
+        const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+          .deploy([changes[0]], 'update')
         expect(errors).toEqual([new Error('someError')])
         expect(appliedChanges).toHaveLength(0)
       })
 
       it('should return applied changes for successful updates and errors for others', async () => {
         mockSuiteAppClient.updateFileCabinetInstances.mockResolvedValue([0, new Error('someError')])
-        const { appliedChanges, errors } = await deploy(suiteAppClient, changes.slice(0, 2), 'update')
+        const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+          .deploy(changes.slice(0, 2), 'update')
         expect(errors).toEqual([new Error('someError')])
         expect(appliedChanges).toHaveLength(1)
       })
@@ -499,7 +512,8 @@ describe('suiteapp_file_cabinet', () => {
           ),
         })
 
-        const { appliedChanges, errors } = await deploy(suiteAppClient, [change], 'update')
+        const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+          .deploy([change], 'update')
         expect(errors).toEqual([new Error('Failed to find the internal id of the file /instance10000')])
         expect(appliedChanges).toHaveLength(0)
       })
@@ -523,12 +537,14 @@ describe('suiteapp_file_cabinet', () => {
           ),
         })
 
-        const { appliedChanges, errors } = await deploy(suiteAppClient, [change], 'update')
+        const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+          .deploy([change], 'update')
         expect(errors).toEqual([new Error('Directory /someFolder was not found when attempting to deploy a file with path /someFolder/instance1')])
         expect(appliedChanges).toHaveLength(0)
       })
       it('should deploy in chunks', async () => {
-        const { appliedChanges, errors } = await deploy(suiteAppClient, changes, 'update')
+        const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+          .deploy(changes, 'update')
         expect(errors).toHaveLength(0)
         expect(appliedChanges).toEqual(changes)
         expect(mockSuiteAppClient.updateFileCabinetInstances.mock.calls[0][0]
@@ -583,7 +599,8 @@ describe('suiteapp_file_cabinet', () => {
           }),
         ]
 
-        const { appliedChanges, errors } = await deploy(suiteAppClient, changes, 'add')
+        const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+          .deploy(changes, 'add')
         expect(errors).toHaveLength(0)
         expect(appliedChanges).toHaveLength(3)
 
@@ -644,7 +661,8 @@ describe('suiteapp_file_cabinet', () => {
           }),
         ]
 
-        const { appliedChanges, errors } = await deploy(suiteAppClient, changes, 'delete')
+        const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+          .deploy(changes, 'delete')
         expect(errors).toHaveLength(0)
         expect(appliedChanges).toHaveLength(3)
 

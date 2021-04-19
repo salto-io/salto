@@ -20,16 +20,14 @@ describe('config_transformation', () => {
   describe('createTransformationConfigTypes', () => {
     it('should return default config type when no custom fields were added', () => {
       const { transformation, transformationDefault } = createTransformationConfigTypes('myAdapter')
-      expect(Object.keys(transformation.fields)).toHaveLength(6)
-      expect(Object.keys(transformation.fields).sort()).toEqual(['dataField', 'fieldTypeOverrides', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
+      expect(Object.keys(transformation.fields).sort()).toEqual(['dataField', 'fieldTypeOverrides', 'fieldsToHide', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
       expect(transformation.fields.idFields.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeUndefined()
       const idFieldsType = transformation.fields.idFields.type as ListType
       expect(idFieldsType).toBeInstanceOf(ListType)
       const idFieldsTypeInner = idFieldsType.innerType
       expect(idFieldsTypeInner).toEqual(BuiltinTypes.STRING)
 
-      expect(Object.keys(transformationDefault.fields)).toHaveLength(6)
-      expect(Object.keys(transformationDefault.fields).sort()).toEqual(['dataField', 'fieldTypeOverrides', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
+      expect(Object.keys(transformationDefault.fields).sort()).toEqual(['dataField', 'fieldTypeOverrides', 'fieldsToHide', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
       expect(transformationDefault.fields.idFields.annotations[CORE_ANNOTATIONS.REQUIRED]).toEqual(
         true
       )
@@ -44,11 +42,9 @@ describe('config_transformation', () => {
         'myAdapter',
         { a: { type: BuiltinTypes.STRING } },
       )
-      expect(Object.keys(transformation.fields)).toHaveLength(7)
-      expect(Object.keys(transformation.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
+      expect(Object.keys(transformation.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToHide', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
       expect(transformation.fields.a.type).toEqual(BuiltinTypes.STRING)
-      expect(Object.keys(transformationDefault.fields)).toHaveLength(7)
-      expect(Object.keys(transformationDefault.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
+      expect(Object.keys(transformationDefault.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToHide', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
       expect(transformationDefault.fields.a.type).toEqual(BuiltinTypes.STRING)
     })
   })
@@ -70,6 +66,10 @@ describe('config_transformation', () => {
               { fieldName: 'abc' },
               { fieldName: 'abd', fieldType: 'cef' },
             ],
+            fieldsToHide: [
+              { fieldName: 'abc' },
+              { fieldName: 'abd', fieldType: 'cef' },
+            ],
             standaloneFields: [
               { fieldName: 'abc' },
             ],
@@ -83,7 +83,7 @@ describe('config_transformation', () => {
         },
       )).not.toThrow()
     })
-    it('should fail if there are conflicts between field entries in the default config', () => {
+    it('should fail if there are conflicts between field entries in the default config (fieldsToOmit)', () => {
       expect(() => validateTransoformationConfig(
         'PATH',
         {
@@ -116,6 +116,40 @@ describe('config_transformation', () => {
           },
         },
       )).toThrow(new Error('Duplicate fieldsToOmit params found in PATH default config: abc'))
+    })
+    it('should fail if there are conflicts between field entries in the default config (fieldsToHide)', () => {
+      expect(() => validateTransoformationConfig(
+        'PATH',
+        {
+          idFields: ['a', 'b', 'c'],
+          fieldsToHide: [
+            { fieldName: 'abc', fieldType: 'something' },
+            { fieldName: 'abc', fieldType: 'something' },
+            { fieldName: 'abc' },
+          ],
+        },
+        {
+          t1: {
+            fieldTypeOverrides: [
+              { fieldName: 'abc', fieldType: 'def' },
+              { fieldName: 'abd', fieldType: 'cef' },
+            ],
+            fieldsToHide: [
+              { fieldName: 'abc' },
+              { fieldName: 'abd', fieldType: 'cef' },
+            ],
+            standaloneFields: [
+              { fieldName: 'abc' },
+            ],
+          },
+          t2: {
+            fieldTypeOverrides: [
+              { fieldName: 'abc', fieldType: 'def' },
+              { fieldName: 'abd', fieldType: 'cef' },
+            ],
+          },
+        },
+      )).toThrow(new Error('Duplicate fieldsToHide params found in PATH default config: abc'))
     })
     it('should fail if there are conflicts between field entries for specific types', () => {
       expect(() => validateTransoformationConfig(

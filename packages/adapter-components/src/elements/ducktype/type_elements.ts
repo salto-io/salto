@@ -16,9 +16,12 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, BuiltinTypes, Values, MapType, PrimitiveType, ListType, isObjectType,
+  FieldDefinition,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
+import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault } from '../../config'
 import { TYPES_PATH, SUBTYPES_PATH } from '../constants'
+import { hideFields } from '../type_elements'
 
 const ID_SEPARATOR = '__'
 
@@ -36,11 +39,21 @@ type NestedTypeWithNestedTypes = {
   nestedTypes: ObjectType[]
 }
 
-const generateNestedType = ({ adapterName, typeName, parentName, entries, hasDynamicFields }: {
+const generateNestedType = ({
+  adapterName,
+  typeName,
+  parentName,
+  entries,
+  transformationConfigByType,
+  transformationDefaultConfig,
+  hasDynamicFields,
+}: {
   adapterName: string
   typeName: string
   parentName: string
   entries: Values[]
+  transformationConfigByType: Record<string, TransformationConfig>
+  transformationDefaultConfig: TransformationDefaultConfig
   hasDynamicFields: boolean
 }): NestedTypeWithNestedTypes => {
   const validEntries = entries.filter(entry => entry !== undefined && entry !== null)
@@ -54,6 +67,8 @@ const generateNestedType = ({ adapterName, typeName, parentName, entries, hasDyn
         parentName,
         entries: validEntries.flat(),
         hasDynamicFields,
+        transformationConfigByType,
+        transformationDefaultConfig,
       })
       return {
         type: new ListType(nestedType.type),
@@ -70,6 +85,8 @@ const generateNestedType = ({ adapterName, typeName, parentName, entries, hasDyn
         name,
         entries: validEntries,
         hasDynamicFields,
+        transformationConfigByType,
+        transformationDefaultConfig,
         isSubType: true,
       })
     }
@@ -119,12 +136,16 @@ export const generateType = ({
   name,
   entries,
   hasDynamicFields,
+  transformationConfigByType,
+  transformationDefaultConfig,
   isSubType = false,
 }: {
   adapterName: string
   name: string
   entries: Values[]
   hasDynamicFields: boolean
+  transformationConfigByType: Record<string, TransformationConfig>
+  transformationDefaultConfig: TransformationDefaultConfig
   isSubType?: boolean
 }): ObjectTypeWithNestedTypes => {
   const naclName = naclCase(name)
@@ -145,7 +166,7 @@ export const generateType = ({
     return typeWithNested.type
   }
 
-  const fields = hasDynamicFields
+  const fields: Record<string, FieldDefinition> = hasDynamicFields
     ? {
       value: {
         type: new MapType(addNestedType(generateNestedType({
@@ -153,6 +174,8 @@ export const generateType = ({
           typeName: 'value',
           parentName: name,
           entries: entries.flatMap(Object.values).filter(entry => entry !== undefined),
+          transformationConfigByType,
+          transformationDefaultConfig,
           hasDynamicFields: false,
         }))),
       },
@@ -167,11 +190,23 @@ export const generateType = ({
               typeName: fieldName,
               parentName: name,
               entries: entries.map(entry => entry[fieldName]).filter(entry => entry !== undefined),
+              transformationConfigByType,
+              transformationDefaultConfig,
               hasDynamicFields: false,
             })),
           },
         ])
     )
+
+  // mark fields as hidden based on config
+  const { fieldsToHide } = getConfigWithDefault(
+    transformationConfigByType[naclName],
+    transformationDefaultConfig,
+  )
+
+  if (Array.isArray(fieldsToHide)) {
+    hideFields(fieldsToHide, fields, name)
+  }
 
   const type = new ObjectType({
     elemID: new ElemID(adapterName, naclName),

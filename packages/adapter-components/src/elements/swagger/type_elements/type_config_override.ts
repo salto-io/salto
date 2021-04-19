@@ -15,9 +15,11 @@
 */
 import { ObjectType, BuiltinTypes, MapType, ListType, TypeElement, isEqualElements, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { TypeSwaggerConfig, AdditionalTypeConfig } from '../../../config/swagger'
-import { FieldTypeOverrideType } from '../../../config/transformation'
+import { getConfigWithDefault } from '../../../config/shared'
+import { TypeSwaggerConfig, AdditionalTypeConfig, TypeSwaggerDefaultConfig } from '../../../config/swagger'
+import { FieldTypeOverrideType, FieldToHideType, TransformationConfig } from '../../../config/transformation'
 import { toPrimitiveType } from './swagger_parser'
+import { hideFields } from '../../type_elements'
 
 const log = logger(module)
 
@@ -87,12 +89,14 @@ export const defineAdditionalTypes = (
 }
 
 /**
- * Adjust the computed types to fix known inconsistencies between the swagger and the response data
- * that are listed in the configuration.
+ * Adjust the computed types based on the configuration in order to:
+ *  1. Fix known inconsistencies between the swagger and the response data
+ *  2. Hide field values that are known to be env-specific
  */
 export const fixTypes = (
   definedTypes: Record<string, ObjectType>,
-  typeConfig: Record<string, TypeSwaggerConfig>
+  typeConfig: Record<string, TypeSwaggerConfig>,
+  typeDefaultConfig: TypeSwaggerDefaultConfig,
 ): void => {
   const toTypeWithContainers = (typeName: string): TypeElement => {
     const containerDetails = getContainerForType(typeName)
@@ -109,26 +113,45 @@ export const fixTypes = (
     return type
   }
 
+  const getTypeTransformationConfig = (typeName: string): TransformationConfig => (
+    getConfigWithDefault(
+      typeConfig[typeName]?.transformation,
+      typeDefaultConfig.transformation,
+    )
+  )
+
+  // fix field types
   Object.keys(typeConfig)
-    .filter(typeName => typeConfig[typeName].transformation?.fieldTypeOverrides !== undefined)
+    .filter(typeName => getTypeTransformationConfig(typeName).fieldTypeOverrides !== undefined)
     .forEach(typeName => {
       const type = definedTypes[typeName]
       if (type === undefined) {
-        log.error('type %s not found, cannot override its field types', typeName)
+        log.warn('type %s not found, cannot override its field types', typeName)
         return
       }
-      const fieldTypeOverrides = typeConfig[
+      const fieldTypeOverrides = getTypeTransformationConfig(
         typeName
-      ].transformation?.fieldTypeOverrides as FieldTypeOverrideType[]
+      ).fieldTypeOverrides as FieldTypeOverrideType[]
       fieldTypeOverrides.forEach(({ fieldName, fieldType }) => {
         const field = type.fields[fieldName]
         if (field === undefined) {
-          log.error('field %s.%s not found, cannot override its type', typeName, fieldName)
+          log.warn('field %s.%s not found, cannot override its type', typeName, fieldName)
           return
         }
         const newFieldType = toTypeWithContainers(fieldType)
-        log.info('Modifying field type for %s.%s from %s to %s', typeName, fieldName, field.type.elemID.name, newFieldType.elemID.name)
+        log.debug('Modifying field type for %s.%s from %s to %s', typeName, fieldName, field.type.elemID.name, newFieldType.elemID.name)
         field.type = newFieldType
       })
+    })
+
+  // hide env-specific fields
+  Object.entries(definedTypes)
+    .filter(([typeName]) => getTypeTransformationConfig(typeName).fieldsToHide !== undefined)
+    .forEach(([typeName, type]) => {
+      hideFields(
+        getTypeTransformationConfig(typeName).fieldsToHide as FieldToHideType[],
+        type.fields,
+        typeName,
+      )
     })
 }

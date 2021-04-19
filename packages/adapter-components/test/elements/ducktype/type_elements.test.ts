@@ -31,6 +31,8 @@ describe('ducktype_type_elements', () => {
         entries,
         hasDynamicFields: false,
         isSubType: false,
+        transformationConfigByType: {},
+        transformationDefaultConfig: { idFields: [] },
       })
       expect(type.isEqual(new ObjectType({ elemID: new ElemID(ADAPTER_NAME, 'typeName'), fields: {} }))).toBeTruthy()
       expect(nestedTypes).toHaveLength(0)
@@ -89,6 +91,8 @@ describe('ducktype_type_elements', () => {
         entries,
         hasDynamicFields: false,
         isSubType: false,
+        transformationConfigByType: {},
+        transformationDefaultConfig: { idFields: [] },
       })
       expect(type.isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName'),
@@ -135,6 +139,108 @@ describe('ducktype_type_elements', () => {
         },
       }))).toBeTruthy()
     })
+    it('should annotate fields marked as fieldsToHide with _hidden_value', () => {
+      const entries = [
+        {
+          id: 41619,
+          api_collection_id: 11815,
+          flow_id: 1381119,
+          flow_ids: [1381119, 1382229],
+          name: 'ab321',
+          method: 'GET',
+          url: 'https://some.url.com/a/bbb/user/{id}',
+          legacy_url: null,
+          base_path: '/a/bbb/user/{id}',
+          path: 'user/{id}',
+          active: false,
+          legacy: false,
+          created_at: '2020-12-21T16:08:03.762-08:00',
+          updated_at: '2020-12-21T16:08:03.762-08:00',
+        },
+        {
+          id: 54775,
+          api_collection_id: 22,
+          flow_id: 890,
+          flow_ids: [890, 980],
+          name: 'some other name',
+          field_with_complex_type: {
+            number: 53,
+            nested_type: {
+              val: 'agds',
+              another_val: 'dgadgasg',
+            },
+          },
+          field_with_complex_list_type: [{
+            number: 53,
+          }],
+        },
+        {
+          field_with_complex_type: {
+            number: 222,
+            nested_type: {
+              val: 'agds',
+              another_val: 7,
+              abc: 'abc',
+              unknown: null,
+            },
+          },
+        },
+      ]
+      const { type, nestedTypes } = generateType({
+        adapterName: ADAPTER_NAME,
+        name: 'typeName',
+        entries,
+        hasDynamicFields: false,
+        isSubType: false,
+        transformationConfigByType: {
+          typeName: {
+            fieldsToHide: [
+              { fieldName: 'flow_id', fieldType: 'number' },
+            ],
+          },
+          typeName__field_with_complex_type: {
+            fieldsToHide: [
+              { fieldName: 'number' },
+            ],
+          },
+        },
+        transformationDefaultConfig: { idFields: [] },
+      })
+      expect(type.isEqual(new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'typeName'),
+        fields: {
+          id: { type: BuiltinTypes.NUMBER },
+          api_collection_id: { type: BuiltinTypes.NUMBER },
+          flow_id: {
+            type: BuiltinTypes.NUMBER,
+            annotations: { _hidden_value: true },
+          },
+          flow_ids: { type: new ListType(BuiltinTypes.NUMBER) },
+          name: { type: BuiltinTypes.STRING },
+          method: { type: BuiltinTypes.STRING },
+          url: { type: BuiltinTypes.STRING },
+          legacy_url: { type: BuiltinTypes.UNKNOWN },
+          base_path: { type: BuiltinTypes.STRING },
+          path: { type: BuiltinTypes.STRING },
+          active: { type: BuiltinTypes.BOOLEAN },
+          legacy: { type: BuiltinTypes.BOOLEAN },
+          created_at: { type: BuiltinTypes.STRING },
+          updated_at: { type: BuiltinTypes.STRING },
+          field_with_complex_type: { type: nestedTypes[0] },
+          field_with_complex_list_type: { type: new ListType(nestedTypes[2]) },
+        },
+      }))).toBeTruthy()
+      expect(nestedTypes[0].isEqual(new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'typeName__field_with_complex_type'),
+        fields: {
+          number: {
+            type: BuiltinTypes.NUMBER,
+            annotations: { _hidden_value: true },
+          },
+          nested_type: { type: nestedTypes[1] },
+        },
+      }))).toBeTruthy()
+    })
     it('should ignore nulls when determining types for fields', () => {
       const entries = [
         {
@@ -170,6 +276,8 @@ describe('ducktype_type_elements', () => {
         entries,
         hasDynamicFields: false,
         isSubType: false,
+        transformationConfigByType: {},
+        transformationDefaultConfig: { idFields: [] },
       })
       expect(type.isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName'),
@@ -210,6 +318,8 @@ describe('ducktype_type_elements', () => {
         entries,
         hasDynamicFields: true,
         isSubType: false,
+        transformationConfigByType: {},
+        transformationDefaultConfig: { idFields: [] },
       })
       expect(type.isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName'),
@@ -242,6 +352,8 @@ describe('ducktype_type_elements', () => {
         entries,
         hasDynamicFields: true,
         isSubType: false,
+        transformationConfigByType: {},
+        transformationDefaultConfig: { idFields: [] },
       })
       expect(type.isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName'),
@@ -284,6 +396,8 @@ describe('ducktype_type_elements', () => {
         entries,
         hasDynamicFields: true,
         isSubType: false,
+        transformationConfigByType: {},
+        transformationDefaultConfig: { idFields: [] },
       })
       expect(type.isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName'),
@@ -301,6 +415,8 @@ describe('ducktype_type_elements', () => {
         entries,
         hasDynamicFields: false,
         isSubType: false,
+        transformationConfigByType: {},
+        transformationDefaultConfig: { idFields: [] },
       })
       expect(type.isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'typeName_requiring_naclcase@vu'),
@@ -317,6 +433,8 @@ describe('ducktype_type_elements', () => {
         entries,
         hasDynamicFields: false,
         isSubType: true,
+        transformationConfigByType: {},
+        transformationDefaultConfig: { idFields: [] },
       })
       expect(type.isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'parent_type__subtypeName'),

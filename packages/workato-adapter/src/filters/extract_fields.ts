@@ -89,6 +89,8 @@ const addFieldTypeAndInstances = ({
     entries: instancesWithValues.map(inst => inst.value[fieldName]),
     hasDynamicFields: false,
     isSubType: true,
+    transformationConfigByType,
+    transformationDefaultConfig,
   })
   type.fields[fieldName].type = fieldType.type
   elements.push(fieldType.type, ...fieldType.nestedTypes)
@@ -151,7 +153,7 @@ const extractFields = ({
     instances.forEach(inst => convertStringToObject(inst, standaloneFields))
 
     // now extract the field data to its own type and instances, and replace the original
-    // value with a reference to the newly-generate instance
+    // value with a reference to the newly-generated instance
     standaloneFields.forEach(fieldDef => {
       newElements.push(...addFieldTypeAndInstances({
         typeName,

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType, MapType,
 } from '@salto-io/adapter-api'
@@ -112,3 +113,17 @@ export const createUserFetchConfigType = (
     },
   })
 )
+
+export const getConfigWithDefault = <
+  T extends TransformationConfig | RequestConfig | undefined,
+  S extends TransformationDefaultConfig | RequestDefaultConfig
+>(
+    typeSpecificConfig: T,
+    defaultConfig: S,
+  ): T & S => (
+    _.defaults(
+      {},
+      typeSpecificConfig,
+      defaultConfig,
+    )
+  )

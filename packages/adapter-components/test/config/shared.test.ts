@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createUserFetchConfigType } from '../../src/config'
+import { createUserFetchConfigType, getConfigWithDefault } from '../../src/config'
 
 describe('config_shared', () => {
   describe('createUserFetchConfigType', () => {
@@ -21,6 +21,28 @@ describe('config_shared', () => {
       const type = createUserFetchConfigType('myAdapter')
       expect(Object.keys(type.fields)).toHaveLength(1)
       expect(type.fields.includeTypes).toBeDefined()
+    })
+  })
+  describe('getConfigWithDefault', () => {
+    it('should return the config with defaults for adapter api when type-specific config is provided', () => {
+      expect(getConfigWithDefault(
+        { url: 'abc', queryParams: { a: 'specific' } },
+        { paginationField: 'page', queryParams: { b: 'default' } }
+      )).toEqual({ url: 'abc', queryParams: { a: 'specific' }, paginationField: 'page' })
+      expect(getConfigWithDefault(
+        { standaloneFields: [{ fieldName: 'specific' }] },
+        { idFields: ['a', 'b'], standaloneFields: [{ fieldName: 'default' }] },
+      )).toEqual({ idFields: ['a', 'b'], standaloneFields: [{ fieldName: 'specific' }] })
+    })
+    it('should return the config with defaults for adapter api  when type-specific config is missing', () => {
+      expect(getConfigWithDefault(
+        undefined,
+        { paginationField: 'page', queryParams: { b: 'default' } }
+      )).toEqual({ paginationField: 'page', queryParams: { b: 'default' } })
+      expect(getConfigWithDefault(
+        undefined,
+        { idFields: ['a', 'b'], standaloneFields: [{ fieldName: 'default' }] },
+      )).toEqual({ idFields: ['a', 'b'], standaloneFields: [{ fieldName: 'default' }] })
     })
   })
 })

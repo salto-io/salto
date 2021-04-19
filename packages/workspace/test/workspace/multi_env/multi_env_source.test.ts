@@ -438,6 +438,15 @@ describe('multi env source', () => {
       expect(await source.get(inactiveElemID)).not.toBeDefined()
     })
   })
+  describe('getElementSource', async () => {
+    it('should return an element source according to env even if state is set', async () => {
+      const primarySource = await source.getElementsSource()
+      const primarySourceByEnvName = await source.getElementsSource(activePrefix)
+      const secondarySourceByEnvName = await source.getElementsSource(inactivePrefix)
+      expect(primarySource).toEqual(primarySourceByEnvName)
+      expect(primarySource).not.toEqual(secondarySourceByEnvName)
+    })
+  })
   describe('getAll', () => {
     it('should return all merged elements', async () => {
       const elements = await awu(await source.getAll()).toArray()

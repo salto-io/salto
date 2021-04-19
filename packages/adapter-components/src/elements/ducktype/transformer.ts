@@ -21,7 +21,7 @@ import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { Paginator } from '../../client'
 import { generateType } from './type_elements'
 import { toInstance } from './instance_elements'
-import { TypeConfig } from '../../config'
+import { TypeConfig, getConfigWithDefault } from '../../config'
 import { FindNestedFieldFunc } from '../field_finder'
 import { TypeDuckTypeDefaultsConfig, TypeDuckTypeConfig } from '../../config/ducktype'
 import { ComputeGetArgsFunc } from '../request_parameters'
@@ -68,7 +68,7 @@ export const getTypeAndInstances = async ({
 
   const {
     fieldsToOmit, hasDynamicFields, dataField,
-  } = _.defaults({}, transformation, typeDefaultConfig.transformation)
+  } = getConfigWithDefault(transformation, typeDefaultConfig.transformation)
 
   const transformationConfigByType = _.pickBy(
     _.mapValues(typesConfig, def => def.transformation),
@@ -76,7 +76,9 @@ export const getTypeAndInstances = async ({
   )
   const transformationDefaultConfig = typeDefaultConfig.transformation
 
-  const requestWithDefaults = _.defaults({}, request, typeDefaultConfig.request ?? {})
+  const requestWithDefaults = getConfigWithDefault(
+    request, typeDefaultConfig.request ?? {},
+  )
 
   const getEntries = async (): Promise<Values[]> => {
     const getArgs = computeGetArgs(requestWithDefaults, contextElements)

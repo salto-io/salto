@@ -20,7 +20,7 @@ import {
 import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { RECORDS_PATH } from './constants'
-import { TransformationConfig, TransformationDefaultConfig } from '../config'
+import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault } from '../config'
 
 const log = logger(module)
 
@@ -75,11 +75,12 @@ export const toBasicInstance = ({
     strict: false,
   })
 
-  const adapterName = type.elemID.adapter
-  const transformationConfig = transformationConfigByType[type.elemID.name]
   const {
     idFields, fileNameFields,
-  } = _.defaults({}, transformationConfig, transformationDefaultConfig)
+  } = getConfigWithDefault(
+    transformationConfigByType[type.elemID.name],
+    transformationDefaultConfig,
+  )
 
   const nameParts = idFields.map(field => _.get(entry, field))
   if (nameParts.includes(undefined)) {
@@ -97,6 +98,7 @@ export const toBasicInstance = ({
   const naclName = naclCase(
     parent && nestName ? `${parent.elemID.name}${ID_SEPARATOR}${name}` : String(name)
   )
+  const adapterName = type.elemID.adapter
 
   return new InstanceElement(
     naclName,

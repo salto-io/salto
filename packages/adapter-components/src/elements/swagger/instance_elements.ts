@@ -26,7 +26,7 @@ import { InstanceCreationParams, toBasicInstance } from '../instance_elements'
 import { UnauthorizedError, Paginator } from '../../client'
 import {
   UserFetchConfig, TypeSwaggerDefaultConfig, TransformationConfig, TransformationDefaultConfig,
-  AdapterSwaggerApiConfig, TypeSwaggerConfig,
+  AdapterSwaggerApiConfig, TypeSwaggerConfig, getConfigWithDefault,
 } from '../../config'
 import { findDataField, FindNestedFieldFunc } from '../field_finder'
 import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../request_parameters'
@@ -257,7 +257,7 @@ const getInstancesForType = async ({
 
   const {
     fieldsToOmit, dataField,
-  } = _.defaults({}, transformation, typeDefaultConfig.transformation)
+  } = getConfigWithDefault(transformation, typeDefaultConfig.transformation)
 
   try {
     const nestedFieldDetails = nestedFieldFinder(type, fieldsToOmit, dataField)

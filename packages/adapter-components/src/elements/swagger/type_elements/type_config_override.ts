@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { ObjectType, BuiltinTypes, MapType, ListType, TypeElement, isEqualElements, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { getConfigWithDefault } from '../../../config/shared'
 import { TypeSwaggerConfig, AdditionalTypeConfig, TypeSwaggerDefaultConfig } from '../../../config/swagger'
 import { FieldTypeOverrideType, FieldToHideType, TransformationConfig } from '../../../config/transformation'
 import { toPrimitiveType } from './swagger_parser'
@@ -114,9 +114,8 @@ export const fixTypes = (
   }
 
   const getTypeTransformationConfig = (typeName: string): TransformationConfig => (
-    _.defaults(
-      {},
-      typeConfig[typeName]?.transformation ?? {},
+    getConfigWithDefault(
+      typeConfig[typeName]?.transformation,
       typeDefaultConfig.transformation,
     )
   )

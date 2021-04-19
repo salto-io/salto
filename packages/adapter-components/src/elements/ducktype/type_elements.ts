@@ -19,7 +19,7 @@ import {
   FieldDefinition,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
-import { TransformationConfig, TransformationDefaultConfig } from '../../config/transformation'
+import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault } from '../../config'
 import { TYPES_PATH, SUBTYPES_PATH } from '../constants'
 import { hideFields } from '../type_elements'
 
@@ -199,9 +199,8 @@ export const generateType = ({
     )
 
   // mark fields as hidden based on config
-  const { fieldsToHide } = _.defaults(
-    {},
-    transformationConfigByType[naclName] ?? {},
+  const { fieldsToHide } = getConfigWithDefault(
+    transformationConfigByType[naclName],
     transformationDefaultConfig,
   )
 

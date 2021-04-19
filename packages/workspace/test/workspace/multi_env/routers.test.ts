@@ -236,11 +236,24 @@ describe('default fetch routing', () => {
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
   })
 
-  it('should route nested add changes to primary env when the containing element is only in common', async () => {
+  it('should route nested add changes to common when the containing element is only in common', async () => {
     const change: DetailedChange = {
       action: 'add',
       data: { after: 'value' },
       id: commonOnlyObject.elemID.createNestedID('attr', 'newAttr'),
+    }
+    const routedChanges = await routeChanges([change], envSource, commonSource, { sec: secEnv }, 'default')
+    expect(routedChanges.primarySource).toHaveLength(0)
+    expect(routedChanges.commonSource).toHaveLength(1)
+    expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual(change)
+    expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
+  })
+
+  it('should route nested add changes to common when the direct parent is only in common', async () => {
+    const change: DetailedChange = {
+      action: 'add',
+      data: { after: 'value' },
+      id: commonObj.fields.commonField.elemID.createNestedID('label'),
     }
     const routedChanges = await routeChanges([change], envSource, commonSource, { sec: secEnv }, 'default')
     expect(routedChanges.primarySource).toHaveLength(0)

@@ -134,10 +134,12 @@ const buildMultiEnvSource = (
     envChanges?: EnvsChanges
   }): Promise<{ state: MultiEnvState; changes: Change[] }> => {
     const primaryEnv = env ?? primarySourceName
-    const actualChanges = primaryEnv === primarySourceName
+    const isReadingFromPrimaryEnv = primaryEnv === primarySourceName
+
+    const actualChanges = isReadingFromPrimaryEnv
       ? envChanges
       : await mapValuesAsync(sources, src => src.load({ cachePrefix: primarySourceName }))
-    const current = state !== undefined
+    const current = (state !== undefined && isReadingFromPrimaryEnv)
       ? state
       : await buildState(env)
 

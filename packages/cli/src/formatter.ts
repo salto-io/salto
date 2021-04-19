@@ -659,14 +659,14 @@ export const formatListUnresolvedMissing = (elemIDs: ElemID[]): string => [
   emptyLine(),
 ].join('\n')
 
-export const formatEnvDiff = (
+export const formatEnvDiff = async (
   changes: LocalChange[],
   detailed: boolean,
   toEnv: string,
   fromEnv: string
-): string => {
+): Promise<string> => {
   const changesStr = changes.length > 0
-    ? formatDetailedChanges([changes.map(change => change.change)], detailed)
+    ? await formatDetailedChanges([changes.map(change => change.change)], detailed)
     : 'No changes'
   return [
     emptyLine(),

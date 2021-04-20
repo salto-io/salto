@@ -263,6 +263,7 @@ const createRateLimitersFromConfig = (
     retrieve: new Bottleneck({ maxConcurrent: rateLimitConfig.retrieve }),
     read: new Bottleneck({ maxConcurrent: rateLimitConfig.read }),
     list: new Bottleneck({ maxConcurrent: rateLimitConfig.list }),
+    query: new Bottleneck({ maxConcurrent: rateLimitConfig.query }),
   }
 }
 
@@ -497,11 +498,26 @@ export default class SalesforceClient {
     )
   }
 
+  @throttle<ClientRateLimitConfig>('query')
+  @logDecorator()
+  @requiresLogin()
+  private query<T>(queryString: string, useToolingApi: boolean): Promise<QueryResult<T>> {
+    const conn = useToolingApi ? this.conn.tooling : this.conn
+    return conn.query(queryString)
+  }
+
+  @throttle<ClientRateLimitConfig>('query')
+  @logDecorator()
+  @requiresLogin()
+  private queryMore<T>(queryString: string, useToolingApi: boolean): Promise<QueryResult<T>> {
+    const conn = useToolingApi ? this.conn.tooling : this.conn
+    return conn.queryMore(queryString)
+  }
+
   /**
    * Queries for all the available Records given a query string
    * @param queryString the string to query with for records
    */
-  @logDecorator()
   @requiresLogin()
   public async *queryAll(
     queryString: string,
@@ -510,14 +526,13 @@ export default class SalesforceClient {
     const hadMore = (results: QueryResult<Value>): boolean =>
       !_.isUndefined(results.nextRecordsUrl)
 
-    const conn = useToolingApi ? this.conn.tooling : this.conn
-    let results = await conn.query(queryString)
+    let results = await this.query(queryString, useToolingApi)
     yield results.records as SalesforceRecord[]
 
     let hasMore = hadMore(results)
     while (hasMore) {
       // eslint-disable-next-line no-await-in-loop
-      results = await conn.queryMore(results.nextRecordsUrl as string)
+      results = await this.queryMore(results.nextRecordsUrl as string, useToolingApi)
       yield results.records as SalesforceRecord[]
       hasMore = hadMore(results)
     }

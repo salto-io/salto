@@ -293,6 +293,50 @@ describe('swagger_type_elements', () => {
         )).rejects.toThrow(new Error('Unsupported OpenAPI version: 4.0.1. Swagger Parser only supports versions 3.0.0, 3.0.1, 3.0.2, 3.0.3'))
       })
     })
+
+    describe('with preParsedDefs', () => {
+      it('should use the pre-computed schemas and refs instead of parsing', async () => {
+        const { allTypes, parsedConfigs } = await generateTypes(
+          ADAPTER_NAME,
+          {
+            swagger: { url: '/non/existent/path' },
+            typeDefaults: { transformation: { idFields: ['name'] } },
+            types: {},
+          },
+          {
+            schemas: {
+              '/a/b': {
+                properties: {
+                  nested: {
+                    $ref: '#/definitions/Str',
+                  },
+                },
+              },
+              '/c/d': {
+                $ref: '#/definitions/X',
+              },
+            },
+            refs: new Map([
+              ['#/definitions/Str', { type: 'string' }],
+              ['#/definitions/X', {
+                type: 'object',
+                properties: {
+                  a: { type: 'string' },
+                  b: { type: 'number' },
+                },
+              }],
+            ]),
+          }
+        )
+        expect(Object.keys(allTypes).sort()).toEqual(['X', 'a__b'].sort())
+        expect(parsedConfigs).toEqual({
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          a__b: { request: { url: '/a/b' } },
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          X: { request: { url: '/c/d' } },
+        })
+      })
+    })
   })
 
   describe('toPrimitiveType', () => {

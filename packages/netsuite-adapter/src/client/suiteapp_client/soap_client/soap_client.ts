@@ -22,7 +22,7 @@ import crypto from 'crypto'
 import xmlConvert from 'xml-js'
 import { collections } from '@salto-io/lowerdash'
 import path from 'path'
-import { SuiteAppCredentials } from '../../credentials'
+import { SuiteAppCredentials, toUrlAccountId } from '../../credentials'
 import { CONSUMER_KEY, CONSUMER_SECRET } from '../constants'
 import { ReadFileError } from '../errors'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails } from '../types'
@@ -40,7 +40,7 @@ export default class SoapClient {
   constructor(credentials: SuiteAppCredentials, callsLimiter: CallsLimiter) {
     this.credentials = credentials
     this.callsLimiter = callsLimiter
-    this.soapUrl = new URL(`https://${credentials.accountId.replace('_', '-')}.suitetalk.api.netsuite.com/services/NetSuitePort_2020_2`)
+    this.soapUrl = new URL(`https://${toUrlAccountId(credentials.accountId)}.suitetalk.api.netsuite.com/services/NetSuitePort_2020_2`)
     this.ajv = new Ajv({ allErrors: true, strict: false })
   }
 

@@ -39,7 +39,9 @@ const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
   // and there isn't much advantage in running it in parallel
   await promises.array.series(relevantElements.map(element => async () => {
     const url = await generateUrl(element, client)
-    element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = url && new URL(url, client.url).href
+    if (url !== undefined) {
+      element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, client.url).href
+    }
   }))
 }
 

@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import { decorators } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
 import { NetsuiteQuery } from '../query'
-import { Credentials } from './credentials'
+import { Credentials, toUrlAccountId } from './credentials'
 import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from '../suiteapp_file_cabinet'
@@ -53,7 +53,7 @@ export default class NetsuiteClient {
       log.debug('Salto SuiteApp configured')
     }
 
-    this.url = new URL(`https://${this.sdfClient.getCredentials().accountId.replace('_', '-')}.app.netsuite.com`)
+    this.url = new URL(`https://${toUrlAccountId(this.sdfClient.getCredentials().accountId)}.app.netsuite.com`)
   }
 
   @NetsuiteClient.logDecorator

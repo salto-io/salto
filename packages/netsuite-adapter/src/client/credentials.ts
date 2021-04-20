@@ -26,3 +26,8 @@ export type SdfCredentials = {
 }
 
 export type Credentials = SdfCredentials & Partial<SuiteAppCredentials>
+
+export const toUrlAccountId = (accountId: string): string => accountId.toLowerCase().replace('_', '-')
+
+// accountId must be uppercased as described in https://github.com/oracle/netsuite-suitecloud-sdk/issues/140
+export const toCredentialsAccountId = (accountId: string): string => accountId.toUpperCase().replace('-', '_')

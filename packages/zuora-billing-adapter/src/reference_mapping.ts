@@ -17,6 +17,7 @@ import { Field, isElement, Value, Element } from '@salto-io/adapter-api'
 import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { TASK_TYPE, WORKFLOW_TYPE } from './constants'
 
 const log = logger(module)
 
@@ -27,7 +28,7 @@ export type ReferenceSerializationStrategy = {
   lookup: LookupFunc
 }
 
-type ReferenceSerializationStrategyName = 'fullValue' | 'id'
+type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name'
 const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
@@ -37,6 +38,10 @@ const ReferenceSerializationStrategyLookup: Record<
   },
   id: {
     serialize: ({ ref }) => ref.value.value.id,
+    lookup: val => val,
+  },
+  name: {
+    serialize: ({ ref }) => ref.value.value.name,
     lookup: val => val,
   },
 }
@@ -91,17 +96,22 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'source_workflow_id', parentTypes: ['Linkage'] },
     serializationStrategy: 'id',
-    target: { type: 'Workflow' },
+    target: { type: WORKFLOW_TYPE },
   },
   {
     src: { field: 'target_task_id', parentTypes: ['Linkage'] },
     serializationStrategy: 'id',
-    target: { type: 'Task' },
+    target: { type: TASK_TYPE },
   },
   {
     src: { field: 'source_task_id', parentTypes: ['Linkage'] },
     serializationStrategy: 'id',
-    target: { type: 'Task' },
+    target: { type: TASK_TYPE },
+  },
+  {
+    src: { field: 'revenueRecognitionRuleName', parentTypes: ['GETProductRatePlanChargeType'] },
+    serializationStrategy: 'name',
+    target: { type: 'Settings_RevenueRecognitionRule' },
   },
 ]
 
@@ -112,7 +122,6 @@ const matchName = (fieldName: string, matcher: string | RegExp): boolean => (
 )
 
 const matchType = (elem: Element, types: string[]): boolean => (
-  // TODO change when using structured types (right now most are unknown)
   types.includes(elem.elemID.name)
 )
 

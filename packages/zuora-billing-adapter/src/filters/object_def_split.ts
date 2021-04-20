@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { Element, ObjectType, Field } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
-import { isObjectDef, isCustomField } from '../transformers/transformer'
+import { isObjectDef, isCustomField } from '../element_utils'
 import { FilterCreator } from '../filter'
 import { ZUORA_BILLING, OBJECTS_PATH } from '../constants'
 

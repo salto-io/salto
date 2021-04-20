@@ -16,10 +16,11 @@
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { ObjectType, InstanceElement } from '@salto-io/adapter-api'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import ZuoraAdapter from '../src/adapter'
 import { adapter } from '../src/adapter_creator'
-import { oauthClientCredentialsType, usernamePasswordCredentialsType } from '../src/auth'
+import { oauthClientCredentialsType } from '../src/auth'
 import { configType } from '../src/config'
 import { ZUORA_BILLING } from '../src/constants'
 import * as connection from '../src/client/connection'
@@ -44,23 +45,20 @@ describe('adapter creator', () => {
       Object.keys(oauthClientCredentialsType.fields)
     )
   })
-  it('should use username+token as the limited auth method', () => {
-    expect(Object.keys(
-      adapter.authenticationMethods.limited?.credentialsType.fields ?? {}
-    )).toEqual(
-      Object.keys(usernamePasswordCredentialsType.fields)
-    )
-  })
   it('should return the zuora_billing adapter', () => {
     expect(adapter.operations({
-      credentials: new InstanceElement(ZUORA_BILLING,
-        adapter.authenticationMethods.basic.credentialsType),
+      credentials: new InstanceElement(
+        ZUORA_BILLING,
+        adapter.authenticationMethods.basic.credentialsType,
+        { clientId: 'id', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
+      ),
       config: new InstanceElement(
         ZUORA_BILLING,
         adapter.configType as ObjectType,
         {
           fetch: {
             includeTypes: [],
+            settingsIncludeTypes: [],
           },
           apiDefinitions: {
             endpoints: {},
@@ -73,8 +71,11 @@ describe('adapter creator', () => {
 
   it('should ignore unexpected configuration values', () => {
     expect(adapter.operations({
-      credentials: new InstanceElement(ZUORA_BILLING,
-        adapter.authenticationMethods.basic.credentialsType),
+      credentials: new InstanceElement(
+        ZUORA_BILLING,
+        adapter.authenticationMethods.basic.credentialsType,
+        { clientId: 'id', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
+      ),
       config: new InstanceElement(
         ZUORA_BILLING,
         adapter.configType as ObjectType,
@@ -94,8 +95,11 @@ describe('adapter creator', () => {
 
   it('should throw error on invalid configuration', () => {
     expect(() => adapter.operations({
-      credentials: new InstanceElement(ZUORA_BILLING,
-        adapter.authenticationMethods.basic.credentialsType),
+      credentials: new InstanceElement(
+        ZUORA_BILLING,
+        adapter.authenticationMethods.basic.credentialsType,
+        { clientId: 'id', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
+      ),
       config: new InstanceElement(
         ZUORA_BILLING,
         adapter.configType as ObjectType,
@@ -112,7 +116,6 @@ describe('adapter creator', () => {
               'NotificationEmailTemplates',
               'PaymentGateways',
               'SequenceSets',
-              'ListAllSettings',
               'WorkflowExport',
             ],
           },
@@ -145,21 +148,57 @@ describe('adapter creator', () => {
       // eslint-disable-next-line @typescript-eslint/camelcase
       token_type: 'bearer', access_token: 'token123', expires_in: 10000,
     })
+    mockAxiosAdapter.onPost('/v1/connections').reply(200, { success: true })
+
     expect(await adapter.validateCredentials(new InstanceElement(
       'config',
       oauthClientCredentialsType,
-      { clientId: 'id', clientSecret: 'secret', baseURL: 'http://localhost' },
+      { clientId: 'id', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
     ))).toEqual('')
     expect(connection.createConnection).toHaveBeenCalledTimes(1)
   })
-  it('should validate username+password credentials using createConnection', async () => {
+
+  it('should throw error when token generation fails', async () => {
     jest.spyOn(connection, 'createConnection')
-    mockAxiosAdapter.onPost('/v1/connections').reply(200, { success: true })
-    expect(await adapter.validateCredentials(new InstanceElement(
+    mockAxiosAdapter.onPost('/oauth/token').reply(500)
+
+    await expect(() => adapter.validateCredentials(new InstanceElement(
       'config',
-      usernamePasswordCredentialsType,
-      { username: 'user123', password: 'pass456', baseURL: 'http://localhost' },
-    ))).toEqual('')
+      oauthClientCredentialsType,
+      { clientId: 'id', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
+    ))).rejects.toThrow(new Error('Request failed with status code 500'))
+    expect(connection.createConnection).toHaveBeenCalledTimes(1)
+  })
+
+  it('should throw UnauthorizedError when auth validation returns success=false', async () => {
+    jest.spyOn(connection, 'createConnection')
+    mockAxiosAdapter.onPost('/oauth/token').reply(200, {
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      token_type: 'bearer', access_token: 'token123', expires_in: 10000,
+    })
+    mockAxiosAdapter.onPost('/v1/connections').reply(200, { success: false })
+
+    await expect(() => adapter.validateCredentials(new InstanceElement(
+      'config',
+      oauthClientCredentialsType,
+      { clientId: 'id', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
+    ))).rejects.toThrow(new clientUtils.UnauthorizedError('Unauthorized - update credentials and try again'))
+    expect(connection.createConnection).toHaveBeenCalledTimes(1)
+  })
+
+  it('should throw UnauthorizedError when auth validation returns an unexpected HTTP code', async () => {
+    jest.spyOn(connection, 'createConnection')
+    mockAxiosAdapter.onPost('/oauth/token').reply(200, {
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      token_type: 'bearer', access_token: 'token123', expires_in: 10000,
+    })
+    mockAxiosAdapter.onPost('/v1/connections').reply(500)
+
+    await expect(() => adapter.validateCredentials(new InstanceElement(
+      'config',
+      oauthClientCredentialsType,
+      { clientId: 'id', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
+    ))).rejects.toThrow(new clientUtils.UnauthorizedError('Unauthorized - update credentials and try again'))
     expect(connection.createConnection).toHaveBeenCalledTimes(1)
   })
 })

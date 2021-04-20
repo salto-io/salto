@@ -16,33 +16,36 @@
 import _ from 'lodash'
 import {
   FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType,
-  DeployModifiers,
+  DeployModifiers, Element,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import ZuoraClient from './client/client'
-import { ZuoraConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZuoraFetchConfig } from './config'
+import { ZuoraConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZuoraApiConfig } from './config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import fieldReferencesFilter from './filters/field_references'
 import objectDefsFilter from './filters/object_defs'
 import objectDefSplitFilter from './filters/object_def_split'
-import standardObjectsFilter, { getStandardObjectTypeName } from './filters/standard_objects'
-import workflowAndTaskReferences from './filters/workflow_and_task_references'
+import workflowAndTaskReferencesFilter from './filters/workflow_and_task_references'
 import changeValidator from './change_validator'
-import { ZUORA_BILLING } from './constants'
+import { ZUORA_BILLING, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX, CUSTOM_OBJECT_DEFINITION_TYPE } from './constants'
+import { generateBillingSettingsTypes } from './transformers/billing_settings'
+import { getStandardObjectElements, getStandardObjectTypeName } from './transformers/standard_objects'
 
 const { createPaginator, getWithCursorPagination } = clientUtils
 const { generateTypes, getAllInstances } = elementUtils.swagger
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
-  // standardObjectsFilter and objectDefsFilter should run before everything else
-  standardObjectsFilter,
+  // objectDefsFilter should run before everything else
   objectDefsFilter,
-  workflowAndTaskReferences,
+
+  workflowAndTaskReferencesFilter,
+
   // fieldReferencesFilter should run after all elements were created
   fieldReferencesFilter,
+
   // objectDefSplitFilter should run at the end - splits elements to divide to multiple files
   objectDefSplitFilter,
 ]
@@ -78,26 +81,10 @@ export default class ZuoraAdapter implements AdapterOperations {
     )
   }
 
-  @logDuration('generating types from swagger')
-  // eslint-disable-next-line class-methods-use-this
-  private async getAllTypes(): Promise<{
-    allTypes: TypeMap
-    parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
-  }> {
-    // TODO add billing-settings types
-    return generateTypes(
-      ZUORA_BILLING,
-      this.userConfig[API_DEFINITIONS_CONFIG]
-    )
-  }
-
-  @logDuration('generating instances from service')
-  private async getInstances(
-    allTypes: TypeMap,
+  private apiDefinitions(
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
-    fetchConfig: ZuoraFetchConfig,
-  ): Promise<InstanceElement[]> {
-    const updatedApiDefinitionsConfig = {
+  ): ZuoraApiConfig {
+    return {
       ...this.userConfig[API_DEFINITIONS_CONFIG],
       // user config takes precedence over parsed config
       types: {
@@ -108,10 +95,87 @@ export default class ZuoraAdapter implements AdapterOperations {
         ),
       },
     }
+  }
+
+  @logDuration('generating types from swagger')
+  private async getSwaggerTypes(): Promise<elementUtils.swagger.ParsedTypes> {
+    return generateTypes(
+      ZUORA_BILLING,
+      this.userConfig[API_DEFINITIONS_CONFIG]
+    )
+  }
+
+  @logDuration('generating types for billing settings')
+  private async getBillingSettingsTypes({
+    parsedConfigs, allTypes,
+  }: elementUtils.swagger.ParsedTypes): Promise<elementUtils.swagger.ParsedTypes> {
+    if (this.userConfig[FETCH_CONFIG].settingsIncludeTypes === undefined) {
+      return { allTypes: {}, parsedConfigs: {} }
+    }
+
+    const apiDefs = this.apiDefinitions(parsedConfigs)
+    const settingsOpInfoInstances = await getAllInstances({
+      paginator: this.paginator,
+      objectTypes: _.pickBy(allTypes, isObjectType),
+      apiConfig: apiDefs,
+      fetchConfig: { includeTypes: [LIST_ALL_SETTINGS_TYPE] },
+    })
+    if (_.isEmpty(settingsOpInfoInstances)) {
+      throw new Error('could not find any settings definitions - remove settingsFetchTypes and fetch again')
+    }
+    return generateBillingSettingsTypes(settingsOpInfoInstances, apiDefs)
+  }
+
+  @logDuration('generating type and instances for standard objects')
+  private async getStandardObjectElements({
+    parsedConfigs, allTypes,
+  }: elementUtils.swagger.ParsedTypes): Promise<Element[]> {
+    const apiConfig = this.apiDefinitions(parsedConfigs)
+    const standardObjectTypeName = getStandardObjectTypeName(apiConfig)
+    if (
+      standardObjectTypeName === undefined
+      || !this.userConfig[FETCH_CONFIG].includeTypes.includes(standardObjectTypeName)
+    ) {
+      return []
+    }
+    const standardObjectWrapperType = allTypes[standardObjectTypeName]
+    const customObjectDefType = allTypes[CUSTOM_OBJECT_DEFINITION_TYPE]
+    if (!isObjectType(standardObjectWrapperType) || !isObjectType(customObjectDefType)) {
+      log.error('Could not find object types %s / %s', standardObjectTypeName, CUSTOM_OBJECT_DEFINITION_TYPE)
+      return []
+    }
+    return getStandardObjectElements({
+      standardObjectWrapperType,
+      customObjectDefType,
+      paginator: this.paginator,
+      apiConfig,
+    })
+  }
+
+  @logDuration('getting instances from service')
+  private async getInstances(
+    allTypes: TypeMap,
+    parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
+  ): Promise<InstanceElement[]> {
+    // standard objects are not included in the swagger and need special handling - done in a filter
+    const standardObjectTypeName = getStandardObjectTypeName(this.apiDefinitions(parsedConfigs))
+    const swaggerIncludeTypes = this.userConfig[FETCH_CONFIG].includeTypes.filter(
+      t => t !== standardObjectTypeName
+    )
+    // settings include types can be fetched with the regular include types, since their types
+    // were already generated
+    const settingsIncludeTypes = (this.userConfig[FETCH_CONFIG].settingsIncludeTypes ?? []).map(
+      t => `${SETTINGS_TYPE_PREFIX}${t}`
+    )
+    const fetchConfig = {
+      ...this.userConfig[FETCH_CONFIG],
+      includeTypes: [...swaggerIncludeTypes, ...settingsIncludeTypes],
+    }
+
     return getAllInstances({
       paginator: this.paginator,
       objectTypes: _.pickBy(allTypes, isObjectType),
-      apiConfig: updatedApiDefinitionsConfig,
+      apiConfig: this.apiDefinitions(parsedConfigs),
       fetchConfig,
     })
   }
@@ -123,25 +187,24 @@ export default class ZuoraAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch(): Promise<FetchResult> {
     log.debug('going to fetch zuora account configuration..')
-    const { allTypes, parsedConfigs } = await this.getAllTypes()
+    const swaggerTypes = await this.getSwaggerTypes()
+    // the billing settings types are not listed in the swagger, so we fetch them separately
+    // and give them a custom prefix to avoid conflicts
+    const settingsTypes = await this.getBillingSettingsTypes(swaggerTypes)
 
-    // standard objects are not included in the swagger and need special handling - done in a filter
-    const standardObjectTypeName = getStandardObjectTypeName(this.userConfig)
-    const fetchIncludeTypes = this.userConfig[FETCH_CONFIG].includeTypes.filter(
-      t => t !== standardObjectTypeName
-    )
-    const instances = await this.getInstances(
-      allTypes,
-      parsedConfigs,
-      {
-        ...this.userConfig[FETCH_CONFIG],
-        includeTypes: fetchIncludeTypes,
-      },
-    )
+    const { allTypes, parsedConfigs } = {
+      allTypes: { ...swaggerTypes.allTypes, ...settingsTypes.allTypes },
+      parsedConfigs: { ...swaggerTypes.parsedConfigs, ...settingsTypes.parsedConfigs },
+    }
+
+    const instances = await this.getInstances(allTypes, parsedConfigs)
+
+    const standardObjectElements = await this.getStandardObjectElements({ allTypes, parsedConfigs })
 
     const elements = [
       ...Object.values(allTypes),
       ...instances,
+      ...standardObjectElements,
     ]
 
     log.debug('going to run filters on %d fetched elements', elements.length)

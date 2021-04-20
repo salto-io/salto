@@ -109,7 +109,6 @@ const mapFieldToElem = (
   instances: InstanceElement[], fieldName: string,
 ): Record<string, Element> => (
   _(instances)
-    // TODO generalize?
     .filter(e => e.value[fieldName] !== undefined)
     .map(e => [e.value[fieldName], e])
     .fromPairs()

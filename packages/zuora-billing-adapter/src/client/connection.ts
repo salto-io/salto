@@ -15,20 +15,26 @@
 */
 import { AccountId } from '@salto-io/adapter-api'
 import { auth as authUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { Credentials, isOAuthClientCredentials, isUsernamePasswordCredentials } from '../auth'
+import { logger } from '@salto-io/logging'
+import { Credentials } from '../auth'
+
+const log = logger(module)
 
 const { oauthClientCredentialsBearerToken } = authUtils
 
 export const validateCredentials = async (
-  creds: Credentials, conn: clientUtils.APIConnection,
+  _creds: Credentials, conn: clientUtils.APIConnection,
 ): Promise<AccountId> => {
-  if (isUsernamePasswordCredentials(creds)) {
+  // oauth was already authenticated when the connection was created, but validating just in case
+  try {
     const res = await conn.post('/v1/connections', {})
     if (res.status !== 200 || !res.data.success) {
-      throw new Error('Authentication failed')
+      throw new clientUtils.UnauthorizedError('Authentication failed')
     }
+  } catch (e) {
+    log.error('Failed to validate credentials: %s', e)
+    throw new clientUtils.UnauthorizedError(e)
   }
-  // the oauth variant was already authenticated when the connection was created
 
   // default to empty to avoid preventing users from refreshing their credentials in the SaaS.
   return ''
@@ -37,20 +43,12 @@ export const validateCredentials = async (
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => (
   clientUtils.axiosConnection({
     retryOptions,
-    authParamsFunc: async (creds: Credentials) => {
-      if (isOAuthClientCredentials(creds)) {
-        return oauthClientCredentialsBearerToken({
-          ...creds,
-          retryOptions,
-        })
-      }
-      return {
-        headers: {
-          apiAccessKeyId: creds.username,
-          apiSecretAccessKey: creds.password,
-        },
-      }
-    },
+    authParamsFunc: async (creds: Credentials) => (
+      oauthClientCredentialsBearerToken({
+        ...creds,
+        retryOptions,
+      })
+    ),
     baseURLFunc: ({ baseURL }) => baseURL,
     credValidateFunc: validateCredentials,
   })

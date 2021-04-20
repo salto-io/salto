@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   Element, ObjectType, isObjectType, ElemID, InstanceElement,
-  ReferenceExpression, BuiltinTypes, isInstanceElement, Values,
+  ReferenceExpression, BuiltinTypes, Values,
 } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { pathNaclCase, naclCase, extendGeneratedDependencies } from '@salto-io/adapter-utils'
@@ -28,22 +28,13 @@ import {
   REQUIRED, FILTERABLE, DESCRIPTION, INTERNAL_ID, STANDARD_OBJECT,
 } from '../constants'
 import { FilterCreator } from '../filter'
+import { isInstanceOfType, apiName } from '../element_utils'
 
 const log = logger(module)
 const { isDefined } = lowerdashValues
 const {
   toPrimitiveType, ADDITIONAL_PROPERTIES_FIELD,
 } = elementUtils.swagger
-
-// Check whether an element is a custom/standard object definition.
-// Only relevant before the object_defs filter is run.
-const isInstanceOfType = (
-  element: Element,
-  typeNames: string[],
-): element is InstanceElement => (
-  isInstanceElement(element)
-  && typeNames.includes(element.type.elemID.name)
-)
 
 // Check whether an element is a custom object definition.
 // Only relevant before the object_defs filter is run.
@@ -56,10 +47,6 @@ export const isInstanceOfCustomObjectDef = (element: Element): element is Instan
 const isInstanceOfObjectDef = (element: Element): element is InstanceElement => (
   isInstanceOfType(element, [STANDARD_OBJECT_DEFINITION_TYPE, CUSTOM_OBJECT_DEFINITION_TYPE])
 )
-
-// elem id renames are currently not allowed in Zuora, so we can use the elem id
-// and don't need a dedicated annotation yet.
-export const apiName = (elem: Element): string => elem.elemID.name
 
 const isStandardObjectInstance = (inst: InstanceElement): boolean => (
   inst.elemID.typeName === STANDARD_OBJECT_DEFINITION_TYPE
@@ -78,7 +65,7 @@ const flattenAdditionalProperties = (val: Values): Values => ({
 
 const createObjectFromInstance = (inst: InstanceElement): ObjectType => {
   const {
-    properties, required, filterable, description, Id, label,
+    properties, required, filterable, description, label,
   } = inst.value.schema
   const requiredFields = new Set(required)
   const filterableFields = new Set(filterable)
@@ -109,7 +96,7 @@ const createObjectFromInstance = (inst: InstanceElement): ObjectType => {
       [METADATA_TYPE]: isStandardObjectInstance(inst) ? STANDARD_OBJECT : CUSTOM_OBJECT,
       [LABEL]: label,
       [DESCRIPTION]: description,
-      [INTERNAL_ID]: Id,
+      [INTERNAL_ID]: inst.value.additionalProperties?.Id,
     },
     path: [ZUORA_BILLING, OBJECTS_PATH, pathNaclCase(naclCase(apiName(inst)))],
   })
@@ -164,8 +151,8 @@ const addRelationships = (
               ? new ReferenceExpression(targetObj.fields[target].elemID)
               : `${referencedObjectName}.${target}`
           )
-          srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.RELATIONSHIP_FIELDS] = [
-            ...(srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.RELATIONSHIP_FIELDS] ?? []),
+          srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.REFERENCE_TO] = [
+            ...(srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.REFERENCE_TO] ?? []),
             targetField,
           ]
           srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.CARDINALITY] = cardinality

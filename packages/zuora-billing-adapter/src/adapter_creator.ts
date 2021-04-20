@@ -21,10 +21,7 @@ import {
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import ZuoraClient from './client/client'
 import ZuoraAdapter from './adapter'
-import {
-  Credentials, usernamePasswordCredentialsType,
-  oauthClientCredentialsType, isOAuthClientCredentialsConfig,
-} from './auth'
+import { Credentials, oauthClientCredentialsType, isSandboxSubdomain, toZuoraBaseUrl } from './auth'
 import {
   configType, ZuoraConfig, CLIENT_CONFIG, DEFAULT_API_DEFINITIONS, API_DEFINITIONS_CONFIG,
   ZuoraApiConfig,
@@ -35,19 +32,20 @@ const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
 const { validateSwaggerApiDefinitionConfig } = configUtils
 
-const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => (
-  isOAuthClientCredentialsConfig(config)
-    ? {
-      clientId: config.value.clientId,
-      clientSecret: config.value.clientSecret,
-      baseURL: config.value.baseURL,
-    }
-    : {
-      username: config.value.username,
-      password: config.value.password,
-      baseURL: config.value.baseURL,
-    }
-)
+const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
+  const { clientId, clientSecret, subdomain, production } = config.value
+  if (!production && !isSandboxSubdomain(subdomain)) {
+    throw new Error(`${subdomain} is not a valid sandbox subdomain`)
+  }
+  if (production && isSandboxSubdomain(subdomain)) {
+    throw new Error(`${subdomain} is a sandbox subdomain and cannot be used for production`)
+  }
+  return {
+    clientId,
+    clientSecret,
+    baseURL: toZuoraBaseUrl(subdomain),
+  }
+}
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZuoraConfig => {
   const apiDefinitions: ZuoraApiConfig = _.defaults(
@@ -87,9 +85,6 @@ export const adapter: Adapter = {
     },
   ),
   authenticationMethods: {
-    limited: {
-      credentialsType: usernamePasswordCredentialsType,
-    },
     basic: {
       credentialsType: oauthClientCredentialsType,
     },

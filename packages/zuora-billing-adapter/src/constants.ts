@@ -33,7 +33,7 @@ export const FILTERABLE = 'filterable'
 export const DESCRIPTION = 'description'
 export const INTERNAL_ID = 'id'
 export const FIELD_RELATIONSHIP_ANNOTATIONS = {
-  RELATIONSHIP_FIELDS: 'relationshipFields',
+  REFERENCE_TO: 'referenceTo',
   CARDINALITY: 'cardinality',
   RECORD_CONSTRAINTS: 'recordConstraints',
 }
@@ -43,3 +43,5 @@ export const CUSTOM_OBJECT_DEFINITION_TYPE = 'CustomObjectDefinition'
 export const STANDARD_OBJECT_DEFINITION_TYPE = 'StandardObjectDefinition'
 export const TASK_TYPE = 'Task'
 export const WORKFLOW_TYPE = 'Workflow'
+export const LIST_ALL_SETTINGS_TYPE = 'ListAllSettings'
+export const SETTINGS_TYPE_PREFIX = 'Settings_'

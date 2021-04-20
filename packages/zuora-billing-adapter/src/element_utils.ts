@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 import {
-  isInstanceElement, Element, isObjectType, isField, ObjectType, Field,
+  isInstanceElement, Element, isObjectType, isField, ObjectType, Field, InstanceElement,
 } from '@salto-io/adapter-api'
 import {
   CUSTOM_FIELD, CUSTOM_OBJECT, ZUORA_CUSTOM_SUFFIX, METADATA_TYPE, STANDARD_OBJECT,
-} from '../constants'
+} from './constants'
 
-export const metadataType = (element: Element): string => {
+const metadataType = (element: Element): string => {
   if (isInstanceElement(element)) {
     return metadataType(element.type)
   }
@@ -40,3 +40,15 @@ export const isCustomField = (field: Field): boolean => (
   // using the suffix as well because custom fields of standard objects don't always have origin
   field.annotations.origin === 'custom' || field.name.endsWith(ZUORA_CUSTOM_SUFFIX)
 )
+
+export const isInstanceOfType = (
+  element: Element,
+  typeNames: string[],
+): element is InstanceElement => (
+  isInstanceElement(element)
+  && typeNames.includes(element.type.elemID.name)
+)
+
+// elem id renames are currently not allowed in Zuora, so we can use the elem id
+// and don't need a dedicated annotation yet.
+export const apiName = (elem: Element): string => elem.elemID.name

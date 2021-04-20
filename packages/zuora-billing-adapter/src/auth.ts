@@ -14,23 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes } from '@salto-io/adapter-api'
 import { auth as authUtils } from '@salto-io/adapter-components'
 import * as constants from './constants'
 
 const configID = new ElemID(constants.ZUORA_BILLING)
-
-export const usernamePasswordCredentialsType = new ObjectType({
-  elemID: configID,
-  fields: {
-    username: { type: BuiltinTypes.STRING },
-    password: { type: BuiltinTypes.STRING },
-    baseURL: {
-      type: BuiltinTypes.STRING,
-      annotations: { message: 'Base URL (e.g. https://rest.sandbox.na.zuora.com)' },
-    },
-  },
-})
 
 export const oauthClientCredentialsType = new ObjectType({
   elemID: configID,
@@ -43,10 +31,11 @@ export const oauthClientCredentialsType = new ObjectType({
       type: BuiltinTypes.STRING,
       annotations: { message: 'OAuth client secret' },
     },
-    baseURL: {
+    subdomain: {
       type: BuiltinTypes.STRING,
-      annotations: { message: 'Base URL (e.g. https://rest.sandbox.na.zuora.com)' },
+      annotations: { message: 'Sandbox subdomain to use, e.g. "sandbox.na" (requests will be made to https://rest.<subdomain>.zuora.com). Keep empty for production' },
     },
+    production: { type: BuiltinTypes.BOOLEAN },
   },
 })
 
@@ -54,37 +43,18 @@ export type OAuthClientCredentials = authUtils.OAuthClientCredentialsArgs & {
   baseURL: string
 }
 
-export type UsernamePasswordCredentials = {
-  username: string
-  password: string
-  baseURL: string
-}
+export type Credentials = OAuthClientCredentials
 
-export type Credentials = OAuthClientCredentials | UsernamePasswordCredentials
+// non-prod valid subdomain, based on https://www.zuora.com/developer/api-reference/#section/Introduction/Access-to-the-API
+// should all be lowercase
+export const KNOWN_SANDBOX_SUBDOMAIN_KEYWORDS = new Set(['apisandbox', 'sandbox', 'test', 'pt1'])
 
-export const isUsernamePasswordCredentials = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  creds: any
-): creds is UsernamePasswordCredentials => (
-  creds !== undefined
-  && _.isString(creds.username)
-  && _.isString(creds.password)
-  && _.isString(creds.baseURL)
+export const isSandboxSubdomain = (subdomain: string): boolean => (
+  subdomain?.toLowerCase().split('.').some(part => KNOWN_SANDBOX_SUBDOMAIN_KEYWORDS.has(part))
 )
 
-export const isOAuthClientCredentials = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  creds: any
-): creds is OAuthClientCredentials => (
-  creds !== undefined
-  && _.isString(creds.clientId)
-  && _.isString(creds.clientSecret)
-  && _.isString(creds.baseURL)
-)
-
-export const isOAuthClientCredentialsConfig = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  credsInstance: Readonly<InstanceElement>
-): boolean => (
-  isOAuthClientCredentials(credsInstance.value)
+export const toZuoraBaseUrl = (subdomain: string): string => (
+  _.isEmpty(subdomain)
+    ? 'https://rest.zuora.com'
+    : `https://rest.${subdomain}.zuora.com`
 )

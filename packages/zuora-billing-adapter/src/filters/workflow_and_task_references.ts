@@ -23,8 +23,7 @@ import { logger } from '@salto-io/logging'
 import { collections, multiIndex } from '@salto-io/lowerdash'
 import { TASK_TYPE, WORKFLOW_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
-import { apiName } from './object_defs'
-import { isObjectDef } from '../transformers/transformer'
+import { apiName, isObjectDef } from '../element_utils'
 
 const log = logger(module)
 const { flatMapAsync, toAsyncIterable } = collections.asynciterable
@@ -60,6 +59,13 @@ const addTaskDependencies = (
   typeLowercaseLookup: multiIndex.Index<[string], ElemID>,
   fieldLowercaseLookup: multiIndex.Index<[string, string], ElemID>,
 ): void => {
+  if (_.isString(inst.value.object)) {
+    const objId = typeLowercaseLookup.get(inst.value.object.toLowerCase())
+    if (objId !== undefined) {
+      inst.value.object = new ReferenceExpression(objId)
+    }
+  }
+
   if (!_.isPlainObject(inst.value.parameters?.fields)) {
     return
   }
@@ -80,13 +86,6 @@ const addTaskDependencies = (
       }
     })
   })
-
-  if (_.isString(inst.value.object)) {
-    const objId = typeLowercaseLookup.get(inst.value.object.toLowerCase())
-    if (objId !== undefined) {
-      inst.value.object = new ReferenceExpression(objId)
-    }
-  }
 
   if (deps.length > 0) {
     extendGeneratedDependencies(inst, deps)

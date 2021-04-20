@@ -16,11 +16,13 @@
 import _ from 'lodash'
 import { ElemID, ElemIDTypes, Value, ElemIDType } from '@salto-io/adapter-api'
 import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
 
-const { asynciterable } = collections
-const { awu } = asynciterable
+const { awu } = collections.asynciterable
+const { asyncWithLimitedConcurrency } = promises.array
+
+const MAX_CONCURRENT_TRANSFORMS = 1000
 
 export type ElementSelector = {
   adapterSelector: RegExp
@@ -233,8 +235,9 @@ export const selectElementIdsByTraversal = async (
     }
     return undefined
   }
-  await awu(stillRelevantElements).forEach(async elemId => transformElement({
-    element: await source.get(elemId), transformFunc: selectFromSubElements, runOnFields: true,
-  }))
+  await asyncWithLimitedConcurrency(awu(stillRelevantElements)
+    .map(elemId => async () => transformElement({
+      element: await source.get(elemId), transformFunc: selectFromSubElements, runOnFields: true,
+    })), MAX_CONCURRENT_TRANSFORMS)
   return awu(idsIterable.concat(subElements)).uniquify(id => id.getFullName())
 }

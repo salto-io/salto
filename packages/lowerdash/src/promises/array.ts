@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { arrayOf } from '../collections/array'
+import { ThenableIterable, awu } from '../collections/asynciterable'
 import { toIndexedIterable, IndexedIterator } from '../collections/iterable'
 
 export const partition = async <T>(
@@ -64,6 +65,27 @@ export const withLimitedConcurrency = async <T>(
   const results: T[] = []
   await Promise.all(arrayOf(maxConcurrency, () => seriesImpl(i, results)))
   return results
+}
+
+export const asyncWithLimitedConcurrency = async <T>(
+  promises: ThenableIterable<() => Promise<T>>, maxConcurrency: number
+): Promise<AsyncIterable<T>> => {
+  const iter = awu(promises)
+  let i = 0
+  const results: T[][] = []
+  const concurrentResults: (() => Promise<T>)[] = Array.from({ length: maxConcurrency })
+  for await (const promise of iter) {
+    concurrentResults[i] = promise
+    i += 1
+    if (i === maxConcurrency) {
+      results.push(await Promise.all(concurrentResults.map(p => p())))
+      i = 0
+    }
+  }
+  if (i > 0) {
+    results.push(await Promise.all(concurrentResults.slice(0, i).map(p => p())))
+  }
+  return awu(results).flat()
 }
 
 export const removeAsync = async <T>(

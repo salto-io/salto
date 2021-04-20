@@ -17,6 +17,7 @@ import { promises, collections } from '../../src'
 import { MaxCounter, maxCounter } from '../max_counter'
 
 const { arrayOf } = collections.array
+const { awu } = collections.asynciterable
 
 describe('array', () => {
   describe('series and withLimitedConcurrency', () => {
@@ -75,6 +76,30 @@ describe('array', () => {
       })
 
       it('creates all promises with the specified maxConcurrency', async () => {
+        expect(concurrencyCounter.max).toBe(MAX_CONCURRENCY)
+      })
+    })
+
+    describe('asyncWithLimitedConcurrency', () => {
+      const { asyncWithLimitedConcurrency } = promises.array
+      const MAX_CONCURRENCY = 2
+
+      beforeEach(async () => {
+        output = await awu(await asyncWithLimitedConcurrency(awu(input),
+          MAX_CONCURRENCY)).toArray()
+      })
+
+      it('resolves all promises', async () => {
+        expect(output).toEqual(arrayOf(NUM_PROMISES, i => i))
+      })
+
+      it('creates all promises with the specified maxConcurrency', async () => {
+        expect(concurrencyCounter.max).toBe(MAX_CONCURRENCY)
+      })
+
+      it('also works if input size is divisable by max concurrency', async () => {
+        output = await awu(await asyncWithLimitedConcurrency(awu(input), 1)).toArray()
+        expect(output).toEqual(arrayOf(NUM_PROMISES, i => i))
         expect(concurrencyCounter.max).toBe(MAX_CONCURRENCY)
       })
     })

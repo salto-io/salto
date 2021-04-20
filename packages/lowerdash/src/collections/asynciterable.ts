@@ -20,7 +20,7 @@ import * as values from '../values'
 type Thenable<T> = T | Promise<T>
 export type ThenableIterable<T> = Iterable<T> | AsyncIterable<T>
 
-const isAsyncIterable = <T>(
+export const isAsyncIterable = <T>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   itr: any
 ): itr is AsyncIterable<T> => itr[Symbol.asyncIterator] !== undefined
@@ -155,12 +155,15 @@ export const isEmptyAsync = async <T>(
   itr: ThenableIterable<T>
 ): Promise<boolean> => (await peekAsync(itr)) === undefined
 
+export const getIterator = <T>(itr: ThenableIterable<T>): Iterator<T> | AsyncIterator<T> =>
+  (isAsyncIterable(itr) ? itr[Symbol.asyncIterator]() : itr[Symbol.iterator]())
+
 export async function *takeAsync<T>(
   itr: ThenableIterable<T>,
   maxItems: number
 ): AsyncIterable<T> {
   let counter = 0
-  const it = isAsyncIterable(itr) ? itr[Symbol.asyncIterator]() : itr[Symbol.iterator]()
+  const it = getIterator<T>(itr)
   let item: IteratorResult<T>
   // eslint-disable-next-line
   while (!(item = await it.next()).done && counter < maxItems) {

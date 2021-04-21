@@ -1,0 +1,4 @@
+dummy.Full InstWithStatic {
+    strField = file("static.txt")
+    numField = 111
+}

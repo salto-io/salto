@@ -617,7 +617,17 @@ export const generateElements = async (
     })
     return (await Promise.all(allNaclMocks.map(async file => {
       const content = fs.readFileSync(file.fullPath, 'utf8')
-      const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {})
+      const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {
+        file: {
+          parse: async funcParams => new StaticFile({
+            content: Buffer.from('THIS IS STATIC FILE'),
+            filepath: funcParams[0],
+          }),
+          dump: async () => ({ funcName: 'file', parameters: [] }),
+          isSerializedAsFunction: () => true,
+        },
+      })
+
       parsedNaclFile.elements.forEach(elem => {
         elem.path = [DUMMY_ADAPTER, 'extra', file.basename.replace(new RegExp(`.${MOCK_NACL_SUFFIX}$`), '')]
       })

@@ -34,7 +34,7 @@ const { makeArray } = collections.array
 // in small Netsuite accounts the concurrency limit per integration can be between 1-4
 export const DEFAULT_CONCURRENCY = 4
 export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = false
-export const DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES = 4
+export const DEFAULT_COMMAND_TIMEOUT_IN_MINUTES = 4
 export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 40
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_USE_CHANGES_DETECTION = true
@@ -51,7 +51,7 @@ const clientConfigType = new ObjectType({
     [FETCH_TYPE_TIMEOUT_IN_MINUTES]: {
       type: BuiltinTypes.NUMBER,
       annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES,
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           min: 1,
         }),

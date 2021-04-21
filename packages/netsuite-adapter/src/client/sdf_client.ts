@@ -19,7 +19,7 @@ import { mkdirp, readDir, readFile, writeFile, rm } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import {
   CommandsMetadataService, CommandActionExecutor, CLIConfigurationService, NodeConsoleLogger,
-  ActionResult, ActionResultUtils,
+  ActionResult, ActionResultUtils, SdkProperties,
 } from '@salto-io/suitecloud-cli'
 import xmlParser from 'fast-xml-parser'
 import he from 'he'
@@ -34,7 +34,7 @@ import {
   FILE_CABINET_PATH_SEPARATOR,
 } from '../constants'
 import {
-  DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES,
+  DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
 } from '../config'
 import { NetsuiteQuery, NetsuiteQueryParameters, ObjectID } from '../query'
@@ -51,7 +51,6 @@ import {
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
-const { withTimeout } = promises.timeout
 const log = logger(module)
 
 export type SdfClientOpts = {
@@ -83,7 +82,7 @@ const FILE_SEPARATOR = '.'
 const ALL = 'ALL'
 const ADDITIONAL_FILE_PATTERN = '.template.'
 
-const MINUTE_IN_MILLISECONDS = 1000 * 60
+export const MINUTE_IN_MILLISECONDS = 1000 * 60
 
 const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING', 'WMSSYSTEM', 'BILLINGACCOUNTS']
 const INVALID_DEPENDENCIES_PATTERN = new RegExp(`^.*(<feature required=".*">${INVALID_DEPENDENCIES.join('|')})</feature>.*\n`, 'gm')
@@ -163,7 +162,6 @@ type ObjectsChunk = {
 export default class SdfClient {
   private readonly credentials: SdfCredentials
   private readonly fetchAllTypesAtOnce: boolean
-  private readonly fetchTypeTimeoutInMinutes: number
   private readonly maxItemsInImportObjectsRequest: number
   private readonly sdfConcurrencyLimit: number
   private readonly sdfCallsLimiter: Bottleneck
@@ -179,14 +177,15 @@ export default class SdfClient {
     this.globalLimiter = globalLimiter
     this.credentials = credentials
     this.fetchAllTypesAtOnce = config?.fetchAllTypesAtOnce ?? DEFAULT_FETCH_ALL_TYPES_AT_ONCE
-    this.fetchTypeTimeoutInMinutes = config?.fetchTypeTimeoutInMinutes
-      ?? DEFAULT_FETCH_TYPE_TIMEOUT_IN_MINUTES
     this.maxItemsInImportObjectsRequest = config?.maxItemsInImportObjectsRequest
       ?? DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST
     this.sdfConcurrencyLimit = config?.sdfConcurrencyLimit ?? DEFAULT_CONCURRENCY
     this.sdfCallsLimiter = new Bottleneck({ maxConcurrent: this.sdfConcurrencyLimit })
     this.setupAccountLock = new AsyncLock()
     this.baseCommandExecutor = SdfClient.initCommandActionExecutor(baseExecutionPath)
+    const commandTimeoutInMinutes = config?.fetchTypeTimeoutInMinutes
+      ?? DEFAULT_COMMAND_TIMEOUT_IN_MINUTES
+    SdkProperties.setCommandTimeout(commandTimeoutInMinutes * MINUTE_IN_MILLISECONDS)
   }
 
   @SdfClient.logDecorator
@@ -247,19 +246,14 @@ export default class SdfClient {
     commandName: string,
     commandArguments: Values,
     projectCommandActionExecutor: CommandActionExecutor,
-    timeoutInMinutes?: number
   ): Promise<ActionResult> {
     const actionResult = await this.globalLimiter.schedule(
-      () => this.sdfCallsLimiter.schedule(() => {
-        const actionResultPromise = projectCommandActionExecutor.executeAction({
+      () => this.sdfCallsLimiter.schedule(() =>
+        projectCommandActionExecutor.executeAction({
           commandName,
           runInInteractiveMode: false,
           arguments: commandArguments,
-        })
-        return timeoutInMinutes !== undefined
-          ? withTimeout(actionResultPromise, timeoutInMinutes * MINUTE_IN_MILLISECONDS)
-          : actionResultPromise
-      })
+        }))
     )
     SdfClient.verifySuccessfulAction(actionResult, commandName)
     return actionResult
@@ -368,9 +362,7 @@ export default class SdfClient {
       try {
         // When fetchAllAtOnce we use the below heuristic in order to define a proper timeout,
         // instead of adding another configuration value
-        return await this.runImportObjectsCommand(
-          executor, ALL, ALL, this.fetchTypeTimeoutInMinutes * 4
-        )
+        return await this.runImportObjectsCommand(executor, ALL, ALL)
       } catch (e) {
         log.warn('Attempt to fetch all custom objects has failed')
         log.warn(e)
@@ -399,7 +391,7 @@ export default class SdfClient {
       try {
         log.debug('Starting to fetch chunk %d/%d with %d objects of type: %s', index, total, ids.length, type)
         const failedTypeToInstances = await this.runImportObjectsCommand(
-          executor, type, ids.join(' '), this.fetchTypeTimeoutInMinutes
+          executor, type, ids.join(' ')
         )
         log.debug('Fetched chunk %d/%d with %d objects of type: %s. failedTypeToInstances: %o',
           index, total, ids.length, type, failedTypeToInstances)
@@ -457,7 +449,6 @@ export default class SdfClient {
     executor: CommandActionExecutor,
     type: string,
     scriptIds: string,
-    timeoutInMinutes: number,
   ): Promise<NetsuiteQueryParameters['types']> {
     const actionResult = await this.executeProjectAction(
       COMMANDS.IMPORT_OBJECTS,
@@ -469,7 +460,6 @@ export default class SdfClient {
         excludefiles: true,
       },
       executor,
-      timeoutInMinutes
     )
     const importResult = actionResult.data as ImportObjectsResult
     return _(importResult.failedImports)

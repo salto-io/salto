@@ -21,6 +21,10 @@ declare module '@salto-io/suitecloud-cli' {
     download(): Promise<AdapterInstallResult>
   }
 
+  interface SdkPropertiesI {
+    setCommandTimeout(commandTimeout: number): void
+  }
+
   export class CommandsMetadataService {
     constructor()
   }
@@ -58,4 +62,6 @@ declare module '@salto-io/suitecloud-cli' {
   }
 
   export const SdkDownloadService: SdkDownloadServiceI
+
+  export const SdkProperties: SdkPropertiesI
 }

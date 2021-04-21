@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, BuiltinTypes, MapType, ListType, TypeElement, isEqualElements, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ElemID } from '@salto-io/adapter-api'
+import { ObjectType, BuiltinTypes, MapType, ListType, TypeElement, isEqualElements, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ElemID, Field } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { getConfigWithDefault } from '../../../config/shared'
 import { TypeSwaggerConfig, AdditionalTypeConfig, TypeSwaggerDefaultConfig } from '../../../config/swagger'
@@ -134,13 +134,14 @@ export const fixTypes = (
       ).fieldTypeOverrides as FieldTypeOverrideType[]
       fieldTypeOverrides.forEach(({ fieldName, fieldType }) => {
         const field = type.fields[fieldName]
-        if (field === undefined) {
-          log.warn('field %s.%s not found, cannot override its type', typeName, fieldName)
-          return
-        }
         const newFieldType = toTypeWithContainers(fieldType)
-        log.debug('Modifying field type for %s.%s from %s to %s', typeName, fieldName, field.type.elemID.name, newFieldType.elemID.name)
-        field.type = newFieldType
+        if (field === undefined) {
+          log.debug('Creating field type for %s.%s with type %s', typeName, fieldName, newFieldType.elemID.name)
+          type.fields[fieldName] = new Field(type, fieldName, newFieldType)
+        } else {
+          log.debug('Modifying field type for %s.%s from %s to %s', typeName, fieldName, field.type.elemID.name, newFieldType.elemID.name)
+          field.type = newFieldType
+        }
       })
     })
 

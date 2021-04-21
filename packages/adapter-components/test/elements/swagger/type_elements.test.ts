@@ -197,9 +197,11 @@ describe('swagger_type_elements', () => {
                     { fieldName: 'shipDate', fieldType: 'Category' },
                     { fieldName: 'quantity', fieldType: 'map<Category>' },
                     { fieldName: 'newField', fieldType: 'map<Category>' },
+                    { fieldName: 'newHiddenField', fieldType: 'Category' },
                   ],
                   fieldsToHide: [
                     { fieldName: 'petId' },
+                    { fieldName: 'newHiddenField' },
                   ],
                 },
               },
@@ -254,17 +256,23 @@ describe('swagger_type_elements', () => {
         expect(order.fields.quantity.type).toBeInstanceOf(MapType)
         expect((order.fields.quantity.type as MapType).innerType).toEqual(allTypes.Category)
       })
+      it('should add fields that did not already exist', () => {
+        const order = allTypes.Order as ObjectType
+        expect(order).toBeInstanceOf(ObjectType)
+        expect(order.fields.newField).toBeDefined()
+        expect(order.fields.newField.type).toBeInstanceOf(MapType)
+        expect((order.fields.newField.type as MapType).innerType).toEqual(allTypes.Category)
+        expect(order.fields.newHiddenField).toBeDefined()
+        expect(order.fields.newHiddenField.type).toEqual(allTypes.Category)
+      })
       it('should annotate fields from fieldsToHide with _hidden_value=true', () => {
         const order = allTypes.Order as ObjectType
         expect(order).toBeInstanceOf(ObjectType)
         // eslint-disable-next-line no-underscore-dangle
         expect((order.fields.petId.annotations?._hidden_value)).toBeTruthy()
+        expect((order.fields.newHiddenField.annotations?._hidden_value)).toBeTruthy()
       })
-      it('should not add fields that did not already exist', () => {
-        const order = allTypes.Order as ObjectType
-        expect(order).toBeInstanceOf(ObjectType)
-        expect(order.fields.newField).toBeUndefined()
-      })
+
       it('should not add types that did not already exist', () => {
         const order = allTypes.NewType as ObjectType
         expect(order).toBeUndefined()

@@ -643,6 +643,22 @@ In order to complete the fetch operation, Salto needs to stop managing these ite
       })
     })
 
+    describe('only fetchConfiguration is defined', () => {
+      const configChange = {
+        config,
+        message: `Salto failed to fetch some items from salesforce.
+
+In order to complete the fetch operation, Salto needs to stop managing these items by applying the following configuration change:`,
+      }
+      const updatedConfig = getConfigChange(
+        configChange,
+        undefined,
+      )
+      it('return configWithoutDeprecated', () => {
+        expect(updatedConfig).toBe(configChange)
+      })
+    })
+
     describe('both configFromFetch and configWithoutDeprecated are undefined', () => {
       const updatedConfig = getConfigChange(
         undefined,

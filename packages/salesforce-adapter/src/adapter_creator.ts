@@ -109,7 +109,7 @@ In Addition, ${configFromFetch.message}`,
     return configWithoutDeprecated
   }
 
-  return undefined
+  return configFromFetch
 }
 
 export const adapter: Adapter = {

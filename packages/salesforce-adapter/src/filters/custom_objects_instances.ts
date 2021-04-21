@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections, values, promises } from '@salto-io/lowerdash'
+import { collections, values, promises, chunks } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, ObjectType, Element, Field } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
@@ -23,7 +23,7 @@ import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
 import {
   SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD,
-  OBJECTS_PATH, FIELD_ANNOTATIONS, MAX_IDS_PER_INSTANCES_QUERY,
+  OBJECTS_PATH, FIELD_ANNOTATIONS, MAX_QUERY_LENGTH,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
@@ -35,6 +35,7 @@ const { mapValuesAsync } = promises.object
 const { isDefined } = values
 const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
+const { weightedChunks } = chunks
 
 const log = logger(module)
 
@@ -67,28 +68,60 @@ const getQueryableFields = (object: ObjectType): Field[] => (
     .filter(field => field.annotations[FIELD_ANNOTATIONS.QUERYABLE] !== false)
 )
 
-export const buildSelectStr = (fields: Field[]): string => (
-  fields
-    .map(field => {
-      if (isNameField(field)) {
-        return Object.keys((field.type as ObjectType).fields).join(',')
-      }
-      return apiName(field, true)
-    }).join(','))
+const getWhereConditions = (
+  conditions: Record<string, string>[],
+  maxLen: number
+): string[] => {
+  // We assume all conditions have the same keys
+  const keys = Object.keys(conditions[0])
+  const constConditionPartLen = (
+    _.sumBy(keys, key => `${key} IN ()`.length)
+    + (' AND '.length * (keys.length - 1))
+  )
 
-const buildQueryString = (typeName: string, fields: Field[], ids?: string[]): string => {
-  const selectStr = buildSelectStr(fields)
-  const whereStr = (ids === undefined || _.isEmpty(ids)) ? '' : ` WHERE Id IN (${ids.map(id => `'${id}'`).join(',')})`
-  return `SELECT ${selectStr} FROM ${typeName}${whereStr}`
+  const conditionChunks = weightedChunks(
+    conditions,
+    maxLen - constConditionPartLen,
+    // Note - this calculates the condition length as if all values are added to the query.
+    // the actual query might end up being shorter if some of the values are not unique.
+    // this can be optimized in the future if needed
+    condition => _.sumBy(Object.values(condition), val => `${val},`.length),
+  )
+
+  return conditionChunks.map(conditionChunk => {
+    const conditionsByKey = _.groupBy(
+      conditionChunk.flatMap(Object.entries),
+      ([keyName]) => keyName
+    )
+    return Object.entries(conditionsByKey)
+      .map(([keyName, conditionValues]) => (
+        `${keyName} IN (${_.uniq(conditionValues.map(val => val[1])).join(',')})`
+      ))
+      .join(' AND ')
+  })
 }
 
-const buildQueryStrings = (typeName: string, fields: Field[], ids?: string[]): string[] => {
-  if (ids === undefined) {
-    return [buildQueryString(typeName, fields)]
+const getFieldNamesForQuery = (field: Field): string[] => (
+  isNameField(field) ? Object.keys((field.type as ObjectType).fields) : [apiName(field, true)]
+)
+
+export const buildSelectQueries = (
+  typeName: string,
+  fields: Field[],
+  conditions?: Record<string, string>[]
+): string[] => {
+  const selectStr = `SELECT ${fields.flatMap(getFieldNamesForQuery).join(',')} FROM ${typeName}`
+  if (conditions === undefined || conditions.length === 0) {
+    return [selectStr]
   }
-  const chunkedIds = _.chunk(ids, MAX_IDS_PER_INSTANCES_QUERY)
-  return chunkedIds.map(idChunk => buildQueryString(typeName, fields, idChunk))
+  const selectWhereStr = `${selectStr} WHERE `
+  const whereConditions = getWhereConditions(conditions, MAX_QUERY_LENGTH - selectWhereStr.length)
+  return whereConditions.map(whereCondition => `${selectWhereStr}${whereCondition}`)
 }
+
+const buildQueryStrings = (typeName: string, fields: Field[], ids?: string[]): string[] => (
+  buildSelectQueries(typeName, fields, ids?.map(id => ({ Id: `'${id}'` })))
+)
 
 const getRecords = async (
   client: SalesforceClient,

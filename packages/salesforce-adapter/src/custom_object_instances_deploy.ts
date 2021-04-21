@@ -20,6 +20,7 @@ import {
   getChangeElement, DeployResult, Change, isPrimitiveType, InstanceElement, Value, PrimitiveTypes,
   ModificationChange, Field, ObjectType, isObjectType, Values, isAdditionChange, isRemovalChange,
   isModificationChange,
+  TypeElement,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { BatchResultInfo } from 'jsforce-types'
@@ -27,12 +28,12 @@ import { isInstanceOfCustomObject, instancesToCreateRecords, apiName,
   instancesToDeleteRecords, instancesToUpdateRecords, Types } from './transformers/transformer'
 import SalesforceClient from './client/client'
 import { CUSTOM_OBJECT_ID_FIELD } from './constants'
-import { getIdFields, buildSelectStr, transformRecordToValues } from './filters/custom_objects_instances'
+import { getIdFields, buildSelectQueries, transformRecordToValues } from './filters/custom_objects_instances'
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
 import { buildDataManagement, DataManagement } from './fetch_profile/data_management'
 
-const { toArrayAsync } = collections.asynciterable
+const { toArrayAsync, flatMapAsync, toAsyncIterable } = collections.asynciterable
 const { toMD5 } = hash
 const log = logger(module)
 
@@ -100,8 +101,13 @@ const formatValueForWhere = (field: Field, value: Value): string => {
     }
     return value.toString()
   }
-  throw new Error(`Can not create WHERE clause for non-primitve field ${field.name}`)
+  throw new Error(`Can not create WHERE clause for non-primitive field ${field.name}`)
 }
+
+const isCompoundFieldType = (type: TypeElement): type is ObjectType => (
+  isObjectType(type)
+  && Object.values(Types.compoundDataTypes).some(compoundType => compoundType.isEqual(type))
+)
 
 const getRecordsBySaltoIds = async (
   type: ObjectType,
@@ -109,41 +115,38 @@ const getRecordsBySaltoIds = async (
   saltoIdFields: Field[],
   client: SalesforceClient,
 ): Promise<SalesforceRecord[]> => {
-  // The use of IN can lead to querying uneeded records (cross values between instances)
+  // The use of IN can lead to querying unneeded records (cross values between instances)
   // and can be optimized
-  const computeWhereConditions = (field: Field): string | string[] => {
+  const getFieldConditions = (instance: InstanceElement, field: Field): [string, string][] => {
     const fieldType = field.type
-    if (isObjectType(fieldType)) {
-      const compoundFieldType = Object.values(Types.compoundDataTypes)
-        .find(compoundType => compoundType.isEqual(fieldType))
-      if (compoundFieldType !== undefined) {
-        return Object
-          .entries(compoundFieldType.fields).map(([compoundFieldName, compoundField]) => {
-            const compoundFieldValues = [
-              ...new Set(instances.map(instance =>
-                (formatValueForWhere(
-                  compoundField,
-                  instance.value[field.name]?.[compoundFieldName]
-                )))),
-            ]
-            return `${strings.capitalizeFirstLetter(compoundFieldName)} IN (${compoundFieldValues.join(',')})`
-          })
-      }
+    if (isCompoundFieldType(fieldType)) {
+      return Object.values(fieldType.fields)
+        .map(compoundField => [
+          strings.capitalizeFirstLetter(compoundField.name),
+          formatValueForWhere(compoundField, instance.value[field.name]?.[compoundField.name]),
+        ])
     }
-    const instancesFieldValues = [...new Set(instances
-      .map(instance =>
-        (formatValueForWhere(instance.type.fields[field.name], instance.value[field.name]))))]
-    return `${apiName(field, true)} IN (${instancesFieldValues.join(',')})`
+    return [[apiName(field, true), formatValueForWhere(field, instance.value[field.name])]]
   }
+
+  const instanceFieldConditions = instances.map(inst => Object.fromEntries(
+    saltoIdFields.flatMap(field => getFieldConditions(inst, field))
+  ))
+
   // Should always query Id together with the SaltoIdFields to match it to instances
   const saltoIdFieldsWithIdField = (saltoIdFields
     .find(field => field.name === CUSTOM_OBJECT_ID_FIELD) === undefined)
     ? [type.fields[CUSTOM_OBJECT_ID_FIELD], ...saltoIdFields] : saltoIdFields
-  const selectStr = buildSelectStr(saltoIdFieldsWithIdField)
-  const fieldsWheres = saltoIdFields.flatMap(computeWhereConditions)
-  const whereStr = fieldsWheres.join(' AND ')
-  const query = `SELECT ${selectStr} FROM ${apiName(type)} WHERE ${whereStr}`
-  const recordsIterable = await client.queryAll(query)
+
+  const queries = buildSelectQueries(
+    apiName(type),
+    saltoIdFieldsWithIdField,
+    instanceFieldConditions,
+  )
+  const recordsIterable = await flatMapAsync(
+    toAsyncIterable(queries),
+    query => client.queryAll(query)
+  )
   return (await toArrayAsync(recordsIterable)).flat()
 }
 

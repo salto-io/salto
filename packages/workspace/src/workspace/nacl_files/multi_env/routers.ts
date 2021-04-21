@@ -238,21 +238,21 @@ export const routeDefault = async (
   secondarySources: Record<string, NaclFilesSource>
 ): Promise<RoutedChanges> => {
   if (change.action === 'add') {
-    const topLevelID = change.id.createTopLevelParentID().parent
-    const commonTopLevelElement = await commonSource.get(topLevelID)
-    const envTopLevelElements = await Promise.all(
-      [primarySource, ...Object.values(secondarySources)].map(src => src.get(topLevelID))
+    const parentID = change.id.isTopLevel() ? change.id : change.id.createParentID()
+    const commonParent = await commonSource.get(parentID)
+    const envParents = await Promise.all(
+      [primarySource, ...Object.values(secondarySources)].map(src => src.get(parentID))
     )
-    const hasCommonTopLevel = commonTopLevelElement !== undefined
-    const hasEnvSpecificDefinition = _.some(envTopLevelElements, srcElem => srcElem !== undefined)
+    const hasCommonParent = commonParent !== undefined
+    const hasEnvSpecificParent = _.some(envParents, srcElem => srcElem !== undefined)
     // If we only have 1 env we will add the element to common UNLESS its parent already
     // has a part defined in the env
-    if (_.isEmpty(secondarySources) && !hasEnvSpecificDefinition) {
+    if (_.isEmpty(secondarySources) && !hasEnvSpecificParent) {
       return { commonSource: [change] }
     }
     // If the element parent is completely defined in common we will add new nested
     // additions to common
-    if (hasCommonTopLevel && !hasEnvSpecificDefinition) {
+    if (hasCommonParent && !hasEnvSpecificParent) {
       return { commonSource: [change] }
     }
     return { primarySource: [change] }

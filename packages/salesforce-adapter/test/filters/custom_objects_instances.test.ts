@@ -13,13 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement, ServiceIds, BuiltinTypes } from '@salto-io/adapter-api'
 import { ConfigChangeSuggestion, isDataManagementConfigSuggestions } from '../../src/types'
 import { getNamespaceFromString } from '../../src/filters/utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
-import filterCreator from '../../src/filters/custom_objects_instances'
+import filterCreator, { buildSelectQueries } from '../../src/filters/custom_objects_instances'
 import mockAdapter from '../adapter'
 import {
   LABEL, CUSTOM_OBJECT, API_NAME, METADATA_TYPE, SALESFORCE, INSTALLED_PACKAGES_PATH,
@@ -33,6 +34,56 @@ jest.mock('../../src/constants', () => ({
   ...jest.requireActual<{}>('../../src/constants'),
   MAX_IDS_PER_INSTANCES_QUERY: 2,
 }))
+
+const stringType = new PrimitiveType({
+  elemID: new ElemID(SALESFORCE, 'string'),
+  primitive: PrimitiveTypes.STRING,
+})
+
+const createCustomObject = (
+  name: string,
+  additionalFields?: Record<string, FieldDefinition>
+): ObjectType => {
+  const namespace = getNamespaceFromString(name)
+  const basicFields = {
+    Id: {
+      type: stringType,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: false,
+        [LABEL]: 'Id',
+        [API_NAME]: 'Id',
+      },
+    },
+    Name: {
+      type: stringType,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: false,
+        [LABEL]: 'description label',
+        [API_NAME]: 'Name',
+      },
+    },
+    TestField: {
+      type: stringType,
+      annotations: {
+        [LABEL]: 'Test field',
+        [API_NAME]: 'TestField',
+      },
+    },
+  }
+  const obj = new ObjectType({
+    elemID: new ElemID(SALESFORCE, name),
+    annotations: {
+      [API_NAME]: name,
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+    },
+    fields: additionalFields ? Object.assign(basicFields, additionalFields) : basicFields,
+  })
+  const path = namespace
+    ? [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, obj.elemID.name]
+    : [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
+  obj.path = path
+  return obj
+}
 
 /* eslint-disable @typescript-eslint/camelcase */
 describe('Custom Object Instances filter', () => {
@@ -89,56 +140,6 @@ describe('Custom Object Instances filter', () => {
       SBQQ__DisplayOrder__c: 3,
     },
   ]
-
-  const stringType = new PrimitiveType({
-    elemID: new ElemID(SALESFORCE, 'string'),
-    primitive: PrimitiveTypes.STRING,
-  })
-
-  const createCustomObject = (
-    name: string,
-    additionalFields?: Record<string, FieldDefinition>
-  ): ObjectType => {
-    const namespace = getNamespaceFromString(name)
-    const basicFields = {
-      Id: {
-        type: stringType,
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
-          [LABEL]: 'Id',
-          [API_NAME]: 'Id',
-        },
-      },
-      Name: {
-        type: stringType,
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
-          [LABEL]: 'description label',
-          [API_NAME]: 'Name',
-        },
-      },
-      TestField: {
-        type: stringType,
-        annotations: {
-          [LABEL]: 'Test field',
-          [API_NAME]: 'TestField',
-        },
-      },
-    }
-    const obj = new ObjectType({
-      elemID: new ElemID(SALESFORCE, name),
-      annotations: {
-        [API_NAME]: name,
-        [METADATA_TYPE]: CUSTOM_OBJECT,
-      },
-      fields: additionalFields ? Object.assign(basicFields, additionalFields) : basicFields,
-    })
-    const path = namespace
-      ? [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, obj.elemID.name]
-      : [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
-    obj.path = path
-    return obj
-  }
 
   let basicQueryImplementation: jest.Mock
 
@@ -997,6 +998,57 @@ describe('Custom Object Instances filter', () => {
         const recordLocation = TestCustomRecords[0].SBQQ__Location__c
         const recordDisplayOrder = TestCustomRecords[0].SBQQ__DisplayOrder__c
         expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${recordLocation}___${recordDisplayOrder}___${recordName}`)
+      })
+    })
+  })
+})
+
+describe('buildSelectQueries', () => {
+  let customObject: ObjectType
+  beforeEach(() => {
+    customObject = createCustomObject('Test')
+  })
+  describe('without conditions', () => {
+    let queries: string[]
+    beforeEach(() => {
+      queries = buildSelectQueries('Test', Object.values(customObject.fields))
+    })
+    it('should create a select query on the specified fields', () => {
+      expect(queries).toHaveLength(1)
+      expect(queries[0]).toEqual('SELECT Id,Name,TestField FROM Test')
+    })
+  })
+  describe('with conditions', () => {
+    describe('with short query', () => {
+      let queries: string[]
+      beforeEach(() => {
+        queries = buildSelectQueries(
+          'Test',
+          [customObject.fields.Id],
+          _.range(0, 2).map(idx => ({ Id: `'id${idx}'`, Name: `'name${idx}'` })),
+        )
+      })
+      it('should create query with WHERE clause', () => {
+        expect(queries).toHaveLength(1)
+        expect(queries[0]).toEqual("SELECT Id FROM Test WHERE Id IN ('id0','id1') AND Name IN ('name0','name1')")
+      })
+    })
+    describe('with query length limit', () => {
+      let queries: string[]
+      beforeEach(() => {
+        queries = buildSelectQueries(
+          'Test',
+          [customObject.fields.Id],
+          _.range(0, 4).map(idx => ({ Id: `'id${idx}'`, Name: `'name${idx}'` })),
+          80,
+        )
+      })
+      it('should create queries that do not exceed query length', () => {
+        expect(queries).toHaveLength(2)
+        const queryLengths = queries.map(query => query.length)
+        expect(_.max(queryLengths)).toBeLessThanOrEqual(80)
+        expect(queries[0]).toEqual("SELECT Id FROM Test WHERE Id IN ('id0','id1') AND Name IN ('name0','name1')")
+        expect(queries[1]).toEqual("SELECT Id FROM Test WHERE Id IN ('id2','id3') AND Name IN ('name2','name3')")
       })
     })
   })

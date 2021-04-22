@@ -117,21 +117,22 @@ const getRecordsBySaltoIds = async (
 ): Promise<SalesforceRecord[]> => {
   // The use of IN can lead to querying unneeded records (cross values between instances)
   // and can be optimized
-  const getFieldConditions = (instance: InstanceElement, field: Field): [string, string][] => {
+  const getFieldNamesToValues = (instance: InstanceElement, field: Field): [string, string][] => {
     const fieldType = field.type
     if (isCompoundFieldType(fieldType)) {
       return Object.values(fieldType.fields)
-        .map(compoundField => [
-          strings.capitalizeFirstLetter(compoundField.name),
-          formatValueForWhere(compoundField, instance.value[field.name]?.[compoundField.name]),
+        .map(innerField => [
+          strings.capitalizeFirstLetter(innerField.name),
+          formatValueForWhere(innerField, instance.value[field.name]?.[innerField.name]),
         ])
     }
     return [[apiName(field, true), formatValueForWhere(field, instance.value[field.name])]]
   }
 
-  const instanceFieldConditions = instances.map(inst => Object.fromEntries(
-    saltoIdFields.flatMap(field => getFieldConditions(inst, field))
-  ))
+  const instanceIdValues = instances.map(inst => {
+    const idFieldsNameToValue = saltoIdFields.flatMap(field => getFieldNamesToValues(inst, field))
+    return Object.fromEntries(idFieldsNameToValue)
+  })
 
   // Should always query Id together with the SaltoIdFields to match it to instances
   const saltoIdFieldsWithIdField = (saltoIdFields
@@ -141,7 +142,7 @@ const getRecordsBySaltoIds = async (
   const queries = buildSelectQueries(
     apiName(type),
     saltoIdFieldsWithIdField,
-    instanceFieldConditions,
+    instanceIdValues,
   )
   const recordsIterable = await flatMapAsync(
     toAsyncIterable(queries),

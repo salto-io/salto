@@ -87,7 +87,7 @@ export const deployActions = async (
           log.warn(
             'Failed to deploy %s, errors: %s',
             item.groupKey,
-            result.errors.map(err => err.stack ?? err.message).join('\n'),
+            result.errors.map(err => err.stack ?? err.message).join('\n\n'),
           )
           throw new Error(
             `Failed to deploy ${item.groupKey} with errors:\n${result.errors.join('\n')}`

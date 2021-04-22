@@ -69,18 +69,17 @@ const getQueryableFields = (object: ObjectType): Field[] => (
 )
 
 const getWhereConditions = (
-  conditions: Record<string, string>[],
+  conditionSets: Record<string, string>[],
   maxLen: number
 ): string[] => {
-  // We assume all conditions have the same keys
-  const keys = Object.keys(conditions[0])
+  const keys = _.uniq(conditionSets.flatMap(Object.keys))
   const constConditionPartLen = (
     _.sumBy(keys, key => `${key} IN ()`.length)
     + (' AND '.length * (keys.length - 1))
   )
 
   const conditionChunks = weightedChunks(
-    conditions,
+    conditionSets,
     maxLen - constConditionPartLen,
     // Note - this calculates the condition length as if all values are added to the query.
     // the actual query might end up being shorter if some of the values are not unique.
@@ -105,17 +104,26 @@ const getFieldNamesForQuery = (field: Field): string[] => (
   isNameField(field) ? Object.keys((field.type as ObjectType).fields) : [apiName(field, true)]
 )
 
+/**
+ * Build a set of queries that select records.
+ *
+ * @param typeName The name of the table to query from
+ * @param fields The names of the fields to query
+ * @param conditionSets Each entry specifies field values used to match a specific record
+ * @param maxQueryLen returned queries will be split such that no single query exceeds this length
+ */
 export const buildSelectQueries = (
   typeName: string,
   fields: Field[],
-  conditions?: Record<string, string>[]
+  conditionSets?: Record<string, string>[],
+  maxQueryLen = MAX_QUERY_LENGTH,
 ): string[] => {
   const selectStr = `SELECT ${fields.flatMap(getFieldNamesForQuery).join(',')} FROM ${typeName}`
-  if (conditions === undefined || conditions.length === 0) {
+  if (conditionSets === undefined || conditionSets.length === 0) {
     return [selectStr]
   }
   const selectWhereStr = `${selectStr} WHERE `
-  const whereConditions = getWhereConditions(conditions, MAX_QUERY_LENGTH - selectWhereStr.length)
+  const whereConditions = getWhereConditions(conditionSets, maxQueryLen - selectWhereStr.length)
   return whereConditions.map(whereCondition => `${selectWhereStr}${whereCondition}`)
 }
 

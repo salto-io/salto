@@ -18,7 +18,7 @@ import {
   FieldDefinition, BuiltinTypes, ListType, TypeElement, InstanceElement,
   Value, isPrimitiveType, isObjectType, isListType, TypeMap, Values,
   CORE_ANNOTATIONS, StaticFile, calculateStaticFileHash, ReferenceExpression,
-  getDeepInnerType, isContainerType, MapType, isMapType, ProgressReporter,
+  getDeepInnerType, isContainerType, MapType, isMapType, ProgressReporter, isType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
@@ -27,7 +27,7 @@ import fs from 'fs'
 import path from 'path'
 import seedrandom from 'seedrandom'
 import readdirp from 'readdirp'
-import { parser } from '@salto-io/workspace'
+import { parser, merger } from '@salto-io/workspace'
 
 const { arrayOf } = collections.array
 
@@ -615,7 +615,7 @@ export const generateElements = async (
     const allNaclMocks = await readdirp.promise(naclDir, {
       fileFilter: [`*.${MOCK_NACL_SUFFIX}`],
     })
-    return (await Promise.all(allNaclMocks.map(async file => {
+    const elements = (await Promise.all(allNaclMocks.map(async file => {
       const content = fs.readFileSync(file.fullPath, 'utf8')
       const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {
         file: {
@@ -633,6 +633,19 @@ export const generateElements = async (
       })
       return parsedNaclFile.elements
     }))).flat()
+
+    // Unfortunately this code uses a hacky way to load elements instead of using a proper
+    // element source. because of this, we have to update the types here to convert them
+    // from fragments (which have placeholder types) to elements (which point to the actual type)
+    // updateMergedTypes should NOT be used outside the workspace package.
+    // THIS SHOULD NEVER BE DONE IN A REAL ADAPTER!
+    const typeMap = _.keyBy(
+      [...elements.filter(isType), ...Object.values(BuiltinTypes)],
+      elem => elem.elemID.getFullName()
+    )
+    merger.updateMergedTypes(elements, typeMap)
+
+    return elements
   }
 
 

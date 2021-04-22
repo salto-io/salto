@@ -1,4 +1,4 @@
-type dummy.Partial {
+type dummy.Partial2 {
     annotations {
         number numAnno {
         }

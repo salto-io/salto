@@ -21,6 +21,7 @@ import {
   RECORD_TYPE,
 } from '../../src/constants'
 import { OnFetchParameters } from '../../src/filter'
+import NetsuiteClient from '../../src/client/client'
 
 describe('consistent_values filter', () => {
   const instanceName = 'instanceName'
@@ -50,6 +51,7 @@ describe('consistent_values filter', () => {
 
     onFetchParameters = {
       elements: [instance, instanceWithNestedInconsistentValue],
+      client: {} as NetsuiteClient,
       elementsSourceIndex: { getIndex: () => Promise.resolve({}) },
       isPartial: false,
     }

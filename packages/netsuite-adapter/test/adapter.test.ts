@@ -42,6 +42,7 @@ import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
 import * as suiteAppFileCabinet from '../src/suiteapp_file_cabinet'
 import { SDF_CHANGE_GROUP_ID } from '../src/group_changes'
+import { SuiteAppFileCabinetOperations } from '../src/suiteapp_file_cabinet'
 
 jest.mock('../src/config', () => ({
   ...jest.requireActual<{}>('../src/config'),
@@ -81,6 +82,13 @@ describe('Adapter', () => {
       [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 1,
     },
   }
+
+  const suiteAppImportFileCabinetMock = jest.fn()
+
+  jest.spyOn(suiteAppFileCabinet, 'createSuiteAppFileCabinetOperations').mockReturnValue({
+    importFileCabinet: suiteAppImportFileCabinetMock,
+  } as unknown as SuiteAppFileCabinetOperations)
+
   const netsuiteAdapter = new NetsuiteAdapter({
     client: new NetsuiteClient(client),
     elementsSource: buildElementsSourceFromElements([]),
@@ -92,8 +100,6 @@ describe('Adapter', () => {
   const mockFetchOpts: MockInterface<FetchOptions> = {
     progressReporter: { reportProgress: jest.fn() },
   }
-
-  const suiteAppImportFileCabinetMock = jest.spyOn(suiteAppFileCabinet, 'importFileCabinet')
 
   beforeEach(() => {
     jest.clearAllMocks()

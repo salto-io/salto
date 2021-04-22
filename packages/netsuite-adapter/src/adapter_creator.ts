@@ -33,7 +33,7 @@ import {
   CONCURRENCY_LIMIT,
 } from './constants'
 import { validateParameters } from './query'
-import { Credentials } from './client/credentials'
+import { Credentials, toCredentialsAccountId } from './client/credentials'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import SdfClient from './client/sdf_client'
 import NetsuiteClient from './client/client'
@@ -134,8 +134,7 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
 
 const netsuiteCredentialsFromCredentials = (credentials: Readonly<InstanceElement>): Credentials =>
   ({
-    // accountId must be uppercased as described in https://github.com/oracle/netsuite-suitecloud-sdk/issues/140
-    accountId: credentials.value.accountId.toUpperCase().replace('-', '_'),
+    accountId: toCredentialsAccountId(credentials.value.accountId),
     tokenId: credentials.value.tokenId,
     tokenSecret: credentials.value.tokenSecret,
     suiteAppTokenId: credentials.value.suiteAppTokenId === '' ? undefined : credentials.value.suiteAppTokenId,

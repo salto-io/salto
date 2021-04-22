@@ -14,10 +14,12 @@
 * limitations under the License.
 */
 import { Element } from '@salto-io/adapter-api'
+import NetsuiteClient from './client/client'
 import { LazyElementsSourceIndex } from './elements_source_index/types'
 
 export type OnFetchParameters = {
   elements: Element[]
+  client: NetsuiteClient
   elementsSourceIndex: LazyElementsSourceIndex
   isPartial: boolean
 }

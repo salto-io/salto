@@ -31,6 +31,7 @@ import {
 } from '../src/constants'
 import { mockGetElemIdFunc } from './utils'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
+import { SdfCredentials } from '../src/client/credentials'
 
 jest.mock('../src/client/sdf_client')
 jest.mock('../src/client/suiteapp_client/suiteapp_client')
@@ -83,6 +84,7 @@ describe('NetsuiteAdapter creator', () => {
   describe('validateCredentials', () => {
     const suiteAppClientValidateMock = jest.spyOn(SuiteAppClient, 'validateCredentials')
     const netsuiteValidateMock = jest.spyOn(SdfClient, 'validateCredentials')
+
     beforeEach(() => {
       jest.mock('@salto-io/suitecloud-cli', () => undefined, { virtual: true })
       suiteAppClientValidateMock.mockReset()
@@ -153,6 +155,7 @@ describe('NetsuiteAdapter creator', () => {
 
   describe('client creation', () => {
     it('should create the client correctly', () => {
+      jest.spyOn(SdfClient.prototype, 'getCredentials').mockReturnValue({ accountId: 'someId' } as SdfCredentials)
       adapter.operations({
         credentials,
         config,

@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import { creds, CredsLease } from '@salto-io/e2e-credentials-store'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import Bottleneck from 'bottleneck'
-import { Credentials } from '../src/client/credentials'
+import { Credentials, toCredentialsAccountId } from '../src/client/credentials'
 import SdfClient from '../src/client/sdf_client'
 import NetsuiteAdapter, { NetsuiteAdapterParams } from '../src/adapter'
 import { NetsuiteConfig } from '../src/config'
@@ -43,7 +43,7 @@ export const realAdapter = (
 ): { client: NetsuiteClient; adapter: NetsuiteAdapter } => {
   const netsuiteCredentials = {
     ...credentials,
-    accountId: credentials.accountId.toUpperCase().replace('-', '_'),
+    accountId: toCredentialsAccountId(credentials.accountId),
   }
   const globalLimiter = new Bottleneck({ maxConcurrent: 4 })
   const client = (adapterParams && adapterParams.client)

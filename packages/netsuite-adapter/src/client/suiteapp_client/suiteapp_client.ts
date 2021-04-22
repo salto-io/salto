@@ -26,7 +26,7 @@ import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDe
   RESTLET_RESULTS_SCHEMA, SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA,
   SuiteAppClientParameters, SuiteQLResults, SUITE_QL_RESULTS_SCHEMA, SystemInformation,
   SYSTEM_INFORMATION_SCHEME } from './types'
-import { SuiteAppCredentials } from '../credentials'
+import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
 import { DEFAULT_CONCURRENCY } from '../../config'
 import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
 import SoapClient from './soap_client/soap_client'
@@ -66,7 +66,7 @@ export default class SuiteAppClient {
     })
     this.callsLimiter = fn => params.globalLimiter.schedule(() => limiter.schedule(fn))
 
-    const accountIdUrl = params.credentials.accountId.replace('_', '-')
+    const accountIdUrl = toUrlAccountId(params.credentials.accountId)
     this.suiteQLUrl = new URL(`https://${accountIdUrl}.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql`)
     this.restletUrl = new URL(`https://${accountIdUrl}.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet`)
 

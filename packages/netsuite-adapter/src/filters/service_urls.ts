@@ -13,21 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export type SuiteAppCredentials = {
-  accountId: string
-  suiteAppTokenId: string
-  suiteAppTokenSecret: string
-}
+import { FilterCreator } from '../filter'
+import setFileCabinetUrls from '../service_url/file_cabinet'
 
-export type SdfCredentials = {
-  accountId: string
-  tokenId: string
-  tokenSecret: string
-}
+const SERVICE_URL_SETTERS = [
+  setFileCabinetUrls,
+]
 
-export type Credentials = SdfCredentials & Partial<SuiteAppCredentials>
+const filterCreator: FilterCreator = () => ({
+  onFetch: async ({ elements, client }) => {
+    if (!client.isSuiteAppConfigured()) {
+      return
+    }
+    await Promise.all(SERVICE_URL_SETTERS.map(setter => setter(elements, client)))
+  },
+})
 
-export const toUrlAccountId = (accountId: string): string => accountId.toLowerCase().replace('_', '-')
-
-// accountId must be uppercased as described in https://github.com/oracle/netsuite-suitecloud-sdk/issues/140
-export const toCredentialsAccountId = (accountId: string): string => accountId.toUpperCase().replace('-', '_')
+export default filterCreator

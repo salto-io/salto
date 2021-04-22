@@ -18,6 +18,7 @@ import filterCreator from '../../src/filters/add_parent_folder'
 import { fileCabinetTypes } from '../../src/types'
 import { PATH, FILE } from '../../src/constants'
 import { OnFetchParameters } from '../../src/filter'
+import NetsuiteClient from '../../src/client/client'
 
 describe('add_parent_folder filter', () => {
   let instance: InstanceElement
@@ -31,6 +32,7 @@ describe('add_parent_folder filter', () => {
 
     onFetchParameters = {
       elements: [instance],
+      client: {} as NetsuiteClient,
       elementsSourceIndex: { getIndex: () => Promise.resolve({}) },
       isPartial: false,
     }

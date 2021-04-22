@@ -197,6 +197,10 @@ export default class SdfClient {
     return Promise.resolve(netsuiteClient.credentials.accountId)
   }
 
+  public getCredentials(): Readonly<SdfCredentials> {
+    return this.credentials
+  }
+
   private static initCommandActionExecutor(executionPath: string): CommandActionExecutor {
     return new CommandActionExecutor({
       executionPath,

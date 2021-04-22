@@ -110,329 +110,15 @@ const MAX_DEPLOYABLE_FILE_SIZE = 10 * 1024 * 1024
 const DEPLOY_CHUNK_SIZE = 50
 
 
-const queryFolders = async (suiteAppClient: SuiteAppClient):
-Promise<FolderResult[]> => {
-  const foldersResults = await suiteAppClient.runSuiteQL(`SELECT name, id, bundleable, isinactive, isprivate, description, parent 
-    FROM mediaitemfolder`)
-
-  if (foldersResults === undefined) {
-    throw new Error('Failed to list folders')
-  }
-
-  const ajv = new Ajv({ allErrors: true, strict: false })
-  if (!ajv.validate<FolderResult[]>(FOLDERS_SCHEMA, foldersResults)) {
-    log.error(`Got invalid results from listing folders: ${ajv.errorsText()}`)
-    throw new Error('Failed to list folders')
-  }
-
-  return foldersResults
-}
-
-const queryFiles = async (suiteAppClient: SuiteAppClient):
-Promise<FileResult[]> => {
-  const filesResults = await suiteAppClient.runSuiteQL(`SELECT name, id, filesize, bundleable, isinactive, isonline, addtimestamptourl, hideinbundle, description, folder 
-    FROM file`)
-
-  if (filesResults === undefined) {
-    throw new Error('Failed to list files')
-  }
-
-  const ajv = new Ajv({ allErrors: true, strict: false })
-  if (!ajv.validate<FileResult[]>(FILES_SCHEMA, filesResults)) {
-    log.error(`Got invalid results from listing files: ${ajv.errorsText()}`)
-    throw new Error('Failed to list files')
-  }
-
-  return filesResults
-}
-
-const getFullPath = (folder: FolderResult, idToFolder: Record<string, FolderResult>):
-  string[] => {
-  if (folder.parent === undefined) {
-    return [folder.name]
-  }
-  return [...getFullPath(idToFolder[folder.parent], idToFolder), folder.name]
-}
-
-export const importFileCabinet = async (suiteAppClient: SuiteAppClient, query: NetsuiteQuery):
-Promise<ImportFileCabinetResult> => {
-  if (!query.areSomeFilesMatch()) {
-    return { elements: [], failedPaths: [] }
-  }
-  const [filesResults, foldersResults] = await Promise.all([
-    queryFiles(suiteAppClient),
-    queryFolders(suiteAppClient),
-  ])
-
-  const idToFolder = _.keyBy(foldersResults, folder => folder.id)
-
-  const foldersCustomizationInfo = foldersResults.map(folder => ({
-    path: getFullPath(folder, idToFolder),
-    typeName: 'folder',
-    values: {
-      description: folder.description ?? '',
-      bundleable: folder.bundleable ?? 'F',
-      isinactive: folder.isinactive,
-      isprivate: folder.isprivate,
-    },
-  })).filter(folder => query.isFileMatch(`/${folder.path.join('/')}`))
-
-  const filesCustomizationInfoWithoutContent = filesResults.map(file => ({
-    path: [...getFullPath(idToFolder[file.folder], idToFolder), file.name],
-    typeName: 'file',
-    values: {
-      description: file.description ?? '',
-      bundleable: file.bundleable ?? 'F',
-      isinactive: file.isinactive,
-      availablewithoutlogin: file.isonline,
-      generateurltimestamp: file.addtimestamptourl,
-      hideinbundle: file.hideinbundle,
-    },
-    id: file.id,
-    size: parseInt(file.filesize, 10),
-  })).filter(file => query.isFileMatch(`/${file.path.join('/')}`))
-
-  const fileChunks = chunks.weightedChunks(
-    filesCustomizationInfoWithoutContent,
-    FILES_CHUNK_SIZE,
-    file => file.size
-  )
-
-  const filesContent = (await Promise.all(
-    fileChunks.map(
-      async (fileChunk, i) => {
-        if (fileChunk[0].size > FILES_CHUNK_SIZE) {
-          const id = parseInt(fileChunk[0].id, 10)
-          log.debug(`File with id ${id} is too big to fetch via Restlet (${fileChunk[0].size}), using SOAP API`)
-          return suiteAppClient.readLargeFile(id)
-        }
-
-        const results = await suiteAppClient.readFiles(fileChunk.map(f => parseInt(f.id, 10)))
-        if (results === undefined) {
-          throw new Error('Request for reading files from the file cabinet failed')
-        }
-        log.debug(`Finished Reading files chunk ${i + 1}/${fileChunks.length} with ${fileChunk.length} files`)
-
-        return results && Promise.all(results.map(async (content, index) => {
-          if (!(content instanceof ReadFileEncodingError)) {
-            return content
-          }
-
-          const id = parseInt(fileChunk[index].id, 10)
-          log.debug(`Received file encoding error for id ${id}. Fallback to SOAP request`)
-          return suiteAppClient.readLargeFile(id)
-        }))
-      }
-    )
-  )).flat()
-
-  const failedPaths: string[][] = []
-  const filesCustomizationInfo = filesCustomizationInfoWithoutContent.map((file, index) => {
-    if (!(filesContent[index] instanceof Buffer)) {
-      log.warn(`Failed reading file /${file.path.join('/')} with id ${file.id}`)
-      failedPaths.push(file.path)
-      return undefined
-    }
-    return {
-      path: file.path,
-      typeName: 'file',
-      fileContent: filesContent[index],
-      values: file.values,
-    }
-  }).filter(values.isDefined)
-
-  return {
-    elements: [...foldersCustomizationInfo, ...filesCustomizationInfo].filter(file => query.isFileMatch(`/${file.path.join('/')}`)),
-    failedPaths: failedPaths.map(fileCabinetPath => `/${fileCabinetPath.join('/')}`),
-  }
-}
-
-const generatePathToIdMap = async (suiteAppClient: SuiteAppClient):
-  Promise<Record<string, number>> => {
-  const files = await queryFiles(suiteAppClient)
-  const folders = await queryFolders(suiteAppClient)
-  const idToFolder = _.keyBy(folders, folder => folder.id)
-  return Object.fromEntries([
-    ...files.map(file => [`/${[...getFullPath(idToFolder[file.folder], idToFolder), file.name].join('/')}`, parseInt(file.id, 10)]),
-    ...folders.map(folder => [`/${getFullPath(folder, idToFolder).join('/')}`, parseInt(folder.id, 10)]),
-  ])
+export type SuiteAppFileCabinetOperations = {
+  importFileCabinet: (query: NetsuiteQuery) => Promise<ImportFileCabinetResult>
+  getPathToIdMap: () => Promise<Record<string, number>>
+  deploy: (changes: ReadonlyArray<Change<InstanceElement>>, type: DeployType)
+    => Promise<DeployResult>
 }
 
 const getContent = (content: string | StaticFile): Buffer =>
   (content instanceof StaticFile ? content.content : Buffer.from(content)) ?? Buffer.from('')
-
-const convertToFileCabinetDetails = (
-  change: Change<InstanceElement>,
-  pathToId: Record<string, number>
-): FileCabinetInstanceDetails | Error => {
-  const instance = getChangeElement(change)
-  const dirname = path.dirname(instance.value.path)
-  if (dirname !== '/' && !(dirname in pathToId)) {
-    return new Error(`Directory ${dirname} was not found when attempting to deploy a file with path ${instance.value.path}`)
-  }
-
-  return isFileInstance(instance)
-    ? {
-      type: 'file',
-      path: instance.value.path,
-      folder: pathToId[dirname],
-      bundleable: instance.value.bundleable ?? false,
-      isInactive: instance.value.isinactive ?? false,
-      isOnline: instance.value.availablewithoutlogin ?? false,
-      hideInBundle: instance.value.hideinbundle ?? false,
-      content: getContent(instance.value.content),
-      description: instance.value.description ?? '',
-    }
-    : {
-      type: 'folder',
-      path: instance.value.path,
-      parent: dirname !== '/' ? pathToId[dirname] : undefined,
-      bundleable: instance.value.bundleable ?? false,
-      isInactive: instance.value.isinactive ?? false,
-      isPrivate: instance.value.isprivate ?? false,
-      description: instance.value.description ?? '',
-    }
-}
-
-const convertToExistingFileCabinetDetails = (
-  change: Change<InstanceElement>,
-  pathToId: Record<string, number>
-): ExistingFileCabinetInstanceDetails | Error => {
-  const details = convertToFileCabinetDetails(change, pathToId)
-  if (details instanceof Error) {
-    return details
-  }
-  const instance = getChangeElement(change)
-  if (pathToId[instance.value.path] === undefined) {
-    log.warn(`Failed to find the internal id of the file ${instance.value.path}`)
-    return new Error(`Failed to find the internal id of the file ${instance.value.path}`)
-  }
-  return { ...details, id: pathToId[instance.value.path] }
-}
-
-const deployInstances = async (
-  instances: FileCabinetInstanceDetails[],
-  type: DeployType,
-  suiteAppClient: SuiteAppClient,
-): Promise<(number | Error)[]> => {
-  if (type === 'add') {
-    return suiteAppClient.addFileCabinetInstances(instances)
-  }
-  if (type === 'delete') {
-    return suiteAppClient.deleteFileCabinetInstances(
-      instances as ExistingFileCabinetInstanceDetails[]
-    )
-  }
-  return suiteAppClient.updateFileCabinetInstances(
-    instances as ExistingFileCabinetInstanceDetails[]
-  )
-}
-
-const deployChunk = async (
-  suiteAppClient: SuiteAppClient,
-  chunk: ReadonlyArray<Change<InstanceElement>>,
-  pathToId: Record<string, number>,
-  type: DeployType
-): Promise<DeployResult> => {
-  log.debug(`Deploying chunk of ${chunk.length} file changes`)
-
-  try {
-    const instancesDetails = chunk.map(
-      change => ({
-        details: type === 'add' ? convertToFileCabinetDetails(change, pathToId) : convertToExistingFileCabinetDetails(change, pathToId),
-        change,
-      })
-    )
-
-    const [errorsInstances, validInstances] = _.partition(
-      instancesDetails,
-      ({ details }) => details instanceof Error,
-    )
-
-    const deployResults = await deployInstances(validInstances.map(
-      ({ details }) => details as FileCabinetInstanceDetails
-    ), type, suiteAppClient)
-
-    log.debug(`Deployed chunk of ${chunk.length} file changes`)
-
-    const [deployErrors, deployChanges] = _(deployResults)
-      .map((res, index) => ({ res, change: validInstances[index].change }))
-      .partition(({ res }) => res instanceof Error)
-      .value()
-
-    deployChanges.forEach(deployedChange => {
-      pathToId[getChangeElement(deployedChange.change).value.path] = deployedChange.res as number
-    })
-
-    return {
-      errors: [
-        ...deployErrors.map(({ res }) => res as Error),
-        ...errorsInstances.map(({ details }) => details as Error),
-      ],
-      appliedChanges: deployChanges.map(({ change }) => change),
-    }
-  } catch (e) {
-    return { errors: [e], appliedChanges: [] }
-  }
-}
-
-const deployChanges = async (
-  suiteAppClient: SuiteAppClient,
-  changes: ReadonlyArray<Change<InstanceElement>>,
-  pathToId: Record<string, number>,
-  type: DeployType): Promise<DeployResult> => {
-  const deployChunkResults = await Promise.all(
-    _.chunk(changes, DEPLOY_CHUNK_SIZE)
-      .map(chunk => deployChunk(suiteAppClient, chunk, pathToId, type))
-  )
-  return {
-    appliedChanges: deployChunkResults
-      .flatMap(deployChunkResult => deployChunkResult.appliedChanges),
-    errors: deployChunkResults.flatMap(deployChunkResult => deployChunkResult.errors),
-  }
-}
-
-const deployAdditionsOrDeletions = async (
-  suiteAppClient: SuiteAppClient,
-  changes: ReadonlyArray<Change<InstanceElement>>,
-  pathToId: Record<string, number>,
-  type: 'add' | 'delete'
-): Promise<DeployResult> => {
-  const changesGroups = _(changes)
-    .groupBy(change => getChangeElement(change).value.path.split('/').length)
-    .entries()
-    .sortBy(([depth]) => depth)
-    .value()
-
-  const orderedChangesGroups = type === 'delete' ? changesGroups.reverse() : changesGroups
-
-  const deployResults = await promises.array.series(orderedChangesGroups
-    .map(([depth, group]) => () => {
-      if (type === 'delete') {
-        log.debug(`Deleting ${group.length} files with depth of ${depth}`)
-      } else {
-        log.debug(`Deploying ${group.length} new files with depth of ${depth}`)
-      }
-
-      return deployChanges(suiteAppClient, group, pathToId, type)
-    }))
-  return {
-    appliedChanges: deployResults.flatMap(deployResult => deployResult.appliedChanges),
-    errors: deployResults.flatMap(deployResult => deployResult.errors),
-  }
-}
-
-export const deploy = async (
-  suiteAppClient: SuiteAppClient,
-  changes: ReadonlyArray<Change<InstanceElement>>,
-  type: DeployType
-): Promise<DeployResult> => {
-  const pathToId = await generatePathToIdMap(suiteAppClient)
-
-  return type === 'update'
-    ? deployChanges(suiteAppClient, changes, pathToId, 'update')
-    : deployAdditionsOrDeletions(suiteAppClient, changes, pathToId, type)
-}
 
 export const isChangeDeployable = (
   change: Change
@@ -448,8 +134,8 @@ export const isChangeDeployable = (
 
   // SuiteApp can't modify files bigger than 10mb
   if (isAdditionOrModificationChange(change)
-    && isFileInstance(changedElement)
-    && getContent(changedElement.value.content).toString('base64').length > MAX_DEPLOYABLE_FILE_SIZE) {
+  && isFileInstance(changedElement)
+  && getContent(changedElement.value.content).toString('base64').length > MAX_DEPLOYABLE_FILE_SIZE) {
     return false
   }
 
@@ -462,4 +148,342 @@ export const isChangeDeployable = (
   }
 
   return true
+}
+
+export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClient):
+SuiteAppFileCabinetOperations => {
+  let queryFoldersResults: FolderResult[]
+  let queryFilesResults: FileResult[]
+  let pathToIdResults: Record<string, number>
+
+
+  const queryFolders = async (): Promise<FolderResult[]> => {
+    if (queryFoldersResults === undefined) {
+      const foldersResults = await suiteAppClient.runSuiteQL(`SELECT name, id, bundleable, isinactive, isprivate, description, parent 
+      FROM mediaitemfolder`)
+
+      if (foldersResults === undefined) {
+        throw new Error('Failed to list folders')
+      }
+
+      const ajv = new Ajv({ allErrors: true, strict: false })
+      if (!ajv.validate<FolderResult[]>(FOLDERS_SCHEMA, foldersResults)) {
+        log.error(`Got invalid results from listing folders: ${ajv.errorsText()}`)
+        throw new Error('Failed to list folders')
+      }
+      queryFoldersResults = foldersResults
+    }
+
+    return queryFoldersResults
+  }
+
+  const queryFiles = async ():
+Promise<FileResult[]> => {
+    if (queryFoldersResults === undefined) {
+      const filesResults = await suiteAppClient.runSuiteQL(`SELECT name, id, filesize, bundleable, isinactive, isonline, addtimestamptourl, hideinbundle, description, folder 
+    FROM file`)
+
+      if (filesResults === undefined) {
+        throw new Error('Failed to list files')
+      }
+
+      const ajv = new Ajv({ allErrors: true, strict: false })
+      if (!ajv.validate<FileResult[]>(FILES_SCHEMA, filesResults)) {
+        log.error(`Got invalid results from listing files: ${ajv.errorsText()}`)
+        throw new Error('Failed to list files')
+      }
+
+      queryFilesResults = filesResults
+    }
+
+    return queryFilesResults
+  }
+
+  const getFullPath = (folder: FolderResult, idToFolder: Record<string, FolderResult>):
+  string[] => {
+    if (folder.parent === undefined) {
+      return [folder.name]
+    }
+    return [...getFullPath(idToFolder[folder.parent], idToFolder), folder.name]
+  }
+
+  const importFileCabinet = async (query: NetsuiteQuery): Promise<ImportFileCabinetResult> => {
+    if (!query.areSomeFilesMatch()) {
+      return { elements: [], failedPaths: [] }
+    }
+    const [filesResults, foldersResults] = await Promise.all([
+      queryFiles(),
+      queryFolders(),
+    ])
+
+    const idToFolder = _.keyBy(foldersResults, folder => folder.id)
+
+    const foldersCustomizationInfo = foldersResults.map(folder => ({
+      path: getFullPath(folder, idToFolder),
+      typeName: 'folder',
+      values: {
+        description: folder.description ?? '',
+        bundleable: folder.bundleable ?? 'F',
+        isinactive: folder.isinactive,
+        isprivate: folder.isprivate,
+      },
+    })).filter(folder => query.isFileMatch(`/${folder.path.join('/')}`))
+
+    const filesCustomizationInfoWithoutContent = filesResults.map(file => ({
+      path: [...getFullPath(idToFolder[file.folder], idToFolder), file.name],
+      typeName: 'file',
+      values: {
+        description: file.description ?? '',
+        bundleable: file.bundleable ?? 'F',
+        isinactive: file.isinactive,
+        availablewithoutlogin: file.isonline,
+        generateurltimestamp: file.addtimestamptourl,
+        hideinbundle: file.hideinbundle,
+      },
+      id: file.id,
+      size: parseInt(file.filesize, 10),
+    })).filter(file => query.isFileMatch(`/${file.path.join('/')}`))
+
+    const fileChunks = chunks.weightedChunks(
+      filesCustomizationInfoWithoutContent,
+      FILES_CHUNK_SIZE,
+      file => file.size
+    )
+
+    const filesContent = (await Promise.all(
+      fileChunks.map(
+        async (fileChunk, i) => {
+          if (fileChunk[0].size > FILES_CHUNK_SIZE) {
+            const id = parseInt(fileChunk[0].id, 10)
+            log.debug(`File with id ${id} is too big to fetch via Restlet (${fileChunk[0].size}), using SOAP API`)
+            return suiteAppClient.readLargeFile(id)
+          }
+
+          const results = await suiteAppClient.readFiles(fileChunk.map(f => parseInt(f.id, 10)))
+          if (results === undefined) {
+            throw new Error('Request for reading files from the file cabinet failed')
+          }
+          log.debug(`Finished Reading files chunk ${i + 1}/${fileChunks.length} with ${fileChunk.length} files`)
+
+          return results && Promise.all(results.map(async (content, index) => {
+            if (!(content instanceof ReadFileEncodingError)) {
+              return content
+            }
+
+            const id = parseInt(fileChunk[index].id, 10)
+            log.debug(`Received file encoding error for id ${id}. Fallback to SOAP request`)
+            return suiteAppClient.readLargeFile(id)
+          }))
+        }
+      )
+    )).flat()
+
+    const failedPaths: string[][] = []
+    const filesCustomizationInfo = filesCustomizationInfoWithoutContent.map((file, index) => {
+      if (!(filesContent[index] instanceof Buffer)) {
+        log.warn(`Failed reading file /${file.path.join('/')} with id ${file.id}`)
+        failedPaths.push(file.path)
+        return undefined
+      }
+      return {
+        path: file.path,
+        typeName: 'file',
+        fileContent: filesContent[index],
+        values: file.values,
+      }
+    }).filter(values.isDefined)
+
+    return {
+      elements: [...foldersCustomizationInfo, ...filesCustomizationInfo].filter(file => query.isFileMatch(`/${file.path.join('/')}`)),
+      failedPaths: failedPaths.map(fileCabinetPath => `/${fileCabinetPath.join('/')}`),
+    }
+  }
+
+  const getPathToIdMap = async ():
+  Promise<Record<string, number>> => {
+    if (pathToIdResults === undefined) {
+      const files = await queryFiles()
+      const folders = await queryFolders()
+      const idToFolder = _.keyBy(folders, folder => folder.id)
+      pathToIdResults = Object.fromEntries([
+        ...files.map(file => [`/${[...getFullPath(idToFolder[file.folder], idToFolder), file.name].join('/')}`, parseInt(file.id, 10)]),
+        ...folders.map(folder => [`/${getFullPath(folder, idToFolder).join('/')}`, parseInt(folder.id, 10)]),
+      ])
+    }
+    return pathToIdResults
+  }
+
+  const convertToFileCabinetDetails = (
+    change: Change<InstanceElement>,
+    pathToId: Record<string, number>
+  ): FileCabinetInstanceDetails | Error => {
+    const instance = getChangeElement(change)
+    const dirname = path.dirname(instance.value.path)
+    if (dirname !== '/' && !(dirname in pathToId)) {
+      return new Error(`Directory ${dirname} was not found when attempting to deploy a file with path ${instance.value.path}`)
+    }
+
+    return isFileInstance(instance)
+      ? {
+        type: 'file',
+        path: instance.value.path,
+        folder: pathToId[dirname],
+        bundleable: instance.value.bundleable ?? false,
+        isInactive: instance.value.isinactive ?? false,
+        isOnline: instance.value.availablewithoutlogin ?? false,
+        hideInBundle: instance.value.hideinbundle ?? false,
+        content: getContent(instance.value.content),
+        description: instance.value.description ?? '',
+      }
+      : {
+        type: 'folder',
+        path: instance.value.path,
+        parent: dirname !== '/' ? pathToId[dirname] : undefined,
+        bundleable: instance.value.bundleable ?? false,
+        isInactive: instance.value.isinactive ?? false,
+        isPrivate: instance.value.isprivate ?? false,
+        description: instance.value.description ?? '',
+      }
+  }
+
+  const convertToExistingFileCabinetDetails = (
+    change: Change<InstanceElement>,
+    pathToId: Record<string, number>
+  ): ExistingFileCabinetInstanceDetails | Error => {
+    const details = convertToFileCabinetDetails(change, pathToId)
+    if (details instanceof Error) {
+      return details
+    }
+    const instance = getChangeElement(change)
+    if (pathToId[instance.value.path] === undefined) {
+      log.warn(`Failed to find the internal id of the file ${instance.value.path}`)
+      return new Error(`Failed to find the internal id of the file ${instance.value.path}`)
+    }
+    return { ...details, id: pathToId[instance.value.path] }
+  }
+
+  const deployInstances = async (
+    instances: FileCabinetInstanceDetails[],
+    type: DeployType,
+  ): Promise<(number | Error)[]> => {
+    if (type === 'add') {
+      return suiteAppClient.addFileCabinetInstances(instances)
+    }
+    if (type === 'delete') {
+      return suiteAppClient.deleteFileCabinetInstances(
+      instances as ExistingFileCabinetInstanceDetails[]
+      )
+    }
+    return suiteAppClient.updateFileCabinetInstances(
+    instances as ExistingFileCabinetInstanceDetails[]
+    )
+  }
+
+  const deployChunk = async (
+    chunk: ReadonlyArray<Change<InstanceElement>>,
+    pathToId: Record<string, number>,
+    type: DeployType
+  ): Promise<DeployResult> => {
+    log.debug(`Deploying chunk of ${chunk.length} file changes`)
+
+    try {
+      const instancesDetails = chunk.map(
+        change => ({
+          details: type === 'add' ? convertToFileCabinetDetails(change, pathToId) : convertToExistingFileCabinetDetails(change, pathToId),
+          change,
+        })
+      )
+
+      const [errorsInstances, validInstances] = _.partition(
+        instancesDetails,
+        ({ details }) => details instanceof Error,
+      )
+
+      const deployResults = await deployInstances(validInstances.map(
+        ({ details }) => details as FileCabinetInstanceDetails
+      ), type)
+
+      log.debug(`Deployed chunk of ${chunk.length} file changes`)
+
+      const [deployErrors, deployChanges] = _(deployResults)
+        .map((res, index) => ({ res, change: validInstances[index].change }))
+        .partition(({ res }) => res instanceof Error)
+        .value()
+
+      deployChanges.forEach(deployedChange => {
+        pathToId[getChangeElement(deployedChange.change).value.path] = deployedChange.res as number
+      })
+
+      return {
+        errors: [
+          ...deployErrors.map(({ res }) => res as Error),
+          ...errorsInstances.map(({ details }) => details as Error),
+        ],
+        appliedChanges: deployChanges.map(({ change }) => change),
+      }
+    } catch (e) {
+      return { errors: [e], appliedChanges: [] }
+    }
+  }
+
+  const deployChanges = async (
+    changes: ReadonlyArray<Change<InstanceElement>>,
+    pathToId: Record<string, number>,
+    type: DeployType): Promise<DeployResult> => {
+    const deployChunkResults = await Promise.all(
+      _.chunk(changes, DEPLOY_CHUNK_SIZE)
+        .map(chunk => deployChunk(chunk, pathToId, type))
+    )
+    return {
+      appliedChanges: deployChunkResults
+        .flatMap(deployChunkResult => deployChunkResult.appliedChanges),
+      errors: deployChunkResults.flatMap(deployChunkResult => deployChunkResult.errors),
+    }
+  }
+
+  const deployAdditionsOrDeletions = async (
+    changes: ReadonlyArray<Change<InstanceElement>>,
+    pathToId: Record<string, number>,
+    type: 'add' | 'delete'
+  ): Promise<DeployResult> => {
+    const changesGroups = _(changes)
+      .groupBy(change => getChangeElement(change).value.path.split('/').length)
+      .entries()
+      .sortBy(([depth]) => depth)
+      .value()
+
+    const orderedChangesGroups = type === 'delete' ? changesGroups.reverse() : changesGroups
+
+    const deployResults = await promises.array.series(orderedChangesGroups
+      .map(([depth, group]) => () => {
+        if (type === 'delete') {
+          log.debug(`Deleting ${group.length} files with depth of ${depth}`)
+        } else {
+          log.debug(`Deploying ${group.length} new files with depth of ${depth}`)
+        }
+
+        return deployChanges(group, pathToId, type)
+      }))
+    return {
+      appliedChanges: deployResults.flatMap(deployResult => deployResult.appliedChanges),
+      errors: deployResults.flatMap(deployResult => deployResult.errors),
+    }
+  }
+
+  const deploy = async (
+    changes: ReadonlyArray<Change<InstanceElement>>,
+    type: DeployType
+  ): Promise<DeployResult> => {
+    const pathToId = await getPathToIdMap()
+
+    return type === 'update'
+      ? deployChanges(changes, pathToId, 'update')
+      : deployAdditionsOrDeletions(changes, pathToId, type)
+  }
+
+  return {
+    importFileCabinet,
+    getPathToIdMap,
+    deploy,
+  }
 }

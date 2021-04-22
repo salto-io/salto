@@ -13,21 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export type SuiteAppCredentials = {
-  accountId: string
-  suiteAppTokenId: string
-  suiteAppTokenSecret: string
-}
 
-export type SdfCredentials = {
-  accountId: string
-  tokenId: string
-  tokenSecret: string
-}
+import { Element } from '@salto-io/adapter-api'
+import NetsuiteClient from '../client/client'
 
-export type Credentials = SdfCredentials & Partial<SuiteAppCredentials>
-
-export const toUrlAccountId = (accountId: string): string => accountId.toLowerCase().replace('_', '-')
-
-// accountId must be uppercased as described in https://github.com/oracle/netsuite-suitecloud-sdk/issues/140
-export const toCredentialsAccountId = (accountId: string): string => accountId.toUpperCase().replace('-', '_')
+export type ServiceUrlSetter = (elements: Element[], client: NetsuiteClient) => Promise<void>

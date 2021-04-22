@@ -84,6 +84,11 @@ export const deployActions = async (
         updatePlanElement(item, result.appliedChanges)
         await postDeployAction(result.appliedChanges)
         if (result.errors.length > 0) {
+          log.warn(
+            'Failed to deploy %s, errors: %s',
+            item.groupKey,
+            result.errors.map(err => err.stack ?? err.message).join('\n\n'),
+          )
           throw new Error(
             `Failed to deploy ${item.groupKey} with errors:\n${result.errors.join('\n')}`
           )

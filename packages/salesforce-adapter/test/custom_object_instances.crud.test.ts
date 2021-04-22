@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, BuiltinTypes, DeployResult, ReferenceExpression,
   isRemovalChange, getChangeElement, isInstanceElement, ChangeGroup, isModificationChange,
-  isAdditionChange, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
+  isAdditionChange, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, Change } from '@salto-io/adapter-api'
 import { BulkLoadOperation, BulkOptions, Record as SfRecord, Batch } from 'jsforce'
 import { EventEmitter } from 'events'
 import { Types } from '../src/transformers/transformer'
@@ -23,6 +24,7 @@ import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
+import { MockInterface } from './utils'
 
 describe('Custom Object Instances CRUD', () => {
   let adapter: SalesforceAdapter
@@ -173,7 +175,7 @@ describe('Custom Object Instances CRUD', () => {
   )
 
   describe('When adapter defined with dataManagement config', () => {
-    let connection: Connection
+    let connection: MockInterface<Connection>
     let mockBulkLoad: jest.Mock
     let partialBulkLoad: jest.Mock
     const errorMsgs = [
@@ -607,6 +609,49 @@ describe('Custom Object Instances CRUD', () => {
             // Should add result Id
             expect(anotherExistingInstanceChangeElement.value.Id).toBeDefined()
             expect(anotherExistingInstanceChangeElement.value.Id).toEqual('anotherQueryId')
+          })
+        })
+        describe('When called with a large number of new instances', () => {
+          beforeEach(async () => {
+            const createTestInstanceAddition = (idx: number): Change<InstanceElement> => ({
+              action: 'add',
+              data: {
+                after: new InstanceElement(
+                  `test${idx}`,
+                  customObject,
+                  {
+                    SaltoName: `name${idx}`,
+                    NumField: idx,
+                  },
+                ),
+              },
+            })
+            result = await adapter.deploy({
+              changeGroup: {
+                groupID: 'add_Test_instances',
+                changes: _.times(100, createTestInstanceAddition),
+              },
+            })
+          })
+          it('should not not exceed max query size', () => {
+            const queryLengths = connection.query.mock.calls.map(args => args[0].length)
+            expect(_.max(queryLengths)).toBeLessThanOrEqual(constants.MAX_QUERY_LENGTH)
+          })
+          it('should query all instances', () => {
+            const queries = connection.query.mock.calls.map(args => args[0])
+            _.times(100).forEach(idx => {
+              expect(queries).toContainEqual(
+                expect.stringMatching(
+                  new RegExp(`SELECT.*WHERE SaltoName IN.*'name${idx}'.*NumField IN.*${idx}(,|\\)).*`)
+                )
+              )
+            })
+          })
+          it('should call bulk insert once', () => {
+            expect(connection.bulk.load).toHaveBeenCalledTimes(1)
+            expect(connection.bulk.load).toHaveBeenCalledWith(
+              'Type', 'insert', expect.anything(), expect.anything()
+            )
           })
         })
       })

@@ -281,7 +281,7 @@ export const DEFAULT_MAX_CONCURRENT_API_REQUESTS = {
 }
 export const DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST = 2500
 export const DEFAULT_USE_OLD_PROFILES = false
-export const MAX_IDS_PER_INSTANCES_QUERY = 500
+export const MAX_QUERY_LENGTH = 2000
 
 // Metadata types
 export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'

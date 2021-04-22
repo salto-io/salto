@@ -42,6 +42,12 @@ const customRecordTypeCeoHandsOffPermittedRole = {
   consistentValue: 'CEO_HANDS_OFF',
 }
 
+const customRecordTypeBuyerPermittedRole = {
+  field: customrecordtype_permissions_permission.fields[PERMITTED_ROLE],
+  inconsistentValues: ['BUYER', 'CUSTOMROLEPURCHASING'],
+  consistentValue: 'BUYER',
+}
+
 const entryFormDiscountItemRecordType = {
   field: entryForm.fields[RECORD_TYPE],
   inconsistentValues: ['DISCOUNTITEM', 'MARKUPITEM'],
@@ -62,7 +68,7 @@ const entryFormJobRecordType = {
 
 const entryFormServiceItemRecordType = {
   field: entryForm.fields[RECORD_TYPE],
-  inconsistentValues: ['OTHERCHARGEPURCHASEITEM', 'OTHERCHARGERESALEITEM', 'NONINVENTORYSALEITEM', 'SERVICEPURCHASEITEM', 'GIFTCERTIFICATEITEM', 'DOWNLOADITEM', 'SERVICERESALEITEM', 'OTHERCHARGEITEM', 'SERVICEITEM', 'NONINVENTORYPURCHASEITEM', 'OTHERCHARGESALEITEM', 'NONINVENTORYRESALEITEM', 'SERVICESALEITEM'],
+  inconsistentValues: ['OTHERCHARGEPURCHASEITEM', 'OTHERCHARGERESALEITEM', 'NONINVENTORYSALEITEM', 'SERVICEPURCHASEITEM', 'GIFTCERTIFICATEITEM', 'DOWNLOADITEM', 'SERVICERESALEITEM', 'OTHERCHARGEITEM', 'SERVICEITEM', 'NONINVENTORYPURCHASEITEM', 'OTHERCHARGESALEITEM', 'NONINVENTORYRESALEITEM', 'SERVICESALEITEM', 'NONINVENTORYITEM'],
   consistentValue: 'SERVICEITEM',
 }
 
@@ -76,6 +82,7 @@ const typeToFieldMappings: Record<string, InconsistentFieldMapping[]> = {
   [CUSTOM_RECORD_TYPE]: [
     customRecordTypeApClerkPermittedRole,
     customRecordTypeCeoHandsOffPermittedRole,
+    customRecordTypeBuyerPermittedRole,
   ],
   [ENTRY_FORM]: [
     entryFormDiscountItemRecordType,

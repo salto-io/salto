@@ -14,34 +14,12 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
+import { PLUGIN_TYPES, SCRIPT_TYPES } from '../../types'
 import { ChangedObject, TypeChangesDetector } from '../types'
 
 const log = logger(module)
 
-export const SCRIPT_TYPES = [
-  'bundleinstallationscript',
-  'clientscript',
-  'scheduledscript',
-  'workflowactionscript',
-  'suitelet',
-  'mapreducescript',
-  'massupdatescript',
-  'usereventscript',
-  'restlet',
-  'sdfinstallationscript',
-  'portlet',
-  'emailcaptureplugin',
-  'plugintype',
-  'customglplugin',
-  'customrecordactionscript',
-  'promotionsplugin',
-  'workbookbuilderplugin',
-  'bankstatementparserplugin',
-  'ficonnectivityplugin',
-  'fiparserplugin',
-  'datasetbuilderplugin',
-  'pluginimplementation',
-]
+export const SUPPORTED_TYPES = [...SCRIPT_TYPES, ...PLUGIN_TYPES, 'plugintype']
 
 const parseChanges = (queryName: string, changes?: Record<string, unknown>[]): ChangedObject[] => {
   if (changes === undefined) {
@@ -106,7 +84,7 @@ const changesDetector: TypeChangesDetector = {
     ])
 
     if (hasFieldChanges(scriptFieldsChanges)) {
-      return SCRIPT_TYPES.map(type => ({ type: 'type', name: type }))
+      return SUPPORTED_TYPES.map(type => ({ type: 'type', name: type }))
     }
 
     return [
@@ -114,7 +92,7 @@ const changesDetector: TypeChangesDetector = {
       ...parseChanges('script deployment', scriptDeploymentChanges),
     ]
   },
-  getTypes: () => SCRIPT_TYPES,
+  getTypes: () => SUPPORTED_TYPES,
 }
 
 export default changesDetector

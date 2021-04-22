@@ -228,3 +228,42 @@ export const getAllTypes = (): TypeElement[] => [
   ...Object.values(fileCabinetTypes),
   ...Object.values(fieldTypes),
 ]
+
+export const SCRIPT_TYPES = [
+  'bundleinstallationscript',
+  'clientscript',
+  'scheduledscript',
+  'workflowactionscript',
+  'suitelet',
+  'mapreducescript',
+  'massupdatescript',
+  'usereventscript',
+  'restlet',
+  'sdfinstallationscript',
+  'portlet',
+  'customrecordactionscript',
+]
+
+export const PLUGIN_TYPES = [
+  'emailcaptureplugin',
+  'customglplugin',
+  'datasetbuilderplugin',
+  'bankstatementparserplugin',
+  'ficonnectivityplugin',
+  'fiparserplugin',
+  'promotionsplugin',
+  'workbookbuilderplugin',
+  'pluginimplementation',
+]
+
+export const FIELD_TYPES = [
+  'entitycustomfield',
+  'transactionbodycustomfield',
+  'transactioncolumncustomfield',
+  'itemcustomfield',
+  'othercustomfield',
+  'itemoptioncustomfield',
+  'itemnumbercustomfield',
+  'crmcustomfield',
+  'customfield',
+]

@@ -1,0 +1,87 @@
+/*
+*                      Copyright 2021 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+
+import { CORE_ANNOTATIONS, isObjectType } from '@salto-io/adapter-api'
+import { ServiceUrlSetter } from './types'
+
+const TYPE_TO_URL: Record<string, string> = {
+  files: 'app/common/media/mediaitemfolders.nl',
+  folders: 'app/common/media/mediaitemfolders.nl',
+  addressForm: 'app/common/custom/custaddressentryforms.nl',
+  advancedpdftemplate: 'app/common/custom/pdftemplates.nl?sc=-90',
+  bundleinstallationscript: 'app/common/scripting/scriptlist.nl?scripttype=BUNDLEINSTALLATION&apiversion=&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  clientscript: 'app/common/scripting/scriptlist.nl?scripttype=CLIENT&apiversion=&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  mapreducescript: 'app/common/scripting/scriptlist.nl?scripttype=MAPREDUCE&apiversion=&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  massupdatescript: 'app/common/scripting/scriptlist.nl?scripttype=MASSUPDATE&apiversion=&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  scheduledscript: 'app/common/scripting/scriptlist.nl?scripttype=SCHEDULED&apiversion=&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  sdfinstallationscript: 'app/common/scripting/scriptlist.nl?scripttype=SDFINSTALLATION&apiversion=&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  usereventscript: 'app/common/scripting/scriptlist.nl?scripttype=USEREVENT&apiversion=&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  workflowactionscript: 'app/common/scripting/scriptlist.nl?scripttype=ACTION&apiversion=&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  portlet: 'app/common/scripting/scriptlist.nl?scripttype=PORTLET&apiversion=&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  restlet: 'app/common/scripting/scriptlist.nl?scripttype=RESTLET&apiversion=&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  suitelet: 'app/common/scripting/scriptlist.nl?scripttype=SCRIPTLET&apiversion=&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  center: 'app/common/custom/custcenters.nl',
+  centercategory: 'app/common/custom/custcategories.nl',
+  centerlink: 'app/common/custom/custtasks.nl',
+  centertab: 'app/common/custom/custsections.nl',
+  crmcustomfield: 'app/common/custom/eventcustfields.nl?whence=',
+  customlist: 'app/common/custom/custlists.nl?whence=',
+  customrecordtype: 'app/common/custom/custrecords.nl?whence=',
+  customsegment: 'app/common/custom/segments/segments.nl?whence=',
+  customtransactiontype: 'app/common/custom/customtransactions.nl?whence=',
+  emailcaptureplugin: 'app/common/scripting/pluginlist.nl?scripttype=EMAILCAPTURE&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  customglplugin: 'app/common/scripting/pluginlist.nl?scripttype=CUSTOMGLLINES&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  datasetbuilderplugin: 'app/common/scripting/pluginlist.nl?scripttype=DATASETBUILDER&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  bankstatementparserplugin: 'app/common/scripting/pluginlist.nl?scripttype=BANKSTATEMENTPARSER&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  ficonnectivityplugin: 'app/common/scripting/pluginlist.nl?scripttype=FICONNECTIVITY&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  fiparserplugin: 'app/common/scripting/pluginlist.nl?scripttype=FIPARSER&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  workbookbuilderplugin: 'app/common/scripting/pluginlist.nl?scripttype=WORKBOOKBUILDER&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  pluginimplementation: 'app/common/scripting/pluginlist.nl?scripttype=&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&_csrf=AojhTU73ytHGABI4Ef4YZbn-QkSH0wGJjezesD8MUrTr5vLWA0g4lBIU62BZZ8Qi3mFJ8qcJSWu6b_uv7b4PJKg2WJf53xWJVGDeoBOBvE4Dim6B9fTCGCk-lqUEp8KSK4zXMfZJ3cZ9Gwhsh3la6p2BFu1TINH_rYuDqnkAFo4%3D&showall=F',
+  emailtemplate: 'app/crm/common/merge/emailtemplates.nl',
+  entitycustomfield: 'app/common/custom/entitycustfields.nl?whence=',
+  entryForm: 'app/common/custom/custentryforms.nl',
+  itemcustomfield: 'app/common/custom/itemcustfields.nl?whence=',
+  itemnumbercustomfield: 'app/common/custom/itemnumbercustfields.nl?whence=',
+  itemoptioncustomfield: 'app/common/custom/itemoptions.nl?whence=',
+  kpiscorecard: 'app/center/enhanced/kpireports.nl',
+  othercustomfield: 'app/common/custom/othercustfields.nl?whence=',
+  plugintype: 'app/common/scripting/plugintypelist.nl?whence=',
+  role: 'app/setup/rolelist.nl',
+  savedcsvimport: 'app/setup/assistants/nsimport/savedimports.nl',
+  savedsearch: 'app/common/search/savedsearchlist.nl',
+  secret: 'app/common/scripting/secrets/settings.nl',
+  sspapplication: 'app/common/scripting/webapplist.nl',
+  sublist: 'app/common/custom/customsublists.nl',
+  subtab: 'app/common/custom/custfieldtabs.nl',
+  transactionForm: 'app/common/custom/custforms.nl',
+  transactionbodycustomfield: 'app/common/custom/bodycustfields.nl',
+  transactioncolumncustomfield: 'app/common/custom/columncustfields.nl?whence=',
+  translationcollection: 'app/translations/ui/managetranslations.nl#/collections',
+  workflow: 'app/common/workflow/setup/workflowlist.nl',
+}
+
+const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
+  elements
+    .filter(isObjectType)
+    .forEach(element => {
+      const url = TYPE_TO_URL[element.elemID.name]
+      if (url !== undefined) {
+        element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, client.url).href
+      }
+    })
+}
+
+export default setServiceUrl

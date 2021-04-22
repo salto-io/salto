@@ -18,12 +18,12 @@ export const weightedChunks = <T>(
   size: number,
   weightFunc: (val: T) => number
 ): T[][] => {
-  const chunks: T[][] = [[]]
+  const chunks: T[][] = []
 
   values.reduce((chunkWeight, val) => {
     const valWeight = weightFunc(val)
 
-    if (valWeight + chunkWeight > size) {
+    if (valWeight + chunkWeight > size || chunks.length === 0) {
       chunks.push([val])
       return valWeight
     }

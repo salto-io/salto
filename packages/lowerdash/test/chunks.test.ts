@@ -16,8 +16,12 @@
 import { weightedChunks } from '../src/chunks'
 
 describe('weightedChunks', () => {
-  it('should split chunks correctly', () => {
+  it('should split chunks correctly when first chunk is smaller than max size', () => {
     const chunks = weightedChunks(['a', 'bb', 'cccc', 'dddddd', 'eeeeeeeeee'], 7, val => val.length)
     expect(chunks).toEqual([['a', 'bb', 'cccc'], ['dddddd'], ['eeeeeeeeee']])
+  })
+  it('should split chunks correctly when first chunk is larger than max size', () => {
+    const chunks = weightedChunks(['eeeeeeeeee', 'dddddd', 'cccc', 'bb', 'a'], 7, val => val.length)
+    expect(chunks).toEqual([['eeeeeeeeee'], ['dddddd'], ['cccc', 'bb', 'a']])
   })
 })

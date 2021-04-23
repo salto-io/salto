@@ -313,8 +313,8 @@ describe('adapter', () => {
               [FETCH_CONFIG]: {
                 includeTypes: [...Object.keys(DEFAULT_TYPES)].sort(),
                 serviceConnectionNames: {
-                  salesforce: 'sfdev1',
-                  netsuite: 'Test NetSuite account',
+                  salesforce: ['sfdev1'],
+                  netsuite: ['Test NetSuite account'],
                 },
               },
             }
@@ -327,13 +327,12 @@ describe('adapter', () => {
         })
         const currentAdapterElements = fetchResult.elements
         expect(adapterOperations.postFetch).toBeDefined()
-        const postFetchRes = await adapterOperations.postFetch({
+        await adapterOperations.postFetch({
           currentAdapterElements,
           elementsByAdapter: {
             salesforce: [fishCustomObject],
           },
         })
-        expect(postFetchRes).toBeTruthy()
         const recipeCodeWithRefs = currentAdapterElements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('workato.recipe__code.instance.pubsub_recipe_412'))
         expect(recipeCodeWithRefs).toBeDefined()
         const deps = recipeCodeWithRefs?.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]

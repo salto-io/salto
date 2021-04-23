@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, CORE_ANNOTATIONS, MapType, BuiltinTypes } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
-import { WORKATO, CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS } from './constants'
+import { WORKATO, CROSS_SERVICE_SUPPORTED_APPS } from './constants'
 
 const { createClientConfigType } = clientUtils
 const {
@@ -39,7 +39,7 @@ export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 export type WorkatoClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
 export type WorkatoFetchConfig = configUtils.UserFetchConfig & {
-  serviceConnectionNames?: Record<string, string>
+  serviceConnectionNames?: Record<string, string[]>
 }
 export type WorkatoApiConfig = configUtils.AdapterDuckTypeApiConfig
 
@@ -141,7 +141,7 @@ export const configType = new ObjectType({
     [FETCH_CONFIG]: {
       type: createUserFetchConfigType(
         WORKATO,
-        { serviceConnectionNames: { type: new MapType(BuiltinTypes.STRING) } },
+        { serviceConnectionNames: { type: new MapType(new ListType(BuiltinTypes.STRING)) } },
       ),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
@@ -181,14 +181,16 @@ export const validateFetchConfig = (
   adapterApiConfig: configUtils.AdapterApiConfig,
 ): void => {
   validateDuckTypeFetchConfig(fetchConfigPath, userFetchConfig, adapterApiConfig)
-  const supportedAdapters = Object.keys(CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS)
+  // TODO change to adapterTypes when allowing multiple adapters of the same type
+  const supportedAdapters = Object.keys(CROSS_SERVICE_SUPPORTED_APPS)
   const { serviceConnectionNames } = userFetchConfig
+
   if (serviceConnectionNames !== undefined) {
     const unsupportedServices = Object.keys(serviceConnectionNames).filter(
       adapterName => !supportedAdapters.includes(adapterName)
     )
     if (unsupportedServices.length > 0) {
-      throw Error(`Unsupported service names in ${fetchConfigPath}: ${unsupportedServices}. The supported services are: ${supportedAdapters}`)
+      throw Error(`Unsupported service names in ${fetchConfigPath}.serviceConnectionNames: ${unsupportedServices}. The supported services are: ${supportedAdapters}`)
     }
   }
 }

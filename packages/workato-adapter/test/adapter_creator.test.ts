@@ -124,8 +124,8 @@ describe('adapter creator', () => {
           fetch: {
             includeTypes: [],
             serviceConnectionNames: {
-              salesforce: 'abc',
-              unsupportedName: 'def',
+              salesforce: ['abc'],
+              unsupportedName: ['def'],
             },
           },
           apiDefinitions: {
@@ -140,7 +140,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toThrow(new Error('Unsupported service names in fetch: unsupportedName. The supported services are: salesforce,netsuite'))
+    })).toThrow(new Error('Unsupported service names in fetch.serviceConnectionNames: unsupportedName. The supported services are: salesforce,netsuite'))
   })
 
   it('should validate credentials using createConnection', async () => {

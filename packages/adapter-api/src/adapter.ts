@@ -65,7 +65,7 @@ export type DeployModifiers = {
 export type AdapterOperations = {
   fetch: (opts: FetchOptions) => Promise<FetchResult>
   deploy: (opts: DeployOptions) => Promise<DeployResult>
-  postFetch?: (opts: PostFetchOptions) => Promise<{ changed: boolean }>
+  postFetch?: (opts: PostFetchOptions) => Promise<void>
   deployModifiers?: DeployModifiers
 }
 

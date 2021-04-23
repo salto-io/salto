@@ -15,8 +15,10 @@
 */
 export const WORKATO = 'workato'
 
-// services supporting cross-service reference - mapping from salto name to workato name
-export const CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS: Record<string, string> = {
-  salesforce: 'salesforce',
-  netsuite: 'netsuite',
+export const SALESFORCE = 'salesforce'
+export const NETSUITE = 'netsuite'
+
+export const CROSS_SERVICE_SUPPORTED_APPS = {
+  [SALESFORCE]: ['salesforce', 'salesforce_secondary'],
+  [NETSUITE]: ['netsuite', 'netsuite_secondary'],
 }

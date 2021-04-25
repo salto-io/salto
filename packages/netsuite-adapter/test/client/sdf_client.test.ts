@@ -21,9 +21,16 @@ import mockClient, { DUMMY_CREDENTIALS } from './sdf_client'
 import {
   FILE_CABINET_PATH_SEPARATOR,
 } from '../../src/constants'
-import SdfClient, { ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, COMMANDS, FOLDER_ATTRIBUTES_FILE_SUFFIX } from '../../src/client/sdf_client'
+import SdfClient, {
+  ATTRIBUTES_FILE_SUFFIX,
+  ATTRIBUTES_FOLDER_NAME,
+  COMMANDS,
+  FOLDER_ATTRIBUTES_FILE_SUFFIX,
+  MINUTE_IN_MILLISECONDS,
+} from '../../src/client/sdf_client'
 import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../../src/client/types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
+import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
 
 
 const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')
@@ -128,6 +135,7 @@ jest.mock('@salto-io/lowerdash', () => ({
 }))
 
 const mockExecuteAction = jest.fn()
+const mockSetCommandTimeout = jest.fn()
 
 jest.mock('@salto-io/suitecloud-cli', () => ({
   ActionResultUtils: {
@@ -141,6 +149,9 @@ jest.mock('@salto-io/suitecloud-cli', () => ({
   CommandActionExecutor: jest.fn().mockImplementation(() => ({
     executeAction: mockExecuteAction,
   })),
+  SdkProperties: {
+    setCommandTimeout: jest.fn((...args) => mockSetCommandTimeout(...args)),
+  },
 }))
 
 describe('netsuite client', () => {
@@ -189,6 +200,12 @@ describe('netsuite client', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+  })
+
+  it('should set command timeout when initializing client', () => {
+    mockClient()
+    expect(mockSetCommandTimeout)
+      .toHaveBeenCalledWith(DEFAULT_COMMAND_TIMEOUT_IN_MINUTES * MINUTE_IN_MILLISECONDS)
   })
 
   describe('validateCredentials', () => {
@@ -461,60 +478,6 @@ describe('netsuite client', () => {
 
       expect(mockExecuteAction)
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
-    })
-
-    it('should fail to import type when it exceeds the configured timeout', async () => {
-      mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
-      mockExecuteAction.mockImplementation(async context => {
-        if (context.commandName === COMMANDS.LIST_OBJECTS) {
-          return Promise.resolve({
-            isSuccess: () => true,
-            data: instancesIds,
-          })
-        }
-        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
-          if (context.arguments.type === 'addressForm') {
-            await new Promise(resolve => setTimeout(resolve, 100))
-          }
-          return Promise.resolve({
-            isSuccess: () => true,
-            data: { failedImports: [] },
-          })
-        }
-        return Promise.resolve({ isSuccess: () => true })
-      })
-      const client = mockClient({ fetchAllTypesAtOnce: false, fetchTypeTimeoutInMinutes: 0.001 })
-      await expect(client.getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
-    })
-
-    it('should fail to import all types at once due to timeout and succeed type by type', async () => {
-      mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
-      mockExecuteAction.mockImplementation(async context => {
-        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
-          if (context.arguments.scriptid === 'ALL') {
-            await new Promise(resolve => setTimeout(resolve, 100))
-          } else {
-            await new Promise(resolve => setTimeout(resolve, 1))
-          }
-          return Promise.resolve({
-            isSuccess: () => true,
-            data: { failedImports: [] },
-          })
-        }
-        if (context.commandName === COMMANDS.LIST_OBJECTS) {
-          return Promise.resolve({ isSuccess: () => true, data: [{ scriptId: 'id', type: 'type' }] })
-        }
-        return Promise.resolve({ isSuccess: () => true })
-      })
-      const client = mockClient({ fetchAllTypesAtOnce: true, fetchTypeTimeoutInMinutes: 0.0001 })
-      const query = buildNetsuiteQuery({
-        types: {
-          addressForm: ['.*'],
-        },
-      })
-      const getCustomObjectsResult = await client.getCustomObjects(typeNames, query)
-      expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
-      expect(getCustomObjectsResult.failedTypeToInstances).toEqual({})
     })
 
     it('should succeed', async () => {

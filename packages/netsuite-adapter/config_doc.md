@@ -39,7 +39,7 @@ netsuite {
 | Name                           | Default when undefined  | Description
 | -------------------------------| ------------------------| -----------
 | fetchAllTypesAtOnce            | false                   | Attempt to fetch all configuration elements in a single SDF API call
-| fetchTypeTimeoutInMinutes      | 4                       | The max number of minutes a single type's chunk fetch can run
+| fetchTypeTimeoutInMinutes      | 4                       | The max number of minutes a single SDF command can run
 | maxItemsInImportObjectsRequest | 40                      | Limits the max number of requested items a single import-objects request
 | sdfConcurrencyLimit            | 4                       | Limits the max number of concurrent SDF API calls. The number should not exceed the concurrency limit enforced by the upstream service.
 

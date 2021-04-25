@@ -51,6 +51,8 @@ const clientConfigType = new ObjectType({
     [FETCH_TYPE_TIMEOUT_IN_MINUTES]: {
       type: BuiltinTypes.NUMBER,
       annotations: {
+        // We set DEFAULT_COMMAND_TIMEOUT_IN_MINUTES to FETCH_TYPE_TIMEOUT_IN_MINUTES since we did
+        // not want to have a disrupting change to existing WSs with renaming this annotation.
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           min: 1,

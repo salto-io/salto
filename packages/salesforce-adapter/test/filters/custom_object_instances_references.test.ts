@@ -13,15 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Element, ElemID, ObjectType, PrimitiveTypes, PrimitiveType, CORE_ANNOTATIONS, InstanceElement,
-  ReferenceExpression, isInstanceElement,
-} from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, PrimitiveTypes, PrimitiveType, CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, isInstanceElement, SaltoError } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/custom_object_instances_references'
 import mockClient from '../client'
-import { SALESFORCE, API_NAME, CUSTOM_OBJECT, METADATA_TYPE, LABEL } from '../../src/constants'
+import { SALESFORCE, API_NAME, CUSTOM_OBJECT, METADATA_TYPE, LABEL, FIELD_ANNOTATIONS } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
 
@@ -96,6 +93,21 @@ describe('Custom Object Instances References filter', () => {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [LABEL]: 'lookup',
             [API_NAME]: 'LookupExample',
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+            referenceTo: [
+              refToName,
+            ],
+          },
+        },
+        NonDeployableLookup: {
+          type: Types.primitiveDataTypes.Lookup,
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+            [LABEL]: 'lookup',
+            [API_NAME]: 'LookupExample',
+            [FIELD_ANNOTATIONS.CREATABLE]: false,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: false,
             referenceTo: [
               refToName,
             ],
@@ -107,6 +119,8 @@ describe('Custom Object Instances References filter', () => {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [LABEL]: 'detailfOfMaster',
             [API_NAME]: 'MasterDetailExample',
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
             referenceTo: [
               masterName,
             ],
@@ -127,6 +141,7 @@ describe('Custom Object Instances References filter', () => {
       Id: '1234',
       LookupExample: 'refToId',
       MasterDetailExample: 'masterToId',
+      NonDeployableLookup: 'ToNothing',
     }
     const refToInstanceName = 'refToInstance'
     const refToInstance = new InstanceElement(
@@ -159,6 +174,7 @@ describe('Custom Object Instances References filter', () => {
       masterObj,
       {
         Id: 'masterToId',
+        MasterDetailExample: '',
       },
     )
     const duplicateInstName = 'duplicateInstance'
@@ -215,12 +231,12 @@ describe('Custom Object Instances References filter', () => {
     const allElements = [
       ...objects, ...legalInstances, ...illegalInstances,
     ]
-    let warnings: string[]
+    let errors: SaltoError[]
     beforeAll(async () => {
       elements = allElements.map(e => e.clone())
       const fetchResult = await filter.onFetch(elements)
       if (fetchResult) {
-        warnings = fetchResult.warnings ?? []
+        errors = fetchResult.errors ?? []
       }
     })
 
@@ -279,11 +295,12 @@ describe('Custom Object Instances References filter', () => {
       expect(afterFilterRefFromToRefToDup).toBeUndefined()
     })
     it('Should have warnings that include all illegal instances names/Ids', () => {
-      expect(warnings).toBeDefined()
+      expect(errors).toBeDefined()
       illegalInstances.forEach(instance => {
-        const warningsIncludeNameOrId = warnings.some(
-          warning => warning.includes(instance.elemID.name)
-        ) || warnings.some(warning => warning.includes(instance.value.Id))
+        const errorMessages = errors.map(error => error.message)
+        const warningsIncludeNameOrId = errorMessages.some(
+          errorMsg => errorMsg.includes(instance.elemID.name)
+        ) || errorMessages.some(errorMsg => errorMsg.includes(instance.value.Id))
         expect(warningsIncludeNameOrId).toBeTruthy()
       })
     })

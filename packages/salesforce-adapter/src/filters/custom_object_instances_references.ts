@@ -18,7 +18,7 @@ import wu from 'wu'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { transformValues, TransformFunc, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { Element, Values, Field, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoError } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { apiName, isInstanceOfCustomObject } from '../transformers/transformer'
 import { FIELD_ANNOTATIONS, CUSTOM_OBJECT_ID_FIELD } from '../constants'
@@ -51,13 +51,19 @@ const deserializeInternalID = (internalID: string): refOrigin => {
   }
 }
 
+const createWarningFromMsg = (message: string): SaltoError =>
+  ({
+    message,
+    severity: 'Warning',
+  })
+
 // TODO: Improve this
 // This is a very initial implementation
 const createWarnings = (
   instancesWithDuplicateElemID: InstanceElement[],
   typeToEmptyRefOrigins: collections.map.DefaultMap<string, Set<refOrigin>>,
   illegalRefSources: Set<string>,
-): string[] => {
+): SaltoError[] => {
   const typeToElemIDtoInstances = _.mapValues(
     _.groupBy(instancesWithDuplicateElemID, instance => apiName(instance.type, true)),
     instances => _.groupBy(instances, instance => instance.elemID.getFullName())
@@ -71,18 +77,19 @@ const createWarnings = (
       const duplicatesMsgs = Object.entries(elemIDtoInstances)
         .map(([elemID, instances]) => `Conflicting SaltoID ${elemID} for instances with values - 
           ${instances.map(instance => safeJsonStringify(instance.value, undefined, 2)).join('\n')}`)
-      return [
+      return createWarningFromMsg([
         header,
+        '',
         ...duplicatesMsgs,
-      ].join('\n')
+      ].join('\n'))
     })
 
   const emptyRefsWarnings = wu(typeToEmptyRefOrigins.entries()).toArray()
     .map(([type, origins]) => {
       const originsArr = [...(origins as Set<refOrigin>)] // Not sure why needed
-      return `Type ${type} has references to instances that does not exist from:
-        ${originsArr.map(origin => `* Instance of type ${origin.type} with Id ${origin.id}, from field ${origin.field}`).join('\n')}
-      `
+      return createWarningFromMsg(`Type ${type} has references to instances that does not exist from:
+      ${originsArr.map(origin => `    * Instance of type ${origin.type} with Id ${origin.id}, from field ${origin.field}`).join('\n')}
+      `)
     })
 
   const typeToIDsSources = _.mapValues(
@@ -92,9 +99,9 @@ const createWarnings = (
 
   const illegalOriginsWarnings = Object.entries(typeToIDsSources)
     .map(([type, ids]) =>
-      `Type ${type} dropped instances with the following Ids due to references to other dropped instances -
-          ${(ids).map(id => `* ${id}`).join('\n')}
-    `)
+      createWarningFromMsg(`Type ${type} dropped instances with the following Ids due to references to other dropped instances -
+      ${(ids).map(id => `    * ${id}`).join('\n')}
+    `))
 
   return [
     ...duplicationWarnings,
@@ -132,12 +139,15 @@ const replaceLookupsWithReferencesAndCreateRefMap = (
         .filter(isDefined)
         .pop()
       if (refTarget === undefined) {
-        refTo.forEach(targetName =>
-          typeToEmptyRefOrigins.get(targetName).add({
-            type: apiName(instance.type, true),
-            id: instance.value[CUSTOM_OBJECT_ID_FIELD],
-            field: field.name,
-          }))
+        if (!_.isEmpty(value) && (field?.annotations?.[FIELD_ANNOTATIONS.CREATABLE]
+            || field?.annotations?.[FIELD_ANNOTATIONS.UPDATEABLE])) {
+          refTo.forEach(targetName =>
+            typeToEmptyRefOrigins.get(targetName).add({
+              type: apiName(instance.type, true),
+              id: instance.value[CUSTOM_OBJECT_ID_FIELD],
+              field: field.name,
+            }))
+        }
         return value
       }
       internalToReferencedFrom.get(serializeInstanceInternalID(refTarget))
@@ -230,7 +240,7 @@ const filter: FilterCreator = () => ({
         && invalidInstances.has(serializeInstanceInternalID(element))),
     )
     return {
-      warnings: createWarnings(
+      errors: createWarnings(
         instancesWithDuplicateElemID,
         typeToEmptyRefOrigins,
         illegalRefSources,

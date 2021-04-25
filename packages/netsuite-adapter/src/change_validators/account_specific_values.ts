@@ -45,7 +45,7 @@ const hasAccountSpecificValue = (instance: InstanceElement): boolean => {
 }
 
 const changeValidator: ChangeValidator = async changes => (
-  _.flatten(changes
+  changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(change => {
@@ -77,7 +77,7 @@ const changeValidator: ChangeValidator = async changes => (
         detailedMessage: 'Fields with ACCOUNT_SPECIFIC_VALUE will be skipped and not deployed',
       } as ChangeError
     })
-    .filter(isDefined))
+    .filter(isDefined)
 )
 
 export default changeValidator

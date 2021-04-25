@@ -1632,10 +1632,10 @@
     requirejs "2.3.6"
     xml2js "0.4.19"
 
-"@salto-io/suitecloud-cli@1.1.2-salto-5":
-  version "1.1.2-salto-5"
-  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.1.2-salto-5.tgz#6d5efc43122c95cadc264ac65d1f53e84aa23d5a"
-  integrity sha512-o1ApSpzFfCt3dOmiuAk2p1oOEyxbrfge9YPHe+Ljr74wmG+hIuJ1N8jt8eAP3IIhJCocJMtJrl1itnbnKwEfsA==
+"@salto-io/suitecloud-cli@1.1.2-salto-6":
+  version "1.1.2-salto-6"
+  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.1.2-salto-6.tgz#351ab1f2a87cb414f94fbebb87dd7669b7f45eef"
+  integrity sha512-6Lr0cOyydnHyxZD9imeRkeMB7lk1urClvG6Q4MzDHQsD5ZFboisVgxJVLCdLSRIDghhiJY5EKsA68u9LgBiNtg==
   dependencies:
     "@oracle/suitecloud-cli-localserver-command" "^1.1.1"
     "@salto-io/logging" "^0.2.8"

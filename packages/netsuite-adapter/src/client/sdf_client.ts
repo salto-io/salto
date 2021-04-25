@@ -645,7 +645,11 @@ export default class SdfClient {
   private async runDeployCommands({ executor, projectPath }: Project): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
     await SdfClient.cleanInvalidDependencies(projectPath)
-    await this.executeProjectAction(COMMANDS.DEPLOY_PROJECT, {}, executor)
+    await this.executeProjectAction(
+      COMMANDS.DEPLOY_PROJECT,
+      { accountspecificvalues: 'WARNING' },
+      executor
+    )
   }
 
   private static async addCustomTypeInfoToProject(customTypeInfo: CustomTypeInfo,

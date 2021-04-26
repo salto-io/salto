@@ -72,6 +72,7 @@ describe('fetch command', () => {
             mode: 'default',
             services,
             stateOnly: false,
+            regenerateSaltoIds: false,
           },
           workspace,
         })
@@ -94,6 +95,7 @@ describe('fetch command', () => {
             mode: 'default',
             services,
             stateOnly: false,
+            regenerateSaltoIds: false,
           },
           workspace,
         })
@@ -149,6 +151,7 @@ describe('fetch command', () => {
             shouldCalcTotalSize: true,
             services,
             stateOnly: false,
+            regenerateSaltoIds: false,
           })
         })
         it('should start at least one step', () => {
@@ -177,6 +180,7 @@ describe('fetch command', () => {
             mode: 'default',
             shouldCalcTotalSize: true,
             stateOnly: false,
+            regenerateSaltoIds: false,
           })
         })
         it('should not update workspace', () => {
@@ -214,6 +218,7 @@ describe('fetch command', () => {
             mode: 'default',
             shouldCalcTotalSize: true,
             stateOnly: false,
+            regenerateSaltoIds: false,
           }
         })
 
@@ -258,6 +263,7 @@ describe('fetch command', () => {
               mode: 'default',
               shouldCalcTotalSize: true,
               stateOnly: false,
+              regenerateSaltoIds: false,
             })
             expect(result).toBe(CliExitCode.Success)
           })
@@ -283,6 +289,7 @@ describe('fetch command', () => {
               shouldUpdateConfig: mockUpdateConfig,
               shouldCalcTotalSize: true,
               stateOnly: false,
+              regenerateSaltoIds: false,
             })
             expect(result).toBe(CliExitCode.Success)
           })
@@ -308,6 +315,7 @@ describe('fetch command', () => {
               shouldUpdateConfig: mockUpdateConfig,
               shouldCalcTotalSize: true,
               stateOnly: false,
+              regenerateSaltoIds: false,
             })
             expect(result).toBe(CliExitCode.Success)
           })
@@ -333,6 +341,7 @@ describe('fetch command', () => {
               shouldUpdateConfig: mockUpdateConfig,
               shouldCalcTotalSize: true,
               stateOnly: false,
+              regenerateSaltoIds: false,
             })
             expect(result).toBe(CliExitCode.Success)
           })
@@ -356,6 +365,7 @@ describe('fetch command', () => {
               shouldUpdateConfig: mockUpdateConfig,
               shouldCalcTotalSize: true,
               stateOnly: true,
+              regenerateSaltoIds: false,
             })).rejects.toThrow())
           })
           describe('when state is updated', () => {
@@ -374,6 +384,7 @@ describe('fetch command', () => {
                 shouldUpdateConfig: mockUpdateConfig,
                 shouldCalcTotalSize: true,
                 stateOnly: true,
+                regenerateSaltoIds: false,
               })
             })
             it('should return OK status when state is updated', () => {
@@ -400,6 +411,7 @@ describe('fetch command', () => {
                 shouldUpdateConfig: mockUpdateConfig,
                 shouldCalcTotalSize: true,
                 stateOnly: true,
+                regenerateSaltoIds: false,
               })
             })
             it('should return AppError status when state is updated', () => {
@@ -427,6 +439,7 @@ describe('fetch command', () => {
               mode: 'default',
               shouldCalcTotalSize: true,
               stateOnly: false,
+              regenerateSaltoIds: false,
             })
           })
           it('should deploy all changes', () => {
@@ -454,6 +467,7 @@ describe('fetch command', () => {
                 mode: 'default',
                 shouldCalcTotalSize: true,
                 stateOnly: false,
+                regenerateSaltoIds: false,
               })
               expect(workspace.updateNaclFiles).toHaveBeenCalledWith([changes[0].change], 'default')
             })
@@ -483,6 +497,7 @@ describe('fetch command', () => {
                 mode: 'default',
                 shouldCalcTotalSize: true,
                 stateOnly: false,
+                regenerateSaltoIds: false,
               })
               expect(workspace.updateNaclFiles).toHaveBeenCalledWith([changes[0].change], 'default')
               expect(res).toBe(CliExitCode.AppError)
@@ -511,6 +526,7 @@ describe('fetch command', () => {
                 mode: 'default',
                 shouldCalcTotalSize: true,
                 stateOnly: false,
+                regenerateSaltoIds: false,
               })
               expect(workspace.updateNaclFiles).toHaveBeenCalledWith([changes[0].change], 'default')
               expect(res).toBe(CliExitCode.Success)
@@ -529,6 +545,7 @@ describe('fetch command', () => {
                 mode: 'default',
                 shouldCalcTotalSize: true,
                 stateOnly: false,
+                regenerateSaltoIds: false,
               })
               expect(output.stderr.content).toContain('Error')
               expect(workspace.updateNaclFiles).not.toHaveBeenCalled()
@@ -568,6 +585,7 @@ describe('fetch command', () => {
             shouldCalcTotalSize: true,
             stateOnly: false,
             services: [],
+            regenerateSaltoIds: false,
           })
         })
         it('should succeed', () => {
@@ -610,6 +628,7 @@ describe('fetch command', () => {
           mode: 'default',
           services,
           stateOnly: false,
+          regenerateSaltoIds: false,
         },
         workspace,
       })
@@ -630,6 +649,7 @@ describe('fetch command', () => {
           mode: 'override',
           services,
           stateOnly: false,
+          regenerateSaltoIds: false,
         },
         workspace,
       })
@@ -649,6 +669,7 @@ describe('fetch command', () => {
           mode: 'default',
           services,
           stateOnly: false,
+          regenerateSaltoIds: false,
         },
         workspace,
       })
@@ -667,6 +688,7 @@ describe('fetch command', () => {
           mode: 'override',
           services,
           stateOnly: false,
+          regenerateSaltoIds: false,
         },
         workspace,
       })
@@ -689,6 +711,7 @@ describe('fetch command', () => {
           mode: 'default',
           services,
           stateOnly: false,
+          regenerateSaltoIds: false,
         },
         workspace,
       })
@@ -708,6 +731,7 @@ describe('fetch command', () => {
           mode: 'align',
           services,
           stateOnly: false,
+          regenerateSaltoIds: false,
         },
         workspace,
       })
@@ -727,6 +751,7 @@ describe('fetch command', () => {
           mode: 'default',
           services,
           stateOnly: false,
+          regenerateSaltoIds: false,
         },
         workspace,
       })
@@ -750,6 +775,7 @@ describe('fetch command', () => {
           force: false,
           mode: 'override',
           stateOnly: false,
+          regenerateSaltoIds: false,
         },
         workspace,
       })
@@ -769,6 +795,7 @@ describe('fetch command', () => {
           mode: 'default',
           services,
           stateOnly: false,
+          regenerateSaltoIds: false,
         },
         workspace,
       })
@@ -784,6 +811,7 @@ describe('fetch command', () => {
           services,
           stateOnly: false,
           env: mocks.withEnvironmentParam,
+          regenerateSaltoIds: false,
         },
         workspace,
       })
@@ -798,6 +826,7 @@ describe('fetch command', () => {
           services,
           stateOnly: false,
           env: 'envThatDoesNotExist',
+          regenerateSaltoIds: false,
         },
         workspace: mocks.mockWorkspace({}),
       })).rejects.toThrow(new CliError(CliExitCode.AppError))

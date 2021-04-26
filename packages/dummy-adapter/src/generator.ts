@@ -103,6 +103,12 @@ export const defaultParams: Omit<GeneratorParams, 'extraNaclPath'> = {
 const MOCK_NACL_SUFFIX = 'nacl.mock'
 export const DUMMY_ADAPTER = 'dummy'
 
+const getDataPath = (): string => process.env.SALTO_DUMMY_ADAPTER_DATA_PATH
+|| path.join(
+  __dirname,
+  'data'
+)
+
 const defaultObj = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'DEFAULT'),
   fields: {
@@ -158,7 +164,8 @@ export const generateElements = async (
   const primitiveByRank: PrimitiveType[][] = arrayOf(defaultParams.maxRank + 1, () => [])
   const objByRank: ObjectType[][] = arrayOf(defaultParams.maxRank + 1, () => [])
   objByRank[0][0] = defaultObj
-  const datFilePath = process.env.SALTO_DUMMY_ADAPTER_DAT_FILE_PATH || `${__dirname}/data/strings.dat`
+  const dataPath = getDataPath()
+  const datFilePath = path.join(dataPath, 'strings.dat')
   const stringLinesOpts = JSON.parse(
     Buffer.from(fs.readFileSync(datFilePath, 'utf8'), 'base64').toString()
   )
@@ -665,7 +672,9 @@ export const generateElements = async (
   const extraElements = params.extraNaclPath
     ? await generateExtraElements(params.extraNaclPath)
     : []
-  const defaultExtraElements = await generateExtraElements(path.join(__dirname, 'data', 'fixtures'))
+  const defaultExtraElements = await generateExtraElements(
+    path.join(dataPath, 'fixtures')
+  )
   return [
     ...defaultTypes,
     ...primtiveTypes,

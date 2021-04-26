@@ -27,7 +27,7 @@ const log = logger(module)
 
 export type ReferenceObject = OpenAPIV2.ReferenceObject | OpenAPIV3.ReferenceObject
 export type SchemaObject = OpenAPIV2.SchemaObject | OpenAPIV3.SchemaObject | IJsonSchema
-export type SwaggerRefs = SwaggerParser.$Refs
+export type SwaggerRefs = Pick<SwaggerParser.$Refs, 'get'>
 
 export type SchemaOrReference = ReferenceObject | SchemaObject
 
@@ -66,7 +66,7 @@ export const toPrimitiveType = (val: string | string[] | undefined): PrimitiveTy
   if (types.length === 1) {
     return types[0]
   }
-  log.error('Found %d types for %s, falling back to unknown', types.length, val)
+  log.warn('Found %d types for %s, falling back to unknown', types.length, val)
   return BuiltinTypes.UNKNOWN
 }
 
@@ -104,11 +104,13 @@ const isV3 = (doc: OpenAPI.Document): doc is OpenAPIV3.Document => {
   return _.isString(version) && version.startsWith('3.')
 }
 
-export const getParsedDefs = async (swaggerPath: string):
-  Promise<{
+export type SchemasAndRefs = {
   schemas: Record<string, SchemaOrReference>
   refs: SwaggerRefs
-}> => {
+}
+
+export const getParsedDefs = async (swaggerPath: string):
+  Promise<SchemasAndRefs> => {
   const parser = new SwaggerParser()
   const parsedSwagger: OpenAPI.Document = await parser.bundle(swaggerPath)
 

@@ -23,7 +23,7 @@ import { RequestableTypeSwaggerConfig, AdapterSwaggerApiConfig } from '../../../
 import {
   getParsedDefs, isReferenceObject, toNormalizedRefName, SchemaObject,
   extractProperties, ADDITIONAL_PROPERTIES_FIELD, toPrimitiveType, toTypeName, SwaggerRefs,
-  SchemaOrReference, SWAGGER_ARRAY, SWAGGER_OBJECT, isArraySchemaObject,
+  SchemaOrReference, SWAGGER_ARRAY, SWAGGER_OBJECT, isArraySchemaObject, SchemasAndRefs,
 } from './swagger_parser'
 import { fixTypes, defineAdditionalTypes } from './type_config_override'
 
@@ -244,6 +244,11 @@ const typeAdder = ({
   return addType
 }
 
+export type ParsedTypes = {
+  allTypes: TypeMap
+  parsedConfigs: Record<string, RequestableTypeSwaggerConfig>
+}
+
 /**
  * Generate types for the given OpenAPI definitions.
  */
@@ -254,10 +259,8 @@ export const generateTypes = async (
     types,
     typeDefaults,
   }: AdapterSwaggerApiConfig,
-): Promise<{
-  allTypes: TypeMap
-  parsedConfigs: Record<string, RequestableTypeSwaggerConfig>
-}> => {
+  preParsedDefs?: SchemasAndRefs,
+): Promise<ParsedTypes> => {
   // TODO SALTO-1252 - persist swagger locally
 
   const toUpdatedResourceName = (
@@ -269,7 +272,7 @@ export const generateTypes = async (
   const definedTypes: Record<string, ObjectType> = {}
   const parsedConfigs: Record<string, RequestableTypeSwaggerConfig> = {}
 
-  const { schemas: getResponseSchemas, refs } = await getParsedDefs(swagger.url)
+  const { schemas: getResponseSchemas, refs } = preParsedDefs ?? await getParsedDefs(swagger.url)
 
   const addType = typeAdder({
     adapterName,

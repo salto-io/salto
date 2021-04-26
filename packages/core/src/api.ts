@@ -195,12 +195,14 @@ export type FetchFunc = (
   workspace: Workspace,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
   services?: string[],
+  ignoreStateElemIdMapping?: boolean,
 ) => Promise<FetchResult>
 
 export const fetch: FetchFunc = async (
   workspace,
   progressEmitter?,
   services?,
+  ignoreStateElemIdMapping?,
 ) => {
   log.debug('fetch starting..')
 
@@ -216,7 +218,7 @@ export const fetch: FetchFunc = async (
     await workspace.servicesCredentials(services),
     workspace.serviceConfig.bind(workspace),
     buildElementsSourceFromElements(stateElements),
-    createElemIdGetter(filteredStateElements)
+    ignoreStateElemIdMapping ? undefined : createElemIdGetter(filteredStateElements)
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)
     .map(creatorConfig => creatorConfig.config)

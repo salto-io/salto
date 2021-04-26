@@ -56,6 +56,7 @@ export type FetchCommandArgs = {
   shouldCalcTotalSize: boolean
   stateOnly: boolean
   services: string[]
+  regenerateSaltoIds: boolean
 }
 
 export const fetchCommand = async (
@@ -63,7 +64,7 @@ export const fetchCommand = async (
     workspace, force, mode,
     getApprovedChanges, shouldUpdateConfig, services,
     cliTelemetry, output, fetch, shouldCalcTotalSize,
-    stateOnly,
+    stateOnly, regenerateSaltoIds,
   }: FetchCommandArgs): Promise<CliExitCode> => {
   const bindedOutputline = (text: string): void => outputLine(text, output)
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
@@ -124,6 +125,7 @@ export const fetchCommand = async (
     workspace,
     fetchProgress,
     services,
+    regenerateSaltoIds,
   )
   if (fetchResult.success === false) {
     errorOutputLine(formatFatalFetchError(fetchResult.mergeErrors), output)
@@ -212,6 +214,7 @@ type FetchArgs = {
   force: boolean
   stateOnly: boolean
   mode: nacl.RoutingMode
+  regenerateSaltoIds: boolean
 } & ServicesArg & EnvArg
 
 export const action: WorkspaceCommandAction<FetchArgs> = async ({
@@ -222,7 +225,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   spinnerCreator,
   workspace,
 }): Promise<CliExitCode> => {
-  const { force, stateOnly, services, mode } = input
+  const { force, stateOnly, services, mode, regenerateSaltoIds } = input
   const { shouldCalcTotalSize } = config
   await validateAndSetEnv(workspace, input, output)
   const activeServices = getAndValidateActiveServices(workspace, services)
@@ -265,6 +268,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
     mode: useAlignMode ? 'align' : mode,
     shouldCalcTotalSize,
     stateOnly,
+    regenerateSaltoIds,
   })
 }
 
@@ -297,6 +301,13 @@ const fetchDef = createWorkspaceCommand({
         type: 'string',
         choices: ['default', 'align', 'override', 'isolated'],
         default: 'default',
+      },
+      {
+        name: 'regenerateSaltoIds',
+        alias: 'r',
+        required: false,
+        description: 'Ignore current SaltoIDs and regenerate them according to current config and fetch results',
+        type: 'boolean',
       },
     ],
   },

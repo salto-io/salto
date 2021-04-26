@@ -35,10 +35,10 @@ const { validateSwaggerApiDefinitionConfig } = configUtils
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
   const { clientId, clientSecret, subdomain, production } = config.value
   if (!production && !isSandboxSubdomain(subdomain)) {
-    throw new Error(`${subdomain} is not a valid sandbox subdomain`)
+    throw new Error(`'${subdomain}' is not a valid sandbox subdomain`)
   }
   if (production && isSandboxSubdomain(subdomain)) {
-    throw new Error(`${subdomain} is a sandbox subdomain and cannot be used for production`)
+    throw new Error(`'${subdomain}' is a sandbox subdomain and cannot be used for production`)
   }
   return {
     clientId,

@@ -19,7 +19,7 @@ import {
   ReferenceExpression, BuiltinTypes, Values,
 } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
-import { pathNaclCase, naclCase, extendGeneratedDependencies } from '@salto-io/adapter-utils'
+import { pathNaclCase, naclCase, extendGeneratedDependencies, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import {
@@ -28,19 +28,13 @@ import {
   REQUIRED, FILTERABLE, DESCRIPTION, INTERNAL_ID, STANDARD_OBJECT,
 } from '../constants'
 import { FilterCreator } from '../filter'
-import { isInstanceOfType, apiName } from '../element_utils'
+import { isInstanceOfType } from '../element_utils'
 
 const log = logger(module)
 const { isDefined } = lowerdashValues
 const {
   toPrimitiveType, ADDITIONAL_PROPERTIES_FIELD,
 } = elementUtils.swagger
-
-// Check whether an element is a custom object definition.
-// Only relevant before the object_defs filter is run.
-export const isInstanceOfCustomObjectDef = (element: Element): element is InstanceElement => (
-  isInstanceOfType(element, [CUSTOM_OBJECT_DEFINITION_TYPE])
-)
 
 // Check whether an element is a custom/standard object definition.
 // Only relevant before the object_defs filter is run.
@@ -82,23 +76,21 @@ const createObjectFromInstance = (inst: InstanceElement): ObjectType => {
         },
       }),
     ),
-    annotationTypes: _.assign(
-      {},
-      _.clone(inst.type.annotationTypes),
-      {
-        [METADATA_TYPE]: BuiltinTypes.STRING,
-        [LABEL]: BuiltinTypes.STRING,
-        [DESCRIPTION]: BuiltinTypes.STRING,
-        [INTERNAL_ID]: BuiltinTypes.HIDDEN_STRING,
-      }
-    ),
+    annotationTypes: {
+      ...inst.type.annotationTypes,
+      [METADATA_TYPE]: BuiltinTypes.STRING,
+      [LABEL]: BuiltinTypes.STRING,
+      [DESCRIPTION]: BuiltinTypes.STRING,
+      [INTERNAL_ID]: BuiltinTypes.HIDDEN_STRING,
+    },
     annotations: {
       [METADATA_TYPE]: isStandardObjectInstance(inst) ? STANDARD_OBJECT : CUSTOM_OBJECT,
       [LABEL]: label,
       [DESCRIPTION]: description,
       [INTERNAL_ID]: inst.value.additionalProperties?.Id,
     },
-    path: [ZUORA_BILLING, OBJECTS_PATH, pathNaclCase(naclCase(apiName(inst)))],
+    // id name changes are currently not allowed so it's ok to use the elem id
+    path: [ZUORA_BILLING, OBJECTS_PATH, pathNaclCase(naclCase(inst.elemID.name))],
   })
   return obj
 }
@@ -133,6 +125,7 @@ const addRelationships = (
           cardinality, namespace, object, fields, recordConstraints: constraints,
           ...additionalDetails
         } = rel
+        // the only cardinalities currently in use are oneToMany / manyToOne
         if (cardinality === 'oneToMany') {
           // each relationship appears in both directions, so it's enough to look at manyToOne
           return
@@ -142,7 +135,7 @@ const addRelationships = (
         Object.entries(fields.additionalProperties ?? {}).forEach(([src, target]) => {
           const srcField = obj.fields[src]
           if (srcField === undefined) {
-            log.error('Could not find field %s in object %s, not adding relationship', src, name)
+            log.warn('Could not find field %s in object %s, not adding relationship', src, name)
             return
           }
           const targetObj = findType(referencedObjectName)
@@ -151,10 +144,28 @@ const addRelationships = (
               ? new ReferenceExpression(targetObj.fields[target].elemID)
               : `${referencedObjectName}.${target}`
           )
+          // we assume each field can be listed in at most one relatioship, so it's ok to override
+          // these annotations
+          if (srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.REFERENCE_TO] !== undefined) {
+            log.info('Field %s already has referenceTo defined, extending', srcField.elemID.getFullName())
+          }
           srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.REFERENCE_TO] = [
             ...(srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.REFERENCE_TO] ?? []),
             targetField,
           ]
+          if ([
+            FIELD_RELATIONSHIP_ANNOTATIONS.CARDINALITY,
+            FIELD_RELATIONSHIP_ANNOTATIONS.RECORD_CONSTRAINTS,
+          ].some(anno => srcField.annotations[anno] !== undefined)) {
+            log.warn(
+              'Field %s already has annotation values %s, overriding',
+              srcField.elemID.getFullName(),
+              safeJsonStringify(_.pick(srcField.annotations, [
+                FIELD_RELATIONSHIP_ANNOTATIONS.CARDINALITY,
+                FIELD_RELATIONSHIP_ANNOTATIONS.RECORD_CONSTRAINTS,
+              ])),
+            )
+          }
           srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.CARDINALITY] = cardinality
           srcField.annotations[FIELD_RELATIONSHIP_ANNOTATIONS.RECORD_CONSTRAINTS] = constraints
         })
@@ -181,10 +192,10 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     // ensure the custom object definition type was not accidentally renamed
     const customObjectDefType = elements.filter(isObjectType).find(
-      e => apiName(e) === CUSTOM_OBJECT_DEFINITION_TYPE
+      e => e.elemID.name === CUSTOM_OBJECT_DEFINITION_TYPE
     )
     if (customObjectDefType === undefined) {
-      log.error('Could not find %s object type, skipping object defs filter', CUSTOM_OBJECT_DEFINITION_TYPE)
+      log.warn('Could not find %s object type, skipping object defs filter', CUSTOM_OBJECT_DEFINITION_TYPE)
       return
     }
 

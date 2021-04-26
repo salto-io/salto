@@ -19,7 +19,6 @@ import { pathNaclCase } from '@salto-io/adapter-utils'
 import {
   ZUORA_BILLING, STANDARD_OBJECT_DEFINITION_TYPE,
 } from '../constants'
-import { apiName } from '../element_utils'
 import { ZuoraApiConfig } from '../config'
 
 const { RECORDS_PATH, swagger } = elementUtils
@@ -45,12 +44,12 @@ export const getStandardObjectElements = async ({
   paginator: clientUtils.Paginator
   apiConfig: ZuoraApiConfig
 }): Promise<Element[]> => {
-  const standardObjecWrapperTypeName = apiName(standardObjectWrapperType)
+  const standardObjecWrapperTypeName = standardObjectWrapperType.elemID.name
   const standardObjectDefType = new ObjectType({
     ...customObjectDefType,
     elemID: new ElemID(ZUORA_BILLING, STANDARD_OBJECT_DEFINITION_TYPE),
     path: customObjectDefType.path !== undefined
-      ? [...customObjectDefType.path?.slice(0, -1), STANDARD_OBJECT_DEFINITION_TYPE]
+      ? [...customObjectDefType.path.slice(0, -1), STANDARD_OBJECT_DEFINITION_TYPE]
       : undefined,
   })
 

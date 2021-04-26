@@ -106,6 +106,46 @@ describe('Workflow and task references filter', () => {
         delete_ttl: 30,
       },
     )
+    const wf3 = new InstanceElement(
+      'wf3',
+      workflowType,
+      {
+        id: 111,
+        name: 'workflow 3',
+        description: 'do things',
+        type: 'Workflow::Setup',
+        additionalProperties: {
+          parameters: {
+            fields: [{
+              index: '0',
+              default: '',
+              datatype: 'Text',
+              required: true,
+              callout_id: 'BillRunID',
+              field_name: 'Id',
+              object_name: 'invalid',
+            }],
+          },
+          ondemand_trigger: true,
+          callout_trigger: true,
+          scheduled_trigger: false,
+          status: 'Active',
+          css: {
+            top: '40px',
+            left: '35px',
+          },
+        },
+        notifications: {
+          emails: [],
+          failure: false,
+          pending: false,
+          success: false,
+        },
+        call_type: 'ASYNC',
+        priority: 'Medium',
+        delete_ttl: 30,
+      },
+    )
     const task1 = new InstanceElement(
       'task1',
       taskType,
@@ -192,7 +232,7 @@ describe('Workflow and task references filter', () => {
       }),
     ]
 
-    return [workflowType, taskType, wf1, wf2, task1, task2, ...standardObjects]
+    return [workflowType, taskType, wf1, wf2, wf3, task1, task2, ...standardObjects]
   }
 
   beforeAll(() => {
@@ -222,7 +262,7 @@ describe('Workflow and task references filter', () => {
     }) as FilterType
   })
 
-  describe('convert instances to object types and fields', () => {
+  describe('workflow and task references', () => {
     let origElements: Element[]
     let elements: Element[]
     beforeAll(async () => {
@@ -233,7 +273,7 @@ describe('Workflow and task references filter', () => {
     it('add references in workflows', () => {
       expect(elements.length).toEqual(origElements.length)
       const workflows = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === 'Workflow')
-      expect(workflows).toHaveLength(2)
+      expect(workflows).toHaveLength(3)
 
       const wf1Param0 = workflows[0].value.additionalProperties.parameters.fields[0]
       expect(wf1Param0.object_name).toBeInstanceOf(ReferenceExpression)
@@ -266,6 +306,14 @@ describe('Workflow and task references filter', () => {
       expect((tasks[1].value.object as ReferenceExpression).elemId.getFullName()).toEqual('zuora_billing.account')
       // eslint-disable-next-line no-underscore-dangle
       expect(tasks[1].annotations._generated_dependencies).toBeUndefined()
+    })
+    it('not add references in workflows when the referenced objects is missing', () => {
+      expect(elements.length).toEqual(origElements.length)
+      const wf3 = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'wf3')[0]
+
+      const wf3Param0 = wf3.value.additionalProperties.parameters.fields[0]
+      expect(wf3Param0.object_name).not.toBeInstanceOf(ReferenceExpression)
+      expect(wf3Param0.object_name).toEqual('invalid')
     })
   })
 })

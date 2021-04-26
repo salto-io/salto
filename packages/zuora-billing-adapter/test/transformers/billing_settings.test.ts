@@ -17,7 +17,7 @@ import { InstanceElement, ObjectType, ElemID, ListType, BuiltinTypes, isEqualEle
 import { ZUORA_BILLING, LIST_ALL_SETTINGS_TYPE } from '../../src/constants'
 import { generateBillingSettingsTypes } from '../../src/transformers/billing_settings'
 
-describe('adapter', () => {
+describe('billing_settings transformer', () => {
   let ListAllSettingsType: ObjectType
 
   beforeEach(async () => {

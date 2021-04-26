@@ -83,8 +83,9 @@ export const generateBillingSettingsTypes = async (
   settingsOpInfoInstances: InstanceElement[],
   apiDefConfig: ZuoraApiConfig,
 ): Promise<elementUtils.swagger.ParsedTypes> => {
-  const settingsInfos = await Promise.all(settingsOpInfoInstances
-    .flatMap(inst => (Array.isArray(inst.value.settings) ? inst.value.settings : [])))
+  const settingsInfos = settingsOpInfoInstances.flatMap(
+    inst => (Array.isArray(inst.value.settings) ? inst.value.settings : [])
+  )
 
   const schemasAndRefs = toSchemasAndRefs(settingsInfos)
   return generateTypes(

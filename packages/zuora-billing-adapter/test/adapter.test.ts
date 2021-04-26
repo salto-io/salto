@@ -258,6 +258,91 @@ describe('adapter', () => {
         expect(_.sortedUniq(elements.filter(isObjectDef).map(e => e.elemID.name))).toEqual(['account', 'accountingcode'])
       })
     })
+    describe('without settings types', () => {
+      it('should generate the right elements on fetch', async () => {
+        const { elements } = await adapter.operations({
+          credentials: new InstanceElement(
+            'config',
+            oauthClientCredentialsType,
+            { clientId: 'client', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
+          ),
+          config: new InstanceElement(
+            'config',
+            configType,
+            {
+              [FETCH_CONFIG]: {
+                includeTypes: DEFAULT_INCLUDE_TYPES,
+              },
+              [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
+            }
+          ),
+          elementsSource: buildElementsSourceFromElements([]),
+        }).fetch({ progressReporter: { reportProgress: () => null } })
+
+        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(1)
+        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledWith(
+          ZUORA_BILLING,
+          DEFAULT_API_DEFINITIONS,
+        )
+        expect(
+          _.sortedUniq(elements.filter(isInstanceElement).map(e => e.elemID.typeName))
+        ).toEqual([
+          'CatalogProduct',
+          'AccountingCodes',
+          'AccountingPeriods',
+          'HostedPages',
+          'NotificationDefinitions',
+          'NotificationEmailTemplates',
+          'PaymentGateways',
+          'SequenceSets',
+        ])
+        expect(elements.filter(isInstanceElement)).toHaveLength(8)
+        expect(elements.filter(isObjectDef)).toHaveLength(2)
+        expect(_.sortedUniq(elements.filter(isObjectDef).map(e => e.elemID.name))).toEqual(['account', 'accountingcode'])
+      })
+    })
+    describe('without settings types and standard objects', () => {
+      it('should generate the right elements on fetch', async () => {
+        const { elements } = await adapter.operations({
+          credentials: new InstanceElement(
+            'config',
+            oauthClientCredentialsType,
+            { clientId: 'client', clientSecret: 'secret', subdomain: '', production: true },
+          ),
+          config: new InstanceElement(
+            'config',
+            configType,
+            {
+              [FETCH_CONFIG]: {
+                includeTypes: DEFAULT_INCLUDE_TYPES.filter(t => t !== 'StandardObject'),
+              },
+              [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
+            }
+          ),
+          elementsSource: buildElementsSourceFromElements([]),
+        }).fetch({ progressReporter: { reportProgress: () => null } })
+
+        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(1)
+        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledWith(
+          ZUORA_BILLING,
+          DEFAULT_API_DEFINITIONS,
+        )
+        expect(
+          _.sortedUniq(elements.filter(isInstanceElement).map(e => e.elemID.typeName))
+        ).toEqual([
+          'CatalogProduct',
+          'AccountingCodes',
+          'AccountingPeriods',
+          'HostedPages',
+          'NotificationDefinitions',
+          'NotificationEmailTemplates',
+          'PaymentGateways',
+          'SequenceSets',
+        ])
+        expect(elements.filter(isInstanceElement)).toHaveLength(8)
+        expect(elements.filter(isObjectDef)).toHaveLength(0)
+      })
+    })
   })
 
   describe('deploy', () => {

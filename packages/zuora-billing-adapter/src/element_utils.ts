@@ -20,7 +20,7 @@ import {
   CUSTOM_FIELD, CUSTOM_OBJECT, ZUORA_CUSTOM_SUFFIX, METADATA_TYPE, STANDARD_OBJECT,
 } from './constants'
 
-const metadataType = (element: Element): string => {
+export const metadataType = (element: Element): string | undefined => {
   if (isInstanceElement(element)) {
     return metadataType(element.type)
   }
@@ -28,12 +28,12 @@ const metadataType = (element: Element): string => {
     // We expect to reach to this place only with fields of CustomObject
     return CUSTOM_FIELD
   }
-  return element.annotations[METADATA_TYPE] || 'unknown'
+  return element.annotations[METADATA_TYPE]
 }
 
 export const isObjectDef = (element: Element): element is ObjectType => (
   isObjectType(element)
-  && [CUSTOM_OBJECT, STANDARD_OBJECT].includes(metadataType(element))
+  && [CUSTOM_OBJECT, STANDARD_OBJECT].includes(metadataType(element) || 'unknown')
 )
 
 export const isCustomField = (field: Field): boolean => (
@@ -48,7 +48,3 @@ export const isInstanceOfType = (
   isInstanceElement(element)
   && typeNames.includes(element.type.elemID.name)
 )
-
-// elem id renames are currently not allowed in Zuora, so we can use the elem id
-// and don't need a dedicated annotation yet.
-export const apiName = (elem: Element): string => elem.elemID.name

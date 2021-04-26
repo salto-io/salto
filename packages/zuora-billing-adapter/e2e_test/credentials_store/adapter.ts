@@ -14,9 +14,7 @@
 * limitations under the License.
 */
 import { Adapter } from '@salto-io/e2e-credentials-store'
-// import { client as clientUtils } from '@salto-io/adapter-components'
 import { Credentials } from '../../src/auth'
-// import { createConnection } from '../../src/client/connection'
 
 type Args = {
   baseURL: string
@@ -45,9 +43,8 @@ const adapter: Adapter<Args, Credentials> = {
     clientId: args.clientId,
     clientSecret: args.clientSecret,
   }),
-  validateCredentials: async _credentials => {
+  validateCredentials: async () => {
     // TODO validate when connecting with real credentials
-    // await clientUtils.validateCredentials(credentials, { createConnection })
   },
 }
 

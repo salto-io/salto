@@ -142,6 +142,55 @@ describe('adapter creator', () => {
     })).toThrow(new Error('Duplicate fieldsToHide params found in apiDefinitions for the following types: CustomObject'))
   })
 
+  it('should throw error on invalid credentials', () => {
+    expect(() => adapter.operations({
+      credentials: new InstanceElement(
+        ZUORA_BILLING,
+        adapter.authenticationMethods.basic.credentialsType,
+        { clientId: 'id', clientSecret: 'secret', subdomain: 'sandbox.na', production: true },
+      ),
+      config: new InstanceElement(
+        ZUORA_BILLING,
+        adapter.configType as ObjectType,
+        {
+          fetch: {
+            includeTypes: [],
+          },
+          apiDefinitions: {
+            swagger: {
+              url: '/tmp/swagger.yaml',
+            },
+            types: {},
+          },
+        },
+      ),
+      elementsSource: buildElementsSourceFromElements([]),
+    })).toThrow(new Error('\'sandbox.na\' is a sandbox subdomain and cannot be used for production'))
+    expect(() => adapter.operations({
+      credentials: new InstanceElement(
+        ZUORA_BILLING,
+        adapter.authenticationMethods.basic.credentialsType,
+        { clientId: 'id', clientSecret: 'secret', subdomain: '', production: false },
+      ),
+      config: new InstanceElement(
+        ZUORA_BILLING,
+        adapter.configType as ObjectType,
+        {
+          fetch: {
+            includeTypes: [],
+          },
+          apiDefinitions: {
+            swagger: {
+              url: '/tmp/swagger.yaml',
+            },
+            types: {},
+          },
+        },
+      ),
+      elementsSource: buildElementsSourceFromElements([]),
+    })).toThrow(new Error('\'\' is not a valid sandbox subdomain'))
+  })
+
   it('should validate oauth credentials using createConnection', async () => {
     jest.spyOn(connection, 'createConnection')
     mockAxiosAdapter.onPost('/oauth/token').reply(200, {

@@ -45,7 +45,7 @@ export AWS_SECRET_ACCESS_KEY='XXXX'
 To add your credentials to the pool, use the `cred-store` CLI located at the `e2e_test` directory of the project:
 
 ```bash
-./e2e_test/cred_store register zuora-billing 'my-credentials-id' --baseUrl='https://rest.SANDBOX_SUBDOMAIN.zuora.com' --clientId='MYCLIENTID' --clientSecret='MYCLIENTSECRET'
+./e2e_test/cred_store register zuora_billing 'my-credentials-id' --baseURL='https://rest.SANDBOX_SUBDOMAIN.zuora.com' --clientId='MYCLIENTID' --clientSecret='MYCLIENTSECRET'
 ```
 
 Enter `--help` to see other uses for the `cred-store` utility - listing, removing and managing sets of credentials.

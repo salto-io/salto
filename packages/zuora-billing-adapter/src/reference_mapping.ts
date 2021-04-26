@@ -13,13 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Field, isElement, Value, Element } from '@salto-io/adapter-api'
-import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
+import { Field, Value } from '@salto-io/adapter-api'
+import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { TASK_TYPE, WORKFLOW_TYPE } from './constants'
-
-const log = logger(module)
 
 type LookupFunc = (val: Value, context?: string) => string
 
@@ -46,23 +43,11 @@ const ReferenceSerializationStrategyLookup: Record<
   },
 }
 
-export type ReferenceContextStrategyName = (
-  'none'
-)
-
-type PickOne<T, K extends keyof T> = Pick<T, K> & { [P in keyof Omit<T, K>]?: never };
-type MetadataTypeArgs = {
-  type: string
-  typeContext: ReferenceContextStrategyName
-}
-type MetadataParentArgs = {
-  parent?: string
-  parentContext?: ReferenceContextStrategyName
-}
 type ReferenceTargetDefinition = {
   name?: string
-} & (PickOne<MetadataTypeArgs, 'type'> | PickOne<MetadataTypeArgs, 'typeContext'>)
-  & (PickOne<MetadataParentArgs, 'parent'> | PickOne<MetadataParentArgs, 'parentContext'>)
+  type: string
+  parent?: string
+}
 export type ExtendedReferenceTargetDefinition = ReferenceTargetDefinition & { lookup: LookupFunc }
 
 type SourceDef = {
@@ -115,16 +100,6 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   },
 ]
 
-const matchName = (fieldName: string, matcher: string | RegExp): boolean => (
-  _.isString(matcher)
-    ? matcher === fieldName
-    : matcher.test(fieldName)
-)
-
-const matchType = (elem: Element, types: string[]): boolean => (
-  types.includes(elem.elemID.name)
-)
-
 export class FieldReferenceResolver {
   src: SourceDef
   serializationStrategy: ReferenceSerializationStrategy
@@ -146,8 +121,8 @@ export class FieldReferenceResolver {
 
   match(field: Field): boolean {
     return (
-      matchName(field.name, this.src.field)
-      && matchType(field.parent, this.src.parentTypes)
+      field.name === this.src.field
+      && this.src.parentTypes.includes(field.parent.elemID.name)
     )
   }
 }
@@ -158,7 +133,7 @@ export type ReferenceResolverFinder = (field: Field) => FieldReferenceResolver[]
  * Generates a function that filters the relevant resolvers for a given field.
  */
 export const generateReferenceResolverFinder = (
-  defs = fieldNameToTypeMappingDefs
+  defs = fieldNameToTypeMappingDefs,
 ): ReferenceResolverFinder => {
   const referenceDefinitions = defs.map(
     def => FieldReferenceResolver.create(def)
@@ -168,69 +143,8 @@ export const generateReferenceResolverFinder = (
     .filter(def => _.isString(def.src.field))
     .groupBy(def => def.src.field)
     .value()
-  const regexFieldMatchersByParent = _(referenceDefinitions)
-    .filter(def => _.isRegExp(def.src.field))
-    .flatMap(def => def.src.parentTypes.map(parentType => ({ parentType, def })))
-    .groupBy(({ parentType }) => parentType)
-    .mapValues(items => items.map(item => item.def))
-    .value()
 
   return (field => (
-    [
-      ...(matchersByFieldName[field.name] ?? []),
-      ...(regexFieldMatchersByParent[field.parent.elemID.name] || []),
-    ].filter(resolver => resolver.match(field))
+    (matchersByFieldName[field.name] ?? []).filter(resolver => resolver.match(field))
   ))
 }
-
-const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc => {
-  const resolverFinder = generateReferenceResolverFinder(defs)
-
-  const determineLookupStrategy = (args: GetLookupNameFuncArgs):
-    ReferenceSerializationStrategy | undefined => {
-    if (args.field === undefined) {
-      log.debug('could not determine field for path %s', args.path?.getFullName())
-      return undefined
-    }
-    const strategies = resolverFinder(args.field)
-      .map(def => def.serializationStrategy)
-
-    if (strategies.length === 0) {
-      log.debug('could not find matching strategy for field %s', args.field.elemID.getFullName())
-      return undefined
-    }
-
-    if (strategies.length > 1) {
-      log.debug(
-        'found %d matching strategies for field %s - using the first one',
-        strategies.length,
-        args.field.elemID.getFullName(),
-      )
-    }
-
-    return strategies[0]
-  }
-
-  return ({ ref, path, field }) => {
-    // We skip resolving instance annotations because they are not deployed to the service
-    // and we need the full element context in those
-    const isInstanceAnnotation = path?.idType === 'instance' && path.isAttrID()
-
-    if (!isInstanceAnnotation) {
-      const strategy = determineLookupStrategy({ ref, path, field })
-      if (strategy !== undefined) {
-        return strategy.serialize({ ref, field })
-      }
-      if (isElement(ref.value)) {
-        const defaultStrategy = ReferenceSerializationStrategyLookup.fullValue
-        return defaultStrategy.serialize({ ref })
-      }
-    }
-    return ref.value
-  }
-}
-
-/**
- * Translate a reference expression back to its original value before deploy.
- */
-export const getLookUpName = getLookUpNameImpl()

@@ -13,13 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-// import { client as clientUtils } from '@salto-io/adapter-components'
 import {
   createEnvUtils, CredsSpec, SaltoE2EJestEnvironment, JestEnvironmentConstructorArgs,
 } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
 import { OAuthClientCredentials } from '../src/auth'
-// import { createConnection } from '../src/client/connection'
 
 const log = logger(module)
 
@@ -42,7 +40,6 @@ export const credsSpec = (envName?: string): CredsSpec<Required<OAuthClientCrede
     },
     validate: async (_creds: OAuthClientCredentials): Promise<void> => {
       // TODO validate when connecting with real credentials
-      // await clientUtils.validateCredentials(creds, { createConnection })
     },
     typeName: 'zuora_billing',
     globalProp: envName ? `zuora_billing_${envName}` : 'zuora_billing',

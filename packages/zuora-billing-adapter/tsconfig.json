@@ -18,7 +18,6 @@
         { "path": "../adapter-api" },
         { "path": "../adapter-components" },
         { "path": "../adapter-utils" },
-        { "path": "../dag" },
         { "path": "../e2e-credentials-store" },
         { "path": "../logging" },
         { "path": "../lowerdash" },

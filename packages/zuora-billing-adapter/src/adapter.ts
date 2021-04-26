@@ -141,7 +141,7 @@ export default class ZuoraAdapter implements AdapterOperations {
     const standardObjectWrapperType = allTypes[standardObjectTypeName]
     const customObjectDefType = allTypes[CUSTOM_OBJECT_DEFINITION_TYPE]
     if (!isObjectType(standardObjectWrapperType) || !isObjectType(customObjectDefType)) {
-      log.error('Could not find object types %s / %s', standardObjectTypeName, CUSTOM_OBJECT_DEFINITION_TYPE)
+      log.warn('Could not find object types %s / %s', standardObjectTypeName, CUSTOM_OBJECT_DEFINITION_TYPE)
       return []
     }
     return getStandardObjectElements({

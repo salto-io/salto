@@ -50,7 +50,7 @@ export type Credentials = OAuthClientCredentials
 export const KNOWN_SANDBOX_SUBDOMAIN_KEYWORDS = new Set(['apisandbox', 'sandbox', 'test', 'pt1'])
 
 export const isSandboxSubdomain = (subdomain: string): boolean => (
-  subdomain?.toLowerCase().split('.').some(part => KNOWN_SANDBOX_SUBDOMAIN_KEYWORDS.has(part))
+  subdomain.toLowerCase().split('.').some(part => KNOWN_SANDBOX_SUBDOMAIN_KEYWORDS.has(part))
 )
 
 export const toZuoraBaseUrl = (subdomain: string): string => (

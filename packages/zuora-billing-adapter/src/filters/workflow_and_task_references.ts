@@ -15,15 +15,14 @@
 */
 import _ from 'lodash'
 import {
-  Element, isObjectType, InstanceElement, ElemID, isInstanceElement, Field, ReferenceExpression,
-  ObjectType,
+  Element, isObjectType, InstanceElement, ElemID, isInstanceElement, ReferenceExpression, isField,
 } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, multiIndex } from '@salto-io/lowerdash'
 import { TASK_TYPE, WORKFLOW_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
-import { apiName, isObjectDef } from '../element_utils'
+import { isObjectDef } from '../element_utils'
 
 const log = logger(module)
 const { flatMapAsync, toAsyncIterable } = collections.asynciterable
@@ -70,20 +69,21 @@ const addTaskDependencies = (
     return
   }
 
-  const deps: ReferenceExpression[] = []
-
   // the type of the parameters is not specified in the swagger
-  Object.entries(inst.value.parameters.fields).forEach(([typeName, fieldMapping]) => {
+  const deps = Object.entries(
+    inst.value.parameters.fields
+  ).flatMap(([typeName, fieldMapping]) => {
     if (!_.isPlainObject(fieldMapping)) {
-      return
+      return []
     }
-    Object.keys(fieldMapping as object).forEach(fieldName => {
+    return Object.keys(fieldMapping as object).flatMap(fieldName => {
       // not looking up custom objects for now - if we did, they'd need to have
       // CUSTOM_OBJECT_SUFFIX appended for lookup
       const fieldId = fieldLowercaseLookup.get(typeName.toLowerCase(), fieldName)
       if (fieldId !== undefined) {
-        deps.push(new ReferenceExpression(fieldId))
+        return [new ReferenceExpression(fieldId)]
       }
+      return []
     })
   })
 
@@ -97,14 +97,14 @@ const addTaskDependencies = (
  */
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    const workflowType = elements.filter(isObjectType).find(e => apiName(e) === WORKFLOW_TYPE)
+    const workflowType = elements.filter(isObjectType).find(e => e.elemID.name === WORKFLOW_TYPE)
     if (workflowType === undefined) {
-      log.error('Could not find %s object type', WORKFLOW_TYPE)
+      log.warn('Could not find %s object type', WORKFLOW_TYPE)
       return
     }
-    const taskType = elements.filter(isObjectType).find(e => apiName(e) === TASK_TYPE)
+    const taskType = elements.filter(isObjectType).find(e => e.elemID.name === TASK_TYPE)
     if (taskType === undefined) {
-      log.error('Could not find %s object type', TASK_TYPE)
+      log.warn('Could not find %s object type', TASK_TYPE)
       return
     }
 
@@ -119,23 +119,26 @@ const filterCreator: FilterCreator = () => ({
     // referenced from workflows
 
     const objectDefs = elements.filter(isObjectDef)
-    const { typeLowercaseLookup } = await multiIndex.buildMultiIndex<ObjectType>()
+    const {
+      typeLowercaseLookup, fieldLowercaseLookup,
+    } = await multiIndex.buildMultiIndex<Element>()
       .addIndex({
         name: 'typeLowercaseLookup',
+        filter: isObjectDef,
         // id name changes are currently not allowed so it's ok to use the elem id
         key: type => [type.elemID.name.toLowerCase()],
         map: type => type.elemID,
       })
-      .process(toAsyncIterable(objectDefs))
-
-    const { fieldLowercaseLookup } = await multiIndex.buildMultiIndex<Field>()
       .addIndex({
         name: 'fieldLowercaseLookup',
+        filter: isField,
         // id name changes are currently not allowed so it's ok to use the elem id
         key: field => [field.elemID.typeName.toLowerCase(), field.elemID.name],
         map: field => field.elemID,
       })
-      .process(flatMapAsync(toAsyncIterable(objectDefs), obj => Object.values(obj.fields)))
+      .process(
+        flatMapAsync(toAsyncIterable(objectDefs), obj => [obj, ...Object.values(obj.fields)])
+      )
 
     workflowInstances.forEach(
       workflow => addWorkflowDependencies(workflow, typeLowercaseLookup, fieldLowercaseLookup)

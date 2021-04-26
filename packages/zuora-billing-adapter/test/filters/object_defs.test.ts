@@ -30,6 +30,7 @@ describe('Object defs filter', () => {
   const generateElements = (): Element[] => {
     const customObjectDefType = new ObjectType({
       elemID: new ElemID(ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE),
+      path: [ZUORA_BILLING, 'Types', 'CustomObjectDefinitions'],
     })
     const standardObjectDefType = new ObjectType({
       elemID: new ElemID(ZUORA_BILLING, STANDARD_OBJECT_DEFINITION_TYPE),
@@ -181,6 +182,13 @@ describe('Object defs filter', () => {
                   description: 'The account that is associated with the record.',
                 },
               },
+              // eslint-disable-next-line @typescript-eslint/camelcase
+              Custom2Id__c: {
+                format: 'uuid',
+                label: 'Custom2',
+                origin: 'custom',
+                type: 'string',
+              },
             },
             Id: {
               format: 'uuid',
@@ -242,11 +250,58 @@ describe('Object defs filter', () => {
                 },
               },
             },
+            {
+              cardinality: 'manyToOne',
+              namespace: 'default',
+              object: 'Custom2',
+              fields: {
+                additionalProperties: {
+                  // eslint-disable-next-line @typescript-eslint/camelcase
+                  Custom2Id__c: 'Id',
+                },
+              },
+              recordConstraints: {
+                create: {
+                  enforceValidMapping: false,
+                },
+              },
+            },
           ],
         },
       },
     )
-    return [customObjectDefType, standardObjectDefType, account, accountingcode, Custom1]
+    const Custom2 = new InstanceElement(
+      'Custom2',
+      customObjectDefType,
+      {
+        additionalProperties: {
+          Id: 'some other id',
+          type: 'Custom2',
+        },
+        CreatedById: 'id1',
+        UpdatedById: 'id1',
+        CreatedDate: '2021-01-01T01:23:45.678Z',
+        UpdatedDate: '2021-01-01T01:23:45.678Z',
+        schema: {
+          object: 'Custom2',
+          label: 'Custom2',
+          properties: {
+            Id: {
+              format: 'uuid',
+              label: 'Id',
+              origin: 'system',
+              type: 'string',
+            },
+          },
+          required: [],
+          description: 'this is a decription',
+          filterable: [],
+          // not supposed to happen
+          relationships: {},
+        },
+      },
+    )
+    return [customObjectDefType, standardObjectDefType, account, accountingcode, Custom1, Custom2]
   }
 
   beforeAll(() => {
@@ -299,6 +354,7 @@ describe('Object defs filter', () => {
       expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
         'zuora_billing.AccountingCode',
         'zuora_billing.Custom1__c',
+        'zuora_billing.Custom2__c',
         'zuora_billing.CustomObjectDefinition',
         'zuora_billing.StandardObjectDefinition',
         'zuora_billing.account',
@@ -342,6 +398,8 @@ describe('Object defs filter', () => {
         SubscriptionId__c: 'string',
         // eslint-disable-next-line @typescript-eslint/camelcase
         AccountId__c: 'string',
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        Custom2Id__c: 'string',
         Id: 'string',
       })
       expect(custom1.fields.Id.annotations).toEqual({
@@ -365,6 +423,30 @@ describe('Object defs filter', () => {
         // not a reference because subscription was not found
         referenceTo: ['subscription.Id'],
       })
+      expect(custom1.fields.Custom2Id__c.annotations).toEqual({
+        format: 'uuid',
+        label: 'Custom2',
+        origin: 'custom',
+        type: 'string',
+        filterable: false,
+        required: false,
+        cardinality: 'manyToOne',
+        recordConstraints: { create: { enforceValidMapping: false } },
+        referenceTo: [expect.any(ReferenceExpression)],
+      })
+      const fieldRef = custom1.fields.Custom2Id__c.annotations.referenceTo[0] as ReferenceExpression
+      expect(fieldRef.elemId.getFullName()).toEqual('zuora_billing.Custom2__c.field.Id')
+      const custom2 = elements.find(e => e.elemID.typeName === 'Custom2__c') as ObjectType
+      expect(custom2).toBeInstanceOf(ObjectType)
+      expect(_.mapValues(custom2.fields, f => f.type.elemID.getFullName())).toEqual({ Id: 'string' })
+      expect(custom1.fields.Id.annotations).toEqual({
+        filterable: true,
+        format: 'uuid',
+        label: 'Id',
+        origin: 'system',
+        required: true,
+        type: 'string',
+      })
     })
     it('should create the right references, ignoring lower/uppercase in type names', () => {
       const custom1 = elements.find(e => e.elemID.typeName === 'Custom1__c') as ObjectType
@@ -386,15 +468,16 @@ describe('Object defs filter', () => {
       expect(fieldRef.elemId.getFullName()).toEqual('zuora_billing.account.field.Id')
       expect(custom1.annotations).toEqual({
         // eslint-disable-next-line @typescript-eslint/camelcase
-        _generated_dependencies: [expect.any(ReferenceExpression)],
+        _generated_dependencies: [expect.any(ReferenceExpression), expect.any(ReferenceExpression)],
         description: 'this is a decription',
         id: 'some id',
         label: 'Custom1',
         metadataType: 'CustomObject',
       })
       // eslint-disable-next-line no-underscore-dangle
-      const objRef = custom1.annotations._generated_dependencies[0] as ReferenceExpression
-      expect(objRef.elemId.getFullName()).toEqual('zuora_billing.account')
+      const objRefs = custom1.annotations._generated_dependencies as ReferenceExpression[]
+      expect(objRefs[0].elemId.getFullName()).toEqual('zuora_billing.Custom2__c')
+      expect(objRefs[1].elemId.getFullName()).toEqual('zuora_billing.account')
     })
   })
 })

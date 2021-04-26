@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, CORE_ANNOTATIONS, ListType, BuiltinTypes } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, ListType, BuiltinTypes } from '@salto-io/adapter-api'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX } from './constants'
 
@@ -37,17 +38,6 @@ export type ZuoraConfig = {
   [API_DEFINITIONS_CONFIG]: ZuoraApiConfig
 }
 
-export type ConfigChangeSuggestion = {
-  type: keyof ZuoraConfig
-  value: string
-  reason?: string
-}
-
-export type FetchElements<T> = {
-  configChanges: ConfigChangeSuggestion[]
-  elements: T
-}
-
 const DEFAULT_ID_FIELDS = ['name']
 export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'createdBy', fieldType: 'string' },
@@ -67,7 +57,8 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
 const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
   WorkflowExport: {
     request: {
-      // for now relying on the specific param name from the config
+      // for now relying on the specific param name from the swagger (workflow_id),
+      // if it changes this should be updated accordingly
       url: '/workflows/{workflow_id}/export',
       dependsOn: [
         { pathParam: 'workflow_id', from: { type: 'Workflows', field: 'id' } },
@@ -225,7 +216,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
   // settings endpoints - adding SETTINGS_TYPE_PREFIX to avoid conflicts with swagger-defined types
   [`${SETTINGS_TYPE_PREFIX}Notification`]: {
     request: {
-      // for now relying on the specific param name from the config
+      // for now relying on the specific param name from the swagger (id)
       url: '/settings/communication-profiles/{id}/notifications',
       dependsOn: [
         { pathParam: 'id', from: { type: `${SETTINGS_TYPE_PREFIX}CommunicationProfiles`, field: 'id' } },
@@ -234,7 +225,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
   },
   [`${SETTINGS_TYPE_PREFIX}GatewayResponse`]: {
     request: {
-      // for now relying on the specific param name from the config
+      // for now relying on the specific param name from the swagger (id)
       url: '/settings/payment-gateways/{id}',
       dependsOn: [
         { pathParam: 'id', from: { type: `${SETTINGS_TYPE_PREFIX}PaymentGateways`, field: 'id' } },
@@ -336,7 +327,6 @@ export const DEFAULT_SETTINGS_INCLUDE_TYPES = [
   'ApplicationRules',
   'AttachmentLimitResponse',
   'AuditTrail',
-  // 'AvalaraTaxCode',
   'BatchAlias',
   'BillingCycleType',
   'BillingListPriceBase',
@@ -346,7 +336,6 @@ export const DEFAULT_SETTINGS_INCLUDE_TYPES = [
   'ChargeModel',
   'ChargeType',
   'CommunicationProfiles',
-  // 'ConnectorTaxCode', // not sure how to get, need specific id
   'Currencies',
   'CustomFields', // Murano - check
   'DataAccess',
@@ -357,13 +346,10 @@ export const DEFAULT_SETTINGS_INCLUDE_TYPES = [
   'ExternalSmtp',
   'FxCurrency',
   'GatewayResponse',
-  // 'GetAvalaraTaxEngine', // not allowed in our account?
-  // 'GetConnectorTaxEngine', // probably depends on the tax engine id, need to simulate
   'GetTaxCompanies',
   'GlSegments',
   'HierarchyDefinition',
   'HierarchyInfo',
-  // 'HostedPaymentMethodPageGetDto', // TODO
   'HostedPaymentPages',
   'InsightsConnection',
   'Notification',
@@ -375,14 +361,12 @@ export const DEFAULT_SETTINGS_INCLUDE_TYPES = [
   'ProductAttribute',
   'ReasonCodes',
   'RevenueEventTypes',
-  // 'RevenueRecognition',
   'RevenueRecognitionModels',
   'revenueRecognitionRuleDtos',
   'RevenueRecognitionStatus',
   'RevenueStartDate',
   'RolesPage',
   'SecurityPolicy',
-  // 'SegmentationRule',
   'SegmentationRules',
   'SharingAttribute',
   'SubscriptionSetting',
@@ -413,7 +397,7 @@ export const DEFAULT_INCLUDE_TYPES: string[] = [
   'WorkflowExport',
 ]
 
-export const configType = new ObjectType({
+export const configType = createMatchingObjectType<ZuoraConfig>({
   elemID: new ElemID(ZUORA_BILLING),
   fields: {
     [CLIENT_CONFIG]: {
@@ -425,7 +409,7 @@ export const configType = new ObjectType({
         { settingsIncludeTypes: { type: new ListType(BuiltinTypes.STRING) } },
       ),
       annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
+        _required: true,
         [CORE_ANNOTATIONS.DEFAULT]: {
           includeTypes: DEFAULT_INCLUDE_TYPES,
           settingsIncludeTypes: DEFAULT_SETTINGS_INCLUDE_TYPES,
@@ -437,6 +421,7 @@ export const configType = new ObjectType({
         adapter: ZUORA_BILLING,
       }),
       annotations: {
+        _required: true,
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_API_DEFINITIONS,
       },
     },

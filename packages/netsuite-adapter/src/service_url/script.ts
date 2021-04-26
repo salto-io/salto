@@ -15,11 +15,15 @@
 */
 
 import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
-import { PLUGIN_TYPES, SCRIPT_TYPES } from '../types'
+import { logger } from '@salto-io/logging'
+import { PLUGIN_IMPLEMENTATION_TYPES, SCRIPT_TYPES } from '../types'
 import NetsuiteClient from '../client/client'
 import { ServiceUrlSetter } from './types'
 import { areQueryResultsValid } from './validation'
 import { SUPPORTED_TYPES } from '../changes_detector/changes_detectors/script'
+
+const log = logger(module)
+
 
 const getScriptIdToInternalId = async (client: NetsuiteClient): Promise<Record<string, number>> => {
   const results = await client.runSuiteQL('SELECT id, scriptid FROM script')
@@ -34,13 +38,14 @@ const generateUrl = (element: InstanceElement, scriptIdToInternalId: Record<stri
   string | undefined => {
   const id = scriptIdToInternalId[element.value.scriptid]
   if (id === undefined) {
+    log.warn(`Did not find the internal id of ${element.elemID.getFullName()}`)
     return undefined
   }
 
   if (SCRIPT_TYPES.includes(element.type.elemID.name)) {
     return `app/common/scripting/script.nl?id=${id}`
   }
-  if (PLUGIN_TYPES.includes(element.type.elemID.name)) {
+  if (PLUGIN_IMPLEMENTATION_TYPES.includes(element.type.elemID.name)) {
     return `app/common/scripting/plugin.nl?id=${id}`
   }
   return `app/common/scripting/plugintype.nl?scripttype=PLUGINTYPE&id=${id}`

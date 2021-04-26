@@ -18,7 +18,7 @@ export const READ_SUCCESS_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
         <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
-            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_032420211672409845160737639_5a9a98</platformMsgs:nsId>
+            <platformMsgs:nsId>WEBSERVICES_ACCOUNTID_032420211672409845160737639_5a9a98</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>
@@ -35,7 +35,7 @@ export const READ_SUCCESS_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
                         <platformCore:name>Templates : E-mail Templates</platformCore:name>
                     </docFileCab:folder>
                     <docFileCab:fileSize>6.0</docFileCab:fileSize>
-                    <docFileCab:url>https://tstdrv2259448.app.netsuite.com/core/media/media.nl?id=5846&amp;c=TSTDRV2259448&amp;h=rCvF1ci0VbmCRfJ04BqD8KsS_Y4-1WaVMEO80PBTpD6_4qf7&amp;_xt=.bin</docFileCab:url>
+                    <docFileCab:url>https://accountid.app.netsuite.com/core/media/media.nl?id=5846&amp;c=ACCOUNTID&amp;h=rCvF1ci0VbmCRfJ04BqD8KsS_Y4-1WaVMEO80PBTpD6_4qf7&amp;_xt=.bin</docFileCab:url>
                     <docFileCab:textFileEncoding>_utf8</docFileCab:textFileEncoding>
                     <docFileCab:description>description3&lt;br&gt;aaaa&lt;br&gt;bbb&lt;br&gt;cc&lt;br&gt;d&lt;br&gt;ee&lt;br&gt;fff&lt;br&gt;gggg</docFileCab:description>
                     <docFileCab:isOnline>false</docFileCab:isOnline>
@@ -71,7 +71,7 @@ export const READ_SUCCESS_RESPONSE_NO_CONTENT = `<?xml version="1.0" encoding="U
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
         <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
-            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_032420211672409845160737639_5a9a98</platformMsgs:nsId>
+            <platformMsgs:nsId>WEBSERVICES_ACCOUNTID_032420211672409845160737639_5a9a98</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>
@@ -87,7 +87,7 @@ export const READ_SUCCESS_RESPONSE_NO_CONTENT = `<?xml version="1.0" encoding="U
                         <platformCore:name>Templates : E-mail Templates</platformCore:name>
                     </docFileCab:folder>
                     <docFileCab:fileSize>6.0</docFileCab:fileSize>
-                    <docFileCab:url>https://tstdrv2259448.app.netsuite.com/core/media/media.nl?id=5846&amp;c=TSTDRV2259448&amp;h=rCvF1ci0VbmCRfJ04BqD8KsS_Y4-1WaVMEO80PBTpD6_4qf7&amp;_xt=.bin</docFileCab:url>
+                    <docFileCab:url>https://accountid.app.netsuite.com/core/media/media.nl?id=5846&amp;c=ACCOUNTID&amp;h=rCvF1ci0VbmCRfJ04BqD8KsS_Y4-1WaVMEO80PBTpD6_4qf7&amp;_xt=.bin</docFileCab:url>
                     <docFileCab:textFileEncoding>_utf8</docFileCab:textFileEncoding>
                     <docFileCab:description>description3&lt;br&gt;aaaa&lt;br&gt;bbb&lt;br&gt;cc&lt;br&gt;d&lt;br&gt;ee&lt;br&gt;fff&lt;br&gt;gggg</docFileCab:description>
                     <docFileCab:isOnline>false</docFileCab:isOnline>
@@ -123,7 +123,7 @@ export const READ_FAILURE_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
         <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
-            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_0324202116735338402072580352_3a3eb</platformMsgs:nsId>
+            <platformMsgs:nsId>WEBSERVICES_ACCOUNTID_0324202116735338402072580352_3a3eb</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>
@@ -144,7 +144,7 @@ export const READ_INVALID_RESPONSE = `<?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
         <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
-            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_032420211672409845160737639_5a9a98</platformMsgs:nsId>
+            <platformMsgs:nsId>WEBSERVICES_ACCOUNTID_032420211672409845160737639_5a9a98</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>
@@ -162,7 +162,7 @@ export const UPDATE_FILE_CABINET_SUCCESS_RESPONSE = `<?xml version="1.0" encodin
 <soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
         <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
-            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_040420211679021275384972772_5a58ea</platformMsgs:nsId>
+            <platformMsgs:nsId>WEBSERVICES_ACCOUNTID_040420211679021275384972772_5a58ea</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>
@@ -195,7 +195,7 @@ export const UPDATE_FILE_CABINET_ERROR_RESPONSE = `<?xml version="1.0" encoding=
 <soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
         <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
-            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_040420211679021275384972772_5a58ea</platformMsgs:nsId>
+            <platformMsgs:nsId>WEBSERVICES_ACCOUNTID_040420211679021275384972772_5a58ea</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>
@@ -216,7 +216,7 @@ export const UPDATE_FILE_CABINET_INVALID_RESPONSE = `<?xml version="1.0" encodin
 <soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
         <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
-            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_040420211679021275384972772_5a58ea</platformMsgs:nsId>
+            <platformMsgs:nsId>WEBSERVICES_ACCOUNTID_040420211679021275384972772_5a58ea</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>
@@ -237,7 +237,7 @@ export const ADD_FILE_CABINET_SUCCESS_RESPONSE = `<?xml version="1.0" encoding="
 <soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
         <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
-            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_0404202116668635922013689574_7ac6b</platformMsgs:nsId>
+            <platformMsgs:nsId>WEBSERVICES_ACCOUNTID_0404202116668635922013689574_7ac6b</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>
@@ -269,7 +269,7 @@ export const ADD_FILE_CABINET_ERROR_RESPONSE = `<?xml version="1.0" encoding="UT
 <soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
         <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
-            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_0404202116668635922013689574_7ac6b</platformMsgs:nsId>
+            <platformMsgs:nsId>WEBSERVICES_ACCOUNTID_0404202116668635922013689574_7ac6b</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>
@@ -290,7 +290,7 @@ export const ADD_FILE_CABINET_INVALID_RESPONSE = `<?xml version="1.0" encoding="
 <soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
         <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
-            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_0404202116668635922013689574_7ac6b</platformMsgs:nsId>
+            <platformMsgs:nsId>WEBSERVICES_ACCOUNTID_0404202116668635922013689574_7ac6b</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>
@@ -307,7 +307,7 @@ export const DELETE_FILE_CABINET_SUCCESS_RESPONSE = `<?xml version="1.0" encodin
 <soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
         <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
-            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_041120211077625073628147978_af1747</platformMsgs:nsId>
+            <platformMsgs:nsId>WEBSERVICES_ACCOUNTID_041120211077625073628147978_af1747</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>
@@ -336,7 +336,7 @@ export const DELETE_FILE_CABINET_ERROR_RESPONSE = `<?xml version="1.0" encoding=
 <soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
         <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
-            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_0404202116668635922013689574_7ac6b</platformMsgs:nsId>
+            <platformMsgs:nsId>WEBSERVICES_ACCOUNTID_0404202116668635922013689574_7ac6b</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>
@@ -357,7 +357,7 @@ export const DELETE_FILE_CABINET_INVALID_RESPONSE = `<?xml version="1.0" encodin
 <soapenv:Envelope xmlns:soapenv="http://www.w3.org/2003/05/soap-envelope" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Header>
         <platformMsgs:documentInfo xmlns:platformMsgs="urn:messages_2020_2.platform.webservices.netsuite.com">
-            <platformMsgs:nsId>WEBSERVICES_TSTDRV2259448_0404202116668635922013689574_7ac6b</platformMsgs:nsId>
+            <platformMsgs:nsId>WEBSERVICES_ACCOUNTID_0404202116668635922013689574_7ac6b</platformMsgs:nsId>
         </platformMsgs:documentInfo>
     </soapenv:Header>
     <soapenv:Body>

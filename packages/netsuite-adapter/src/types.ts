@@ -244,7 +244,7 @@ export const SCRIPT_TYPES = [
   'customrecordactionscript',
 ]
 
-export const PLUGIN_TYPES = [
+export const PLUGIN_IMPLEMENTATION_TYPES = [
   'emailcaptureplugin',
   'customglplugin',
   'datasetbuilderplugin',

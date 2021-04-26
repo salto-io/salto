@@ -23,7 +23,7 @@ describe('setFileCabinetUrls', () => {
   const getPathInternalIdMock = jest.fn()
   const client = {
     getPathInternalId: getPathInternalIdMock,
-    url: 'https://tstdrv2259448.app.netsuite.com',
+    url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
 
   const elements = [
@@ -40,8 +40,8 @@ describe('setFileCabinetUrls', () => {
 
   it('should set the right url', async () => {
     await setServiceUrl(elements, client)
-    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://tstdrv2259448.app.netsuite.com/app/common/media/mediaitem.nl?id=1')
-    expect(elements[1].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://tstdrv2259448.app.netsuite.com/app/common/media/mediaitemfolder.nl?id=2')
+    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/media/mediaitem.nl?id=1')
+    expect(elements[1].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/media/mediaitemfolder.nl?id=2')
   })
 
   it('should not set url if not found internal id', async () => {

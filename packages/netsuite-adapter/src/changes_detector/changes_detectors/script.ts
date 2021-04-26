@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { PLUGIN_TYPES, SCRIPT_TYPES } from '../../types'
+import { PLUGIN_IMPLEMENTATION_TYPES, SCRIPT_TYPES } from '../../types'
 import { ChangedObject, TypeChangesDetector } from '../types'
 
 const log = logger(module)
 
-export const SUPPORTED_TYPES = [...SCRIPT_TYPES, ...PLUGIN_TYPES, 'plugintype']
+export const SUPPORTED_TYPES = [...SCRIPT_TYPES, ...PLUGIN_IMPLEMENTATION_TYPES, 'plugintype']
 
 const parseChanges = (queryName: string, changes?: Record<string, unknown>[]): ChangedObject[] => {
   if (changes === undefined) {

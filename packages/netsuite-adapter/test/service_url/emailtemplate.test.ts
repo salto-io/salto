@@ -23,7 +23,7 @@ describe('setEmailTemplatesUrls', () => {
   const runSuiteQlMock = jest.fn()
   const client = {
     runSuiteQL: runSuiteQlMock,
-    url: 'https://tstdrv2259448.app.netsuite.com',
+    url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
 
   let elements: InstanceElement[]
@@ -40,7 +40,7 @@ describe('setEmailTemplatesUrls', () => {
 
   it('should set the right url', async () => {
     await setServiceUrl(elements, client)
-    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://tstdrv2259448.app.netsuite.com/app/crm/common/merge/emailtemplate.nl?id=1&cp=F')
+    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/crm/common/merge/emailtemplate.nl?id=1&cp=F')
   })
 
   it('should not set url if not found internal id', async () => {

@@ -23,7 +23,7 @@ describe('setSavedSearchUrls', () => {
   const runSavedSearchQueryMock = jest.fn()
   const client = {
     runSavedSearchQuery: runSavedSearchQueryMock,
-    url: 'https://tstdrv2259448.app.netsuite.com',
+    url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
 
   let elements: InstanceElement[]
@@ -40,7 +40,7 @@ describe('setSavedSearchUrls', () => {
 
   it('should set the right url', async () => {
     await setServiceUrl(elements, client)
-    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://tstdrv2259448.app.netsuite.com/app/common/search/search.nl?cu=T&id=1')
+    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/search/search.nl?cu=T&id=1')
   })
 
   it('should not set url if not found internal id', async () => {

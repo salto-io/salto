@@ -16,14 +16,19 @@
 
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import { promises } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { ServiceUrlSetter } from './types'
 import { isFileCabinetInstance, isFileInstance } from '../types'
 import NetsuiteClient from '../client/client'
+
+const log = logger(module)
+
 
 const generateUrl = async (element: InstanceElement, client: NetsuiteClient):
   Promise<string | undefined> => {
   const id = await client.getPathInternalId(element.value.path)
   if (id === undefined) {
+    log.warn(`Did not find the internal id of ${element.elemID.getFullName()}`)
     return undefined
   }
 

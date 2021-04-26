@@ -15,9 +15,12 @@
 */
 
 import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import NetsuiteClient from '../client/client'
 import { ServiceUrlSetter } from './types'
 import { areQueryResultsValid } from './validation'
+
+const log = logger(module)
 
 const getScriptIdToInternalId = async (client: NetsuiteClient): Promise<Record<string, number>> => {
   const results = await client.runSuiteQL('SELECT internalid AS id, scriptid FROM customrecordtype')
@@ -37,6 +40,7 @@ const generateUrl = (element: InstanceElement, scriptIdToInternalId: Record<stri
     : element.value.scriptid
   const id = scriptIdToInternalId[scriptid]
   if (id === undefined) {
+    log.warn(`Did not find the internal id of ${element.elemID.getFullName()}`)
     return undefined
   }
 

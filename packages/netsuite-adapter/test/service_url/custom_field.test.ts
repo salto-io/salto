@@ -30,7 +30,7 @@ describe('setCustomFieldsUrls', () => {
   const runSuiteQlMock = jest.fn()
   const client = {
     runSuiteQL: runSuiteQlMock,
-    url: 'https://tstdrv2259448.app.netsuite.com',
+    url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
 
   let elements: InstanceElement[]
@@ -61,14 +61,14 @@ describe('setCustomFieldsUrls', () => {
 
   it('should set the right url', async () => {
     await setServiceUrl(elements, client)
-    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://tstdrv2259448.app.netsuite.com/app/common/custom/eventcustfield.nl?id=1')
-    expect(elements[1].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://tstdrv2259448.app.netsuite.com/app/common/custom/entitycustfield.nl?id=2')
-    expect(elements[2].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://tstdrv2259448.app.netsuite.com/app/common/custom/itemcustfield.nl?id=3')
-    expect(elements[3].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://tstdrv2259448.app.netsuite.com/app/common/custom/itemnumbercustfield.nl?id=4')
-    expect(elements[4].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://tstdrv2259448.app.netsuite.com/app/common/custom/itemoption.nl?id=5')
-    expect(elements[5].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://tstdrv2259448.app.netsuite.com/app/common/custom/othercustfield.nl?id=6')
-    expect(elements[6].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://tstdrv2259448.app.netsuite.com/app/common/custom/bodycustfield.nl?id=7')
-    expect(elements[7].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://tstdrv2259448.app.netsuite.com/app/common/custom/columncustfield.nl?id=8')
+    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/eventcustfield.nl?id=1')
+    expect(elements[1].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/entitycustfield.nl?id=2')
+    expect(elements[2].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/itemcustfield.nl?id=3')
+    expect(elements[3].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/itemnumbercustfield.nl?id=4')
+    expect(elements[4].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/itemoption.nl?id=5')
+    expect(elements[5].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/othercustfield.nl?id=6')
+    expect(elements[6].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/bodycustfield.nl?id=7')
+    expect(elements[7].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/columncustfield.nl?id=8')
   })
 
   it('should not set url if not found internal id', async () => {

@@ -15,9 +15,12 @@
 */
 
 import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import NetsuiteClient from '../client/client'
 import { ServiceUrlSetter } from './types'
 import { areQueryResultsValid } from './validation'
+
+const log = logger(module)
 
 const getScriptIdToInternalId = async (client: NetsuiteClient): Promise<Record<string, number>> => {
   const results = await client.runSuiteQL('SELECT id, scriptid FROM emailtemplate')
@@ -45,6 +48,8 @@ const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
     const id = scriptIdToInternalId[element.value.scriptid]
     if (id !== undefined) {
       element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(`app/crm/common/merge/emailtemplate.nl?id=${id}&cp=F`, client.url).href
+    } else {
+      log.warn(`Did not find the internal id of ${element.elemID.getFullName()}`)
     }
   })
 }

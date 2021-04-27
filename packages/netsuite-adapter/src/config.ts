@@ -24,7 +24,7 @@ import {
   SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
   CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
   SAVED_SEARCH, SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
-  CONCURRENCY_LIMIT,
+  CONCURRENCY_LIMIT, DATASET, WORKBOOK,
 } from './constants'
 import { NetsuiteQueryParameters } from './query'
 import { mergeTypeToInstances } from './client/utils'
@@ -156,10 +156,12 @@ export const configType = new ObjectType({
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: {
           types: {
+            [DATASET]: ['.*'], // Has a definition field which is a long XML and it contains 'translationScriptId' value that changes every fetch
             // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch.
             // Although the SAVED_SEARCH is not editable since it's encrypted, there still might be
             // a value for specific customers to use it for moving between envs, backup etc.
             [SAVED_SEARCH]: ['.*'],
+            [WORKBOOK]: ['.*'], // Has a definition field which is a long XML and it contains 'translationScriptId' value that changes every fetch
           },
           filePaths: [],
         },

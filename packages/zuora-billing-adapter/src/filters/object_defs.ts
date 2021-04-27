@@ -212,7 +212,6 @@ const filterCreator: FilterCreator = () => ({
     )
     addRelationships(typesByLowercaseName, defInstancesByName)
 
-    // TODO do we need additional checks before completely omitting the originals?
     elements.push(...Object.values(typesByLowercaseName))
   },
 })

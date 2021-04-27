@@ -127,7 +127,7 @@ export const addSalesforceRecipeReferences = (
           (f: { value: string }) => f.value
         )
         potentialFields.forEach((fieldName, idx) => {
-          const relatedObjectCheck = [...fieldListRelatedObjectAndFieldMatcher(fieldName)][0]
+          const relatedObjectCheck = fieldListRelatedObjectAndFieldMatcher(fieldName)[0]
           if (relatedObjectCheck !== undefined) {
             const { obj, field } = relatedObjectCheck
             const relatedObjectDetails = getObjectDetails(obj)
@@ -181,7 +181,7 @@ export const addSalesforceRecipeReferences = (
   const formulaFieldMatcher = createFormulaFieldMatcher(appName)
 
   const formulaReferenceFinder: FormulaReferenceFinder = value => {
-    const potentialMatchGroups = [...formulaFieldMatcher(value)]
+    const potentialMatchGroups = formulaFieldMatcher(value)
     return potentialMatchGroups.map(({ block, obj, field }) => {
       const blockSObject = sobjectByBlock[block]
       const objName = obj ?? blockSObject

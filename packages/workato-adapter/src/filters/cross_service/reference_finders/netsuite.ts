@@ -84,7 +84,7 @@ export const addNetsuiteRecipeReferences = (
   const formulaFieldMatcher = createFormulaFieldMatcher(appName)
 
   const formulaReferenceFinder: FormulaReferenceFinder = value => {
-    const potentialFields = [...formulaFieldMatcher(value)].map(match => match.field)
+    const potentialFields = formulaFieldMatcher(value).map(match => match.field)
     return potentialFields.map(fieldNameScriptId => {
       const referencedId = indexedElements[fieldNameScriptId]
       if (referencedId !== undefined) {

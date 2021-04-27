@@ -83,22 +83,19 @@ export const addReferencesForService = <T extends SalesforceBlock | NetsuiteBloc
   extendGeneratedDependencies(inst, dependencyMapping.map(dep => dep.ref))
 }
 
-export type Matcher<T> = (value: string) => Iterable<T>
+export type Matcher<T> = (value: string) => T[]
 export const createMatcher = <T>(
   matchers: RegExp[],
   typeGuard: types.TypeGuard<Values, T>,
 ): Matcher<T> => (
-    function *fieldMatcher(value) {
+    value => {
       const matchGroups = (
         matchers
           .flatMap(m => [...matchAll(value, m)])
           .map(r => r.groups)
           .filter(isDefined)
-      )
-      for (const m of matchGroups) {
-        if (typeGuard(m)) {
-          yield m
-        }
-      }
+      ) as Values[]
+      const x: T[] = matchGroups.filter(typeGuard)
+      return x
     }
   )

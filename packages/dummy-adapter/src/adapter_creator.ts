@@ -21,7 +21,7 @@ import { GeneratorParams, DUMMY_ADAPTER, defaultParams } from './generator'
 
 export const configType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER),
-  fields: {... _.mapValues(defaultParams, defValue => ({
+  fields: { ..._.mapValues(defaultParams, defValue => ({
     refType: _.isBoolean(defValue)
       ? createRefToElmWithValue(BuiltinTypes.BOOLEAN)
       : createRefToElmWithValue(BuiltinTypes.NUMBER),
@@ -29,8 +29,7 @@ export const configType = new ObjectType({
       [CORE_ANNOTATIONS.DEFAULT]: defValue,
     },
   })),
-  extraNaclPath: { refType: createRefToElmWithValue(BuiltinTypes.STRING) }
-  },
+  extraNaclPath: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
 })
 
 export const adapter: Adapter = {

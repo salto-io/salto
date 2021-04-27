@@ -22,7 +22,7 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async ({ elements }) => {
     elements
       .filter(isInstanceElement)
-      .filter(e => isFileCabinetType(e.type))
+      .filter(e => isFileCabinetType(e.refType.elemID))
       .filter(e => path.dirname(e.value.path) !== '/')
       .forEach(e => { e.annotations[CORE_ANNOTATIONS.PARENT] = [`[${path.dirname(e.value.path)}]`] })
   },

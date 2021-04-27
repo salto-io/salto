@@ -64,8 +64,8 @@ describe('ducktype_field_finder', () => {
       ], '.')
       expect(fieldDetails).toBeUndefined()
     })
-    it('should return undefined when the specified data field is not an object type', () => {
-      const fieldDetails = findDataField(sampleType, undefined, 'str')
+    it('should return undefined when the specified data field is not an object type', async () => {
+      const fieldDetails = await findDataField(sampleType, undefined, 'str')
       expect(fieldDetails).toBeUndefined()
     })
     it('should return inner type when the matching field is a list', async () => {

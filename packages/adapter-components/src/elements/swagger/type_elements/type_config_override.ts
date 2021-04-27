@@ -15,6 +15,7 @@
 */
 import { ObjectType, BuiltinTypes, MapType, ListType, TypeElement, isEqualElements, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { getConfigWithDefault } from '../../../config/shared'
 import { TypeSwaggerConfig, AdditionalTypeConfig, TypeSwaggerDefaultConfig } from '../../../config/swagger'
 import { FieldTypeOverrideType, FieldToHideType, TransformationConfig } from '../../../config/transformation'
@@ -139,8 +140,8 @@ export const fixTypes = (
           return
         }
         const newFieldType = toTypeWithContainers(fieldType)
-        log.debug('Modifying field type for %s.%s from %s to %s', typeName, fieldName, field.type.elemID.name, newFieldType.elemID.name)
-        field.type = newFieldType
+        log.debug('Modifying field type for %s.%s from %s to %s', typeName, fieldName, field.refType.elemID.name, newFieldType.elemID.name)
+        field.refType = createRefToElmWithValue(newFieldType)
       })
     })
 

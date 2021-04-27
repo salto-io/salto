@@ -20,10 +20,12 @@ import {
   isFieldChange, isListType, TypeElement, isMapType, Value, Values, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FIELD_ANNOTATIONS, LABEL } from '../constants'
 import { isFieldOfCustomObject } from '../transformers/transformer'
 
+const { awu } = collections.asynciterable
 const fieldNameToInnerContextField: Record<string, string> = {
   applicationVisibilities: 'application',
   recordTypeVisibilities: 'recordType',
@@ -48,7 +50,7 @@ const isFieldWithValueSet = (field: Field): field is FieldWithValueSet => (
 
 const formatContext = (context: Value): string => {
   if (isReferenceExpression(context)) {
-    return context.elemId.getFullName()
+    return context.elemID.getFullName()
   }
   if (_.isString(context)) {
     return context
@@ -72,29 +74,42 @@ const getPicklistMultipleDefaultsErrors = (field: FieldWithValueSet): ChangeErro
   return contexts.length > 1 ? [createChangeError(field, contexts)] : []
 }
 
-const getInstancesMultipleDefaultsErrors = (after: InstanceElement): ChangeError[] => {
-  const getDefaultObjectsList = (val: Value, type: TypeElement): Value[] => {
+const getInstancesMultipleDefaultsErrors = async (
+  after: InstanceElement
+): Promise<ChangeError[]> => {
+  const getDefaultObjectsList = async (val: Value, type: TypeElement): Promise<Value[]> => {
     if (isMapType(type)) {
-      return Object.values(val).flatMap(inner => getDefaultObjectsList(inner, type.innerType))
+      return awu(Object.values(val))
+        .flatMap(async inner => getDefaultObjectsList(inner, await type.getInnerType()))
+        .toArray()
     }
     if (isListType(type) && _.isArray(val)) {
-      return val.flatMap(inner => getDefaultObjectsList(inner, type.innerType))
+      return awu(val)
+        .flatMap(async inner => getDefaultObjectsList(inner, await type.getInnerType()))
+        .toArray()
     }
     return val
   }
 
-  const errors: ChangeError[] = Object.entries(after.value)
+  const errors: ChangeError[] = await awu(Object.entries(after.value))
     .filter(([fieldName]) => Object.keys(fieldNameToInnerContextField).includes(fieldName))
-    .flatMap(([fieldName, value]) => {
-      const defaultObjects = getDefaultObjectsList(value, after.type.fields[fieldName].type)
+    .flatMap(async ([fieldName, value]) => {
+      const defaultObjects = await getDefaultObjectsList(
+        value,
+        await (await after.getType()).fields[fieldName].getType()
+      )
       const contexts = defaultObjects
         .filter(val => val.default)
         .map(obj => obj[fieldNameToInnerContextField[fieldName]])
         .map(formatContext)
       return contexts.length > 1
-        ? [createChangeError(after.type.fields[fieldName], contexts, after.elemID.name)]
-        : []
-    })
+        ? [
+          createChangeError((
+            await after.getType()).fields[fieldName],
+          contexts,
+          after.elemID.name),
+        ] : []
+    }).toArray()
 
   return errors
 }
@@ -103,11 +118,12 @@ const getInstancesMultipleDefaultsErrors = (after: InstanceElement): ChangeError
  * It is forbidden to set more than one 'default' field as 'true' for some types.
  */
 const changeValidator: ChangeValidator = async changes => {
-  const instanceChangesErrors = changes
+  const instanceChangesErrors = await awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .map(getChangeElement)
     .flatMap(getInstancesMultipleDefaultsErrors)
+    .toArray()
 
   // special treatment for picklist & multipicklist valueSets
   const picklistChangesErrors = changes

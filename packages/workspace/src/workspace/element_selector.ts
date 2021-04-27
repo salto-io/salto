@@ -82,10 +82,11 @@ export const validateSelectorsMatches = (selectors: ElementSelector[],
 
 export const selectElementsBySelectors = (
   {
-    elementIds, selectors,
+    elementIds, selectors, includeNested = false,
   }: {
     elementIds: AsyncIterable<ElemID>
     selectors: ElementSelector[]
+    includeNested?: boolean
   }
 ): AsyncIterable<ElemID> => {
   const matches: Record<string, boolean> = { }
@@ -97,6 +98,7 @@ export const selectElementsBySelectors = (
       const result = match(
         isElementContainer(obj) ? obj.elemID : obj as ElemID,
         selector,
+        includeNested
       )
       matches[selector.origin] = matches[selector.origin] || result
       return result
@@ -209,7 +211,7 @@ export const selectElementIdsByTraversal = async (
     isTopLevelSelector,
   )
   if (topLevelSelectors.length !== 0) {
-    const topLevelElements = selectElementsBySelectors({elementIds, selectors: topLevelSelectors})
+    const topLevelElements = selectElementsBySelectors({ elementIds, selectors: topLevelSelectors })
     if (subElementSelectors.length === 0) {
       idsIterable = awu(idsIterable).concat(topLevelElements)
       return awu(idsIterable).uniquify(id => id.getFullName())
@@ -219,7 +221,9 @@ export const selectElementIdsByTraversal = async (
     idsIterable = awu(idsIterable).concat(topLevelElementsArr)
   }
   const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)
-  const possibleParentElements = selectElementsBySelectors({elementIds, selectors: possibleParentSelectors})
+  const possibleParentElements = selectElementsBySelectors(
+    { elementIds, selectors: possibleParentSelectors }
+  )
   const stillRelevantElements = compact
     ? awu(possibleParentElements).filter(id => !currentIds.includes(id.getFullName()))
     : possibleParentElements

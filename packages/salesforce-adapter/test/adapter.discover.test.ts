@@ -622,7 +622,6 @@ public class MyClass${index} {
           })
         )
       )
-
       const { elements: result } = await adapter.fetch(mockFetchOpts)
       expect(connection.metadata.retrieve).toHaveBeenCalledTimes(2)
       const [first] = findElements(result, 'ApexClass', 'MyClass0') as InstanceElement[]

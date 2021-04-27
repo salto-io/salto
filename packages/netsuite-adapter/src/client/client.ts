@@ -16,7 +16,7 @@
 
 import { AccountId, Change, ChangeGroup, DeployResult, getChangeElement, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { decorators } from '@salto-io/lowerdash'
+import { decorators, collections } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
 import { NetsuiteQuery } from '../query'
 import { Credentials } from './credentials'
@@ -30,6 +30,7 @@ import { getLookUpName, toCustomizationInfo } from '../transformer'
 import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
 import { DeployType } from '../suiteapp_file_cabinet'
 
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
@@ -91,10 +92,10 @@ export default class NetsuiteClient {
     return this.sdfClient.importFileCabinetContent(query)
   }
 
-  private static getAllRequiredReferencedInstances(
+  private static async getAllRequiredReferencedInstances(
     changedInstances: ReadonlyArray<InstanceElement>,
     deployReferencedElements: boolean,
-  ): ReadonlyArray<InstanceElement> {
+  ): Promise<ReadonlyArray<InstanceElement>> {
     if (deployReferencedElements) {
       return getAllReferencedInstances(changedInstances)
     }
@@ -106,11 +107,12 @@ export default class NetsuiteClient {
     deployReferencedElements: boolean
   ): Promise<DeployResult> {
     const changedInstances = changes.map(getChangeElement)
-    const customizationInfos = NetsuiteClient.getAllRequiredReferencedInstances(
+    const customizationInfos = await awu(await NetsuiteClient.getAllRequiredReferencedInstances(
       changedInstances,
       deployReferencedElements
-    ).map(instance => resolveValues(instance, getLookUpName))
-      .map(toCustomizationInfo)
+    )).map(instance => resolveValues(instance, getLookUpName))
+      .map(instance => toCustomizationInfo(instance))
+      .toArray()
 
     try {
       await this.sdfClient.deploy(customizationInfos)

@@ -30,17 +30,17 @@ describe('createMatchingObjectType', () => {
     const innerType = createMatchingObjectType<InnerType>({
       elemID: new ElemID('inner'),
       fields: {
-        inner: { type: BuiltinTypes.BOOLEAN, annotations: { _required: true } },
+        inner: { refType: BuiltinTypes.BOOLEAN, annotations: { _required: true } },
       },
     })
     expect(createMatchingObjectType<Test>({
       elemID: new ElemID('test'),
       fields: {
-        str: { type: BuiltinTypes.STRING, annotations: { _required: true } },
+        str: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
         // enforced to be ObjectType, no enforcement on inner fields here
-        obj: { type: innerType, annotations: { _required: true } },
-        lst: { type: new ListType(BuiltinTypes.NUMBER), annotations: { _required: true } },
-        objLst: { type: new ListType(innerType), annotations: { _required: true } },
+        obj: { refType: innerType, annotations: { _required: true } },
+        lst: { refType: new ListType(BuiltinTypes.NUMBER), annotations: { _required: true } },
+        objLst: { refType: new ListType(innerType), annotations: { _required: true } },
       },
     })).toBeInstanceOf(ObjectType)
   })
@@ -56,10 +56,10 @@ describe('createMatchingObjectType', () => {
     expect(createMatchingObjectType<Test>({
       elemID: new ElemID('test'),
       fields: {
-        a: { type: BuiltinTypes.STRING, annotations: { _required: true } },
-        b: { type: BuiltinTypes.STRING, annotations: { _required: false } },
-        c: { type: BuiltinTypes.STRING, annotations: {} },
-        d: { type: BuiltinTypes.STRING },
+        a: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
+        b: { refType: BuiltinTypes.STRING, annotations: { _required: false } },
+        c: { refType: BuiltinTypes.STRING, annotations: {} },
+        d: { refType: BuiltinTypes.STRING },
       },
     })).toBeInstanceOf(ObjectType)
   })

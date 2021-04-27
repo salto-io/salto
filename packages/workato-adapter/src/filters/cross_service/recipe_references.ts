@@ -359,10 +359,10 @@ const filter: FilterCreator = ({ config }) => ({
   onPostFetch: async ({
     currentAdapterElements,
     elementsByAdapter,
-  }: PostFetchOptions): Promise<void> => {
+  }: PostFetchOptions): Promise<boolean> => {
     const { serviceConnectionNames } = config[FETCH_CONFIG]
     if (serviceConnectionNames === undefined || _.isEmpty(serviceConnectionNames)) {
-      return
+      return false
     }
 
     const serviceConnections = getServiceConnectionIDs(
@@ -383,19 +383,19 @@ const filter: FilterCreator = ({ config }) => ({
       inst => inst.elemID.getFullName()
     )
 
-    await awu(Object.entries(serviceConnections))
-      .forEach(async ([serviceName, connectionID]) => {
+    return awu(Object.entries(serviceConnections))
+      .map(async ([serviceName, connectionID]) => {
         const relevantRecipeCodes = filterRelevantRecipeCodes(
           connectionID,
           recipeInstances,
           recipeCodeInstancesByElemID,
         )
-        await addReferencesForConnectionRecipes(
+        return addReferencesForConnectionRecipes(
           relevantRecipeCodes,
           serviceName,
           elementsByAdapter[serviceName] ?? [],
         )
-      })
+      }).some(t => t)
   },
 })
 

@@ -222,7 +222,7 @@ export const transformValues = async (
   const fieldMapper = fieldMapperGenerator(type, values)
 
   const newVal = isTopLevel ? await transformFunc({ value: values, path: pathID }) : values
-  if (!_.isPlainObject(newVal)) { //REBASE Possible rebase issue
+  if (!_.isPlainObject(newVal) && !_.isArray(newVal)) {
     return newVal
   }
   const result = _.omitBy(

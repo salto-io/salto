@@ -88,21 +88,23 @@ const mockInstance = new InstanceElement(
   },
   ['yes', 'this', 'is', 'path'],
 )
-// eslint-disable-next-line jest/no-disabled-tests
-describe('element selector', () => {
-  const selectElements = async ({
-    elements, selectors, caseInsensitive = false
-  }: {
-    elements: ElemID[]
-    selectors: string[]
-    caseInsensitive?: boolean
-  }): Promise<ElemID[]> => awu(
-    (selectElementsBySelectors({
-      elementIds: awu(elements),
-      selectors: createElementSelectors(selectors, caseInsensitive).validSelectors
-    }))
-  ).toArray()
 
+const selectElements = async ({
+  elements, selectors, caseInsensitive = false, includeNested = false,
+}: {
+  elements: ElemID[]
+  selectors: string[]
+  caseInsensitive?: boolean
+  includeNested?: boolean
+}): Promise<ElemID[]> => awu(
+  (selectElementsBySelectors({
+    elementIds: awu(elements),
+    selectors: createElementSelectors(selectors, caseInsensitive).validSelectors,
+    includeNested,
+  }))
+).toArray()
+
+describe('element selector', () => {
   it('should handle asterisks in adapter and type', async () => {
     const elements = [
       new ElemID('salesforce', 'sometype'),
@@ -110,7 +112,7 @@ describe('element selector', () => {
       new ElemID('otheradapter', 'othertype'),
       new ElemID('salesforce', 'othertype', 'instance'),
     ]
-    const selectedElements = await selectElements({elements, selectors: ['*.*']})
+    const selectedElements = await selectElements({ elements, selectors: ['*.*'] })
     expect(selectedElements).toEqual([elements[0], elements[1], elements[2]])
   })
 
@@ -146,7 +148,7 @@ describe('element selector', () => {
       new ElemID('salesforce', 'othertype', 'instance', 'NotA'),
     ]
     const selectedElements = await selectElements(
-      { elements, selectors: ['salesforce.*.instance.A']}
+      { elements, selectors: ['salesforce.*.instance.A'] }
     )
     expect(selectedElements).toEqual([elements[0]])
   })
@@ -159,7 +161,7 @@ describe('element selector', () => {
       new ElemID('salesforce', 'othertype', 'instance', 'NotA'),
     ]
     const selectedElements = await selectElements(
-      { elements, selectors: ['salesforce.*.instance.A']}
+      { elements, selectors: ['salesforce.*.instance.A'], includeNested: true }
     )
     expect(selectedElements).toEqual([elements[0], elements[1], elements[2]])
   })
@@ -172,7 +174,7 @@ describe('element selector', () => {
       new ElemID('salesforce', 'othertype', 'instance', 'NotA', 'B'),
     ]
     const selectedElements = await selectElements(
-      { elements, selectors: ['salesforce.*.instance.A.*']}
+      { elements, selectors: ['salesforce.*.instance.A.*'] }
     )
     expect(selectedElements).toEqual([elements[1]])
   })
@@ -185,7 +187,7 @@ describe('element selector', () => {
       new ElemID('salesforce', 'othertype', 'instance', 'NotA', 'B'),
     ]
     const selectedElements = await selectElements(
-      { elements, selectors: ['salesforce.*.instance.A.*']}
+      { elements, selectors: ['salesforce.*.instance.A.*'], includeNested: true }
     )
     expect(selectedElements).toEqual([elements[1], elements[2]])
   })
@@ -262,7 +264,7 @@ describe('element selector', () => {
 
   // Since element selection is now asynchronous, validation has been removed for now
   // This comment kept as reminder of that possibility
-  it('should use case insensitive selectors when specified', () => {
+  it('should use case insensitive selectors when specified', async () => {
     const elements = [
       new ElemID('salesfOrce', 'valUe', 'instance', 'heLlo', 'woRld'),
       new ElemID('salesfOrce', 'valUe', 'instance', 'heLlo', 'universe'),
@@ -271,58 +273,63 @@ describe('element selector', () => {
       new ElemID('hubsPot', 'value', 'attr', 'sOmetHing'),
       new ElemID('hubspot', 'value', 'attr', 'other'),
     ]
-    const selectedElements = selectElements({
+    const selectedElements = await selectElements({
       elements,
       selectors: ['salesforce.v*ue.INSTANCE.hellO.World', 'netsuitE.v*', 'Hubspot.V*.attR.Something'],
       caseInsensitive: true,
     })
     expect(selectedElements).toEqual([elements[0], elements[3], elements[4]])
   })
+})
 
-    it('should throw error when invalid selector is given', () => {
-      const invalidFilters = ['salesforce.Account.*', 'salesforce', '']
-      expect(() => {
-        createElementSelector('salesforce.Account.*')
-      }).toThrow(new Error('Illegal element selector includes illegal type name: "*". Full selector is: "salesforce.Account.*"'))
-      expect(() => {
-        createElementSelector('salesforce')
-      }).toThrow(new Error('Illegal element selector does not contain type name: "salesforce"'))
-      expect(() => {
-        createElementSelector('')
-      }).toThrow(new Error('Illegal element selector does not contain adapter expression: ""'))
-      expect(createElementSelectors(invalidFilters).invalidSelectors).toEqual(invalidFilters)
-    })
+// eslint-disable-next-line jest/no-disabled-tests
+describe.skip('validation tests', () => {
+  it('should throw error when invalid selector is given', () => {
+    const invalidFilters = ['salesforce.Account.*', 'salesforce', '']
+    expect(() => {
+      createElementSelector('salesforce.Account.*')
+    }).toThrow(new Error('Illegal element selector includes illegal type name: "*". Full selector is: "salesforce.Account.*"'))
+    expect(() => {
+      createElementSelector('salesforce')
+    }).toThrow(new Error('Illegal element selector does not contain type name: "salesforce"'))
+    expect(() => {
+      createElementSelector('')
+    }).toThrow(new Error('Illegal element selector does not contain adapter expression: ""'))
+    expect(createElementSelectors(invalidFilters).invalidSelectors).toEqual(invalidFilters)
+  })
 
-    it('should throw error if exact element id filter matches nothing', async () => {
-      const elements = [
-        new ElemID('salesforce', 'ApexClass', 'instance', 'American'),
-        new ElemID('salesforce', 'othertype'),
-        new ElemID('salesforce', 'othertype', 'instance', 'American', 'Australian'),
-        new ElemID('otheradapter', 'ApexClass', 'instance', 'Bob'),
-        new ElemID('otheradapter', 'ApexClass', 'instance', 'bob2'),
-        new ElemID('salesforce', 'ApexClass', 'instance', 'Im eric chan'),
-        new ElemID('salesforce', 'ApexClass', 'instance', 'eric'),
-        new ElemID('salesforce', 'ApexClass', 'instance', 'Im eric'),
-        new ElemID('salesforce', 'ApexClass', 'instance', 'eric chan'),
-      ]
-      return expect(selectElements({elements, selectors: ['salesforce.*', 'otheradapter.ApexClass.instance.bob2',
-        'otheradapter.Apexclass.instance.bob3', 'otheradapter.Apexclass.instance.bob4']}))
-        .rejects.toThrow(new Error('The following salto ids were not found: otheradapter.Apexclass.instance.bob3,otheradapter.Apexclass.instance.bob4'))
-    })
-    it('should throw error if no filter matches anything', async () => {
-      const elements = [
-        new ElemID('salesforce', 'ApexClass', 'instance', 'American'),
-        new ElemID('salesforce', 'othertype'),
-        new ElemID('salesforce', 'othertype', 'instance', 'American', 'Australian'),
-        new ElemID('otheradapter', 'ApexClass', 'instance', 'Bob'),
-        new ElemID('otheradapter', 'ApexClass', 'instance', 'bob2'),
-        new ElemID('salesforce', 'ApexClass', 'instance', 'Im eric chan'),
-        new ElemID('salesforce', 'ApexClass', 'instance', 'eric'),
-        new ElemID('salesforce', 'ApexClass', 'instance', 'Im eric'),
-        new ElemID('salesforce', 'ApexClass', 'instance', 'eric chan'),
-      ]
-      return expect(selectElements({elements, selectors: ['nonexistantadapter.ApexClass.instance.*',
-        'anothernonexistantadapter.*']})).rejects.toThrow(new Error('No salto ids matched the provided selectors nonexistantadapter.ApexClass.instance.*,anothernonexistantadapter.*'))
+  it('should throw error if exact element id filter matches nothing', async () => {
+    const elements = [
+      new ElemID('salesforce', 'ApexClass', 'instance', 'American'),
+      new ElemID('salesforce', 'othertype'),
+      new ElemID('salesforce', 'othertype', 'instance', 'American', 'Australian'),
+      new ElemID('otheradapter', 'ApexClass', 'instance', 'Bob'),
+      new ElemID('otheradapter', 'ApexClass', 'instance', 'bob2'),
+      new ElemID('salesforce', 'ApexClass', 'instance', 'Im eric chan'),
+      new ElemID('salesforce', 'ApexClass', 'instance', 'eric'),
+      new ElemID('salesforce', 'ApexClass', 'instance', 'Im eric'),
+      new ElemID('salesforce', 'ApexClass', 'instance', 'eric chan'),
+    ]
+    return expect(selectElements({ elements,
+      selectors: ['salesforce.*', 'otheradapter.ApexClass.instance.bob2',
+        'otheradapter.Apexclass.instance.bob3', 'otheradapter.Apexclass.instance.bob4'] }))
+      .rejects.toThrow(new Error('The following salto ids were not found: otheradapter.Apexclass.instance.bob3,otheradapter.Apexclass.instance.bob4'))
+  })
+  it('should throw error if no filter matches anything', async () => {
+    const elements = [
+      new ElemID('salesforce', 'ApexClass', 'instance', 'American'),
+      new ElemID('salesforce', 'othertype'),
+      new ElemID('salesforce', 'othertype', 'instance', 'American', 'Australian'),
+      new ElemID('otheradapter', 'ApexClass', 'instance', 'Bob'),
+      new ElemID('otheradapter', 'ApexClass', 'instance', 'bob2'),
+      new ElemID('salesforce', 'ApexClass', 'instance', 'Im eric chan'),
+      new ElemID('salesforce', 'ApexClass', 'instance', 'eric'),
+      new ElemID('salesforce', 'ApexClass', 'instance', 'Im eric'),
+      new ElemID('salesforce', 'ApexClass', 'instance', 'eric chan'),
+    ]
+    return expect(selectElements({ elements,
+      selectors: ['nonexistantadapter.ApexClass.instance.*',
+        'anothernonexistantadapter.*'] })).rejects.toThrow(new Error('No salto ids matched the provided selectors nonexistantadapter.ApexClass.instance.*,anothernonexistantadapter.*'))
   })
 })
 describe('select elements recursively', () => {
@@ -407,11 +414,11 @@ describe('select elements recursively', () => {
     const selectors = createElementSelectors([
       'mockAdapter.test.instance.mockInstance.thispropertydoesntexist',
     ]).validSelectors
-    const elementIds = (await selectElementIdsByTraversal(
+    const elementIds = await awu((await selectElementIdsByTraversal(
       selectors,
-      awu([mockInstance, mockType]).map(element => (element.elemID)), 
+      awu([mockInstance, mockType]).map(element => (element.elemID)),
       createInMemoryElementSource([mockInstance, mockType])
-    ))
+    ))).toArray()
     expect(elementIds).toEqual([ElemID
       .fromFullName('mockAdapter.test.instance.mockInstance.thispropertydoesntexist')])
   })
@@ -420,10 +427,10 @@ describe('select elements recursively', () => {
       'mockAdapter.test.instance.mockInstance.thispropertydoesntexist',
       'mockAdapter.test.field.strMap',
     ]).validSelectors
-    const elementIds = (await selectElementIdsByTraversal(selectors,
-      awu([mockInstance, mockType]).map(element => element.elemID), 
+    const elementIds = await awu(await selectElementIdsByTraversal(selectors,
+      awu([mockInstance, mockType]).map(element => element.elemID),
       createInMemoryElementSource([mockInstance, mockType]),
-      false, true))
+      false, true)).toArray()
     expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
   })
 })

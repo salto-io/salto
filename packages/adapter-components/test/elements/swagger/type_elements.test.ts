@@ -16,6 +16,7 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, ListType, TypeElement, BuiltinTypes, MapType } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { generateTypes, toPrimitiveType } from '../../../src/elements/swagger'
 import { RequestableTypeSwaggerConfig } from '../../../src/config'
 
@@ -58,14 +59,14 @@ describe('swagger_type_elements', () => {
         // regular response type with reference
         const pet = allTypes.Pet as ObjectType
         expect(pet).toBeInstanceOf(ObjectType)
-        expect(_.mapValues(pet.fields, f => f.type.elemID.getFullName())).toEqual({
-          additionalProperties: 'map<unknown>',
+        expect(_.mapValues(pet.fields, f => f.refType.elemID.getFullName())).toEqual({
+          additionalProperties: 'Map<unknown>',
           category: 'myAdapter.Category',
           id: 'number',
           name: 'string',
-          photoUrls: 'list<string>',
+          photoUrls: 'List<string>',
           status: 'string',
-          tags: 'list<myAdapter.Tag>',
+          tags: 'List<myAdapter.Tag>',
         })
 
         // array response type
@@ -73,7 +74,7 @@ describe('swagger_type_elements', () => {
         expect(petArray).toEqual(new ObjectType({
           elemID: new ElemID(ADAPTER_NAME, 'pet__findByStatus'),
           fields: {
-            items: { type: new ListType(pet) },
+            items: { refType: createRefToElmWithValue(new ListType(pet)) },
           },
           path: [ADAPTER_NAME, 'Types', 'pet__findByStatus'],
         }))
@@ -81,7 +82,7 @@ describe('swagger_type_elements', () => {
         // field with allOf
         const user = allTypes.User as ObjectType
         expect(user).toBeInstanceOf(ObjectType)
-        expect(_.mapValues(user.fields, f => f.type.elemID.getFullName())).toEqual({
+        expect(_.mapValues(user.fields, f => f.refType.elemID.getFullName())).toEqual({
           // directly listed
           email: 'string',
           firstName: 'string',
@@ -96,17 +97,17 @@ describe('swagger_type_elements', () => {
           // ref to UserAdditional2 in swagger
           middleName2: 'string',
           // additional properties
-          additionalProperties: 'map<myAdapter.Order>',
+          additionalProperties: 'Map<myAdapter.Order>',
         })
 
         // additionalProperties explicit property combined with enabled additionalProperties
         // should be undefined
         const food = allTypes.Food as ObjectType
         expect(food).toBeInstanceOf(ObjectType)
-        expect(_.mapValues(food.fields, f => f.type.elemID.getFullName())).toEqual({
+        expect(_.mapValues(food.fields, f => f.refType.elemID.getFullName())).toEqual({
           brand: 'string',
           id: 'number',
-          additionalProperties: 'map<unknown>',
+          additionalProperties: 'Map<unknown>',
         })
 
         return { allTypes, parsedConfigs }
@@ -134,20 +135,20 @@ describe('swagger_type_elements', () => {
         expect(foodOrCategory).toBeInstanceOf(ObjectType)
         expect(foodXorCategory).toBeInstanceOf(ObjectType)
         // anyOf
-        expect(_.mapValues(foodOrCategory.fields, f => f.type.elemID.name)).toEqual({
-          ..._.mapValues(food.fields, f => f.type.elemID.name),
-          ..._.mapValues(category.fields, f => f.type.elemID.name),
+        expect(_.mapValues(foodOrCategory.fields, f => f.refType.elemID.name)).toEqual({
+          ..._.mapValues(food.fields, f => f.refType.elemID.name),
+          ..._.mapValues(category.fields, f => f.refType.elemID.name),
         })
         // oneOf
-        expect(_.mapValues(foodXorCategory.fields, f => f.type.elemID.name)).toEqual({
-          ..._.mapValues(food.fields, f => f.type.elemID.name),
-          ..._.mapValues(category.fields, f => f.type.elemID.name),
+        expect(_.mapValues(foodXorCategory.fields, f => f.refType.elemID.name)).toEqual({
+          ..._.mapValues(food.fields, f => f.refType.elemID.name),
+          ..._.mapValues(category.fields, f => f.refType.elemID.name),
         })
 
         const location = allTypes.Location as ObjectType
         expect(location).toBeInstanceOf(ObjectType)
-        expect(_.mapValues(location.fields, f => f.type.elemID.name)).toEqual({
-          additionalProperties: 'map<unknown>',
+        expect(_.mapValues(location.fields, f => f.refType.elemID.name)).toEqual({
+          additionalProperties: 'Map<unknown>',
           name: 'string',
           // address is defined as anyOf combining primitive and object - should use unknown
           address: 'unknown',
@@ -193,10 +194,10 @@ describe('swagger_type_elements', () => {
               Order: {
                 transformation: {
                   fieldTypeOverrides: [
-                    { fieldName: 'petId', fieldType: 'list<number>' },
+                    { fieldName: 'petId', fieldType: 'List<number>' },
                     { fieldName: 'shipDate', fieldType: 'Category' },
-                    { fieldName: 'quantity', fieldType: 'map<Category>' },
-                    { fieldName: 'newField', fieldType: 'map<Category>' },
+                    { fieldName: 'quantity', fieldType: 'Map<Category>' },
+                    { fieldName: 'newField', fieldType: 'Map<Category>' },
                   ],
                   fieldsToHide: [
                     { fieldName: 'petId' },
@@ -245,14 +246,16 @@ describe('swagger_type_elements', () => {
         expect(allTypes.pet__findByTags).toBeUndefined()
       })
 
-      it('should override field types', () => {
+      it('should override field types', async () => {
         const order = allTypes.Order as ObjectType
         expect(order).toBeInstanceOf(ObjectType)
-        expect(order.fields.petId.type).toBeInstanceOf(ListType)
-        expect((order.fields.petId.type as ListType).innerType).toEqual(BuiltinTypes.NUMBER)
-        expect(order.fields.shipDate.type).toEqual(allTypes.Category)
-        expect(order.fields.quantity.type).toBeInstanceOf(MapType)
-        expect((order.fields.quantity.type as MapType).innerType).toEqual(allTypes.Category)
+        expect(await order.fields.petId.getType()).toBeInstanceOf(ListType)
+        expect(await (await order.fields.petId.getType() as ListType)
+          .getInnerType()).toEqual(BuiltinTypes.NUMBER)
+        expect(await order.fields.shipDate.getType()).toEqual(allTypes.Category)
+        expect(await order.fields.quantity.getType()).toBeInstanceOf(MapType)
+        expect(await (await order.fields.quantity.getType() as MapType)
+          .getInnerType()).toEqual(allTypes.Category)
       })
       it('should annotate fields from fieldsToHide with _hidden_value=true', () => {
         const order = allTypes.Order as ObjectType

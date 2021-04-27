@@ -30,14 +30,16 @@ describe('filter utils', () => {
         await new Promise(resolve => setTimeout(resolve, 2))
       }
     )
-    const mockOnPostFetch2: () => Promise<void> = jest.fn().mockImplementation(
-      async (): Promise<void> => {
+    const mockOnPostFetch2: () => Promise<boolean> = jest.fn().mockImplementation(
+      async (): Promise<boolean> => {
         await new Promise(resolve => setTimeout(resolve, 2))
+        return true
       }
     )
-    const mockOnPostFetch3: () => Promise<void> = jest.fn().mockImplementation(
-      async (): Promise<void> => {
+    const mockOnPostFetch3: () => Promise<boolean> = jest.fn().mockImplementation(
+      async (): Promise<boolean> => {
         await new Promise(resolve => setTimeout(resolve, 2))
+        return false
       }
     )
     beforeAll(() => {

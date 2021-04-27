@@ -15,6 +15,7 @@
 */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { FieldDefinition, BuiltinTypes, ObjectType, ElemID } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { hideFields } from '../../src/elements/type_elements'
 
 describe('type_elements', () => {
@@ -26,14 +27,14 @@ describe('type_elements', () => {
       myCustomType = new ObjectType({
         elemID: new ElemID('adapter', 'myCustomType'),
         fields: {
-          str: { type: BuiltinTypes.STRING },
-          num: { type: BuiltinTypes.NUMBER },
+          str: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          num: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
         },
       })
       fields = {
-        str: { type: BuiltinTypes.STRING },
-        num: { type: BuiltinTypes.NUMBER },
-        custom: { type: myCustomType },
+        str: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        num: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+        custom: { refType: createRefToElmWithValue(myCustomType) },
       }
     })
     it('should hide values for fields matching the specification', () => {

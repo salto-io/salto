@@ -41,19 +41,10 @@ describe('config_transformation', () => {
         'myAdapter',
         { a: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
       )
-      // REBASE commited out check this
-      // expect(Object.keys(transformation.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToHide', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
-      // expect(transformation.fields.a.type).toEqual(BuiltinTypes.STRING)
-      // expect(Object.keys(transformationDefault.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToHide', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
-      // expect(transformationDefault.fields.a.type).toEqual(BuiltinTypes.STRING)
-      expect(Object.keys(transformation.fields)).toHaveLength(7)
-      expect(Object.keys(transformation.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
-      expect(transformation.fields.a.refType.elemID.isEqual(BuiltinTypes.STRING.elemID))
-        .toBeTruthy()
-      expect(Object.keys(transformationDefault.fields)).toHaveLength(7)
-      expect(Object.keys(transformationDefault.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
-      expect(transformationDefault.fields.a.refType.elemID.isEqual(BuiltinTypes.STRING.elemID))
-        .toBeTruthy()
+      expect(Object.keys(transformation.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToHide', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
+      expect(transformation.fields.a.refType.elemID).toEqual(BuiltinTypes.STRING.elemID)
+      expect(Object.keys(transformationDefault.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToHide', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
+      expect(transformationDefault.fields.a.refType.elemID).toEqual(BuiltinTypes.STRING.elemID)
     })
   })
 

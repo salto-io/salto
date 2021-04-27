@@ -16,6 +16,7 @@
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ObjectType, ElemID, BuiltinTypes, ListType, MapType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { getAllInstances } from '../../../src/elements/swagger'
 import { returnFullEntry } from '../../../src/elements/field_finder'
 import { Paginator } from '../../../src/client'
@@ -32,25 +33,27 @@ describe('swagger_instance_elements', () => {
       const Owner = new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'Owner'),
         fields: {
-          name: { type: BuiltinTypes.STRING },
-          additionalProperties: { type: new MapType(BuiltinTypes.UNKNOWN) },
+          name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          additionalProperties: {
+            refType: createRefToElmWithValue(new MapType(BuiltinTypes.UNKNOWN)),
+          },
         },
       })
       const Food = new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'Owner'),
         fields: {
-          id: { type: BuiltinTypes.STRING },
-          name: { type: BuiltinTypes.STRING },
+          id: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
         },
       })
       const Pet = new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'Pet'),
         fields: {
-          id: { type: BuiltinTypes.STRING },
-          name: { type: BuiltinTypes.STRING },
-          owners: { type: new ListType(Owner) },
-          primaryOwner: { type: Owner },
-          additionalProperties: { type: new MapType(Food) },
+          id: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          owners: { refType: createRefToElmWithValue(new ListType(Owner)) },
+          primaryOwner: { refType: createRefToElmWithValue(Owner) },
+          additionalProperties: { refType: createRefToElmWithValue(new MapType(Food)) },
         },
       })
 
@@ -484,7 +487,7 @@ describe('swagger_instance_elements', () => {
         },
         objectTypes,
         computeGetArgs: simpleGetArgs,
-        nestedFieldFinder: type => {
+        nestedFieldFinder: async type => {
           if (type.fields.owners !== undefined) {
             return {
               field: type.fields.owners,
@@ -546,7 +549,7 @@ describe('swagger_instance_elements', () => {
           includeTypes: ['Pet'],
         },
         objectTypes,
-        nestedFieldFinder: type => ({
+        nestedFieldFinder: async type => ({
           field: type.fields.name,
           type, // not the real type
         }),
@@ -559,7 +562,7 @@ describe('swagger_instance_elements', () => {
       const PetList = new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'PetList'),
         fields: {
-          items: { type: new ListType(objectTypes.Pet) },
+          items: { refType: createRefToElmWithValue(new ListType(objectTypes.Pet)) },
         },
       })
 
@@ -663,20 +666,24 @@ describe('swagger_instance_elements', () => {
       const CustomObjectDefinition = new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'CustomObjectDefinition'),
         fields: {
-          name: { type: BuiltinTypes.STRING },
-          additionalProperties: { type: new MapType(BuiltinTypes.UNKNOWN) },
+          name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          additionalProperties: {
+            refType: createRefToElmWithValue(new MapType(BuiltinTypes.UNKNOWN)),
+          },
         },
       })
       const CustomObjectDefinitionMapping = new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'CustomObjectDefinitionMapping'),
         fields: {
-          additionalProperties: { type: new MapType(CustomObjectDefinition) },
+          additionalProperties: {
+            refType: createRefToElmWithValue(new MapType(CustomObjectDefinition)),
+          },
         },
       })
       const AllCustomObjects = new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'AllCustomObjects'),
         fields: {
-          definitions: { type: CustomObjectDefinitionMapping },
+          definitions: { refType: createRefToElmWithValue(CustomObjectDefinitionMapping) },
         },
       })
       const objectTypes = {

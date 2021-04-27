@@ -13,10 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, FieldDefinition, PrimitiveType, ListType, PrimitiveTypes } from '@salto-io/adapter-api'
+import { ObjectType, FieldDefinition, PrimitiveType, ListType, PrimitiveTypes, Value } from '@salto-io/adapter-api'
 import { types } from '@salto-io/lowerdash'
-
-type ListTypeOf<T> = ListType & { innerType: SaltoTypeForType<T> }
 
 type SaltoPrimitiveTypeForType<T> = (
   T extends string
@@ -29,8 +27,8 @@ type SaltoPrimitiveTypeForType<T> = (
 )
 
 type SaltoTypeForType<T> = (
-  T extends Array<infer Inner>
-    ? ListTypeOf<Inner>
+  T extends Array<Value>
+    ? ListType
     : T extends (string | number | boolean | undefined)
       ? PrimitiveType<SaltoPrimitiveTypeForType<T>>
       : T extends {} ? ObjectType : unknown
@@ -48,7 +46,7 @@ type ObjectTypeCtorForType<T> = (
   & {
     fields: {
       [K in keyof Required<T>]: FieldDefinition &
-        { type: SaltoTypeForType<T[K]> } &
+        { refType: SaltoTypeForType<T[K]> } &
         SaltoAnnotationsForField<T, K>
     }
   }

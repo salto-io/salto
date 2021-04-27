@@ -288,11 +288,11 @@ describe('handleHiddenChanges', () => {
           },
         }
 
-        result = await handleHiddenChanges(
+        result = (await handleHiddenChanges(
           [change],
           mockState([instance]),
           mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
-        )
+        )).visible
         expect(result).toHaveLength(1)
         filteredValue = getChangeElement(result[0])
       })
@@ -313,11 +313,11 @@ describe('handleHiddenChanges', () => {
           },
         }
 
-        result = await handleHiddenChanges(
+        result = (await handleHiddenChanges(
           [change],
           mockState([instance]),
           mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
-        )
+        )).visible
         expect(result).toHaveLength(1)
         filteredValue = getChangeElement(result[0])
       })

@@ -102,8 +102,9 @@ export default class WorkatoAdapter implements AdapterOperations {
   }
 
   @logDuration('updating cross-service references')
-  async postFetch(args: PostFetchOptions): Promise<void> {
-    await this.filtersRunner.onPostFetch(args)
+  async postFetch(args: PostFetchOptions): Promise<{ changed: boolean }> {
+    const changed = await this.filtersRunner.onPostFetch(args)
+    return { changed }
   }
 
   /**

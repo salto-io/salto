@@ -47,7 +47,7 @@ const getChangeValidator: (withSuiteApp: boolean) => ChangeValidator = withSuite
       : [...changeValidators, ...nonSuiteAppValidators]
     const changeErrors = await createChangeValidator(validators)(changes)
     const invalidElementIds = changeErrors.map(error => error.elemID.getFullName())
-    return changeErrors.concat(validateDependsOnInvalidElement(invalidElementIds, changes))
+    return changeErrors.concat(await validateDependsOnInvalidElement(invalidElementIds, changes))
   }
 
 export default getChangeValidator

@@ -214,15 +214,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
   },
 
   // settings endpoints - adding SETTINGS_TYPE_PREFIX to avoid conflicts with swagger-defined types
-  [`${SETTINGS_TYPE_PREFIX}Notification`]: {
-    request: {
-      // for now relying on the specific param name from the swagger (id)
-      url: '/settings/communication-profiles/{id}/notifications',
-      dependsOn: [
-        { pathParam: 'id', from: { type: `${SETTINGS_TYPE_PREFIX}CommunicationProfiles`, field: 'id' } },
-      ],
-    },
-  },
   [`${SETTINGS_TYPE_PREFIX}GatewayResponse`]: {
     request: {
       // for now relying on the specific param name from the swagger (id)
@@ -267,6 +258,16 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       fieldTypeOverrides: [
         // the type only has additionalProperties - this allows the individual rules to be extracted
         { fieldName: 'revenueRecognitionRuleDtos', fieldType: 'list<Settings_RevenueRecognitionRule>' },
+      ],
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}WorkflowObject`]: {
+    request: {
+      // for now relying on the specific param name from the swagger (workFlowId),
+      // if it changes this should be updated accordingly
+      url: '/settings/workflows/v1/{workFlowId}',
+      dependsOn: [
+        { pathParam: 'workFlowId', from: { type: 'Workflows', field: 'id' } },
       ],
     },
   },
@@ -318,15 +319,11 @@ export const DEFAULT_API_DEFINITIONS: ZuoraApiConfig = {
 export const DEFAULT_SETTINGS_INCLUDE_TYPES = [
   'AccountingRules',
   'AgingBucket',
-  'AllCustomObjectNamespaces',
   'AllNotifications',
   'AllPaymentTerms',
   'AllRevenueRecognition',
   'AllTaxCode',
-  'AllWorkflows',
   'ApplicationRules',
-  'AttachmentLimitResponse',
-  'AuditTrail',
   'BatchAlias',
   'BillingCycleType',
   'BillingListPriceBase',
@@ -337,28 +334,18 @@ export const DEFAULT_SETTINGS_INCLUDE_TYPES = [
   'ChargeType',
   'CommunicationProfiles',
   'Currencies',
-  'CustomFields', // Murano - check
-  'DataAccess',
   'DiscountSettings',
   'DocPrefix',
-  'EntityConnections',
-  'EntityNodes',
-  'ExternalSmtp',
   'FxCurrency',
   'GatewayResponse',
   'GetTaxCompanies',
   'GlSegments',
-  'HierarchyDefinition',
-  'HierarchyInfo',
   'HostedPaymentPages',
-  'InsightsConnection',
-  'Notification',
   'NumberAndSku',
   'PaymentGateways',
   'PaymentMethods',
   'PaymentRetryRules',
   'PaymentRules',
-  'ProductAttribute',
   'ReasonCodes',
   'RevenueEventTypes',
   'RevenueRecognitionModels',
@@ -366,21 +353,9 @@ export const DEFAULT_SETTINGS_INCLUDE_TYPES = [
   'RevenueRecognitionStatus',
   'RevenueStartDate',
   'RolesPage',
-  'SecurityPolicy',
   'SegmentationRules',
-  'SharingAttribute',
   'SubscriptionSetting',
-  'TaxCompany',
-  'TaxRatePeriod',
-  'TaxRates',
-  'Template',
-  'TenantProfileChangeHistories',
-  'TenantProfileResponse',
-  'UnitOfMeasure',
   'UnitsOfMeasureList',
-  'WorkflowObject',
-  'ZuoraTaxCode',
-  'ZuoraTaxEngine',
 ]
 
 export const DEFAULT_INCLUDE_TYPES: string[] = [

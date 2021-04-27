@@ -16,7 +16,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
-import { Element, ElemID, AdapterOperations, ReferenceMap, Values, ServiceIds, BuiltinTypes, ObjectType, toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType, ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { Element, ElemID, AdapterOperations, ReferenceMap, Values, ServiceIds, BuiltinTypes, ObjectType, toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType, ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, ReadOnlyElementsSource, Value } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger, elementSource } from '@salto-io/workspace'
@@ -86,13 +86,21 @@ export const getDetailedChanges = async (
 const getChangeMap = async (
   before: elementSource.ElementsSource,
   after: elementSource.ElementsSource,
-  idFilters: IDFilter[]
-): Promise<Record<string, DetailedChange>> =>
-  _.fromPairs(
-    wu(await getDetailedChanges(before, after, idFilters))
+  idFilters: IDFilter[],
+  serviceChanges: DetailedChange<Value>[]
+): Promise<Record<string, DetailedChange>> => {
+  const serviceChangeID = new Set(
+    serviceChanges.map(change => change.id.createTopLevelParentID().parent.getFullName())
+  )
+  return _.fromPairs(
+    wu(await getDetailedChanges(before, after, [
+      ...idFilters,
+      id => serviceChangeID.has(id.getFullName()),
+    ]))
       .map(change => [change.id.getFullName(), change])
       .toArray(),
   )
+}
 
 const findNestedElementPath = (
   changeElemID: ElemID,
@@ -397,9 +405,19 @@ const calcFetchChanges = async (
   workspaceElements: elementSource.ElementsSource,
   partiallyFetchedAdapters: Set<string>,
 ): Promise<Iterable<FetchChange>> => {
-  const paritalFetchFilter: IDFilter = id => (
-    !partiallyFetchedAdapters.has(id.adapter) || mergedServiceElements.has(id)
-  )
+  const createPartialFetchFilter = async (): Promise<IDFilter> => {
+    if (partiallyFetchedAdapters.size === 0) {
+      return () => true
+    }
+    const idsFromPartialFetch = new Set([...await awu(await mergedServiceElements.list())
+      .filter(id => partiallyFetchedAdapters.has(id.adapter))
+      .map(id => id.getFullName())
+      .toArray()])
+
+    return id => !partiallyFetchedAdapters.has(id.adapter)
+      || idsFromPartialFetch.has(id.getFullName())
+  }
+  const paritalFetchFilter = await createPartialFetchFilter()
 
   const serviceChanges = [...await log.time(() =>
     getDetailedChanges(
@@ -411,13 +429,15 @@ const calcFetchChanges = async (
   const pendingChanges = await log.time(() => getChangeMap(
     stateElements,
     workspaceElements,
-    [paritalFetchFilter]
+    [paritalFetchFilter],
+    serviceChanges
   ), 'finished to calculate pending changes')
 
   const workspaceToServiceChanges = await log.time(() => getChangeMap(
     workspaceElements,
     mergedServiceElements,
-    [paritalFetchFilter]
+    [paritalFetchFilter],
+    serviceChanges
   ), 'finished to calculate service-workspace changes')
   const serviceElementsMap = _.groupBy(
     serviceElements,

@@ -565,7 +565,7 @@ export function isEqualElements(first?: any, second?: any): boolean {
 
 export type ReadOnlyElementsSource = {
   list: () => Promise<AsyncIterable<ElemID>>
-  getAll: () => Promise<AsyncIterable<Element>>
+  getAll: (filter?: (id: ElemID) => boolean) => Promise<AsyncIterable<Element>>
   has: (id: ElemID) => Promise<boolean>
   get(id: ElemID): Promise<Value>
 }

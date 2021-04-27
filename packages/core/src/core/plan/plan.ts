@@ -40,7 +40,7 @@ const { resolve, resolveReferenceExpression } = expressions
 
 const log = logger(module)
 
-export type IDFilter = (id: ElemID) => boolean | Promise<boolean>
+export type IDFilter = (id: ElemID) => boolean
 /**
  * Check if 2 nodes in the DAG are equals or not
  */
@@ -240,12 +240,11 @@ const addDifferentElements = (
     }
     return elementPair
   }
-  const getFilteredElements = async (source: elementSource.ElementsSource):
-    Promise<AsyncIterable<ChangeDataType>> =>
-    (awu(await source.getAll()).filter(async elem =>
-      _.every(await Promise.all(
-        topLevelFilters.map(filter => filter(elem.elemID))
-      )))) as AsyncIterable<ChangeDataType>
+  const getFilteredElements = (source: elementSource.ElementsSource):
+    Promise<AsyncIterable<ChangeDataType>> => (
+      source.getAll(id => topLevelFilters.every(filter => filter(id)))
+    ) as Promise<AsyncIterable<ChangeDataType>>
+
   const cmp = (e1: ChangeDataType, e2: ChangeDataType): number => {
     if (e1.elemID.getFullName() < e2.elemID.getFullName()) {
       return -1

@@ -17,6 +17,7 @@
 import { FieldDefinition, BuiltinTypes, ObjectType, ElemID } from '@salto-io/adapter-api'
 import { SUBTYPES_PATH, TYPES_PATH } from '../../src/elements/constants'
 import { filterTypes, hideFields } from '../../src/elements/type_elements'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 
 describe('type_elements', () => {
   describe('hideFields', () => {
@@ -27,14 +28,14 @@ describe('type_elements', () => {
       myCustomType = new ObjectType({
         elemID: new ElemID('adapter', 'myCustomType'),
         fields: {
-          str: { type: BuiltinTypes.STRING },
-          num: { type: BuiltinTypes.NUMBER },
+          str: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          num: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
         },
       })
       fields = {
-        str: { type: BuiltinTypes.STRING },
-        num: { type: BuiltinTypes.NUMBER },
-        custom: { type: myCustomType },
+        str: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        num: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+        custom: { refType: createRefToElmWithValue(myCustomType) },
       }
     })
     it('should hide values for fields matching the specification', () => {
@@ -91,7 +92,9 @@ describe('type_elements', () => {
   describe('filterTypes', () => {
     it('should filter the right types', () => {
       const typeA = new ObjectType({ elemID: new ElemID('adapterName', 'A'), path: ['adapterName', 'A'] })
-      const typeB = new ObjectType({ elemID: new ElemID('adapterName', 'B'), fields: { a: { type: typeA } }, path: ['adapterName', 'B'] })
+      const typeB = new ObjectType({ elemID: new ElemID('adapterName', 'B'), fields: { 
+        a: { refType: createRefToElmWithValue(typeA) } 
+      }, path: ['adapterName', 'B'] })
       const typeC = new ObjectType({ elemID: new ElemID('adapterName', 'C'), path: ['adapterName', 'C'] })
       const filteredTypes = filterTypes('adapterName', [typeA, typeB, typeC], ['B', 'D'])
 

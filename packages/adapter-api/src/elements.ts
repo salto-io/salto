@@ -160,7 +160,7 @@ abstract class PlaceholderTypeElement extends Element {
   }
 }
 
-export class ListType<Inner extends TypeElement = TypeElement> extends Element {
+export class ListType extends Element {
   public refInnerType: ReferenceExpression
   public constructor(
     innerTypeOrRef: TypeOrRef
@@ -343,7 +343,7 @@ export class PrimitiveType<Primitive extends PrimitiveTypes = PrimitiveTypes> ex
 }
 
 export type FieldDefinition = {
-  refType: ReferenceExpression
+  refType: TypeOrRef
   annotations?: Values
 }
 /**
@@ -371,7 +371,7 @@ export class ObjectType extends Element {
     super({ elemID, annotationRefsOrTypes, annotations, path })
     this.fields = _.mapValues(
       fields,
-      (fieldDef, name) => new Field(this, name, fieldDef.refType, fieldDef.annotations),
+      (fieldDef, name) => new Field(this, name, getRefType(fieldDef.refType), fieldDef.annotations),
     )
     this.isSettings = isSettings
   }

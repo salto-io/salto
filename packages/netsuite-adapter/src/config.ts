@@ -134,7 +134,7 @@ export const configType = new ObjectType({
       },
     },
     [CONCURRENCY_LIMIT]: {
-      type: BuiltinTypes.NUMBER,
+      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           min: 1,

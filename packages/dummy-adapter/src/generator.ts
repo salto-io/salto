@@ -692,6 +692,7 @@ export const generateElements = async (
   const records = await generateRecords()
   progressReporter.reportProgress({ message: 'Generating profile likes' })
   const profiles = generateProfileLike(params.useOldProfiles)
+  progressReporter.reportProgress({ message: 'Generating extra elements' })
   const extraElements = params.extraNaclPath
     ? await generateExtraElements(params.extraNaclPath)
     : []
@@ -699,6 +700,7 @@ export const generateElements = async (
     path.join(dataPath, 'fixtures')
   )
   const envObjects = generateEnvElements()
+  progressReporter.reportProgress({ message: 'Generation done' })
   return [
     ...defaultTypes,
     ...primtiveTypes,

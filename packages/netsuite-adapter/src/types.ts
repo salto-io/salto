@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, isInstanceElement, ObjectType, TypeElement, ElemID, ReadOnlyElementsSource} from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement, ObjectType, TypeElement, ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { file, folder } from './types/file_cabinet_types'

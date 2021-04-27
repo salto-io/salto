@@ -1219,8 +1219,8 @@ export const createHubspotMetadataFromInstanceElement = async (
   const createMetadataValueFromObject = async (
     objectType: ObjectType,
     values: Values
-  ): Promise<Values> =>
-    (mapValuesAsync(values, async (val, key) => {
+  ): Promise<Values> => (
+    mapValuesAsync(values, async (val, key) => {
       const fieldType = await objectType.fields[key]?.getType()
       if (_.isUndefined(fieldType) || _.isUndefined(val)) {
         return val
@@ -1247,12 +1247,13 @@ export const createHubspotMetadataFromInstanceElement = async (
       if (isListType(fieldType) && _.isArray(val)) {
         const fieldDeepInnerType = await getDeepInnerType(fieldType)
         if (isUserIdentifierType(fieldDeepInnerType)) {
-          return _.cloneDeepWith(val, v =>
+          const a = _.cloneDeepWith(val, v =>
             (_.every(v, _.isString)
               // Currently all array are represented as a string in HubSpot
               // If there will be "real" array ones we need to support it
               ? val.map(strVal => ownersMap.get(strVal) || strVal).join(',')
               : undefined))
+          return a
         }
         if (isObjectType(fieldDeepInnerType) || isMapType(fieldDeepInnerType)) {
           const transformFunc: TransformFunc = async ({ value }) => (

@@ -128,7 +128,7 @@ export const isChangeDeployable = (
   }
 
   const changedElement = getChangeElement(change)
-  if (!isFileCabinetType(changedElement.type)) {
+  if (!isFileCabinetType(changedElement.refType.elemID)) {
     return false
   }
 

@@ -495,22 +495,6 @@ describe('Transformer', () => {
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
     })
 
-    it('should ignore list field with incompatible type', async () => {
-      instance.value.roleaccesses = {
-        roleaccess: 'not a list',
-      }
-      const customizationInfo = await toCustomizationInfo(instance)
-      const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
-    })
-
-    it('should ignore object field with incompatible type', async () => {
-      instance.value.roleaccesses = ['not an object']
-      const customizationInfo = await toCustomizationInfo(instance)
-      const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
-    })
-
     it('should encode to html chars', async () => {
       instance.value.label = 'Golf & Co’Co element​Name' // There is ZeroWidthSpace char between element and Name
       const customizationInfo = await toCustomizationInfo(instance)

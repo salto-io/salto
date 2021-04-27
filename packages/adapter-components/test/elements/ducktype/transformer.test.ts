@@ -16,24 +16,16 @@
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-<<<<<<< HEAD
-import { getTypeAndInstances, getAllElements } from '../../../src/elements/ducktype'
-import { returnFullEntry, findDataField } from '../../../src/elements/field_finder'
-=======
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
-import { simpleGetArgs, getTypeAndInstances, getAllElements, returnFullEntry, findDataField } from '../../../src/elements/ducktype'
->>>>>>> 3cf29ffc (Fix post-rebase issues with types -> references & funcs becoming async)
+import { getTypeAndInstances, getAllElements } from '../../../src/elements/ducktype'
 import * as typeElements from '../../../src/elements/ducktype/type_elements'
 import * as instanceElements from '../../../src/elements/ducktype/instance_elements'
 import * as transformer from '../../../src/elements/ducktype/transformer'
 import { Paginator } from '../../../src/client'
 import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/config'
-<<<<<<< HEAD
-import { simpleGetArgs } from '../../../src/elements/request_parameters'
 import { mockFunction } from '../../common'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
-=======
->>>>>>> 3cf29ffc (Fix post-rebase issues with types -> references & funcs becoming async)
+import { simpleGetArgs, returnFullEntry } from '../../../src/elements'
+import { findDataField } from '../../../src/elements/field_finder'
 
 describe('ducktype_transformer', () => {
   describe('getTypeAndInstances', () => {

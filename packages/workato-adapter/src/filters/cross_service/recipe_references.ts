@@ -127,10 +127,10 @@ const filter: FilterCreator = ({ config }) => ({
   onPostFetch: async ({
     currentAdapterElements,
     elementsByAdapter,
-  }: PostFetchOptions): Promise<void> => {
+  }: PostFetchOptions): Promise<boolean> => {
     const { serviceConnectionNames } = config[FETCH_CONFIG]
     if (serviceConnectionNames === undefined || _.isEmpty(serviceConnectionNames)) {
-      return
+      return false
     }
 
     const serviceConnectionDetails = getServiceConnectionDetails(

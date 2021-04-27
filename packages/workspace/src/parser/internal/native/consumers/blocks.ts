@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, Values, FieldDefinition, ReferenceMap } from '@salto-io/adapter-api'
+import { ElemID, Values, ReferenceMap, ReferenceExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { TOKEN_TYPES } from '../lexer'
 import { ParseContext, ConsumerReturnType } from '../types'
@@ -62,11 +62,11 @@ export const recoverInvalidItemDefinition = (context: ParseContext): void => {
 
 export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID): ConsumerReturnType<{
     attrs: Values
-    fields: Record<string, FieldDefinition>
+    fields: Record<string, {refType: ReferenceExpression; annotations? : Values}>
     annotationRefTypes: ReferenceMap
   }> => {
   const attrs: Values = {}
-  const fields: Record<string, FieldDefinition> = {}
+  const fields: Record<string, {refType: ReferenceExpression; annotations? : Values} > = {}
   let annotationRefTypes: ReferenceMap | undefined
   const attrIDPrefix = idPrefix.idType === 'type' ? idPrefix.createNestedID('attr') : idPrefix
   const fieldIDPrefix = idPrefix.idType === 'type' ? idPrefix.createNestedID('field') : idPrefix

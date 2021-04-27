@@ -109,7 +109,7 @@ const setConsistentValues = async (instance: InstanceElement): Promise<void> => 
 
   const fieldMappings = typeToFieldMappings[instance.refType.elemID.name]
   if (!fieldMappings) return
-  instance.value = transformValues({
+  instance.value = await transformValues({
     values: instance.value,
     type: await instance.getType(),
     transformFunc: transformFunc(fieldMappings),

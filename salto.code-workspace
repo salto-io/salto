@@ -1,0 +1,133 @@
+{
+	"folders": [
+		{
+			"name": "playground",
+			"path": "playground"
+		},
+		{
+			"name": "adapter-api",
+			"path": "packages/adapter-api"
+		},
+		{
+			"name": "adapter-components",
+			"path": "packages/adapter-components"
+		},
+		{
+			"name": "adapter-utils",
+			"path": "packages/adapter-utils"
+		},
+		{
+			"name": "cli",
+			"path": "packages/cli"
+		},
+		{
+			"name": "core",
+			"path": "packages/core"
+		},
+		{
+			"name": "dag",
+			"path": "packages/dag"
+		},
+		{
+			"name": "dummy-adapter",
+			"path": "packages/dummy-adapter"
+		},
+		{
+			"name": "e2e-credentials-store",
+			"path": "packages/e2e-credentials-store"
+		},
+		{
+			"name": "file",
+			"path": "packages/file"
+		},
+		{
+			"name": "hubspot-adapter",
+			"path": "packages/hubspot-adapter"
+		},
+		{
+			"name": "jira-adapter",
+			"path": "packages/jira-adapter"
+		},
+		{
+			"name": "lang-server",
+			"path": "packages/lang-server"
+		},
+		{
+			"name": "logging",
+			"path": "packages/logging"
+		},
+		{
+			"name": "lowerdash",
+			"path": "packages/lowerdash"
+		},
+		{
+			"name": "marketo-adapter",
+			"path": "packages/marketo-adapter"
+		},
+		{
+			"name": "netsuite-adapter",
+			"path": "packages/netsuite-adapter"
+		},
+		{
+			"name": "persistent-pool",
+			"path": "packages/persistent-pool"
+		},
+		{
+			"name": "salesforce-adapter",
+			"path": "packages/salesforce-adapter"
+		},
+		{
+			"name": "vscode",
+			"path": "packages/vscode"
+		},
+		{
+			"name": "workato-adapter",
+			"path": "packages/workato-adapter"
+		},
+		{
+			"name": "workspace",
+			"path": "packages/workspace"
+		},
+		{
+			"name": "graph-exporter",
+			"path": "packages/graph-exporter"
+		},
+		{
+			"name": "workato-adapter",
+			"path": "packages/workato-adapter"
+		},
+		{
+			"name": "zuora-billing-adapter",
+			"path": "packages/zuora-billing-adapter"
+		}
+	],
+	"settings": {
+		"files.exclude": {
+			"**/dist": true,
+			"**/node_modules": true
+		},
+		"typescript.tsdk": "../node_modules/typescript/lib",
+		"cSpell.words": [
+			"AUTONUMBER",
+			"DATETIME",
+			"ENCRYPTEDTEXT",
+			"LONGTEXTAREA",
+			"MULTIPICKLIST",
+			"PICKLIST",
+			"RICHTEXTAREA",
+			"camelcase",
+			"jsforce",
+			"lowerdash",
+			"nacl",
+			"nearley",
+			"netsuite",
+			"orientdb",
+			"orientjs",
+			"requestretry",
+			"sfdc",
+			"sobject",
+			"sobjects",
+			"upsert"
+		]
+	}
+}

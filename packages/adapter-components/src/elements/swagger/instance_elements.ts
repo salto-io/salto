@@ -34,7 +34,7 @@ import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../
 import { getElementsWithContext } from '../element_getter'
 
 const { makeArray } = collections.array
-const { toArrayAsync } = collections.asynciterable
+const { toArrayAsync, awu } = collections.asynciterable
 const { isDefined } = lowerdashValues
 const log = logger(module)
 
@@ -43,7 +43,7 @@ class InvalidTypeConfig extends Error {}
 /**
  * Extract standalone fields to their own instances, and convert the original value to a reference.
  */
-const extractStandaloneFields = (
+const extractStandaloneFields = async (
   inst: InstanceElement,
   {
     transformationConfigByType,
@@ -52,19 +52,19 @@ const extractStandaloneFields = (
     transformationConfigByType: Record<string, TransformationConfig>
     transformationDefaultConfig: TransformationDefaultConfig
   },
-): InstanceElement[] => {
-  if (_.isEmpty(transformationConfigByType[inst.type.elemID.name]?.standaloneFields)) {
+): Promise<InstanceElement[]> => {
+  if (_.isEmpty(transformationConfigByType[inst.refType.elemID.name]?.standaloneFields)) {
     return [inst]
   }
   const additionalInstances: InstanceElement[] = []
 
-  const replaceWithReference = ({ values, parent, objType }: {
+  const replaceWithReference = async ({ values, parent, objType }: {
     values: Values[]
     parent: InstanceElement
     objType: ObjectType
-  }): ReferenceExpression[] => {
+  }): Promise<ReferenceExpression[]> => {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    const refInstances = generateInstancesForType({
+    const refInstances = await generateInstancesForType({
       entries: values,
       objType,
       nestName: true,
@@ -77,7 +77,7 @@ const extractStandaloneFields = (
     return refInstances.map(refInst => new ReferenceExpression(refInst.elemID))
   }
 
-  const extractFields: TransformFunc = ({ value, field, path }) => {
+  const extractFields: TransformFunc = async ({ value, field, path }) => {
     if (field === undefined) {
       return value
     }
@@ -95,7 +95,8 @@ const extractStandaloneFields = (
       return value
     }
 
-    const refType = isListType(field.type) ? field.type.innerType : field.type
+    const refOrListType = await field.getType()
+    const refType = isListType(refOrListType) ? await refOrListType.getInnerType() : refOrListType
     if (!isObjectType(refType)) {
       log.error(`unexpected type encountered when extracting nested fields - skipping path ${path} for instance ${inst.elemID.getFullName()}`)
       return value
@@ -108,14 +109,14 @@ const extractStandaloneFields = (
         objType: refType,
       })
     }
-    return replaceWithReference({
+    return (await replaceWithReference({
       values: [value],
       parent: inst,
       objType: refType,
-    })[0]
+    }))[0]
   }
 
-  const updatedInst = transformElement({
+  const updatedInst = await transformElement({
     element: inst,
     transformFunc: extractFields,
     strict: false,
@@ -129,13 +130,15 @@ const extractStandaloneFields = (
  *
  * Note: The reverse will need to be done pre-deploy (not implemented for fetch-only)
  */
-const normalizeElementValues = (instance: InstanceElement): InstanceElement => {
-  const transformAdditionalProps: TransformFunc = ({ value, field, path }) => {
-    const fieldType = path?.isEqual(instance.elemID) ? instance.type : field?.type
+const normalizeElementValues = (instance: InstanceElement): Promise<InstanceElement> => {
+  const transformAdditionalProps: TransformFunc = async ({ value, field, path }) => {
+    const fieldType = path?.isEqual(instance.elemID)
+      ? await instance.getType()
+      : await field?.getType()
     if (
       !isObjectType(fieldType)
       || fieldType.fields[ADDITIONAL_PROPERTIES_FIELD] === undefined
-      || !isMapType(fieldType.fields[ADDITIONAL_PROPERTIES_FIELD].type)
+      || !isMapType(await fieldType.fields[ADDITIONAL_PROPERTIES_FIELD].getType())
     ) {
       return value
     }
@@ -157,8 +160,8 @@ const normalizeElementValues = (instance: InstanceElement): InstanceElement => {
   })
 }
 
-const toInstance = (args: InstanceCreationParams): InstanceElement => (
-  args.normalized ? toBasicInstance(args) : normalizeElementValues(toBasicInstance(args))
+const toInstance = async (args: InstanceCreationParams): Promise<InstanceElement> => (
+  args.normalized ? toBasicInstance(args) : normalizeElementValues(await toBasicInstance(args))
 )
 
 /**
@@ -181,9 +184,9 @@ const generateInstancesForType = ({
   transformationConfigByType: Record<string, TransformationConfig>
   transformationDefaultConfig: TransformationDefaultConfig
   normalized?: boolean
-}): InstanceElement[] => {
+}): Promise<InstanceElement[]> => {
   const standaloneFields = transformationConfigByType[objType.elemID.name]?.standaloneFields
-  return entries
+  return awu(entries)
     .map((entry, index) => toInstance({
       entry,
       type: objType,
@@ -201,7 +204,7 @@ const generateInstancesForType = ({
           transformationConfigByType,
           transformationDefaultConfig,
         })
-    ))
+    )).toArray()
 }
 
 const isAdditionalPropertiesOnlyObjectType = (type: ObjectType): boolean => (
@@ -212,11 +215,11 @@ const isItemsOnlyObjectType = (type: ObjectType): boolean => (
   _.isEqual(Object.keys(type.fields), [ARRAY_ITEMS_FIELD])
 )
 
-const normalizeType = (type: ObjectType | undefined): ObjectType | undefined => {
+const normalizeType = async (type: ObjectType | undefined): Promise<ObjectType | undefined> => {
   if (type !== undefined && isItemsOnlyObjectType(type)) {
-    const itemsType = type.fields.items.type
-    if (isListType(itemsType) && isObjectType(itemsType.innerType)) {
-      return itemsType.innerType
+    const itemsType = await type.fields.items.getType()
+    if (isListType(itemsType) && isObjectType(await itemsType.getInnerType())) {
+      return itemsType.getInnerType() as Promise<ObjectType>
     }
   }
   return type
@@ -255,7 +258,7 @@ const getEntriesForType = async (
     typeName, paginator, typesConfig, typeDefaultConfig, objectTypes, contextElements,
     requestContext, nestedFieldFinder, computeGetArgs,
   } = params
-  const type = normalizeType(objectTypes[typeName])
+  const type = await normalizeType(objectTypes[typeName])
   const typeConfig = typesConfig[typeName]
   if (type === undefined || typeConfig === undefined) {
     // should never happen
@@ -274,14 +277,14 @@ const getEntriesForType = async (
 
   const nestedFieldDetails = nestedFieldFinder(type, fieldsToOmit, dataField)
 
-  const getType = (): { objType: ObjectType; extractValues?: boolean } => {
+  const getType = async (): Promise<{ objType: ObjectType; extractValues?: boolean }> => {
     if (nestedFieldDetails === undefined) {
       return {
         objType: type,
       }
     }
 
-    const dataFieldType = nestedFieldDetails.field.type
+    const dataFieldType = await nestedFieldDetails.field.getType()
 
     // special case - should probably move to adapter-specific filter if does not recur
     if (
@@ -289,23 +292,26 @@ const getEntriesForType = async (
       && isObjectType(dataFieldType)
       && isAdditionalPropertiesOnlyObjectType(dataFieldType)
     ) {
-      const propsType = dataFieldType.fields[ADDITIONAL_PROPERTIES_FIELD].type
-      if (isMapType(propsType) && isObjectType(propsType.innerType)) {
-        return {
-          objType: propsType.innerType,
-          extractValues: true,
+      const propsType = await dataFieldType.fields[ADDITIONAL_PROPERTIES_FIELD].getType()
+      if (isMapType(propsType)) {
+        const propsInnerType = await propsType.getInnerType()
+        if (isObjectType(propsInnerType)) {
+          return {
+            objType: propsInnerType,
+            extractValues: true,
+          }
         }
       }
     }
 
-    const fieldType = isListType(dataFieldType) ? dataFieldType.innerType : dataFieldType
+    const fieldType = isListType(dataFieldType) ? await dataFieldType.getInnerType() : dataFieldType
     if (!isObjectType(fieldType)) {
       throw new Error(`data field type ${fieldType.elemID.getFullName()} must be an object type`)
     }
     return { objType: fieldType }
   }
 
-  const { objType, extractValues } = getType()
+  const { objType, extractValues } = await getType()
 
   const getEntries = async (): Promise<Values[]> => {
     const args = computeGetArgs(requestWithDefaults, contextElements, requestContext)

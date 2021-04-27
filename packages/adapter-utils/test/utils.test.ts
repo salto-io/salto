@@ -538,18 +538,18 @@ describe('Test utils.ts', () => {
         let refResult: Values | undefined
         let staticFileResult: Values | undefined
         let varResult: Values | undefined
-        beforeEach(() => {
-          refResult = transformValues({
+        beforeEach(async () => {
+          refResult = await transformValues({
             values: new ReferenceExpression(mockInstance.elemID),
             type: mockType,
             transformFunc,
           })
-          staticFileResult = transformValues({
+          staticFileResult = await transformValues({
             values: new StaticFile({ content: Buffer.from('asd'), filepath: 'a' }),
             type: mockType,
             transformFunc,
           })
-          varResult = transformValues({
+          varResult = await transformValues({
             values: new VariableExpression(
               new ElemID(ElemID.VARIABLES_NAMESPACE, 'myVar', 'var')
             ),

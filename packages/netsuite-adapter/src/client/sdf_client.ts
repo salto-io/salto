@@ -269,19 +269,30 @@ export default class SdfClient {
     projectCommandActionExecutor: CommandActionExecutor,
     authId: string
   ): Promise<void> {
+    const setupCommandArguments = {
+      authid: authId,
+      account: this.credentials.accountId,
+      tokenid: this.credentials.tokenId,
+      tokensecret: this.credentials.tokenSecret,
+      savetoken: true,
+    }
     await this.withAuthIdsLock(async () => {
       log.debug(`Setting up account using authId: ${authId}`)
-      await this.executeProjectAction(
-        COMMANDS.SETUP_ACCOUNT,
-        {
-          authid: authId,
-          account: this.credentials.accountId,
-          tokenid: this.credentials.tokenId,
-          tokensecret: this.credentials.tokenSecret,
-          savetoken: true,
-        },
-        projectCommandActionExecutor
-      )
+      try {
+        await this.executeProjectAction(
+          COMMANDS.SETUP_ACCOUNT,
+          setupCommandArguments,
+          projectCommandActionExecutor
+        )
+      } catch (e) {
+        log.warn(`Failed to setup account using authId: ${authId}`, e)
+        log.debug(`Retrying to setup account using authId: ${authId}`)
+        await this.executeProjectAction(
+          COMMANDS.SETUP_ACCOUNT,
+          setupCommandArguments,
+          projectCommandActionExecutor
+        )
+      }
     })
   }
 

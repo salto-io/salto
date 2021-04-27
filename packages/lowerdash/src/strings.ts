@@ -27,3 +27,21 @@ export const insecureRandomString = (
 
 export const capitalizeFirstLetter = (str: string): string =>
   str.charAt(0).toUpperCase() + str.slice(1)
+
+/**
+ * Find all matches to the specified regular expression.
+ * This is a partial replacement for String.prototype.matchAll which
+ * is not currently available in node.
+ */
+export function *matchAll(str: string, matcher: RegExp): Iterable<RegExpExecArray> {
+  if (!matcher.global) {
+    throw new Error('matchAll only supports global regular expressions')
+  }
+  while (true) {
+    const match = matcher.exec(str)
+    if (match === null) {
+      break
+    }
+    yield match
+  }
+}

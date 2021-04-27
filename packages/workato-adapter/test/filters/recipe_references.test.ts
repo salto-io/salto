@@ -43,9 +43,9 @@ describe('Recipe references filter', () => {
         fetch: {
           includeTypes: ['connection', 'recipe'],
           serviceConnectionNames: {
-            salesforce: 'salesforce sandbox 1',
-            netsuite: 'netsuite sbx 123',
-            ignoreThis: 'abc',
+            salesforce: ['salesforce sandbox 1'],
+            netsuite: ['netsuite sbx 123'],
+            ignore: ['abc'],
           },
         },
         apiDefinitions: {
@@ -99,6 +99,25 @@ describe('Recipe references filter', () => {
       }
     )
 
+    const secondarySalesforce = new InstanceElement(
+      'secondary_sf',
+      connectionType,
+      {
+        id: 1235,
+        application: 'salesforce_secondary',
+        name: 'secondary salesforce',
+      }
+    )
+    const secondaryNetsuite = new InstanceElement(
+      'secondary_ns',
+      connectionType,
+      {
+        id: 1236,
+        application: 'netsuite_secondary',
+        name: 'secondary netsuite',
+      }
+    )
+
     const labelValueType = new ObjectType({
       elemID: new ElemID(WORKATO, 'labelValue'),
       fields: {
@@ -138,6 +157,7 @@ describe('Recipe references filter', () => {
         name: { type: BuiltinTypes.STRING },
         dynamicPickListSelection: { type: dynamicPickListSelectionType },
         input: { type: inputType },
+        as: { type: BuiltinTypes.STRING },
       },
     })
 
@@ -149,6 +169,7 @@ describe('Recipe references filter', () => {
         dynamicPickListSelection: { type: dynamicPickListSelectionType },
         input: { type: inputType },
         block: { type: new ListType(nestedBlockTypeInner) },
+        as: { type: BuiltinTypes.STRING },
       },
     })
 
@@ -160,6 +181,7 @@ describe('Recipe references filter', () => {
         dynamicPickListSelection: { type: dynamicPickListSelectionType },
         input: { type: inputType },
         block: { type: new ListType(nestedBlockType) },
+        as: { type: BuiltinTypes.STRING },
       },
     })
 
@@ -171,6 +193,7 @@ describe('Recipe references filter', () => {
         dynamicPickListSelection: { type: dynamicPickListSelectionType },
         input: { type: inputType },
         block: { type: new ListType(blockType) },
+        as: { type: BuiltinTypes.STRING },
       },
     })
 
@@ -196,6 +219,7 @@ describe('Recipe references filter', () => {
     })
 
     const sharedRecipeCode = {
+      as: '1234aaaa',
       provider: 'salesforce',
       name: 'updated_custom_object',
       dynamicPickListSelection: {
@@ -216,6 +240,10 @@ describe('Recipe references filter', () => {
           {
             label: 'Custom field',
             value: 'Custom__c',
+          },
+          {
+            label: 'Owner.Field 123 label',
+            value: 'User$Owner or some other label to ignore.Field111__c',
           },
         ],
         table_list: [
@@ -240,6 +268,7 @@ describe('Recipe references filter', () => {
       },
       block: [
         {
+          as: 'nestedid1',
           provider: 'netsuite',
           name: 'add_object',
           dynamicPickListSelection: {
@@ -253,6 +282,7 @@ describe('Recipe references filter', () => {
           },
           block: [
             {
+              as: 'nestedid2',
               provider: 'salesforce',
               name: 'updated_custom_object',
               dynamicPickListSelection: {
@@ -260,7 +290,12 @@ describe('Recipe references filter', () => {
               },
               input: {
                 sobject_name: 'MyCustom__c',
-                customField__c: 'something',
+                customField__c: '#{_(\'data.salesforce.1234aaaa.Opportunity.first.FormulaRef1__c\')}',
+                something1: '#{_(\'data.salesforce.1234aaaa.sobject.FormulaRef2__c\')}',
+                something2: '#{_(\'data.salesforce.1234aaaa.FormulaRef3__c\')}',
+                something3: '#{_(\'data.salesforce.1234aaaa.sobject.User.Field222__c\')}',
+                unknown1: '#{_(\'data.salesforce.1234aaaa.sobject.User.unknown\')}',
+                unknown2: '#{_(\'data.salesforce.1234aaaa.unknown.first.FormulaRef1__c\')}',
               },
             },
           ],
@@ -334,6 +369,7 @@ describe('Recipe references filter', () => {
       code: new ReferenceExpression(recipe3OnlyNetsuiteCode.elemID),
     })
     const recipe4UnknownSalesforceSobjectCode = new InstanceElement('recipe4_code', codeType, {
+      as: 'recipe4id',
       provider: 'salesforce',
       name: 'updated_custom_object',
       dynamicPickListSelection: {
@@ -386,11 +422,98 @@ describe('Recipe references filter', () => {
       ],
       code: new ReferenceExpression(recipe4UnknownSalesforceSobjectCode.elemID),
     })
+    const recipe5WithSecondaryCode = new InstanceElement(
+      'recipe5_code',
+      codeType,
+      {
+        as: '1234aaaa',
+        provider: 'salesforce_secondary',
+        name: 'updated_custom_object',
+        dynamicPickListSelection: {
+          sobject_name: 'Opportunity',
+        },
+        input: {
+          sobject_name: 'Opportunity',
+          // sets the value of Custom__c using netsuite custom fields
+          Custom__c: "some prefix to ignore #{_('data.netsuite_secondary.211cdf34.dateCreated')} #{_('data.netsuite_secondary.12345678.custom_fields.f_custrecordaccount_id')}#{_('data.netsuite_secondary.211cdf34.custom_fields.f_123_custrecord5')} #{_('data.netsuite_secondary.44bf4bfd.Customers.first.custom_fields.f_126_custentitycustom_account_city')} ignore",
+        },
+        block: [
+          {
+            as: 'nestedid1',
+            provider: 'netsuite_secondary',
+            name: 'add_object',
+            dynamicPickListSelection: {
+              netsuite_object: 'custom record type label',
+              custom_list: [
+                { value: 'othercustomfield@custrecord2', label: 'something' },
+              ],
+            },
+            input: {
+              netsuite_object: 'custom record type label@@customrecord16',
+            },
+            block: [
+              {
+                as: 'nestedid2',
+                provider: 'salesforce',
+                name: 'updated_custom_object',
+                dynamicPickListSelection: {
+                  sobject_name: 'My Custom',
+                },
+                input: {
+                  sobject_name: 'MyCustom__c',
+                  customField__c: '#{_(\'data.salesforce_secondary.1234aaaa.Opportunity.first.FormulaRef1__c\')}',
+                  something1: '#{_(\'data.salesforce_secondary.1234aaaa.sobject.FormulaRef2__c\')}',
+                  something2: '#{_(\'data.salesforce_secondary.1234aaaa.FormulaRef3__c\')}',
+                  unknown2: '#{_(\'data.salesforce_secondary.1234aaaa.unknown.first.FormulaRef1__c\')}',
+                },
+              },
+            ],
+          },
+        ],
+      },
+    )
+    const recipe5WithSecondary = new InstanceElement('recipe5', recipeType, {
+      config: [
+        {
+          keyword: 'application',
+          name: 'salesforce',
+          provider: 'salesforce',
+          account_id: new ReferenceExpression(sfSandbox1.elemID),
+        },
+        {
+          keyword: 'application',
+          name: 'rest',
+          provider: 'rest',
+        },
+        {
+          keyword: 'application',
+          name: 'netsuite',
+          provider: 'netsuite',
+          account_id: new ReferenceExpression(netsuiteSandbox123.elemID),
+        },
+        {
+          keyword: 'application',
+          name: 'salesforce_secondary',
+          provider: 'salesforce_secondary',
+          account_id: new ReferenceExpression(secondarySalesforce.elemID),
+        },
+        {
+          keyword: 'application',
+          name: 'netsuite_secondary',
+          provider: 'netsuite_secondary',
+          account_id: new ReferenceExpression(secondaryNetsuite.elemID),
+        },
+      ],
+      code: new ReferenceExpression(recipe5WithSecondaryCode.elemID),
+    })
+
     return [
       connectionType,
       sfSandbox1,
       anotherSfSandbox,
       netsuiteSandbox123,
+      secondarySalesforce,
+      secondaryNetsuite,
       labelValueType,
       dynamicPickListSelectionType,
       inputType,
@@ -408,6 +531,8 @@ describe('Recipe references filter', () => {
       recipe3OnlyNetsuiteCode,
       recipe4UnknownSalesforceSobject,
       recipe4UnknownSalesforceSobjectCode,
+      recipe5WithSecondary,
+      recipe5WithSecondaryCode,
     ]
   }
 
@@ -433,6 +558,24 @@ describe('Recipe references filter', () => {
             apiName: 'Opportunity.Name',
           },
         },
+        FormulaRef1__c: {
+          type: BuiltinTypes.STRING,
+          annotations: {
+            apiName: 'Opportunity.FormulaRef1__c',
+          },
+        },
+        FormulaRef2__c: {
+          type: BuiltinTypes.STRING,
+          annotations: {
+            apiName: 'Opportunity.FormulaRef2__c',
+          },
+        },
+        FormulaRef3__c: {
+          type: BuiltinTypes.STRING,
+          annotations: {
+            apiName: 'Opportunity.FormulaRef3__c',
+          },
+        },
       },
       annotations: {
         metadataType: 'CustomObject',
@@ -442,7 +585,20 @@ describe('Recipe references filter', () => {
     })
     const user = new ObjectType({
       elemID: new ElemID('salesforce', 'User'),
-      fields: {},
+      fields: {
+        Field111__c: {
+          type: BuiltinTypes.NUMBER,
+          annotations: {
+            apiName: 'User.Field111__c',
+          },
+        },
+        Field222__c: {
+          type: BuiltinTypes.NUMBER,
+          annotations: {
+            apiName: 'User.Field222__c',
+          },
+        },
+      },
       annotations: {
         metadataType: 'CustomObject',
         apiName: 'User',
@@ -518,17 +674,41 @@ describe('Recipe references filter', () => {
     ]
   }
 
-  describe('on post-fetch', () => {
+  describe('on post-fetch primary', () => {
     let currentAdapterElements: Element[]
     let salesforceElements: Element[]
     let netsuiteElements: Element[]
-    let res: boolean
 
     beforeAll(async () => {
+      filter = filterCreator({
+        client,
+        paginator: clientUtils.createPaginator({
+          client,
+          paginationFunc: paginate,
+        }),
+        config: {
+          fetch: {
+            includeTypes: ['connection', 'recipe'],
+            serviceConnectionNames: {
+              salesforce: ['salesforce sandbox 1'],
+              netsuite: ['netsuite sbx 123'],
+            },
+          },
+          apiDefinitions: {
+            typeDefaults: {
+              transformation: {
+                idFields: DEFAULT_ID_FIELDS,
+              },
+            },
+            types: DEFAULT_TYPES,
+          },
+        },
+      }) as FilterType
+
       currentAdapterElements = generateCurrentAdapterElements()
       salesforceElements = generateSalesforceElements()
       netsuiteElements = generateNetsuiteElements()
-      res = await filter.onPostFetch({
+      await filter.onPostFetch({
         currentAdapterElements,
         elementsByAdapter: {
           salesforce: salesforceElements,
@@ -542,7 +722,7 @@ describe('Recipe references filter', () => {
         const recipeCode = currentAdapterElements.find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe1_code')
         expect(recipeCode).toBeDefined()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
-        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(12)
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(17)
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].every(
           isReferenceExpression
         )).toBeTruthy()
@@ -558,9 +738,14 @@ describe('Recipe references filter', () => {
           'salesforce.MyCustom__c.field.customField__c',
           'salesforce.Opportunity',
           'salesforce.Opportunity.field.Custom__c',
+          'salesforce.Opportunity.field.FormulaRef1__c',
+          'salesforce.Opportunity.field.FormulaRef2__c',
+          'salesforce.Opportunity.field.FormulaRef3__c',
           'salesforce.Opportunity.field.Id',
           'salesforce.Opportunity.field.Name',
           'salesforce.User',
+          'salesforce.User.field.Field111__c',
+          'salesforce.User.field.Field222__c',
         ])
       })
 
@@ -577,7 +762,7 @@ describe('Recipe references filter', () => {
           ReferenceExpression
         )
         expect(recipeCode.value.dynamicPickListSelection.sobject_name.elemId.getFullName()).toEqual('salesforce.Opportunity')
-        expect(recipeCode.value.dynamicPickListSelection.field_list).toHaveLength(4)
+        expect(recipeCode.value.dynamicPickListSelection.field_list).toHaveLength(5)
         // some, but not all, references are resolved
         expect(
           recipeCode.value.dynamicPickListSelection.field_list.every(isReferenceExpression)
@@ -589,6 +774,7 @@ describe('Recipe references filter', () => {
         expect(recipeCode.value.dynamicPickListSelection.field_list[1]).toEqual({ label: 'Account ID', value: 'AccountId' })
         expect(recipeCode.value.dynamicPickListSelection.field_list[2].elemId.getFullName()).toEqual('salesforce.Opportunity.field.Name')
         expect(recipeCode.value.dynamicPickListSelection.field_list[3].elemId.getFullName()).toEqual('salesforce.Opportunity.field.Custom__c')
+        expect(recipeCode.value.dynamicPickListSelection.field_list[4].elemId.getFullName()).toEqual('salesforce.User.field.Field111__c')
         expect(recipeCode.value.dynamicPickListSelection.table_list).toHaveLength(3)
         // some, but not all, references are resolved
         expect(
@@ -664,7 +850,7 @@ describe('Recipe references filter', () => {
         expect(recipeCode).toBeInstanceOf(InstanceElement)
         expect(recipeCode.value.input.sobject_name).toEqual('Opportunity')
         expect(recipeCode.value.dynamicPickListSelection.sobject_name).toEqual('Opportunity')
-        expect(recipeCode.value.dynamicPickListSelection.field_list).toHaveLength(4)
+        expect(recipeCode.value.dynamicPickListSelection.field_list).toHaveLength(5)
         expect(
           recipeCode.value.dynamicPickListSelection.field_list.some(isReferenceExpression)
         ).toBeFalsy()
@@ -710,10 +896,24 @@ describe('Recipe references filter', () => {
         ).toBeFalsy()
       })
     })
-
-    it('should return true if any element was changed', () => {
-      expect(res).toBeTruthy()
+    describe('recipe5WithSecondaryCode', () => {
+      it('should only have _generated_dependencies for blocks that are not using the secondary connections', () => {
+        const recipeCode = currentAdapterElements.find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe5_code')
+        expect(recipeCode).toBeDefined()
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(2)
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].every(
+          isReferenceExpression
+        )).toBeTruthy()
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
+          (ref: ReferenceExpression) => ref.elemId.getFullName()
+        )).toEqual([
+          'salesforce.MyCustom__c',
+          'salesforce.MyCustom__c.field.customField__c',
+        ])
+      })
     })
+
     it('should return false if no elements were modified', async () => {
       const elements = generateCurrentAdapterElements()
       expect(await filter.onPostFetch({
@@ -774,9 +974,9 @@ describe('Recipe references filter', () => {
           fetch: {
             includeTypes: ['connection', 'recipe'],
             serviceConnectionNames: {
-              salesforce: 'salesforce sandbox 1 unresolved',
-              netsuite: 'netsuite sbx 123',
-              ignoreThis: 'abc',
+              salesforce: ['salesforce sandbox 1 unresolved'],
+              netsuite: ['netsuite sbx 123'],
+
             },
           },
           apiDefinitions: {
@@ -791,13 +991,13 @@ describe('Recipe references filter', () => {
       }) as FilterType
 
       // should still resolve the netsuite references
-      expect(await otherFilter.onPostFetch({
+      await otherFilter.onPostFetch({
         currentAdapterElements: elements,
         elementsByAdapter: {
           salesforce: generateSalesforceElements(),
           netsuite: generateNetsuiteElements(),
         },
-      })).toBeTruthy()
+      })
       expect(
         elements.filter(e => e.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] !== undefined)
       ).toHaveLength(2)
@@ -817,6 +1017,78 @@ describe('Recipe references filter', () => {
         'netsuite.entitycustomfield.instance.custentitycustom_account_city',
         'netsuite.othercustomfield.instance.custrecord2',
       ])
+    })
+  })
+
+  describe('on post-fetch primary+secondary', () => {
+    let currentAdapterElements: Element[]
+    let salesforceElements: Element[]
+    let netsuiteElements: Element[]
+
+    beforeAll(async () => {
+      filter = filterCreator({
+        client,
+        paginator: clientUtils.createPaginator({
+          client,
+          paginationFunc: paginate,
+        }),
+        config: {
+          fetch: {
+            includeTypes: ['connection', 'recipe'],
+            serviceConnectionNames: {
+              salesforce: ['secondary salesforce', 'salesforce sandbox 1'],
+              netsuite: ['secondary netsuite'],
+            },
+          },
+          apiDefinitions: {
+            typeDefaults: {
+              transformation: {
+                idFields: DEFAULT_ID_FIELDS,
+              },
+            },
+            types: DEFAULT_TYPES,
+          },
+        },
+      }) as FilterType
+
+      currentAdapterElements = generateCurrentAdapterElements()
+      salesforceElements = generateSalesforceElements()
+      netsuiteElements = generateNetsuiteElements()
+      await filter.onPostFetch({
+        currentAdapterElements,
+        elementsByAdapter: {
+          salesforce: salesforceElements,
+          netsuite: netsuiteElements,
+        },
+      })
+    })
+
+    describe('recipe5WithSecondaryCode', () => {
+      it('should show all resolved references in the _generated_dependencies annotation, in alphabetical order', () => {
+        const recipeCode = currentAdapterElements.find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe5_code')
+        expect(recipeCode).toBeDefined()
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(12)
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].every(
+          isReferenceExpression
+        )).toBeTruthy()
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
+          (ref: ReferenceExpression) => ref.elemId.getFullName()
+        )).toEqual([
+          'netsuite.customrecordtype.instance.customrecord16',
+          'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',
+          'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.2',
+          'netsuite.entitycustomfield.instance.custentitycustom_account_city',
+          'netsuite.othercustomfield.instance.custrecord2',
+          'salesforce.MyCustom__c',
+          'salesforce.MyCustom__c.field.customField__c',
+          'salesforce.Opportunity',
+          'salesforce.Opportunity.field.Custom__c',
+          'salesforce.Opportunity.field.FormulaRef1__c',
+          'salesforce.Opportunity.field.FormulaRef2__c',
+          'salesforce.Opportunity.field.FormulaRef3__c',
+        ])
+      })
     })
   })
 })

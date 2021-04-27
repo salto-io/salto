@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS } from '../../constants'
+import { SALESFORCE, CROSS_SERVICE_SUPPORTED_APPS, NETSUITE } from '../../../constants'
 
 type RefListItem = {
   label: string
@@ -22,7 +22,8 @@ type RefListItem = {
 }
 
 export type SalesforceBlock = {
-  provider: 'salesforce'
+  as: string
+  provider: 'salesforce' | 'salesforce_secondary'
   dynamicPickListSelection: {
     sobject_name: string
     field_list?: RefListItem[]
@@ -32,8 +33,9 @@ export type SalesforceBlock = {
     sobject_name: string
   }
 }
+
 export type NetsuiteBlock = {
-  provider: 'netsuite'
+  provider: 'netsuite' | 'netsuite_secondary'
   dynamicPickListSelection: {
     netsuite_object: string
     custom_list?: RefListItem[]
@@ -49,21 +51,24 @@ const isListItem = (value: any): value is RefListItem => (
 )
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isSalesforceBlock = (value: any): value is SalesforceBlock => (
+export const isSalesforceBlock = (value: any, application: string): value is SalesforceBlock => (
   _.isObjectLike(value)
-  && value.provider === CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS.salesforce
+  && CROSS_SERVICE_SUPPORTED_APPS[SALESFORCE].includes(application)
+  && value.provider === application
   && _.isObjectLike(value.dynamicPickListSelection)
   && _.isString(value.dynamicPickListSelection.sobject_name)
   && (value.dynamicPickListSelection.table_list ?? []).every(isListItem)
   && (value.dynamicPickListSelection.field_list ?? []).every(isListItem)
   && _.isObjectLike(value.input)
   && _.isString(value.input.sobject_name)
+  && _.isString(value.as)
 )
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isNetsuiteBlock = (value: any): value is NetsuiteBlock => (
+export const isNetsuiteBlock = (value: any, application: string): value is NetsuiteBlock => (
   _.isObjectLike(value)
-  && value.provider === CROSS_SERVICE_REFERENCE_SUPPORTED_ADAPTERS.netsuite
+  && CROSS_SERVICE_SUPPORTED_APPS[NETSUITE].includes(application)
+  && value.provider === application
   && _.isObjectLike(value.dynamicPickListSelection)
   && _.isString(value.dynamicPickListSelection.netsuite_object)
   && (value.dynamicPickListSelection.custom_list ?? []).every(isListItem)

@@ -87,4 +87,29 @@ describe('strings', () => {
       expect(strings.capitalizeFirstLetter('')).toEqual('')
     })
   })
+
+  describe('matchAll', () => {
+    it('should find all matches for a global regular expression', () => {
+      const unnamed = [...strings.matchAll('abcdacdbcd', /[ab](cd)/g)]
+      expect(unnamed).toHaveLength(3)
+      expect(unnamed[0][0]).toEqual('bcd')
+      expect(unnamed[0][1]).toEqual('cd')
+      expect(unnamed[0].groups).toBeUndefined()
+      expect(unnamed[1][0]).toEqual('acd')
+      expect(unnamed[1][1]).toEqual('cd')
+      const named = [...strings.matchAll('abcdacdbcd', /[ab](?<g1>cd)/g)]
+      expect(named).toHaveLength(3)
+      expect(named[0][0]).toEqual('bcd')
+      expect(named[0][1]).toEqual('cd')
+      expect(named[0].groups).toEqual({ g1: 'cd' })
+      expect(named[1][0]).toEqual('acd')
+      expect(named[1][1]).toEqual('cd')
+    })
+    it('should return empty when no matches were found', () => {
+      expect([...strings.matchAll('abcdbcdbcd', /[ab](cde)/g)]).toEqual([])
+    })
+    it('should throw for non-global regular expressions', () => {
+      expect(() => [...strings.matchAll('abcdacdbcd', /[ab](cd)/)]).toThrow(new Error('matchAll only supports global regular expressions'))
+    })
+  })
 })

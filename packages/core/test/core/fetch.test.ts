@@ -865,7 +865,7 @@ describe('fetch', () => {
       dummy: {
         fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
         deploy: mockFunction<AdapterOperations['deploy']>(),
-        postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue({ changed: true }),
+        postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue(),
       },
     }
     describe('fetch is partial', () => {
@@ -935,12 +935,12 @@ describe('fetch', () => {
         dummy2: {
           fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy2Type1], isPartial: false }),
           deploy: mockFunction<AdapterOperations['deploy']>(),
-          postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue({ changed: true }),
+          postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue(),
         },
         dummy3: {
           fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy3Type1], isPartial: false }),
           deploy: mockFunction<AdapterOperations['deploy']>(),
-          postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue({ changed: true }),
+          postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue(),
         },
       }
       beforeEach(() => {

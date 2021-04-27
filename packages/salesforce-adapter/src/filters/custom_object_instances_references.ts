@@ -31,18 +31,18 @@ const { DefaultMap } = collections.map
 
 const log = logger(module)
 
-type refOrigin = { type: string; id: string; field?: string }
+type RefOrigin = { type: string; id: string; field?: string }
 
-const internalIDSeparator = '$'
+const INTERNAL_ID_SEPARATOR = '$'
 
 const serializeInternalID = (typeName: string, id: string): string =>
-  (`${typeName}${internalIDSeparator}${id}`)
+  (`${typeName}${INTERNAL_ID_SEPARATOR}${id}`)
 
 const serializeInstanceInternalID = (instance: InstanceElement): string =>
-  serializeInternalID(apiName(instance.type, true), instance.value[CUSTOM_OBJECT_ID_FIELD])
+  serializeInternalID(apiName(instance.type, true), apiName(instance))
 
-const deserializeInternalID = (internalID: string): refOrigin => {
-  const splitInternalID = internalID.split(internalIDSeparator)
+const deserializeInternalID = (internalID: string): RefOrigin => {
+  const splitInternalID = internalID.split(INTERNAL_ID_SEPARATOR)
   if (splitInternalID.length !== 2) {
     throw Error(`Invalid Custom Object Instance internalID - ${internalID}`)
   }
@@ -61,7 +61,7 @@ const createWarningFromMsg = (message: string): SaltoError =>
 // This is a very initial implementation
 const createWarnings = (
   instancesWithDuplicateElemID: InstanceElement[],
-  typeToEmptyRefOrigins: collections.map.DefaultMap<string, Set<refOrigin>>,
+  typeToMissingRefOrigins: collections.map.DefaultMap<string, Set<RefOrigin>>,
   illegalRefSources: Set<string>,
 ): SaltoError[] => {
   const typeToElemIDtoInstances = _.mapValues(
@@ -84,9 +84,9 @@ const createWarnings = (
       ].join('\n'))
     })
 
-  const emptyRefsWarnings = wu(typeToEmptyRefOrigins.entries()).toArray()
+  const missingRefsWarnings = wu(typeToMissingRefOrigins.entries()).toArray()
     .map(([type, origins]) => {
-      const originsArr = [...(origins as Set<refOrigin>)] // Not sure why needed
+      const originsArr = [...(origins as Set<RefOrigin>)] // Not sure why needed
       return createWarningFromMsg(`Type ${type} has references to instances that does not exist from:
       ${originsArr.map(origin => `    * Instance of type ${origin.type} with Id ${origin.id}, from field ${origin.field}`).join('\n')}
       `)
@@ -105,32 +105,29 @@ const createWarnings = (
 
   return [
     ...duplicationWarnings,
-    ...emptyRefsWarnings,
+    ...missingRefsWarnings,
     ...illegalOriginsWarnings,
   ]
 }
 
-const createInternalToInstance = (instances: InstanceElement[]): Record<string, InstanceElement> =>
-  (_.keyBy(instances, serializeInstanceInternalID))
-
-const shouldReplaceFieldVal = (field: Field): boolean => (
-  isLookupField(field) || isMasterDetailField(field)
+const isReferenceField = (field?: Field): boolean => (
+  isDefined(field) && (isLookupField(field) || isMasterDetailField(field))
 )
 
-const replaceLookupsWithReferencesAndCreateRefMap = (
+const replaceLookupsWithRefsAndCreateRefMap = (
   instances: InstanceElement[],
   internalToInstance: Record<string, InstanceElement>,
 ): {
-  reverseRefsMap: collections.map.DefaultMap<string, Set<string>>
-  typeToEmptyRefOrigins: collections.map.DefaultMap<string, Set<refOrigin>>
+  reverseReferencesMap: collections.map.DefaultMap<string, Set<string>>
+  typeToMissingRefOrigins: collections.map.DefaultMap<string, Set<RefOrigin>>
 } => {
-  const internalToReferencedFrom = new DefaultMap<string, Set<string>>(() => new Set())
-  const typeToEmptyRefOrigins = new DefaultMap<string, Set<refOrigin>>(() => new Set())
+  const reverseReferencesMap = new DefaultMap<string, Set<string>>(() => new Set())
+  const typeToMissingRefOrigins = new DefaultMap<string, Set<RefOrigin>>(() => new Set())
   const replaceLookups = (
     instance: InstanceElement
   ): Values => {
     const transformFunc: TransformFunc = ({ value, field }) => {
-      if (_.isUndefined(field) || !shouldReplaceFieldVal(field)) {
+      if (!isReferenceField(field)) {
         return value
       }
       const refTo = makeArray(field?.annotations?.[FIELD_ANNOTATIONS.REFERENCE_TO])
@@ -142,7 +139,7 @@ const replaceLookupsWithReferencesAndCreateRefMap = (
         if (!_.isEmpty(value) && (field?.annotations?.[FIELD_ANNOTATIONS.CREATABLE]
             || field?.annotations?.[FIELD_ANNOTATIONS.UPDATEABLE])) {
           refTo.forEach(targetName =>
-            typeToEmptyRefOrigins.get(targetName).add({
+            typeToMissingRefOrigins.get(targetName).add({
               type: apiName(instance.type, true),
               id: instance.value[CUSTOM_OBJECT_ID_FIELD],
               field: field.name,
@@ -150,7 +147,7 @@ const replaceLookupsWithReferencesAndCreateRefMap = (
         }
         return value
       }
-      internalToReferencedFrom.get(serializeInstanceInternalID(refTarget))
+      reverseReferencesMap.get(serializeInstanceInternalID(refTarget))
         .add(serializeInstanceInternalID(instance))
       return new ReferenceExpression(refTarget.elemID)
     }
@@ -171,9 +168,7 @@ const replaceLookupsWithReferencesAndCreateRefMap = (
       log.debug(`Replaced lookup with references for ${index} instances`)
     }
   })
-  return {
-    reverseRefsMap: internalToReferencedFrom, typeToEmptyRefOrigins,
-  }
+  return { reverseReferencesMap, typeToMissingRefOrigins }
 }
 
 const getIllegalRefSources = (
@@ -202,8 +197,8 @@ const getIllegalRefSources = (
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const customObjectInstances = elements.filter(isInstanceOfCustomObject)
-    const internalToInstance = createInternalToInstance(customObjectInstances)
-    const { reverseRefsMap, typeToEmptyRefOrigins } = replaceLookupsWithReferencesAndCreateRefMap(
+    const internalToInstance = _.keyBy(customObjectInstances, serializeInstanceInternalID)
+    const { reverseReferencesMap, typeToMissingRefOrigins } = replaceLookupsWithRefsAndCreateRefMap(
       customObjectInstances,
       internalToInstance,
     )
@@ -214,19 +209,19 @@ const filter: FilterCreator = () => ({
       ))
       .filter(instances => instances.length > 1)
       .flat()
-    const emptyRefOriginInternalIDs = new Set(wu(typeToEmptyRefOrigins.entries()).toArray()
-      .flatMap(([_type, origins]) =>
-        [...origins]
-          .map(origin => serializeInternalID(origin.type, origin.id))))
+    const missingRefOriginInternalIDs = new Set(
+      [...typeToMissingRefOrigins.values()]
+        .flatMap(origins => [...origins].map(origin => serializeInternalID(origin.type, origin.id)))
+    )
     const instWithDupElemIDInterIDs = new Set(
       instancesWithDuplicateElemID.flatMap(serializeInstanceInternalID)
     )
     const illegalRefTargets = new Set(
       [
-        ...emptyRefOriginInternalIDs, ...instWithDupElemIDInterIDs,
+        ...missingRefOriginInternalIDs, ...instWithDupElemIDInterIDs,
       ]
     )
-    const illegalRefSources = getIllegalRefSources(illegalRefTargets, reverseRefsMap)
+    const illegalRefSources = getIllegalRefSources(illegalRefTargets, reverseReferencesMap)
     const invalidInstances = new Set(
       [
         ...illegalRefSources,
@@ -242,7 +237,7 @@ const filter: FilterCreator = () => ({
     return {
       errors: createWarnings(
         instancesWithDuplicateElemID,
-        typeToEmptyRefOrigins,
+        typeToMissingRefOrigins,
         illegalRefSources,
       ),
     }

@@ -15,7 +15,7 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { hash, collections } from '@salto-io/lowerdash'
+import { hash, collections, values } from '@salto-io/lowerdash'
 import { SourceMap, ParseError } from '../../parser'
 import { ContentType } from '../dir_store'
 import { serialize, deserialize } from '../../serializer/elements'
@@ -51,8 +51,10 @@ export type ParsedNaclFileCache = {
   rename: (name: string) => Promise<void>
   list: () => Promise<string[]>
   delete: (filename: string) => Promise<void>
+  deleteAll: (filenames: string[]) => Promise<void>
   get(filename: string): Promise<ParsedNaclFile>
   put(filename: string, value: ParsedNaclFile): Promise<void>
+  putAll(files: Record<string, ParsedNaclFile>): Promise<void>
   hasValid(key: ParseResultKey): Promise<boolean>
   getAllErrors(): Promise<ParseError[]> // TEMP
 }
@@ -187,6 +189,51 @@ export const createParseResultCache = (
         timestamp: (await value.data.timestamp()) ?? Date.now(),
       })
     },
+    putAll: async (files: Record<string, ParsedNaclFile>): Promise<void> => {
+      const { metadata, errors, referenced, sourceMap, elements } = await cacheSources
+      const errorEntriesToAdd = awu(Object.keys(files))
+        .map(async file => {
+          const value = await files[file].data.errors()
+          return { key: file, value: value === undefined ? [] : value }
+        })
+        .filter(entry => entry.value.length > 0)
+      const errorEntriesToDelete = awu(Object.keys(files))
+        .map(async file => {
+          const value = await files[file].data.errors()
+          if (value === undefined || value.length > 0) {
+            return undefined
+          }
+          return file
+        })
+        .filter(values.isDefined)
+      await errors.setAll(errorEntriesToAdd)
+      await errors.deleteAll(errorEntriesToDelete)
+      await referenced.setAll(awu(Object.keys(files))
+        .map(async file => ({ key: file, value: await files[file].data.referenced() ?? [] })))
+      await sourceMap.setAll(awu(Object.keys(files))
+        .map(async file => {
+          const fileSourceMap = await files[file].sourceMap?.()
+          if (fileSourceMap === undefined) {
+            return undefined
+          }
+          return { key: file, value: fileSourceMap }
+        }).filter(values.isDefined))
+      await sourceMap.deleteAll(awu(Object.keys(files))
+        .filter(async file => (await files[file].sourceMap?.() === undefined)))
+      await elements.setAll(awu(Object.keys(files))
+        .map(async file => ({ key: file, value: await files[file].elements() ?? [] })))
+      await metadata.setAll(awu(Object.keys(files))
+        .map(async file => {
+          const value = files[file]
+          return {
+            key: file,
+            value: {
+              hash: hash.toMD5(value.buffer ?? ''),
+              timestamp: (await value.data.timestamp()) ?? Date.now(),
+            },
+          }
+        }))
+    },
     hasValid: async (key: ParseResultKey): Promise<boolean> => {
       const fileMetadata = await (await cacheSources).metadata.get(key.filename)
       if (fileMetadata === undefined) {
@@ -205,6 +252,10 @@ export const createParseResultCache = (
     },
     delete: async (filename: string): Promise<void> =>
       (awu(Object.values(await cacheSources)).forEach(async source => source.delete(filename))),
+    deleteAll: async (filenames: string[]): Promise<void> =>
+      (awu(Object.values(await cacheSources)).forEach(async source => {
+        source.deleteAll(filenames)
+      })),
     list: async () => awu((await cacheSources).metadata.keys()).toArray(),
     clear: async () =>
       awu(Object.values((await cacheSources))).forEach(async source => source.clear()),

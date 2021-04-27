@@ -22,12 +22,12 @@ const log = logger(module)
 
 const { oauthClientCredentialsBearerToken } = authUtils
 
-export const validateCredentials = async (
-  _creds: Credentials, conn: clientUtils.APIConnection,
-): Promise<AccountId> => {
+export const validateCredentials = async ({ connection }: {
+  connection: clientUtils.APIConnection
+}): Promise<AccountId> => {
   // oauth was already authenticated when the connection was created, but validating just in case
   try {
-    const res = await conn.post('/v1/connections', {})
+    const res = await connection.post('/v1/connections', {})
     if (res.status !== 200 || !res.data.success) {
       throw new clientUtils.UnauthorizedError('Authentication failed')
     }

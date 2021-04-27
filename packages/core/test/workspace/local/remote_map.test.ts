@@ -182,8 +182,8 @@ describe('test operations on remote db', () => {
       for await (const elemId of remoteMap.keys({ first: 5, after })) {
         nextPageRes.push(elemId)
       }
-      expect(nextPageRes).toHaveLength(4)
-      expect(nextPageRes).toEqual(sortedElements.slice(5))
+      expect(nextPageRes).toHaveLength(5)
+      expect(nextPageRes).toEqual(sortedElements.slice(5, 10))
     })
   })
 
@@ -209,10 +209,10 @@ describe('test operations on remote db', () => {
       expect(firstPageRes.map(e => e.elemID.getFullName())).toEqual(sortedElements.slice(0, 5))
       const after = firstPageRes[firstPageRes.length - 1].elemID.getFullName()
       const nextPageRes: Element[] = []
-      for await (const element of remoteMap.values({ first: 5, after })) {
+      for await (const element of remoteMap.values({ first: 100, after })) {
         nextPageRes.push(element)
       }
-      expect(nextPageRes).toHaveLength(4)
+      expect(nextPageRes).toHaveLength(9)
       expect(nextPageRes.map(e => e.elemID.getFullName())).toEqual(sortedElements.slice(5))
     })
   })
@@ -243,10 +243,10 @@ describe('test operations on remote db', () => {
       expect(firstPageRes.map(e => e.key)).toEqual(sortedElements.slice(0, 5))
       const after = firstPageRes[firstPageRes.length - 1].key
       const nextPageRes: { key: string; value: Element }[] = []
-      for await (const element of remoteMap.entries({ first: 5, after })) {
+      for await (const element of remoteMap.entries({ first: 100, after })) {
         nextPageRes.push(element)
       }
-      expect(nextPageRes).toHaveLength(4)
+      expect(nextPageRes).toHaveLength(9)
       expect(nextPageRes.map(e => e.value.elemID.getFullName())).toEqual(sortedElements.slice(5))
       expect(nextPageRes.map(e => e.key)).toEqual(sortedElements.slice(5))
     })

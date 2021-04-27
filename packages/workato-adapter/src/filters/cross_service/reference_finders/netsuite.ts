@@ -24,6 +24,9 @@ import { addReferencesForService, FormulaReferenceFinder, MappedReference, Refer
 
 const { isDefined } = lowerdashValues
 
+const OBJECT_REFERENCE_SEEPARATOR = '@@'
+const FIELD_REFERENCE_SEPARATOR = '@'
+
 type NetsuiteFieldMatchGroup = { field: string }
 const isNetsuiteFieldMatchGroup = (val: Values): val is NetsuiteFieldMatchGroup => (
   _.isString(val.field)
@@ -42,15 +45,16 @@ export const addNetsuiteRecipeReferences = (
   inst: InstanceElement,
   indexedElements: NetsuiteIndex,
   appName: string,
-): boolean => {
+): void => {
   const referenceFinder: ReferenceFinder<NetsuiteBlock> = (blockValue, path) => {
     const references: MappedReference[] = []
 
     const { dynamicPickListSelection, input } = blockValue
 
     const addPotentialReference = (value: unknown, separator: string, nestedPath: ElemID): void => {
-      if (_.isString(value) && value.split(separator).length === 2) {
-        const scriptId = _.last(value.toLowerCase().split(separator))
+      const lowercaseSeparator = separator.toLowerCase()
+      if (_.isString(value) && value.split(lowercaseSeparator).length === 2) {
+        const scriptId = _.last(value.toLowerCase().split(lowercaseSeparator))
         if (scriptId !== undefined) {
           const referencedId = indexedElements[scriptId]
           if (referencedId !== undefined) {
@@ -65,12 +69,12 @@ export const addNetsuiteRecipeReferences = (
 
     const netsuiteObject = input?.netsuite_object
     if (netsuiteObject !== undefined) {
-      addPotentialReference(netsuiteObject, '@@', path.createNestedID('input', 'netsuite_object'))
+      addPotentialReference(netsuiteObject, OBJECT_REFERENCE_SEEPARATOR, path.createNestedID('input', 'netsuite_object'))
     }
     (dynamicPickListSelection.custom_list ?? []).forEach(({ value }, idx) => {
       addPotentialReference(
         value,
-        '@',
+        FIELD_REFERENCE_SEPARATOR,
         path.createNestedID('dynamicPickListSelection', 'custom_list', String(idx)),
       )
     })

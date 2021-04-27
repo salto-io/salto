@@ -14,11 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  InstanceElement, ElemID, ReferenceExpression,
-  Value,
-  Values,
-} from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, ReferenceExpression, Value, Values } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc, safeJsonStringify, setPath, extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { types } from '@salto-io/lowerdash'
@@ -47,7 +43,7 @@ export const addReferencesForService = <T extends SalesforceBlock | NetsuiteBloc
   typeGuard: (value: Value, appName: string) => value is T,
   addReferences: ReferenceFinder<T>,
   addFormulaReferences?: FormulaReferenceFinder,
-): boolean => {
+): void => {
   const dependencyMapping: MappedReference[] = []
 
   const findReferences: TransformFunc = ({ value, path }) => {
@@ -74,7 +70,7 @@ export const addReferencesForService = <T extends SalesforceBlock | NetsuiteBloc
     strict: false,
   })
   if (dependencyMapping.length === 0) {
-    return false
+    return
   }
   log.debug('found the following references: %s', safeJsonStringify(dependencyMapping.map(dep => [dep.srcPath?.getFullName(), dep.ref.elemId.getFullName()])))
   dependencyMapping.forEach(({ srcPath, ref }) => {
@@ -83,7 +79,6 @@ export const addReferencesForService = <T extends SalesforceBlock | NetsuiteBloc
     }
   })
   extendGeneratedDependencies(inst, dependencyMapping.map(dep => dep.ref))
-  return true
 }
 
 export type Matcher<T> = (value: string) => Iterable<T>
@@ -92,6 +87,8 @@ export const createMatcher = <T>(
   typeGuard: types.TypeGuard<Values, T>,
 ): Matcher<T> => (
     function *fieldMatcher(value) {
+      // replacement for string.prototype.matchAll which is not supported yet in node -
+      // the matcher.exec() calls maintain the context when the regexes are global
       for (const matcher of matchers) {
         while (true) {
           const match = matcher.exec(value)?.groups

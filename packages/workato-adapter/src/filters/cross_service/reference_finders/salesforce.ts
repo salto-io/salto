@@ -61,7 +61,7 @@ export const addSalesforceRecipeReferences = (
   inst: InstanceElement,
   indexedElements: SalesforceIndex,
   appName: string,
-): boolean => {
+): void => {
   const sobjectByBlock: Record<string, string> = {}
 
   const getObjectDetails = (objectName: string): {
@@ -72,8 +72,8 @@ export const addSalesforceRecipeReferences = (
     const refObjectFragments = (
       indexedElements.CustomObject?.[objectName] ?? indexedElements[objectName]?.[objectName]
     )
-    if (refObjectFragments !== undefined && refObjectFragments.every(isObjectType)) {
-      const fields: Record<string, Field> = _.assign(
+    if (!_.isEmpty(refObjectFragments) && refObjectFragments.every(isObjectType)) {
+      const fields: Record<string, Field> = Object.assign(
         {},
         ...(refObjectFragments as ObjectType[]).map(fragment => fragment.fields),
       )

@@ -36,7 +36,7 @@ type ConnectionDetails = {
   applicationName: string
 }
 
-const getServiceConnectionNames = (
+const getServiceConnectionDetails = (
   serviceConnectionConfig: Record<string, string[]>,
   connectionInstances: InstanceElement[],
 ): Record<string, Record<string, ConnectionDetails>> => {
@@ -133,7 +133,7 @@ const filter: FilterCreator = ({ config }) => ({
       return
     }
 
-    const serviceConnectionDetails = getServiceConnectionNames(
+    const serviceConnectionDetails = getServiceConnectionDetails(
       serviceConnectionNames,
       currentAdapterElements
         .filter(isInstanceElement)

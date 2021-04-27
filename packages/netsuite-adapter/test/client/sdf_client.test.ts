@@ -238,7 +238,37 @@ describe('netsuite client', () => {
       await expect(mockClient().getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
+    })
+
+    it('should retry to authenticate when SETUP_ACCOUNT has failed', async () => {
+      let isFirstSetupTry = true
+      mockExecuteAction.mockImplementation(context => {
+        if (context.commandName === COMMANDS.SETUP_ACCOUNT && isFirstSetupTry) {
+          isFirstSetupTry = false
+          return Promise.resolve({ isSuccess: () => false })
+        }
+        if (context.commandName === COMMANDS.LIST_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: instancesIds,
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+
+      await mockClient().getCustomObjects(typeNames, typeNamesQuery)
+      expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenCalledWith(importObjectsCommandMatcher)
     })
 
     it('should return true failedToFetchAllAtOnce when IMPORT_OBJECTS has failed with fetchAllAtOnce', async () => {

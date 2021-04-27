@@ -17,9 +17,11 @@ import _ from 'lodash'
 import { InstanceElement, ElemID, ReferenceExpression, Value, Values } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc, safeJsonStringify, setPath, extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { types } from '@salto-io/lowerdash'
+import { strings, types, values as lowerdashValues } from '@salto-io/lowerdash'
 import { NetsuiteBlock, SalesforceBlock } from './recipe_block_types'
 
+const { isDefined } = lowerdashValues
+const { matchAll } = strings
 const log = logger(module)
 
 export type MappedReference = {
@@ -52,8 +54,8 @@ export const addReferencesForService = <T extends SalesforceBlock | NetsuiteBloc
         value,
         path ?? inst.elemID,
       ))
-    }
-    if (
+    // we can't have both cases because on expects an object and the other a string
+    } else if (
       addFormulaReferences !== undefined
       && path !== undefined
       && _.isString(value)
@@ -87,17 +89,15 @@ export const createMatcher = <T>(
   typeGuard: types.TypeGuard<Values, T>,
 ): Matcher<T> => (
     function *fieldMatcher(value) {
-      // replacement for string.prototype.matchAll which is not supported yet in node -
-      // the matcher.exec() calls maintain the context when the regexes are global
-      for (const matcher of matchers) {
-        while (true) {
-          const match = matcher.exec(value)?.groups
-          if (match === undefined || match === null) {
-            break
-          }
-          if (typeGuard(match)) {
-            yield match
-          }
+      const matchGroups = (
+        matchers
+          .flatMap(m => [...matchAll(value, m)])
+          .map(r => r.groups)
+          .filter(isDefined)
+      )
+      for (const m of matchGroups) {
+        if (typeGuard(m)) {
+          yield m
         }
       }
     }

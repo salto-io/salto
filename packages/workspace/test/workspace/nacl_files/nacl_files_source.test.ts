@@ -91,6 +91,7 @@ describe('Nacl Files Source', () => {
       values: jest.fn().mockReturnValue(awu([])),
       entries: jest.fn().mockReturnValue(awu([])),
       setAll: jest.fn(),
+      deleteAll: jest.fn(),
       clear: jest.fn(),
       isEmpty: jest.fn().mockResolvedValue(true),
       get: jest.fn().mockResolvedValue(undefined),

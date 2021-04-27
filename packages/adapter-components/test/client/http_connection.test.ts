@@ -15,8 +15,8 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { validateCredentials } from '../../src/client'
-import { createConnection } from './common'
+import { validateCredentials, axiosConnection, UnauthorizedError } from '../../src/client'
+import { createConnection, BASE_URL } from './common'
 
 describe('client_http_connection', () => {
   let mockAxiosAdapter: MockAdapter
@@ -46,6 +46,28 @@ describe('client_http_connection', () => {
       expect(req.url).toEqual('/users/me')
       expect(req.auth).toEqual({ username: 'user123', password: 'pass' })
       // already verified the customheader1 header in the onGet header matcher
+    })
+    it('should throw Unauthorized on UnauthorizedError', async () => {
+      await expect(() => validateCredentials(
+        { username: 'user123', password: 'pass' },
+        { createConnection: retryOptions => (axiosConnection({
+          retryOptions,
+          authParamsFunc: async () => ({}),
+          baseURLFunc: () => BASE_URL,
+          credValidateFunc: async () => { throw new UnauthorizedError('aaa') },
+        })) },
+      )).rejects.toThrow(new UnauthorizedError('Unauthorized - update credentials and try again'))
+    })
+    it('should throw Error on other errors', async () => {
+      await expect(() => validateCredentials(
+        { username: 'user123', password: 'pass' },
+        { createConnection: retryOptions => (axiosConnection({
+          retryOptions,
+          authParamsFunc: async () => ({}),
+          baseURLFunc: () => BASE_URL,
+          credValidateFunc: async () => { throw new Error('aaa') },
+        })) },
+      )).rejects.toThrow(new Error('Login failed with error: Error: aaa'))
     })
   })
 })

@@ -133,7 +133,7 @@ export const axiosConnection = <TCredentials>({
       }
     } catch (e) {
       log.error(`Login failed: ${e}, stack: ${e.stack}`)
-      if (e.response?.status === 401) {
+      if (e.response?.status === 401 || e instanceof UnauthorizedError) {
         throw new UnauthorizedError('Unauthorized - update credentials and try again')
       }
       throw new Error(`Login failed with error: ${e}`)

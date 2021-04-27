@@ -34,6 +34,7 @@
         { "path": "../salesforce-adapter" },
         { "path": "../marketo-adapter" },
         { "path": "../workato-adapter" },
+        { "path": "../zuora-billing-adapter" },
         { "path": "../dummy-adapter" }
     ]
 }

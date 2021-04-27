@@ -306,7 +306,7 @@ const fetchDef = createWorkspaceCommand({
         name: 'regenerateSaltoIds',
         alias: 'r',
         required: false,
-        description: 'Ignore current SaltoIDs and regenerate them according to current config and fetch results',
+        description: 'Regenerate configuration elements Salto IDs based on the current settings and fetch results',
         type: 'boolean',
       },
     ],

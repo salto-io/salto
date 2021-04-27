@@ -68,7 +68,25 @@ describe('adapter creator', () => {
       elementsSource: buildElementsSourceFromElements([]),
     })).toBeInstanceOf(ZuoraAdapter)
   })
-
+  it('should return the zuora_billing adapter if configuration is missing', () => {
+    expect(adapter.operations({
+      credentials: new InstanceElement(
+        ZUORA_BILLING,
+        adapter.authenticationMethods.basic.credentialsType,
+        { clientId: 'id', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
+      ),
+      elementsSource: buildElementsSourceFromElements([]),
+    })).toBeInstanceOf(ZuoraAdapter)
+    expect(adapter.operations({
+      credentials: new InstanceElement(
+        ZUORA_BILLING,
+        adapter.authenticationMethods.basic.credentialsType,
+        { clientId: 'id', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
+      ),
+      config: new InstanceElement(ZUORA_BILLING, adapter.configType as ObjectType),
+      elementsSource: buildElementsSourceFromElements([]),
+    })).toBeInstanceOf(ZuoraAdapter)
+  })
   it('should ignore unexpected configuration values', () => {
     expect(adapter.operations({
       credentials: new InstanceElement(

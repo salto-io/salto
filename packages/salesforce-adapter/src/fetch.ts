@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { FileProperties, MetadataObject } from 'jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
@@ -235,9 +236,24 @@ export const retrieveMetadataInstances = async ({
     const filesToRetrieve = fileProps.map(inst => (
       { ...inst, type: getManifestTypeName(typesByName[inst.type]) }
     ))
+    const typesToRetrieve = [...new Set(filesToRetrieve.map(prop => prop.type))].join(',')
+    log.debug('retrieving types %s', typesToRetrieve)
     const request = toRetrieveRequest(filesToRetrieve)
     const result = await client.retrieve(request)
+    log.debug(
+      'retrieve result for types %s: %o',
+      typesToRetrieve, _.omit(result, ['zipFile', 'fileProperties']),
+    )
     configChanges.push(...createRetrieveConfigChange(result))
+    // Unclear when / why this can happen, but it seems like sometimes zipFile is not a string
+    // TODO: investigate further why this happens and find a better solution than just failing
+    if (!_.isString(result.zipFile)) {
+      log.warn(
+        'retrieve request for types %s failed, zipFile is %o',
+        typesToRetrieve, result.zipFile,
+      )
+      throw new Error(`Retrieve request for ${typesToRetrieve} failed. messages: ${safeJsonStringify(result.messages)}`)
+    }
     const allValues = await fromRetrieveResult(
       result,
       fileProps,

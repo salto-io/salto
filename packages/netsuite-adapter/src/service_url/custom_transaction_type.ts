@@ -14,45 +14,16 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
-import NetsuiteClient from '../client/client'
+import { setInstancesUrls } from './instances_urls'
 import { ServiceUrlSetter } from './types'
-import { areQueryResultsValid } from './validation'
 
-const log = logger(module)
-
-
-const getScriptIdToInternalId = async (client: NetsuiteClient): Promise<Record<string, number>> => {
-  const results = await client.runSuiteQL('SELECT id, scriptid FROM customtransactiontype')
-  if (!areQueryResultsValid(results)) {
-    throw new Error('Got invalid results from custom transaction type query')
-  }
-
-  return Object.fromEntries(
-    results.map(({ scriptid, id }) => [scriptid, parseInt(id, 10)])
+const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
+  setInstancesUrls(
+    elements,
+    client,
+    element => element.type.elemID.name === 'customtransactiontype',
+    'SELECT id, scriptid FROM customtransactiontype',
+    id => `app/common/custom/customtransaction.nl?id=${id}`,
   )
-}
-
-const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
-  const relevantElements = elements
-    .filter(isInstanceElement)
-    .filter(element => element.type.elemID.name === 'customtransactiontype')
-
-  if (relevantElements.length === 0) {
-    return
-  }
-
-  const scriptIdToInternalId = await getScriptIdToInternalId(client)
-
-  relevantElements.forEach(element => {
-    const id = scriptIdToInternalId[element.value.scriptid]
-    if (id !== undefined) {
-      element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(`app/common/custom/customtransaction.nl?id=${id}`, client.url).href
-    } else {
-      log.warn(`Did not find the internal id of ${element.elemID.getFullName()}`)
-    }
-  })
-}
 
 export default setServiceUrl

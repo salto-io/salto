@@ -14,12 +14,11 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FIELD_TYPES } from '../types'
-import NetsuiteClient from '../client/client'
 import { ServiceUrlSetter } from './types'
-import { areQueryResultsValid } from './validation'
+import { setInstancesUrls } from './instances_urls'
 
 const log = logger(module)
 
@@ -35,25 +34,8 @@ const TYPE_TO_URL: Record<string, (id: number) => string> = {
   transactioncolumncustomfield: id => `app/common/custom/columncustfield.nl?id=${id}`,
 }
 
-const getScriptIdToInternalId = async (client: NetsuiteClient): Promise<Record<string, number>> => {
-  const results = await client.runSuiteQL('SELECT internalid AS id, scriptid FROM customfield')
-  if (!areQueryResultsValid(results)) {
-    throw new Error('Got invalid results from custom fields query')
-  }
-
-  return Object.fromEntries(
-    results.map(({ scriptid, id }) => [scriptid.toLowerCase(), parseInt(id, 10)])
-  )
-}
-
-const generateUrl = (element: InstanceElement, scriptIdToInternalId: Record<string, number>):
+const generateUrl = (id: number, element: InstanceElement):
   string | undefined => {
-  const id = scriptIdToInternalId[element.value.scriptid]
-  if (id === undefined) {
-    log.warn(`Did not find the internal id of ${element.elemID.getFullName()}`)
-    return undefined
-  }
-
   const url = TYPE_TO_URL[element.type.elemID.name]?.(id)
   if (url === undefined) {
     log.warn(`Got unknown type in custom_field service url setter: ${element.elemID.getFullName()}`)
@@ -61,23 +43,13 @@ const generateUrl = (element: InstanceElement, scriptIdToInternalId: Record<stri
   return url
 }
 
-const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
-  const relevantElements = elements
-    .filter(isInstanceElement)
-    .filter(element => FIELD_TYPES.includes(element.type.elemID.name))
-
-  if (relevantElements.length === 0) {
-    return
-  }
-
-  const scriptIdToInternalId = await getScriptIdToInternalId(client)
-
-  relevantElements.forEach(element => {
-    const url = generateUrl(element, scriptIdToInternalId)
-    if (url !== undefined) {
-      element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, client.url).href
-    }
-  })
-}
+const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
+  setInstancesUrls(
+    elements,
+    client,
+    element => FIELD_TYPES.includes(element.type.elemID.name),
+    'SELECT internalid AS id, scriptid FROM customfield',
+    generateUrl
+  )
 
 export default setServiceUrl

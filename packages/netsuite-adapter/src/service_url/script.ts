@@ -14,34 +14,14 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
+import { InstanceElement } from '@salto-io/adapter-api'
 import { PLUGIN_IMPLEMENTATION_TYPES, SCRIPT_TYPES } from '../types'
-import NetsuiteClient from '../client/client'
 import { ServiceUrlSetter } from './types'
-import { areQueryResultsValid } from './validation'
 import { SUPPORTED_TYPES } from '../changes_detector/changes_detectors/script'
+import { setInstancesUrls } from './instances_urls'
 
-const log = logger(module)
-
-
-const getScriptIdToInternalId = async (client: NetsuiteClient): Promise<Record<string, number>> => {
-  const results = await client.runSuiteQL('SELECT id, scriptid FROM script')
-  if (!areQueryResultsValid(results)) {
-    throw new Error('Got invalid results from scripts query')
-  }
-
-  return Object.fromEntries(results.map(({ scriptid, id }) => [scriptid, parseInt(id, 10)]))
-}
-
-const generateUrl = (element: InstanceElement, scriptIdToInternalId: Record<string, number>):
+const generateUrl = (id: number, element: InstanceElement):
   string | undefined => {
-  const id = scriptIdToInternalId[element.value.scriptid]
-  if (id === undefined) {
-    log.warn(`Did not find the internal id of ${element.elemID.getFullName()}`)
-    return undefined
-  }
-
   if (SCRIPT_TYPES.includes(element.type.elemID.name)) {
     return `app/common/scripting/script.nl?id=${id}`
   }
@@ -51,23 +31,13 @@ const generateUrl = (element: InstanceElement, scriptIdToInternalId: Record<stri
   return `app/common/scripting/plugintype.nl?scripttype=PLUGINTYPE&id=${id}`
 }
 
-const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
-  const relevantElements = elements
-    .filter(isInstanceElement)
-    .filter(element => SUPPORTED_TYPES.includes(element.type.elemID.name))
-
-  if (relevantElements.length === 0) {
-    return
-  }
-
-  const scriptIdToInternalId = await getScriptIdToInternalId(client)
-
-  relevantElements.forEach(element => {
-    const url = generateUrl(element, scriptIdToInternalId)
-    if (url !== undefined) {
-      element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, client.url).href
-    }
-  })
-}
+const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
+  setInstancesUrls(
+    elements,
+    client,
+    element => SUPPORTED_TYPES.includes(element.type.elemID.name),
+    'SELECT id, scriptid FROM script',
+    generateUrl
+  )
 
 export default setServiceUrl

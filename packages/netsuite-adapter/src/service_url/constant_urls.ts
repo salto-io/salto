@@ -15,11 +15,12 @@
 */
 
 import { CORE_ANNOTATIONS, isObjectType } from '@salto-io/adapter-api'
+import { CustomType } from '../types'
 import { ServiceUrlSetter } from './types'
 
-const TYPE_TO_URL: Record<string, string> = {
-  files: 'app/common/media/mediaitemfolders.nl',
-  folders: 'app/common/media/mediaitemfolders.nl',
+const TYPE_TO_URL: Record<CustomType | 'file' | 'folder', string| undefined> = {
+  file: 'app/common/media/mediaitemfolders.nl',
+  folder: 'app/common/media/mediaitemfolders.nl',
   addressForm: 'app/common/custom/custaddressentryforms.nl',
   advancedpdftemplate: 'app/common/custom/pdftemplates.nl',
   bundleinstallationscript: 'app/common/scripting/scriptlist.nl?scripttype=BUNDLEINSTALLATION&apiversion=&scriptfile=&bundlefilter=BLANK&sortcol=name&sortdir=ASC&csv=HTML&OfficeXML=F&pdf=&size=50&showall=F',
@@ -71,13 +72,20 @@ const TYPE_TO_URL: Record<string, string> = {
   transactioncolumncustomfield: 'app/common/custom/columncustfields.nl',
   translationcollection: 'app/translations/ui/managetranslations.nl#/collections',
   workflow: 'app/common/workflow/setup/workflowlist.nl',
+  cmscontenttype: undefined,
+  customrecordactionscript: undefined,
+  dataset: undefined,
+  integration: undefined,
+  promotionsplugin: undefined,
+  publisheddashboard: undefined,
+  workbook: undefined,
 }
 
 const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
   elements
     .filter(isObjectType)
     .forEach(element => {
-      const url = TYPE_TO_URL[element.elemID.name]
+      const url = TYPE_TO_URL[element.elemID.name as CustomType]
       if (url !== undefined) {
         element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, client.url).href
       }

@@ -39,6 +39,7 @@ export type AdapterApiConfig<
   apiVersion?: string
   typeDefaults: TypeDefaultsConfig<TD>
   types: Record<string, TypeConfig<T>>
+  fieldsAnnotations?: string[]
 }
 
 export type UserFetchConfig = {

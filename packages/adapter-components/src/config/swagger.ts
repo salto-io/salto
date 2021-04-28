@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType } from '@salto-io/adapter-api'
 import { types, values as lowerDashValues } from '@salto-io/lowerdash'
+import { OpenAPI } from 'openapi-types'
 import { AdapterApiConfig, createAdapterApiConfigType, TypeConfig, TypeDefaultsConfig } from './shared'
 import { createRequestConfigs, validateRequestConfig } from './request'
 import { createTransformationConfigTypes, validateTransoformationConfig } from './transformation'
@@ -38,8 +39,11 @@ export type AdditionalTypeConfig = {
   cloneFrom: string
 }
 
-export type SwaggerDefinitionBaseConfig = {
-  url: string
+export type SwaggerContent = OpenAPI.Document
+
+export type SwaggerSource = { url: string } | { swaggerContent: SwaggerContent }
+
+export type SwaggerDefinitionBaseConfig = SwaggerSource & {
   // rename types
   // NOTE: this applies everywhere and the old names will not be accessible
   typeNameOverrides?: TypeNameOverrideConfig[]

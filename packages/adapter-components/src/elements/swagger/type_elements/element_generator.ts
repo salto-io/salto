@@ -48,6 +48,7 @@ const typeAdder = ({
   definedTypes,
   parsedConfigs,
   refs,
+  fieldsAnnotations,
 }: {
   adapterName: string
   toUpdatedResourceName: (origResourceName: string) => string
@@ -55,6 +56,7 @@ const typeAdder = ({
   definedTypes: Record<string, ObjectType>
   parsedConfigs: Record<string, RequestableTypeSwaggerConfig>
   refs: SwaggerRefs
+  fieldsAnnotations: string[]
 }): TypeAdderType => {
   // keep track of the top-level schemas, so that even if they are reached from another
   // endpoint before being reached directly, they will be treated as top-level
@@ -149,6 +151,7 @@ const typeAdder = ({
             fieldSchema,
             toNestedTypeName(fieldSchema),
           ),
+          _.pick(fieldSchema, fieldsAnnotations),
         )
       }),
     )
@@ -258,6 +261,7 @@ export const generateTypes = async (
     swagger,
     types,
     typeDefaults,
+    fieldsAnnotations = [],
   }: AdapterSwaggerApiConfig,
   preParsedDefs?: SchemasAndRefs,
 ): Promise<ParsedTypes> => {
@@ -272,7 +276,7 @@ export const generateTypes = async (
   const definedTypes: Record<string, ObjectType> = {}
   const parsedConfigs: Record<string, RequestableTypeSwaggerConfig> = {}
 
-  const { schemas: getResponseSchemas, refs } = preParsedDefs ?? await getParsedDefs(swagger.url)
+  const { schemas: getResponseSchemas, refs } = preParsedDefs ?? await getParsedDefs(swagger)
 
   const addType = typeAdder({
     adapterName,
@@ -281,6 +285,7 @@ export const generateTypes = async (
     definedTypes,
     parsedConfigs,
     refs,
+    fieldsAnnotations,
   })
 
   Object.entries(getResponseSchemas).forEach(

@@ -16,8 +16,10 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, ListType, TypeElement, BuiltinTypes, MapType } from '@salto-io/adapter-api'
+import fs from 'fs'
 import { generateTypes, toPrimitiveType } from '../../../src/elements/swagger'
 import { RequestableTypeSwaggerConfig } from '../../../src/config'
+import { SwaggerSource } from '../../../src/config/swagger'
 
 const ADAPTER_NAME = 'myAdapter'
 const BASE_DIR = __dirname.replace('/dist', '')
@@ -41,16 +43,18 @@ describe('swagger_type_elements', () => {
 
     describe('no config overrides', () => {
       const validateV2 = async (
-        url: string,
+        source: SwaggerSource,
         extraTypes: string[] = [],
         extraConfig: Record<string, RequestableTypeSwaggerConfig> = {},
+        fieldsAnnotations: string[] = [],
       ): ReturnType<typeof generateTypes> => {
         const { allTypes, parsedConfigs } = await generateTypes(
           ADAPTER_NAME,
           {
-            swagger: { url },
+            swagger: source,
             typeDefaults: { transformation: { idFields: ['name'] } },
             types: {},
+            fieldsAnnotations,
           },
         )
         expect(Object.keys(allTypes).sort()).toEqual([...expectedTypes, ...extraTypes].sort())
@@ -113,10 +117,10 @@ describe('swagger_type_elements', () => {
       }
 
       const validateV3 = async (
-        url: string,
+        source: SwaggerSource,
       ): ReturnType<typeof generateTypes> => {
         const { allTypes, parsedConfigs } = await validateV2(
-          url,
+          source,
           ['foodOrCategory', 'foodXorCategory', 'FoodOrCategory', 'FoodXorCategory', 'Location'],
           {
             foodOrCategory: { request: { url: '/foodOrCategory' } },
@@ -157,16 +161,36 @@ describe('swagger_type_elements', () => {
       }
 
       it('should generate the right types for swagger v2 yaml', async () => {
-        await validateV2(`${BASE_DIR}/petstore_swagger.v2.yaml`)
+        await validateV2({ url: `${BASE_DIR}/petstore_swagger.v2.yaml` })
       })
-      it('should generate the right types for swagger v2 json', async () => {
-        await validateV2(`${BASE_DIR}/petstore_swagger.v2.json`)
+      it('should generate the right types for swagger v2 json url', async () => {
+        await validateV2({ url: `${BASE_DIR}/petstore_swagger.v2.json` })
       })
       it('should generate the right types for swagger v3 yaml', async () => {
-        await validateV3(`${BASE_DIR}/petstore_openapi.v3.yaml`)
+        await validateV3({ url: `${BASE_DIR}/petstore_openapi.v3.yaml` })
       })
-      it('should generate the right types for swagger v3 json', async () => {
-        await validateV3(`${BASE_DIR}/petstore_openapi.v3.json`)
+      it('should generate the right types for swagger v3 json url', async () => {
+        await validateV3({ url: `${BASE_DIR}/petstore_openapi.v3.json` })
+      })
+      it('should generate the right types for swagger v2 json content', async () => {
+        const content = await fs.promises.readFile(`${BASE_DIR}/petstore_swagger.v2.json`)
+        await validateV2({ swaggerContent: JSON.parse(content.toString()) })
+      })
+      it('should generate the right types for swagger v3 json content', async () => {
+        const content = await fs.promises.readFile(`${BASE_DIR}/petstore_openapi.v3.json`)
+        await validateV3({ swaggerContent: JSON.parse(content.toString()) })
+      })
+      it('should add the annotations to the fields', async () => {
+        const { allTypes } = await generateTypes(
+          ADAPTER_NAME,
+          {
+            swagger: { url: `${BASE_DIR}/petstore_swagger.v2.json` },
+            typeDefaults: { transformation: { idFields: ['name'] } },
+            types: {},
+            fieldsAnnotations: ['type'],
+          },
+        )
+        expect((allTypes.Food as ObjectType).fields.id.annotations.type).toBe('integer')
       })
     })
 

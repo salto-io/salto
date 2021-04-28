@@ -20,6 +20,7 @@ import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import SwaggerParser from '@apidevtools/swagger-parser'
 import { OpenAPI, OpenAPIV2, IJsonSchema, OpenAPIV3 } from 'openapi-types'
+import { SwaggerSource } from '../../../config/swagger'
 
 const { isDefined } = lowerdashValues
 const { makeArray } = collections.array
@@ -109,10 +110,12 @@ export type SchemasAndRefs = {
   refs: SwaggerRefs
 }
 
-export const getParsedDefs = async (swaggerPath: string):
+export const getParsedDefs = async (source: SwaggerSource):
   Promise<SchemasAndRefs> => {
   const parser = new SwaggerParser()
-  const parsedSwagger: OpenAPI.Document = await parser.bundle(swaggerPath)
+
+  const swaggerApi = 'swaggerContent' in source ? source.swaggerContent : source.url
+  const parsedSwagger: OpenAPI.Document = await parser.bundle(swaggerApi)
 
   const toSchemaV2 = (def?: OpenAPIV2.OperationObject): (undefined | OpenAPIV2.Schema) => (
     def?.responses?.[200]?.schema

@@ -28,6 +28,7 @@ import * as strings from './strings'
 import * as types from './types'
 import * as validators from './validators'
 import * as values from './values'
+import * as objects from './objects'
 
 export {
   collections,
@@ -45,4 +46,5 @@ export {
   types,
   validators,
   values,
+  objects,
 }

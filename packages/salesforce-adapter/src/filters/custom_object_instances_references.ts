@@ -60,12 +60,12 @@ const createWarningFromMsg = (message: string): SaltoError =>
 // TODO: Improve this
 // This is a very initial implementation
 const createWarnings = (
-  instancesWithDuplicateElemID: InstanceElement[],
+  instancesWithCollidingElemID: InstanceElement[],
   typeToMissingRefOrigins: collections.map.DefaultMap<string, Set<RefOrigin>>,
   illegalRefSources: Set<string>,
 ): SaltoError[] => {
   const typeToElemIDtoInstances = _.mapValues(
-    _.groupBy(instancesWithDuplicateElemID, instance => apiName(instance.type, true)),
+    _.groupBy(instancesWithCollidingElemID, instance => apiName(instance.type, true)),
     instances => _.groupBy(instances, instance => instance.elemID.getFullName())
   )
 
@@ -74,13 +74,13 @@ const createWarnings = (
       const numInstances = Object.values(elemIDtoInstances)
         .flat().length
       const header = `Dropped ${numInstances} instances of type ${type} due to SaltoID conflicts`
-      const duplicatesMsgs = Object.entries(elemIDtoInstances)
+      const collisionMsgs = Object.entries(elemIDtoInstances)
         .map(([elemID, instances]) => `Conflicting SaltoID ${elemID} for instances with values - 
           ${instances.map(instance => safeJsonStringify(instance.value, undefined, 2)).join('\n')}`)
       return createWarningFromMsg([
         header,
         '',
-        ...duplicatesMsgs,
+        ...collisionMsgs,
       ].join('\n'))
     })
 
@@ -202,10 +202,10 @@ const filter: FilterCreator = () => ({
       customObjectInstances,
       internalToInstance,
     )
-    const instancesWithDuplicateElemID = Object
+    const instancesWithCollidingElemID = Object
       .values(_.groupBy(
         customObjectInstances,
-        instance => serializeInternalID(apiName(instance.type, true), instance.elemID.getFullName())
+        instance => instance.elemID.getFullName(),
       ))
       .filter(instances => instances.length > 1)
       .flat()
@@ -214,7 +214,7 @@ const filter: FilterCreator = () => ({
         .flatMap(origins => [...origins].map(origin => serializeInternalID(origin.type, origin.id)))
     )
     const instWithDupElemIDInterIDs = new Set(
-      instancesWithDuplicateElemID.flatMap(serializeInstanceInternalID)
+      instancesWithCollidingElemID.flatMap(serializeInstanceInternalID)
     )
     const illegalRefTargets = new Set(
       [
@@ -236,7 +236,7 @@ const filter: FilterCreator = () => ({
     )
     return {
       errors: createWarnings(
-        instancesWithDuplicateElemID,
+        instancesWithCollidingElemID,
         typeToMissingRefOrigins,
         illegalRefSources,
       ),

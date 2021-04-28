@@ -17,7 +17,8 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { Element, ElemID, Value, DetailedChange, isElement, getChangeElement, isObjectType,
   isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, isVariable, Change,
-  placeholderReadonlyElementsSource } from '@salto-io/adapter-api'
+  placeholderReadonlyElementsSource, ObjectType, isModificationChange,
+  isObjectTypeChange, toChange, isAdditionChange } from '@salto-io/adapter-api'
 import { resolvePath, TransformFuncArgs, transformElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { promises, values, collections } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
@@ -84,6 +85,7 @@ export type NaclFilesSource<Changes=Change[]> = Omit<ElementsSource, 'clear'> & 
   }): Promise<void>
   getElementsSource: () => Promise<ElementsSource>
   load: (args: SourceLoadParams) => Promise<Changes>
+  getSearchableNames(): Promise<string[]>
 }
 
 type NaclFilesState = {
@@ -92,6 +94,7 @@ type NaclFilesState = {
   mergedElements: RemoteElementSource
   mergeErrors: RemoteMap<MergeError[]>
   referencedIndex: RemoteMap<string[]>
+  searchableNamesIndex: RemoteMap<boolean>
 }
 
 const cacheResultKey = (naclFile: { filename: string; timestamp?: number; buffer?: string }):
@@ -230,6 +233,11 @@ const createNaclFilesState = async (
     serialize: val => safeJsonStringify(val),
     deserialize: data => JSON.parse(data),
   }),
+  searchableNamesIndex: await remoteMapCreator<boolean>({
+    namespace: getRemoteMapNamespace('searchableNamesIndex', sourceName, cachePrefix),
+    serialize: val => (val === true ? '1' : '0'),
+    deserialize: async data => data !== '0',
+  }),
 })
 
 const buildNaclFilesState = async ({
@@ -264,6 +272,45 @@ const buildNaclFilesState = async ({
       return { key, value: _.uniq(newValues) }
     }), UPDATE_INDEX_CONCURRENCY)
     return index.setAll(awu(newEntries))
+  }
+
+  const getFieldsElemIDsFullName = (objectType: ObjectType): string[] =>
+    Object.values(objectType.fields).map(field => field.elemID.getFullName())
+
+  const updateSearchableNamesIndex = async (
+    changes: Change[]
+  ): Promise<void> => {
+    const getRelevantNamesFromChange = (change: Change): string[] => {
+      const element = getChangeElement(change)
+      const fieldsNames = isObjectType(element)
+        ? getFieldsElemIDsFullName(element)
+        : []
+      return [element.elemID.getFullName(), ...fieldsNames]
+    }
+    const [additions, removals] = _.partition(changes.flatMap(change => {
+      if (isModificationChange(change)) {
+        if (isObjectTypeChange(change)) {
+          const beforeFields = Object.values(change.data.before.fields)
+          const afterFields = Object.values(change.data.after.fields)
+          const additionFields = afterFields
+            .filter(field => !beforeFields.find(f => f.elemID.isEqual(field.elemID)))
+          const removalFields = beforeFields
+            .filter(field => !afterFields.find(f => f.elemID.isEqual(field.elemID)))
+          return [
+            ...additionFields.map(f => toChange({ after: f })),
+            ...removalFields.map(f => toChange({ before: f })),
+          ]
+        }
+      }
+      return change
+    }).filter(change => !isModificationChange(change)),
+    isAdditionChange)
+    const additionsNames = _.uniq(additions.flatMap(getRelevantNamesFromChange))
+    await currentState.searchableNamesIndex
+      .setAll(additionsNames.map(name => ({ key: name, value: true })))
+    const removalNames = _.uniq(removals.flatMap(getRelevantNamesFromChange))
+    await currentState.searchableNamesIndex
+      .deleteAll(removalNames)
   }
 
   const handleAdditionOrModification = async (naclFile: ParsedNaclFile): Promise<void> => {
@@ -340,7 +387,13 @@ const buildNaclFilesState = async ({
             e => e.elemID.isEqual(elemID)
           ))
     }).filter(values.isDefined) as AsyncIterable<Element>
-
+  const changes = await buildNewMergedElementsAndErrors({
+    afterElements: concatAsync(...newElementsToMerge, unmodifiedFragments),
+    relevantElementIDs: awu(relevantElementIDs),
+    currentElements: currentState.mergedElements,
+    currentErrors: currentState.mergeErrors,
+    mergeFunc: elements => mergeElements(elements),
+  }) as Change[]
   await Promise.all([
     updateIndex(
       currentState.elementsIndex,
@@ -352,14 +405,8 @@ const buildNaclFilesState = async ({
       referencedIndexAdditions,
       referencedIndexDeletions
     ),
+    updateSearchableNamesIndex(changes),
   ])
-  const changes = await buildNewMergedElementsAndErrors({
-    afterElements: concatAsync(...newElementsToMerge, unmodifiedFragments),
-    relevantElementIDs: awu(relevantElementIDs),
-    currentElements: currentState.mergedElements,
-    currentErrors: currentState.mergeErrors,
-    mergeFunc: elements => mergeElements(elements),
-  }) as Change[]
   return {
     state: currentState,
     changes,
@@ -657,6 +704,7 @@ const buildNaclFilesSource = (
       await currentState.mergedElements.flush()
       await currentState.referencedIndex.flush()
       await currentState.parsedNaclFiles.flush()
+      await currentState.searchableNamesIndex.flush()
     },
 
     getErrors: async (): Promise<Errors> => {
@@ -718,6 +766,7 @@ const buildNaclFilesSource = (
         await currentState.mergedElements.clear()
         await currentState.referencedIndex.clear()
         await currentState.parsedNaclFiles.clear()
+        await currentState.searchableNamesIndex.clear()
       }
     },
 
@@ -779,6 +828,8 @@ const buildNaclFilesSource = (
       }
       return initChanges
     },
+    getSearchableNames: async (): Promise<string[]> =>
+      (awu((await getState())?.searchableNamesIndex?.keys() ?? []).toArray()),
   }
 }
 

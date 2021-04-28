@@ -321,6 +321,44 @@ describe('workspace', () => {
     })
   })
 
+  describe('getSearchableNamesOfSource', () => {
+    let workspace: Workspace
+
+    it('should return names of top level elements and fields of desired sources', async () => {
+      workspace = await createWorkspace(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        {
+          [COMMON_ENV_PREFIX]: {
+            naclFiles: createMockNaclFileSource([
+              new ObjectType({ elemID: new ElemID('salto', 'com') }),
+            ]),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource([
+              new ObjectType({
+                elemID: new ElemID('salto', 'obj'),
+                fields: {
+                  field: {
+                    refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+                  },
+                },
+              }),
+            ]),
+            state: createState([]),
+          },
+        },
+      )
+      const searchableNamesOfCommon = await workspace.getSearchableNamesOfSource(COMMON_ENV_PREFIX)
+      expect(searchableNamesOfCommon).toEqual(['salto.com'])
+      const searchableNamesOfEnv = await workspace.getSearchableNamesOfSource('default')
+      expect(searchableNamesOfEnv).toEqual(['salto.obj', 'salto.obj.field.field'])
+    })
+  })
+
   describe('errors', () => {
     it('should be empty when there are no errors', async () => {
       const workspace = await createWorkspace()
@@ -1456,7 +1494,6 @@ describe('workspace', () => {
       expect(mockFlush).toHaveBeenCalledTimes(2)
       expect(mapFlushCounter['workspace-default-merged']).toEqual(1)
       expect(mapFlushCounter['workspace-default-errors']).toEqual(1)
-      expect(mapFlushCounter['workspace-default-searchableNamesIndex']).toEqual(1)
       expect(mapFlushCounter['workspace-default-validationErrors']).toEqual(1)
     })
   })

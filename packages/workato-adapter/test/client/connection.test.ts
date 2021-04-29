@@ -37,8 +37,8 @@ describe('client connection', () => {
       post: mockFunction<clientUtils.APIConnection['post']>(),
     }
     it('should always extract empty account id', async () => {
-      expect(await validateCredentials({ username: 'user123', token: 'token456' }, mockConnection)).toEqual('')
-      expect(await validateCredentials({ username: 'user123', token: 'token456' }, mockConnection)).toEqual('')
+      expect(await validateCredentials({ connection: mockConnection })).toEqual('')
+      expect(await validateCredentials({ connection: mockConnection })).toEqual('')
     })
   })
 

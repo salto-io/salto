@@ -107,7 +107,10 @@ type AxiosConnectionParams<TCredentials> = {
     headers?: Record<string, unknown>
   }>
   baseURLFunc: (creds: TCredentials) => string
-  credValidateFunc: (creds: TCredentials, conn: APIConnection) => Promise<AccountId>
+  credValidateFunc: ({ credentials, connection }: {
+    credentials: TCredentials
+    connection: APIConnection
+  }) => Promise<AccountId>
 }
 
 export const axiosConnection = <TCredentials>({
@@ -126,7 +129,7 @@ export const axiosConnection = <TCredentials>({
     axiosRetry(httpClient, retryOptions)
 
     try {
-      const accountId = await credValidateFunc(creds, httpClient)
+      const accountId = await credValidateFunc({ credentials: creds, connection: httpClient })
       return {
         ...httpClient,
         accountId,

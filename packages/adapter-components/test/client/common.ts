@@ -20,12 +20,12 @@ export type Credentials = { username: string; password: string}
 
 export const BASE_URL = 'http://localhost:1234/api/v1'
 
-export const validateCreds = async (
-  creds: Credentials,
-  conn: APIConnection,
-): Promise<AccountId> => {
-  const user = await conn.get('/users/me')
-  return `${user.data.accountId}:${creds.username}`
+export const validateCreds = async ({ credentials, connection }: {
+  credentials: Credentials
+  connection: APIConnection
+}): Promise<AccountId> => {
+  const user = await connection.get('/users/me')
+  return `${user.data.accountId}:${credentials.username}`
 }
 
 export const createConnection: ConnectionCreator<Credentials> = retryOptions => (

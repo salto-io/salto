@@ -19,10 +19,10 @@ import { Credentials } from '../auth'
 
 const BASE_URL = 'https://www.workato.com/api'
 
-export const validateCredentials = async (
-  _creds: Credentials, conn: clientUtils.APIConnection,
-): Promise<AccountId> => {
-  await conn.get('/users/me')
+export const validateCredentials = async ({ connection }: {
+  connection: clientUtils.APIConnection
+}): Promise<AccountId> => {
+  await connection.get('/users/me')
   // there is no good stable account id in workato, so we default to empty string to avoid
   // preventing users from refreshing their credentials in the SaaS.
   return ''

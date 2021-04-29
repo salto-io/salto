@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { collections, values as lowerfashValues } from '@salto-io/lowerdash'
+import { collections, values as lowerfashValues, types } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ResponseValue } from './http_connection'
 import { ClientGetParams, HTTPClientInterface } from './http_client'
@@ -48,7 +48,7 @@ export type PaginationFunc = ({
   responseData: unknown
   page: ResponseValue[]
   pageSize: number
-  getParams: ClientGetWithPaginationParams
+  getParams: types.PickyRequired<ClientGetWithPaginationParams, 'paginationField'>
   currentParams: Record<string, string>
 }) => Record<string, string>[]
 
@@ -121,7 +121,7 @@ export const traverseRequests: (
       requestQueryArgs.unshift(...paginationFunc({
         responseData: response.data,
         page,
-        getParams,
+        getParams: { ...getParams, paginationField },
         pageSize,
         currentParams: additionalArgs,
       }))
@@ -143,7 +143,7 @@ export const traverseRequests: (
 export const getWithPageOffsetPagination: GetAllItemsFunc = async function *getWithOffset(args) {
   const nextPageFullPages: PaginationFunc = ({ page, getParams, currentParams, pageSize }) => {
     const { paginationField } = getParams
-    if (paginationField !== undefined && page.length >= pageSize) {
+    if (page.length >= pageSize) {
       return [{
         ...currentParams,
         [paginationField]: (currentParams[paginationField] ?? 1) + 1,
@@ -164,7 +164,7 @@ export const getWithCursorPagination: GetAllItemsFunc = async function *getWithC
     responseData, getParams, currentParams,
   }) => {
     const { paginationField, url } = getParams
-    const nextPagePath = paginationField ? _.get(responseData, paginationField) : undefined
+    const nextPagePath = _.get(responseData, paginationField)
     if (nextPagePath !== undefined) {
       const nextPage = new URL(nextPagePath, 'http://localhost')
       if (nextPage.pathname !== url) {
@@ -176,6 +176,43 @@ export const getWithCursorPagination: GetAllItemsFunc = async function *getWithC
     return []
   }
   yield* traverseRequests(nextPageCursorPages)(args)
+}
+
+export const getWithOffsetAndLimit: GetAllItemsFunc = args => {
+  // Hard coded "isLast" and "values" in order to fit the configuration scheme which only allows
+  // "paginationField" to be configured
+  type PageResponse = {
+    isLast: boolean
+    values: unknown[]
+    [k: string]: unknown
+  }
+  const isPageResponse = (
+    responseData: unknown,
+    paginationField: string
+  ): responseData is PageResponse => (
+    _.isObject(responseData)
+    && _.isBoolean(_.get(responseData, 'isLast'))
+    && Array.isArray(_.get(responseData, 'values'))
+    && _.isNumber(_.get(responseData, paginationField))
+  )
+
+  const getNextPage: PaginationFunc = (
+    { responseData, getParams, currentParams }
+  ) => {
+    const { paginationField } = getParams
+    if (!isPageResponse(responseData, paginationField)) {
+      throw new Error(`Response from ${getParams.url} expected page with pagination field ${paginationField}, got ${responseData}`)
+    }
+    if (responseData.isLast) {
+      return []
+    }
+    const currentPageStart = responseData[paginationField] as number
+    const nextPageStart = currentPageStart + responseData.values.length
+    const nextPage = { ...currentParams, [paginationField]: nextPageStart.toString() }
+    return [nextPage]
+  }
+
+  return traverseRequests(getNextPage)(args)
 }
 
 export type Paginator = (params: ClientGetWithPaginationParams) => AsyncIterable<ResponseValue[]>

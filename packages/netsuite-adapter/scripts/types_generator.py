@@ -153,6 +153,8 @@ import {{ file, folder }} from './types/file_cabinet_types'
 import {{ enums }} from './types/enums'
 
 
+export type CustomType = {custom_type_value}
+
 /**
 * generated using types_generator.py as Netsuite don't expose a metadata API for them.
 */
@@ -372,7 +374,8 @@ def create_types_file(type_names):
     import_types_statements = ''.join([import_type_statement_template.format(type_name = type_name) for type_name in type_names])
     custom_types_map_entries = ''.join([custom_types_map_entry_template.format(type_name = type_name) for type_name in type_names])
     all_inner_types_vars = ''.join([type_inner_types_vars_template.format(type_name = type_name) for type_name in type_names])
-    file_content = types_file_template.format(import_types_statements = import_types_statements, custom_types_map_entries = custom_types_map_entries, all_inner_types_vars = all_inner_types_vars)
+    custom_type_value = ' | '.join(f'\'{name}\'' for name in type_names)
+    file_content = types_file_template.format(import_types_statements = import_types_statements, custom_types_map_entries = custom_types_map_entries, all_inner_types_vars = all_inner_types_vars, custom_type_value = custom_type_value)
     with open(SRC_DIR + 'types.ts', 'w') as file:
         file.write(file_content)
 

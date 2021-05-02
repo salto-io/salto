@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
+import { FIELD_TYPES } from '../../types'
 import NetsuiteClient from '../../client/client'
 import { convertSuiteQLStringToDate } from '../date_formats'
 import { ChangedObject, DateRange, TypeChangesDetector } from '../types'
@@ -57,15 +58,5 @@ export const customListDetector: TypeChangesDetector = {
 
 export const customFieldDetector: TypeChangesDetector = {
   getChanges: async (client, dateRange) => getChanges('customfield', client, dateRange),
-  getTypes: () => ([
-    'entitycustomfield',
-    'transactionbodycustomfield',
-    'transactioncolumncustomfield',
-    'itemcustomfield',
-    'othercustomfield',
-    'itemoptioncustomfield',
-    'itemnumbercustomfield',
-    'crmcustomfield',
-    'customfield',
-  ]),
+  getTypes: () => FIELD_TYPES,
 }

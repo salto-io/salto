@@ -14,38 +14,43 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
+import { sublist } from '../../src/types/custom_types/sublist'
 import NetsuiteClient from '../../src/client/client'
-import setServiceUrl from '../../src/service_url/file_cabinet'
-import { file, folder } from '../../src/types/file_cabinet_types'
+import setServiceUrl from '../../src/service_url/sublist'
 
 
-describe('setFileCabinetUrls', () => {
-  const getPathInternalIdMock = jest.fn()
+describe('setSublistsUrls', () => {
+  const runSuiteQlMock = jest.fn()
   const client = {
-    getPathInternalId: getPathInternalIdMock,
+    runSuiteQL: runSuiteQlMock,
     url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
 
-  const elements = [
-    new InstanceElement('A', file, { path: '/path/A' }),
-    new InstanceElement('B', folder, { path: '/path/B' }),
-    new InstanceElement('C', folder, { path: '/path/C' }),
-  ]
+  let elements: InstanceElement[]
 
   beforeEach(() => {
     jest.resetAllMocks()
-    getPathInternalIdMock.mockResolvedValueOnce(1)
-    getPathInternalIdMock.mockResolvedValueOnce(2)
+    runSuiteQlMock.mockResolvedValue([
+      { scriptid: 'someScriptId', id: '1' },
+    ])
+    elements = [
+      new InstanceElement('A', sublist, { scriptid: 'someScriptId' }),
+    ]
   })
 
   it('should set the right url', async () => {
     await setServiceUrl(elements, client)
-    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/media/mediaitem.nl?id=1')
-    expect(elements[1].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/media/mediaitemfolder.nl?id=2')
+    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/sublist.nl?id=1')
   })
 
   it('should not set url if not found internal id', async () => {
-    await setServiceUrl(elements, client)
-    expect(elements[2].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+    const notFoundElement = new InstanceElement('A2', sublist, { scriptid: 'someScriptID2' })
+    await setServiceUrl([notFoundElement], client)
+    expect(notFoundElement.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+  })
+
+  it('invalid results should throw an error', async () => {
+    runSuiteQlMock.mockResolvedValue([{ scriptid: 'someScriptID' }])
+    await expect(setServiceUrl(elements, client)).rejects.toThrow()
   })
 })

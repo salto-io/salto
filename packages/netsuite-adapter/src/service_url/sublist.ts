@@ -14,21 +14,17 @@
 * limitations under the License.
 */
 
-import { Element } from '@salto-io/adapter-api'
-import NetsuiteClient from '../client/client'
+import { setInstancesUrls } from './instances_urls'
+import { ServiceUrlSetter } from './types'
 
-export type ServiceUrlSetter = (elements: Element[], client: NetsuiteClient) => Promise<void>
 
-export type QueryResult = {
-  id: string
-  scriptid: string
-}
+const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
+  setInstancesUrls({
+    elements,
+    client,
+    filter: element => element.type.elemID.name === 'sublist',
+    query: 'SELECT id, scriptid FROM sublist',
+    generateUrl: id => `app/common/custom/sublist.nl?id=${id}`,
+  })
 
-export type SavedSearchResult = {
-  id: string
-  internalid: [
-    {
-      value: string
-    }
-  ]
-}
+export default setServiceUrl

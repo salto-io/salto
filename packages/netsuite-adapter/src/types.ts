@@ -78,6 +78,8 @@ import { fieldTypes } from './types/field_types'
 import { enums } from './types/enums'
 
 
+export type CustomType = 'addressForm' | 'advancedpdftemplate' | 'bankstatementparserplugin' | 'bundleinstallationscript' | 'center' | 'centercategory' | 'centerlink' | 'centertab' | 'clientscript' | 'cmscontenttype' | 'crmcustomfield' | 'customglplugin' | 'customlist' | 'customrecordactionscript' | 'customrecordtype' | 'customsegment' | 'customtransactiontype' | 'dataset' | 'datasetbuilderplugin' | 'emailcaptureplugin' | 'emailtemplate' | 'entitycustomfield' | 'entryForm' | 'ficonnectivityplugin' | 'fiparserplugin' | 'integration' | 'itemcustomfield' | 'itemnumbercustomfield' | 'itemoptioncustomfield' | 'kpiscorecard' | 'mapreducescript' | 'massupdatescript' | 'othercustomfield' | 'pluginimplementation' | 'plugintype' | 'portlet' | 'promotionsplugin' | 'publisheddashboard' | 'restlet' | 'role' | 'savedcsvimport' | 'savedsearch' | 'scheduledscript' | 'sdfinstallationscript' | 'secret' | 'sspapplication' | 'sublist' | 'subtab' | 'suitelet' | 'transactionForm' | 'transactionbodycustomfield' | 'transactioncolumncustomfield' | 'translationcollection' | 'usereventscript' | 'workbook' | 'workbookbuilderplugin' | 'workflow' | 'workflowactionscript'
+
 /**
 * generated using types_generator.py as Netsuite don't expose a metadata API for them.
 */
@@ -227,4 +229,43 @@ export const getAllTypes = (): TypeElement[] => [
   ...Object.values(enums),
   ...Object.values(fileCabinetTypes),
   ...Object.values(fieldTypes),
+]
+
+export const SCRIPT_TYPES = [
+  'bundleinstallationscript',
+  'clientscript',
+  'scheduledscript',
+  'workflowactionscript',
+  'suitelet',
+  'mapreducescript',
+  'massupdatescript',
+  'usereventscript',
+  'restlet',
+  'sdfinstallationscript',
+  'portlet',
+  'customrecordactionscript',
+]
+
+export const PLUGIN_IMPLEMENTATION_TYPES = [
+  'emailcaptureplugin',
+  'customglplugin',
+  'datasetbuilderplugin',
+  'bankstatementparserplugin',
+  'ficonnectivityplugin',
+  'fiparserplugin',
+  'promotionsplugin',
+  'workbookbuilderplugin',
+  'pluginimplementation',
+]
+
+export const FIELD_TYPES = [
+  'entitycustomfield',
+  'transactionbodycustomfield',
+  'transactioncolumncustomfield',
+  'itemcustomfield',
+  'othercustomfield',
+  'itemoptioncustomfield',
+  'itemnumbercustomfield',
+  'crmcustomfield',
+  'customfield',
 ]

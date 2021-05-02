@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
-import detector, { SCRIPT_TYPES } from '../../src/changes_detector/changes_detectors/script'
+import detector, { SUPPORTED_TYPES } from '../../src/changes_detector/changes_detectors/script'
 import { Change } from '../../src/changes_detector/types'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
@@ -52,7 +52,7 @@ describe('script', () => {
       )
     })
     it('should return the changes', () => {
-      expect(results).toEqual(SCRIPT_TYPES.map(name => ({
+      expect(results).toEqual(SUPPORTED_TYPES.map(name => ({
         type: 'type',
         name,
       })))

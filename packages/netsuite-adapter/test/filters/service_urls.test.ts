@@ -24,7 +24,7 @@ describe('serviceUrls', () => {
   const client = {
     getPathInternalId: getPathInternalIdMock,
     isSuiteAppConfigured: isSuiteAppConfiguredMock,
-    url: 'https://tstdrv2259448.app.netsuite.com',
+    url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
 
   let elements: Element[]
@@ -45,7 +45,7 @@ describe('serviceUrls', () => {
       elementsSourceIndex: { getIndex: () => Promise.resolve({}) },
       isPartial: false,
     })
-    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://tstdrv2259448.app.netsuite.com/app/common/media/mediaitem.nl?id=1')
+    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/media/mediaitem.nl?id=1')
   })
   it('should do nothing if Salto SuiteApp is not configured', async () => {
     isSuiteAppConfiguredMock.mockReturnValue(false)

@@ -19,12 +19,12 @@ import { ServiceUrlSetter } from './types'
 
 
 const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
-  setInstancesUrls(
+  setInstancesUrls({
     elements,
     client,
-    element => element.type.elemID.name === 'sublist',
-    'SELECT id, scriptid FROM sublist',
-    id => `app/common/custom/sublist.nl?id=${id}`,
-  )
+    filter: element => element.type.elemID.name === 'sublist',
+    query: 'SELECT id, scriptid FROM sublist',
+    generateUrl: id => `app/common/custom/sublist.nl?id=${id}`,
+  })
 
 export default setServiceUrl

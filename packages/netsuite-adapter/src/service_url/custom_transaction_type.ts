@@ -18,12 +18,12 @@ import { setInstancesUrls } from './instances_urls'
 import { ServiceUrlSetter } from './types'
 
 const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
-  setInstancesUrls(
+  setInstancesUrls({
     elements,
     client,
-    element => element.type.elemID.name === 'customtransactiontype',
-    'SELECT id, scriptid FROM customtransactiontype',
-    id => `app/common/custom/customtransaction.nl?id=${id}`,
-  )
+    filter: element => element.type.elemID.name === 'customtransactiontype',
+    query: 'SELECT id, scriptid FROM customtransactiontype',
+    generateUrl: id => `app/common/custom/customtransaction.nl?id=${id}`,
+  })
 
 export default setServiceUrl

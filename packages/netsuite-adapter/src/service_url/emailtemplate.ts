@@ -19,12 +19,12 @@ import { ServiceUrlSetter } from './types'
 
 
 const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
-  setInstancesUrls(
+  setInstancesUrls({
     elements,
     client,
-    element => element.type.elemID.name === 'emailtemplate',
-    'SELECT id, scriptid FROM emailtemplate',
-    id => `app/crm/common/merge/emailtemplate.nl?id=${id}&cp=F`
-  )
+    filter: element => element.type.elemID.name === 'emailtemplate',
+    query: 'SELECT id, scriptid FROM emailtemplate',
+    generateUrl: id => `app/crm/common/merge/emailtemplate.nl?id=${id}&cp=F`,
+  })
 
 export default setServiceUrl

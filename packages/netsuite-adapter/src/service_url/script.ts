@@ -32,12 +32,12 @@ const generateUrl = (id: number, element: InstanceElement):
 }
 
 const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
-  setInstancesUrls(
+  setInstancesUrls({
     elements,
     client,
-    element => SUPPORTED_TYPES.includes(element.type.elemID.name),
-    'SELECT id, scriptid FROM script',
-    generateUrl
-  )
+    filter: element => SUPPORTED_TYPES.includes(element.type.elemID.name),
+    query: 'SELECT id, scriptid FROM script',
+    generateUrl,
+  })
 
 export default setServiceUrl

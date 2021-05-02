@@ -36,13 +36,21 @@ const getScriptIdToInternalId = async (
 }
 
 export const setInstancesUrls = async (
-  elements: Element[],
-  client: NetsuiteClient,
-  filter: (element: InstanceElement) => boolean,
-  query: string,
-  generateUrl: (id: number, element: InstanceElement) => string | undefined,
-  elementToId: (element: InstanceElement) => string = element => element.value.scriptid,
-): Promise<void> => {
+  {
+    elements,
+    client,
+    filter,
+    query,
+    generateUrl,
+    elementToId = element => element.value.scriptid,
+  }: {
+  elements: Element[]
+  client: NetsuiteClient
+  filter: (element: InstanceElement) => boolean
+  query: string
+  generateUrl: (id: number, element: InstanceElement) => string | undefined
+  elementToId?: (element: InstanceElement) => string
+}): Promise<void> => {
   const relevantElements = elements
     .filter(isInstanceElement)
     .filter(e => filter(e))

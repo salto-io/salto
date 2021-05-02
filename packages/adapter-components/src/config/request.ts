@@ -28,11 +28,25 @@ export type DependsOnConfig = {
   }
 }
 
+export type RecurseIntoConfig = {
+  toField: string
+  type: string
+  param: {
+    name: string
+    fromField: string
+  }
+  condition?: {
+    field: string
+    matchValues: string[]
+  }
+}
+
 export type RequestConfig = {
   url: string
   queryParams?: Record<string, string>
   recursiveQueryByResponseField?: Record<string, string>
   dependsOn?: DependsOnConfig[]
+  recurseInto?: RecurseIntoConfig[]
   paginationField?: string
 }
 

@@ -99,6 +99,11 @@ describe('request_parameters', () => {
       expect(res[0].recursiveQueryParams?.parentId({ id: 'id' })).toEqual('id')
     })
 
+    it('should resolve urlParams from the provided params', () => {
+      const urls = computeGetArgs({ url: '/a/{p1}/{p2}' }, undefined, { p1: 'b', p2: 'c' })
+      expect(urls).toEqual([{ url: '/a/b/c' }])
+    })
+
     it('should compute dependsOn urls', () => {
       const Pet = new ObjectType({ elemID: new ElemID('bla', 'Pet') })
       const Owner = new ObjectType({ elemID: new ElemID('bla', 'Owner') })
@@ -157,7 +162,7 @@ describe('request_parameters', () => {
         },
       )).toThrow(new Error('cannot resolve endpoint /a/b/{pet_id} - missing context'))
     })
-    it('should fail if url is not tvalid', () => {
+    it('should fail if url is not valid', () => {
       expect(() => computeGetArgs(
         {
           url: '/a/b/{pet_id',

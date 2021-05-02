@@ -25,10 +25,11 @@ const log = logger(module)
 export type ComputeGetArgsFunc = (
   request: RequestConfig,
   contextElements?: Record<string, Element[]>,
+  urlParams?: Record<string, string>,
 ) => ClientGetWithPaginationParams[]
 
 /**
- * Convert an endpoint's request details into get argumets.
+ * Convert an endpoint's request details into get arguments.
  * Supports recursive queries (subsequent queries to the same endpoint based on response data).
  */
 export const simpleGetArgs: ComputeGetArgsFunc = (
@@ -90,7 +91,16 @@ const computeDependsOnURLs = (
 export const computeGetArgs: ComputeGetArgsFunc = (
   args,
   contextElements,
+  urlParams
 ) => {
-  const urls = computeDependsOnURLs(args, contextElements)
+  // Replace known url params
+  const baseUrl = args.url.replace(
+    ARG_PLACEHOLDER_MATCHER,
+    (val => urlParams?.[val.slice(1, -1)] ?? val)
+  )
+  const urls = computeDependsOnURLs(
+    { url: baseUrl, dependsOn: args.dependsOn },
+    contextElements,
+  )
   return urls.flatMap(url => simpleGetArgs({ ...args, url }, contextElements))
 }

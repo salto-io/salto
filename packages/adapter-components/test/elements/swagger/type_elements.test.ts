@@ -279,6 +279,25 @@ describe('swagger_type_elements', () => {
       })
     })
 
+    describe('with supportedEndpoints', () => {
+      let allTypes: Record<string, TypeElement>
+      beforeAll(async () => {
+        const res = await generateTypes(
+          ADAPTER_NAME,
+          {
+            swagger: { url: `${BASE_DIR}/petstore_swagger.v2.yaml` },
+            typeDefaults: { transformation: { idFields: ['name'] } },
+            types: {},
+            supportedEndpoints: ['/pet/{petId}'],
+          },
+        )
+        allTypes = res.allTypes
+      })
+      it('should generate the right types', () => {
+        expect(Object.keys(allTypes).sort()).toEqual(['Pet', 'Category', 'Tag'].sort())
+      })
+    })
+
     describe('invalid versions', () => {
       it('should fail on invalid swagger version (v2)', async () => {
         await expect(() => generateTypes(

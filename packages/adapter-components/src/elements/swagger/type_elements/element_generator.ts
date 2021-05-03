@@ -258,6 +258,7 @@ export const generateTypes = async (
     swagger,
     types,
     typeDefaults,
+    supportedEndpoints,
   }: AdapterSwaggerApiConfig,
   preParsedDefs?: SchemasAndRefs,
 ): Promise<ParsedTypes> => {
@@ -283,13 +284,19 @@ export const generateTypes = async (
     refs,
   })
 
-  Object.entries(getResponseSchemas).forEach(
-    ([endpointName, schema]) => addType(
-      schema,
-      toTypeName(endpointName),
-      endpointName,
-    )
+  const isEndpointSupported = (endpointName: string): boolean => (
+    supportedEndpoints === undefined || supportedEndpoints?.includes(endpointName)
   )
+
+  Object.entries(getResponseSchemas)
+    .filter(([endpointName]) => isEndpointSupported(endpointName))
+    .forEach(
+      ([endpointName, schema]) => addType(
+        schema,
+        toTypeName(endpointName),
+        endpointName,
+      )
+    )
 
   if (swagger.additionalTypes !== undefined) {
     defineAdditionalTypes(adapterName, swagger.additionalTypes, definedTypes, types)

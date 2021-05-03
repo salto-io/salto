@@ -53,6 +53,7 @@ export type TypeSwaggerDefaultConfig = TypeDefaultsConfig
 
 export type AdapterSwaggerApiConfig = AdapterApiConfig & {
   swagger: SwaggerDefinitionBaseConfig
+  supportedEndpoints?: string[]
 }
 export type RequestableAdapterSwaggerApiConfig = AdapterSwaggerApiConfig & {
   types: Record<string, RequestableTypeSwaggerConfig>

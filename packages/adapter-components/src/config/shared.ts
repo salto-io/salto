@@ -39,7 +39,6 @@ export type AdapterApiConfig<
   apiVersion?: string
   typeDefaults: TypeDefaultsConfig<TD>
   types: Record<string, TypeConfig<T>>
-  supportedEndpoints?: string[]
 }
 
 export type UserFetchConfig = {

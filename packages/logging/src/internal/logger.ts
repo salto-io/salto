@@ -30,6 +30,7 @@ export type BaseLogger = {
   log(level: LogLevel, ...rest: Parameters<LogMethod>): ReturnType<LogMethod>
   assignGlobalTags(logTags?: LogTags): void
   assignTags(logTags?: LogTags): void
+  getGlobalTags(): LogTags
 }
 
 export type BaseLoggerMaker = (namespace: Namespace, tags? : LogTags) => BaseLogger

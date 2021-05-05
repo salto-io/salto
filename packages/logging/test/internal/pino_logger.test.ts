@@ -432,19 +432,19 @@ describe('pino based logger', () => {
             expect(line).toContain('hello { world: true }')
           })
         })
-        describe('Get All Tags', () => {
-          let globalTagsRespons: LogTags| undefined
+        describe('getGlobalTags', () => {
+          let globalTagsResponse: LogTags| undefined
           beforeEach(async () => {
             initialConfig.globalTags = logTags
             logger = createLogger()
             logger.assignGlobalTags({ newTag: 'data', superNewTag: 'tag', functionTag: () => 5 })
-            globalTagsRespons = logger.getGlobalTags()
+            globalTagsResponse = logger.getGlobalTags()
           })
           afterEach(() => {
             logger.assignGlobalTags(undefined)
           })
           it('should contain all global tags', () => {
-            expect(globalTagsRespons).toEqual({
+            expect(globalTagsResponse).toEqual({
               bool: true,
               functionTag: 5,
               newTag: 'data',

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions targetNamespace="main" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns="http://schemas.xmlsoap.org/wsdl/">
+  <types>
+    <xsd:schema elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+      <xsd:import namespace="testXsd1" schemaLocation="testXsd1.xsd"/>
+      <xsd:import namespace="testXsd2" schemaLocation="testXsd2.xsd"/>
+      
+      <complexType name="typeInMain">
+        <sequence>
+          <element name="someField" minOccurs="1" maxOccurs="1" type="xsd:string"/>
+        </sequence>
+      </complexType>
+
+      <complexType name="typeInMain2">
+        <sequence>
+          <element name="someField" minOccurs="1" maxOccurs="1" type="typeInMain"/>
+        </sequence>
+      </complexType>
+    </xsd:schema>
+  </types>
+</definitions>

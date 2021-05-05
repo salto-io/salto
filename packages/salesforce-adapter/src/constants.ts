@@ -150,6 +150,7 @@ export const BUSINESS_OWNER_GROUP = 'businessOwnerGroup'
 export const BUSINESS_STATUS = 'businessStatus'
 export const SECURITY_CLASSIFICATION = 'securityClassification'
 export const COMPLIANCE_GROUP = 'complianceGroup'
+export const KEY_PREFIX = 'keyPrefix'
 
 export const FIELD_ANNOTATIONS = {
   UNIQUE: 'unique',

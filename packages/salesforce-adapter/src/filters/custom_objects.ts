@@ -55,6 +55,7 @@ import {
   isInstanceOfType,
   isMasterDetailField,
   buildElementsSourceForFetch,
+  addKeyPrefix,
 } from './utils'
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
@@ -378,11 +379,13 @@ const createNestedMetadataInstances = (instance: InstanceElement,
 const createObjectType = ({
   name,
   label,
+  keyPrefix,
   fields,
   systemFields,
 }: {
   name: string
   label: string
+  keyPrefix?: string | null
   fields?: SObjField[]
   systemFields?: string[]
 }): ObjectType => {
@@ -395,6 +398,7 @@ const createObjectType = ({
   addApiName(object, name)
   addMetadataType(object)
   addLabel(object, label)
+  addKeyPrefix(object, keyPrefix === null ? undefined : keyPrefix)
   object.path = [...getObjectDirectoryPath(object), pathNaclCase(object.elemID.name)]
   if (!_.isUndefined(fields)) {
     const getCompoundTypeName = (nestedFields: SObjField[], compoundName: string): string => {
@@ -469,8 +473,8 @@ const createFromSObjectsAndInstances = (
   typesFromInstance: TypesFromInstance,
   systemFields: string[],
 ): Element[] =>
-  _.flatten(sObjects.map(({ name, label, custom, fields }) => {
-    const object = createObjectType({ name, label, fields, systemFields })
+  _.flatten(sObjects.map(({ name, label, custom, keyPrefix, fields }) => {
+    const object = createObjectType({ name, label, keyPrefix, fields, systemFields })
     const instance = instances[name]
     if (!instance) {
       return [object]

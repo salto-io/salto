@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { getWithCursorPagination, getWithPageOffsetPagination, HTTPClientInterface, createPaginator, GetAllItemsFunc } from '../../src/client'
+import { getWithCursorPagination, getWithPageOffsetPagination, getWithOffsetAndLimit, HTTPClientInterface, createPaginator, GetAllItemsFunc, ResponseValue } from '../../src/client'
 import { MockInterface, mockFunction } from '../common'
 
 const { toArrayAsync } = collections.asynciterable
@@ -373,6 +373,65 @@ describe('client_pagination', () => {
           },
         },
       }))).rejects.toThrow()
+    })
+  })
+
+  describe('getWithOffsetAndLimit', () => {
+    let client: MockInterface<HTTPClientInterface>
+    beforeEach(() => {
+      client = {
+        getSinglePage: mockFunction<HTTPClientInterface['getSinglePage']>(),
+        getPageSize: mockFunction<HTTPClientInterface['getPageSize']>().mockReturnValue(2),
+      }
+    })
+    describe('when paginationField is not specified', () => {
+      let results: ResponseValue[][]
+      beforeEach(async () => {
+        client.getSinglePage.mockResolvedValue({ status: 200, statusText: 'OK', data: { page: 1 } })
+        results = await toArrayAsync(
+          getWithOffsetAndLimit({ client, pageSize: 2, getParams: { url: '/ep' } })
+        )
+      })
+      it('should query a single page', () => {
+        expect(client.getSinglePage).toHaveBeenCalledTimes(1)
+        expect(results).toHaveLength(1)
+      })
+    })
+    describe('with paginationField', () => {
+      const pages = [
+        { isLast: false, startAt: 0, values: [1, 2] },
+        { isLast: false, startAt: 2, values: [3] },
+        { isLast: true, startAt: 3, values: [4, 5] },
+      ]
+      beforeEach(() => {
+        pages.forEach(
+          data => client.getSinglePage.mockResolvedValueOnce(
+            { status: 200, statusText: 'OK', data }
+          )
+        )
+      })
+      describe('when response is a valid page', () => {
+        let results: ResponseValue[][]
+        beforeEach(async () => {
+          results = await toArrayAsync(getWithOffsetAndLimit(
+            { client, pageSize: 2, getParams: { url: '/ep', paginationField: 'startAt' } }
+          ))
+        })
+        it('should query until isLast is true', () => {
+          expect(client.getSinglePage).toHaveBeenCalledTimes(3)
+          expect(results).toHaveLength(3)
+          expect(results).toEqual(pages.map(page => [page]))
+        })
+      })
+      describe('when response is not a valid page', () => {
+        let resultIter: AsyncIterable<ResponseValue[]>
+        beforeEach(async () => {
+          resultIter = getWithOffsetAndLimit({ client, pageSize: 2, getParams: { url: '/ep', paginationField: 'wrong' } })
+        })
+        it('should throw error', async () => {
+          await expect(toArrayAsync(resultIter)).rejects.toThrow()
+        })
+      })
     })
   })
 

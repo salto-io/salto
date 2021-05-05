@@ -16,6 +16,7 @@
 import * as fs from 'fs'
 import * as tmp from 'tmp-promise'
 import { EOL } from 'os'
+import { LogTags } from '../../src'
 import { mockConsoleStream, MockWritableStream } from '../console'
 import { LogLevel, LOG_LEVELS } from '../../src/internal/level'
 import { Config, mergeConfigs } from '../../src/internal/config'
@@ -429,6 +430,28 @@ describe('pino based logger', () => {
             expect(line).toContain(NAMESPACE)
             expect(line).toContain('warn')
             expect(line).toContain('hello { world: true }')
+          })
+        })
+        describe('getGlobalTags', () => {
+          let globalTagsResponse: LogTags| undefined
+          beforeEach(async () => {
+            initialConfig.globalTags = logTags
+            logger = createLogger()
+            logger.assignGlobalTags({ newTag: 'data', superNewTag: 'tag', functionTag: () => 5 })
+            globalTagsResponse = logger.getGlobalTags()
+          })
+          afterEach(() => {
+            logger.assignGlobalTags(undefined)
+          })
+          it('should contain all global tags', () => {
+            expect(globalTagsResponse).toEqual({
+              bool: true,
+              functionTag: 5,
+              newTag: 'data',
+              number: 1,
+              string: '1',
+              superNewTag: 'tag',
+            })
           })
         })
         describe('globalTags transfer between 2 repos', () => {

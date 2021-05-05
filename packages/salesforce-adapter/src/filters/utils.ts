@@ -26,6 +26,7 @@ import { FileProperties } from 'jsforce-types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION, CUSTOM_FIELD,
+  KEY_PREFIX,
 } from '../constants'
 import { JSONBool, CustomObject } from '../client/types'
 import { metadataType, apiName, defaultApiName, Types, isCustomSettingsObject, isCustomObject } from '../transformers/transformer'
@@ -70,6 +71,10 @@ const setAnnotationDefault = (
 export const addLabel = (elem: TypeElement | Field, label?: string): void => {
   const { name } = elem.elemID
   setAnnotationDefault(elem, LABEL, label ?? name, BuiltinTypes.STRING)
+}
+
+export const addKeyPrefix = (elem: TypeElement | Field, keyPrefix?: string): void => {
+  setAnnotationDefault(elem, KEY_PREFIX, keyPrefix, BuiltinTypes.HIDDEN_STRING)
 }
 
 export const addApiName = (elem: TypeElement | Field, name?: string, parentName?: string):

@@ -362,6 +362,7 @@ export const mockWorkspace = ({
     copyTo: mockFunction<Workspace['copyTo']>(),
     getValue: mockFunction<Workspace['getValue']>(),
     getSearchableNames: mockFunction<Workspace['getSearchableNames']>(),
+    getSearchableNamesOfEnv: mockFunction<Workspace['getSearchableNamesOfEnv']>(),
   }
 }
 

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, Element, Change } from '@salto-io/adapter-api'
+import { ElemID, Element, Change, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -78,5 +78,11 @@ export const createMockNaclFileSource = (
     clone: jest.fn().mockImplementation(() => Promise.resolve()),
     getElementReferencedFiles: jest.fn().mockResolvedValue([]),
     load: jest.fn().mockResolvedValue(elements.map(e => createAddChange(e, e.elemID))),
+    getSearchableNames: jest.fn().mockResolvedValue(_.uniq(elements.flatMap(e => {
+      const fieldNames = isObjectType(e)
+        ? Object.values(e.fields).map(field => field.elemID.getFullName())
+        : []
+      return [e.elemID.getFullName(), ...fieldNames]
+    }))),
   })
 }

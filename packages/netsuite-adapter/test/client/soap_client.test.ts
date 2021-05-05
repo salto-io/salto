@@ -13,19 +13,29 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import axios from 'axios'
+import * as soap from 'soap'
 import { ExistingFileCabinetInstanceDetails } from '../../src/client/suiteapp_client/types'
 import { ReadFileError } from '../../src/client/suiteapp_client/errors'
 import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client'
-import { ADD_FILE_CABINET_ERROR_RESPONSE, ADD_FILE_CABINET_INVALID_RESPONSE, ADD_FILE_CABINET_SUCCESS_RESPONSE, DELETE_FILE_CABINET_ERROR_RESPONSE, DELETE_FILE_CABINET_INVALID_RESPONSE, DELETE_FILE_CABINET_SUCCESS_RESPONSE, READ_FAILURE_RESPONSE, READ_INVALID_RESPONSE, READ_SUCCESS_RESPONSE, READ_SUCCESS_RESPONSE_NO_CONTENT, UPDATE_FILE_CABINET_ERROR_RESPONSE, UPDATE_FILE_CABINET_INVALID_RESPONSE, UPDATE_FILE_CABINET_SUCCESS_RESPONSE } from './soap_responses'
-
 
 describe('soap_client', () => {
-  const postMock = jest.spyOn(axios, 'post')
+  const addListAsyncMock = jest.fn()
+  const updateListAsyncMock = jest.fn()
+  const deleteListAsyncMock = jest.fn()
+  const getAsyncMock = jest.fn()
+  const createClientAsyncMock = jest.spyOn(soap, 'createClientAsync')
   let client: SoapClient
 
   beforeEach(() => {
-    postMock.mockReset()
+    jest.resetAllMocks()
+    createClientAsyncMock.mockResolvedValue({
+      addListAsync: addListAsyncMock,
+      updateListAsync: updateListAsyncMock,
+      deleteListAsync: deleteListAsyncMock,
+      getAsync: getAsyncMock,
+      addSoapHeader: (fn: () => object) => fn(),
+    } as unknown as soap.Client)
+
     client = new SoapClient(
       {
         accountId: 'ACCOUNT_ID',
@@ -35,40 +45,83 @@ describe('soap_client', () => {
       fn => fn(),
     )
   })
+  it('client should be cached', async () => {
+    getAsyncMock.mockResolvedValue([{
+      readResponse: {
+        record: {
+          content: 'ZGVtbw==',
+        },
+        status: { attributes: { isSuccess: 'true' } },
+      },
+    }])
+    expect(await client.readFile(1)).toEqual(Buffer.from('demo'))
+    expect(await client.readFile(1)).toEqual(Buffer.from('demo'))
+    expect(createClientAsyncMock).toHaveBeenCalledTimes(1)
+  })
   describe('readFile', () => {
     it('should return the content of a file', async () => {
-      postMock.mockResolvedValue({
-        data: READ_SUCCESS_RESPONSE,
-      })
-      expect(await client.readFile(1)).toEqual(Buffer.from('demo\n\n'))
+      getAsyncMock.mockResolvedValue([{
+        readResponse: {
+          record: {
+            content: 'ZGVtbw==',
+          },
+          status: { attributes: { isSuccess: 'true' } },
+        },
+      }])
+      expect(await client.readFile(1)).toEqual(Buffer.from('demo'))
     })
 
     it('no content should return the empty buffer', async () => {
-      postMock.mockResolvedValue({
-        data: READ_SUCCESS_RESPONSE_NO_CONTENT,
-      })
+      getAsyncMock.mockResolvedValue([{
+        readResponse: {
+          record: {
+          },
+          status: { attributes: { isSuccess: 'true' } },
+        },
+      }])
       expect(await client.readFile(1)).toEqual(Buffer.from(''))
     })
 
     it('should throw an error when failed to read the file', async () => {
-      postMock.mockResolvedValue({
-        data: READ_FAILURE_RESPONSE,
-      })
+      getAsyncMock.mockResolvedValue([{
+        readResponse: {
+          status: {
+            attributes: { isSuccess: 'false' },
+            statusDetail: [{ code: 'code', message: 'message' }],
+          },
+        },
+      }])
       await expect(client.readFile(1)).rejects.toThrow(ReadFileError)
     })
 
     it('should throw an error when got invalid response', async () => {
-      postMock.mockResolvedValue({
-        data: READ_INVALID_RESPONSE,
-      })
+      getAsyncMock.mockResolvedValue([{}])
       await expect(client.readFile(1)).rejects.toThrow(Error)
     })
   })
   describe('updateFileCabinetInstances', () => {
     it('should return the id is success and the error if fails', async () => {
-      postMock.mockResolvedValue({
-        data: UPDATE_FILE_CABINET_SUCCESS_RESPONSE,
-      })
+      updateListAsyncMock.mockResolvedValue([{
+        writeResponseList: {
+          writeResponse: [
+            {
+              status: { attributes: { isSuccess: 'true' } },
+              baseRef: {
+                attributes: {
+                  internalId: '6233',
+                },
+              },
+            },
+            {
+              status: {
+                attributes: { isSuccess: 'false' },
+                statusDetail: [{ code: 'MEDIA_NOT_FOUND', message: 'Media item not found 62330' }],
+              },
+            },
+          ],
+          status: { attributes: { isSuccess: 'true' } },
+        },
+      }])
       expect(await client.updateFileCabinetInstances([
         {
           type: 'file',
@@ -98,9 +151,15 @@ describe('soap_client', () => {
     })
 
     it('should throw an error if request fails', async () => {
-      postMock.mockResolvedValue({
-        data: UPDATE_FILE_CABINET_ERROR_RESPONSE,
-      })
+      updateListAsyncMock.mockResolvedValue([{
+        writeResponseList: {
+          status: {
+            attributes: { isSuccess: 'false' },
+            statusDetail: [{ code: 'SOME_ERROR', message: 'SOME_ERROR' }],
+          },
+        },
+      }])
+
       await expect(client.updateFileCabinetInstances([
         {
           type: 'file',
@@ -127,9 +186,7 @@ describe('soap_client', () => {
     })
 
     it('should throw an error if received invalid response', async () => {
-      postMock.mockResolvedValue({
-        data: UPDATE_FILE_CABINET_INVALID_RESPONSE,
-      })
+      updateListAsyncMock.mockResolvedValue([{}])
       await expect(client.updateFileCabinetInstances([
         {
           type: 'file',
@@ -158,9 +215,27 @@ describe('soap_client', () => {
 
   describe('addFileCabinetInstances', () => {
     it('should return the id is success and the error if fails', async () => {
-      postMock.mockResolvedValue({
-        data: ADD_FILE_CABINET_SUCCESS_RESPONSE,
-      })
+      addListAsyncMock.mockResolvedValue([{
+        writeResponseList: {
+          writeResponse: [
+            {
+              status: { attributes: { isSuccess: 'true' } },
+              baseRef: {
+                attributes: {
+                  internalId: '6334',
+                },
+              },
+            },
+            {
+              status: {
+                attributes: { isSuccess: 'false' },
+                statusDetail: [{ code: 'INVALID_KEY_OR_REF', message: 'Invalid folder reference key -600' }],
+              },
+            },
+          ],
+          status: { attributes: { isSuccess: 'true' } },
+        },
+      }])
       expect(await client.addFileCabinetInstances([
         {
           type: 'file',
@@ -184,14 +259,19 @@ describe('soap_client', () => {
         },
       ])).toEqual([
         6334,
-        new Error('SOAP api call to add file cabinet instance addedFile2 failed. error code: INVALID_KEY_OR_REF, error message: Invalid folder reference key -600.'),
+        new Error('SOAP api call to add file cabinet instance addedFile2 failed. error code: INVALID_KEY_OR_REF, error message: Invalid folder reference key -600'),
       ])
     })
 
     it('should throw an error if request fails', async () => {
-      postMock.mockResolvedValue({
-        data: ADD_FILE_CABINET_ERROR_RESPONSE,
-      })
+      addListAsyncMock.mockResolvedValue([{
+        writeResponseList: {
+          status: {
+            attributes: { isSuccess: 'false' },
+            statusDetail: [{ code: 'SOME_ERROR', message: 'SOME_ERROR' }],
+          },
+        },
+      }])
       await expect(client.addFileCabinetInstances([
         {
           type: 'file',
@@ -217,9 +297,7 @@ describe('soap_client', () => {
     })
 
     it('should throw an error if received invalid response', async () => {
-      postMock.mockResolvedValue({
-        data: ADD_FILE_CABINET_INVALID_RESPONSE,
-      })
+      addListAsyncMock.mockResolvedValue([{}])
       await expect(client.addFileCabinetInstances([
         {
           type: 'file',
@@ -247,9 +325,27 @@ describe('soap_client', () => {
 
   describe('deleteFileCabinetInstances', () => {
     it('should return the id is success and the error if fails', async () => {
-      postMock.mockResolvedValue({
-        data: DELETE_FILE_CABINET_SUCCESS_RESPONSE,
-      })
+      deleteListAsyncMock.mockResolvedValue([{
+        writeResponseList: {
+          writeResponse: [
+            {
+              status: { attributes: { isSuccess: 'true' } },
+              baseRef: {
+                attributes: {
+                  internalId: '7148',
+                },
+              },
+            },
+            {
+              status: {
+                attributes: { isSuccess: 'false' },
+                statusDetail: [{ code: 'MEDIA_NOT_FOUND', message: 'Media item not found 99999' }],
+              },
+            },
+          ],
+          status: { attributes: { isSuccess: 'true' } },
+        },
+      }])
       expect(await client.deleteFileCabinetInstances([
         {
           type: 'file',
@@ -268,9 +364,14 @@ describe('soap_client', () => {
     })
 
     it('should throw an error if request fails', async () => {
-      postMock.mockResolvedValue({
-        data: DELETE_FILE_CABINET_ERROR_RESPONSE,
-      })
+      deleteListAsyncMock.mockResolvedValue([{
+        writeResponseList: {
+          status: {
+            attributes: { isSuccess: 'false' },
+            statusDetail: [{ code: 'SOME_ERROR', message: 'SOME_ERROR' }],
+          },
+        },
+      }])
       await expect(client.deleteFileCabinetInstances([
         {
           type: 'file',
@@ -286,9 +387,7 @@ describe('soap_client', () => {
     })
 
     it('should throw an error if received invalid response', async () => {
-      postMock.mockResolvedValue({
-        data: DELETE_FILE_CABINET_INVALID_RESPONSE,
-      })
+      deleteListAsyncMock.mockResolvedValue([{}])
       await expect(client.deleteFileCabinetInstances([
         {
           type: 'file',

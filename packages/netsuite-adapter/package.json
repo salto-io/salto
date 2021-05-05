@@ -46,9 +46,9 @@
     "he": "^1.2.0",
     "lodash": "^4.17.21",
     "oauth-1.0a": "^2.2.6",
+    "soap": "^0.37.0",
     "uuid": "^3.3.3",
-    "wu": "^2.1.0",
-    "xml-js": "^1.6.11"
+    "wu": "^2.1.0"
   },
   "devDependencies": {
     "@types/async-lock": "^1.1.2",
@@ -56,6 +56,7 @@
     "@types/jest": "^26.0.20",
     "@types/lodash": "^4.14.168",
     "@types/node": "^12.7.1",
+    "@types/sax": "^1.2.1",
     "@types/uuid": "^3.4.6",
     "@typescript-eslint/eslint-plugin": "2.31.0",
     "@typescript-eslint/parser": "2.31.0",

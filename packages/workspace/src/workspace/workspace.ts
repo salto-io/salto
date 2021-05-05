@@ -16,10 +16,10 @@
 import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
-  Value, toChange, isRemovalChange, getChangeElement, isAdditionChange, isObjectType, ObjectType,
-  isModificationChange, isObjectTypeChange, ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+  Value, toChange, isRemovalChange, getChangeElement, ReadOnlyElementsSource,
+  isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { applyDetailedChanges, safeJsonStringify } from '@salto-io/adapter-utils'
+import { applyDetailedChanges } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { ValidationError, validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
@@ -130,6 +130,7 @@ export type Workspace = {
   copyTo(ids: ElemID[], targetEnvs?: string[]): Promise<void>
   getValue(id: ElemID): Promise<Value | undefined>
   getSearchableNames(): Promise<string[]>
+  getSearchableNamesOfEnv(env?: string): Promise<string[]>
 }
 
 // common source has no state
@@ -142,7 +143,6 @@ export type EnvironmentsSources = {
 type WorkspaceState = {
   merged: ElementsSource
   errors: RemoteMap<MergeError[]>
-  searchableNamesIndex: RemoteMap<boolean>
   validationErrors: RemoteMap<ValidationError[]>
 }
 
@@ -202,11 +202,6 @@ export const loadWorkspace = async (
           namespace: getRemoteMapNamespace('errors', actualEnv),
           serialize: mergeErrors => serialize(mergeErrors),
           deserialize: async data => deserializeMergeErrors(data),
-        }),
-        searchableNamesIndex: await remoteMapCreator<boolean>({
-          namespace: getRemoteMapNamespace('searchableNamesIndex', actualEnv),
-          serialize: b => safeJsonStringify(b),
-          deserialize: async data => JSON.parse(data),
         }),
         validationErrors: await remoteMapCreator<ValidationError[]>({
           namespace: getRemoteMapNamespace('validationErrors', actualEnv),
@@ -287,45 +282,6 @@ export const loadWorkspace = async (
         .concat(stateRemovedElementChanges)
     }
 
-    const getFieldsElemIDsFullName = (objectType: ObjectType): string[] =>
-      Object.values(objectType.fields).map(field => field.elemID.getFullName())
-
-    const updateSearchableNamesIndex = async (
-      changes: Change[]
-    ): Promise<void> => {
-      const getRelevantNamesFromChange = (change: Change): string[] => {
-        const element = getChangeElement(change)
-        const fieldsNames = isObjectType(element)
-          ? getFieldsElemIDsFullName(element)
-          : []
-        return [element.elemID.getFullName(), ...fieldsNames]
-      }
-      const [additions, removals] = _.partition(changes.flatMap(change => {
-        if (isModificationChange(change)) {
-          if (isObjectTypeChange(change)) {
-            const beforeFields = Object.values(change.data.before.fields)
-            const afterFields = Object.values(change.data.after.fields)
-            const additionFields = afterFields
-              .filter(field => !beforeFields.find(f => f.elemID.isEqual(field.elemID)))
-            const removalFields = beforeFields
-              .filter(field => !afterFields.find(f => f.elemID.isEqual(field.elemID)))
-            return [
-              ...additionFields.map(f => toChange({ after: f })),
-              ...removalFields.map(f => toChange({ before: f })),
-            ]
-          }
-        }
-        return change
-      }).filter(change => !isModificationChange(change)),
-      isAdditionChange)
-      const additionsNames = additions.flatMap(getRelevantNamesFromChange)
-      await stateToBuild.searchableNamesIndex
-        .setAll(additionsNames.map(name => ({ key: name, value: true })))
-      const removalNames = removals.flatMap(getRelevantNamesFromChange)
-      await stateToBuild.searchableNamesIndex
-        .deleteAll(removalNames)
-    }
-
     const mergeData = await getAfterElements({
       src1Changes: workspaceChanges,
       src1: await naclFilesSource.getElementsSource(),
@@ -346,7 +302,6 @@ export const loadWorkspace = async (
       mergeFunc: elements => mergeElements(elements),
       ...mergeData,
     })
-    await updateSearchableNamesIndex(changes)
     const changedElements = changes
       .filter(isAdditionOrModificationChange)
       .map(getChangeElement)
@@ -624,7 +579,6 @@ export const loadWorkspace = async (
       await (await getLoadedNaclFilesSource()).flush()
       await currentWSState.merged.flush()
       await currentWSState.errors.flush()
-      await currentWSState.searchableNamesIndex.flush()
       await currentWSState.validationErrors.flush()
     },
     clone: (): Promise<Workspace> => {
@@ -641,7 +595,6 @@ export const loadWorkspace = async (
         const currentWSState = await getWorkspaceState()
         await currentWSState.merged.clear()
         await currentWSState.errors.clear()
-        await currentWSState.searchableNamesIndex.clear()
         await currentWSState.validationErrors.clear()
         await (await getLoadedNaclFilesSource()).clear(args)
       }
@@ -774,13 +727,10 @@ export const loadWorkspace = async (
     getValue: async (id: ElemID, env?: string): Promise<Value | undefined> => (
       (await elements(env)).merged.get(id)
     ),
-    getSearchableNames: async (): Promise<string[]> => {
-      // We update the WS state before to ensure the load changes will not be lost
-      await getWorkspaceState()
-      return (
-        awu((await workspaceState)?.searchableNamesIndex?.keys() ?? []).toArray()
-      )
-    },
+    getSearchableNames: async (): Promise<string[]> =>
+      (await getLoadedNaclFilesSource()).getSearchableNames(),
+    getSearchableNamesOfEnv: async (env?: string): Promise<string[]> =>
+      (await getLoadedNaclFilesSource()).getSearchableNamesOfEnv(env),
   }
 }
 

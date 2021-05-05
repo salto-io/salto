@@ -249,7 +249,7 @@ export const loggerRepo = (
         else global.globalLogTags = mergeLogTags(global.globalLogTags, logTags)
       },
       getGlobalTags(): LogTags {
-        return global.globalLogTags
+        return normalizeLogTags(global.globalLogTags)
       },
       assignTags(logTags?: LogTags): void {
         if (!logTags) tagsByNamespace.set(namespace, {})

@@ -28,12 +28,15 @@ export type LogMethod = (message: string | Error, ...args: unknown[]) => void
 
 export type BaseLogger = {
   log(level: LogLevel, ...rest: Parameters<LogMethod>): ReturnType<LogMethod>
-  assignGlobalTags(logTags?: LogTags): void
   assignTags(logTags?: LogTags): void
+}
+
+export type GlobalTags = {
+  assignGlobalTags(logTags?: LogTags): void
   getGlobalTags(): LogTags
 }
 
-export type BaseLoggerMaker = (namespace: Namespace, tags? : LogTags) => BaseLogger
+export type BaseLoggerMaker = (namespace: Namespace, tags? : LogTags) => BaseLogger & GlobalTags
 
 export type BaseLoggerRepo = BaseLoggerMaker & {
   setMinLevel(level: LogLevel): void
@@ -45,7 +48,7 @@ type HasLoggerFuncs = {
   [level in LogLevel]: LogMethod
 }
 
-export type Logger = BaseLogger & HasLoggerFuncs & {
+export type Logger = BaseLogger & GlobalTags & HasLoggerFuncs & {
   readonly namespace: Namespace
   readonly time: <T>(inner: () => T, desc: string, ...descArgs: unknown[]) => T
 }

@@ -84,7 +84,7 @@ export type MultiEnvSource = Omit<NaclFilesSource<Change[]>, 'getAll' | 'getElem
   demoteAll: () => Promise<void>
   copyTo: (ids: ElemID[], targetEnvs?: string[]) => Promise<void>
   getElementsSource: (env?: string) => Promise<ElementsSource>
-  getSearchableNamesOfSource: (source?: string) => Promise<string[]>
+  getSearchableNamesOfEnv: (env?: string) => Promise<string[]>
   setCurrentEnv: (env: string) => void
 }
 
@@ -514,8 +514,8 @@ const buildMultiEnvSource = (
       )
       return _.uniq([...primarySearchableNames, ...commonSearchableNames])
     },
-    getSearchableNamesOfSource: async (source?: string): Promise<string[]> => {
-      const naclSource = source === undefined ? primarySource() : sources[source]
+    getSearchableNamesOfEnv: async (env?: string): Promise<string[]> => {
+      const naclSource = env === undefined ? primarySource() : sources[env]
       return naclSource === undefined ? [] : naclSource.getSearchableNames()
     },
   }

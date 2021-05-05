@@ -321,7 +321,7 @@ describe('workspace', () => {
     })
   })
 
-  describe('getSearchableNamesOfSource', () => {
+  describe('getSearchableNamesOfEnv', () => {
     let workspace: Workspace
 
     it('should return names of top level elements and fields of desired sources', async () => {
@@ -352,9 +352,9 @@ describe('workspace', () => {
           },
         },
       )
-      const searchableNamesOfCommon = await workspace.getSearchableNamesOfSource(COMMON_ENV_PREFIX)
+      const searchableNamesOfCommon = await workspace.getSearchableNamesOfEnv(COMMON_ENV_PREFIX)
       expect(searchableNamesOfCommon).toEqual(['salto.com'])
-      const searchableNamesOfEnv = await workspace.getSearchableNamesOfSource('default')
+      const searchableNamesOfEnv = await workspace.getSearchableNamesOfEnv('default')
       expect(searchableNamesOfEnv).toEqual(['salto.obj', 'salto.obj.field.field'])
     })
   })

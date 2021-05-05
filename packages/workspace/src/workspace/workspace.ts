@@ -130,7 +130,7 @@ export type Workspace = {
   copyTo(ids: ElemID[], targetEnvs?: string[]): Promise<void>
   getValue(id: ElemID): Promise<Value | undefined>
   getSearchableNames(): Promise<string[]>
-  getSearchableNamesOfSource(source?: string): Promise<string[]>
+  getSearchableNamesOfEnv(env?: string): Promise<string[]>
 }
 
 // common source has no state
@@ -729,8 +729,8 @@ export const loadWorkspace = async (
     ),
     getSearchableNames: async (): Promise<string[]> =>
       (await getLoadedNaclFilesSource()).getSearchableNames(),
-    getSearchableNamesOfSource: async (source?: string): Promise<string[]> =>
-      (await getLoadedNaclFilesSource()).getSearchableNamesOfSource(source),
+    getSearchableNamesOfEnv: async (env?: string): Promise<string[]> =>
+      (await getLoadedNaclFilesSource()).getSearchableNamesOfEnv(env),
   }
 }
 

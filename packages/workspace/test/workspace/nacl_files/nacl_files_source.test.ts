@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID, ObjectType, DetailedChange, StaticFile, SaltoError, Value } from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, DetailedChange, StaticFile, SaltoError, Value, ReferenceExpression, BuiltinTypes } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
@@ -34,6 +34,11 @@ const createChange = (): DetailedChange => {
   const newElem = new ObjectType({
     elemID: newElemID,
     path: ['test', 'new'],
+    fields: {
+      myField: {
+        refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
+      },
+    },
   })
   const change = {
     id: newElemID,
@@ -92,6 +97,8 @@ describe('Nacl Files Source', () => {
       entries: jest.fn().mockReturnValue(awu([])),
       setAll: jest.fn(),
       clear: jest.fn(),
+      deleteAll: jest.fn(),
+      flush: jest.fn(),
       isEmpty: jest.fn().mockResolvedValue(true),
       get: jest.fn().mockResolvedValue(undefined),
       getMany: jest.fn().mockImplementation((keys: string[]) => keys.map(_k => undefined)),
@@ -181,6 +188,25 @@ describe('Nacl Files Source', () => {
       expect(mockDirStore.clear as jest.Mock).not.toHaveBeenCalled()
       Object.values(createdMaps).forEach(cache => expect(cache.clear).not.toHaveBeenCalled())
       expect(mockedStaticFilesSource.clear).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('flush', () => {
+    it('should flush everything by default', async () => {
+      mockDirStore.flush = jest.fn().mockResolvedValue(Promise.resolve())
+      mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
+      mockedStaticFilesSource.clear = jest.fn().mockResolvedValue(Promise.resolve())
+      const naclSrc = await naclFilesSource(
+        '',
+        mockDirStore,
+        mockedStaticFilesSource,
+        mockRemoteMapCreator,
+      )
+      await naclSrc.load({})
+      await naclSrc.flush()
+      expect(mockDirStore.flush as jest.Mock).toHaveBeenCalledTimes(1)
+      Object.values(createdMaps).forEach(cache => expect(cache.flush).toHaveBeenCalledTimes(1))
+      expect(mockedStaticFilesSource.flush).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -398,6 +424,25 @@ describe('Nacl Files Source', () => {
 
     it('should list all elements', async () => {
       expect(await awu(await src.list()).toArray()).toHaveLength(1)
+    })
+  })
+
+  describe('getSearchableNames', () => {
+    let src: NaclFilesSource
+    beforeEach(async () => {
+      src = await naclFilesSource(
+        '',
+        mockDirStore,
+        mockedStaticFilesSource,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+      )
+      await src.load({})
+      await src.updateNaclFiles([createChange()])
+    })
+
+    it('should list all searchable elements', async () => {
+      expect(await src.getSearchableNames())
+        .toEqual(['salesforce.new_elem', 'salesforce.new_elem.field.myField'])
     })
   })
 })

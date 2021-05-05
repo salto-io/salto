@@ -279,13 +279,13 @@ describe('workspace', () => {
     let workspace: Workspace
     const TOTAL_NUM_ELEMENETS = 54
 
-    it('Should return names of top level elemnts and fields', async () => {
+    it('should return names of top level elements and fields', async () => {
       workspace = await createWorkspace()
       const searchableNames = await workspace.getSearchableNames()
       expect(searchableNames.length).toEqual(TOTAL_NUM_ELEMENETS)
     })
 
-    it('Should remove object and fields from list if removed', async () => {
+    it('should remove object and fields from list if removed', async () => {
       workspace = await createWorkspace()
       const accountIntSett = await workspace.getValue(new ElemID('salesforce', 'AccountIntelligenceSettings')) as ObjectType
       const searchableNames = await workspace.getSearchableNames()
@@ -304,7 +304,7 @@ describe('workspace', () => {
       })
     })
 
-    it('Should add object and fields to list if added', async () => {
+    it('should add object and fields to list if added', async () => {
       workspace = await createWorkspace()
       const newElemID = new ElemID('salesforce', 'new')
       const newObject = new ObjectType({
@@ -318,6 +318,44 @@ describe('workspace', () => {
       }])
       const searchableNamesAfter = await workspace.getSearchableNames()
       expect(searchableNamesAfter.length).toEqual(TOTAL_NUM_ELEMENETS + 2)
+    })
+  })
+
+  describe('getSearchableNamesOfSource', () => {
+    let workspace: Workspace
+
+    it('should return names of top level elements and fields of desired sources', async () => {
+      workspace = await createWorkspace(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        {
+          [COMMON_ENV_PREFIX]: {
+            naclFiles: createMockNaclFileSource([
+              new ObjectType({ elemID: new ElemID('salto', 'com') }),
+            ]),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource([
+              new ObjectType({
+                elemID: new ElemID('salto', 'obj'),
+                fields: {
+                  field: {
+                    refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+                  },
+                },
+              }),
+            ]),
+            state: createState([]),
+          },
+        },
+      )
+      const searchableNamesOfCommon = await workspace.getSearchableNamesOfSource(COMMON_ENV_PREFIX)
+      expect(searchableNamesOfCommon).toEqual(['salto.com'])
+      const searchableNamesOfEnv = await workspace.getSearchableNamesOfSource('default')
+      expect(searchableNamesOfEnv).toEqual(['salto.obj', 'salto.obj.field.field'])
     })
   })
 
@@ -1456,7 +1494,6 @@ describe('workspace', () => {
       expect(mockFlush).toHaveBeenCalledTimes(2)
       expect(mapFlushCounter['workspace-default-merged']).toEqual(1)
       expect(mapFlushCounter['workspace-default-errors']).toEqual(1)
-      expect(mapFlushCounter['workspace-default-searchableNamesIndex']).toEqual(1)
       expect(mapFlushCounter['workspace-default-validationErrors']).toEqual(1)
     })
   })

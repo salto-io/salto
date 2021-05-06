@@ -430,19 +430,19 @@ const validateValue = async (
       return [new InvalidValueTypeValidationError({ elemID, value, type: type.elemID })]
     }
     const objType = toObjectType(type, value)
-    return awu(Object.keys(value)).filter(k => objType.fields[k] !== undefined).flatMap(
+    return (await Promise.all(Object.keys(value).filter(k => objType.fields[k] !== undefined).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
       k => validateFieldValue(elemID.createNestedID(k), value[k], objType.fields[k], elementsSource)
-    ).toArray()
+    ))).flat()
   }
 
   if (isListType(type)) {
-    return awu(mapAsArrayWithIds(value, elemID)).flatMap(async item => validateValue(
+    return (await Promise.all(mapAsArrayWithIds(value, elemID).map(async item => validateValue(
       item.nestedID,
       item.value,
       await type.getInnerType(elementsSource),
       elementsSource
-    )).toArray()
+    )))).flat()
   }
 
   return (
@@ -572,8 +572,8 @@ const validateVariable = (element: Variable): ValidationError[] => validateVaria
 
 export const validateElements = async (
   elements: Element[], elementsSource: ReadOnlyElementsSource,
-): Promise<ValidationError[]> => awu(await resolve(elements, elementsSource))
-  .flatMap(e => {
+): Promise<ValidationError[]> => (await Promise.all((await resolve(elements, elementsSource))
+  .flatMap(async e => {
     if (isInstanceElement(e)) {
       return validateInstanceElements(e, elementsSource)
     }
@@ -581,5 +581,4 @@ export const validateElements = async (
       return validateVariable(e)
     }
     return validateType(e as TypeElement, elementsSource)
-  })
-  .toArray()
+  }))).flat()

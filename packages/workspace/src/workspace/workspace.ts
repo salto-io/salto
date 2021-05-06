@@ -245,10 +245,8 @@ export const loadWorkspace = async (
       validatedElementsIDs: ElemID[]
     }> => {
       const dependentsID = await getElementsDependents(relevantElementIDs, new Set())
-      const dependents = await awu(dependentsID)
-        .map(id => elementSource.get(id))
-        .filter(values.isDefined)
-        .toArray()
+      const dependents = await Promise.all(dependentsID.map(id => elementSource.get(id))
+        .filter(values.isDefined))
       const elementsToValidate = [...elements, ...dependents]
       return {
         errors: await validateElements(elementsToValidate, elementSource),

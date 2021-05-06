@@ -128,7 +128,7 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
   if (!await fileUtils.exists(location)) {
     await fileUtils.mkdirp(location)
   }
-  if (!/^[a-z0-9-_/]+$/i.test(namespace)) {
+  if (!/^[a-z0-9-_\s/]+$/i.test(namespace)) {
     throw new Error(
       `Invalid namespace: ${namespace}. Must include only alphanumeric characters or -`
     )

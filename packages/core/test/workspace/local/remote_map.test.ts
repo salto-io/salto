@@ -68,7 +68,8 @@ describe('test operations on remote db', () => {
     elements = await createElements()
     sortedElements = _.sortBy(elements, e => e.elemID.getFullName())
       .map(e => e.elemID.getFullName())
-    remoteMap = await createMap(Math.random().toString(36).substring(2, 15))
+    remoteMap = await createMap(`${Math.random().toString(36).substring(2, 15)} -_${Math.random()
+      .toString(36).substring(2, 15)}`)
   })
   afterEach(async () => {
     await remoteMap.revert()

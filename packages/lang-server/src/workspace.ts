@@ -171,6 +171,9 @@ export class EditorWorkspace {
   }
 
   private async validateElements(ids: Set<string>): Promise<errors.ValidationError[]> {
+    if (ids.size === 0) {
+      return []
+    }
     const elements = await this.workspace.elements()
     const elementsToValidate = (await Promise.all(
       [...ids].map(async id => elements.get(ElemID.fromFullName(id)))

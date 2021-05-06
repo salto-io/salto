@@ -17,1370 +17,329 @@
 // The schemas here were generated automatically using https://github.com/YousefED/typescript-json-schema
 
 export const GET_RESULTS_SCHEMA = {
-  anyOf: [
-    {
-      properties: {
-        'soapenv:Envelope': {
-          properties: {
-            'soapenv:Body': {
-              properties: {
-                getResponse: {
-                  properties: {
-                    'platformMsgs:readResponse': {
-                      properties: {
-                        'platformCore:status': {
-                          properties: {
-                            _attributes: {
-                              properties: {
-                                isSuccess: {
-                                  enum: [
-                                    'true',
-                                  ],
-                                  type: 'string',
-                                },
-                              },
-                              required: [
-                                'isSuccess',
-                              ],
-                              type: 'object',
-                            },
-                          },
-                          required: [
-                            '_attributes',
-                          ],
-                          type: 'object',
-                        },
-                        'platformMsgs:record': {
-                          properties: {
-                            'docFileCab:content': {
-                              properties: {
-                                _text: {
-                                  type: 'string',
-                                },
-                              },
-                              type: 'object',
-                            },
-                          },
-                          required: [
-                            'docFileCab:content',
-                          ],
-                          type: 'object',
-                        },
-                      },
-                      required: [
-                        'platformCore:status',
-                        'platformMsgs:record',
-                      ],
-                      type: 'object',
-                    },
-                  },
-                  required: [
-                    'platformMsgs:readResponse',
-                  ],
-                  type: 'object',
-                },
-              },
-              required: [
-                'getResponse',
-              ],
-              type: 'object',
-            },
-          },
-          required: [
-            'soapenv:Body',
-          ],
-          type: 'object',
-        },
-      },
-      required: [
-        'soapenv:Envelope',
-      ],
-      type: 'object',
-    },
-    {
-      properties: {
-        'soapenv:Envelope': {
-          properties: {
-            'soapenv:Body': {
-              properties: {
-                getResponse: {
-                  properties: {
-                    'platformMsgs:readResponse': {
-                      properties: {
-                        'platformCore:status': {
-                          properties: {
-                            _attributes: {
-                              properties: {
-                                isSuccess: {
-                                  enum: [
-                                    'false',
-                                  ],
-                                  type: 'string',
-                                },
-                              },
-                              required: [
-                                'isSuccess',
-                              ],
-                              type: 'object',
-                            },
-                            'platformCore:statusDetail': {
-                              properties: {
-                                'platformCore:code': {
-                                  properties: {
-                                    _text: {
-                                      type: 'string',
-                                    },
-                                  },
-                                  required: [
-                                    '_text',
-                                  ],
-                                  type: 'object',
-                                },
-                                'platformCore:message': {
-                                  properties: {
-                                    _text: {
-                                      type: 'string',
-                                    },
-                                  },
-                                  required: [
-                                    '_text',
-                                  ],
-                                  type: 'object',
-                                },
-                              },
-                              required: [
-                                'platformCore:code',
-                                'platformCore:message',
-                              ],
-                              type: 'object',
-                            },
-                          },
-                          required: [
-                            '_attributes',
-                            'platformCore:statusDetail',
-                          ],
-                          type: 'object',
-                        },
-                      },
-                      required: [
-                        'platformCore:status',
-                      ],
-                      type: 'object',
-                    },
-                  },
-                  required: [
-                    'platformMsgs:readResponse',
-                  ],
-                  type: 'object',
-                },
-              },
-              required: [
-                'getResponse',
-              ],
-              type: 'object',
-            },
-          },
-          required: [
-            'soapenv:Body',
-          ],
-          type: 'object',
-        },
-      },
-      required: [
-        'soapenv:Envelope',
-      ],
-      type: 'object',
-    },
-  ],
-}
-
-export const UPDATE_LIST_SCHEMA = {
-  anyOf: [
-    {
-      properties: {
-        'soapenv:Envelope': {
-          properties: {
-            'soapenv:Body': {
-              properties: {
-                updateListResponse: {
-                  properties: {
-                    writeResponseList: {
-                      properties: {
-                        'platformCore:status': {
-                          properties: {
-                            _attributes: {
-                              properties: {
-                                isSuccess: {
-                                  enum: [
-                                    'true',
-                                  ],
-                                  type: 'string',
-                                },
-                              },
-                              required: [
-                                'isSuccess',
-                              ],
-                              type: 'object',
-                            },
-                          },
-                          required: [
-                            '_attributes',
-                          ],
-                          type: 'object',
-                        },
-                        writeResponse: {
-                          anyOf: [
-                            {
-                              properties: {
-                                baseRef: {
-                                  properties: {
-                                    _attributes: {
-                                      properties: {
-                                        internalId: {
-                                          type: 'string',
-                                        },
-                                      },
-                                      required: [
-                                        'internalId',
-                                      ],
-                                      type: 'object',
-                                    },
-                                  },
-                                  required: [
-                                    '_attributes',
-                                  ],
-                                  type: 'object',
-                                },
-                                'platformCore:status': {
-                                  properties: {
-                                    _attributes: {
-                                      properties: {
-                                        isSuccess: {
-                                          enum: [
-                                            'true',
-                                          ],
-                                          type: 'string',
-                                        },
-                                      },
-                                      required: [
-                                        'isSuccess',
-                                      ],
-                                      type: 'object',
-                                    },
-                                  },
-                                  required: [
-                                    '_attributes',
-                                  ],
-                                  type: 'object',
-                                },
-                              },
-                              required: [
-                                'baseRef',
-                                'platformCore:status',
-                              ],
-                              type: 'object',
-                            },
-                            {
-                              properties: {
-                                'platformCore:status': {
-                                  properties: {
-                                    _attributes: {
-                                      properties: {
-                                        isSuccess: {
-                                          enum: [
-                                            'false',
-                                          ],
-                                          type: 'string',
-                                        },
-                                      },
-                                      required: [
-                                        'isSuccess',
-                                      ],
-                                      type: 'object',
-                                    },
-                                    'platformCore:statusDetail': {
-                                      properties: {
-                                        'platformCore:code': {
-                                          properties: {
-                                            _text: {
-                                              type: 'string',
-                                            },
-                                          },
-                                          required: [
-                                            '_text',
-                                          ],
-                                          type: 'object',
-                                        },
-                                        'platformCore:message': {
-                                          properties: {
-                                            _text: {
-                                              type: 'string',
-                                            },
-                                          },
-                                          required: [
-                                            '_text',
-                                          ],
-                                          type: 'object',
-                                        },
-                                      },
-                                      required: [
-                                        'platformCore:code',
-                                        'platformCore:message',
-                                      ],
-                                      type: 'object',
-                                    },
-                                  },
-                                  required: [
-                                    '_attributes',
-                                    'platformCore:statusDetail',
-                                  ],
-                                  type: 'object',
-                                },
-                              },
-                              required: [
-                                'platformCore:status',
-                              ],
-                              type: 'object',
-                            },
-                            {
-                              items: {
-                                anyOf: [
-                                  {
-                                    properties: {
-                                      baseRef: {
-                                        properties: {
-                                          _attributes: {
-                                            properties: {
-                                              internalId: {
-                                                type: 'string',
-                                              },
-                                            },
-                                            required: [
-                                              'internalId',
-                                            ],
-                                            type: 'object',
-                                          },
-                                        },
-                                        required: [
-                                          '_attributes',
-                                        ],
-                                        type: 'object',
-                                      },
-                                      'platformCore:status': {
-                                        properties: {
-                                          _attributes: {
-                                            properties: {
-                                              isSuccess: {
-                                                enum: [
-                                                  'true',
-                                                ],
-                                                type: 'string',
-                                              },
-                                            },
-                                            required: [
-                                              'isSuccess',
-                                            ],
-                                            type: 'object',
-                                          },
-                                        },
-                                        required: [
-                                          '_attributes',
-                                        ],
-                                        type: 'object',
-                                      },
-                                    },
-                                    required: [
-                                      'baseRef',
-                                      'platformCore:status',
-                                    ],
-                                    type: 'object',
-                                  },
-                                  {
-                                    properties: {
-                                      'platformCore:status': {
-                                        properties: {
-                                          _attributes: {
-                                            properties: {
-                                              isSuccess: {
-                                                enum: [
-                                                  'false',
-                                                ],
-                                                type: 'string',
-                                              },
-                                            },
-                                            required: [
-                                              'isSuccess',
-                                            ],
-                                            type: 'object',
-                                          },
-                                          'platformCore:statusDetail': {
-                                            properties: {
-                                              'platformCore:code': {
-                                                properties: {
-                                                  _text: {
-                                                    type: 'string',
-                                                  },
-                                                },
-                                                required: [
-                                                  '_text',
-                                                ],
-                                                type: 'object',
-                                              },
-                                              'platformCore:message': {
-                                                properties: {
-                                                  _text: {
-                                                    type: 'string',
-                                                  },
-                                                },
-                                                required: [
-                                                  '_text',
-                                                ],
-                                                type: 'object',
-                                              },
-                                            },
-                                            required: [
-                                              'platformCore:code',
-                                              'platformCore:message',
-                                            ],
-                                            type: 'object',
-                                          },
-                                        },
-                                        required: [
-                                          '_attributes',
-                                          'platformCore:statusDetail',
-                                        ],
-                                        type: 'object',
-                                      },
-                                    },
-                                    required: [
-                                      'platformCore:status',
-                                    ],
-                                    type: 'object',
-                                  },
-                                ],
-                              },
-                              type: 'array',
-                            },
-                          ],
-                        },
-                      },
-                      required: [
-                        'platformCore:status',
-                        'writeResponse',
-                      ],
-                      type: 'object',
-                    },
-                  },
-                  required: [
-                    'writeResponseList',
-                  ],
-                  type: 'object',
-                },
-              },
-              required: [
-                'updateListResponse',
-              ],
-              type: 'object',
-            },
-          },
-          required: [
-            'soapenv:Body',
-          ],
-          type: 'object',
-        },
-      },
-      required: [
-        'soapenv:Envelope',
-      ],
-      type: 'object',
-    },
-    {
-      properties: {
-        'soapenv:Envelope': {
-          properties: {
-            'soapenv:Body': {
-              properties: {
-                updateListResponse: {
-                  properties: {
-                    writeResponseList: {
-                      properties: {
-                        'platformCore:status': {
-                          properties: {
-                            _attributes: {
-                              properties: {
-                                isSuccess: {
-                                  enum: [
-                                    'false',
-                                  ],
-                                  type: 'string',
-                                },
-                              },
-                              required: [
-                                'isSuccess',
-                              ],
-                              type: 'object',
-                            },
-                            'platformCore:statusDetail': {
-                              properties: {
-                                'platformCore:code': {
-                                  properties: {
-                                    _text: {
-                                      type: 'string',
-                                    },
-                                  },
-                                  required: [
-                                    '_text',
-                                  ],
-                                  type: 'object',
-                                },
-                                'platformCore:message': {
-                                  properties: {
-                                    _text: {
-                                      type: 'string',
-                                    },
-                                  },
-                                  required: [
-                                    '_text',
-                                  ],
-                                  type: 'object',
-                                },
-                              },
-                              required: [
-                                'platformCore:code',
-                                'platformCore:message',
-                              ],
-                              type: 'object',
-                            },
-                          },
-                          required: [
-                            '_attributes',
-                            'platformCore:statusDetail',
-                          ],
-                          type: 'object',
-                        },
-                      },
-                      required: [
-                        'platformCore:status',
-                      ],
-                      type: 'object',
-                    },
-                  },
-                  required: [
-                    'writeResponseList',
-                  ],
-                  type: 'object',
-                },
-              },
-              required: [
-                'updateListResponse',
-              ],
-              type: 'object',
-            },
-          },
-          required: [
-            'soapenv:Body',
-          ],
-          type: 'object',
-        },
-      },
-      required: [
-        'soapenv:Envelope',
-      ],
-      type: 'object',
-    },
-  ],
-}
-
-export const ADD_LIST_SCHEMA = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   anyOf: [
     {
       properties: {
-        'soapenv:Envelope': {
+        readResponse: {
           properties: {
-            'soapenv:Body': {
+            record: {
               properties: {
-                addListResponse: {
+                content: {
+                  type: 'string',
+                },
+              },
+              type: 'object',
+            },
+            status: {
+              properties: {
+                attributes: {
                   properties: {
-                    writeResponseList: {
-                      properties: {
-                        'platformCore:status': {
-                          properties: {
-                            _attributes: {
-                              properties: {
-                                isSuccess: {
-                                  enum: [
-                                    'true',
-                                  ],
-                                  type: 'string',
-                                },
-                              },
-                              required: [
-                                'isSuccess',
-                              ],
-                              type: 'object',
-                            },
-                          },
-                          required: [
-                            '_attributes',
-                          ],
-                          type: 'object',
-                        },
-                        writeResponse: {
-                          anyOf: [
-                            {
-                              properties: {
-                                baseRef: {
-                                  properties: {
-                                    _attributes: {
-                                      properties: {
-                                        internalId: {
-                                          type: 'string',
-                                        },
-                                      },
-                                      required: [
-                                        'internalId',
-                                      ],
-                                      type: 'object',
-                                    },
-                                  },
-                                  required: [
-                                    '_attributes',
-                                  ],
-                                  type: 'object',
-                                },
-                                'platformCore:status': {
-                                  properties: {
-                                    _attributes: {
-                                      properties: {
-                                        isSuccess: {
-                                          enum: [
-                                            'true',
-                                          ],
-                                          type: 'string',
-                                        },
-                                      },
-                                      required: [
-                                        'isSuccess',
-                                      ],
-                                      type: 'object',
-                                    },
-                                  },
-                                  required: [
-                                    '_attributes',
-                                  ],
-                                  type: 'object',
-                                },
-                              },
-                              required: [
-                                'baseRef',
-                                'platformCore:status',
-                              ],
-                              type: 'object',
-                            },
-                            {
-                              properties: {
-                                'platformCore:status': {
-                                  properties: {
-                                    _attributes: {
-                                      properties: {
-                                        isSuccess: {
-                                          enum: [
-                                            'false',
-                                          ],
-                                          type: 'string',
-                                        },
-                                      },
-                                      required: [
-                                        'isSuccess',
-                                      ],
-                                      type: 'object',
-                                    },
-                                    'platformCore:statusDetail': {
-                                      properties: {
-                                        'platformCore:code': {
-                                          properties: {
-                                            _text: {
-                                              type: 'string',
-                                            },
-                                          },
-                                          required: [
-                                            '_text',
-                                          ],
-                                          type: 'object',
-                                        },
-                                        'platformCore:message': {
-                                          properties: {
-                                            _text: {
-                                              type: 'string',
-                                            },
-                                          },
-                                          required: [
-                                            '_text',
-                                          ],
-                                          type: 'object',
-                                        },
-                                      },
-                                      required: [
-                                        'platformCore:code',
-                                        'platformCore:message',
-                                      ],
-                                      type: 'object',
-                                    },
-                                  },
-                                  required: [
-                                    '_attributes',
-                                    'platformCore:statusDetail',
-                                  ],
-                                  type: 'object',
-                                },
-                              },
-                              required: [
-                                'platformCore:status',
-                              ],
-                              type: 'object',
-                            },
-                            {
-                              items: {
-                                anyOf: [
-                                  {
-                                    properties: {
-                                      baseRef: {
-                                        properties: {
-                                          _attributes: {
-                                            properties: {
-                                              internalId: {
-                                                type: 'string',
-                                              },
-                                            },
-                                            required: [
-                                              'internalId',
-                                            ],
-                                            type: 'object',
-                                          },
-                                        },
-                                        required: [
-                                          '_attributes',
-                                        ],
-                                        type: 'object',
-                                      },
-                                      'platformCore:status': {
-                                        properties: {
-                                          _attributes: {
-                                            properties: {
-                                              isSuccess: {
-                                                enum: [
-                                                  'true',
-                                                ],
-                                                type: 'string',
-                                              },
-                                            },
-                                            required: [
-                                              'isSuccess',
-                                            ],
-                                            type: 'object',
-                                          },
-                                        },
-                                        required: [
-                                          '_attributes',
-                                        ],
-                                        type: 'object',
-                                      },
-                                    },
-                                    required: [
-                                      'baseRef',
-                                      'platformCore:status',
-                                    ],
-                                    type: 'object',
-                                  },
-                                  {
-                                    properties: {
-                                      'platformCore:status': {
-                                        properties: {
-                                          _attributes: {
-                                            properties: {
-                                              isSuccess: {
-                                                enum: [
-                                                  'false',
-                                                ],
-                                                type: 'string',
-                                              },
-                                            },
-                                            required: [
-                                              'isSuccess',
-                                            ],
-                                            type: 'object',
-                                          },
-                                          'platformCore:statusDetail': {
-                                            properties: {
-                                              'platformCore:code': {
-                                                properties: {
-                                                  _text: {
-                                                    type: 'string',
-                                                  },
-                                                },
-                                                required: [
-                                                  '_text',
-                                                ],
-                                                type: 'object',
-                                              },
-                                              'platformCore:message': {
-                                                properties: {
-                                                  _text: {
-                                                    type: 'string',
-                                                  },
-                                                },
-                                                required: [
-                                                  '_text',
-                                                ],
-                                                type: 'object',
-                                              },
-                                            },
-                                            required: [
-                                              'platformCore:code',
-                                              'platformCore:message',
-                                            ],
-                                            type: 'object',
-                                          },
-                                        },
-                                        required: [
-                                          '_attributes',
-                                          'platformCore:statusDetail',
-                                        ],
-                                        type: 'object',
-                                      },
-                                    },
-                                    required: [
-                                      'platformCore:status',
-                                    ],
-                                    type: 'object',
-                                  },
-                                ],
-                              },
-                              type: 'array',
-                            },
-                          ],
-                        },
-                      },
-                      required: [
-                        'platformCore:status',
-                        'writeResponse',
+                    isSuccess: {
+                      enum: [
+                        'true',
                       ],
-                      type: 'object',
+                      type: 'string',
                     },
                   },
                   required: [
-                    'writeResponseList',
+                    'isSuccess',
                   ],
                   type: 'object',
                 },
               },
               required: [
-                'addListResponse',
+                'attributes',
               ],
               type: 'object',
             },
           },
           required: [
-            'soapenv:Body',
+            'record',
+            'status',
           ],
           type: 'object',
         },
       },
       required: [
-        'soapenv:Envelope',
+        'readResponse',
       ],
       type: 'object',
     },
     {
       properties: {
-        'soapenv:Envelope': {
+        readResponse: {
           properties: {
-            'soapenv:Body': {
+            status: {
               properties: {
-                addListResponse: {
+                attributes: {
                   properties: {
-                    writeResponseList: {
-                      properties: {
-                        'platformCore:status': {
-                          properties: {
-                            _attributes: {
-                              properties: {
-                                isSuccess: {
-                                  enum: [
-                                    'false',
-                                  ],
-                                  type: 'string',
-                                },
-                              },
-                              required: [
-                                'isSuccess',
-                              ],
-                              type: 'object',
-                            },
-                            'platformCore:statusDetail': {
-                              properties: {
-                                'platformCore:code': {
-                                  properties: {
-                                    _text: {
-                                      type: 'string',
-                                    },
-                                  },
-                                  required: [
-                                    '_text',
-                                  ],
-                                  type: 'object',
-                                },
-                                'platformCore:message': {
-                                  properties: {
-                                    _text: {
-                                      type: 'string',
-                                    },
-                                  },
-                                  required: [
-                                    '_text',
-                                  ],
-                                  type: 'object',
-                                },
-                              },
-                              required: [
-                                'platformCore:code',
-                                'platformCore:message',
-                              ],
-                              type: 'object',
-                            },
-                          },
-                          required: [
-                            '_attributes',
-                            'platformCore:statusDetail',
-                          ],
-                          type: 'object',
-                        },
-                      },
-                      required: [
-                        'platformCore:status',
+                    isSuccess: {
+                      enum: [
+                        'false',
                       ],
-                      type: 'object',
+                      type: 'string',
                     },
                   },
                   required: [
-                    'writeResponseList',
+                    'isSuccess',
                   ],
                   type: 'object',
                 },
+                statusDetail: {
+                  items: [
+                    {
+                      properties: {
+                        code: {
+                          type: 'string',
+                        },
+                        message: {
+                          type: 'string',
+                        },
+                      },
+                      required: [
+                        'code',
+                        'message',
+                      ],
+                      type: 'object',
+                    },
+                  ],
+                  maxItems: 1,
+                  minItems: 1,
+                  type: 'array',
+                },
               },
               required: [
-                'addListResponse',
+                'attributes',
+                'statusDetail',
               ],
               type: 'object',
             },
           },
           required: [
-            'soapenv:Body',
+            'status',
           ],
           type: 'object',
         },
       },
       required: [
-        'soapenv:Envelope',
+        'readResponse',
       ],
       type: 'object',
     },
   ],
 }
 
-export const DELETE_LIST_SCHEMA = {
+export const DEPLOY_LIST_SCHEMA = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   anyOf: [
     {
       properties: {
-        'soapenv:Envelope': {
+        writeResponseList: {
           properties: {
-            'soapenv:Body': {
+            status: {
               properties: {
-                deleteListResponse: {
+                attributes: {
                   properties: {
-                    writeResponseList: {
-                      properties: {
-                        'platformCore:status': {
-                          properties: {
-                            _attributes: {
-                              properties: {
-                                isSuccess: {
-                                  enum: [
-                                    'true',
-                                  ],
-                                  type: 'string',
-                                },
-                              },
-                              required: [
-                                'isSuccess',
-                              ],
-                              type: 'object',
-                            },
-                          },
-                          required: [
-                            '_attributes',
-                          ],
-                          type: 'object',
-                        },
-                        writeResponse: {
-                          anyOf: [
-                            {
-                              properties: {
-                                baseRef: {
-                                  properties: {
-                                    _attributes: {
-                                      properties: {
-                                        internalId: {
-                                          type: 'string',
-                                        },
-                                      },
-                                      required: [
-                                        'internalId',
-                                      ],
-                                      type: 'object',
-                                    },
-                                  },
-                                  required: [
-                                    '_attributes',
-                                  ],
-                                  type: 'object',
-                                },
-                                'platformCore:status': {
-                                  properties: {
-                                    _attributes: {
-                                      properties: {
-                                        isSuccess: {
-                                          enum: [
-                                            'true',
-                                          ],
-                                          type: 'string',
-                                        },
-                                      },
-                                      required: [
-                                        'isSuccess',
-                                      ],
-                                      type: 'object',
-                                    },
-                                  },
-                                  required: [
-                                    '_attributes',
-                                  ],
-                                  type: 'object',
-                                },
-                              },
-                              required: [
-                                'baseRef',
-                                'platformCore:status',
-                              ],
-                              type: 'object',
-                            },
-                            {
-                              properties: {
-                                'platformCore:status': {
-                                  properties: {
-                                    _attributes: {
-                                      properties: {
-                                        isSuccess: {
-                                          enum: [
-                                            'false',
-                                          ],
-                                          type: 'string',
-                                        },
-                                      },
-                                      required: [
-                                        'isSuccess',
-                                      ],
-                                      type: 'object',
-                                    },
-                                    'platformCore:statusDetail': {
-                                      properties: {
-                                        'platformCore:code': {
-                                          properties: {
-                                            _text: {
-                                              type: 'string',
-                                            },
-                                          },
-                                          required: [
-                                            '_text',
-                                          ],
-                                          type: 'object',
-                                        },
-                                        'platformCore:message': {
-                                          properties: {
-                                            _text: {
-                                              type: 'string',
-                                            },
-                                          },
-                                          required: [
-                                            '_text',
-                                          ],
-                                          type: 'object',
-                                        },
-                                      },
-                                      required: [
-                                        'platformCore:code',
-                                        'platformCore:message',
-                                      ],
-                                      type: 'object',
-                                    },
-                                  },
-                                  required: [
-                                    '_attributes',
-                                    'platformCore:statusDetail',
-                                  ],
-                                  type: 'object',
-                                },
-                              },
-                              required: [
-                                'platformCore:status',
-                              ],
-                              type: 'object',
-                            },
-                            {
-                              items: {
-                                anyOf: [
-                                  {
-                                    properties: {
-                                      baseRef: {
-                                        properties: {
-                                          _attributes: {
-                                            properties: {
-                                              internalId: {
-                                                type: 'string',
-                                              },
-                                            },
-                                            required: [
-                                              'internalId',
-                                            ],
-                                            type: 'object',
-                                          },
-                                        },
-                                        required: [
-                                          '_attributes',
-                                        ],
-                                        type: 'object',
-                                      },
-                                      'platformCore:status': {
-                                        properties: {
-                                          _attributes: {
-                                            properties: {
-                                              isSuccess: {
-                                                enum: [
-                                                  'true',
-                                                ],
-                                                type: 'string',
-                                              },
-                                            },
-                                            required: [
-                                              'isSuccess',
-                                            ],
-                                            type: 'object',
-                                          },
-                                        },
-                                        required: [
-                                          '_attributes',
-                                        ],
-                                        type: 'object',
-                                      },
-                                    },
-                                    required: [
-                                      'baseRef',
-                                      'platformCore:status',
-                                    ],
-                                    type: 'object',
-                                  },
-                                  {
-                                    properties: {
-                                      'platformCore:status': {
-                                        properties: {
-                                          _attributes: {
-                                            properties: {
-                                              isSuccess: {
-                                                enum: [
-                                                  'false',
-                                                ],
-                                                type: 'string',
-                                              },
-                                            },
-                                            required: [
-                                              'isSuccess',
-                                            ],
-                                            type: 'object',
-                                          },
-                                          'platformCore:statusDetail': {
-                                            properties: {
-                                              'platformCore:code': {
-                                                properties: {
-                                                  _text: {
-                                                    type: 'string',
-                                                  },
-                                                },
-                                                required: [
-                                                  '_text',
-                                                ],
-                                                type: 'object',
-                                              },
-                                              'platformCore:message': {
-                                                properties: {
-                                                  _text: {
-                                                    type: 'string',
-                                                  },
-                                                },
-                                                required: [
-                                                  '_text',
-                                                ],
-                                                type: 'object',
-                                              },
-                                            },
-                                            required: [
-                                              'platformCore:code',
-                                              'platformCore:message',
-                                            ],
-                                            type: 'object',
-                                          },
-                                        },
-                                        required: [
-                                          '_attributes',
-                                          'platformCore:statusDetail',
-                                        ],
-                                        type: 'object',
-                                      },
-                                    },
-                                    required: [
-                                      'platformCore:status',
-                                    ],
-                                    type: 'object',
-                                  },
-                                ],
-                              },
-                              type: 'array',
-                            },
-                          ],
-                        },
-                      },
-                      required: [
-                        'platformCore:status',
-                        'writeResponse',
+                    isSuccess: {
+                      enum: [
+                        'true',
                       ],
-                      type: 'object',
+                      type: 'string',
                     },
                   },
                   required: [
-                    'writeResponseList',
+                    'isSuccess',
                   ],
                   type: 'object',
                 },
               },
               required: [
-                'deleteListResponse',
+                'attributes',
               ],
               type: 'object',
             },
+            writeResponse: {
+              items: {
+                anyOf: [
+                  {
+                    properties: {
+                      baseRef: {
+                        properties: {
+                          attributes: {
+                            properties: {
+                              internalId: {
+                                type: 'string',
+                              },
+                            },
+                            required: [
+                              'internalId',
+                            ],
+                            type: 'object',
+                          },
+                        },
+                        required: [
+                          'attributes',
+                        ],
+                        type: 'object',
+                      },
+                      status: {
+                        properties: {
+                          attributes: {
+                            properties: {
+                              isSuccess: {
+                                enum: [
+                                  'true',
+                                ],
+                                type: 'string',
+                              },
+                            },
+                            required: [
+                              'isSuccess',
+                            ],
+                            type: 'object',
+                          },
+                        },
+                        required: [
+                          'attributes',
+                        ],
+                        type: 'object',
+                      },
+                    },
+                    required: [
+                      'baseRef',
+                      'status',
+                    ],
+                    type: 'object',
+                  },
+                  {
+                    properties: {
+                      status: {
+                        properties: {
+                          attributes: {
+                            properties: {
+                              isSuccess: {
+                                enum: [
+                                  'false',
+                                ],
+                                type: 'string',
+                              },
+                            },
+                            required: [
+                              'isSuccess',
+                            ],
+                            type: 'object',
+                          },
+                          statusDetail: {
+                            items: [
+                              {
+                                properties: {
+                                  code: {
+                                    type: 'string',
+                                  },
+                                  message: {
+                                    type: 'string',
+                                  },
+                                },
+                                required: [
+                                  'code',
+                                  'message',
+                                ],
+                                type: 'object',
+                              },
+                            ],
+                            maxItems: 1,
+                            minItems: 1,
+                            type: 'array',
+                          },
+                        },
+                        required: [
+                          'attributes',
+                          'statusDetail',
+                        ],
+                        type: 'object',
+                      },
+                    },
+                    required: [
+                      'status',
+                    ],
+                    type: 'object',
+                  },
+                ],
+              },
+              type: 'array',
+            },
           },
           required: [
-            'soapenv:Body',
+            'status',
+            'writeResponse',
           ],
           type: 'object',
         },
       },
       required: [
-        'soapenv:Envelope',
+        'writeResponseList',
       ],
       type: 'object',
     },
     {
       properties: {
-        'soapenv:Envelope': {
+        writeResponseList: {
           properties: {
-            'soapenv:Body': {
+            status: {
               properties: {
-                deleteListResponse: {
+                attributes: {
                   properties: {
-                    writeResponseList: {
-                      properties: {
-                        'platformCore:status': {
-                          properties: {
-                            _attributes: {
-                              properties: {
-                                isSuccess: {
-                                  enum: [
-                                    'false',
-                                  ],
-                                  type: 'string',
-                                },
-                              },
-                              required: [
-                                'isSuccess',
-                              ],
-                              type: 'object',
-                            },
-                            'platformCore:statusDetail': {
-                              properties: {
-                                'platformCore:code': {
-                                  properties: {
-                                    _text: {
-                                      type: 'string',
-                                    },
-                                  },
-                                  required: [
-                                    '_text',
-                                  ],
-                                  type: 'object',
-                                },
-                                'platformCore:message': {
-                                  properties: {
-                                    _text: {
-                                      type: 'string',
-                                    },
-                                  },
-                                  required: [
-                                    '_text',
-                                  ],
-                                  type: 'object',
-                                },
-                              },
-                              required: [
-                                'platformCore:code',
-                                'platformCore:message',
-                              ],
-                              type: 'object',
-                            },
-                          },
-                          required: [
-                            '_attributes',
-                            'platformCore:statusDetail',
-                          ],
-                          type: 'object',
-                        },
-                      },
-                      required: [
-                        'platformCore:status',
+                    isSuccess: {
+                      enum: [
+                        'false',
                       ],
-                      type: 'object',
+                      type: 'string',
                     },
                   },
                   required: [
-                    'writeResponseList',
+                    'isSuccess',
                   ],
                   type: 'object',
                 },
+                statusDetail: {
+                  items: [
+                    {
+                      properties: {
+                        code: {
+                          type: 'string',
+                        },
+                        message: {
+                          type: 'string',
+                        },
+                      },
+                      required: [
+                        'code',
+                        'message',
+                      ],
+                      type: 'object',
+                    },
+                  ],
+                  maxItems: 1,
+                  minItems: 1,
+                  type: 'array',
+                },
               },
               required: [
-                'deleteListResponse',
+                'attributes',
+                'statusDetail',
               ],
               type: 'object',
             },
           },
           required: [
-            'soapenv:Body',
+            'status',
           ],
           type: 'object',
         },
       },
       required: [
-        'soapenv:Envelope',
+        'writeResponseList',
       ],
       type: 'object',
     },

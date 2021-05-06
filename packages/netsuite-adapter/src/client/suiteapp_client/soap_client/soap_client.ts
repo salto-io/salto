@@ -13,52 +13,59 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-/* eslint-disable no-underscore-dangle */
-
 import { logger } from '@salto-io/logging'
 import Ajv from 'ajv'
-import axios from 'axios'
 import crypto from 'crypto'
-import xmlConvert from 'xml-js'
-import { collections } from '@salto-io/lowerdash'
 import path from 'path'
+import * as soap from 'soap'
 import { SuiteAppCredentials, toUrlAccountId } from '../../credentials'
 import { CONSUMER_KEY, CONSUMER_SECRET } from '../constants'
 import { ReadFileError } from '../errors'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails } from '../types'
-import { AddListResults, DeleteListResults, GetResult, isAddListSuccess, isDeleteListSuccess, isGetSuccess, isUpdateListSuccess, isWriteResponseSuccess, UpdateListResults } from './types'
-import { ADD_LIST_SCHEMA, DELETE_LIST_SCHEMA, GET_RESULTS_SCHEMA, UPDATE_LIST_SCHEMA } from './schemas'
+import { DeployListResults, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess } from './types'
+import { DEPLOY_LIST_SCHEMA, GET_RESULTS_SCHEMA } from './schemas'
 
 const log = logger(module)
+
+export const WSDL_PATH = `${__dirname}/client/suiteapp_client/soap_client/wsdl/netsuite_1.wsdl`
+
+const NETSUITE_VERSION = '2020_2'
 
 export default class SoapClient {
   private credentials: SuiteAppCredentials
   private callsLimiter: CallsLimiter
-  private soapUrl: URL
   private ajv: Ajv
+  private client: soap.Client | undefined
 
   constructor(credentials: SuiteAppCredentials, callsLimiter: CallsLimiter) {
     this.credentials = credentials
     this.callsLimiter = callsLimiter
-    this.soapUrl = new URL(`https://${toUrlAccountId(credentials.accountId)}.suitetalk.api.netsuite.com/services/NetSuitePort_2020_2`)
     this.ajv = new Ajv({ allErrors: true, strict: false })
+  }
+
+  private async getClient(): Promise<soap.Client> {
+    if (this.client === undefined) {
+      this.client = await soap.createClientAsync(
+        `https://webservices.netsuite.com/wsdl/v${NETSUITE_VERSION}_0/netsuite.wsdl`,
+        { endpoint: `https://${toUrlAccountId(this.credentials.accountId)}.suitetalk.api.netsuite.com/services/NetSuitePort_${NETSUITE_VERSION}` }
+      )
+      this.client.addSoapHeader(() => this.generateSoapHeader())
+    }
+    return this.client
   }
 
   public async readFile(id: number): Promise<Buffer> {
     const body = {
-      _attributes: {
-        'xmlns:platformCore': 'urn:core_2020_2.platform.webservices.netsuite.com',
-      },
       baseRef: {
-        _attributes: {
-          internalId: id,
+        attributes: {
+          internalId: id.toString(),
           type: 'file',
-          'xsi:type': 'platformCore:RecordRef',
+          'xsi:type': 'ns7:RecordRef',
+          'xmlns:ns7': `urn:core_${NETSUITE_VERSION}.platform.webservices.netsuite.com`,
         },
-        'platformCore:name': {},
       },
     }
-    const response = await this.sendSoapRequest('get', body)
+    const response = (await this.sendSoapRequest('get', body))
 
     if (!this.ajv.validate<GetResult>(
       GET_RESULTS_SCHEMA,
@@ -69,55 +76,36 @@ export default class SoapClient {
     }
 
     if (!isGetSuccess(response)) {
-      const result = response['soapenv:Envelope']['soapenv:Body'].getResponse['platformMsgs:readResponse']
-      const code = result['platformCore:status']['platformCore:statusDetail']['platformCore:code']._text
-      const message = result['platformCore:status']['platformCore:statusDetail']['platformCore:message']._text
-
+      const { code, message } = response.readResponse.status.statusDetail[0]
       log.error(`Failed to read file with id ${id}: error code: ${code}, error message: ${message}`)
       throw new ReadFileError(`Failed to read file with id ${id}: error code: ${code}, error message: ${message}`)
     }
 
-    const b64content = response['soapenv:Envelope']['soapenv:Body'].getResponse['platformMsgs:readResponse']['platformMsgs:record']['docFileCab:content']._text
+    const b64content = response.readResponse.record.content
     return b64content !== undefined ? Buffer.from(b64content, 'base64') : Buffer.from('')
   }
 
   private static convertToFileRecord(file: FileDetails): object {
     const internalIdEntry = file.id !== undefined ? { internalId: file.id.toString() } : {}
     return {
-      _attributes: {
+      attributes: {
         'xsi:type': 'q1:File',
-        'xmlns:q1': 'urn:filecabinet_2020_2.documents.webservices.netsuite.com',
+        'xmlns:q1': `urn:filecabinet_${NETSUITE_VERSION}.documents.webservices.netsuite.com`,
         ...internalIdEntry,
       },
-      'q1:name': {
-        _text: path.basename(file.path),
-      },
-      'q1:attachFrom': {
-        _text: '_computer',
-      },
-      'q1:content': {
-        _text: file.content.toString('base64'),
-      },
+      'q1:name': path.basename(file.path),
+      'q1:attachFrom': '_computer',
+      'q1:content': file.content.toString('base64'),
       'q1:folder': {
-        _attributes: {
+        attributes: {
           internalId: file.folder.toString(),
         },
       },
-      'q1:description': {
-        _text: file.description,
-      },
-      'q1:bundleable': {
-        _text: file.bundleable,
-      },
-      'q1:isInactive': {
-        _text: file.isInactive,
-      },
-      'q1:isOnline': {
-        _text: file.isOnline,
-      },
-      'q1:hideInBundle': {
-        _text: file.hideInBundle,
-      },
+      'q1:description': file.description,
+      'q1:bundleable': file.bundleable,
+      'q1:isInactive': file.isInactive,
+      'q1:isOnline': file.isOnline,
+      'q1:hideInBundle': file.hideInBundle,
     }
   }
 
@@ -125,7 +113,7 @@ export default class SoapClient {
     const parentEntry = folder.parent !== undefined
       ? {
         'q1:parent': {
-          _attributes: {
+          attributes: {
             internalId: folder.parent.toString(),
           },
         },
@@ -135,26 +123,16 @@ export default class SoapClient {
     const internalIdEntry = folder.id !== undefined ? { internalId: folder.id.toString() } : {}
 
     return {
-      _attributes: {
+      attributes: {
         'xsi:type': 'q1:Folder',
-        'xmlns:q1': 'urn:filecabinet_2020_2.documents.webservices.netsuite.com',
+        'xmlns:q1': `urn:filecabinet_${NETSUITE_VERSION}.documents.webservices.netsuite.com`,
         ...internalIdEntry,
       },
-      'q1:name': {
-        _text: path.basename(folder.path),
-      },
-      'q1:description': {
-        _text: folder.description,
-      },
-      'q1:bundleable': {
-        _text: folder.bundleable,
-      },
-      'q1:isInactive': {
-        _text: folder.isInactive,
-      },
-      'q1:isPrivate': {
-        _text: folder.isPrivate,
-      },
+      'q1:name': path.basename(folder.path),
+      'q1:description': folder.description,
+      'q1:bundleable': folder.bundleable,
+      'q1:isInactive': folder.isInactive,
+      'q1:isPrivate': folder.isPrivate,
       ...parentEntry,
     }
   }
@@ -169,11 +147,11 @@ export default class SoapClient {
   private static convertToDeletionFileCabinetRecord(fileCabinetInstance:
     { id: number; type: 'file' | 'folder' }): object {
     return {
-      _attributes: {
+      attributes: {
         type: fileCabinetInstance.type,
         internalId: fileCabinetInstance.id,
         'xsi:type': 'q1:RecordRef',
-        'xmlns:q1': 'urn:core_2020_2.platform.webservices.netsuite.com',
+        'xmlns:q1': `urn:core_${NETSUITE_VERSION}.platform.webservices.netsuite.com`,
       },
     }
   }
@@ -181,148 +159,102 @@ export default class SoapClient {
   public async addFileCabinetInstances(fileCabinetInstances:
     (FileCabinetInstanceDetails)[]): Promise<(number | Error)[]> {
     const body = {
-      _attributes: {
-        xmlns: 'urn:messages_2020_2.platform.webservices.netsuite.com',
-      },
       record: fileCabinetInstances.map(SoapClient.convertToFileCabinetRecord),
     }
 
     const response = await this.sendSoapRequest('addList', body)
-    if (!this.ajv.validate<AddListResults>(
-      ADD_LIST_SCHEMA,
+    if (!this.ajv.validate<DeployListResults>(
+      DEPLOY_LIST_SCHEMA,
       response
     )) {
       log.error(`Got invalid response from addList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
       throw new Error(`Got invalid response from addList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
-    if (!isAddListSuccess(response)) {
-      const details = response['soapenv:Envelope']['soapenv:Body'].addListResponse.writeResponseList['platformCore:status']['platformCore:statusDetail']
-      const code = details['platformCore:code']._text
-      const message = details['platformCore:message']._text
-
+    if (!isDeployListSuccess(response)) {
+      const { code, message } = response.writeResponseList.status.statusDetail[0]
       log.error(`Failed to addList: error code: ${code}, error message: ${message}`)
       throw new Error(`Failed to addList: error code: ${code}, error message: ${message}`)
     }
 
-    return collections.array.makeArray(response['soapenv:Envelope']['soapenv:Body'].addListResponse.writeResponseList.writeResponse).map((writeResponse, index) => {
+    return response.writeResponseList.writeResponse.map((writeResponse, index) => {
       if (!isWriteResponseSuccess(writeResponse)) {
-        const details = writeResponse['platformCore:status']['platformCore:statusDetail']
-        const code = details['platformCore:code']._text
-        const message = details['platformCore:message']._text
+        const { code, message } = writeResponse.status.statusDetail[0]
 
         log.error(`SOAP api call to add file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`)
         return new Error(`SOAP api call to add file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`)
       }
-      return parseInt(writeResponse.baseRef._attributes.internalId, 10)
+      return parseInt(writeResponse.baseRef.attributes.internalId, 10)
     })
   }
 
   public async deleteFileCabinetInstances(instances: ExistingFileCabinetInstanceDetails[]):
   Promise<(number | Error)[]> {
     const body = {
-      _attributes: {
-        xmlns: 'urn:messages_2020_2.platform.webservices.netsuite.com',
-      },
       baseRef: instances.map(SoapClient.convertToDeletionFileCabinetRecord),
     }
 
     const response = await this.sendSoapRequest('deleteList', body)
-    if (!this.ajv.validate<DeleteListResults>(
-      DELETE_LIST_SCHEMA,
+    if (!this.ajv.validate<DeployListResults>(
+      DEPLOY_LIST_SCHEMA,
       response
     )) {
       log.error(`Got invalid response from deleteList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
       throw new Error(`Got invalid response from deleteList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
-    if (!isDeleteListSuccess(response)) {
-      const details = response['soapenv:Envelope']['soapenv:Body'].deleteListResponse.writeResponseList['platformCore:status']['platformCore:statusDetail']
-      const code = details['platformCore:code']._text
-      const message = details['platformCore:message']._text
+    if (!isDeployListSuccess(response)) {
+      const { code, message } = response.writeResponseList.status.statusDetail[0]
 
       log.error(`Failed to deleteList: error code: ${code}, error message: ${message}`)
       throw new Error(`Failed to deleteList: error code: ${code}, error message: ${message}`)
     }
 
-    return collections.array.makeArray(response['soapenv:Envelope']['soapenv:Body'].deleteListResponse.writeResponseList.writeResponse).map((writeResponse, index) => {
+    return response.writeResponseList.writeResponse.map((writeResponse, index) => {
       if (!isWriteResponseSuccess(writeResponse)) {
-        const details = writeResponse['platformCore:status']['platformCore:statusDetail']
-        const code = details['platformCore:code']._text
-        const message = details['platformCore:message']._text
-
+        const { code, message } = writeResponse.status.statusDetail[0]
         log.error(`SOAP api call to delete file cabinet instance ${instances[index].path} failed. error code: ${code}, error message: ${message}`)
         return Error(`SOAP api call to delete file cabinet instance ${instances[index].path} failed. error code: ${code}, error message: ${message}`)
       }
-      return parseInt(writeResponse.baseRef._attributes.internalId, 10)
+      return parseInt(writeResponse.baseRef.attributes.internalId, 10)
     })
   }
 
   public async updateFileCabinetInstances(fileCabinetInstances:
     ExistingFileCabinetInstanceDetails[]): Promise<(number | Error)[]> {
     const body = {
-      _attributes: {
-        xmlns: 'urn:messages_2020_2.platform.webservices.netsuite.com',
-      },
       record: fileCabinetInstances.map(SoapClient.convertToFileCabinetRecord),
     }
 
     const response = await this.sendSoapRequest('updateList', body)
-    if (!this.ajv.validate<UpdateListResults>(
-      UPDATE_LIST_SCHEMA,
+    if (!this.ajv.validate<DeployListResults>(
+      DEPLOY_LIST_SCHEMA,
       response
     )) {
       log.error(`Got invalid response from updateList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
       throw new Error(`Got invalid response from updateList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 
-    if (!isUpdateListSuccess(response)) {
-      const details = response['soapenv:Envelope']['soapenv:Body'].updateListResponse.writeResponseList['platformCore:status']['platformCore:statusDetail']
-      const code = details['platformCore:code']._text
-      const message = details['platformCore:message']._text
-
+    if (!isDeployListSuccess(response)) {
+      const { code, message } = response.writeResponseList.status.statusDetail[0]
       log.error(`Failed to updateList: error code: ${code}, error message: ${message}`)
       throw new Error(`Failed to updateList: error code: ${code}, error message: ${message}`)
     }
 
-    return collections.array.makeArray(response['soapenv:Envelope']['soapenv:Body'].updateListResponse.writeResponseList.writeResponse).map((writeResponse, index) => {
+    return response.writeResponseList.writeResponse.map((writeResponse, index) => {
       if (!isWriteResponseSuccess(writeResponse)) {
-        const details = writeResponse['platformCore:status']['platformCore:statusDetail']
-        const code = details['platformCore:code']._text
-        const message = details['platformCore:message']._text
+        const { code, message } = writeResponse.status.statusDetail[0]
 
         log.error(`SOAP api call to update file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`)
         return Error(`SOAP api call to update file cabinet instance ${fileCabinetInstances[index].path} failed. error code: ${code}, error message: ${message}`)
       }
-      return parseInt(writeResponse.baseRef._attributes.internalId, 10)
+      return parseInt(writeResponse.baseRef.attributes.internalId, 10)
     })
   }
 
   private async sendSoapRequest(operation: string, body: object): Promise<unknown> {
-    const headers = {
-      'Content-Type': 'text/xml',
-      SOAPAction: operation,
-    }
-    const response = await this.callsLimiter(() => axios.post(
-      this.soapUrl.href,
-      this.generateSoapPayload({ [operation]: body }),
-      { headers },
-    ))
-
-    return xmlConvert.xml2js(response.data, { compact: true })
-  }
-
-  private generateSoapPayload(body: object): string {
-    return xmlConvert.js2xml({
-      'soap:Envelope': {
-        _attributes: {
-          'xmlns:soap': 'http://www.w3.org/2003/05/soap-envelope',
-          'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-        },
-        'soap:Header': this.generateSoapHeader(),
-        'soap:Body': body,
-      },
-    }, { compact: true })
+    const client = await this.getClient()
+    return this.callsLimiter(async () => (await client[`${operation}Async`](body))[0])
   }
 
   private generateSoapHeader(): object {
@@ -331,35 +263,22 @@ export default class SoapClient {
     const baseString = `${this.credentials.accountId}&${CONSUMER_KEY}&${this.credentials.suiteAppTokenId}&${nonce}&${timestamp}`
     const key = `${CONSUMER_SECRET}&${this.credentials.suiteAppTokenSecret}`
     const signature = crypto.createHmac('sha256', key).update(baseString).digest('base64')
-
     return {
       tokenPassport: {
-        account: {
-          _text: this.credentials.accountId,
-        },
-        consumerKey: {
-          _text: CONSUMER_KEY,
-        },
-        token: {
-          _text: this.credentials.suiteAppTokenId,
-        },
-        nonce: {
-          _text: nonce,
-        },
-        timestamp: {
-          _text: timestamp,
-        },
+        account: this.credentials.accountId,
+        consumerKey: CONSUMER_KEY,
+        token: this.credentials.suiteAppTokenId,
+        nonce,
+        timestamp,
         signature: {
-          _attributes: {
+          attributes: {
             algorithm: 'HMAC-SHA256',
           },
-          _text: signature,
+          $value: signature,
         },
       },
       preferences: {
-        runServerSuiteScriptAndTriggerWorkflows: {
-          _text: 'false',
-        },
+        runServerSuiteScriptAndTriggerWorkflows: false,
       },
     }
   }

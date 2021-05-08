@@ -73,7 +73,7 @@ const generateMockTypes: typeof elementUtils.swagger.generateTypes = async (
   }
   return {
     allTypes: {
-      ...Object.fromEntries([...DEFAULT_INCLUDE_TYPES, 'Workflows'].map(
+      ...Object.fromEntries(DEFAULT_INCLUDE_TYPES.map(
         type => [naclCase(type), new ObjectType({ elemID: new ElemID(ZUORA_BILLING, type) })]
       )),
       ...getObjectDefTypes(),
@@ -81,6 +81,31 @@ const generateMockTypes: typeof elementUtils.swagger.generateTypes = async (
         elemID: new ElemID(ZUORA_BILLING, LIST_ALL_SETTINGS_TYPE),
         fields: {
           settings: { type: new ListType(BuiltinTypes.UNKNOWN) },
+        },
+      }),
+      Workflows: new ObjectType({
+        elemID: new ElemID(ZUORA_BILLING, 'Workflows'),
+        fields: {
+          data: { type: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'Workflow') })) },
+          pagination: { type: BuiltinTypes.UNKNOWN },
+        },
+      }),
+      EventTriggers: new ObjectType({
+        elemID: new ElemID(ZUORA_BILLING, 'EventTriggers'),
+        fields: {
+          data: { type: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'EventTrigger') })) },
+        },
+      }),
+      NotificationDefinitions: new ObjectType({
+        elemID: new ElemID(ZUORA_BILLING, 'NotificationDefinitions'),
+        fields: {
+          data: { type: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'PublicNotificationDefinition') })) },
+        },
+      }),
+      NotificationEmailTemplates: new ObjectType({
+        elemID: new ElemID(ZUORA_BILLING, 'NotificationEmailTemplates'),
+        fields: {
+          data: { type: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'PublicEmailTemplate') })) },
         },
       }),
     },
@@ -215,21 +240,15 @@ describe('adapter', () => {
           DEFAULT_API_DEFINITIONS,
         )
         expect(
-          _.sortedUniq(elements.filter(isInstanceElement).map(e => e.elemID.typeName))
+          [...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()
         ).toEqual([
-          'CatalogProduct',
           'AccountingCodes',
           'AccountingPeriods',
+          'CatalogProduct',
           'HostedPages',
-          'NotificationDefinitions',
-          'NotificationEmailTemplates',
           'PaymentGateways',
           'SequenceSets',
-          'Settings_PaymentTerm',
-          'Settings_Codes',
-          'Settings_TaxCode',
           'Settings_ApplicationRules',
-          'Settings_SingleAlias',
           'Settings_BillingCycleType',
           'Settings_BillingListPriceBase',
           'Settings_BillingPeriod',
@@ -237,25 +256,32 @@ describe('adapter', () => {
           'Settings_BillingRules',
           'Settings_ChargeModel',
           'Settings_ChargeType',
+          'Settings_Codes',
           'Settings_CommunicationProfile',
           'Settings_Currency',
           'Settings_DocPrefix',
           'Settings_FxCurrency',
-          'Settings_TaxCompany',
+          'Settings_Gateway',
           'Settings_HostedPaymentPage',
           'Settings_NumberAndSku',
-          'Settings_Gateway',
           'Settings_PaymentMethods',
           'Settings_PaymentRetryRules',
+          'Settings_PaymentTerm',
           'Settings_ReasonCode',
           'Settings_RevenueRecognitionStatus',
           'Settings_RevenueStartDate',
+          'Settings_SingleAlias',
           'Settings_SubscriptionSetting',
+          'Settings_TaxCode',
+          'Settings_TaxCompany',
           'Settings_UnitOfMeasure',
+          'WorkflowExport',
         ])
-        expect(elements.filter(isInstanceElement)).toHaveLength(137)
+        expect(elements.filter(isInstanceElement)).toHaveLength(141)
         expect(elements.filter(isObjectDef)).toHaveLength(2)
-        expect(_.sortedUniq(elements.filter(isObjectDef).map(e => e.elemID.name))).toEqual(['account', 'accountingcode'])
+        expect([...new Set(elements.filter(isObjectDef).map(e => e.elemID.name))].sort()).toEqual(['account', 'accountingcode'])
+        // ensure pagination is working
+        expect(elements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'WorkflowExport')).toHaveLength(6)
       })
     })
     describe('without settings types', () => {
@@ -285,20 +311,19 @@ describe('adapter', () => {
           DEFAULT_API_DEFINITIONS,
         )
         expect(
-          _.sortedUniq(elements.filter(isInstanceElement).map(e => e.elemID.typeName))
+          [...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()
         ).toEqual([
-          'CatalogProduct',
           'AccountingCodes',
           'AccountingPeriods',
+          'CatalogProduct',
           'HostedPages',
-          'NotificationDefinitions',
-          'NotificationEmailTemplates',
           'PaymentGateways',
           'SequenceSets',
+          'WorkflowExport',
         ])
-        expect(elements.filter(isInstanceElement)).toHaveLength(8)
+        expect(elements.filter(isInstanceElement)).toHaveLength(12)
         expect(elements.filter(isObjectDef)).toHaveLength(2)
-        expect(_.sortedUniq(elements.filter(isObjectDef).map(e => e.elemID.name))).toEqual(['account', 'accountingcode'])
+        expect([...new Set(elements.filter(isObjectDef).map(e => e.elemID.name))].sort()).toEqual(['account', 'accountingcode'])
       })
     })
     describe('without settings types and standard objects', () => {
@@ -328,18 +353,17 @@ describe('adapter', () => {
           DEFAULT_API_DEFINITIONS,
         )
         expect(
-          _.sortedUniq(elements.filter(isInstanceElement).map(e => e.elemID.typeName))
+          [...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()
         ).toEqual([
-          'CatalogProduct',
           'AccountingCodes',
           'AccountingPeriods',
+          'CatalogProduct',
           'HostedPages',
-          'NotificationDefinitions',
-          'NotificationEmailTemplates',
           'PaymentGateways',
           'SequenceSets',
+          'WorkflowExport',
         ])
-        expect(elements.filter(isInstanceElement)).toHaveLength(8)
+        expect(elements.filter(isInstanceElement)).toHaveLength(12)
         expect(elements.filter(isObjectDef)).toHaveLength(0)
       })
     })

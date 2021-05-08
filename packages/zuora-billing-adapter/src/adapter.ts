@@ -32,8 +32,9 @@ import changeValidator from './change_validator'
 import { ZUORA_BILLING, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX, CUSTOM_OBJECT_DEFINITION_TYPE } from './constants'
 import { generateBillingSettingsTypes } from './transformers/billing_settings'
 import { getStandardObjectElements, getStandardObjectTypeName } from './transformers/standard_objects'
+import { paginate } from './client/pagination'
 
-const { createPaginator, getWithCursorPagination } = clientUtils
+const { createPaginator } = clientUtils
 const { generateTypes, getAllInstances } = elementUtils.swagger
 const log = logger(module)
 
@@ -71,7 +72,7 @@ export default class ZuoraAdapter implements AdapterOperations {
     this.client = client
     this.paginator = createPaginator({
       client: this.client,
-      paginationFunc: getWithCursorPagination,
+      paginationFunc: paginate,
     })
     this.filtersRunner = filtersRunner(
       this.client,

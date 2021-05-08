@@ -155,7 +155,7 @@ const typeAdder = ({
 
     if (additionalProperties !== undefined) {
       if (type.fields[ADDITIONAL_PROPERTIES_FIELD] !== undefined) {
-        log.error('type %s has both a standard %s field and allows additionalProperties - overriding with an additionalProperties field of type unknown',
+        log.warn('type %s has both a standard %s field and allows additionalProperties - overriding with an additionalProperties field of type unknown',
           type.elemID.name, ADDITIONAL_PROPERTIES_FIELD)
         Object.assign(
           type.fields,

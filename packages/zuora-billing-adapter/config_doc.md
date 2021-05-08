@@ -14,16 +14,17 @@ zuora_billing {
   }
   fetch = {
     includeTypes = [
-      "CatalogProduct",
-      "CustomObject",
-      "StandardObject",
       "AccountingCodes",
       "AccountingPeriods",
+      "CatalogProduct",
+      "CustomObject",
+      "EventTriggers",
       "HostedPages",
       "NotificationDefinitions",
       "NotificationEmailTemplates",
       "PaymentGateways",
       "SequenceSets",
+      "StandardObject",
       "WorkflowExport",
     ]
     settingsIncludeTypes = [

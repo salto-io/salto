@@ -76,9 +76,7 @@ export const getTypeAndInstances = async ({
   )
   const transformationDefaultConfig = typeDefaultConfig.transformation
 
-  const requestWithDefaults = getConfigWithDefault(
-    request, typeDefaultConfig.request ?? {},
-  )
+  const requestWithDefaults = getConfigWithDefault(request, typeDefaultConfig.request ?? {})
 
   const getEntries = async (): Promise<Values[]> => {
     const getArgs = computeGetArgs(requestWithDefaults, contextElements)

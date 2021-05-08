@@ -38,7 +38,7 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = (await toArrayAsync(await getWithPageOffsetPagination({
+      const result = (await toArrayAsync(await getWithPageOffsetPagination(1)({
         client,
         pageSize: 123,
         getParams: {
@@ -58,7 +58,7 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = (await toArrayAsync(await getWithPageOffsetPagination({
+      const result = (await toArrayAsync(await getWithPageOffsetPagination(1)({
         client,
         pageSize: 123,
         getParams: {
@@ -108,7 +108,7 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = (await toArrayAsync(await getWithPageOffsetPagination({
+      const result = (await toArrayAsync(await getWithPageOffsetPagination(1)({
         client,
         pageSize: 5,
         getParams: {
@@ -139,7 +139,7 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = (await toArrayAsync(await getWithPageOffsetPagination({
+      const result = (await toArrayAsync(await getWithPageOffsetPagination(1)({
         client,
         pageSize: 123,
         getParams: {
@@ -187,7 +187,7 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = (await toArrayAsync(await getWithPageOffsetPagination({
+      const result = (await toArrayAsync(await getWithPageOffsetPagination(1)({
         client,
         pageSize: 1,
         getParams: {
@@ -217,7 +217,7 @@ describe('client_pagination', () => {
         status: 404,
         statusText: 'Not Found',
       }))
-      const result = (await toArrayAsync(await getWithPageOffsetPagination({
+      const result = (await toArrayAsync(await getWithPageOffsetPagination(1)({
         client,
         pageSize: 1,
         getParams: {

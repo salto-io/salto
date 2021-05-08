@@ -84,7 +84,7 @@ export const toBasicInstance = ({
 
   const nameParts = idFields.map(field => _.get(entry, field))
   if (nameParts.includes(undefined)) {
-    log.error(`could not find name for entry - expected name fields ${idFields}, available fields ${Object.keys(entry)}`)
+    log.warn(`could not find id for entry - expected id fields ${idFields}, available fields ${Object.keys(entry)}`)
   }
   const name = nameParts.every(part => part !== undefined && part !== '') ? nameParts.map(String).join('_') : defaultName
 

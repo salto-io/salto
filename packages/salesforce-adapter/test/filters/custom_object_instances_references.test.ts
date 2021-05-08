@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { Element, ElemID, ObjectType, PrimitiveTypes, PrimitiveType, CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, isInstanceElement, SaltoError } from '@salto-io/adapter-api'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/custom_object_instances_references'
@@ -132,7 +133,20 @@ describe('Custom Object Instances References filter', () => {
 
   beforeAll(() => {
     client = mockClient().client
-    filter = filterCreator({ client, config: defaultFilterContext }) as FilterType
+    filter = filterCreator({
+      client,
+      config: {
+        ...defaultFilterContext,
+        fetchProfile: buildFetchProfile({
+          data: {
+            includeObjects: ['*'],
+            saltoIDSettings: {
+              defaultIdFields: ['Name'],
+            },
+          },
+        }),
+      },
+    }) as FilterType
   })
 
   describe('lookup ref to', () => {
@@ -225,11 +239,16 @@ describe('Custom Object Instances References filter', () => {
       refFromEmptyRefsInstance,
       firstDupInst,
       secondDupInst,
+    ]
+    const sideEffectIllegalInstances = [
       refFromToDupInst,
       refFromToRefToDupInst,
     ]
     const allElements = [
-      ...objects, ...legalInstances, ...illegalInstances,
+      ...objects,
+      ...legalInstances,
+      ...illegalInstances,
+      ...sideEffectIllegalInstances,
     ]
     let errors: SaltoError[]
     beforeAll(async () => {

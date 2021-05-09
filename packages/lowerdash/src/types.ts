@@ -74,6 +74,7 @@ export class _Bean<T> {
 }
 
 export type Bean<T> = _Bean<T> & T
+// eslint-disable-next-line no-use-before-define
 export const Bean = _Bean as new <T>(props: T) => Bean<T>
 
 export const isArrayOfType = <T>(

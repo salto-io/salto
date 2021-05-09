@@ -17,6 +17,20 @@ import { Values } from '@salto-io/adapter-api'
 
 export type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'|'dynamic'|'func'
 
+
+export interface SourcePos {
+  line: number
+  col: number
+  byte: number
+}
+
+export interface SourceRange {
+  filename: string
+  start: SourcePos
+  end: SourcePos
+}
+
+
 export type HclExpression = {
   type: ExpressionType
   expressions: HclExpression[]
@@ -62,18 +76,6 @@ export interface HclParseReturn {
 }
 
 export type DumpedHclBody = Pick<DumpedHclBlock, 'attrs' | 'blocks'>
-
-export interface SourcePos {
-  line: number
-  col: number
-  byte: number
-}
-
-export interface SourceRange {
-  filename: string
-  start: SourcePos
-  end: SourcePos
-}
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isSourceRange(v: any): v is SourceRange {

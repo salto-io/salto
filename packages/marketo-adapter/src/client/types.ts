@@ -16,13 +16,6 @@
 
 import { Values } from '@salto-io/adapter-api'
 
-export type Credentials = {
-  endpoint: string
-  clientId: string
-  clientSecret: string
-  identity?: Identity
-}
-
 export type Identity = {
   accessToken: string
   scope: string
@@ -30,18 +23,15 @@ export type Identity = {
   tokenType: string
 }
 
-export interface MarketoMetadata {
-  name: string
+export type Credentials = {
+  endpoint: string
+  clientId: string
+  clientSecret: string
+  identity?: Identity
 }
 
-export interface MarketoResponse {
-  requestId: string // Id of the request made
-  success: boolean // Whether the request succeeded
-  result: Values[] // Array of results for individual records in the operation
-  moreResult?: boolean // Boolean indicating if there are more results in subsequent pages
-  nextPageToken?: string // Paging token given if the result set exceeded the allowed batch size
-  errors: MarketoError[] // Array of errors that occurred if the request was unsuccessful
-  warnings: MarketoWarning[] // Array of warnings given for the operation
+export interface MarketoMetadata {
+  name: string
 }
 
 export interface MarketoError {
@@ -54,10 +44,14 @@ export interface MarketoWarning {
   message: string // Message describing the warning
 }
 
-export interface Lead extends MarketoMetadata {
-  membership: ProgramMembership
-  status?: string
-  reason?: string
+export interface MarketoResponse {
+  requestId: string // Id of the request made
+  success: boolean // Whether the request succeeded
+  result: Values[] // Array of results for individual records in the operation
+  moreResult?: boolean // Boolean indicating if there are more results in subsequent pages
+  nextPageToken?: string // Paging token given if the result set exceeded the allowed batch size
+  errors: MarketoError[] // Array of errors that occurred if the request was unsuccessful
+  warnings: MarketoWarning[] // Array of warnings given for the operation
 }
 
 export interface ProgramMembership {
@@ -70,6 +64,17 @@ export interface ProgramMembership {
   stream?: string // Stream that the lead is a member of
 }
 
+export interface Lead extends MarketoMetadata {
+  membership: ProgramMembership
+  status?: string
+  reason?: string
+}
+
+export interface LeadMapAttribute {
+  name: string // Name of the attribute
+  readOnly?: boolean // Whether the attribute is read only
+}
+
 export interface LeadAttribute {
   id: number // Unique integer id of the field
   dataType: string // Datatype of the field
@@ -79,12 +84,27 @@ export interface LeadAttribute {
   soap: LeadMapAttribute // Description of SOAP API usage attributes
 }
 
-export interface LeadMapAttribute {
-  name: string // Name of the attribute
-  readOnly?: boolean // Whether the attribute is read only
+export type CustomObjectState = 'draft' | 'approved' | 'approvedWithDraft'
+
+export interface Field {
+  name: string // Name of the field
+  dataType: string // Datatype of the field
+  displayName?: string // UI display-name of the field
+  length?: number // Max length of the field. Only applicable to text, string, and text area.
+  updateable?: boolean // Whether the field is updateable
+  crmManaged?: boolean // Whether the field is managed by CRM (native sync)
 }
 
-export type CustomObjectState = 'draft' | 'approved' | 'approvedWithDraft'
+export interface RelatedObject {
+  field: string // Name of link field (within link object)
+  name: string // Name of the link object
+}
+
+export interface Relation {
+  field: string // API Name of link field
+  relatedTo: RelatedObject // Object to which the field is linked
+  type: string // Type of the relationship field
+}
 
 export interface CustomObject extends MarketoMetadata {
   idField: string // Primary id key of the object type
@@ -106,24 +126,4 @@ export type CustomObjectResponse = {
   state: CustomObjectState
   approved?: CustomObject
   draft?: CustomObject
-}
-
-export interface Field {
-  name: string // Name of the field
-  dataType: string // Datatype of the field
-  displayName?: string // UI display-name of the field
-  length?: number // Max length of the field. Only applicable to text, string, and text area.
-  updateable?: boolean // Whether the field is updateable
-  crmManaged?: boolean // Whether the field is managed by CRM (native sync)
-}
-
-export interface Relation {
-  field: string // API Name of link field
-  relatedTo: RelatedObject // Object to which the field is linked
-  type: string // Type of the relationship field
-}
-
-export interface RelatedObject {
-  field: string // Name of link field (within link object)
-  name: string // Name of the link object
 }

@@ -27,7 +27,6 @@ export type IterationOpts = {
 
 export type RemoteMapEntry<T, K extends string = string> = { key: K; value: T }
 export type RemoteMapType = 'workspace' | 'state'
-export type ReadOnlyRemoteMap<T> = Pick<RemoteMap<T>, 'get'|'entries'|'values'|'has'>
 
 export interface CreateRemoteMapParams<T> {
   namespace: string
@@ -53,6 +52,8 @@ export type RemoteMap<T, K extends string = string> = {
   close(): Promise<void>
   isEmpty(): Promise<boolean>
 }
+
+export type ReadOnlyRemoteMap<T> = Pick<RemoteMap<T>, 'get'|'entries'|'values'|'has'>
 
 export type RemoteMapCreator = <T, K extends string = string>(
   opts: CreateRemoteMapParams<T>

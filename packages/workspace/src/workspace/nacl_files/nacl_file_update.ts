@@ -128,6 +128,11 @@ const fixEdgeIndentation = (
   ].join('\n')
 }
 
+type DetailedAddition = AdditionDiff<Element> & {
+  id: ElemID
+  path: string[]
+}
+
 export const groupAnnotationTypeChanges = (fileChanges: DetailedChange[],
   existingFileSourceMap?: SourceMap): DetailedChange[] => {
   const isAnnotationTypeAddChange = (change: DetailedChange): boolean =>
@@ -244,11 +249,6 @@ export const updateNaclFileData = async (
   const sortedChanges = _.sortBy(bufferChanges, change => change.start).reverse()
   const ret = sortedChanges.reduce(replaceBufferPart, currentData)
   return ret
-}
-
-type DetailedAddition = AdditionDiff<Element> & {
-  id: ElemID
-  path: string[]
 }
 
 const wrapAdditions = (nestedAdditions: DetailedAddition[]): DetailedAddition => {

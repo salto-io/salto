@@ -138,7 +138,7 @@ const registerGroup = (
     .description(properties.description)
     .exitOverride()
   subCommands.forEach(subCommand => {
-    /* eslint-disable-next-line @typescript-eslint/no-use-before-define */
+    /* eslint-disable-next-line no-use-before-define */
     registerCommandOrGroup(groupCommand, subCommand, cliArgs)
   })
   parentCommand.addCommand(groupCommand)

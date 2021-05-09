@@ -20,13 +20,7 @@ import { EventEmitter } from 'events'
 import { Values } from '@salto-io/adapter-api'
 import { Credentials, Identity, MarketoError, MarketoResponse } from './types'
 
-export type MarketoClientOpts = {
-  credentials: Credentials
-  connection?: MarketoObjectAPI
-}
-
 type RestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
-
 export interface RequestOptions {
   id?: string | number
   method?: RestMethod
@@ -38,6 +32,11 @@ export interface RequestOptions {
 export interface MarketoObjectAPI {
   refreshAccessToken(): Promise<Identity>
   request(requestOptions: RequestOptions): Promise<Values[]>
+}
+
+export type MarketoClientOpts = {
+  credentials: Credentials
+  connection?: MarketoObjectAPI
 }
 
 export class Marketo extends EventEmitter implements MarketoObjectAPI {

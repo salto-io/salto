@@ -39,6 +39,11 @@ export const DEPLOY_WRAPPER_INSTANCE_MARKER = '_magic_constant_that_means_this_i
 // Mapping of metadata type to fullNames
 type MetadataIdsMap = Record<string, Set<string>>
 
+export type NestedMetadataTypeInfo = {
+  nestedInstanceFields: string[]
+  isNestedApiNameRelative: boolean
+}
+
 const addNestedInstancesToPackageManifest = async (
   pkg: DeployPackage,
   nestedTypeInfo: NestedMetadataTypeInfo,
@@ -203,11 +208,6 @@ const processDeployResponse = (
     .concat(unFoundDeleteNames)
 
   return { successfulFullNames, errors }
-}
-
-export type NestedMetadataTypeInfo = {
-  nestedInstanceFields: string[]
-  isNestedApiNameRelative: boolean
 }
 
 const getChangeError = async (change: Change): Promise<string | undefined> => {

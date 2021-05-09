@@ -112,35 +112,17 @@ module.exports = {
         }],
         'no-shadow': ['off'],
         '@typescript-eslint/no-shadow': ['error'],
-        '@typescript-eslint/ban-types': [
-          'error',
+        "@typescript-eslint/ban-types": [
+          "error",
           {
-            types: {
-              String: {
-                message: 'Use string instead',
-                fixWith: 'string',
-              },
-              Boolean: {
-                message: 'Use boolean instead',
-                fixWith: 'boolean',
-              },
-              Number: {
-                message: 'Use number instead',
-                fixWith: 'number',
-              },
-              Symbol: {
-                message: 'Use symbol instead',
-                fixWith: 'symbol',
-              },
-              Object: {
-                message: 'Use object instead',
-                fixWith: 'object',
-              },      
-            },
-            extendDefaults: false,   
+            "extendDefaults": true,
+            "types": {
+              "{}": false,
+              "object": false
+            }
           }
         ],
-        'no-use-before-define': ['off'],
+        // This rule is already enforced on all functions so no need to enforce it in addition on module boundary
         '@typescript-eslint/explicit-module-boundary-types': ['off'],
         'jest/valid-describe': ['off'],
         'import/extensions': [ 'error', 'never', {

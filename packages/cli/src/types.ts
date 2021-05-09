@@ -42,14 +42,6 @@ export class CliError extends Error {
   }
 }
 
-export type CliArgs = {
-  telemetry: Telemetry
-  config: CommandConfig
-  output: CliOutput
-  workspacePath: string
-  spinnerCreator: SpinnerCreator
-}
-
 export interface Spinner {
   succeed(text: string): void
   fail(text: string): void
@@ -70,6 +62,14 @@ export interface CliOutput {
 
   // TODO: Also belong here:
   // fs abstractions
+}
+
+export type CliArgs = {
+  telemetry: Telemetry
+  config: CommandConfig
+  output: CliOutput
+  workspacePath: string
+  spinnerCreator: SpinnerCreator
 }
 
 export interface CliInput {

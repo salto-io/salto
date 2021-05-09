@@ -400,6 +400,7 @@ export const configType = new ObjectType({
               { metadataType: 'PermissionSet' },
               { metadataType: 'SiteDotCom' },
               { metadataType: 'EmailTemplate' },
+              { metadataType: 'ContentAsset' },
               {
                 metadataType: 'StandardValueSet',
                 name: '^(AddressCountryCode)|(AddressStateCode)$',

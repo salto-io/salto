@@ -262,8 +262,6 @@ describe('swagger_type_elements', () => {
         expect(order).toBeInstanceOf(ObjectType)
         // eslint-disable-next-line no-underscore-dangle
         expect((order.fields.petId.annotations?._hidden_value)).toBeTruthy()
-        // eslint-disable-next-line no-underscore-dangle
-        expect((order.fields.newHiddenField.annotations?._hidden_value)).toBeTruthy()
       })
       it('should not add fields that did not already exist', () => {
         const order = allTypes.Order as ObjectType

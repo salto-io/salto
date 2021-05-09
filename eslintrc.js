@@ -112,13 +112,13 @@ module.exports = {
         }],
         'no-shadow': ['off'],
         '@typescript-eslint/no-shadow': ['error'],
-        "@typescript-eslint/ban-types": [
-          "error",
+        '@typescript-eslint/ban-types': [
+          'error',
           {
-            "extendDefaults": true,
-            "types": {
-              "{}": false,
-              "object": false
+            'extendDefaults': true,
+            'types': {
+              '{}': false,
+              'object': false
             }
           }
         ],

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import {
   ElemID, ObjectType, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
   FieldDefinition,
@@ -27,7 +28,6 @@ export const FETCH_CONFIG = 'fetch'
 export const METADATA_CONFIG = 'metadata'
 const METADATA_INCLUDE_LIST = 'include'
 const METADATA_EXCLUDE_LIST = 'exclude'
-const FETCH_TARGET = 'target'
 const METADATA_TYPE = 'metadataType'
 const METADATA_NAME = 'name'
 const METADATA_NAMESPACE = 'namespace'
@@ -51,10 +51,15 @@ export type MetadataParams = {
   exclude?: MetadataQueryParams[]
 }
 
+export type OptionalFeatures = {
+  extraDependencies?: boolean
+}
+
 export type FetchParameters = {
   metadata?: MetadataParams
   data?: DataManagementConfig
-  fetchAllCustomSettings?: boolean
+  fetchAllCustomSettings?: boolean // TODO - move this into optional features
+  optionalFeatures?: OptionalFeatures
   target?: string[]
 }
 
@@ -365,13 +370,21 @@ const metadataConfigType = new ObjectType({
   },
 })
 
-const fetchConfigType = new ObjectType({
-  elemID: new ElemID(SALESFORCE, 'metadataQuery'),
+const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
+  elemID: new ElemID(SALESFORCE, 'optionalFeatures'),
   fields: {
-    [METADATA_CONFIG]: { type: metadataConfigType },
-    [DATA_CONFIGURATION]: { type: dataManagementType },
-    [SHOULD_FETCH_ALL_CUSTOM_SETTINGS]: { type: BuiltinTypes.BOOLEAN },
-    [FETCH_TARGET]: { type: new ListType(BuiltinTypes.STRING) },
+    extraDependencies: { type: BuiltinTypes.BOOLEAN },
+  },
+})
+
+const fetchConfigType = createMatchingObjectType<FetchParameters>({
+  elemID: new ElemID(SALESFORCE, 'fetchConfig'),
+  fields: {
+    metadata: { type: metadataConfigType },
+    data: { type: dataManagementType },
+    optionalFeatures: { type: optionalFeaturesType },
+    fetchAllCustomSettings: { type: BuiltinTypes.BOOLEAN },
+    target: { type: new ListType(BuiltinTypes.STRING) },
   },
 })
 

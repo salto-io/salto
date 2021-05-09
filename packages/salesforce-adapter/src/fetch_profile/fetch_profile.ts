@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { DATA_CONFIGURATION, FetchParameters, METADATA_CONFIG } from '../types'
+import { DATA_CONFIGURATION, FetchParameters, METADATA_CONFIG, OptionalFeatures } from '../types'
 import { buildDataManagement, DataManagement, validateDataManagementConfig } from './data_management'
 import { buildMetadataQuery, MetadataQuery, validateMetadataParams } from './metadata_query'
 
@@ -22,6 +22,7 @@ import { buildMetadataQuery, MetadataQuery, validateMetadataParams } from './met
 export type FetchProfile = {
   readonly metadataQuery: MetadataQuery
   readonly dataManagement?: DataManagement
+  readonly isFeatureEnabled: (name: keyof OptionalFeatures) => boolean
   readonly shouldFetchAllCustomSettings: () => boolean
 }
 
@@ -29,10 +30,12 @@ export const buildFetchProfile = ({
   metadata = {},
   data,
   fetchAllCustomSettings,
+  optionalFeatures,
   target,
 }: FetchParameters): FetchProfile => ({
   metadataQuery: buildMetadataQuery(metadata, target),
   dataManagement: data && buildDataManagement(data),
+  isFeatureEnabled: name => optionalFeatures?.[name] ?? true,
   shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
 })
 

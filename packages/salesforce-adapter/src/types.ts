@@ -401,6 +401,7 @@ export const configType = new ObjectType({
               { metadataType: 'SiteDotCom' },
               { metadataType: 'EmailTemplate' },
               { metadataType: 'ContentAsset' },
+              { metadataType: 'CustomObjectTranslation' },
               {
                 metadataType: 'StandardValueSet',
                 name: '^(AddressCountryCode)|(AddressStateCode)$',

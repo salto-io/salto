@@ -185,6 +185,9 @@ const addExtraReferences = async (
  */
 const creator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
+    if (!config.fetchProfile.isFeatureEnabled('extraDependencies')) {
+      return
+    }
     const groupedDeps = await getDependencies(client)
     const fetchedElements = buildElementsSourceFromElements(elements)
     const allElements = buildElementsSourceForFetch(elements, config)

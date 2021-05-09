@@ -22,7 +22,7 @@ import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/extra_dependencies'
 import mockClient from '../client'
-import { createMetadataTypeElement, defaultFilterContext } from '../utils'
+import { createMetadataTypeElement, defaultFilterContext, MockInterface } from '../utils'
 import {
   SALESFORCE, API_NAME, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD,
   CUSTOM_FIELD, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION, CUSTOM_OBJECT,
@@ -30,6 +30,7 @@ import {
 import { SalesforceRecord } from '../../src/client/types'
 import { Types } from '../../src/transformers/transformer'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import Connection from '../../src/client/jsforce'
 
 const getGeneratedDeps = (elem: Element): ReferenceExpression[] => (
   elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
@@ -320,6 +321,27 @@ describe('extra dependencies filter', () => {
 
     it('should not modify workspace elements that were not fetched', () => {
       expect(getGeneratedDeps(workspaceInstance)).toBeUndefined()
+    })
+  })
+
+  describe('when feature is disabled', () => {
+    let connection: MockInterface<Connection>
+    beforeEach(async () => {
+      const mockClientInst = mockClient()
+      client = mockClientInst.client
+      connection = mockClientInst.connection
+      filter = filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({ optionalFeatures: { extraDependencies: false } }),
+          elementsSource: buildElementsSourceFromElements(elements),
+        },
+      }) as FilterType
+      await filter.onFetch(elements)
+    })
+    it('should not run any query', () => {
+      expect(connection.query).not.toHaveBeenCalled()
     })
   })
 })

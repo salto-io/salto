@@ -17,21 +17,21 @@ import { ElemID, ObjectType, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import { ComplexTypeElement, ExtensionElement, SchemaElement, Element, ElementElement, ComplexContentElement } from 'soap/lib/wsdl/elements'
-import { convertToNamespaceName, scanComplexType } from './utils'
+import { convertToNamespaceName, searchInElement } from './utils'
 
 const log = logger(module)
 
-export class UnresolvedField {
-  constructor(
-    readonly name: string,
-    readonly type: string,
-    readonly isList: boolean,
-    readonly annotations: Values
-  ) {}
+export type UnresolvedField = {
+  resolveType: 'field'
+  name: string
+  type: string
+  isList: boolean
+  annotations: Values
 }
 
-export class UnresolvedExtension {
-  constructor(readonly type: string) {}
+export type UnresolvedExtension = {
+  resolveType: 'extension'
+  type: string
 }
 
 type FieldType = UnresolvedField | UnresolvedExtension
@@ -52,9 +52,10 @@ const convertComplexContent = (
     log.warn(`Received unexpected complex element extension in type ${typeName}: ${extension?.name}`)
     return undefined
   }
-  return new UnresolvedExtension(
-    convertToNamespaceName(extension.$base, element.schemaXmlns ?? {}, namespace)
-  )
+  return {
+    resolveType: 'extension',
+    type: convertToNamespaceName(extension.$base, element.schemaXmlns ?? {}, namespace),
+  }
 }
 
 const convertField = (
@@ -89,7 +90,13 @@ const convertField = (
   const isList = elementWithProperties.$maxOccurs !== undefined && elementWithProperties.$maxOccurs !== '1'
   const annotations = isAttribute ? { isAttribute: true } : {}
 
-  return new UnresolvedField(elementWithProperties.$name, fieldTypeName, isList, annotations)
+  return {
+    resolveType: 'field',
+    name: elementWithProperties.$name,
+    type: fieldTypeName,
+    isList,
+    annotations,
+  }
 }
 
 const convertComplexType = (
@@ -102,8 +109,8 @@ const convertComplexType = (
     return undefined
   }
 
-  const objectType = new ObjectType({ elemID: new ElemID(adapterName, typeName), fields: {} })
-  const fields = scanComplexType(type, ['element', 'attribute', 'complexContent'])
+  const objectType = new ObjectType({ elemID: new ElemID(adapterName, typeName) })
+  const fields = searchInElement(type, ['element', 'attribute', 'complexContent'])
     .map(element => convertField(element, typeName, namespace))
     .filter(values.isDefined)
 

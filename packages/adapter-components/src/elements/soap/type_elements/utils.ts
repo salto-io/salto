@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element } from 'soap/lib/wsdl/elements'
+import { Element as WsdlElement } from 'soap/lib/wsdl/elements'
 
-export const scanComplexType = (element: Element, types: string[]): Element[] => {
+export const searchInElement = (element: WsdlElement, types: string[]): WsdlElement[] => {
   const returnTypes = element.name && types.includes(element.name)
     ? [element]
     : []
 
-  const childrenTypes = _.flatten(element.children?.map(e => scanComplexType(e, types))) ?? []
+  const childrenTypes = _.flatten(element.children?.map(e => searchInElement(e, types))) ?? []
   return [...returnTypes, ...childrenTypes]
 }
 

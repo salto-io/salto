@@ -73,7 +73,7 @@ export const linkTypes = (
     }
 
     const fields = type.fields.map(field => {
-      if (field instanceof UnresolvedField) {
+      if (field.resolveType === 'field') {
         return linkUnresolvedField(field, type.objectType, typesMap, typeAliases)
       }
 

@@ -74,6 +74,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
     if (layouts.length === 0) {
       return
     }
+    // TODO: fix me
 
     // const layouts = [...findInstances(elements, LAYOUT_TYPE_ID)]
     // const apiNameToCustomObject = await generateApiNameToCustomObject(elements)

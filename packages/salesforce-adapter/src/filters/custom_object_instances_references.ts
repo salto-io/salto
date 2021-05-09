@@ -40,6 +40,8 @@ type MissingRef = {
 }
 
 const INTERNAL_ID_SEPARATOR = '$'
+const MAX_BREAKDOWN_ELEMENTS = 10
+const MAX_BREAKDOWN_DETAILS_ELEMENTS = 3
 
 const serializeInternalID = (typeName: string, id: string): string =>
   (`${typeName}${INTERNAL_ID_SEPARATOR}${id}`)
@@ -66,6 +68,17 @@ const createWarningFromMsg = (message: string): SaltoError =>
 const getInstanceDesc = (instanceId: string, baseUrl?: string): string =>
   (baseUrl ? `${baseUrl}/${instanceId}` : `Instance with Id - ${instanceId}`)
 
+const getInstancesDetailsMsg = (instanceIds: string[], baseUrl?: string): string => {
+  const instancesToPrint = instanceIds.slice(0, MAX_BREAKDOWN_DETAILS_ELEMENTS)
+  const instancesMsgs = instancesToPrint.map(instanceId => getInstanceDesc(instanceId, baseUrl))
+  const overFlowSize = instanceIds.length - MAX_BREAKDOWN_DETAILS_ELEMENTS
+  const overFlowMsg = overFlowSize > 0 ? [`${overFlowSize} more instances`] : []
+  return [
+    ...instancesMsgs,
+    ...overFlowMsg,
+  ].map(msg => `\t* ${msg}`).join('\n')
+}
+
 const createWarnings = (
   instancesWithCollidingElemID: InstanceElement[],
   missingRefs: MissingRef[],
@@ -76,7 +89,7 @@ const createWarnings = (
 ): SaltoError[] => {
   const typeToElemIDtoInstances = _.mapValues(
     _.groupBy(instancesWithCollidingElemID, instance => apiName(instance.type, true)),
-    instances => _.groupBy(instances, instance => instance.elemID.getFullName())
+    instances => _.groupBy(instances, instance => instance.elemID.name)
   )
 
   const collisionWarnings = Object.entries(typeToElemIDtoInstances)
@@ -84,22 +97,26 @@ const createWarnings = (
       const numInstances = Object.values(elemIDtoInstances)
         .flat().length
       const header = `Omitted ${numInstances} instances of ${type} due to Salto ID collisions. 
-      Current Salto ID configuration for ${type} is defined as [${dataManagement.getObjectIdsFields(type).join(', ')}].`
+Current Salto ID configuration for ${type} is defined as [${dataManagement.getObjectIdsFields(type).join(', ')}].`
 
       const collisionsHeader = 'Breakdown per colliding Salto ID:'
-      const collisionMsgs = Object.entries(elemIDtoInstances)
+      const collisionsToDisplay = Object.entries(elemIDtoInstances).slice(0, MAX_BREAKDOWN_ELEMENTS)
+      const collisionMsgs = collisionsToDisplay
         .map(([elemID, instances]) => `- ${elemID}:
-        ${instances.map(instance => `\t* ${getInstanceDesc(instance.value[CUSTOM_OBJECT_ID_FIELD], baseUrl)}`).join('\n')}`)
+${getInstancesDetailsMsg(instances.map(instance => instance.value[CUSTOM_OBJECT_ID_FIELD]), baseUrl)}`)
       const epilogue = `To resolve these collisions please take one of the following actions and fetch again:
-      1. Change TYPE_NAME's saltoIDSettings in salesforce.nacl to include all fields that uniquely identify the type's instances.
-      2. Delete duplicate instances from your Salesforce account.
-      
-      Alternatively, you can exclude ${type} from the data management configuration in salesforce.nacl`
+\t1. Change ${type}'s saltoIDSettings to include all fields that uniquely identify the type's instances.
+\t2. Delete duplicate instances from your Salesforce account.
+         
+Alternatively, you can exclude ${type} from the data management configuration in salesforce.nacl`
+      const elemIDCount = Object.keys(elemIDtoInstances).length
+      const overflowMsg = elemIDCount > MAX_BREAKDOWN_ELEMENTS ? ['', `And ${elemIDCount - MAX_BREAKDOWN_ELEMENTS} more colliding Salto IDs`] : []
       return createWarningFromMsg([
         header,
         '',
         collisionsHeader,
         ...collisionMsgs,
+        ...overflowMsg,
         '',
         epilogue,
       ].join('\n'))
@@ -117,16 +134,21 @@ const createWarnings = (
     .map(([type, instanceIdToMissingRefs]) => {
       const numMissingInstances = Object.keys(instanceIdToMissingRefs).length
       const header = `Identified references to ${numMissingInstances} missing instances of ${type}`
-      const perMissingInstanceMsgs = Object.entries(instanceIdToMissingRefs)
+      const perMissingInstToDisplay = Object.entries(instanceIdToMissingRefs)
+        .slice(0, MAX_BREAKDOWN_ELEMENTS)
+      const perMissingInstanceMsgs = perMissingInstToDisplay
         .map(([instanceId, instanceMissingRefs]) => `${getInstanceDesc(instanceId, baseUrl)} referenced from -
-      ${instanceMissingRefs.map(instanceMissingRef => `\t*${getInstanceDesc(instanceMissingRef.originId, baseUrl)}`)}`)
+  ${getInstancesDetailsMsg(instanceMissingRefs.map(instanceMissingRef => instanceMissingRef.originId), baseUrl)}`)
       const epilogue = `To resolve this issue please edit the salesforce.nacl file to include ${type} instances in the data management configuration and fetch again.
 
       Alternatively, you can exclude the referring types from the data management configuration in salesforce.nacl`
+      const missingInstCount = Object.keys(instanceIdToMissingRefs).length
+      const overflowMsg = missingInstCount > MAX_BREAKDOWN_ELEMENTS ? ['', `And ${missingInstCount - MAX_BREAKDOWN_ELEMENTS} more missing Instances`] : []
       return createWarningFromMsg([
         header,
         '',
         ...perMissingInstanceMsgs,
+        ...overflowMsg,
         '',
         epilogue,
       ].join('\n'))
@@ -136,13 +158,13 @@ const createWarnings = (
     .map(deserializeInternalID)
     .map(source => source.type))
 
-  const illegalOriginsWarning = createWarningFromMsg(`Omitted ${illegalRefSources.size} instances due to the previous SaltoID collisions and/or missing instances.
-  Types of the omitted instances are: ${typesOfIllegalRefSources.join(', ')}.`)
+  const illegalOriginsWarnings = illegalRefSources.size === 0 ? [] : [createWarningFromMsg(`Omitted ${illegalRefSources.size} instances due to the previous SaltoID collisions and/or missing instances.
+  Types of the omitted instances are: ${typesOfIllegalRefSources.join(', ')}.`)]
 
   return [
     ...collisionWarnings,
     ...missingRefsWarnings,
-    illegalOriginsWarning,
+    ...illegalOriginsWarnings,
   ]
 }
 

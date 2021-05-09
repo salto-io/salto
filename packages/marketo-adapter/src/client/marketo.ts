@@ -93,11 +93,11 @@ export class Marketo extends EventEmitter implements MarketoObjectAPI {
       method: 'GET',
       url: '/identity/oauth/token',
       params: {
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         client_id: this.credentials.clientId,
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         client_secret: this.credentials.clientSecret,
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         grant_type: 'client_credentials',
       },
     }
@@ -105,9 +105,12 @@ export class Marketo extends EventEmitter implements MarketoObjectAPI {
     //  Start time is taken before request to avoid edge cases
     const startTime = Date.now()
     const response = await this.api.request(config) as AxiosResponse<{
+      // eslint-disable-next-line camelcase
       access_token: string
       scope: string
+      // eslint-disable-next-line camelcase
       expires_in: number
+      // eslint-disable-next-line camelcase
       token_type: string
     }>
     if (response.data === undefined) {

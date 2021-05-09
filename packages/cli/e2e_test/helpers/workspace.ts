@@ -35,6 +35,7 @@ const { awu } = collections.asynciterable
 declare global {
   // eslint-disable-next-line
   module jest {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     interface Matchers<R> {
       toExist(): jest.CustomMatcherResult
     }

@@ -204,11 +204,11 @@ describe('client_pagination', () => {
       expect(result).toEqual([{ a: 'a1', id: 150 }, { a: 'a2', b: 'b2', id: 140 }, { a: 'a3', id: 130 }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(4)
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '150' } })
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '140' } })
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '130' } })
     })
 
@@ -241,7 +241,7 @@ describe('client_pagination', () => {
       expect(result).toEqual([{ a: 'a1', id: 150 }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(2)
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '150', arg1: 'val1' } })
     })
 
@@ -292,9 +292,9 @@ describe('client_pagination', () => {
       expect(result).toEqual([{ a: 'a1', id: 150 }, { a: 'a2', b: 'b2', id: 140 }, { a: 'a3', id: 140 }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(3)
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '150' } })
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '140' } })
     })
     it('should stop pagination if non-numerical id values are found', async () => {
@@ -329,7 +329,7 @@ describe('client_pagination', () => {
       expect(result).toEqual([{ a: 'a1', id: 150 }, { a: 'a2', b: 'b2', id: '140' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(2)
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { since_id: '150' } })
     })
   })

@@ -38,7 +38,6 @@ jest.mock('../../src/constants', () => ({
   MAX_IDS_PER_INSTANCES_QUERY: 2,
 }))
 
-/* eslint-disable @typescript-eslint/camelcase */
 describe('Custom Object Instances filter', () => {
   let connection: Connection
   let client: SalesforceClient

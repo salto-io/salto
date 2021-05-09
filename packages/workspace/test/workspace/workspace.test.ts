@@ -525,9 +525,9 @@ describe('workspace', () => {
     const salesforceLeadObject = new ObjectType({
       elemID: salesforceLeadElemID,
       fields: {
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         new_base: { refType: createRefToElmWithValue(salesforceText) },
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         ext_field: { refType: createRefToElmWithValue(salesforceText), annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'foo' } },
       },
     })

@@ -67,7 +67,6 @@ class MyBean extends Bean<{ prop1: string, prop2?: number }> {}
 
 */
 
-// eslint-disable-next-line @typescript-eslint/class-name-casing
 export class _Bean<T> {
   constructor(props: T) {
     Object.assign(this, props)

@@ -268,7 +268,7 @@ describe('Custom Object Instances CRUD', () => {
             [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           },
         },
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         TestField__c: {
           label: 'TestField',
           refType: createRefToElmWithValue(stringType),
@@ -293,14 +293,14 @@ describe('Custom Object Instances CRUD', () => {
         fields: basicFields,
       })
       const existingSettingRecord = {
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         TestField__c: 'somevalue',
         Id: 'a014W00000zMPT6QAO',
         Name: 'TestName1',
       }
       const nonExistingSettingRecord = {
         Name: 'TestName2',
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         TestField__c: 'somevalue2',
         Id: 'a014W00000zNPT6QAO',
       }

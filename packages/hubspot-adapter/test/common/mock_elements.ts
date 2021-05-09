@@ -1257,23 +1257,23 @@ const firstMarketingEmailMock = {
   rssEmailUrl: '',
   rssToEmailTiming: {
     repeats: 'daily',
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     repeats_on_monthly: 1,
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     repeats_on_weekly: 1,
     time: '9:00 am',
   },
   slug: 'slug-23412423423',
   smartEmailFields: {},
   styleSettings: {
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     background_color: '#EAF0F6',
   },
   subcategory: 'blog_email',
   subject: 'Subject line',
   subscription: 123456,
   subscriptionBlogId: 1234567890,
-  // eslint-disable-next-line @typescript-eslint/camelcase
+  // eslint-disable-next-line camelcase
   subscription_name: 'Default HubSpot Blog Subscription',
   templatePath: 'generated_layouts/1345.html',
   trasactional: false,
@@ -1285,11 +1285,11 @@ const firstMarketingEmailMock = {
   vidsExcluded: [1234],
   vidsIncluded: [12],
   widgets: {
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     builtin_module_0_0_0: {
       body: {
         alignment: 'center',
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         hs_enable_module_padding: true,
         img: {
           alt: 'HubSpot logo orange',
@@ -1297,14 +1297,14 @@ const firstMarketingEmailMock = {
           src: 'https://static.hsappstatic.net/TemplateAssets/static-1.46/img/hs_default_template_images/email_dnd_template_images/company-logo-orange.png',
           width: 240,
         },
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         module_id: 1367093,
       },
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       child_css: {},
       css: {},
       id: 'builtin_module_0_0_0',
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       module_id: 1367093,
       name: 'builtin_module_0_0_0',
       order: 1,
@@ -1411,23 +1411,23 @@ const secondMarketingEmailMock = {
   rssEmailUrl: '',
   rssToEmailTiming: {
     repeats: 'daily',
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     repeats_on_monthly: 1,
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     repeats_on_weekly: 1,
     time: '9:00 am',
   },
   slug: 'slug-23412423423',
   smartEmailFields: {},
   styleSettings: {
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     background_color: '#EAF0F6',
   },
   subcategory: 'blog_email',
   subject: 'Subject line 2',
   subscription: 123456,
   subscriptionBlogId: 1234567890,
-  // eslint-disable-next-line @typescript-eslint/camelcase
+  // eslint-disable-next-line camelcase
   subscription_name: 'Default HubSpot Blog Subscription',
   templatePath: 'generated_layouts/1345.html',
   trasactional: false,
@@ -1439,11 +1439,11 @@ const secondMarketingEmailMock = {
   vidsExcluded: [1234],
   vidsIncluded: [12],
   widgets: {
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     builtin_module_0_0_0: {
       body: {
         alignment: 'center',
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         hs_enable_module_padding: true,
         img: {
           alt: 'HubSpot logo orange',
@@ -1451,14 +1451,14 @@ const secondMarketingEmailMock = {
           src: 'https://static.hsappstatic.net/TemplateAssets/static-1.46/img/hs_default_template_images/email_dnd_template_images/company-logo-orange.png',
           width: 240,
         },
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         module_id: 1367093,
       },
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       child_css: {},
       css: {},
       id: 'builtin_module_0_0_0',
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       module_id: 1367093,
       name: 'builtin_module_0_0_0',
       order: 1,
@@ -1565,23 +1565,23 @@ const thirdMarketingEmailMock = {
   rssEmailUrl: '',
   rssToEmailTiming: {
     repeats: 'daily',
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     repeats_on_monthly: 1,
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     repeats_on_weekly: 1,
     time: '9:00 am',
   },
   slug: 'slug-23412423423',
   smartEmailFields: {},
   styleSettings: {
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     background_color: '#EAF0F6',
   },
   subcategory: 'blog_email',
   subject: 'Subject line 2',
   subscription: 123456,
   subscriptionBlogId: 1234567890,
-  // eslint-disable-next-line @typescript-eslint/camelcase
+  // eslint-disable-next-line camelcase
   subscription_name: 'Default HubSpot Blog Subscription',
   templatePath: 'generated_layouts/1345.html',
   trasactional: false,
@@ -1593,11 +1593,11 @@ const thirdMarketingEmailMock = {
   vidsExcluded: [1234],
   vidsIncluded: [12],
   widgets: {
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     builtin_module_0_0_0: {
       body: {
         alignment: 'center',
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         hs_enable_module_padding: true,
         img: {
           alt: 'HubSpot logo orange',
@@ -1605,14 +1605,14 @@ const thirdMarketingEmailMock = {
           src: 'https://static.hsappstatic.net/TemplateAssets/static-1.46/img/hs_default_template_images/email_dnd_template_images/company-logo-orange.png',
           width: 240,
         },
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         module_id: 1367093,
       },
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       child_css: {},
       css: {},
       id: 'builtin_module_0_0_0',
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       module_id: 1367093,
       name: 'builtin_module_0_0_0',
       order: 1,
@@ -1682,9 +1682,9 @@ export const marketingEmailMock = {
   rssEmailUrl: '',
   rssToEmailTiming: {
     repeats: 'daily',
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     repeats_on_monthly: 1,
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     repeats_on_weekly: 1,
     time: '9:00 am',
   },
@@ -1695,7 +1695,7 @@ export const marketingEmailMock = {
   subject: 'Subject line 2',
   subscription: 123456,
   subscriptionBlogId: 1234567890,
-  // eslint-disable-next-line @typescript-eslint/camelcase
+  // eslint-disable-next-line camelcase
   subscription_name: 'Default HubSpot Blog Subscription',
   templatePath: 'generated_layouts/1345.html',
   trasactional: false,
@@ -1803,23 +1803,23 @@ export const marketingEmailCreateResponse = {
   rssEmailUrl: '',
   rssToEmailTiming: {
     repeats: 'daily',
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     repeats_on_monthly: 1,
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     repeats_on_weekly: 1,
     time: '9:00 am',
   },
   slug: 'slug-23412423423',
   smartEmailFields: {},
   styleSettings: {
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     background_color: '#EAF0F6',
   },
   subcategory: 'blog_email',
   subject: 'Subject line 2',
   subscription: 123456,
   subscriptionBlogId: 1234567890,
-  // eslint-disable-next-line @typescript-eslint/camelcase
+  // eslint-disable-next-line camelcase
   subscription_name: 'Default HubSpot Blog Subscription',
   templatePath: 'generated_layouts/1345.html',
   trasactional: false,
@@ -1831,11 +1831,11 @@ export const marketingEmailCreateResponse = {
   vidsExcluded: [1234],
   vidsIncluded: [12],
   widgets: {
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     builtin_module_0_0_0: {
       body: {
         alignment: 'center',
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         hs_enable_module_padding: true,
         img: {
           alt: 'HubSpot logo orange',
@@ -1843,14 +1843,14 @@ export const marketingEmailCreateResponse = {
           src: 'https://static.hsappstatic.net/TemplateAssets/static-1.46/img/hs_default_template_images/email_dnd_template_images/company-logo-orange.png',
           width: 240,
         },
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         module_id: 1367093,
       },
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       child_css: {},
       css: {},
       id: 'builtin_module_0_0_0',
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       module_id: 1367093,
       name: 'builtin_module_0_0_0',
       order: 1,

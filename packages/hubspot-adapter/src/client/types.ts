@@ -13,6 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+/* eslint-disable camelcase */
+
 export interface HubspotMetadata {
   name: string
 }

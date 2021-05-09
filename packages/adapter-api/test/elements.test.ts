@@ -47,9 +47,9 @@ describe('Test elements.ts', () => {
   const ot = new ObjectType({
     elemID: otID,
     fields: {
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       num_field: { refType: new ReferenceExpression(primNum.elemID, primNum) },
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       str_field: { refType: new ReferenceExpression(primStr.elemID, primStr) },
     },
     annotationRefsOrTypes: {},
@@ -109,9 +109,9 @@ describe('Test elements.ts', () => {
       const obj = new ObjectType({
         elemID: otID,
         fields: {
-          // eslint-disable-next-line @typescript-eslint/camelcase
+          // eslint-disable-next-line camelcase
           num_field: { refType: new ReferenceExpression(primNum.elemID, primNum) },
-          // eslint-disable-next-line @typescript-eslint/camelcase
+          // eslint-disable-next-line camelcase
           str_field: { refType: new ReferenceExpression(primStr.elemID, primStr) },
         },
         annotationRefsOrTypes: {},

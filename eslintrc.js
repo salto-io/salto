@@ -110,6 +110,38 @@ module.exports = {
         'import/no-extraneous-dependencies': ['error', {
             devDependencies: ['!test/**/*'],
         }],
+        'no-shadow': ['off'],
+        '@typescript-eslint/no-shadow': ['error'],
+        '@typescript-eslint/ban-types': [
+          'error',
+          {
+            types: {
+              String: {
+                message: 'Use string instead',
+                fixWith: 'string',
+              },
+              Boolean: {
+                message: 'Use boolean instead',
+                fixWith: 'boolean',
+              },
+              Number: {
+                message: 'Use number instead',
+                fixWith: 'number',
+              },
+              Symbol: {
+                message: 'Use symbol instead',
+                fixWith: 'symbol',
+              },
+              Object: {
+                message: 'Use object instead',
+                fixWith: 'object',
+              },      
+            },
+            extendDefaults: false,   
+          }
+        ],
+        'no-use-before-define': ['off'],
+        '@typescript-eslint/explicit-module-boundary-types': ['off'],
         'jest/valid-describe': ['off'],
         'import/extensions': [ 'error', 'never', {
             'json': 'always',

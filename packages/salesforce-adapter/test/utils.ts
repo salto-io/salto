@@ -253,7 +253,7 @@ export const createCustomSettingsObject = (
         [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
       },
     },
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     TestField__c: {
       label: 'TestField',
       refType: createRefToElmWithValue(stringType),

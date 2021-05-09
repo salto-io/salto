@@ -29,11 +29,11 @@ describe('swagger_type_elements', () => {
     const expectedParsedConfigs = {
       Order: { request: { url: '/store/order/{orderId}' } },
       Pet: { request: { url: '/pet/{petId}' } },
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       pet__findByStatus: { request: { url: '/pet/findByStatus' } },
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       pet__findByTags: { request: { url: '/pet/findByTags' } },
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       store__inventory: { request: { url: '/store/inventory' } },
       User: { request: { url: '/user/{username}' } },
       Food: { request: { url: '/food/{foodId}' } },
@@ -223,13 +223,13 @@ describe('swagger_type_elements', () => {
         // no Pet2 because it does not have a request config
         const updatedExpectedParsedConfigs = {
           Order: { request: { url: '/store/order/{orderId}' } },
-          // eslint-disable-next-line @typescript-eslint/camelcase
+          // eslint-disable-next-line camelcase
           Pet__new: { request: { url: '/pet/{petId}' } },
-          // eslint-disable-next-line @typescript-eslint/camelcase
+          // eslint-disable-next-line camelcase
           pet__findByStatus: { request: { url: '/pet/findByStatus' } },
-          // eslint-disable-next-line @typescript-eslint/camelcase
+          // eslint-disable-next-line camelcase
           PetByTag: { request: { url: '/pet/findByTags' } },
-          // eslint-disable-next-line @typescript-eslint/camelcase
+          // eslint-disable-next-line camelcase
           store__inventory: { request: { url: '/store/inventory' } },
           User: { request: { url: '/user/{username}' } },
           Food: { request: { url: '/food/{foodId}' } },
@@ -262,6 +262,8 @@ describe('swagger_type_elements', () => {
         expect(order).toBeInstanceOf(ObjectType)
         // eslint-disable-next-line no-underscore-dangle
         expect((order.fields.petId.annotations?._hidden_value)).toBeTruthy()
+        // eslint-disable-next-line no-underscore-dangle
+        expect((order.fields.newHiddenField.annotations?._hidden_value)).toBeTruthy()
       })
       it('should not add fields that did not already exist', () => {
         const order = allTypes.Order as ObjectType

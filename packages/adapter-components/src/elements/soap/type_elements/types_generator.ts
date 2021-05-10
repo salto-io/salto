@@ -58,7 +58,7 @@ const getTypeAliases = (schema: SchemaElement): Record<string, string> =>
  * @param wsdl wsdl soap object or a path to the WSDL, can be both local file or a url
  * @returns the converted object types
  */
-export const generateTypes = async (
+export const extractTypes = async (
   adapterName: string,
   wsdl: string | soap.WSDL,
 ): Promise<ObjectType[]> => {

@@ -15,15 +15,15 @@
 */
 import { ListType, ObjectType } from '@salto-io/adapter-api'
 import * as soap from 'soap'
-import { generateTypes } from '../../../src/elements/soap'
+import { extractTypes } from '../../../src/elements/soap'
 
 const WSDL_PATH = `${__dirname.replace('/dist', '')}/wsdl/main.wsdl`
 const TESTED_TYPE = 'testedType'
-describe('generateTypes', () => {
+describe('extractTypes', () => {
   let testedType: ObjectType
   let types: ObjectType[]
   beforeEach(async () => {
-    types = await generateTypes('adapterName', WSDL_PATH)
+    types = await extractTypes('adapterName', WSDL_PATH)
     testedType = types.find(type => type.elemID.name === TESTED_TYPE) as ObjectType
   })
   it('should return the expected type', () => {
@@ -73,7 +73,7 @@ describe('generateTypes', () => {
 
   it('should work when a wsdl object is passed', async () => {
     const { wsdl } = (await soap.createClientAsync(WSDL_PATH)) as unknown as { wsdl: soap.WSDL }
-    types = await generateTypes('adapterName', wsdl)
+    types = await extractTypes('adapterName', wsdl)
     testedType = types.find(type => type.elemID.name === TESTED_TYPE) as ObjectType
     expect(testedType).toBeDefined()
   })

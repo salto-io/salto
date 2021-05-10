@@ -19,8 +19,8 @@ import LRU from 'lru-cache'
 import uuidv4 from 'uuid/v4'
 import * as fileUtils from '@salto-io/file'
 import { remoteMap } from '@salto-io/workspace'
-import { collections, promises } from '@salto-io/lowerdash'
-import type rocksdb from 'rocksdb'
+import { collections, promises, values } from '@salto-io/lowerdash'
+import type rocksdb from '@salto-io/rocksdb'
 
 const { asynciterable } = collections
 const { awu } = asynciterable
@@ -60,16 +60,14 @@ const readIteratorPage = (iterator: rocksdb
     .Iterator): Promise<remoteMap.RemoteMapEntry<string>[] | undefined> =>
   new Promise<remoteMap.RemoteMapEntry<string>[] | undefined>(resolve => {
     const callback = (_err: Error | undefined, res: [RocksDBValue, RocksDBValue][]): void => {
-      const result = []
-      while (res?.length > 0) {
-        const [key, value] = res.pop() as [RocksDBValue, RocksDBValue]
+      const result = res.map(([key, value]) => {
         const keyAsString = key?.toString()
         const cleanKey = keyAsString?.substr(keyAsString
           .indexOf(NAMESPACE_SEPARATOR) + NAMESPACE_SEPARATOR.length)
-        if (value !== undefined && cleanKey !== undefined) {
-          result.push({ key: cleanKey, value: value.toString() })
-        }
-      }
+        return { key: cleanKey, value: value?.toString() }
+      }).filter(
+        entry => values.isDefined(entry.key) && values.isDefined(entry.value)
+      ) as remoteMap.RemoteMapEntry<string>[]
       if (result.length > 0) {
         resolve(result)
       } else {
@@ -129,22 +127,22 @@ AsyncIterable<remoteMap.RemoteMapEntry<string>[]> {
     while (!done && page.length < pageSize) {
       let min: string | undefined
       let minIndex = 0
-      latestEntries.forEach((entries, index) => {
-        const entry = entries && entries[0]
-        if (entry !== undefined) {
+      latestEntries
+        .filter(values.isDefined)
+        .filter(entries => entries.length > 0)
+        .forEach((entries, index) => {
+          const entry = entries[0]
           if (min === undefined || entry.key < min) {
             min = entry.key
             minIndex = index
           }
-        }
-      })
+        })
       const minEntry = min !== undefined ? latestEntries[minIndex]?.pop() : undefined
       if (minEntry === undefined) {
         done = true
       } else {
         for (let i = 0; i < latestEntries.length; i += 1) {
           const entries = latestEntries[i]
-          // await Promise.all(latestEntries.map(async (entries, i) => {
           // We load the next page for emptied out pages
           if (min !== undefined && entries && entries[0] !== undefined && entries[0].key <= min) {
             // This skips all values with the same key because some keys can appear in two iterators

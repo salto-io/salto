@@ -1632,6 +1632,15 @@
     requirejs "2.3.6"
     xml2js "0.4.19"
 
+"@salto-io/rocksdb@4.1.0":
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/@salto-io/rocksdb/-/rocksdb-4.1.0.tgz#04ae30e1869afd43d884e04f1cc20989210f9517"
+  integrity sha512-1gPZq7ZUQ2VpCBg3IChdyyUXAKTjB1oy6WuT9u+DUXDjAMQ0IkPMxH2DGbQnOa0ThYrzfn5p40vN17jSAojC0g==
+  dependencies:
+    abstract-leveldown "~6.1.1"
+    napi-macros "~2.0.0"
+    node-gyp-build "~4.1.0"
+
 "@salto-io/suitecloud-cli@1.1.2-salto-5":
   version "1.1.2-salto-5"
   resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.1.2-salto-5.tgz#6d5efc43122c95cadc264ac65d1f53e84aa23d5a"
@@ -10061,14 +10070,6 @@ rimraf@^3.0.0:
   integrity sha512-JZkJMZkAGFFPP2YqXZXPbMlMBgsxzE8ILs4lMIX/2o0L9UBw9O/Y3o6wFw/i9YLapcUJWwqbi3kdxIPdC62TIA==
   dependencies:
     glob "^7.1.3"
-
-rocksdb@salto-io/rocksdb.git:
-  version "4.1.0"
-  resolved "https://codeload.github.com/salto-io/rocksdb/tar.gz/6c1d258e14adce92fd9fd6a79755dfa214d65df4"
-  dependencies:
-    abstract-leveldown "~6.1.1"
-    napi-macros "~2.0.0"
-    node-gyp-build "~4.1.0"
 
 rsvp@^4.8.4:
   version "4.8.5"

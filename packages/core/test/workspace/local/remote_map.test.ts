@@ -20,7 +20,7 @@ import { Element, ObjectType, isObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { promisify } from 'util'
 import { serialization, remoteMap as rm, merger } from '@salto-io/workspace'
-import rocksdb from 'rocksdb'
+import rocksdb from '@salto-io/rocksdb'
 import { createRemoteMapCreator, RocksDBValue } from '../../../src/local-workspace/remote_map'
 
 const { serialize, deserialize } = serialization

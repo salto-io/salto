@@ -320,6 +320,10 @@ export const TERRITORY2_RULE_TYPE = 'Territory2Rule'
 // Retrieve constants
 export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/
 
+// According to Salesforce spec the keyPrefix length is 3
+// If this changes in the future we need to change this and add further logic where it's used
+export const KEY_PREFIX_LENGTH = 3
+
 // CPQ CustomObjects
 export const CPQ_PRODUCT_RULE = 'SBQQ__ProductRule__c'
 export const CPQ_PRICE_RULE = 'SBQQ__PriceRule__c'

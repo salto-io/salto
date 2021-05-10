@@ -13,15 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Element, ElemID, ObjectType, PrimitiveTypes, PrimitiveType, CORE_ANNOTATIONS, InstanceElement,
-  ReferenceExpression, isInstanceElement,
-} from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, PrimitiveTypes, PrimitiveType, CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, isInstanceElement, SaltoError } from '@salto-io/adapter-api'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/custom_object_instances_references'
 import mockClient from '../client'
-import { SALESFORCE, API_NAME, CUSTOM_OBJECT, METADATA_TYPE, LABEL } from '../../src/constants'
+import { SALESFORCE, API_NAME, CUSTOM_OBJECT, METADATA_TYPE, LABEL, FIELD_ANNOTATIONS } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
 
@@ -30,13 +28,11 @@ describe('Custom Object Instances References filter', () => {
   type FilterType = FilterWith<'onFetch'>
   let filter: FilterType
 
-  const refFromName = 'refFrom'
-  const refToName = 'refToName'
-  const masterName = 'masterName'
   const stringType = new PrimitiveType({
     elemID: new ElemID(SALESFORCE, 'string'),
     primitive: PrimitiveTypes.STRING,
   })
+  const masterName = 'masterName'
   const masterElemID = new ElemID(SALESFORCE, masterName)
   const masterObj = new ObjectType({
     elemID: masterElemID,
@@ -55,6 +51,7 @@ describe('Custom Object Instances References filter', () => {
       },
     },
   })
+  const refToName = 'refToName'
   const refToElemID = new ElemID(SALESFORCE, refToName)
   const refToObj = new ObjectType({
     elemID: refToElemID,
@@ -73,6 +70,7 @@ describe('Custom Object Instances References filter', () => {
       },
     },
   })
+  const refFromName = 'refFrom'
   const refFromElemID = new ElemID(SALESFORCE, refFromName)
   const refFromObj = new ObjectType(
     {
@@ -96,6 +94,21 @@ describe('Custom Object Instances References filter', () => {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [LABEL]: 'lookup',
             [API_NAME]: 'LookupExample',
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+            referenceTo: [
+              refToName,
+            ],
+          },
+        },
+        NonDeployableLookup: {
+          type: Types.primitiveDataTypes.Lookup,
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+            [LABEL]: 'lookup',
+            [API_NAME]: 'LookupExample',
+            [FIELD_ANNOTATIONS.CREATABLE]: false,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: false,
             referenceTo: [
               refToName,
             ],
@@ -107,6 +120,8 @@ describe('Custom Object Instances References filter', () => {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [LABEL]: 'detailfOfMaster',
             [API_NAME]: 'MasterDetailExample',
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
             referenceTo: [
               masterName,
             ],
@@ -118,7 +133,20 @@ describe('Custom Object Instances References filter', () => {
 
   beforeAll(() => {
     client = mockClient().client
-    filter = filterCreator({ client, config: defaultFilterContext }) as FilterType
+    filter = filterCreator({
+      client,
+      config: {
+        ...defaultFilterContext,
+        fetchProfile: buildFetchProfile({
+          data: {
+            includeObjects: ['*'],
+            saltoIDSettings: {
+              defaultIdFields: ['Name'],
+            },
+          },
+        }),
+      },
+    }) as FilterType
   })
 
   describe('lookup ref to', () => {
@@ -127,6 +155,7 @@ describe('Custom Object Instances References filter', () => {
       Id: '1234',
       LookupExample: 'refToId',
       MasterDetailExample: 'masterToId',
+      NonDeployableLookup: 'ToNothing',
     }
     const refToInstanceName = 'refToInstance'
     const refToInstance = new InstanceElement(
@@ -159,24 +188,79 @@ describe('Custom Object Instances References filter', () => {
       masterObj,
       {
         Id: 'masterToId',
+        MasterDetailExample: '',
       },
     )
-    const originalElements = [
+    const duplicateInstName = 'duplicateInstance'
+    const firstDupInst = new InstanceElement(
+      duplicateInstName,
+      refToObj,
+      {
+        Id: 'duplicateId-1',
+      },
+    )
+    const secondDupInst = new InstanceElement(
+      duplicateInstName,
+      refToObj,
+      {
+        Id: 'duplicateId-2',
+      },
+    )
+    const refFromToDupName = 'refFromToDuplicateInstance'
+    const refFromToDupInst = new InstanceElement(
+      refFromToDupName,
+      refFromObj,
+      {
+        Id: 'toDuplicate',
+        LookupExample: 'duplicateId-1',
+        MasterDetailExample: 'duplicateId-2',
+      }
+    )
+    const refFromToRefToDupName = 'refFromToRefToDupInstance'
+    const refFromToRefToDupInst = new InstanceElement(
+      refFromToRefToDupName,
+      refFromObj,
+      {
+        Id: 'toToDuplicate',
+        LookupExample: 'toDuplicate',
+      }
+    )
+    const objects = [
       refFromObj,
       refToObj,
       masterObj,
+    ]
+    const legalInstances = [
       refToInstance,
       refFromInstance,
       masterToInstance,
-      refFromEmptyRefsInstance,
     ]
+    const illegalInstances = [
+      refFromEmptyRefsInstance,
+      firstDupInst,
+      secondDupInst,
+    ]
+    const sideEffectIllegalInstances = [
+      refFromToDupInst,
+      refFromToRefToDupInst,
+    ]
+    const allElements = [
+      ...objects,
+      ...legalInstances,
+      ...illegalInstances,
+      ...sideEffectIllegalInstances,
+    ]
+    let errors: SaltoError[]
     beforeAll(async () => {
-      elements = originalElements.map(e => e.clone())
-      await filter.onFetch(elements)
+      elements = allElements.map(e => e.clone())
+      const fetchResult = await filter.onFetch(elements)
+      if (fetchResult) {
+        errors = fetchResult.errors ?? []
+      }
     })
 
-    it('should not change # of elements, the objects and the ref to instances', () => {
-      expect(elements.length).toEqual(originalElements.length)
+    it('Should drop the illegal instances and not change the objects and the ref to instances', () => {
+      expect(elements.length).toEqual(objects.length + legalInstances.length)
 
       // object types
       expect(elements.find(e => e.elemID.isEqual(refFromElemID))).toMatchObject(refFromObj)
@@ -200,16 +284,44 @@ describe('Custom Object Instances References filter', () => {
         .toEqual(new ReferenceExpression(masterToInstance.elemID))
     })
 
-    it('should keep the value if "empty" ref (no instance with this id)', () => {
+    it('should drop the referencing instance if ref is to non existing instance', () => {
       const afterFilterEmptyRefToInst = elements.find(
         e => e.elemID.isEqual(refFromEmptyRefsInstance.elemID)
       )
-      expect(afterFilterEmptyRefToInst).toBeDefined()
-      expect(isInstanceElement(afterFilterEmptyRefToInst)).toBeTruthy()
-      expect((afterFilterEmptyRefToInst as InstanceElement).value.LookupExample)
-        .toEqual(refFromEmptyRefsValues.LookupExample)
-      expect((afterFilterEmptyRefToInst as InstanceElement).value.MasterDetailExample)
-        .toEqual(refFromEmptyRefsValues.MasterDetailExample)
+      expect(afterFilterEmptyRefToInst).toBeUndefined()
+    })
+
+    it('should drop instances with duplicate elemIDs', () => {
+      const afterFilterFirstDup = elements.find(
+        e => e.elemID.isEqual(firstDupInst.elemID)
+      )
+      const afterFilterSecondDup = elements.find(
+        e => e.elemID.isEqual(secondDupInst.elemID)
+      )
+      expect(afterFilterFirstDup).toBeUndefined()
+      expect(afterFilterSecondDup).toBeUndefined()
+    })
+    it('should drop instances with ref to instances that have elemID duplications', () => {
+      const afterFilterRefFromToDup = elements.find(
+        e => e.elemID.isEqual(refFromToDupInst.elemID)
+      )
+      expect(afterFilterRefFromToDup).toBeUndefined()
+    })
+    it('should drop instances with ref to instances that have refs to inst with elemID duplications', () => {
+      const afterFilterRefFromToRefToDup = elements.find(
+        e => e.elemID.isEqual(refFromToRefToDupInst.elemID)
+      )
+      expect(afterFilterRefFromToRefToDup).toBeUndefined()
+    })
+    it('Should have warnings that include all illegal instances names/Ids', () => {
+      expect(errors).toBeDefined()
+      illegalInstances.forEach(instance => {
+        const errorMessages = errors.map(error => error.message)
+        const warningsIncludeNameOrId = errorMessages.some(
+          errorMsg => errorMsg.includes(instance.elemID.name)
+        ) || errorMessages.some(errorMsg => errorMsg.includes(instance.value.Id))
+        expect(warningsIncludeNameOrId).toBeTruthy()
+      })
     })
   })
 })

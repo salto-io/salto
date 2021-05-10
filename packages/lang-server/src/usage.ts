@@ -93,7 +93,7 @@ export const getReferencingFiles = async (
 ): Promise<string[]> => {
   try {
     const id = ElemID.fromFullName(fullName)
-    return workspace.getElementReferencedFiles(id)
+    return await workspace.getElementReferencedFiles(id)
   } catch (e) {
     return []
   }

@@ -19,18 +19,11 @@ const deepMerge = require('../../build_utils/deep_merge')
 module.exports = deepMerge(
   require('../../eslintrc.js'),
   {
-    overrides: [
-      {
-        files: ['*.ts'],
-        parserOptions: {
-          tsconfigRootDir: __dirname,
-          project: path.resolve(__dirname, './tsconfig.json'),
-        },
-      }
-    ],
     parserOptions: {
-      project: [],
-    }
+      tsconfigRootDir: __dirname,
+      project: path.resolve(__dirname, './tsconfig.json'),
+    },
+    ignorePatterns: ['jest-dynalite-config.js']
   },
 )
 

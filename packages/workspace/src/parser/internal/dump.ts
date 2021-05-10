@@ -76,7 +76,7 @@ const dumpObject = (
   obj: Value, indentationLevel = 0,
 ): string[] => {
   const attributes = _.toPairs(obj).map(
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    // eslint-disable-next-line no-use-before-define
     attr => dumpAttr(attr, indentationLevel + 1)
   )
   const res = [`${createIndentation(indentationLevel)}${O_OBJ}`]
@@ -87,7 +87,7 @@ const dumpObject = (
 
 const dumpArray = (arr: Value, indentationLevel = 0): string[] => {
   const items = separateByCommas(arr.map(
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    // eslint-disable-next-line no-use-before-define
     (val: Value) => dumpValue(val, indentationLevel + 1)
   ))
   const res = [`${createIndentation(indentationLevel)}${O_ARR}`]

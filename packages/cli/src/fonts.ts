@@ -19,6 +19,7 @@ export enum Font { 'Standard' }
 
 const fontsDir = path.join(__dirname, '..', '..', '..', '..', 'node_modules', 'figlet', 'fonts')
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 const fontValues = Object.keys(Font).map(k => Font[k]).filter(k => typeof k === 'number')
 

@@ -27,6 +27,7 @@ import { SourceMap } from '../../source_map'
 import { Functions } from '../../functions'
 import { TopLevelElementData, NearleyError } from './converter/types'
 import { startParse, setErrorRecoveryMode, replaceValuePromises } from './converter/context'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import grammar from '../../../generated/hcl'
 

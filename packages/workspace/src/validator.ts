@@ -70,7 +70,7 @@ const validateAnnotations = async (
 Promise<ValidationError[]> => {
   if (isObjectType(type)) {
     return awu(Object.keys(type.fields)).flatMap(
-      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      // eslint-disable-next-line no-use-before-define
       async k => validateFieldAnnotations(
         elemID.createNestedID(k),
         value[k],
@@ -431,7 +431,7 @@ const validateValue = async (
     }
     const objType = toObjectType(type, value)
     return (await Promise.all(Object.keys(value).filter(k => objType.fields[k] !== undefined).map(
-      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      // eslint-disable-next-line no-use-before-define
       k => validateFieldValue(elemID.createNestedID(k), value[k], objType.fields[k], elementsSource)
     ))).flat()
   }

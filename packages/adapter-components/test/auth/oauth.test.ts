@@ -32,7 +32,7 @@ describe('oauth', () => {
       mockAxiosAdapter.onPost(
         '/oauth/token',
       ).reply(200, {
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         access_token: 'token123', expires_in: 3599, token_type: 'bearer', scope: 'abc def',
       })
 
@@ -68,7 +68,7 @@ describe('oauth', () => {
       mockAxiosAdapter.onPost(
         '/oauth/token',
       ).reply(200, {
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         access_token: 'token123', expires_in: 3599, token_type: 'mac', scope: 'abc def',
       })
 
@@ -85,7 +85,7 @@ describe('oauth', () => {
       ).reply(503).onPost(
         '/oauth/token',
       ).reply(200, {
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         access_token: 'token123', expires_in: 3599, token_type: 'bearer', scope: 'abc def',
       })
 
@@ -100,7 +100,7 @@ describe('oauth', () => {
       mockAxiosAdapter.onPost(
         '/custom_oauth_endpoint',
       ).reply(200, {
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         access_token: 'token123', expires_in: 3599, token_type: 'bearer', scope: 'abc def',
       })
 

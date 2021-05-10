@@ -29,12 +29,12 @@ export class TreeMap<T> implements Map<string, T[]> {
     wu(entries).forEach(([key, value]) => this.push(key, ...value))
   }
 
-  protected static getFromPath = <T>(
-    data: TreeMapEntry<T>,
+  protected static getFromPath = <S>(
+    data: TreeMapEntry<S>,
     path: string[],
     createIfMissing = false,
     returnPartial = false
-  ): TreeMapEntry<T> | undefined => {
+  ): TreeMapEntry<S> | undefined => {
     if (_.isEmpty(path)) {
       return data
     }
@@ -48,37 +48,37 @@ export class TreeMap<T> implements Map<string, T[]> {
     return returnPartial ? data : undefined
   }
 
-  protected static mergeEntries = <T>(src: TreeMapEntry<T>, target: TreeMapEntry<T>): void => {
+  protected static mergeEntries = <S>(src: TreeMapEntry<S>, target: TreeMapEntry<S>): void => {
     src.value.push(...target.value)
     _.entries(target.children).forEach(([key, value]) => {
       if (key in src.children) {
-        TreeMap.mergeEntries(src.children[key] as TreeMapEntry<T>, value)
+        TreeMap.mergeEntries(src.children[key] as TreeMapEntry<S>, value)
       } else {
         src.children[key] = value
       }
     })
   }
 
-  protected static mountToPath = <T>(
-    data: TreeMapEntry<T>,
+  protected static mountToPath = <S>(
+    data: TreeMapEntry<S>,
     path: string[],
-    value: TreeMapEntry<T>
+    value: TreeMapEntry<S>
   ): void => {
-    const target = TreeMap.getFromPath(data, path, true) as TreeMapEntry<T>
+    const target = TreeMap.getFromPath(data, path, true) as TreeMapEntry<S>
     TreeMap.mergeEntries(target, value)
   }
 
-  protected static setToPath = <T>(
-    data: TreeMapEntry<T>,
+  protected static setToPath = <S>(
+    data: TreeMapEntry<S>,
     path: string[],
-    value: T[]
+    value: S[]
   ): void => {
-    const target = TreeMap.getFromPath(data, path, true) as TreeMapEntry<T>
+    const target = TreeMap.getFromPath(data, path, true) as TreeMapEntry<S>
     target.value = value
   }
 
-  private iterEntry<T>(
-    entry: TreeMapEntry<T>,
+  private iterEntry<S>(
+    entry: TreeMapEntry<S>,
     prefix: string[] = []
   ): WuIterable<[string, T[]]> {
     const childEntries = wu.entries(entry.children)

@@ -70,7 +70,7 @@ import * as constants from '../constants'
 
 '''
 
-DISABLE_LINT_CAMEL_CASE = '''/* eslint-disable @typescript-eslint/camelcase */
+DISABLE_LINT_CAMEL_CASE = '''/* eslint-disable camelcase */
 '''
 
 DISABLE_LINT_LINE_LENGTH = '''/* eslint-disable max-len */

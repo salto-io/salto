@@ -37,7 +37,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
     // fix flowMetadataValue - mark restriction values as not enforced, see: SALTO-93
     const flowMetadataValue = findObjectType(elements, FLOW_METADATA_TYPE_ID)
     if (flowMetadataValue && flowMetadataValue.fields.name) {
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       getRestriction(flowMetadataValue.fields.name).enforce_value = false
     }
   },

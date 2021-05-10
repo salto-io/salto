@@ -50,7 +50,7 @@ const getResolvedElement = async (
      ?? await elementsSource.get(elemID)
 
   if (unresolvedElement !== undefined) {
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    // eslint-disable-next-line no-use-before-define
     return resolveElement(
       unresolvedElement,
       elementsSource,
@@ -70,7 +70,7 @@ const resolveMaybeExpression: Resolver<Value> = async (
   visited: Set<string> = new Set<string>(),
 ): Promise<Value> => {
   if (isReferenceExpression(value)) {
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    // eslint-disable-next-line no-use-before-define
     return resolveReferenceExpression(
       value,
       elementsSource,

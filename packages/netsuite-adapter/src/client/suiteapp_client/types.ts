@@ -78,11 +78,10 @@ export type RestletErrorResults = {
   error?: Values
 }
 
-export const isError = (results: RestletResults): results is RestletErrorResults =>
-  results.status === 'error'
-
 export type RestletResults = RestletSuccessResults | RestletErrorResults
 
+export const isError = (results: RestletResults): results is RestletErrorResults =>
+  results.status === 'error'
 
 export type HttpMethod = 'POST' | 'GET'
 

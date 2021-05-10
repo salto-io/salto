@@ -23,6 +23,7 @@ export type NodeId = collections.set.SetId
 export class CircularDependencyError extends Error {
   public readonly causingNodeIds: NodeId[]
 
+  // eslint-disable-next-line no-use-before-define
   constructor(nodes: AbstractNodeMap) {
     super(`Circular dependencies exist among these items: ${nodes}`)
     this.causingNodeIds = [...nodes.keys()]
@@ -70,6 +71,7 @@ const promiseAllToSingle = (promises: Iterable<Promise<void>>): Promise<void> =>
   Promise.all(promises).then(() => undefined)
 
 class WalkErrors extends Map<NodeId, Error> {
+  // eslint-disable-next-line no-use-before-define
   constructor(readonly nodeMap: AbstractNodeMap) {
     super()
   }

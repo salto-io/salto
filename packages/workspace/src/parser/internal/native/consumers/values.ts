@@ -224,7 +224,7 @@ const consumeArrayItems = (
   while (context.lexer.peek()?.type !== closingTokenType) {
     const itemIndex = items.length
     const itemId = idPrefix?.createNestedID(itemIndex.toString())
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    // eslint-disable-next-line no-use-before-define
     const consumedValue = consumeValue(context, itemId, TOKEN_TYPES.COMMA)
     if (context.lexer.peek()?.type === TOKEN_TYPES.COMMA) {
       context.lexer.next()
@@ -377,7 +377,7 @@ const consumeObject = (context: ParseContext, idPrefix?: ElemID): ConsumerReturn
     }
     // consume the token
     context.lexer.next()
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    // eslint-disable-next-line no-use-before-define
     const consumedValue = consumeValue(context, attrId)
     if (obj[key] === undefined) {
       obj[key] = consumedValue.value

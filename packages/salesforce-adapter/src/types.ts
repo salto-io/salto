@@ -52,22 +52,6 @@ export type MetadataParams = {
   exclude?: MetadataQueryParams[]
 }
 
-export type FetchParameters = {
-  metadata?: MetadataParams
-  data?: DataManagementConfig
-  fetchAllCustomSettings?: boolean
-  target?: string[]
-}
-
-export type DeprecatedMetadataParams = {
-  [METADATA_TYPES_SKIPPED_LIST]?: string[]
-  [INSTANCES_REGEX_SKIPPED_LIST]?: string[]
-}
-
-export type DeprecatedFetchParameters = {
-  [DATA_MANAGEMENT]?: DataManagementConfig
-} & DeprecatedMetadataParams
-
 type ObjectIdSettings = {
   objectsRegex: string
   idFields: string[]
@@ -84,6 +68,22 @@ export type DataManagementConfig = {
   allowReferenceTo?: string[]
   saltoIDSettings: SaltoIDSettings
 }
+
+export type FetchParameters = {
+  metadata?: MetadataParams
+  data?: DataManagementConfig
+  fetchAllCustomSettings?: boolean
+  target?: string[]
+}
+
+export type DeprecatedMetadataParams = {
+  [METADATA_TYPES_SKIPPED_LIST]?: string[]
+  [INSTANCES_REGEX_SKIPPED_LIST]?: string[]
+}
+
+export type DeprecatedFetchParameters = {
+  [DATA_MANAGEMENT]?: DataManagementConfig
+} & DeprecatedMetadataParams
 
 export type ClientRateLimitConfig = Partial<{
   total: number
@@ -134,16 +134,11 @@ export type SalesforceConfig = {
   [CLIENT_CONFIG]?: SalesforceClientConfig
 }
 
-export type ConfigChangeSuggestion = DataManagementConfigSuggestions | MetadataConfigSuggestion
-
 type DataManagementConfigSuggestions = {
   type: 'dataObjectsExclude'
   value: string
   reason?: string
 }
-
-export const isDataManagementConfigSuggestions = (suggestion: ConfigChangeSuggestion):
-  suggestion is DataManagementConfigSuggestions => suggestion.type === 'dataObjectsExclude'
 
 export type MetadataConfigSuggestion = {
   type: 'metadataExclude'
@@ -151,9 +146,13 @@ export type MetadataConfigSuggestion = {
   reason?: string
 }
 
+export type ConfigChangeSuggestion = DataManagementConfigSuggestions | MetadataConfigSuggestion
+
+export const isDataManagementConfigSuggestions = (suggestion: ConfigChangeSuggestion):
+  suggestion is DataManagementConfigSuggestions => suggestion.type === 'dataObjectsExclude'
+
 export const isMetadataConfigSuggestions = (suggestion: ConfigChangeSuggestion):
   suggestion is MetadataConfigSuggestion => suggestion.type === 'metadataExclude'
-
 
 export type FetchElements<T> = {
   configChanges: ConfigChangeSuggestion[]

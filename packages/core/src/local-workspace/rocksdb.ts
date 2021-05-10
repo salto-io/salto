@@ -23,11 +23,11 @@ const requireOrExtract = (externalsLocation: string): any => {
     // eslint-disable-next-line global-require
     return require('rocksdb')
   } catch {
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     if (typeof __non_webpack_require__ !== 'undefined') {
       const extractedModuleLocation = path.join(externalsLocation, 'rocksdb')
       rimraf.sync(externalsLocation)
-      // eslint-disable-next-line no-undef, @typescript-eslint/camelcase
+      // eslint-disable-next-line no-undef, camelcase
       fsExtra.copySync(path.dirname(__non_webpack_require__.resolve('rocksdb')), extractedModuleLocation,
         { dereference: true })
       // eslint-disable-next-line no-undef

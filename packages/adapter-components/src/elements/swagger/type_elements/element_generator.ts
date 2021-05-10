@@ -77,7 +77,7 @@ const typeAdder = ({
   ): ObjectType | ListType | PrimitiveType => {
     if (!isReferenceObject(schemaDef)) {
       if (isArraySchemaObject(schemaDef)) {
-        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        // eslint-disable-next-line no-use-before-define
         return new ListType(addType(
           schemaDef.items,
           nestedName,
@@ -94,7 +94,7 @@ const typeAdder = ({
         return BuiltinTypes.UNKNOWN
       }
     }
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    // eslint-disable-next-line no-use-before-define
     return addType(
       schemaDef,
       nestedName,

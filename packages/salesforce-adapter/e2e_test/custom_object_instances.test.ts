@@ -34,7 +34,7 @@ import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
 
 const { awu } = collections.asynciterable
 
-/* eslint-disable @typescript-eslint/camelcase */
+/* eslint-disable camelcase */
 describe('custom object instances e2e', () => {
   // Set long timeout as we communicate with salesforce API
   jest.setTimeout(1000000)

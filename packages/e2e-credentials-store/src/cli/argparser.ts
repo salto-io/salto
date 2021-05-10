@@ -78,6 +78,7 @@ const argparser = ({ adapters, stdout, stderr, createRepo }: ParserOpts): Parser
 
   const showHelp = (
     stream: Writable
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
   ): void => parser.showHelp(s => writeLine(stream, `Usage: ${s}`))
 

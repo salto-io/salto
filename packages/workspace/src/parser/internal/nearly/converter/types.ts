@@ -17,6 +17,24 @@ import { Element, Value, Values, TypeMap } from '@salto-io/adapter-api'
 import { SourceMap } from '../../../source_map'
 import { SourceRange } from '../../types'
 
+
+export interface InternalParseRes<T> {
+  value: T
+  source: SourceRange
+  sourceMap?: SourceMap
+}
+
+
+export type LexerToken = {
+  type: string
+  value: string
+  text: string
+  line: number
+  lineBreaks: number
+  col: number
+  offset: number
+}
+
 export type Token = LexerToken | InternalParseRes<Value>
 
 export type NearleyErrorToken = Partial<InternalParseRes<Value> & LexerToken>
@@ -36,12 +54,6 @@ export interface ValuePromiseWatcher {
     key: string | number
   }
 
-export interface InternalParseRes<T> {
-    value: T
-    source: SourceRange
-    sourceMap?: SourceMap
-  }
-
 export type AttrData = [string, Value]
 
 export type FieldData = {
@@ -56,17 +68,6 @@ export type TopLevelElementData = {
   }
 
 export type ElementItem = AttrData | FieldData | TypeMap
-
-export type LexerToken = {
-    type: string
-    value: string
-    text: string
-    line: number
-    lineBreaks: number
-    col: number
-    offset: number
-}
-
 
 export const isLexerToken = (token: Token): token is LexerToken => 'value' in token
     && 'text' in token

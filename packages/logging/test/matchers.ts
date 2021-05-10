@@ -21,8 +21,9 @@ const toContainColors: (
     : { pass: false, message: () => `expected "${received} to contain colors` }
 )
 
-// eslint-disable-next-line @typescript-eslint/no-namespace
+// eslint-disable-next-line @typescript-eslint/no-namespace, @typescript-eslint/no-unused-vars
 declare namespace jest {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface Matchers<R, T> {
     toContainColors: typeof toContainColors
   }

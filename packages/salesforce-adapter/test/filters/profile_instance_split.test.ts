@@ -59,11 +59,11 @@ describe('Profile Instance Split filter', () => {
               },
             },
             layoutAssignments: {
-              // eslint-disable-next-line @typescript-eslint/camelcase
+              // eslint-disable-next-line camelcase
               Account_Account_Layout: [
                 { layout: 'Account-Account Layout' },
               ],
-              // eslint-disable-next-line @typescript-eslint/camelcase
+              // eslint-disable-next-line camelcase
               Account_random_characters_aaa___bbb: [
                 { layout: 'Account-random characters %3B%2E%2B%3F%22aaa%27_%2B- bbb', recordType: 'something' },
               ],

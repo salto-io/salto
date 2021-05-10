@@ -59,11 +59,11 @@ export const oauthClientCredentialsBearerToken = async ({
   const res = await httpClient.post(
     endpoint,
     qs.stringify({
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       client_id: clientId,
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       client_secret: clientSecret,
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       grant_type: 'client_credentials',
     }),
   )

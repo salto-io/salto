@@ -45,16 +45,18 @@ type CommandAction = (args: CliArgs & { commanderInput: any[] }) => Promise<void
 
 export type CommandsGroupDef = {
   properties: BasicCommandProperties
+  // eslint-disable-next-line no-use-before-define
   subCommands: CommandOrGroupDef[]
 }
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export type CommandOrGroupDef = CommandsGroupDef | CommandDef<any>
 
 export type CommandDef<T> = {
   properties: CommandOptions<T>
   action: CommandAction
 }
+
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export type CommandOrGroupDef = CommandsGroupDef | CommandDef<any>
 
 export type CommandArgs = Omit<CliArgs, 'telemetry'> & { cliTelemetry: CliTelemetry }
 

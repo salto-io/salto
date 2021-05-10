@@ -29,11 +29,11 @@ describe('swagger_type_elements', () => {
     const expectedParsedConfigs = {
       Order: { request: { url: '/store/order/{orderId}' } },
       Pet: { request: { url: '/pet/{petId}' } },
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       pet__findByStatus: { request: { url: '/pet/findByStatus' } },
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       pet__findByTags: { request: { url: '/pet/findByTags' } },
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       store__inventory: { request: { url: '/store/inventory' } },
       User: { request: { url: '/user/{username}' } },
       Food: { request: { url: '/food/{foodId}' } },
@@ -223,13 +223,13 @@ describe('swagger_type_elements', () => {
         // no Pet2 because it does not have a request config
         const updatedExpectedParsedConfigs = {
           Order: { request: { url: '/store/order/{orderId}' } },
-          // eslint-disable-next-line @typescript-eslint/camelcase
+          // eslint-disable-next-line camelcase
           Pet__new: { request: { url: '/pet/{petId}' } },
-          // eslint-disable-next-line @typescript-eslint/camelcase
+          // eslint-disable-next-line camelcase
           pet__findByStatus: { request: { url: '/pet/findByStatus' } },
-          // eslint-disable-next-line @typescript-eslint/camelcase
+          // eslint-disable-next-line camelcase
           PetByTag: { request: { url: '/pet/findByTags' } },
-          // eslint-disable-next-line @typescript-eslint/camelcase
+          // eslint-disable-next-line camelcase
           store__inventory: { request: { url: '/store/inventory' } },
           User: { request: { url: '/user/{username}' } },
           Food: { request: { url: '/food/{foodId}' } },

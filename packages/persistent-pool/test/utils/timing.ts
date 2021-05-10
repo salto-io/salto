@@ -20,6 +20,7 @@ type Func<TArgs extends unknown[], TReturn> = (...args: TArgs) => TReturn
 export type InvocationsMeasurements = number[]
 
 export type Timings = {
+  // eslint-disable-next-line @typescript-eslint/ban-types
   setup: <T extends {}, M extends types.KeysOfType<T, Function>>(
     objectName: string,
     object: T,
@@ -52,6 +53,7 @@ const timings = (): Timings => {
         : after()
     }
 
+  // eslint-disable-next-line @typescript-eslint/ban-types
   const setup = <T extends {}, M extends types.KeysOfType<T, Function>>(
     objectName: string, object: T, method: M
   ): void => {

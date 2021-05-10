@@ -218,14 +218,15 @@ describe('Transformer', () => {
       mockObjectWithJSON,
       mockValuesWithJSON
     )
-    interface JSONMetadata extends HubspotMetadata {
-      jsonType: JSONType
-      jsonTypeFileValue: JSONType
-    }
     interface JSONType {
       a: string
       c: string[]
     }
+    interface JSONMetadata extends HubspotMetadata {
+      jsonType: JSONType
+      jsonTypeFileValue: JSONType
+    }
+
     let hsClient: HubspotClient
     beforeEach(() => {
       const { client } = mockClient()

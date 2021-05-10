@@ -122,6 +122,7 @@ export const serialize = <T = Element>(
   elements: T[],
   referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue'
 ): string => {
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   const saltoClassReplacer = <T extends Serializable>(e: T): T & SerializedClass => {
     // Add property SALTO_CLASS_FIELD
     const o = _.clone(e as T & SerializedClass)

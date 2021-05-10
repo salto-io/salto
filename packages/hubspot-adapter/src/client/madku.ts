@@ -22,6 +22,13 @@ export interface Owner {
   getById(ownerId: number | string, opts?: {}): RequestPromise
 }
 
+export interface HubspotObjectAPI {
+  getAll(opts?: {}): RequestPromise
+  create(data: {}): RequestPromise
+  delete(id: string | number): RequestPromise
+  update?(id: string | number, data: {}): RequestPromise
+}
+
 export interface Form extends HubspotObjectAPI {
   update(guid: string, data: {}): RequestPromise
 }
@@ -47,13 +54,6 @@ export interface Contact extends HubspotObjectAPI {
 
 export interface Integrations {
   getAccountDetails(): RequestPromise
-}
-
-export interface HubspotObjectAPI {
-  getAll(opts?: {}): RequestPromise
-  create(data: {}): RequestPromise
-  delete(id: string | number): RequestPromise
-  update?(id: string | number, data: {}): RequestPromise
 }
 
 export default interface Connection {

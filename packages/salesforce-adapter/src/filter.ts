@@ -41,10 +41,6 @@ export type Filter = Partial<{
 
 export type FilterWith<M extends keyof Filter> = types.HasMember<Filter, M>
 
-export type FilterCreator = (
-  opts: { client: SalesforceClient; config: FilterContext }
-) => Filter
-
 export type FilterContext = {
   unsupportedSystemFields?: string[]
   systemFields?: string[]
@@ -52,6 +48,10 @@ export type FilterContext = {
   fetchProfile: FetchProfile
   elementsSource: ReadOnlyElementsSource
 }
+
+export type FilterCreator = (
+  opts: { client: SalesforceClient; config: FilterContext }
+) => Filter
 
 export const filtersRunner = (client: SalesforceClient,
   config: FilterContext,

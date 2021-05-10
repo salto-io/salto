@@ -48,15 +48,15 @@ export const ADAPTERS_CONFIGS_PATH = 'adapters'
 export const COMMON_ENV_PREFIX = ''
 const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
 
-export type WorkspaceError<T extends SaltoError> = Readonly<T & {
-  sourceFragments: SourceFragment[]
-}>
-
 export type SourceFragment = {
   sourceRange: SourceRange
   fragment: string
   subRange?: SourceRange
 }
+
+export type WorkspaceError<T extends SaltoError> = Readonly<T & {
+  sourceFragments: SourceFragment[]
+}>
 
 type RecencyStatus = 'Old' | 'Nonexistent' | 'Valid'
 export type StateRecency = {

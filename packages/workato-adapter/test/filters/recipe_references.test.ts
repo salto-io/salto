@@ -23,7 +23,7 @@ import { paginate } from '../../src/client/pagination'
 import { DEFAULT_TYPES, DEFAULT_ID_FIELDS } from '../../src/config'
 import { WORKATO } from '../../src/constants'
 
-/* eslint-disable @typescript-eslint/camelcase */
+/* eslint-disable camelcase */
 
 describe('Recipe references filter', () => {
   let client: WorkatoClient

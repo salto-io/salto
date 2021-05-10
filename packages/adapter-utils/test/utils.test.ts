@@ -1424,9 +1424,9 @@ describe('Test utils.ts', () => {
     const ot = new ObjectType({
       elemID: otID,
       fields: {
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         num_field: { refType: createRefToElmWithValue(primNum) },
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         str_field: { refType: createRefToElmWithValue(primStr) },
       },
       annotationRefsOrTypes: {},

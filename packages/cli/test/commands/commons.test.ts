@@ -56,11 +56,11 @@ describe('Commands commons tests', () => {
     describe('with valid arguments from command line and env vars', () => {
       let changes: ReadonlyArray<DetailedChange>
       const envConfig = {
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         SALTO_CONFIG_env_str: 'str',
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         SALTO_CONFIG_env_num: '12',
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         SALTO_CONFIG_env_nested_bool: 'false',
       }
       beforeEach(() => {
@@ -108,11 +108,11 @@ describe('Commands commons tests', () => {
     describe('with invalid environment variable format', () => {
       let changes: DetailedChange[]
       const envConfig = {
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         SALTO_CONFIG_empty: '',
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         NOT_SALTO_CONFIG_env_num: '12',
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         SALTO_CONFIG: 'false',
       }
       beforeEach(() => {

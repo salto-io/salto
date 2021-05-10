@@ -58,6 +58,13 @@ export type PostFetchOptions = {
 }
 
 
+export type ChangeError = SaltoElementError & {
+  detailedMessage: string
+}
+
+export type ChangeValidator = (changes: ReadonlyArray<Change>) =>
+  Promise<ReadonlyArray<ChangeError>>
+
 export type DeployModifiers = {
   changeValidator?: ChangeValidator
   dependencyChanger?: DependencyChanger
@@ -73,6 +80,10 @@ export type AdapterOperations = {
 
 export type AdapterOperationName = keyof AdapterOperations
 
+export type ServiceIds = Record<string, string>
+
+export type ElemIdGetter = (adapterName: string, serviceIds: ServiceIds, name: string) => ElemID
+
 export type AdapterOperationsContext = {
   credentials: InstanceElement
   config?: InstanceElement
@@ -80,19 +91,14 @@ export type AdapterOperationsContext = {
   elementsSource: ReadOnlyElementsSource
 }
 
-export type ChangeError = SaltoElementError & {
-  detailedMessage: string
-}
-
-export type ChangeValidator = (changes: ReadonlyArray<Change>) =>
-  Promise<ReadonlyArray<ChangeError>>
-
 export type AdapterSuccessInstallResult = { success: true; installedVersion: string }
 export type AdapterFailureInstallResult = { success: false; errors: string[] }
 export type AdapterInstallResult = AdapterSuccessInstallResult | AdapterFailureInstallResult
 
 export const isAdapterSuccessInstallResult = (result: AdapterInstallResult):
   result is AdapterSuccessInstallResult => result.success
+
+export type AccountId = string
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
@@ -107,8 +113,5 @@ export const ADAPTER = 'adapter'
 export const OBJECT_NAME = 'object_name'
 export const FIELD_NAME = 'field_name'
 export const INSTANCE_NAME = 'instance_name'
-export type ServiceIds = Record<string, string>
 export const toServiceIdsString = (serviceIds: ServiceIds): string =>
   Object.entries(serviceIds).sort().toString()
-export type ElemIdGetter = (adapterName: string, serviceIds: ServiceIds, name: string) => ElemID
-export type AccountId = string

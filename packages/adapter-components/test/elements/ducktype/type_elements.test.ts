@@ -19,7 +19,7 @@ import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { generateType, toNestedTypeName } from '../../../src/elements/ducktype'
 import { TYPES_PATH, SUBTYPES_PATH } from '../../../src/elements'
 
-/* eslint-disable @typescript-eslint/camelcase */
+/* eslint-disable camelcase */
 const ADAPTER_NAME = 'myAdapter'
 
 describe('ducktype_type_elements', () => {

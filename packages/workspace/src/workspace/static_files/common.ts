@@ -15,6 +15,13 @@
 */
 import { StaticFile, Value } from '@salto-io/adapter-api'
 
+export abstract class InvalidStaticFile {
+  constructor(
+    public readonly message: string,
+  ) {
+  }
+}
+
 export type StaticFilesSource = {
   getStaticFile: (filepath: string, encoding: BufferEncoding) =>
     Promise<StaticFile | InvalidStaticFile>
@@ -26,13 +33,6 @@ export type StaticFilesSource = {
   getTotalSize: () => Promise<number>
   clone: () => StaticFilesSource
   delete: (staticFile: StaticFile) => Promise<void>
-}
-
-export abstract class InvalidStaticFile {
-  constructor(
-    public readonly message: string,
-  ) {
-  }
 }
 
 export class MissingStaticFile extends InvalidStaticFile {

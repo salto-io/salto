@@ -25,11 +25,15 @@ export type SalesforceBlock = {
   as: string
   provider: 'salesforce' | 'salesforce_secondary'
   dynamicPickListSelection: {
+    // eslint-disable-next-line camelcase
     sobject_name: string
+    // eslint-disable-next-line camelcase
     field_list?: RefListItem[]
+    // eslint-disable-next-line camelcase
     table_list?: RefListItem[]
   }
   input: {
+    // eslint-disable-next-line camelcase
     sobject_name: string
   }
 }
@@ -37,10 +41,13 @@ export type SalesforceBlock = {
 export type NetsuiteBlock = {
   provider: 'netsuite' | 'netsuite_secondary'
   dynamicPickListSelection: {
+    // eslint-disable-next-line camelcase
     netsuite_object: string
+    // eslint-disable-next-line camelcase
     custom_list?: RefListItem[]
   }
   input?: {
+    // eslint-disable-next-line camelcase
     netsuite_object: string
   }
 }

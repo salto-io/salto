@@ -18,6 +18,7 @@ import { Repo, Pool, LeaseWithStatus } from '../src/index'
 
 const mockFunc = <
   T,
+  // eslint-disable-next-line @typescript-eslint/ban-types
   FN extends types.KeysOfType<T, Function>,
   F extends T[FN] = T[FN],
   RT extends ReturnType<F> = ReturnType<F>,
@@ -31,6 +32,7 @@ export type MockObj<T> = T & {
 
 const mockPoolFunc = <
   T,
+  // eslint-disable-next-line @typescript-eslint/ban-types
   FN extends types.KeysOfType<Pool<T>, Function>,
   F extends Pool<T>[FN] = Pool<T>[FN],
   >(): jest.Mock<ReturnType<F>, Parameters<F>> => mockFunc<Pool<T>, FN>()

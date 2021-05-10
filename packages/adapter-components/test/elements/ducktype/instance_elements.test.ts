@@ -20,7 +20,7 @@ import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { toInstance } from '../../../src/elements/ducktype'
 import { RECORDS_PATH } from '../../../src/elements/constants'
 
-/* eslint-disable @typescript-eslint/camelcase */
+/* eslint-disable camelcase */
 const ADAPTER_NAME = 'myAdapter'
 
 const type = new ObjectType({

@@ -60,7 +60,7 @@ const generateNestedType = ({
   const name = toNestedTypeName(parentName, typeName)
   if (validEntries.length > 0) {
     if (validEntries.every(entry => Array.isArray(entry))) {
-      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      // eslint-disable-next-line no-use-before-define
       const nestedType = generateNestedType({
         adapterName,
         typeName,
@@ -79,7 +79,7 @@ const generateNestedType = ({
     }
 
     if (validEntries.every(entry => _.isObjectLike(entry))) {
-      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      // eslint-disable-next-line no-use-before-define
       return generateType({
         adapterName,
         name,

@@ -64,6 +64,10 @@ const DEFAULT_TELEMETRY_CONFIG: TelemetryConfig = {
   enabled: !telemetryDisabled(),
 }
 
+export type CommandConfig = {
+  shouldCalcTotalSize: boolean
+}
+
 const DEFAULT_COMMAND_CONFIG: CommandConfig = {
   shouldCalcTotalSize: true,
 }
@@ -75,10 +79,6 @@ const configHomeDir = (): string => (
 const configFullPath = (): string => path.join(configHomeDir(), CONFIG_FILENAME)
 
 const generateInstallationID = (): string => uuidv4()
-
-export type CommandConfig = {
-  shouldCalcTotalSize: boolean
-}
 
 export type AppConfig = {
   installationID: string

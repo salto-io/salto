@@ -75,6 +75,8 @@ export const rules: Record<string, moo.Rules> = {
   },
 }
 
+export type LexerToken = Required<moo.Token>
+
 export class NoSuchElementError extends Error {
   constructor(public lastValidToken?: LexerToken) {
     super("All of the lexer's token has already been consumed.")
@@ -86,8 +88,6 @@ class InvalidLexerTokenError extends Error {
     super('All lexer tokens must have a type.')
   }
 }
-
-export type LexerToken = Required<moo.Token>
 
 const validateToken = (token?: moo.Token): token is LexerToken => {
   if (token === undefined) {

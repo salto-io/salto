@@ -78,7 +78,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     request: {
       url: '/folders',
       recursiveQueryByResponseField: {
-        // eslint-disable-next-line @typescript-eslint/camelcase
+        // eslint-disable-next-line camelcase
         parent_id: 'id',
       },
       paginationField: 'page',
@@ -87,28 +87,28 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       idFields: ['name', 'parent_id'], // not multienv-friendly - see SALTO-1241
     },
   },
-  // eslint-disable-next-line @typescript-eslint/camelcase
+  // eslint-disable-next-line camelcase
   api_collection: {
     request: {
       url: '/api_collections',
       paginationField: 'page',
     },
   },
-  // eslint-disable-next-line @typescript-eslint/camelcase
+  // eslint-disable-next-line camelcase
   api_endpoint: {
     request: {
       url: '/api_endpoints',
       paginationField: 'page',
     },
   },
-  // eslint-disable-next-line @typescript-eslint/camelcase
+  // eslint-disable-next-line camelcase
   api_client: {
     request: {
       url: '/api_clients',
       paginationField: 'page',
     },
   },
-  // eslint-disable-next-line @typescript-eslint/camelcase
+  // eslint-disable-next-line camelcase
   api_access_profile: {
     request: {
       url: '/api_access_profiles',

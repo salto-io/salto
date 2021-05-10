@@ -19,6 +19,7 @@ import { createWriteStream } from 'fs'
 import { EOL } from 'os'
 import pino, { LevelWithSilent, DestinationStream } from 'pino'
 // Workaround - pino in browser doesn't include pino.stdTimeFunctions
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { isoTime } from 'pino/lib/time'
 import chalk from 'chalk'
@@ -241,6 +242,7 @@ export const loggerRepo = (
           ]
           : [formatted]
 
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         pinoLogger[level](...logArgs)
       },

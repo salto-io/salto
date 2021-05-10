@@ -25,6 +25,11 @@ export type AuthMethod = {
   credentialsType: ObjectType
 }
 
+export type OauthAccessTokenResponse = {
+  instanceUrl: string
+  accessToken: string
+}
+
 export type OAuthMethod = AuthMethod & {
   oauthRequestParameters: ObjectType
   createOAuthRequest: (userInput: InstanceElement) => OAuthRequestParameters
@@ -36,9 +41,5 @@ export type AdapterAuthentication = {
   oauth?: OAuthMethod
 }
 
-export type OauthAccessTokenResponse = {
-  instanceUrl: string
-  accessToken: string
-}
 
 export type AdapterAuthMethod = keyof AdapterAuthentication

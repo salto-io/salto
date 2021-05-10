@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-/* eslint-disable @typescript-eslint/camelcase */
+/* eslint-disable camelcase */
 import { Field, InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'

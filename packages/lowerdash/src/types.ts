@@ -67,7 +67,6 @@ class MyBean extends Bean<{ prop1: string, prop2?: number }> {}
 
 */
 
-// eslint-disable-next-line @typescript-eslint/class-name-casing
 export class _Bean<T> {
   constructor(props: T) {
     Object.assign(this, props)
@@ -75,6 +74,7 @@ export class _Bean<T> {
 }
 
 export type Bean<T> = _Bean<T> & T
+// eslint-disable-next-line no-use-before-define
 export const Bean = _Bean as new <T>(props: T) => Bean<T>
 
 export const isArrayOfType = <T>(

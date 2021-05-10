@@ -13,8 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+/* eslint-disable camelcase */
+
 export interface HubspotMetadata {
   name: string
+}
+
+interface Options {
+  label: string
+  value: string
+  displayOrder: number
+  doubleData: number
+  hidden: boolean
+  description: string
+  readOnly: boolean
 }
 
 export interface ContactProperty extends HubspotMetadata {
@@ -71,6 +83,60 @@ export interface ContactProperty extends HubspotMetadata {
   createdAt: number
 }
 
+export interface FormProperty {
+  // String; The internal name of the property.
+  // The name should be used when referencing the property through the API
+  name: string
+  // String; A human readable label for the property.
+  // The label is used to display the property in the HubSpot UI.
+  label: string
+  description: string
+  // The property group that the property belongs to.
+  groupName: string
+  // String, one of string, number, date, datetime, or enumeration
+  // This needs to match the 'type' field of the corresponding contact property.
+  type: string
+  // String, one of textarea, text, date, file, number, select, radio, checkbox or boolean checkbox
+  // Controls how the property appears in a form when the property is used as a form field.
+  fieldType: string
+  // Required fields must be filled out to submit the form.
+  required: boolean
+  // Hidden fields do not appear in the HubSpot UI
+  hidden: boolean
+  // Whether or not the field is a smart field.
+  // Smart fields are hidden if the visitor is a known contact that already has a value for
+  // the field.
+  isSmartField: boolean
+  // The default value of the field
+  defaultValue: string
+  // For enumerated fields, this will be a list of Strings.
+  // Representing the options that will be selected by default
+  selectedOptions: string[]
+  // For enumerated fields, this will be a list of Strings representing the options for the field
+  // Will be empty for non-enumerated fields.
+  options: Options[]
+  // String; The placeholder text for the field, which will display
+  placeholder: string
+  // Integer; The order to display the fields in.
+  // If the values are negative, the fields appear in the order they appear in the 'fields' list
+  displayOrder: number
+  // A list of filters that will be used to display dependent fields.
+  // eslint-disable-next-line no-use-before-define
+  dependentFieldFilters: DependentFieldFilter[]
+}
+
+interface RichText {
+  content: string
+}
+
+interface PropertyGroup {
+  // A list of fields in the group
+  fields: FormProperty[]
+  default: boolean
+  isSmartGroup: boolean
+  richText: RichText
+}
+
 export interface Form extends HubspotMetadata {
   // String, read-only; The internal ID of the form
   guid: string
@@ -115,28 +181,6 @@ export interface Form extends HubspotMetadata {
   themeName: string
 }
 
-interface PropertyGroup {
-  // A list of fields in the group
-  fields: FormProperty[]
-  default: boolean
-  isSmartGroup: boolean
-  richText: RichText
-}
-
-interface RichText {
-  content: string
-}
-
-interface Options {
-  label: string
-  value: string
-  displayOrder: number
-  doubleData: number
-  hidden: boolean
-  description: string
-  readOnly: boolean
-}
-
 interface RssToEmailTiming {
   repeats: string
   // Integer, what day of the month should the monthly email be sent [1-31]
@@ -146,45 +190,13 @@ interface RssToEmailTiming {
   time: string // time the email should be sent at (9:00 am)
 }
 
-export interface FormProperty {
-  // String; The internal name of the property.
-  // The name should be used when referencing the property through the API
-  name: string
-  // String; A human readable label for the property.
-  // The label is used to display the property in the HubSpot UI.
-  label: string
-  description: string
-  // The property group that the property belongs to.
-  groupName: string
-  // String, one of string, number, date, datetime, or enumeration
-  // This needs to match the 'type' field of the corresponding contact property.
-  type: string
-  // String, one of textarea, text, date, file, number, select, radio, checkbox or boolean checkbox
-  // Controls how the property appears in a form when the property is used as a form field.
-  fieldType: string
-  // Required fields must be filled out to submit the form.
-  required: boolean
-  // Hidden fields do not appear in the HubSpot UI
-  hidden: boolean
-  // Whether or not the field is a smart field.
-  // Smart fields are hidden if the visitor is a known contact that already has a value for
-  // the field.
-  isSmartField: boolean
-  // The default value of the field
-  defaultValue: string
-  // For enumerated fields, this will be a list of Strings.
-  // Representing the options that will be selected by default
-  selectedOptions: string[]
-  // For enumerated fields, this will be a list of Strings representing the options for the field
-  // Will be empty for non-enumerated fields.
-  options: Options[]
-  // String; The placeholder text for the field, which will display
-  placeholder: string
-  // Integer; The order to display the fields in.
-  // If the values are negative, the fields appear in the order they appear in the 'fields' list
-  displayOrder: number
-  // A list of filters that will be used to display dependent fields.
-  dependentFieldFilters: DependentFieldFilter[]
+interface Filter {
+  operator: string
+  strValue: string
+  boolValue: boolean
+  numberValue: number
+  strValues: string[]
+  numberValues: number[]
 }
 
 interface DependentFieldFilter {
@@ -193,13 +205,54 @@ interface DependentFieldFilter {
   formFieldAction: string
 }
 
-interface Filter {
+interface Criteria {
+  filterFamily: string
+  withinTimeMode: string
   operator: string
-  strValue: string
-  boolValue: boolean
-  numberValue: number
-  strValues: string[]
-  numberValues: number[]
+  type: string
+  property: string
+  propertyObjectType: string
+  value: string
+}
+
+interface EventAnchor {
+  staticDateAnchor: string
+  contactPropertyAnchor: string
+}
+
+interface AnchorSetting {
+  execTimeOfDay: string
+  execTimeInMinutes: number
+  boundary: string
+}
+
+interface Action {
+  type: string
+  anchorSetting: AnchorSetting
+  delayMillis: number
+  filterListId: number
+  filters: Criteria[][]
+  newValue: string
+  propertyName: string
+  actionId: number
+  stepId: number
+  body: string
+  staticTo: string
+  acceptActions: Action[]
+  rejectActions: Action[]
+}
+
+interface NurtureTimeRange {
+  enabled: boolean
+  startHour: number
+  stopHour: number
+}
+
+interface ContactListIds {
+  enrolled: number
+  active: number
+  completed: number
+  succeeded: number
 }
 
 export interface Workflows extends HubspotMetadata {
@@ -225,55 +278,6 @@ export interface Workflows extends HubspotMetadata {
   goalCriteria: Criteria[][]
 }
 
-interface Criteria {
-  filterFamily: string
-  withinTimeMode: string
-  operator: string
-  type: string
-  property: string
-  propertyObjectType: string
-  value: string
-}
-
-interface EventAnchor {
-  staticDateAnchor: string
-  contactPropertyAnchor: string
-}
-
-interface Action {
-  type: string
-  anchorSetting: AnchorSetting
-  delayMillis: number
-  filterListId: number
-  filters: Criteria[][]
-  newValue: string
-  propertyName: string
-  actionId: number
-  stepId: number
-  body: string
-  staticTo: string
-  acceptActions: Action[]
-  rejectActions: Action[]
-}
-
-interface AnchorSetting {
-  execTimeOfDay: string
-  execTimeInMinutes: number
-  boundary: string
-}
-
-interface NurtureTimeRange {
-  enabled: boolean
-  startHour: number
-  stopHour: number
-}
-
-interface ContactListIds {
-  enrolled: number
-  active: number
-  completed: number
-  succeeded: number
-}
 
 export interface MarketingEmail extends HubspotMetadata {
   // Whether or not the page is part of an AB test.
@@ -474,6 +478,15 @@ export interface MarketingEmail extends HubspotMetadata {
   workflowNames: []
 }
 
+interface RemoteList {
+  id: number
+  portalId: number
+  ownerId: number
+  remoteId: string
+  remoteType: string
+  active: boolean
+}
+
 export interface Owner {
     portalId: number
     ownerId: number
@@ -489,13 +502,4 @@ export interface Owner {
     activeSalesforceId: number
     remoteList: RemoteList[]
     isActive: boolean
-}
-
-interface RemoteList {
-  id: number
-  portalId: number
-  ownerId: number
-  remoteId: string
-  remoteType: string
-  active: boolean
 }

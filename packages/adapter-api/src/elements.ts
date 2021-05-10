@@ -13,6 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+/* eslint-disable no-use-before-define */
+
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
 
@@ -97,7 +99,7 @@ export abstract class Element {
       refType => (refType.getResolvedValue(elementsSource))
     )
 
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    // eslint-disable-next-line no-use-before-define
     const nonTypeVals = Object.values(annotationTypes).filter(type => !isType(type))
     if (nonTypeVals.length) {
       throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s has annotationType that resolves as non-TypeElement`)
@@ -152,7 +154,7 @@ abstract class PlaceholderTypeElement extends Element {
 
   async getType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
     const type = await getRefTypeValue(this.refType, elementsSource)
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    // eslint-disable-next-line no-use-before-define
     if (!isType(type)) {
       throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-TypeElement`)
     }
@@ -174,7 +176,7 @@ export class ListType extends Element {
 
   isEqual(other: ListType): boolean {
     return super.isEqual(other)
-      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      // eslint-disable-next-line no-use-before-define
       && this.refInnerType.elemID.isEqual(other.refInnerType.elemID) && isListType(other)
   }
 
@@ -186,7 +188,7 @@ export class ListType extends Element {
 
   async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
     const refInnerTypeVal = await getRefTypeValue(this.refInnerType, elementsSource)
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    // eslint-disable-next-line no-use-before-define
     if (!isType(refInnerTypeVal)) {
       throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
     }
@@ -197,7 +199,7 @@ export class ListType extends Element {
     if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
       this.refInnerType = getRefType(innerTypeOrRefInnerType)
       const innerType = this.refInnerType.value
-      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      // eslint-disable-next-line no-use-before-define
       if (innerType !== undefined && isType(innerType)) {
         this.annotations = innerType.annotations
         this.annotationRefTypes = innerType.annotationRefTypes
@@ -225,7 +227,7 @@ export class MapType extends Element {
 
   isEqual(other: MapType): boolean {
     return super.isEqual(other)
-      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      // eslint-disable-next-line no-use-before-define
       && this.refInnerType.elemID.isEqual(other.refInnerType.elemID) && isMapType(other)
   }
 
@@ -237,7 +239,7 @@ export class MapType extends Element {
 
   async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
     const refInnerTypeVal = await getRefTypeValue(this.refInnerType, elementsSource)
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    // eslint-disable-next-line no-use-before-define
     if (!isType(refInnerTypeVal)) {
       throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
     }
@@ -248,7 +250,7 @@ export class MapType extends Element {
     if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
       this.refInnerType = getRefType(innerTypeOrRefInnerType)
       const innerType = this.refInnerType.value
-      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      // eslint-disable-next-line no-use-before-define
       if (innerType !== undefined && isType(innerType)) {
         this.annotations = innerType.annotations
         this.annotationRefTypes = innerType.annotationRefTypes
@@ -437,7 +439,7 @@ export class InstanceElement extends PlaceholderTypeElement {
 
   async getType(elementsSource?: ReadOnlyElementsSource): Promise<ObjectType> {
     const type = await getRefTypeValue(this.refType, elementsSource)
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    // eslint-disable-next-line no-use-before-define
     if (!isObjectType(type)) {
       throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-ObjectType`)
     }

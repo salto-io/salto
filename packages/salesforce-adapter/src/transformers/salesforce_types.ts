@@ -103,7 +103,7 @@ const lightningComponentBundlePropertyType = new ObjectType({
         [IS_ATTRIBUTE]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           values: ['Boolean', 'Integer', 'String', 'Color', 'Date', 'DateTime'],
-          // eslint-disable-next-line @typescript-eslint/camelcase
+          // eslint-disable-next-line camelcase
           enforce_value: false,
         }),
       },

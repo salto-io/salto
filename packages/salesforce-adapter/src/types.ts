@@ -153,18 +153,17 @@ type DataManagementConfigSuggestions = {
   reason?: string
 }
 
-export const isDataManagementConfigSuggestions = (suggestion: ConfigChangeSuggestion):
-  suggestion is DataManagementConfigSuggestions => suggestion.type === 'dataObjectsExclude'
-
 export type MetadataConfigSuggestion = {
   type: 'metadataExclude'
   value: MetadataQueryParams
   reason?: string
 }
 
+export const isDataManagementConfigSuggestions = (suggestion: ConfigChangeSuggestion):
+  suggestion is DataManagementConfigSuggestions => suggestion.type === 'dataObjectsExclude'
+
 export const isMetadataConfigSuggestions = (suggestion: ConfigChangeSuggestion):
   suggestion is MetadataConfigSuggestion => suggestion.type === 'metadataExclude'
-
 
 export type FetchElements<T> = {
   configChanges: ConfigChangeSuggestion[]
@@ -389,7 +388,7 @@ const metadataConfigType = new ObjectType({
 const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
   elemID: new ElemID(SALESFORCE, 'optionalFeatures'),
   fields: {
-    extraDependencies: { type: BuiltinTypes.BOOLEAN },
+    extraDependencies: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
   },
 })
 
@@ -398,7 +397,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
   fields: {
     metadata: { refType: createRefToElmWithValue(metadataConfigType) },
     data: { refType: createRefToElmWithValue(dataManagementType) },
-    optionalFeatures: { type: optionalFeaturesType },
+    optionalFeatures: { refType: createRefToElmWithValue(optionalFeaturesType) },
     fetchAllCustomSettings:  { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
     target: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
   },

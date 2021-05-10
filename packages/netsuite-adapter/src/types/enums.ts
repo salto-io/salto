@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 /* eslint-disable max-len */
-/* eslint-disable @typescript-eslint/camelcase */
+/* eslint-disable camelcase */
 import { CORE_ANNOTATIONS, createRestriction, ElemID, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
 import * as constants from '../constants'
 

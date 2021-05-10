@@ -291,7 +291,7 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const getRemoteDbImpl = (): any => {
     if (rocksdbImpl === undefined) {
-      // eslint-disable-next-line global-require
+      // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires
       rocksdbImpl = require('./rocksdb').default
     }
     return rocksdbImpl

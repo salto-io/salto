@@ -19,6 +19,7 @@ describe('decorators', () => {
   describe('wrapMethodWith', () => {
     const ensureFooIsCalled = jest.fn(
       async function ensureFooIsCalledImpl(
+        // eslint-disable-next-line no-use-before-define
         this: MyClass, original: decorators.OriginalCall
       ): Promise<unknown> {
         this.foo()

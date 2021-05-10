@@ -25,7 +25,7 @@ describe('client connection', () => {
       get: mockFunction<clientUtils.APIConnection['get']>()
         .mockImplementationOnce(url => Promise.resolve(
           url === '/users/me'
-            // eslint-disable-next-line @typescript-eslint/camelcase
+            // eslint-disable-next-line camelcase
             ? ({ data: { id: 'id123', company_name: 'company123' }, status: 200, statusText: 'OK' })
             : { data: {}, status: 200, statusText: 'OK' }
         ))

@@ -142,6 +142,7 @@ export class VariableExpression extends ReferenceExpression {
   }
 }
 
+// eslint-disable-next-line no-use-before-define
 export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> { }
 
 export type Expression = ReferenceExpression | TemplateExpression

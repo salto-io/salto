@@ -53,7 +53,7 @@ const StandardBuiltinTypes = {
 const restrictionType = new ObjectType({
   elemID: new ElemID('', 'restriction'),
   fields: {
-    // eslint-disable-next-line @typescript-eslint/camelcase
+    // eslint-disable-next-line camelcase
     enforce_value: {
       refType: new ReferenceExpression(
         StandardBuiltinTypes.BOOLEAN.elemID,
@@ -88,6 +88,7 @@ const restrictionType = new ObjectType({
 })
 
 type RestrictionAnnotationType = Partial<{
+  // eslint-disable-next-line camelcase
   enforce_value: boolean
   values: ReadonlyArray<unknown>
   min: number

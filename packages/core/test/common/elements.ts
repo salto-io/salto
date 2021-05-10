@@ -47,7 +47,7 @@ export const getAllElements = (): AllElementsTypes => {
     annotationRefsOrTypes: {
       label: BuiltinTypes.STRING,
       old: BuiltinTypes.STRING,
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       case_sensitive: BuiltinTypes.BOOLEAN,
       address: saltoAddr,
     },

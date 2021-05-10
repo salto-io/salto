@@ -37,6 +37,11 @@ declare module '@salto-io/suitecloud-cli' {
     constructor()
   }
 
+  export class ActionResult {
+    data: Value
+    isSuccess(): boolean
+  }
+
   export class CommandActionExecutor {
     constructor(dependencies: {
       executionPath: string
@@ -54,11 +59,6 @@ declare module '@salto-io/suitecloud-cli' {
 
   export class ActionResultUtils {
     static getErrorMessagesString(actionResult: ActionResult): string
-  }
-
-  export class ActionResult {
-    data: Value
-    isSuccess(): boolean
   }
 
   export const SdkDownloadService: SdkDownloadServiceI

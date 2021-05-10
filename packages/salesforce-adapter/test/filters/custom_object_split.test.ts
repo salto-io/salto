@@ -31,11 +31,11 @@ describe('Custom Object Split filter', () => {
       standard: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       custom__c: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       custom_namespace__c: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
@@ -54,11 +54,11 @@ describe('Custom Object Split filter', () => {
       standard: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       custom__c: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
       },
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       custom_namespace__c: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {

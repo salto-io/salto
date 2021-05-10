@@ -110,6 +110,20 @@ module.exports = {
         'import/no-extraneous-dependencies': ['error', {
             devDependencies: ['!test/**/*'],
         }],
+        'no-shadow': ['off'],
+        '@typescript-eslint/no-shadow': ['error'],
+        '@typescript-eslint/ban-types': [
+          'error',
+          {
+            'extendDefaults': true,
+            'types': {
+              '{}': false,
+              'object': false
+            }
+          }
+        ],
+        // This rule is already enforced on all functions so no need to enforce it in addition on module boundary
+        '@typescript-eslint/explicit-module-boundary-types': ['off'],
         'jest/valid-describe': ['off'],
         'import/extensions': [ 'error', 'never', {
             'json': 'always',

@@ -280,6 +280,12 @@ const resolveNodeElements = (
   return graph
 }
 
+export type Plan = GroupedNodeMap<Change> & {
+  itemsByEvalOrder: () => Iterable<PlanItem>
+  getItem: (id: PlanItemId) => PlanItem
+  changeErrors: ReadonlyArray<ChangeError>
+}
+
 const addPlanFunctions = (
   groupGraph: GroupedNodeMap<Change>, changeErrors: ReadonlyArray<ChangeError>
 ): Plan => Object.assign(groupGraph,
@@ -295,12 +301,6 @@ const addPlanFunctions = (
     },
     changeErrors,
   })
-
-export type Plan = GroupedNodeMap<Change> & {
-  itemsByEvalOrder: () => Iterable<PlanItem>
-  getItem: (id: PlanItemId) => PlanItem
-  changeErrors: ReadonlyArray<ChangeError>
-}
 
 const buildDiffGraph = (
   ...transforms: ReadonlyArray<PlanTransformer>

@@ -15,7 +15,7 @@
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
 
-const { getWithPageOffsetPagination, getWithCursorPagination } = clientUtils
+const { getWithPageOffsetAndLastPagination, getWithCursorPagination } = clientUtils
 
 export const paginate: clientUtils.GetAllItemsFunc = async function *paginate({
   client,
@@ -26,6 +26,6 @@ export const paginate: clientUtils.GetAllItemsFunc = async function *paginate({
     // special handling for endpoints that use descending ids, like the recipes endpoint
     yield* getWithCursorPagination({ client, pageSize, getParams })
   } else {
-    yield* getWithPageOffsetPagination(0)({ client, pageSize, getParams })
+    yield* getWithPageOffsetAndLastPagination(0)({ client, pageSize, getParams })
   }
 }

@@ -19,5 +19,5 @@ export { DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from
 export { logDecorator, requiresLogin } from './decorators'
 export { AdapterHTTPClient, ClientOpts, HTTPClientInterface } from './http_client'
 export { APIConnection, ConnectionCreator, axiosConnection, createClientConnection, createRetryOptions, validateCredentials, UnauthorizedError, ResponseValue } from './http_connection'
-export { createPaginator, getWithCursorPagination, getWithPageOffsetPagination, getWithOffsetAndLimit, traverseRequests, ClientGetWithPaginationParams, PaginationFunc, Paginator, GetAllItemsFunc } from './pagination'
+export { createPaginator, getWithCursorPagination, getWithPageOffsetPagination, getWithPageOffsetAndLastPagination, getWithOffsetAndLimit, traverseRequests, ClientGetWithPaginationParams, PaginationFunc, Paginator, GetAllItemsFunc } from './pagination'
 export { createRateLimitersFromConfig, throttle, BottleneckBuckets } from './rate_limit'

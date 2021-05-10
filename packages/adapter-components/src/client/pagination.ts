@@ -144,8 +144,29 @@ export const getWithPageOffsetPagination: ((firstPage: number) => GetAllItemsFun
   firstPage => async function *getWithOffset(args) {
     const nextPageFullPages: PaginationFunc = ({ page, getParams, currentParams, pageSize }) => {
       const { paginationField } = getParams
+      if (page.length >= pageSize) {
+        return [{
+          ...currentParams,
+          [paginationField]: (currentParams[paginationField] ?? firstPage) + 1,
+        }]
+      }
+      return []
+    }
+    yield* traverseRequests(nextPageFullPages)(args)
+  }
+)
+
+/**
+ * Make paginated requests using the specified pagination field, assuming the
+ * next page is prev+1 and first page is as specified.
+ * Also supports recursive queries (see example under computeRecursiveArgs).
+ */
+export const getWithPageOffsetAndLastPagination: ((firstPage: number) => GetAllItemsFunc) = (
+  firstPage => async function *getWithOffset(args) {
+    const nextPageFullPages: PaginationFunc = ({ responseData, getParams, currentParams }) => {
+      const { paginationField } = getParams
       // hard-coding the "last" flag for now - if we see more variants we can move it to config
-      if (page.length >= pageSize || (page.length === 1 && page[0].last === false)) {
+      if (_.get(responseData, 'last') === false) {
         return [{
           ...currentParams,
           [paginationField]: (currentParams[paginationField] ?? firstPage) + 1,
@@ -209,7 +230,7 @@ export const getWithOffsetAndLimit: GetAllItemsFunc = args => {
     if (responseData.isLast) {
       return []
     }
-    const currentPageStart = responseData[paginationField] as number
+    const currentPageStart = _.get(responseData, paginationField) as number
     const nextPageStart = currentPageStart + responseData.values.length
     const nextPage = { ...currentParams, [paginationField]: nextPageStart.toString() }
     return [nextPage]

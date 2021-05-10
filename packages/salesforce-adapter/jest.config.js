@@ -24,7 +24,7 @@ module.exports = deepMerge(
     collectCoverageFrom: [
       '!<rootDir>/dist/index.js',
     ],
-    testEnvironment: process.env.RUN_E2E_TESTS	
+    testEnvironment: process.env.SALTO_RUN_E2E_TESTS
       ? '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'	
       : undefined,
     coverageThreshold: {

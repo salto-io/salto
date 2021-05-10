@@ -17,7 +17,7 @@ module.exports = {
   verbose: true,
   testEnvironment: 'node',
   testMatch: [
-    process.env['RUN_E2E_TESTS']
+    process.env['SALTO_RUN_E2E_TESTS']
       ? '<rootDir>/dist/e2e_test/**/*.test.js'
       : '<rootDir>/dist/test/**/*.test.js'
   ],

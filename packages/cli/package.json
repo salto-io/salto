@@ -31,7 +31,7 @@
     "clean": "rm -rf ./dist ./pkg .eslintcache src/generated",
     "clean-ts-test": "yarn clean-ts && yarn test",
     "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
-    "e2e-test": "RUN_E2E_TESTS=1 jest",
+    "e2e-test": "SALTO_RUN_E2E_TESTS=1 jest",
     "generate": "./generate.sh",
     "package": "node ./package_native.js"
   },

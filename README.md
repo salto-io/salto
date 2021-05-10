@@ -48,10 +48,10 @@ $ yarn test
 
 By default, `yarn test` will run only unit tests - stored at the `tests` directory of each package.
 
-E2E (end-to-end) tests are stored at the `e2e_tests` directories. To run them, define the `RUN_E2E_TESTS=1` environment variable:
+E2E (end-to-end) tests are stored at the `e2e_tests` directories. To run them, define the `SALTO_RUN_E2E_TESTS=1` environment variable:
 
 ```bash
-RUN_E2E_TESTS=1 yarn test
+SALTO_RUN_E2E_TESTS=1 yarn test
 ```
 
 E2E tests are run on CircleCI builds, and you should also run them locally before creating a PR.

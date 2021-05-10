@@ -347,16 +347,6 @@ const fetchAndProcessMergeErrors = async (
     }
 
     const { errors: mergeErrors, merged: elements } = await mergeElements(awu(serviceElements))
-    // applyInstancesDefaults(elements.filter(isInstanceElement))
-    // log.debug(`got ${serviceElements.length} from merge results and
-    // elements and to ${elements.length} elements [errors=${
-    //   mergeErrors.length}]`)
-
-    // We need to think about printing the size of it :/
-    // log.debug(`got ${serviceElements.length} from merge
-    // results and elements and to ${elements.length}
-    // elements [errors=${
-    //   mergeErrors.length}]`)
     const mergeErrorsArr = await awu(mergeErrors.values()).flat().toArray()
     const processErrorsResult = await processMergeErrors(
       applyInstancesDefaults(elements.values()),

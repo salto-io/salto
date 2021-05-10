@@ -18,7 +18,7 @@ import {
   FieldDefinition, BuiltinTypes, ListType, TypeElement, InstanceElement,
   Value, isPrimitiveType, isObjectType, isListType, TypeMap, Values,
   CORE_ANNOTATIONS, StaticFile, calculateStaticFileHash, ReferenceExpression,
-  getDeepInnerType, isContainerType, MapType, isMapType, ProgressReporter, isType,
+  getDeepInnerType, isContainerType, MapType, isMapType, ProgressReporter,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
@@ -28,7 +28,7 @@ import fs from 'fs'
 import path from 'path'
 import seedrandom from 'seedrandom'
 import readdirp from 'readdirp'
-import { parser, merger } from '@salto-io/workspace'
+import { parser, merger, expressions, elementSource } from '@salto-io/workspace'
 
 const { mapValuesAsync } = promises.object
 const { arrayOf } = collections.array
@@ -564,7 +564,7 @@ export const generateElements = async (
     const allNaclMocks = await readdirp.promise(naclDir, {
       fileFilter: [`*.${MOCK_NACL_SUFFIX}`],
     })
-    const elements = (await Promise.all(allNaclMocks.map(async file => {
+    const elements = await awu(allNaclMocks.map(async file => {
       const content = fs.readFileSync(file.fullPath, 'utf8')
       const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {
         file: {
@@ -581,20 +581,14 @@ export const generateElements = async (
         elem.path = [DUMMY_ADAPTER, 'extra', file.basename.replace(new RegExp(`.${MOCK_NACL_SUFFIX}$`), '')]
       })
       return parsedNaclFile.elements
-    }))).flat()
-
-    // Unfortunately this code uses a hacky way to load elements instead of using a proper
-    // element source. because of this, we have to update the types here to convert them
-    // from fragments (which have placeholder types) to elements (which point to the actual type)
-    // updateMergedTypes should NOT be used outside the workspace package.
-    // THIS SHOULD NEVER BE DONE IN A REAL ADAPTER!
-    const typeMap = _.keyBy(
-      [...elements.filter(isType), ...Object.values(BuiltinTypes)],
-      elem => elem.elemID.getFullName()
+    })).flat().toArray()
+    const mergedElements = await merger.mergeElements(awu(elements))
+    const inMemElemSource = elementSource.createInMemoryElementSource(
+      await awu(mergedElements.merged.values()).toArray()
     )
-    merger.updateMergedTypes(elements, typeMap)
-
-    return elements
+    return (await Promise.all(
+      elements.map(async elem => expressions.resolve([elem], inMemElemSource))
+    )).flat()
   }
 
 

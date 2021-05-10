@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoError } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { apiName, isInstanceOfCustomObject, isCustomObject } from '../transformers/transformer'
-import { FIELD_ANNOTATIONS, CUSTOM_OBJECT_ID_FIELD, KEY_PREFIX, KEY_PREFIX_LENGTH } from '../constants'
+import { FIELD_ANNOTATIONS, KEY_PREFIX, KEY_PREFIX_LENGTH } from '../constants'
 import { isLookupField, isMasterDetailField } from './utils'
 import { FilterResult } from '../types'
 import { DataManagement } from '../fetch_profile/data_management'
@@ -33,9 +33,7 @@ const log = logger(module)
 
 type RefOrigin = { type: string; id: string; field?: string }
 type MissingRef = {
-  originType: string
-  originId: string
-  originField?: string
+  origin: RefOrigin
   targetId: string
 }
 
@@ -75,8 +73,10 @@ const logInstancesWithCollidingElemID = (instances: InstanceElement[]): void => 
     Object.entries(elemIDtoInstances).forEach(([elemID, elemIDInstances]) => {
       const relevantInstanceValues = elemIDInstances
         .map(instance => _.pickBy(instance.value, val => !_.isEmpty(val)))
+      const relevantInstanceValuesStr = relevantInstanceValues
+        .map(instValues => safeJsonStringify(instValues, undefined, 2)).join('\n')
       log.debug(`Omitted instances of type ${type} with colliding ElemID ${elemID} with values - 
-  ${relevantInstanceValues.map(instValues => `    ${safeJsonStringify(instValues, undefined, 2)}`).join('\n')}`)
+  ${relevantInstanceValuesStr}`)
     })
   })
 }
@@ -122,7 +122,7 @@ Current Salto ID configuration for ${type} is defined as [${dataManagement.getOb
       const collisionsToDisplay = Object.entries(elemIDtoInstances).slice(0, MAX_BREAKDOWN_ELEMENTS)
       const collisionMsgs = collisionsToDisplay
         .map(([elemID, instances]) => `- ${elemID}:
-${getInstancesDetailsMsg(instances.map(instance => instance.value[CUSTOM_OBJECT_ID_FIELD]), baseUrl)}`)
+${getInstancesDetailsMsg(instances.map(instance => apiName(instance)), baseUrl)}`)
       const epilogue = `To resolve these collisions please take one of the following actions and fetch again:
 \t1. Change ${type}'s saltoIDSettings to include all fields that uniquely identify the type's instances.
 \t2. Delete duplicate instances from your Salesforce account.
@@ -157,7 +157,7 @@ Alternatively, you can exclude ${type} from the data management configuration in
         .slice(0, MAX_BREAKDOWN_ELEMENTS)
       const perMissingInstanceMsgs = perMissingInstToDisplay
         .map(([instanceId, instanceMissingRefs]) => `${getInstanceDesc(instanceId, baseUrl)} referenced from -
-  ${getInstancesDetailsMsg(instanceMissingRefs.map(instanceMissingRef => instanceMissingRef.originId), baseUrl)}`)
+  ${getInstancesDetailsMsg(instanceMissingRefs.map(instanceMissingRef => instanceMissingRef.origin.id), baseUrl)}`)
       const epilogue = `To resolve this issue please edit the salesforce.nacl file to include ${type} instances in the data management configuration and fetch again.
 
       Alternatively, you can exclude the referring types from the data management configuration in salesforce.nacl`
@@ -216,9 +216,11 @@ const replaceLookupsWithRefsAndCreateRefMap = (
         if (!_.isEmpty(value) && (field?.annotations?.[FIELD_ANNOTATIONS.CREATABLE]
             || field?.annotations?.[FIELD_ANNOTATIONS.UPDATEABLE])) {
           missingRefs.push({
-            originType: apiName(instance.type, true),
-            originId: instance.value[CUSTOM_OBJECT_ID_FIELD],
-            originField: field.name,
+            origin: {
+              type: apiName(instance.type, true),
+              id: apiName(instance),
+              field: field.name,
+            },
             targetId: instance.value[field.name],
           })
         }
@@ -273,16 +275,18 @@ const getIllegalRefSources = (
 }
 
 const buildCustomObjectPrefixKeyMap = (elements: Element[]): Record<string, string> => {
-  const customObjects = elements.filter(isCustomObject)
-  const keyPrefixToCustomObject = _.groupBy(
-    customObjects.filter(customObject => isDefined(customObject.annotations[KEY_PREFIX])),
-    customObject => customObject.annotations[KEY_PREFIX],
+  const customObjects = elements
+    .filter(isCustomObject)
+    .filter(customObject => isDefined(customObject.annotations[KEY_PREFIX]))
+  const keyPrefixToCustomObject = _.keyBy(
+    customObjects,
+    customObject => customObject.annotations[KEY_PREFIX] as string,
   )
   return _.mapValues(
     keyPrefixToCustomObject,
     // Looking at Salesforce's keyPrefix results duplicate types with
     // the same prefix exist but are not relevant/important to differentiate between
-    keyCustomObjects => keyCustomObjects.map(customObject => apiName(customObject))[0],
+    keyCustomObject => apiName(keyCustomObject),
   )
 }
 
@@ -307,10 +311,10 @@ const filter: FilterCreator = ({ client, config }) => ({
       .flat()
     const missingRefOriginInternalIDs = new Set(
       missingRefs
-        .map(missingRef => serializeInternalID(missingRef.originType, missingRef.originId))
+        .map(missingRef => serializeInternalID(missingRef.origin.type, missingRef.origin.id))
     )
     const instWithDupElemIDInterIDs = new Set(
-      instancesWithCollidingElemID.flatMap(serializeInstanceInternalID)
+      instancesWithCollidingElemID.map(serializeInstanceInternalID)
     )
     const illegalRefTargets = new Set(
       [

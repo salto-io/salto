@@ -247,8 +247,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
     return this.client.deploy(changeGroup, this.deployReferencedElements)
-    // TODO: fix me
-
     // const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
     // const customizationInfosToDeploy = await awu(
     //   await this.getAllRequiredReferencedInstances(changedInstances)

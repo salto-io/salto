@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
+import { transformValues, TransformFunc, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoError } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
@@ -59,6 +59,28 @@ const deserializeInternalID = (internalID: string): RefOrigin => {
   }
 }
 
+const groupInstancesByTypeAndElemID = (
+  instances: InstanceElement[],
+): Record<string, Record<string, InstanceElement[]>> =>
+  (_.mapValues(
+    _.groupBy(instances, instance => apiName(instance.type, true)),
+    typeInstances => _.groupBy(typeInstances, instance => instance.elemID.name)
+  ))
+
+const logInstancesWithCollidingElemID = (instances: InstanceElement[]): void => {
+  const typeToElemIDtoInstances = groupInstancesByTypeAndElemID(instances)
+  Object.entries(typeToElemIDtoInstances).forEach(([type, elemIDtoInstances]) => {
+    const instancesCount = Object.values(elemIDtoInstances).flat().length
+    log.debug(`Omitted ${instancesCount} instances of type ${type} due to Salto ID collisions`)
+    Object.entries(elemIDtoInstances).forEach(([elemID, elemIDInstances]) => {
+      const relevantInstanceValues = elemIDInstances
+        .map(instance => _.pickBy(instance.value, val => !_.isEmpty(val)))
+      log.debug(`Omitted instances of type ${type} with colliding ElemID ${elemID} with values - 
+  ${relevantInstanceValues.map(instValues => `    ${safeJsonStringify(instValues, undefined, 2)}`).join('\n')}`)
+    })
+  })
+}
+
 const createWarningFromMsg = (message: string): SaltoError =>
   ({
     message,
@@ -87,10 +109,7 @@ const createWarnings = (
   dataManagement: DataManagement,
   baseUrl?: string,
 ): SaltoError[] => {
-  const typeToElemIDtoInstances = _.mapValues(
-    _.groupBy(instancesWithCollidingElemID, instance => apiName(instance.type, true)),
-    instances => _.groupBy(instances, instance => instance.elemID.name)
-  )
+  const typeToElemIDtoInstances = groupInstancesByTypeAndElemID(instancesWithCollidingElemID)
 
   const collisionWarnings = Object.entries(typeToElemIDtoInstances)
     .map(([type, elemIDtoInstances]) => {
@@ -313,6 +332,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     )
     const baseUrl = await client.getUrl()
     const customObjectPrefixKeyMap = buildCustomObjectPrefixKeyMap(elements)
+    logInstancesWithCollidingElemID(instancesWithCollidingElemID)
     return {
       errors: createWarnings(
         instancesWithCollidingElemID,

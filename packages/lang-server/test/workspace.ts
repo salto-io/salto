@@ -17,7 +17,7 @@ import * as path from 'path'
 import { readFileSync } from 'fs'
 import _ from 'lodash'
 import { Workspace, parser, errors as wsErrors, state, nacl, staticFiles, dirStore,
-  loadWorkspace, EnvironmentsSources, remoteMap, elementSource } from '@salto-io/workspace'
+  loadWorkspace, EnvironmentsSources, remoteMap, elementSource, pathIndex } from '@salto-io/workspace'
 import { ElemID, SaltoError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 
@@ -185,7 +185,7 @@ Promise<Workspace> => {
           elements: createInMemoryElementSource(
             await awu(await commonNaclFilesSource.getAll()).toArray()
           ),
-          pathIndex: new InMemoryRemoteMap(),
+          pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
           servicesUpdateDate: new InMemoryRemoteMap(),
           saltoVersion: '0.0.1',
           saltoMetadata: new InMemoryRemoteMap(),
@@ -200,7 +200,7 @@ Promise<Workspace> => {
         ),
         state: state.buildInMemState(async () => ({
           elements: createInMemoryElementSource([]),
-          pathIndex: new InMemoryRemoteMap(),
+          pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
           servicesUpdateDate: new InMemoryRemoteMap(),
           saltoVersion: '0.0.1',
           saltoMetadata: new InMemoryRemoteMap(),

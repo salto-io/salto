@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { AwuIterable } from '@salto-io/lowerdash/src/collections/asynciterable'
+import wu from 'wu'
 
 const { toAsyncIterable, awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
@@ -23,6 +23,21 @@ type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 export type IterationOpts = {
   first?: number
   after?: string
+  pageSize?: number
+}
+
+export type PagedIterationOpts = IterationOpts & {
+  pageSize: number
+}
+
+export const isPagedIterationOpts = (opts: IterationOpts): opts is PagedIterationOpts => {
+  if (opts.pageSize === undefined) {
+    return false
+  }
+  if (opts.pageSize <= 0 || !Number.isInteger(opts.pageSize)) {
+    throw new Error('Iteration page size must be a positive integer')
+  }
+  return true
 }
 
 export type RemoteMapEntry<T, K extends string = string> = { key: K; value: T }
@@ -36,6 +51,14 @@ export interface CreateRemoteMapParams<T> {
   deserialize: (s: string) => Promise<T>
 }
 
+export type RemoteMapIterator<T, Opts> = Opts extends PagedIterationOpts
+  ? AsyncIterable<T[]> : Opts extends IterationOpts
+  ? AsyncIterable<T> : never
+
+export type RemoteMapIteratorCreator<T, Opts extends IterationOpts = IterationOpts> = (
+  opts?: Opts,
+) => RemoteMapIterator<T, Opts>
+
 export type RemoteMap<T, K extends string = string> = {
   delete(key: K): Promise<void>
   get(key: K): Promise<T | undefined>
@@ -44,9 +67,9 @@ export type RemoteMap<T, K extends string = string> = {
   set(key: K, value: T): Promise<void>
   setAll(values: ThenableIterable<RemoteMapEntry<T, K>>): Promise<void>
   deleteAll(keys: ThenableIterable<K>): Promise<void>
-  entries(opts?: IterationOpts): AsyncIterable<RemoteMapEntry<T, K>>
-  keys(opts?: IterationOpts): AsyncIterable<K>
-  values(opts?: IterationOpts): AsyncIterable<T>
+  entries: RemoteMapIteratorCreator<RemoteMapEntry<T, K>>
+  keys: RemoteMapIteratorCreator<K>
+  values: RemoteMapIteratorCreator<T>
   flush: () => Promise<boolean>
   revert: () => Promise<void>
   clear(): Promise<void>
@@ -100,19 +123,32 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
     this.data = new Map()
   }
 
-  getSortedEntries = (): AwuIterable<[K, T]> => awu(_.sortBy(Array
-    .from(this.data.entries()), [e => e[0]]))
+  getSortedEntries = (): [K, T][] => _.sortBy(Array
+    .from(this.data.entries()), [e => e[0]])
 
-  entries(): AsyncIterable<RemoteMapEntry<T, K>> {
-    return this.getSortedEntries().map(e => ({ key: e[0], value: e[1] }))
+  entries<Opts extends IterationOpts>(opts?: Opts): RemoteMapIterator<RemoteMapEntry<T, K>, Opts> {
+    const sortedEntries = this.getSortedEntries().map(e => ({ key: e[0], value: e[1] }))
+    if (opts && isPagedIterationOpts(opts)) {
+      return toAsyncIterable(wu(sortedEntries)
+        .chunk(opts.pageSize)) as RemoteMapIterator<RemoteMapEntry<T, K>, Opts>
+    }
+    return toAsyncIterable(sortedEntries) as RemoteMapIterator<RemoteMapEntry<T, K>, Opts>
   }
 
-  keys(): AsyncIterable<K> {
-    return toAsyncIterable(Array.from(this.data.keys()).sort())
+  keys<Opts extends IterationOpts>(opts?: Opts): RemoteMapIterator<K, Opts> {
+    const sortedKeys = Array.from(this.data.keys()).sort()
+    if (opts && isPagedIterationOpts(opts)) {
+      return toAsyncIterable(wu(sortedKeys).chunk(opts.pageSize)) as RemoteMapIterator<K, Opts>
+    }
+    return toAsyncIterable(sortedKeys) as RemoteMapIterator<K, Opts>
   }
 
-  values(): AsyncIterable<T> {
-    return this.getSortedEntries().map(e => e[1])
+  values<Opts extends IterationOpts>(opts?: Opts): RemoteMapIterator<T, Opts> {
+    const sortedValues = this.getSortedEntries().map(e => e[1])
+    if (opts && isPagedIterationOpts(opts)) {
+      return toAsyncIterable(wu(sortedValues).chunk(opts.pageSize)) as RemoteMapIterator<T, Opts>
+    }
+    return toAsyncIterable(sortedValues) as RemoteMapIterator<T, Opts>
   }
 
   // eslint-disable-next-line class-methods-use-this

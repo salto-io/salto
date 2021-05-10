@@ -43,6 +43,7 @@ import { EnvConfig } from '../../src/workspace/config/workspace_config_types'
 import { resolve } from '../../src/expressions'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { InMemoryRemoteMap, RemoteMapCreator, RemoteMap, CreateRemoteMapParams } from '../../src/workspace/remote_map'
+import { Path } from '../../src/workspace/path_index'
 
 const { awu } = collections.asynciterable
 
@@ -86,7 +87,7 @@ const mockCredentialsSource = (): ConfigSource => ({
 
 const createState = (elements: Element[]): State => buildInMemState(async () => ({
   elements: createInMemoryElementSource(elements),
-  pathIndex: new InMemoryRemoteMap(),
+  pathIndex: new InMemoryRemoteMap<Path[]>(),
   servicesUpdateDate: new InMemoryRemoteMap(),
   saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
 }))

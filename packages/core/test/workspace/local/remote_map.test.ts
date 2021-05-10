@@ -185,6 +185,14 @@ describe('test operations on remote db', () => {
       expect(nextPageRes).toHaveLength(5)
       expect(nextPageRes).toEqual(sortedElements.slice(5, 10))
     })
+
+
+    it('should return a paged iterator', async () => {
+      await remoteMap.setAll(createAsyncIterable(elements))
+      const pages = await awu(remoteMap.keys({ pageSize: 3 })).toArray()
+      expect(pages).toHaveLength(3)
+      expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
+    })
   })
 
   describe('values', () => {
@@ -214,6 +222,14 @@ describe('test operations on remote db', () => {
       }
       expect(nextPageRes).toHaveLength(9)
       expect(nextPageRes.map(e => e.elemID.getFullName())).toEqual(sortedElements.slice(5))
+    })
+
+
+    it('should return a paged iterator', async () => {
+      await remoteMap.setAll(createAsyncIterable(elements))
+      const pages = await awu(remoteMap.values({ pageSize: 3 })).toArray() as unknown as Element[][]
+      expect(pages).toHaveLength(3)
+      expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
     })
   })
 
@@ -247,8 +263,18 @@ describe('test operations on remote db', () => {
         nextPageRes.push(element)
       }
       expect(nextPageRes).toHaveLength(9)
-      expect(nextPageRes.map(e => e.value.elemID.getFullName())).toEqual(sortedElements.slice(5))
+      expect(nextPageRes.map(e => e.value.elemID.getFullName()))
+        .toEqual(sortedElements.slice(5))
       expect(nextPageRes.map(e => e.key)).toEqual(sortedElements.slice(5))
+    })
+
+    it('should return a paged iterator', async () => {
+      await remoteMap.setAll(createAsyncIterable(elements))
+      const pages = await awu(
+        remoteMap.entries({ pageSize: 3 })
+      ).toArray() as unknown as rm.RemoteMapEntry<Element>[][]
+      expect(pages).toHaveLength(3)
+      expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
     })
   })
 

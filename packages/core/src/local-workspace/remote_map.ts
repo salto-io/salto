@@ -56,8 +56,31 @@ const readIteratorNext = (iterator: rocksdb
     iterator.next(callback)
   })
 
+const readIteratorPage = (iterator: rocksdb
+    .Iterator): Promise<remoteMap.RemoteMapEntry<string>[] | undefined> =>
+  new Promise<remoteMap.RemoteMapEntry<string>[] | undefined>(resolve => {
+    const callback = (_err: Error | undefined, res: [RocksDBValue, RocksDBValue][]): void => {
+      const result = []
+      while (res?.length > 0) {
+        const [key, value] = res.pop() as [RocksDBValue, RocksDBValue]
+        const keyAsString = key?.toString()
+        const cleanKey = keyAsString?.substr(keyAsString
+          .indexOf(NAMESPACE_SEPARATOR) + NAMESPACE_SEPARATOR.length)
+        if (value !== undefined && cleanKey !== undefined) {
+          result.push({ key: cleanKey, value: value.toString() })
+        }
+      }
+      if (result.length > 0) {
+        resolve(result)
+      } else {
+        resolve(undefined)
+      }
+    }
+    iterator.nextPage(callback)
+  })
+
 export async function *aggregatedIterable(iterators: rocksdb.Iterator[]):
-AsyncIterable<remoteMap.RemoteMapEntry<string>> {
+    AsyncIterable<remoteMap.RemoteMapEntry<string>> {
   const latestEntries: (remoteMap.RemoteMapEntry<string> | undefined)[] = Array.from(
     { length: iterators.length }
   )
@@ -89,6 +112,53 @@ AsyncIterable<remoteMap.RemoteMapEntry<string>> {
       }))
       yield { key: minEntry.key, value: minEntry.value }
     }
+  }
+}
+
+export async function *aggregatedIterablesWithPages(iterators: rocksdb.Iterator[], pageSize = 1000):
+AsyncIterable<remoteMap.RemoteMapEntry<string>[]> {
+  const latestEntries: (remoteMap.RemoteMapEntry<string>[] | undefined)[] = Array.from(
+    { length: iterators.length }
+  )
+  await Promise.all(iterators.map(async (iter, i) => {
+    latestEntries[i] = await readIteratorPage(iter)
+  }))
+  let done = false
+  while (!done) {
+    const page = []
+    while (!done && page.length < pageSize) {
+      let min: string | undefined
+      let minIndex = 0
+      latestEntries.forEach((entries, index) => {
+        const entry = entries && entries[0]
+        if (entry !== undefined) {
+          if (min === undefined || entry.key < min) {
+            min = entry.key
+            minIndex = index
+          }
+        }
+      })
+      const minEntry = min !== undefined ? latestEntries[minIndex]?.pop() : undefined
+      if (minEntry === undefined) {
+        done = true
+      } else {
+        for (let i = 0; i < latestEntries.length; i += 1) {
+          const entries = latestEntries[i]
+          // await Promise.all(latestEntries.map(async (entries, i) => {
+          // We load the next page for emptied out pages
+          if (min !== undefined && entries && entries[0] !== undefined && entries[0].key <= min) {
+            // This skips all values with the same key because some keys can appear in two iterators
+            entries.pop()
+          }
+          if (entries?.length === 0) {
+            // eslint-disable-next-line no-await-in-loop
+            latestEntries[i] = await readIteratorPage(iterators[i])
+          }
+        }
+        page.push({ key: minEntry.key, value: minEntry.value })
+      }
+    }
+    yield page
   }
 }
 
@@ -124,7 +194,7 @@ export const createRemoteMapCreator = (location: string, readOnly = false):
 remoteMap.RemoteMapCreator => async <T, K extends string = string>(
   { namespace, batchInterval = 1000, serialize, deserialize }:
   remoteMap.CreateRemoteMapParams<T>
-): Promise<remoteMap.RemoteMap<T, K>> => {
+): Promise<remoteMap.RemoteMap<T, K> > => {
   if (!await fileUtils.exists(location)) {
     await fileUtils.mkdirp(location)
   }
@@ -224,13 +294,39 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       .map(async entry => deserialize(entry.value))
   }
 
+  const valuesPagesImpl = (tempOnly = false, iterationOpts?: remoteMap.IterationOpts):
+  AsyncIterable<T[]> => {
+    const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
+    const tempIter = createTempIterator(opts)
+    const iter = createPersistentIterator(opts)
+    return awu(aggregatedIterablesWithPages(
+      tempOnly ? [tempIter] : [tempIter, iter],
+      opts.pageSize
+    )).map(async entries => Promise.all(entries.map(entry => deserialize(entry.value))))
+  }
+
   const entriesImpl = (iterationOpts?: remoteMap.IterationOpts):
   AsyncIterable<remoteMap.RemoteMapEntry<T, K>> => {
     const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
     const tempIter = createTempIterator(opts)
     const iter = createPersistentIterator(opts)
     return awu(aggregatedIterable([tempIter, iter]))
-      .map(async entry => ({ key: entry.key as K, value: await deserialize(entry.value) }))
+      .map(
+        async entry => ({ key: entry.key as K, value: await deserialize(entry.value) })
+      )
+  }
+
+  const entriesPagesImpl = (iterationOpts?: remoteMap.IterationOpts):
+  AsyncIterable<remoteMap.RemoteMapEntry<T, K>[]> => {
+    const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
+    const tempIter = createTempIterator(opts)
+    const iter = createPersistentIterator(opts)
+    return awu(aggregatedIterablesWithPages([tempIter, iter], opts.pageSize))
+      .map(entries => Promise.all(
+        entries.map(
+          async entry => ({ key: entry.key as K, value: await deserialize(entry.value) })
+        )
+      ))
   }
 
   const clearImpl = (prefix: string, suffix?: string): Promise<void> =>
@@ -249,6 +345,15 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
     const keyIter = createPersistentIterator(opts)
     return awu(aggregatedIterable([tempKeyIter, keyIter]))
       .map(async (entry: remoteMap.RemoteMapEntry<string>) => entry.key as K)
+  }
+
+  const keysPagesImpl = (iterationOpts?: remoteMap.IterationOpts):
+  AsyncIterable<K[]> => {
+    const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
+    const tempKeyIter = createTempIterator(opts)
+    const keyIter = createPersistentIterator(opts)
+    return awu(aggregatedIterablesWithPages([tempKeyIter, keyIter], opts.pageSize))
+      .map(async entries => entries.map(entry => entry.key as K))
   }
 
   const getImpl = (key: string): Promise<T | undefined> => new Promise(resolve => {
@@ -340,8 +445,24 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
     get: getImpl,
     getMany: async (keys: string[]): Promise<(T | undefined)[]> =>
       withLimitedConcurrency(keys.map(k => () => getImpl(k)), GET_CONCURRENCY),
-    values: (iterationOpts?: remoteMap.IterationOpts) => valuesImpl(false, iterationOpts),
-    entries: (iterationOpts?: remoteMap.IterationOpts) => entriesImpl(iterationOpts),
+    values: <Opts extends remoteMap.IterationOpts>(iterationOpts?: Opts) => {
+      if (iterationOpts && remoteMap.isPagedIterationOpts(iterationOpts)) {
+        return valuesPagesImpl(false, iterationOpts) as remoteMap.RemoteMapIterator<T, Opts>
+      }
+      return valuesImpl(false, iterationOpts)
+    },
+    entries: <Opts extends remoteMap.IterationOpts>(
+      iterationOpts?: Opts
+    ): remoteMap.RemoteMapIterator<remoteMap.RemoteMapEntry<T, K>, Opts> => {
+      if (iterationOpts && remoteMap.isPagedIterationOpts(iterationOpts)) {
+        return entriesPagesImpl(
+          iterationOpts
+        ) as remoteMap.RemoteMapIterator<remoteMap.RemoteMapEntry<T, K>, Opts>
+      }
+      return entriesImpl(
+        iterationOpts
+      ) as remoteMap.RemoteMapIterator<remoteMap.RemoteMapEntry<T, K>, Opts>
+    },
     set: async (key: string, element: T): Promise<void> => {
       cache.set(keyToTempDBKey(key), element)
       await promisify(db.put.bind(db))(keyToTempDBKey(key), serialize(element))
@@ -351,7 +472,14 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       await batchUpdate(awu(iterator).map(async key => ({ key, value: key })),
         false, DELETE_OPERATION)
     },
-    keys: keysImpl,
+    keys: <Opts extends remoteMap.IterationOpts>(
+      iterationOpts?: Opts
+    ): remoteMap.RemoteMapIterator<K, Opts> => {
+      if (iterationOpts && remoteMap.isPagedIterationOpts(iterationOpts)) {
+        return keysPagesImpl(iterationOpts) as remoteMap.RemoteMapIterator<K, Opts>
+      }
+      return keysImpl(iterationOpts) as remoteMap.RemoteMapIterator<K, Opts>
+    },
     flush: async () => {
       const res = await batchUpdate(awu(aggregatedIterable(
         [createTempIterator({ keys: true, values: true })]

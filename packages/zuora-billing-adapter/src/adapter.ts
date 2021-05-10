@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType,
-  DeployModifiers, Element,
+  DeployModifiers, Element, FetchOptions,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
@@ -185,12 +185,14 @@ export default class ZuoraAdapter implements AdapterOperations {
    * Account credentials were given in the constructor.
    */
   @logDuration('fetching account configuration')
-  async fetch(): Promise<FetchResult> {
+  async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch zuora account configuration..')
     const swaggerTypes = await this.getSwaggerTypes()
     // the billing settings types are not listed in the swagger, so we fetch them separately
     // and give them a custom prefix to avoid conflicts
     const settingsTypes = await this.getBillingSettingsTypes(swaggerTypes)
+
+    progressReporter.reportProgress({ message: 'Finished fetching types. Fetching instances' })
 
     const { allTypes, parsedConfigs } = {
       allTypes: { ...swaggerTypes.allTypes, ...settingsTypes.allTypes },
@@ -200,6 +202,8 @@ export default class ZuoraAdapter implements AdapterOperations {
     const instances = await this.getInstances(allTypes, parsedConfigs)
 
     const standardObjectElements = await this.getStandardObjectElements({ allTypes, parsedConfigs })
+
+    progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
 
     const elements = [
       ...Object.values(allTypes),

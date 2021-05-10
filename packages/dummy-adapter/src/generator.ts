@@ -28,7 +28,7 @@ import fs from 'fs'
 import path from 'path'
 import seedrandom from 'seedrandom'
 import readdirp from 'readdirp'
-import { parser } from '@salto-io/workspace'
+import { parser, merger, expressions, elementSource } from '@salto-io/workspace'
 
 const { mapValuesAsync } = promises.object
 const { arrayOf } = collections.array
@@ -557,7 +557,7 @@ export const generateElements = async (
     const allNaclMocks = await readdirp.promise(naclDir, {
       fileFilter: [`*.${MOCK_NACL_SUFFIX}`],
     })
-    return awu(allNaclMocks.map(async file => {
+    const elements = await awu(allNaclMocks.map(async file => {
       const content = fs.readFileSync(file.fullPath, 'utf8')
       const parsedNaclFile = await parser.parse(Buffer.from(content), file.basename, {})
       awu(parsedNaclFile.elements).forEach(elem => {
@@ -565,6 +565,13 @@ export const generateElements = async (
       })
       return parsedNaclFile.elements
     })).flat().toArray()
+    const mergedElements = await merger.mergeElements(awu(elements))
+    const inMemElemSource = elementSource.createInMemoryElementSource(
+      await awu(mergedElements.merged.values()).toArray()
+    )
+    return (await Promise.all(
+      elements.map(async elem => expressions.resolve([elem], inMemElemSource))
+    )).flat()
   }
 
 

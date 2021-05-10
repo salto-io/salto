@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isObjectType } from '@salto-io/adapter-api'
+import { isObjectType, FetchOptions } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { OAuthClientCredentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
 import ZuoraAdapter from '../src/adapter'
+import { MockInterface } from '../test/utils'
 
 describe('Zuora adapter E2E with real swagger and mock replies', () => {
   let adapter: ZuoraAdapter
@@ -40,7 +41,10 @@ describe('Zuora adapter E2E with real swagger and mock replies', () => {
   describe('fetch', () => {
     describe('swagger types only', () => {
       it('should generate the right type elements on fetch', async () => {
-        const { elements } = await adapter.fetch()
+        const mockFetchOpts: MockInterface<FetchOptions> = {
+          progressReporter: { reportProgress: jest.fn() },
+        }
+        const { elements } = await adapter.fetch(mockFetchOpts)
 
         expect(elements.every(isObjectType)).toBeTruthy()
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual(expect.arrayContaining([

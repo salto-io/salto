@@ -15,6 +15,7 @@
 */
 import {
   FetchResult, AdapterOperations, DeployResult, Element, PostFetchOptions, DeployModifiers,
+  FetchOptions,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
@@ -92,9 +93,11 @@ export default class WorkatoAdapter implements AdapterOperations {
    * Account credentials were given in the constructor.
    */
   @logDuration('fetching account configuration')
-  async fetch(): Promise<FetchResult> {
+  async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch workato account configuration..')
     const elements = await this.getElements()
+
+    progressReporter.reportProgress({ message: 'Finished fetching types and instances. Running filters for additional information' })
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     await this.filtersRunner.onFetch(elements)

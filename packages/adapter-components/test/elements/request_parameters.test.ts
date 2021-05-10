@@ -99,9 +99,15 @@ describe('request_parameters', () => {
       expect(res[0].recursiveQueryParams?.parentId({ id: 'id' })).toEqual('id')
     })
 
-    it('should resolve urlParams from the provided params', () => {
+    it('should resolve url params from the provided context', () => {
       const urls = computeGetArgs({ url: '/a/{p1}/{p2}' }, undefined, { p1: 'b', p2: 'c' })
       expect(urls).toEqual([{ url: '/a/b/c' }])
+    })
+
+    it('should fail if the provided context is not a primitive', () => {
+      expect(
+        () => computeGetArgs({ url: '/a/{p}' }, undefined, { p: { complex: true } })
+      ).toThrow()
     })
 
     it('should compute dependsOn urls', () => {

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, Values, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, Values, isInstanceElement, isPrimitiveValue } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { ClientGetWithPaginationParams } from '../client'
@@ -25,7 +25,7 @@ const log = logger(module)
 export type ComputeGetArgsFunc = (
   request: RequestConfig,
   contextElements?: Record<string, Element[]>,
-  urlParams?: Record<string, string>,
+  requestContext?: Values,
 ) => ClientGetWithPaginationParams[]
 
 /**
@@ -91,12 +91,18 @@ const computeDependsOnURLs = (
 export const computeGetArgs: ComputeGetArgsFunc = (
   args,
   contextElements,
-  urlParams
+  requestContext
 ) => {
   // Replace known url params
   const baseUrl = args.url.replace(
     ARG_PLACEHOLDER_MATCHER,
-    (val => urlParams?.[val.slice(1, -1)] ?? val)
+    val => {
+      const replacement = requestContext?.[val.slice(1, -1)] ?? val
+      if (!isPrimitiveValue(replacement)) {
+        throw new Error(`Cannot replace arg ${val} in ${args.url} with non-string value ${replacement}`)
+      }
+      return replacement.toString()
+    }
   )
   const urls = computeDependsOnURLs(
     { url: baseUrl, dependsOn: args.dependsOn },

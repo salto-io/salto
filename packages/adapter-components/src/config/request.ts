@@ -28,17 +28,32 @@ export type DependsOnConfig = {
   }
 }
 
-export type RecurseIntoConfig = {
+type RecurseIntoConditionBase = { match: string[] }
+type RecurseIntoConditionByField = RecurseIntoConditionBase & {
+  fromField: string
+}
+type RecurseIntoConditionByContext = RecurseIntoConditionBase & {
+  fromContext: string
+}
+
+export type RecurseIntoCondition = RecurseIntoConditionByField | RecurseIntoConditionByContext
+
+export const isRecurseIntoConditionByField = (
+  condition: RecurseIntoCondition
+): condition is RecurseIntoConditionByField => (
+  'fromField' in condition
+)
+
+type RecurseIntoContext = {
+  name: string
+  fromField: string
+}
+
+type RecurseIntoConfig = {
   toField: string
   type: string
-  param: {
-    name: string
-    fromField: string
-  }
-  condition?: {
-    field: string
-    matchValues: string[]
-  }
+  context: RecurseIntoContext[]
+  conditions?: RecurseIntoCondition[]
 }
 
 export type RequestConfig = {

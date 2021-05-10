@@ -26,7 +26,8 @@ import { InstanceCreationParams, toBasicInstance } from '../instance_elements'
 import { UnauthorizedError, Paginator } from '../../client'
 import {
   UserFetchConfig, TypeSwaggerDefaultConfig, TransformationConfig, TransformationDefaultConfig,
-  AdapterSwaggerApiConfig, TypeSwaggerConfig, getConfigWithDefault, RequestConfig,
+  AdapterSwaggerApiConfig, TypeSwaggerConfig, getConfigWithDefault, RecurseIntoCondition,
+  isRecurseIntoConditionByField,
 } from '../../config'
 import { findDataField, FindNestedFieldFunc } from '../field_finder'
 import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../request_parameters'
@@ -221,12 +222,18 @@ const normalizeType = (type: ObjectType | undefined): ObjectType | undefined => 
   return type
 }
 
-type RecurseIntoConditionType = Required<RequestConfig>['recurseInto'][0]['condition']
-const shouldRecurseIntoEntry = (entry: Values, condition?: RecurseIntoConditionType): boolean => (
-  condition === undefined
-  || condition.matchValues.some(
-    expression => new RegExp(expression).test(_.get(entry, condition.field))
-  )
+
+const shouldRecurseIntoEntry = (
+  entry: Values,
+  context?: Record<string, string>,
+  conditions?: RecurseIntoCondition[]
+): boolean => (
+  (conditions ?? []).every(condition => {
+    const compareValue = isRecurseIntoConditionByField(condition)
+      ? _.get(entry, condition.fromField)
+      : _.get(context, condition.fromContext)
+    return condition.match.some(m => new RegExp(m).test(compareValue))
+  })
 )
 
 type GetEntriesParams = {
@@ -236,7 +243,7 @@ type GetEntriesParams = {
   typesConfig: Record<string, TypeSwaggerConfig>
   typeDefaultConfig: TypeSwaggerDefaultConfig
   contextElements?: Record<string, InstanceElement[]>
-  urlParams?: Record<string, string>
+  requestContext?: Values
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
 }
@@ -246,7 +253,7 @@ const getEntriesForType = async (
 ): Promise<{ entries: Values[]; objType: ObjectType }> => {
   const {
     typeName, paginator, typesConfig, typeDefaultConfig, objectTypes, contextElements,
-    urlParams, nestedFieldFinder, computeGetArgs,
+    requestContext, nestedFieldFinder, computeGetArgs,
   } = params
   const type = normalizeType(objectTypes[typeName])
   const typeConfig = typesConfig[typeName]
@@ -301,7 +308,7 @@ const getEntriesForType = async (
   const { objType, extractValues } = getType()
 
   const getEntries = async (): Promise<Values[]> => {
-    const args = computeGetArgs(requestWithDefaults, contextElements, urlParams)
+    const args = computeGetArgs(requestWithDefaults, contextElements, requestContext)
 
     const results = (await Promise.all(
       args.map(async getArgs => ((await toArrayAsync(await paginator(getArgs))).flat()))
@@ -320,21 +327,26 @@ const getEntriesForType = async (
 
   const entries = await getEntries()
 
-  const { recurseInto } = request
+  const { recurseInto } = requestWithDefaults
   if (recurseInto === undefined) {
     return { entries, objType }
   }
 
   const getExtraFieldValues = (entry: Values): Promise<[string, Values[]][]> => Promise.all(
     recurseInto
-      .filter(({ condition }) => shouldRecurseIntoEntry(entry, condition))
+      .filter(({ conditions }) => shouldRecurseIntoEntry(entry, requestContext, conditions))
       .map(async nested => {
+        const nestedRequestContext = Object.fromEntries(
+          nested.context.map(
+            contextDef => [contextDef.name, _.get(entry, contextDef.fromField)]
+          )
+        )
         const nestedEntries = await getEntriesForType({
           ...params,
           typeName: nested.type,
-          urlParams: {
-            ...urlParams ?? {},
-            [nested.param.name]: _.get(entry, nested.param.fromField),
+          requestContext: {
+            ...requestContext ?? {},
+            ...nestedRequestContext,
           },
         })
         return [nested.toField, nestedEntries.entries] as [string, Values[]]

@@ -74,6 +74,30 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       ],
     },
   },
+  Workflows: {
+    request: {
+      url: '/workflows',
+      paginationField: 'pagination.next_page',
+    },
+  },
+  EventTriggers: {
+    request: {
+      url: '/events/event-triggers',
+      paginationField: 'next',
+    },
+  },
+  NotificationDefinitions: {
+    request: {
+      url: '/notifications/notification-definitions',
+      paginationField: 'next',
+    },
+  },
+  NotificationEmailTemplates: {
+    request: {
+      url: '/notifications/email-templates',
+      paginationField: 'next',
+    },
+  },
   Task: {
     transformation: {
       fieldsToHide: [
@@ -223,16 +247,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       ],
     },
   },
-  [`${SETTINGS_TYPE_PREFIX}RolesPage`]: {
-    request: {
-      // TODO add real pagination once merged
-      url: '/settings/user-roles',
-      queryParams: {
-        size: '1000',
-        page: '0',
-      },
-    },
-  },
   [`${SETTINGS_TYPE_PREFIX}Currency`]: {
     transformation: {
       idFields: ['currencyCode'],
@@ -257,8 +271,32 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         // the type only has additionalProperties - this allows the individual rules to be extracted
-        { fieldName: 'revenueRecognitionRuleDtos', fieldType: 'list<Settings_RevenueRecognitionRule>' },
+        { fieldName: 'revenueRecognitionRuleDtos', fieldType: `list<${SETTINGS_TYPE_PREFIX}RevenueRecognitionRule>` },
       ],
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}Role`]: {
+    transformation: {
+      idFields: ['category', 'name'],
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}RolesPage`]: {
+    request: {
+      url: '/settings/user-roles',
+      queryParams: {
+        size: '100',
+        // the request fails if the page arg is not set
+        // the pagination infra will increment it for the 2nd page
+        page: '0',
+      },
+      paginationField: 'page',
+    },
+    transformation: {
+      fieldTypeOverrides: [
+        // the type specifies contents but the response has content
+        { fieldName: 'content', fieldType: `list<${SETTINGS_TYPE_PREFIX}Role>` },
+      ],
+      dataField: 'content',
     },
   },
   [`${SETTINGS_TYPE_PREFIX}WorkflowObject`]: {
@@ -271,11 +309,34 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       ],
     },
   },
+  [`${SETTINGS_TYPE_PREFIX}AllNotifications`]: {
+    request: {
+      url: '/settings/communication-profiles/{id}/notifications',
+      dependsOn: [
+        { pathParam: 'id', from: { type: `${SETTINGS_TYPE_PREFIX}CommunicationProfiles`, field: 'id' } },
+      ],
+    },
+    transformation: {
+      dataField: '.',
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}Notification`]: {
+    transformation: {
+      // TODO replace profileId with profile name to make this multienv-friendly
+      idFields: ['eventName', 'name', 'profileId'],
+      fieldsToHide: [
+        { fieldName: 'id', fieldType: 'string' },
+        { fieldName: 'eventId', fieldType: 'string' },
+        { fieldName: 'emailTemplate', fieldType: 'string' },
+      ],
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: ZuoraApiConfig['swagger'] = {
   url: 'https://assets.zuora.com/zuora-documentation/swagger.yaml',
   typeNameOverrides: [
+    { originalName: 'events__event_triggers@uub', newName: 'EventTriggers' },
     { originalName: 'notifications__email_templates@uub', newName: 'NotificationEmailTemplates' },
     { originalName: 'notifications__notification_definitions@uub', newName: 'NotificationDefinitions' },
     { originalName: 'workflows___workflow_id___export@uu_00123u_00125uu', newName: 'WorkflowExport' },
@@ -359,16 +420,17 @@ export const DEFAULT_SETTINGS_INCLUDE_TYPES = [
 ]
 
 export const DEFAULT_INCLUDE_TYPES: string[] = [
-  'CatalogProduct',
-  'CustomObject',
-  'StandardObject',
   'AccountingCodes',
   'AccountingPeriods',
+  'CatalogProduct',
+  'CustomObject',
+  'EventTriggers',
   'HostedPages',
   'NotificationDefinitions',
   'NotificationEmailTemplates',
   'PaymentGateways',
   'SequenceSets',
+  'StandardObject',
   'WorkflowExport',
 ]
 

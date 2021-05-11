@@ -196,6 +196,60 @@ describe('swagger_instance_elements', () => {
       ))).toBeTruthy()
     })
 
+    it('should use the request defaults', async () => {
+      const objectTypes = generateObjectTypes()
+      const res = await getAllInstances({
+        paginator: mockPaginator,
+        apiConfig: {
+          swagger: {
+            url: 'ignored',
+          },
+          typeDefaults: {
+            request: {
+              paginationField: 'abc',
+            },
+            transformation: {
+              idFields: ['id'],
+            },
+          },
+          types: {
+            Owner: {
+              request: {
+                url: '/owner',
+              },
+              transformation: {
+                idFields: ['name'],
+              },
+            },
+            Pet: {
+              request: {
+                url: '/pet',
+                queryParams: {
+                  a: 'b',
+                },
+              },
+            },
+          },
+        },
+        fetchConfig: {
+          includeTypes: ['Owner', 'Pet'],
+        },
+        objectTypes,
+        computeGetArgs: simpleGetArgs,
+        nestedFieldFinder: returnFullEntry,
+      })
+      expect(res).toHaveLength(4)
+      expect(res.map(e => e.elemID.getFullName())).toEqual([
+        `${ADAPTER_NAME}.Owner.instance.owner2`,
+        `${ADAPTER_NAME}.Pet.instance.dog`,
+        `${ADAPTER_NAME}.Pet.instance.cat`,
+        `${ADAPTER_NAME}.Pet.instance.mouse`,
+      ])
+      expect(mockPaginator).toHaveBeenCalledTimes(2)
+      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: 'abc' })
+      expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: 'abc' })
+    })
+
     it('should extract standalone fields', async () => {
       const objectTypes = generateObjectTypes()
       const res = await getAllInstances({

@@ -84,6 +84,7 @@ describe('Zuora adapter E2E with real swagger and mock replies', () => {
           'zuora_billing.DiscountPricingUpdate',
           'zuora_billing.EndConditions',
           'zuora_billing.EventTrigger',
+          'zuora_billing.EventTriggers',
           'zuora_billing.EventType',
           'zuora_billing.FieldsAdditionalProperties',
           'zuora_billing.FilterRuleParameterDefinition',
@@ -425,7 +426,6 @@ describe('Zuora adapter E2E with real swagger and mock replies', () => {
           'zuora_billing.Workflows',
           'zuora_billing.Workflows_pagination',
           'zuora_billing.creditCard',
-          'zuora_billing.events__event_triggers@uub',
           'zuora_billing.orderMetric',
         ]))
       })

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { Field, Value } from '@salto-io/adapter-api'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { TASK_TYPE, WORKFLOW_TYPE } from './constants'
+import { TASK_TYPE, WORKFLOW_TYPE, SETTINGS_TYPE_PREFIX } from './constants'
 
 type LookupFunc = (val: Value, context?: string) => string
 
@@ -94,9 +94,14 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: TASK_TYPE },
   },
   {
+    src: { field: 'profileId', parentTypes: [`${SETTINGS_TYPE_PREFIX}Notification`] },
+    serializationStrategy: 'id',
+    target: { type: `${SETTINGS_TYPE_PREFIX}CommunicationProfile` },
+  },
+  {
     src: { field: 'revenueRecognitionRuleName', parentTypes: ['GETProductRatePlanChargeType'] },
     serializationStrategy: 'name',
-    target: { type: 'Settings_RevenueRecognitionRule' },
+    target: { type: `${SETTINGS_TYPE_PREFIX}RevenueRecognitionRule` },
   },
 ]
 

@@ -259,6 +259,8 @@ const getInstancesForType = async ({
     fieldsToOmit, dataField,
   } = getConfigWithDefault(transformation, typeDefaultConfig.transformation)
 
+  const requestWithDefaults = getConfigWithDefault(request, typeDefaultConfig.request ?? {})
+
   try {
     const nestedFieldDetails = nestedFieldFinder(type, fieldsToOmit, dataField)
 
@@ -296,7 +298,7 @@ const getInstancesForType = async ({
     const { objType, extractValues } = getType()
 
     const getEntries = async (): Promise<Values[]> => {
-      const args = computeGetArgs(request, contextElements)
+      const args = computeGetArgs(requestWithDefaults, contextElements)
 
       const results = (await Promise.all(
         args.map(async getArgs => ((await toArrayAsync(await paginator(getArgs))).flat()))

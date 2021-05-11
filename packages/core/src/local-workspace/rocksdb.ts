@@ -21,7 +21,7 @@ import path from 'path'
 const requireOrExtract = (externalsLocation: string): any => {
   try {
     // eslint-disable-next-line global-require
-    return require('rocksdb')
+    return require('@salto-io/rocksdb')
   } catch {
     // eslint-disable-next-line @typescript-eslint/camelcase
     if (typeof __non_webpack_require__ !== 'undefined') {

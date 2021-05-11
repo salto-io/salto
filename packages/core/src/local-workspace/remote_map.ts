@@ -60,14 +60,14 @@ const readIteratorPage = (iterator: rocksdb
     .Iterator): Promise<remoteMap.RemoteMapEntry<string>[] | undefined> =>
   new Promise<remoteMap.RemoteMapEntry<string>[] | undefined>(resolve => {
     const callback = (_err: Error | undefined, res: [RocksDBValue, RocksDBValue][]): void => {
-      const result = res.map(([key, value]) => {
+      const result = res?.map(([key, value]) => {
         const keyAsString = key?.toString()
         const cleanKey = keyAsString?.substr(keyAsString
           .indexOf(NAMESPACE_SEPARATOR) + NAMESPACE_SEPARATOR.length)
         return { key: cleanKey, value: value?.toString() }
       }).filter(
         entry => values.isDefined(entry.key) && values.isDefined(entry.value)
-      ) as remoteMap.RemoteMapEntry<string>[]
+      ) as remoteMap.RemoteMapEntry<string>[] ?? []
       if (result.length > 0) {
         resolve(result)
       } else {

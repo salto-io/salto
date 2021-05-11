@@ -25,7 +25,7 @@ import {
   Plan, PlanItem, EVENT_TYPES, DeployResult,
   telemetrySender, Telemetry, Tags, TelemetryEvent, CommandConfig,
 } from '@salto-io/core'
-import { Workspace, errors as wsErrors, state as wsState, parser, remoteMap, elementSource } from '@salto-io/workspace'
+import { Workspace, errors as wsErrors, state as wsState, parser, remoteMap, elementSource, pathIndex } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -297,7 +297,7 @@ export const mockWorkspace = ({
   const state = wsState.buildInMemState(
     async () => ({
       elements: createInMemoryElementSource(),
-      pathIndex: new InMemoryRemoteMap(),
+      pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
       servicesUpdateDate: new InMemoryRemoteMap(),
       saltoMetadata: new InMemoryRemoteMap([
         { key: 'version', value: currentVersion },

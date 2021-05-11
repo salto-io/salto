@@ -16,7 +16,7 @@
 import semver from 'semver'
 import moment from 'moment'
 import { Plan, PlanItem } from '@salto-io/core'
-import { Workspace, state, remoteMap, elementSource } from '@salto-io/workspace'
+import { Workspace, state, remoteMap, elementSource, pathIndex } from '@salto-io/workspace'
 import { CliExitCode } from '../../src/types'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
@@ -247,7 +247,7 @@ describe('deploy command', () => {
       const saltoMetadata = new InMemoryRemoteMap<string, state.StateMetadataKey>(metaData)
       return state.buildInMemState(async () => ({
         elements: createInMemoryElementSource(),
-        pathIndex: new InMemoryRemoteMap(),
+        pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
         servicesUpdateDate: data.servicesUpdateDate ?? new InMemoryRemoteMap(),
         saltoMetadata,
       }))

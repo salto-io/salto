@@ -20,6 +20,7 @@ import * as subtypes from './subtypes'
 import { computeGetArgs, simpleGetArgs } from './request_parameters'
 import { RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH } from './constants'
 import { returnFullEntry, FindNestedFieldFunc } from './field_finder'
+import { filterTypes } from './type_elements'
 
 export {
   ducktype,
@@ -29,4 +30,5 @@ export {
   computeGetArgs, simpleGetArgs,
   returnFullEntry, FindNestedFieldFunc,
   RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH,
+  filterTypes,
 }

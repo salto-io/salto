@@ -15,7 +15,8 @@
 */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { FieldDefinition, BuiltinTypes, ObjectType, ElemID } from '@salto-io/adapter-api'
-import { hideFields } from '../../src/elements/type_elements'
+import { SUBTYPES_PATH, TYPES_PATH } from '../../src/elements/constants'
+import { filterTypes, hideFields } from '../../src/elements/type_elements'
 
 describe('type_elements', () => {
   describe('hideFields', () => {
@@ -84,6 +85,20 @@ describe('type_elements', () => {
       expect(fields.str.annotations).toBeUndefined()
       expect(fields.num.annotations).toBeUndefined()
       expect(fields.custom.annotations).toBeUndefined()
+    })
+  })
+
+  describe('filterTypes', () => {
+    it('should filter the right types', () => {
+      const typeA = new ObjectType({ elemID: new ElemID('adapterName', 'A'), path: ['adapterName', 'A'] })
+      const typeB = new ObjectType({ elemID: new ElemID('adapterName', 'B'), fields: { a: { type: typeA } }, path: ['adapterName', 'B'] })
+      const typeC = new ObjectType({ elemID: new ElemID('adapterName', 'C'), path: ['adapterName', 'C'] })
+      const filteredTypes = filterTypes('adapterName', [typeA, typeB, typeC], ['B', 'D'])
+
+      expect(filteredTypes[0].elemID.getFullNameParts()).toEqual(['adapterName', 'B'])
+      expect(filteredTypes[0].path).toEqual(['adapterName', TYPES_PATH, 'B'])
+      expect(filteredTypes[1].elemID.getFullNameParts()).toEqual(['adapterName', 'A'])
+      expect(filteredTypes[1].path).toEqual(['adapterName', TYPES_PATH, SUBTYPES_PATH, 'A'])
     })
   })
 })

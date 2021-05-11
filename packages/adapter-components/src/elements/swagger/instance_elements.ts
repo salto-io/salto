@@ -225,7 +225,7 @@ const normalizeType = (type: ObjectType | undefined): ObjectType | undefined => 
 
 const shouldRecurseIntoEntry = (
   entry: Values,
-  context?: Record<string, string>,
+  context?: Record<string, unknown>,
   conditions?: RecurseIntoCondition[]
 ): boolean => (
   (conditions ?? []).every(condition => {
@@ -243,7 +243,7 @@ type GetEntriesParams = {
   typesConfig: Record<string, TypeSwaggerConfig>
   typeDefaultConfig: TypeSwaggerDefaultConfig
   contextElements?: Record<string, InstanceElement[]>
-  requestContext?: Values
+  requestContext?: Record<string, unknown>
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
 }

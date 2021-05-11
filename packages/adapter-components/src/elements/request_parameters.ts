@@ -25,7 +25,7 @@ const log = logger(module)
 export type ComputeGetArgsFunc = (
   request: RequestConfig,
   contextElements?: Record<string, Element[]>,
-  requestContext?: Values,
+  requestContext?: Record<string, unknown>,
 ) => ClientGetWithPaginationParams[]
 
 /**
@@ -99,7 +99,7 @@ export const computeGetArgs: ComputeGetArgsFunc = (
     val => {
       const replacement = requestContext?.[val.slice(1, -1)] ?? val
       if (!isPrimitiveValue(replacement)) {
-        throw new Error(`Cannot replace arg ${val} in ${args.url} with non-string value ${replacement}`)
+        throw new Error(`Cannot replace arg ${val} in ${args.url} with non-primitive value ${replacement}`)
       }
       return replacement.toString()
     }

@@ -34,6 +34,9 @@ import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
 import addParentFolder from './filters/add_parent_folder'
 import serviceUrls from './filters/service_urls'
+import redundantTypes from './filters/remove_redundant_types'
+import replaceRecordRef from './filters/replace_record_ref'
+import hiddenFields from './filters/hidden_fields'
 import { FilterCreator } from './filter'
 import {
   getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
@@ -48,6 +51,7 @@ import { createElementsSourceIndex } from './elements_source_index/elements_sour
 import { LazyElementsSourceIndex } from './elements_source_index/types'
 import getChangeValidator from './change_validator'
 import { getChangeGroupIdsFunc } from './group_changes'
+import { getDataTypes } from './data_elements'
 
 const { makeArray } = collections.array
 
@@ -62,6 +66,7 @@ export interface NetsuiteAdapterParams {
   typesToSkip?: string[]
   // File paths regular expression that we skip their fetch
   filePathRegexSkipList?: string[]
+  dataTypesNames?: string[]
   // Determines whether to attempt deploying all the elements that are referenced by the changed
   // elements. It's needed as a workaround in cases deploy fails due to SDF inconsistent behavior
   deployReferencedElements?: boolean
@@ -77,6 +82,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private filtersCreators: FilterCreator[]
   private readonly typesToSkip: string[]
   private readonly filePathRegexSkipList: string[]
+  private readonly dataTypesNames: string[]
   private readonly deployReferencedElements: boolean
   private readonly userConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
@@ -94,6 +100,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       consistentValues,
       replaceInstanceReferencesFilter,
       serviceUrls,
+      replaceRecordRef,
+      redundantTypes,
+      hiddenFields,
     ],
     typesToSkip = [
       INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard
@@ -102,6 +111,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       // If we decide to fetch them we should set the SCRIPT_ID by the xml's filename upon fetch.
     ],
     filePathRegexSkipList = [],
+    dataTypesNames = [],
     deployReferencedElements = DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
     getElemIdFunc,
     config,
@@ -112,6 +122,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.typesToSkip = typesToSkip.concat(makeArray(config[TYPES_TO_SKIP]))
     this.filePathRegexSkipList = filePathRegexSkipList
       .concat(makeArray(config[FILE_PATHS_REGEX_SKIP_LIST]))
+    this.dataTypesNames = dataTypesNames
     this.deployReferencedElements = config[DEPLOY_REFERENCED_ELEMENTS] ?? deployReferencedElements
     this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
@@ -190,7 +201,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
         ? createInstanceElement(customizationInfo, type, this.getElemIdFunc, serverTime)
         : undefined
     }).filter(isInstanceElement)
-    const elements = [...getAllTypes(), ...instances, ...serverTimeElements]
+    const elements = [
+      ...getAllTypes(),
+      ...await getDataTypes(this.dataTypesNames, this.client),
+      ...instances,
+      ...serverTimeElements,
+    ]
 
     progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
     await this.runFiltersOnFetch(elements, elementsSourceIndex, isPartial)

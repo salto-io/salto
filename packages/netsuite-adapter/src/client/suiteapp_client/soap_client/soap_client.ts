@@ -252,6 +252,11 @@ export default class SoapClient {
     })
   }
 
+  public async getNetsuiteWsdl(): Promise<soap.WSDL> {
+    const { wsdl } = (await this.getClient()) as unknown as { wsdl: soap.WSDL }
+    return wsdl
+  }
+
   private async sendSoapRequest(operation: string, body: object): Promise<unknown> {
     const client = await this.getClient()
     return this.callsLimiter(async () => (await client[`${operation}Async`](body))[0])

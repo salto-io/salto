@@ -18,6 +18,7 @@ import { AccountId, Change, ChangeGroup, DeployResult, getChangeElement, Instanc
 import { logger } from '@salto-io/logging'
 import { decorators } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
+import * as soap from 'soap'
 import { NetsuiteQuery } from '../query'
 import { Credentials, toUrlAccountId } from './credentials'
 import SdfClient from './sdf_client'
@@ -177,4 +178,8 @@ export default class NetsuiteClient {
       }
     }
   )
+
+  public async getNetsuiteWsdl(): Promise<soap.WSDL | undefined> {
+    return this.suiteAppClient?.getNetsuiteWsdl()
+  }
 }

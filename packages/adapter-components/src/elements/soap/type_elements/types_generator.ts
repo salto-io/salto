@@ -82,7 +82,7 @@ export const extractTypes = async (
     .value()
 
   if (duplicateTypes.length > 0) {
-    throw new Error(`There are duplicate type names in the WSDL: ${duplicateTypes}`)
+    log.debug(`There are duplicate type names in the WSDL: ${duplicateTypes}`)
   }
 
   log.debug('Finished generating SOAP types')

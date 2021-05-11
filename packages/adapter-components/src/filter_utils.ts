@@ -13,9 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, PostFetchOptions } from '@salto-io/adapter-api'
-import { types, promises } from '@salto-io/lowerdash'
+import { Element, ObjectType, PostFetchOptions } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import { types, promises, values } from '@salto-io/lowerdash'
+import _ from 'lodash'
 import { Paginator } from './client'
+import { SUBTYPES_PATH, TYPES_PATH } from './elements'
+import { getSubtypes } from './elements/subtypes'
+
+const log = logger(module)
 
 export type Filter = Partial<{
   onFetch(elements: Element[]): Promise<void>
@@ -51,4 +57,26 @@ export const filtersRunner = <TClient, TContext>(
       )
     },
   }
+}
+
+export const filterTypes = (
+  adapterName: string,
+  allTypes: ObjectType[],
+  typesToFilter: string[]
+): ObjectType[] => {
+  const nameToType = _.keyBy(allTypes, type => type.elemID.name)
+
+  const relevantTypes = typesToFilter.map(name => {
+    const type = nameToType[name]
+    if (type === undefined) {
+      log.warn(`Data type '${name}' of adapter ${adapterName} does not exists`)
+    }
+    return type
+  }).filter(values.isDefined)
+
+  relevantTypes.forEach(t => { t.path = [adapterName, TYPES_PATH, t.elemID.name] })
+  const subtypes = getSubtypes(relevantTypes)
+  subtypes.forEach(t => { t.path = [adapterName, TYPES_PATH, SUBTYPES_PATH, t.elemID.name] })
+
+  return [...relevantTypes, ...subtypes]
 }

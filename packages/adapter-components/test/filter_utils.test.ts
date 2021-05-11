@@ -13,9 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { filtersRunner, FilterCreator } from '../src/filter_utils'
+import { ElemID, ObjectType } from '@salto-io/adapter-api'
+import { filtersRunner, FilterCreator, filterTypes } from '../src/filter_utils'
 import { makeResolvablePromise, mockFunction } from './common'
 import { Paginator, HTTPClientInterface } from '../src/client'
+import { SUBTYPES_PATH, TYPES_PATH } from '../src/elements'
 
 describe('filter utils', () => {
   describe('filtersRunner', () => {
@@ -97,6 +99,20 @@ describe('filter utils', () => {
       await onPostFetchRes
       expect(mockOnPostFetch2).toHaveBeenCalled()
       expect(mockOnPostFetch3).toHaveBeenCalled()
+    })
+  })
+
+  describe('filterTypes', () => {
+    it('should filter the right types', () => {
+      const typeA = new ObjectType({ elemID: new ElemID('adapterName', 'A'), path: ['adapterName', 'A'] })
+      const typeB = new ObjectType({ elemID: new ElemID('adapterName', 'B'), fields: { a: { type: typeA } }, path: ['adapterName', 'B'] })
+      const typeC = new ObjectType({ elemID: new ElemID('adapterName', 'C'), path: ['adapterName', 'C'] })
+      const filteredTypes = filterTypes('adapterName', [typeA, typeB, typeC], ['B', 'D'])
+
+      expect(filteredTypes[0].elemID.getFullNameParts()).toEqual(['adapterName', 'B'])
+      expect(filteredTypes[0].path).toEqual(['adapterName', TYPES_PATH, 'B'])
+      expect(filteredTypes[1].elemID.getFullNameParts()).toEqual(['adapterName', 'A'])
+      expect(filteredTypes[1].path).toEqual(['adapterName', TYPES_PATH, SUBTYPES_PATH, 'A'])
     })
   })
 })

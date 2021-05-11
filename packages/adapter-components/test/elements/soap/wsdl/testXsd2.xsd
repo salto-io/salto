@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema targetNamespace="testXsd2" elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <complexType name="someType">
+  </complexType>
+
+  <simpleType name="someAlias">
+    <restriction base="xsd:string">
+    </restriction>
+  </simpleType>
+</schema>

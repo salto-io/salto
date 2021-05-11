@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema targetNamespace="testXsd1" elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.w3.org/2001/XMLSchema" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd2="testXsd2">
+  
+<simpleType name="invalidSimpleType">
+</simpleType>
+
+<complexType name="invalidComplexType">
+  <complexContent>
+  </complexContent>
+</complexType>
+
+<complexType>
+</complexType>
+
+  <complexType name="extendedType">
+    <sequence>
+      <attribute name="testAttr" type="xsd:string"/>
+    </sequence>
+  </complexType>
+
+  <complexType name="testedTypeSubtype">
+    <sequence>
+      <element name="testField" type="xsd:string" minOccurs="0"/>
+    </sequence>
+  </complexType>
+
+  <complexType name="testedType">
+    <complexContent>
+      <extension base="extendedType">
+        <sequence>
+          <element name="testInvalid"/>
+          <element name="testUnknown" type="xsd:notExists" minOccurs="0"/>
+          <element name="primitiveField" type="xsd:string" minOccurs="0"/>
+          <element name="aliasField" type="xsd2:someAlias" minOccurs="0"/>
+          <element name="fieldToType" type="xsd2:someType" minOccurs="0"/>
+          <element name="subtypeField" type="testedTypeSubtype" minOccurs="0"/>
+          <element name="listField" type="xsd:string" minOccurs="0" maxOccurs="unbounded"/>
+        </sequence>
+      </extension>
+    </complexContent>
+  </complexType>
+</xsd:schema>

@@ -39,7 +39,8 @@
     "axios-retry": "^3.1.9",
     "bottleneck": "^2.19.5",
     "lodash": "^4.17.21",
-    "qs": "^6.10.1"
+    "qs": "^6.10.1",
+    "soap": "^0.37.0"
   },
   "devDependencies": {
     "@types/jest": "^26.0.20",
@@ -47,6 +48,7 @@
     "@types/node": "^12.7.1",
     "@typescript-eslint/eslint-plugin": "2.31.0",
     "@typescript-eslint/parser": "2.31.0",
+    "@types/sax": "^1.2.1",
     "axios-mock-adapter": "^1.19.0",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",

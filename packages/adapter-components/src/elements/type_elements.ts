@@ -14,9 +14,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { FieldDefinition, Field, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { FieldDefinition, Field, CORE_ANNOTATIONS, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { values } from '@salto-io/lowerdash'
+import _ from 'lodash'
 import { FieldToHideType } from '../config/transformation'
+import { SUBTYPES_PATH, TYPES_PATH } from './constants'
+import { getSubtypes } from './subtypes'
 
 const log = logger(module)
 
@@ -42,4 +46,27 @@ export const hideFields = (
       }
     }
   })
+}
+
+
+export const filterTypes = (
+  adapterName: string,
+  allTypes: ObjectType[],
+  typesToFilter: string[]
+): ObjectType[] => {
+  const nameToType = _.keyBy(allTypes, type => type.elemID.name)
+
+  const relevantTypes = typesToFilter.map(name => {
+    const type = nameToType[name]
+    if (type === undefined) {
+      log.warn(`Data type '${name}' of adapter ${adapterName} does not exist`)
+    }
+    return type
+  }).filter(values.isDefined)
+
+  relevantTypes.forEach(t => { t.path = [adapterName, TYPES_PATH, t.elemID.name] })
+  const subtypes = getSubtypes(relevantTypes)
+  subtypes.forEach(t => { t.path = [adapterName, TYPES_PATH, SUBTYPES_PATH, t.elemID.name] })
+
+  return [...relevantTypes, ...subtypes]
 }

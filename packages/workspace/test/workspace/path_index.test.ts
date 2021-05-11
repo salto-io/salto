@@ -16,7 +16,7 @@
 import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import {
-  updatePathIndex, getElementsPathHints, PathIndex, getFromPathIndex,
+  updatePathIndex, getElementsPathHints, PathIndex, getFromPathIndex, Path,
 } from '../../src/workspace/path_index'
 import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
 
@@ -113,7 +113,7 @@ const multiPathInstanceB = new InstanceElement(
 describe('updatePathIndex', () => {
   let index: PathIndex
   beforeAll(async () => {
-    index = new InMemoryRemoteMap()
+    index = new InMemoryRemoteMap<Path[]>()
     await index.setAll(getElementsPathHints([singlePathObject]))
     await updatePathIndex(index, [
       multiPathAnnoObj,
@@ -158,7 +158,7 @@ describe('updatePathIndex', () => {
 })
 
 describe('getFromPathIndex', () => {
-  const index: PathIndex = new InMemoryRemoteMap()
+  const index: PathIndex = new InMemoryRemoteMap<Path[]>()
   const parentID = new ElemID('salto.parent')
   const nestedID = parentID.createNestedID('attr', 'one')
   const nestedPath = ['salto', 'one']

@@ -170,14 +170,6 @@ export type FetchChangesResult = {
   adapterNameToConfigMessage: Record<string, string>
 }
 
-export class FatalFetchMergeError extends Error {
-  constructor(public causes: MergeErrorWithElements[]) {
-    super(`Error occurred during fetch, cause:\n${
-      causes.map(c => `Error: ${c.error.message}, Elements: ${c.elements.map(e => e.elemID.getFullName()).join(', ')}\n`)
-    }`)
-  }
-}
-
 type ProcessMergeErrorsResult = {
   keptElements: Element[]
   errorsWithDroppedElements: MergeErrorWithElements[]
@@ -186,7 +178,6 @@ type ProcessMergeErrorsResult = {
 const processMergeErrors = (
   elements: Element[],
   errors: merger.MergeError[],
-  stateElementIDs: Set<string>
 ): ProcessMergeErrorsResult => log.time(() => {
   const mergeErrsByElemID = _(errors)
     .map(me => ([
@@ -196,14 +187,10 @@ const processMergeErrors = (
     .value() as Record<string, MergeErrorWithElements>
 
   const errorsWithDroppedElements: MergeErrorWithElements[] = []
-  const errorsWithStateElements: MergeErrorWithElements[] = []
   const keptElements = elements.filter(e => {
     const foundMergeErr = mergeErrsByElemID[e.elemID.getFullName()]
     if (foundMergeErr) {
       foundMergeErr.elements.push(e)
-      if (stateElementIDs.has(e.elemID.getFullName())) {
-        errorsWithStateElements.push(foundMergeErr)
-      }
       errorsWithDroppedElements.push(foundMergeErr)
     }
 
@@ -217,17 +204,12 @@ const processMergeErrors = (
 
     return !foundMergeErr && !foundMergeErrForInstanceType
   })
-  if (!_.isEmpty(errorsWithStateElements)) {
-    throw new FatalFetchMergeError(
-      errorsWithStateElements
-    )
-  }
   return {
     keptElements,
     errorsWithDroppedElements,
   }
-}, 'process merge errors for %o elements with %o errors and %o state elements',
-elements.length, errors.length, stateElementIDs.size)
+}, 'process merge errors for %o elements with %o error',
+elements.length, errors.length)
 
 type UpdatedConfig = {
   config: InstanceElement
@@ -362,7 +344,6 @@ const fetchAndProcessMergeErrors = async (
     const processErrorsResult = processMergeErrors(
       elements,
       mergeErrors,
-      new Set(filteredStateElements.map(e => e.elemID.getFullName()))
     )
 
     const droppedElements = new Set(

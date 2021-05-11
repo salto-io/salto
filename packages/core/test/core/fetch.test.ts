@@ -353,22 +353,6 @@ describe('fetch', () => {
         fields: {},
         annotations: { bla: 'blu' },
       })
-      describe('when state', () => {
-        describe('contains elements with errored elem ids', () => {
-          it('should throw an exception', async () => {
-            try {
-              mockAdapters.dummy.fetch.mockResolvedValueOnce(
-                Promise.resolve({ elements: [dupTypeBase, dupTypeBase2] })
-              )
-              await fetchChanges(mockAdapters, [], [dupTypeBase], [], [])
-              expect(false).toBeTruthy()
-            } catch (e) {
-              expect(e.message).toMatch(/.*duplicate annotation.*/)
-              expect(e.message).toMatch(/.*bla.*/)
-            }
-          })
-        })
-      })
       describe('when instance type has merge error', () => {
         let fetchChangesResult: FetchChangesResult
         let dupInstance: InstanceElement

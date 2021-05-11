@@ -34,7 +34,6 @@ import {
 import { getPlan, Plan, PlanItem } from './core/plan'
 import {
   createElemIdGetter,
-  FatalFetchMergeError,
   FetchChange,
   fetchChanges,
   FetchProgressEvents,
@@ -229,41 +228,29 @@ export const fetch: FetchFunc = async (
   if (progressEmitter) {
     progressEmitter.emit('adaptersDidInitialize')
   }
-  try {
-    const {
-      changes, elements, mergeErrors, errors,
-      configChanges, adapterNameToConfigMessage, unmergedElements,
-    } = await fetchChanges(
-      adapters,
-      filterElementsByServices(await workspace.elements(), fetchServices),
-      filteredStateElements,
-      stateElementsNotCoveredByFetch,
-      currentConfigs,
-      progressEmitter,
-    )
-    log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-    await state.override(elements.concat(stateElementsNotCoveredByFetch))
-    await state.updatePathIndex(unmergedElements,
-      (await state.existingServices()).filter(key => !fetchServices.includes(key)))
-    log.debug(`finish to override state with ${elements.length} elements`)
-    return {
-      changes,
-      fetchErrors: errors,
-      mergeErrors,
-      success: true,
-      configChanges,
-      adapterNameToConfigMessage,
-    }
-  } catch (error) {
-    if (error instanceof FatalFetchMergeError) {
-      return {
-        changes: [],
-        fetchErrors: [],
-        mergeErrors: error.causes,
-        success: false,
-      }
-    }
-    throw error
+  const {
+    changes, elements, mergeErrors, errors,
+    configChanges, adapterNameToConfigMessage, unmergedElements,
+  } = await fetchChanges(
+    adapters,
+    filterElementsByServices(await workspace.elements(), fetchServices),
+    filteredStateElements,
+    stateElementsNotCoveredByFetch,
+    currentConfigs,
+    progressEmitter,
+  )
+  log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
+  await state.override(elements.concat(stateElementsNotCoveredByFetch))
+  await state.updatePathIndex(unmergedElements,
+    (await state.existingServices()).filter(key => !fetchServices.includes(key)))
+  log.debug(`finish to override state with ${elements.length} elements`)
+  return {
+    changes,
+    fetchErrors: errors,
+    mergeErrors,
+    success: true,
+    configChanges,
+    adapterNameToConfigMessage,
   }
 }
 

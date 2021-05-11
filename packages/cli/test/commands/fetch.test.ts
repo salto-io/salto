@@ -116,9 +116,6 @@ describe('fetch command', () => {
       const mockFetch = jest.fn().mockResolvedValue(
         { changes: [], mergeErrors: [], success: true }
       )
-      const mockFailedFetch = jest.fn().mockResolvedValue(
-        { changes: [], mergeErrors: [], success: false }
-      )
       const mockEmptyApprove = jest.fn().mockResolvedValue([])
       const mockUpdateConfig = jest.fn().mockResolvedValue(true)
 
@@ -530,25 +527,6 @@ describe('fetch command', () => {
               })
               expect(workspace.updateNaclFiles).toHaveBeenCalledWith([changes[0].change], 'default')
               expect(res).toBe(CliExitCode.Success)
-            })
-            it('should not update workspace if fetch failed', async () => {
-              const workspace = mocks.mockWorkspace({})
-              await fetchCommand({
-                workspace,
-                force: false,
-                services,
-                cliTelemetry,
-                output,
-                fetch: mockFailedFetch,
-                getApprovedChanges: mockSingleChangeApprove,
-                shouldUpdateConfig: mockUpdateConfig,
-                mode: 'default',
-                shouldCalcTotalSize: true,
-                stateOnly: false,
-                regenerateSaltoIds: false,
-              })
-              expect(output.stderr.content).toContain('Error')
-              expect(workspace.updateNaclFiles).not.toHaveBeenCalled()
             })
           })
         })

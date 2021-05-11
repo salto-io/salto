@@ -452,11 +452,6 @@ export const formatFetchWarnings = (warnings: string[]): string => [
   `${Prompts.FETCH_WARNINGS}\n${warnings.join('\n\n')}`,
 ].join('\n')
 
-export const formatFatalFetchError = (mergeErrors: FetchResult['mergeErrors']): string =>
-  formatSimpleError(`${Prompts.FETCH_FATAL_MERGE_ERROR_PREFIX}${
-    mergeErrors.map(c => `Error: ${c.error.message}, Elements: ${c.elements.map(e => e.elemID.getFullName()).join(', ')}\n`)
-  }`)
-
 export const formatWorkspaceLoadFailed = (numErrors: number): string =>
   formatSimpleError(`${Prompts.WORKSPACE_LOAD_FAILED(numErrors)}`)
 

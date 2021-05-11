@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { collections } from '@salto-io/lowerdash'
 import { ObjectType, ElemID, BuiltinTypes, ListType, MapType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { getAllInstances } from '../../../src/elements/swagger'
 import { returnFullEntry } from '../../../src/elements/field_finder'
@@ -22,11 +22,13 @@ import { Paginator } from '../../../src/client'
 import { simpleGetArgs } from '../../../src/elements/request_parameters'
 import { mockFunction } from '../../common'
 
+const { toAsyncIterable } = collections.asynciterable
+
 const ADAPTER_NAME = 'myAdapter'
 
 describe('swagger_instance_elements', () => {
   describe('getAllInstances', () => {
-    let mockPaginator: Paginator
+    let mockPaginator: jest.MockedFunction<Paginator>
 
     const generateObjectTypes = (): Record<string, ObjectType> => {
       const Owner = new ObjectType({
@@ -37,7 +39,7 @@ describe('swagger_instance_elements', () => {
         },
       })
       const Food = new ObjectType({
-        elemID: new ElemID(ADAPTER_NAME, 'Owner'),
+        elemID: new ElemID(ADAPTER_NAME, 'Food'),
         fields: {
           id: { type: BuiltinTypes.STRING },
           name: { type: BuiltinTypes.STRING },
@@ -811,6 +813,163 @@ describe('swagger_instance_elements', () => {
         },
         [ADAPTER_NAME, 'CustomObjectDefinition', 'Owner', 'Pet'],
       ))).toBeTruthy()
+    })
+
+    describe('with types that require recursing', () => {
+      let instances: InstanceElement[]
+      beforeEach(async () => {
+        mockPaginator.mockImplementation(({ url }) => {
+          if (url === '/pet') {
+            return toAsyncIterable([[
+              { id: 'dog', name: 'def' },
+              { id: 'cat', name: 'def' },
+              { id: 'fish', name: 'fish' },
+            ]])
+          }
+          if (url === '/pet/dog/owner' || url === '/pet/fish/owner') {
+            return toAsyncIterable([[
+              { name: 'o1' },
+              { name: 'o2' },
+            ]])
+          }
+          if (url === '/pet/dog/owner/o1/nicknames') {
+            return toAsyncIterable([[{ names: ['n1', 'n2'] }]])
+          }
+          if (url === '/pet/dog/owner/o2/nicknames') {
+            return toAsyncIterable([[{ names: ['n3'] }]])
+          }
+          if (url.match(/\/pet\/.*\/owner\/.*\/info/) !== null) {
+            return toAsyncIterable([[{ numOfPets: 2 }]])
+          }
+          return toAsyncIterable([[]])
+        })
+
+        const objectTypes = generateObjectTypes()
+        instances = await getAllInstances({
+          paginator: mockPaginator,
+          apiConfig: {
+            swagger: {
+              url: 'ignored',
+            },
+            typeDefaults: {
+              transformation: {
+                idFields: ['id'],
+              },
+            },
+            types: {
+              Pet: {
+                request: {
+                  url: '/pet',
+                  recurseInto: [
+                    {
+                      type: 'Owner',
+                      toField: 'owners',
+                      context: [
+                        { name: 'petId', fromField: 'id' },
+                        { name: 'petName', fromField: 'name' },
+                      ],
+                      conditions: [
+                        { fromField: 'id', match: ['dog', 'fish'] },
+                      ],
+                    },
+                  ],
+                },
+              },
+              Owner: {
+                request: {
+                  url: '/pet/{petId}/owner',
+                  recurseInto: [
+                    {
+                      type: 'OwnerNickNames',
+                      toField: 'nicknames',
+                      context: [{ name: 'ownerName', fromField: 'name' }],
+                      conditions: [{ fromContext: 'petName', match: ['def'] }],
+                    },
+                    {
+                      type: 'OwnerInfo',
+                      toField: 'info',
+                      context: [{ name: 'ownerName', fromField: 'name' }],
+                    },
+                  ],
+                },
+              },
+              OwnerNickNames: {
+                request: {
+                  url: '/pet/{petId}/owner/{ownerName}/nicknames',
+                },
+                transformation: { dataField: 'items' },
+              },
+              OwnerInfo: {
+                request: {
+                  url: '/pet/{petId}/owner/{ownerName}/info',
+                },
+              },
+            },
+          },
+          fetchConfig: {
+            includeTypes: ['Pet'],
+          },
+          objectTypes: {
+            ...objectTypes,
+            OwnerNickNames: new ObjectType({
+              elemID: new ElemID(ADAPTER_NAME, 'OwnerNickNames'),
+              fields: { names: { type: new ListType(BuiltinTypes.STRING) } },
+            }),
+            OwnerInfo: new ObjectType({
+              elemID: new ElemID(ADAPTER_NAME, 'OwnerInfo'),
+              fields: { numOfPets: { type: BuiltinTypes.NUMBER } },
+            }),
+          },
+        })
+      })
+      it('should get inner types recursively for instances that match the condition', () => {
+        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner' }))
+        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/fish/owner' }))
+        expect(mockPaginator).not.toHaveBeenCalledWith(expect.objectContaining({ url: expect.stringContaining('/pet/cat/') }))
+      })
+      it('should get inner types for instances based on context from previous requests', () => {
+        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner/o1/nicknames' }))
+        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner/o2/nicknames' }))
+        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner/o1/info' }))
+        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner/o2/info' }))
+        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/fish/owner/o1/info' }))
+        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/fish/owner/o2/info' }))
+
+        expect(mockPaginator).not.toHaveBeenCalledWith(
+          expect.objectContaining({ url: expect.stringMatching(/\/pet\/fish\/owner\/.*\/nicknames/) })
+        )
+      })
+      it('should return nested value list in the instance', () => {
+        expect(instances).toHaveLength(3)
+        const [dog, cat, fish] = instances
+        expect(dog.value).toHaveProperty(
+          'owners',
+          [
+            {
+              name: 'o1',
+              additionalProperties: {
+                nicknames: [{ names: ['n1', 'n2'] }],
+                info: [{ numOfPets: 2 }],
+              },
+            },
+            {
+              name: 'o2',
+              additionalProperties: {
+                nicknames: [{ names: ['n3'] }],
+                info: [{ numOfPets: 2 }],
+              },
+            },
+          ]
+        )
+        expect(cat.value).not.toHaveProperty('owners')
+        expect(fish.value).toHaveProperty(
+          'owners',
+          [
+            { name: 'o1', additionalProperties: { info: [{ numOfPets: 2 }] } },
+            { name: 'o2', additionalProperties: { info: [{ numOfPets: 2 }] } },
+          ]
+        )
+      })
     })
 
     it('should fail if type is missing from config', async () => {

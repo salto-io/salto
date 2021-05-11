@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, Values, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, Values, isInstanceElement, isPrimitiveValue } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { ClientGetWithPaginationParams } from '../client'
@@ -25,10 +25,11 @@ const log = logger(module)
 export type ComputeGetArgsFunc = (
   request: RequestConfig,
   contextElements?: Record<string, Element[]>,
+  requestContext?: Record<string, unknown>,
 ) => ClientGetWithPaginationParams[]
 
 /**
- * Convert an endpoint's request details into get argumets.
+ * Convert an endpoint's request details into get arguments.
  * Supports recursive queries (subsequent queries to the same endpoint based on response data).
  */
 export const simpleGetArgs: ComputeGetArgsFunc = (
@@ -90,7 +91,22 @@ const computeDependsOnURLs = (
 export const computeGetArgs: ComputeGetArgsFunc = (
   args,
   contextElements,
+  requestContext
 ) => {
-  const urls = computeDependsOnURLs(args, contextElements)
+  // Replace known url params
+  const baseUrl = args.url.replace(
+    ARG_PLACEHOLDER_MATCHER,
+    val => {
+      const replacement = requestContext?.[val.slice(1, -1)] ?? val
+      if (!isPrimitiveValue(replacement)) {
+        throw new Error(`Cannot replace arg ${val} in ${args.url} with non-primitive value ${replacement}`)
+      }
+      return replacement.toString()
+    }
+  )
+  const urls = computeDependsOnURLs(
+    { url: baseUrl, dependsOn: args.dependsOn },
+    contextElements,
+  )
   return urls.flatMap(url => simpleGetArgs({ ...args, url }, contextElements))
 }

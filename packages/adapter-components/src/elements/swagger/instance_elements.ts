@@ -26,7 +26,8 @@ import { InstanceCreationParams, toBasicInstance } from '../instance_elements'
 import { UnauthorizedError, Paginator } from '../../client'
 import {
   UserFetchConfig, TypeSwaggerDefaultConfig, TransformationConfig, TransformationDefaultConfig,
-  AdapterSwaggerApiConfig, TypeSwaggerConfig, getConfigWithDefault,
+  AdapterSwaggerApiConfig, TypeSwaggerConfig, getConfigWithDefault, RecurseIntoCondition,
+  isRecurseIntoConditionByField,
 } from '../../config'
 import { findDataField, FindNestedFieldFunc } from '../field_finder'
 import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../request_parameters'
@@ -36,6 +37,8 @@ const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
 const { isDefined } = lowerdashValues
 const log = logger(module)
+
+class InvalidTypeConfig extends Error {}
 
 /**
  * Extract standalone fields to their own instances, and convert the original value to a reference.
@@ -219,109 +222,162 @@ const normalizeType = (type: ObjectType | undefined): ObjectType | undefined => 
   return type
 }
 
-/**
- * Fetch all instances for the specified type, generating the needed API requests
- * based on the endpoint configuration. For endpoints that depend on other endpoints,
- * use the already-fetched elements as context in order to determine the right requests.
- */
-const getInstancesForType = async ({
-  typeName,
-  paginator,
-  typesConfig,
-  typeDefaultConfig,
-  objectTypes,
-  contextElements,
-  nestedFieldFinder,
-  computeGetArgs,
-}: {
+
+const shouldRecurseIntoEntry = (
+  entry: Values,
+  context?: Record<string, unknown>,
+  conditions?: RecurseIntoCondition[]
+): boolean => (
+  (conditions ?? []).every(condition => {
+    const compareValue = isRecurseIntoConditionByField(condition)
+      ? _.get(entry, condition.fromField)
+      : _.get(context, condition.fromContext)
+    return condition.match.some(m => new RegExp(m).test(compareValue))
+  })
+)
+
+type GetEntriesParams = {
   typeName: string
   paginator: Paginator
   objectTypes: Record<string, ObjectType>
   typesConfig: Record<string, TypeSwaggerConfig>
   typeDefaultConfig: TypeSwaggerDefaultConfig
   contextElements?: Record<string, InstanceElement[]>
+  requestContext?: Record<string, unknown>
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
-}): Promise<InstanceElement[]> => {
+}
+
+const getEntriesForType = async (
+  params: GetEntriesParams
+): Promise<{ entries: Values[]; objType: ObjectType }> => {
+  const {
+    typeName, paginator, typesConfig, typeDefaultConfig, objectTypes, contextElements,
+    requestContext, nestedFieldFinder, computeGetArgs,
+  } = params
   const type = normalizeType(objectTypes[typeName])
   const typeConfig = typesConfig[typeName]
   if (type === undefined || typeConfig === undefined) {
     // should never happen
-    throw new Error(`could not find type ${typeName}`)
+    throw new InvalidTypeConfig(`could not find type ${typeName}`)
   }
   const { request, transformation } = typeConfig
   if (request === undefined) {
     // a type with no request config cannot be fetched
-    throw new Error(`Invalid type config - type ${type.elemID.adapter}.${typeName} has no request config`)
+    throw new InvalidTypeConfig(`Invalid type config - type ${type.elemID.adapter}.${typeName} has no request config`)
   }
 
   const {
     fieldsToOmit, dataField,
   } = getConfigWithDefault(transformation, typeDefaultConfig.transformation)
-
   const requestWithDefaults = getConfigWithDefault(request, typeDefaultConfig.request ?? {})
 
-  try {
-    const nestedFieldDetails = nestedFieldFinder(type, fieldsToOmit, dataField)
+  const nestedFieldDetails = nestedFieldFinder(type, fieldsToOmit, dataField)
 
-    const getType = (): { objType: ObjectType; extractValues?: boolean } => {
-      if (nestedFieldDetails === undefined) {
+  const getType = (): { objType: ObjectType; extractValues?: boolean } => {
+    if (nestedFieldDetails === undefined) {
+      return {
+        objType: type,
+      }
+    }
+
+    const dataFieldType = nestedFieldDetails.field.type
+
+    // special case - should probably move to adapter-specific filter if does not recur
+    if (
+      dataField !== undefined
+      && isObjectType(dataFieldType)
+      && isAdditionalPropertiesOnlyObjectType(dataFieldType)
+    ) {
+      const propsType = dataFieldType.fields[ADDITIONAL_PROPERTIES_FIELD].type
+      if (isMapType(propsType) && isObjectType(propsType.innerType)) {
         return {
-          objType: type,
+          objType: propsType.innerType,
+          extractValues: true,
         }
       }
-
-      const dataFieldType = nestedFieldDetails.field.type
-
-      // special case - should probably move to adapter-specific filter if does not recur
-      if (
-        dataField !== undefined
-        && isObjectType(dataFieldType)
-        && isAdditionalPropertiesOnlyObjectType(dataFieldType)
-      ) {
-        const propsType = dataFieldType.fields[ADDITIONAL_PROPERTIES_FIELD].type
-        if (isMapType(propsType) && isObjectType(propsType.innerType)) {
-          return {
-            objType: propsType.innerType,
-            extractValues: true,
-          }
-        }
-      }
-
-      const fieldType = isListType(dataFieldType) ? dataFieldType.innerType : dataFieldType
-      if (!isObjectType(fieldType)) {
-        throw new Error(`data field type ${fieldType.elemID.getFullName()} must be an object type`)
-      }
-      return { objType: fieldType }
     }
 
-    const { objType, extractValues } = getType()
-
-    const getEntries = async (): Promise<Values[]> => {
-      const args = computeGetArgs(requestWithDefaults, contextElements)
-
-      const results = (await Promise.all(
-        args.map(async getArgs => ((await toArrayAsync(await paginator(getArgs))).flat()))
-      )).flatMap(makeArray)
-
-      const entries = (results
-        .flatMap(result => (nestedFieldDetails !== undefined
-          ? makeArray(result[nestedFieldDetails.field.name])
-          : makeArray(result)))
-        .flatMap(result => (extractValues && _.isPlainObject(result)
-          ? Object.values(result as object)
-          : makeArray(result))))
-
-      return entries
+    const fieldType = isListType(dataFieldType) ? dataFieldType.innerType : dataFieldType
+    if (!isObjectType(fieldType)) {
+      throw new Error(`data field type ${fieldType.elemID.getFullName()} must be an object type`)
     }
+    return { objType: fieldType }
+  }
 
-    const transformationConfigByType = _.pickBy(
-      _.mapValues(typesConfig, def => def.transformation),
-      isDefined,
-    )
-    const transformationDefaultConfig = typeDefaultConfig.transformation
+  const { objType, extractValues } = getType()
 
-    const entries = await getEntries()
+  const getEntries = async (): Promise<Values[]> => {
+    const args = computeGetArgs(requestWithDefaults, contextElements, requestContext)
+
+    const results = (await Promise.all(
+      args.map(async getArgs => ((await toArrayAsync(await paginator(getArgs))).flat()))
+    )).flatMap(makeArray)
+
+    const entries = (results
+      .flatMap(result => (nestedFieldDetails !== undefined
+        ? makeArray(result[nestedFieldDetails.field.name])
+        : makeArray(result)))
+      .flatMap(result => (extractValues && _.isPlainObject(result)
+        ? Object.values(result as object)
+        : makeArray(result))))
+
+    return entries
+  }
+
+  const entries = await getEntries()
+
+  const { recurseInto } = requestWithDefaults
+  if (recurseInto === undefined) {
+    return { entries, objType }
+  }
+
+  const getExtraFieldValues = (entry: Values): Promise<[string, Values[]][]> => Promise.all(
+    recurseInto
+      .filter(({ conditions }) => shouldRecurseIntoEntry(entry, requestContext, conditions))
+      .map(async nested => {
+        const nestedRequestContext = Object.fromEntries(
+          nested.context.map(
+            contextDef => [contextDef.name, _.get(entry, contextDef.fromField)]
+          )
+        )
+        const nestedEntries = await getEntriesForType({
+          ...params,
+          typeName: nested.type,
+          requestContext: {
+            ...requestContext ?? {},
+            ...nestedRequestContext,
+          },
+        })
+        return [nested.toField, nestedEntries.entries] as [string, Values[]]
+      })
+  )
+
+  const filledEntries = await Promise.all(
+    entries.map(async entry => {
+      const extraFields = await getExtraFieldValues(entry)
+      return { ...entry, ...Object.fromEntries(extraFields) }
+    })
+  )
+
+  return { entries: filledEntries, objType }
+}
+
+/**
+ * Fetch all instances for the specified type, generating the needed API requests
+ * based on the endpoint configuration. For endpoints that depend on other endpoints,
+ * use the already-fetched elements as context in order to determine the right requests.
+ */
+const getInstancesForType = async (params: GetEntriesParams): Promise<InstanceElement[]> => {
+  const { typeName, typesConfig, typeDefaultConfig } = params
+  const transformationConfigByType = _.pickBy(
+    _.mapValues(typesConfig, def => def.transformation),
+    isDefined,
+  )
+  const transformationDefaultConfig = typeDefaultConfig.transformation
+  try {
+    const { entries, objType } = await getEntriesForType(params)
+
     return generateInstancesForType({
       entries,
       objType,
@@ -329,8 +385,8 @@ const getInstancesForType = async ({
       transformationDefaultConfig,
     })
   } catch (e) {
-    log.error(`Could not fetch ${type.elemID.name}: ${e}. %s`, e.stack)
-    if (e instanceof UnauthorizedError) {
+    log.warn(`Could not fetch ${typeName}: ${e}. %s`, e.stack)
+    if (e instanceof UnauthorizedError || e instanceof InvalidTypeConfig) {
       throw e
     }
     return []

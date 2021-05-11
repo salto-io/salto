@@ -69,7 +69,7 @@ type RestrictionAnnotationType = Partial<{
 }>
 
 const StandardCoreAnnotationTypes: TypeMap = {
-  [CORE_ANNOTATIONS.DEFAULT]: StandardBuiltinTypes.STRING,
+  [CORE_ANNOTATIONS.DEFAULT]: StandardBuiltinTypes.UNKNOWN,
   [CORE_ANNOTATIONS.REQUIRED]: StandardBuiltinTypes.BOOLEAN,
   [CORE_ANNOTATIONS.RESTRICTION]: restrictionType,
   [CORE_ANNOTATIONS.HIDDEN]: StandardBuiltinTypes.BOOLEAN,

@@ -22,7 +22,7 @@ import {
   isReferenceExpression, StaticFile, isContainerType, isMapType, ObjectType,
   InstanceAnnotationTypes, GLOBAL_ADAPTER, SaltoError,
 } from '@salto-io/adapter-api'
-import { toObjectType } from '@salto-io/adapter-utils'
+import { toObjectType, elementAnnotationTypes } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
 import { IllegalReference } from './parser/parse'
@@ -415,22 +415,25 @@ const validateFieldValue = (elemID: ElemID, value: Value, field: Field): Validat
   ))
 }
 
-const validateField = (field: Field): ValidationError[] =>
-  Object.keys(field.annotations)
-    .filter(k => field.type.annotationTypes[k])
+const validateField = (field: Field): ValidationError[] => {
+  const annotationTypes = elementAnnotationTypes(field)
+  return Object.keys(field.annotations)
+    .filter(k => annotationTypes[k])
     .flatMap(k => validateValue(
       field.elemID.createNestedID(k),
       field.annotations[k],
-      field.type.annotationTypes[k],
+      annotationTypes[k],
     ))
+}
 
 const validateType = (element: TypeElement): ValidationError[] => {
+  const annotationTypes = elementAnnotationTypes(element)
   const errors = Object.keys(element.annotations)
-    .filter(k => element.annotationTypes[k]).flatMap(
+    .filter(k => annotationTypes[k]).flatMap(
       k => validateValue(
         element.elemID.createNestedID('attr', k),
         element.annotations[k],
-        element.annotationTypes[k],
+        annotationTypes[k],
       )
     )
 

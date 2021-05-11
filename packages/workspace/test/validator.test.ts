@@ -316,6 +316,24 @@ describe('Elements validation', () => {
       const errors = validateElements([objWithListAnnotation])
       expect(errors).toHaveLength(2)
     })
+
+    it('should return unresolved reference error in core annotations', () => {
+      const objWithUnresolvedRef = new ObjectType({
+        elemID: new ElemID('salto', 'test'),
+        fields: {
+          bad: {
+            type: BuiltinTypes.STRING,
+            annotations: {
+              [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [
+                new ReferenceExpression(new ElemID('salto', 'test', 'field', 'noSuchField')),
+              ],
+            },
+          },
+        },
+      })
+      const errors = validateElements([objWithUnresolvedRef])
+      expect(errors).toHaveLength(1)
+    })
   })
 
   describe('validate instances', () => {

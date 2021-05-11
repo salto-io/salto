@@ -18,6 +18,8 @@ import * as soap from 'soap'
 import { extractTypes } from '../../../src/elements/soap'
 
 const WSDL_PATH = `${__dirname.replace('/dist', '')}/wsdl/main.wsdl`
+const INVALID_WSDL_PATH = `${__dirname.replace('/dist', '')}/wsdl/invalid.wsdl`
+
 const TESTED_TYPE = 'testedType'
 describe('extractTypes', () => {
   let testedType: ObjectType
@@ -76,5 +78,9 @@ describe('extractTypes', () => {
     types = await extractTypes('adapterName', wsdl)
     testedType = types.find(type => type.elemID.name === TESTED_TYPE) as ObjectType
     expect(testedType).toBeDefined()
+  })
+
+  it('should throw error when there are duplicate types', async () => {
+    await expect(extractTypes('adapterName', INVALID_WSDL_PATH)).rejects.toThrow()
   })
 })

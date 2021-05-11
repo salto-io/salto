@@ -35,11 +35,11 @@ export const convertToNamespaceName = (
     ? splittedName
     : [undefined, splittedName[0]]
   if (namespaceAlias !== undefined) {
-    return `${aliasToNamespace[namespaceAlias]}:${realName}`
+    return `${aliasToNamespace[namespaceAlias]}|${realName}`
   }
 
   if (targetNamespace !== undefined) {
-    return `${targetNamespace}:${realName}`
+    return `${targetNamespace}|${realName}`
   }
 
   return realName

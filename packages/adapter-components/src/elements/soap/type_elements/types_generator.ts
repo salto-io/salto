@@ -26,7 +26,7 @@ import { convertToNamespaceName } from './utils'
 const log = logger(module)
 
 /**
- * This methods treats simpleType as aliases to another types
+ * This method treats simpleType as an alias to another type
  * (since simpleType can only add restrictions and not elements or attributes)
  */
 const getTypeAliases = (schema: SchemaElement): Record<string, string> =>
@@ -35,7 +35,7 @@ const getTypeAliases = (schema: SchemaElement): Record<string, string> =>
     .map(([name, simpleType]) => {
       const element = simpleType.children[0]
       if (element instanceof RestrictionElement) {
-        return [`${schema.$targetNamespace}:${name}`, convertToNamespaceName(element.$base, element.schemaXmlns ?? {}, schema.$targetNamespace)]
+        return [`${schema.$targetNamespace}|${name}`, convertToNamespaceName(element.$base, element.schemaXmlns ?? {}, schema.$targetNamespace)]
       }
       log.warn(`Received unexpected simple type element restriction: ${element?.name}`)
       return undefined
@@ -51,7 +51,7 @@ const getTypeAliases = (schema: SchemaElement): Record<string, string> =>
  * This method knowingly does not support:
  *  - complex type inside complex type.
  *  - elements with 'ref' attribute.
- * Also, currently if two there are two complex types with the same name in different namespace,
+ * Also, currently if there are two complex types with the same name in different namespaces,
  * two object types with the same elem id will be created.
  *
  * @param adapterName the adapter name of the converted elements
@@ -74,6 +74,16 @@ export const extractTypes = async (
 
   const typeAliases = _.assign({}, ...schemas.map(getTypeAliases))
   const objectTypes = linkTypes(unresolvedTypes, typeAliases)
+
+  const duplicateTypes = _(objectTypes)
+    .countBy(type => type.elemID.name)
+    .pickBy(count => count > 1)
+    .keys()
+    .value()
+
+  if (duplicateTypes.length > 0) {
+    throw new Error(`There are duplicate type names in the WSDL: ${duplicateTypes}`)
+  }
 
   log.debug('Finished generating SOAP types')
   return objectTypes

@@ -22,19 +22,19 @@ import { UnresolvedField, UnresolvedType } from './complex_types_converter'
 const log = logger(module)
 
 const PRIMITIVE_TYPES: Record<string, PrimitiveType> = {
-  'http://www.w3.org/2001/XMLSchema:boolean': BuiltinTypes.BOOLEAN,
-  'http://www.w3.org/2001/XMLSchema:decimal': BuiltinTypes.NUMBER,
-  'http://www.w3.org/2001/XMLSchema:double': BuiltinTypes.NUMBER,
-  'http://www.w3.org/2001/XMLSchema:float': BuiltinTypes.NUMBER,
-  'http://www.w3.org/2001/XMLSchema:int': BuiltinTypes.NUMBER,
-  'http://www.w3.org/2001/XMLSchema:short': BuiltinTypes.NUMBER,
-  'http://www.w3.org/2001/XMLSchema:long': BuiltinTypes.NUMBER,
-  'http://www.w3.org/2001/XMLSchema:date': BuiltinTypes.STRING,
-  'http://www.w3.org/2001/XMLSchema:dateTime': BuiltinTypes.STRING,
-  'http://www.w3.org/2001/XMLSchema:dateTimeStamp': BuiltinTypes.STRING,
-  'http://www.w3.org/2001/XMLSchema:dayTimeDuration': BuiltinTypes.STRING,
-  'http://www.w3.org/2001/XMLSchema:string': BuiltinTypes.STRING,
-  'http://www.w3.org/2001/XMLSchema:base64Binary': BuiltinTypes.STRING,
+  'http://www.w3.org/2001/XMLSchema|boolean': BuiltinTypes.BOOLEAN,
+  'http://www.w3.org/2001/XMLSchema|decimal': BuiltinTypes.NUMBER,
+  'http://www.w3.org/2001/XMLSchema|double': BuiltinTypes.NUMBER,
+  'http://www.w3.org/2001/XMLSchema|float': BuiltinTypes.NUMBER,
+  'http://www.w3.org/2001/XMLSchema|int': BuiltinTypes.NUMBER,
+  'http://www.w3.org/2001/XMLSchema|short': BuiltinTypes.NUMBER,
+  'http://www.w3.org/2001/XMLSchema|long': BuiltinTypes.NUMBER,
+  'http://www.w3.org/2001/XMLSchema|date': BuiltinTypes.STRING,
+  'http://www.w3.org/2001/XMLSchema|dateTime': BuiltinTypes.STRING,
+  'http://www.w3.org/2001/XMLSchema|dateTimeStamp': BuiltinTypes.STRING,
+  'http://www.w3.org/2001/XMLSchema|dayTimeDuration': BuiltinTypes.STRING,
+  'http://www.w3.org/2001/XMLSchema|string': BuiltinTypes.STRING,
+  'http://www.w3.org/2001/XMLSchema|base64Binary': BuiltinTypes.STRING,
 }
 
 const getUnaliasedType = (type: string, typeAliases: Record<string, string>): string =>
@@ -64,7 +64,7 @@ export const linkTypes = (
   types: UnresolvedType[],
   typeAliases: Record<string, string>
 ): ObjectType[] => {
-  const typesMap = _.keyBy(types, type => (type.namespace !== undefined ? `${type.namespace}:${type.objectType.elemID.name}` : type.objectType.elemID.name))
+  const typesMap = _.keyBy(types, type => (type.namespace !== undefined ? `${type.namespace}|${type.objectType.elemID.name}` : type.objectType.elemID.name))
   const linkedTypes = new Set<string>()
 
   const linkType = (type: UnresolvedType): ObjectType => {

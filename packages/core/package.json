@@ -42,7 +42,7 @@
     "@salto-io/lowerdash": "0.2.9",
     "@salto-io/marketo-adapter": "0.2.9",
     "@salto-io/netsuite-adapter": "0.2.9",
-    "@salto-io/rocksdb": "4.1.0",
+    "@salto-io/rocksdb": "4.1.0-salto-1",
     "@salto-io/salesforce-adapter": "0.2.9",
     "@salto-io/workato-adapter": "0.2.9",
     "@salto-io/workspace": "0.2.9",

@@ -47,7 +47,7 @@ describe('SalesforceAdapter fetch', () => {
     { metadataType: '.*AssignmentRules', name: 'MyRules.*' },
   ]
 
-  const testMaxItemsInRetrieveRequest = 100
+  const testMaxItemsInRetrieveRequest = 20
 
   const mockFetchOpts: MockInterface<FetchOptions> = {
     progressReporter: { reportProgress: jest.fn() },

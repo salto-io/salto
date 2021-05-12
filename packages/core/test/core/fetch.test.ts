@@ -891,6 +891,7 @@ describe('fetch', () => {
               typeWithField,
             ]),
           },
+          progressReporter: expect.anything(),
         })
       })
     })
@@ -916,6 +917,7 @@ describe('fetch', () => {
               newTypeBaseModified,
             ]),
           },
+          progressReporter: expect.anything(),
         })
       })
     })
@@ -962,6 +964,7 @@ describe('fetch', () => {
             dummy2: expect.arrayContaining([dummy2Type1]),
             dummy3: expect.arrayContaining([dummy3Type1]),
           },
+          progressReporter: expect.anything(),
         })
         expect(adapters.dummy3.postFetch).toHaveBeenCalledWith({
           currentAdapterElements: expect.arrayContaining([dummy3Type1]),
@@ -970,6 +973,7 @@ describe('fetch', () => {
             dummy2: expect.arrayContaining([dummy2Type1]),
             dummy3: expect.arrayContaining([dummy3Type1]),
           },
+          progressReporter: expect.anything(),
         })
       })
       it('should call postFetch only for fetched adapters (with postFetch defined) when not all are fetched', async () => {
@@ -989,6 +993,7 @@ describe('fetch', () => {
             // dummy3 was not fetched so it includes only elements from the workspace
             dummy3: expect.arrayContaining([dummy3]),
           },
+          progressReporter: expect.anything(),
         })
         expect(adapters.dummy3.postFetch).not.toHaveBeenCalled()
       })
@@ -1010,6 +1015,7 @@ describe('fetch', () => {
             // dummy3 was not fetched so it includes only elements from the workspace
             dummy3: expect.arrayContaining([dummy3]),
           },
+          progressReporter: expect.anything(),
         })
         expect(adapters.dummy3.postFetch).not.toHaveBeenCalled()
       })

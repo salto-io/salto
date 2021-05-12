@@ -714,6 +714,7 @@ describe('Recipe references filter', () => {
           salesforce: salesforceElements,
           netsuite: netsuiteElements,
         },
+        progressReporter: { reportProgress: () => null },
       })
     })
 
@@ -922,6 +923,7 @@ describe('Recipe references filter', () => {
           salesforce: [],
           netsuite: [],
         },
+        progressReporter: { reportProgress: () => null },
       })).toBeFalsy()
     })
 
@@ -955,6 +957,7 @@ describe('Recipe references filter', () => {
           salesforce: [],
           netsuite: [],
         },
+        progressReporter: { reportProgress: () => null },
       })).toBeFalsy()
       expect(
         elements.filter(e => e.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] !== undefined)
@@ -997,6 +1000,7 @@ describe('Recipe references filter', () => {
           salesforce: generateSalesforceElements(),
           netsuite: generateNetsuiteElements(),
         },
+        progressReporter: { reportProgress: () => null },
       })
       expect(
         elements.filter(e => e.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] !== undefined)
@@ -1060,6 +1064,7 @@ describe('Recipe references filter', () => {
           salesforce: salesforceElements,
           netsuite: netsuiteElements,
         },
+        progressReporter: { reportProgress: () => null },
       })
     })
 

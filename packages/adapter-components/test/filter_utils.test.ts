@@ -89,6 +89,7 @@ describe('filter utils', () => {
       const onPostFetchRes = runner.onPostFetch({
         elementsByAdapter: {},
         currentAdapterElements: [],
+        progressReporter: { reportProgress: jest.fn() },
       })
       await new Promise(resolve => setTimeout(resolve, 2))
       expect(mockOnPostFetch2).not.toHaveBeenCalled()

@@ -20,6 +20,7 @@ import {
   Element, ElemID, AdapterOperations, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
+  ProgressReporter,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
@@ -242,12 +243,19 @@ const isAdapterOperationsWithPostFetch = (
   v.postFetch !== undefined
 )
 
-const runPostFetch = async (
-  adapters: Record<string, AdapterOperationsWithPostFetch>,
-  serviceElements: Element[],
-  stateElementsByAdapter: Record<string, ReadonlyArray<Element>>,
-  partiallyFetchedAdapters: Set<string>,
-): Promise<void> => {
+const runPostFetch = async ({
+  adapters,
+  serviceElements,
+  stateElementsByAdapter,
+  partiallyFetchedAdapters,
+  progressReporters,
+}: {
+  adapters: Record<string, AdapterOperationsWithPostFetch>
+  serviceElements: Element[]
+  stateElementsByAdapter: Record<string, ReadonlyArray<Element>>
+  partiallyFetchedAdapters: Set<string>
+  progressReporters: Record<string, ProgressReporter>
+}): Promise<void> => {
   const serviceElementsByAdapter = _.groupBy(serviceElements, e => e.elemID.adapter)
 
   const getAdapterElements = (adapterName: string): ReadonlyArray<Element> => {
@@ -278,6 +286,7 @@ const runPostFetch = async (
       adapter.postFetch({
         currentAdapterElements: serviceElementsByAdapter[adapterName],
         elementsByAdapter,
+        progressReporter: progressReporters[adapterName],
       })
     ))
   )
@@ -298,11 +307,15 @@ const fetchAndProcessMergeErrors = async (
     partiallyFetchedAdapters: Set<string>
   }> => {
   try {
+    const progressReporters = _.mapValues(
+      adapters,
+      (_adapter, adapterName) => createAdapterProgressReporter(adapterName, 'fetch', progressEmitter)
+    )
     const fetchResults = await Promise.all(
       Object.entries(adapters)
         .map(async ([adapterName, adapter]) => {
           const fetchResult = await adapter.fetch({
-            progressReporter: createAdapterProgressReporter(adapterName, 'fetch', progressEmitter),
+            progressReporter: progressReporters[adapterName],
           })
           // We need to flatten the elements string to avoid a memory leak. See docs
           // of the flattenElementStr method for more details.
@@ -341,12 +354,13 @@ const fetchAndProcessMergeErrors = async (
           e => e.elemID.adapter,
         )
         // update elements based on fetch results from other services
-        await runPostFetch(
-          adaptersWithPostFetch,
+        await runPostFetch({
+          adapters: adaptersWithPostFetch,
           serviceElements,
           stateElementsByAdapter,
           partiallyFetchedAdapters,
-        )
+          progressReporters,
+        })
         log.debug('ran post-fetch in the following adapters: %s', Object.keys(adaptersWithPostFetch))
       } catch (e) {
         // failures in this step should never fail the fetch

@@ -332,6 +332,7 @@ describe('adapter', () => {
           elementsByAdapter: {
             salesforce: [fishCustomObject],
           },
+          progressReporter: { reportProgress: () => null },
         })
         const recipeCodeWithRefs = currentAdapterElements.filter(isInstanceElement).find(e => e.elemID.getFullName().startsWith('workato.recipe__code.instance.pubsub_recipe_412'))
         expect(recipeCodeWithRefs).toBeDefined()

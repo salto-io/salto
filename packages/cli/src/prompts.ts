@@ -94,7 +94,6 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
   public static readonly FETCH_CONFLICTING_CHANGE = 'This change conflicts with the following pending change from your workspace:'
   public static readonly FETCH_MERGE_ERRORS = 'These errors occurred as part of the fetch:'
   public static readonly FETCH_WARNINGS = 'The fetch concluded with the following warnings:'
-  public static readonly FETCH_FATAL_MERGE_ERROR_PREFIX = 'Error occurred during fetch, cause:\n'
   public static readonly FETCH_CHANGES_APPLIED = (appliedChanges: number): string => `${appliedChanges} changes were applied to the local workspace`
   public static readonly APPLYING_CHANGES = 'Applying changes'
 

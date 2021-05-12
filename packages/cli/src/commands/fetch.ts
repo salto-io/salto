@@ -24,7 +24,7 @@ import { logger } from '@salto-io/logging'
 import { progressOutputer, outputLine, errorOutputLine } from '../outputer'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
-import { formatMergeErrors, formatFatalFetchError, formatFetchHeader, formatFetchFinish, formatStateChanges, formatStateRecencies, formatAppliedChanges, formatFetchWarnings } from '../formatter'
+import { formatMergeErrors, formatFetchHeader, formatFetchFinish, formatStateChanges, formatStateRecencies, formatAppliedChanges, formatFetchWarnings } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliShouldUpdateConfig, getChangeToAlignAction } from '../callbacks'
 import { getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
@@ -127,10 +127,6 @@ export const fetchCommand = async (
     services,
     regenerateSaltoIds,
   )
-  if (fetchResult.success === false) {
-    errorOutputLine(formatFatalFetchError(fetchResult.mergeErrors), output)
-    return CliExitCode.AppError
-  }
 
   // A few merge errors might have occurred,
   // but since it's fetch flow, we omitted the elements

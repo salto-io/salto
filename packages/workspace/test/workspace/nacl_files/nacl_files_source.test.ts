@@ -98,7 +98,6 @@ describe('Nacl Files Source', () => {
       setAll: jest.fn(),
       deleteAll: jest.fn(),
       clear: jest.fn(),
-      deleteAll: jest.fn(),
       flush: jest.fn(),
       isEmpty: jest.fn().mockResolvedValue(true),
       get: jest.fn().mockResolvedValue(undefined),

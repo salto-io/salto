@@ -246,12 +246,12 @@ describe('Nacl Files Source', () => {
             data: { before: objectTypeObjectMatcher, after: newObjectTypeObjectMatcher },
           },
           {
-            action: 'add',
-            data: { after: newInstanceElementObjectMatcher },
-          },
-          {
             action: 'remove',
             data: { before: instanceElementObjectMatcher },
+          },
+          {
+            action: 'add',
+            data: { after: newInstanceElementObjectMatcher },
           },
         ])
       })

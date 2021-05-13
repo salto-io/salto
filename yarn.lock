@@ -1632,10 +1632,10 @@
     requirejs "2.3.6"
     xml2js "0.4.19"
 
-"@salto-io/rocksdb@4.1.0-salto-1":
-  version "4.1.0-salto-1"
-  resolved "https://registry.yarnpkg.com/@salto-io/rocksdb/-/rocksdb-4.1.0-salto-1.tgz#a4ecad0089ce486c3f8d760b311923d6f5a1555c"
-  integrity sha512-TUwK6bw2qHdNxPumaMpIg9JtFHfmTh7/kBCYcSaLCAf6ByouGbJnNJAZm5XYZPR3yxMDD2e7+v3SuP58aDRWKQ==
+"@salto-io/rocksdb@4.1.0-salto-2":
+  version "4.1.0-salto-2"
+  resolved "https://registry.yarnpkg.com/@salto-io/rocksdb/-/rocksdb-4.1.0-salto-2.tgz#75d7817be623527a832f966fc12fd9494e82901d"
+  integrity sha512-9qO1/ycgNlssNf9BhQ8bWMOalDxIpy1nVUtir4Xv8/81Bry8/fSmRDtN4SV98lBLoQ3BCEv/PlBvJgnwlDgWSA==
   dependencies:
     abstract-leveldown "~6.1.1"
     napi-macros "~2.0.0"

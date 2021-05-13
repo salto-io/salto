@@ -273,36 +273,36 @@ describe('extra dependencies filter', () => {
       const firstFieldRef = new ReferenceExpression(customObjType.fields.first.elemID)
       const secondFieldRef = new ReferenceExpression(customObjType.fields.second.elemID)
       const leadFieldRef = new ReferenceExpression(leadObjType.fields.custom.elemID)
-      expect(getGeneratedDeps(instances[0])).toContainEqual(secondFieldRef)
+      expect(getGeneratedDeps(instances[0])).toContainEqual({ reference: secondFieldRef })
       expect(getGeneratedDeps(instances[1])).toEqual(
-        expect.arrayContaining([firstFieldRef, leadFieldRef])
+        expect.arrayContaining([{ reference: firstFieldRef }, { reference: leadFieldRef }])
       )
-      expect(getGeneratedDeps(instances[2])).toEqual([firstFieldRef])
+      expect(getGeneratedDeps(instances[2])).toEqual([{ reference: firstFieldRef }])
     })
 
     it('should not add generated dependencies to targets that already have a reference in the element', () => {
       expect(getGeneratedDeps(instances[0])).not.toContainEqual(
-        new ReferenceExpression(customObjType.fields.first.elemID)
+        { reference: new ReferenceExpression(customObjType.fields.first.elemID) }
       )
     })
 
     it('should add dependencies to standard objects', () => {
       expect(getGeneratedDeps(instances[1])).toEqual(
-        expect.arrayContaining([new ReferenceExpression(leadObjType.elemID)])
+        expect.arrayContaining([{ reference: new ReferenceExpression(leadObjType.elemID) }])
       )
     })
 
     it('should add generated dependencies annotation to fields', () => {
       expect(getGeneratedDeps(leadObjType.fields.custom)).toEqual(
-        [new ReferenceExpression(customObjType.fields.second.elemID)]
+        [{ reference: new ReferenceExpression(customObjType.fields.second.elemID) }]
       )
     })
 
     it('should sort generated dependencies by name', () => {
       expect(getGeneratedDeps(instances[1])).toEqual([
-        new ReferenceExpression(leadObjType.elemID),
-        new ReferenceExpression(leadObjType.fields.custom.elemID),
-        new ReferenceExpression(customObjType.fields.first.elemID),
+        { reference: new ReferenceExpression(leadObjType.elemID) },
+        { reference: new ReferenceExpression(leadObjType.fields.custom.elemID) },
+        { reference: new ReferenceExpression(customObjType.fields.first.elemID) },
       ])
     })
 
@@ -312,7 +312,7 @@ describe('extra dependencies filter', () => {
 
     it('should add generated dependencies to elements that were not fetched', () => {
       expect(getGeneratedDeps(instances[0])).toContainEqual(
-        new ReferenceExpression(workspaceInstance.elemID)
+        { reference: new ReferenceExpression(workspaceInstance.elemID) }
       )
     })
 

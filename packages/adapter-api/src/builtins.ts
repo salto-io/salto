@@ -51,7 +51,7 @@ const StandardBuiltinTypes = {
 }
 
 const restrictionType = new ObjectType({
-  elemID: new ElemID('', 'restriction'),
+  elemID: new ElemID(GLOBAL_ADAPTER, 'restriction'),
   fields: {
     // eslint-disable-next-line camelcase
     enforce_value: {
@@ -84,6 +84,24 @@ const restrictionType = new ObjectType({
         StandardBuiltinTypes.STRING,
       ),
     },
+  },
+})
+
+const dependencyOccurrenceType = new ObjectType({
+  elemID: new ElemID(GLOBAL_ADAPTER, 'dependencyOccurrence'),
+  fields: {
+    direction: { refType: StandardBuiltinTypes.STRING },
+    location: { refType: StandardBuiltinTypes.UNKNOWN },
+  },
+})
+const dependencyType = new ObjectType({
+  elemID: new ElemID(GLOBAL_ADAPTER, 'dependency'),
+  fields: {
+    reference: {
+      refType: StandardBuiltinTypes.UNKNOWN,
+      annotations: { [CORE_ANNOTATIONS.REQUIRED]: true },
+    },
+    occurrences: { refType: new ListType(dependencyOccurrenceType) },
   },
 })
 
@@ -127,9 +145,9 @@ export const BuiltinTypesRefByFullName = _.mapValues(
 )
 
 export const InstanceAnnotationTypes: TypeMap = {
-  [INSTANCE_ANNOTATIONS.DEPENDS_ON]: new ListType(StandardBuiltinTypes.STRING),
+  [INSTANCE_ANNOTATIONS.DEPENDS_ON]: new ListType(dependencyType),
   [INSTANCE_ANNOTATIONS.PARENT]: new ListType(StandardBuiltinTypes.STRING),
-  [INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES]: new ListType(StandardBuiltinTypes.UNKNOWN),
+  [INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES]: new ListType(dependencyType),
   [INSTANCE_ANNOTATIONS.HIDDEN]: StandardBuiltinTypes.BOOLEAN,
   [INSTANCE_ANNOTATIONS.SERVICE_URL]: BuiltinTypes.HIDDEN_STRING,
 }

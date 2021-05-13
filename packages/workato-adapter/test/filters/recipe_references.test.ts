@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, ListType, CORE_ANNOTATIONS, isReferenceExpression } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { createRefToElmWithValue, DetailedDependency } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/cross_service/recipe_references'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
@@ -798,11 +798,8 @@ describe('Recipe references filter', () => {
         expect(recipeCode).toBeDefined()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(19)
-        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].every(
-          isReferenceExpression
-        )).toBeTruthy()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
-          (ref: ReferenceExpression) => ref.elemID.getFullName()
+          (dep: DetailedDependency) => dep.reference.elemID.getFullName()
         )).toEqual([
           'netsuite.customrecordtype.instance.customrecord16',
           'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',
@@ -906,11 +903,8 @@ describe('Recipe references filter', () => {
         expect(recipeCode).toBeDefined()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(5)
-        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].every(
-          isReferenceExpression
-        )).toBeTruthy()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
-          (ref: ReferenceExpression) => ref.elemID.getFullName()
+          (dep: DetailedDependency) => dep.reference.elemID.getFullName()
         )).toEqual([
           'netsuite.customrecordtype.instance.customrecord16',
           'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',
@@ -979,11 +973,8 @@ describe('Recipe references filter', () => {
         expect(recipeCode).toBeDefined()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(2)
-        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].every(
-          isReferenceExpression
-        )).toBeTruthy()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
-          (ref: ReferenceExpression) => ref.elemID.getFullName()
+          (dep: DetailedDependency) => dep.reference.elemID.getFullName()
         )).toEqual([
           'salesforce.MyCustom__c',
           'salesforce.MyCustom__c.field.customField__c',
@@ -1084,7 +1075,7 @@ describe('Recipe references filter', () => {
       expect(
         elements
           .flatMap(e => e.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] ?? [])
-          .map(e => e.elemID.getFullName())
+          .map((dep: DetailedDependency) => dep.reference.elemID.getFullName())
       ).toEqual([
         'netsuite.customrecordtype.instance.customrecord16',
         'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',
@@ -1150,11 +1141,8 @@ describe('Recipe references filter', () => {
         expect(recipeCode).toBeDefined()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(12)
-        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].every(
-          isReferenceExpression
-        )).toBeTruthy()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
-          (ref: ReferenceExpression) => ref.elemID.getFullName()
+          (dep: DetailedDependency) => dep.reference.elemID.getFullName()
         )).toEqual([
           'netsuite.customrecordtype.instance.customrecord16',
           'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.0',

@@ -892,22 +892,6 @@ export const getParents = (instance: Element): Array<Value> => (
   collections.array.makeArray(instance.annotations[CORE_ANNOTATIONS.PARENT])
 )
 
-export const extendGeneratedDependencies = (
-  elem: Element,
-  newDependencies: ReferenceExpression[],
-): void => {
-  elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = _.sortedUniqBy(
-    _.sortBy(
-      [
-        ...collections.array.makeArray(elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]),
-        ...newDependencies,
-      ],
-      ref => ref.elemID.getFullName(),
-    ),
-    ref => ref.elemID.getFullName(),
-  )
-}
-
 // In the current use-cases for resolveTypeShallow it makes sense
 // to use the value on the ref over the elementsSource, unlike the
 // current Reference.getResolvedValue implementation

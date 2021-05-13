@@ -338,8 +338,8 @@ describe('adapter', () => {
         const deps = recipeCodeWithRefs?.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
         expect(deps).toBeDefined()
         expect(deps).toHaveLength(1)
-        expect(deps[0]).toBeInstanceOf(ReferenceExpression)
-        expect(deps[0].elemID.getFullName()).toEqual('salesforce.Fish__c')
+        expect(deps[0].reference).toBeInstanceOf(ReferenceExpression)
+        expect(deps[0].reference.elemID.getFullName()).toEqual('salesforce.Fish__c')
       })
     })
   })

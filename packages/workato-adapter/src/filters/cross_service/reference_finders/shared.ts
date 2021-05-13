@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, ElemID, ReferenceExpression, Value, Values } from '@salto-io/adapter-api'
-import { transformElement, TransformFunc, safeJsonStringify, setPath, extendGeneratedDependencies } from '@salto-io/adapter-utils'
+import { InstanceElement, ElemID, Value, Values } from '@salto-io/adapter-api'
+import { transformElement, TransformFunc, safeJsonStringify, setPath, extendGeneratedDependencies, FlatDetailedDependency } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { strings, types, values as lowerdashValues } from '@salto-io/lowerdash'
 import { NetsuiteBlock, SalesforceBlock } from './recipe_block_types'
@@ -24,9 +24,12 @@ const { isDefined } = lowerdashValues
 const { matchAll } = strings
 const log = logger(module)
 
-export type MappedReference = {
-  srcPath: ElemID | undefined
-  ref: ReferenceExpression
+export type MappedReference = FlatDetailedDependency & {
+  // pathToOverride is used to denote where in the element to put the reference.
+  // it is usually related to the dependency location, but may not be identical -
+  // for example, if we extract a few references from a formula, they may have a location
+  // but not a pathToOverride.
+  pathToOverride?: ElemID
 }
 
 export type ReferenceFinder<T extends SalesforceBlock | NetsuiteBlock> = (
@@ -74,13 +77,13 @@ export const addReferencesForService = async <T extends SalesforceBlock | Netsui
   if (dependencyMapping.length === 0) {
     return
   }
-  log.debug('found the following references: %s', safeJsonStringify(dependencyMapping.map(dep => [dep.srcPath?.getFullName(), dep.ref.elemID.getFullName()])))
-  dependencyMapping.forEach(({ srcPath, ref }) => {
-    if (srcPath !== undefined) {
-      setPath(inst, srcPath, ref)
+  log.debug('found the following references: %s', safeJsonStringify(dependencyMapping.map(dep => [dep.pathToOverride?.getFullName(), dep.reference.elemID.getFullName()])))
+  dependencyMapping.forEach(({ pathToOverride, reference }) => {
+    if (pathToOverride !== undefined) {
+      setPath(inst, pathToOverride, reference)
     }
   })
-  extendGeneratedDependencies(inst, dependencyMapping.map(dep => dep.ref))
+  extendGeneratedDependencies(inst, dependencyMapping)
 }
 
 export type Matcher<T> = (value: string) => T[]

@@ -59,8 +59,8 @@ export const addNetsuiteRecipeReferences = async (
           const referencedId = indexedElements[scriptId]
           if (referencedId !== undefined) {
             references.push({
-              srcPath: nestedPath,
-              ref: new ReferenceExpression(referencedId),
+              pathToOverride: nestedPath,
+              reference: new ReferenceExpression(referencedId),
             })
           }
         }
@@ -89,8 +89,7 @@ export const addNetsuiteRecipeReferences = async (
       const referencedId = indexedElements[fieldNameScriptId]
       if (referencedId !== undefined) {
         return {
-          srcPath: undefined,
-          ref: new ReferenceExpression(referencedId),
+          reference: new ReferenceExpression(referencedId),
         }
       }
       return undefined

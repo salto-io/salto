@@ -87,7 +87,7 @@ const addTaskDependencies = (
   })
 
   if (deps.length > 0) {
-    extendGeneratedDependencies(inst, deps)
+    extendGeneratedDependencies(inst, deps.map(dep => ({ reference: dep })))
   }
 }
 

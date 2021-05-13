@@ -75,6 +75,12 @@ salesforce {
           metadataType = "EmailTemplate"
         },
         {
+          metadataType = "ContentAsset"
+        },
+        {
+          metadataType = "CustomObjectTranslation"
+        },
+        {
           metadataType = "StandardValueSet"
           name = "^(AddressCountryCode)|(AddressStateCode)$"
           namespace = ""
@@ -98,7 +104,7 @@ salesforce {
           "SBQQ__SubscriptionConsumptionSchedule__c",
           "SBQQ__WebQuote__c",
           "SBQQ__WebQuoteLine__c",
-          "SBQQ__QuoteLineCosumptionSchedule__c",
+          "SBQQ__QuoteLineConsumptionSchedule__c",
           "SBQQ__QuoteLineConsumptionsRate__c",
           "SBQQ__InstallProcessorLog__c",
           "SBQQ__ProcessInputValue__c",
@@ -119,9 +125,10 @@ salesforce {
             {
                 objectsRegex = "SBQQ__CustomAction__c"
                 idFields = [
-                  "Name",
                   "SBQQ__Location__c",
                   "SBQQ__DisplayOrder__c",
+                  "SBQQ__Type__c",
+                  "Name",
                 ]
             },
             {
@@ -129,6 +136,8 @@ salesforce {
                 idFields = [
                   "##allMasterDetailFields##",
                   "SBQQ__ConfiguredSKU__c",
+                  "SBQQ__Category__c",
+                  "SBQQ__Number__c",
                   "Name",
                 ]
             },
@@ -136,9 +145,27 @@ salesforce {
                 objectsRegex = "SBQQ__ConfigurationAttribute__c"
                 idFields = [
                   "##allMasterDetailFields##",
+                  "SBQQ__Product__c",
+                  "SBQQ__Feature__c",
                   "SBQQ__TargetField__c",
                   "Name",
                 ]
+            },
+            {
+              objectsRegex = "SBQQ__FavoriteProduct__c"
+              idFields = [
+                "##allMasterDetailFields##",
+                "SBQQ__DynamicOptionId__c",
+                "Name",
+              ]
+            },
+            {
+              objectsRegex = "SBQQ__LineColumn__c"
+              idFields = [
+                "##allMasterDetailFields##",
+                "SBQQ__FieldName__c",
+                "Name",
+              ]
             },
             {
               objectsRegex = "SBQQ__LookupQuery__c"
@@ -149,10 +176,26 @@ salesforce {
               ]
             },
             {
+              objectsRegex = "SBQQ__TemplateContent__c"
+              idFields = [
+                "##allMasterDetailFields##",
+                "SBQQ__Type__c",
+                "Name",
+              ]
+            },
+            {
+              objectsRegex = "SBQQ__Dimension__c"
+              idFields = [
+                "##allMasterDetailFields##",
+                "SBQQ__Product__c",
+                "Name",
+              ]
+            },
+            {
               objectsRegex = "PricebookEntry"
               idFields = [
-                "Name",
                 "Pricebook2Id",
+                "Name",
               ]
             },
             {

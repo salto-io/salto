@@ -128,7 +128,7 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID): Consu
           filename: context.filename,
         }))
       }
-      if (fields[fieldName] === undefined) {
+      if (!Object.prototype.hasOwnProperty.call(fields, fieldName)) {
         fields[fieldName] = {
           type: createFieldType(context, fieldType),
           annotations: consumedBlock.value.attrs,

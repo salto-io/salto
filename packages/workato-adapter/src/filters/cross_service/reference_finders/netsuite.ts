@@ -17,10 +17,11 @@ import _ from 'lodash'
 import {
   InstanceElement, ElemID, ReferenceExpression, Values,
 } from '@salto-io/adapter-api'
+import { DependencyDirection } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { NetsuiteIndex } from '../element_indexes'
 import { isNetsuiteBlock, NetsuiteBlock } from './recipe_block_types'
-import { addReferencesForService, FormulaReferenceFinder, MappedReference, ReferenceFinder, createMatcher, Matcher } from './shared'
+import { addReferencesForService, FormulaReferenceFinder, MappedReference, ReferenceFinder, createMatcher, Matcher, getBlockDependencyDirection } from './shared'
 
 const { isDefined } = lowerdashValues
 
@@ -60,6 +61,8 @@ export const addNetsuiteRecipeReferences = async (
           if (referencedId !== undefined) {
             references.push({
               pathToOverride: nestedPath,
+              location: new ReferenceExpression(path),
+              direction: getBlockDependencyDirection(blockValue),
               reference: new ReferenceExpression(referencedId),
             })
           }
@@ -83,12 +86,15 @@ export const addNetsuiteRecipeReferences = async (
 
   const formulaFieldMatcher = createFormulaFieldMatcher(appName)
 
-  const formulaReferenceFinder: FormulaReferenceFinder = value => {
+  const formulaReferenceFinder: FormulaReferenceFinder = (value, path) => {
     const potentialFields = formulaFieldMatcher(value).map(match => match.field)
     return potentialFields.map(fieldNameScriptId => {
       const referencedId = indexedElements[fieldNameScriptId]
       if (referencedId !== undefined) {
         return {
+          location: new ReferenceExpression(path),
+          // references inside formulas are always used as input
+          direction: 'input' as DependencyDirection,
           reference: new ReferenceExpression(referencedId),
         }
       }

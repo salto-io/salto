@@ -21,7 +21,11 @@ type RefListItem = {
   value: string
 }
 
-export type SalesforceBlock = {
+export type BlockBase = {
+  keyword: string
+}
+
+export type SalesforceBlock = BlockBase & {
   as: string
   provider: 'salesforce' | 'salesforce_secondary'
   dynamicPickListSelection: {
@@ -38,7 +42,7 @@ export type SalesforceBlock = {
   }
 }
 
-export type NetsuiteBlock = {
+export type NetsuiteBlock = BlockBase & {
   provider: 'netsuite' | 'netsuite_secondary'
   dynamicPickListSelection: {
     // eslint-disable-next-line camelcase
@@ -62,6 +66,7 @@ export const isSalesforceBlock = (value: any, application: string): value is Sal
   _.isObjectLike(value)
   && CROSS_SERVICE_SUPPORTED_APPS[SALESFORCE].includes(application)
   && value.provider === application
+  && _.isString(value.keyword)
   && _.isObjectLike(value.dynamicPickListSelection)
   && _.isString(value.dynamicPickListSelection.sobject_name)
   && (value.dynamicPickListSelection.table_list ?? []).every(isListItem)
@@ -76,6 +81,7 @@ export const isNetsuiteBlock = (value: any, application: string): value is Netsu
   _.isObjectLike(value)
   && CROSS_SERVICE_SUPPORTED_APPS[NETSUITE].includes(application)
   && value.provider === application
+  && _.isString(value.keyword)
   && _.isObjectLike(value.dynamicPickListSelection)
   && _.isString(value.dynamicPickListSelection.netsuite_object)
   && (value.dynamicPickListSelection.custom_list ?? []).every(isListItem)

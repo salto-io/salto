@@ -18,10 +18,11 @@ import {
   InstanceElement, ElemID, ReferenceExpression,
   isObjectType, ObjectType, Field, Values,
 } from '@salto-io/adapter-api'
+import { DependencyDirection } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { SalesforceIndex } from '../element_indexes'
 import { isSalesforceBlock, SalesforceBlock } from './recipe_block_types'
-import { addReferencesForService, FormulaReferenceFinder, MappedReference, ReferenceFinder, createMatcher, Matcher } from './shared'
+import { addReferencesForService, FormulaReferenceFinder, MappedReference, ReferenceFinder, createMatcher, Matcher, getBlockDependencyDirection } from './shared'
 
 const { isDefined } = lowerdashValues
 
@@ -109,7 +110,9 @@ export const addSalesforceRecipeReferences = async (
 
     const references: MappedReference[] = [{
       pathToOverride: path.createNestedID('input', 'sobject_name'),
+      location: new ReferenceExpression(path),
       reference: new ReferenceExpression(objectDetails.id),
+      direction: getBlockDependencyDirection(blockValue),
     }]
 
     const inputFieldNames = Object.keys(_.omit(input, 'sobject_name'))
@@ -118,6 +121,8 @@ export const addSalesforceRecipeReferences = async (
         references.push(
           {
             // no pathToOverride because we can't override the field keys in the current format
+            location: new ReferenceExpression(path),
+            direction: getBlockDependencyDirection(blockValue),
             reference: new ReferenceExpression(objectDetails.fields[fieldName].elemID),
           },
         )
@@ -128,6 +133,8 @@ export const addSalesforceRecipeReferences = async (
     if (dynamicPickListSelection.sobject_name === objectDetails.label) {
       references.push({
         pathToOverride: path.createNestedID('dynamicPickListSelection', 'sobject_name'),
+        location: new ReferenceExpression(path),
+        direction: getBlockDependencyDirection(blockValue),
         reference: new ReferenceExpression(objectDetails.id),
       })
 
@@ -147,11 +154,15 @@ export const addSalesforceRecipeReferences = async (
               references.push(
                 {
                   pathToOverride: path.createNestedID('dynamicPickListSelection', 'field_list', String(idx)),
+                  location: new ReferenceExpression(path),
+                  direction: getBlockDependencyDirection(blockValue),
                   reference: new ReferenceExpression(relatedObjectDetails.fields[field].elemID),
                 },
               )
               references.push(
                 {
+                  location: new ReferenceExpression(path),
+                  direction: getBlockDependencyDirection(blockValue),
                   reference: new ReferenceExpression(relatedObjectDetails.id),
                 },
               )
@@ -160,6 +171,8 @@ export const addSalesforceRecipeReferences = async (
             references.push(
               {
                 pathToOverride: path.createNestedID('dynamicPickListSelection', 'field_list', String(idx)),
+                location: new ReferenceExpression(path),
+                direction: getBlockDependencyDirection(blockValue),
                 reference: new ReferenceExpression(objectDetails.fields[fieldName].elemID),
               },
             )
@@ -176,6 +189,8 @@ export const addSalesforceRecipeReferences = async (
             references.push(
               {
                 pathToOverride: path.createNestedID('dynamicPickListSelection', 'table_list', String(idx)),
+                location: new ReferenceExpression(path),
+                direction: getBlockDependencyDirection(blockValue),
                 reference: new ReferenceExpression(refObjectDetails.id),
               },
             )
@@ -188,7 +203,7 @@ export const addSalesforceRecipeReferences = async (
 
   const formulaFieldMatcher = createFormulaFieldMatcher(appName)
 
-  const formulaReferenceFinder: FormulaReferenceFinder = value => {
+  const formulaReferenceFinder: FormulaReferenceFinder = (value, path) => {
     const potentialMatchGroups = formulaFieldMatcher(value)
     return potentialMatchGroups.map(({ block, obj, field }) => {
       const blockSObject = sobjectByBlock[block]
@@ -201,11 +216,17 @@ export const addSalesforceRecipeReferences = async (
       const objectDetails = getObjectDetails(objName)
       if (field !== undefined && objectDetails?.fields[field] !== undefined) {
         return {
+          location: new ReferenceExpression(path),
+          // references inside formulas are always used as input
+          direction: 'input' as DependencyDirection,
           reference: new ReferenceExpression(objectDetails.fields[field].elemID),
         }
       }
       if (objectDetails !== undefined) {
         return {
+          location: new ReferenceExpression(path),
+          // references inside formulas are always used as input
+          direction: 'input' as DependencyDirection,
           reference: new ReferenceExpression(objectDetails.id),
         }
       }

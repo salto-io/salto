@@ -15,10 +15,10 @@
 */
 import _ from 'lodash'
 import { InstanceElement, ElemID, Value, Values } from '@salto-io/adapter-api'
-import { transformElement, TransformFunc, safeJsonStringify, setPath, extendGeneratedDependencies, FlatDetailedDependency } from '@salto-io/adapter-utils'
+import { transformElement, TransformFunc, safeJsonStringify, setPath, extendGeneratedDependencies, FlatDetailedDependency, DependencyDirection } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { strings, types, values as lowerdashValues } from '@salto-io/lowerdash'
-import { NetsuiteBlock, SalesforceBlock } from './recipe_block_types'
+import { NetsuiteBlock, SalesforceBlock, BlockBase } from './recipe_block_types'
 
 const { isDefined } = lowerdashValues
 const { matchAll } = strings
@@ -83,7 +83,7 @@ export const addReferencesForService = async <T extends SalesforceBlock | Netsui
       setPath(inst, pathToOverride, reference)
     }
   })
-  extendGeneratedDependencies(inst, dependencyMapping)
+  extendGeneratedDependencies(inst, dependencyMapping.map(dep => _.omit(dep, 'pathToOverride')))
 }
 
 export type Matcher<T> = (value: string) => T[]
@@ -102,3 +102,13 @@ export const createMatcher = <T>(
       return x
     }
   )
+
+const DIRECTED_BLOCK_TYPES: Record<string, DependencyDirection> = {
+  trigger: 'input',
+  if: 'input',
+  action: 'output',
+  // other known block types: foreach, else
+}
+export const getBlockDependencyDirection = (block: BlockBase): DependencyDirection | undefined => (
+  DIRECTED_BLOCK_TYPES[block.keyword]
+)

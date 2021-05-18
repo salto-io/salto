@@ -35,9 +35,9 @@ const removeScopedObjects = <T extends unknown>(response: T): T => {
 }
 
 const suppressPageNotFoundError = (error: Error): void => {
-  // TODO - currently the http_client code catches the original error
-  // and transforms it such that it removes the parsed information (like the status code)
-  // we should probably stop doing that so that this code won't have to rely on the message
+  // The http_client code catches the original error and transforms it such that it removes
+  // the parsed information (like the status code), so we have to parse the string here in order
+  // to realize what type of error was thrown
   if (error.message.endsWith('Request failed with status code 404')) {
     log.warn('%o', error)
     return

@@ -56,6 +56,9 @@ function validateConfig(config?: Readonly<InstanceElement>): asserts config is J
   if (!_.isPlainObject(apiDefinitions)) {
     throw new Error('Missing apiDefinitions from configuration')
   }
+  // Note - this is a temporary way of handling multiple swagger defs in the same adapter
+  // this will be replaced by built-in infrastructure support for multiple swagger defs
+  // in the configuration
   getApiDefinitions(apiDefinitions).forEach(swaggerDef => {
     validateSwaggerApiDefinitionConfig('apiDefinitions', swaggerDef)
   })

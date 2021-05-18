@@ -14,9 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType,
-} from '@salto-io/adapter-api'
+import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -69,6 +67,9 @@ export default class JiraAdapter implements AdapterOperations {
     allTypes: TypeMap
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
   }> {
+    // Note - this is a temporary way of handling multiple swagger defs in the same adapter
+    // this will be replaced by built-in infrastructure support for multiple swagger defs
+    // in the configuration
     const results = await Promise.all(
       getApiDefinitions(this.userConfig.apiDefinitions).map(config => generateTypes(JIRA, config))
     )
@@ -99,10 +100,12 @@ export default class JiraAdapter implements AdapterOperations {
   }
 
   @logDuration('fetching account configuration')
-  async fetch(): Promise<FetchResult> {
+  async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch jira account configuration..')
     const { allTypes, parsedConfigs } = await this.getAllTypes()
+    progressReporter.reportProgress({ message: 'Finished fetching types' })
     const instances = await this.getInstances(allTypes, parsedConfigs)
+    progressReporter.reportProgress({ message: 'Finished fetching instances' })
 
     const elements = [
       ...Object.values(allTypes),

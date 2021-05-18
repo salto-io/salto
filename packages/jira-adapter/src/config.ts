@@ -35,6 +35,15 @@ type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
   jiraSwagger: configUtils.AdapterSwaggerApiConfig['swagger']
 }
 
+// A list of custom field types that support options
+// according to https://support.atlassian.com/jira-cloud-administration/docs/edit-a-custom-fields-options/
+const FIELD_TYPES_WITH_OPTIONS = [
+  'com.atlassian.jira.plugin.system.customfieldtypes:select',
+  'com.atlassian.jira.plugin.system.customfieldtypes:multiselect',
+  'com.atlassian.jira.plugin.system.customfieldtypes:cascadingselect',
+  'com.atlassian.jira.plugin.system.customfieldtypes:radiobuttons',
+  'com.atlassian.jira.plugin.system.customfieldtypes:multicheckboxes',
+]
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   // Cloud platform API
@@ -78,12 +87,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           context: [{ name: 'fieldId', fromField: 'id' }],
           conditions: [{
             fromField: 'schema.custom',
-            // TODO - not all types allow defaults and options
-            // not clear which types allow options and which do not
-            match: [
-              'com.atlassian.jira.plugin.system.customfieldtypes:select',
-              'com.atlassian.jira.plugin.system.customfieldtypes:cascadingselect',
-            ],
+            match: FIELD_TYPES_WITH_OPTIONS,
           }],
         },
         {
@@ -106,7 +110,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       idFields: ['id'],
       fieldTypeOverrides: [
         { fieldName: 'contexts', fieldType: 'list<CustomFieldContext>' },
-        // TODO:ORI - move this to a "mapping" type fetch logic?
         { fieldName: 'contextDefaults', fieldType: 'list<CustomFieldContextDefaultValue>' },
         { fieldName: 'contextIssueTypes', fieldType: 'list<IssueTypeToContextMapping>' },
         { fieldName: 'contextProjects', fieldType: 'list<CustomFieldContextProjectMapping>' },
@@ -124,12 +127,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           context: [{ name: 'contextId', fromField: 'id' }],
           conditions: [{
             fromContext: 'fieldSchema',
-            // TODO - not all types allow defaults and options
-            // not clear which types allow options and which do not
-            match: [
-              'com.atlassian.jira.plugin.system.customfieldtypes:select',
-              'com.atlassian.jira.plugin.system.customfieldtypes:cascadingselect',
-            ],
+            match: FIELD_TYPES_WITH_OPTIONS,
           }],
         },
       ],
@@ -247,7 +245,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   Permissions: {
     request: {
-      // TODO - can we use "standalone fields" to extract the permissions to instances?
       url: '/rest/api/3/permissions',
     },
   },
@@ -348,8 +345,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
   Labels: {
-    // TODO - need to handle this in a filter probably, this currently fetches each page
-    // as an instance, it cannot fetch the values because the values are strings
     request: {
       url: '/rest/api/3/label',
       paginationField: 'startAt',
@@ -425,7 +420,7 @@ export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
   'PageBeanFieldConfigurationIssueTypeItem',
   'PageBeanFilterDetails',
   'IssueLinkTypes',
-  'SecuritySchemes', // TODO - extend support for this (only supported on paid accounts)
+  'SecuritySchemes',
   'PageBeanIssueTypeScheme',
   'PageBeanIssueTypeSchemeMapping',
   'PageBeanIssueTypeScreenScheme',
@@ -441,7 +436,7 @@ export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
   'rest__api__3__role',
   'PageBeanScreen',
   'PageBeanScreenScheme',
-  'rest__api__3__settings__columns', // TODO - group these into one element
+  'rest__api__3__settings__columns',
   'rest__api__3__status',
   'rest__api__3__statuscategory',
   'PageBeanWorkflow',

@@ -13,6 +13,15 @@ jira {
       get = 10
     }
   }
+  fetch = {
+    includeTypes = [
+      "PageBeanDashboard",
+      "PageBeanField",
+      "PageBeanFieldConfiguration",
+      "PageBeanFieldConfigurationScheme",
+      "PageBeanFieldConfigurationIssueTypeItem",
+    ]
+  }
 }
 ```
 
@@ -20,7 +29,8 @@ jira {
 
 | Name                                                     | Default when undefined        | Description
 | ---------------------------------------------------------| ------------------------------| -----------
-| [client](#client-configuration-options)                  | {} (no overrides)             | Configuration relating to the client used to interact with JIRA
+| [client](#client-configuration-options)                  | `{}` (no overrides)             | Configuration relating to the client used to interact with JIRA
+| [fetch](#fetch-configuration-options)                    | `{}` (no overrides)             | Configuration relating to the endpoints that will be queried during fetch
 
 ### Client configuration options
 
@@ -43,3 +53,9 @@ jira {
 | ------------------------------------------------------------| -------------------------------------------------| -----------
 | get                                                         | `10`                                             | Max number of concurrent get requests
 | total                                                       | `-1` (unlimited)                                 | Shared limit for all concurrent requests
+
+## Fetch configuration options
+
+| Name                                        | Default when undefined          | Description
+|---------------------------------------------|---------------------------------|------------
+| includeTypes                                | []                              | List of types to fetch

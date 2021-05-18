@@ -43,8 +43,18 @@ const createFormulaFieldMatcher = (application: string): Matcher<SalesforceField
   const sobjectFieldMatcher = new RegExp(`\\('data\\.${application}\\.(?<block>\\w+)\\.sobject\\.(?<field>\\w+)'\\)`, 'g')
   // example: ('data.salesforce.1234abcd.Name')
   const fieldOnlyMatcher = new RegExp(`\\('data\\.${application}\\.(?<block>\\w+)\\.(?<field>\\w+)'\\)`, 'g')
+  // examples:
+  //  - ('data.salesforce.aaa.get_custom_object(AccountId>id, sobject_name: Account).Name')
+  // eslint-disable-next-line max-len
+  //  - ('data.salesforce.aaa.get_custom_object(AccountId>id, sobject_name: Account).get_custom_object(ParentId>id, sobject_name: User).Name')
+  const customObjectFunctionUnnamedMatcher = '\\.get_custom_object\\([A-Za-z0-9_<>\\.]+\\, sobject_name\\: \\w+\\)'
+  const customObjectFunctionNamedMatcher = '\\.get_custom_object\\([A-Za-z0-9_<>\\.]+\\, sobject_name\\: (?<obj>\\w+)\\)'
+  const getCustomObjectMatcher = new RegExp(`\\('data\\.${application}\\.(?<block>\\w+)(${customObjectFunctionUnnamedMatcher})*${customObjectFunctionNamedMatcher}\\.(?<field>\\w+)'\\)`, 'g')
   return createMatcher(
-    [objectAndFieldMatcher, relatedObjectAndFieldMatcher, sobjectFieldMatcher, fieldOnlyMatcher],
+    [
+      objectAndFieldMatcher, relatedObjectAndFieldMatcher, sobjectFieldMatcher, fieldOnlyMatcher,
+      getCustomObjectMatcher,
+    ],
     isSalesforceFieldMatchGroup,
   )
 }

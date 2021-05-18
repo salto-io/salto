@@ -294,6 +294,7 @@ describe('Recipe references filter', () => {
                 something1: '#{_(\'data.salesforce.1234aaaa.sobject.FormulaRef2__c\')}',
                 something2: '#{_(\'data.salesforce.1234aaaa.FormulaRef3__c\')}',
                 something3: '#{_(\'data.salesforce.1234aaaa.sobject.User.Field222__c\')}',
+                getCustomObject: '#{_(\'data.salesforce.1234aaaa.get_custom_object(UserId>id, sobject_name: User).Name__c\')}#{_(\'data.salesforce.1234aaaa.get_custom_object(CampaignId>id, sobject_name: Campaign).get_custom_object(CampaignMemberRecordTypeId>id, sobject_name: Opportunity).FormulaRef4__c\')}',
                 unknown1: '#{_(\'data.salesforce.1234aaaa.sobject.User.unknown\')}',
                 unknown2: '#{_(\'data.salesforce.1234aaaa.unknown.first.FormulaRef1__c\')}',
               },
@@ -576,6 +577,12 @@ describe('Recipe references filter', () => {
             apiName: 'Opportunity.FormulaRef3__c',
           },
         },
+        FormulaRef4__c: {
+          type: BuiltinTypes.STRING,
+          annotations: {
+            apiName: 'Opportunity.FormulaRef4__c',
+          },
+        },
       },
       annotations: {
         metadataType: 'CustomObject',
@@ -596,6 +603,12 @@ describe('Recipe references filter', () => {
           type: BuiltinTypes.NUMBER,
           annotations: {
             apiName: 'User.Field222__c',
+          },
+        },
+        Name__c: {
+          type: BuiltinTypes.STRING,
+          annotations: {
+            apiName: 'User.Name__c',
           },
         },
       },
@@ -723,7 +736,7 @@ describe('Recipe references filter', () => {
         const recipeCode = currentAdapterElements.find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe1_code')
         expect(recipeCode).toBeDefined()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
-        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(17)
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(19)
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].every(
           isReferenceExpression
         )).toBeTruthy()
@@ -742,11 +755,13 @@ describe('Recipe references filter', () => {
           'salesforce.Opportunity.field.FormulaRef1__c',
           'salesforce.Opportunity.field.FormulaRef2__c',
           'salesforce.Opportunity.field.FormulaRef3__c',
+          'salesforce.Opportunity.field.FormulaRef4__c',
           'salesforce.Opportunity.field.Id',
           'salesforce.Opportunity.field.Name',
           'salesforce.User',
           'salesforce.User.field.Field111__c',
           'salesforce.User.field.Field222__c',
+          'salesforce.User.field.Name__c',
         ])
       })
 

@@ -527,6 +527,22 @@ describe('parsing errors', () => {
         expect(element.fields.mycar.type.elemID.getFullName()).toEqual('can.drive')
       })
     })
+    describe('when there is a field with the name of a builtin function', () => {
+      const nacl = `
+      type baby.you {
+        can.drive toString {
+
+        }
+      }
+    `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should not create an error', () => {
+        expect(res.errors).toHaveLength(0)
+      })
+    })
     describe('has a duplicated attribute', () => {
       const nacl = `
       type baby.you {

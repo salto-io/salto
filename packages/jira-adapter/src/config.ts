@@ -338,15 +338,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       },
     },
   },
+  Workflow: {
+    transformation: {
+      idFields: ['id.name'],
+    },
+  },
   PageBeanWorkflowScheme: {
     request: {
       url: '/rest/api/3/workflowscheme',
-      paginationField: 'startAt',
-    },
-  },
-  Labels: {
-    request: {
-      url: '/rest/api/3/label',
       paginationField: 'startAt',
     },
   },
@@ -369,7 +368,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     },
   },
 
-  'agile__1_0__board_values@uuvuuu': {
+  Board: {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'config', fieldType: 'list<agile__1_0__board___boardId___configuration@uuvuuuu_00123_00125uu>' },
@@ -387,15 +386,15 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
 export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
   platformSwagger: {
     url: 'https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json',
-    typeNameOverrides: [
-      {
-        originalName: 'PageBeanString',
-        newName: 'Labels',
-      },
-    ],
   },
   jiraSwagger: {
     url: 'https://developer.atlassian.com/cloud/jira/software/swagger.v3.json',
+    typeNameOverrides: [
+      {
+        originalName: 'agile__1_0__board_values@uuvuuu',
+        newName: 'Board',
+      },
+    ],
   },
   typeDefaults: {
     transformation: {
@@ -436,12 +435,10 @@ export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
   'rest__api__3__role',
   'PageBeanScreen',
   'PageBeanScreenScheme',
-  'rest__api__3__settings__columns',
   'rest__api__3__status',
   'rest__api__3__statuscategory',
   'PageBeanWorkflow',
   'PageBeanWorkflowScheme',
-  'Labels',
   'ServerInformation',
 
   // jira api

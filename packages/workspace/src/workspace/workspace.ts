@@ -586,11 +586,11 @@ export const loadWorkspace = async (
       return loadWorkspace(config, credentials, envSources, remoteMapCreator)
     },
     clear: async (args: Omit<WorkspaceComponents, 'serviceConfig'>) => {
+      const currentWSState = await getWorkspaceState()
       if (args.cache || args.nacl || args.staticResources) {
         if (args.staticResources && !(args.state && args.cache && args.nacl)) {
           throw new Error('Cannot clear static resources without clearing the state, cache and nacls')
         }
-        const currentWSState = await getWorkspaceState()
         await currentWSState.merged.clear()
         await currentWSState.errors.clear()
         await currentWSState.validationErrors.clear()

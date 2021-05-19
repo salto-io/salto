@@ -128,16 +128,14 @@ AsyncIterable<remoteMap.RemoteMapEntry<string>[]> {
       let min: string | undefined
       let minIndex = 0
       latestEntries
-        .filter(values.isDefined)
-        .filter(entries => entries.length > 0)
         .forEach((entries, index) => {
-          const entry = entries[0]
-          if (min === undefined || entry.key < min) {
+          const entry = entries?.[0]
+          if (entry !== undefined && (min === undefined || entry.key < min)) {
             min = entry.key
             minIndex = index
           }
         })
-      const minEntry = min !== undefined ? latestEntries[minIndex]?.pop() : undefined
+      const minEntry = min !== undefined ? latestEntries[minIndex]?.shift() : undefined
       if (minEntry === undefined) {
         done = true
       } else {
@@ -146,7 +144,7 @@ AsyncIterable<remoteMap.RemoteMapEntry<string>[]> {
           // We load the next page for emptied out pages
           if (min !== undefined && entries && entries[0] !== undefined && entries[0].key <= min) {
             // This skips all values with the same key because some keys can appear in two iterators
-            entries.pop()
+            entries.shift()
           }
           if (entries?.length === 0) {
             // eslint-disable-next-line no-await-in-loop

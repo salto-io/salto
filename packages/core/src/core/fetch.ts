@@ -386,14 +386,14 @@ const calcFetchChanges = async (
   stateElements: elementSource.ElementsSource,
   workspaceElements: elementSource.ElementsSource,
   partiallyFetchedAdapters: Set<string>,
-  fullFetchAdapters: Set<string>
+  allFetchedAdapters: Set<string>
 ): Promise<Iterable<FetchChange>> => {
   const paritalFetchFilter: IDFilter = id => (
     !partiallyFetchedAdapters.has(id.adapter)
     || mergedServiceElements.has(id)
   )
   const serviceFetchFilter: IDFilter = id => (
-    partiallyFetchedAdapters.has(id.adapter) || fullFetchAdapters.has(id.adapter)
+    allFetchedAdapters.has(id.adapter)
   )
   const serviceChanges = [...await log.time(() =>
     getDetailedChanges(

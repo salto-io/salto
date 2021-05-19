@@ -386,28 +386,32 @@ const calcFetchChanges = async (
   stateElements: elementSource.ElementsSource,
   workspaceElements: elementSource.ElementsSource,
   partiallyFetchedAdapters: Set<string>,
+  allFetchedAdapters: Set<string>
 ): Promise<Iterable<FetchChange>> => {
   const paritalFetchFilter: IDFilter = id => (
-    !partiallyFetchedAdapters.has(id.adapter) || mergedServiceElements.has(id)
+    !partiallyFetchedAdapters.has(id.adapter)
+    || mergedServiceElements.has(id)
   )
-
+  const serviceFetchFilter: IDFilter = id => (
+    allFetchedAdapters.has(id.adapter)
+  )
   const serviceChanges = [...await log.time(() =>
     getDetailedChanges(
       stateElements,
       mergedServiceElements,
-      [paritalFetchFilter]
+      [serviceFetchFilter, paritalFetchFilter]
     ),
   'finished to calculate service-state changes')]
   const pendingChanges = await log.time(() => getChangeMap(
     stateElements,
     workspaceElements,
-    [paritalFetchFilter]
+    [serviceFetchFilter, paritalFetchFilter]
   ), 'finished to calculate pending changes')
 
   const workspaceToServiceChanges = await log.time(() => getChangeMap(
     workspaceElements,
     mergedServiceElements,
-    [paritalFetchFilter]
+    [serviceFetchFilter, paritalFetchFilter]
   ), 'finished to calculate service-workspace changes')
   const serviceElementsMap = _.groupBy(
     serviceElements,
@@ -469,7 +473,8 @@ export const fetchChanges = async (
       // should be calculated with them in mind.
       await awu(await stateElements.list()).isEmpty() ? workspaceElements : stateElements,
       workspaceElements,
-      partiallyFetchedAdapters
+      partiallyFetchedAdapters,
+      new Set(adapterNames)
     )
 
   log.debug('finished to calculate fetch changes')

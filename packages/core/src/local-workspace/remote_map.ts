@@ -128,11 +128,9 @@ AsyncIterable<remoteMap.RemoteMapEntry<string>[]> {
       let min: string | undefined
       let minIndex = 0
       latestEntries
-        .filter(values.isDefined)
-        .filter(entries => entries.length > 0)
         .forEach((entries, index) => {
-          const entry = entries[0]
-          if (min === undefined || entry.key < min) {
+          const entry = entries?.[0]
+          if (entry !== undefined && (min === undefined || entry.key < min)) {
             min = entry.key
             minIndex = index
           }

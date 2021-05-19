@@ -187,9 +187,16 @@ describe('test operations on remote db', () => {
       expect(nextPageRes).toEqual(sortedElements.slice(5, 10))
     })
 
-
     it('should return a paged iterator', async () => {
       await remoteMap.setAll(createAsyncIterable(elements))
+      const pages = await awu(remoteMap.keys({ pageSize: 3 })).toArray()
+      expect(pages).toHaveLength(3)
+      expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
+    })
+
+    it('should return a paged iterator after flush', async () => {
+      await remoteMap.setAll(createAsyncIterable(elements))
+      await remoteMap.flush()
       const pages = await awu(remoteMap.keys({ pageSize: 3 })).toArray()
       expect(pages).toHaveLength(3)
       expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
@@ -228,6 +235,14 @@ describe('test operations on remote db', () => {
 
     it('should return a paged iterator', async () => {
       await remoteMap.setAll(createAsyncIterable(elements))
+      const pages = await awu(remoteMap.values({ pageSize: 3 })).toArray() as unknown as Element[][]
+      expect(pages).toHaveLength(3)
+      expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
+    })
+
+    it('should return a paged iterator after flush', async () => {
+      await remoteMap.setAll(createAsyncIterable(elements))
+      await remoteMap.flush()
       const pages = await awu(remoteMap.values({ pageSize: 3 })).toArray() as unknown as Element[][]
       expect(pages).toHaveLength(3)
       expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
@@ -271,6 +286,16 @@ describe('test operations on remote db', () => {
 
     it('should return a paged iterator', async () => {
       await remoteMap.setAll(createAsyncIterable(elements))
+      const pages = await awu(
+        remoteMap.entries({ pageSize: 3 })
+      ).toArray() as unknown as rm.RemoteMapEntry<Element>[][]
+      expect(pages).toHaveLength(3)
+      expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
+    })
+
+    it('should return a paged iterator after flush', async () => {
+      await remoteMap.setAll(createAsyncIterable(elements))
+      await remoteMap.flush()
       const pages = await awu(
         remoteMap.entries({ pageSize: 3 })
       ).toArray() as unknown as rm.RemoteMapEntry<Element>[][]

@@ -190,7 +190,7 @@ describe('test operations on remote db', () => {
     it('should return a paged iterator', async () => {
       await remoteMap.setAll(createAsyncIterable(elements))
       const pages = await awu(remoteMap.keys({ pageSize: 3 })).toArray()
-      expect(pages).toHaveLength(3)
+      expect(pages).toHaveLength(5)
       expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
     })
 
@@ -198,8 +198,9 @@ describe('test operations on remote db', () => {
       await remoteMap.setAll(createAsyncIterable(elements))
       await remoteMap.flush()
       const pages = await awu(remoteMap.keys({ pageSize: 3 })).toArray()
-      expect(pages).toHaveLength(3)
+      expect(pages).toHaveLength(5)
       expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
+      expect(_.flatten(pages)).toEqual(sortedElements)
     })
   })
 
@@ -236,7 +237,7 @@ describe('test operations on remote db', () => {
     it('should return a paged iterator', async () => {
       await remoteMap.setAll(createAsyncIterable(elements))
       const pages = await awu(remoteMap.values({ pageSize: 3 })).toArray() as unknown as Element[][]
-      expect(pages).toHaveLength(3)
+      expect(pages).toHaveLength(5)
       expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
     })
 
@@ -244,8 +245,9 @@ describe('test operations on remote db', () => {
       await remoteMap.setAll(createAsyncIterable(elements))
       await remoteMap.flush()
       const pages = await awu(remoteMap.values({ pageSize: 3 })).toArray() as unknown as Element[][]
-      expect(pages).toHaveLength(3)
+      expect(pages).toHaveLength(5)
       expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
+      expect(_.flatten(pages).map(e => e.elemID.getFullName())).toEqual(sortedElements)
     })
   })
 
@@ -289,7 +291,7 @@ describe('test operations on remote db', () => {
       const pages = await awu(
         remoteMap.entries({ pageSize: 3 })
       ).toArray() as unknown as rm.RemoteMapEntry<Element>[][]
-      expect(pages).toHaveLength(3)
+      expect(pages).toHaveLength(5)
       expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
     })
 
@@ -299,8 +301,9 @@ describe('test operations on remote db', () => {
       const pages = await awu(
         remoteMap.entries({ pageSize: 3 })
       ).toArray() as unknown as rm.RemoteMapEntry<Element>[][]
-      expect(pages).toHaveLength(3)
+      expect(pages).toHaveLength(5)
       expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
+      expect(_.flatten(pages).map(e => e.key)).toEqual(sortedElements)
     })
   })
 

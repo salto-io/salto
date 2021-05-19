@@ -405,7 +405,7 @@ export const getAllInstances = async ({
   computeGetArgs = defaultComputeGetArgs,
 }: {
   paginator: Paginator
-  apiConfig: AdapterSwaggerApiConfig
+  apiConfig: Pick<AdapterSwaggerApiConfig, 'types' | 'typeDefaults'>
   fetchConfig: UserFetchConfig
   objectTypes: Record<string, ObjectType>
   nestedFieldFinder?: FindNestedFieldFunc

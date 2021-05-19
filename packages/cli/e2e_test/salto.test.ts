@@ -140,7 +140,7 @@ describe('cli e2e', () => {
       await client.delete(ROLE, newInstance2FullName)
     }
     await runSalesforceLogin(fetchOutputDir)
-    await runFetch(fetchOutputDir) // TODO:ORI - uncomment
+    await runFetch(fetchOutputDir)
   })
 
   afterAll(async () => {

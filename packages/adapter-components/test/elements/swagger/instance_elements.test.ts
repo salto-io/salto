@@ -118,9 +118,6 @@ describe('swagger_instance_elements', () => {
       const res = await getAllInstances({
         paginator: mockPaginator,
         apiConfig: {
-          swagger: {
-            url: 'ignored',
-          },
           typeDefaults: {
             transformation: {
               idFields: ['id'],
@@ -203,9 +200,6 @@ describe('swagger_instance_elements', () => {
       const res = await getAllInstances({
         paginator: mockPaginator,
         apiConfig: {
-          swagger: {
-            url: 'ignored',
-          },
           typeDefaults: {
             request: {
               paginationField: 'abc',
@@ -257,9 +251,6 @@ describe('swagger_instance_elements', () => {
       const res = await getAllInstances({
         paginator: mockPaginator,
         apiConfig: {
-          swagger: {
-            url: 'ignored',
-          },
           typeDefaults: {
             transformation: {
               idFields: ['id'],
@@ -372,9 +363,6 @@ describe('swagger_instance_elements', () => {
       const res = await getAllInstances({
         paginator: mockPaginator,
         apiConfig: {
-          swagger: {
-            url: 'ignored',
-          },
           typeDefaults: {
             transformation: {
               idFields: ['id'],
@@ -426,9 +414,6 @@ describe('swagger_instance_elements', () => {
       const res = await getAllInstances({
         paginator: mockPaginator,
         apiConfig: {
-          swagger: {
-            url: 'ignored',
-          },
           typeDefaults: {
             transformation: {
               idFields: ['id'],
@@ -508,9 +493,6 @@ describe('swagger_instance_elements', () => {
       const res = await getAllInstances({
         paginator: mockPaginator,
         apiConfig: {
-          swagger: {
-            url: 'ignored',
-          },
           typeDefaults: {
             transformation: {
               idFields: ['id'],
@@ -582,9 +564,6 @@ describe('swagger_instance_elements', () => {
       const res = await getAllInstances({
         paginator: mockPaginator,
         apiConfig: {
-          swagger: {
-            url: 'ignored',
-          },
           typeDefaults: {
             transformation: {
               idFields: ['id'],
@@ -656,9 +635,6 @@ describe('swagger_instance_elements', () => {
       const res = await getAllInstances({
         paginator: mockPaginator,
         apiConfig: {
-          swagger: {
-            url: 'ignored',
-          },
           typeDefaults: {
             transformation: {
               idFields: ['id'],
@@ -767,9 +743,6 @@ describe('swagger_instance_elements', () => {
       const res = await getAllInstances({
         paginator: mockPaginator,
         apiConfig: {
-          swagger: {
-            url: 'ignored',
-          },
           typeDefaults: {
             transformation: {
               idFields: ['name'],
@@ -848,9 +821,6 @@ describe('swagger_instance_elements', () => {
         instances = await getAllInstances({
           paginator: mockPaginator,
           apiConfig: {
-            swagger: {
-              url: 'ignored',
-            },
             typeDefaults: {
               transformation: {
                 idFields: ['id'],
@@ -977,9 +947,6 @@ describe('swagger_instance_elements', () => {
       await expect(() => getAllInstances({
         paginator: mockPaginator,
         apiConfig: {
-          swagger: {
-            url: 'ignored',
-          },
           typeDefaults: {
             transformation: {
               idFields: ['id'],
@@ -1001,9 +968,6 @@ describe('swagger_instance_elements', () => {
       await expect(() => getAllInstances({
         paginator: mockPaginator,
         apiConfig: {
-          swagger: {
-            url: 'ignored',
-          },
           typeDefaults: {
             transformation: {
               idFields: ['id'],
@@ -1025,9 +989,6 @@ describe('swagger_instance_elements', () => {
       await expect(() => getAllInstances({
         paginator: mockPaginator,
         apiConfig: {
-          swagger: {
-            url: 'ignored',
-          },
           typeDefaults: {
             transformation: {
               idFields: ['id'],

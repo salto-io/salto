@@ -25,16 +25,17 @@
         { "path": "../adapter-api" },
         { "path": "../adapter-utils" },
         { "path": "../dag" },
+        { "path": "../dummy-adapter" },
         { "path": "../file" },
-        { "path": "../workspace" },
         { "path": "../hubspot-adapter" },
-        { "path": "../netsuite-adapter" },
+        { "path": "../jira-adapter" },
         { "path": "../logging" },
         { "path": "../lowerdash" },
-        { "path": "../salesforce-adapter" },
         { "path": "../marketo-adapter" },
+        { "path": "../netsuite-adapter" },
+        { "path": "../salesforce-adapter" },
         { "path": "../workato-adapter" },
+        { "path": "../workspace" },
         { "path": "../zuora-billing-adapter" },
-        { "path": "../dummy-adapter" }
     ]
 }

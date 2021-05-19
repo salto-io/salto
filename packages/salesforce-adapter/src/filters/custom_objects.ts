@@ -248,7 +248,13 @@ export const transformFieldAnnotations = (
     return {}
   }
 
-  const annotations = transfromAnnotationsNames(instanceFieldValues, parentName)
+  const annotations = _.omit(
+    transfromAnnotationsNames(
+      instanceFieldValues,
+      parentName,
+    ),
+    INSTANCE_TYPE_FIELD
+  )
   const annotationsType = buildAnnotationsObjectType(fieldType.annotationTypes)
   convertList(annotationsType, annotations)
 
@@ -257,6 +263,7 @@ export const transformFieldAnnotations = (
       values: annotations,
       type: annotationsType,
       transformFunc: transformPrimitive,
+      strict: false,
     }
   ) || {}
 }

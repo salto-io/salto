@@ -185,10 +185,9 @@ describe('Salesforce adapter E2E with real account', () => {
           extractReferenceTo(lead.fields.OwnerId.annotations)
         ).toEqual(['Group', 'User'])
 
-        // Test lookup allow_lookup_record_deletion annotation
         expect(
-          lead.fields.OwnerId.annotations[constants.FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]
-        ).toBe(true)
+          lead.fields.OwnerId.annotations[constants.FIELD_ANNOTATIONS.DELETE_CONSTRAINT]
+        ).toBe('SetNull')
 
         // Test default value for checkbox
         expect(lead.fields.IsConverted.annotations[constants.FIELD_ANNOTATIONS.DEFAULT_VALUE])
@@ -1396,8 +1395,6 @@ describe('Salesforce adapter E2E with real account', () => {
           it('lookup', () => {
             const field = fields[CUSTOM_FIELD_NAMES.LOOKUP]
             verifyFieldFetch(field, testLookup, Types.primitiveDataTypes.Lookup)
-            expect(field.annotations[constants.FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION])
-              .toBe(false)
           })
 
           it('master-detail', () => {
@@ -1989,7 +1986,7 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.DESCRIPTION]: 'Lookup description Updated',
             [constants.HELP_TEXT]: 'Lookup help updated',
             [CORE_ANNOTATIONS.REQUIRED]: false,
-            [constants.FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: true,
+            [constants.FIELD_ANNOTATIONS.DELETE_CONSTRAINT]: 'SetNull',
             [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Opportunity'],
             [constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: CUSTOM_FIELD_NAMES.LOOKUP
               .split(constants.SALESFORCE_CUSTOM_SUFFIX)[0],
@@ -2223,7 +2220,7 @@ describe('Salesforce adapter E2E with real account', () => {
             verifyFieldUpdate(
               CUSTOM_FIELD_NAMES.LOOKUP,
               constants.FIELD_TYPE_NAMES.LOOKUP,
-              _.omit(annotations, constants.FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION)
+              annotations,
             )
             expect(makeArray(objectInfo?.fields)
               .find(f => f.fullName === CUSTOM_FIELD_NAMES.LOOKUP)?.deleteConstraint)

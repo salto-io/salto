@@ -37,7 +37,7 @@ const createSettingsType = async (
   const typeFields = await client.describeMetadataType(settingsTypesName)
   const baseTypeNames = new Set([settingsTypesName])
   try {
-    return createMetadataTypeElements({
+    return await createMetadataTypeElements({
       name: settingsTypesName,
       fields: typeFields.valueTypeFields,
       knownTypes,

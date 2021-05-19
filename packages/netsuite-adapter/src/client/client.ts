@@ -164,6 +164,7 @@ export default class NetsuiteClient {
     ): Promise<unknown> => {
       const desc = `client.${name}`
       try {
+        // eslint-disable-next-line @typescript-eslint/return-await
         return await log.time(call, desc)
       } catch (e) {
         log.error('failed to run Netsuite client command on: %o', e)

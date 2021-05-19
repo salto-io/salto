@@ -124,6 +124,7 @@ module.exports = {
         ],
         // This rule is already enforced on all functions so no need to enforce it in addition on module boundary
         '@typescript-eslint/explicit-module-boundary-types': ['off'],
+        '@typescript-eslint/return-await': ['error', 'in-try-catch'],
         'jest/valid-describe': ['off'],
         'import/extensions': [ 'error', 'never', {
             'json': 'always',

@@ -15,7 +15,8 @@
 */
 import * as path from 'path'
 import { EditorWorkspace } from '../src/workspace'
-import { getQueryLocations, getQueryLocationsFuzzy, completeSaltoLocation } from '../src/location'
+import { getQueryLocationsExactMatch, getQueryLocationsFuzzy,
+  getQueryLocations, completeSaltoLocation } from '../src/location'
 import { mockWorkspace } from './workspace'
 
 // eslint-disable-next-line jest/no-disabled-tests
@@ -29,22 +30,22 @@ describe('workspace query locations', () => {
   })
   describe('sensitive', () => {
     it('should find prefixes', async () => {
-      const res = await getQueryLocations(workspace, 'vs.per')
+      const res = await getQueryLocationsExactMatch(workspace, 'vs.per')
       expect(res).toHaveLength(10)
       expect(res[0].fullname).toBe('vs.person')
     })
     it('should find suffixes', async () => {
-      const res = await getQueryLocations(workspace, 's.person')
+      const res = await getQueryLocationsExactMatch(workspace, 's.person')
       expect(res).toHaveLength(1)
       expect(res[0].fullname).toBe('vs.person')
     })
     it('should find fragments in last name part', async () => {
-      const res = await getQueryLocations(workspace, 'erso')
+      const res = await getQueryLocationsExactMatch(workspace, 'erso')
       expect(res).toHaveLength(1)
       expect(res[0].fullname).toBe('vs.person')
     })
     it('should return empty results on not found', async () => {
-      const res = await getQueryLocations(workspace, 'nope')
+      const res = await getQueryLocationsExactMatch(workspace, 'nope')
       expect(res).toHaveLength(0)
     })
     it('should find field elements', async () => {
@@ -54,22 +55,22 @@ describe('workspace query locations', () => {
   })
   describe('insensitive', () => {
     it('should find prefixes', async () => {
-      const res = await getQueryLocations(workspace, 'vs.peR', false)
+      const res = await getQueryLocationsExactMatch(workspace, 'vs.peR', false)
       expect(res).toHaveLength(10)
       expect(res[0].fullname).toBe('vs.person')
     })
     it('should find suffixes', async () => {
-      const res = await getQueryLocations(workspace, 's.PerSon', false)
+      const res = await getQueryLocationsExactMatch(workspace, 's.PerSon', false)
       expect(res).toHaveLength(1)
       expect(res[0].fullname).toBe('vs.person')
     })
     it('should find fragments in last name part', async () => {
-      const res = await getQueryLocations(workspace, 'eRSo', false)
+      const res = await getQueryLocationsExactMatch(workspace, 'eRSo', false)
       expect(res).toHaveLength(1)
       expect(res[0].fullname).toBe('vs.person')
     })
     it('should return empty results on not found', async () => {
-      const res = await getQueryLocations(workspace, 'NOPe', false)
+      const res = await getQueryLocationsExactMatch(workspace, 'NOPe', false)
       expect(res).toHaveLength(0)
     })
     it('should find field elements', async () => {
@@ -91,8 +92,36 @@ describe('workspace query locations', () => {
       expect(res.find(e => e.item.fullname === 'vs.person.field.age')).toBeDefined()
     })
     it('should return empty results on not found', async () => {
-      const res = await getQueryLocations(workspace, 'blablablabla')
+      const res = await getQueryLocationsFuzzy(workspace, 'blablablabla')
       expect(res).toHaveLength(0)
+    })
+  })
+
+  describe('new algorithm', () => {
+    it('should find elements', async () => {
+      const res = await getQueryLocations(workspace, 'perSon')
+      expect(res.totalCount).toEqual(5)
+      expect(res.results).toEqual([
+        { filename: naclFileName, fullname: 'vs.person', indices: [[3, 9]] },
+        { filename: naclFileName, fullname: 'vs.person.instance.lavi', indices: [[3, 9]] },
+        { filename: naclFileName, fullname: 'vs.person.instance.evyatar', indices: [[3, 9]] },
+        { filename: naclFileName, fullname: 'vs.person.instance.hadar', indices: [[3, 9]] },
+        { filename: naclFileName, fullname: 'vs.person.instance.parentTester', indices: [[3, 9]] },
+      ])
+    })
+    it('should find field elements', async () => {
+      const res = await getQueryLocations(workspace, 'car')
+      expect(res.totalCount).toEqual(3)
+      expect(res.results).toEqual([
+        { filename: naclFileName, fullname: 'vs.car', indices: [[3, 6]] },
+        { filename: naclFileName, fullname: 'vs.car.field.car_owner', indices: [[3, 6], [13, 16]] },
+        { filename: naclFileName, fullname: 'vs.loan.instance.weekend_car', indices: [[25, 28]] },
+      ])
+    })
+    it('should return empty results on not found', async () => {
+      const res = await getQueryLocations(workspace, 'blablablabla')
+      expect(res.totalCount).toEqual(0)
+      expect(res.results).toEqual([])
     })
   })
 

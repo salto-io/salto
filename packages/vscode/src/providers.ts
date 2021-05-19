@@ -137,7 +137,7 @@ export const createWorkspaceSymbolProvider = (
 
     const fullLocations = _.flatten(
       await Promise.all(
-        (await location.getQueryLocations(workspace, query))
+        (await location.getQueryLocationsExactMatch(workspace, query))
           .map(partial => location.completeSaltoLocation(workspace, partial))
       )
     )

@@ -29,9 +29,10 @@ export interface SaltoElemLocation {
 }
 
 export type SaltoElemFileLocation = Omit<SaltoElemLocation, 'range'>
+type LocationResultType = SaltoElemFileLocation & { indices: [number, number][] }
 
 export const FUSE_SEARCH_THRESHOLD = 0.3
-const MAX_LOCATION_SEARCH_RESULT = 20
+const MAX_LOCATION_SEARCH_RESULT = 100
 
 export const getAllElements = async (workspace: EditorWorkspace):
 Promise<ReadonlyArray<Element>> => (await workspace.elements)
@@ -114,7 +115,7 @@ export const completeSaltoLocation = async (
 ): Promise<SaltoElemLocation[]> => (await workspace.getSourceMap(fileLocation.filename))
   .get(fileLocation.fullname)?.map(range => ({ ...fileLocation, range })) ?? []
 
-export const getQueryLocations = async (
+export const getQueryLocationsExactMatch = async (
   workspace: EditorWorkspace,
   query: string,
   sensitive = true,
@@ -184,4 +185,52 @@ export const getQueryLocationsFuzzy = async (
     return _.flatten(locationsRes)
   }
   return []
+}
+
+export const getQueryLocations = async (
+  workspace: EditorWorkspace,
+  query: string,
+): Promise<{ totalCount: number; results: LocationResultType[]}> => {
+  const getMatches = (fullName: string): RegExpMatchArray[] => {
+    const regexp = new RegExp(query, 'gi')
+    const matches: RegExpMatchArray[] = []
+    let match = regexp.exec(fullName)
+    while (match !== null) {
+      matches.push(match)
+      match = regexp.exec(fullName)
+    }
+    return matches
+  }
+
+  const elemIDToMatches: Record<string, RegExpMatchArray[]> = {}
+  const elementIDs = (await getAllElements(workspace)).map(e => e.elemID)
+  elementIDs.forEach(e => {
+    const id = e.getFullName()
+    if (e.isTopLevel()) {
+      elemIDToMatches[id] = elemIDToMatches[id] ?? getMatches(id)
+    } else {
+      const topLevelId = e.createTopLevelParentID().parent.getFullName()
+      if (elemIDToMatches[topLevelId] === undefined) {
+        elemIDToMatches[topLevelId] = getMatches(topLevelId)
+      }
+      const matches = getMatches(id)
+      elemIDToMatches[id] = (matches.length === elemIDToMatches[topLevelId].length) ? [] : matches
+    }
+  })
+  const matches = _.pickBy(elemIDToMatches, c => c.length > 0)
+  const results = Object.keys(matches).slice(0, MAX_LOCATION_SEARCH_RESULT)
+  if (results.length > 0) {
+    const locationsRes = await Promise.all(results
+      .map(async res => {
+        const locations = await createFileLocations(workspace, ElemID.fromFullName(res))
+        return locations
+          .map(location => ({
+            ...location,
+            indices: matches[res].map(m =>
+              [(m.index as number), (m.index as number) + query.length] as [number, number]),
+          }))
+      }))
+    return { totalCount: Object.keys(matches).length, results: _.flatten(locationsRes) }
+  }
+  return { totalCount: 0, results: [] }
 }

@@ -214,6 +214,7 @@ export default class SdfClient {
       { call }: decorators.OriginalCall,
     ): Promise<unknown> => {
       try {
+        // eslint-disable-next-line @typescript-eslint/return-await
         return await call()
       } catch (e) {
         throw _.isObject(e) ? e : new Error(String(e))

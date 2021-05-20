@@ -67,11 +67,11 @@ const fieldListRelatedObjectAndFieldMatcher = createMatcher(
   ),
 )
 
-export const addSalesforceRecipeReferences = (
+export const addSalesforceRecipeReferences = async (
   inst: InstanceElement,
   indexedElements: SalesforceIndex,
   appName: string,
-): void => {
+): Promise<void> => {
   const sobjectByBlock: Record<string, string> = {}
 
   const getObjectDetails = (objectName: string): {

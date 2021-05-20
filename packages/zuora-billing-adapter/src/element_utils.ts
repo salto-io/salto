@@ -14,15 +14,15 @@
 * limitations under the License.
 */
 import {
-  isInstanceElement, Element, isObjectType, isField, ObjectType, Field, InstanceElement,
+  isInstanceElement, Element, isObjectType, isField, Field, InstanceElement,
 } from '@salto-io/adapter-api'
 import {
   CUSTOM_FIELD, CUSTOM_OBJECT, ZUORA_CUSTOM_SUFFIX, METADATA_TYPE, STANDARD_OBJECT,
 } from './constants'
 
-export const metadataType = (element: Element): string | undefined => {
+export const metadataType = async (element: Element): Promise<string | undefined> => {
   if (isInstanceElement(element)) {
-    return metadataType(element.type)
+    return metadataType(await element.getType())
   }
   if (isField(element)) {
     // We expect to reach to this place only with fields of CustomObject
@@ -31,9 +31,9 @@ export const metadataType = (element: Element): string | undefined => {
   return element.annotations[METADATA_TYPE]
 }
 
-export const isObjectDef = (element: Element): element is ObjectType => (
+export const isObjectDef = async (element: Element): Promise<boolean> => (
   isObjectType(element)
-  && [CUSTOM_OBJECT, STANDARD_OBJECT].includes(metadataType(element) || 'unknown')
+  && [CUSTOM_OBJECT, STANDARD_OBJECT].includes(await metadataType(element) || 'unknown')
 )
 
 export const isCustomField = (field: Field): boolean => (
@@ -46,5 +46,5 @@ export const isInstanceOfType = (
   typeNames: string[],
 ): element is InstanceElement => (
   isInstanceElement(element)
-  && typeNames.includes(element.type.elemID.name)
+  && typeNames.includes(element.refType.elemID.name)
 )

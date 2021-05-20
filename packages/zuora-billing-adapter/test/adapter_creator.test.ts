@@ -212,7 +212,6 @@ describe('adapter creator', () => {
   it('should validate oauth credentials using createConnection', async () => {
     jest.spyOn(connection, 'createConnection')
     mockAxiosAdapter.onPost('/oauth/token').reply(200, {
-      // eslint-disable-next-line @typescript-eslint/camelcase
       token_type: 'bearer', access_token: 'token123', expires_in: 10000,
     })
     mockAxiosAdapter.onPost('/v1/connections').reply(200, { success: true })
@@ -240,7 +239,6 @@ describe('adapter creator', () => {
   it('should throw UnauthorizedError when auth validation returns success=false', async () => {
     jest.spyOn(connection, 'createConnection')
     mockAxiosAdapter.onPost('/oauth/token').reply(200, {
-      // eslint-disable-next-line @typescript-eslint/camelcase
       token_type: 'bearer', access_token: 'token123', expires_in: 10000,
     })
     mockAxiosAdapter.onPost('/v1/connections').reply(200, { success: false })
@@ -256,7 +254,6 @@ describe('adapter creator', () => {
   it('should throw UnauthorizedError when auth validation returns an unexpected HTTP code', async () => {
     jest.spyOn(connection, 'createConnection')
     mockAxiosAdapter.onPost('/oauth/token').reply(200, {
-      // eslint-disable-next-line @typescript-eslint/camelcase
       token_type: 'bearer', access_token: 'token123', expires_in: 10000,
     })
     mockAxiosAdapter.onPost('/v1/connections').reply(500)

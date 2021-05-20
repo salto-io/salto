@@ -22,7 +22,7 @@ import ZuoraClient from '../../src/client/client'
 import { ZUORA_BILLING, WORKFLOW_TYPE, TASK_TYPE, STANDARD_OBJECT, METADATA_TYPE } from '../../src/constants'
 import filterCreator from '../../src/filters/workflow_and_task_references'
 
-/* eslint-disable @typescript-eslint/camelcase */
+/* eslint-disable camelcase */
 
 describe('Workflow and task references filter', () => {
   let client: ZuoraClient
@@ -188,7 +188,7 @@ describe('Workflow and task references filter', () => {
       new ObjectType({
         elemID: new ElemID(ZUORA_BILLING, 'account'),
         fields: {
-          Id: { type: BuiltinTypes.STRING },
+          Id: { refType: BuiltinTypes.STRING },
         },
         annotations: {
           [METADATA_TYPE]: STANDARD_OBJECT,
@@ -203,7 +203,7 @@ describe('Workflow and task references filter', () => {
       new ObjectType({
         elemID: new ElemID(ZUORA_BILLING, 'Billingrun'),
         fields: {
-          Id: { type: BuiltinTypes.STRING },
+          Id: { refType: BuiltinTypes.STRING },
         },
         annotations: {
           [METADATA_TYPE]: STANDARD_OBJECT,
@@ -212,9 +212,9 @@ describe('Workflow and task references filter', () => {
       new ObjectType({
         elemID: new ElemID(ZUORA_BILLING, 'Refund'),
         fields: {
-          Id: { type: BuiltinTypes.STRING },
-          ReasonCode: { type: BuiltinTypes.STRING },
-          RefundDate: { type: BuiltinTypes.STRING },
+          Id: { refType: BuiltinTypes.STRING },
+          ReasonCode: { refType: BuiltinTypes.STRING },
+          RefundDate: { refType: BuiltinTypes.STRING },
         },
         annotations: {
           [METADATA_TYPE]: STANDARD_OBJECT,
@@ -223,8 +223,8 @@ describe('Workflow and task references filter', () => {
       new ObjectType({
         elemID: new ElemID(ZUORA_BILLING, 'Invoice'),
         fields: {
-          Id: { type: BuiltinTypes.STRING },
-          InvoiceNumber: { type: BuiltinTypes.NUMBER },
+          Id: { refType: BuiltinTypes.STRING },
+          InvoiceNumber: { refType: BuiltinTypes.NUMBER },
         },
         annotations: {
           [METADATA_TYPE]: STANDARD_OBJECT,
@@ -277,9 +277,9 @@ describe('Workflow and task references filter', () => {
 
       const wf1Param0 = workflows[0].value.additionalProperties.parameters.fields[0]
       expect(wf1Param0.object_name).toBeInstanceOf(ReferenceExpression)
-      expect((wf1Param0.object_name as ReferenceExpression).elemId.getFullName()).toEqual('zuora_billing.Billingrun')
+      expect((wf1Param0.object_name as ReferenceExpression).elemID.getFullName()).toEqual('zuora_billing.Billingrun')
       expect(wf1Param0.field_name).toBeInstanceOf(ReferenceExpression)
-      expect((wf1Param0.field_name as ReferenceExpression).elemId.getFullName()).toEqual('zuora_billing.Billingrun.field.Id')
+      expect((wf1Param0.field_name as ReferenceExpression).elemID.getFullName()).toEqual('zuora_billing.Billingrun.field.Id')
       // eslint-disable-next-line no-underscore-dangle
       expect(workflows[0].annotations._generated_dependencies).toBeUndefined()
     })
@@ -289,11 +289,11 @@ describe('Workflow and task references filter', () => {
       expect(tasks).toHaveLength(2)
 
       expect(tasks[0].value.object).toBeInstanceOf(ReferenceExpression)
-      expect((tasks[0].value.object as ReferenceExpression).elemId.getFullName()).toEqual('zuora_billing.RefundInvoicePayment')
+      expect((tasks[0].value.object as ReferenceExpression).elemID.getFullName()).toEqual('zuora_billing.RefundInvoicePayment')
       // eslint-disable-next-line no-underscore-dangle
       const task1Deps = tasks[0].annotations._generated_dependencies as ReferenceExpression[]
       expect(task1Deps.every(isReferenceExpression)).toBeTruthy()
-      expect(task1Deps.map(e => e.elemId.getFullName())).toEqual([
+      expect(task1Deps.map(e => e.elemID.getFullName())).toEqual([
         'zuora_billing.Invoice.field.Id',
         // Invoice.Balance and InvoiceDate do not exist on the object so they are not referenced
         'zuora_billing.Invoice.field.InvoiceNumber',
@@ -303,7 +303,7 @@ describe('Workflow and task references filter', () => {
       ])
 
       expect(tasks[1].value.object).toBeInstanceOf(ReferenceExpression)
-      expect((tasks[1].value.object as ReferenceExpression).elemId.getFullName()).toEqual('zuora_billing.account')
+      expect((tasks[1].value.object as ReferenceExpression).elemID.getFullName()).toEqual('zuora_billing.account')
       // eslint-disable-next-line no-underscore-dangle
       expect(tasks[1].annotations._generated_dependencies).toBeUndefined()
     })

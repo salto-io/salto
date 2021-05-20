@@ -120,7 +120,10 @@ const getRecordsBySaltoIds = async (
 ): Promise<SalesforceRecord[]> => {
   // The use of IN can lead to querying unneeded records (cross values between instances)
   // and can be optimized
-  const getFieldNamesToValues = async (instance: InstanceElement, field: Field): Promise<[string, string][]> => {
+  const getFieldNamesToValues = async (
+    instance: InstanceElement,
+    field: Field
+  ): Promise<[string, string][]> => {
     const fieldType = await field.getType()
     if (isCompoundFieldType(fieldType)) {
       return Promise.all(Object.values(fieldType.fields)
@@ -129,50 +132,24 @@ const getRecordsBySaltoIds = async (
           await formatValueForWhere(innerField, instance.value[field.name]?.[innerField.name]),
         ])) as Promise<[string, string][]>
     }
-    return [[await apiName(field, true), await formatValueForWhere(field, instance.value[field.name])]]
-}
-  // Possible rebase issue
-  // const computeWhereConditions = async (field: Field): Promise<string | string[]> => {
-  //   const fieldType = await field.getType()
-  //   if (isObjectType(fieldType)) {
-  //     const compoundFieldType = Object.values(Types.compoundDataTypes)
-  //       .find(compoundType => compoundType.isEqual(fieldType))
-  //     if (compoundFieldType !== undefined) {
-  //       return awu(Object.entries(compoundFieldType.fields))
-  //         .map(async ([compoundFieldName, compoundField]) => {
-  //           const compoundFieldValues = [
-  //             ...new Set(
-  //               await awu(instances).map(instance => formatValueForWhere(
-  //                 compoundField,
-  //                 instance.value[field.name]?.[compoundFieldName]
-  //               )).toArray()
-  //             ),
-  //           ]
-  //           return `${strings.capitalizeFirstLetter(compoundFieldName)} IN (${compoundFieldValues.join(',')})`
-  //         }).toArray()
-  //     }
-  //   }
-  //   const instancesFieldValues = [...new Set(await awu(instances)
-  //     .map(async instance => (
-  //       formatValueForWhere(
-  //         (await instance.getType()).fields[field.name], instance.value[field.name]
-  //       ))).toArray())]
-  //   return `${await apiName(field, true)} IN (${instancesFieldValues.join(',')})`
-  // }
+    return [
+      [await apiName(field, true), await formatValueForWhere(field, instance.value[field.name])],
+    ]
+  }
 
-  const instanceIdValues = await  Promise.all(instances.map(async inst => {
-    const idFieldsNameToValue = await Promise.all(
-      saltoIdFields.flatMap(async field => await getFieldNamesToValues(inst, field))
-    )
-    return Object.fromEntries(idFieldsNameToValue)
+  const instanceIdValues = await Promise.all(instances.map(async inst => {
+    const idFieldsNameToValue = (await Promise.all(
+      saltoIdFields.map(field => getFieldNamesToValues(inst, field))
+    )).flat()
+    const r = Object.fromEntries(idFieldsNameToValue)
+    return r
   }))
 
   // Should always query Id together with the SaltoIdFields to match it to instances
   const saltoIdFieldsWithIdField = (saltoIdFields
     .find(field => field.name === CUSTOM_OBJECT_ID_FIELD) === undefined)
     ? [type.fields[CUSTOM_OBJECT_ID_FIELD], ...saltoIdFields] : saltoIdFields
-
-  const queries = buildSelectQueries(
+  const queries = await buildSelectQueries(
     await apiName(type),
     saltoIdFieldsWithIdField,
     instanceIdValues,

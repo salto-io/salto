@@ -21,7 +21,7 @@ const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
   setInstancesUrls({
     elements,
     client,
-    filter: element => element.type.elemID.name === 'role',
+    filter: element => element.refType.elemID.name === 'role',
     query: 'SELECT id, scriptid FROM role',
     generateUrl: id => `app/setup/role.nl?id=${id}`,
   })

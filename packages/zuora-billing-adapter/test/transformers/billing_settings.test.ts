@@ -24,7 +24,7 @@ describe('billing_settings transformer', () => {
     ListAllSettingsType = new ObjectType({
       elemID: new ElemID(ZUORA_BILLING, LIST_ALL_SETTINGS_TYPE),
       fields: {
-        settings: { type: new ListType(BuiltinTypes.UNKNOWN) },
+        settings: { refType: new ListType(BuiltinTypes.UNKNOWN) },
       },
     })
   })
@@ -139,7 +139,7 @@ describe('billing_settings transformer', () => {
           typeDefaults: { transformation: { idFields: ['a'] } },
         },
       )
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       expect(parsedConfigs).toEqual({ Settings_AAA: { request: { url: '/settings/aaa' } } })
       expect(Object.keys(allTypes).sort()).toEqual(['Settings_AAA', 'Settings_ABC'])
       expect(isEqualElements(
@@ -147,9 +147,9 @@ describe('billing_settings transformer', () => {
         new ObjectType({
           elemID: new ElemID(ZUORA_BILLING, 'Settings_AAA'),
           fields: {
-            a: { type: BuiltinTypes.BOOLEAN },
-            b: { type: BuiltinTypes.BOOLEAN },
-            nested: { type: allTypes.Settings_ABC },
+            a: { refType: BuiltinTypes.BOOLEAN },
+            b: { refType: BuiltinTypes.BOOLEAN },
+            nested: { refType: allTypes.Settings_ABC },
           },
         })
       )).toBeTruthy()

@@ -15,9 +15,9 @@
 */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { FieldDefinition, BuiltinTypes, ObjectType, ElemID } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { SUBTYPES_PATH, TYPES_PATH } from '../../src/elements/constants'
 import { filterTypes, hideFields } from '../../src/elements/type_elements'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 
 describe('type_elements', () => {
   describe('hideFields', () => {
@@ -90,13 +90,15 @@ describe('type_elements', () => {
   })
 
   describe('filterTypes', () => {
-    it('should filter the right types', () => {
+    it('should filter the right types', async () => {
       const typeA = new ObjectType({ elemID: new ElemID('adapterName', 'A'), path: ['adapterName', 'A'] })
-      const typeB = new ObjectType({ elemID: new ElemID('adapterName', 'B'), fields: { 
-        a: { refType: createRefToElmWithValue(typeA) } 
-      }, path: ['adapterName', 'B'] })
+      const typeB = new ObjectType({ elemID: new ElemID('adapterName', 'B'),
+        fields: {
+          a: { refType: createRefToElmWithValue(typeA) },
+        },
+        path: ['adapterName', 'B'] })
       const typeC = new ObjectType({ elemID: new ElemID('adapterName', 'C'), path: ['adapterName', 'C'] })
-      const filteredTypes = filterTypes('adapterName', [typeA, typeB, typeC], ['B', 'D'])
+      const filteredTypes = await filterTypes('adapterName', [typeA, typeB, typeC], ['B', 'D'])
 
       expect(filteredTypes[0].elemID.getFullNameParts()).toEqual(['adapterName', 'B'])
       expect(filteredTypes[0].path).toEqual(['adapterName', TYPES_PATH, 'B'])

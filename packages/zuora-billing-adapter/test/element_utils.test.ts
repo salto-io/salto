@@ -20,13 +20,13 @@ import { isObjectDef, isCustomField, metadataType } from '../src/element_utils'
 describe('element utils', () => {
   describe('isObjectDef', () => {
     it('should return true for object types with the right value in the metadata type annotation', async () => {
-      expect(isObjectDef(new ObjectType({
+      expect(await isObjectDef(new ObjectType({
         elemID: new ElemID(ZUORA_BILLING, 'anything'),
         annotations: {
           metadataType: 'CustomObject',
         },
       }))).toBeTruthy()
-      expect(isObjectDef(new ObjectType({
+      expect(await isObjectDef(new ObjectType({
         elemID: new ElemID(ZUORA_BILLING, 'anything'),
         annotations: {
           metadataType: 'StandardObject',
@@ -38,32 +38,32 @@ describe('element utils', () => {
         elemID: new ElemID(ZUORA_BILLING, 'CustomObject'),
         fields: {
           f: {
-            type: BuiltinTypes.STRING,
+            refType: BuiltinTypes.STRING,
             annotations: { metadataType: 'CustomObject' },
           },
         },
         annotations: { metadataType: 'CustomObject' },
       })
-      expect(isObjectDef(new InstanceElement(
+      expect(await isObjectDef(new InstanceElement(
         'CustomObject',
         type,
         {},
         undefined,
         { metadataType: 'CustomObject' },
       ))).toBeFalsy()
-      expect(isObjectDef(type.fields.f)).toBeFalsy()
+      expect(await isObjectDef(type.fields.f)).toBeFalsy()
     })
   })
 
   describe('metadataType', () => {
     it('should return the metadataType annotation value for object types', async () => {
-      expect(metadataType(new ObjectType({
+      expect(await metadataType(new ObjectType({
         elemID: new ElemID(ZUORA_BILLING, 'anything'),
         annotations: {
           metadataType: 'AAA',
         },
       }))).toEqual('AAA')
-      expect(metadataType(new ObjectType({
+      expect(await metadataType(new ObjectType({
         elemID: new ElemID(ZUORA_BILLING, 'anything'),
       }))).toBeUndefined()
     })
@@ -74,7 +74,7 @@ describe('element utils', () => {
           metadataType: 'AAA',
         },
       })
-      expect(metadataType(new InstanceElement(
+      expect(await metadataType(new InstanceElement(
         'a',
         type,
         {},
@@ -87,13 +87,13 @@ describe('element utils', () => {
         elemID: new ElemID(ZUORA_BILLING, 'anything'),
         fields: {
           f: {
-            type: BuiltinTypes.STRING,
+            refType: BuiltinTypes.STRING,
             annotations: { metadataType: 'CCC' },
           },
         },
         annotations: { metadataType: 'AAA' },
       })
-      expect(metadataType(type.fields.f)).toEqual('CustomField')
+      expect(await metadataType(type.fields.f)).toEqual('CustomField')
     })
   })
 
@@ -104,12 +104,11 @@ describe('element utils', () => {
         elemID: new ElemID(ZUORA_BILLING, 'anything'),
         fields: {
           f1: {
-            type: BuiltinTypes.STRING,
+            refType: BuiltinTypes.STRING,
             annotations: { origin: 'custom' },
           },
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          f2__c: { type: BuiltinTypes.STRING },
-          f3: { type: BuiltinTypes.STRING },
+          f2__c: { refType: BuiltinTypes.STRING },
+          f3: { refType: BuiltinTypes.STRING },
         },
       })
     })

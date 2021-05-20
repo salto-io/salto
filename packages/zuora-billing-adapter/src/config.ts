@@ -438,12 +438,12 @@ export const configType = createMatchingObjectType<ZuoraConfig>({
   elemID: new ElemID(ZUORA_BILLING),
   fields: {
     [CLIENT_CONFIG]: {
-      type: createClientConfigType(ZUORA_BILLING),
+      refType: createClientConfigType(ZUORA_BILLING),
     },
     [FETCH_CONFIG]: {
-      type: createUserFetchConfigType(
+      refType: createUserFetchConfigType(
         ZUORA_BILLING,
-        { settingsIncludeTypes: { type: new ListType(BuiltinTypes.STRING) } },
+        { settingsIncludeTypes: { refType: new ListType(BuiltinTypes.STRING) } },
       ),
       annotations: {
         _required: true,
@@ -454,7 +454,7 @@ export const configType = createMatchingObjectType<ZuoraConfig>({
       },
     },
     [API_DEFINITIONS_CONFIG]: {
-      type: createSwaggerAdapterApiConfigType({
+      refType: createSwaggerAdapterApiConfigType({
         adapter: ZUORA_BILLING,
       }),
       annotations: {

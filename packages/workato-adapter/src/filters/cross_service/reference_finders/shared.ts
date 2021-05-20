@@ -39,13 +39,13 @@ export type FormulaReferenceFinder = (
   path: ElemID,
 ) => MappedReference[]
 
-export const addReferencesForService = <T extends SalesforceBlock | NetsuiteBlock>(
+export const addReferencesForService = async <T extends SalesforceBlock | NetsuiteBlock>(
   inst: InstanceElement,
   appName: string,
   typeGuard: (value: Value, appName: string) => value is T,
   addReferences: ReferenceFinder<T>,
   addFormulaReferences?: FormulaReferenceFinder,
-): void => {
+): Promise<void> => {
   const dependencyMapping: MappedReference[] = []
 
   const findReferences: TransformFunc = ({ value, path }) => {
@@ -66,7 +66,7 @@ export const addReferencesForService = <T extends SalesforceBlock | NetsuiteBloc
   }
 
   // used for traversal, the transform result is ignored
-  transformElement({
+  await transformElement({
     element: inst,
     transformFunc: findReferences,
     strict: false,
@@ -74,7 +74,7 @@ export const addReferencesForService = <T extends SalesforceBlock | NetsuiteBloc
   if (dependencyMapping.length === 0) {
     return
   }
-  log.debug('found the following references: %s', safeJsonStringify(dependencyMapping.map(dep => [dep.srcPath?.getFullName(), dep.ref.elemId.getFullName()])))
+  log.debug('found the following references: %s', safeJsonStringify(dependencyMapping.map(dep => [dep.srcPath?.getFullName(), dep.ref.elemID.getFullName()])))
   dependencyMapping.forEach(({ srcPath, ref }) => {
     if (srcPath !== undefined) {
       setPath(inst, srcPath, ref)

@@ -37,7 +37,7 @@ const getScriptIdToInternalId = async (client: NetsuiteClient): Promise<Record<s
 const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
   const relevantElements = elements
     .filter(isInstanceElement)
-    .filter(element => element.type.elemID.name === 'savedsearch')
+    .filter(element => element.refType.elemID.name === 'savedsearch')
 
   if (relevantElements.length === 0) {
     return

@@ -36,7 +36,7 @@ const TYPE_TO_URL: Record<string, (id: number) => string> = {
 
 const generateUrl = (id: number, element: InstanceElement):
   string | undefined => {
-  const url = TYPE_TO_URL[element.type.elemID.name]?.(id)
+  const url = TYPE_TO_URL[element.refType.elemID.name]?.(id)
   if (url === undefined) {
     log.warn(`Got unknown type in custom_field service url setter: ${element.elemID.getFullName()}`)
   }
@@ -47,7 +47,7 @@ const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
   setInstancesUrls({
     elements,
     client,
-    filter: element => FIELD_TYPES.includes(element.type.elemID.name),
+    filter: element => FIELD_TYPES.includes(element.refType.elemID.name),
     query: 'SELECT internalid AS id, scriptid FROM customfield',
     generateUrl,
   })

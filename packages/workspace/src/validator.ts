@@ -22,7 +22,7 @@ import {
   isReferenceExpression, StaticFile, isContainerType, isMapType, ObjectType,
   InstanceAnnotationTypes, GLOBAL_ADAPTER, SaltoError, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import { toObjectType, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { toObjectType, createRefToElmWithValue, elementAnnotationTypes } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
 import { IllegalReference } from './parser/parse'
@@ -480,27 +480,30 @@ const validateFieldValue = async (
 const validateField = async (
   field: Field,
   elementsSource: ReadOnlyElementsSource
-): Promise<ValidationError[]> =>
-  awu(Object.keys(field.annotations))
-    .filter(async k => (await field.getType(elementsSource)).annotationRefTypes[k] !== undefined)
+): Promise<ValidationError[]> => {
+  const annotationTypes = await elementAnnotationTypes(field)
+  return awu(Object.keys(field.annotations))
+    .filter(async k => annotationTypes[k] !== undefined)
     .flatMap(async k => validateValue(
       field.elemID.createNestedID(k),
       field.annotations[k],
-      (await (await field.getType(elementsSource)).getAnnotationTypes(elementsSource))[k],
+      annotationTypes[k],
       elementsSource
     ))
     .toArray()
+}
 
 const validateType = async (
   element: TypeElement,
   elementsSource: ReadOnlyElementsSource
 ): Promise<ValidationError[]> => {
+  const annotationTypes = await elementAnnotationTypes(element)
   const errors = await awu(Object.keys(element.annotations))
-    .filter(k => element.annotationRefTypes[k] !== undefined).flatMap(
+    .filter(k => annotationTypes[k] !== undefined).flatMap(
       async k => validateValue(
         element.elemID.createNestedID('attr', k),
         element.annotations[k],
-        (await element.getAnnotationTypes(elementsSource))[k],
+        annotationTypes[k],
         elementsSource
       )
     ).toArray()

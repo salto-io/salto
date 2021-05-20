@@ -15,8 +15,10 @@
 */
 import { ObjectType, Field, isListType, isObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { FieldToOmitType, DATA_FIELD_ENTIRE_OBJECT } from '../config/transformation'
 
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 export type FindNestedFieldFunc = (
@@ -60,9 +62,10 @@ export const findDataField: FindNestedFieldFunc = async (type, fieldsToIgnore, d
     dataField !== undefined && type.fields[dataField] !== undefined
       ? [type.fields[dataField]]
       : (
-        Object.values(type.fields)
+        await awu(Object.values(type.fields))
           .filter(async field => isObjectTypeDeep(await field.getType()))
           .filter(field => !shouldIgnoreField(field))
+          .toArray()
       )
   )
 

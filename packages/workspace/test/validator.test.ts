@@ -402,12 +402,12 @@ describe('Elements validation', () => {
       expect(errors).toHaveLength(2)
     })
 
-    it('should return unresolved reference error in core annotations', () => {
+    it('should return unresolved reference error in core annotations', async () => {
       const objWithUnresolvedRef = new ObjectType({
         elemID: new ElemID('salto', 'test'),
         fields: {
           bad: {
-            type: BuiltinTypes.STRING,
+            refType: BuiltinTypes.STRING,
             annotations: {
               [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [
                 new ReferenceExpression(new ElemID('salto', 'test', 'field', 'noSuchField')),
@@ -416,7 +416,13 @@ describe('Elements validation', () => {
           },
         },
       })
-      const errors = validateElements([objWithUnresolvedRef])
+      const errors = await validateElements(
+        [objWithUnresolvedRef],
+        createInMemoryElementSource([
+          objWithUnresolvedRef,
+          ...await getFieldsAndAnnoTypes(objWithUnresolvedRef),
+        ]),
+      )
       expect(errors).toHaveLength(1)
     })
   })

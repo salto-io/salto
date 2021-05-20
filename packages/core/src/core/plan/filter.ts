@@ -17,10 +17,9 @@ import wu from 'wu'
 import _ from 'lodash'
 
 import { DataNodeMap, DiffGraph, DiffNode, WalkError } from '@salto-io/dag'
-import { ChangeError, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeElement, ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationChange, isField, isObjectType } from '@salto-io/adapter-api'
+import { ChangeError, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeElement, ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationChange, isField, isObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { elementSource } from '@salto-io/workspace'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -33,8 +32,8 @@ type FilterResult = {
 type TopLevelElement = InstanceElement | TypeElement
 
 export const filterInvalidChanges = async (
-  beforeElements: elementSource.ElementsSource,
-  afterElements: elementSource.ElementsSource,
+  beforeElements: ReadOnlyElementsSource,
+  afterElements: ReadOnlyElementsSource,
   diffGraph: DiffGraph<ChangeDataType>,
   changeValidators: Record<string, ChangeValidator>,
 ): Promise<FilterResult> => {

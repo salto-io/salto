@@ -15,18 +15,36 @@
 */
 import { ElemID, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { getSubtypes } from '../../src/elements/subtypes'
 
 describe('getSubtypes', () => {
-  it('should return the expected subtypes', () => {
+  it('should return the expected subtypes', async () => {
     const typeA = new ObjectType({ elemID: new ElemID('adapter', 'A') })
     const typeB = new ObjectType({ elemID: new ElemID('adapter', 'B') })
-    const typeC = new ObjectType({ elemID: new ElemID('adapter', 'C'), fields: { b: { type: typeB }, a: { type: new MapType(typeA) } } })
-    const typeD = new ObjectType({ elemID: new ElemID('adapter', 'D'), fields: { c: { type: new ListType(typeC) } } })
+    const typeC = new ObjectType({
+      elemID: new ElemID('adapter', 'C'),
+      fields: {
+        b: { refType: createRefToElmWithValue(typeB) },
+        a: { refType: createRefToElmWithValue(new MapType(typeA)) },
+      },
+    })
+    const typeD = new ObjectType({
+      elemID: new ElemID('adapter', 'D'),
+      fields: {
+        c: { refType: createRefToElmWithValue(new ListType(typeC)) },
+      },
+    })
     const typeE = new ObjectType({ elemID: new ElemID('adapter', 'E') })
-    const typeF = new ObjectType({ elemID: new ElemID('adapter', 'F'), fields: { d: { type: typeD }, e: { type: typeE } } })
+    const typeF = new ObjectType({
+      elemID: new ElemID('adapter', 'F'),
+      fields: {
+        d: { refType: createRefToElmWithValue(typeD) },
+        e: { refType: createRefToElmWithValue(typeE) },
+      },
+    })
 
-    const subtypes = getSubtypes([typeD, typeF])
+    const subtypes = await getSubtypes([typeD, typeF])
     expect(_.sortBy(subtypes, type => type.elemID.name)).toEqual([typeA, typeB, typeC, typeE])
   })
 })

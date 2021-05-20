@@ -577,7 +577,7 @@ export const generateElements = async (
         },
       })
 
-      parsedNaclFile.elements.forEach(elem => {
+      await awu(parsedNaclFile.elements).forEach(elem => {
         elem.path = [DUMMY_ADAPTER, 'extra', file.basename.replace(new RegExp(`.${MOCK_NACL_SUFFIX}$`), '')]
       })
       return parsedNaclFile.elements

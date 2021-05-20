@@ -22,10 +22,10 @@ import { setInstancesUrls } from './instances_urls'
 
 const generateUrl = (id: number, element: InstanceElement):
   string | undefined => {
-  if (SCRIPT_TYPES.includes(element.type.elemID.name)) {
+  if (SCRIPT_TYPES.includes(element.refType.elemID.name)) {
     return `app/common/scripting/script.nl?id=${id}`
   }
-  if (PLUGIN_IMPLEMENTATION_TYPES.includes(element.type.elemID.name)) {
+  if (PLUGIN_IMPLEMENTATION_TYPES.includes(element.refType.elemID.name)) {
     return `app/common/scripting/plugin.nl?id=${id}`
   }
   return `app/common/scripting/plugintype.nl?scripttype=PLUGINTYPE&id=${id}`
@@ -35,7 +35,7 @@ const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
   setInstancesUrls({
     elements,
     client,
-    filter: element => SUPPORTED_TYPES.includes(element.type.elemID.name),
+    filter: element => SUPPORTED_TYPES.includes(element.refType.elemID.name),
     query: 'SELECT id, scriptid FROM script',
     generateUrl,
   })

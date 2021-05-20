@@ -29,7 +29,8 @@ export interface SaltoElemLocation {
 }
 
 export type SaltoElemFileLocation = Omit<SaltoElemLocation, 'range'>
-type LocationResultType = SaltoElemFileLocation & { indices: [number, number][] }
+export type LocationResult = SaltoElemFileLocation & { indices: [number, number][] }
+export type LocationResults = { totalCount: number; results: LocationResult[] }
 
 export const FUSE_SEARCH_THRESHOLD = 0.3
 const MAX_LOCATION_SEARCH_RESULT = 100
@@ -190,7 +191,7 @@ export const getQueryLocationsFuzzy = async (
 export const getQueryLocations = async (
   workspace: EditorWorkspace,
   query: string,
-): Promise<{ totalCount: number; results: LocationResultType[]}> => {
+): Promise<LocationResults> => {
   const getMatches = (fullName: string): RegExpMatchArray[] => {
     const regexp = new RegExp(query, 'gi')
     const matches: RegExpMatchArray[] = []

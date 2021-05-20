@@ -635,7 +635,7 @@ describe('Custom Objects filter', () => {
             label: 'Encrypto Stringo',
             createable: true,
             updateable: true,
-            required: true,
+            nillable: false,
             nameField: true,
           },
         ])
@@ -935,7 +935,7 @@ describe('Custom Objects filter', () => {
             expect(leadObjectType.fields.MyAutoNumber
               .annotations.label).toBe('AutoNumero')
             expect(leadObjectType.fields.MyAutoNumber
-              .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+              .annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
             expect(leadObjectType.fields.MyPicklist.annotations[FIELD_ANNOTATIONS.VALUE_SET])
               .toEqual([
                 createValueSetEntry('YES', true),
@@ -953,7 +953,7 @@ describe('Custom Objects filter', () => {
             expect(leadObjectType.fields.MyCheckbox
               .annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE]).toBe(true)
             expect(leadObjectType.fields.MyCheckbox
-              .annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+              .annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
 
             // Verify rollup field
             const expectedRollupSummaryField = testInstanceElement.value.fields

@@ -21,7 +21,7 @@ describe('config_transformation', () => {
     it('should return default config type when no custom fields were added', () => {
       const { transformation, transformationDefault } = createTransformationConfigTypes('myAdapter')
       expect(Object.keys(transformation.fields).sort()).toEqual(['dataField', 'fieldTypeOverrides', 'fieldsToHide', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
-      expect(transformation.fields.idFields.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeUndefined()
+      expect(transformation.fields.idFields.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
       const idFieldsType = transformation.fields.idFields.type as ListType
       expect(idFieldsType).toBeInstanceOf(ListType)
       const idFieldsTypeInner = idFieldsType.innerType

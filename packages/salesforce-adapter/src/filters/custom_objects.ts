@@ -182,7 +182,9 @@ const transfromAnnotationsNames = (fields: Values, parentName: string): Values =
   Object.entries(fields).forEach(([k, v]) => {
     switch (k) {
       case INSTANCE_REQUIRED_FIELD:
-        annotations[CORE_ANNOTATIONS.REQUIRED] = v
+        if (v === 'true') {
+          annotations[CORE_ANNOTATIONS.REQUIRED] = v
+        }
         break
       case INSTANCE_FULL_NAME_FIELD:
         annotations[API_NAME] = [parentName, v].join(API_NAME_SEPARATOR)

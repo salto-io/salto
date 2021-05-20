@@ -144,7 +144,7 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(lead.fields.Name.annotations[constants.LABEL]).toBe('Full Name')
 
         // Test true and false required
-        expect(lead.fields.Description.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(lead.fields.Description.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         expect(lead.fields.Company.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
 
         // Test picklist restriction.enforce_value prop
@@ -487,7 +487,6 @@ describe('Salesforce adapter E2E with real account', () => {
           description: {
             type: stringType,
             annotations: {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.DEFAULT_VALUE_FORMULA]: '"test"',
               [constants.LABEL]: 'description label',
             },
@@ -548,7 +547,6 @@ describe('Salesforce adapter E2E with real account', () => {
             annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'description__c'),
               [constants.LABEL]: 'test label',
-              [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.DEFAULT_VALUE_FORMULA]: '"test"',
             },
           },
@@ -580,7 +578,6 @@ describe('Salesforce adapter E2E with real account', () => {
           },
         },
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test',
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
@@ -608,7 +605,6 @@ describe('Salesforce adapter E2E with real account', () => {
           },
         },
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test2',
           [constants.LABEL]: 'test2 label',
           [constants.API_NAME]: customObjectName,
@@ -810,7 +806,6 @@ describe('Salesforce adapter E2E with real account', () => {
           nameField: nameFieldType,
         },
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test',
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
@@ -968,7 +963,7 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.LABEL]).toBe('Date label')
         expect(annotations[constants.DESCRIPTION]).toBe('Date description')
         expect(annotations[constants.HELP_TEXT]).toBe('Date help')
-        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toEqual('Today() + 7')
       }
 
@@ -984,20 +979,20 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.LABEL]).toBe('DateTime label')
         expect(annotations[constants.DESCRIPTION]).toBe('DateTime description')
         expect(annotations[constants.HELP_TEXT]).toBe('DateTime help')
-        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toBe('NOW() + 7')
       }
 
       const testEmail = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Email label')
-        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         expect(annotations[constants.FIELD_ANNOTATIONS.UNIQUE]).toBe(true)
         expect(annotations[constants.FIELD_ANNOTATIONS.EXTERNAL_ID]).toBe(true)
       }
 
       const testLocation = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Location label')
-        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         expect(annotations[constants.FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL])
           .toBe(true)
         expect(annotations[constants.FIELD_ANNOTATIONS.SCALE]).toBe(2)
@@ -1026,7 +1021,7 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.CUSTOM_VALUE.IS_ACTIVE]: false,
           },
         ])
-        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
       }
 
       const testMultiSelectPicklist = (annotations: Values, sorted = false): void => {
@@ -1063,13 +1058,13 @@ describe('Salesforce adapter E2E with real account', () => {
               [constants.VALUE_SETTINGS_FIELDS.VALUE_NAME]: 'RE',
             },
           ])
-        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
       }
 
       const testPercent = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Percent label')
         expect(annotations[constants.DESCRIPTION]).toBe('Percent description')
-        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         expect(annotations[constants.FIELD_ANNOTATIONS.PRECISION]).toBe(12)
         expect(annotations[constants.FIELD_ANNOTATIONS.SCALE]).toBe(3)
       }
@@ -1098,7 +1093,7 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.LABEL]).toBe('TextArea label')
         expect(annotations[constants.DESCRIPTION]).toBe('TextArea description')
         expect(annotations[constants.HELP_TEXT]).toBe('TextArea help')
-        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
       }
 
       const testEncryptedText = (annotations: Values): void => {
@@ -1106,12 +1101,12 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.FIELD_ANNOTATIONS.LENGTH]).toBe(35)
         expect(annotations[constants.FIELD_ANNOTATIONS.MASK_CHAR]).toBe('asterisk')
         expect(annotations[constants.FIELD_ANNOTATIONS.MASK_TYPE]).toBe('creditCard')
-        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
       }
 
       const testUrl = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Url label')
-        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
       }
 
       const testNumber = (annotations: Values): void => {
@@ -1119,7 +1114,7 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.FIELD_ANNOTATIONS.PRECISION]).toBe(15)
         expect(annotations[constants.FIELD_ANNOTATIONS.SCALE]).toBe(3)
         expect(annotations[constants.FIELD_ANNOTATIONS.UNIQUE]).toBe(true)
-        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toBe('42')
       }
 
@@ -1129,7 +1124,7 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.FIELD_ANNOTATIONS.EXTERNAL_ID]).toBe(true)
         expect(annotations[constants.FIELD_ANNOTATIONS.CASE_SENSITIVE]).toBe(true)
         expect(annotations[constants.FIELD_ANNOTATIONS.UNIQUE]).toBe(true)
-        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
       }
 
       const testCheckbox = (annotations: Values): void => {
@@ -1139,14 +1134,14 @@ describe('Salesforce adapter E2E with real account', () => {
 
       const testGlobalPicklist = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Global Picklist label')
-        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         expect(annotations[constants.FIELD_ANNOTATIONS.RESTRICTED]).toBe(true)
       }
 
       const testLookup = (annotations: Values): void => {
         expect(annotations[constants.LABEL]).toBe('Lookup label')
         expect(extractReferenceTo(annotations)).toEqual(['Opportunity'])
-        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         const lookupFilter = annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]
         expect(lookupFilter).toBeDefined()
         expect(lookupFilter[constants.LOOKUP_FILTER_FIELDS.ACTIVE]).toBe(true)
@@ -1731,7 +1726,6 @@ describe('Salesforce adapter E2E with real account', () => {
                 rollupSummaryFieldName,
                 Types.primitiveDataTypes.Summary,
                 {
-                  [CORE_ANNOTATIONS.REQUIRED]: false,
                   [constants.LABEL]: 'Summary label',
                   [constants.API_NAME]: apiNameAnno('Case', rollupSummaryFieldName),
                   [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: `${customObjectAddFieldsName}.${CUSTOM_FIELD_NAMES.CURRENCY}`,
@@ -1823,7 +1817,6 @@ describe('Salesforce adapter E2E with real account', () => {
           },
           [CUSTOM_FIELD_NAMES.TIME]: {
             [constants.LABEL]: 'Time label Updated',
-            [CORE_ANNOTATIONS.REQUIRED]: false,
             [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.TIME,
@@ -1835,7 +1828,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.BUSINESS_STATUS]: 'Hidden',
             [constants.SECURITY_CLASSIFICATION]: 'Restricted',
             [constants.COMPLIANCE_GROUP]: 'GDPR',
-            [CORE_ANNOTATIONS.REQUIRED]: false,
             [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.DATETIME,
@@ -1891,7 +1883,6 @@ describe('Salesforce adapter E2E with real account', () => {
           },
           [CUSTOM_FIELD_NAMES.EMAIL]: {
             [constants.LABEL]: 'Email label Updated',
-            [CORE_ANNOTATIONS.REQUIRED]: false,
             [constants.FIELD_ANNOTATIONS.UNIQUE]: false,
             [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
@@ -1913,14 +1904,12 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.HELP_TEXT]: 'Percent help updated',
             [constants.FIELD_ANNOTATIONS.SCALE]: 7,
             [constants.FIELD_ANNOTATIONS.PRECISION]: 8,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
             [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.PERCENT,
           },
           [CUSTOM_FIELD_NAMES.PHONE]: {
             [constants.LABEL]: 'Phone label Updated',
-            [CORE_ANNOTATIONS.REQUIRED]: false,
             [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.TRACK_TRENDING]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.PHONE,
@@ -1987,7 +1976,6 @@ describe('Salesforce adapter E2E with real account', () => {
           },
           [CUSTOM_FIELD_NAMES.TEXT]: {
             [constants.LABEL]: 'Text label Updated',
-            [CORE_ANNOTATIONS.REQUIRED]: false,
             [constants.FIELD_ANNOTATIONS.LENGTH]: 99,
             [constants.FIELD_ANNOTATIONS.CASE_SENSITIVE]: true,
             [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
@@ -2019,7 +2007,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.LABEL]: 'Lookup label Updated',
             [constants.DESCRIPTION]: 'Lookup description Updated',
             [constants.HELP_TEXT]: 'Lookup help updated',
-            [CORE_ANNOTATIONS.REQUIRED]: false,
             [constants.FIELD_ANNOTATIONS.DELETE_CONSTRAINT]: 'SetNull',
             [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Opportunity'],
             [constants.FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: CUSTOM_FIELD_NAMES.LOOKUP
@@ -2340,7 +2327,6 @@ describe('Salesforce adapter E2E with real account', () => {
           },
         } },
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
@@ -2399,7 +2385,6 @@ describe('Salesforce adapter E2E with real account', () => {
       const element = new ObjectType({
         elemID: mockElemID,
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
@@ -2421,7 +2406,6 @@ describe('Salesforce adapter E2E with real account', () => {
       const element = new ObjectType({
         elemID: mockElemID,
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
@@ -2451,7 +2435,6 @@ describe('Salesforce adapter E2E with real account', () => {
       const oldElement = new ObjectType({
         elemID: mockElemID,
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,

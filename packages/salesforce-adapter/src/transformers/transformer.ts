@@ -1064,13 +1064,11 @@ export const getSObjectFieldElement = (
     [API_NAME]: fieldApiName,
     [LABEL]: field.label,
   }
-  if (field.type !== 'boolean') {
-    // nillable is the closest thing we could find to infer if a field is required, it might not
-    // be perfect
+  if (field.type !== 'boolean' && field.nillable === false) {
+    // nillable is the closest thing we could find to infer if a field is required,
+    // it might not be perfect
     // boolean (i.e. Checkbox) must not have required field
-    if (!field.nillable) {
-      annotations[CORE_ANNOTATIONS.REQUIRED] = true
-    }
+    annotations[CORE_ANNOTATIONS.REQUIRED] = true
   }
 
   if (field.defaultValueFormula) {

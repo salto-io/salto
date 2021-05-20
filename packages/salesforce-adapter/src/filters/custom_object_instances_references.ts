@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
+import { collections, values as lowerdashValues, promises } from '@salto-io/lowerdash'
 import { transformValues, TransformFunc, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoError } from '@salto-io/adapter-api'
@@ -24,14 +24,13 @@ import { FIELD_ANNOTATIONS, KEY_PREFIX, KEY_PREFIX_LENGTH } from '../constants'
 import { isLookupField, isMasterDetailField } from './utils'
 import { FilterResult } from '../types'
 import { DataManagement } from '../fetch_profile/data_management'
-import { mapValuesAsync } from '@salto-io/lowerdash/dist/src/promises/object'
-import { keyByAsync } from '@salto-io/lowerdash/dist/src/collections/asynciterable'
-import { removeAsync } from '@salto-io/lowerdash/dist/src/promises/array'
 
 const { makeArray } = collections.array
 const { isDefined } = lowerdashValues
 const { DefaultMap } = collections.map
-
+const { keyByAsync } = collections.asynciterable
+const { removeAsync } = promises.array
+const { mapValuesAsync } = promises.object
 type RefOrigin = { type: string; id: string; field?: string }
 type MissingRef = {
   origin: RefOrigin
@@ -49,8 +48,9 @@ const MAX_BREAKDOWN_DETAILS_ELEMENTS = 3
 const serializeInternalID = (typeName: string, id: string): string =>
   (`${typeName}${INTERNAL_ID_SEPARATOR}${id}`)
 
-const serializeInstanceInternalID = async (instance: InstanceElement): Promise<string> =>
+const serializeInstanceInternalID = async (instance: InstanceElement): Promise<string> => (
   serializeInternalID(await apiName(await instance.getType(), true), await apiName(instance))
+)
 
 const deserializeInternalID = (internalID: string): RefOrigin => {
   const splitInternalID = internalID.split(INTERNAL_ID_SEPARATOR)
@@ -66,7 +66,7 @@ const groupInstancesByTypeAndElemID = async (
   instances: InstanceElement[],
 ): Promise<Record<string, Record<string, InstanceElement[]>>> =>
   (_.mapValues(
-    await groupByAsync(instances, async instance => await apiName(await instance.getType(), true)),
+    await groupByAsync(instances, async instance => apiName(await instance.getType(), true)),
     typeInstances => _.groupBy(typeInstances, instance => instance.elemID.name)
   ))
 
@@ -237,7 +237,7 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
       return new ReferenceExpression(refTarget.elemID)
     }
 
-    return transformValues(
+    return await transformValues(
       {
         values: instance.value,
         type: await instance.getType(),
@@ -247,7 +247,7 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
     ) ?? instance.value
   }
 
-  awu(instances).forEach(async (instance, index) => {
+  await awu(instances).forEach(async (instance, index) => {
     instance.value = await replaceLookups(instance)
     if (index > 0 && index % 500 === 0) {
       log.debug(`Replaced lookup with references for ${index} instances`)
@@ -279,10 +279,13 @@ const getIllegalRefSources = (
   return illegalRefSources
 }
 
-const buildCustomObjectPrefixKeyMap = async (elements: Element[]): Promise<Record<string, string>> => {
-  const customObjects = elements
+const buildCustomObjectPrefixKeyMap = async (
+  elements: Element[]
+): Promise<Record<string, string>> => {
+  const customObjects = await awu(elements)
     .filter(isCustomObject)
     .filter(customObject => isDefined(customObject.annotations[KEY_PREFIX]))
+    .toArray()
   const keyPrefixToCustomObject = _.keyBy(
     customObjects,
     customObject => customObject.annotations[KEY_PREFIX] as string,
@@ -337,12 +340,12 @@ const filter: FilterCreator = ({ client, config }) => ({
     await removeAsync(
       elements,
       async element =>
-        (isInstanceOfCustomObject(element)
+        (await isInstanceOfCustomObject(element)
         && invalidInstances.has(await serializeInstanceInternalID(element as InstanceElement))),
     )
     const baseUrl = await client.getUrl()
     const customObjectPrefixKeyMap = await buildCustomObjectPrefixKeyMap(elements)
-    logInstancesWithCollidingElemID(instancesWithCollidingElemID)
+    await logInstancesWithCollidingElemID(instancesWithCollidingElemID)
     return {
       errors: await createWarnings(
         instancesWithCollidingElemID,

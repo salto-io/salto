@@ -13,13 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { createMatchingObjectType, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import {
   ElemID, ObjectType, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
   FieldDefinition,
   SaltoError,
 } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from './constants'
 import { SALESFORCE } from './constants'
 
@@ -57,6 +56,56 @@ export type OptionalFeatures = {
   extraDependencies?: boolean
 }
 
+type ObjectIdSettings = {
+  objectsRegex: string
+  idFields: string[]
+}
+
+export type SaltoIDSettings = {
+  defaultIdFields: string[]
+  overrides?: ObjectIdSettings[]
+}
+
+const objectIdSettings = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'objectIdSettings'),
+  fields: {
+    objectsRegex: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+    idFields: {
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+  } as Record<keyof ObjectIdSettings, FieldDefinition>,
+})
+
+const saltoIDSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'saltoIDSettings'),
+  fields: {
+    defaultIdFields: {
+      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+    overrides: {
+      refType: createRefToElmWithValue(new ListType(objectIdSettings)),
+    },
+  } as Record<keyof SaltoIDSettings, FieldDefinition>,
+})
+
+export type DataManagementConfig = {
+  includeObjects: string[]
+  excludeObjects?: string[]
+  allowReferenceTo?: string[]
+  saltoIDSettings: SaltoIDSettings
+}
+
 export type FetchParameters = {
   metadata?: MetadataParams
   data?: DataManagementConfig
@@ -73,23 +122,6 @@ export type DeprecatedMetadataParams = {
 export type DeprecatedFetchParameters = {
   [DATA_MANAGEMENT]?: DataManagementConfig
 } & DeprecatedMetadataParams
-
-type ObjectIdSettings = {
-  objectsRegex: string
-  idFields: string[]
-}
-
-export type SaltoIDSettings = {
-  defaultIdFields: string[]
-  overrides?: ObjectIdSettings[]
-}
-
-export type DataManagementConfig = {
-  includeObjects: string[]
-  excludeObjects?: string[]
-  allowReferenceTo?: string[]
-  saltoIDSettings: SaltoIDSettings
-}
 
 export type ClientRateLimitConfig = Partial<{
   total: number
@@ -140,13 +172,6 @@ export type SalesforceConfig = {
   [CLIENT_CONFIG]?: SalesforceClientConfig
 }
 
-export type FilterResult = {
-  configSuggestions?: ConfigChangeSuggestion[]
-  errors?: SaltoError[]
-}
-
-export type ConfigChangeSuggestion = DataManagementConfigSuggestions | MetadataConfigSuggestion
-
 type DataManagementConfigSuggestions = {
   type: 'dataObjectsExclude'
   value: string
@@ -157,6 +182,13 @@ export type MetadataConfigSuggestion = {
   type: 'metadataExclude'
   value: MetadataQueryParams
   reason?: string
+}
+
+export type ConfigChangeSuggestion = DataManagementConfigSuggestions | MetadataConfigSuggestion
+
+export type FilterResult = {
+  configSuggestions?: ConfigChangeSuggestion[]
+  errors?: SaltoError[]
 }
 
 export const isDataManagementConfigSuggestions = (suggestion: ConfigChangeSuggestion):
@@ -247,39 +279,6 @@ export class OauthAccessTokenCredentials {
 }
 
 export type Credentials = UsernamePasswordCredentials | OauthAccessTokenCredentials
-
-const objectIdSettings = new ObjectType({
-  elemID: new ElemID(constants.SALESFORCE, 'objectIdSettings'),
-  fields: {
-    objectsRegex: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    },
-    idFields: {
-      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    },
-  } as Record<keyof ObjectIdSettings, FieldDefinition>,
-})
-
-const saltoIDSettingsType = new ObjectType({
-  elemID: new ElemID(constants.SALESFORCE, 'saltoIDSettings'),
-  fields: {
-    defaultIdFields: {
-      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    },
-    overrides: {
-      refType: createRefToElmWithValue(new ListType(objectIdSettings)),
-    },
-  } as Record<keyof SaltoIDSettings, FieldDefinition>,
-})
 
 const dataManagementType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, DATA_CONFIGURATION),
@@ -388,18 +387,18 @@ const metadataConfigType = new ObjectType({
 const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
   elemID: new ElemID(SALESFORCE, 'optionalFeatures'),
   fields: {
-    extraDependencies: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+    extraDependencies: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 
 const fetchConfigType = createMatchingObjectType<FetchParameters>({
   elemID: new ElemID(SALESFORCE, 'fetchConfig'),
   fields: {
-    metadata: { refType: createRefToElmWithValue(metadataConfigType) },
-    data: { refType: createRefToElmWithValue(dataManagementType) },
-    optionalFeatures: { refType: createRefToElmWithValue(optionalFeaturesType) },
-    fetchAllCustomSettings:  { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-    target: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
+    metadata: { refType: metadataConfigType },
+    data: { refType: dataManagementType },
+    optionalFeatures: { refType: optionalFeaturesType },
+    fetchAllCustomSettings: { refType: BuiltinTypes.BOOLEAN },
+    target: { refType: new ListType(BuiltinTypes.STRING) },
   },
 })
 

@@ -145,7 +145,7 @@ export const handleErrorsAsync = <T>(
       }
     },
   })
-  
+
 export async function *flattenAsync<T>(
   ...iterables: ThenableIterable<ThenableIterable<T> | T>[]
 ): AsyncIterable<T> {

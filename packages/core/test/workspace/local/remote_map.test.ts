@@ -229,7 +229,7 @@ describe('test operations on remote db', () => {
       for await (const element of remoteMap.values({ first: 100, after })) {
         nextPageRes.push(element)
       }
-      expect(nextPageRes).toHaveLength(9)
+      expect(nextPageRes).toHaveLength(10)
       expect(nextPageRes.map(e => e.elemID.getFullName())).toEqual(sortedElements.slice(5))
     })
 
@@ -280,7 +280,7 @@ describe('test operations on remote db', () => {
       for await (const element of remoteMap.entries({ first: 100, after })) {
         nextPageRes.push(element)
       }
-      expect(nextPageRes).toHaveLength(9)
+      expect(nextPageRes).toHaveLength(10)
       expect(nextPageRes.map(e => e.value.elemID.getFullName()))
         .toEqual(sortedElements.slice(5))
       expect(nextPageRes.map(e => e.key)).toEqual(sortedElements.slice(5))

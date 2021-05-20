@@ -22,7 +22,7 @@ const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
   setInstancesUrls({
     elements,
     client,
-    filter: element => element.type.elemID.name === 'emailtemplate',
+    filter: element => element.refType.elemID.name === 'emailtemplate',
     query: 'SELECT id, scriptid FROM emailtemplate',
     generateUrl: id => `app/crm/common/merge/emailtemplate.nl?id=${id}&cp=F`,
   })

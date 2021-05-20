@@ -55,7 +55,7 @@ describe('standard_objects transformer', () => {
       expect(type.elemID.name).toEqual('StandardObjectDefinition')
       expect(instances).toHaveLength(1)
       expect(instances[0]).toBeInstanceOf(InstanceElement)
-      expect((instances[0] as InstanceElement).type).toEqual(type)
+      expect(await (instances[0] as InstanceElement).getType()).toEqual(type)
     })
   })
 })

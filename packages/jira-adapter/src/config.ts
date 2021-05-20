@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { JIRA } from './constants'
 
@@ -323,7 +323,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       paginationField: 'startAt',
     },
   },
-  // eslint-disable-next-line @typescript-eslint/camelcase
   rest__api__3__status: {
     transformation: {
       dataField: '.',
@@ -453,24 +452,40 @@ export type JiraConfig = {
 
 const defaultApiDefinitionsType = createSwaggerAdapterApiConfigType({ adapter: JIRA })
 
+// We use this to allow ourselfs to get the IDs of the def fields and enjoy the benefits
+// of the schema validation without having to create uneeded async gets
+const createObjectTypeFromRefType = (refType: ReferenceExpression): ObjectType => (
+  new ObjectType({
+    elemID: refType.elemID,
+  })
+)
+
 const apiDefinitionsType = createMatchingObjectType<JiraApiConfig>({
   elemID: new ElemID(JIRA, 'apiDefinitions'),
   fields: {
-    apiVersion: { type: BuiltinTypes.STRING },
+    apiVersion: { refType: BuiltinTypes.STRING },
     typeDefaults: {
-      type: defaultApiDefinitionsType.fields.typeDefaults.type as ObjectType,
+      refType: createObjectTypeFromRefType(
+        defaultApiDefinitionsType.fields.typeDefaults.refType
+      ),
       annotations: { _required: true },
     },
     types: {
-      type: defaultApiDefinitionsType.fields.types.type as ObjectType,
+      refType: createObjectTypeFromRefType(
+        defaultApiDefinitionsType.fields.types.refType
+      ),
       annotations: { _required: true },
     },
     jiraSwagger: {
-      type: defaultApiDefinitionsType.fields.swagger.type as ObjectType,
+      refType: createObjectTypeFromRefType(
+        defaultApiDefinitionsType.fields.swagger.refType
+      ),
       annotations: { _required: true },
     },
     platformSwagger: {
-      type: defaultApiDefinitionsType.fields.swagger.type as ObjectType,
+      refType: createObjectTypeFromRefType(
+        defaultApiDefinitionsType.fields.swagger.refType
+      ),
       annotations: { _required: true },
     },
   },
@@ -479,9 +494,9 @@ const apiDefinitionsType = createMatchingObjectType<JiraApiConfig>({
 export const configType = createMatchingObjectType<JiraConfig>({
   elemID: new ElemID(JIRA),
   fields: {
-    client: { type: createClientConfigType(JIRA) },
+    client: { refType: createClientConfigType(JIRA) },
     fetch: {
-      type: createUserFetchConfigType(JIRA),
+      refType: createUserFetchConfigType(JIRA),
       annotations: {
         _required: true,
         [CORE_ANNOTATIONS.DEFAULT]: {
@@ -490,7 +505,7 @@ export const configType = createMatchingObjectType<JiraConfig>({
       },
     },
     apiDefinitions: {
-      type: apiDefinitionsType,
+      refType: apiDefinitionsType,
       annotations: {
         _required: true,
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_API_DEFINITIONS,

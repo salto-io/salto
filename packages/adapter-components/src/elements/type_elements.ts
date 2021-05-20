@@ -49,11 +49,11 @@ export const hideFields = (
 }
 
 
-export const filterTypes = (
+export const filterTypes = async (
   adapterName: string,
   allTypes: ObjectType[],
   typesToFilter: string[]
-): ObjectType[] => {
+): Promise<ObjectType[]> => {
   const nameToType = _.keyBy(allTypes, type => type.elemID.name)
 
   const relevantTypes = typesToFilter.map(name => {
@@ -65,7 +65,7 @@ export const filterTypes = (
   }).filter(values.isDefined)
 
   relevantTypes.forEach(t => { t.path = [adapterName, TYPES_PATH, t.elemID.name] })
-  const subtypes = getSubtypes(relevantTypes)
+  const subtypes = await getSubtypes(relevantTypes)
   subtypes.forEach(t => { t.path = [adapterName, TYPES_PATH, SUBTYPES_PATH, t.elemID.name] })
 
   return [...relevantTypes, ...subtypes]

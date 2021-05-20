@@ -29,6 +29,7 @@ import { addSalesforceRecipeReferences } from './reference_finders/salesforce'
 
 const log = logger(module)
 const { makeArray } = collections.array
+const { awu } = collections.asynciterable
 const { toNestedTypeName } = elementUtils.ducktype
 
 type ConnectionDetails = {
@@ -107,14 +108,14 @@ const addReferencesForConnectionRecipes = async (
 ): Promise<void> => {
   if (serviceName === SALESFORCE) {
     const index = indexSalesforceByMetadataTypeAndApiName(serviceElements)
-    relevantRecipeCodes.forEach(
+    await awu(relevantRecipeCodes).forEach(
       inst => addSalesforceRecipeReferences(inst, index, appName)
     )
     return
   }
   if (serviceName === NETSUITE) {
     const index = indexNetsuiteByTypeAndScriptId(serviceElements)
-    relevantRecipeCodes.forEach(
+    await awu(relevantRecipeCodes).forEach(
       inst => addNetsuiteRecipeReferences(inst, index, appName)
     )
   }
@@ -127,10 +128,10 @@ const filter: FilterCreator = ({ config }) => ({
   onPostFetch: async ({
     currentAdapterElements,
     elementsByAdapter,
-  }: PostFetchOptions): Promise<boolean> => {
+  }: PostFetchOptions): Promise<void> => {
     const { serviceConnectionNames } = config[FETCH_CONFIG]
     if (serviceConnectionNames === undefined || _.isEmpty(serviceConnectionNames)) {
-      return false
+      return
     }
 
     const serviceConnectionDetails = getServiceConnectionDetails(
@@ -151,21 +152,22 @@ const filter: FilterCreator = ({ config }) => ({
       inst => inst.elemID.getFullName()
     )
 
-    Object.entries(serviceConnectionDetails).forEach(([serviceName, connections]) => {
-      Object.values(connections).forEach(({ id, applicationName }) => {
-        const relevantRecipeCodes = filterRelevantRecipeCodes(
-          id,
-          recipeInstances,
-          recipeCodeInstancesByElemID,
-        )
-        addReferencesForConnectionRecipes(
-          relevantRecipeCodes,
-          applicationName,
-          serviceName,
-          elementsByAdapter[serviceName] ?? [],
-        )
+    await awu(Object.entries(serviceConnectionDetails))
+      .forEach(async ([serviceName, connections]) => {
+        await awu(Object.values(connections)).forEach(async ({ id, applicationName }) => {
+          const relevantRecipeCodes = filterRelevantRecipeCodes(
+            id,
+            recipeInstances,
+            recipeCodeInstancesByElemID,
+          )
+          await addReferencesForConnectionRecipes(
+            relevantRecipeCodes,
+            applicationName,
+            serviceName,
+            elementsByAdapter[serviceName] ?? [],
+          )
+        })
       })
-    })
   },
 })
 

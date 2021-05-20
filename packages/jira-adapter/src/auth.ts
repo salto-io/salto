@@ -26,9 +26,9 @@ type BasicAuthCredentials = {
 export const basicAuthCredentialsType = createMatchingObjectType<BasicAuthCredentials>({
   elemID: new ElemID(constants.JIRA),
   fields: {
-    baseUrl: { type: BuiltinTypes.STRING, annotations: { _required: true } },
-    user: { type: BuiltinTypes.STRING, annotations: { _required: true } },
-    token: { type: BuiltinTypes.STRING, annotations: { _required: true } },
+    baseUrl: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
+    user: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
+    token: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
   },
 })
 

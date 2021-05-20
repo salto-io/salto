@@ -275,7 +275,7 @@ const getEntriesForType = async (
   } = getConfigWithDefault(transformation, typeDefaultConfig.transformation)
   const requestWithDefaults = getConfigWithDefault(request, typeDefaultConfig.request ?? {})
 
-  const nestedFieldDetails = nestedFieldFinder(type, fieldsToOmit, dataField)
+  const nestedFieldDetails = await nestedFieldFinder(type, fieldsToOmit, dataField)
 
   const getType = async (): Promise<{ objType: ObjectType; extractValues?: boolean }> => {
     if (nestedFieldDetails === undefined) {

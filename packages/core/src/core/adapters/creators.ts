@@ -30,7 +30,7 @@ const adapterCreators: Record<string, Adapter> = {
   marketo: marketoAdapter,
   dummy: dummyAdapter,
   workato: workatoAdapter,
-  // eslint-disable-next-line @typescript-eslint/camelcase
+  // eslint-disable-next-line camelcase
   zuora_billing: zuoraBillingAdapter,
   jira: jiraAdapter,
 }

@@ -199,9 +199,9 @@ export const getQueryLocations = async (
   }
 
   const elemIDToMatches: Record<string, RegExpMatchArray[]> = {}
-  const elementIDs = (await getAllElements(workspace)).map(e => e.elemID)
-  elementIDs.forEach(e => {
-    const id = e.getFullName()
+  const elementIDs = await workspace.getSearchableNames()
+  elementIDs.forEach(id => {
+    const e = ElemID.fromFullName(id)
     if (e.isTopLevel()) {
       elemIDToMatches[id] = elemIDToMatches[id] ?? getMatches(id)
     } else {

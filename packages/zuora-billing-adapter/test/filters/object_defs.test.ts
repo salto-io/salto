@@ -147,7 +147,6 @@ describe('Object defs filter', () => {
           label: 'Custom1',
           properties: {
             additionalProperties: {
-              // eslint-disable-next-line @typescript-eslint/camelcase
               field1__c: {
                 format: 'uuid',
                 label: 'field1 label',
@@ -157,12 +156,10 @@ describe('Object defs filter', () => {
                   description: 'some description',
                 },
               },
-              // eslint-disable-next-line @typescript-eslint/camelcase
               field2__c: {
                 label: 'field2 label',
                 type: 'number',
               },
-              // eslint-disable-next-line @typescript-eslint/camelcase
               SubscriptionId__c: {
                 format: 'uuid',
                 label: 'Subscription',
@@ -172,7 +169,6 @@ describe('Object defs filter', () => {
                   description: 'The subscription that is associated with the record.',
                 },
               },
-              // eslint-disable-next-line @typescript-eslint/camelcase
               AccountId__c: {
                 format: 'uuid',
                 label: 'Account',
@@ -182,7 +178,6 @@ describe('Object defs filter', () => {
                   description: 'The account that is associated with the record.',
                 },
               },
-              // eslint-disable-next-line @typescript-eslint/camelcase
               Custom2Id__c: {
                 format: 'uuid',
                 label: 'Custom2',
@@ -214,7 +209,6 @@ describe('Object defs filter', () => {
               object: 'subscription',
               fields: {
                 additionalProperties: {
-                  // eslint-disable-next-line @typescript-eslint/camelcase
                   SubscriptionId__c: 'Id',
                 },
               },
@@ -230,7 +224,6 @@ describe('Object defs filter', () => {
               object: 'account',
               fields: {
                 additionalProperties: {
-                  // eslint-disable-next-line @typescript-eslint/camelcase
                   AccountId__c: 'Id',
                 },
               },
@@ -256,7 +249,6 @@ describe('Object defs filter', () => {
               object: 'Custom2',
               fields: {
                 additionalProperties: {
-                  // eslint-disable-next-line @typescript-eslint/camelcase
                   Custom2Id__c: 'Id',
                 },
               },
@@ -365,13 +357,13 @@ describe('Object defs filter', () => {
       const accountingcode = elements.find(e => e.elemID.typeName === 'AccountingCode') as ObjectType
       expect(account).toBeInstanceOf(ObjectType)
       expect(accountingcode).toBeInstanceOf(ObjectType)
-      expect(_.mapValues(account.fields, f => f.type.elemID.getFullName())).toEqual({
+      expect(_.mapValues(account.fields, f => f.refType.elemID.getFullName())).toEqual({
         AccountNumber: 'string',
         CreatedById: 'string',
         Id: 'string',
         Name: 'string',
       })
-      expect(_.mapValues(accountingcode.fields, f => f.type.elemID.getFullName())).toEqual({
+      expect(_.mapValues(accountingcode.fields, f => f.refType.elemID.getFullName())).toEqual({
         deleted: 'boolean',
         Category: 'string',
         Id: 'string',
@@ -389,16 +381,11 @@ describe('Object defs filter', () => {
     it('should create custom objects and fields correctly, with the __c suffix', () => {
       const custom1 = elements.find(e => e.elemID.typeName === 'Custom1__c') as ObjectType
       expect(custom1).toBeInstanceOf(ObjectType)
-      expect(_.mapValues(custom1.fields, f => f.type.elemID.getFullName())).toEqual({
-        // eslint-disable-next-line @typescript-eslint/camelcase
+      expect(_.mapValues(custom1.fields, f => f.refType.elemID.getFullName())).toEqual({
         field1__c: 'string',
-        // eslint-disable-next-line @typescript-eslint/camelcase
         field2__c: 'number',
-        // eslint-disable-next-line @typescript-eslint/camelcase
         SubscriptionId__c: 'string',
-        // eslint-disable-next-line @typescript-eslint/camelcase
         AccountId__c: 'string',
-        // eslint-disable-next-line @typescript-eslint/camelcase
         Custom2Id__c: 'string',
         Id: 'string',
       })
@@ -435,10 +422,10 @@ describe('Object defs filter', () => {
         referenceTo: [expect.any(ReferenceExpression)],
       })
       const fieldRef = custom1.fields.Custom2Id__c.annotations.referenceTo[0] as ReferenceExpression
-      expect(fieldRef.elemId.getFullName()).toEqual('zuora_billing.Custom2__c.field.Id')
+      expect(fieldRef.elemID.getFullName()).toEqual('zuora_billing.Custom2__c.field.Id')
       const custom2 = elements.find(e => e.elemID.typeName === 'Custom2__c') as ObjectType
       expect(custom2).toBeInstanceOf(ObjectType)
-      expect(_.mapValues(custom2.fields, f => f.type.elemID.getFullName())).toEqual({ Id: 'string' })
+      expect(_.mapValues(custom2.fields, f => f.refType.elemID.getFullName())).toEqual({ Id: 'string' })
       expect(custom1.fields.Id.annotations).toEqual({
         filterable: true,
         format: 'uuid',
@@ -465,9 +452,8 @@ describe('Object defs filter', () => {
         referenceTo: [expect.any(ReferenceExpression)],
       })
       const fieldRef = custom1.fields.AccountId__c.annotations.referenceTo[0] as ReferenceExpression
-      expect(fieldRef.elemId.getFullName()).toEqual('zuora_billing.account.field.Id')
+      expect(fieldRef.elemID.getFullName()).toEqual('zuora_billing.account.field.Id')
       expect(custom1.annotations).toEqual({
-        // eslint-disable-next-line @typescript-eslint/camelcase
         _generated_dependencies: [expect.any(ReferenceExpression), expect.any(ReferenceExpression)],
         description: 'this is a decription',
         id: 'some id',
@@ -476,8 +462,8 @@ describe('Object defs filter', () => {
       })
       // eslint-disable-next-line no-underscore-dangle
       const objRefs = custom1.annotations._generated_dependencies as ReferenceExpression[]
-      expect(objRefs[0].elemId.getFullName()).toEqual('zuora_billing.Custom2__c')
-      expect(objRefs[1].elemId.getFullName()).toEqual('zuora_billing.account')
+      expect(objRefs[0].elemID.getFullName()).toEqual('zuora_billing.Custom2__c')
+      expect(objRefs[1].elemID.getFullName()).toEqual('zuora_billing.account')
     })
   })
 })

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import * as path from 'path'
+import _ from 'lodash'
 import { EditorWorkspace } from '../src/workspace'
 import { getQueryLocationsExactMatch, getQueryLocationsFuzzy,
   getQueryLocations, completeSaltoLocation } from '../src/location'
@@ -100,13 +101,13 @@ describe('workspace query locations', () => {
     it('should find elements', async () => {
       const res = await getQueryLocations(workspace, 'perSon')
       expect(res.totalCount).toEqual(5)
-      expect(res.results).toEqual([
+      expect(_.sortBy(res.results, 'fullname')).toEqual(_.sortBy([
         { filename: naclFileName, fullname: 'vs.person', indices: [[3, 9]] },
         { filename: naclFileName, fullname: 'vs.person.instance.lavi', indices: [[3, 9]] },
         { filename: naclFileName, fullname: 'vs.person.instance.evyatar', indices: [[3, 9]] },
         { filename: naclFileName, fullname: 'vs.person.instance.hadar', indices: [[3, 9]] },
         { filename: naclFileName, fullname: 'vs.person.instance.parentTester', indices: [[3, 9]] },
-      ])
+      ], 'fullname'))
     })
     it('should find field elements', async () => {
       const res = await getQueryLocations(workspace, 'car')

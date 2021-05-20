@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import {
   ChangeError,
   ChangeValidator,
@@ -26,14 +26,15 @@ import { transformValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isCustomType } from '../types'
 
+const { awu } = collections.asynciterable
 const { isDefined } = values
 export const ACCOUNT_SPECIFIC_VALUE = '[ACCOUNT_SPECIFIC_VALUE]'
 
-const hasAccountSpecificValue = (instance: InstanceElement): boolean => {
+const hasAccountSpecificValue = async (instance: InstanceElement): Promise<boolean> => {
   let foundAccountSpecificValue = false
-  transformValues({
+  await transformValues({
     values: instance.value,
-    type: instance.type,
+    type: await instance.getType(),
     transformFunc: ({ value }) => {
       if (_.isString(value) && value.includes(ACCOUNT_SPECIFIC_VALUE)) {
         foundAccountSpecificValue = true
@@ -45,15 +46,15 @@ const hasAccountSpecificValue = (instance: InstanceElement): boolean => {
 }
 
 const changeValidator: ChangeValidator = async changes => (
-  changes
+  awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
-    .map(change => {
+    .map(async change => {
       const instance = getChangeElement(change)
-      if (!isCustomType(instance.type)) {
+      if (!isCustomType(instance.refType.elemID)) {
         return undefined
       }
-      if (!hasAccountSpecificValue(instance)) {
+      if (!(await hasAccountSpecificValue(instance))) {
         return undefined
       }
       // We identified ACCOUNT_SPECIFIC_VALUE only in workflows and script related types,
@@ -78,6 +79,7 @@ const changeValidator: ChangeValidator = async changes => (
       } as ChangeError
     })
     .filter(isDefined)
+    .toArray()
 )
 
 export default changeValidator

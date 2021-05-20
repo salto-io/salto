@@ -21,7 +21,7 @@ const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
   setInstancesUrls({
     elements,
     client,
-    filter: element => element.type.elemID.name === 'customtransactiontype',
+    filter: element => element.refType.elemID.name === 'customtransactiontype',
     query: 'SELECT id, scriptid FROM customtransactiontype',
     generateUrl: id => `app/common/custom/customtransaction.nl?id=${id}`,
   })

@@ -154,7 +154,9 @@ AsyncIterable<remoteMap.RemoteMapEntry<string>[]> {
         page.push({ key: minEntry.key, value: minEntry.value })
       }
     }
-    yield page
+    if (page.length > 0) {
+      yield page
+    }
   }
 }
 

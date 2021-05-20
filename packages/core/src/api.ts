@@ -222,14 +222,15 @@ export const fetch: FetchFunc = async (
     adapters,
     await workspace.elements(),
     workspace.state(),
-    stateElementsNotCoveredByFetch,
     currentConfigs,
     progressEmitter,
   )
   log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-  await state.override(awu(elements).concat(stateElementsNotCoveredByFetch), fetchServices)
-  await state.updatePathIndex(unmergedElements,
-    (await state.existingServices()).filter(key => !fetchServices.includes(key)))
+  await workspace.state()
+    .override(awu(elements)
+      .concat(stateElementsNotCoveredByFetch), fetchServices)
+  await workspace.state().updatePathIndex(unmergedElements,
+    (await workspace.state().existingServices()).filter(key => !fetchServices.includes(key)))
   log.debug(`finish to override state with ${elements.length} elements`)
   return {
     changes,

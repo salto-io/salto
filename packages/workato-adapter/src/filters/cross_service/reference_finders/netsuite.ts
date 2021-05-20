@@ -41,11 +41,11 @@ const createFormulaFieldMatcher = (application: string): Matcher<NetsuiteFieldMa
   )
 )
 
-export const addNetsuiteRecipeReferences = (
+export const addNetsuiteRecipeReferences = async (
   inst: InstanceElement,
   indexedElements: NetsuiteIndex,
   appName: string,
-): void => {
+): Promise<void> => {
   const referenceFinder: ReferenceFinder<NetsuiteBlock> = (blockValue, path) => {
     const references: MappedReference[] = []
 

@@ -166,9 +166,9 @@ describe('Recipe references filter', () => {
         input: {
           refType: createRefToElmWithValue(inputType),
         },
-        as : {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING)
-        }
+        as: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
       },
     })
 
@@ -190,9 +190,9 @@ describe('Recipe references filter', () => {
         block: {
           refType: createRefToElmWithValue(new ListType(nestedBlockTypeInner)),
         },
-        as : {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING)
-        }
+        as: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
       },
     })
 
@@ -214,9 +214,9 @@ describe('Recipe references filter', () => {
         block: {
           refType: createRefToElmWithValue(new ListType(nestedBlockType)),
         },
-        as : {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING)
-        }
+        as: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
       },
     })
 
@@ -238,9 +238,9 @@ describe('Recipe references filter', () => {
         block: {
           refType: createRefToElmWithValue(new ListType(blockType)),
         },
-        as : {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING)
-        }
+        as: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
       },
     })
 

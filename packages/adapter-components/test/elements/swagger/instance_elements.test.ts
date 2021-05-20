@@ -890,11 +890,13 @@ describe('swagger_instance_elements', () => {
             ...objectTypes,
             OwnerNickNames: new ObjectType({
               elemID: new ElemID(ADAPTER_NAME, 'OwnerNickNames'),
-              fields: { names: { type: new ListType(BuiltinTypes.STRING) } },
+              fields: { names: {
+                refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+              } },
             }),
             OwnerInfo: new ObjectType({
               elemID: new ElemID(ADAPTER_NAME, 'OwnerInfo'),
-              fields: { numOfPets: { type: BuiltinTypes.NUMBER } },
+              fields: { numOfPets: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) } },
             }),
           },
         })

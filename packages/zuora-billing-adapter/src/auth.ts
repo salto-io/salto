@@ -24,18 +24,18 @@ export const oauthClientCredentialsType = new ObjectType({
   elemID: configID,
   fields: {
     clientId: {
-      type: BuiltinTypes.STRING,
+      refType: BuiltinTypes.STRING,
       annotations: { message: 'OAuth client ID' },
     },
     clientSecret: {
-      type: BuiltinTypes.STRING,
+      refType: BuiltinTypes.STRING,
       annotations: { message: 'OAuth client secret' },
     },
     subdomain: {
-      type: BuiltinTypes.STRING,
+      refType: BuiltinTypes.STRING,
       annotations: { message: 'Sandbox subdomain to use, e.g. "sandbox.na" (requests will be made to https://rest.<subdomain>.zuora.com). Keep empty for production' },
     },
-    production: { type: BuiltinTypes.BOOLEAN },
+    production: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 

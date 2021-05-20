@@ -86,8 +86,7 @@ const getWhereConditions = (
     // this can be optimized in the future if needed
     condition => _.sumBy(Object.values(condition), val => `${val},`.length),
   )
-
-  return conditionChunks.map(conditionChunk => {
+  const r = conditionChunks.map(conditionChunk => {
     const conditionsByKey = _.groupBy(
       conditionChunk.flatMap(Object.entries),
       ([keyName]) => keyName
@@ -98,10 +97,13 @@ const getWhereConditions = (
       ))
       .join(' AND ')
   })
+  return r
 }
 
 const getFieldNamesForQuery = async (field: Field): Promise<string[]> => (
-  await isNameField(field) ? Object.keys((await field.getType() as ObjectType).fields) : [await apiName(field, true)]
+  await isNameField(field)
+    ? Object.keys((await field.getType() as ObjectType).fields)
+    : [await apiName(field, true)]
 )
 
 /**
@@ -112,13 +114,16 @@ const getFieldNamesForQuery = async (field: Field): Promise<string[]> => (
  * @param conditionSets Each entry specifies field values used to match a specific record
  * @param maxQueryLen returned queries will be split such that no single query exceeds this length
  */
-export const buildSelectQueries = (
+export const buildSelectQueries = async (
   typeName: string,
   fields: Field[],
   conditionSets?: Record<string, string>[],
   maxQueryLen = MAX_QUERY_LENGTH,
-): string[] => {
-  const selectStr = `SELECT ${fields.flatMap(getFieldNamesForQuery).join(',')} FROM ${typeName}`
+): Promise<string[]> => {
+  const fieldsNameQuery = (
+    await awu(fields).flatMap(getFieldNamesForQuery).toArray()
+  ).join(',')
+  const selectStr = `SELECT ${fieldsNameQuery} FROM ${typeName}`
   if (conditionSets === undefined || conditionSets.length === 0) {
     return [selectStr]
   }
@@ -127,7 +132,11 @@ export const buildSelectQueries = (
   return whereConditions.map(whereCondition => `${selectWhereStr}${whereCondition}`)
 }
 
-const buildQueryStrings = (typeName: string, fields: Field[], ids?: string[]): string[] => (
+const buildQueryStrings = async (
+  typeName: string,
+  fields: Field[],
+  ids?: string[]
+): Promise<string[]> => (
   buildSelectQueries(typeName, fields, ids?.map(id => ({ Id: `'${id}'` })))
 )
 

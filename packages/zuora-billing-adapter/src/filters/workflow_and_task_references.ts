@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  Element, isObjectType, InstanceElement, ElemID, isInstanceElement, ReferenceExpression, isField,
+  Element, isObjectType, InstanceElement, ElemID, isInstanceElement, ReferenceExpression,
+  isField, ObjectType,
 } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -25,7 +26,7 @@ import { FilterCreator } from '../filter'
 import { isObjectDef } from '../element_utils'
 
 const log = logger(module)
-const { flatMapAsync, toAsyncIterable } = collections.asynciterable
+const { flatMapAsync, toAsyncIterable, awu } = collections.asynciterable
 
 const addWorkflowDependencies = (
   inst: InstanceElement,
@@ -43,11 +44,9 @@ const addWorkflowDependencies = (
     if (objId === undefined) {
       return
     }
-    // eslint-disable-next-line @typescript-eslint/camelcase
     fieldDef.object_name = new ReferenceExpression(objId)
     const fieldId = fieldLowercaseLookup.get(objName, fieldDef.field_name)
     if (fieldId !== undefined) {
-      // eslint-disable-next-line @typescript-eslint/camelcase
       fieldDef.field_name = new ReferenceExpression(fieldId)
     }
   })
@@ -118,7 +117,7 @@ const filterCreator: FilterCreator = () => ({
     // for now only supporting standard objects - not clear if and how custom objects can be
     // referenced from workflows
 
-    const objectDefs = elements.filter(isObjectDef)
+    const objectDefs = await awu(elements).filter(isObjectDef).toArray() as ObjectType[]
     const {
       typeLowercaseLookup, fieldLowercaseLookup,
     } = await multiIndex.buildMultiIndex<Element>()

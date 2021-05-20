@@ -75,7 +75,7 @@ export const buildMultiIndex = <InputType, Result extends object = {}>(
 
   const processItem = async (item: InputType, index: Record<string, unknown>): Promise<void> => {
     await awu(indexDefinitions)
-      .filter(indexDef => indexDef.filter === undefined || indexDef.filter(item))
+      .filter(async indexDef => indexDef.filter === undefined || indexDef.filter(item))
       .forEach(async indexDef => {
         const keyParts = await indexDef.key(item)
         if (keyParts.some(part => part === undefined)) {

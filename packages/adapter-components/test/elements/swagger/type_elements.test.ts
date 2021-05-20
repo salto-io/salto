@@ -264,7 +264,8 @@ describe('swagger_type_elements', () => {
         expect(order).toBeInstanceOf(ObjectType)
         expect(order.fields.newField).toBeDefined()
         expect(await order.fields.newField.getType()).toBeInstanceOf(MapType)
-        expect(await (await order.fields.newField.getType() as MapType).getInnerType()).toEqual(allTypes.Category)
+        expect(await (await order.fields.newField.getType() as MapType)
+          .getInnerType()).toEqual(allTypes.Category)
         expect(order.fields.newHiddenField).toBeDefined()
         expect(await order.fields.newHiddenField.getType()).toEqual(allTypes.Category)
       })
@@ -273,6 +274,7 @@ describe('swagger_type_elements', () => {
         expect(order).toBeInstanceOf(ObjectType)
         // eslint-disable-next-line no-underscore-dangle
         expect((order.fields.petId.annotations?._hidden_value)).toBeTruthy()
+        // eslint-disable-next-line no-underscore-dangle
         expect((order.fields.newHiddenField.annotations?._hidden_value)).toBeTruthy()
       })
 
@@ -341,9 +343,7 @@ describe('swagger_type_elements', () => {
         )
         expect(Object.keys(allTypes).sort()).toEqual(['X', 'a__b'].sort())
         expect(parsedConfigs).toEqual({
-          // eslint-disable-next-line @typescript-eslint/camelcase
           a__b: { request: { url: '/a/b' } },
-          // eslint-disable-next-line @typescript-eslint/camelcase
           X: { request: { url: '/c/d' } },
         })
       })

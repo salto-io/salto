@@ -15,9 +15,9 @@
 */
 import _ from 'lodash'
 import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement, ServiceIds, BuiltinTypes } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion, isDataManagementConfigSuggestions, FilterResult } from '../../src/types'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { ConfigChangeSuggestion, isDataManagementConfigSuggestions, FilterResult } from '../../src/types'
 import { getNamespaceFromString } from '../../src/filters/utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
@@ -89,7 +89,7 @@ const createCustomObject = (
   return obj
 }
 
-/* eslint-disable @typescript-eslint/camelcase */
+/* eslint-disable camelcase */
 describe('Custom Object Instances filter', () => {
   let connection: Connection
   let client: SalesforceClient
@@ -144,56 +144,6 @@ describe('Custom Object Instances filter', () => {
       SBQQ__DisplayOrder__c: 3,
     },
   ]
-
-  const stringType = new PrimitiveType({
-    elemID: new ElemID(SALESFORCE, 'string'),
-    primitive: PrimitiveTypes.STRING,
-  })
-
-  const createCustomObject = (
-    name: string,
-    additionalFields?: Record<string, FieldDefinition>
-  ): ObjectType => {
-    const namespace = getNamespaceFromString(name)
-    const basicFields = {
-      Id: {
-        refType: createRefToElmWithValue(stringType),
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
-          [LABEL]: 'Id',
-          [API_NAME]: 'Id',
-        },
-      },
-      Name: {
-        refType: createRefToElmWithValue(stringType),
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
-          [LABEL]: 'description label',
-          [API_NAME]: 'Name',
-        },
-      },
-      TestField: {
-        refType: createRefToElmWithValue(stringType),
-        annotations: {
-          [LABEL]: 'Test field',
-          [API_NAME]: 'TestField',
-        },
-      },
-    }
-    const obj = new ObjectType({
-      elemID: new ElemID(SALESFORCE, name),
-      annotations: {
-        [API_NAME]: name,
-        [METADATA_TYPE]: CUSTOM_OBJECT,
-      },
-      fields: additionalFields ? Object.assign(basicFields, additionalFields) : basicFields,
-    })
-    const path = namespace
-      ? [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, obj.elemID.name]
-      : [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
-    obj.path = path
-    return obj
-  }
 
   let basicQueryImplementation: jest.Mock
 
@@ -411,7 +361,7 @@ describe('Custom Object Instances filter', () => {
         elemID: new ElemID(SALESFORCE, noFieldsName),
         fields: {
           Id: {
-            refType: createRefToElmWithValue(stringType),
+            refType: stringType,
             annotations: {
               [API_NAME]: 'Id',
               queryable: false,
@@ -1067,8 +1017,8 @@ describe('buildSelectQueries', () => {
   })
   describe('without conditions', () => {
     let queries: string[]
-    beforeEach(() => {
-      queries = buildSelectQueries('Test', Object.values(customObject.fields))
+    beforeEach(async () => {
+      queries = await buildSelectQueries('Test', Object.values(customObject.fields))
     })
     it('should create a select query on the specified fields', () => {
       expect(queries).toHaveLength(1)
@@ -1078,8 +1028,8 @@ describe('buildSelectQueries', () => {
   describe('with conditions', () => {
     describe('with short query', () => {
       let queries: string[]
-      beforeEach(() => {
-        queries = buildSelectQueries(
+      beforeEach(async () => {
+        queries = await buildSelectQueries(
           'Test',
           [customObject.fields.Id],
           _.range(0, 2).map(idx => ({ Id: `'id${idx}'`, Name: `'name${idx}'` })),
@@ -1092,8 +1042,8 @@ describe('buildSelectQueries', () => {
     })
     describe('with query length limit', () => {
       let queries: string[]
-      beforeEach(() => {
-        queries = buildSelectQueries(
+      beforeEach(async () => {
+        queries = await buildSelectQueries(
           'Test',
           [customObject.fields.Id],
           _.range(0, 4).map(idx => ({ Id: `'id${idx}'`, Name: `'name${idx}'` })),

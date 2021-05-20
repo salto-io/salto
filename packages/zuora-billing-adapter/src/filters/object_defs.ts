@@ -21,7 +21,7 @@ import {
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { pathNaclCase, naclCase, extendGeneratedDependencies, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { values as lowerdashValues } from '@salto-io/lowerdash'
+import { values as lowerdashValues, promises } from '@salto-io/lowerdash'
 import {
   ZUORA_BILLING, CUSTOM_OBJECT, CUSTOM_OBJECT_DEFINITION_TYPE, OBJECTS_PATH, METADATA_TYPE,
   STANDARD_OBJECT_DEFINITION_TYPE, CUSTOM_OBJECT_SUFFIX, LABEL, FIELD_RELATIONSHIP_ANNOTATIONS,
@@ -35,7 +35,7 @@ const { isDefined } = lowerdashValues
 const {
   toPrimitiveType, ADDITIONAL_PROPERTIES_FIELD,
 } = elementUtils.swagger
-
+const { mapValuesAsync } = promises.object
 // Check whether an element is a custom/standard object definition.
 // Only relevant before the object_defs filter is run.
 const isInstanceOfObjectDef = (element: Element): element is InstanceElement => (
@@ -57,7 +57,7 @@ const flattenAdditionalProperties = (val: Values): Values => ({
   ...val[ADDITIONAL_PROPERTIES_FIELD],
 })
 
-const createObjectFromInstance = (inst: InstanceElement): ObjectType => {
+const createObjectFromInstance = async (inst: InstanceElement): Promise<ObjectType> => {
   const {
     properties, required, filterable, description, label,
   } = inst.value.schema
@@ -68,7 +68,7 @@ const createObjectFromInstance = (inst: InstanceElement): ObjectType => {
     fields: _.mapValues(
       flattenAdditionalProperties(properties),
       (prop, fieldName) => ({
-        type: toPrimitiveType(prop.type),
+        refType: toPrimitiveType(prop.type),
         annotations: {
           ...flattenAdditionalProperties(prop),
           [REQUIRED]: requiredFields.has(fieldName),
@@ -76,8 +76,8 @@ const createObjectFromInstance = (inst: InstanceElement): ObjectType => {
         },
       }),
     ),
-    annotationTypes: {
-      ...inst.type.annotationTypes,
+    annotationRefsOrTypes: {
+      ...await (await inst.getType()).getAnnotationTypes(),
       [METADATA_TYPE]: BuiltinTypes.STRING,
       [LABEL]: BuiltinTypes.STRING,
       [DESCRIPTION]: BuiltinTypes.STRING,
@@ -206,8 +206,9 @@ const filterCreator: FilterCreator = () => ({
     )
 
     // type names are unique regardless of character case
+    const defInstancesObjects = await mapValuesAsync(defInstancesByName, createObjectFromInstance)
     const typesByLowercaseName = _.mapKeys(
-      _.mapValues(defInstancesByName, createObjectFromInstance),
+      defInstancesObjects,
       (_v, k) => k.toLowerCase(),
     )
     addRelationships(typesByLowercaseName, defInstancesByName)

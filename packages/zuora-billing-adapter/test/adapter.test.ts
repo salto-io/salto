@@ -20,12 +20,15 @@ import { InstanceElement, isInstanceElement, ObjectType, ElemID, MapType, ListTy
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import * as adapterComponents from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { adapter } from '../src/adapter_creator'
 import { oauthClientCredentialsType } from '../src/auth'
 import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG, DEFAULT_INCLUDE_TYPES, DEFAULT_API_DEFINITIONS, DEFAULT_SETTINGS_INCLUDE_TYPES } from '../src/config'
 import mockReplies from './mock_replies.json'
 import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, CUSTOM_OBJECT, STANDARD_OBJECT, LIST_ALL_SETTINGS_TYPE } from '../src/constants'
 import { isObjectDef } from '../src/element_utils'
+
+const { awu } = collections.asynciterable
 
 type MockReply = {
   url: string
@@ -41,20 +44,20 @@ const getObjectDefTypes = (): Record<string, ObjectType> => {
     elemID: new ElemID(ZUORA_BILLING, 'CustomObjectDefinitions'),
     fields: {
       additionalProperties: {
-        type: new MapType(customObjectDefType),
+        refType: new MapType(customObjectDefType),
       },
     },
   })
   const customObjectType = new ObjectType({
     elemID: new ElemID(ZUORA_BILLING, CUSTOM_OBJECT),
     fields: {
-      definitions: { type: customObjectDefinitionsType },
+      definitions: { refType: customObjectDefinitionsType },
     },
   })
   const standardObjectType = new ObjectType({
     elemID: new ElemID(ZUORA_BILLING, STANDARD_OBJECT),
     fields: {
-      definitions: { type: customObjectDefinitionsType },
+      definitions: { refType: customObjectDefinitionsType },
     },
   })
 
@@ -80,32 +83,32 @@ const generateMockTypes: typeof elementUtils.swagger.generateTypes = async (
       [LIST_ALL_SETTINGS_TYPE]: new ObjectType({
         elemID: new ElemID(ZUORA_BILLING, LIST_ALL_SETTINGS_TYPE),
         fields: {
-          settings: { type: new ListType(BuiltinTypes.UNKNOWN) },
+          settings: { refType: new ListType(BuiltinTypes.UNKNOWN) },
         },
       }),
       Workflows: new ObjectType({
         elemID: new ElemID(ZUORA_BILLING, 'Workflows'),
         fields: {
-          data: { type: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'Workflow') })) },
-          pagination: { type: BuiltinTypes.UNKNOWN },
+          data: { refType: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'Workflow') })) },
+          pagination: { refType: BuiltinTypes.UNKNOWN },
         },
       }),
       EventTriggers: new ObjectType({
         elemID: new ElemID(ZUORA_BILLING, 'EventTriggers'),
         fields: {
-          data: { type: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'EventTrigger') })) },
+          data: { refType: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'EventTrigger') })) },
         },
       }),
       NotificationDefinitions: new ObjectType({
         elemID: new ElemID(ZUORA_BILLING, 'NotificationDefinitions'),
         fields: {
-          data: { type: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'PublicNotificationDefinition') })) },
+          data: { refType: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'PublicNotificationDefinition') })) },
         },
       }),
       NotificationEmailTemplates: new ObjectType({
         elemID: new ElemID(ZUORA_BILLING, 'NotificationEmailTemplates'),
         fields: {
-          data: { type: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'PublicEmailTemplate') })) },
+          data: { refType: new ListType(new ObjectType({ elemID: new ElemID(ZUORA_BILLING, 'PublicEmailTemplate') })) },
         },
       }),
     },
@@ -195,7 +198,7 @@ describe('adapter', () => {
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
     mockAxiosAdapter.onPost('/oauth/token').reply(200, {
-      // eslint-disable-next-line @typescript-eslint/camelcase
+      // eslint-disable-next-line camelcase
       token_type: 'bearer', access_token: 'token123', expires_in: 10000,
     })
     mockAxiosAdapter.onPost('/v1/connections').reply(200, { success: true });
@@ -278,8 +281,10 @@ describe('adapter', () => {
           'WorkflowExport',
         ])
         expect(elements.filter(isInstanceElement)).toHaveLength(141)
-        expect(elements.filter(isObjectDef)).toHaveLength(2)
-        expect([...new Set(elements.filter(isObjectDef).map(e => e.elemID.name))].sort()).toEqual(['account', 'accountingcode'])
+        expect(await awu(elements).filter(isObjectDef).toArray()).toHaveLength(2)
+        expect([...new Set(
+          await awu(elements).filter(isObjectDef).map(e => e.elemID.name).toArray()
+        )].sort()).toEqual(['account', 'accountingcode'])
         // ensure pagination is working
         expect(elements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'WorkflowExport')).toHaveLength(6)
       })
@@ -322,8 +327,10 @@ describe('adapter', () => {
           'WorkflowExport',
         ])
         expect(elements.filter(isInstanceElement)).toHaveLength(12)
-        expect(elements.filter(isObjectDef)).toHaveLength(2)
-        expect([...new Set(elements.filter(isObjectDef).map(e => e.elemID.name))].sort()).toEqual(['account', 'accountingcode'])
+        expect(await awu(elements).filter(isObjectDef).toArray()).toHaveLength(2)
+        expect([...new Set(
+          await awu(elements).filter(isObjectDef).map(e => e.elemID.name).toArray()
+        )].sort()).toEqual(['account', 'accountingcode'])
       })
     })
     describe('without settings types and standard objects', () => {
@@ -364,7 +371,7 @@ describe('adapter', () => {
           'WorkflowExport',
         ])
         expect(elements.filter(isInstanceElement)).toHaveLength(12)
-        expect(elements.filter(isObjectDef)).toHaveLength(0)
+        expect(await awu(elements).filter(isObjectDef).toArray()).toHaveLength(0)
       })
     })
   })

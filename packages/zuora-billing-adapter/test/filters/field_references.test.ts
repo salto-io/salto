@@ -55,43 +55,40 @@ describe('Field references filter', () => {
   const workflowType = new ObjectType({
     elemID: new ElemID(ZUORA_BILLING, 'Workflow'),
     fields: {
-      id: { type: BuiltinTypes.NUMBER },
+      id: { refType: BuiltinTypes.NUMBER },
     },
   })
   const taskType = new ObjectType({
     elemID: new ElemID(ZUORA_BILLING, 'Task'),
     fields: {
-      id: { type: BuiltinTypes.NUMBER },
+      id: { refType: BuiltinTypes.NUMBER },
     },
   })
   const settingsRevenueRecognitionRuleType = new ObjectType({
     elemID: new ElemID(ZUORA_BILLING, 'Settings_RevenueRecognitionRule'),
     fields: {
-      name: { type: BuiltinTypes.STRING },
+      name: { refType: BuiltinTypes.STRING },
     },
   })
 
   const linkageType = new ObjectType({
     elemID: new ElemID(ZUORA_BILLING, 'Linkage'),
     fields: {
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      source_workflow_id: { type: BuiltinTypes.NUMBER },
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      source_task_id: { type: BuiltinTypes.NUMBER },
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      target_task_id: { type: BuiltinTypes.NUMBER },
+      source_workflow_id: { refType: BuiltinTypes.NUMBER },
+      source_task_id: { refType: BuiltinTypes.NUMBER },
+      target_task_id: { refType: BuiltinTypes.NUMBER },
     },
   })
   const productRatePlanChargeType = new ObjectType({
     elemID: new ElemID(ZUORA_BILLING, 'GETProductRatePlanChargeType'),
     fields: {
-      revenueRecognitionRuleName: { type: BuiltinTypes.STRING },
+      revenueRecognitionRuleName: { refType: BuiltinTypes.STRING },
     },
   })
   const someOtherType = new ObjectType({
     elemID: new ElemID(ZUORA_BILLING, 'OtherType'),
     fields: {
-      revenueRecognitionRuleName: { type: BuiltinTypes.STRING },
+      revenueRecognitionRuleName: { refType: BuiltinTypes.STRING },
     },
   })
 
@@ -107,7 +104,6 @@ describe('Field references filter', () => {
     new InstanceElement('rule5', settingsRevenueRecognitionRuleType, { name: 'rule5 name' }),
     linkageType,
     new InstanceElement('workflow_linkage1', linkageType, {
-      // eslint-disable-next-line @typescript-eslint/camelcase
       source_workflow_id: 123, source_task_id: 0, target_task_id: 22,
     }),
     productRatePlanChargeType,
@@ -127,25 +123,25 @@ describe('Field references filter', () => {
 
     it('should resolve field values when referenced element exists', () => {
       const link = elements.filter(
-        e => isInstanceElement(e) && e.type.elemID.name === 'Linkage'
+        e => isInstanceElement(e) && e.refType.elemID.name === 'Linkage'
       )[0] as InstanceElement
       expect(link.value.source_workflow_id).toBeInstanceOf(ReferenceExpression)
-      expect(link.value.source_workflow_id?.elemId.getFullName()).toEqual('zuora_billing.Workflow.instance.workflow123')
+      expect(link.value.source_workflow_id?.elemID.getFullName()).toEqual('zuora_billing.Workflow.instance.workflow123')
       expect(link.value.target_task_id).toBeInstanceOf(ReferenceExpression)
-      expect(link.value.target_task_id?.elemId.getFullName()).toEqual('zuora_billing.Task.instance.task22')
+      expect(link.value.target_task_id?.elemID.getFullName()).toEqual('zuora_billing.Task.instance.task22')
 
       const chargeTypes = elements.filter(
         e => isInstanceElement(e)
-        && e.type.elemID.name === 'GETProductRatePlanChargeType'
+        && e.refType.elemID.name === 'GETProductRatePlanChargeType'
         && e.elemID.name === 'chargeType55'
       ) as InstanceElement[]
       expect(chargeTypes[0].value.revenueRecognitionRuleName).toBeInstanceOf(ReferenceExpression)
-      expect(chargeTypes[0].value.revenueRecognitionRuleName.elemId.getFullName()).toEqual('zuora_billing.Settings_RevenueRecognitionRule.instance.rule5')
+      expect(chargeTypes[0].value.revenueRecognitionRuleName.elemID.getFullName()).toEqual('zuora_billing.Settings_RevenueRecognitionRule.instance.rule5')
     })
 
     it('should not resolve fields in unexpected types even if field name matches', () => {
       const others = elements.filter(
-        e => isInstanceElement(e) && e.type.elemID.name === 'OtherType'
+        e => isInstanceElement(e) && e.refType.elemID.name === 'OtherType'
       ) as InstanceElement[]
       expect(others[0].value.revenueRecognitionRuleName).not.toBeInstanceOf(ReferenceExpression)
       expect(others[0].value.revenueRecognitionRuleName).toEqual('rule5 name')
@@ -153,14 +149,14 @@ describe('Field references filter', () => {
 
     it('should not resolve if referenced element does not exist', () => {
       const link = elements.filter(
-        e => isInstanceElement(e) && e.type.elemID.name === 'Linkage'
+        e => isInstanceElement(e) && e.refType.elemID.name === 'Linkage'
       )[0] as InstanceElement
       expect(link.value.source_task_id).not.toBeInstanceOf(ReferenceExpression)
       expect(link.value.source_task_id).toEqual(0)
 
       const chargeTypes = elements.filter(
         e => isInstanceElement(e)
-        && e.type.elemID.name === 'GETProductRatePlanChargeType'
+        && e.refType.elemID.name === 'GETProductRatePlanChargeType'
         && e.elemID.name === 'chargeType66'
       ) as InstanceElement[]
       expect(chargeTypes[0].value.revenueRecognitionRuleName).not.toBeInstanceOf(

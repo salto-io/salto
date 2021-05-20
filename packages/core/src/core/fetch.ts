@@ -20,7 +20,7 @@ import {
   Element, ElemID, AdapterOperations, Values, ServiceIds, BuiltinTypes, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
-  ProgressReporter, ReferenceMap, ReadOnlyElementsSource
+  ProgressReporter, ReferenceMap, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
@@ -33,7 +33,7 @@ import { getPlan, Plan } from './plan'
 import { AdapterEvents, createAdapterProgressReporter } from './adapters/progress'
 import { IDFilter } from './plan/plan'
 
-const { awu } = collections.asynciterable
+const { awu, groupByAsync } = collections.asynciterable
 const { mergeElements } = merger
 const log = logger(module)
 
@@ -204,11 +204,6 @@ const processMergeErrors = async (
 
     return !foundMergeErr && !foundMergeErrForInstanceType
   }).toArray()
-  if (!_.isEmpty(errorsWithStateElements)) {
-    throw new FatalFetchMergeError(
-      errorsWithStateElements
-    )
-  }
   return {
     keptElements,
     errorsWithDroppedElements,
@@ -327,7 +322,10 @@ const fetchAndProcessMergeErrors = async (
     )
 
     log.debug(`fetched ${serviceElements.length} elements from adapters`)
-
+    const stateElementsByAdapter = await groupByAsync(
+      await stateElements.getAll(),
+      elem => elem.elemID.adapter
+    )
     const adaptersWithPostFetch = _.pickBy(adapters, isAdapterOperationsWithPostFetch)
     if (!_.isEmpty(adaptersWithPostFetch)) {
       try {
@@ -335,7 +333,7 @@ const fetchAndProcessMergeErrors = async (
         await runPostFetch({
           adapters: adaptersWithPostFetch,
           serviceElements,
-          stateElements,
+          stateElementsByAdapter,
           partiallyFetchedAdapters,
           progressReporters,
         })

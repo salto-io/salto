@@ -385,6 +385,10 @@ export class Types {
     [FIELD_ANNOTATIONS.UPDATEABLE]: BuiltinTypes.BOOLEAN,
     [FIELD_ANNOTATIONS.QUERYABLE]: BuiltinTypes.BOOLEAN,
     [INTERNAL_ID_ANNOTATION]: BuiltinTypes.HIDDEN_STRING,
+    [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
+    [FIELD_ANNOTATIONS.TRACK_TRENDING]: BuiltinTypes.BOOLEAN,
+    [FIELD_ANNOTATIONS.TRACK_FEED_HISTORY]: BuiltinTypes.BOOLEAN,
+    [FIELD_ANNOTATIONS.DEPRECATED]: BuiltinTypes.BOOLEAN,
   }
 
   // Type mapping for custom objects
@@ -395,7 +399,6 @@ export class Types {
       annotationTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
-        [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.CASE_SENSITIVE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.LENGTH]: restrictedNumberTypes.TextLength,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
@@ -409,7 +412,6 @@ export class Types {
         [FIELD_ANNOTATIONS.SCALE]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.PRECISION]: BuiltinTypes.NUMBER,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
-        [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
@@ -418,7 +420,6 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.DISPLAY_FORMAT]: BuiltinTypes.STRING,
       },
     }),
@@ -497,7 +498,6 @@ export class Types {
       annotationTypes: {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
-        [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
         [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
@@ -569,10 +569,11 @@ export class Types {
       primitive: PrimitiveTypes.STRING,
       annotationTypes: {
         ...Types.commonAnnotationTypes,
-        [FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.REFERENCE_TO]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.LOOKUP_FILTER]: Types.lookupFilterType,
         [FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.RELATIONSHIP_LABEL]: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.DELETE_CONSTRAINT]: BuiltinTypes.STRING,
       },
     }),
     MasterDetail: new PrimitiveType({
@@ -586,6 +587,7 @@ export class Types {
         [FIELD_ANNOTATIONS.REFERENCE_TO]: BuiltinTypes.STRING,
         [FIELD_ANNOTATIONS.RELATIONSHIP_ORDER]: restrictedNumberTypes.RelationshipOrder,
         [FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: BuiltinTypes.STRING,
+        [FIELD_ANNOTATIONS.RELATIONSHIP_LABEL]: BuiltinTypes.STRING,
       },
     }),
     Summary: new PrimitiveType({
@@ -859,13 +861,11 @@ export const toCustomField = (field: Field): CustomField => {
     field.annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS],
     field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],
     field.annotations[FIELD_ANNOTATIONS.RELATIONSHIP_NAME],
-    field.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION],
     field.annotations[FIELD_ANNOTATIONS.LENGTH],
   )
 
   // Skip the assignment of the following annotations that are defined as annotationType
   const annotationsHandledInCtor = [
-    FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION,
     FIELD_ANNOTATIONS.VALUE_SET,
     FIELD_ANNOTATIONS.RESTRICTED,
     VALUE_SET_DEFINITION_FIELDS.SORTED,
@@ -1137,7 +1137,6 @@ export const getSObjectFieldElement = (
       annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = Boolean(field.updateable)
     } else {
       naclFieldType = getFieldType(FIELD_TYPE_NAMES.LOOKUP)
-      annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = !(_.get(field, 'restrictedDelete'))
     }
     if (!_.isEmpty(field.referenceTo)) {
       // todo: currently this field is populated with the referenced object's API name,

@@ -170,7 +170,6 @@ export class CustomField implements MetadataInfo {
     summaryFilterItems?: FilterItem[],
     relatedTo?: string[],
     relationshipName?: string,
-    allowLookupRecordDeletion?: boolean,
     length?: number,
   ) {
     this.type = type
@@ -227,7 +226,6 @@ export class CustomField implements MetadataInfo {
       this.defaultValue = defaultVal
     } else if (type === FIELD_TYPE_NAMES.LOOKUP) {
       this.relationshipName = relationshipName
-      this.deleteConstraint = allowLookupRecordDeletion ? 'SetNull' : 'Restrict'
       this.referenceTo = relatedTo
     } else if (type === FIELD_TYPE_NAMES.MASTER_DETAIL) {
       this.relationshipName = relationshipName

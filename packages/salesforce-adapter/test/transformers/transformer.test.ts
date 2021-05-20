@@ -133,10 +133,11 @@ describe('transformer', () => {
         salesforceReferenceField = _.cloneDeep(origSalesforceReferenceField)
       })
 
-      const assertReferenceFieldTransformation = (fieldElement: Field, expectedRelatedTo: string[],
-        expectedType: TypeElement, expectedAllowLookupRecordDeletion: boolean | undefined,
-        expectedLookupFilter: object | undefined):
-        void => {
+      const assertReferenceFieldTransformation = (
+        fieldElement: Field,
+        expectedRelatedTo: string[],
+        expectedType: TypeElement,
+      ): void => {
         expect(fieldElement.type).toEqual(expectedType)
         expect(fieldElement.name).toEqual('OwnerId')
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REFERENCE_TO])
@@ -144,31 +145,27 @@ describe('transformer', () => {
         expectedRelatedTo.forEach(expectedRelatedToValue =>
           expect(fieldElement.annotations[FIELD_ANNOTATIONS.REFERENCE_TO])
             .toContain(expectedRelatedToValue))
-        expect(fieldElement.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION])
-          .toEqual(expectedAllowLookupRecordDeletion)
-        expect(fieldElement.annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER])
-          .toEqual(expectedLookupFilter)
       }
 
       it('should fetch lookup relationships with restricted deletion', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', true)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
           serviceIds)
-        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup, false, undefined)
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup)
       })
 
       it('should fetch lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', false)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
           serviceIds)
-        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup, true, undefined)
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup)
       })
 
       it('should fetch lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', undefined)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
           serviceIds)
-        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup, true, undefined)
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup)
       })
 
       it('should fetch masterdetail relationships', async () => {
@@ -177,7 +174,7 @@ describe('transformer', () => {
         salesforceReferenceField.writeRequiresMasterRead = true
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField,
           serviceIds)
-        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.MasterDetail, undefined, undefined)
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.MasterDetail)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(true)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
       })
@@ -187,7 +184,7 @@ describe('transformer', () => {
         salesforceReferenceField.updateable = false
         delete salesforceReferenceField.writeRequiresMasterRead
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
-        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.MasterDetail, undefined, undefined)
+        assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.MasterDetail)
         expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(false)
@@ -729,22 +726,6 @@ describe('transformer', () => {
         expect(customField.deleteConstraint).toEqual(expectedDeleteConstraint)
         expect(customField.referenceTo).toEqual(expectedReferenceTo)
       }
-
-      it('should transform lookup field with deletion constraint', async () => {
-        // eslint-disable-next-line max-len
-        objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = false
-        const customLookupField = toCustomField(objectType.fields[fieldName])
-        assertCustomFieldTransformation(customLookupField,
-          FIELD_TYPE_NAMES.LOOKUP, relationshipName, 'Restrict', relatedTo)
-      })
-
-      it('should transform lookup field with no deletion constraint', async () => {
-        // eslint-disable-next-line max-len
-        objectType.fields[fieldName].annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = true
-        const customLookupField = toCustomField(objectType.fields[fieldName])
-        assertCustomFieldTransformation(customLookupField,
-          FIELD_TYPE_NAMES.LOOKUP, relationshipName, 'SetNull', relatedTo)
-      })
 
       it('should transform masterdetail field', async () => {
         const masterDetailField = objectType.fields[fieldName]

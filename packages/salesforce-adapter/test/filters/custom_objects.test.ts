@@ -261,7 +261,7 @@ describe('Custom Objects filter', () => {
         expect(leadObj.fields.LastName.annotations[CORE_ANNOTATIONS.REQUIRED])
           .toBe(true)
         expect(leadObj.fields.FirstName.annotations[CORE_ANNOTATIONS.REQUIRED])
-          .toBe(false)
+          .toBeUndefined()
         // Default string and boolean
         expect(leadObj.fields.LastName.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE])
           .toBe('BLABLA')

@@ -185,7 +185,7 @@ describe('transformer', () => {
         delete salesforceReferenceField.writeRequiresMasterRead
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.MasterDetail)
-        expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+        expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(false)
       })

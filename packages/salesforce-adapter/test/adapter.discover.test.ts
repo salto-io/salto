@@ -152,7 +152,7 @@ describe('SalesforceAdapter fetch', () => {
       // TODO: remove comment when SALTO-45 will be resolved
       // expect(flow.fields.description.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
       expect(flow.fields.isTemplate.type.elemID.name).toBe('boolean')
-      expect(flow.fields.isTemplate.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
+      expect(flow.fields.isTemplate.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
       expect(flow.fields.enum.type.elemID.name).toBe('string')
       expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('yes')
       // Note the order here is important because we expect restriction values to be sorted

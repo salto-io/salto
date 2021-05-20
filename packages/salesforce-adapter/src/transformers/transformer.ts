@@ -948,9 +948,7 @@ export const getValueTypeFieldElement = (parent: ObjectType, field: ValueTypeFie
   const naclFieldType = (field.name === INSTANCE_FULL_NAME_FIELD)
     ? BuiltinTypes.SERVICE_ID
     : knownTypes.get(field.soapType) || Types.get(field.soapType, false)
-  // mark required as false until SALTO-45 will be resolved
   const annotations: Values = {
-    [CORE_ANNOTATIONS.REQUIRED]: false,
     ...(additionalAnnotations || {}),
   }
 
@@ -1066,11 +1064,11 @@ export const getSObjectFieldElement = (
     [API_NAME]: fieldApiName,
     [LABEL]: field.label,
   }
-  if (field.type !== 'boolean') {
-    // nillable is the closest thing we could find to infer if a field is required, it might not
-    // be perfect
+  if (field.type !== 'boolean' && field.nillable === false) {
+    // nillable is the closest thing we could find to infer if a field is required,
+    // it might not be perfect
     // boolean (i.e. Checkbox) must not have required field
-    annotations[CORE_ANNOTATIONS.REQUIRED] = !field.nillable
+    annotations[CORE_ANNOTATIONS.REQUIRED] = true
   }
 
   if (field.defaultValueFormula) {
@@ -1130,7 +1128,7 @@ export const getSObjectFieldElement = (
     if (field.cascadeDelete) {
       naclFieldType = getFieldType(FIELD_TYPE_NAMES.MASTER_DETAIL)
       // master detail fields are always not required in SF although returned as nillable=false
-      annotations[CORE_ANNOTATIONS.REQUIRED] = false
+      delete annotations[CORE_ANNOTATIONS.REQUIRED]
       annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = Boolean(
         field.writeRequiresMasterRead
       )
@@ -1177,14 +1175,14 @@ export const getSObjectFieldElement = (
     annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
     annotations[FIELD_ANNOTATIONS.UPDATEABLE] = false
     annotations[FIELD_ANNOTATIONS.CREATABLE] = false
-    annotations[CORE_ANNOTATIONS.REQUIRED] = false
+    delete annotations[CORE_ANNOTATIONS.REQUIRED]
   }
 
   // An autoNumber field should be hidden because it will differ between enviorments
   // and not required to be able to add without it (ie. when moving envs)
   if (field.autoNumber) {
     annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
-    annotations[CORE_ANNOTATIONS.REQUIRED] = false
+    delete annotations[CORE_ANNOTATIONS.REQUIRED]
   }
 
   const fieldName = Types.getElemId(field.name, true, serviceIds).name
@@ -1319,7 +1317,6 @@ const createIdField = (parent: ObjectType): void => {
     INTERNAL_ID_FIELD,
     BuiltinTypes.STRING,
     {
-      [CORE_ANNOTATIONS.REQUIRED]: false,
       [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
       [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
     }

@@ -377,7 +377,7 @@ salto.example example_instance {
 ```
 
 #### _parent
-This is an annotation that can hold references to other elements to represents a parent-child relationship
+This is an annotation that can hold references to other elements to represent a parent-child relationship
 
 Type: `List<reference>`
 Default: `[]`

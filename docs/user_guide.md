@@ -434,50 +434,9 @@ For example, a workspace with 3 environments (named dev, test and prod), each co
 
 Please see [Salto configuration](salto_configuration.md) 
 
-## NaCl language spec
+## NaCl syntax and feature reference
 
-A formal language specification is coming soon.
-
-Till then, the basic syntax is mostly HCL2 ([https://github.com/hashicorp/hcl/tree/hcl2](https://github.com/hashicorp/hcl/tree/hcl2)) with some minor deviations. 
-
-## Salto Core annotations
-
-Salto supports various annotations whose semantic is enforced by the tool itself, independent of the business application the relevant configuration element is mapped to.
-
-- **_required** A boolean specifying whether the specific field value must be set or if it may be omitted when defining an instance or using it as a field in another type. Adapters may use this annotation whenever their target service supports the feature of required/optional fields.
-- **_default** A default value that will be used in instances that do not explicitly define a value for the specific field.
-- **_restriction** Can be used to define acceptable values for a particular field or type, accepts a complex value with (some of) the following fields:
-    - **values** A list of allowed values for the field
-    - **min** For number fields, the smallest allowed value
-    - **max** For number fields, the greatest allowed value
-    - **enforce_value** A boolean specifying whether the restriction should be enforced. when set to true, restriction violations will create warnings (this is the default behavior), when set to `false` a violation of this restriction will be ignored (the restriction is essentially disabled)
-    - **regex** A regular expression that the value should match (e.g. "^[a-z]*$" for lowercase values)
-- **\_depends\_on** Can be used to explicitly define dependencies between blocks. Its value is a list of references, each reference marks that this block depends on the reference target
-- **_parent** Can be used to explicitly define a relationship between blocks. Its value is a list of references, each reference marks that this block is a child of the reference target, unlike _depends_on, a parent relationship means the child block is assumed to be deleted automatically (by the service) when the parent is removed
-- **_generated_dependencies** System-generated list of additional references besides the ones already covered elsewhere. Should not be modified manually - use _depends_on instead
-
-## Salto builtin types
-
-The following types are supported in the language:
-| Name      | Example field definition | Example value  | Description
-|-----------|--------------------------|----------------|------------
-| `string`    | string name {}           | "me"           | Use " to define single line string.
-|             |                          | '''            | Use ''' to define a multiline string.
-|             |                          | Multiline      |
-|             |                          | String         |
-|             |                          | '''            |
-| `number`    | number age {}            | 12             |
-| `boolean`   | boolean isOpen {}        | true / false   |
-| `json`      | json value {}            | "{ \"a\": 12 }"| A string value that expects the value to be in JSON format
-| `serviceid` | serviceid myid {}        | "ID"           | A string value that denotes an ID in the service (used by adapters to distinguish ID fields from other fields)
-| `list`      | "list\<string\>" listField {}| ["a", "b", "c"]| A list of values. contains values of a specific type
-| `map`      | "map\<string\>" mapField {}| {             | A map/dictionary with string keys, and values of the specified type
-|             |                          | &nbsp;&nbsp;&nbsp;&nbsp;a = "A" |
-|             |                          | &nbsp;&nbsp;&nbsp;&nbsp;b = "B" |
-|             |                          | &nbsp;&nbsp;&nbsp;&nbsp;c = "C" |
-|             |                          | }              |
-| `set`       | Coming soon!             |                | Coming soon!
-| `unknown`   | unknown anyType          | anything       | a field value which is not validated, and can hold any type of data.
+See the [NaCl syntax documentation](syntax.md)
 
 ## Glossary - Coming Soon!
 

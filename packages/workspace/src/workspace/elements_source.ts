@@ -26,7 +26,7 @@ type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 export interface ElementsSource {
   list(): Promise<AsyncIterable<ElemID>>
   has(id: ElemID): Promise<boolean>
-  get(id: ElemID): Promise<Element | Value>
+  get(id: ElemID): Promise<Value>
   getAll(): Promise<AsyncIterable<Element>>
   flush(): Promise<void>
   clear(): Promise<void>

@@ -77,8 +77,8 @@ export type MergeErrorWithElements = {
 }
 
 export const getDetailedChanges = async (
-  before: elementSource.ElementsSource,
-  after: elementSource.ElementsSource,
+  before: ReadOnlyElementsSource,
+  after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[] = []
 ): Promise<Iterable<DetailedChange>> =>
   wu((await getPlan({
@@ -91,8 +91,8 @@ export const getDetailedChanges = async (
     .flatten()
 
 const getChangeMap = async (
-  before: elementSource.ElementsSource,
-  after: elementSource.ElementsSource,
+  before: ReadOnlyElementsSource,
+  after: ReadOnlyElementsSource,
   idFilters: IDFilter[]
 ): Promise<Record<string, DetailedChange>> =>
   _.fromPairs(
@@ -405,10 +405,23 @@ const calcFetchChanges = async (
   const serviceFetchFilter: IDFilter = id => (
     allFetchedAdapters.has(id.adapter)
   )
+  const partialFetchElementSource: ReadOnlyElementsSource = {
+    get: async (id: ElemID): Promise<Element | undefined> => {
+      const mergedElem = await mergedServiceElements.get(id)
+      if (mergedElem === undefined && partiallyFetchedAdapters.has(id.adapter)) {
+        return stateElements.get(id)
+      }
+      return mergedElem
+    },
+    getAll: () => mergedServiceElements.getAll(),
+    has: id => mergedServiceElements.has(id),
+    list: () => mergedServiceElements.list(),
+  }
+
   const serviceChanges = [...await log.time(() =>
     getDetailedChanges(
       stateElements,
-      mergedServiceElements,
+      partialFetchElementSource,
       [serviceFetchFilter, paritalFetchFilter]
     ),
   'finished to calculate service-state changes')]
@@ -420,7 +433,7 @@ const calcFetchChanges = async (
 
   const workspaceToServiceChanges = await log.time(() => getChangeMap(
     workspaceElements,
-    mergedServiceElements,
+    partialFetchElementSource,
     [serviceFetchFilter, paritalFetchFilter]
   ), 'finished to calculate service-workspace changes')
   const serviceElementsMap = _.groupBy(

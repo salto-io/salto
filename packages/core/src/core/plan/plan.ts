@@ -63,9 +63,6 @@ const compareValuesAndLazyResolveRefs = async (
     : second
 
   const specialCompareRes = compareSpecialValues(resolvedFirst, resolvedSecond)
-  if (specialCompareRes === false) {
-    compareSpecialValues(resolvedFirst, resolvedSecond)
-  }
   if (values.isDefined(specialCompareRes)) {
     return specialCompareRes
   }
@@ -100,7 +97,6 @@ const compareValuesAndLazyResolveRefs = async (
       )
     )
   }
-
   return _.isEqual(first, second)
 }
 /**
@@ -159,13 +155,12 @@ const isEqualsNode = async (
   if (isField(node1) && isField(node2)) {
     return node1.refType.elemID.isEqual(node2.refType.elemID)
   }
-
   return _.isEqual(node1, node2)
 }
 
 const addDifferentElements = (
-  before: elementSource.ElementsSource,
-  after: elementSource.ElementsSource,
+  before: ReadOnlyElementsSource,
+  after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[]
 ): PlanTransformer => graph => log.time(async () => {
   const outputGraph = graph.clone()
@@ -240,7 +235,7 @@ const addDifferentElements = (
     }
     return elementPair
   }
-  const getFilteredElements = async (source: elementSource.ElementsSource):
+  const getFilteredElements = async (source: ReadOnlyElementsSource):
     Promise<AsyncIterable<ChangeDataType>> =>
     (awu(await source.getAll()).filter(async elem =>
       _.every(await Promise.all(
@@ -261,8 +256,8 @@ const addDifferentElements = (
 }, 'add nodes to graph with action %s for %d elements')
 
 const resolveNodeElements = (
-  before: elementSource.ElementsSource,
-  after: elementSource.ElementsSource,
+  before: ReadOnlyElementsSource,
+  after: ReadOnlyElementsSource,
 ): PlanTransformer => async graph => {
   const beforeItemsToResolve: ChangeDataType[] = []
   const afterItemsToResolve: ChangeDataType[] = []
@@ -371,8 +366,8 @@ export type AdditionalResolveContext = {
 }
 
 type GetPlanParameters = {
-  before: elementSource.ElementsSource
-  after: elementSource.ElementsSource
+  before: ReadOnlyElementsSource
+  after: ReadOnlyElementsSource
   changeValidators?: Record<string, ChangeValidator>
   dependencyChangers?: ReadonlyArray<DependencyChanger>
   customGroupIdFunctions?: Record<string, ChangeGroupIdFunction>

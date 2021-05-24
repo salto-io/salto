@@ -34,7 +34,8 @@ type Resolver<T> = (
 ) => Promise<Value>
 
 export class UnresolvedReference {
-  constructor(public target: ElemID) {}
+  constructor(public target: ElemID) {
+  }
 }
 
 export class CircularReference {

@@ -126,13 +126,14 @@ const changeValidator: ChangeValidator = async changes => {
     .toArray()
 
   // special treatment for picklist & multipicklist valueSets
-  const picklistChangesErrors = changes
+  const picklistChangesErrors = await awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isFieldChange)
     .map(getChangeElement)
     .filter(isFieldOfCustomObject)
     .filter(isFieldWithValueSet)
     .flatMap(getPicklistMultipleDefaultsErrors)
+    .toArray()
 
   return [...instanceChangesErrors, ...picklistChangesErrors]
 }

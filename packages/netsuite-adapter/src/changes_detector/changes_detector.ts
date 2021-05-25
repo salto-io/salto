@@ -169,7 +169,9 @@ export const getChangedObjects = async (
   log.debug(`${folderPaths.length} folder paths changes were detected`)
 
   return {
-    isTypeMatch: () => scriptIds.size !== 0 || types.size !== 0,
+    isTypeMatch: typeName => !SUPPORTED_TYPES.has(typeName)
+      || scriptIds.size !== 0
+      || types.size !== 0,
     isObjectMatch: objectID => !SUPPORTED_TYPES.has(objectID.type)
       || scriptIds.has(objectID.scriptId)
       || types.has(objectID.type),

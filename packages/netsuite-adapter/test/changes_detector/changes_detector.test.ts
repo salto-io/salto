@@ -115,10 +115,25 @@ describe('changes_detector', () => {
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+      createDateRange(new Date('2022-01-11T18:55:17.949Z'), new Date('2022-02-22T18:55:17.949Z')),
       elementsSourceIndex,
     )
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/anyFile')).toBeTruthy()
+  })
+
+  it('should match types that are not supported by the changes detector', async () => {
+    getCustomRecordTypeChangesMock.mockResolvedValue([])
+    getChangedFilesMock.mockResolvedValue([])
+    getChangesFoldersMock.mockResolvedValue([])
+    runSavedSearchQueryMock.mockResolvedValue([])
+
+    const changedObjectsQuery = await getChangedObjects(
+      client,
+      query,
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+      elementsSourceIndex,
+    )
+    expect(changedObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
   })
 
   it('should return all the results of system note query failed', async () => {

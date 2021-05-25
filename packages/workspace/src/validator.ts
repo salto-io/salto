@@ -481,7 +481,7 @@ const validateField = async (
   field: Field,
   elementsSource: ReadOnlyElementsSource
 ): Promise<ValidationError[]> => {
-  const annotationTypes = await elementAnnotationTypes(field)
+  const annotationTypes = await elementAnnotationTypes(field, elementsSource)
   return awu(Object.keys(field.annotations))
     .filter(async k => annotationTypes[k] !== undefined)
     .flatMap(async k => validateValue(
@@ -497,7 +497,7 @@ const validateType = async (
   element: TypeElement,
   elementsSource: ReadOnlyElementsSource
 ): Promise<ValidationError[]> => {
-  const annotationTypes = await elementAnnotationTypes(element)
+  const annotationTypes = await elementAnnotationTypes(element, elementsSource)
   const errors = await awu(Object.keys(element.annotations))
     .filter(k => annotationTypes[k] !== undefined).flatMap(
       async k => validateValue(

@@ -142,8 +142,7 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
     await printRestorePlan(changes, detailedPlan, output)
   }
 
-  outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_FINISH), output)
-  outputLine(EOL, output)
+  outputLine(formatStepCompleted(Prompts.RESTORE_CALC_DIFF_FINISH), output)
 
   if (dryRun) {
     return CliExitCode.Success

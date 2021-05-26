@@ -731,10 +731,10 @@ export class Types {
       elemID: geoLocationElemID,
       fields: {
         [GEOLOCATION_FIELDS.LATITUDE]: {
-          refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
         },
         [GEOLOCATION_FIELDS.LONGITUDE]: {
-          refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
         },
       },
       annotationRefsOrTypes: {
@@ -823,7 +823,7 @@ export class Types {
         const fieldType = type.clone()
         fieldType.path = fieldType.elemID.isEqual(Types.filterItemElemID)
           ? [SALESFORCE, TYPES_PATH, Types.filterItemElemID.name]
-          : [SALESFORCE, TYPES_PATH, 'annotationRefTypes']
+          : [SALESFORCE, TYPES_PATH, 'annotationTypes']
         return fieldType
       })
   }

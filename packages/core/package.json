@@ -41,7 +41,6 @@
     "@salto-io/jira-adapter": "0.2.11",
     "@salto-io/logging": "0.2.11",
     "@salto-io/lowerdash": "0.2.11",
-    "@salto-io/marketo-adapter": "0.2.11",
     "@salto-io/netsuite-adapter": "0.2.11",
     "@salto-io/salesforce-adapter": "0.2.11",
     "@salto-io/rocksdb": "4.1.0-salto-2",

@@ -17,7 +17,6 @@ import { Adapter } from '@salto-io/adapter-api'
 import { adapter as salesforceAdapter } from '@salto-io/salesforce-adapter'
 import { adapter as hubspotAdapter } from '@salto-io/hubspot-adapter'
 import { adapter as netsuiteAdapter } from '@salto-io/netsuite-adapter'
-import { adapter as marketoAdapter } from '@salto-io/marketo-adapter'
 import { adapter as dummyAdapter } from '@salto-io/dummy-adapter'
 import { adapter as workatoAdapter } from '@salto-io/workato-adapter'
 import { adapter as zuoraBillingAdapter } from '@salto-io/zuora-billing-adapter'
@@ -27,7 +26,6 @@ const adapterCreators: Record<string, Adapter> = {
   salesforce: salesforceAdapter,
   hubspot: hubspotAdapter,
   netsuite: netsuiteAdapter,
-  marketo: marketoAdapter,
   dummy: dummyAdapter,
   workato: workatoAdapter,
   // eslint-disable-next-line camelcase

@@ -514,11 +514,6 @@ remoteMap.RemoteMapCreator => async <T, K extends string = string>(
       }
       return hasKeyImpl(keyToTempDBKey(key)) || hasKeyImpl(keyToDBKey(key))
     },
-    isEmpty: async (): Promise<boolean> => {
-      if (cache.length > 0) {
-        return false
-      }
-      return awu(keysImpl({ first: 1 })).isEmpty()
-    },
+    isEmpty: async (): Promise<boolean> => awu(keysImpl({ first: 1 })).isEmpty(),
   }
 }

@@ -272,7 +272,9 @@ const buildNaclFilesState = async ({
         .concat(keyAdditions)
       return { key, value: _.uniq(newValues) }
     }), UPDATE_INDEX_CONCURRENCY)
-    return index.setAll(awu(newEntries))
+    const [entriesToSet, entriesToDelete] = _.partition(newEntries, e => e.value.length > 0)
+    await index.deleteAll(awu(entriesToDelete).map(e => e.key))
+    await index.setAll(awu(entriesToSet))
   }
 
   const getFieldsElemIDsFullName = (objectType: ObjectType): string[] =>
@@ -313,29 +315,57 @@ const buildNaclFilesState = async ({
     await currentState.searchableNamesIndex
       .deleteAll(removalNames)
   }
+  const updateIndexOfFile = (
+    indexAdditions: Record<string, Set<string>>,
+    indexDeletions: Record<string, Set<string>>,
+    filename: string,
+    oldElemFullNames: string[] = [],
+    currentElemFullNames: string[] = [],
+  ): void => {
+    const oldElemFullNamesUniq = _.uniq(oldElemFullNames)
+    const currentElemFullNamesUniq = _.uniq(currentElemFullNames)
+    const toAdd = currentElemFullNamesUniq
+      .filter(e => !oldElemFullNamesUniq.includes(e))
+    const toRemove = oldElemFullNamesUniq
+      .filter(e => !currentElemFullNamesUniq.includes(e))
+    toAdd.forEach(fullname => {
+      indexAdditions[fullname] = indexAdditions[fullname] ?? new Set<string>()
+      indexAdditions[fullname].add(filename)
+    })
+    toRemove.forEach(fullname => {
+      indexDeletions[fullname] = indexDeletions[fullname] ?? new Set<string>()
+      indexDeletions[fullname].add(filename)
+    })
+  }
   const handleAdditionsOrModifications = async (naclFiles:
     AwuIterable<ParsedNaclFile>): Promise<void> => {
     const toAdd: Record<string, ParsedNaclFile> = {}
     await naclFiles.forEach(async naclFile => {
-      ((await naclFile.data.referenced()) ?? []).forEach((elementFullName: string) => {
-        referencedIndexAdditions[elementFullName] = referencedIndexAdditions[elementFullName]
-          ?? new Set<string>()
-        referencedIndexAdditions[elementFullName].add(naclFile.filename)
-      })
-      await awu((await naclFile.elements()) ?? []).forEach(element => {
-        const elementFullName = element.elemID.getFullName()
-        elementsIndexAdditions[elementFullName] = elementsIndexAdditions[elementFullName]
-          ?? new Set<string>()
-        elementsIndexAdditions[elementFullName].add(naclFile.filename)
-      })
-      relevantElementIDs.push(
-        ...((await naclFile.elements()) ?? []).map(e => e.elemID),
-        ...(await (await currentState.parsedNaclFiles.get(naclFile.filename))?.elements() ?? [])
-          .map(e => e.elemID),
+      updateIndexOfFile(
+        referencedIndexAdditions,
+        referencedIndexDeletions,
+        naclFile.filename,
+        await (await currentState.parsedNaclFiles.get(naclFile.filename)).data.referenced(),
+        await naclFile.data.referenced(),
       )
-      const naclFileElements = await naclFile.elements()
-      if (!_.isEmpty(naclFileElements)) {
-        newElementsToMerge.push(awu(naclFileElements as Element[]))
+
+      const currentNaclFileElements = (await naclFile.elements()) ?? []
+      const oldNaclFileElements = await (await currentState.parsedNaclFiles
+        .get(naclFile.filename))?.elements() ?? []
+      updateIndexOfFile(
+        elementsIndexAdditions,
+        elementsIndexDeletions,
+        naclFile.filename,
+        oldNaclFileElements.map(e => e.elemID.getFullName()),
+        currentNaclFileElements.map(e => e.elemID.getFullName()),
+      )
+
+      relevantElementIDs.push(
+        ...currentNaclFileElements.map(e => e.elemID),
+        ...oldNaclFileElements.map(e => e.elemID),
+      )
+      if (!_.isEmpty(currentNaclFileElements)) {
+        newElementsToMerge.push(awu(currentNaclFileElements as Element[]))
       }
       // This is temp and should be removed when we change the init flow
       // This happens now cause we get here with ParsedNaclFiles that originate from the cache

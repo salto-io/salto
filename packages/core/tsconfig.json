@@ -31,7 +31,6 @@
         { "path": "../jira-adapter" },
         { "path": "../logging" },
         { "path": "../lowerdash" },
-        { "path": "../marketo-adapter" },
         { "path": "../netsuite-adapter" },
         { "path": "../salesforce-adapter" },
         { "path": "../workato-adapter" },

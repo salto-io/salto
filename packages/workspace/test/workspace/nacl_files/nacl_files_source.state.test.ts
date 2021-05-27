@@ -275,6 +275,33 @@ describe('Nacl Files Source', () => {
         expect(objType).toBeDefined()
         expect(instance.refType.elemID.isEqual(objType.elemID)).toBeTruthy()
       })
+      it('should remove elements from list result upon element removal', async () => {
+        const newFile = {
+          filename: 'file2.nacl',
+          buffer: `
+            type dummy.test {
+              number b {}
+            }
+          `,
+        }
+        expect(await awu(await naclFileSourceTest.list()).map(e => e.getFullName()).toArray())
+          .toEqual(['dummy.test', 'dummy.test.instance.inst'])
+        await naclFileSourceTest.setNaclFiles(newFile)
+        expect(await awu(await naclFileSourceTest.list()).map(e => e.getFullName()).toArray())
+          .toEqual(['dummy.test'])
+      })
+      it('should remove elements from the indexes upon element removal', async () => {
+        const newFile = {
+          filename: 'file2.nacl',
+          buffer: '',
+        }
+        const removedElemId = new ElemID('dummy', 'test')
+        expect(await naclFileSourceTest.getElementReferencedFiles(removedElemId))
+          .toEqual(['file2.nacl'])
+        await naclFileSourceTest.setNaclFiles(newFile)
+        expect(await naclFileSourceTest.getElementReferencedFiles(removedElemId))
+          .toEqual([])
+      })
       describe('splitted elements', () => {
         describe('fragmented in all files', () => {
           let naclFileSourceWithFragments: NaclFilesSource

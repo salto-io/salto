@@ -316,8 +316,8 @@ const buildMultiEnvSource = (
     await awu([
       primarySource(),
       commonSource(),
-      ...Object.values(secondarySources()),
-    ]).forEach(async src => src.flush())
+    ]).forEach(async src => src.flush(true))
+    await awu(Object.values(secondarySources())).forEach(src => src.flush())
     const currentState = await getState()
     await currentState.elements.flush()
     await currentState.mergeErrors.flush()

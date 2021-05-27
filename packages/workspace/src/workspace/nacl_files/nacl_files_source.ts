@@ -87,6 +87,7 @@ export type NaclFilesSource<Changes=Change[]> = Omit<ElementsSource, 'clear'> & 
   getElementsSource: () => Promise<ElementsSource>
   load: (args: SourceLoadParams) => Promise<Changes>
   getSearchableNames(): Promise<string[]>
+  flush(flushCache?: boolean): Promise<void>
 }
 
 type NaclFilesState = {
@@ -497,7 +498,6 @@ const buildNaclFilesSource = (
       cachePrefix
     )
     const modifiedNaclFiles: NaclFile[] = []
-
     if (!ignoreFileChanges) {
       const cacheFilenames = await currentState.parsedNaclFiles.list()
       const naclFilenames = await naclFilesStore.list()
@@ -729,16 +729,18 @@ const buildNaclFilesSource = (
       (await getState()).mergedElements.getAll()
     ),
 
-    flush: async (): Promise<void> => {
+    flush: async (flushCache?: boolean): Promise<void> => {
       await naclFilesStore.flush()
       await staticFilesSource.flush()
-      const currentState = await getState()
-      await currentState.elementsIndex.flush()
-      await currentState.mergeErrors.flush()
-      await currentState.mergedElements.flush()
-      await currentState.referencedIndex.flush()
-      await currentState.parsedNaclFiles.flush()
-      await currentState.searchableNamesIndex.flush()
+      if (flushCache) {
+        const currentState = await getState()
+        await currentState.elementsIndex.flush()
+        await currentState.mergeErrors.flush()
+        await currentState.mergedElements.flush()
+        await currentState.referencedIndex.flush()
+        await currentState.parsedNaclFiles.flush()
+        await currentState.searchableNamesIndex.flush()
+      }
     },
 
     getErrors: async (): Promise<Errors> => {

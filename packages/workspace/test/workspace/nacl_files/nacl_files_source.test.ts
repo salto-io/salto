@@ -192,7 +192,24 @@ describe('Nacl Files Source', () => {
   })
 
   describe('flush', () => {
-    it('should flush everything by default', async () => {
+    it('should flush everything cache when argument is passed', async () => {
+      mockDirStore.flush = jest.fn().mockResolvedValue(Promise.resolve())
+      mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
+      mockedStaticFilesSource.clear = jest.fn().mockResolvedValue(Promise.resolve())
+      const naclSrc = await naclFilesSource(
+        '',
+        mockDirStore,
+        mockedStaticFilesSource,
+        mockRemoteMapCreator,
+      )
+      await naclSrc.load({})
+      await naclSrc.flush(true)
+      expect(mockDirStore.flush as jest.Mock).toHaveBeenCalledTimes(1)
+      Object.values(createdMaps).forEach(cache => expect(cache.flush).toHaveBeenCalledTimes(1))
+      expect(mockedStaticFilesSource.flush).toHaveBeenCalledTimes(1)
+    })
+
+    it('should not flush cache by default', async () => {
       mockDirStore.flush = jest.fn().mockResolvedValue(Promise.resolve())
       mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
       mockedStaticFilesSource.clear = jest.fn().mockResolvedValue(Promise.resolve())
@@ -205,7 +222,7 @@ describe('Nacl Files Source', () => {
       await naclSrc.load({})
       await naclSrc.flush()
       expect(mockDirStore.flush as jest.Mock).toHaveBeenCalledTimes(1)
-      Object.values(createdMaps).forEach(cache => expect(cache.flush).toHaveBeenCalledTimes(1))
+      Object.values(createdMaps).forEach(cache => expect(cache.flush).toHaveBeenCalledTimes(0))
       expect(mockedStaticFilesSource.flush).toHaveBeenCalledTimes(1)
     })
   })

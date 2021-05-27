@@ -29,7 +29,12 @@ export const provideWorkspaceDefinition = async (
   token: Token
 ): Promise<SaltoElemLocation[]> => {
   if (context.ref) {
-    const staticFileLocation = getStaticLocations(context.ref.element, context.ref.path, token)
+    const staticFileLocation = await getStaticLocations(
+      workspace,
+      context.ref.element,
+      context.ref.path,
+      token
+    )
     if (values.isDefined<SaltoElemLocation>(staticFileLocation)) {
       return [staticFileLocation]
     }

@@ -19,6 +19,7 @@ import Fuse from 'fuse.js'
 import { Element, ElemID, isObjectType, isInstanceElement, isField } from '@salto-io/adapter-api'
 import { staticFiles } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
+import { resolvePath } from '@salto-io/adapter-utils'
 import { EditorWorkspace } from './workspace'
 import { EditorRange } from './context'
 import { Token } from './token'
@@ -52,47 +53,50 @@ export const getLocations = async (
   (await workspace.getSourceRanges(ElemID.fromFullName(fullname)))
     .map(range => ({ fullname, filename: range.filename, range }))
 
-type StaticFileAttributes = {
-  staticFile: unknown
-  fullname: string
-}
-const extractStaticFileAttributes = (
+const extractStaticFileID = (
   element: Element, refPath: string[]
-): StaticFileAttributes | undefined => {
+): ElemID | undefined => {
   if (isInstanceElement(element)) {
-    const staticFile = _.get(element.value, refPath)
-    const fullname = element.elemID.createNestedID(...refPath).getFullName()
-    return { staticFile, fullname }
+    return element.elemID.createNestedID(...refPath)
   }
   if (isObjectType(element)) {
-    const staticFile = _.get(element.annotations, refPath)
-    const fullname = element.elemID.createNestedID('attr', ...refPath).getFullName()
-    return { staticFile, fullname }
+    return element.elemID.createNestedID('attr', ...refPath)
   }
   if (isField(element)) {
-    const staticFile = _.get(element.annotations, refPath)
-    const fullname = element.elemID.createNestedID(...refPath).getFullName()
-    return { staticFile, fullname }
+    return element.elemID.createNestedID(...refPath)
   }
   return undefined
 }
 
-export const getStaticLocations = (
+export const getStaticLocations = async (
+  workspace: EditorWorkspace,
   element: Element,
   refPath: string[],
   token: Token
-): SaltoElemLocation | undefined => {
-  const staticFileAttributes = extractStaticFileAttributes(element, refPath)
-
-  if (_.isUndefined(staticFileAttributes)) {
+): Promise<SaltoElemLocation | undefined> => {
+  const staticFileID = extractStaticFileID(element, refPath)
+  if (_.isUndefined(staticFileID)) {
     return undefined
   }
-  if (staticFileAttributes.staticFile instanceof staticFiles.AbsoluteStaticFile
+  const defFile = await workspace.getParsedNaclFile((await workspace.getElementNaclFiles(
+    staticFileID
+  // A static file can only be defined in a single file due to merge rules.
+  ))?.[0])
+  if (_.isUndefined(defFile)) {
+    return undefined
+  }
+  const defFileElement = await awu(await defFile.elements() ?? [])
+    .find(e => e.elemID.getFullName() === element.elemID.getFullName())
+  if (_.isUndefined(defFileElement)) {
+    return undefined
+  }
+  const fullStaticFile = await resolvePath(defFileElement, staticFileID)
+  if (fullStaticFile instanceof staticFiles.AbsoluteStaticFile
     && token.type === 'content'
-    && staticFileAttributes.staticFile.filepath === token.value) {
+    && fullStaticFile.filepath === token.value) {
     return {
-      fullname: staticFileAttributes.fullname,
-      filename: staticFileAttributes.staticFile.absoluteFilePath,
+      fullname: staticFileID.getFullName(),
+      filename: fullStaticFile.absoluteFilePath,
       range: {
         start: {
           line: 1,

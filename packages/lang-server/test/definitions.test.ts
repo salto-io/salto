@@ -77,8 +77,7 @@ describe('Test go to definitions', () => {
     expect(defs[0].range.start.line).toBe(203)
   })
 
-  // eslint-disable-next-line
-  describe.skip('static files', () => {
+  describe('static files', () => {
     each([
       // ['', { line: 240, col: 27 }, 'path/to/content'],
       [' nested', { line: 242, col: 31 }, 'path/to/deep_content'],

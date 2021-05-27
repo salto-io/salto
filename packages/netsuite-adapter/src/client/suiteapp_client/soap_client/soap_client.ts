@@ -252,6 +252,13 @@ export default class SoapClient {
     })
   }
 
+  public async getNetsuiteWsdl(): Promise<soap.WSDL> {
+    // Though wsdl is private on the client, it is available publicly when using
+    // the library without typescript so we rely on it to not change
+    const { wsdl } = (await this.getClient()) as unknown as { wsdl: soap.WSDL }
+    return wsdl
+  }
+
   private async sendSoapRequest(operation: string, body: object): Promise<unknown> {
     const client = await this.getClient()
     return this.callsLimiter(async () => (await client[`${operation}Async`](body))[0])

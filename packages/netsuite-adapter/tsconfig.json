@@ -15,6 +15,7 @@
   ],
   "references": [
     { "path": "../adapter-api" },
+    { "path": "../adapter-components" },
     { "path": "../adapter-utils" },
     { "path": "../e2e-credentials-store" },
     { "path": "../file" },

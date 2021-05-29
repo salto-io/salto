@@ -14,5 +14,5 @@
 * limitations under the License.
 */
 export { ParsedNaclFile, ParsedNaclFileDataKeys } from './parsed_nacl_file'
-export { NaclFile, FILE_EXTENSION, NaclFilesSource, naclFilesSource, getParsedNaclFiles, RoutingMode, getFunctions } from './nacl_files_source'
+export { NaclFile, FILE_EXTENSION, NaclFilesSource, naclFilesSource, RoutingMode, getFunctions } from './nacl_files_source'
 export { ENVS_PREFIX } from './multi_env/multi_env_source'

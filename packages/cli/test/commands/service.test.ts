@@ -15,9 +15,10 @@
 */
 import { AdapterAuthentication, ObjectType } from '@salto-io/adapter-api'
 import {
-  LoginStatus, updateCredentials, addAdapter, installAdapter, getPrivateAdaptersNames,
+  LoginStatus, updateCredentials, addAdapter, installAdapter,
 } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
+import { getPrivateAdaptersNames } from '../../src/formatter'
 import { loginAction, addAction, listAction } from '../../src/commands/service'
 import { processOauthCredentials } from '../../src/cli_oauth_authenticator'
 import * as mocks from '../mocks'

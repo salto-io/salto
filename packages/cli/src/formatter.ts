@@ -523,10 +523,10 @@ const formatConfiguredServices = (serviceNames: ReadonlyArray<string>): string =
   return formattedServices.join('\n')
 }
 
-const formatAdditionalConfigurableServices = (services: ReadonlyArray<string>): string => {
+const formattedAdditionalServices = (services: ReadonlyArray<string>): string => {
   const formattedServices = getSupportedServiceAdapterNames()
     .filter(serviceName => !services.includes(serviceName))
-    .map(serviceName => indent(`* ${serviceName}`, 1))
+    .map(serviceName => indent(`- ${serviceName}`, 1))
   if (formattedServices.length === 0) {
     return Prompts.NO_ADDITIONAL_CONFIGURED_SERVICES.concat(EOL)
   }
@@ -537,7 +537,7 @@ const formatAdditionalConfigurableServices = (services: ReadonlyArray<string>): 
 }
 
 export const formatConfiguredAndAdditionalServices = (services: ReadonlyArray<string>): string =>
-  [formatConfiguredServices(services), formatAdditionalConfigurableServices(services)].join(EOL)
+  [formatConfiguredServices(services), formattedAdditionalServices(services)].join(EOL)
 
 export const formatServiceAdded = (serviceName: string): string => [
   formatSuccess(Prompts.SERVICE_ADDED(serviceName)),

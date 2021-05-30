@@ -153,6 +153,7 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
   public static readonly CONFIGURED_SERVICES_TITLE = 'The configured services are:'
   public static readonly ADDITIONAL_SUPPORTED_SERVICES_TITLE = 'Additional supported services are:'
   public static readonly NO_CONFIGURED_SERVICES = 'There are not configured services in this environment'
+  public static readonly NO_ADDITIONAL_CONFIGURED_SERVICES = 'There are no additional configurable services for this environment'
   public static readonly SERVICE_ALREADY_ADDED = (serviceName: string): string => `${serviceName} was already added to this environment`
   public static readonly WORKING_ON_ENV = 'The active environment is'
   public static readonly NO_CURRENT_ENV = 'No active environment is currently set'

@@ -350,7 +350,9 @@ export const getLoginStatuses = async (
 
 const privateAdapters = ['dummy']
 
+export const getPrivateAdaptersNames = (): string[] => privateAdapters
+
 export const getSupportedServiceAdapterNames = (): string[] =>
   Object.keys(adapterCreators).filter(
-    serviceAdapterName => !privateAdapters.includes(serviceAdapterName)
+    serviceAdapterName => !getPrivateAdaptersNames().includes(serviceAdapterName)
   )

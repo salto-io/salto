@@ -15,7 +15,7 @@
 */
 import { AdapterAuthentication, ObjectType } from '@salto-io/adapter-api'
 import {
-  LoginStatus, updateCredentials, addAdapter, installAdapter,
+  LoginStatus, updateCredentials, addAdapter, installAdapter, getPrivateAdaptersNames,
 } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { loginAction, addAction, listAction } from '../../src/commands/service'
@@ -116,12 +116,21 @@ describe('service command group', () => {
             workspace,
           })
         })
-
-        it('should print configured services', () => {
-          expect(output.stdout.content).toContain('The configured services are:')
-          expect(output.stdout.content).toContain('salesforce')
+        it('should not print private services', () => {
+          expect(output.stdout.content).toContain('Additional supported services are:')
+          expect(!getPrivateAdaptersNames().some(privateName =>
+            output.stdout.content.split('Additional supported services are:')[1].includes(privateName))).toBeTruthy()
         })
-
+        it('should print configured services under configured services', () => {
+          expect(output.stdout.content).toContain('The configured services are:')
+          expect(output.stdout.content.split('Additional supported services are:')[0]).toContain('salesforce')
+        })
+        it('should print other services under additional services', () => {
+          expect(output.stdout.content).toContain('Additional supported services are:')
+          expect(!['workato', 'netsuite'].some(serviceName => !output.stdout.content
+            .split('Additional supported services are:')[1]
+            .includes(serviceName))).toBeTruthy()
+        })
         it('should use current env', () => {
           expect(workspace.setCurrentEnv).not.toHaveBeenCalled()
         })

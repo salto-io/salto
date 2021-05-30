@@ -530,6 +530,7 @@ const formatAdditionalConfigurableServices = (services: ReadonlyArray<string>): 
   if (formattedServices.length === 0) {
     return Prompts.NO_ADDITIONAL_CONFIGURED_SERVICES.concat(EOL)
   }
+  
   formattedServices.unshift(Prompts.ADDITIONAL_SUPPORTED_SERVICES_TITLE)
   formattedServices.push(emptyLine())
   return formattedServices.join(EOL)

@@ -77,6 +77,10 @@ class WalkErrors extends Map<NodeId, Error> {
   }
 
   set(nodeId: NodeId, value: Error): this {
+    // eslint-disable-next-line no-console
+    console.log(new Error().stack)
+    // eslint-disable-next-line no-console
+    console.log(nodeId)
     super.set(nodeId, value)
     this.nodeMap.getReverse(nodeId).forEach(
       dependentNode => this.set(dependentNode, new NodeSkippedError(nodeId))
@@ -272,6 +276,8 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     const errors = new WalkErrors(this)
 
     const next = (affectedNodes: Iterable<NodeId>): void => {
+      // eslint-disable-next-line no-console
+      console.log(affectedNodes)
       wu(this.freeNodes(affectedNodes))
         .forEach(node => {
           try {
@@ -282,12 +288,15 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
           }
         })
     }
-
+    // eslint-disable-next-line no-console
+    console.log(this.keys())
     next(this.keys())
     errors.throwIfNotEmpty()
   }
 
   walkSync(handler: NodeHandler): void {
+    // eslint-disable-next-line no-console
+    console.log(new Error().stack)
     return this.clone().walkSyncDestructive(handler)
   }
 

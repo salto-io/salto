@@ -169,6 +169,8 @@ export const filterInvalidChanges = async (
   const invalidChanges = changeErrors.filter(v => v.severity === 'Error')
   const nodeIdsToOmit = new Set(invalidChanges.map(change => change.elemID.getFullName()))
   const validAfterElementsMap = await createValidAfterElementsMap(invalidChanges)
+  // eslint-disable-next-line no-console
+  console.log(await awu(diffGraph.entries()).toArray())
   const validDiffGraph = buildValidDiffGraph(nodeIdsToOmit, validAfterElementsMap)
   return { changeErrors, validDiffGraph }
 }

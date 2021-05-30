@@ -265,7 +265,7 @@ export const verifyChanges = (plan: Plan,
     .map(change => ({ action: change.action, element: getChangedElementName(change) }))
     .sort(compareChanges)
 
-  expect(expectedChanges.sort(compareChanges)).toEqual(changes)
+  expect(changes).toEqual(expectedChanges.sort(compareChanges))
 }
 
 export const runEmptyPreview = async (fetchOutputDir: string): Promise<void> => {

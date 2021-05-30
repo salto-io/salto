@@ -28,18 +28,18 @@ const log = logger(module)
 
 export const EMPTY_CHANGE_SET = { changes: [], cacheValid: true }
 
-export type CacheUpdate = {
-  src1Changes: Change<Element>[]
-  src2Changes: Change<Element>[]
-  src1: ReadOnlyElementsSource
-  src2: ReadOnlyElementsSource
-}
-
 export type ChangeSet<Change> = {
   changes: Change[]
   cacheValid: boolean
   preChangeHash?: string
   postChangeHash?: string
+}
+
+export type CacheUpdate = {
+  src1Changes: ChangeSet<Change<Element>>
+  src2Changes: ChangeSet<Change<Element>>
+  src1: ReadOnlyElementsSource
+  src2: ReadOnlyElementsSource
 }
 
 export type CacheChangeSetUpdate = {

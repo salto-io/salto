@@ -265,8 +265,8 @@ export const loadWorkspace = async (
         validatedElementsIDs: ElemID[]
       }> => {
         const dependentsID = await getElementsDependents(relevantElementIDs, new Set())
-        const dependents = await Promise.all(dependentsID.map(id => elementSource.get(id))
-          .filter(values.isDefined))
+        const dependents = (await Promise.all(dependentsID.map(id => elementSource.get(id))))
+          .filter(values.isDefined)
         const elementsToValidate = [...elements, ...dependents]
         return {
           errors: await validateElements(elementsToValidate, elementSource),
@@ -276,7 +276,6 @@ export const loadWorkspace = async (
           ),
         }
       }
-  }
   // When we load the workspace with a clean cache from existings nacls, we need
   // to add hidden elements from the state since they will not be a part of the nacl
   // changes. In any other load - the state changes will be reflected by the workspace

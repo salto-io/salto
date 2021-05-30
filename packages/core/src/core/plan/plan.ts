@@ -413,7 +413,6 @@ export const getPlan = async ({
     resolveNodeElements(before, after),
     addModifyNodes(addNodeDependencies(dependencyChangers)),
   )
-
   const filterResult = await filterInvalidChanges(
     before, after, diffGraph, changeValidators,
   )

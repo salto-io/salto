@@ -23,7 +23,7 @@ import {
   ActionName, ChangeError, SaltoError, isElement, TypeMap, DetailedChange, ChangeDataType,
   isStaticFile,
 } from '@salto-io/adapter-api'
-import { Plan, PlanItem, FetchChange, FetchResult, LocalChange, getSupportedServiceAdapterNames } from '@salto-io/core'
+import { Plan, PlanItem, FetchChange, FetchResult, LocalChange, getSupportedServiceAdapterNames, getPrivateAdaptersNames } from '@salto-io/core'
 import { errors, SourceFragment, parser, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -523,9 +523,9 @@ const formatConfiguredServices = (serviceNames: ReadonlyArray<string>): string =
   return formattedServices.join('\n')
 }
 
-const formattedAdditionalServices = (services: ReadonlyArray<string>): string => {
+const formatAdditionalServices = (services: ReadonlyArray<string>): string => {
   const formattedServices = getSupportedServiceAdapterNames()
-    .filter(serviceName => !services.includes(serviceName))
+    .filter(serviceName => !services.includes(serviceName) && !getPrivateAdaptersNames().includes(serviceName))
     .map(serviceName => indent(`- ${serviceName}`, 1))
   if (formattedServices.length === 0) {
     return Prompts.NO_ADDITIONAL_CONFIGURED_SERVICES.concat(EOL)
@@ -537,7 +537,7 @@ const formattedAdditionalServices = (services: ReadonlyArray<string>): string =>
 }
 
 export const formatConfiguredAndAdditionalServices = (services: ReadonlyArray<string>): string =>
-  [formatConfiguredServices(services), formattedAdditionalServices(services)].join(EOL)
+  [formatConfiguredServices(services), formatAdditionalServices(services)].join(EOL)
 
 export const formatServiceAdded = (serviceName: string): string => [
   formatSuccess(Prompts.SERVICE_ADDED(serviceName)),

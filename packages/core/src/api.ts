@@ -352,7 +352,4 @@ const privateAdapters = ['dummy']
 
 export const getPrivateAdaptersNames = (): string[] => privateAdapters
 
-export const getSupportedServiceAdapterNames = (): string[] =>
-  Object.keys(adapterCreators).filter(
-    serviceAdapterName => !getPrivateAdaptersNames().includes(serviceAdapterName)
-  )
+export const getSupportedServiceAdapterNames = (): string[] => Object.keys(adapterCreators)

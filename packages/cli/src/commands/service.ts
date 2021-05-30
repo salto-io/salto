@@ -20,7 +20,7 @@ import { Workspace } from '@salto-io/workspace'
 import { getCredentialsFromUser } from '../callbacks'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { createCommandGroupDef, WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
-import { formatServiceAlreadyAdded, formatServiceAdded, formatLoginToServiceFailed, formatCredentialsHeader, formatLoginUpdated, formatConfiguredServices, formatServiceNotConfigured, formatLoginOverride } from '../formatter'
+import { formatServiceAlreadyAdded, formatServiceAdded, formatLoginToServiceFailed, formatCredentialsHeader, formatLoginUpdated, formatServiceNotConfigured, formatLoginOverride, formatConfiguredAndAdditionalServices } from '../formatter'
 import { errorOutputLine, outputLine } from '../outputer'
 import { processOauthCredentials } from '../cli_oauth_authenticator'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
@@ -159,7 +159,7 @@ export const listAction: WorkspaceCommandAction<ServiceListArgs> = async (
   { input, output, workspace },
 ): Promise<CliExitCode> => {
   await validateAndSetEnv(workspace, input, output)
-  outputLine(formatConfiguredServices(workspace.services()), output)
+  outputLine(formatConfiguredAndAdditionalServices(workspace.services()), output)
   return CliExitCode.Success
 }
 

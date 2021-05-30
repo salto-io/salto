@@ -347,3 +347,10 @@ export const getLoginStatuses = async (
 
   return promises.object.resolveValues(logins)
 }
+
+const privateAdapters = ['dummy']
+
+export const getSupportedServiceAdapterNames = (): string[] =>
+  Object.keys(adapterCreators).filter(
+    serviceAdapterName => !privateAdapters.includes(serviceAdapterName)
+  )

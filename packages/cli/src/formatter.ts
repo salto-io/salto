@@ -523,9 +523,7 @@ const formatConfiguredServices = (serviceNames: ReadonlyArray<string>): string =
   return formattedServices.join('\n')
 }
 
-const privateAdapters = ['dummy']
-
-export const getPrivateAdaptersNames = (): string[] => privateAdapters
+export const getPrivateAdaptersNames = (): ReadonlyArray<string> => ['dummy']
 
 const formatAdditionalServices = (services: ReadonlyArray<string>): string => {
   const formattedServices = getSupportedServiceAdapterNames()

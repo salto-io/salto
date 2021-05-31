@@ -138,12 +138,13 @@ const buildMultiEnvSource = (
   const buildMultiEnvState = async ({ envChanges = {} }: { envChanges?: EnvsChanges }):
   Promise<{ state: MultiEnvState; changes: EnvsChanges }> => {
     const current = await buildState()
-    const changes = await mapValuesAsync(
-      _.pickBy(
-        envChanges,
-        (changesInEnv, name) => (name !== commonSourceName) && (changesInEnv.length > 0)
-      ),
-      async (_changes, envName) => {
+    const changesInCommon = (envChanges[commonSourceName] ?? []).length > 0
+    const relevantEnvs = Object.keys(sources)
+      .filter(name =>
+        (name !== commonSourceName)
+        && (changesInCommon || (envChanges[name] ?? []).length > 0))
+    const changes = Object.fromEntries(
+      await awu(relevantEnvs).map(async envName => {
         const envState = current[envName]
         const { afterElements: newElements, relevantElementIDs } = await getAfterElements({
           src1Changes: envChanges[envName] ?? [],
@@ -151,7 +152,7 @@ const buildMultiEnvSource = (
           src2Changes: envChanges[commonSourceName] ?? [],
           src2: sources[commonSourceName],
         })
-        return buildNewMergedElementsAndErrors({
+        return [envName, await buildNewMergedElementsAndErrors({
           afterElements: awu(newElements),
           currentElements: envState.elements,
           currentErrors: envState.mergeErrors,
@@ -174,8 +175,8 @@ const buildMultiEnvSource = (
                 )),
             }
           },
-        })
-      }
+        })]
+      }).toArray()
     )
     return {
       state: current,

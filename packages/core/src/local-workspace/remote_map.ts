@@ -186,10 +186,22 @@ const withCreatorLock = async (fn: (() => Promise<void>)): Promise<void> => {
   await creatorLock.acquire('createInProgress', fn)
 }
 
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+const caches = new LRU<string, any>({ max: 10 })
+
 export const createRemoteMapCreator = (location: string, readOnly = false, cacheSize = 5000):
 remoteMap.RemoteMapCreator => {
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  const cache = new LRU<string, any>({ max: cacheSize })
+  let locationCache: LRU<string, any>
+  if (caches.has(location)) {
+    locationCache = caches.get(location)
+  } else {
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    locationCache = new LRU<string, any>({ max: cacheSize })
+    if (cacheSize > 0) {
+      caches.set(location, locationCache)
+    }
+  }
   return async <T, K extends string = string>(
     { namespace, batchInterval = 1000, serialize, deserialize }:
     remoteMap.CreateRemoteMapParams<T>
@@ -272,7 +284,7 @@ remoteMap.RemoteMapCreator => {
       temp = true,
     ): Promise<void> => {
       const batchInsertIterator = awu(elementsEntries).map(entry => {
-        cache.set(keyToTempDBKey(entry.key), entry.value)
+        locationCache.set(keyToTempDBKey(entry.key), entry.value)
         return { key: entry.key, value: serialize(entry.value) }
       })
       await batchUpdate(batchInsertIterator, temp)
@@ -342,12 +354,12 @@ remoteMap.RemoteMapCreator => {
         .map(async entries => entries.map(entry => entry.key as K))
     }
     const getImpl = (key: string): Promise<T | undefined> => new Promise(resolve => {
-      if (cache.has(keyToTempDBKey(key))) {
-        resolve(cache.get(keyToTempDBKey(key)) as T)
+      if (locationCache.has(keyToTempDBKey(key))) {
+        resolve(locationCache.get(keyToTempDBKey(key)) as T)
       } else {
         const resolveRet = async (value: Buffer | string): Promise<void> => {
           const ret = (await deserialize(value.toString()))
-          cache.set(keyToTempDBKey(key), ret)
+          locationCache.set(keyToTempDBKey(key), ret)
           resolve(ret)
         }
         db.get(keyToTempDBKey(key), async (error, value) => {
@@ -444,7 +456,7 @@ remoteMap.RemoteMapCreator => {
         ) as remoteMap.RemoteMapIterator<remoteMap.RemoteMapEntry<T, K>, Opts>
       },
       set: async (key: string, element: T): Promise<void> => {
-        cache.set(keyToTempDBKey(key), element)
+        locationCache.set(keyToTempDBKey(key), element)
         await promisify(db.put.bind(db))(keyToTempDBKey(key), serialize(element))
       },
       setAll: setAllImpl,
@@ -468,22 +480,23 @@ remoteMap.RemoteMapCreator => {
         return res
       },
       revert: async () => {
-        cache.reset()
+        locationCache.reset()
         await clearImpl(tempKeyPrefix)
       },
       clear: async () => {
-        cache.reset()
+        locationCache.reset()
         await clearImpl(keyPrefix)
         await clearImpl(tempKeyPrefix)
       },
       delete: async (key: string) => {
-        cache.del(keyToTempDBKey(key))
+        locationCache.del(keyToTempDBKey(key))
+        caches.del(location)
         await clearImpl(keyToDBKey(key), keyToDBKey(key))
         await clearImpl(keyToTempDBKey(key), keyToTempDBKey(key))
       },
       close: closeImpl,
       has: async (key: string): Promise<boolean> => {
-        if (cache.has(keyToTempDBKey(key))) {
+        if (locationCache.has(keyToTempDBKey(key))) {
           return true
         }
         const hasKeyImpl = (k: string): boolean => {

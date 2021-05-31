@@ -347,3 +347,5 @@ export const getLoginStatuses = async (
 
   return promises.object.resolveValues(logins)
 }
+
+export const getSupportedServiceAdapterNames = (): string[] => Object.keys(adapterCreators)

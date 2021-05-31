@@ -23,7 +23,7 @@ import {
   ActionName, ChangeError, SaltoError, isElement, TypeMap, DetailedChange, ChangeDataType,
   isStaticFile,
 } from '@salto-io/adapter-api'
-import { Plan, PlanItem, FetchChange, FetchResult, LocalChange } from '@salto-io/core'
+import { Plan, PlanItem, FetchChange, FetchResult, LocalChange, getSupportedServiceAdapterNames } from '@salto-io/core'
 import { errors, SourceFragment, parser, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -509,7 +509,7 @@ export const formatServiceNotConfigured = (serviceName: string): string => [
   emptyLine(),
 ].join('\n')
 
-export const formatConfiguredServices = (serviceNames: ReadonlyArray<string>): string => {
+const formatConfiguredServices = (serviceNames: ReadonlyArray<string>): string => {
   if (serviceNames.length === 0) {
     return [
       Prompts.NO_CONFIGURED_SERVICES,
@@ -522,6 +522,25 @@ export const formatConfiguredServices = (serviceNames: ReadonlyArray<string>): s
   formattedServices.push(emptyLine())
   return formattedServices.join('\n')
 }
+
+export const getPrivateAdaptersNames = (): ReadonlyArray<string> => ['dummy']
+
+const formatAdditionalServices = (services: ReadonlyArray<string>): string => {
+  const formattedServices = getSupportedServiceAdapterNames()
+    .filter(serviceName => !services.includes(serviceName)
+      && !getPrivateAdaptersNames().includes(serviceName))
+    .map(serviceName => indent(`- ${serviceName}`, 1))
+  if (formattedServices.length === 0) {
+    return Prompts.NO_ADDITIONAL_CONFIGURED_SERVICES.concat(EOL)
+  }
+
+  formattedServices.unshift(Prompts.ADDITIONAL_SUPPORTED_SERVICES_TITLE)
+  formattedServices.push(emptyLine())
+  return formattedServices.join(EOL)
+}
+
+export const formatConfiguredAndAdditionalServices = (services: ReadonlyArray<string>): string =>
+  [formatConfiguredServices(services), formatAdditionalServices(services)].join(EOL)
 
 export const formatServiceAdded = (serviceName: string): string => [
   formatSuccess(Prompts.SERVICE_ADDED(serviceName)),

@@ -140,11 +140,12 @@ export type EnvironmentsSources = {
   sources: Record<string, EnvironmentSource>
 }
 
-type WorkspaceState = Record<string, {
+type SingleState = {
   merged: ElementsSource
   errors: RemoteMap<MergeError[]>
   validationErrors: RemoteMap<ValidationError[]>
-}>
+}
+type WorkspaceState = Record<string, SingleState>
 
 export const loadWorkspace = async (
   config: WorkspaceConfigSource,
@@ -191,26 +192,29 @@ export const loadWorkspace = async (
     validate?: boolean
   }): Promise<WorkspaceState> => {
     const relevantEnvs = Object.keys(_.pickBy(workspaceChanges, changes => changes.length > 0))
-    const stateToBuild = Object.fromEntries(await awu(envs()).map(async envName => [envName, {
-      merged: new RemoteElementSource(
-        await remoteMapCreator<Element>({
-          namespace: getRemoteMapNamespace('merged', envName),
-          serialize: element => serialize([element]),
-          // TODO: we might need to pass static file reviver to the deserialization func
-          deserialize: deserializeSingleElement,
-        })
-      ),
-      errors: await remoteMapCreator<MergeError[]>({
-        namespace: getRemoteMapNamespace('errors', envName),
-        serialize: mergeErrors => serialize(mergeErrors),
-        deserialize: async data => deserializeMergeErrors(data),
-      }),
-      validationErrors: await remoteMapCreator<ValidationError[]>({
-        namespace: getRemoteMapNamespace('validationErrors', envName),
-        serialize: validationErrors => serialize(validationErrors),
-        deserialize: async data => deserializeValidationErrors(data),
-      }),
-    }]).toArray())
+    const stateToBuild = workspaceState !== undefined
+      ? await workspaceState
+      : Object.fromEntries(await awu(envs())
+        .map(async envName => [envName, {
+          merged: new RemoteElementSource(
+            await remoteMapCreator<Element>({
+              namespace: getRemoteMapNamespace('merged', envName),
+              serialize: element => serialize([element]),
+              // TODO: we might need to pass static file reviver to the deserialization func
+              deserialize: deserializeSingleElement,
+            })
+          ),
+          errors: await remoteMapCreator<MergeError[]>({
+            namespace: getRemoteMapNamespace('errors', envName),
+            serialize: mergeErrors => serialize(mergeErrors),
+            deserialize: async data => deserializeMergeErrors(data),
+          }),
+          validationErrors: await remoteMapCreator<ValidationError[]>({
+            namespace: getRemoteMapNamespace('validationErrors', envName),
+            serialize: validationErrors => serialize(validationErrors),
+            deserialize: async data => deserializeValidationErrors(data),
+          }),
+        }]).toArray())
     const updateWorkspace = async (envName: string): Promise<void> => {
       const source = createNaclFilesSource(envName)
       const getElementsDependents = async (

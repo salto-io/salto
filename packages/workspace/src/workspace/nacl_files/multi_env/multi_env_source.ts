@@ -68,10 +68,11 @@ export class UnsupportedNewEnvChangeError extends Error {
   }
 }
 
-type MultiEnvState = Record<string, {
+type SingleState = {
   elements: ElementsSource
   mergeErrors: RemoteMap<MergeError[]>
-}>
+}
+type MultiEnvState = Record<string, SingleState>
 
 export type EnvsChanges = Record<string, Change[]>
 
@@ -111,33 +112,32 @@ const buildMultiEnvSource = (
     [commonSourceName]: sources[commonSourceName],
   })
 
-  const buildState = async (): Promise<MultiEnvState> =>
-    Object.fromEntries(
-      await awu(Object.keys(sources))
-        .filter(name => name !== commonSourceName)
-        .map(async name => {
-          const elements = new RemoteElementSource(await remoteMapCreator<Element>({
-            namespace: getRemoteMapNamespace('merged', name),
-            serialize: element => serialize([element]),
-            // TODO: we might need to pass static file reviver to the deserialization func
-            deserialize: deserializeSingleElement,
-          }))
-          return [name, {
-            elements,
-            mergeErrors: await remoteMapCreator<MergeError[]>({
-              namespace: getRemoteMapNamespace('errors', name),
-              serialize: errors => serialize(errors),
-              deserialize: async data => deserializeMergeErrors(data),
-            }),
-          }]
-        }).toArray()
-    )
+  const buildStateForSingleEnv = async (envName: string): Promise<SingleState> => {
+    const elements = new RemoteElementSource(await remoteMapCreator<Element>({
+      namespace: getRemoteMapNamespace('merged', envName),
+      serialize: element => serialize([element]),
+      deserialize: deserializeSingleElement,
+    }))
+    return {
+      elements,
+      mergeErrors: await remoteMapCreator<MergeError[]>({
+        namespace: getRemoteMapNamespace('errors', envName),
+        serialize: errors => serialize(errors),
+        deserialize: async data => deserializeMergeErrors(data),
+      }),
+    }
+  }
 
   let state = initState
 
   const buildMultiEnvState = async ({ envChanges = {} }: { envChanges?: EnvsChanges }):
   Promise<{ state: MultiEnvState; changes: EnvsChanges }> => {
-    const current = await buildState()
+    const current = Object.fromEntries(
+      await awu(Object.keys(sources))
+        .filter(name => name !== commonSourceName)
+        .map(async name => [name, state?.[name] ?? (await buildStateForSingleEnv(name))])
+        .toArray()
+    )
     const changesInCommon = (envChanges[commonSourceName] ?? []).length > 0
     const relevantEnvs = Object.keys(sources)
       .filter(name =>

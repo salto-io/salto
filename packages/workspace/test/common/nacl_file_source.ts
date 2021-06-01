@@ -32,23 +32,29 @@ export const createMockNaclFileSource = (
   sourceRanges?: SourceRange[],
   changes: Change[] = [],
 ): NaclFilesSource => {
+  const currentElements = elements
   const getElementNaclFiles = (elemID: ElemID): string[] =>
     Object.entries(naclFiles).filter(([_filename, fileElements]) => fileElements.find(
       element => resolvePath(element, elemID) !== undefined
     ) !== undefined).map(([filename, _elements]) => filename)
   return ({
-    list: async () => awu(elements.map(e => e.elemID)),
-    isEmpty: async () => elements.length === 0,
+    list: async () => awu(currentElements.map(e => e.elemID)),
+    isEmpty: async () => currentElements.length === 0,
     get: async (id: ElemID) => {
       const { parent, path: idPath } = id.createTopLevelParentID()
-      const element = elements.find(e => e.elemID.getFullName() === parent.getFullName())
+      const element = currentElements.find(e => e.elemID.getFullName() === parent.getFullName())
       return element && !_.isEmpty(idPath) ? resolvePath(element, id) : element
     },
-    has: async (id: ElemID) => elements.find(e => e.elemID.isEqual(id)) !== undefined,
-    set: async (_element: Element) => Promise.resolve(undefined),
-    delete: async (_id: ElemID) => Promise.resolve(undefined),
-    getAll: async () => awu(elements),
-    getElementsSource: async () => createInMemoryElementSource(elements),
+    has: async (id: ElemID) => currentElements.find(e => e.elemID.isEqual(id)) !== undefined,
+    set: async (element: Element) => {
+      _.remove(currentElements, e => e.elemID.isEqual(element.elemID))
+      currentElements.push(element)
+    },
+    delete: async (id: ElemID) => {
+      _.remove(currentElements, e => e.elemID.isEqual(id))
+    },
+    getAll: async () => awu(currentElements),
+    getElementsSource: async () => createInMemoryElementSource(currentElements),
     clear: jest.fn().mockImplementation(() => Promise.resolve()),
     rename: jest.fn().mockImplementation(() => Promise.resolve()),
     flush: jest.fn().mockImplementation(() => Promise.resolve()),
@@ -77,8 +83,8 @@ export const createMockNaclFileSource = (
     getElementNaclFiles: jest.fn().mockImplementation(getElementNaclFiles),
     clone: jest.fn().mockImplementation(() => Promise.resolve()),
     getElementReferencedFiles: jest.fn().mockResolvedValue([]),
-    load: jest.fn().mockResolvedValue(elements.map(e => createAddChange(e, e.elemID))),
-    getSearchableNames: jest.fn().mockResolvedValue(_.uniq(elements.flatMap(e => {
+    load: jest.fn().mockResolvedValue(currentElements.map(e => createAddChange(e, e.elemID))),
+    getSearchableNames: jest.fn().mockResolvedValue(_.uniq(currentElements.flatMap(e => {
       const fieldNames = isObjectType(e)
         ? Object.values(e.fields).map(field => field.elemID.getFullName())
         : []

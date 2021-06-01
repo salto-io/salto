@@ -222,6 +222,7 @@ export class EditorWorkspace {
 
   private async runAggregatedSetOperation(): Promise<void> {
     if (this.hasPendingUpdates() && this.workspace !== undefined) {
+      const env = this.workspace.currentEnv()
       const opDeletes = this.pendingDeletes
       const opUpdates = this.pendingSets
       this.pendingDeletes = new Set<string>()
@@ -229,11 +230,12 @@ export class EditorWorkspace {
       // We start by running all deleted
       const shouldCalcValidation = this.wsErrors === undefined
       const removeChanges = (!_.isEmpty(opDeletes))
-        ? (await this.workspace.removeNaclFiles([...opDeletes], shouldCalcValidation))
+        ? (await this.workspace.removeNaclFiles([...opDeletes], shouldCalcValidation))[env]
         : []
       // Now add the waiting changes
       const updateChanges = (!_.isEmpty(opUpdates))
-        ? await this.workspace.setNaclFiles(Object.values(opUpdates), shouldCalcValidation)
+        ? (await this.workspace
+          .setNaclFiles(Object.values(opUpdates), shouldCalcValidation))[env] ?? []
         : []
       if (this.wsErrors !== undefined) {
         const validation = await this.getValidationErrors(

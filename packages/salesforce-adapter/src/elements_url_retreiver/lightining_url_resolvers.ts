@@ -15,9 +15,11 @@
 */
 import { isObjectType, Element, isField, Field, isType, isReferenceExpression, ElemID, isInstanceElement } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
-import { isDefined } from '@salto-io/lowerdash/src/values'
+import { values } from '@salto-io/lowerdash'
 import { apiName, metadataType, isCustomObject, isFieldOfCustomObject, isInstanceOfCustomObject } from '../transformers/transformer'
 import { getInternalId, isInstanceOfType } from '../filters/utils'
+
+const { isDefined } = values
 
 export type ElementIDResolver = (id: ElemID) => Promise<Element | undefined>
 

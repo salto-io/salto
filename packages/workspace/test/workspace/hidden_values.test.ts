@@ -326,4 +326,32 @@ describe('handleHiddenChanges', () => {
       })
     })
   })
+
+  describe('arrays and undefined values', () => {
+    const object = new ObjectType({
+      elemID: new ElemID('test', 'type'),
+      fields: {
+        field: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: { [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [{ reference: 'aaa', occurrences: undefined }] },
+        },
+      },
+    })
+
+    const change: DetailedChange = {
+      id: object.fields.field.elemID.createNestedID(CORE_ANNOTATIONS.GENERATED_DEPENDENCIES),
+      action: 'add',
+      data: { after: [{ reference: 'aaa' }] },
+    }
+
+    it('should not hide anything', async () => {
+      const result = await handleHiddenChanges(
+        [change],
+        mockState([object]),
+        mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+      )
+      expect(result.visible.length).toBe(1)
+      expect(result.hidden.length).toBe(0)
+    })
+  })
 })

@@ -16,12 +16,11 @@
 import _ from 'lodash'
 import { values, collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { transformElement, TransformFunc, transformValues, applyFunctionToChangeData, elementAnnotationTypes } from '@salto-io/adapter-utils'
+import { transformElement, TransformFunc, transformValues, applyFunctionToChangeData, elementAnnotationTypes, safeJsonStringify } from '@salto-io/adapter-utils'
 import { CORE_ANNOTATIONS, Element, isInstanceElement, isType, TypeElement, getField,
   DetailedChange, isRemovalChange, ElemID, isObjectType, ObjectType, Values,
   isRemovalOrModificationChange, isAdditionOrModificationChange, isElement, isField,
   ReadOnlyElementsSource, ReferenceMap, isPrimitiveType, PrimitiveType, InstanceElement, Field } from '@salto-io/adapter-api'
-import { addedDiff } from 'deep-object-diff'
 import { mergeElements, MergeResult } from '../merger'
 import { State } from './state'
 import { createAddChange, createRemoveChange } from './nacl_files/multi_env/projections'
@@ -383,6 +382,53 @@ const isHiddenField = async (
       || isHiddenField(baseType, fieldPath.slice(0, -1), hiddenValue, elementsSource)
 }
 
+const diffForHidden = (lhs: unknown, rhs: unknown): unknown => {
+  if (lhs === rhs) {
+    return undefined
+  }
+  if (rhs === undefined) {
+    return lhs
+  }
+
+  if (Array.isArray(lhs)) {
+    if (!Array.isArray(rhs) || lhs.length !== rhs.length) {
+      // should never happen
+      log.warn('Unexpected diff found in array: %s', safeJsonStringify([lhs, rhs]))
+      return lhs
+    }
+    const arrayDiff = lhs.map((val, idx) => diffForHidden(val, rhs[idx]))
+    if (arrayDiff.some(val => !_.isEmpty(val))) {
+      return arrayDiff
+    }
+    return undefined
+  }
+
+  if (!_.isPlainObject(lhs) || !_.isPlainObject(rhs)) {
+    return undefined
+  }
+
+  const res = Object.keys(_.pickBy(lhs as object, values.isDefined)).reduce((acc, key) => {
+    if (Object.prototype.hasOwnProperty.call(rhs, key)) {
+      const difference = diffForHidden(_.get(lhs, key), _.get(rhs, key))
+
+      if (
+        difference === undefined
+        || (
+          _.isPlainObject(difference)
+          && _.isEmpty(difference as object)
+        )
+      ) {
+        return acc
+      }
+
+      return { ...acc, [key]: difference }
+    }
+
+    return { ...acc, [key]: _.get(lhs, key) }
+  }, {})
+  return _.isEmpty(res) ? undefined : res
+}
+
 const diffElements = <T extends Element>(visibleElem?: T, fullElem?: T): T | undefined => {
   if (fullElem === undefined) {
     return undefined
@@ -390,7 +436,7 @@ const diffElements = <T extends Element>(visibleElem?: T, fullElem?: T): T | und
   if (visibleElem === undefined) {
     return fullElem
   }
-  const diffAnno = addedDiff(visibleElem.annotations, fullElem.annotations)
+  const diffAnno = diffForHidden(fullElem.annotations, visibleElem.annotations) as Values
   const diffAnnoTypes: ReferenceMap = {}
   if (isObjectType(fullElem) && isObjectType(visibleElem)) {
     const diffFields = _.pickBy(_.mapValues(
@@ -416,7 +462,7 @@ const diffElements = <T extends Element>(visibleElem?: T, fullElem?: T): T | und
     }) as unknown as T
   }
   if (isInstanceElement(fullElem) && isInstanceElement(visibleElem)) {
-    const diffValue = addedDiff(visibleElem.value, fullElem.value)
+    const diffValue = diffForHidden(fullElem.value, visibleElem.value) as Values
     if ([diffAnno, diffAnnoTypes, diffValue].every(_.isEmpty)) {
       return undefined
     }
@@ -550,7 +596,7 @@ export const filterOutHiddenChanges = async (
           hidden: {
             ...change,
             data: {
-              after: addedDiff(visible.data.after, change.data.after),
+              after: diffForHidden(change.data.after, visible.data.after) as Values,
             },
           } as DetailedChange }
       }

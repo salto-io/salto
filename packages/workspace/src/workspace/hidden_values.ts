@@ -526,7 +526,7 @@ export const filterOutHiddenChanges = async (
           ...change,
           data: {
             ...change.data,
-            after: diffElements(visible.data.after, change.data.after),
+            after,
           },
         } as DetailedChange }
     }

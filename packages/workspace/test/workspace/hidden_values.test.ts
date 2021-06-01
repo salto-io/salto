@@ -327,27 +327,25 @@ describe('handleHiddenChanges', () => {
     })
   })
 
-  describe('arrays and undefined values', () => {
-    const object = new ObjectType({
-      elemID: new ElemID('test', 'type'),
-      fields: {
-        field: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
-          annotations: { [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [{ reference: 'aaa', occurrences: undefined }] },
-        },
-      },
-    })
+  describe('undefined values', () => {
+    const workspaceInstance = new InstanceElement(
+      'instance',
+      new ObjectType({
+        elemID: new ElemID('test', 'type'),
+      }),
+      { [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [{ reference: 'aaa', occurrences: undefined }] },
+    )
 
     const change: DetailedChange = {
-      id: object.fields.field.elemID.createNestedID(CORE_ANNOTATIONS.GENERATED_DEPENDENCIES),
+      id: workspaceInstance.elemID,
       action: 'add',
-      data: { after: [{ reference: 'aaa' }] },
+      data: { after: workspaceInstance },
     }
 
-    it('should not hide anything', async () => {
+    it('should not hide anything if there is no hidden part, even if nested values are undefined', async () => {
       const result = await handleHiddenChanges(
         [change],
-        mockState([object]),
+        mockState([]),
         mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
       )
       expect(result.visible.length).toBe(1)

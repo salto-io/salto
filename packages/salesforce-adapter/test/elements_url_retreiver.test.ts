@@ -159,6 +159,11 @@ describe('lightningElementsUrlRetriever', () => {
         await expect(elementUrlRetriever?.retrieveUrl(element)).resolves.toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/_classic/%2FsomeId'))
       })
 
+      it('instance of custom object', async () => {
+        const element = new InstanceElement('InstanceOfCustomObject', customObject, { fullName: 'InstanceOfCustomObject', Id: 'instanceId' })
+        await expect(elementUrlRetriever?.retrieveUrl(element)).resolves.toEqual(new URL(`https://salto5-dev-ed.lightning.force.com/lightning/r/${customObject.annotations.apiName}/instanceId/view`))
+      })
+
       it('unknown element', async () => {
         const element = new ObjectType({ elemID: new ElemID('salesforce', 'someType') })
         expect(elementUrlRetriever).toBeDefined()

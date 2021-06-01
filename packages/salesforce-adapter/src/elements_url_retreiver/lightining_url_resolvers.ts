@@ -15,7 +15,7 @@
 */
 import { isObjectType, Element, isField, Field, isType, isReferenceExpression, ElemID, isInstanceElement } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
-import { apiName, metadataType, isCustomObject, isFieldOfCustomObject } from '../transformers/transformer'
+import { apiName, metadataType, isCustomObject, isFieldOfCustomObject, isInstanceOfCustomObject } from '../transformers/transformer'
 import { getInternalId, isInstanceOfType } from '../filters/utils'
 
 export type ElementIDResolver = (id: ElemID) => Promise<Element | undefined>
@@ -161,7 +161,19 @@ const internalIdResolver: UrlResolver = async (element, baseUrl) => {
   return undefined
 }
 
+
+const instanceCustomObjectResolver: UrlResolver = async (element, baseUrl) => {
+  const instanceId = await apiName(element)
+  const typeId = isInstanceElement(element) ? await apiName(await element.getType()) : undefined
+  if (await isInstanceOfCustomObject(element)
+    && instanceId !== undefined
+    && typeId !== undefined) {
+    return new URL(`${baseUrl}lightning/r/${typeId}/${instanceId}/view`)
+  }
+  return undefined
+}
+
 export const resolvers: UrlResolver[] = [genernalConstantsResolver,
   settingsConstantsResolver, assignmentRulesResolver, metadataTypeResolver,
   objectResolver, fieldResolver, flowResolver, workflowResolver, layoutResolver, queueResolver,
-  internalIdResolver]
+  internalIdResolver, instanceCustomObjectResolver]

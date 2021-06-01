@@ -15,8 +15,10 @@
 */
 import { isObjectType, Element, isField, Field, isType, isReferenceExpression, ElemID, isInstanceElement } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
+import { isDefined } from '@salto-io/lowerdash/src/values'
 import { apiName, metadataType, isCustomObject, isFieldOfCustomObject, isInstanceOfCustomObject } from '../transformers/transformer'
 import { getInternalId, isInstanceOfType } from '../filters/utils'
+
 
 export type ElementIDResolver = (id: ElemID) => Promise<Element | undefined>
 
@@ -166,9 +168,7 @@ const instanceCustomObjectResolver: UrlResolver = async (element, baseUrl) => {
   if (await isInstanceOfCustomObject(element)) {
     const instanceId = await apiName(element)
     const typeId = isInstanceElement(element) ? await apiName(await element.getType()) : undefined
-    if (typeId !== undefined) {
-      return new URL(`${baseUrl}lightning/r/${typeId}/${instanceId}/view`)
-    }
+    return isDefined(typeId) ? new URL(`${baseUrl}lightning/r/${typeId}/${instanceId}/view`) : undefined
   }
   return undefined
 }

@@ -160,7 +160,7 @@ describe('lightningElementsUrlRetriever', () => {
       })
 
       it('instance of custom object', async () => {
-        const element = new InstanceElement('InstanceOfCustomObject', customObject, { fullName: 'InstanceOfCustomObject', Id: 'instanceId' })
+        const element = new InstanceElement('InstanceOfCustomObject', customObject, { Id: 'instanceId' })
         await expect(elementUrlRetriever?.retrieveUrl(element)).resolves.toEqual(new URL(`https://salto5-dev-ed.lightning.force.com/lightning/r/${customObject.annotations.apiName}/instanceId/view`))
       })
 

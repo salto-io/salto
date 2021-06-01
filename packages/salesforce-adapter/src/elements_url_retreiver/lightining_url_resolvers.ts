@@ -163,12 +163,12 @@ const internalIdResolver: UrlResolver = async (element, baseUrl) => {
 
 
 const instanceCustomObjectResolver: UrlResolver = async (element, baseUrl) => {
-  const instanceId = await apiName(element)
-  const typeId = isInstanceElement(element) ? await apiName(await element.getType()) : undefined
-  if (await isInstanceOfCustomObject(element)
-    && instanceId !== undefined
-    && typeId !== undefined) {
-    return new URL(`${baseUrl}lightning/r/${typeId}/${instanceId}/view`)
+  if (await isInstanceOfCustomObject(element)) {
+    const instanceId = await apiName(element)
+    const typeId = isInstanceElement(element) ? await apiName(await element.getType()) : undefined
+    if (typeId !== undefined) {
+      return new URL(`${baseUrl}lightning/r/${typeId}/${instanceId}/view`)
+    }
   }
   return undefined
 }

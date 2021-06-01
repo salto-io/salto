@@ -493,7 +493,7 @@ remoteMap.RemoteMapCreator => {
       },
       delete: async (key: string) => {
         locationCache.del(keyToTempDBKey(key))
-        caches.del(location)
+        locationCaches.del(location)
         await clearImpl(keyToDBKey(key), keyToDBKey(key))
         await clearImpl(keyToTempDBKey(key), keyToTempDBKey(key))
       },

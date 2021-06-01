@@ -19,7 +19,6 @@ import { isDefined } from '@salto-io/lowerdash/src/values'
 import { apiName, metadataType, isCustomObject, isFieldOfCustomObject, isInstanceOfCustomObject } from '../transformers/transformer'
 import { getInternalId, isInstanceOfType } from '../filters/utils'
 
-
 export type ElementIDResolver = (id: ElemID) => Promise<Element | undefined>
 
 export type UrlResolver = (element: Element, baseUrl: URL, elementIDResolver: ElementIDResolver) =>

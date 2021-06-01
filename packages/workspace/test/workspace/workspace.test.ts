@@ -495,10 +495,8 @@ describe('workspace', () => {
       const elemMap = await getElemMap(await workspace.elements())
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(Object.keys(lead.fields)).not.toContain('ext_field')
-      expect(changes).toBeDefined()
-      // TODO: fix here
-      // expect(changes.map(getChangeElement).map(c => c.elemID.getFullName()).sort())
-      //   .toEqual(['salesforce.lead', 'multi.loc'].sort())
+      expect(changes.default.map(getChangeElement).map(c => c.elemID.getFullName()).sort())
+        .toEqual(['salesforce.lead', 'multi.loc'].sort())
     })
 
     it('should remove from store', async () => {
@@ -515,6 +513,69 @@ describe('workspace', () => {
         .toEqual(['salesforce.RenamedType1', 'salesforce.lead', 'multi.loc'].sort())
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(Object.keys(lead.fields)).toContain('ext_field')
+    })
+
+    describe('on secondary envs', () => {
+      const primarySourceName = 'default'
+      const secondarySourceName = 'inactive'
+      let wsWithMultipleEnvs: Workspace
+      const removedElemID = new ElemID('salesforce', 'RenamedType1')
+      beforeEach(async () => {
+        wsWithMultipleEnvs = await createWorkspace(
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          {
+            [COMMON_ENV_PREFIX]: {
+              naclFiles: await naclFilesSource(
+                COMMON_ENV_PREFIX,
+                mockDirStore([], true),
+                mockStaticFilesSource(),
+                persistentMockCreateRemoteMap(),
+              ),
+            },
+            [primarySourceName]: {
+              naclFiles: await naclFilesSource(
+                COMMON_ENV_PREFIX,
+                mockDirStore([], true),
+                mockStaticFilesSource(),
+                persistentMockCreateRemoteMap(),
+              ),
+              state: createState([]),
+            },
+            [secondarySourceName]: {
+              naclFiles: await naclFilesSource(
+                COMMON_ENV_PREFIX,
+                mockDirStore(),
+                mockStaticFilesSource(),
+                persistentMockCreateRemoteMap(),
+              ),
+              state: createState([]),
+            },
+          },
+        )
+      })
+      it('should return the changes of secondary envs as well', async () => {
+        const envChanges = await wsWithMultipleEnvs
+          .removeNaclFiles([`envs/${secondarySourceName}/renamed_type.nacl`])
+        const change = {
+          action: 'remove',
+          data: { before: new ObjectType({ elemID: removedElemID }) },
+        } as Change<ObjectType>
+        expect(envChanges[secondarySourceName]).toEqual([change])
+      })
+      it('should not include remove element in the secondary env', async () => {
+        expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
+          .list()).toArray())
+          .toContainEqual(removedElemID)
+        await wsWithMultipleEnvs
+          .removeNaclFiles([`envs/${secondarySourceName}/renamed_type.nacl`])
+        expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
+          .list()).toArray())
+          .not.toContainEqual(removedElemID)
+      })
     })
   })
 
@@ -640,15 +701,13 @@ describe('workspace', () => {
         expect(envChanges[secondarySourceName]).toEqual([change])
       })
       it('should include the new elements in the secondary env', async () => {
-        const before = await awu(await (
+        expect(await awu(await (
           await wsWithMultipleEnvs.elements(true, secondarySourceName)
-        ).list()).toArray()
-        expect(before).toEqual([])
+        ).list()).toArray()).toEqual([])
         await wsWithMultipleEnvs.setNaclFiles([changedNaclFile])
-        const after = await awu(await (
+        expect(await awu(await (
           await wsWithMultipleEnvs.elements(true, secondarySourceName)
-        ).list()).toArray()
-        expect(after).toEqual([afterObj.elemID])
+        ).list()).toArray()).toEqual([afterObj.elemID])
       })
     })
   })
@@ -1458,6 +1517,65 @@ describe('workspace', () => {
 
     it('should hide hidden instance elements', () => {
       expect(elemMap['salesforce.Queue.instance.queueHiddenInstance']).toBeUndefined()
+    })
+    describe('on secondary envs', () => {
+      const primarySourceName = 'default'
+      const secondarySourceName = 'inactive'
+      let wsWithMultipleEnvs: Workspace
+      const obj = new ObjectType({ elemID: new ElemID('salesforce', 'dum') })
+      const change = {
+        id: obj.elemID,
+        action: 'add',
+        data: {
+          after: obj,
+        },
+      } as DetailedChange
+      beforeEach(async () => {
+        wsWithMultipleEnvs = await createWorkspace(
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          {
+            [COMMON_ENV_PREFIX]: {
+              naclFiles: await naclFilesSource(
+                COMMON_ENV_PREFIX,
+                mockDirStore([], true),
+                mockStaticFilesSource(),
+                persistentMockCreateRemoteMap(),
+              ),
+            },
+            [primarySourceName]: {
+              naclFiles: await naclFilesSource(
+                COMMON_ENV_PREFIX,
+                mockDirStore([], true),
+                mockStaticFilesSource(),
+                persistentMockCreateRemoteMap(),
+              ),
+              state: createState([]),
+            },
+            [secondarySourceName]: {
+              naclFiles: await naclFilesSource(
+                COMMON_ENV_PREFIX,
+                mockDirStore([], true),
+                mockStaticFilesSource(),
+                persistentMockCreateRemoteMap(),
+              ),
+              state: createState([]),
+            },
+          },
+        )
+      })
+      it('should include added element in the secondary env', async () => {
+        expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
+          .list()).toArray())
+          .not.toContainEqual(change.id)
+        expect(await wsWithMultipleEnvs.updateNaclFiles([change], 'override')).toEqual(2)
+        expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
+          .list()).toArray())
+          .toContainEqual(change.id)
+      })
     })
   })
 
@@ -2372,6 +2490,79 @@ describe('workspace', () => {
       )
 
       expect(usedAsChainedReference).not.toBeDefined()
+    })
+  })
+
+  describe('element commands', () => {
+    const primarySourceName = 'default'
+    const secondarySourceName = 'inactive'
+    let ws: Workspace
+    beforeEach(async () => {
+      ws = await createWorkspace(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        {
+          [COMMON_ENV_PREFIX]: {
+            naclFiles: await naclFilesSource(
+              COMMON_ENV_PREFIX,
+              mockDirStore([], false, { 'common.nacl': 'type salesforce.hearing { }' }),
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+            ),
+          },
+          [primarySourceName]: {
+            naclFiles: await naclFilesSource(
+              COMMON_ENV_PREFIX,
+              mockDirStore(),
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+            ),
+            state: createState([]),
+          },
+          [secondarySourceName]: {
+            naclFiles: await naclFilesSource(
+              COMMON_ENV_PREFIX,
+              mockDirStore([], true),
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+            ),
+            state: createState([]),
+          },
+        },
+      )
+    })
+    describe('promote', () => {
+      it('should update the elements correctly', async () => {
+        const elemIDToMove = new ElemID('salesforce', 'lead')
+        expect(
+          await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray()
+        ).not.toContainEqual(elemIDToMove)
+        await ws.promote([elemIDToMove])
+        expect(
+          await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray()
+        ).toContainEqual(elemIDToMove)
+        expect(
+          await awu(await (await ws.elements(undefined, primarySourceName)).list()).toArray()
+        ).toContainEqual(elemIDToMove)
+      })
+    })
+    describe('copyTo', () => {
+      it('should update the elements correctly', async () => {
+        const elemIDToMove = new ElemID('salesforce', 'lead')
+        expect(
+          await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray()
+        ).not.toContainEqual(elemIDToMove)
+        await ws.copyTo([elemIDToMove], [secondarySourceName])
+        expect(
+          await awu(await (await ws.elements(undefined, secondarySourceName)).list()).toArray()
+        ).toContainEqual(elemIDToMove)
+        expect(
+          await awu(await (await ws.elements(undefined, primarySourceName)).list()).toArray()
+        ).toContainEqual(elemIDToMove)
+      })
     })
   })
 })

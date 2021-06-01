@@ -362,13 +362,10 @@ describe('multi env source', () => {
         await multiEnvSourceWithMockSources.updateNaclFiles(detailedChanges)
       )
       const elements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
-      // TODO: fix here
-      expect(_.sortBy(
-        Object.values(elementChanges).flat(),
-        c => getChangeElement(c).elemID.getFullName()
-      ))
-        .toEqual(_.sortBy(detailedChanges, c => getChangeElement(c).elemID.getFullName())
-          .map(dc => _.omit(dc, ['path', 'id'])))
+      expect(
+        _.sortBy(elementChanges[primarySourceName], c => getChangeElement(c).elemID.getFullName())
+      ).toEqual(_.sortBy(detailedChanges, c => getChangeElement(c).elemID.getFullName())
+        .map(dc => _.omit(dc, ['path', 'id'])))
       expect(sortElemArray(elements)).toEqual(sortElemArray([commonObject, newEnvFragment]))
     })
   })

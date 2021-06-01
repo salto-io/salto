@@ -18,8 +18,7 @@ import wu from 'wu'
 import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
   Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
-  isObjectType, ContainerType, Change, PrimitiveType, Value,
-  // isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType, Value,
+  isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType, Value,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges, createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
@@ -571,21 +570,86 @@ describe('workspace', () => {
       expect(mockSetNaclFileStore).toHaveBeenCalledWith(changedNaclFile)
     })
 
-    // TODO: fix here
     it('should return the correct changes', async () => {
-      expect(changes).toBeDefined()
-      // expect(changes).toHaveLength(25)
-      // expect((changes.find(c => c.action === 'add') as AdditionChange<Element>).data.after)
-      //   .toEqual(newAddedObject)
-      // const multiLocChange = changes
-      //   .find(c => getChangeElement(c).elemID.isEqual(multiLocElemID))
-      // expect(multiLocChange).toEqual({
-      //   action: 'modify',
-      //   data: {
-      //     before: new ObjectType({ elemID: multiLocElemID, annotations: { a: 1, b: 1 } }),
-      //     after: mutliLocObject,
-      //   },
-      // })
+      const primaryEnvChanges = changes.default
+      expect(primaryEnvChanges).toHaveLength(25)
+      expect((primaryEnvChanges.find(c => c.action === 'add') as AdditionChange<Element>).data.after)
+        .toEqual(newAddedObject)
+      const multiLocChange = primaryEnvChanges
+        .find(c => getChangeElement(c).elemID.isEqual(multiLocElemID))
+      expect(multiLocChange).toEqual({
+        action: 'modify',
+        data: {
+          before: new ObjectType({ elemID: multiLocElemID, annotations: { a: 1, b: 1 } }),
+          after: mutliLocObject,
+        },
+      })
+    })
+
+    describe('on secondary envs', () => {
+      const primarySourceName = 'default'
+      const secondarySourceName = 'inactive'
+      let wsWithMultipleEnvs: Workspace
+      let afterObj: ObjectType
+      beforeEach(async () => {
+        wsWithMultipleEnvs = await createWorkspace(
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          {
+            [COMMON_ENV_PREFIX]: {
+              naclFiles: await naclFilesSource(
+                COMMON_ENV_PREFIX,
+                mockDirStore([], true),
+                mockStaticFilesSource(),
+                persistentMockCreateRemoteMap(),
+              ),
+            },
+            [primarySourceName]: {
+              naclFiles: await naclFilesSource(
+                COMMON_ENV_PREFIX,
+                mockDirStore(),
+                mockStaticFilesSource(),
+                persistentMockCreateRemoteMap(),
+              ),
+              state: createState([]),
+            },
+            [secondarySourceName]: {
+              naclFiles: await naclFilesSource(
+                COMMON_ENV_PREFIX,
+                mockDirStore([], true),
+                mockStaticFilesSource(),
+                persistentMockCreateRemoteMap(),
+              ),
+              state: createState([]),
+            },
+          },
+        )
+        afterObj = new ObjectType({
+          elemID: new ElemID('salesforce', 'lead'),
+          fields: {
+            new_base: { refType: createRefToElmWithValue(salesforceText) },
+          },
+        })
+      })
+      it('should return the changes of secondary envs as well', async () => {
+        const envChanges = await wsWithMultipleEnvs.setNaclFiles([changedNaclFile])
+        const change = { action: 'add', data: { after: afterObj } } as Change<ObjectType>
+        expect(envChanges[secondarySourceName]).toEqual([change])
+      })
+      it('should include the new elements in the secondary env', async () => {
+        const before = await awu(await (
+          await wsWithMultipleEnvs.elements(true, secondarySourceName)
+        ).list()).toArray()
+        expect(before).toEqual([])
+        await wsWithMultipleEnvs.setNaclFiles([changedNaclFile])
+        const after = await awu(await (
+          await wsWithMultipleEnvs.elements(true, secondarySourceName)
+        ).list()).toArray()
+        expect(after).toEqual([afterObj.elemID])
+      })
     })
   })
 

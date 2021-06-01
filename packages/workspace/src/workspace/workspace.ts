@@ -191,7 +191,6 @@ export const loadWorkspace = async (
     stateOnlyChanges?: Record<string, Change<Element>[]>
     validate?: boolean
   }): Promise<WorkspaceState> => {
-    const relevantEnvs = Object.keys(_.pickBy(workspaceChanges, changes => changes.length > 0))
     const stateToBuild = workspaceState !== undefined
       ? await workspaceState
       : Object.fromEntries(await awu(envs())
@@ -334,6 +333,9 @@ export const loadWorkspace = async (
         await stateToBuild[envName].validationErrors.deleteAll(elementsWithNoErrors)
       }
     }
+    const relevantEnvs = envs()
+      .filter(name =>
+        (workspaceChanges[name] ?? []).length > 0 || (stateOnlyChanges[name] ?? []).length > 0)
     await awu(relevantEnvs).forEach(async envName => { await updateWorkspace(envName) })
     return stateToBuild
   }
@@ -405,21 +407,18 @@ export const loadWorkspace = async (
       stateOnlyChanges: { [currentEnv()]: stateOnlyChanges },
       validate,
     })
-    await getWorkspaceState()
     return (Object.values(workspaceChanges).flat().length + stateOnlyChanges.length)
   }
 
   const setNaclFiles = async (naclFiles: NaclFile[], validate = true): Promise<EnvsChanges> => {
     const elementChanges = await (await getLoadedNaclFilesSource()).setNaclFiles(...naclFiles)
     workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })
-    await getWorkspaceState()
     return elementChanges
   }
 
   const removeNaclFiles = async (names: string[], validate = true): Promise<EnvsChanges> => {
     const elementChanges = await (await getLoadedNaclFilesSource()).removeNaclFiles(...names)
     workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })
-    await getWorkspaceState()
     return elementChanges
   }
 
@@ -579,22 +578,18 @@ export const loadWorkspace = async (
     promote: async (ids: ElemID[]) => {
       const workspaceChanges = await (await getLoadedNaclFilesSource()).promote(ids)
       workspaceState = buildWorkspaceState({ workspaceChanges })
-      await getWorkspaceState()
     },
     demote: async (ids: ElemID[]) => {
       const workspaceChanges = await (await getLoadedNaclFilesSource()).demote(ids)
       workspaceState = buildWorkspaceState({ workspaceChanges })
-      await getWorkspaceState()
     },
     demoteAll: async () => {
       const workspaceChanges = await (await getLoadedNaclFilesSource()).demoteAll()
       workspaceState = buildWorkspaceState({ workspaceChanges })
-      await getWorkspaceState()
     },
     copyTo: async (ids: ElemID[], targetEnvs: string[]) => {
       const workspaceChanges = await (await getLoadedNaclFilesSource()).copyTo(ids, targetEnvs)
       workspaceState = buildWorkspaceState({ workspaceChanges })
-      await getWorkspaceState()
     },
     transformToWorkspaceError,
     transformError,
@@ -637,7 +632,6 @@ export const loadWorkspace = async (
         await promises.array.series(envs().map(e => (() => credentials.delete(e))))
       }
       workspaceState = buildWorkspaceState({})
-      await getWorkspaceState()
     },
     addService: async (service: string): Promise<void> => {
       const currentServices = services() || []

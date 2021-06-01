@@ -18,7 +18,8 @@ import wu from 'wu'
 import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
   Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
-  isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType, Value,
+  isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType,
+  Value, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges, createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
@@ -590,7 +591,12 @@ describe('workspace', () => {
       const primarySourceName = 'default'
       const secondarySourceName = 'inactive'
       let wsWithMultipleEnvs: Workspace
-      let afterObj: ObjectType
+      const afterObj = new ObjectType({
+        elemID: new ElemID('salesforce', 'lead'),
+        fields: {
+          new_base: { refType: new ReferenceExpression(salesforceText.elemID) },
+        },
+      })
       beforeEach(async () => {
         wsWithMultipleEnvs = await createWorkspace(
           undefined,
@@ -627,12 +633,6 @@ describe('workspace', () => {
             },
           },
         )
-        afterObj = new ObjectType({
-          elemID: new ElemID('salesforce', 'lead'),
-          fields: {
-            new_base: { refType: createRefToElmWithValue(salesforceText) },
-          },
-        })
       })
       it('should return the changes of secondary envs as well', async () => {
         const envChanges = await wsWithMultipleEnvs.setNaclFiles([changedNaclFile])

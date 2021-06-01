@@ -143,40 +143,44 @@ const buildMultiEnvSource = (
       .filter(name =>
         (name !== commonSourceName)
         && (changesInCommon || (envChanges[name] ?? []).length > 0))
+
+    const getEnvMergedChanges = async (envName: string): Promise<Change[]> => {
+      const envState = current[envName]
+      const { afterElements: newElements, relevantElementIDs } = await getAfterElements({
+        src1Changes: envChanges[envName] ?? [],
+        src1: sources[envName],
+        src2Changes: envChanges[commonSourceName] ?? [],
+        src2: sources[commonSourceName],
+      })
+      return buildNewMergedElementsAndErrors({
+        afterElements: awu(newElements),
+        currentElements: envState.elements,
+        currentErrors: envState.mergeErrors,
+        relevantElementIDs: awu(relevantElementIDs),
+        mergeFunc: async elements => {
+          const plainResult = await mergeElements(elements)
+          return {
+            errors: plainResult.errors,
+            merged: mapRemoteMapResult(plainResult.merged,
+              async element => applyInstanceDefaults(
+                element,
+                { get: async id => (await plainResult.merged.get(id.getFullName()))
+                    ?? envState.elements.get(id),
+                getAll: async () => awu(plainResult.merged.values())
+                  .concat(await envState.elements.getAll()),
+                has: async id => (await plainResult.merged.has(id.getFullName()))
+                    || envState.elements.has(id),
+                list: async () => awu(plainResult.merged.values())
+                  .map(e => e.elemID).concat(await envState.elements.list()) }
+              )),
+          }
+        },
+      })
+    }
     const changes = Object.fromEntries(
-      await awu(relevantEnvs).map(async envName => {
-        const envState = current[envName]
-        const { afterElements: newElements, relevantElementIDs } = await getAfterElements({
-          src1Changes: envChanges[envName] ?? [],
-          src1: sources[envName],
-          src2Changes: envChanges[commonSourceName] ?? [],
-          src2: sources[commonSourceName],
-        })
-        return [envName, await buildNewMergedElementsAndErrors({
-          afterElements: awu(newElements),
-          currentElements: envState.elements,
-          currentErrors: envState.mergeErrors,
-          relevantElementIDs: awu(relevantElementIDs),
-          mergeFunc: async elements => {
-            const plainResult = await mergeElements(elements)
-            return {
-              errors: plainResult.errors,
-              merged: mapRemoteMapResult(plainResult.merged,
-                async element => applyInstanceDefaults(
-                  element,
-                  { get: async id => (await plainResult.merged.get(id.getFullName()))
-                      ?? envState.elements.get(id),
-                  getAll: async () => awu(plainResult.merged.values())
-                    .concat(await envState.elements.getAll()),
-                  has: async id => (await plainResult.merged.has(id.getFullName()))
-                      || envState.elements.has(id),
-                  list: async () => awu(plainResult.merged.values())
-                    .map(e => e.elemID).concat(await envState.elements.list()) }
-                )),
-            }
-          },
-        })]
-      }).toArray()
+      await awu(relevantEnvs)
+        .map(async envName => [envName, await getEnvMergedChanges(envName)])
+        .toArray()
     )
     return {
       state: current,

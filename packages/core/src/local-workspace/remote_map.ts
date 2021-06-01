@@ -187,19 +187,22 @@ const withCreatorLock = async (fn: (() => Promise<void>)): Promise<void> => {
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-const caches = new LRU<string, any>({ max: 10 })
+const locationCaches = new LRU<string, LRU<string, any>>({ max: 10 })
 
 export const createRemoteMapCreator = (location: string, readOnly = false, cacheSize = 5000):
 remoteMap.RemoteMapCreator => {
+  // Note: once we set a non-zero cache size,
+  //   we won't change the cache size even if we give different value
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   let locationCache: LRU<string, any>
-  if (caches.has(location)) {
-    locationCache = caches.get(location)
+  if (locationCaches.has(location)) {
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+    locationCache = locationCaches.get(location) as LRU<string, any>
   } else {
     /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
     locationCache = new LRU<string, any>({ max: cacheSize })
     if (cacheSize > 0) {
-      caches.set(location, locationCache)
+      locationCaches.set(location, locationCache)
     }
   }
   return async <T, K extends string = string>(

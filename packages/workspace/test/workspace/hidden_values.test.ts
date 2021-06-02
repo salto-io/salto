@@ -230,6 +230,33 @@ describe('handleHiddenChanges', () => {
         expect(result).toHaveLength(0)
       })
     })
+
+    describe('when converting a remove change', () => {
+      const obj = new ObjectType({
+        elemID: new ElemID('salto', 'obj'),
+      })
+      const inst = new InstanceElement('hidden', obj, {}, [], {
+        [INSTANCE_ANNOTATIONS.HIDDEN]: true,
+      })
+      const change: DetailedChange = {
+        id: inst.elemID,
+        action: 'remove',
+        data: {
+          before: inst,
+        },
+      }
+      it('should return the entire change and both hidden and visible', async () => {
+        const res = (await handleHiddenChanges(
+          [change],
+          mockState([instanceType, instance]),
+          mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+        ))
+        expect(res.visible).toHaveLength(1)
+        expect(res.hidden).toHaveLength(1)
+        expect(res.hidden[0].id).toEqual(change.id)
+        expect(res.visible[0].id).toEqual(change.id)
+      })
+    })
   })
 
   describe('hidden annotation of field', () => {

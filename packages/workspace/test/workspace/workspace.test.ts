@@ -880,6 +880,26 @@ describe('workspace', () => {
       elemID: new ElemID('salesforce', 'ObjWithNestedHidden'),
     })
 
+    const queueHiddenInstanceToRemove = new InstanceElement(
+      'queueHiddenInstanceToRemove',
+      queueHiddenType,
+      {
+        queueSobjectHidden: {
+          str: 'hidden',
+        },
+        queueSobjectWithHiddenType: {
+          str: 'hidden2',
+        },
+        numHidden: 123,
+        boolNotHidden: false,
+        objWithHiddenAnno: { aaa: 23 },
+      },
+      ['Records', 'Queue', 'queueInstanceToRemove'],
+      {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      }
+    )
+
     const renamedTypes = {
       before: new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType1') }),
       after: new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType2'), path: ['renamed_type'] }),
@@ -1199,6 +1219,14 @@ describe('workspace', () => {
         action: 'add',
         data: { after: 5 },
       },
+      // Remove a hidden type
+      {
+        id: queueHiddenInstanceToRemove.elemID,
+        action: 'remove',
+        data: {
+          before: queueHiddenInstanceToRemove,
+        },
+      },
     ]
 
     let clonedChanges: DetailedChange[]
@@ -1255,7 +1283,7 @@ describe('workspace', () => {
         queueHiddenType,
         queueHiddenInstance,
         queueSobjectHiddenSubType,
-        // objectWithNestedHidden
+        queueHiddenInstanceToRemove,
       ])
 
       workspace = await createWorkspace(dirStore, state)
@@ -1518,6 +1546,13 @@ describe('workspace', () => {
     it('should hide hidden instance elements', () => {
       expect(elemMap['salesforce.Queue.instance.queueHiddenInstance']).toBeUndefined()
     })
+
+    it('should remove hidden elements', async () => {
+      expect(elemMap[queueHiddenInstanceToRemove.elemID.getFullName()]).toBeUndefined()
+      const elem = await workspace.getValue(queueHiddenInstanceToRemove.elemID)
+      expect(elem).toBeUndefined()
+    })
+    
     describe('on secondary envs', () => {
       const primarySourceName = 'default'
       const secondarySourceName = 'inactive'

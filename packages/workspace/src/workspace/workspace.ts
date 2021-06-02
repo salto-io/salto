@@ -373,6 +373,11 @@ export const loadWorkspace = async (
         return changes as Change[]
       }
       const before = await state().get(refID.createTopLevelParentID().parent)
+      // In remove changes, the change target won't be in the state since the
+      // state is updated prior to this function invokation during the fetch itself.
+      if (before === undefined) {
+        return []
+      }
       const clonedBefore = before.clone()
       applyDetailedChanges(clonedBefore, changes)
       const after = await getElementHiddenParts(

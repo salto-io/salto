@@ -13,4 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
+
 export const isDefined = <T>(val: T | undefined | void): val is T => val !== undefined
+
+export const isPlainObject = (val: unknown): val is object => _.isPlainObject(val)

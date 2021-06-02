@@ -382,51 +382,67 @@ const isHiddenField = async (
       || isHiddenField(baseType, fieldPath.slice(0, -1), hiddenValue, elementsSource)
 }
 
-const diffForHidden = (lhs: unknown, rhs: unknown): unknown => {
-  if (lhs === rhs) {
-    return undefined
+type RecursivePartialWithUndefined<T> = undefined | T | (
+  T extends object ? {
+    [P in keyof T]?: RecursivePartialWithUndefined<T[P]>
   }
-  if (rhs === undefined) {
-    return lhs
-  }
+  : T extends (infer U)[] ? RecursivePartialWithUndefined<U>[]
+  : never
+)
 
-  if (Array.isArray(lhs)) {
-    if (!Array.isArray(rhs) || lhs.length !== rhs.length) {
-      // should never happen
-      log.warn('Unexpected diff found in array: %s', safeJsonStringify([lhs, rhs]))
-      return lhs
+/**
+ * Given a full value and its filtered visible part, calculate the complementing
+ * hidden part.
+ */
+const calcHiddenPart = <V extends object>(
+  fullValue: V, visibleValue?: V,
+): RecursivePartialWithUndefined<V> => {
+  const calcHiddenInner = <T>(full: T, visible?: T): RecursivePartialWithUndefined<T> => {
+    if (full === visible) {
+      return undefined
     }
-    const arrayDiff = lhs.map((val, idx) => diffForHidden(val, rhs[idx]))
-    if (arrayDiff.some(val => !_.isEmpty(val))) {
-      return arrayDiff
+    if (visible === undefined) {
+      return full
     }
-    return undefined
-  }
 
-  if (!_.isPlainObject(lhs) || !_.isPlainObject(rhs)) {
-    return undefined
-  }
-
-  const res = Object.keys(_.pickBy(lhs as object, values.isDefined)).reduce((acc, key) => {
-    if (Object.prototype.hasOwnProperty.call(rhs, key)) {
-      const difference = diffForHidden(_.get(lhs, key), _.get(rhs, key))
-
-      if (
-        difference === undefined
-        || (
-          _.isPlainObject(difference)
-          && _.isEmpty(difference as object)
-        )
-      ) {
-        return acc
+    if (Array.isArray(full)) {
+      if (!Array.isArray(visible) || full.length !== visible.length) {
+        // should never happen
+        log.warn('Unexpected diff found in array: %s', safeJsonStringify([full, visible]))
+        return full
       }
 
-      return { ...acc, [key]: difference }
+      const arrayDiff = full.map((val, idx) => calcHiddenInner(val, visible[idx]))
+      if (arrayDiff.some(val => !_.isEmpty(val))) {
+        return arrayDiff as RecursivePartialWithUndefined<T>
+      }
+      return undefined
     }
 
-    return { ...acc, [key]: _.get(lhs, key) }
-  }, {})
-  return _.isEmpty(res) ? undefined : res
+    if (values.isPlainObject(full) && values.isPlainObject(visible)) {
+      const res = _.pickBy(
+        _.mapValues(
+          full,
+          (val, key) => {
+            if (Object.prototype.hasOwnProperty.call(visible, key)) {
+              const difference = calcHiddenInner(_.get(full, key), _.get(visible, key))
+              if (_.isEmpty(difference)) {
+                return undefined
+              }
+              return difference
+            }
+            return val
+          }
+        ),
+        values.isDefined,
+      ) as RecursivePartialWithUndefined<T>
+      return _.isEmpty(res) ? undefined : res
+    }
+
+    return undefined
+  }
+
+  return calcHiddenInner(fullValue, visibleValue)
 }
 
 const diffElements = <T extends Element>(visibleElem?: T, fullElem?: T): T | undefined => {
@@ -436,7 +452,7 @@ const diffElements = <T extends Element>(visibleElem?: T, fullElem?: T): T | und
   if (visibleElem === undefined) {
     return fullElem
   }
-  const diffAnno = diffForHidden(fullElem.annotations, visibleElem.annotations) as Values
+  const diffAnno = calcHiddenPart(fullElem.annotations, visibleElem.annotations)
   const diffAnnoTypes: ReferenceMap = {}
   if (isObjectType(fullElem) && isObjectType(visibleElem)) {
     const diffFields = _.pickBy(_.mapValues(
@@ -462,7 +478,7 @@ const diffElements = <T extends Element>(visibleElem?: T, fullElem?: T): T | und
     }) as unknown as T
   }
   if (isInstanceElement(fullElem) && isInstanceElement(visibleElem)) {
-    const diffValue = diffForHidden(fullElem.value, visibleElem.value) as Values
+    const diffValue = calcHiddenPart(fullElem.value, visibleElem.value)
     if ([diffAnno, diffAnnoTypes, diffValue].every(_.isEmpty)) {
       return undefined
     }
@@ -596,7 +612,7 @@ export const filterOutHiddenChanges = async (
           hidden: {
             ...change,
             data: {
-              after: diffForHidden(change.data.after, visible.data.after) as Values,
+              after: calcHiddenPart(change.data.after, visible.data.after),
             },
           } as DetailedChange }
       }

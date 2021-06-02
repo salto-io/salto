@@ -47,7 +47,6 @@ import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_k
 import { createDiffChanges } from './core/diff'
 
 export { cleanWorkspace } from './core/clean'
-export { listUnresolvedReferences } from './core/list'
 
 const log = logger(module)
 

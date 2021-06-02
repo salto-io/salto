@@ -16,7 +16,6 @@
 import _ from 'lodash'
 import open from 'open'
 import { ElemID, isElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { listUnresolvedReferences } from '@salto-io/core'
 import { Workspace, ElementSelector, createElementSelectors } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
@@ -355,7 +354,7 @@ export const listUnresolvedAction: WorkspaceCommandAction<ElementListUnresolvedA
   outputLine(emptyLine(), output)
 
   try {
-    const { found, missing } = await listUnresolvedReferences(workspace, completeFrom)
+    const { found, missing } = await workspace.listUnresolvedReferences(completeFrom)
 
     if (missing.length === 0 && found.length === 0) {
       outputLine(Prompts.LIST_UNRESOLVED_NONE(workspace.currentEnv()), output)

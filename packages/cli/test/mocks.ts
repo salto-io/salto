@@ -350,6 +350,7 @@ export const mockWorkspace = ({
     demoteAll: mockFunction<Workspace['demoteAll']>(),
     copyTo: mockFunction<Workspace['copyTo']>(),
     getValue: mockFunction<Workspace['getValue']>(),
+    listUnresolvedReferences: mockFunction<Workspace['listUnresolvedReferences']>(),
   }
 }
 

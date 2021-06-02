@@ -608,13 +608,19 @@ export const filterOutHiddenChanges = async (
             state,
           ),
         )
-        return { visible,
+        const hidden = calcHiddenPart(change.data.after, visible.data.after)
+        if (hidden === undefined) {
+          return { visible }
+        }
+        return {
+          visible,
           hidden: {
             ...change,
             data: {
-              after: calcHiddenPart(change.data.after, visible.data.after),
+              after: hidden,
             },
-          } as DetailedChange }
+          } as DetailedChange,
+        }
       }
     }
 

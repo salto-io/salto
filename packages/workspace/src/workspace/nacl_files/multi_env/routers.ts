@@ -467,11 +467,17 @@ export const routeChanges = async (
     }
   }))
   const secondaryEnvsChanges = routedChanges
-    .map(r => r.secondarySources || {}).reduce((previousValue: Record<string, DetailedChange[]>,
-      currentValue: Record<string, DetailedChange[]>) => _.mergeWith(previousValue, currentValue,
-      (objValue: DetailedChange[], srcValue: DetailedChange[]) => (
-        objValue ? [...objValue, ...srcValue] : srcValue
-      ))) as Record<string, DetailedChange[]>
+    .map(r => r.secondarySources || {})
+    .reduce(
+      (previousValue: Record<string, DetailedChange[]>,
+        currentValue: Record<string, DetailedChange[]>) => _.mergeWith(
+        previousValue,
+        currentValue,
+        (objValue: DetailedChange[], srcValue: DetailedChange[]) => (
+          objValue ? [...objValue, ...srcValue] : srcValue
+        )
+      )
+    ) as Record<string, DetailedChange[]>
   return {
     primarySource: await createUpdateChanges(
       _.flatten(routedChanges.map(r => r.primarySource || [])),

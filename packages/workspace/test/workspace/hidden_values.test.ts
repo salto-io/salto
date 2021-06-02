@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeElement, Element, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -186,8 +187,9 @@ describe('handleHiddenChanges', () => {
     })
 
     describe('when adding the whole instance', () => {
-      let result: DetailedChange[]
-      let filteredInstance: InstanceElement
+      let result: { visible: DetailedChange[]; hidden: DetailedChange[] }
+      let visibleInstance: InstanceElement
+      let hiddenInstance: InstanceElement
       beforeEach(async () => {
         const change: DetailedChange = {
           id: instance.elemID,
@@ -195,67 +197,81 @@ describe('handleHiddenChanges', () => {
           data: { after: instance },
         }
 
-        result = (await handleHiddenChanges(
+        result = await handleHiddenChanges(
           [change],
           mockState(),
           mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
-        )).visible
-        expect(result).toHaveLength(1)
-        filteredInstance = getChangeElement(result[0])
+        )
+        expect(result.visible).toHaveLength(1)
+        expect(result.hidden).toHaveLength(1)
+        visibleInstance = getChangeElement(result.visible[0])
+        hiddenInstance = getChangeElement(result.hidden[0])
       })
-      it('should omit the hidden annotation', () => {
-        expect(filteredInstance.annotations).not.toHaveProperty(INSTANCE_ANNOTATIONS.SERVICE_URL)
+      it('should omit the hidden annotation from visible and add it to hidden', () => {
+        expect(visibleInstance.annotations).not.toHaveProperty(INSTANCE_ANNOTATIONS.SERVICE_URL)
+        expect(hiddenInstance.annotations).toHaveProperty(INSTANCE_ANNOTATIONS.SERVICE_URL)
       })
-      it('should keep non hidden values', () => {
-        expect(filteredInstance.value).toHaveProperty('val', 'asd')
+      it('should keep non hidden values in visible and omit them from hidden', () => {
+        expect(visibleInstance.value).toHaveProperty('val', 'asd')
+        expect(hiddenInstance.value).not.toHaveProperty('val', 'asd')
       })
     })
 
     describe('when adding only the hidden annotation', () => {
-      let result: DetailedChange[]
-      beforeEach(async () => {
+      let result: { visible: DetailedChange[]; hidden: DetailedChange[]}
+      beforeAll(async () => {
         const change: DetailedChange = {
           id: instance.elemID.createNestedID(INSTANCE_ANNOTATIONS.SERVICE_URL),
           action: 'add',
           data: { after: instance.annotations[INSTANCE_ANNOTATIONS.SERVICE_URL] },
         }
 
-        result = (await handleHiddenChanges(
+        result = await handleHiddenChanges(
           [change],
           mockState([instanceType, instance]),
           mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
-        )).visible
+        )
       })
-      it('should omit the whole change', () => {
-        expect(result).toHaveLength(0)
+      it('should not have a visible change', () => {
+        expect(result.visible).toHaveLength(0)
+      })
+      it('should have a hidden change', () => {
+        expect(result.hidden).toHaveLength(1)
+        expect(_.get(result.hidden[0].data, 'after')).toEqual('someUrl')
       })
     })
   })
 
   describe('hidden annotation of field', () => {
-    const object = new ObjectType({
-      elemID: new ElemID('test', 'type'),
-      fields: {
-        field: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
-          annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' },
+    let result: { visible: DetailedChange[]; hidden: DetailedChange[]}
+    beforeAll(async () => {
+      const object = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: {
+          field: {
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' },
+          },
         },
-      },
-    })
-
-    const change: DetailedChange = {
-      id: object.fields.field.elemID.createNestedID(CORE_ANNOTATIONS.SERVICE_URL),
-      action: 'add',
-      data: { after: 'someUrl' },
-    }
-
-    it('hidden annotation should be omitted', async () => {
-      const result = (await handleHiddenChanges(
+      })
+      const change: DetailedChange = {
+        id: object.fields.field.elemID.createNestedID(CORE_ANNOTATIONS.SERVICE_URL),
+        action: 'add',
+        data: { after: 'someUrl' },
+      }
+      result = await handleHiddenChanges(
         [change],
         mockState([object]),
         mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
-      )).visible
-      expect(result.length).toBe(0)
+      )
+    })
+
+    it('should not have a visible change', () => {
+      expect(result.visible).toHaveLength(0)
+    })
+    it('should have a hidden change', () => {
+      expect(result.hidden).toHaveLength(1)
+      expect(_.get(result.hidden[0].data, 'after')).toEqual('someUrl')
     })
   })
 
@@ -277,7 +293,7 @@ describe('handleHiddenChanges', () => {
     })
 
     describe('when adding a reference expression', () => {
-      let result: DetailedChange[]
+      let result: { visible: DetailedChange[]; hidden: DetailedChange[]}
       let filteredValue: unknown
       beforeEach(async () => {
         const change: DetailedChange = {
@@ -288,20 +304,21 @@ describe('handleHiddenChanges', () => {
           },
         }
 
-        result = (await handleHiddenChanges(
+        result = await handleHiddenChanges(
           [change],
           mockState([instance]),
           mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
-        )).visible
-        expect(result).toHaveLength(1)
-        filteredValue = getChangeElement(result[0])
+        )
+        expect(result.visible).toHaveLength(1)
+        expect(result.hidden).toHaveLength(0)
+        filteredValue = getChangeElement(result.visible[0])
       })
       it('should keep the reference expression as-is', () => {
         expect(filteredValue).toBeInstanceOf(ReferenceExpression)
       })
     })
     describe('when converting a value to a reference expression', () => {
-      let result: DetailedChange[]
+      let result: { visible: DetailedChange[]; hidden: DetailedChange[]}
       let filteredValue: unknown
       beforeEach(async () => {
         const change: DetailedChange = {
@@ -313,13 +330,14 @@ describe('handleHiddenChanges', () => {
           },
         }
 
-        result = (await handleHiddenChanges(
+        result = await handleHiddenChanges(
           [change],
           mockState([instance]),
           mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
-        )).visible
-        expect(result).toHaveLength(1)
-        filteredValue = getChangeElement(result[0])
+        )
+        expect(result.visible).toHaveLength(1)
+        expect(result.hidden).toHaveLength(0)
+        filteredValue = getChangeElement(result.visible[0])
       })
       it('should keep the updated value as a reference expression', () => {
         expect(filteredValue).toBeInstanceOf(ReferenceExpression)

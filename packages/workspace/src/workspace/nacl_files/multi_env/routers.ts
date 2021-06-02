@@ -467,6 +467,7 @@ export const routeChanges = async (
     }
   }))
   const secondaryEnvsChanges = routedChanges
+<<<<<<< HEAD
     .map(r => r.secondarySources || {})
     .reduce(
       (previousValue: Record<string, DetailedChange[]>,
@@ -478,6 +479,13 @@ export const routeChanges = async (
         )
       )
     ) as Record<string, DetailedChange[]>
+=======
+    .map(r => r.secondarySources || {}).reduce((previousValue: Record<string, DetailedChange[]>,
+      currentValue: Record<string, DetailedChange[]>) => _.mergeWith(previousValue, currentValue,
+      (objValue: DetailedChange[], srcValue: DetailedChange[]) => (
+        objValue ? [...objValue, ...srcValue] : srcValue
+      ))) as Record<string, DetailedChange[]>
+>>>>>>> 391a0c58... fix issue with over-large parameters to route changes
   return {
     primarySource: await createUpdateChanges(
       _.flatten(routedChanges.map(r => r.primarySource || [])),

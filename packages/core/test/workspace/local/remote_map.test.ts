@@ -376,6 +376,7 @@ describe('full integration', () => {
     }
     expect(ids).toEqual(elements.map(elem => 'integration::'
       .concat(elem.elemID.getFullName())).sort())
+
     await promisify(db.close.bind(db))()
   })
 })

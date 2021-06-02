@@ -1552,7 +1552,7 @@ describe('workspace', () => {
       const elem = await workspace.getValue(queueHiddenInstanceToRemove.elemID)
       expect(elem).toBeUndefined()
     })
-    
+
     describe('on secondary envs', () => {
       const primarySourceName = 'default'
       const secondarySourceName = 'inactive'

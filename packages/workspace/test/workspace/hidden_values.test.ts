@@ -352,4 +352,36 @@ describe('handleHiddenChanges', () => {
       expect(result.hidden.length).toBe(0)
     })
   })
+
+  describe('with nested visible change', () => {
+    const type = new ObjectType({
+      elemID: new ElemID('test', 'type'),
+      fields: {
+        val: { refType: new ObjectType({
+          elemID: new ElemID('test', 'type'),
+          fields: { inner: { refType: BuiltinTypes.STRING } },
+        }) },
+      },
+    })
+
+    const stateInstance = new InstanceElement('instance', type, {})
+
+    const change: DetailedChange = {
+      id: stateInstance.elemID.createNestedID('val'),
+      action: 'add',
+      data: {
+        after: { inner: 'abc' },
+      },
+    }
+
+    it('should not have a hidden change', async () => {
+      const result = await handleHiddenChanges(
+        [change],
+        mockState([stateInstance]),
+        mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+      )
+      expect(result.visible.length).toBe(1)
+      expect(result.hidden.length).toBe(0)
+    })
+  })
 })

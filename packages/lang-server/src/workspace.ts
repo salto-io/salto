@@ -76,6 +76,13 @@ export class EditorWorkspace {
     }
   }
 
+  private editorParsedNaclFile(naclFile: nacl.ParsedNaclFile): nacl.ParsedNaclFile {
+    return {
+      ...naclFile,
+      filename: this.editorFilename(naclFile.filename),
+    }
+  }
+
   private workspaceNaclFile(naclFile: nacl.NaclFile): nacl.NaclFile {
     return {
       ...naclFile,
@@ -270,6 +277,11 @@ export class EditorWorkspace {
   async getNaclFile(filename: string): Promise<nacl.NaclFile | undefined> {
     const naclFile = await this.workspace.getNaclFile(this.workspaceFilename(filename))
     return naclFile && this.editorNaclFile(naclFile)
+  }
+
+  async getParsedNaclFile(filename: string): Promise<nacl.ParsedNaclFile | undefined> {
+    const naclFile = await this.workspace.getParsedNaclFile(this.workspaceFilename(filename))
+    return naclFile && this.editorParsedNaclFile(naclFile)
   }
 
   async listNaclFiles(): Promise<string[]> {

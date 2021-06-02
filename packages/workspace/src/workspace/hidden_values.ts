@@ -408,12 +408,14 @@ const calcHiddenPart = <V extends object>(
     if (Array.isArray(full)) {
       if (!Array.isArray(visible) || full.length !== visible.length) {
         // should never happen
-        log.warn('Unexpected diff found in array: %s', safeJsonStringify([full, visible]))
+        log.error('Unexpected hidden part found in array: %s', safeJsonStringify([full, visible]))
         return full
       }
 
       const arrayDiff = full.map((val, idx) => calcHiddenInner(val, visible[idx]))
       if (arrayDiff.some(val => !_.isEmpty(val))) {
+        // invalid scenario - hidden parts within arrays are not supported
+        log.error('Unexpected hidden part found in array: %s', safeJsonStringify([full, visible]))
         return arrayDiff as RecursivePartialWithUndefined<T>
       }
       return undefined

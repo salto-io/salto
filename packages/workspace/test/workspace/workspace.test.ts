@@ -19,7 +19,7 @@ import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
   Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
   isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType,
-  Value, ReferenceExpression,
+  ReferenceExpression, Value,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges, createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
@@ -34,7 +34,7 @@ import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
-  COMMON_ENV_PREFIX } from '../../src/workspace/workspace'
+  COMMON_ENV_PREFIX, UnresolvedElemIDs } from '../../src/workspace/workspace'
 import { DeleteCurrentEnvError,
   UnknownEnvError, EnvDuplicationError, ServiceDuplicationError } from '../../src/workspace/errors'
 import { StaticFilesSource } from '../../src/workspace/static_files'
@@ -2812,5 +2812,241 @@ describe('stateOnly update', () => {
 
   it('should not apply the workspace changes', () => {
     expect(resElement.annotations.visible).not.toBeDefined()
+  })
+})
+describe('listUnresolvedReferences', () => {
+  let workspace: Workspace
+  let res: UnresolvedElemIDs
+
+  const createEnvElements = (): Element[] => {
+    const type1 = new ObjectType({
+      elemID: new ElemID('salesforce', 'someType'),
+      fields: {
+        f1: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+        f2: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+        f3: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+      },
+    })
+    const type2 = new ObjectType({
+      elemID: new ElemID('salesforce', 'anotherType'),
+      annotations: { _parent: new ReferenceExpression(type1.elemID) },
+      fields: {
+        f1: { refType: type1 },
+        f2: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+        f3: { refType: type1 },
+      },
+    })
+    const inst1 = new InstanceElement(
+      'inst1',
+      type1,
+      {
+        f1: 'aaa',
+        f2: new ReferenceExpression(new ElemID('salesforce', 'someType', 'field', 'f3')),
+        f3: 'ccc',
+      },
+    )
+    const inst2 = new InstanceElement(
+      'inst2',
+      type2,
+      {
+        f1: {
+          f1: 'aaa',
+          f2: 'bbb',
+          f3: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'inst1', 'f1')),
+        },
+        f3: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'inst1')),
+      },
+    )
+    return [type1, type2, inst1, inst2]
+  }
+
+  describe('workspace with no references', () => {
+    beforeAll(async () => {
+      const elements = createEnvElements().slice(0, 1)
+      workspace = await createWorkspace(
+        undefined, undefined, undefined, undefined, undefined,
+        {
+          '': {
+            naclFiles: await naclFilesSource(
+              COMMON_ENV_PREFIX,
+              mockDirStore(),
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true
+            ),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource(elements),
+            state: createState(elements),
+          },
+          other: {
+            naclFiles: createMockNaclFileSource(elements),
+            state: createState(elements),
+          },
+        }
+      )
+      res = await workspace.listUnresolvedReferences()
+    })
+
+    it('should not find any unresolved references', async () => {
+      expect(res.found).toHaveLength(0)
+      expect(res.missing).toHaveLength(0)
+    })
+  })
+
+  describe('workspace with resolved references', () => {
+    beforeAll(async () => {
+      jest.resetAllMocks()
+      const elements = createEnvElements()
+      workspace = await createWorkspace(
+        undefined, undefined, undefined, undefined, undefined,
+        {
+          '': {
+            naclFiles: await naclFilesSource(
+              COMMON_ENV_PREFIX,
+              mockDirStore(),
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true
+            ),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource(elements),
+            state: createState(elements),
+          },
+          other: {
+            naclFiles: createMockNaclFileSource(elements),
+            state: createState(elements),
+          },
+        }
+      )
+      res = await workspace.listUnresolvedReferences('other')
+    })
+
+    it('should not find any unresolved references', () => {
+      expect(res.found).toHaveLength(0)
+      expect(res.missing).toHaveLength(0)
+    })
+  })
+
+  describe('workspace with unresolved references and no complete-from env', () => {
+    beforeAll(async () => {
+      jest.resetAllMocks()
+      const defaultElements = createEnvElements().slice(3)
+      const otherElements = createEnvElements()
+      workspace = await createWorkspace(
+        undefined, undefined, undefined, undefined, undefined,
+        {
+          '': {
+            naclFiles: await naclFilesSource(
+              COMMON_ENV_PREFIX,
+              mockDirStore(),
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true
+            ),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource(defaultElements),
+            state: createState(defaultElements),
+          },
+          other: {
+            naclFiles: createMockNaclFileSource(otherElements),
+            state: createState(otherElements),
+          },
+        }
+      )
+      res = await workspace.listUnresolvedReferences()
+    })
+
+    it('should not resolve any references', () => {
+      expect(res.found).toHaveLength(0)
+      expect(res.missing).toEqual([
+        new ElemID('salesforce', 'someType', 'instance', 'inst1'),
+      ])
+    })
+  })
+
+  describe('workspace with unresolved references that exist in other env', () => {
+    beforeAll(async () => {
+      jest.resetAllMocks()
+      const defaultElements = createEnvElements().slice(3)
+      const otherElements = createEnvElements()
+      workspace = await createWorkspace(
+        undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
+        {
+          '': {
+            naclFiles: await naclFilesSource(
+              COMMON_ENV_PREFIX,
+              mockDirStore(),
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true
+            ),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource(defaultElements),
+            state: createState(defaultElements),
+          },
+          inactive: {
+            naclFiles: createMockNaclFileSource(otherElements),
+            state: createState(otherElements),
+          },
+        }
+      )
+      res = await workspace.listUnresolvedReferences('inactive')
+    })
+
+    it('should successfully resolve all references', () => {
+      expect(res.found).toEqual([
+        new ElemID('salesforce', 'someType', 'field', 'f3'),
+        new ElemID('salesforce', 'someType', 'instance', 'inst1'),
+      ])
+      expect(res.missing).toHaveLength(0)
+    })
+  })
+
+  describe('workspace with unresolved references that do not exist in other env', () => {
+    beforeAll(async () => {
+      jest.resetAllMocks()
+      const defaultElements = createEnvElements().slice(3) as InstanceElement[]
+      defaultElements[0].value = {
+        ...(defaultElements[0] as InstanceElement).value,
+        f3: new ReferenceExpression(new ElemID('salesforce', 'unresolved')),
+      }
+      const otherElements = createEnvElements().slice(1)
+      workspace = await createWorkspace(
+        undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
+        {
+          '': {
+            naclFiles: await naclFilesSource(
+              COMMON_ENV_PREFIX,
+              mockDirStore(),
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true
+            ),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource(defaultElements),
+            state: createState(defaultElements),
+          },
+          inactive: {
+            naclFiles: createMockNaclFileSource(otherElements),
+            state: createState(otherElements),
+          },
+        }
+      )
+      res = await workspace.listUnresolvedReferences('inactive')
+    })
+
+    it('should resolve some of the references', () => {
+      expect(res.found).toEqual([
+        new ElemID('salesforce', 'someType', 'instance', 'inst1', 'f1'),
+      ])
+      expect(res.missing).toEqual([
+        new ElemID('salesforce', 'unresolved'),
+      ])
+    })
   })
 })

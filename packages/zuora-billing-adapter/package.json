@@ -35,12 +35,12 @@
     "@salto-io/adapter-api": "0.2.11",
     "@salto-io/adapter-components": "0.2.11",
     "@salto-io/adapter-utils": "0.2.11",
-    "@salto-io/e2e-credentials-store": "0.2.11",
     "@salto-io/logging": "0.2.11",
     "@salto-io/lowerdash": "0.2.11",
     "lodash": "^4.17.21"
   },
   "devDependencies": {
+    "@salto-io/e2e-credentials-store": "0.2.11",
     "@types/jest": "^26.0.20",
     "@types/lodash": "^4.14.168",
     "@typescript-eslint/eslint-plugin": "4.22.1",

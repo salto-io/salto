@@ -15,14 +15,11 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import {
-  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange,
-  Change, getChangeElement, isAdditionOrModificationChange, Value, isType,
-} from '@salto-io/adapter-api'
+import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change, getChangeElement, isAdditionOrModificationChange, Value, isType, isElement, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, promises, values } from '@salto-io/lowerdash'
-import { resolvePath } from '@salto-io/adapter-utils'
-import { validateElements } from '../validator'
+import { resolvePath, setPath } from '@salto-io/adapter-utils'
+import { validateElements, isUnresolvedRefError } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
@@ -45,15 +42,15 @@ export const ADAPTERS_CONFIGS_PATH = 'adapters'
 export const COMMON_ENV_PREFIX = ''
 const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
 
-export type WorkspaceError<T extends SaltoError> = Readonly<T & {
-  sourceFragments: SourceFragment[]
-}>
-
 export type SourceFragment = {
   sourceRange: SourceRange
   fragment: string
   subRange?: SourceRange
 }
+
+export type WorkspaceError<T extends SaltoError> = Readonly<T & {
+  sourceFragments: SourceFragment[]
+}>
 
 type RecencyStatus = 'Old' | 'Nonexistent' | 'Valid'
 export type StateRecency = {
@@ -74,6 +71,11 @@ export type WorkspaceComponents = {
 type WorkspaceState = {
   mergeErrors: MergeError[]
   elements: Record<string, Element>
+}
+
+export type UnresolvedElemIDs = {
+  found: ElemID[]
+  missing: ElemID[]
 }
 
 export type Workspace = {
@@ -131,6 +133,7 @@ export type Workspace = {
   demoteAll(): Promise<void>
   copyTo(ids: ElemID[], targetEnvs?: string[]): Promise<void>
   getValue(id: ElemID): Promise<Value | undefined>
+  listUnresolvedReferences(completeFromEnv?: string): Promise<UnresolvedElemIDs>
 }
 
 // common source has no state
@@ -138,6 +141,22 @@ export type EnvironmentSource = { naclFiles: NaclFilesSource; state?: State }
 export type EnvironmentsSources = {
   commonSourceName: string
   sources: Record<string, EnvironmentSource>
+}
+
+/**
+ * Filter out descendants from a list of sorted elem ids.
+ *
+ * @param sortedIds   The list of elem id full names, sorted alphabetically
+ */
+const compact = (sortedIds: ElemID[]): ElemID[] => {
+  const ret = sortedIds.slice(0, 1)
+  sortedIds.slice(1).forEach(id => {
+    const lastItem = _.last(ret) as ElemID // if we're in the loop then ret is not empty
+    if (!lastItem.isParentOf(id)) {
+      ret.push(id)
+    }
+  })
+  return ret
 }
 
 export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: ConfigSource,
@@ -513,6 +532,81 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
         return undefined
       }
       return resolvePath(element, id)
+    },
+    listUnresolvedReferences: async (completeFromEnv?: string): Promise<UnresolvedElemIDs> => {
+      const getUnresolvedElemIDs = (
+        currentElements: ReadonlyArray<Element>,
+        additionalContext?: ReadonlyArray<Element>,
+      ): ElemID[] => _.uniqBy(
+        validateElements(currentElements, additionalContext)
+          .filter(isUnresolvedRefError)
+          .map(e => e.target),
+        elemID => elemID.getFullName(),
+      )
+
+      const initialElements = Object.values((await elements(currentEnv())).elements)
+      const unresolvedElemIDs = getUnresolvedElemIDs(initialElements)
+
+      if (completeFromEnv === undefined) {
+        return {
+          found: [],
+          missing: compact(_.sortBy(unresolvedElemIDs, id => id.getFullName())),
+        }
+      }
+
+      const elemCompletionLookup = (await elements(completeFromEnv)).elements
+
+      const addAndValidate = async (
+        ids: ElemID[], elms: Element[],
+      ): Promise<{ completed: string[]; missing: string[] }> => {
+        if (ids.length === 0) {
+          return { completed: [], missing: [] }
+        }
+
+        const getCompletionElem = (id: ElemID): Element | undefined => {
+          const rootElem = elemCompletionLookup[id.createTopLevelParentID().parent.getFullName()]
+          if (!rootElem) {
+            return undefined
+          }
+          const val = resolvePath(rootElem, id)
+          if (isElement(val)) {
+            return val
+          }
+          if (isInstanceElement(rootElem) && !id.isTopLevel()) {
+            const newInstance = new InstanceElement(
+              rootElem.elemID.name,
+              rootElem.type,
+              {},
+              rootElem.path,
+            )
+            setPath(newInstance, id, val)
+            return newInstance
+          }
+          return undefined
+        }
+
+        const completionRes = Object.fromEntries(
+          ids.map(id => ([id.getFullName(), getCompletionElem(id)]))
+        )
+        const [completed, missing] = _.partition(
+          Object.keys(completionRes), id => values.isDefined(completionRes[id])
+        )
+        const resolvedElements = Object.values(completionRes).filter(values.isDefined)
+        const unresolvedIDs = getUnresolvedElemIDs(resolvedElements, elms)
+
+        const innerRes = await addAndValidate(unresolvedIDs, [...elms, ...resolvedElements])
+        return {
+          completed: [...completed, ...innerRes.completed],
+          missing: [...missing, ...innerRes.missing],
+        }
+      }
+
+      const { completed, missing } = await addAndValidate(unresolvedElemIDs, initialElements)
+
+      return {
+        found: compact(completed.sort().map(ElemID.fromFullName)),
+        missing: compact(missing.sort().map(ElemID.fromFullName)),
+      }
     },
   }
 }

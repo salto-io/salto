@@ -15,9 +15,10 @@
 */
 
 const NACL_ESCAPING_SUFFIX_SEPARATOR = '@'
+const MAX_PATH_LENGTH = 200
 
 export const pathNaclCase = (name?: string): string =>
-  (name ? name.split(NACL_ESCAPING_SUFFIX_SEPARATOR)[0] : '')
+  (name ? name.split(NACL_ESCAPING_SUFFIX_SEPARATOR)[0] : '').slice(0, MAX_PATH_LENGTH)
 
 /* eslint-disable quote-props */
 // Current values in this mapping should not be changed

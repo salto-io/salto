@@ -81,20 +81,31 @@ describe('naclCase utils', () => {
   })
 
   describe('pathNaclCase func', () => {
-    describe('Without naclCase seperator', () => {
-      const noSeperatorNames = [
+    describe('Without naclCase separator', () => {
+      const noSeparatorNames = [
         'lalala', 'Lead', 'LALA__Lead__c', 'NameWithNumber2',
       ]
       it('Should remain the same', () => {
-        noSeperatorNames.forEach(name => expect(pathNaclCase(name)).toEqual(name))
+        noSeparatorNames.forEach(name => expect(pathNaclCase(name)).toEqual(name))
       })
     })
 
-    describe('With naclCase seperator', () => {
-      it('Should return up to the seperator', () => {
+    describe('With naclCase separator', () => {
+      it('Should return up to the separator', () => {
         expect(pathNaclCase('Lead@1234')).toEqual('Lead')
         expect(pathNaclCase('LALA__Lead__c@12_34')).toEqual('LALA__Lead__c')
         expect(pathNaclCase('NameWithNumber2@12_34')).toEqual('NameWithNumber2')
+      })
+    })
+
+    describe('With a very long string', () => {
+      const longString = new Array(30).fill('123456789_').join('')
+      it('Should return at most 200 chars', () => {
+        expect(pathNaclCase(longString).length).toBeLessThanOrEqual(200)
+      })
+
+      it('Should return the first 200 chars', () => {
+        expect(pathNaclCase(longString)).toEqual(longString.slice(0, 200))
       })
     })
   })

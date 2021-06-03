@@ -114,7 +114,7 @@ export const toBasicInstance = ({
       adapterName,
       RECORDS_PATH,
       pathNaclCase(type.elemID.name),
-      (fileName ? pathNaclCase(naclCase(fileName)) : pathNaclCase(naclName)).slice(0, 100),
+      (fileName ? pathNaclCase(naclCase(fileName)) : pathNaclCase(naclName)),
     ],
     parent ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID)] } : undefined,
   )

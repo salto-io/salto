@@ -15,6 +15,9 @@
 */
 
 const NACL_ESCAPING_SUFFIX_SEPARATOR = '@'
+// Windows has the lowest known limit, of 255
+// This can have an effect at a time we add a ~15 chars suffix
+// So we are taking an extra buffer and limit it to 200
 const MAX_PATH_LENGTH = 200
 
 export const pathNaclCase = (name?: string): string =>

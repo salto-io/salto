@@ -370,11 +370,9 @@ export const loadWorkspace = async (
     return awu(Object.values(changesByID)).flatMap(async changes => {
       const refID = changes[0].id
       if (refID.isTopLevel()) {
-        return changes as Change[]
+        return changes
       }
       const before = await state().get(refID.createTopLevelParentID().parent)
-      // In remove changes, the change target won't be in the state since the
-      // state is updated prior to this function invokation during the fetch itself.
       if (before === undefined) {
         return []
       }

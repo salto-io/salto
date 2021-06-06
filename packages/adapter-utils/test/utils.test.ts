@@ -1090,11 +1090,6 @@ describe('Test utils.ts', () => {
         expect(resolvedInstance.value.mapValues.valueRef).toEqual(regValue)
         expect(resolvedInstance.value.fileValue).toEqual(Buffer.from(fileContent))
         expect(resolvedInstance.value.objValue).toEqual(firstRef.value.obj)
-
-        // this is not a realistic scenario, we should remove it
-        expect(resolvedInstance.annotations[CORE_ANNOTATIONS.DEPENDS_ON]).toEqual({
-          reference: regValue,
-        })
       })
 
       it('should transform back to instance', async () => {

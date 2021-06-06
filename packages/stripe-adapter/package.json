@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/stripe-adapter",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "license": "Apache-2.0",
   "description": "Salto stripe adapter",
   "repository": {
@@ -32,12 +32,12 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.2.11",
-    "@salto-io/adapter-components": "0.2.11",
-    "@salto-io/adapter-utils": "0.2.11",
-    "@salto-io/e2e-credentials-store": "0.2.11",
-    "@salto-io/logging": "0.2.11",
-    "@salto-io/lowerdash": "0.2.11",
+    "@salto-io/adapter-api": "0.2.12",
+    "@salto-io/adapter-components": "0.2.12",
+    "@salto-io/adapter-utils": "0.2.12",
+    "@salto-io/e2e-credentials-store": "0.2.12",
+    "@salto-io/logging": "0.2.12",
+    "@salto-io/lowerdash": "0.2.12",
     "lodash": "^4.17.21"
   },
   "devDependencies": {

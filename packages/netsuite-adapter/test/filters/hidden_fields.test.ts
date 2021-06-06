@@ -21,11 +21,14 @@ import { OnFetchParameters } from '../../src/filter'
 
 describe('hidden_fields', () => {
   it('should hide requested fields', async () => {
-    const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType'),
+    const type = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'someType'),
       fields: {
         internalId: { refType: BuiltinTypes.STRING },
         otherField: { refType: BuiltinTypes.STRING },
-      } })
+      },
+      annotations: { source: 'soap' },
+    })
     const onFetchParameters: OnFetchParameters = {
       elements: [type],
       client: {} as NetsuiteClient,

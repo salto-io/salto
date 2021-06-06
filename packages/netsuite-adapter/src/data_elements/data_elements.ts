@@ -17,6 +17,7 @@ import { BuiltinTypes, ObjectType, ReferenceExpression } from '@salto-io/adapter
 import { logger } from '@salto-io/logging'
 import { elements as elementsComponents } from '@salto-io/adapter-components'
 import NetsuiteClient from '../client/client'
+import { NETSUITE } from '../constants'
 
 export const SUPPORTED_TYPES = ['Account', 'Subsidiary', 'Department', 'Classification', 'Location', 'Currency']
 
@@ -35,7 +36,7 @@ export const getDataTypes = async (
     log.warn('Failed to get WSDL, skipping dataTypes')
     return []
   }
-  const types = await elementsComponents.soap.extractTypes('netsuite', wsdl)
+  const types = await elementsComponents.soap.extractTypes(NETSUITE, wsdl)
 
   types.forEach(type => {
     type.annotationRefTypes.source = new ReferenceExpression(BuiltinTypes.HIDDEN_STRING.elemID)

@@ -192,6 +192,9 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
         await mockObjectType.fields.listOfMapFieldTest.getType() as ListType
       )).toEqual(BuiltinTypes.NUMBER)
     })
+    it('should return the type if not container', async () => {
+      expect(await getDeepInnerType(primitiveNum)).toEqual(primitiveNum)
+    })
   })
   describe('getField, getFieldType funcs', () => {
     describe('With ElementsSource', () => {

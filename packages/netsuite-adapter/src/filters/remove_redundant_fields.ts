@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isContainerType, isObjectType } from '@salto-io/adapter-api'
+import { getDeepInnerType, isObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
@@ -25,15 +25,15 @@ const REDUNDANT_TYPES = ['NullField', 'CustomFieldList', 'CustomFieldRef']
 
 const filterCreator: FilterCreator = () => ({
   onFetch: async ({ elements }) => {
-    await awu(elements).filter(isObjectType).forEach(async e =>
-      awu(REDUNDANT_TYPES).forEach(async type => {
+    await awu(elements)
+      .filter(isObjectType)
+      .forEach(async e => {
         e.fields = Object.fromEntries(await awu(Object.entries(e.fields))
           .filter(async ([_name, field]) => {
-            const rawType = await field.getType()
-            const fieldType = isContainerType(rawType) ? await rawType.getInnerType() : rawType
-            return fieldType.elemID.name !== type
+            const fieldType = await getDeepInnerType(await field.getType())
+            return !REDUNDANT_TYPES.includes(fieldType.elemID.name)
           }).toArray())
-      }))
+      })
 
     _.remove(elements, e => REDUNDANT_TYPES.includes(e.elemID.name))
   },

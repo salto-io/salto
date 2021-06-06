@@ -19,14 +19,18 @@ import { isObjectType } from '@salto-io/adapter-api'
 import { NETSUITE, TYPES_PATH } from '../constants'
 import { FilterCreator } from '../filter'
 import { SUPPORTED_TYPES } from '../data_elements/data_elements'
-import { customTypes, fileCabinetTypes, getAllTypes } from '../types'
+import { customTypes, fileCabinetTypes, getAllTypes, isDataObjectType } from '../types'
 
 
 const filterCreator: FilterCreator = () => ({
   onFetch: async ({ elements }) => {
     const sdfTypeNames = new Set(getAllTypes().map(e => e.elemID.getFullName()))
     const supportedDataTypes = (await elementsComponents
-      .filterTypes(NETSUITE, elements.filter(isObjectType), SUPPORTED_TYPES))
+      .filterTypes(
+        NETSUITE,
+        elements.filter(isObjectType).filter(isDataObjectType),
+        SUPPORTED_TYPES
+      ))
       .filter(e => !sdfTypeNames.has(e.elemID.getFullName()))
 
     // In case an sdf type was miss-classified as sub type because it was referenced from data type
@@ -35,7 +39,7 @@ const filterCreator: FilterCreator = () => ({
       type.path = [NETSUITE, TYPES_PATH, type.elemID.name]
     })
 
-    _.remove(elements, e => isObjectType(e) && e.annotations.source === 'soap')
+    _.remove(elements, e => isObjectType(e) && isDataObjectType(e))
     elements.push(...supportedDataTypes)
   },
 })

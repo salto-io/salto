@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, isObjectType } from '@salto-io/adapter-api'
+import { isDataObjectType } from '../types'
 import { FilterCreator } from '../filter'
 
 const HIDDEN_FIELDS = ['internalId']
@@ -22,6 +23,7 @@ const filterCreator: FilterCreator = () => ({
   onFetch: async ({ elements }) => {
     elements
       .filter(isObjectType)
+      .filter(isDataObjectType)
       .forEach(type => Object.values(type.fields)
         .forEach(field => {
           if (HIDDEN_FIELDS.includes(field.elemID.name)) {

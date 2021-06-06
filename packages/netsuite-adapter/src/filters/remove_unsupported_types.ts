@@ -23,7 +23,10 @@ import { getAllTypes, isDataObjectType } from '../types'
 
 
 const filterCreator: FilterCreator = () => ({
-  onFetch: async ({ elements }) => {
+  onFetch: async ({ elements, client }) => {
+    if (!client.isSuiteAppConfigured()) {
+      return
+    }
     const sdfTypeNames = new Set(getAllTypes().map(e => e.elemID.getFullName()))
     const supportedDataTypes = (await elementsComponents
       .filterTypes(

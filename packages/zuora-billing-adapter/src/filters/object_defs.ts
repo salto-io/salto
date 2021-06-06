@@ -179,7 +179,7 @@ const addRelationships = (
           [...refObjectNames]
             .map(findType)
             .filter(isDefined)
-            .map(refObj => new ReferenceExpression(refObj.elemID))
+            .map(refObj => ({ reference: new ReferenceExpression(refObj.elemID) }))
         )
       }
     })

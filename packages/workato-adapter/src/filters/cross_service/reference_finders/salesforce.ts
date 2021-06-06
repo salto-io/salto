@@ -108,8 +108,8 @@ export const addSalesforceRecipeReferences = async (
     }
 
     const references: MappedReference[] = [{
-      srcPath: path.createNestedID('input', 'sobject_name'),
-      ref: new ReferenceExpression(objectDetails.id),
+      pathToOverride: path.createNestedID('input', 'sobject_name'),
+      reference: new ReferenceExpression(objectDetails.id),
     }]
 
     const inputFieldNames = Object.keys(_.omit(input, 'sobject_name'))
@@ -117,9 +117,8 @@ export const addSalesforceRecipeReferences = async (
       if (objectDetails.fields[fieldName] !== undefined) {
         references.push(
           {
-            // no srcPath because we can't override the field keys in the current format
-            srcPath: undefined,
-            ref: new ReferenceExpression(objectDetails.fields[fieldName].elemID),
+            // no pathToOverride because we can't override the field keys in the current format
+            reference: new ReferenceExpression(objectDetails.fields[fieldName].elemID),
           },
         )
       }
@@ -128,8 +127,8 @@ export const addSalesforceRecipeReferences = async (
     // dynamicPickListSelection uses the label, not the api name
     if (dynamicPickListSelection.sobject_name === objectDetails.label) {
       references.push({
-        srcPath: path.createNestedID('dynamicPickListSelection', 'sobject_name'),
-        ref: new ReferenceExpression(objectDetails.id),
+        pathToOverride: path.createNestedID('dynamicPickListSelection', 'sobject_name'),
+        reference: new ReferenceExpression(objectDetails.id),
       })
 
       if (dynamicPickListSelection.field_list !== undefined) {
@@ -147,22 +146,21 @@ export const addSalesforceRecipeReferences = async (
             if (relatedObjectDetails.fields[field] !== undefined) {
               references.push(
                 {
-                  srcPath: path.createNestedID('dynamicPickListSelection', 'field_list', String(idx)),
-                  ref: new ReferenceExpression(relatedObjectDetails.fields[field].elemID),
+                  pathToOverride: path.createNestedID('dynamicPickListSelection', 'field_list', String(idx)),
+                  reference: new ReferenceExpression(relatedObjectDetails.fields[field].elemID),
                 },
               )
               references.push(
                 {
-                  srcPath: undefined,
-                  ref: new ReferenceExpression(relatedObjectDetails.id),
+                  reference: new ReferenceExpression(relatedObjectDetails.id),
                 },
               )
             }
           } else if (objectDetails.fields[fieldName] !== undefined) {
             references.push(
               {
-                srcPath: path.createNestedID('dynamicPickListSelection', 'field_list', String(idx)),
-                ref: new ReferenceExpression(objectDetails.fields[fieldName].elemID),
+                pathToOverride: path.createNestedID('dynamicPickListSelection', 'field_list', String(idx)),
+                reference: new ReferenceExpression(objectDetails.fields[fieldName].elemID),
               },
             )
           }
@@ -177,8 +175,8 @@ export const addSalesforceRecipeReferences = async (
           if (refObjectDetails !== undefined) {
             references.push(
               {
-                srcPath: path.createNestedID('dynamicPickListSelection', 'table_list', String(idx)),
-                ref: new ReferenceExpression(refObjectDetails.id),
+                pathToOverride: path.createNestedID('dynamicPickListSelection', 'table_list', String(idx)),
+                reference: new ReferenceExpression(refObjectDetails.id),
               },
             )
           }
@@ -203,14 +201,12 @@ export const addSalesforceRecipeReferences = async (
       const objectDetails = getObjectDetails(objName)
       if (field !== undefined && objectDetails?.fields[field] !== undefined) {
         return {
-          srcPath: undefined,
-          ref: new ReferenceExpression(objectDetails.fields[field].elemID),
+          reference: new ReferenceExpression(objectDetails.fields[field].elemID),
         }
       }
       if (objectDetails !== undefined) {
         return {
-          srcPath: undefined,
-          ref: new ReferenceExpression(objectDetails.id),
+          reference: new ReferenceExpression(objectDetails.id),
         }
       }
       return undefined

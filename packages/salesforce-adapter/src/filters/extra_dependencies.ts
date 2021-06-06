@@ -109,7 +109,10 @@ const addGeneratedDependencies = async (elem: Element, refElemIDs: ElemID[]): Pr
     .map(elemId => new ReferenceExpression(elemId))
 
   if (newDependencies.length !== 0) {
-    extendGeneratedDependencies(elem, newDependencies)
+    extendGeneratedDependencies(
+      elem,
+      newDependencies.map(reference => ({ reference })),
+    )
   }
 }
 

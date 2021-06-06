@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * from './src/utils'
-export * from './src/nacl_case_utils'
 export * from './src/change_validator'
-export * from './src/decorators'
-export * from './src/deploy'
 export * from './src/compare'
+export * from './src/decorators'
+export * from './src/dependencies'
+export * from './src/deploy'
 export * from './src/element_source'
 export * from './src/element'
+export * from './src/nacl_case_utils'
+export * from './src/utils'

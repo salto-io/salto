@@ -18,6 +18,7 @@ import {
   ObjectType, ElemID, InstanceElement, Element, isEqualElements, isObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { DetailedDependency } from '@salto-io/adapter-utils'
 import ZuoraClient from '../../src/client/client'
 import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, STANDARD_OBJECT_DEFINITION_TYPE } from '../../src/constants'
 import filterCreator from '../../src/filters/object_defs'
@@ -454,16 +455,17 @@ describe('Object defs filter', () => {
       const fieldRef = custom1.fields.AccountId__c.annotations.referenceTo[0] as ReferenceExpression
       expect(fieldRef.elemID.getFullName()).toEqual('zuora_billing.account.field.Id')
       expect(custom1.annotations).toEqual({
-        _generated_dependencies: [expect.any(ReferenceExpression), expect.any(ReferenceExpression)],
+        // eslint-disable-next-line camelcase
+        _generated_dependencies: [expect.anything(), expect.anything()],
         description: 'this is a decription',
         id: 'some id',
         label: 'Custom1',
         metadataType: 'CustomObject',
       })
       // eslint-disable-next-line no-underscore-dangle
-      const objRefs = custom1.annotations._generated_dependencies as ReferenceExpression[]
-      expect(objRefs[0].elemID.getFullName()).toEqual('zuora_billing.Custom2__c')
-      expect(objRefs[1].elemID.getFullName()).toEqual('zuora_billing.account')
+      const objRefs = custom1.annotations._generated_dependencies as DetailedDependency[]
+      expect(objRefs[0].reference.elemID.getFullName()).toEqual('zuora_billing.Custom2__c')
+      expect(objRefs[1].reference.elemID.getFullName()).toEqual('zuora_billing.account')
     })
   })
 })

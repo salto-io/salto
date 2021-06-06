@@ -18,6 +18,7 @@ import {
   isInstanceElement, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
+import { DetailedDependency } from '@salto-io/adapter-utils'
 import ZuoraClient from '../../src/client/client'
 import { ZUORA_BILLING, WORKFLOW_TYPE, TASK_TYPE, STANDARD_OBJECT, METADATA_TYPE } from '../../src/constants'
 import filterCreator from '../../src/filters/workflow_and_task_references'
@@ -291,9 +292,10 @@ describe('Workflow and task references filter', () => {
       expect(tasks[0].value.object).toBeInstanceOf(ReferenceExpression)
       expect((tasks[0].value.object as ReferenceExpression).elemID.getFullName()).toEqual('zuora_billing.RefundInvoicePayment')
       // eslint-disable-next-line no-underscore-dangle
-      const task1Deps = tasks[0].annotations._generated_dependencies as ReferenceExpression[]
-      expect(task1Deps.every(isReferenceExpression)).toBeTruthy()
-      expect(task1Deps.map(e => e.elemID.getFullName())).toEqual([
+      const task1Deps = tasks[0].annotations._generated_dependencies as DetailedDependency[]
+      expect(task1Deps.map(e => e.reference).every(isReferenceExpression)).toBeTruthy()
+      expect(task1Deps.map(e => e.occurrences).every(oc => oc === undefined)).toBeTruthy()
+      expect(task1Deps.map(e => e.reference.elemID.getFullName())).toEqual([
         'zuora_billing.Invoice.field.Id',
         // Invoice.Balance and InvoiceDate do not exist on the object so they are not referenced
         'zuora_billing.Invoice.field.InvoiceNumber',

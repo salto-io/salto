@@ -555,6 +555,7 @@ describe('Adapter', () => {
 
       const suiteAppClient = {
         getSystemInformation: getSystemInformationMock,
+        getNetsuiteWsdl: () => undefined,
       } as unknown as SuiteAppClient
 
       adapter = new NetsuiteAdapter({
@@ -583,6 +584,7 @@ describe('Adapter', () => {
     it('should not create serverTime elements when fetchTarget parameter was passed', async () => {
       const suiteAppClient = {
         getSystemInformation: getSystemInformationMock,
+        getNetsuiteWsdl: () => undefined,
       } as unknown as SuiteAppClient
 
       adapter = new NetsuiteAdapter({
@@ -632,6 +634,7 @@ describe('Adapter', () => {
 
         suiteAppClient = {
           getSystemInformation: getSystemInformationMock,
+          getNetsuiteWsdl: () => undefined,
         } as unknown as SuiteAppClient
 
         adapter = new NetsuiteAdapter({

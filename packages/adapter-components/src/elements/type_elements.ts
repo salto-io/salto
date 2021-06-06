@@ -64,9 +64,13 @@ export const filterTypes = async (
     return type
   }).filter(values.isDefined)
 
-  relevantTypes.forEach(t => { t.path = [adapterName, TYPES_PATH, t.elemID.name] })
+  relevantTypes
+    .filter(t => t.path === undefined)
+    .forEach(t => { t.path = [adapterName, TYPES_PATH, t.elemID.name] })
   const subtypes = await getSubtypes(relevantTypes)
-  subtypes.forEach(t => { t.path = [adapterName, TYPES_PATH, SUBTYPES_PATH, t.elemID.name] })
+  subtypes
+    .filter(t => t.path === undefined)
+    .forEach(t => { t.path = [adapterName, TYPES_PATH, SUBTYPES_PATH, t.elemID.name] })
 
   return [...relevantTypes, ...subtypes]
 }

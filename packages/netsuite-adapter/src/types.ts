@@ -224,6 +224,8 @@ export const isFileCabinetInstance = (element: Element): element is InstanceElem
 export const isFileInstance = (element: Element): boolean =>
   isInstanceElement(element) && element.refType.elemID.name === 'file'
 
+export const isDataObjectType = (element: ObjectType): boolean =>
+  element.annotations.source === 'soap'
 
 export const getAllTypes = (): TypeElement[] => [
   ...Object.values(customTypes),

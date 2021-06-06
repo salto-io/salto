@@ -80,7 +80,8 @@ describe('extractTypes', () => {
     expect(testedType).toBeDefined()
   })
 
-  it('should throw error when there are duplicate types', async () => {
-    await expect(extractTypes('adapterName', INVALID_WSDL_PATH)).rejects.toThrow()
+  it('should return duplicate types', async () => {
+    const typesWithDups = await extractTypes('adapterName', INVALID_WSDL_PATH)
+    expect(typesWithDups.filter(type => type.elemID.name === 'testedType')).toHaveLength(2)
   })
 })

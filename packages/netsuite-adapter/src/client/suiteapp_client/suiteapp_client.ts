@@ -21,6 +21,7 @@ import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { WSDL } from 'soap'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails,
   FILES_READ_SCHEMA, HttpMethod, isError, ReadResults, RestletOperation, RestletResults,
   RESTLET_RESULTS_SCHEMA, SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA,
@@ -284,5 +285,9 @@ export default class SuiteAppClient {
   public async deleteFileCabinetInstances(fileCabinetInstances:
     ExistingFileCabinetInstanceDetails[]): Promise<(number | Error)[]> {
     return this.soapClient.deleteFileCabinetInstances(fileCabinetInstances)
+  }
+
+  public async getNetsuiteWsdl(): Promise<WSDL> {
+    return this.soapClient.getNetsuiteWsdl()
   }
 }

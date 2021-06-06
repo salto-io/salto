@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { TypeElement, ObjectType, Element, PrimitiveType, ContainerType, isContainerType, Field, isObjectType, isField, isListType, isMapType, ReadOnlyElementsSource } from './elements'
+import { TypeElement, ObjectType, Element, PrimitiveType, isContainerType, Field, isObjectType, isField, isListType, isMapType, ReadOnlyElementsSource } from './elements'
 import { Values } from './values'
 
 interface AnnoRef {
@@ -30,14 +30,13 @@ type SubElementSearchResult = {
 export const isIndexPathPart = (key: string): boolean => !Number.isNaN(Number(key))
 
 export const getDeepInnerType = async (
-  containerType: ContainerType,
+  type: TypeElement,
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<ObjectType | PrimitiveType> => {
-  const innerType = await containerType.getInnerType(elementsSource)
-  if (!isContainerType(innerType)) {
-    return innerType
+  if (!isContainerType(type)) {
+    return type
   }
-  return getDeepInnerType(innerType, elementsSource)
+  return getDeepInnerType(await type.getInnerType(elementsSource), elementsSource)
 }
 
 export const getSubElement = async (

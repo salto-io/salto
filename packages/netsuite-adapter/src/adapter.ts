@@ -34,6 +34,10 @@ import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
 import addParentFolder from './filters/add_parent_folder'
 import serviceUrls from './filters/service_urls'
+import redundantFields from './filters/remove_redundant_fields'
+import hiddenFields from './filters/hidden_fields'
+import replaceRecordRef from './filters/replace_record_ref'
+import removeUnsupportedTypes from './filters/remove_unsupported_types'
 import { FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_USE_CHANGES_DETECTION } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery } from './query'
@@ -45,6 +49,7 @@ import { createElementsSourceIndex } from './elements_source_index/elements_sour
 import { LazyElementsSourceIndex } from './elements_source_index/types'
 import getChangeValidator from './change_validator'
 import { getChangeGroupIdsFunc } from './group_changes'
+import { getDataTypes } from './data_elements/data_elements'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -92,6 +97,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
       consistentValues,
       replaceInstanceReferencesFilter,
       serviceUrls,
+      redundantFields,
+      hiddenFields,
+      replaceRecordRef,
+      removeUnsupportedTypes,
     ],
     typesToSkip = [
       INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard
@@ -151,6 +160,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const isPartial = this.fetchTarget !== undefined
 
+    const dataTypesPromise = getDataTypes(this.client)
+
     const getCustomObjectsResult = this.client.getCustomObjects(
       Object.keys(customTypes),
       fetchQuery
@@ -187,12 +198,23 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return type
         ? createInstanceElement(customizationInfo, type, this.getElemIdFunc, serverTime)
         : undefined
-    }).filter(isInstanceElement)
-      .toArray()
-    const elements = [...getAllTypes(), ...instances, ...serverTimeElements]
+    }).filter(isInstanceElement).toArray()
+
+    const dataTypes = await dataTypesPromise
+
+    const elements = [
+      ...getAllTypes(),
+      ...dataTypes,
+      ...instances,
+      ...serverTimeElements,
+    ]
 
     progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
-    await this.runFiltersOnFetch(elements, elementsSourceIndex, isPartial)
+    await this.runFiltersOnFetch(
+      elements,
+      elementsSourceIndex,
+      isPartial,
+    )
     const updatedConfig = getConfigFromConfigChanges(
       failedToFetchAllAtOnce, failedFilePaths, failedTypeToInstances, this.userConfig
     )
@@ -266,12 +288,17 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private async runFiltersOnFetch(
     elements: Element[],
     elementsSourceIndex: LazyElementsSourceIndex,
-    isPartial: boolean
+    isPartial: boolean,
   ): Promise<void> {
     // Fetch filters order is important so they should run one after the other
     return this.filtersCreators.map(filterCreator => filterCreator()).reduce(
       (prevRes, filter) => prevRes.then(() =>
-        filter.onFetch({ elements, client: this.client, elementsSourceIndex, isPartial })),
+        filter.onFetch({
+          elements,
+          client: this.client,
+          elementsSourceIndex,
+          isPartial,
+        })),
       Promise.resolve(),
     )
   }

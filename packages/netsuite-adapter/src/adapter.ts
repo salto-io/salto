@@ -16,7 +16,7 @@
 import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
   ElemIdGetter, Element, ReadOnlyElementsSource,
-  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS, DeployModifiers, ObjectType,
+  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS, DeployModifiers,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -49,6 +49,7 @@ import { createElementsSourceIndex } from './elements_source_index/elements_sour
 import { LazyElementsSourceIndex } from './elements_source_index/types'
 import getChangeValidator from './change_validator'
 import { getChangeGroupIdsFunc } from './group_changes'
+import { getDataTypes } from './data_elements/data_elements'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -159,10 +160,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const isPartial = this.fetchTarget !== undefined
 
-
-    // TODO: uncomment when dataTypes is ready
-    // const dataTypesPromise = getDataTypes(this.client)
-    const dataTypesPromise: ObjectType[] = []
+    const dataTypesPromise = getDataTypes(this.client)
 
     const getCustomObjectsResult = this.client.getCustomObjects(
       Object.keys(customTypes),

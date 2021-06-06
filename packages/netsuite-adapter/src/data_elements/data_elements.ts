@@ -19,7 +19,19 @@ import { elements as elementsComponents } from '@salto-io/adapter-components'
 import NetsuiteClient from '../client/client'
 import { NETSUITE } from '../constants'
 
-export const SUPPORTED_TYPES = ['Account', 'Subsidiary', 'Department', 'Classification', 'Location', 'Currency']
+export const SUPPORTED_TYPES = [
+  'Account',
+  'Subsidiary',
+  'Department',
+  'Classification',
+  'Location',
+  'Currency',
+  'Opportunity',
+  'Customer',
+  'InventoryItem',
+  'SalesOrder',
+  'Order',
+]
 
 const log = logger(module)
 

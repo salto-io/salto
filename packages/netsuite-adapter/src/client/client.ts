@@ -185,4 +185,8 @@ export default class NetsuiteClient {
   public async getNetsuiteWsdl(): Promise<WSDL | undefined> {
     return this.suiteAppClient?.getNetsuiteWsdl()
   }
+
+  public async getAllRecords(type: string): Promise<Record<string, unknown>[] | undefined> {
+    return this.suiteAppClient?.getAllRecords(type)
+  }
 }

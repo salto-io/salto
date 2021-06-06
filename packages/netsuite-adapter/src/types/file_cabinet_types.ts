@@ -71,6 +71,12 @@ export const file = new ObjectType({
       annotations: {
       },
     },
+    internalId: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+      },
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, fileElemID.name],
 })
@@ -109,6 +115,12 @@ export const folder = new ObjectType({
     isprivate: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
+      },
+    },
+    internalId: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
       },
     },
   },

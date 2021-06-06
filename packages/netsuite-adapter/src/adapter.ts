@@ -38,6 +38,8 @@ import redundantFields from './filters/remove_redundant_fields'
 import hiddenFields from './filters/hidden_fields'
 import replaceRecordRef from './filters/replace_record_ref'
 import removeUnsupportedTypes from './filters/remove_unsupported_types'
+import dataInstancesInternalId from './filters/data_instances_internal_id'
+import dataInstancesReferences from './filters/data_instances_references'
 import { FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_USE_CHANGES_DETECTION } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery } from './query'
@@ -101,6 +103,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       hiddenFields,
       replaceRecordRef,
       removeUnsupportedTypes,
+      dataInstancesReferences,
+      dataInstancesInternalId,
     ],
     typesToSkip = [
       INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard
@@ -160,7 +164,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const isPartial = this.fetchTarget !== undefined
 
-    const dataTypesPromise = getDataTypes(this.client)
+    // TODO: Replace when data instances are ready
+    // const dataElementsPromise = await getDataElements(this.client)
+    const dataElementsPromise = await getDataTypes(this.client)
 
     const getCustomObjectsResult = this.client.getCustomObjects(
       Object.keys(customTypes),
@@ -200,11 +206,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
         : undefined
     }).filter(isInstanceElement).toArray()
 
-    const dataTypes = await dataTypesPromise
+    const dataElements = await dataElementsPromise
 
     const elements = [
       ...getAllTypes(),
-      ...dataTypes,
+      ...dataElements ?? [],
       ...instances,
       ...serverTimeElements,
     ]

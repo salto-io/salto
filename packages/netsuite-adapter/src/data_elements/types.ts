@@ -1,0 +1,156 @@
+/*
+*                      Copyright 2021 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import _ from 'lodash'
+
+export const TYPE_TO_IDENTIFIER: Record<string, string> = {
+  Account: 'acctName',
+  Subsidiary: 'name',
+  Department: 'name',
+  Classification: 'name',
+  Location: 'name',
+  Currency: 'name',
+  Customer: 'entityId',
+  AccountingPeriod: 'periodName',
+  Employee: 'entityId',
+  Job: 'entityId',
+  ManufacturingCostTemplate: 'name',
+  Partner: 'partnerCode',
+  Solution: 'solutionCode',
+}
+
+// Was taken from http://www.netsuiterp.com/2019/05/internal-ids-for-netsuite-record-types.html
+export const TYPES_TO_INTERNAL_ID: Record<string, string> = {
+  Account: '-112',
+  AccountingPeriod: '-105',
+  AssemblyBuild: '-30',
+  AssemblyItem: '-10',
+  AssemblyUnbuild: '-30',
+  BillingSchedule: '-141',
+  Bin: '-242',
+  BinTransfer: '-30',
+  BinWorksheet: '-30',
+  CalendarEvent: '-20',
+  Campaign: '-24',
+  CampaignResponse: '-130',
+  CashRefund: '-30',
+  CashSale: '-30',
+  Charge: '-290',
+  Check: '-30',
+  Classification: '-101',
+  Contact: '-6',
+  ContactCategory: '-158',
+  ContactRole: '-157',
+  CostCategory: '-155',
+  CreditMemo: '-30',
+  Currency: '-122',
+  Customer: '-2',
+  CustomerCategory: '-109',
+  CustomerDeposit: '-30',
+  CustomerMessage: '-161',
+  CustomerPayment: '-30',
+  CustomerRefund: '-30',
+  CustomerStatus: '-104',
+  Department: '-102',
+  DepositApplication: '-30',
+  DescriptionItem: '-10',
+  DiscountItem: '-10',
+  DownloadItem: '-10',
+  Employee: '-4',
+  Estimate: '-30',
+  ExpenseCategory: '-126',
+  ExpenseReport: '-30',
+  GiftCertificateItem: '-10',
+  GlobalAccountMapping: '-250',
+  InterCompanyJournalEntry: '-30',
+  InterCompanyTransferOrder: '-30',
+  InventoryAdjustment: '-30',
+  InventoryCostRevaluation: '-30',
+  InventoryDetail: '-260',
+  InventoryItem: '-10',
+  InventoryNumber: '-266',
+  InventoryTransfer: '-30',
+  Invoice: '-30',
+  Issue: '-26',
+  ItemAccountMapping: '-251',
+  ItemDemandPlan: '-246',
+  ItemFulfillment: '-30',
+  ItemGroup: '-10',
+  ItemReceipt: '-30',
+  ItemRevision: '-269',
+  ItemSupplyPlan: '-247',
+  Job: '-7',
+  JobType: '-177',
+  JournalEntry: '-30',
+  KitItem: '-10',
+  Location: '-103',
+  LotNumberedAssemblyItem: '-10',
+  LotNumberedInventoryItem: '-10',
+  ManufacturingCostTemplate: '-294',
+  ManufacturingOperationTask: '-36',
+  ManufacturingRouting: '-288',
+  MarkupItem: '-10',
+  Note: '-303',
+  NoteType: '-180',
+  Opportunity: '-31',
+  OtherNameCategory: '-181',
+  Partner: '-5',
+  PartnerCategory: '-182',
+  PaycheckJournal: '-30',
+  PaymentItem: '-10',
+  PaymentMethod: '-183',
+  PayrollItem: '-265',
+  PhoneCall: '-22',
+  PriceLevel: '-186',
+  PricingGroup: '-187',
+  ProjectTask: '-27',
+  PromotionCode: '-121',
+  PurchaseOrder: '-30',
+  ResourceAllocation: '-28',
+  ReturnAuthorization: '-30',
+  SalesOrder: '-30',
+  SalesRole: '-191',
+  SalesTaxItem: '-128',
+  SerializedAssemblyItem: '-10',
+  SerializedInventoryItem: '-10',
+  Solution: '-25',
+  Subsidiary: '-117',
+  SubtotalItem: '-10',
+  SupportCase: '-23',
+  Task: '-21',
+  Term: '-199',
+  TimeBill: '-256',
+  TransferOrder: '-30',
+  UnitsType: '-201',
+  Vendor: '-3',
+  VendorBill: '-30',
+  VendorCategory: '-110',
+  VendorCredit: '-30',
+  VendorPayment: '-30',
+  VendorReturnAuthorization: '-30',
+  WinLossReason: '-203',
+  WorkOrder: '-30',
+  WorkOrderClose: '-30',
+  WorkOrderCompletion: '-30',
+  WorkOrderIssue: '-30',
+}
+
+export const INTERNAL_ID_TO_TYPES: Record<string, string[]> = _(TYPES_TO_INTERNAL_ID)
+  .entries()
+  .groupBy(([_type, internalId]) => internalId)
+  .mapValues(values => values.map(([type]) => type))
+  .value()
+
+export const SUPPORTED_TYPES = Object.keys(TYPES_TO_INTERNAL_ID)

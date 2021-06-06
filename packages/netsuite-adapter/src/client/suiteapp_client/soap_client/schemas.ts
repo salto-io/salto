@@ -345,3 +345,86 @@ export const DEPLOY_LIST_SCHEMA = {
     },
   ],
 }
+
+export const SEARCH_RESPONSE_SCHEMA = {
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  definitions: {
+    'Record<string,unknown>': {
+      type: 'object',
+    },
+  },
+  properties: {
+    searchResult: {
+      properties: {
+        recordList: {
+          properties: {
+            record: {
+              items: {
+                $ref: '#/definitions/Record<string,unknown>',
+              },
+              type: 'array',
+            },
+          },
+          required: [
+            'record',
+          ],
+          type: 'object',
+          nullable: true,
+        },
+        searchId: {
+          type: 'string',
+        },
+        totalPages: {
+          type: 'number',
+        },
+      },
+      required: [
+        'recordList',
+        'searchId',
+        'totalPages',
+      ],
+      type: 'object',
+    },
+  },
+  required: [
+    'searchResult',
+  ],
+  type: 'object',
+}
+
+export const GET_ALL_RESPONSE_SCHEMA = {
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  definitions: {
+    'Record<string,unknown>': {
+      type: 'object',
+    },
+  },
+  properties: {
+    getAllResult: {
+      properties: {
+        recordList: {
+          properties: {
+            record: {
+              items: {
+                $ref: '#/definitions/Record<string,unknown>',
+              },
+              type: 'array',
+            },
+          },
+          required: [
+            'record',
+          ],
+          type: 'object',
+        },
+      },
+      required: [
+        'recordList',
+      ],
+      type: 'object',
+    },
+  },
+  required: [
+    'getAllResult',
+  ],
+  type: 'object',
+}

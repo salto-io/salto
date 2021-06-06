@@ -18,18 +18,21 @@ import Ajv from 'ajv'
 import crypto from 'crypto'
 import path from 'path'
 import * as soap from 'soap'
+import _ from 'lodash'
 import { SuiteAppCredentials, toUrlAccountId } from '../../credentials'
 import { CONSUMER_KEY, CONSUMER_SECRET } from '../constants'
 import { ReadFileError } from '../errors'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails } from '../types'
-import { DeployListResults, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess } from './types'
-import { DEPLOY_LIST_SCHEMA, GET_RESULTS_SCHEMA } from './schemas'
+import { DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess, SearchResponse } from './types'
+import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, SEARCH_RESPONSE_SCHEMA } from './schemas'
 
 const log = logger(module)
 
+export const TRANSACTION_TYPES = ['SalesOrder']
 export const WSDL_PATH = `${__dirname}/client/suiteapp_client/soap_client/wsdl/netsuite_1.wsdl`
 
 const NETSUITE_VERSION = '2020_2'
+const SEARCH_PAGE_SIZE = 100
 
 export default class SoapClient {
   private credentials: SuiteAppCredentials
@@ -264,6 +267,148 @@ export default class SoapClient {
     return this.callsLimiter(async () => (await client[`${operation}Async`](body))[0])
   }
 
+  private static getSearchType(type: string): string {
+    return TRANSACTION_TYPES.includes(type) ? 'TransactionSearch' : `${type}Search`
+  }
+
+  public async getAllRecords(type: string): Promise<Record<string, unknown>[]> {
+    log.debug(`Getting all records of ${type}`)
+
+    const namespace = await this.getTypeNamespace(SoapClient.getSearchType(type))
+
+    let results: Record<string, unknown>[]
+    if (namespace !== undefined) {
+      results = await this.search(type, namespace)
+    } else {
+      log.debug(`type ${type} does not support 'search' operation. Fallback to 'getAll' request`)
+      results = await this.sendGetAllRequest(type)
+    }
+
+    log.debug(`Finished getting all records of ${type}`)
+    return results
+  }
+
+  private async search(type: string, namespace: string): Promise<Record<string, unknown>[]> {
+    const initialResponse = await this.sendSearchRequest(type, namespace)
+    log.debug(`Finished sending initial search request for type ${type}`)
+
+    const responses = [initialResponse]
+
+    if (initialResponse.searchResult.totalPages > 1) {
+      responses.push(
+        ...await Promise.all(
+          _.range(2, initialResponse.searchResult.totalPages + 1)
+            .map(async i => {
+              const res = await this.sendSearchWithIdRequest(
+                initialResponse.searchResult.searchId,
+                i
+              )
+              log.debug(`Finished sending search request for page ${i}/${initialResponse.searchResult.totalPages} of type ${type}`)
+              return res
+            })
+        )
+      )
+    }
+
+    return responses.map(
+      response => response.searchResult.recordList?.record ?? []
+    ).flat()
+  }
+
+  private async sendGetAllRequest(type: string): Promise<Record<string, unknown>[]> {
+    const body = {
+      record: {
+        attributes: {
+          recordType: type[0].toLowerCase() + type.slice(1),
+        },
+      },
+    }
+
+    const response = await this.sendSoapRequest('getAll', body)
+
+    if (!this.ajv.validate<GetAllResponse>(
+      GET_ALL_RESPONSE_SCHEMA,
+      response
+    )) {
+      log.error(`Got invalid response from get all request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`Got invalid response from get all request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    }
+
+    return response.getAllResult.recordList.record
+  }
+
+  private async sendSearchRequest(type: string, namespace: string): Promise<SearchResponse> {
+    const searchTypeName = SoapClient.getSearchType(type)
+    const body = {
+      searchRecord: {
+        attributes: {
+          'xsi:type': `q1:${searchTypeName}`,
+          'xmlns:q1': namespace,
+        },
+      },
+    }
+
+    if (TRANSACTION_TYPES.includes(type)) {
+      _.assign(body.searchRecord, {
+        'tranSales:basic': {
+          attributes: {
+            'xmlns:tranSales': 'urn:sales_2020_2.transactions.webservices.netsuite.com',
+            'xmlns:platformCommon': 'urn:common_2020_2.platform.webservices.netsuite.com',
+            'xmlns:platformCore': 'urn:core_2020_2.platform.webservices.netsuite.com',
+          },
+          'platformCommon:type': {
+            attributes: {
+              'xsi:type': 'platformCore:SearchEnumMultiSelectField',
+              operator: 'anyOf',
+            },
+            'platformCore:searchValue': type[0].toLowerCase() + type.slice(1),
+          },
+        },
+      })
+    }
+
+    const response = await this.sendSoapRequest('search', body)
+
+    if (!this.ajv.validate<SearchResponse>(
+      SEARCH_RESPONSE_SCHEMA,
+      response
+    )) {
+      log.error(`Got invalid response from search request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`Got invalid response from search request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    }
+
+    return response
+  }
+
+  private async sendSearchWithIdRequest(
+    searchId: string,
+    pageIndex: number
+  ): Promise<SearchResponse> {
+    const body = {
+      searchId,
+      pageIndex,
+    }
+
+    const response = await this.sendSoapRequest('searchMoreWithId', body)
+
+    if (!this.ajv.validate<SearchResponse>(
+      SEARCH_RESPONSE_SCHEMA,
+      response
+    )) {
+      log.error(`Got invalid response from search with id request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`Got invalid response from search with id request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    }
+
+    return response
+  }
+
+  private async getTypeNamespace(type: string): Promise<string | undefined> {
+    const wsdl = await this.getNetsuiteWsdl()
+    return Object.entries(wsdl.definitions.schemas).find(
+      ([_namespace, schema]) => schema.complexTypes[type] !== undefined
+    )?.[0]
+  }
+
   private generateSoapHeader(): object {
     const timestamp = new Date().getTime().toString().substring(0, 10)
     const nonce = crypto.randomBytes(10).toString('base64')
@@ -286,6 +431,10 @@ export default class SoapClient {
       },
       preferences: {
         runServerSuiteScriptAndTriggerWorkflows: false,
+      },
+      searchPreferences: {
+        pageSize: SEARCH_PAGE_SIZE,
+        bodyFieldsOnly: false,
       },
     }
   }

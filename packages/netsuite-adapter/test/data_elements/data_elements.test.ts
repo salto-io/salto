@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import * as soap from 'soap'
 import Bottleneck from 'bottleneck'
 import { elements as elementsComponents } from '@salto-io/adapter-components'
@@ -21,7 +21,7 @@ import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import NetsuiteClient from '../../src/client/client'
 import { NETSUITE } from '../../src/constants'
 import SdfClient from '../../src/client/sdf_client'
-import { getDataTypes } from '../../src/data_elements/data_elements'
+import { getDataElements, getDataTypes } from '../../src/data_elements/data_elements'
 
 jest.mock('@salto-io/adapter-components', () => ({
   ...jest.requireActual<{}>('@salto-io/adapter-components'),
@@ -33,7 +33,7 @@ jest.mock('@salto-io/adapter-components', () => ({
   },
 }))
 
-describe('getDataTypes', () => {
+describe('data_elements', () => {
   const createClientMock = jest.spyOn(soap, 'createClientAsync')
   const extractTypesMock = elementsComponents.soap.extractTypes as jest.Mock
   const wsdl = {}
@@ -50,33 +50,126 @@ describe('getDataTypes', () => {
     new SuiteAppClient({ credentials: creds, globalLimiter: new Bottleneck() }),
   )
 
+  const getAllRecordsMock = jest.spyOn(client, 'getAllRecords')
+
   beforeEach(() => {
     jest.resetAllMocks()
+    jest.spyOn(client, 'isSuiteAppConfigured').mockReturnValue(true)
+    jest.spyOn(client, 'getNetsuiteWsdl').mockResolvedValue(wsdl as soap.WSDL)
     createClientMock.mockResolvedValue({ wsdl, addSoapHeader: jest.fn() } as unknown as soap.Client)
   })
 
-  it('should return all the types', async () => {
-    const typeA = new ObjectType({ elemID: new ElemID(NETSUITE, 'A') })
-    const typeB = new ObjectType({ elemID: new ElemID(NETSUITE, 'Subsidiary'), fields: { A: { refType: typeA } } })
-    const typeC = new ObjectType({ elemID: new ElemID(NETSUITE, 'C') })
+  describe('getDataTypes', () => {
+    it('should return all the types', async () => {
+      const typeA = new ObjectType({ elemID: new ElemID(NETSUITE, 'A') })
+      const typeB = new ObjectType({ elemID: new ElemID(NETSUITE, 'Subsidiary'), fields: { A: { refType: typeA } } })
+      const typeC = new ObjectType({ elemID: new ElemID(NETSUITE, 'C') })
 
+      extractTypesMock.mockResolvedValue([typeA, typeB, typeC])
 
-    extractTypesMock.mockResolvedValue([typeA, typeB, typeC])
+      const types = await getDataTypes(client)
+      expect(types?.map(t => t.elemID.name)).toEqual(['A', 'Subsidiary', 'C'])
+    })
 
-    const types = await getDataTypes(client)
-    expect(types.map(t => t.elemID.name)).toEqual(['A', 'Subsidiary', 'C'])
+    it('should do nothing if SuiteApp is not configured', async () => {
+      jest.spyOn(client, 'isSuiteAppConfigured').mockReturnValue(false)
+      await expect(getDataTypes(client)).resolves.toBeUndefined()
+    })
+
+    it('should return empty list if failed to get wsdl', async () => {
+      jest.spyOn(client, 'getNetsuiteWsdl').mockResolvedValue(undefined)
+      await expect(getDataTypes(client)).resolves.toBeUndefined()
+    })
   })
 
-  it('should do nothing if SuiteApp is not configured ', async () => {
-    jest.spyOn(client, 'isSuiteAppConfigured').mockReturnValue(false)
-    const types = await getDataTypes(client)
-    expect(types).toHaveLength(0)
-    expect(createClientMock).not.toHaveBeenCalled()
-  })
+  describe('getDataElements', () => {
+    const subsidiaryType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'Subsidiary'),
+      fields: {
+        booleanField: { refType: BuiltinTypes.BOOLEAN },
+        numberField: { refType: BuiltinTypes.NUMBER },
+      },
+    })
 
-  it('should return empty list if failed to get wsdl', async () => {
-    jest.spyOn(client, 'getNetsuiteWsdl').mockResolvedValue(undefined)
-    const types = await getDataTypes(client)
-    expect(types).toHaveLength(0)
+    beforeEach(() => {
+      extractTypesMock.mockResolvedValue([subsidiaryType])
+    })
+
+    it('should return the instances of the types', async () => {
+      getAllRecordsMock.mockImplementation(async type => {
+        if (type === 'Subsidiary') {
+          return [{ name: 'name' }]
+        }
+        return []
+      })
+
+      const elements = await getDataElements(client)
+      expect(elements[0].elemID.getFullNameParts()).toEqual([NETSUITE, 'Subsidiary'])
+      expect(elements[1].elemID.getFullNameParts()).toEqual([NETSUITE, 'Subsidiary', 'instance', 'name'])
+      expect((elements[1] as InstanceElement).value).toEqual({ name: 'name' })
+    })
+
+    it('should return empty array if failed to get the types', async () => {
+      jest.spyOn(client, 'isSuiteAppConfigured').mockReturnValue(false)
+      await expect(getDataElements(client)).resolves.toEqual([])
+    })
+
+    it('should throw an error if failed to getAllRecords', async () => {
+      getAllRecordsMock.mockResolvedValue(undefined)
+      await expect(getDataElements(client)).rejects.toThrow()
+    })
+
+    it('should convert attributes into fields', async () => {
+      getAllRecordsMock.mockImplementation(async type => {
+        if (type === 'Subsidiary') {
+          return [{ name: 'name', attributes: { internalId: '1', 'xsi:type': 'Subsidiary' } }]
+        }
+        return []
+      })
+      const elements = await getDataElements(client)
+      expect((elements[1] as InstanceElement).value).toEqual({
+        name: 'name',
+        internalId: '1',
+      })
+    })
+
+    it('should convert date to string', async () => {
+      getAllRecordsMock.mockImplementation(async type => {
+        if (type === 'Subsidiary') {
+          return [{ name: 'name', date: new Date(2020, 1, 1) }]
+        }
+        return []
+      })
+      const elements = await getDataElements(client)
+      expect(typeof (elements[1] as InstanceElement).value.date).toEqual('string')
+    })
+
+    it('should convert booleans', async () => {
+      getAllRecordsMock.mockImplementation(async type => {
+        if (type === 'Subsidiary') {
+          return [
+            { name: 'name1', booleanField: 'true' },
+            { name: 'name2', booleanField: 'false' },
+          ]
+        }
+        return []
+      })
+      const elements = await getDataElements(client)
+      expect((elements[1] as InstanceElement).value.booleanField).toBe(true)
+      expect((elements[2] as InstanceElement).value.booleanField).toBe(false)
+    })
+
+    it('should convert numbers', async () => {
+      getAllRecordsMock.mockImplementation(async type => {
+        if (type === 'Subsidiary') {
+          return [
+            { name: 'name', numberField: '1234' },
+          ]
+        }
+        return []
+      })
+      const elements = await getDataElements(client)
+      expect((elements[1] as InstanceElement).value.numberField).toBe(1234)
+    })
   })
 })

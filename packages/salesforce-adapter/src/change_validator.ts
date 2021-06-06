@@ -23,6 +23,7 @@ import customFieldTypeValidator from './change_validators/custom_field_type'
 import standardFieldLabelValidator from './change_validators/standard_field_label'
 import profileMapKeysValidator from './change_validators/profile_map_keys'
 import multipleDefaultsValidator from './change_validators/multiple_deafults'
+import fieldAnnotationsReadOnlyValidator from './change_validators/field_annotations'
 
 const changeValidators: ChangeValidator[] = [
   packageValidator,
@@ -33,6 +34,7 @@ const changeValidators: ChangeValidator[] = [
   standardFieldLabelValidator,
   profileMapKeysValidator,
   multipleDefaultsValidator,
+  fieldAnnotationsReadOnlyValidator,
 ]
 
 export default createChangeValidator(changeValidators)

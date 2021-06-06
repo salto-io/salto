@@ -370,9 +370,12 @@ export const loadWorkspace = async (
     return awu(Object.values(changesByID)).flatMap(async changes => {
       const refID = changes[0].id
       if (refID.isTopLevel()) {
-        return changes as Change[]
+        return changes
       }
       const before = await state().get(refID.createTopLevelParentID().parent)
+      if (before === undefined) {
+        return []
+      }
       const clonedBefore = before.clone()
       applyDetailedChanges(clonedBefore, changes)
       const after = await getElementHiddenParts(

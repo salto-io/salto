@@ -153,6 +153,7 @@ export const loadWorkspace = async (
   enviormentsSources: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
   ignoreFileChanges = false,
+  persistent = true,
 ): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
@@ -178,6 +179,7 @@ export const loadWorkspace = async (
     envName ?? currentEnv(),
     enviormentsSources.commonSourceName,
     remoteMapCreator,
+    persistent
   )
   let naclFilesSource = createNaclFilesSource()
   let workspaceState: Promise<WorkspaceState> | undefined
@@ -201,17 +203,20 @@ export const loadWorkspace = async (
               serialize: element => serialize([element]),
               // TODO: we might need to pass static file reviver to the deserialization func
               deserialize: deserializeSingleElement,
+              persistent,
             })
           ),
           errors: await remoteMapCreator<MergeError[]>({
             namespace: getRemoteMapNamespace('errors', envName),
             serialize: mergeErrors => serialize(mergeErrors),
             deserialize: async data => deserializeMergeErrors(data),
+            persistent,
           }),
           validationErrors: await remoteMapCreator<ValidationError[]>({
             namespace: getRemoteMapNamespace('validationErrors', envName),
             serialize: validationErrors => serialize(validationErrors),
             deserialize: async data => deserializeValidationErrors(data),
+            persistent,
           }),
         }]).toArray())
     const updateWorkspace = async (envName: string): Promise<void> => {
@@ -596,6 +601,9 @@ export const loadWorkspace = async (
     transformError,
     getSourceFragment,
     flush: async (): Promise<void> => {
+      if (!persistent) {
+        throw new Error('Can not flush a non-persistent workspace.')
+      }
       const currentWSState = await getWorkspaceState()
       await state().flush()
       await (await getLoadedNaclFilesSource()).flush()
@@ -684,6 +692,7 @@ export const loadWorkspace = async (
         currentEnv(),
         enviormentsSources.commonSourceName,
         remoteMapCreator,
+        persistent
       )
     },
     renameEnvironment: async (envName: string, newEnvName: string, newEnvNaclPath? : string) => {
@@ -718,6 +727,7 @@ export const loadWorkspace = async (
         currentEnv(),
         enviormentsSources.commonSourceName,
         remoteMapCreator,
+        persistent
       )
     },
     setCurrentEnv: async (env: string, persist = true): Promise<void> => {
@@ -733,6 +743,7 @@ export const loadWorkspace = async (
         currentEnv(),
         enviormentsSources.commonSourceName,
         remoteMapCreator,
+        persistent
       )
       workspaceState = undefined
     },

@@ -97,13 +97,18 @@ const loadNaclFileSource = async (
   sourceBaseDir: string,
   cacheBaseDir: string,
   sourceName: string,
+  persistent: boolean,
   excludeDirs: string[] = []
 ): Promise<nacl.NaclFilesSource> => {
   const { naclFilesStore, staticFileSource } = getNaclFilesSourceParams(
     sourceBaseDir, cacheBaseDir, sourceName, excludeDirs
   )
   return naclFilesSource(
-    sourceName, naclFilesStore, staticFileSource, createRemoteMapCreator(cacheBaseDir)
+    sourceName,
+    naclFilesStore,
+    staticFileSource,
+    createRemoteMapCreator(cacheBaseDir),
+    persistent
   )
 }
 
@@ -117,6 +122,7 @@ export const loadLocalElementsSources = async (
   localStorage: string,
   envs: ReadonlyArray<string>,
   remoteMapCreator: remoteMap.RemoteMapCreator,
+  persistent = true
 ): Promise<EnvironmentsSources> => ({
   commonSourceName: COMMON_ENV_PREFIX,
   sources: {
@@ -127,12 +133,14 @@ export const loadLocalElementsSources = async (
           naclFiles: await loadNaclFileSource(
             baseDir,
             path.resolve(localStorage, CACHE_DIR_NAME),
-            getLocalEnvName(env)
+            getLocalEnvName(env),
+            persistent
           ),
           state: localState(
             path.join(getConfigDir(baseDir), STATES_DIR_NAME, env),
             env,
-            remoteMapCreator
+            remoteMapCreator,
+            persistent
           ),
         },
       ]))),
@@ -141,6 +149,7 @@ export const loadLocalElementsSources = async (
         baseDir,
         path.resolve(localStorage, CACHE_DIR_NAME),
         getLocalEnvName(COMMON_ENV_PREFIX),
+        persistent,
         [path.join(baseDir, ENVS_PREFIX)]
       ),
     },
@@ -163,7 +172,7 @@ const credentialsSource = (localStorage: string): cs.ConfigSource =>
   }))
 
 export const loadLocalWorkspace = async (
-  lookupDir: string, configOverrides?: DetailedChange[],
+  lookupDir: string, configOverrides?: DetailedChange[], persistent = true
 ): Promise<Workspace> => {
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
   if (_.isUndefined(baseDir)) {
@@ -174,7 +183,11 @@ export const loadLocalWorkspace = async (
   const credentials = credentialsSource(workspaceConfig.localStorage)
   const cacheDirName = path.join(workspaceConfig.localStorage, CACHE_DIR_NAME)
   const elemSources = await loadLocalElementsSources(
-    baseDir, workspaceConfig.localStorage, envs, createRemoteMapCreator(cacheDirName)
+    baseDir,
+    workspaceConfig.localStorage,
+    envs,
+    createRemoteMapCreator(cacheDirName),
+    persistent
   )
   const ws = await loadWorkspace(
     workspaceConfig, credentials, elemSources, createRemoteMapCreator(cacheDirName)
@@ -207,7 +220,11 @@ export const loadLocalWorkspace = async (
   }
 }
 
-export const initLocalWorkspace = async (baseDir: string, name?: string, envName = 'default'):
+export const initLocalWorkspace = async (
+  baseDir: string,
+  name?: string,
+  envName = 'default',
+):
 Promise<Workspace> => {
   const workspaceName = name ?? path.basename(path.resolve(baseDir))
   const uid = uuidv4()
@@ -226,7 +243,8 @@ Promise<Workspace> => {
     path.resolve(baseDir),
     localStorage,
     [envName],
-    remoteMapCreator
+    remoteMapCreator,
+    true
   )
 
   return initWorkspace(

@@ -137,7 +137,11 @@ const persistentMockCreateRemoteMap = ():
   return creator
 }
 
-const buildMockWorkspace = async (files: Record<string, string>, staticFileNames: string[]):
+const buildMockWorkspace = async (
+  files: Record<string, string>,
+  staticFileNames: string[],
+  persistent = false
+):
 Promise<Workspace> => {
   const mockStaticFilesCache: staticFiles.StaticFilesCache = {
     get: mockFunction<staticFiles.StaticFilesCache['get']>(),
@@ -159,6 +163,7 @@ Promise<Workspace> => {
     mockedDirStore,
     commonStaticFilesSource,
     mockCreateRemoteMap,
+    persistent
   )
   const defaultStaticFilesSource = staticFiles.buildStaticFilesSource(
     mockDirStore({}),
@@ -180,6 +185,7 @@ Promise<Workspace> => {
           mockDirStore({}),
           defaultStaticFilesSource,
           mockCreateRemoteMap,
+          persistent
         ),
         state: state.buildInMemState(async () => ({
           elements: createInMemoryElementSource(
@@ -197,6 +203,7 @@ Promise<Workspace> => {
           mockDirStore({}),
           inactiveStaticFilesSource,
           mockCreateRemoteMap,
+          persistent
         ),
         state: state.buildInMemState(async () => ({
           elements: createInMemoryElementSource([]),

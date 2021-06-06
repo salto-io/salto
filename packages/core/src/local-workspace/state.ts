@@ -83,7 +83,8 @@ const deserializeAndFlatten = async (elementsJSON: string): Promise<Element[]> =
 export const localState = (
   filePrefix: string,
   envName: string,
-  remoteMapCreator: remoteMap.RemoteMapCreator
+  remoteMapCreator: remoteMap.RemoteMapCreator,
+  persistent = true
 ): state.State => {
   let dirty = false
   let pathToClean = ''
@@ -143,7 +144,11 @@ export const localState = (
     getHashFromContent((await Promise.all(filePaths.map(readTextFile))))
 
   const loadStateData = async (): Promise<state.StateData> => {
-    const quickAccessStateData = await state.buildStateData(envName, remoteMapCreator)
+    const quickAccessStateData = await state.buildStateData(
+      envName,
+      remoteMapCreator,
+      persistent
+    )
     const filePaths = await getRelevantStateFiles()
     const stateFilesHash = await getHash(filePaths)
     const quickAccessHash = (await quickAccessStateData.saltoMetadata.get('hash'))

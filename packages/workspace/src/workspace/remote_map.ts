@@ -46,6 +46,7 @@ export type RemoteMapType = 'workspace' | 'state'
 export interface CreateRemoteMapParams<T> {
   namespace: string
   batchInterval?: number
+  persistent: boolean
   serialize: (value: T) => string
   deserialize: (s: string) => Promise<T>
 }

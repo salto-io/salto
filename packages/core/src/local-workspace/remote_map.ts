@@ -21,6 +21,7 @@ import * as fileUtils from '@salto-io/file'
 import { remoteMap } from '@salto-io/workspace'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import type rocksdb from '@salto-io/rocksdb'
+import path from 'path'
 
 const { asynciterable } = collections
 const { awu } = asynciterable
@@ -31,11 +32,23 @@ const UNIQUE_ID_SEPARATOR = '%%'
 const DELETE_OPERATION = 1
 const SET_OPERATION = 0
 const GET_CONCURRENCY = 100
+export const TMP_DB_DIR = 'tmp-dbs'
 export type RocksDBValue = string | Buffer | undefined
 
 type CreateIteratorOpts = remoteMap.IterationOpts & {
   keys: boolean
   values: boolean
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let rocksdbImpl: any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getRemoteDbImpl = (): any => {
+  if (rocksdbImpl === undefined) {
+    // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires
+    rocksdbImpl = require('./rocksdb').default
+  }
+  return rocksdbImpl
 }
 
 const readIteratorNext = (iterator: rocksdb
@@ -159,25 +172,48 @@ AsyncIterable<remoteMap.RemoteMapEntry<string>[]> {
 }
 
 const MAX_CONNECTIONS = 1000
-const dbConnections: Record<string, Promise<rocksdb>> = {}
+const persistentDBConnections: Record<string, Promise<rocksdb>> = {}
+const tmpDBConnections: Record<string, Record<string, Promise<rocksdb>>> = {}
 let currnetConnectionsCount = 0
 
 const closeConnection = async (location: string, connection: Promise<rocksdb>): Promise<void> => {
   const dbConnection = await connection
   await promisify(dbConnection.close.bind(dbConnection))()
-  delete dbConnections[location]
+  delete persistentDBConnections[location]
 }
 
-export const closeAllRemoteMaps = async (): Promise<void> => (
-  awu(Object.entries(dbConnections)).forEach(async ([loc, connection]) => {
+const closeTmpConnection = async (
+  location: string,
+  tmpLocation: string,
+  connection: Promise<rocksdb>
+): Promise<void> => {
+  const dbConnection = await connection
+  await promisify(dbConnection.close.bind(dbConnection))()
+  await promisify(getRemoteDbImpl().destroy.bind(getRemoteDbImpl(), tmpLocation))()
+  delete (tmpDBConnections[location] ?? {})[tmpLocation]
+}
+
+export const closeAllRemoteMaps = async (): Promise<void> => {
+  await awu(Object.entries(persistentDBConnections)).forEach(async ([loc, connection]) => {
     await closeConnection(loc, connection)
   })
-)
+  await awu(Object.entries(tmpDBConnections)).forEach(async ([loc, tmpConnections]) => {
+    await awu(Object.entries(tmpConnections)).forEach(async ([tmpLoc, connection]) => {
+      await closeTmpConnection(loc, tmpLoc, connection)
+    })
+  })
+}
 
 export const closeRemoteMapsOfLocation = async (location: string): Promise<void> => {
-  const connection = dbConnections[location]
+  const connection = persistentDBConnections[location]
   if (connection) {
     await closeConnection(location, connection)
+  }
+  const tmpConnections = tmpDBConnections[location]
+  if (tmpConnections) {
+    await awu(Object.entries(tmpConnections)).forEach(([tmpLoc, tmpCon]) => (
+      closeTmpConnection(location, tmpLoc, tmpCon)
+    ))
   }
 }
 
@@ -189,7 +225,9 @@ const withCreatorLock = async (fn: (() => Promise<void>)): Promise<void> => {
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 const locationCaches = new LRU<string, LRU<string, any>>({ max: 10 })
 
-export const createRemoteMapCreator = (location: string, readOnly = false, cacheSize = 5000):
+export const createRemoteMapCreator = (location: string,
+  persistentDefaultValue = false,
+  cacheSize = 5000):
 remoteMap.RemoteMapCreator => {
   // Note: once we set a non-zero cache size,
   //   we won't change the cache size even if we give different value
@@ -206,20 +244,31 @@ remoteMap.RemoteMapCreator => {
     }
   }
   return async <T, K extends string = string>(
-    { namespace, batchInterval = 1000, serialize, deserialize }:
+    { namespace,
+      batchInterval = 1000,
+      persistent = persistentDefaultValue,
+      serialize,
+      deserialize }:
     remoteMap.CreateRemoteMapParams<T>
   ): Promise<remoteMap.RemoteMap<T, K> > => {
     const delKeys = new Set<string>()
+    const locationTmpDir = path.join(location, TMP_DB_DIR)
     if (!await fileUtils.exists(location)) {
       await fileUtils.mkdirp(location)
+    }
+    if (!await fileUtils.exists(locationTmpDir)) {
+      await fileUtils.mkdirp(locationTmpDir)
     }
     if (!/^[a-z0-9-_\s/]+$/i.test(namespace)) {
       throw new Error(
         `Invalid namespace: ${namespace}. Must include only alphanumeric characters or -`
       )
     }
-    let db: rocksdb
+    let persistentDB: rocksdb
+    let tmpDB: rocksdb
+
     const uniqueId = uuidv4()
+    const tmpLocation = path.join(locationTmpDir, uniqueId)
     const keyPrefix = namespace.concat(NAMESPACE_SEPARATOR)
     const tempKeyPrefix = TEMP_PREFIX.concat(UNIQUE_ID_SEPARATOR, uniqueId, UNIQUE_ID_SEPARATOR,
       keyPrefix)
@@ -232,15 +281,16 @@ remoteMap.RemoteMapCreator => {
     const getPrefixEndCondition = (prefix: string): string => prefix
       .substring(0, prefix.length - 1).concat((String
         .fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1)))
-    const createIterator = (prefix: string, opts: CreateIteratorOpts):
+    const createIterator = (prefix: string, opts: CreateIteratorOpts, connection: rocksdb):
     rocksdb.Iterator =>
-      db.iterator({
+      connection.iterator({
         keys: opts.keys,
         values: opts.values,
         lte: getPrefixEndCondition(prefix),
         ...(opts.after !== undefined ? { gt: opts.after } : { gte: prefix }),
         ...(opts.first !== undefined ? { limit: opts.first } : {}),
       })
+
     const createTempIterator = (opts: CreateIteratorOpts): rocksdb.Iterator => {
       const normalizedOpts = {
         ...opts,
@@ -248,7 +298,8 @@ remoteMap.RemoteMapCreator => {
       }
       return createIterator(
         tempKeyPrefix,
-        normalizedOpts
+        normalizedOpts,
+        tmpDB
       )
     }
     const createPersistentIterator = (opts: CreateIteratorOpts): rocksdb.Iterator => {
@@ -256,15 +307,16 @@ remoteMap.RemoteMapCreator => {
         ...opts,
         ...(opts.after ? { after: keyToDBKey(opts.after) } : {}),
       }
-      return createIterator(keyPrefix, normalizedOpts)
+      return createIterator(keyPrefix, normalizedOpts, persistentDB)
     }
     const batchUpdate = async (
       batchInsertIterator: AsyncIterable<remoteMap.RemoteMapEntry<string, string>>,
       temp = true,
       operation = SET_OPERATION,
     ): Promise<boolean> => {
+      const connection = temp ? tmpDB : persistentDB
       let i = 0
-      let batch = db.batch()
+      let batch = connection.batch()
       for await (const entry of batchInsertIterator) {
         i += 1
         if (operation === SET_OPERATION) {
@@ -275,7 +327,7 @@ remoteMap.RemoteMapCreator => {
         }
         if (i % batchInterval === 0) {
           await promisify(batch.write.bind(batch))()
-          batch = db.batch()
+          batch = connection.batch()
         }
       }
       if (i % batchInterval !== 0) {
@@ -337,9 +389,13 @@ remoteMap.RemoteMapCreator => {
             )
         ))
     }
-    const clearImpl = (prefix: string, suffix?: string): Promise<void> =>
+    const clearImpl = (
+      connection: rocksdb,
+      prefix: string,
+      suffix?: string
+    ): Promise<void> =>
       new Promise<void>(resolve => {
-        db.clear({
+        connection.clear({
           gte: prefix,
           lte: suffix ?? getPrefixEndCondition(prefix),
         }, () => {
@@ -374,9 +430,9 @@ remoteMap.RemoteMapCreator => {
           locationCache.set(keyToTempDBKey(key), ret)
           resolve(ret)
         }
-        db.get(keyToTempDBKey(key), async (error, value) => {
+        tmpDB.get(keyToTempDBKey(key), async (error, value) => {
           if (error) {
-            db.get(keyToDBKey(key), async (innerError, innerValue) => {
+            persistentDB.get(keyToDBKey(key), async (innerError, innerValue) => {
               if (innerError) {
                 resolve(undefined)
               } else {
@@ -390,27 +446,21 @@ remoteMap.RemoteMapCreator => {
       }
     })
     const closeImpl = async (): Promise<void> => {
-      if (db.status === 'open') {
-        await promisify(db.close.bind(db))()
-        if (!readOnly) {
-          delete dbConnections[location]
-        }
+      if (persistentDB.status === 'open') {
+        await closeConnection(location, Promise.resolve(persistentDB))
+        currnetConnectionsCount -= 1
+      }
+      if (tmpDB.status === 'open') {
+        await closeTmpConnection(location, tmpLocation, Promise.resolve(tmpDB))
         currnetConnectionsCount -= 1
       }
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let rocksdbImpl: any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const getRemoteDbImpl = (): any => {
-      if (rocksdbImpl === undefined) {
-        // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires
-        rocksdbImpl = require('./rocksdb').default
-      }
-      return rocksdbImpl
-    }
-    const getOpenDBConnection = async (loc: string): Promise<rocksdb> => {
+    const getOpenDBConnection = async (
+      loc: string,
+      isReadOnly: boolean
+    ): Promise<rocksdb> => {
       const newDb = getRemoteDbImpl()(loc)
-      await promisify(newDb.open.bind(newDb, { readOnly }))()
+      await promisify(newDb.open.bind(newDb, { readOnly: isReadOnly }))()
       return newDb
     }
     const createDBIfNotExist = async (loc: string): Promise<void> => {
@@ -427,24 +477,30 @@ remoteMap.RemoteMapCreator => {
         }
       }
     }
-    const createDBConnections = async (loc: string): Promise<void> => {
-      if (loc in dbConnections) {
-        db = await dbConnections[loc]
+    const createDBConnections = async (): Promise<void> => {
+      if (tmpDB === undefined) {
+        const tmpConnection = getOpenDBConnection(tmpLocation, false)
+        tmpDB = await tmpConnection
+        tmpDBConnections[location] = tmpDBConnections[location] ?? {}
+        tmpDBConnections[location][tmpLocation] = tmpConnection
+      }
+      if (location in persistentDBConnections) {
+        persistentDB = await persistentDBConnections[location]
         return
       }
       if (currnetConnectionsCount > MAX_CONNECTIONS) {
         throw new Error('Failed to open rocksdb connection - too much open connections already')
       }
-      await createDBIfNotExist(loc)
-      const connection = getOpenDBConnection(loc)
-      db = await connection
-      currnetConnectionsCount += 1
-      if (!readOnly) {
-        dbConnections[loc] = connection
-        await clearImpl(TEMP_PREFIX)
+      await createDBIfNotExist(location)
+      const connection = getOpenDBConnection(location, !persistent)
+      persistentDB = await connection
+
+      currnetConnectionsCount += 2
+      if (persistent) {
+        persistentDBConnections[location] = connection
       }
     }
-    await createDBConnections(location)
+    await createDBConnections()
     return {
       get: getImpl,
       getMany: async (keys: string[]): Promise<(T | undefined)[]> =>
@@ -470,7 +526,7 @@ remoteMap.RemoteMapCreator => {
       set: async (key: string, element: T): Promise<void> => {
         delKeys.delete(key)
         locationCache.set(keyToTempDBKey(key), element)
-        await promisify(db.put.bind(db))(keyToTempDBKey(key), serialize(element))
+        await promisify(tmpDB.put.bind(tmpDB))(keyToTempDBKey(key), serialize(element))
       },
       setAll: setAllImpl,
       deleteAll: async (iterator: AsyncIterable<K>) => awu(iterator).forEach(k => delKeys.add(k)),
@@ -483,43 +539,47 @@ remoteMap.RemoteMapCreator => {
         return keysImpl(iterationOpts) as remoteMap.RemoteMapIterator<K, Opts>
       },
       flush: async () => {
-        const res = await batchUpdate(awu(aggregatedIterable(
+        if (!persistent) {
+          throw new Error('can not flush a non persistent remote map')
+        }
+        const writeRes = await batchUpdate(awu(aggregatedIterable(
           [createTempIterator({ keys: true, values: true })]
         )), false)
-        await clearImpl(tempKeyPrefix)
-        await batchUpdate(awu(delKeys.keys()).map(async key => ({ key, value: key })),
-          false, DELETE_OPERATION)
-        return res
+        await clearImpl(tmpDB, tempKeyPrefix)
+        const readRes = await batchUpdate(
+          awu(delKeys.keys()).map(async key => ({ key, value: key })),
+          false,
+          DELETE_OPERATION
+        )
+        return writeRes || readRes
       },
       revert: async () => {
         locationCache.reset()
         delKeys.clear()
-        await clearImpl(tempKeyPrefix)
+        await clearImpl(tmpDB, tempKeyPrefix)
       },
       clear: async () => {
         locationCache.reset()
-        await clearImpl(keyPrefix)
-        await clearImpl(tempKeyPrefix)
+        await clearImpl(persistentDB, keyPrefix)
+        await clearImpl(tmpDB, tempKeyPrefix)
       },
       delete: async (key: string) => {
-        locationCache.del(keyToTempDBKey(key))
-        locationCaches.del(location)
-        await clearImpl(keyToDBKey(key), keyToDBKey(key))
-        await clearImpl(keyToTempDBKey(key), keyToTempDBKey(key))
+        delKeys.add(key)
       },
       close: closeImpl,
       has: async (key: string): Promise<boolean> => {
         if (locationCache.has(keyToTempDBKey(key))) {
           return true
         }
-        const hasKeyImpl = (k: string): boolean => {
+        const hasKeyImpl = (k: string, db: rocksdb): boolean => {
           let val: RocksDBValue
           db.get(k, async (error, value) => {
             val = error ? undefined : value
           })
           return val !== undefined
         }
-        return hasKeyImpl(keyToTempDBKey(key)) || hasKeyImpl(keyToDBKey(key))
+        return hasKeyImpl(keyToTempDBKey(key), tmpDB)
+          || hasKeyImpl(keyToDBKey(key), persistentDB)
       },
       isEmpty: async (): Promise<boolean> => awu(keysImpl({ first: 1 })).isEmpty(),
     }

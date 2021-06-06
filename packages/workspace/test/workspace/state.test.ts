@@ -125,4 +125,11 @@ describe('state', () => {
       expect(await state.getStateSaltoVersion()).toEqual('0.0.1')
     })
   })
+
+  describe('non persistent state', () => {
+    it('should not allow flush when the ws is non-persistent', async () => {
+      const nonPState = buildInMemState(loadStateData, false)
+      await expect(() => nonPState.flush()).rejects.toThrow()
+    })
+  })
 })

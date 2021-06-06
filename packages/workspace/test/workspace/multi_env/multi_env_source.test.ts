@@ -186,6 +186,7 @@ const source = multiEnvSource(
   activePrefix,
   commonPrefix,
   () => Promise.resolve(new InMemoryRemoteMap()),
+  true
 )
 
 
@@ -253,6 +254,7 @@ describe('multi env source', () => {
         primarySourceName,
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
@@ -283,6 +285,7 @@ describe('multi env source', () => {
         primarySourceName,
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
@@ -332,6 +335,7 @@ describe('multi env source', () => {
         primarySourceName,
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
@@ -393,6 +397,7 @@ describe('multi env source', () => {
         activePrefix,
         commonPrefix,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await src.load({})
       expect(await src.isEmpty()).toBeTruthy()
@@ -408,6 +413,7 @@ describe('multi env source', () => {
         activePrefix,
         commonPrefix,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await src.load({})
       expect(await src.isEmpty()).toBeFalsy()
@@ -422,6 +428,7 @@ describe('multi env source', () => {
         activePrefix,
         commonPrefix,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await src.load({})
       expect(await src.isEmpty()).toBeTruthy()
@@ -529,6 +536,7 @@ describe('multi env source', () => {
         primarySourceName,
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
@@ -557,6 +565,7 @@ describe('multi env source', () => {
         primarySourceName,
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
@@ -588,6 +597,7 @@ describe('multi env source', () => {
         primarySourceName,
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
@@ -631,6 +641,7 @@ describe('multi env source', () => {
         primarySourceName,
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
@@ -665,6 +676,7 @@ describe('multi env source', () => {
         primarySourceName,
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
@@ -706,6 +718,7 @@ describe('multi env source', () => {
         primarySourceName,
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
@@ -734,6 +747,7 @@ describe('multi env source', () => {
         primarySourceName,
         commonSourceName,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await multiEnvSourceWithMockSources.load({})
       // NOTE: the getAll call initialize the init state
@@ -854,6 +868,19 @@ describe('multi env source', () => {
       expect(routers.routeDemote).toHaveBeenCalledWith(
         [envElemID, objectElemID], envSource, commonSource, { inactive: inactiveSource }
       )
+    })
+  })
+
+  describe('non persistent multiEnvSource', () => {
+    it('should not allow flush when the ws is non-persistent', async () => {
+      const nonPSource = multiEnvSource(
+        sources,
+        activePrefix,
+        commonPrefix,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+        false
+      )
+      await expect(() => nonPSource.flush()).rejects.toThrow()
     })
   })
 })

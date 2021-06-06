@@ -21,7 +21,9 @@ import { collections } from '@salto-io/lowerdash'
 import { promisify } from 'util'
 import { serialization, remoteMap as rm, merger } from '@salto-io/workspace'
 import rocksdb from '@salto-io/rocksdb'
-import { createRemoteMapCreator, RocksDBValue } from '../../../src/local-workspace/remote_map'
+import path from 'path'
+import { readdirSync } from 'fs-extra'
+import { createRemoteMapCreator, RocksDBValue, TMP_DB_DIR } from '../../../src/local-workspace/remote_map'
 
 const { serialize, deserialize } = serialization
 const { awu } = collections.asynciterable
@@ -45,12 +47,16 @@ const DB_LOCATION = '/tmp/test_db'
 
 let remoteMap: rm.RemoteMap<Element>
 
-const createMap = async (namespace: string): Promise<rm.RemoteMap<Element>> =>
+const createMap = async (
+  namespace: string,
+  persistent = true
+): Promise<rm.RemoteMap<Element>> =>
   createRemoteMapCreator(DB_LOCATION)({
     namespace,
     batchInterval: 1000,
     serialize: elem => serialize([elem]),
     deserialize: async elemStr => ((await deserialize(elemStr)) as Element[])[0],
+    persistent,
   })
 
 async function *createAsyncIterable(iterable: Element[]):
@@ -326,6 +332,22 @@ describe('test operations on remote db', () => {
     expect(res.map(elemToFieldNameMapping)).toEqual(cloneElements.sort((a, b) =>
       (a.elemID.getFullName() < b.elemID.getFullName() ? -1 : 1))
       .map(elemToFieldNameMapping))
+  })
+})
+
+describe('non persistent mode', () => {
+  it('should throw an error if flush is called', async () => {
+    const readOnlyRemoteMap = await createMap(DB_LOCATION, false)
+    await expect(() => readOnlyRemoteMap.flush()).rejects.toThrow()
+  })
+
+  it('should destroy the tmp storage dirs after the connection is closed', async () => {
+    const tmpDir = path.join(DB_LOCATION, TMP_DB_DIR)
+    const preDirs = readdirSync(tmpDir)
+    const readOnlyRemoteMap = await createMap(DB_LOCATION, false)
+    await readOnlyRemoteMap.close()
+    const postDirs = readdirSync(tmpDir)
+    expect(preDirs).toEqual(postDirs)
   })
 })
 

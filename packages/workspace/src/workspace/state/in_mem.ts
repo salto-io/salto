@@ -26,7 +26,10 @@ type InMemoryState = State & {
   setVersion(version: string): Promise<void>
 }
 
-export const buildInMemState = (loadData: () => Promise<StateData>): InMemoryState => {
+export const buildInMemState = (
+  loadData: () => Promise<StateData>,
+  persistent = true
+): InMemoryState => {
   let innerStateData: Promise<StateData>
   const stateData = async (): Promise<StateData> => {
     if (innerStateData === undefined) {
@@ -80,6 +83,9 @@ export const buildInMemState = (loadData: () => Promise<StateData>): InMemorySta
       await currentStateData.saltoMetadata.clear()
     },
     flush: async () => {
+      if (!persistent) {
+        throw new Error('can not flush a non persistent state')
+      }
       const currentStateData = await stateData()
       await currentStateData.elements.flush()
       await currentStateData.pathIndex.flush()

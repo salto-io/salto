@@ -91,19 +91,22 @@ describe('type_elements', () => {
 
   describe('filterTypes', () => {
     it('should filter the right types', async () => {
-      const typeA = new ObjectType({ elemID: new ElemID('adapterName', 'A'), path: ['adapterName', 'A'] })
-      const typeB = new ObjectType({ elemID: new ElemID('adapterName', 'B'),
+      const typeA = new ObjectType({ elemID: new ElemID('adapterName', 'A') })
+      const typeB = new ObjectType({ elemID: new ElemID('adapterName', 'B'), path: ['adapter', 'somePath'] })
+      const typeC = new ObjectType({ elemID: new ElemID('adapterName', 'C'),
         fields: {
           a: { refType: createRefToElmWithValue(typeA) },
-        },
-        path: ['adapterName', 'B'] })
-      const typeC = new ObjectType({ elemID: new ElemID('adapterName', 'C'), path: ['adapterName', 'C'] })
-      const filteredTypes = await filterTypes('adapterName', [typeA, typeB, typeC], ['B', 'D'])
+          b: { refType: createRefToElmWithValue(typeB) },
+        } })
+      const typeD = new ObjectType({ elemID: new ElemID('adapterName', 'D') })
+      const filteredTypes = await filterTypes('adapterName', [typeA, typeC, typeD], ['C', 'E'])
 
-      expect(filteredTypes[0].elemID.getFullNameParts()).toEqual(['adapterName', 'B'])
-      expect(filteredTypes[0].path).toEqual(['adapterName', TYPES_PATH, 'B'])
+      expect(filteredTypes[0].elemID.getFullNameParts()).toEqual(['adapterName', 'C'])
+      expect(filteredTypes[0].path).toEqual(['adapterName', TYPES_PATH, 'C'])
       expect(filteredTypes[1].elemID.getFullNameParts()).toEqual(['adapterName', 'A'])
       expect(filteredTypes[1].path).toEqual(['adapterName', TYPES_PATH, SUBTYPES_PATH, 'A'])
+      expect(filteredTypes[2].elemID.getFullNameParts()).toEqual(['adapterName', 'B'])
+      expect(filteredTypes[2].path).toEqual(['adapter', 'somePath'])
     })
   })
 })

@@ -256,7 +256,10 @@ export const loadWorkspace = async (
         const elementsToValidate = [...elements, ...dependents]
         return {
           errors: await validateElements(elementsToValidate, elementSource),
-          validatedElementsIDs: elementsToValidate.map(elem => elem.elemID),
+          validatedElementsIDs: _.uniqBy(
+            [...elementsToValidate.map(elem => elem.elemID), ...relevantElementIDs],
+            e => e.getFullName(),
+          ),
         }
       }
 

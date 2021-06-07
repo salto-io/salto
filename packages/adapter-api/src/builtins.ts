@@ -84,6 +84,12 @@ const restrictionType = new ObjectType({
         StandardBuiltinTypes.STRING,
       ),
     },
+    length_limit: {
+      refType: new ReferenceExpression(
+        StandardBuiltinTypes.NUMBER.elemID,
+        StandardBuiltinTypes.NUMBER,
+      ),
+    },
   },
 })
 
@@ -112,6 +118,7 @@ type RestrictionAnnotationType = Partial<{
   min: number
   max: number
   regex: string
+  length_limit: number
 }>
 
 const StandardCoreAnnotationTypes: TypeMap = {

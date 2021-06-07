@@ -155,6 +155,24 @@ export class RegexMismatchValidationError extends ValidationError {
   }
 }
 
+export class InvalidValueLengthValidationError extends ValidationError {
+  readonly value: Value
+  readonly fieldName: string
+  readonly length: number
+
+  constructor({ elemID, value, fieldName, length }:
+    { elemID: ElemID; value: Value; fieldName: string; length: number }) {
+    super({
+      elemID,
+      error: `Value "${value}" is too long for field ${fieldName}.`
+        + ` expected value maximum length is "${length}"`,
+      severity: 'Warning',
+    })
+    this.value = value
+    this.fieldName = fieldName
+    this.length = length
+  }
+}
 export class MissingRequiredFieldValidationError extends ValidationError {
   readonly fieldName: string
 
@@ -275,10 +293,23 @@ const validateAnnotationsValue = async (
       return []
     }
 
+    const validateLengthLimit = (): ValidationError[] => {
+      const maxLength = restrictions.length_limit
+      if ((values.isDefined(maxLength) && (!_.isString(val) || (val.length > maxLength)))) {
+        return [
+          new InvalidValueLengthValidationError(
+            { elemID, value, fieldName: elemID.name, length: maxLength }
+          ),
+        ]
+      }
+      return []
+    }
+
     const restrictionValidations = [
       validateValueInsideRange,
       validateValueInList,
       validateRegexMatches,
+      validateLengthLimit,
     ]
     return restrictionValidations.flatMap(validation => validation())
   }

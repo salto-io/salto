@@ -14,20 +14,23 @@
 * limitations under the License.
 */
 import { InstanceElement, isInstanceElement, isListType, ReferenceExpression, TypeElement, Value } from '@salto-io/adapter-api'
-import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
+import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { isDataObjectType } from '../types'
 import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
 
-const getReference = (
+const getId = (value: Value, type: TypeElement): string => `${type.elemID.name}-${value.internalId}`
+
+const generateReference = (
   value: Value,
   type: TypeElement,
   elementsMap: Record<string, InstanceElement>,
 ): ReferenceExpression | undefined =>
   value.internalId
-  && elementsMap[`${type.elemID.name}-${value.internalId}`]
-  && new ReferenceExpression(elementsMap[`${type.elemID.name}-${value.internalId}`].elemID)
+  && elementsMap[getId(value, type)]
+  && new ReferenceExpression(elementsMap[getId(value, type)].elemID)
 
 const replaceReference: (
   elementsMap: Record<string, InstanceElement>
@@ -39,11 +42,15 @@ const replaceReference: (
   const fieldType = await field?.getType()
   if (isListType(fieldType) && value.recordRef !== undefined) {
     return Promise.all(value.recordRef.map(
-      async (val: Value) => (getReference(val, await fieldType.getInnerType(), elementsMap)) ?? val
+      async (val: Value) => (generateReference(
+        val,
+        await fieldType.getInnerType(),
+        elementsMap
+      )) ?? val
     ))
   }
 
-  const reference = fieldType && getReference(value, fieldType, elementsMap)
+  const reference = fieldType && generateReference(value, fieldType, elementsMap)
   if (reference !== undefined) {
     return reference
   }
@@ -53,17 +60,21 @@ const replaceReference: (
 const filterCreator: FilterCreator = () => ({
   onFetch: async ({ elements }) => {
     const instances = elements.filter(isInstanceElement)
-    const elementsMap = await awu(instances.filter(e => e.value.internalId !== undefined))
+    const dataInstancesMap = await awu(instances.filter(e => e.value.internalId !== undefined))
       .keyBy(async e => `${(await e.getType()).elemID.name}-${e.value.internalId}`)
 
-    await awu(instances).forEach(async element => {
-      const updatedElement = await transformElement({
-        element,
-        transformFunc: replaceReference(elementsMap),
-        strict: false,
+    await awu(instances)
+      .filter(async e => isDataObjectType(await e.getType()))
+      .forEach(async element => {
+        const values = await transformValues({
+          values: element.value,
+          type: await element.getType(),
+          transformFunc: replaceReference(dataInstancesMap),
+          strict: false,
+          pathID: element.elemID,
+        }) ?? {}
+        element.value = values
       })
-      element.value = updatedElement.value
-    })
   },
 })
 

@@ -27,6 +27,7 @@ describe('data_instances_references', () => {
         annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
       },
     },
+    annotations: { source: 'soap' },
   })
   const secondType = new ObjectType({
     elemID: new ElemID(NETSUITE, 'secondType'),
@@ -34,6 +35,7 @@ describe('data_instances_references', () => {
       field: { refType: firstType },
       recordRefList: { refType: new ListType(firstType) },
     },
+    annotations: { source: 'soap' },
   })
   it('should add replace with reference', async () => {
     const instance = new InstanceElement(

@@ -20,18 +20,7 @@ import _ from 'lodash'
 import { naclCase, pathNaclCase, transformValues } from '@salto-io/adapter-utils'
 import NetsuiteClient from '../client/client'
 import { NETSUITE, RECORDS_PATH } from '../constants'
-
-const TYPE_TO_IDENTIFIER: Record<string, string> = {
-  Account: 'acctName',
-  Subsidiary: 'name',
-  Department: 'name',
-  Classification: 'name',
-  Location: 'name',
-  Currency: 'name',
-  Customer: 'entityId',
-}
-
-export const SUPPORTED_TYPES = Object.keys(TYPE_TO_IDENTIFIER)
+import { SUPPORTED_TYPES, TYPE_TO_IDENTIFIER } from './types'
 
 const log = logger(module)
 
@@ -39,15 +28,15 @@ export type DataTypeConfig = Record<string, string[]>
 
 export const getDataTypes = async (
   client: NetsuiteClient
-): Promise<ObjectType[] | undefined> => {
+): Promise<ObjectType[]> => {
   if (!client.isSuiteAppConfigured()) {
-    return undefined
+    return []
   }
 
   const wsdl = await client.getNetsuiteWsdl()
   if (wsdl === undefined) {
     log.warn('Failed to get WSDL, skipping data elements')
-    return undefined
+    return []
   }
   const types = await elementsComponents.soap.extractTypes(NETSUITE, wsdl)
 
@@ -102,24 +91,16 @@ export const getDataElements = async (
   client: NetsuiteClient
 ): Promise<Element[]> => {
   const types = await getDataTypes(client)
-  if (types === undefined) {
-    return []
-  }
 
   const typesMap = _.keyBy(types, e => e.elemID.name)
 
-  const instances = _.flatten(await Promise.all(SUPPORTED_TYPES.map(
-    typeName => client.getAllRecords(typeName)
-      .then(records => {
-        if (records === undefined) {
-          throw new Error(`Search for type ${typeName} failed`)
-        }
-
-        return Promise.all(records.map(
+  const instances = _.flatten(await Promise.all(SUPPORTED_TYPES
+    .filter(typeName => typeName in typesMap)
+    .map(typeName => client.getAllRecords(typeName)
+      .then(records =>
+        Promise.all(records.map(
           record => createInstance(record, typesMap[typeName])
-        ))
-      })
-  )))
+        ))))))
 
   return [...types, ...instances]
 }

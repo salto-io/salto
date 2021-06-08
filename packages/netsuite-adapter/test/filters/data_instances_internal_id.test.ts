@@ -31,7 +31,7 @@ describe('data_instances_internal_id', () => {
   it('should add account specific value to record refs', async () => {
     const instance = new InstanceElement(
       'instance',
-      new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { recordRef: { refType: recordRefType } } }),
+      new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { recordRef: { refType: recordRefType } }, annotations: { source: 'soap' } }),
       { recordRef: {} }
     )
 
@@ -49,7 +49,7 @@ describe('data_instances_internal_id', () => {
   it('should extract list items with internal id', async () => {
     const instance = new InstanceElement(
       'instance',
-      new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { someList: { refType: new ListType(recordRefType) } } }),
+      new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { someList: { refType: new ListType(recordRefType) } }, annotations: { source: 'soap' } }),
       { someList: [{ internalId: '1' }, { internalId: '1' }] }
     )
 

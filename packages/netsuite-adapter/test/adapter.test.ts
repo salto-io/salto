@@ -22,7 +22,7 @@ import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import createClient from './client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
-import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
+import { customTypes, fileCabinetTypes, getMetadataTypes } from '../src/types'
 import {
   ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, TYPES_TO_SKIP,
   FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, DEPLOY_REFERENCED_ELEMENTS,
@@ -164,7 +164,7 @@ describe('Adapter', () => {
       expect(fileCabinetQuery.isFileMatch('Some/File/Regex')).toBeFalsy()
       expect(fileCabinetQuery.isFileMatch('Some/anotherFile/Regex')).toBeTruthy()
 
-      expect(elements).toHaveLength(getAllTypes().length + 3)
+      expect(elements).toHaveLength(getMetadataTypes().length + 3)
       const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
       expect(elements).toContainEqual(customFieldType)
       expect(elements).toContainEqual(
@@ -258,7 +258,7 @@ describe('Adapter', () => {
           failedTypeToInstances: {},
         })
       const { elements } = await netsuiteAdapter.fetch(mockFetchOpts)
-      expect(elements).toHaveLength(getAllTypes().length)
+      expect(elements).toHaveLength(getMetadataTypes().length)
     })
 
     it('should call filters by their order', async () => {

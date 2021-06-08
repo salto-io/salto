@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
+import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { isDataObjectType } from '../types'
 import { NETSUITE, RECORDS_PATH } from '../constants'
 import { FilterCreator } from '../filter'
 
@@ -29,6 +30,11 @@ const getSubInstanceName = (path: ElemID, internalId: string): string => {
   return `${path.typeName}_${name}_${internalId}`
 }
 
+/**
+ * Extract to a new instance every object in a list that contains an internal id
+ * (since the internal id is hidden, and we don't support hidden values in lists,
+ * the objects in the list need to be extracted to new instances).
+ */
 const filterCreator: FilterCreator = () => ({
   onFetch: async ({ elements }) => {
     const recordRefType = elements.find(e => e.elemID.name === 'RecordRef')
@@ -66,13 +72,16 @@ const filterCreator: FilterCreator = () => ({
 
     await awu(elements)
       .filter(isInstanceElement)
+      .filter(async e => isDataObjectType(await e.getType()))
       .forEach(async element => {
-        const updatedElement = await transformElement({
-          element,
+        const values = await transformValues({
+          values: element.value,
+          type: await element.getType(),
           transformFunc: transformIds,
           strict: false,
-        })
-        element.value = updatedElement.value
+          pathID: element.elemID,
+        }) ?? {}
+        element.value = values
       })
 
     elements.push(...Object.values(newInstancesMap))

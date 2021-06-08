@@ -299,10 +299,10 @@ export default class SoapClient {
         ...await Promise.all(
           _.range(2, initialResponse.searchResult.totalPages + 1)
             .map(async i => {
-              const res = await this.sendSearchWithIdRequest(
-                initialResponse.searchResult.searchId,
-                i
-              )
+              const res = await this.sendSearchWithIdRequest({
+                searchId: initialResponse.searchResult.searchId,
+                pageIndex: i,
+              })
               log.debug(`Finished sending search request for page ${i}/${initialResponse.searchResult.totalPages} of type ${type}`)
               return res
             })
@@ -352,9 +352,9 @@ export default class SoapClient {
       _.assign(body.searchRecord, {
         'tranSales:basic': {
           attributes: {
-            'xmlns:tranSales': 'urn:sales_2020_2.transactions.webservices.netsuite.com',
-            'xmlns:platformCommon': 'urn:common_2020_2.platform.webservices.netsuite.com',
-            'xmlns:platformCore': 'urn:core_2020_2.platform.webservices.netsuite.com',
+            'xmlns:tranSales': `urn:sales_${NETSUITE_VERSION}.transactions.webservices.netsuite.com`,
+            'xmlns:platformCommon': `urn:common_${NETSUITE_VERSION}.platform.webservices.netsuite.com`,
+            'xmlns:platformCore': `urn:core_${NETSUITE_VERSION}.platform.webservices.netsuite.com`,
           },
           'platformCommon:type': {
             attributes: {
@@ -381,21 +381,18 @@ export default class SoapClient {
   }
 
   private async sendSearchWithIdRequest(
-    searchId: string,
-    pageIndex: number
-  ): Promise<SearchResponse> {
-    const body = {
-      searchId,
-      pageIndex,
+    args: {
+      searchId: string
+      pageIndex: number
     }
-
-    const response = await this.sendSoapRequest('searchMoreWithId', body)
+  ): Promise<SearchResponse> {
+    const response = await this.sendSoapRequest('searchMoreWithId', args)
 
     if (!this.ajv.validate<SearchResponse>(
       SEARCH_RESPONSE_SCHEMA,
       response
     )) {
-      log.error(`Got invalid response from search with id request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      log.error(`Got invalid response from search with id request with in SOAP api. Id: ${args.searchId}, index: ${args.pageIndex}, errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
       throw new Error(`Got invalid response from search with id request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
 

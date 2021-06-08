@@ -25,7 +25,7 @@ import {
   createInstanceElement,
 } from './transformer'
 import {
-  customTypes, getAllTypes, fileCabinetTypes,
+  customTypes, getMetadataTypes, fileCabinetTypes,
 } from './types'
 import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS,
   INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION } from './constants'
@@ -209,8 +209,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const dataElements = await dataElementsPromise
 
     const elements = [
-      ...getAllTypes(),
-      ...dataElements ?? [],
+      ...getMetadataTypes(),
+      ...dataElements,
       ...instances,
       ...serverTimeElements,
     ]

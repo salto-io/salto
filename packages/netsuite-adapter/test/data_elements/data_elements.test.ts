@@ -73,12 +73,12 @@ describe('data_elements', () => {
 
     it('should do nothing if SuiteApp is not configured', async () => {
       jest.spyOn(client, 'isSuiteAppConfigured').mockReturnValue(false)
-      await expect(getDataTypes(client)).resolves.toBeUndefined()
+      await expect(getDataTypes(client)).resolves.toEqual([])
     })
 
     it('should return empty list if failed to get wsdl', async () => {
       jest.spyOn(client, 'getNetsuiteWsdl').mockResolvedValue(undefined)
-      await expect(getDataTypes(client)).resolves.toBeUndefined()
+      await expect(getDataTypes(client)).resolves.toEqual([])
     })
   })
 
@@ -115,7 +115,7 @@ describe('data_elements', () => {
     })
 
     it('should throw an error if failed to getAllRecords', async () => {
-      getAllRecordsMock.mockResolvedValue(undefined)
+      getAllRecordsMock.mockRejectedValue(new Error())
       await expect(getDataElements(client)).rejects.toThrow()
     })
 

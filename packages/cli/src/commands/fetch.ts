@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import wu from 'wu'
-import { getChangeElement, isInstanceElement } from '@salto-io/adapter-api'
+import { getChangeElement, isInstanceElement, AdapterOperationName, Progress } from '@salto-io/adapter-api'
 import { fetch as apiFetch, FetchFunc, FetchChange, FetchProgressEvents, StepEmitter, PlanItem } from '@salto-io/core'
 import { Workspace, nacl, StateRecency } from '@salto-io/workspace'
 import { promises } from '@salto-io/lowerdash'
@@ -24,7 +24,7 @@ import { logger } from '@salto-io/logging'
 import { progressOutputer, outputLine, errorOutputLine } from '../outputer'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
-import { formatMergeErrors, formatFetchHeader, formatFetchFinish, formatStateChanges, formatStateRecencies, formatAppliedChanges, formatFetchWarnings } from '../formatter'
+import { formatMergeErrors, formatFetchHeader, formatFetchFinish, formatStateChanges, formatStateRecencies, formatAppliedChanges, formatFetchWarnings, subHeader } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliShouldUpdateConfig, getChangeToAlignAction } from '../callbacks'
 import { getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
@@ -72,6 +72,9 @@ export const fetchCommand = async (
   fetchProgress.on('adaptersDidInitialize', () => {
     bindedOutputline(formatFetchHeader())
   })
+
+  fetchProgress.on('adapterProgress', (adapterName: string, _operationName: AdapterOperationName, progress: Progress) =>
+    outputLine(subHeader(`       - ${adapterName} adapter: ${progress.message}`), output))
 
   fetchProgress.on('stateWillBeUpdated', (
     progress: StepEmitter,

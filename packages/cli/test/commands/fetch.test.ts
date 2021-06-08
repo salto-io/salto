@@ -154,6 +154,9 @@ describe('fetch command', () => {
         it('should start at least one step', () => {
           expect(output.stdout.content).toContain('>>>')
         })
+        it('should report at least one adapter progress', () => {
+          expect(output.stdout.content).toContain('salesforce adapter:')
+        })
         it('should finish one step', () => {
           expect(output.stdout.content).toContain('vvv')
         })

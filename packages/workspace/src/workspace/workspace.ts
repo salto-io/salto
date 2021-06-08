@@ -74,6 +74,10 @@ export type WorkspaceComponents = {
   serviceConfig: boolean
 }
 
+export type ClearFlags = Omit<WorkspaceComponents, 'serviceConfig'> & {
+  regenerateCache?: boolean
+}
+
 export type Workspace = {
   uid: string
   name: string
@@ -113,7 +117,7 @@ export type Workspace = {
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
   flush: () => Promise<void>
   clone: () => Promise<Workspace>
-  clear: (args: Omit<WorkspaceComponents, 'serviceConfig'>) => Promise<void>
+  clear: (args: ClearFlags) => Promise<void>
 
   addService: (service: string) => Promise<void>
   addEnvironment: (env: string) => Promise<void>
@@ -620,7 +624,7 @@ export const loadWorkspace = async (
       const envSources = { commonSourceName: enviormentsSources.commonSourceName, sources }
       return loadWorkspace(config, credentials, envSources, remoteMapCreator)
     },
-    clear: async (args: Omit<WorkspaceComponents, 'serviceConfig'>) => {
+    clear: async (args: ClearFlags) => {
       const currentWSState = await getWorkspaceState()
       if (args.cache || args.nacl || args.staticResources) {
         if (args.staticResources && !(args.state && args.cache && args.nacl)) {
@@ -641,6 +645,7 @@ export const loadWorkspace = async (
         await promises.array.series(envs().map(e => (() => credentials.delete(e))))
       }
       workspaceState = undefined
+      // We want to ignore file changes if the user doesn't want to regerenarte the cache
       await getWorkspaceState()
     },
     addService: async (service: string): Promise<void> => {

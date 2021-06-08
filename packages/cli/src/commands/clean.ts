@@ -47,7 +47,7 @@ export const action: WorkspaceCommandAction<CleanArgs> = async ({
     return CliExitCode.UserInputError
   }
   const cleanArgs = {
-    ..._.omit(allCleanArgs, 'regenerateCache', 'cache'),
+    ..._.omit(allCleanArgs, 'cache'),
     // should still clear the cache before re-generating it
     cache: allCleanArgs.cache || allCleanArgs.regenerateCache,
   }

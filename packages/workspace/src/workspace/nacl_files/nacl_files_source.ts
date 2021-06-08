@@ -793,6 +793,8 @@ const buildNaclFilesSource = (
         await currentState.parsedNaclFiles.clear()
         await currentState.searchableNamesIndex.clear()
       }
+      initChanges = undefined
+      state = undefined
     },
 
     rename: async (name: string) => {

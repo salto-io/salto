@@ -160,6 +160,7 @@ describe('clean command', () => {
         state: true,
         cache: true,
         staticResources: true,
+        regenerateCache: false,
         credentials: true,
         serviceConfig: true,
       })
@@ -189,6 +190,7 @@ describe('clean command', () => {
         state: false,
         cache: true,
         staticResources: false,
+        regenerateCache: true,
         credentials: false,
         serviceConfig: false,
       })
@@ -248,6 +250,7 @@ describe('clean command', () => {
         nacl: true,
         state: true,
         cache: true,
+        regenerateCache: false,
         staticResources: true,
         credentials: true,
         serviceConfig: true,

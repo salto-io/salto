@@ -37,7 +37,7 @@ describe('data_instances_references', () => {
     },
     annotations: { source: 'soap' },
   })
-  it('should add replace with reference', async () => {
+  it('should replace with reference', async () => {
     const instance = new InstanceElement(
       'instance',
       secondType,

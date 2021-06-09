@@ -20,7 +20,7 @@ import _ from 'lodash'
 import { naclCase, pathNaclCase, transformValues } from '@salto-io/adapter-utils'
 import NetsuiteClient from '../client/client'
 import { NETSUITE, RECORDS_PATH } from '../constants'
-import { SUPPORTED_TYPES, TYPE_TO_IDENTIFIER } from './types'
+import { TYPE_TO_IDENTIFIER } from './types'
 
 const log = logger(module)
 
@@ -94,7 +94,7 @@ export const getDataElements = async (
 
   const typesMap = _.keyBy(types, e => e.elemID.name)
 
-  const instances = _.flatten(await Promise.all(SUPPORTED_TYPES
+  const instances = _.flatten(await Promise.all(Object.keys(TYPE_TO_IDENTIFIER)
     .filter(typeName => typeName in typesMap)
     .map(typeName => client.getAllRecords(typeName)
       .then(records =>

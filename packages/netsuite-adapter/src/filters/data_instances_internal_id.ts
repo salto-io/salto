@@ -80,7 +80,7 @@ const filterCreator: FilterCreator = () => ({
           transformFunc: transformIds,
           strict: false,
           pathID: element.elemID,
-        }) ?? {}
+        }) ?? element.value
         element.value = values
       })
 

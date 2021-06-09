@@ -21,7 +21,7 @@ import { FilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
 
-const getId = (value: Value, type: TypeElement): string => `${type.elemID.name}-${value.internalId}`
+const getId = (internalId: string, type: TypeElement): string => `${type.elemID.name}-${internalId}`
 
 const generateReference = (
   value: Value,
@@ -29,8 +29,8 @@ const generateReference = (
   elementsMap: Record<string, InstanceElement>,
 ): ReferenceExpression | undefined =>
   value.internalId
-  && elementsMap[getId(value, type)]
-  && new ReferenceExpression(elementsMap[getId(value, type)].elemID)
+  && elementsMap[getId(value.internalId, type)]
+  && new ReferenceExpression(elementsMap[getId(value.internalId, type)].elemID)
 
 const replaceReference: (
   elementsMap: Record<string, InstanceElement>
@@ -65,15 +65,15 @@ const filterCreator: FilterCreator = () => ({
 
     await awu(instances)
       .filter(async e => isDataObjectType(await e.getType()))
-      .forEach(async element => {
+      .forEach(async instance => {
         const values = await transformValues({
-          values: element.value,
-          type: await element.getType(),
+          values: instance.value,
+          type: await instance.getType(),
           transformFunc: replaceReference(dataInstancesMap),
           strict: false,
-          pathID: element.elemID,
-        }) ?? {}
-        element.value = values
+          pathID: instance.elemID,
+        }) ?? instance.value
+        instance.value = values
       })
   },
 })

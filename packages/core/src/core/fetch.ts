@@ -155,6 +155,12 @@ const toFetchChanges = (
   return serviceChange => {
     const pendingChange = getMatchingChange(serviceChange.id, pendingChanges)
     const change = getMatchingChange(serviceChange.id, workspaceToServiceChanges)
+    if (change !== undefined && !change.id.isEqual(serviceChange.id)) {
+      // temporary log - should be replaced by SALTO-1364
+      log.warn('service %s change for id %s was replaced by containing %s change for id %s',
+        serviceChange.action, serviceChange.id.getFullName(),
+        change.action, change.id.getFullName())
+    }
     return change === undefined
       ? []
       : [{ change, pendingChange, serviceChange }]

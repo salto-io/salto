@@ -117,9 +117,8 @@ export const indexNetsuiteByTypeAndScriptId = (
   const indexTypesAndFields = (): Record<string, Readonly<ObjectType>> => {
     const types = elements.filter(isObjectType)
     return _.keyBy(
-      // TODO (once SALTO-825 is ready):
-      //  1. filter only types returned from SuiteApp?
-      //  2. prefer to use scriptId / apiName over elem id name when available
+      // We can use the elem id (and not an apiName / scriptId annotation)
+      // as long as we don't support renaming type elem ids
       types,
       e => e.elemID.name.toLowerCase(),
     )

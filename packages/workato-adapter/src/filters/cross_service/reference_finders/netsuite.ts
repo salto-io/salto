@@ -55,11 +55,10 @@ export const addNetsuiteRecipeReferences = async (
     const addPotentialReference = (
       value: unknown, separator: string, nestedPath: ElemID,
     ): Readonly<ObjectType> | undefined => {
-      const lowercaseSeparator = separator.toLowerCase()
       if (!_.isString(value) || value.length === 0) {
         return undefined
       }
-      const valueParts = value.toLowerCase().split(lowercaseSeparator)
+      const valueParts = value.toLowerCase().split(separator.toLowerCase())
       if (valueParts.length > 2) {
         return undefined
       }

@@ -24,7 +24,7 @@ type Args = {
 }
 
 const adapter: Adapter<Args, Credentials> = {
-  name: 'netsuite_tmp',
+  name: 'netsuite',
   credentialsOpts: {
     accountId: {
       type: 'string',

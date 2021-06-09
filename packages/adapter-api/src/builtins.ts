@@ -118,6 +118,7 @@ type RestrictionAnnotationType = Partial<{
   min: number
   max: number
   regex: string
+  // eslint-disable-next-line camelcase
   length_limit: number
 }>
 

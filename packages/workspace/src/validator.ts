@@ -164,8 +164,8 @@ export class InvalidValueLengthValidationError extends ValidationError {
     { elemID: ElemID; value: Value; fieldName: string; length: number }) {
     super({
       elemID,
-      error: `Value "${value}" is too long for field ${fieldName}.`
-        + ` expected value maximum length is "${length}"`,
+      error: `Value "${value}" is too long for field.`
+        + ` ${fieldName} maximum length is "${length}"`,
       severity: 'Warning',
     })
     this.value = value

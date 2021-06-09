@@ -32,7 +32,7 @@ import { DuplicateVariableNameError } from '../merger/internal/variables'
 import { MultiplePrimitiveTypesError } from '../merger/internal/primitives'
 
 import { InvalidStaticFile } from '../workspace/static_files/common'
-import { ValidationError, InvalidValueValidationError, InvalidValueTypeValidationError, InvalidStaticFileError, CircularReferenceValidationError, IllegalReferenceValidationError, UnresolvedReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, isValidationError } from '../validator'
+import { ValidationError, InvalidValueValidationError, InvalidValueTypeValidationError, InvalidStaticFileError, CircularReferenceValidationError, IllegalReferenceValidationError, UnresolvedReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, InvalidValueLengthValidationError, isValidationError } from '../validator'
 
 const { awu } = collections.asynciterable
 // There are two issues with naive json stringification:
@@ -83,6 +83,7 @@ const NameToType = {
   MissingRequiredFieldValidationError: MissingRequiredFieldValidationError,
   RegexMismatchValidationError: RegexMismatchValidationError,
   InvalidValueRangeValidationError: InvalidValueRangeValidationError,
+  InvalidValueLengthValidationError: InvalidValueLengthValidationError,
 }
 const nameToTypeEntries = Object.entries(NameToType)
 const possibleTypes = Object.values(NameToType)
@@ -369,6 +370,15 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
         value: v.value,
         maxValue: v.maxValue,
         minValue: v.minValue,
+      })
+    ),
+    InvalidValueLengthValidationError: v => (
+      new InvalidValueLengthValidationError({
+        elemID: reviveElemID(v.elemID),
+        fieldName: v.fieldName,
+        value: v.value,
+        length: v.length_limit,
+     
       })
     ),
   }

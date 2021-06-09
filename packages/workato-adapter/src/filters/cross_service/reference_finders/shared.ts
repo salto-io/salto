@@ -45,7 +45,7 @@ export type FormulaReferenceFinder = (
 export const addReferencesForService = async <T extends SalesforceBlock | NetsuiteBlock>(
   inst: InstanceElement,
   appName: string,
-  typeGuard: (value: Value, appName: string) => value is T,
+  typeGuard: (value: Value, app: string) => value is T,
   addReferences: ReferenceFinder<T>,
   addFormulaReferences?: FormulaReferenceFinder,
 ): Promise<void> => {

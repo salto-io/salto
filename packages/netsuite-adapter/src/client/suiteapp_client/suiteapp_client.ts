@@ -31,6 +31,7 @@ import { DEFAULT_CONCURRENCY } from '../../config'
 import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
 import SoapClient from './soap_client/soap_client'
 import { ReadFileEncodingError, ReadFileError } from './errors'
+import { InvalidSuiteAppCredentialsError } from '../types'
 
 const PAGE_SIZE = 1000
 
@@ -49,6 +50,7 @@ const NON_BINARY_FILETYPES = new Set([
   'XMLDOC',
 ])
 
+const unauthorizedStatuses = [401, 403]
 
 export default class SuiteAppClient {
   private credentials: SuiteAppCredentials
@@ -88,6 +90,9 @@ export default class SuiteAppClient {
         hasMore = results.hasMore
       } catch (error) {
         log.error('SuiteQL query error', { error })
+        if (error instanceof InvalidSuiteAppCredentialsError) {
+          throw error
+        }
         return undefined
       }
     }
@@ -174,11 +179,19 @@ export default class SuiteAppClient {
       ...this.generateHeaders(url, 'POST'),
       prefer: 'transient',
     }
-    const response = await this.callsLimiter(() => axios.post(
-      url.href,
-      { q: query },
-      { headers },
-    ))
+    let response
+    try {
+      response = await this.callsLimiter(() => axios.post(
+        url.href,
+        { q: query },
+        { headers },
+      ))
+    } catch (e) {
+      if (unauthorizedStatuses.includes(e.response?.status)) {
+        throw new InvalidSuiteAppCredentialsError()
+      }
+      throw e
+    }
 
     if (!this.ajv.validate<SuiteQLResults>(SUITE_QL_RESULTS_SCHEMA, response.data)) {
       throw new Error(`Got invalid results from the SuiteQL query: ${this.ajv.errorsText()}`)
@@ -191,14 +204,22 @@ export default class SuiteAppClient {
     operation: RestletOperation,
     args: Record<string, unknown> = {}
   ): Promise<unknown> {
-    const response = await this.callsLimiter(() => axios.post(
-      this.restletUrl.href,
-      {
-        operation,
-        args,
-      },
-      { headers: this.generateHeaders(this.restletUrl, 'POST') },
-    ))
+    let response
+    try {
+      response = await this.callsLimiter(() => axios.post(
+        this.restletUrl.href,
+        {
+          operation,
+          args,
+        },
+        { headers: this.generateHeaders(this.restletUrl, 'POST') },
+      ))
+    } catch (e) {
+      if (unauthorizedStatuses.includes(e.response?.status)) {
+        throw new InvalidSuiteAppCredentialsError()
+      }
+      throw e
+    }
 
     if (!this.ajv.validate<RestletResults>(RESTLET_RESULTS_SCHEMA, response.data)) {
       throw new Error(`Got invalid results from a Restlet request: ${this.ajv.errorsText()}`)

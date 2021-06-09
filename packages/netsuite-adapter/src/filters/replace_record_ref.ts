@@ -16,7 +16,7 @@
 import { BuiltinTypes, ElemID, Field, isObjectType, ListType, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { getAllTypes } from '../types'
+import { getMetadataTypes } from '../types'
 import { NETSUITE } from '../constants'
 import { FilterCreator } from '../filter'
 
@@ -75,7 +75,7 @@ const filterCreator: FilterCreator = () => ({
     recordRefType.fields.id = new Field(recordRefType, 'id', BuiltinTypes.STRING)
 
     const types = elements.filter(isObjectType)
-    const typeMap = _.keyBy([...types, ...getAllTypes()], e => e.elemID.name)
+    const typeMap = _.keyBy([...types, ...getMetadataTypes()], e => e.elemID.name)
 
     await awu(types).forEach(async element => {
       element.fields = Object.fromEntries(await awu(Object.entries(element.fields))

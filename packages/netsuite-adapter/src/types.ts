@@ -227,7 +227,7 @@ export const isFileInstance = (element: Element): boolean =>
 export const isDataObjectType = (element: ObjectType): boolean =>
   element.annotations.source === 'soap'
 
-export const getAllTypes = (): TypeElement[] => [
+export const getMetadataTypes = (): TypeElement[] => [
   ...Object.values(customTypes),
   ...innerCustomTypes,
   ...Object.values(enums),
@@ -276,7 +276,7 @@ export const FIELD_TYPES = [
 export const typesElementSourceWrapper = (
 ): ReadOnlyElementsSource => {
   const typesByKey = _.keyBy(
-    getAllTypes(),
+    getMetadataTypes(),
     type => type.elemID.getFullName()
   )
   return {

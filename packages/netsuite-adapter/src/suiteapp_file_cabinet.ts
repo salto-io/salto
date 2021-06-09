@@ -226,6 +226,7 @@ Promise<FileResult[]> => {
         bundleable: folder.bundleable ?? 'F',
         isinactive: folder.isinactive,
         isprivate: folder.isprivate,
+        internalId: folder.id,
       },
     })).filter(folder => query.isFileMatch(`/${folder.path.join('/')}`))
 
@@ -239,6 +240,7 @@ Promise<FileResult[]> => {
         availablewithoutlogin: file.isonline,
         generateurltimestamp: file.addtimestamptourl,
         hideinbundle: file.hideinbundle,
+        internalId: file.id,
       },
       id: file.id,
       size: parseInt(file.filesize, 10),

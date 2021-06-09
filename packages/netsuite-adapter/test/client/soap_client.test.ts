@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import * as soap from 'soap'
+import _ from 'lodash'
 import { ExistingFileCabinetInstanceDetails } from '../../src/client/suiteapp_client/types'
 import { ReadFileError } from '../../src/client/suiteapp_client/errors'
 import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client'
@@ -22,18 +23,27 @@ describe('soap_client', () => {
   const addListAsyncMock = jest.fn()
   const updateListAsyncMock = jest.fn()
   const deleteListAsyncMock = jest.fn()
+  const searchAsyncMock = jest.fn()
+  const searchMoreWithIdAsyncMock = jest.fn()
+  const getAllAsyncMock = jest.fn()
   const getAsyncMock = jest.fn()
+  let wsdl: Record<string, unknown>
   const createClientAsyncMock = jest.spyOn(soap, 'createClientAsync')
   let client: SoapClient
 
   beforeEach(() => {
     jest.resetAllMocks()
+    wsdl = {}
     createClientAsyncMock.mockResolvedValue({
       addListAsync: addListAsyncMock,
       updateListAsync: updateListAsyncMock,
       deleteListAsync: deleteListAsyncMock,
       getAsync: getAsyncMock,
+      searchAsync: searchAsyncMock,
+      searchMoreWithIdAsync: searchMoreWithIdAsyncMock,
+      getAllAsync: getAllAsyncMock,
       addSoapHeader: (fn: () => object) => fn(),
+      wsdl,
     } as unknown as soap.Client)
 
     client = new SoapClient(
@@ -400,6 +410,112 @@ describe('soap_client', () => {
           path: 'somePath2',
         },
       ] as ExistingFileCabinetInstanceDetails[])).rejects.toThrow('Got invalid response from deleteList request. Errors:')
+    })
+  })
+
+  describe('getAllRecords', () => {
+    beforeEach(() => {
+      _.assign(wsdl, {
+        definitions: {
+          schemas: {
+            someNamespace: {
+              complexTypes: {
+                SubsidiarySearch: 'someValue',
+                TransactionSearch: 'someValue',
+              },
+            },
+          },
+        },
+      })
+    })
+    it('Should return record using search', async () => {
+      searchAsyncMock.mockResolvedValue([{
+        searchResult: {
+          totalPages: 1,
+          searchId: 'someId',
+          recordList: {
+            record: [{ id: 'id1' }, { id: 'id2' }],
+          },
+        },
+      }])
+      await expect(client.getAllRecords('Subsidiary')).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+    })
+
+    it('Should work for transaction type', async () => {
+      searchAsyncMock.mockResolvedValue([{
+        searchResult: {
+          totalPages: 1,
+          searchId: 'someId',
+          recordList: {
+            record: [{ id: 'id1' }, { id: 'id2' }],
+          },
+        },
+      }])
+      await expect(client.getAllRecords('SalesOrder')).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+    })
+
+    it('Should throw an error if got invalid search results', async () => {
+      searchAsyncMock.mockResolvedValue([{}])
+      await expect(client.getAllRecords('Subsidiary')).rejects.toThrow()
+    })
+
+    it('Should call all search pages', async () => {
+      searchAsyncMock.mockResolvedValue([{
+        searchResult: {
+          totalPages: 2,
+          searchId: 'someId',
+          recordList: {
+            record: [{ id: 'id1' }],
+          },
+        },
+      }])
+
+      searchMoreWithIdAsyncMock.mockResolvedValue([{
+        searchResult: {
+          totalPages: 2,
+          searchId: 'someId',
+          recordList: {
+            record: [{ id: 'id2' }],
+          },
+        },
+      }])
+      await expect(client.getAllRecords('Subsidiary')).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+    })
+
+    it('Should throw an error if got invalid searchMoreWithId results', async () => {
+      searchAsyncMock.mockResolvedValue([{
+        searchResult: {
+          totalPages: 2,
+          searchId: 'someId',
+          recordList: {
+            record: [{ id: 'id1' }],
+          },
+        },
+      }])
+
+      searchMoreWithIdAsyncMock.mockResolvedValue([{}])
+      await expect(client.getAllRecords('Subsidiary')).rejects.toThrow()
+    })
+
+    it('Should use getAll if search not supported', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (wsdl as any).definitions.schemas.someNamespace.complexTypes.SubsidiarySearch
+      getAllAsyncMock.mockResolvedValue([{
+        getAllResult: {
+          recordList: {
+            record: [{ id: 'id1' }, { id: 'id2' }],
+          },
+        },
+      }])
+      await expect(client.getAllRecords('Subsidiary')).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+    })
+
+    it('Should throw an error if got invalid getAll results', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (wsdl as any).definitions.schemas.someNamespace.complexTypes.SubsidiarySearch
+
+      getAllAsyncMock.mockResolvedValue([{}])
+      await expect(client.getAllRecords('Subsidiary')).rejects.toThrow()
     })
   })
 })

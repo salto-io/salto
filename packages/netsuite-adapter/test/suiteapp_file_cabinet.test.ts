@@ -84,6 +84,7 @@ describe('suiteapp_file_cabinet', () => {
         description: 'desc3',
         isinactive: 'F',
         isprivate: 'F',
+        internalId: '3',
       },
     },
     {
@@ -94,6 +95,7 @@ describe('suiteapp_file_cabinet', () => {
         description: 'desc4',
         isinactive: 'T',
         isprivate: 'T',
+        internalId: '4',
       },
     },
     {
@@ -104,6 +106,7 @@ describe('suiteapp_file_cabinet', () => {
         isinactive: 'F',
         isprivate: 'T',
         description: '',
+        internalId: '5',
       },
     },
     {
@@ -117,6 +120,7 @@ describe('suiteapp_file_cabinet', () => {
         generateurltimestamp: 'F',
         hideinbundle: 'F',
         bundleable: 'F',
+        internalId: '1',
       },
     },
     {
@@ -130,6 +134,7 @@ describe('suiteapp_file_cabinet', () => {
         description: 'desc2',
         generateurltimestamp: 'T',
         hideinbundle: 'T',
+        internalId: '2',
       },
     },
   ]
@@ -246,6 +251,7 @@ describe('suiteapp_file_cabinet', () => {
             description: '',
             generateurltimestamp: 'T',
             hideinbundle: 'T',
+            internalId: '6',
           },
         },
       ])

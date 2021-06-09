@@ -25,7 +25,7 @@ import _ from 'lodash'
 import each from 'jest-each'
 import NetsuiteAdapter from '../src/adapter'
 import { credsLease, realAdapter } from './adapter'
-import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
+import { customTypes, fileCabinetTypes, getMetadataTypes } from '../src/types'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import {
   CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD, FETCH_ALL_TYPES_AT_ONCE,
@@ -269,7 +269,7 @@ describe('Netsuite adapter E2E with real account', () => {
       })
 
       it('should fetch account successfully', async () => {
-        expect(fetchResult.elements.length).toBeGreaterThan(getAllTypes().length)
+        expect(fetchResult.elements.length).toBeGreaterThan(getMetadataTypes().length)
         validateConfigSuggestions(fetchResult.updatedConfig?.config)
       })
 

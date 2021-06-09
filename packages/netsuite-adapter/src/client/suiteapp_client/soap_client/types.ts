@@ -87,3 +87,22 @@ export type DeployListResults = DeployListError | DeployListSuccess
 
 export const isDeployListSuccess = (result: DeployListResults): result is DeployListSuccess =>
   result.writeResponseList.status.attributes.isSuccess === 'true'
+
+
+export type SearchResponse = {
+  searchResult: {
+    totalPages: number
+    searchId: string
+    recordList: {
+      record: Record<string, unknown>[]
+    } | null
+  }
+}
+
+export type GetAllResponse = {
+  getAllResult: {
+    recordList: {
+      record: Record<string, unknown>[]
+    }
+  }
+}

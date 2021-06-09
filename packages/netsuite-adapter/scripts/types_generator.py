@@ -176,7 +176,7 @@ export const isCustomType = (typeElemID: ElemID): boolean =>
 export const isFileCabinetType = (typeElemID: ElemID): boolean =>
   !_.isUndefined(fileCabinetTypes[ypeElemID.name])
 
-export const getAllTypes = (): TypeElement[] => [
+export const getMetadataTypes = (): TypeElement[] => [
   ...Object.values(customTypes),
   ...innerCustomTypes,
   ...Object.values(enums),

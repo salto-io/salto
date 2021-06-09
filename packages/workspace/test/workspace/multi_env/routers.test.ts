@@ -222,6 +222,11 @@ describe('default fetch routing', () => {
     await routeChanges(changes, envSource, commonSource, { sec: secEnv }, 'default')
   })
 
+  it('should handle empty changeset without error', async () => {
+    const changes: DetailedChange[] = []
+    await routeChanges(changes, envSource, commonSource, { sec: secEnv }, 'default')
+  })
+
   it('should route nested add changes to primary env when the containing element is not in common', async () => {
     const change: DetailedChange = {
       action: 'add',

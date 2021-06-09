@@ -582,6 +582,42 @@ describe('Recipe references filter', () => {
       ],
       code: new ReferenceExpression(recipe5WithSecondaryCode.elemID),
     })
+    const recipe6NetsuiteTypesCode = new InstanceElement('recipe6_code', codeType, {
+      as: 'recipe6id',
+      provider: 'netsuite',
+      name: 'updated_custom_object',
+      keyword: 'trigger',
+      dynamicPickListSelection: {
+        netsuite_object: 'Customer',
+      },
+      input: {
+        netsuite_object: 'Customer',
+        companyName: 'abc',
+      },
+      block: [{
+        as: 'recipe6id_nested',
+        provider: 'netsuite',
+        name: 'search_object_v2',
+        keyword: 'action',
+        dynamicPickListSelection: {
+          netsuite_object: 'Opportunity',
+        },
+        input: {
+          netsuite_object: 'Opportunity@@script',
+        },
+      }],
+    })
+    const recipe6NetsuiteTypes = new InstanceElement('recipe6', recipeType, {
+      config: [
+        {
+          keyword: 'application',
+          name: 'netsuite',
+          provider: 'netsuite',
+          account_id: new ReferenceExpression(netsuiteSandbox123.elemID),
+        },
+      ],
+      code: new ReferenceExpression(recipe6NetsuiteTypesCode.elemID),
+    })
 
     return [
       connectionType,
@@ -609,6 +645,8 @@ describe('Recipe references filter', () => {
       recipe4UnknownSalesforceSobjectCode,
       recipe5WithSecondary,
       recipe5WithSecondaryCode,
+      recipe6NetsuiteTypes,
+      recipe6NetsuiteTypesCode,
     ]
   }
 
@@ -755,10 +793,22 @@ describe('Recipe references filter', () => {
       }
     )
 
+    const customerType = new ObjectType({
+      elemID: new ElemID('netsuite', 'Customer'),
+      fields: {
+        companyName: { refType: BuiltinTypes.STRING },
+      },
+    })
+    const opportunityType = new ObjectType({
+      elemID: new ElemID('netsuite', 'Opportunity'),
+      fields: {},
+    })
+
     return [
       customRecordType, myCustomRecord,
       otherCustomFieldType, otherCustomFieldInst,
       entitycustomfieldType, entitycustomfieldInst,
+      customerType, opportunityType,
     ]
   }
 
@@ -951,7 +1001,7 @@ describe('Recipe references filter', () => {
         const block2 = recipeCode.value.block[0].block[0]
         expect(block2.input.sobject_name).toEqual('MyCustom__c')
       })
-      it('should resolve references in-place in nested nestuite block', () => {
+      it('should resolve references in-place in nested netsuite block', () => {
         const recipeCode = currentAdapterElements.find(
           e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe3_code'
         ) as InstanceElement
@@ -999,6 +1049,33 @@ describe('Recipe references filter', () => {
           { reference: 'salesforce.MyCustom__c', occurrences: [{ location: 'workato.recipe__code.instance.recipe5_code.block.0.block.0', direction: 'output' }] },
           { reference: 'salesforce.MyCustom__c.field.customField__c', occurrences: [{ location: 'workato.recipe__code.instance.recipe5_code.block.0.block.0', direction: 'output' }] },
         ])
+      })
+    })
+    describe('recipe6NetsuiteTypes', () => {
+      it('should show all resolved references in the _generated_dependencies annotation, in alphabetical order', () => {
+        const recipeCode = currentAdapterElements.find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe6_code')
+        expect(recipeCode).toBeDefined()
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(3)
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
+          dereferenceDep
+        )).toEqual([
+          { reference: 'netsuite.Customer', occurrences: [{ location: 'workato.recipe__code.instance.recipe6_code', direction: 'input' }] },
+          { reference: 'netsuite.Customer.field.companyName', occurrences: [{ location: 'workato.recipe__code.instance.recipe6_code', direction: 'input' }] },
+          { reference: 'netsuite.Opportunity', occurrences: [{ location: 'workato.recipe__code.instance.recipe6_code.block.0', direction: 'output' }] },
+        ])
+      })
+
+      it('should resolve references in-place where possible', () => {
+        const recipeCode = currentAdapterElements.find(
+          e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe6_code'
+        ) as InstanceElement
+        expect(recipeCode).toBeInstanceOf(InstanceElement)
+        expect(recipeCode.value.input.netsuite_object).toBeInstanceOf(
+          ReferenceExpression
+        )
+        expect(recipeCode.value.input.netsuite_object.elemID.getFullName()).toEqual('netsuite.Customer')
+        // TODO decide if should also override under dynamicPickListSelection
       })
     })
 
@@ -1091,7 +1168,7 @@ describe('Recipe references filter', () => {
       })
       expect(
         elements.filter(e => e.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] !== undefined)
-      ).toHaveLength(2)
+      ).toHaveLength(3)
       expect(
         elements
           .flatMap(e => e.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] ?? [])
@@ -1107,6 +1184,9 @@ describe('Recipe references filter', () => {
         { reference: 'netsuite.customrecordtype.instance.customrecord16.customrecordcustomfields.customrecordcustomfield.2', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.input.Custom__c', direction: 'input' }] },
         { reference: 'netsuite.entitycustomfield.instance.custentitycustom_account_city', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.input.Custom__c', direction: 'input' }] },
         { reference: 'netsuite.othercustomfield.instance.custrecord2', occurrences: [{ location: 'workato.recipe__code.instance.recipe3_code.block.0', direction: 'output' }] },
+        { reference: 'netsuite.Customer', occurrences: [{ location: 'workato.recipe__code.instance.recipe6_code', direction: 'input' }] },
+        { reference: 'netsuite.Customer.field.companyName', occurrences: [{ location: 'workato.recipe__code.instance.recipe6_code', direction: 'input' }] },
+        { reference: 'netsuite.Opportunity', occurrences: [{ location: 'workato.recipe__code.instance.recipe6_code.block.0', direction: 'output' }] },
       ])
     })
   })

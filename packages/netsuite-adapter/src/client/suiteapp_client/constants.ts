@@ -13,5 +13,5 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const CONSUMER_KEY = '3db2f2ec0bd98c4eee526ea0b8da876d1d739597e50ee593c67c0f2c34294073'
-export const CONSUMER_SECRET = '4c8399c03043f4ff2889610d260fc76037d126c840f83b3e6a4e6f4ddf3b0b79'
+export const CONSUMER_KEY = '9dc4d9f6c593fcc417636990a7581ee1272c824eca0847fed5075276d630c338'
+export const CONSUMER_SECRET = '13f886e062f985b96068994b231f1b28c53d89b0dde04cc74244653f94226a38'

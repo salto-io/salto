@@ -127,7 +127,10 @@ describe('fetch command', () => {
         ) => {
           const getChangesEmitter = new StepEmitter()
           progressEmitter.emit('changesWillBeFetched', getChangesEmitter, ['adapterName'])
-          progressEmitter.emit('adapterProgress', 'salesforce', 'fetch', { message: 'fetching message' })
+          progressEmitter.emit('adapterProgress',
+            'salesforce',
+            'fetch',
+            { message: 'fetching message' })
           getChangesEmitter.emit('completed')
           const calculateDiffEmitter = new StepEmitter()
           progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)

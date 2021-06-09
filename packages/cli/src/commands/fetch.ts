@@ -24,7 +24,7 @@ import { logger } from '@salto-io/logging'
 import { progressOutputer, outputLine, errorOutputLine } from '../outputer'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
-import { formatMergeErrors, formatFetchHeader, formatFetchFinish, formatStateChanges, formatStateRecencies, formatAppliedChanges, formatFetchWarnings, subHeader } from '../formatter'
+import { formatMergeErrors, formatFetchHeader, formatFetchFinish, formatStateChanges, formatStateRecencies, formatAppliedChanges, formatFetchWarnings, formatAdapterProgress } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliShouldUpdateConfig, getChangeToAlignAction } from '../callbacks'
 import { getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
@@ -74,7 +74,7 @@ export const fetchCommand = async (
   })
 
   fetchProgress.on('adapterProgress', (adapterName: string, _operationName: AdapterOperationName, progress: Progress) =>
-    outputLine(subHeader(`       - ${adapterName} adapter: ${progress.message}`), output))
+    bindedOutputline(formatAdapterProgress(adapterName, progress.message)))
 
   fetchProgress.on('stateWillBeUpdated', (
     progress: StepEmitter,

@@ -156,6 +156,7 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
   public static readonly NO_CONFIGURED_SERVICES = 'There are not configured services in this environment'
   public static readonly NO_ADDITIONAL_CONFIGURED_SERVICES = 'There are no additional configurable services for this environment'
   public static readonly SERVICE_ALREADY_ADDED = (serviceName: string): string => `${serviceName} was already added to this environment`
+  public static readonly SERVICE_NOT_VALID = (serviceName: string, supportedServiceAdapters:string[]): string => `${serviceName} is not a valid service name, available service names are:\n${supportedServiceAdapters.join('\n')}`
   public static readonly WORKING_ON_ENV = 'The active environment is'
   public static readonly NO_CURRENT_ENV = 'No active environment is currently set'
   public static readonly SET_ENV = 'Active environment is set to'

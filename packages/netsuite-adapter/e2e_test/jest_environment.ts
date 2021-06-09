@@ -49,7 +49,7 @@ export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> =>
       // when running against staging and prod from the test runner, opposed to regular backend e2e
       // tests. Thus we skip the credentials validation in e2e tests.
     },
-    typeName: 'netsuite',
+    typeName: 'netsuite_tmp',
     globalProp: envName ? `netsuite_${envName}` : 'netsuite',
   }
 }

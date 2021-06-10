@@ -102,10 +102,10 @@ export default class JiraAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch jira account configuration..')
+    progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes, parsedConfigs } = await this.getAllTypes()
-    progressReporter.reportProgress({ message: 'Finished fetching types' })
+    progressReporter.reportProgress({ message: 'Fetching instances' })
     const instances = await this.getInstances(allTypes, parsedConfigs)
-    progressReporter.reportProgress({ message: 'Finished fetching instances' })
 
     const elements = [
       ...Object.values(allTypes),
@@ -113,6 +113,7 @@ export default class JiraAdapter implements AdapterOperations {
     ]
 
     log.debug('going to run filters on %d fetched elements', elements.length)
+    progressReporter.reportProgress({ message: 'Running filters for additional information' })
     await this.filtersRunner.onFetch(elements)
     return { elements }
   }

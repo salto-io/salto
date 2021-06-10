@@ -331,19 +331,18 @@ export default class SalesforceAdapter implements AdapterOperations {
       metadataTypeInfosPromise,
       metadataTypesPromise
     )
-
+    progressReporter.reportProgress({ message: 'Fetching types' })
     const metadataTypes = await metadataTypesPromise
-    progressReporter.reportProgress({ message: 'Finished fetching types. Fetching instances' })
-
+    progressReporter.reportProgress({ message: 'Fetching instances' })
     const {
       elements: metadataInstancesElements,
       configChanges: metadataInstancesConfigInstances,
     } = await metadataInstancesPromise
-    progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
 
     const elements = [
       ...fieldTypes, ...hardCodedTypes, ...metadataTypes, ...metadataInstancesElements,
     ]
+    progressReporter.reportProgress({ message: 'Running filters for additional information' })
     const onFetchFilterResult = (
       await this.filtersRunner.onFetch(elements)
     ) as FilterResult

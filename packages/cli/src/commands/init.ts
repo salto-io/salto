@@ -27,11 +27,11 @@ const log = logger(module)
 
 type InitArgs = {
   workspaceName?: string
-  environment?: string
+  envName?: string
 }
 
 export const action: CommandDefAction<InitArgs> = async (
-  { input: { workspaceName , environment }, cliTelemetry, output, workspacePath },
+  { input: { workspaceName , envName }, cliTelemetry, output, workspacePath },
 ): Promise<CliExitCode> => {
   log.debug('running env init command on \'%s\'', workspaceName)
   cliTelemetry.start()
@@ -45,16 +45,11 @@ export const action: CommandDefAction<InitArgs> = async (
       )
       return CliExitCode.AppError
     }
-    const defaultEnvName = environment ?? (await getEnvName())
+    const defaultEnvName = envName ?? (await getEnvName())
     const workspace = await initLocalWorkspace(baseDir, workspaceName, defaultEnvName)
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
     cliTelemetry.success(workspaceTags)
-    if (defaultEnvName==environment){
-      outputLine(Prompts.initWithEnvCompleted(workspace.name, defaultEnvName , baseDir), output)
-    }
-    else{
-      outputLine(Prompts.initCompleted(workspace.name, baseDir), output)
-        }
+    outputLine(Prompts.initCompleted(), output)
   } catch (e) {
     errorOutputLine(Prompts.initFailed(e.message), output)
     cliTelemetry.failure()
@@ -70,10 +65,10 @@ const initDef = createPublicCommandDef({
     description: 'Initialize a new Salto workspace in the current directory',
     keyedOptions: [
       {
-        name: 'environment',
+        name: 'envName',
         alias: 'e',
         required: false,
-        description: 'Set the new environment name',
+        description: 'The name of the first environment in the workspace',
         type: 'string',
       },
     ],

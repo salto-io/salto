@@ -32,7 +32,6 @@ type AsyncCache<K, V> = {
 
 export type ParseResultKey = {
   filename: string
-  lastModified: number
   buffer?: ContentType
 }
 
@@ -79,10 +78,7 @@ export const parseResultCache = (
           return undefined
         }
 
-        const cacheTimeMs = await dirStore.mtimestamp(cacheFileName) || -1
-
-        if (cacheTimeMs >= key.lastModified
-          || doesBufferMatchCachedMD5(key.buffer, file.buffer)) {
+        if (doesBufferMatchCachedMD5(key.buffer, file.buffer)) {
           return await parseResultSerializer.deserialize(
             file.buffer,
             val => staticFilesSource.getStaticFile(val.filepath, val.encoding)

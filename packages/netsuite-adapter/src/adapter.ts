@@ -173,19 +173,21 @@ export default class NetsuiteAdapter implements AdapterOperations {
       fetchQuery
     )
     const importFileCabinetResult = this.client.importFileCabinetContent(fetchQuery)
+    progressReporter.reportProgress({ message: 'Fetching file cabinet instances' })
+
     const {
       elements: fileCabinetContent,
       failedPaths: failedFilePaths,
     } = await importFileCabinetResult
-    progressReporter.reportProgress({ message: 'Finished fetching file cabinet instances. Fetching custom object instances' })
 
+    progressReporter.reportProgress({ message: 'Fetching instances' })
     const {
       elements: customObjects,
       failedToFetchAllAtOnce,
       failedTypeToInstances,
     } = await getCustomObjectsResult
-    progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
 
+    progressReporter.reportProgress({ message: 'Running filters for additional information' })
     _(Object.values(customTypes))
       .concat(Object.values(fileCabinetTypes))
       .forEach(type => {
@@ -215,7 +217,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ...serverTimeElements,
     ]
 
-    progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
     await this.runFiltersOnFetch(
       elements,
       elementsSourceIndex,

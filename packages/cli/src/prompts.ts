@@ -147,7 +147,7 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
   public static readonly SERVICES_LOGIN_UPDATED = 'Login information successfully updated!'
   public static readonly SERVICES_LOGIN_OVERRIDE = '** This will override the current login information **'
   public static readonly SERVICE_LOGIN_FAILED = (serviceName: string, errorMessage: string): string => `Could not login to ${serviceName}: ${errorMessage}`
-  public static readonly SERVICE_LOGIN_FAILED_TRY_AGAIN = (serviceName: string): string => `To try again run: \`salto service add ${serviceName}\``
+  public static readonly SERVICE_LOGIN_FAILED_TRY_AGAIN = (serviceName: string): string => `To try again run: \`salto service login ${serviceName}\``
   public static readonly SERVICE_CONFIGURED = (serviceName: string): string => `${serviceName} is configured in this environment`
   public static readonly SERVICE_NOT_CONFIGURED = (serviceName: string): string => `${serviceName} is not configured in this environment`
   public static readonly CONFIGURED_SERVICES_TITLE = 'The configured services are:'

@@ -188,21 +188,21 @@ export default class ZuoraAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch zuora account configuration..')
+    progressReporter.reportProgress({ message: 'Fetching types' })
     const swaggerTypes = await this.getSwaggerTypes()
     // the billing settings types are not listed in the swagger, so we fetch them separately
     // and give them a custom prefix to avoid conflicts
     const settingsTypes = await this.getBillingSettingsTypes(swaggerTypes)
 
-    progressReporter.reportProgress({ message: 'Finished fetching types. Fetching instances' })
 
     const { allTypes, parsedConfigs } = {
       allTypes: { ...swaggerTypes.allTypes, ...settingsTypes.allTypes },
       parsedConfigs: { ...swaggerTypes.parsedConfigs, ...settingsTypes.parsedConfigs },
     }
+    progressReporter.reportProgress({ message: 'Fetching instances' })
+
     const instances = await this.getInstances(allTypes, parsedConfigs)
     const standardObjectElements = await this.getStandardObjectElements({ allTypes, parsedConfigs })
-
-    progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
 
     const elements = [
       ...Object.values(allTypes),
@@ -211,6 +211,8 @@ export default class ZuoraAdapter implements AdapterOperations {
     ]
 
     log.debug('going to run filters on %d fetched elements', elements.length)
+    progressReporter.reportProgress({ message: 'Running filters for additional information' })
+
     await this.filtersRunner.onFetch(elements)
     return { elements }
   }

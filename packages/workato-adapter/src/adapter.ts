@@ -95,11 +95,12 @@ export default class WorkatoAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch workato account configuration..')
+    progressReporter.reportProgress({ message: 'Fetching types and instances' })
     const elements = await this.getElements()
 
-    progressReporter.reportProgress({ message: 'Finished fetching types and instances. Running filters for additional information' })
 
     log.debug('going to run filters on %d fetched elements', elements.length)
+    progressReporter.reportProgress({ message: 'Running filters for additional information' })
     await this.filtersRunner.onFetch(elements)
     return { elements }
   }

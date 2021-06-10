@@ -108,7 +108,7 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'connection' },
   },
   {
-    src: { field: 'folder_id', parentTypes: [toNestedTypeName('recipe', 'config')] },
+    src: { field: 'folder_id', parentTypes: ['recipe'] },
     serializationStrategy: 'id',
     target: { type: 'folder' },
   },

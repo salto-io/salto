@@ -65,3 +65,9 @@ export type ImportObjectsResult = {
     referencedFileImportResult: unknown
   }[]
 }
+
+export class InvalidSuiteAppCredentialsError extends Error {
+  constructor() {
+    super('Invalid SuiteApp credentials')
+  }
+}

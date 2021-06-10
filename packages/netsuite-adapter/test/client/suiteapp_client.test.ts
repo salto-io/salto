@@ -19,6 +19,7 @@ import _ from 'lodash'
 import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client'
 import { ReadFileEncodingError, ReadFileError } from '../../src/client/suiteapp_client/errors'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
+import { InvalidSuiteAppCredentialsError } from '../../src/client/types'
 
 jest.mock('axios')
 
@@ -103,6 +104,19 @@ describe('SuiteAppClient', () => {
           },
         }
       )
+    })
+
+    it('should throw InvalidSuiteAppCredentialsError', async () => {
+      class MockedAxiosError extends Error {
+        response: { status: number }
+        constructor() {
+          super('Invalid SuiteApp credentials')
+          this.response = { status: 401 }
+        }
+      }
+      const unauthorizedError = new MockedAxiosError()
+      postMock.mockRejectedValue(unauthorizedError)
+      await expect(client.runSuiteQL('query')).rejects.toThrow(InvalidSuiteAppCredentialsError)
     })
 
     describe('query failure', () => {

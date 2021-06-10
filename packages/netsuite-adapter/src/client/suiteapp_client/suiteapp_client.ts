@@ -16,7 +16,7 @@
 import Bottleneck from 'bottleneck'
 import OAuth from 'oauth-1.0a'
 import crypto from 'crypto'
-import axios from 'axios'
+import axios, { AxiosResponse } from 'axios'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -32,6 +32,7 @@ import { DEFAULT_CONCURRENCY } from '../../config'
 import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
 import SoapClient from './soap_client/soap_client'
 import { ReadFileEncodingError, ReadFileError } from './errors'
+import { InvalidSuiteAppCredentialsError } from '../types'
 
 const PAGE_SIZE = 1000
 
@@ -50,6 +51,7 @@ const NON_BINARY_FILETYPES = new Set([
   'XMLDOC',
 ])
 
+const UNAUTHORIZED_STATUSES = [401, 403]
 
 export default class SuiteAppClient {
   private credentials: SuiteAppCredentials
@@ -89,6 +91,9 @@ export default class SuiteAppClient {
         hasMore = results.hasMore
       } catch (error) {
         log.error('SuiteQL query error', { error })
+        if (error instanceof InvalidSuiteAppCredentialsError) {
+          throw error
+        }
         return undefined
       }
     }
@@ -165,6 +170,25 @@ export default class SuiteAppClient {
     await client.sendRestletRequest('sysInfo')
   }
 
+  private async safeAxiosPost(
+    href: string,
+    data: unknown,
+    headers: unknown
+  ): Promise<AxiosResponse> {
+    try {
+      return await this.callsLimiter(() => axios.post(
+        href,
+        data,
+        { headers },
+      ))
+    } catch (e) {
+      if (UNAUTHORIZED_STATUSES.includes(e.response?.status)) {
+        throw new InvalidSuiteAppCredentialsError()
+      }
+      throw e
+    }
+  }
+
   private async sendSuiteQLRequest(query: string, offset: number, limit: number):
   Promise<SuiteQLResults> {
     const url = new URL(this.suiteQLUrl.href)
@@ -175,11 +199,7 @@ export default class SuiteAppClient {
       ...this.generateHeaders(url, 'POST'),
       prefer: 'transient',
     }
-    const response = await this.callsLimiter(() => axios.post(
-      url.href,
-      { q: query },
-      { headers },
-    ))
+    const response = await this.safeAxiosPost(url.href, { q: query }, headers)
 
     if (!this.ajv.validate<SuiteQLResults>(SUITE_QL_RESULTS_SCHEMA, response.data)) {
       throw new Error(`Got invalid results from the SuiteQL query: ${this.ajv.errorsText()}`)
@@ -192,14 +212,7 @@ export default class SuiteAppClient {
     operation: RestletOperation,
     args: Record<string, unknown> = {}
   ): Promise<unknown> {
-    const response = await this.callsLimiter(() => axios.post(
-      this.restletUrl.href,
-      {
-        operation,
-        args,
-      },
-      { headers: this.generateHeaders(this.restletUrl, 'POST') },
-    ))
+    const response = await this.safeAxiosPost(this.restletUrl.href, { operation, args }, this.generateHeaders(this.restletUrl, 'POST'))
 
     if (!this.ajv.validate<RestletResults>(RESTLET_RESULTS_SCHEMA, response.data)) {
       throw new Error(`Got invalid results from a Restlet request: ${this.ajv.errorsText()}`)

@@ -175,7 +175,7 @@ export default class SuiteAppClient {
     headers: unknown
   ): Promise<AxiosResponse> {
     try {
-      return this.callsLimiter(() => axios.post(
+      return await this.callsLimiter(() => axios.post(
         href,
         data,
         { headers },

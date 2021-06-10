@@ -256,7 +256,7 @@ export default class SoapClient {
   private async sendSoapRequest(operation: string, body: object): Promise<unknown> {
     const client = await this.getClient()
     try {
-      return this.callsLimiter(async () => (await client[`${operation}Async`](body))[0])
+      return await this.callsLimiter(async () => (await client[`${operation}Async`](body))[0])
     } catch (e) {
       if (e.message.includes('Invalid login attempt.')) {
         throw new InvalidSuiteAppCredentialsError()

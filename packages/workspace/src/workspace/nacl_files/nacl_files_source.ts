@@ -84,7 +84,6 @@ export type ParsedNaclFile = {
   filename: string
   elements: Element[]
   errors: ParseError[]
-  timestamp: number
   referenced: ElemID[]
 }
 
@@ -100,10 +99,9 @@ type NaclFilesState = {
   readonly referencedIndex: Record<string, string[]>
 }
 
-const cacheResultKey = (naclFile: { filename: string; timestamp?: number; buffer?: string }):
+const cacheResultKey = (naclFile: { filename: string; buffer?: string }):
  ParseResultKey => ({
   filename: naclFile.filename,
-  lastModified: naclFile.timestamp ?? Date.now(),
   buffer: naclFile.buffer,
 })
 
@@ -158,7 +156,6 @@ export const toParsedNaclFile = (
   naclFile: NaclFile,
   parseResult: ParseResult
 ): ParsedNaclFile => ({
-  timestamp: naclFile.timestamp || Date.now(),
   filename: naclFile.filename,
   elements: parseResult.elements,
   errors: parseResult.errors,
@@ -307,20 +304,16 @@ const buildNaclFilesSource = (
     change: AdditionDiff<Element>,
     fileData: string,
   ): Promise<ParsedNaclFile> => {
-    const elements = [(change as AdditionDiff<Element>).data.after]
-    const referenced = getElementsReferences(elements)
-    const parsed = {
-      timestamp: Date.now(),
+    const elements = [change.data.after]
+    const errors: ParseError[] = []
+    const key = cacheResultKey({ filename, buffer: fileData })
+    await cache.put(key, { elements, errors })
+    return {
       filename,
       elements,
-      errors: [],
-      referenced,
+      errors,
+      referenced: getElementsReferences(elements),
     }
-    const key = cacheResultKey({ filename: parsed.filename,
-      buffer: fileData,
-      timestamp: parsed.timestamp })
-    await cache.put(key, { elements, errors: [] })
-    return parsed
   }
 
   let state = initState

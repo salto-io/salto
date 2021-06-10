@@ -107,6 +107,11 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     serializationStrategy: 'id',
     target: { type: 'connection' },
   },
+  {
+    src: { field: 'folder_id', parentTypes: ['recipe'] },
+    serializationStrategy: 'id',
+    target: { type: 'folder' },
+  },
 ]
 
 // We can extract the api name from the elem id as long as we don't support renaming

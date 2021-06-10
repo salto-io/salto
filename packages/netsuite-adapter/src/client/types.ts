@@ -68,6 +68,6 @@ export type ImportObjectsResult = {
 
 export class InvalidSuiteAppCredentialsError extends Error {
   constructor() {
-    super('Invalid suite app credentials')
+    super('Invalid SuiteApp credentials')
   }
 }

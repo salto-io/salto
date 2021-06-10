@@ -55,14 +55,13 @@ const getResolvedElement = async (
   elemID: ElemID,
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
-  inPlace: boolean
 ): Promise<Element | undefined> => {
   if (workingSetElements[elemID.getFullName()] !== undefined) {
     return workingSetElements[elemID.getFullName()].element
   }
   const element = await elementsSource.get(elemID)
-  if (element !== undefined && inPlace) {
-    return shallowCloneElement((await elementsSource.get(elemID)))
+  if (element !== undefined) {
+    return shallowCloneElement(element)
   }
   return element
 }
@@ -88,10 +87,7 @@ const resolveMaybeExpression: Resolver<Value> = async (
   if (value instanceof TemplateExpression) {
     return resolveTemplateExpression(value, elementsSource, workingSetElements, visited)
   }
-  // We do not want to recurse into elements because we can assume they will also be resolved
-  // at some point (because we are calling resolve on all elements), so if we encounter an element
-  // all we need to do is make it point to the element from the context. If the element is not in
-  // the context or the source - we'll keep it as it is.
+
   if (isElement(value)) {
     // eslint-disable-next-line no-use-before-define
     return (await resolveElement(
@@ -176,10 +172,6 @@ const resolveElement = async (
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
 ): Promise<Element> => {
-  // Create a ReadonlyElementSource (ElementsGetter) with the proper context
-  // to be used to resolve types. If it was already resolved use the reolsved and if not
-  // fallback to the elementsSource
-
   const referenceCloner: TransformFunc = ({ value }) => resolveMaybeExpression(
     value,
     elementsSource,
@@ -276,7 +268,7 @@ export const resolve = async (
   const contextedElementsGetter: ReadOnlyElementsSource = {
     ...elementsSource,
     get: id =>
-      (getResolvedElement(id, elementsSource, resolvedElements, inPlace)),
+      (getResolvedElement(id, elementsSource, resolvedElements)),
   }
   await awu(elementsToResolve).forEach(e => resolveElement(
     e,

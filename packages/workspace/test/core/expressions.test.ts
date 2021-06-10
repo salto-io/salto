@@ -164,7 +164,7 @@ describe('Test Salto Expressions', () => {
       simpleRefType,
     ]
 
-    const origElements = _.cloneDeep(elements)
+    const origElements = elements.map(elem => elem.clone())
 
     let resolved: Element[]
 

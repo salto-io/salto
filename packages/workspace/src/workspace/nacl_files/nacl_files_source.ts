@@ -203,7 +203,7 @@ const createNaclFilesState = async (
   }),
   mergedElements: new RemoteElementSource(await remoteMapCreator<Element>({
     namespace: getRemoteMapNamespace('merged', sourceName),
-    serialize: element => serialize([element], 'keepRef'),
+    serialize: element => serialize([element]),
     deserialize: async data => deserializeSingleElement(
       data,
       async sf => staticFilesSource.getStaticFile(sf.filepath, sf.encoding)

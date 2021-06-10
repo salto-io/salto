@@ -24,6 +24,7 @@ import { ReadFileError } from '../errors'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails } from '../types'
 import { DeployListResults, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess } from './types'
 import { DEPLOY_LIST_SCHEMA, GET_RESULTS_SCHEMA } from './schemas'
+import { InvalidSuiteAppCredentialsError } from '../../types'
 
 const log = logger(module)
 
@@ -254,7 +255,14 @@ export default class SoapClient {
 
   private async sendSoapRequest(operation: string, body: object): Promise<unknown> {
     const client = await this.getClient()
-    return this.callsLimiter(async () => (await client[`${operation}Async`](body))[0])
+    try {
+      return await this.callsLimiter(async () => (await client[`${operation}Async`](body))[0])
+    } catch (e) {
+      if (e.message.includes('Invalid login attempt.')) {
+        throw new InvalidSuiteAppCredentialsError()
+      }
+      throw e
+    }
   }
 
   private generateSoapHeader(): object {

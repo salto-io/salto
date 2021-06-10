@@ -17,9 +17,14 @@ import { ElemID } from '@salto-io/adapter-api'
 
 export type ElementsSourceValue = {
   lastFetchTime?: Date
-  elemID?: ElemID
+  elemID: ElemID
 }
 
-export type LazyElementsSourceIndex = {
-  getIndex: () => Promise<Record<string, ElementsSourceValue>>
+export type ElementsSourceIndexes = {
+  serviceIdsIndex: Record<string, ElementsSourceValue>
+  internalIdsIndex: Record<string, ElementsSourceValue>
+}
+
+export type LazyElementsSourceIndexes = {
+  getIndexes: () => Promise<ElementsSourceIndexes>
 }

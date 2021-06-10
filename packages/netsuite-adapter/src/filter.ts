@@ -15,12 +15,12 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import NetsuiteClient from './client/client'
-import { LazyElementsSourceIndex } from './elements_source_index/types'
+import { LazyElementsSourceIndexes } from './elements_source_index/types'
 
 export type OnFetchParameters = {
   elements: Element[]
   client: NetsuiteClient
-  elementsSourceIndex: LazyElementsSourceIndex
+  elementsSourceIndex: LazyElementsSourceIndexes
   isPartial: boolean
 }
 

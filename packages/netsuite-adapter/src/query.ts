@@ -17,11 +17,12 @@
 import { collections, regex } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FETCH_TARGET } from './constants'
+import { SUPPORTED_TYPES } from './data_elements/types'
 import { customTypes } from './types'
 
 export interface ObjectID {
   type: string
-  scriptId: string
+  instanceId: string
 }
 
 export type NetsuiteQueryParameters = {
@@ -31,6 +32,7 @@ export type NetsuiteQueryParameters = {
 
 export type NetsuiteQuery = {
   isTypeMatch: (typeName: string) => boolean
+  areAllObjectsMatch: (typeName: string) => boolean
   isObjectMatch: (objectID: ObjectID) => boolean
   isFileMatch: (filePath: string) => boolean
   areSomeFilesMatch: () => boolean
@@ -40,7 +42,7 @@ export const validateParameters = ({ types = {}, filePaths = [] }:
   Partial<NetsuiteQueryParameters>): void => {
   const parameters = { types, filePaths }
 
-  const existingTypes = new Set(Object.keys(customTypes))
+  const existingTypes = new Set([...Object.keys(customTypes), ...SUPPORTED_TYPES])
   const receivedTypes = new Set(Object.keys(parameters.types))
 
   const invalidTypes = collections.set.difference(receivedTypes, existingTypes)
@@ -63,12 +65,13 @@ export const buildNetsuiteQuery = (
   const parameters = { types, filePaths }
   return {
     isTypeMatch: typeName => parameters.types[typeName] !== undefined,
+    areAllObjectsMatch: typeName => parameters.types[typeName] !== undefined && parameters.types[typeName].some(pattern => pattern === '.*'),
     isObjectMatch: objectID => {
       const regexes = parameters.types[objectID.type]
       if (regexes === undefined) {
         return false
       }
-      return regexes.some(reg => new RegExp(`^${reg}$`).test(objectID.scriptId))
+      return regexes.some(reg => new RegExp(`^${reg}$`).test(objectID.instanceId))
     },
     isFileMatch: filePath =>
       parameters.filePaths.some(reg => new RegExp(`^${reg}$`).test(filePath)),
@@ -79,6 +82,8 @@ export const buildNetsuiteQuery = (
 export const andQuery = (firstQuery: NetsuiteQuery, secondQuery: NetsuiteQuery): NetsuiteQuery => ({
   isTypeMatch: typeName =>
     firstQuery.isTypeMatch(typeName) && secondQuery.isTypeMatch(typeName),
+  areAllObjectsMatch: typeName =>
+    firstQuery.areAllObjectsMatch(typeName) && secondQuery.areAllObjectsMatch(typeName),
   isObjectMatch: objectID =>
     firstQuery.isObjectMatch(objectID) && secondQuery.isObjectMatch(objectID),
   isFileMatch: filePath =>
@@ -87,7 +92,8 @@ export const andQuery = (firstQuery: NetsuiteQuery, secondQuery: NetsuiteQuery):
 })
 
 export const notQuery = (query: NetsuiteQuery): NetsuiteQuery => ({
-  isTypeMatch: () => true,
+  isTypeMatch: typeName => !query.areAllObjectsMatch(typeName),
+  areAllObjectsMatch: typeName => !query.isTypeMatch(typeName),
   isObjectMatch: objectID => !query.isObjectMatch(objectID),
   isFileMatch: filePath => !query.isFileMatch(filePath),
   areSomeFilesMatch: () => true,

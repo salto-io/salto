@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, isInstanceElement, isListType, ReferenceExpression, TypeElement, Value } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { ElemID, isInstanceElement, isListType, ReferenceExpression, TypeElement, Value } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { isDataObjectType } from '../types'
@@ -26,14 +27,14 @@ const getId = (internalId: string, type: TypeElement): string => `${type.elemID.
 const generateReference = (
   value: Value,
   type: TypeElement,
-  elementsMap: Record<string, InstanceElement>,
+  elementsMap: Record<string, { elemID: ElemID }>,
 ): ReferenceExpression | undefined =>
   value.internalId
   && elementsMap[getId(value.internalId, type)]
   && new ReferenceExpression(elementsMap[getId(value.internalId, type)].elemID)
 
 const replaceReference: (
-  elementsMap: Record<string, InstanceElement>
+  elementsMap: Record<string, { elemID: ElemID }>
 ) => TransformFunc = elementsMap => async ({ value, path, field }) => {
   if (path?.isTopLevel()) {
     return value
@@ -58,10 +59,17 @@ const replaceReference: (
 }
 
 const filterCreator: FilterCreator = () => ({
-  onFetch: async ({ elements }) => {
+  onFetch: async ({ elements, elementsSourceIndex, isPartial }) => {
     const instances = elements.filter(isInstanceElement)
-    const dataInstancesMap = await awu(instances.filter(e => e.value.internalId !== undefined))
-      .keyBy(async e => `${(await e.getType()).elemID.name}-${e.value.internalId}`)
+    const dataInstancesMap: Record<string, { elemID: ElemID }> = isPartial ? _.clone(
+      (await elementsSourceIndex.getIndexes()).internalIdsIndex
+    ) : {}
+
+    _.assign(
+      dataInstancesMap,
+      await awu(instances.filter(e => e.value.internalId !== undefined))
+        .keyBy(async e => `${(await e.getType()).elemID.name}-${e.value.internalId}`)
+    )
 
     await awu(instances)
       .filter(async e => isDataObjectType(await e.getType()))

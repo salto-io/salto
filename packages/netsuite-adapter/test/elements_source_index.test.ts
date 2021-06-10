@@ -31,13 +31,13 @@ describe('createElementsSourceIndex', () => {
   })
   it('should create the index only once and cache it', async () => {
     const elementsSourceIndex = createElementsSourceIndex(elementsSource)
-    const index = await elementsSourceIndex.getIndex()
-    const anotherIndex = await elementsSourceIndex.getIndex()
+    const index = await elementsSourceIndex.getIndexes()
+    const anotherIndex = await elementsSourceIndex.getIndexes()
     expect(index).toBe(anotherIndex)
     expect(getAllMock).toHaveBeenCalledTimes(1)
   })
 
-  it('should create the right index', async () => {
+  it('should create the right service ids index', async () => {
     getAllMock.mockImplementation(buildElementsSourceFromElements([
       new InstanceElement(
         'name',
@@ -48,7 +48,22 @@ describe('createElementsSourceIndex', () => {
     ]).getAll)
 
     const elementsSourceIndex = createElementsSourceIndex(elementsSource)
-    const index = await elementsSourceIndex.getIndex()
+    const index = (await elementsSourceIndex.getIndexes()).serviceIdsIndex
     expect(index.path).toEqual({ lastFetchTime: new Date('2021-02-22T18:55:17.949Z'), elemID: new ElemID(NETSUITE, 'someType', 'instance', 'name', PATH) })
+  })
+
+  it('should create the right internal ids index', async () => {
+    getAllMock.mockImplementation(buildElementsSourceFromElements([
+      new InstanceElement(
+        'name',
+        new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') }),
+        { internalId: '4', [LAST_FETCH_TIME]: '2021-02-22T18:55:17.949Z' },
+        [],
+      ),
+    ]).getAll)
+
+    const elementsSourceIndex = createElementsSourceIndex(elementsSource)
+    const index = (await elementsSourceIndex.getIndexes()).internalIdsIndex
+    expect(index['someType-4']).toEqual({ lastFetchTime: new Date('2021-02-22T18:55:17.949Z'), elemID: new ElemID(NETSUITE, 'someType', 'instance', 'name') })
   })
 })

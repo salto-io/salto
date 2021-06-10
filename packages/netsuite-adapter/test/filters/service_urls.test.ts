@@ -42,7 +42,10 @@ describe('serviceUrls', () => {
     await serviceUrls().onFetch({
       elements,
       client,
-      elementsSourceIndex: { getIndex: () => Promise.resolve({}) },
+      elementsSourceIndex: { getIndexes: () => Promise.resolve({
+        serviceIdsIndex: {},
+        internalIdsIndex: {},
+      }) },
       isPartial: false,
     })
     expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/media/mediaitem.nl?id=1')
@@ -52,7 +55,10 @@ describe('serviceUrls', () => {
     await serviceUrls().onFetch({
       elements,
       client,
-      elementsSourceIndex: { getIndex: () => Promise.resolve({}) },
+      elementsSourceIndex: { getIndexes: () => Promise.resolve({
+        serviceIdsIndex: {},
+        internalIdsIndex: {},
+      }) },
       isPartial: false,
     })
     expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()

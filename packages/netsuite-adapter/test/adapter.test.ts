@@ -28,6 +28,7 @@ import {
   FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, DEPLOY_REFERENCED_ELEMENTS,
   FETCH_TYPE_TIMEOUT_IN_MINUTES, INTEGRATION, CLIENT_CONFIG, FETCH_TARGET, NETSUITE,
   USE_CHANGES_DETECTION,
+  SKIP_LIST,
 } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import SdfClient, { convertToCustomTypeInfo } from '../src/client/sdf_client'
@@ -75,6 +76,13 @@ describe('Adapter', () => {
   const client = createClient()
   const config = {
     [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
+    [SKIP_LIST]: {
+      types: {
+        Account: ['aaa'],
+        Subsidiary: ['.*'],
+      },
+      filePaths: [],
+    },
     [FILE_PATHS_REGEX_SKIP_LIST]: [filePathRegexStr],
     [DEPLOY_REFERENCED_ELEMENTS]: false,
     [CLIENT_CONFIG]: {
@@ -158,7 +166,10 @@ describe('Adapter', () => {
       const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION]
       expect(_.pull(Object.keys(customTypes), ...typesToSkip).every(customObjectsQuery.isTypeMatch))
         .toBeTruthy()
-      expect(typesToSkip.every(customObjectsQuery.isTypeMatch)).toBeTruthy()
+      expect(typesToSkip.every(customObjectsQuery.isTypeMatch)).toBeFalsy()
+      expect(customObjectsQuery.isTypeMatch('Subsidiary')).toBeFalsy()
+      expect(customObjectsQuery.isTypeMatch('Account')).toBeTruthy()
+
 
       const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
       expect(fileCabinetQuery.isFileMatch('Some/File/Regex')).toBeFalsy()
@@ -271,7 +282,7 @@ describe('Adapter', () => {
       await netsuiteAdapter.fetch(mockFetchOpts)
       const query = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
       expect(query.isTypeMatch(ENTITY_CUSTOM_FIELD)).toBeTruthy()
-      expect(query.isTypeMatch(SAVED_SEARCH)).toBeTruthy()
+      expect(query.isTypeMatch(SAVED_SEARCH)).toBeFalsy()
     })
 
     it('should return only the elements when having no config changes', async () => {
@@ -542,7 +553,8 @@ describe('Adapter', () => {
       getChangedObjectsMock.mockReset()
       getChangedObjectsMock.mockResolvedValue({
         isTypeMatch: () => true,
-        isObjectMatch: objectID => objectID.scriptId.startsWith('aa'),
+        areAllObjectsMatch: () => false,
+        isObjectMatch: objectID => objectID.instanceId.startsWith('aa'),
         isFileMatch: () => true,
         areSomeFilesMatch: () => true,
       })
@@ -672,8 +684,8 @@ describe('Adapter', () => {
         await adapter.fetch(mockFetchOpts)
 
         const passedQuery = getCustomObjectsMock.mock.calls[0][1]
-        expect(passedQuery.isObjectMatch({ scriptId: 'aaaa', type: 'workflow' })).toBeTruthy()
-        expect(passedQuery.isObjectMatch({ scriptId: 'bbbb', type: 'workflow' })).toBeFalsy()
+        expect(passedQuery.isObjectMatch({ instanceId: 'aaaa', type: 'workflow' })).toBeTruthy()
+        expect(passedQuery.isObjectMatch({ instanceId: 'bbbb', type: 'workflow' })).toBeFalsy()
       })
 
       it('should not call getChangedObjectsMock if server time instance is invalid', async () => {

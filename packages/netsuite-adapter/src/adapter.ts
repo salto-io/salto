@@ -48,10 +48,10 @@ import { getChangedObjects } from './changes_detector/changes_detector'
 import NetsuiteClient from './client/client'
 import { createDateRange } from './changes_detector/date_formats'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
-import { LazyElementsSourceIndex } from './elements_source_index/types'
+import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import getChangeValidator from './change_validator'
 import { getChangeGroupIdsFunc } from './group_changes'
-import { getDataElements } from './data_elements/data_elements'
+import { getDataTypes } from './data_elements/data_elements'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -165,8 +165,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const isPartial = this.fetchTarget !== undefined
 
     // TODO: Replace when data instances are ready
-    const dataElementsPromise = await getDataElements(this.client)
-    // const dataElementsPromise = await getDataTypes(this.client)
+    // const dataElementsPromise = await getDataElements(this.client, fetchQuery)
+    const dataElementsPromise = await getDataTypes(this.client)
 
     const getCustomObjectsResult = this.client.getCustomObjects(
       Object.keys(customTypes),
@@ -233,7 +233,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   private async runSuiteAppOperations(
     fetchQuery: NetsuiteQuery,
-    elementsSourceIndex: LazyElementsSourceIndex
+    elementsSourceIndex: LazyElementsSourceIndexes
   ):
     Promise<{
       changedObjectsQuery?: NetsuiteQuery
@@ -293,7 +293,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   private async runFiltersOnFetch(
     elements: Element[],
-    elementsSourceIndex: LazyElementsSourceIndex,
+    elementsSourceIndex: LazyElementsSourceIndexes,
     isPartial: boolean,
   ): Promise<void> {
     // Fetch filters order is important so they should run one after the other

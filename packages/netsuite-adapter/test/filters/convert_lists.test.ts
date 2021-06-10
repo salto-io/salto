@@ -36,7 +36,9 @@ describe('convert_lists filter', () => {
     onFetchParameters = {
       elements: [instance],
       client: {} as NetsuiteClient,
-      elementsSourceIndex: { getIndex: () => Promise.resolve({}) },
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve({ serviceIdsIndex: {}, internalIdsIndex: {} }),
+      },
       isPartial: false,
     }
   })

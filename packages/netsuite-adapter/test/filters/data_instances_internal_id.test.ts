@@ -38,7 +38,9 @@ describe('data_instances_internal_id', () => {
     const onFetchParameters = {
       elements: [instance],
       client: {} as NetsuiteClient,
-      elementsSourceIndex: { getIndex: () => Promise.resolve({}) },
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve({ serviceIdsIndex: {}, internalIdsIndex: {} }),
+      },
       isPartial: false,
       dataTypeNames: new Set<string>(),
     }
@@ -57,7 +59,9 @@ describe('data_instances_internal_id', () => {
     const onFetchParameters = {
       elements,
       client: {} as NetsuiteClient,
-      elementsSourceIndex: { getIndex: () => Promise.resolve({}) },
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve({ serviceIdsIndex: {}, internalIdsIndex: {} }),
+      },
       isPartial: false,
       dataTypeNames: new Set<string>(),
     }

@@ -13,48 +13,68 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { LAST_FETCH_TIME } from '../constants'
 import { getInstanceServiceIdRecords } from '../filters/instance_references'
 import { serviceId } from '../transformer'
-import { ElementsSourceValue, LazyElementsSourceIndex } from './types'
+import { ElementsSourceIndexes, ElementsSourceValue, LazyElementsSourceIndexes } from './types'
 
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 
-const createIndex = async (elementsSource: ReadOnlyElementsSource):
-  Promise<Record<string, ElementsSourceValue>> => {
+const createIndexes = async (elementsSource: ReadOnlyElementsSource):
+  Promise<ElementsSourceIndexes> => {
   log.debug('Starting to create elements source index')
-  const elementsSourceIndex: Record<string, ElementsSourceValue> = {}
+  const serviceIdsIndex: Record<string, ElementsSourceValue> = {}
+  const internalIdsIndex: Record<string, ElementsSourceValue> = {}
 
-  for await (const element of await elementsSource.getAll()) {
-    if (isInstanceElement(element)) {
-      const idRecords = await getInstanceServiceIdRecords(element)
-      const rawLastFetchTime = element.value[LAST_FETCH_TIME]
-      const lastFetchTime = rawLastFetchTime && new Date(rawLastFetchTime)
+  const updateServiceIdIndex = async (element: InstanceElement): Promise<void> => {
+    const idRecords = await getInstanceServiceIdRecords(element)
+    const rawLastFetchTime = element.value[LAST_FETCH_TIME]
+    const lastFetchTime = rawLastFetchTime && new Date(rawLastFetchTime)
 
-      _.assign(
-        elementsSourceIndex,
-        _.isEmpty(idRecords)
-          ? { [serviceId(element)]: { lastFetchTime } }
-          : _.mapValues(idRecords, elemID => ({ elemID, lastFetchTime }))
-      )
-    }
+    _.assign(
+      serviceIdsIndex,
+      _.isEmpty(idRecords)
+        ? { [serviceId(element)]: { lastFetchTime } }
+        : _.mapValues(idRecords, elemID => ({ elemID, lastFetchTime }))
+    )
   }
+
+  const updateInternalIdsIndex = async (element: InstanceElement): Promise<void> => {
+    const { internalId } = element.value
+    if (internalId === undefined) {
+      return
+    }
+
+    const rawLastFetchTime = element.value[LAST_FETCH_TIME]
+    const lastFetchTime = rawLastFetchTime && new Date(rawLastFetchTime)
+
+    internalIdsIndex[`${element.elemID.typeName}-${internalId}`] = { elemID: element.elemID, lastFetchTime }
+  }
+
+  await awu(await elementsSource.getAll())
+    .filter(isInstanceElement)
+    .forEach(async element => {
+      await updateServiceIdIndex(element)
+      updateInternalIdsIndex(element)
+    })
   log.debug('finished creating elements source index')
-  return elementsSourceIndex
+  return { serviceIdsIndex, internalIdsIndex }
 }
 
 export const createElementsSourceIndex = (
   elementsSource: ReadOnlyElementsSource,
-): LazyElementsSourceIndex => {
-  let cachedIndex: Record<string, ElementsSourceValue> | undefined
+): LazyElementsSourceIndexes => {
+  let cachedIndex: ElementsSourceIndexes | undefined
   return {
-    getIndex: async () => {
+    getIndexes: async () => {
       if (cachedIndex === undefined) {
-        cachedIndex = await createIndex(elementsSource)
+        cachedIndex = await createIndexes(elementsSource)
       }
       return cachedIndex
     },

@@ -32,7 +32,9 @@ describe('hidden_fields', () => {
     const onFetchParameters: OnFetchParameters = {
       elements: [type],
       client: {} as NetsuiteClient,
-      elementsSourceIndex: { getIndex: () => Promise.resolve({}) },
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve({ serviceIdsIndex: {}, internalIdsIndex: {} }),
+      },
       isPartial: false,
     }
     await filterCreator().onFetch(onFetchParameters)

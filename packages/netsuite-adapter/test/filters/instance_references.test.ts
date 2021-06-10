@@ -30,14 +30,17 @@ describe('instance_references filter', () => {
     let workflowInstance: InstanceElement
     let instanceWithRefs: InstanceElement
 
-    const getIndexMock = jest.fn()
+    const getIndexesMock = jest.fn()
     const elementsSourceIndex = {
-      getIndex: getIndexMock,
+      getIndexes: getIndexesMock,
     }
 
     beforeEach(async () => {
-      getIndexMock.mockReset()
-      getIndexMock.mockResolvedValue({})
+      getIndexesMock.mockReset()
+      getIndexesMock.mockResolvedValue({
+        serviceIdsIndex: {},
+        internalIdsIndex: {},
+      })
 
       fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
         [PATH]: '/Templates/file.name',
@@ -204,8 +207,11 @@ describe('instance_references filter', () => {
     })
 
     it('should use elements source for creating the references with fetch is partial', async () => {
-      getIndexMock.mockResolvedValue({
-        '/Templates/instanceInElementsSource': { elemID: instanceInElementsSource.elemID.createNestedID(PATH) },
+      getIndexesMock.mockResolvedValue({
+        serviceIdsIndex: {
+          '/Templates/instanceInElementsSource': { elemID: instanceInElementsSource.elemID.createNestedID(PATH) },
+        },
+        internalIdsIndex: {},
       })
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],
@@ -219,8 +225,11 @@ describe('instance_references filter', () => {
     })
 
     it('should not use elements source for creating the references when fetch is not partial', async () => {
-      getIndexMock.mockResolvedValue({
-        '/Templates/instanceInElementsSource': { elemID: instanceInElementsSource.elemID.createNestedID(PATH) },
+      getIndexesMock.mockResolvedValue({
+        serviceIdsIndex: {
+          '/Templates/instanceInElementsSource': { elemID: instanceInElementsSource.elemID.createNestedID(PATH) },
+        },
+        internalIdsIndex: {},
       })
       await filterCreator().onFetch({
         elements: [fileInstance, workflowInstance, instanceWithRefs],

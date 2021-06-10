@@ -42,24 +42,29 @@ export class CircularReference {
   constructor(public ref: string) {}
 }
 
+const shallowCloneElement = <T extends Element>(element: T): T => {
+  const clonedElement = _.clone(element)
+  if (isObjectType(clonedElement)) {
+    clonedElement.fields = _.mapValues(clonedElement.fields, _.clone)
+  }
+  clonedElement.annotationRefTypes = _.mapValues(clonedElement.annotationRefTypes, _.clone)
+  return clonedElement
+}
+
 const getResolvedElement = async (
   elemID: ElemID,
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
+  inPlace: boolean
 ): Promise<Element | undefined> => {
-  const unresolvedElement = workingSetElements[elemID.getFullName()]?.element
-     ?? await elementsSource.get(elemID)
-
-  if (unresolvedElement !== undefined) {
-    // eslint-disable-next-line no-use-before-define
-    return resolveElement(
-      unresolvedElement,
-      elementsSource,
-      workingSetElements,
-    )
+  if (workingSetElements[elemID.getFullName()] !== undefined) {
+    return workingSetElements[elemID.getFullName()].element
   }
-
-  return unresolvedElement
+  const element = await elementsSource.get(elemID)
+  if (element !== undefined && inPlace) {
+    return shallowCloneElement((await elementsSource.get(elemID)))
+  }
+  return element
 }
 
 let resolveTemplateExpression: Resolver<TemplateExpression>
@@ -88,8 +93,12 @@ const resolveMaybeExpression: Resolver<Value> = async (
   // all we need to do is make it point to the element from the context. If the element is not in
   // the context or the source - we'll keep it as it is.
   if (isElement(value)) {
-    return (await getResolvedElement(value.elemID, elementsSource, workingSetElements))
-      ?? value
+    // eslint-disable-next-line no-use-before-define
+    return (await resolveElement(
+      value,
+      elementsSource,
+      workingSetElements
+    )) ?? value
   }
   return value
 }
@@ -171,11 +180,6 @@ const resolveElement = async (
   // to be used to resolve types. If it was already resolved use the reolsved and if not
   // fallback to the elementsSource
 
-  const contextedElementsGetter: ReadOnlyElementsSource = {
-    ...elementsSource,
-    get: id =>
-      (getResolvedElement(id, elementsSource, workingSetElements)),
-  }
   const referenceCloner: TransformFunc = ({ value }) => resolveMaybeExpression(
     value,
     elementsSource,
@@ -192,7 +196,7 @@ const resolveElement = async (
   workingSetElements[element.elemID.getFullName()].resolved = true
 
 
-  const elementAnnoTypes = await element.getAnnotationTypes(contextedElementsGetter)
+  const elementAnnoTypes = await element.getAnnotationTypes(elementsSource)
   element.annotationRefTypes = await mapValuesAsync(
     elementAnnoTypes,
     async type => createRefToElmWithValue(
@@ -212,7 +216,7 @@ const resolveElement = async (
   if (isContainerType(element)) {
     element.refInnerType = createRefToElmWithValue(
       await resolveElement(
-        await element.getInnerType(contextedElementsGetter),
+        await element.getInnerType(elementsSource),
         elementsSource,
         workingSetElements,
       )
@@ -222,7 +226,7 @@ const resolveElement = async (
   if (isInstanceElement(element) || isField(element)) {
     element.refType = createRefToElmWithValue(
       await resolveElement(
-        await element.getType(contextedElementsGetter),
+        await element.getType(elementsSource),
         elementsSource,
         workingSetElements,
       )
@@ -235,7 +239,7 @@ const resolveElement = async (
       values: element.value,
       elementsSource,
       strict: false,
-      type: await element.getType(contextedElementsGetter),
+      type: await element.getType(elementsSource),
       allowEmpty: true,
     })) ?? {}
   }
@@ -260,18 +264,23 @@ export const resolve = async (
   elementsSource: ReadOnlyElementsSource,
   inPlace = false
 ): Promise<Element[]> => {
-  // intentionally shallow clone because in resolve element we replace only top level properties
   const elementsToResolve = inPlace
     ? elements
-    : elements.map(_.clone)
+    : elements.map(shallowCloneElement)
   const resolvedElements = await awu(elementsToResolve)
     .map(element => ({ element }))
     .keyBy(
       workingSetElement => workingSetElement.element.elemID.getFullName()
     )
+
+  const contextedElementsGetter: ReadOnlyElementsSource = {
+    ...elementsSource,
+    get: id =>
+      (getResolvedElement(id, elementsSource, resolvedElements, inPlace)),
+  }
   await awu(elementsToResolve).forEach(e => resolveElement(
     e,
-    elementsSource,
+    contextedElementsGetter,
     resolvedElements
   ))
   return elementsToResolve

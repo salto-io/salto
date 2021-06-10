@@ -331,5 +331,5 @@ ${Prompts.LIST_IDS(ids)}
     (elementId: string): string => `Go to service is not supported for element ${elementId}`
 
   public static readonly FETCH_PROGRESSING_MESSAGES =
-    (adapterName: string, progressMessage: string): string => `       - ${adapterName} adapter: ${progressMessage}`
+    (adapterName: string, progressMessage: string): string => `- ${adapterName} adapter: ${progressMessage}`
 }

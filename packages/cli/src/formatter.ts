@@ -704,5 +704,5 @@ export const formatStateRecencies = (stateRecencies: StateRecency[]): string => 
 )
 
 export const formatAdapterProgress = (adapterName: string, progressMessage: string): string => (
-  subHeader(Prompts.FETCH_PROGRESSING_MESSAGES(adapterName, progressMessage))
+  subHeader(indent(Prompts.FETCH_PROGRESSING_MESSAGES(adapterName, progressMessage), 4))
 )

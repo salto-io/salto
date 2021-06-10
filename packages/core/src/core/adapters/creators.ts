@@ -21,6 +21,7 @@ import { adapter as dummyAdapter } from '@salto-io/dummy-adapter'
 import { adapter as workatoAdapter } from '@salto-io/workato-adapter'
 import { adapter as zuoraBillingAdapter } from '@salto-io/zuora-billing-adapter'
 import { adapter as jiraAdapter } from '@salto-io/jira-adapter'
+import { adapter as stripeAdapter } from '@salto-io/stripe-adapter'
 
 const adapterCreators: Record<string, Adapter> = {
   salesforce: salesforceAdapter,
@@ -31,6 +32,7 @@ const adapterCreators: Record<string, Adapter> = {
   // eslint-disable-next-line camelcase
   zuora_billing: zuoraBillingAdapter,
   jira: jiraAdapter,
+  stripe: stripeAdapter,
 }
 
 export default adapterCreators

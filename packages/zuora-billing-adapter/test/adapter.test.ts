@@ -392,9 +392,7 @@ describe('adapter', () => {
               includeTypes: DEFAULT_INCLUDE_TYPES,
               settingsIncludeTypes: DEFAULT_SETTINGS_INCLUDE_TYPES,
             },
-            [API_DEFINITIONS_CONFIG]: {
-              [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
-            },
+            [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
           }
         ),
         elementsSource: buildElementsSourceFromElements([]),

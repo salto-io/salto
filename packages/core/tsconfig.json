@@ -33,6 +33,7 @@
         { "path": "../lowerdash" },
         { "path": "../netsuite-adapter" },
         { "path": "../salesforce-adapter" },
+        { "path": "../stripe-adapter" },
         { "path": "../workato-adapter" },
         { "path": "../workspace" },
         { "path": "../zuora-billing-adapter" },

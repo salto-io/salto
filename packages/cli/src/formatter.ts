@@ -702,3 +702,7 @@ export const formatStateRecencies = (stateRecencies: StateRecency[]): string => 
       : Prompts.STATE_RECENCY(recency.serviceName, recency.date as Date))
   ).join(EOL)
 )
+
+export const formatAdapterProgress = (adapterName: string, progressMessage: string): string => (
+  subHeader(indent(Prompts.FETCH_PROGRESSING_MESSAGES(adapterName, progressMessage), 4))
+)

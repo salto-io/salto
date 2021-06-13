@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Workspace } from '@salto-io/workspace'
-import { locateWorkspaceRoot } from '@salto-io/core'
+import { initLocalWorkspace, locateWorkspaceRoot } from '@salto-io/core'
 import * as mocks from '../mocks'
 import { action } from '../../src/commands/init'
 import { buildEventName } from '../../src/telemetry'
@@ -40,6 +40,7 @@ jest.mock('@salto-io/core', () => ({
 const mockLocateWorkspaceRoot = (
   locateWorkspaceRoot as jest.MockedFunction<typeof locateWorkspaceRoot>
 )
+const mockInitLocalWorkspace = initLocalWorkspace as jest.MockedFunction<typeof initLocalWorkspace>
 
 jest.mock('../../src/callbacks', () => {
   const actual = jest.requireActual('../../src/callbacks')
@@ -62,6 +63,7 @@ describe('init command', () => {
   let telemetry: mocks.MockTelemetry
   let output: mocks.MockCliOutput
   beforeEach(async () => {
+    jest.clearAllMocks()
     mockGetEnvName.mockResolvedValue('default')
     mockLocateWorkspaceRoot.mockResolvedValue(undefined)
     const cliArgs = mocks.mockCliArgs()
@@ -107,8 +109,7 @@ describe('init command', () => {
         ...cliCommandArgs,
         input: {
           workspaceName: 'test',
-          envName: 'env1',
-
+          envName: 'userEnvInput',
         },
       })
       expect(output.stdout.content.includes('Initiated')).toBeTruthy()
@@ -116,13 +117,14 @@ describe('init command', () => {
       expect(telemetry.getEventsMap()[eventsNames.failure]).toBeUndefined()
       expect(telemetry.getEventsMap()[eventsNames.success]).not.toBeUndefined()
       expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
+      expect(mockInitLocalWorkspace).toHaveBeenCalledWith(expect.anything(), 'test', 'userEnvInput')
     })
     it('should print errors', async () => {
       await action({
         ...cliCommandArgs,
         input: {
           workspaceName: 'error',
-          envName: 'env1',
+          envName: 'userEnvInput',
         },
       })
       expect(output.stderr.content.search('failed')).toBeGreaterThan(0)
@@ -132,7 +134,6 @@ describe('init command', () => {
       expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
     })
   })
-
 
   it('should avoid initiating a workspace which already exists', async () => {
     const path = '/some/path/to/workspace'

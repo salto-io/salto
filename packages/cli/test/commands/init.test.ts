@@ -73,34 +73,33 @@ describe('init command', () => {
     output = cliArgs.output
   })
   describe('with interactive env input ', () => {
-
     it('should invoke api\'s init', async () => {
-     await action({
-       ...cliCommandArgs,
-       input: {
-         workspaceName: 'test',
-      
+      await action({
+        ...cliCommandArgs,
+        input: {
+          workspaceName: 'test',
+
         },
-     })
-     expect(output.stdout.content.includes('Initiated')).toBeTruthy()
-     expect(telemetry.getEvents()).toHaveLength(2)
-     expect(telemetry.getEventsMap()[eventsNames.failure]).toBeUndefined()
-     expect(telemetry.getEventsMap()[eventsNames.success]).not.toBeUndefined()
-     expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
-  })
-  it('should print errors', async () => {
-    await action({
-      ...cliCommandArgs,
-      input: {
-        workspaceName: 'error',
-      },
+      })
+      expect(output.stdout.content.includes('Initiated')).toBeTruthy()
+      expect(telemetry.getEvents()).toHaveLength(2)
+      expect(telemetry.getEventsMap()[eventsNames.failure]).toBeUndefined()
+      expect(telemetry.getEventsMap()[eventsNames.success]).not.toBeUndefined()
+      expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
     })
-    expect(output.stderr.content.search('failed')).toBeGreaterThan(0)
-    expect(telemetry.getEvents()).toHaveLength(2)
-    expect(telemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
-    expect(telemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
-    expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
-  })
+    it('should print errors', async () => {
+      await action({
+        ...cliCommandArgs,
+        input: {
+          workspaceName: 'error',
+        },
+      })
+      expect(output.stderr.content.search('failed')).toBeGreaterThan(0)
+      expect(telemetry.getEvents()).toHaveLength(2)
+      expect(telemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
+      expect(telemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
+      expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
+    })
   })
   describe('without interactive env input ', () => {
     it('should invoke api\'s init', async () => {
@@ -109,31 +108,31 @@ describe('init command', () => {
         input: {
           workspaceName: 'test',
           envName: 'env1',
-       
-         },
+
+        },
       })
       expect(output.stdout.content.includes('Initiated')).toBeTruthy()
       expect(telemetry.getEvents()).toHaveLength(2)
       expect(telemetry.getEventsMap()[eventsNames.failure]).toBeUndefined()
       expect(telemetry.getEventsMap()[eventsNames.success]).not.toBeUndefined()
       expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
-   })
-   it('should print errors', async () => {
-    await action({
-      ...cliCommandArgs,
-      input: {
-        workspaceName: 'error',
-        envName: 'env1',
-      },
     })
-    expect(output.stderr.content.search('failed')).toBeGreaterThan(0)
-    expect(telemetry.getEvents()).toHaveLength(2)
-    expect(telemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
-    expect(telemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
-    expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
+    it('should print errors', async () => {
+      await action({
+        ...cliCommandArgs,
+        input: {
+          workspaceName: 'error',
+          envName: 'env1',
+        },
+      })
+      expect(output.stderr.content.search('failed')).toBeGreaterThan(0)
+      expect(telemetry.getEvents()).toHaveLength(2)
+      expect(telemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
+      expect(telemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
+      expect(telemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
+    })
   })
-  })
-  
+
 
   it('should avoid initiating a workspace which already exists', async () => {
     const path = '/some/path/to/workspace'

@@ -31,7 +31,7 @@ type InitArgs = {
 }
 
 export const action: CommandDefAction<InitArgs> = async (
-  { input: { workspaceName , envName }, cliTelemetry, output, workspacePath },
+  { input: { workspaceName, envName }, cliTelemetry, output, workspacePath },
 ): Promise<CliExitCode> => {
   log.debug('running env init command on \'%s\'', workspaceName)
   cliTelemetry.start()

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, Element, Value, ReferenceExpression, TemplateExpression, isReferenceExpression, isVariableExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, isContainerType, isField } from '@salto-io/adapter-api'
+import { ElemID, Element, Value, ReferenceExpression, TemplateExpression, isReferenceExpression, isVariableExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, isContainerType, isField, Field } from '@salto-io/adapter-api'
 import { resolvePath, TransformFunc, createRefToElmWithValue, transformValues } from '@salto-io/adapter-utils'
 import { collections, promises } from '@salto-io/lowerdash'
 
@@ -168,7 +168,7 @@ resolveTemplateExpression = async (
   .join('')
 
 const resolveElement = async (
-  element: Element,
+  elementToResolve: Element,
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
 ): Promise<Element> => {
@@ -178,9 +178,16 @@ const resolveElement = async (
     workingSetElements,
     undefined,
   )
-  if (workingSetElements[element.elemID.getFullName()]?.resolved) {
-    return workingSetElements[element.elemID.getFullName()].element
+  if (workingSetElements[elementToResolve.elemID.getFullName()]?.resolved) {
+    return workingSetElements[elementToResolve.elemID.getFullName()].element
   }
+  if (workingSetElements[elementToResolve.elemID.getFullName()] === undefined) {
+    workingSetElements[elementToResolve.elemID.getFullName()] = {
+      element: shallowCloneElement(elementToResolve),
+    }
+  }
+
+  const { element } = workingSetElements[elementToResolve.elemID.getFullName()]
   if (workingSetElements[element.elemID.getFullName()] === undefined) {
     workingSetElements[element.elemID.getFullName()] = { element }
   }
@@ -237,11 +244,14 @@ const resolveElement = async (
   }
 
   if (isObjectType(element)) {
-    await awu(Object.values(element.fields)).forEach(field => resolveElement(
-      field,
-      elementsSource,
-      workingSetElements,
-    ))
+    element.fields = await mapValuesAsync(
+      element.fields,
+      field => resolveElement(
+        field,
+        elementsSource,
+        workingSetElements,
+      )
+    ) as Record<string, Field>
   }
 
   if (isVariable(element)) {

@@ -115,14 +115,14 @@ const buildMultiEnvSource = (
   const buildStateForSingleEnv = async (envName: string): Promise<SingleState> => {
     const elements = new RemoteElementSource(await remoteMapCreator<Element>({
       namespace: getRemoteMapNamespace('merged', envName),
-      serialize: element => serialize([element]),
+      serialize: element => serialize([element], 'keepRef'),
       deserialize: deserializeSingleElement,
     }))
     return {
       elements,
       mergeErrors: await remoteMapCreator<MergeError[]>({
         namespace: getRemoteMapNamespace('errors', envName),
-        serialize: errors => serialize(errors),
+        serialize: errors => serialize(errors, 'keepRef'),
         deserialize: async data => deserializeMergeErrors(data),
       }),
     }

@@ -26,6 +26,7 @@ import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../util
 import * as parser from '../../../src/parser'
 import { InMemoryRemoteMap, RemoteMapCreator, RemoteMap, CreateRemoteMapParams } from '../../../src/workspace/remote_map'
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 
 const { awu } = collections.asynciterable
 

@@ -254,11 +254,8 @@ const resolveElement = async (
 export const resolve = async (
   elements: Element[],
   elementsSource: ReadOnlyElementsSource,
-  inPlace = false
 ): Promise<Element[]> => {
-  const elementsToResolve = inPlace
-    ? elements
-    : elements.map(shallowCloneElement)
+  const elementsToResolve = elements.map(shallowCloneElement)
   const resolvedElements = await awu(elementsToResolve)
     .map(element => ({ element }))
     .keyBy(

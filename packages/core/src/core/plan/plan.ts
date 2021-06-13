@@ -19,7 +19,8 @@ import {
   Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType,
   ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeElement,
   isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID, isVariable,
-  Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName,
+  Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
+  isModificationChange, isRemovalChange,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, DiffGraph, Group } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -270,8 +271,33 @@ const resolveNodeElements = (
       afterItemsToResolve.push(change.data.after)
     }
   })
-  await resolve(beforeItemsToResolve, before, true)
-  await resolve(afterItemsToResolve, after, true)
+
+  const resolvedBefore = _.keyBy(
+    await resolve(beforeItemsToResolve, before),
+    e => e.elemID.getFullName()
+  ) as Record<string, ChangeDataType>
+  const resolvedAfter = _.keyBy(
+    await resolve(afterItemsToResolve, after),
+    e => e.elemID.getFullName()
+  ) as Record<string, ChangeDataType>
+
+  graph.walkSync(id => {
+    const change = graph.getData(id)
+    const resolvedChange = _.clone(change)
+    if (isAdditionChange(resolvedChange)) {
+      resolvedChange.data.after = resolvedAfter[resolvedChange.data.after.elemID.getFullName()]
+    }
+    if (isModificationChange(resolvedChange)) {
+      resolvedChange.data.after = resolvedAfter[resolvedChange.data.after.elemID.getFullName()]
+      resolvedChange.data.before = resolvedBefore[resolvedChange.data.before.elemID.getFullName()]
+    }
+    if (isRemovalChange(resolvedChange)) {
+      resolvedChange.data.before = resolvedBefore[resolvedChange.data.before.elemID.getFullName()]
+    }
+    graph.setData(id, resolvedChange)
+  })
+
+
   return graph
 }
 

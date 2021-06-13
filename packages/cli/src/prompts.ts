@@ -70,8 +70,8 @@ export default class Prompts {
 
   private static readonly SERVICE_ADD_HELP = 'Use `salto service add <service-name>` to add services to the environment'
 
-  public static initCompleted(name: string, baseDir: string): string {
-    return `Initiated empty workspace ${name} at ${baseDir}
+  public static initCompleted(): string {
+    return `Initiated empty workspace
 ${Prompts.SERVICE_ADD_HELP}
 `
   }

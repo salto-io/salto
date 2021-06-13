@@ -338,26 +338,31 @@ describe('service command group', () => {
       })
 
       describe('when called with a new adapter that does not exist', () => {
-        describe('with login', () => {
-          it('should throw an error', async () => {
-            expect(await addAction({
+        describe('with login', () => { 
+          let errCode: CliExitCode
+          beforeEach(async () => {
+            errCode= await addAction({
               ...cliCommandArgs,
               input: {
-                login: true,
                 serviceName: 'noAdapter',
                 authType: 'basic',
+                login: true,
               },
               workspace,
-            })).toBe(CliExitCode.UserInputError)
+            })
           })
-          it('should not print private services', () => {
+          it('should return user input error', async () => {
+            expect(errCode).toBe(CliExitCode.UserInputError)
+          })
+          it('should not print private services', async () => {
             expect(getPrivateAdaptersNames().some(privateName =>
               output.stdout.content.includes(privateName))).toBeFalsy()
           })
         })
         describe('without login', () => {
-          it('should throw an error', async () => {
-            expect(await addAction({
+          let errCode: CliExitCode
+          beforeEach(async () => {
+            errCode= await addAction({
               ...cliCommandArgs,
               input: {
                 serviceName: 'noAdapter',
@@ -365,9 +370,12 @@ describe('service command group', () => {
                 login: false,
               },
               workspace,
-            })).toBe(CliExitCode.UserInputError)
+            })
           })
-          it('should not print private services', () => {
+          it('should return user input error', async () => {
+            expect(errCode).toBe(CliExitCode.UserInputError)
+          })
+          it('should not print private services', async () => {
             expect(getPrivateAdaptersNames().some(privateName =>
               output.stdout.content.includes(privateName))).toBeFalsy()
           })

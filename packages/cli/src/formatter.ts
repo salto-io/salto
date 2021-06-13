@@ -559,6 +559,12 @@ export const formatLoginToServiceFailed = (serviceName: string, errorMessage: st
   emptyLine(),
 ].join('\n')
 
+export const formatAddServiceFailed = (serviceName: string, errorMessage: string): string => [
+  formatSimpleError(Prompts.SERVICE_LOGIN_FAILED(serviceName, errorMessage)),
+  Prompts.SERVICE_ADD_FAILED_TRY_AGAIN(serviceName),
+  emptyLine(),
+].join('\n')
+
 export const formatEnvListItem = (envNames: ReadonlyArray<string>, currentEnv?: string): string => (
   envNames
     .map(name => `${name === currentEnv ? '*' : ' '} ${name}`)

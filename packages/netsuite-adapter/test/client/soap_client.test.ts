@@ -18,6 +18,7 @@ import _ from 'lodash'
 import { ExistingFileCabinetInstanceDetails } from '../../src/client/suiteapp_client/types'
 import { ReadFileError } from '../../src/client/suiteapp_client/errors'
 import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client'
+import { InvalidSuiteAppCredentialsError } from '../../src/client/types'
 
 describe('soap_client', () => {
   const addListAsyncMock = jest.fn()
@@ -107,6 +108,11 @@ describe('soap_client', () => {
     it('should throw an error when got invalid response', async () => {
       getAsyncMock.mockResolvedValue([{}])
       await expect(client.readFile(1)).rejects.toThrow(Error)
+    })
+
+    it('should throw InvalidSuiteAppCredentialsError', async () => {
+      getAsyncMock.mockRejectedValue(new Error('bla bla Invalid login attempt. bla bla'))
+      await expect(client.readFile(1)).rejects.toThrow(InvalidSuiteAppCredentialsError)
     })
   })
   describe('updateFileCabinetInstances', () => {
@@ -221,6 +227,32 @@ describe('soap_client', () => {
         },
       ])).rejects.toThrow('Got invalid response from updateList request. Errors:')
     })
+    it('should throw InvalidSuiteAppCredentialsError', async () => {
+      updateListAsyncMock.mockRejectedValue(new Error('bla bla Invalid login attempt. bla bla'))
+      await expect(client.updateFileCabinetInstances([
+        {
+          type: 'file',
+          path: 'somePath',
+          id: 6233,
+          folder: -6,
+          bundleable: true,
+          isInactive: false,
+          isOnline: false,
+          hideInBundle: true,
+          content: Buffer.from('aaa'),
+          description: 'desc',
+        },
+        {
+          type: 'folder',
+          path: 'somePath2',
+          id: 62330,
+          bundleable: true,
+          isInactive: false,
+          isPrivate: false,
+          description: 'desc',
+        },
+      ])).rejects.toThrow(InvalidSuiteAppCredentialsError)
+    })
   })
 
   describe('addFileCabinetInstances', () => {
@@ -331,6 +363,32 @@ describe('soap_client', () => {
         },
       ])).rejects.toThrow('Got invalid response from addList request. Errors:')
     })
+
+    it('should throw InvalidSuiteAppCredentialsError', async () => {
+      addListAsyncMock.mockRejectedValue(new Error('bla bla Invalid login attempt. bla bla'))
+      await expect(client.addFileCabinetInstances([
+        {
+          type: 'file',
+          path: 'addedFile',
+          folder: -6,
+          bundleable: true,
+          isInactive: false,
+          isOnline: false,
+          hideInBundle: true,
+          content: Buffer.from('aaa'),
+          description: 'desc',
+        },
+        {
+          type: 'folder',
+          path: 'addedFile2',
+          parent: -600,
+          bundleable: true,
+          isInactive: false,
+          isPrivate: false,
+          description: 'desc',
+        },
+      ])).rejects.toThrow(InvalidSuiteAppCredentialsError)
+    })
   })
 
   describe('deleteFileCabinetInstances', () => {
@@ -410,6 +468,22 @@ describe('soap_client', () => {
           path: 'somePath2',
         },
       ] as ExistingFileCabinetInstanceDetails[])).rejects.toThrow('Got invalid response from deleteList request. Errors:')
+    })
+
+    it('should throw InvalidSuiteAppCredentialsError', async () => {
+      deleteListAsyncMock.mockRejectedValue(new Error('bla bla Invalid login attempt. bla bla'))
+      await expect(client.deleteFileCabinetInstances([
+        {
+          type: 'file',
+          id: 7148,
+          path: 'somePath1',
+        },
+        {
+          type: 'folder',
+          id: 99999,
+          path: 'somePath2',
+        },
+      ] as ExistingFileCabinetInstanceDetails[])).rejects.toThrow(InvalidSuiteAppCredentialsError)
     })
   })
 

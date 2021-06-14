@@ -15,12 +15,12 @@
 */
 import { AdapterAuthMethod, AdapterAuthentication, InstanceElement, ObjectType, OAuthMethod, ElemID } from '@salto-io/adapter-api'
 import { EOL } from 'os'
-import { addAdapter, getLoginStatuses, LoginStatus, updateCredentials, getAdaptersCredentialsTypes, installAdapter } from '@salto-io/core'
+import { addAdapter, getLoginStatuses, LoginStatus, updateCredentials, getAdaptersCredentialsTypes, installAdapter, getSupportedServiceAdapterNames } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { getCredentialsFromUser } from '../callbacks'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { createCommandGroupDef, WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
-import { formatServiceAlreadyAdded, formatServiceAdded, formatLoginToServiceFailed, formatCredentialsHeader, formatLoginUpdated, formatServiceNotConfigured, formatLoginOverride, formatConfiguredAndAdditionalServices, formatAddServiceFailed } from '../formatter'
+import { formatServiceAlreadyAdded, formatServiceAdded, formatLoginToServiceFailed, formatCredentialsHeader, formatLoginUpdated, formatServiceNotConfigured, formatLoginOverride, formatConfiguredAndAdditionalServices, formatAddServiceFailed, formatInvalidServiceInput } from '../formatter'
 import { errorOutputLine, outputLine } from '../outputer'
 import { processOauthCredentials } from '../cli_oauth_authenticator'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
@@ -101,6 +101,12 @@ export const addAction: WorkspaceCommandAction<ServiceAddArgs> = async ({
 }): Promise<CliExitCode> => {
   const { login, serviceName, authType } = input
   await validateAndSetEnv(workspace, input, output)
+
+  const supportedServiceAdapters = getSupportedServiceAdapterNames()
+  if (!supportedServiceAdapters.includes(serviceName)) {
+    errorOutputLine(formatInvalidServiceInput(serviceName, supportedServiceAdapters), output)
+    return CliExitCode.UserInputError
+  }
 
   if (workspace.services().includes(serviceName)) {
     errorOutputLine(formatServiceAlreadyAdded(serviceName), output)

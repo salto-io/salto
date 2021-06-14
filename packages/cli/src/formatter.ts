@@ -553,6 +553,23 @@ export const formatServiceAlreadyAdded = (serviceName: string): string => [
   emptyLine(),
 ].join('\n')
 
+export const formatInvalidServiceInput = (
+  serviceName: string, supportedServiceAdapters:string[]
+): string => {
+  const privateAdapterNames = getPrivateAdaptersNames()
+  const isPrivateServiceName = (service: string) : boolean =>
+    privateAdapterNames.includes(service)
+  return [
+    formatSimpleError(Prompts.SERVICE_NAME_NOT_VALID(
+      serviceName, supportedServiceAdapters.filter(supportedServiceAdapter =>
+        !isPrivateServiceName(supportedServiceAdapter)).map(
+        nonPrivateServiceName => indent(`- ${nonPrivateServiceName}`, 1)
+      )
+    )),
+    emptyLine(),
+  ].join('\n')
+}
+
 export const formatLoginToServiceFailed = (serviceName: string, errorMessage: string): string => [
   formatSimpleError(Prompts.SERVICE_LOGIN_FAILED(serviceName, errorMessage)),
   Prompts.SERVICE_LOGIN_FAILED_TRY_AGAIN(serviceName),

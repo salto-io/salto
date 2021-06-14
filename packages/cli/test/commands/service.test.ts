@@ -23,6 +23,7 @@ import { loginAction, addAction, listAction } from '../../src/commands/service'
 import { processOauthCredentials } from '../../src/cli_oauth_authenticator'
 import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
+import { CliExitCode } from '../../src/types'
 
 jest.mock('../../src/cli_oauth_authenticator', () => ({
   processOauthCredentials: jest.fn().mockResolvedValue({
@@ -80,6 +81,8 @@ jest.mock('@salto-io/core', () => ({
     return loginStatuses
   }),
   installAdapter: jest.fn(),
+  getSupportedServiceAdapterNames: jest.fn()
+    .mockReturnValue(['salesforce', 'newAdapter', 'workato', 'netsuite']),
 }))
 
 describe('service command group', () => {
@@ -102,7 +105,6 @@ describe('service command group', () => {
     output = cliArgs.output
     workspace = mocks.mockWorkspace({ services: ['salesforce', 'hubspot', 'oauthAdapter'] })
   })
-
   describe('list command', () => {
     let cliCommandArgs: mocks.MockCommandArgs
     beforeEach(() => {
@@ -336,21 +338,30 @@ describe('service command group', () => {
 
       describe('when called with a new adapter that does not exist', () => {
         describe('with login', () => {
-          it('should throw an error', async () => {
-            await expect(addAction({
+          let errCode: CliExitCode
+          beforeEach(async () => {
+            errCode = await addAction({
               ...cliCommandArgs,
               input: {
-                login: true,
                 serviceName: 'noAdapter',
                 authType: 'basic',
+                login: true,
               },
               workspace,
-            })).rejects.toThrow()
+            })
+          })
+          it('should return user input error', async () => {
+            expect(errCode).toBe(CliExitCode.UserInputError)
+          })
+          it('should not print private services', async () => {
+            expect(getPrivateAdaptersNames().some(privateName =>
+              output.stdout.content.includes(privateName))).toBeFalsy()
           })
         })
         describe('without login', () => {
-          it('should throw an error', async () => {
-            await expect(addAction({
+          let errCode: CliExitCode
+          beforeEach(async () => {
+            errCode = await addAction({
               ...cliCommandArgs,
               input: {
                 serviceName: 'noAdapter',
@@ -358,7 +369,14 @@ describe('service command group', () => {
                 login: false,
               },
               workspace,
-            })).rejects.toThrow()
+            })
+          })
+          it('should return user input error', async () => {
+            expect(errCode).toBe(CliExitCode.UserInputError)
+          })
+          it('should not print private services', async () => {
+            expect(getPrivateAdaptersNames().some(privateName =>
+              output.stdout.content.includes(privateName))).toBeFalsy()
           })
         })
       })

@@ -460,7 +460,7 @@ const createObjectTypeFromRefType = (refType: ReferenceExpression): ObjectType =
   })
 )
 
-const createMapTypeFromRefType = (refType: ReferenceExpression): MapType => (
+const createObjectMapTypeFromRefType = (refType: ReferenceExpression): MapType => (
   new MapType(new ObjectType({
     elemID: refType.elemID,
   }))
@@ -477,7 +477,7 @@ const apiDefinitionsType = createMatchingObjectType<JiraApiConfig>({
       annotations: { _required: true },
     },
     types: {
-      refType: createMapTypeFromRefType(
+      refType: createObjectMapTypeFromRefType(
         defaultApiDefinitionsType.fields.types.refType
       ),
       annotations: { _required: true },

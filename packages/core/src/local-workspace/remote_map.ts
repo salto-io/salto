@@ -492,7 +492,8 @@ remoteMap.RemoteMapCreator => {
         throw new Error('Failed to open rocksdb connection - too much open connections already')
       }
       await createDBIfNotExist(location)
-      const connection = getOpenDBConnection(location, !persistent)
+      const readOnly = !persistent
+      const connection = getOpenDBConnection(location, readOnly)
       persistentDB = await connection
 
       currnetConnectionsCount += 2

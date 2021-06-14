@@ -21,7 +21,7 @@ import {
   validateElements, InvalidValueValidationError, CircularReferenceValidationError,
   InvalidValueRangeValidationError, IllegalReferenceValidationError,
   UnresolvedReferenceValidationError, InvalidValueTypeValidationError,
-  InvalidStaticFileError, RegexMismatchValidationError,
+  InvalidStaticFileError, RegexMismatchValidationError, InvalidValueLengthValidationError,
 } from '../src/validator'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
 import { IllegalReference } from '../src/parser/parse'
@@ -166,6 +166,14 @@ describe('Elements validation', () => {
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             regex: '^[a-z0-9]*$',
+          }),
+        },
+      },
+      restrictStringLength: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            length_limit: 15,
           }),
         },
       },
@@ -859,6 +867,34 @@ describe('Elements validation', () => {
           expect(errors[1].elemID).toEqual(
             extType.elemID.createNestedID('field', 'restrictedAnnotation', 'rangeNoMax')
           )
+        })
+
+        it('should return an error when annotations value length is bigger than length limit restriction', async () => {
+          extInst.value.restrictStringLength = 'longer than length limit restriction'
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(1)
+          expect(errors[0]).toBeInstanceOf(InvalidValueLengthValidationError)
+        })
+
+        it('should succeed when annotations value length maches the length limit restriction', async () => {
+          extInst.value.restrictStringLength = 'validLenStr'
+          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          expect(await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ]),
+          )).toHaveLength(0)
         })
 
         it('should return an error when annotations value does not match regex restriction', async () => {

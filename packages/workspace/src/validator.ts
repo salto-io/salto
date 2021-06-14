@@ -296,11 +296,9 @@ const validateAnnotationsValue = async (
     const validateLengthLimit = (): ValidationError[] => {
       const maxLength = restrictions.length_limit
       if ((values.isDefined(maxLength) && (!_.isString(val) || (val.length > maxLength)))) {
-        return [
-          new InvalidValueLengthValidationError(
-            { elemID, value, fieldName: elemID.name, length: maxLength }
-          ),
-        ]
+        return [new InvalidValueLengthValidationError(
+          { elemID, value, fieldName: elemID.name, length: maxLength }
+        )]
       }
       return []
     }

@@ -15,13 +15,13 @@
 */
 import { ObjectType, BuiltinTypes, MapType } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
-import { createSwaggerAdapterApiConfigType, validateSwaggerApiDefinitionConfig } from '../../src/config'
+import { createSwaggerAdapterApiConfigType, validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } from '../../src/config'
 
 describe('config_swagger', () => {
   describe('createSwaggerAdapterApiConfigType', () => {
     it('should return default config type when no custom fields were added', async () => {
       const configType = createSwaggerAdapterApiConfigType({ adapter: 'myAdapter' })
-      expect(Object.keys(configType.fields)).toHaveLength(4)
+      expect(Object.keys(configType.fields)).toHaveLength(5)
       expect(configType.fields.types).toBeDefined()
       expect(configType.fields.typeDefaults).toBeDefined()
       expect(configType.fields.apiVersion).toBeDefined()
@@ -55,7 +55,7 @@ describe('config_swagger', () => {
           refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
         } },
       })
-      expect(Object.keys(configType.fields)).toHaveLength(4)
+      expect(Object.keys(configType.fields)).toHaveLength(5)
       expect(configType.fields.types).toBeDefined()
       expect(configType.fields.typeDefaults).toBeDefined()
       expect(configType.fields.apiVersion).toBeDefined()
@@ -185,6 +185,171 @@ describe('config_swagger', () => {
           },
         },
       )).toThrow(new Error('Duplicate type names in PATH.typeNameOverrides: bbb,eee'))
+    })
+    it('should not throw when supportedTypes is non-empty', () => {
+      expect(() => validateSwaggerApiDefinitionConfig(
+        'PATH',
+        {
+          swagger: {
+            url: '/a/b/c',
+            additionalTypes: [
+              { typeName: 'abc', cloneFrom: 'def' },
+            ],
+            typeNameOverrides: [
+              { newName: 'aaa', originalName: 'bbb' },
+            ],
+          },
+          typeDefaults: {
+            transformation: {
+              idFields: ['a', 'b'],
+            },
+          },
+          types: {
+            abc: {
+              transformation: {
+                idFields: ['something', 'else'],
+              },
+            },
+            aaa: {
+              transformation: {
+                idFields: ['something'],
+              },
+            },
+          },
+          supportedTypes: ['aaa'],
+        },
+      )).not.toThrow()
+    })
+    it('should throw when supportedTypes is empty', () => {
+      expect(() => validateSwaggerApiDefinitionConfig(
+        'PATH',
+        {
+          swagger: {
+            url: '/a/b/c',
+            additionalTypes: [
+              { typeName: 'abc', cloneFrom: 'def' },
+            ],
+            typeNameOverrides: [
+              { newName: 'aaa', originalName: 'bbb' },
+            ],
+          },
+          typeDefaults: {
+            transformation: {
+              idFields: ['a', 'b'],
+            },
+          },
+          types: {
+            abc: {
+              transformation: {
+                idFields: ['something', 'else'],
+              },
+            },
+            aaa: {
+              transformation: {
+                idFields: ['something'],
+              },
+            },
+          },
+          supportedTypes: [],
+        },
+      )).toThrow(new Error('Empty supportedTypes field in PATH. Should either be undefined or non-empty.'))
+    })
+  })
+
+  describe('validateFetchConfig', () => {
+    it('should validate successfully when supportedTypes is undefined', () => {
+      expect(() => validateSwaggerFetchConfig(
+        'PATH',
+        {
+          includeTypes: ['a', 'bla'],
+        },
+        {
+          swagger: {
+            url: 'www.url.com',
+          },
+          typeDefaults: {
+            transformation: {
+              idFields: ['id'],
+            },
+          },
+          types: {
+            a: {
+              request: {
+                url: '/x/a',
+              },
+            },
+            bla: {
+              request: {
+                url: '/bla',
+              },
+            },
+          },
+        },
+      )).not.toThrow()
+    })
+
+    it('should validate successfully when values are valid', () => {
+      expect(() => validateSwaggerFetchConfig(
+        'PATH',
+        {
+          includeTypes: ['a', 'bla'],
+        },
+        {
+          swagger: {
+            url: 'www.url.com',
+          },
+          supportedTypes: ['a', 'bla', 'lala'],
+          typeDefaults: {
+            transformation: {
+              idFields: ['id'],
+            },
+          },
+          types: {
+            a: {
+              request: {
+                url: '/x/a',
+              },
+            },
+            bla: {
+              request: {
+                url: '/bla',
+              },
+            },
+          },
+        },
+      )).not.toThrow()
+    })
+
+    it('should throw when there are invalid includeTypes', () => {
+      expect(() => validateSwaggerFetchConfig(
+        'PATH',
+        {
+          includeTypes: ['a', 'unknown'],
+        },
+        {
+          swagger: {
+            url: 'www.url.com',
+          },
+          supportedTypes: ['a', 'bla', 'lala'],
+          typeDefaults: {
+            transformation: {
+              idFields: ['id'],
+            },
+          },
+          types: {
+            a: {
+              request: {
+                url: '/x/a',
+              },
+            },
+            bla: {
+              request: {
+                url: '/bla',
+              },
+            },
+          },
+        },
+      )).toThrow(new Error('Type names are not supported in PATH: unknown'))
     })
   })
 })

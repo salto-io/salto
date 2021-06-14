@@ -14,10 +14,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { FieldDefinition, Field, CORE_ANNOTATIONS, ObjectType } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { FieldDefinition, Field, CORE_ANNOTATIONS, TypeElement, isObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
-import _ from 'lodash'
 import { FieldToHideType } from '../config/transformation'
 import { SUBTYPES_PATH, TYPES_PATH } from './constants'
 import { getSubtypes } from './subtypes'
@@ -51,9 +51,9 @@ export const hideFields = (
 
 export const filterTypes = async (
   adapterName: string,
-  allTypes: ObjectType[],
+  allTypes: TypeElement[],
   typesToFilter: string[]
-): Promise<ObjectType[]> => {
+): Promise<TypeElement[]> => {
   const nameToType = _.keyBy(allTypes, type => type.elemID.name)
 
   const relevantTypes = typesToFilter.map(name => {
@@ -67,7 +67,7 @@ export const filterTypes = async (
   relevantTypes
     .filter(t => t.path === undefined)
     .forEach(t => { t.path = [adapterName, TYPES_PATH, t.elemID.name] })
-  const subtypes = await getSubtypes(relevantTypes)
+  const subtypes = await getSubtypes(relevantTypes.filter(isObjectType))
   subtypes
     .filter(t => t.path === undefined)
     .forEach(t => { t.path = [adapterName, TYPES_PATH, SUBTYPES_PATH, t.elemID.name] })

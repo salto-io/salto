@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { ElemID, CORE_ANNOTATIONS, BuiltinTypes } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { JIRA } from './constants'
 
@@ -471,6 +471,9 @@ const apiDefinitionsType = createMatchingObjectType<JiraApiConfig>({
     platformSwagger: {
       refType: defaultApiDefinitionsType.fields.swagger.refType,
       annotations: { _required: true },
+    },
+    supportedTypes: {
+      refType: new ListType(BuiltinTypes.STRING),
     },
   },
 })

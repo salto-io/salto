@@ -79,6 +79,7 @@ export const DEFAULT_API_DEFINITIONS: StripeApiConfig = {
     },
   },
   types: {},
+  supportedTypes: DEFAULT_INCLUDE_TYPES,
 }
 
 

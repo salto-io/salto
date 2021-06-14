@@ -42,15 +42,6 @@ export class CircularReference {
   constructor(public ref: string) {}
 }
 
-const shallowCloneElement = <T extends Element>(element: T): T => {
-  const clonedElement = _.clone(element)
-  if (isObjectType(clonedElement)) {
-    clonedElement.fields = _.mapValues(clonedElement.fields, _.clone)
-  }
-  clonedElement.annotationRefTypes = _.mapValues(clonedElement.annotationRefTypes, _.clone)
-  return clonedElement
-}
-
 const getResolvedElement = async (
   elemID: ElemID,
   elementsSource: ReadOnlyElementsSource,
@@ -61,7 +52,7 @@ const getResolvedElement = async (
   }
   const element = await elementsSource.get(elemID)
   if (element !== undefined) {
-    return shallowCloneElement(element)
+    return _.clone(element)
   }
   return element
 }
@@ -183,7 +174,7 @@ const resolveElement = async (
   }
   if (workingSetElements[elementToResolve.elemID.getFullName()] === undefined) {
     workingSetElements[elementToResolve.elemID.getFullName()] = {
-      element: shallowCloneElement(elementToResolve),
+      element: _.clone(elementToResolve),
     }
   }
 
@@ -265,7 +256,7 @@ export const resolve = async (
   elements: Element[],
   elementsSource: ReadOnlyElementsSource,
 ): Promise<Element[]> => {
-  const elementsToResolve = elements.map(shallowCloneElement)
+  const elementsToResolve = elements.map(_.clone)
   const resolvedElements = await awu(elementsToResolve)
     .map(element => ({ element }))
     .keyBy(

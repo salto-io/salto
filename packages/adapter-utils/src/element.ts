@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, FieldDefinition, PrimitiveType, ListType, PrimitiveTypes, Value } from '@salto-io/adapter-api'
+import { ObjectType, FieldDefinition, PrimitiveType, ListType, MapType, PrimitiveTypes, Value } from '@salto-io/adapter-api'
 import { types } from '@salto-io/lowerdash'
 
 type SaltoPrimitiveTypeForType<T> = (
@@ -26,12 +26,16 @@ type SaltoPrimitiveTypeForType<T> = (
         : PrimitiveTypes.UNKNOWN
 )
 
+type RecordOf<T, S> = string extends keyof T ? Record<string, S> : never
+
 type SaltoTypeForType<T> = (
   T extends Array<Value>
     ? ListType
     : T extends (string | number | boolean | undefined)
       ? PrimitiveType<SaltoPrimitiveTypeForType<T>>
-      : T extends {} ? ObjectType : unknown
+      : T extends Record<string, Value> & RecordOf<T, Value>
+        ? MapType
+        : T extends {} ? ObjectType : unknown
 )
 
 type OptionalKeys<T> = types.KeysOfExtendingType<T, undefined>

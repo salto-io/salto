@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType, MapType, ReferenceExpression } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { JIRA } from './constants'
 
@@ -460,6 +460,12 @@ const createObjectTypeFromRefType = (refType: ReferenceExpression): ObjectType =
   })
 )
 
+const createObjectMapTypeFromRefType = (refType: ReferenceExpression): MapType => (
+  new MapType(new ObjectType({
+    elemID: refType.elemID,
+  }))
+)
+
 const apiDefinitionsType = createMatchingObjectType<JiraApiConfig>({
   elemID: new ElemID(JIRA, 'apiDefinitions'),
   fields: {
@@ -471,7 +477,7 @@ const apiDefinitionsType = createMatchingObjectType<JiraApiConfig>({
       annotations: { _required: true },
     },
     types: {
-      refType: createObjectTypeFromRefType(
+      refType: createObjectMapTypeFromRefType(
         defaultApiDefinitionsType.fields.types.refType
       ),
       annotations: { _required: true },

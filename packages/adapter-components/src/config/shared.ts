@@ -15,9 +15,9 @@
 */
 import _ from 'lodash'
 import {
-  ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType, MapType,
+  ElemID, ObjectType, BuiltinTypes, FieldDefinition, ListType, MapType,
 } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { createRefToElmWithValue, createMatchingObjectType } from '@salto-io/adapter-utils'
 import { RequestConfig, RequestDefaultConfig } from './request'
 import { TransformationConfig, TransformationDefaultConfig } from './transformation'
 
@@ -57,44 +57,44 @@ export const createAdapterApiConfigType = ({
   requestTypes: { request: ObjectType; requestDefault: ObjectType }
   transformationTypes: { transformation: ObjectType; transformationDefault: ObjectType }
 }): ObjectType => {
-  const typeDefaultsConfigType = new ObjectType({
+  const typeDefaultsConfigType = createMatchingObjectType<TypeDefaultsConfig>({
     elemID: new ElemID(adapter, 'typeDefaultsConfig'),
     fields: {
-      request: { refType: createRefToElmWithValue(new MapType(requestTypes.requestDefault)) },
+      request: { refType: requestTypes.requestDefault },
       transformation: {
-        refType: createRefToElmWithValue(new MapType(transformationTypes.transformationDefault)),
+        refType: transformationTypes.transformationDefault,
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
+          _required: true,
         },
       },
     },
   })
 
-  const typesConfigType = new ObjectType({
+  const typesConfigType = createMatchingObjectType<TypeConfig>({
     elemID: new ElemID(adapter, 'typesConfig'),
     fields: {
-      request: { refType: createRefToElmWithValue(requestTypes.request) },
-      transformation: { refType: createRefToElmWithValue(transformationTypes.transformation) },
+      request: { refType: requestTypes.request },
+      transformation: { refType: transformationTypes.transformation },
     },
   })
 
-  const adapterApiConfigType = new ObjectType({
+  const adapterApiConfigType = createMatchingObjectType<AdapterApiConfig>({
     elemID: new ElemID(adapter, 'adapterApiConfig'),
     fields: {
       types: {
-        refType: createRefToElmWithValue(new MapType(typesConfigType)),
+        refType: new MapType(typesConfigType),
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
+          _required: true,
         },
       },
       typeDefaults: {
-        refType: createRefToElmWithValue(typeDefaultsConfigType),
+        refType: typeDefaultsConfigType,
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
+          _required: true,
         },
       },
       apiVersion: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       ...additionalFields,
     },

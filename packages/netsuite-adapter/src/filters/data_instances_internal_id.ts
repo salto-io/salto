@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { naclCase, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { isDataObjectType } from '../types'
@@ -27,7 +27,7 @@ const isNumberStr = (str: string): boolean => !Number.isNaN(Number(str))
 
 const getSubInstanceName = (path: ElemID, internalId: string): string => {
   const name = _.findLast(path.getFullNameParts(), part => !isNumberStr(part) && !['customField', 'customFieldList', 'recordRef'].includes(part))
-  return `${path.typeName}_${name}_${internalId}`
+  return naclCase(`${path.typeName}_${name}_${internalId}`)
 }
 
 /**

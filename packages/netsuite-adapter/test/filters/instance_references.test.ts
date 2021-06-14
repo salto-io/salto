@@ -17,6 +17,7 @@ import {
   CORE_ANNOTATIONS,
   ElemID, InstanceElement, ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/instance_references'
 import { customTypes, fileCabinetTypes } from '../../src/types'
 import { FILE, PATH, SCRIPT_ID, WORKFLOW } from '../../src/constants'
@@ -99,6 +100,7 @@ describe('instance_references filter', () => {
       await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
@@ -110,6 +112,7 @@ describe('instance_references filter', () => {
       await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
@@ -122,6 +125,7 @@ describe('instance_references filter', () => {
       await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
@@ -136,6 +140,7 @@ describe('instance_references filter', () => {
       await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
@@ -148,6 +153,7 @@ describe('instance_references filter', () => {
       await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
@@ -160,6 +166,7 @@ describe('instance_references filter', () => {
       await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
@@ -172,6 +179,7 @@ describe('instance_references filter', () => {
       await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
@@ -185,6 +193,7 @@ describe('instance_references filter', () => {
       await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
@@ -197,6 +206,7 @@ describe('instance_references filter', () => {
       await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
@@ -215,6 +225,7 @@ describe('instance_references filter', () => {
       await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
         isPartial: true,
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
@@ -233,6 +244,7 @@ describe('instance_references filter', () => {
       await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
       }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 

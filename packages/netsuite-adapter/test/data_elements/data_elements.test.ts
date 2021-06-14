@@ -23,6 +23,9 @@ import { NETSUITE } from '../../src/constants'
 import SdfClient from '../../src/client/sdf_client'
 import { getDataElements, getDataTypes } from '../../src/data_elements/data_elements'
 import { NetsuiteQuery } from '../../src/query'
+import { entitycustomfield } from '../../src/types/custom_types/entitycustomfield'
+import { getFieldInstanceTypes } from '../../src/data_elements/custom_fields'
+import { othercustomfield } from '../../src/types/custom_types/othercustomfield'
 
 jest.mock('@salto-io/adapter-components', () => ({
   ...jest.requireActual<{}>('@salto-io/adapter-components'),
@@ -225,6 +228,18 @@ describe('data_elements', () => {
       })
       const elements = await getDataElements(client, query)
       expect((elements[1] as InstanceElement).value.numberField).toBe(1234)
+    })
+  })
+
+  describe('getFieldInstanceTypes', () => {
+    it('Should identify field instance with appliesto ', () => {
+      const instance = new InstanceElement('name', entitycustomfield, { appliestocontact: true, appliestocustomer: false, appliestoemployee: true })
+      expect(getFieldInstanceTypes(instance)).toEqual(['Contact', 'Employee'])
+    })
+
+    it('Should identify othercustomfield instance', () => {
+      const instance = new InstanceElement('name', othercustomfield, { rectype: '-112' })
+      expect(getFieldInstanceTypes(instance)).toEqual(['Account'])
     })
   })
 })

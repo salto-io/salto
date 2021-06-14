@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement, Element } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { file } from '../../src/types/file_cabinet_types'
 import NetsuiteClient from '../../src/client/client'
 import serviceUrls from '../../src/filters/service_urls'
@@ -44,7 +45,9 @@ describe('serviceUrls', () => {
       elementsSourceIndex: { getIndexes: () => Promise.resolve({
         serviceIdsIndex: {},
         internalIdsIndex: {},
+        customFieldsIndex: {},
       }) },
+      elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
     }).onFetch?.(elements)
     expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/media/mediaitem.nl?id=1')
@@ -56,7 +59,9 @@ describe('serviceUrls', () => {
       elementsSourceIndex: { getIndexes: () => Promise.resolve({
         serviceIdsIndex: {},
         internalIdsIndex: {},
+        customFieldsIndex: {},
       }) },
+      elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
     }).onFetch?.(elements)
     expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, TypeElement } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/remove_unsupported_types'
 import { NETSUITE } from '../../src/constants'
 import NetsuiteClient from '../../src/client/client'
@@ -37,7 +38,9 @@ describe('remove_unsupported_types', () => {
       elementsSourceIndex: { getIndexes: () => Promise.resolve({
         serviceIdsIndex: {},
         internalIdsIndex: {},
+        customFieldsIndex: {},
       }) },
+      elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
     }
   })

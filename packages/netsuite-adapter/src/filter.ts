@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 import { filter } from '@salto-io/adapter-utils'
+import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import NetsuiteClient from './client/client'
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 
@@ -25,6 +25,7 @@ export type FilterWith<M extends keyof Filter> = filter.FilterWith<void, M>
 export type FilterOpts = {
   client: NetsuiteClient
   elementsSourceIndex: LazyElementsSourceIndexes
+  elementsSource: ReadOnlyElementsSource
   isPartial: boolean
 }
 

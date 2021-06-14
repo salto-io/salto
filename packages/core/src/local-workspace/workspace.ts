@@ -98,6 +98,7 @@ const loadNaclFileSource = async (
   cacheBaseDir: string,
   sourceName: string,
   persistent: boolean,
+  remoteMapCreator: remoteMap.RemoteMapCreator,
   excludeDirs: string[] = []
 ): Promise<nacl.NaclFilesSource> => {
   const { naclFilesStore, staticFileSource } = getNaclFilesSourceParams(
@@ -107,7 +108,7 @@ const loadNaclFileSource = async (
     sourceName,
     naclFilesStore,
     staticFileSource,
-    createRemoteMapCreator(cacheBaseDir),
+    remoteMapCreator,
     persistent
   )
 }
@@ -134,7 +135,8 @@ export const loadLocalElementsSources = async (
             baseDir,
             path.resolve(localStorage, CACHE_DIR_NAME),
             getLocalEnvName(env),
-            persistent
+            persistent,
+            remoteMapCreator,
           ),
           state: localState(
             path.join(getConfigDir(baseDir), STATES_DIR_NAME, env),
@@ -150,6 +152,7 @@ export const loadLocalElementsSources = async (
         path.resolve(localStorage, CACHE_DIR_NAME),
         getLocalEnvName(COMMON_ENV_PREFIX),
         persistent,
+        remoteMapCreator,
         [path.join(baseDir, ENVS_PREFIX)]
       ),
     },

@@ -105,7 +105,6 @@ describe('service command group', () => {
     output = cliArgs.output
     workspace = mocks.mockWorkspace({ services: ['salesforce', 'hubspot', 'oauthAdapter'] })
   })
-
   describe('list command', () => {
     let cliCommandArgs: mocks.MockCommandArgs
     beforeEach(() => {
@@ -338,10 +337,10 @@ describe('service command group', () => {
       })
 
       describe('when called with a new adapter that does not exist', () => {
-        describe('with login', () => { 
+        describe('with login', () => {
           let errCode: CliExitCode
           beforeEach(async () => {
-            errCode= await addAction({
+            errCode = await addAction({
               ...cliCommandArgs,
               input: {
                 serviceName: 'noAdapter',
@@ -362,7 +361,7 @@ describe('service command group', () => {
         describe('without login', () => {
           let errCode: CliExitCode
           beforeEach(async () => {
-            errCode= await addAction({
+            errCode = await addAction({
               ...cliCommandArgs,
               input: {
                 serviceName: 'noAdapter',

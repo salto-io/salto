@@ -113,7 +113,6 @@ export const addAction: WorkspaceCommandAction<ServiceAddArgs> = async ({
     return CliExitCode.UserInputError
   }
 
-
   await installAdapter(serviceName)
   if (login) {
     const adapterCredentialsTypes = getAdaptersCredentialsTypes([serviceName])[serviceName]

@@ -23,6 +23,8 @@ import { SourceRange } from '../../src/parser/internal/types'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { createAddChange } from '../../src/workspace/nacl_files/multi_env/projections'
 import { mockStaticFilesSource } from '../utils'
+import { SourceMap } from '../../src/parser'
+import { mockFunction } from './helpers'
 
 const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
@@ -36,7 +38,6 @@ export const createMockNaclFileSource = (
   staticFileSource = mockStaticFilesSource()
 ): NaclFilesSource => {
   const currentElements = elements
-  const elementSource = createInMemoryElementSource(currentElements)
   const getElementNaclFiles = (elemID: ElemID): string[] =>
     Object.entries(naclFiles).filter(([_filename, fileElements]) => fileElements.find(
       element => resolvePath(element, elemID) !== undefined
@@ -60,42 +61,48 @@ export const createMockNaclFileSource = (
     },
     deleteAll: async (_ids: ThenableIterable<ElemID>) => Promise.resolve(undefined),
     getAll: async () => awu(currentElements),
-    getElementsSource: async () => elementSource,
-    clear: jest.fn().mockImplementation(() => Promise.resolve()),
-    rename: jest.fn().mockImplementation(() => Promise.resolve()),
-    flush: jest.fn().mockImplementation(() => Promise.resolve()),
-    updateNaclFiles: jest.fn().mockImplementation(() => Promise.resolve(changes)),
-    listNaclFiles: jest.fn().mockImplementation(() => Promise.resolve(_.keys(naclFiles))),
-    getTotalSize: jest.fn().mockImplementation(() => Promise.resolve(5)),
-    getNaclFile: jest.fn().mockImplementation(
-      (filename: string) => Promise.resolve(naclFiles[filename] ? { filename, buffer: '' } : undefined)
+    getElementsSource: async () => createInMemoryElementSource(currentElements),
+    clear: mockFunction<NaclFilesSource['clear']>().mockResolvedValue(),
+    rename: mockFunction<NaclFilesSource['rename']>().mockResolvedValue(),
+    flush: mockFunction<NaclFilesSource['flush']>().mockResolvedValue(),
+    updateNaclFiles: mockFunction<NaclFilesSource['updateNaclFiles']>().mockResolvedValue(changes),
+    listNaclFiles: mockFunction<NaclFilesSource['listNaclFiles']>().mockResolvedValue(_.keys(naclFiles)),
+    getTotalSize: mockFunction<NaclFilesSource['getTotalSize']>().mockResolvedValue(5),
+    getNaclFile: mockFunction<NaclFilesSource['getNaclFile']>().mockImplementation(
+      async filename => (naclFiles[filename] ? { filename, buffer: '' } : undefined)
     ),
-    setNaclFiles: jest.fn().mockImplementation(() => Promise.resolve(changes)),
-    removeNaclFiles: jest.fn().mockImplementation(() => Promise.resolve(changes)),
-    getSourceMap: jest.fn().mockImplementation(() => Promise.resolve(new Map())),
-    getSourceRanges: jest.fn().mockImplementation(async elemID => sourceRanges
-      ?? getElementNaclFiles(elemID).map(filename => ({ filename, start: {}, end: {} }))),
-    getErrors: jest.fn().mockImplementation(() => Promise.resolve(errors)),
-    getParsedNaclFile: jest.fn().mockImplementation(async filename => ({
-      filename,
-      data: {
-        errors: () => Promise.resolve([]),
-        timestamp: () => Promise.resolve(Date.now()),
-        referenced: () => Promise.resolve([]),
-      },
-      elements: () => Promise.resolve(naclFiles[filename] || []),
-      buffer: '',
-    })),
-    getElementNaclFiles: jest.fn().mockImplementation(getElementNaclFiles),
-    clone: jest.fn().mockImplementation(() => Promise.resolve()),
-    getElementReferencedFiles: jest.fn().mockResolvedValue([]),
-    load: jest.fn().mockResolvedValue({
-      changes: currentElements.map(e => createAddChange(
-        e, e.elemID
-      )),
+    setNaclFiles: mockFunction<NaclFilesSource['setNaclFiles']>().mockResolvedValue(changes),
+    removeNaclFiles: mockFunction<NaclFilesSource['removeNaclFiles']>().mockResolvedValue(changes),
+    getSourceMap: mockFunction<NaclFilesSource['getSourceMap']>().mockResolvedValue(new SourceMap()),
+    getSourceRanges: mockFunction<NaclFilesSource['getSourceRanges']>().mockImplementation(
+      async elemID => (
+        sourceRanges ?? getElementNaclFiles(elemID).map(filename => ({
+          filename,
+          start: { byte: 0, line: 1, col: 1 },
+          end: { byte: 0, line: 1, col: 1 },
+        }))
+      )
+    ),
+    getErrors: mockFunction<NaclFilesSource['getErrors']>().mockResolvedValue(errors),
+    getParsedNaclFile: mockFunction<NaclFilesSource['getParsedNaclFile']>().mockImplementation(
+      async filename => ({
+        filename,
+        data: {
+          errors: () => Promise.resolve([]),
+          referenced: () => Promise.resolve([]),
+        },
+        elements: () => Promise.resolve(naclFiles[filename] || []),
+        buffer: '',
+      })
+    ),
+    getElementNaclFiles: mockFunction<NaclFilesSource['getElementNaclFiles']>().mockImplementation(async elemID => getElementNaclFiles(elemID)),
+    clone: jest.fn().mockRejectedValue(new Error('not implemented in mock')),
+    getElementReferencedFiles: mockFunction<NaclFilesSource['getElementReferencedFiles']>().mockResolvedValue([]),
+    load: mockFunction<NaclFilesSource['load']>().mockResolvedValue({
+      changes: currentElements.map(e => createAddChange(e, e.elemID)),
       cacheValid: true,
     }),
-    getSearchableNames: jest.fn().mockResolvedValue(_.uniq(currentElements.flatMap(e => {
+    getSearchableNames: mockFunction<NaclFilesSource['getSearchableNames']>().mockResolvedValue(_.uniq(currentElements.flatMap(e => {
       const fieldNames = isObjectType(e)
         ? Object.values(e.fields).map(field => field.elemID.getFullName())
         : []

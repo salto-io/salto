@@ -509,6 +509,7 @@ const buildMultiEnvSource = (
         await s.elements.clear()
         await s.mergeErrors.clear()
       })
+      state = undefined
     },
     rename: async (name: string): Promise<void> => {
       await series([primarySource(), commonSource(), ...Object.values(secondarySources())]

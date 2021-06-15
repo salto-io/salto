@@ -198,19 +198,19 @@ export const loadWorkspace = async (
           merged: new RemoteElementSource(
             await remoteMapCreator<Element>({
               namespace: getRemoteMapNamespace('merged', envName),
-              serialize: element => serialize([element]),
+              serialize: element => serialize([element], 'keepRef'),
               // TODO: we might need to pass static file reviver to the deserialization func
               deserialize: deserializeSingleElement,
             })
           ),
           errors: await remoteMapCreator<MergeError[]>({
             namespace: getRemoteMapNamespace('errors', envName),
-            serialize: mergeErrors => serialize(mergeErrors),
+            serialize: mergeErrors => serialize(mergeErrors, 'keepRef'),
             deserialize: async data => deserializeMergeErrors(data),
           }),
           validationErrors: await remoteMapCreator<ValidationError[]>({
             namespace: getRemoteMapNamespace('validationErrors', envName),
-            serialize: validationErrors => serialize(validationErrors),
+            serialize: validationErrors => serialize(validationErrors, 'keepRef'),
             deserialize: async data => deserializeValidationErrors(data),
           }),
         }]).toArray())

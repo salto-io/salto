@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ObjectType, Element, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, Element, BuiltinTypes, ReferenceExpression, ElemIdGetter, ADAPTER, OBJECT_SERVICE_ID, toServiceIdsString, OBJECT_NAME } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { elements as elementsComponents } from '@salto-io/adapter-components'
 import _ from 'lodash'
@@ -91,6 +91,7 @@ const getType = (
 const createInstance = async (
   record: Record<string, unknown>,
   typesMap: Record<string, ObjectType>,
+  elemIdGetter?: ElemIdGetter,
 ): Promise<InstanceElement> => {
   const type = getType(record, typesMap)
   const fixedRecord = await transformValues({
@@ -107,18 +108,32 @@ const createInstance = async (
       return castFieldValue(value, field)
     },
   })
-  const id = naclCase(fixedRecord?.[TYPE_TO_IDENTIFIER[type.elemID.name]])
+  const defaultName = naclCase(fixedRecord?.[TYPE_TO_IDENTIFIER[type.elemID.name]])
+  const name = elemIdGetter !== undefined ? elemIdGetter(
+    NETSUITE,
+    {
+      [ADAPTER]: NETSUITE,
+      [TYPE_TO_IDENTIFIER[type.elemID.name]]: fixedRecord?.[TYPE_TO_IDENTIFIER[type.elemID.name]],
+      [OBJECT_SERVICE_ID]: toServiceIdsString({
+        [ADAPTER]: NETSUITE,
+        [OBJECT_NAME]: type.elemID.getFullName(),
+      }),
+    },
+    defaultName
+  ).name : defaultName
+
   return new InstanceElement(
-    id,
+    name,
     type,
     fixedRecord,
-    [NETSUITE, RECORDS_PATH, type.elemID.name, pathNaclCase(id)],
+    [NETSUITE, RECORDS_PATH, type.elemID.name, pathNaclCase(name)],
   )
 }
 
 export const getDataElements = async (
   client: NetsuiteClient,
   query: NetsuiteQuery,
+  elemIdGetter?: ElemIdGetter,
 ): Promise<Element[]> => {
   const types = await getDataTypes(client)
 
@@ -135,9 +150,8 @@ export const getDataElements = async (
     return types
   }
 
-  const instances = await awu(await client.getAllRecords(availableTypesToFetch))
-    .map(record => createInstance(record, typesMap))
-    .toArray()
+  const instances = await Promise.all((await client.getAllRecords(availableTypesToFetch))
+    .map(record => createInstance(record, typesMap, elemIdGetter)))
 
   return [
     ...types,

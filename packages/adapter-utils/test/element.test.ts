@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, BuiltinTypes, ObjectType, ListType } from '@salto-io/adapter-api'
+import { ElemID, BuiltinTypes, ObjectType, ListType, MapType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '../src/element'
 
 describe('createMatchingObjectType', () => {
@@ -26,6 +26,7 @@ describe('createMatchingObjectType', () => {
       obj: InnerType
       lst: number[]
       objLst: InnerType[]
+      numMap: Record<string, number>
     }
     const innerType = createMatchingObjectType<InnerType>({
       elemID: new ElemID('inner'),
@@ -41,6 +42,7 @@ describe('createMatchingObjectType', () => {
         obj: { refType: innerType, annotations: { _required: true } },
         lst: { refType: new ListType(BuiltinTypes.NUMBER), annotations: { _required: true } },
         objLst: { refType: new ListType(innerType), annotations: { _required: true } },
+        numMap: { refType: new MapType(BuiltinTypes.NUMBER), annotations: { _required: true } },
       },
     })).toBeInstanceOf(ObjectType)
   })

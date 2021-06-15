@@ -137,7 +137,7 @@ export enum PrimitiveTypes {
 export type ContainerType = ListType | MapType
 export type TypeElement = PrimitiveType | ObjectType | ContainerType
 export type TypeMap = Record<string, TypeElement>
-type TypeOrRef = TypeElement | ReferenceExpression
+type TypeOrRef<T extends TypeElement = TypeElement> = T | ReferenceExpression
 export type TypeRefMap = Record<string, TypeOrRef>
 export type ReferenceMap = Record<string, ReferenceExpression>
 
@@ -162,10 +162,10 @@ abstract class PlaceholderTypeElement extends Element {
   }
 }
 
-export class ListType extends Element {
+export class ListType<T extends TypeElement = TypeElement> extends Element {
   public refInnerType: ReferenceExpression
   public constructor(
-    innerTypeOrRef: TypeOrRef
+    innerTypeOrRef: TypeOrRef<T>
   ) {
     super({
       elemID: new ElemID('', `${LIST_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`),
@@ -186,13 +186,13 @@ export class ListType extends Element {
     )
   }
 
-  async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
+  async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<T> {
     const refInnerTypeVal = await getRefTypeValue(this.refInnerType, elementsSource)
     // eslint-disable-next-line no-use-before-define
     if (!isType(refInnerTypeVal)) {
       throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
     }
-    return refInnerTypeVal
+    return refInnerTypeVal as T
   }
 
   setRefInnerType(innerTypeOrRefInnerType: TypeOrRef): void {
@@ -213,10 +213,10 @@ export class ListType extends Element {
 /**
  * Represents a map with string keys and innerType values.
  */
-export class MapType extends Element {
+export class MapType<T extends TypeElement = TypeElement> extends Element {
   public refInnerType: ReferenceExpression
   public constructor(
-    innerTypeOrRef: TypeOrRef
+    innerTypeOrRef: TypeOrRef<T>
   ) {
     super({
       elemID: new ElemID('', `${MAP_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`),
@@ -237,13 +237,13 @@ export class MapType extends Element {
     )
   }
 
-  async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
+  async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<T> {
     const refInnerTypeVal = await getRefTypeValue(this.refInnerType, elementsSource)
     // eslint-disable-next-line no-use-before-define
     if (!isType(refInnerTypeVal)) {
       throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
     }
-    return refInnerTypeVal
+    return refInnerTypeVal as T
   }
 
   setRefInnerType(innerTypeOrRefInnerType: TypeOrRef): void {

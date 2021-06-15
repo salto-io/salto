@@ -22,6 +22,7 @@ import NetsuiteClient from '../../src/client/client'
 import { NETSUITE } from '../../src/constants'
 import SdfClient from '../../src/client/sdf_client'
 import { getDataElements, getDataTypes } from '../../src/data_elements/data_elements'
+import { NetsuiteQuery } from '../../src/query'
 
 jest.mock('@salto-io/adapter-components', () => ({
   ...jest.requireActual<{}>('@salto-io/adapter-components'),
@@ -37,6 +38,10 @@ describe('data_elements', () => {
   const createClientMock = jest.spyOn(soap, 'createClientAsync')
   const extractTypesMock = elementsComponents.soap.extractTypes as jest.Mock
   const wsdl = {}
+  const query = {
+    isTypeMatch: () => true,
+    isObjectMatch: () => true,
+  } as unknown as NetsuiteQuery
 
   const creds = {
     accountId: 'accountId',
@@ -62,7 +67,7 @@ describe('data_elements', () => {
   describe('getDataTypes', () => {
     it('should return all the types', async () => {
       const typeA = new ObjectType({ elemID: new ElemID(NETSUITE, 'A') })
-      const typeB = new ObjectType({ elemID: new ElemID(NETSUITE, 'Subsidiary'), fields: { A: { refType: typeA } } })
+      const typeB = new ObjectType({ elemID: new ElemID(NETSUITE, 'Subsidiary'), fields: { A: { refType: typeA }, name: { refType: BuiltinTypes.STRING } } })
       const typeC = new ObjectType({ elemID: new ElemID(NETSUITE, 'C') })
 
       extractTypesMock.mockResolvedValue([typeA, typeB, typeC])
@@ -103,20 +108,70 @@ describe('data_elements', () => {
         return []
       })
 
-      const elements = await getDataElements(client)
+      const elements = await getDataElements(client, query)
       expect(elements[0].elemID.getFullNameParts()).toEqual([NETSUITE, 'Subsidiary'])
       expect(elements[1].elemID.getFullNameParts()).toEqual([NETSUITE, 'Subsidiary', 'instance', 'name'])
       expect((elements[1] as InstanceElement).value).toEqual({ name: 'name' })
     })
 
+    it('should return only requested instances', async () => {
+      getAllRecordsMock.mockImplementation(async type => {
+        if (type === 'Subsidiary') {
+          return [{ name: 'name1' }, { name: 'name2' }]
+        }
+        return []
+      })
+
+      const netsuiteQuery = {
+        isTypeMatch: (typeName: string) => typeName === 'Subsidiary',
+        isObjectMatch: ({ instanceId }: { instanceId: string }) => instanceId === 'name1',
+      } as unknown as NetsuiteQuery
+
+      const elements = await getDataElements(
+        client,
+        netsuiteQuery,
+      )
+      expect(elements[0].elemID.getFullNameParts()).toEqual([NETSUITE, 'Subsidiary'])
+      expect(elements[1].elemID.getFullNameParts()).toEqual([NETSUITE, 'Subsidiary', 'instance', 'name1'])
+      expect(elements).toHaveLength(2)
+      expect(getAllRecordsMock).not.toHaveBeenCalledWith('Account')
+    })
+
+    it('should return only types when no instances match', async () => {
+      getAllRecordsMock.mockImplementation(async type => {
+        if (type === 'Subsidiary') {
+          return [{ name: 'name1' }, { name: 'name2' }]
+        }
+        return []
+      })
+
+      const netsuiteQuery = {
+        isTypeMatch: () => false,
+        isObjectMatch: () => false,
+      } as unknown as NetsuiteQuery
+
+      const elements = await getDataElements(
+        client,
+        netsuiteQuery,
+      )
+      expect(elements[0].elemID.getFullNameParts()).toEqual([NETSUITE, 'Subsidiary'])
+      expect(elements).toHaveLength(1)
+    })
+
     it('should return empty array if failed to get the types', async () => {
       jest.spyOn(client, 'isSuiteAppConfigured').mockReturnValue(false)
-      await expect(getDataElements(client)).resolves.toEqual([])
+      await expect(getDataElements(
+        client,
+        query,
+      )).resolves.toEqual([])
     })
 
     it('should throw an error if failed to getAllRecords', async () => {
       getAllRecordsMock.mockRejectedValue(new Error())
-      await expect(getDataElements(client)).rejects.toThrow()
+      await expect(getDataElements(
+        client,
+        query,
+      )).rejects.toThrow()
     })
 
     it('should convert attributes into fields', async () => {
@@ -126,7 +181,7 @@ describe('data_elements', () => {
         }
         return []
       })
-      const elements = await getDataElements(client)
+      const elements = await getDataElements(client, query)
       expect((elements[1] as InstanceElement).value).toEqual({
         name: 'name',
         internalId: '1',
@@ -140,7 +195,7 @@ describe('data_elements', () => {
         }
         return []
       })
-      const elements = await getDataElements(client)
+      const elements = await getDataElements(client, query)
       expect(typeof (elements[1] as InstanceElement).value.date).toEqual('string')
     })
 
@@ -154,7 +209,7 @@ describe('data_elements', () => {
         }
         return []
       })
-      const elements = await getDataElements(client)
+      const elements = await getDataElements(client, query)
       expect((elements[1] as InstanceElement).value.booleanField).toBe(true)
       expect((elements[2] as InstanceElement).value.booleanField).toBe(false)
     })
@@ -168,7 +223,7 @@ describe('data_elements', () => {
         }
         return []
       })
-      const elements = await getDataElements(client)
+      const elements = await getDataElements(client, query)
       expect((elements[1] as InstanceElement).value.numberField).toBe(1234)
     })
   })

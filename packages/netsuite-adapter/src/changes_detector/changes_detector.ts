@@ -26,7 +26,7 @@ import savedSearchDetector from './changes_detectors/savedsearch'
 import { ChangedObject, ChangedType, DateRange } from './types'
 import NetsuiteClient from '../client/client'
 import { convertSavedSearchStringToDate } from './date_formats'
-import { ElementsSourceValue, LazyElementsSourceIndex } from '../elements_source_index/types'
+import { ElementsSourceValue, LazyElementsSourceIndexes } from '../elements_source_index/types'
 
 const log = logger(module)
 
@@ -118,7 +118,7 @@ export const getChangedObjects = async (
   client: NetsuiteClient,
   query: NetsuiteQuery,
   dateRange: DateRange,
-  elementsSourceIndex: LazyElementsSourceIndex,
+  elementsSourceIndex: LazyElementsSourceIndexes,
 ): Promise<NetsuiteQuery> => {
   log.debug('Starting to look for changed objects')
 
@@ -128,7 +128,7 @@ export const getChangedObjects = async (
       .map(detector => detector.getChanges(client, dateRange))
   ).then(output => output.flat())
 
-  const idToLastFetchDate = await elementsSourceIndex.getIndex()
+  const idToLastFetchDate = (await elementsSourceIndex.getIndexes()).serviceIdsIndex
 
   const [
     systemNoteChanges,
@@ -172,8 +172,9 @@ export const getChangedObjects = async (
     isTypeMatch: typeName => !SUPPORTED_TYPES.has(typeName)
       || scriptIds.size !== 0
       || types.size !== 0,
+    areAllObjectsMatch: () => false,
     isObjectMatch: objectID => !SUPPORTED_TYPES.has(objectID.type)
-      || scriptIds.has(objectID.scriptId)
+      || scriptIds.has(objectID.instanceId)
       || types.has(objectID.type),
     isFileMatch: filePath => filePaths.has(filePath)
       || unresolvedFolderPaths.some(path => filePath.startsWith(path)),

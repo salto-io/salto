@@ -23,6 +23,7 @@ describe('NetsuiteQuery', () => {
         types: {
           addressForm: ['aaa.*', 'bbb.*'],
           advancedpdftemplate: ['ccc.*', 'ddd.*'],
+          Account: ['.*'],
         },
         filePaths: ['eee.*', 'fff.*'],
       })
@@ -51,13 +52,13 @@ describe('NetsuiteQuery', () => {
 
       describe('isObjectMatch', () => {
         it('should match objects that match the received regexes', () => {
-          expect(query.isObjectMatch({ scriptId: 'aaaaaa', type: 'addressForm' })).toBeTruthy()
-          expect(query.isObjectMatch({ scriptId: 'cccccc', type: 'advancedpdftemplate' })).toBeTruthy()
+          expect(query.isObjectMatch({ instanceId: 'aaaaaa', type: 'addressForm' })).toBeTruthy()
+          expect(query.isObjectMatch({ instanceId: 'cccccc', type: 'advancedpdftemplate' })).toBeTruthy()
         })
 
         it('should not match objects that do not match the received regexes', () => {
-          expect(query.isObjectMatch({ scriptId: 'aaaaaa', type: 'notExists' })).toBeFalsy()
-          expect(query.isObjectMatch({ scriptId: 'cccccc', type: 'addressForm' })).toBeFalsy()
+          expect(query.isObjectMatch({ instanceId: 'aaaaaa', type: 'notExists' })).toBeFalsy()
+          expect(query.isObjectMatch({ instanceId: 'cccccc', type: 'addressForm' })).toBeFalsy()
         })
       })
 
@@ -75,6 +76,12 @@ describe('NetsuiteQuery', () => {
             filePaths: [],
           })
           expect(q.areSomeFilesMatch()).toBeFalsy()
+        })
+      })
+      describe('areAllObjectsMatch', () => {
+        it('when there is .* should return true', () => {
+          expect(query.areAllObjectsMatch('Account')).toBeTruthy()
+          expect(query.areAllObjectsMatch('addressForm')).toBeFalsy()
         })
       })
     })
@@ -135,6 +142,7 @@ describe('NetsuiteQuery', () => {
       types: {
         addressForm: ['aaa.*'],
         advancedpdftemplate: ['.*'],
+        Account: ['.*'],
       },
       filePaths: ['bbb.*'],
     })
@@ -142,6 +150,7 @@ describe('NetsuiteQuery', () => {
       types: {
         addressForm: ['.*ccc'],
         bankstatementparserplugin: ['.*'],
+        Account: ['.*'],
       },
       filePaths: ['.*ddd'],
     })
@@ -153,6 +162,11 @@ describe('NetsuiteQuery', () => {
       expect(bothQuery.isTypeMatch('bankstatementparserplugin')).toBeFalsy()
     })
 
+    it('should match all objects if both queries match all objects', () => {
+      expect(bothQuery.areAllObjectsMatch('Account')).toBeTruthy()
+      expect(bothQuery.areAllObjectsMatch('bankstatementparserplugin')).toBeFalsy()
+    })
+
     it('should match only files that match both queries', () => {
       expect(bothQuery.isFileMatch('bbbdddd')).toBeTruthy()
       expect(bothQuery.isFileMatch('bbb')).toBeFalsy()
@@ -160,9 +174,9 @@ describe('NetsuiteQuery', () => {
     })
 
     it('should match only objects that match both queries', () => {
-      expect(bothQuery.isObjectMatch({ scriptId: 'aaacccc', type: 'addressForm' })).toBeTruthy()
-      expect(bothQuery.isObjectMatch({ scriptId: 'aaa', type: 'addressForm' })).toBeFalsy()
-      expect(bothQuery.isObjectMatch({ scriptId: 'aaa', type: 'advancedpdftemplate' })).toBeFalsy()
+      expect(bothQuery.isObjectMatch({ instanceId: 'aaacccc', type: 'addressForm' })).toBeTruthy()
+      expect(bothQuery.isObjectMatch({ instanceId: 'aaa', type: 'addressForm' })).toBeFalsy()
+      expect(bothQuery.isObjectMatch({ instanceId: 'aaa', type: 'advancedpdftemplate' })).toBeFalsy()
     })
 
     it('should return whether both queries has some files match', () => {
@@ -184,15 +198,20 @@ describe('NetsuiteQuery', () => {
       expect(inverseQuery.isTypeMatch('advancedpdftemplate')).toBeTruthy()
     })
 
+    it('should match all objects if did not match any object before', () => {
+      expect(inverseQuery.areAllObjectsMatch('Account')).toBeTruthy()
+      expect(inverseQuery.areAllObjectsMatch('addressForm')).toBeFalsy()
+    })
+
     it('should match only files that do not match the original query', () => {
       expect(inverseQuery.isFileMatch('bbb')).toBeFalsy()
       expect(inverseQuery.isFileMatch('ddd')).toBeTruthy()
     })
 
     it('should match only objects that do not match the original query', () => {
-      expect(inverseQuery.isObjectMatch({ scriptId: 'aaa', type: 'addressForm' })).toBeFalsy()
-      expect(inverseQuery.isObjectMatch({ scriptId: 'aaa', type: 'advancedpdftemplate' })).toBeTruthy()
-      expect(inverseQuery.isObjectMatch({ scriptId: 'bbb', type: 'addressForm' })).toBeTruthy()
+      expect(inverseQuery.isObjectMatch({ instanceId: 'aaa', type: 'addressForm' })).toBeFalsy()
+      expect(inverseQuery.isObjectMatch({ instanceId: 'aaa', type: 'advancedpdftemplate' })).toBeTruthy()
+      expect(inverseQuery.isObjectMatch({ instanceId: 'bbb', type: 'addressForm' })).toBeTruthy()
     })
   })
 })

@@ -18,10 +18,13 @@ import { logger } from '@salto-io/logging'
 import { elements as elementsComponents } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { naclCase, pathNaclCase, transformValues } from '@salto-io/adapter-utils'
-import NetsuiteClient from '../client/client'
+import { collections } from '@salto-io/lowerdash'
 import { NETSUITE, RECORDS_PATH } from '../constants'
+import { NetsuiteQuery } from '../query'
 import { TYPE_TO_IDENTIFIER } from './types'
+import NetsuiteClient from '../client/client'
 
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 export type DataTypeConfig = Record<string, string[]>
@@ -41,9 +44,26 @@ export const getDataTypes = async (
   const types = await elementsComponents.soap.extractTypes(NETSUITE, wsdl)
 
   types.forEach(type => {
-    type.annotationRefTypes.source = new ReferenceExpression(BuiltinTypes.HIDDEN_STRING.elemID)
+    type.annotationRefTypes.source = new ReferenceExpression(
+      BuiltinTypes.HIDDEN_STRING.elemID,
+      BuiltinTypes.HIDDEN_STRING
+    )
     type.annotations.source = 'soap'
   })
+
+  types
+    .filter(type => TYPE_TO_IDENTIFIER[type.elemID.name] !== undefined)
+    .forEach(type => {
+      const field = type.fields[TYPE_TO_IDENTIFIER[type.elemID.name]]
+      if (field !== undefined) {
+        field.refType = new ReferenceExpression(
+          BuiltinTypes.SERVICE_ID.elemID,
+          BuiltinTypes.SERVICE_ID
+        )
+      } else {
+        log.warn(`Identifier field ${TYPE_TO_IDENTIFIER[type.elemID.name]} does not exists on type ${type.elemID.getFullName()}`)
+      }
+    })
   return types
 }
 
@@ -88,13 +108,19 @@ const createInstance = async (
 }
 
 export const getDataElements = async (
-  client: NetsuiteClient
+  client: NetsuiteClient,
+  query: NetsuiteQuery,
 ): Promise<Element[]> => {
   const types = await getDataTypes(client)
 
+  const typesToFetch = Object.keys(TYPE_TO_IDENTIFIER).filter(query.isTypeMatch)
+  if (typesToFetch.length === 0) {
+    return types
+  }
+
   const typesMap = _.keyBy(types, e => e.elemID.name)
 
-  const instances = _.flatten(await Promise.all(Object.keys(TYPE_TO_IDENTIFIER)
+  const instances = _.flatten(await Promise.all(typesToFetch
     .filter(typeName => typeName in typesMap)
     .map(typeName => client.getAllRecords(typeName)
       .then(records =>
@@ -102,5 +128,14 @@ export const getDataElements = async (
           record => createInstance(record, typesMap[typeName])
         ))))))
 
-  return [...types, ...instances]
+  return [
+    ...types,
+    ...await awu(instances).filter(async instance => {
+      const type = await instance.getType()
+      return query.isObjectMatch({
+        type: type.elemID.name,
+        instanceId: instance.value[TYPE_TO_IDENTIFIER[type.elemID.name]],
+      })
+    }).toArray(),
+  ]
 }

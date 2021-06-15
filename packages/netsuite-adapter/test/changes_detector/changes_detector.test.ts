@@ -41,9 +41,9 @@ describe('changes_detector', () => {
 
   const client = new NetsuiteClient(mockSdfClient(), suiteAppClient)
 
-  const getIndexMock = jest.fn()
+  const getIndexesMock = jest.fn()
   const elementsSourceIndex = {
-    getIndex: getIndexMock,
+    getIndexes: getIndexesMock,
   }
 
   beforeEach(() => {
@@ -71,7 +71,10 @@ describe('changes_detector', () => {
       { invalid: {} },
     ])
 
-    getIndexMock.mockResolvedValue({})
+    getIndexesMock.mockResolvedValue({
+      serviceIdsIndex: {},
+      internalIdsIndex: {},
+    })
   })
 
   it('should only query requested types', async () => {
@@ -98,13 +101,13 @@ describe('changes_detector', () => {
     expect(changedObjectsQuery.isFileMatch('/other/path/to/file')).toBeTruthy()
 
 
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'a' })).toBeTruthy()
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'b' })).toBeTruthy()
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'c' })).toBeFalsy()
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'd' })).toBeFalsy()
-    expect(changedObjectsQuery.isObjectMatch({ type: 'notSupported', scriptId: 'd' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'a' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'b' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'c' })).toBeFalsy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'd' })).toBeFalsy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'notSupported', instanceId: 'd' })).toBeTruthy()
 
-    expect(changedObjectsQuery.isObjectMatch({ type: 'customrecordtype', scriptId: 'anything' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'customrecordtype', instanceId: 'anything' })).toBeTruthy()
     expect(changedObjectsQuery.isTypeMatch('anything')).toBeTruthy()
 
     expect(changedObjectsQuery.areSomeFilesMatch()).toBeTruthy()
@@ -148,13 +151,13 @@ describe('changes_detector', () => {
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file2')).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/notExists')).toBeFalsy()
 
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'a' })).toBeTruthy()
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'b' })).toBeTruthy()
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'c' })).toBeTruthy()
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'd' })).toBeFalsy()
-    expect(changedObjectsQuery.isObjectMatch({ type: 'notSupported', scriptId: 'd' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'a' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'b' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'c' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'd' })).toBeFalsy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'notSupported', instanceId: 'd' })).toBeTruthy()
 
-    expect(changedObjectsQuery.isObjectMatch({ type: 'customrecordtype', scriptId: 'anything' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'customrecordtype', instanceId: 'anything' })).toBeTruthy()
   })
 
   it('should not return results that there last fetch time is later than the query return time', async () => {
@@ -167,12 +170,17 @@ describe('changes_detector', () => {
       { invalid: {} },
     ])
 
-    getIndexMock.mockResolvedValue({
-      '/Templates/path/to/file': { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
-      '/Templates/path/to/file2': { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
-      a: { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
-      b: { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
-    })
+    getIndexesMock.mockResolvedValue(
+      {
+        serviceIdsIndex: {
+          '/Templates/path/to/file': { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
+          '/Templates/path/to/file2': { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
+          a: { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
+          b: { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
+        },
+        internalIdsIndex: {},
+      }
+    )
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
@@ -182,8 +190,8 @@ describe('changes_detector', () => {
 
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeFalsy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file2')).toBeTruthy()
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'a' })).toBeFalsy()
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'b' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'a' })).toBeFalsy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'b' })).toBeTruthy()
   })
 
   it('areSomeFilesMatch return false when no file changes were detected', async () => {
@@ -208,13 +216,16 @@ describe('changes_detector', () => {
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
       elementsSourceIndex,
     )
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'a' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'a' })).toBeTruthy()
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeFalsy()
   })
 
   it('should return the results when the results time is invalid', async () => {
-    getIndexMock.mockResolvedValue({
-      b: { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
+    getIndexesMock.mockResolvedValue({
+      serviceIdsIndex: {
+        b: { lastFetchTime: new Date('2022-02-22T18:55:17.949Z') },
+      },
+      internalIdsIndex: {},
     })
 
     getCustomRecordTypeChangesMock.mockResolvedValue([
@@ -226,6 +237,6 @@ describe('changes_detector', () => {
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
       elementsSourceIndex,
     )
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', scriptId: 'b' })).toBeTruthy()
+    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'b' })).toBeTruthy()
   })
 })

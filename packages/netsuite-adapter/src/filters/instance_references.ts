@@ -32,7 +32,7 @@ import {
 import { serviceId } from '../transformer'
 import { FilterCreator } from '../filter'
 import { isCustomType, typesElementSourceWrapper } from '../types'
-import { LazyElementsSourceIndex } from '../elements_source_index/types'
+import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 
 const { awu } = collections.asynciterable
 // e.g. '[/Templates/filename.html]' & '[/SuiteScripts/script.js]'
@@ -136,14 +136,14 @@ const replaceReferenceValues = async (
 }
 
 const createElementsSourceServiceIdToElemID = async (
-  elementsSourceIndex: LazyElementsSourceIndex,
+  elementsSourceIndex: LazyElementsSourceIndexes,
   isPartial: boolean,
 ): Promise<Record<string, ElemID>> => {
   if (!isPartial) {
     return {}
   }
 
-  return _(await elementsSourceIndex.getIndex())
+  return _((await elementsSourceIndex.getIndexes()).serviceIdsIndex)
     .mapValues(val => val.elemID)
     .pickBy(lowerdashValues.isDefined)
     .value()

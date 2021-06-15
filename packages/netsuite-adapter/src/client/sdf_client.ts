@@ -437,7 +437,7 @@ export default class SdfClient {
     const idsChunks = wu.entries(instancesIdsByType).map(
       ([type, ids]: [string, ObjectID[]]) =>
         wu(ids)
-          .map(id => id.scriptId)
+          .map(id => id.instanceId)
           .chunk(this.maxItemsInImportObjectsRequest)
           .enumerate()
           .map(([chunk, index]) => ({
@@ -499,7 +499,9 @@ export default class SdfClient {
       },
       executor,
     )
-    return results.data
+    return results.data.map(
+      ({ type, scriptId }: { type: string; scriptId: string }) => ({ type, instanceId: scriptId })
+    )
   }
 
   private async listFilePaths(executor: CommandActionExecutor):

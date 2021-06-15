@@ -35,7 +35,10 @@ describe('removeRedundantFields', () => {
     onFetchParameters = {
       elements,
       client: {} as NetsuiteClient,
-      elementsSourceIndex: { getIndex: () => Promise.resolve({}) },
+      elementsSourceIndex: { getIndexes: () => Promise.resolve({
+        serviceIdsIndex: {},
+        internalIdsIndex: {},
+      }) },
       isPartial: false,
     }
   })

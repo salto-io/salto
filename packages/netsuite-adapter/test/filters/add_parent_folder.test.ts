@@ -33,7 +33,9 @@ describe('add_parent_folder filter', () => {
     onFetchParameters = {
       elements: [instance],
       client: {} as NetsuiteClient,
-      elementsSourceIndex: { getIndex: () => Promise.resolve({}) },
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve({ serviceIdsIndex: {}, internalIdsIndex: {} }),
+      },
       isPartial: false,
     }
   })

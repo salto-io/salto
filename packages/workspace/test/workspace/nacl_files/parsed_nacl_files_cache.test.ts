@@ -108,17 +108,16 @@ describe('ParsedNaclFileCache', () => {
     expect(await p1.sourceMap?.()).toEqual(await p2.sourceMap?.())
     expect(await p1.data.errors()).toEqual(await p2.data.errors())
     expect(await p1.data.referenced()).toEqual(await p2.data.referenced())
-    expect(await p1.data.timestamp()).toEqual(await p2.data.timestamp())
   }
 
   beforeAll(async () => {
     jest.spyOn(Date, 'now').mockImplementation(() => someDateTimestamp)
     parsedDummy = await toParsedNaclFile(
-      { ...dummyParsedKey, timestamp: dummyParsedKey.lastModified },
+      dummyParsedKey,
       parseResultWithoutMD5
     )
     parsedToDelete = await toParsedNaclFile(
-      { ...toDeleteKey, timestamp: toDeleteKey.lastModified },
+      toDeleteKey,
       toDeleteParseResult
     )
   })
@@ -153,24 +152,21 @@ describe('ParsedNaclFileCache', () => {
       )
     })
 
-    it('Should be true if exists and newer', async () => {
+    it('Should be true if content did not change', async () => {
       expect(await cache.hasValid(dummyParsedKey)).toBeTruthy()
     })
 
-    it('Should be true if content did not change regardless of timestamp', async () => {
-      expect(await cache.hasValid({
-        ...dummyParsedKey,
-        lastModified: afterTimestamp,
-      })).toBeTruthy()
-    })
-
-    it('Should be false if content changed and timestap later', async () => {
+    it('Should be false if content changed', async () => {
       const newerDummyKey = {
         filename: dummyFilename,
         buffer: 'changed',
         lastModified: afterTimestamp,
       }
       expect(await cache.hasValid(newerDummyKey)).toBeFalsy()
+    })
+
+    it('Should be false if the filename does not exist', async () => {
+      expect(await cache.hasValid({ filename: 'noSuchFile.nacl', buffer: 'some data' })).toBeFalsy()
     })
   })
 

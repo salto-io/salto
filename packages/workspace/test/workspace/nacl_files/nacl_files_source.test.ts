@@ -358,14 +358,13 @@ describe('Nacl Files Source', () => {
       const elemID = new ElemID('dummy', 'elem')
       const elem = new ObjectType({ elemID, path: ['test', 'new'] })
       const elements = [elem]
-      const parsedFiles = [
+      const parsedFiles: ParsedNaclFile[] = [
         {
           filename,
           elements: () => Promise.resolve(elements),
           buffer: '',
           data: {
             errors: () => Promise.resolve([]),
-            timestamp: () => Promise.resolve(0),
             referenced: () => Promise.resolve([]),
           },
         },

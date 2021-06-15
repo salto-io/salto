@@ -681,7 +681,7 @@ export const formatInvalidElementCommand = (command: string): string => [
 ].join('\n')
 
 export const formatCleanWorkspace = (
-  cleanArgs: WorkspaceComponents & { regenerateCache: boolean }
+  cleanArgs: WorkspaceComponents
 ): string => {
   const componentsToClean = Object.entries(cleanArgs)
     .filter(([_comp, shouldClean]) => shouldClean)

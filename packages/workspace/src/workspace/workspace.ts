@@ -74,9 +74,7 @@ export type WorkspaceComponents = {
   serviceConfig: boolean
 }
 
-export type ClearFlags = Omit<WorkspaceComponents, 'serviceConfig'> & {
-  regenerateCache?: boolean
-}
+export type ClearFlags = Omit<WorkspaceComponents, 'serviceConfig'>
 
 export type Workspace = {
   uid: string

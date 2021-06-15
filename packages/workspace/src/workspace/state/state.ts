@@ -48,27 +48,35 @@ export interface State extends ElementsSource {
 export const createStateNamespace = (envName: string, namespace: string): string =>
   `state-${envName}-${namespace}`
 
-export const buildStateData = async (envName: string, remoteMapCreator: RemoteMapCreator):
+export const buildStateData = async (
+  envName: string,
+  remoteMapCreator: RemoteMapCreator,
+  persistent: boolean
+):
 Promise<StateData> => ({
   elements: new RemoteElementSource(await remoteMapCreator<Element>({
     namespace: createStateNamespace(envName, 'elements'),
     serialize: elem => serialize([elem]),
     // TODO: I don't think we should add reviver here but I need to think about it more
     deserialize: deserializeSingleElement,
+    persistent,
   })),
   pathIndex: await remoteMapCreator<Path[]>({
     namespace: createStateNamespace(envName, 'path_index'),
     serialize: paths => safeJsonStringify(paths),
     deserialize: async data => JSON.parse(data),
+    persistent,
   }),
   servicesUpdateDate: await remoteMapCreator<Date>({
     namespace: createStateNamespace(envName, 'service_update_date'),
     serialize: date => date.toISOString(),
     deserialize: async data => new Date(data),
+    persistent,
   }),
   saltoMetadata: await remoteMapCreator<string, 'version'>({
     namespace: createStateNamespace(envName, 'salto_metadata'),
     serialize: data => data,
     deserialize: async data => data,
+    persistent,
   }),
 })

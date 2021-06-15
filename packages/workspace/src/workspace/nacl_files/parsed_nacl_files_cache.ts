@@ -76,7 +76,7 @@ const isCacheDataRelevant = (
 
 const parseNaclFileFromCacheSources = async (
   cacheSources: CacheSources,
-  filename: string
+  filename: string,
 ): Promise<ParsedNaclFile> => ({
   filename,
   elements: () => cacheSources.elements.get(filename),
@@ -98,22 +98,26 @@ const getRemoteMapCacheNamespace = (
 const getMetadata = async (
   cacheName: string,
   remoteMapCreator: RemoteMapCreator,
+  persistent: boolean
 ): Promise<RemoteMap<FileCacheMetdata>> => (
   remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'metadata'),
     serialize: (val: FileCacheMetdata) => safeJsonStringify(val),
     deserialize: data => JSON.parse(data),
+    persistent,
   })
 )
 
 const getErrors = async (
   cacheName: string,
   remoteMapCreator: RemoteMapCreator,
+  persistent: boolean
 ): Promise<RemoteMap<ParseError[]>> => (
   remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'errors'),
     serialize: (errors: ParseError[]) => safeJsonStringify(errors ?? []),
     deserialize: data => JSON.parse(data),
+    persistent,
   })
 )
 
@@ -121,8 +125,9 @@ const getCacheSources = async (
   cacheName: string,
   remoteMapCreator: RemoteMapCreator,
   staticFilesSource: StaticFilesSource,
+  persistent: boolean
 ): Promise<CacheSources> => ({
-  metadata: await getMetadata(cacheName, remoteMapCreator),
+  metadata: await getMetadata(cacheName, remoteMapCreator, persistent),
   elements: await remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'elements'),
     serialize: (elements: Element[]) => serialize(elements ?? [], 'keepRef'),
@@ -130,17 +135,20 @@ const getCacheSources = async (
       data,
       async sf => staticFilesSource.getStaticFile(sf.filepath, sf.encoding),
     )),
+    persistent,
   }),
   sourceMap: (await remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'sourceMap'),
     serialize: (sourceMap: SourceMap) => safeJsonStringify(Array.from(sourceMap.entries())),
     deserialize: async data => (new SourceMap(JSON.parse(data))),
+    persistent,
   })),
-  errors: await getErrors(cacheName, remoteMapCreator),
+  errors: await getErrors(cacheName, remoteMapCreator, persistent),
   referenced: (await remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'referenced'),
     serialize: (val: string[]) => safeJsonStringify(val ?? []),
     deserialize: data => (JSON.parse(data)),
+    persistent,
   })),
 })
 
@@ -159,13 +167,15 @@ export const createParseResultCache = (
   cacheName: string,
   remoteMapCreator: RemoteMapCreator,
   staticFilesSource: StaticFilesSource,
+  persistent: boolean
 ): ParsedNaclFileCache => {
   // To allow renames
   let actualCacheName = cacheName
   let cacheSources = getCacheSources(
     actualCacheName,
     remoteMapCreator,
-    staticFilesSource
+    staticFilesSource,
+    persistent
   )
   return {
     put: async (filename: string, value: ParsedNaclFile): Promise<void> => {
@@ -265,7 +275,8 @@ export const createParseResultCache = (
       const newCacheSources = await getCacheSources(
         newName,
         remoteMapCreator,
-        staticFilesSource
+        staticFilesSource,
+        persistent
       )
       await awu(Object.values(newCacheSources)).forEach(async source => source.clear())
       const oldCacheSources = await cacheSources
@@ -277,8 +288,18 @@ export const createParseResultCache = (
       actualCacheName = newName
       cacheSources = Promise.resolve(newCacheSources)
     },
-    flush: async () => awu(Object.values((await cacheSources))).forEach(source => source.flush()),
+    flush: async () => {
+      if (!persistent) {
+        throw new Error('can not flush an non persistent parsed nacl file cache')
+      }
+      await awu(Object.values((await cacheSources))).forEach(source => source.flush())
+    },
     clone: (): ParsedNaclFileCache =>
-      createParseResultCache(cacheName, remoteMapCreator, staticFilesSource.clone()),
+      createParseResultCache(
+        cacheName,
+        remoteMapCreator,
+        staticFilesSource.clone(),
+        persistent
+      ),
   }
 }

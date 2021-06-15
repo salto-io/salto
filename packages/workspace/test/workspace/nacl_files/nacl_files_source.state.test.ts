@@ -107,6 +107,7 @@ describe('Nacl Files Source', () => {
         mockDirStore,
         mockedStaticFilesSource,
         persistentMockCreateRemoteMap(),
+        true,
         parsedNaclFiles
       )
       await naclFileSourceTest.getAll()
@@ -339,6 +340,7 @@ describe('Nacl Files Source', () => {
               mockDirStore,
               mockedStaticFilesSource,
               persistentMockCreateRemoteMap(),
+              true,
               parsedNaclFiles,
             )
           })

@@ -127,7 +127,8 @@ describe('ParsedNaclFileCache', () => {
     cache = createParseResultCache(
       'mockCache',
       inMemoryRemoteMapsCreator,
-      mockedStaticFilesSource
+      mockedStaticFilesSource,
+      true
     )
   })
 
@@ -362,6 +363,18 @@ describe('ParsedNaclFileCache', () => {
       const errors = await cache.getAllErrors()
       expect(errors.includes(errorA)).toBeTruthy()
       expect(errors.includes(errorB)).toBeFalsy()
+    })
+  })
+
+  describe('non persistent workspace', () => {
+    it('should not allow flush when the ws is non-persistent', async () => {
+      const nonPCache = createParseResultCache(
+        'mockCache',
+        inMemoryRemoteMapsCreator,
+        mockedStaticFilesSource,
+        false
+      )
+      await expect(() => nonPCache.flush()).rejects.toThrow()
     })
   })
 

@@ -94,6 +94,7 @@ const buildMultiEnvSource = (
   initPrimarySourceName: string,
   commonSourceName: string,
   remoteMapCreator: RemoteMapCreator,
+  persistent: boolean,
   initState?: MultiEnvState
 ): MultiEnvSource => {
   let primarySourceName = initPrimarySourceName
@@ -112,11 +113,14 @@ const buildMultiEnvSource = (
     [commonSourceName]: sources[commonSourceName],
   })
 
-  const buildStateForSingleEnv = async (envName: string): Promise<SingleState> => {
+  const buildStateForSingleEnv = async (
+    envName: string,
+  ): Promise<SingleState> => {
     const elements = new RemoteElementSource(await remoteMapCreator<Element>({
       namespace: getRemoteMapNamespace('merged', envName),
       serialize: element => serialize([element], 'keepRef'),
       deserialize: deserializeSingleElement,
+      persistent,
     }))
     return {
       elements,
@@ -124,6 +128,7 @@ const buildMultiEnvSource = (
         namespace: getRemoteMapNamespace('errors', envName),
         serialize: errors => serialize(errors, 'keepRef'),
         deserialize: async data => deserializeMergeErrors(data),
+        persistent,
       }),
     }
   }
@@ -135,7 +140,8 @@ const buildMultiEnvSource = (
     const current = Object.fromEntries(
       await awu(Object.keys(sources))
         .filter(name => name !== commonSourceName)
-        .map(async name => [name, state?.[name] ?? (await buildStateForSingleEnv(name))])
+        .map(async name => [name, state?.[name]
+          ?? (await buildStateForSingleEnv(name))])
         .toArray()
     )
     const changesInCommon = (envChanges[commonSourceName] ?? []).length > 0
@@ -332,6 +338,9 @@ const buildMultiEnvSource = (
   }
 
   const flush = async (): Promise<void> => {
+    if (!persistent) {
+      throw new Error('can not flush a non persistent multi env source.')
+    }
     await awu([
       primarySource(),
       commonSource(),
@@ -510,6 +519,7 @@ const buildMultiEnvSource = (
       primarySourceName,
       commonSourceName,
       remoteMapCreator,
+      persistent,
       state
     ),
     load,
@@ -534,9 +544,11 @@ export const multiEnvSource = (
   primarySourceName: string,
   commonSourceName: string,
   remoteMapCreator: RemoteMapCreator,
+  persistent: boolean
 ): MultiEnvSource => buildMultiEnvSource(
   sources,
   primarySourceName,
   commonSourceName,
-  remoteMapCreator
+  remoteMapCreator,
+  persistent
 )

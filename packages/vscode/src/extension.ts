@@ -36,7 +36,11 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
   const { name, rootPath } = vscode.workspace
   if (name && rootPath) {
     const diagCollection = vscode.languages.createDiagnosticCollection('@salto-io/core')
-    const workspace = new ws.EditorWorkspace(rootPath, await loadLocalWorkspace(rootPath))
+    const workspace = new ws.EditorWorkspace(rootPath, await loadLocalWorkspace(
+      rootPath,
+      undefined,
+      false
+    ))
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.nacl' } },

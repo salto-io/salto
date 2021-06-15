@@ -130,6 +130,7 @@ describe('Nacl Files Source', () => {
       'test',
       persistentMockCreateRemoteMap(),
       mockStaticFilesSource(),
+      true
     )
     mockParse.mockResolvedValue({ elements: [], errors: [] })
   })
@@ -144,6 +145,7 @@ describe('Nacl Files Source', () => {
         mockDirStore,
         mockedStaticFilesSource,
         mockRemoteMapCreator,
+        true
       )
       await naclSrc.load({})
       await naclSrc.clear()
@@ -161,6 +163,7 @@ describe('Nacl Files Source', () => {
         mockDirStore,
         mockedStaticFilesSource,
         mockRemoteMapCreator,
+        true
       )
       await naclSrc.load({})
       await naclSrc.clear(
@@ -179,7 +182,8 @@ describe('Nacl Files Source', () => {
         '',
         mockDirStore,
         mockedStaticFilesSource,
-        mockRemoteMapCreator,
+        mockRemoteMapCreator, true
+
       )
       await naclSrc.load({})
       await expect(naclSrc.clear(
@@ -201,6 +205,7 @@ describe('Nacl Files Source', () => {
         mockDirStore,
         mockedStaticFilesSource,
         mockRemoteMapCreator,
+        true
       )
       await naclSrc.load({})
       await naclSrc.flush()
@@ -218,6 +223,7 @@ describe('Nacl Files Source', () => {
         mockDirStore,
         mockedStaticFilesSource,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await naclSrc.load({})
       await naclSrc.isEmpty()
@@ -233,6 +239,7 @@ describe('Nacl Files Source', () => {
         mockDirStore,
         mockedStaticFilesSource,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )).load({})
       expect(mockDirStore.list as jest.Mock).toHaveBeenCalled()
     })
@@ -243,6 +250,7 @@ describe('Nacl Files Source', () => {
         mockDirStore,
         mockedStaticFilesSource,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )).load({ ignoreFileChanges: true })
       expect(mockDirStore.list as jest.Mock).not.toHaveBeenCalled()
     })
@@ -258,7 +266,8 @@ describe('Nacl Files Source', () => {
         '',
         mockDirStore,
         mockedStaticFilesSource,
-        mockRemoteMapCreator
+        mockRemoteMapCreator,
+        true
       )
       await naclSrc.load({})
       await naclSrc.rename(newName)
@@ -291,6 +300,7 @@ describe('Nacl Files Source', () => {
           mockDirStore,
           mockedStaticFilesSource,
           () => Promise.resolve(new InMemoryRemoteMap()),
+          true
         )
       ).getTotalSize()
       expect(totalSize).toEqual(300)
@@ -307,6 +317,7 @@ describe('Nacl Files Source', () => {
         mockDirStore,
         mockedStaticFilesSource,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await naclSrc.load({})
       await naclSrc.updateNaclFiles([change])
@@ -325,6 +336,7 @@ describe('Nacl Files Source', () => {
         mockDirStore,
         mockedStaticFilesSource,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await src.load({})
     })
@@ -363,6 +375,7 @@ describe('Nacl Files Source', () => {
         mockDirStore,
         mockedStaticFilesSource,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true,
         parsedFiles
       )
       const parsed = await (await naclSource).getParsedNaclFile(filename)
@@ -383,6 +396,7 @@ describe('Nacl Files Source', () => {
         mockDirStore,
         mockedStaticFilesSource,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
     })
 
@@ -417,6 +431,7 @@ describe('Nacl Files Source', () => {
         mockDirStore,
         mockedStaticFilesSource,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await src.load({})
       await src.updateNaclFiles([createChange()])
@@ -435,6 +450,7 @@ describe('Nacl Files Source', () => {
         mockDirStore,
         mockedStaticFilesSource,
         () => Promise.resolve(new InMemoryRemoteMap()),
+        true
       )
       await src.load({})
       await src.updateNaclFiles([createChange()])
@@ -443,6 +459,19 @@ describe('Nacl Files Source', () => {
     it('should list all searchable elements', async () => {
       expect(await src.getSearchableNames())
         .toEqual(['salesforce.new_elem', 'salesforce.new_elem.field.myField'])
+    })
+  })
+
+  describe('non persistent naclFileSource', () => {
+    it('should not allow flush when the ws is non-persistent', async () => {
+      const nonPSrc = await naclFilesSource(
+        '',
+        mockDirStore,
+        mockedStaticFilesSource,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+        false
+      )
+      await expect(nonPSrc.flush()).rejects.toThrow()
     })
   })
 })

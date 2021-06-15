@@ -86,12 +86,15 @@ const mockCredentialsSource = (): ConfigSource => ({
   rename: jest.fn(),
 })
 
-const createState = (elements: Element[]): State => buildInMemState(async () => ({
+const createState = (
+  elements: Element[],
+  persistent = true
+): State => buildInMemState(async () => ({
   elements: createInMemoryElementSource(elements),
   pathIndex: new InMemoryRemoteMap<Path[]>(),
   servicesUpdateDate: new InMemoryRemoteMap(),
   saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
-}))
+}), persistent)
 
 const createWorkspace = async (
   dirStore?: DirectoryStore<string>,
@@ -100,7 +103,8 @@ const createWorkspace = async (
   credentials?: ConfigSource,
   staticFilesSource?: StaticFilesSource,
   elementSources?: Record<string, EnvironmentSource>,
-  remoteMapCreator?: RemoteMapCreator
+  remoteMapCreator?: RemoteMapCreator,
+  persistent = true
 ): Promise<Workspace> => {
   const mapCreator = remoteMapCreator ?? persistentMockCreateRemoteMap()
   const actualStaticFilesSource = staticFilesSource || mockStaticFilesSource()
@@ -116,11 +120,12 @@ const createWorkspace = async (
             dirStore || mockDirStore(),
             actualStaticFilesSource,
             mapCreator,
+            persistent
           ),
         },
         default: {
           naclFiles: createMockNaclFileSource([]),
-          state: state ?? createState([]),
+          state: state ?? createState([], persistent),
         },
       },
     },
@@ -534,6 +539,7 @@ describe('workspace', () => {
                 mockDirStore([], true),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
+                true
               ),
             },
             [primarySourceName]: {
@@ -542,6 +548,7 @@ describe('workspace', () => {
                 mockDirStore([], true),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
+                true
               ),
               state: createState([]),
             },
@@ -551,6 +558,7 @@ describe('workspace', () => {
                 mockDirStore(),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
+                true
               ),
               state: createState([]),
             },
@@ -672,6 +680,7 @@ describe('workspace', () => {
                 mockDirStore([], true),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
+                true
               ),
             },
             [primarySourceName]: {
@@ -680,6 +689,7 @@ describe('workspace', () => {
                 mockDirStore(),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
+                true
               ),
               state: createState([]),
             },
@@ -689,6 +699,7 @@ describe('workspace', () => {
                 mockDirStore([], true),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
+                true
               ),
               state: createState([]),
             },
@@ -1579,6 +1590,7 @@ describe('workspace', () => {
                 mockDirStore([], true),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
+                true
               ),
             },
             [primarySourceName]: {
@@ -1587,6 +1599,7 @@ describe('workspace', () => {
                 mockDirStore([], true),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
+                true
               ),
               state: createState([]),
             },
@@ -1596,6 +1609,7 @@ describe('workspace', () => {
                 mockDirStore([], true),
                 mockStaticFilesSource(),
                 persistentMockCreateRemoteMap(),
+                true
               ),
               state: createState([]),
             },
@@ -2296,6 +2310,7 @@ describe('workspace', () => {
               mockDirStore(),
               staticFilesSource,
               remoteMapCreator,
+              true
             ),
           },
           empty: {
@@ -2334,6 +2349,7 @@ describe('workspace', () => {
               mockDirStore(),
               staticFilesSource,
               remoteMapCreator,
+              true
             ),
           },
           default: {
@@ -2546,6 +2562,7 @@ describe('workspace', () => {
               mockDirStore([], false, { 'common.nacl': 'type salesforce.hearing { }' }),
               mockStaticFilesSource(),
               persistentMockCreateRemoteMap(),
+              true
             ),
           },
           [primarySourceName]: {
@@ -2554,6 +2571,7 @@ describe('workspace', () => {
               mockDirStore(),
               mockStaticFilesSource(),
               persistentMockCreateRemoteMap(),
+              true
             ),
             state: createState([]),
           },
@@ -2563,6 +2581,7 @@ describe('workspace', () => {
               mockDirStore([], true),
               mockStaticFilesSource(),
               persistentMockCreateRemoteMap(),
+              true
             ),
             state: createState([]),
           },
@@ -2658,5 +2677,13 @@ describe('getElementNaclFiles', () => {
     const res = await workspace.getElementNaclFiles(id)
     expect(res).toContain('firstFile.nacl')
     expect(res).not.toContain('secondFile.nacl')
+  })
+})
+
+describe('non persistent workspace', () => {
+  it('should not allow flush when the ws is non-persistent', async () => {
+    const nonPWorkspace = await createWorkspace(undefined, undefined, undefined, undefined,
+      undefined, undefined, undefined, false)
+    await expect(() => nonPWorkspace.flush()).rejects.toThrow()
   })
 })

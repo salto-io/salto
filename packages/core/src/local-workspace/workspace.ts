@@ -185,15 +185,16 @@ export const loadLocalWorkspace = async (
   const envs = (await workspaceConfig.getWorkspaceConfig()).envs.map(e => e.name)
   const credentials = credentialsSource(workspaceConfig.localStorage)
   const cacheDirName = path.join(workspaceConfig.localStorage, CACHE_DIR_NAME)
+  const remoteMapCreator = createRemoteMapCreator(cacheDirName)
   const elemSources = await loadLocalElementsSources(
     baseDir,
     workspaceConfig.localStorage,
     envs,
-    createRemoteMapCreator(cacheDirName),
+    remoteMapCreator,
     persistent
   )
   const ws = await loadWorkspace(
-    workspaceConfig, credentials, elemSources, createRemoteMapCreator(cacheDirName)
+    workspaceConfig, credentials, elemSources, remoteMapCreator
   )
 
   return {

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, Element, Value, ReferenceExpression, TemplateExpression, isReferenceExpression, isVariableExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, isContainerType, isField } from '@salto-io/adapter-api'
+import { ElemID, Element, Value, ReferenceExpression, TemplateExpression, isReferenceExpression, isVariableExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, isContainerType, isField, Field } from '@salto-io/adapter-api'
 import { resolvePath, TransformFunc, createRefToElmWithValue, transformValues } from '@salto-io/adapter-utils'
 import { collections, promises } from '@salto-io/lowerdash'
 
@@ -47,19 +47,14 @@ const getResolvedElement = async (
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
 ): Promise<Element | undefined> => {
-  const unresolvedElement = workingSetElements[elemID.getFullName()]?.element
-     ?? await elementsSource.get(elemID)
-
-  if (unresolvedElement !== undefined) {
-    // eslint-disable-next-line no-use-before-define
-    return resolveElement(
-      unresolvedElement,
-      elementsSource,
-      workingSetElements,
-    )
+  if (workingSetElements[elemID.getFullName()] !== undefined) {
+    return workingSetElements[elemID.getFullName()].element
   }
-
-  return unresolvedElement
+  const element = await elementsSource.get(elemID)
+  if (element !== undefined) {
+    return _.clone(element)
+  }
+  return element
 }
 
 let resolveTemplateExpression: Resolver<TemplateExpression>
@@ -83,13 +78,14 @@ const resolveMaybeExpression: Resolver<Value> = async (
   if (value instanceof TemplateExpression) {
     return resolveTemplateExpression(value, elementsSource, workingSetElements, visited)
   }
-  // We do not want to recurse into elements because we can assume they will also be resolved
-  // at some point (because we are calling resolve on all elements), so if we encounter an element
-  // all we need to do is make it point to the element from the context. If the element is not in
-  // the context or the source - we'll keep it as it is.
+
   if (isElement(value)) {
-    return (await getResolvedElement(value.elemID, elementsSource, workingSetElements))
-      ?? value
+    // eslint-disable-next-line no-use-before-define
+    return (await resolveElement(
+      value,
+      elementsSource,
+      workingSetElements
+    )) ?? value
   }
   return value
 }
@@ -163,28 +159,26 @@ resolveTemplateExpression = async (
   .join('')
 
 const resolveElement = async (
-  element: Element,
+  elementToResolve: Element,
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
 ): Promise<Element> => {
-  // Create a ReadonlyElementSource (ElementsGetter) with the proper context
-  // to be used to resolve types. If it was already resolved use the reolsved and if not
-  // fallback to the elementsSource
-
-  const contextedElementsGetter: ReadOnlyElementsSource = {
-    ...elementsSource,
-    get: id =>
-      (getResolvedElement(id, elementsSource, workingSetElements)),
-  }
   const referenceCloner: TransformFunc = ({ value }) => resolveMaybeExpression(
     value,
     elementsSource,
     workingSetElements,
     undefined,
   )
-  if (workingSetElements[element.elemID.getFullName()]?.resolved) {
-    return workingSetElements[element.elemID.getFullName()].element
+  if (workingSetElements[elementToResolve.elemID.getFullName()]?.resolved) {
+    return workingSetElements[elementToResolve.elemID.getFullName()].element
   }
+  if (workingSetElements[elementToResolve.elemID.getFullName()] === undefined) {
+    workingSetElements[elementToResolve.elemID.getFullName()] = {
+      element: _.clone(elementToResolve),
+    }
+  }
+
+  const { element } = workingSetElements[elementToResolve.elemID.getFullName()]
   if (workingSetElements[element.elemID.getFullName()] === undefined) {
     workingSetElements[element.elemID.getFullName()] = { element }
   }
@@ -192,7 +186,7 @@ const resolveElement = async (
   workingSetElements[element.elemID.getFullName()].resolved = true
 
 
-  const elementAnnoTypes = await element.getAnnotationTypes(contextedElementsGetter)
+  const elementAnnoTypes = await element.getAnnotationTypes(elementsSource)
   element.annotationRefTypes = await mapValuesAsync(
     elementAnnoTypes,
     async type => createRefToElmWithValue(
@@ -212,7 +206,7 @@ const resolveElement = async (
   if (isContainerType(element)) {
     element.refInnerType = createRefToElmWithValue(
       await resolveElement(
-        await element.getInnerType(contextedElementsGetter),
+        await element.getInnerType(elementsSource),
         elementsSource,
         workingSetElements,
       )
@@ -222,7 +216,7 @@ const resolveElement = async (
   if (isInstanceElement(element) || isField(element)) {
     element.refType = createRefToElmWithValue(
       await resolveElement(
-        await element.getType(contextedElementsGetter),
+        await element.getType(elementsSource),
         elementsSource,
         workingSetElements,
       )
@@ -235,17 +229,20 @@ const resolveElement = async (
       values: element.value,
       elementsSource,
       strict: false,
-      type: await element.getType(contextedElementsGetter),
+      type: await element.getType(elementsSource),
       allowEmpty: true,
     })) ?? {}
   }
 
   if (isObjectType(element)) {
-    await awu(Object.values(element.fields)).forEach(field => resolveElement(
-      field,
-      elementsSource,
-      workingSetElements,
-    ))
+    element.fields = await mapValuesAsync(
+      element.fields,
+      field => resolveElement(
+        field,
+        elementsSource,
+        workingSetElements,
+      )
+    ) as Record<string, Field>
   }
 
   if (isVariable(element)) {
@@ -258,20 +255,22 @@ const resolveElement = async (
 export const resolve = async (
   elements: Element[],
   elementsSource: ReadOnlyElementsSource,
-  inPlace = false
 ): Promise<Element[]> => {
-  // intentionally shallow clone because in resolve element we replace only top level properties
-  const elementsToResolve = inPlace
-    ? elements
-    : elements.map(_.clone)
+  const elementsToResolve = elements.map(_.clone)
   const resolvedElements = await awu(elementsToResolve)
     .map(element => ({ element }))
     .keyBy(
       workingSetElement => workingSetElement.element.elemID.getFullName()
     )
+
+  const contextedElementsGetter: ReadOnlyElementsSource = {
+    ...elementsSource,
+    get: id =>
+      (getResolvedElement(id, elementsSource, resolvedElements)),
+  }
   await awu(elementsToResolve).forEach(e => resolveElement(
     e,
-    elementsSource,
+    contextedElementsGetter,
     resolvedElements
   ))
   return elementsToResolve

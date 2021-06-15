@@ -1542,8 +1542,8 @@ describe('Elements validation', () => {
           createInMemoryElementSource([circularRefInst, circularRefInst2, simpleType]),
         )
         expect(errors).toHaveLength(2)
-        expect(errors[0].elemID).toEqual(circularRefInst.elemID.createNestedID('bool'))
-        expect(errors[0]).toBeInstanceOf(CircularReferenceValidationError)
+        const circErr = errors.find(err => err instanceof CircularReferenceValidationError)
+        expect(circErr?.elemID).toEqual(circularRefInst.elemID.createNestedID('bool'))
       })
 
       it('should return error when encountering a reference to self', async () => {

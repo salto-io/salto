@@ -164,6 +164,8 @@ describe('Test Salto Expressions', () => {
       simpleRefType,
     ]
 
+    const origElements = elements.map(elem => elem.clone())
+
     let resolved: Element[]
 
     beforeAll(async () => {
@@ -176,6 +178,10 @@ describe('Test Salto Expressions', () => {
       target: Element): T => resolved.filter(
         e => _.isEqual(e.elemID, target.elemID)
       )[0] as T
+
+    it('should not modify the origin value', () => {
+      expect(origElements).toEqual(elements)
+    })
 
     it('should not modify simple values', () => {
       const element = findResolved<InstanceElement>(noRefInst)

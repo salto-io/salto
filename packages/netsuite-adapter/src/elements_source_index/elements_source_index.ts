@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, isInstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement, ReadOnlyElementsSource, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -24,6 +24,8 @@ import { ElementsSourceIndexes, ElementsSourceValue, LazyElementsSourceIndexes }
 
 const { awu } = collections.asynciterable
 const log = logger(module)
+
+export const getDataInstanceId = (internalId: string, type: TypeElement): string => `${type.elemID.name}-${internalId}`
 
 
 const createIndexes = async (elementsSource: ReadOnlyElementsSource):
@@ -54,7 +56,10 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     const rawLastFetchTime = element.value[LAST_FETCH_TIME]
     const lastFetchTime = rawLastFetchTime && new Date(rawLastFetchTime)
 
-    internalIdsIndex[`${element.elemID.typeName}-${internalId}`] = { elemID: element.elemID, lastFetchTime }
+    internalIdsIndex[getDataInstanceId(internalId, await element.getType(elementsSource))] = {
+      elemID: element.elemID,
+      lastFetchTime,
+    }
   }
 
   await awu(await elementsSource.getAll())

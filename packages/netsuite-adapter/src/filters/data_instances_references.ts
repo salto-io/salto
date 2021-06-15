@@ -19,10 +19,9 @@ import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { isDataObjectType } from '../types'
 import { FilterCreator } from '../filter'
+import { getDataInstanceId } from '../elements_source_index/elements_source_index'
 
 const { awu } = collections.asynciterable
-
-const getId = (internalId: string, type: TypeElement): string => `${type.elemID.name}-${internalId}`
 
 const generateReference = (
   value: Value,
@@ -30,8 +29,8 @@ const generateReference = (
   elementsMap: Record<string, { elemID: ElemID }>,
 ): ReferenceExpression | undefined =>
   value.internalId
-  && elementsMap[getId(value.internalId, type)]
-  && new ReferenceExpression(elementsMap[getId(value.internalId, type)].elemID)
+  && elementsMap[getDataInstanceId(value.internalId, type)]
+  && new ReferenceExpression(elementsMap[getDataInstanceId(value.internalId, type)].elemID)
 
 const replaceReference: (
   elementsMap: Record<string, { elemID: ElemID }>
@@ -67,8 +66,11 @@ const filterCreator: FilterCreator = () => ({
 
     _.assign(
       dataInstancesMap,
-      await awu(instances.filter(e => e.value.internalId !== undefined))
-        .keyBy(async e => `${(await e.getType()).elemID.name}-${e.value.internalId}`)
+      await awu(instances.filter(instance => instance.value.internalId !== undefined))
+        .keyBy(async instance => getDataInstanceId(
+          instance.value.internalId,
+          await instance.getType(),
+        ))
     )
 
     await awu(instances)

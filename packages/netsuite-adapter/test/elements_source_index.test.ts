@@ -21,12 +21,15 @@ import { createElementsSourceIndex } from '../src/elements_source_index/elements
 
 describe('createElementsSourceIndex', () => {
   const getAllMock = jest.fn()
+  const getMock = jest.fn()
   const elementsSource = {
     getAll: getAllMock,
+    get: getMock,
   } as unknown as ReadOnlyElementsSource
 
   beforeEach(() => {
     getAllMock.mockReset()
+    getMock.mockReset()
     getAllMock.mockImplementation(buildElementsSourceFromElements([]).getAll)
   })
   it('should create the index only once and cache it', async () => {
@@ -53,14 +56,19 @@ describe('createElementsSourceIndex', () => {
   })
 
   it('should create the right internal ids index', async () => {
+    const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') })
     getAllMock.mockImplementation(buildElementsSourceFromElements([
       new InstanceElement(
         'name',
-        new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') }),
+        type,
         { internalId: '4', [LAST_FETCH_TIME]: '2021-02-22T18:55:17.949Z' },
         [],
       ),
+      type,
     ]).getAll)
+    getMock.mockImplementation(buildElementsSourceFromElements([
+      type,
+    ]).get)
 
     const elementsSourceIndex = createElementsSourceIndex(elementsSource)
     const index = (await elementsSourceIndex.getIndexes()).internalIdsIndex

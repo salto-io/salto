@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, Values } from '@salto-io/adapter-api'
+import { naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import { ComplexTypeElement, ExtensionElement, SchemaElement, Element, ElementElement, ComplexContentElement } from 'soap/lib/wsdl/elements'
@@ -109,7 +110,7 @@ const convertComplexType = (
     return undefined
   }
 
-  const objectType = new ObjectType({ elemID: new ElemID(adapterName, typeName) })
+  const objectType = new ObjectType({ elemID: new ElemID(adapterName, naclCase(typeName)) })
   const fields = searchInElement(type, ['element', 'attribute', 'complexContent'])
     .map(element => convertField(element, typeName, namespace))
     .filter(values.isDefined)

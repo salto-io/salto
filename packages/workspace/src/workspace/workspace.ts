@@ -634,7 +634,7 @@ export const loadWorkspace = async (
             await s.errors.clear()
             await s.validationErrors.clear()
           })
-        await (await getLoadedNaclFilesSource()).clear(args)
+        await naclFilesSource.clear(args)
       }
       if (args.state) {
         await promises.array.series(envs().map(e => (() => state(e).clear())))
@@ -643,7 +643,6 @@ export const loadWorkspace = async (
         await promises.array.series(envs().map(e => (() => credentials.delete(e))))
       }
       workspaceState = undefined
-      // We want to ignore file changes if the user doesn't want to regerenarte the cache
       await getWorkspaceState()
     },
     addService: async (service: string): Promise<void> => {

@@ -402,26 +402,26 @@ export default class SdfClient {
       const retryFetchFailedInstances = async (
         failedInstancesIds: string[]
       ): Promise<NetsuiteQueryParameters['types']> => {
-        log.debug('Retrying to fetch %d failed instances of chunk %d/%d of type: %s.',
-          failedInstancesIds.length, index, total, type)
+        log.debug('Retrying to fetch failed instances of chunk %d/%d of type %s: %o',
+          index, total, type, failedInstancesIds)
         const failedTypeToInstancesAfterRetry = await this.runImportObjectsCommand(
           executor, type, failedInstancesIds.join(' ')
         )
-        log.debug('Retried to fetch %d failed instances of chunk %d/%d of type: %s. failedTypeToInstances: %o',
-          failedInstancesIds.length, index, total, type, failedTypeToInstancesAfterRetry)
+        log.debug('Retried to fetch %d failed instances of chunk %d/%d of type: %s.',
+          failedInstancesIds.length, index, total, type)
         return failedTypeToInstancesAfterRetry
       }
 
       try {
         log.debug('Starting to fetch chunk %d/%d with %d objects of type: %s', index, total, ids.length, type)
-        const failedTypeToInstances = await this.runImportObjectsCommand(
+        let failedTypeToInstances = await this.runImportObjectsCommand(
           executor, type, ids.join(' ')
         )
+        if (failedTypeToInstances[type]?.length > 0) {
+          failedTypeToInstances = await retryFetchFailedInstances(failedTypeToInstances[type])
+        }
         log.debug('Fetched chunk %d/%d with %d objects of type: %s. failedTypeToInstances: %o',
           index, total, ids.length, type, failedTypeToInstances)
-        if (failedTypeToInstances[type]?.length > 0) {
-          return await retryFetchFailedInstances(failedTypeToInstances[type])
-        }
         return failedTypeToInstances
       } catch (e) {
         log.warn('Failed to fetch chunk %d/%d with %d objects of type: %s', index, total, ids.length, type)

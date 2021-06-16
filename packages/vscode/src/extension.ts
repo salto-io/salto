@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import * as vscode from 'vscode'
-import { loadLocalWorkspace } from '@salto-io/core'
+import { loadLocalWorkspace, closeAllRemoteMaps } from '@salto-io/core'
 import { diagnostics, workspace as ws } from '@salto-io/lang-server'
 import { onTextChangeEvent, onFileChange, onFileOpen, createReportErrorsEventListener } from './events'
 import {
@@ -112,3 +112,7 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
   },
   async () => onActivate(context))
 )
+
+export const deactviate = async (): Promise<void> => {
+  await closeAllRemoteMaps()
+}

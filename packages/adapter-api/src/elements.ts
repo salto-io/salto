@@ -163,6 +163,13 @@ abstract class PlaceholderTypeElement extends Element {
 }
 
 export class ListType<T extends TypeElement = TypeElement> extends Element {
+  // This unused value which is always undefined is only here to allow us to enforce
+  // the inner type T in createMatchingObjectType. without this member the only information
+  // about T is in the constructor and the constructor is not part of the instance.
+  // In order to enforce an instance to have a specific T we need some reference to T outside
+  // the constructor and because we currently don't have one, we add an artificial one here
+  protected _typeMarker?: T
+
   public refInnerType: ReferenceExpression
   public constructor(
     innerTypeOrRef: TypeOrRef<T>
@@ -186,13 +193,13 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
     )
   }
 
-  async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<T> {
+  async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
     const refInnerTypeVal = await getRefTypeValue(this.refInnerType, elementsSource)
     // eslint-disable-next-line no-use-before-define
     if (!isType(refInnerTypeVal)) {
       throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
     }
-    return refInnerTypeVal as T
+    return refInnerTypeVal
   }
 
   setRefInnerType(innerTypeOrRefInnerType: TypeOrRef): void {
@@ -214,6 +221,13 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
  * Represents a map with string keys and innerType values.
  */
 export class MapType<T extends TypeElement = TypeElement> extends Element {
+  // This unused value which is always undefined is only here to allow us to enforce
+  // the inner type T in createMatchingObjectType. without this member the only information
+  // about T is in the constructor and the constructor is not part of the instance.
+  // In order to enforce an instance to have a specific T we need some reference to T outside
+  // the constructor and because we currently don't have one, we add an artificial one here
+  protected _typeMarker?: T
+
   public refInnerType: ReferenceExpression
   public constructor(
     innerTypeOrRef: TypeOrRef<T>
@@ -237,13 +251,13 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
     )
   }
 
-  async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<T> {
+  async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
     const refInnerTypeVal = await getRefTypeValue(this.refInnerType, elementsSource)
     // eslint-disable-next-line no-use-before-define
     if (!isType(refInnerTypeVal)) {
       throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
     }
-    return refInnerTypeVal as T
+    return refInnerTypeVal
   }
 
   setRefInnerType(innerTypeOrRefInnerType: TypeOrRef): void {

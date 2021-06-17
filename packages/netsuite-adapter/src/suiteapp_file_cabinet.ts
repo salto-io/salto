@@ -19,7 +19,7 @@ import { chunks, promises, values } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
 import _ from 'lodash'
 import path from 'path'
-import { ReadFileEncodingError } from './client/suiteapp_client/errors'
+import { ReadFileEncodingError, ReadFileInsufficientPermissionError } from './client/suiteapp_client/errors'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './client/suiteapp_client/types'
 import { ImportFileCabinetResult } from './client/types'
@@ -284,7 +284,11 @@ Promise<FileResult[]> => {
     const filesCustomizationInfo = filesCustomizationInfoWithoutContent.map((file, index) => {
       if (!(filesContent[index] instanceof Buffer)) {
         log.warn(`Failed reading file /${file.path.join('/')} with id ${file.id}`)
-        failedPaths.push(file.path)
+        // SuiteBundles directory might contain hundreds of locked files so
+        // we don't report this kind of error so it won't be added to the skip list.
+        if (!(filesContent[index] instanceof ReadFileInsufficientPermissionError)) {
+          failedPaths.push(file.path)
+        }
         return undefined
       }
       return {

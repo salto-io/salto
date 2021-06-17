@@ -31,7 +31,7 @@ import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
 import { DEFAULT_CONCURRENCY } from '../../config'
 import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
 import SoapClient from './soap_client/soap_client'
-import { ReadFileEncodingError, ReadFileError } from './errors'
+import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
 
 const PAGE_SIZE = 1000
@@ -155,6 +155,9 @@ export default class SuiteAppClient {
             return new ReadFileEncodingError(`Received file encoding error: ${JSON.stringify(file.error, undefined, 2)}`)
           }
           log.warn(`Received file read error: ${JSON.stringify(file.error, undefined, 2)}`)
+          if (file.error.name === 'INSUFFICIENT_PERMISSION') {
+            return new ReadFileInsufficientPermissionError(`No permission for reading file: ${JSON.stringify(file.error, undefined, 2)}`)
+          }
           return new ReadFileError(`Received an error while tried to read file: ${JSON.stringify(file.error, undefined, 2)}`)
         }
         return NON_BINARY_FILETYPES.has(file.type) ? Buffer.from(file.content) : Buffer.from(file.content, 'base64')

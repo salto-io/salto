@@ -125,7 +125,7 @@ const parseType = (
   return {
     element: typeObj,
     sourceMap,
-    containerTypes: wu(listElements.values()).toArray().concat(wu(mapElements.values()).toArray()),
+    containerTypes: wu.chain<ContainerType>(listElements.values(), mapElements.values()).toArray(),
   }
 }
 

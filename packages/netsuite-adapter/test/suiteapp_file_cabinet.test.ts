@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { NetsuiteQuery } from '../src/query'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, isChangeDeployable } from '../src/suiteapp_file_cabinet'
-import { ReadFileEncodingError, ReadFileError } from '../src/client/suiteapp_client/errors'
+import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../src/client/suiteapp_client/errors'
 import { fileCabinetTypes } from '../src/types'
 import { FILE } from '../src/constants'
 import { customtransactiontype } from '../src/types/custom_types/customtransactiontype'
@@ -274,6 +274,23 @@ describe('suiteapp_file_cabinet', () => {
       expect(failedPaths).toEqual([
         '/folder5/folder3/file1',
         '/folder5/folder4/file2',
+      ])
+    })
+
+    it('should not return locked files as failed paths', async () => {
+      const filesContentWithError: Record<string, Buffer | Error> = {
+        1: new ReadFileError(),
+        2: new ReadFileInsufficientPermissionError(),
+      }
+      mockSuiteAppClient.readFiles.mockImplementation(
+        async (ids: string[]) => ids.map(id => filesContentWithError[id])
+      )
+      mockSuiteAppClient.readLargeFile.mockResolvedValue(new ReadFileError())
+
+      const { failedPaths } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query)
+      expect(failedPaths).toEqual([
+        '/folder5/folder3/file1',
       ])
     })
 

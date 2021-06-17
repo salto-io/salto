@@ -15,4 +15,6 @@
 */
 export class ReadFileError extends Error {}
 
-export class ReadFileEncodingError extends Error {}
+export class ReadFileEncodingError extends ReadFileError {}
+
+export class ReadFileInsufficientPermissionError extends ReadFileError {}

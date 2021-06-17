@@ -17,7 +17,7 @@ import axios from 'axios'
 import Bottleneck from 'bottleneck'
 import _ from 'lodash'
 import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client'
-import { ReadFileEncodingError, ReadFileError } from '../../src/client/suiteapp_client/errors'
+import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../../src/client/suiteapp_client/errors'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import { InvalidSuiteAppCredentialsError } from '../../src/client/types'
 
@@ -361,6 +361,12 @@ describe('SuiteAppClient', () => {
             {
               status: 'error',
               error: {
+                name: 'INSUFFICIENT_PERMISSION',
+              },
+            },
+            {
+              status: 'error',
+              error: {
                 name: 'OTHER_ERROR',
               },
             },
@@ -368,11 +374,12 @@ describe('SuiteAppClient', () => {
         },
       })
 
-      const results = await client.readFiles([1, 2, 3, 4])
+      const results = await client.readFiles([1, 2, 3, 4, 5])
       expect(results).toEqual([
         Buffer.from('someText1'),
         Buffer.from('someText2'),
         expect.any(ReadFileEncodingError),
+        expect.any(ReadFileInsufficientPermissionError),
         expect.any(ReadFileError),
       ])
 
@@ -381,7 +388,7 @@ describe('SuiteAppClient', () => {
         {
           operation: 'readFile',
           args: {
-            ids: [1, 2, 3, 4],
+            ids: [1, 2, 3, 4, 5],
           },
         },
         {

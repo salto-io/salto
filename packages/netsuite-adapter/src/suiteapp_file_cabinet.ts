@@ -284,8 +284,8 @@ Promise<FileResult[]> => {
     const filesCustomizationInfo = filesCustomizationInfoWithoutContent.map((file, index) => {
       if (!(filesContent[index] instanceof Buffer)) {
         log.warn(`Failed reading file /${file.path.join('/')} with id ${file.id}`)
-        // Bundles directory might contains hundred of locked files so
-        // we don't to report this kind of error so it won't be added to the skip list.
+        // SuiteBundles directory might contain hundreds of locked files so
+        // we don't report this kind of error so it won't be added to the skip list.
         if (!(filesContent[index] instanceof ReadFileInsufficientPermissionError)) {
           failedPaths.push(file.path)
         }

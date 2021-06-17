@@ -137,7 +137,7 @@ export enum PrimitiveTypes {
 export type ContainerType = ListType | MapType
 export type TypeElement = PrimitiveType | ObjectType | ContainerType
 export type TypeMap = Record<string, TypeElement>
-type TypeOrRef = TypeElement | ReferenceExpression
+type TypeOrRef<T extends TypeElement = TypeElement> = T | ReferenceExpression
 export type TypeRefMap = Record<string, TypeOrRef>
 export type ReferenceMap = Record<string, ReferenceExpression>
 
@@ -162,10 +162,17 @@ abstract class PlaceholderTypeElement extends Element {
   }
 }
 
-export class ListType extends Element {
+export class ListType<T extends TypeElement = TypeElement> extends Element {
+  // This unused value which is always undefined is only here to allow us to enforce
+  // the inner type T in createMatchingObjectType. without this member the only information
+  // about T is in the constructor and the constructor is not part of the instance.
+  // In order to enforce an instance to have a specific T we need some reference to T outside
+  // the constructor and because we currently don't have one, we add an artificial one here
+  protected _typeMarker?: T
+
   public refInnerType: ReferenceExpression
   public constructor(
-    innerTypeOrRef: TypeOrRef
+    innerTypeOrRef: TypeOrRef<T>
   ) {
     super({
       elemID: new ElemID('', `${LIST_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`),
@@ -213,10 +220,17 @@ export class ListType extends Element {
 /**
  * Represents a map with string keys and innerType values.
  */
-export class MapType extends Element {
+export class MapType<T extends TypeElement = TypeElement> extends Element {
+  // This unused value which is always undefined is only here to allow us to enforce
+  // the inner type T in createMatchingObjectType. without this member the only information
+  // about T is in the constructor and the constructor is not part of the instance.
+  // In order to enforce an instance to have a specific T we need some reference to T outside
+  // the constructor and because we currently don't have one, we add an artificial one here
+  protected _typeMarker?: T
+
   public refInnerType: ReferenceExpression
   public constructor(
-    innerTypeOrRef: TypeOrRef
+    innerTypeOrRef: TypeOrRef<T>
   ) {
     super({
       elemID: new ElemID('', `${MAP_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`),

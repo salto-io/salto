@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, FieldDefinition, PrimitiveType, ListType, MapType, PrimitiveTypes, Value } from '@salto-io/adapter-api'
+import { ObjectType, FieldDefinition, PrimitiveType, ListType, MapType, PrimitiveTypes, TypeElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { types } from '@salto-io/lowerdash'
 
 type SaltoPrimitiveTypeForType<T> = (
@@ -29,12 +29,12 @@ type SaltoPrimitiveTypeForType<T> = (
 type RecordOf<T, S> = string extends keyof T ? Record<string, S> : never
 
 type SaltoTypeForType<T> = (
-  T extends Array<Value>
-    ? ListType
+  T extends Array<infer U>
+    ? ListType<TypeElement & SaltoTypeForType<U>>
     : T extends (string | number | boolean | undefined)
       ? PrimitiveType<SaltoPrimitiveTypeForType<T>>
-      : T extends Record<string, Value> & RecordOf<T, Value>
-        ? MapType
+      : T extends Record<string, infer U> & RecordOf<T, infer U>
+        ? MapType<TypeElement & SaltoTypeForType<U>>
         : T extends {} ? ObjectType : unknown
 )
 
@@ -50,7 +50,7 @@ type ObjectTypeCtorForType<T> = (
   & {
     fields: {
       [K in keyof Required<T>]: FieldDefinition &
-        { refType: SaltoTypeForType<T[K]> } &
+        { refType: SaltoTypeForType<T[K]> | ReferenceExpression } &
         SaltoAnnotationsForField<T, K>
     }
   }

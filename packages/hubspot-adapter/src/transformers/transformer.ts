@@ -1270,7 +1270,7 @@ export const createHubspotMetadataFromInstanceElement = async (
             values: val,
             transformFunc,
             strict: false,
-            type: fieldType,
+            type: fieldDeepInnerType,
           })
         }
       }

@@ -50,13 +50,13 @@ export const advancedpdftemplate = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 297,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 297 }),
       },
     }, /* Original description: This field value can be up to 297 characters long. */
     description: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 4000,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 4000 }),
       },
     }, /* Original description: This field value can be up to 4000 characters long. */
     displaysourcecode: {

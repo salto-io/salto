@@ -377,7 +377,7 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
         elemID: reviveElemID(v.elemID),
         fieldName: v.fieldName,
         value: v.value,
-        length: v.length_limit,
+        maxLength: v.max_length,
 
       })
     ),

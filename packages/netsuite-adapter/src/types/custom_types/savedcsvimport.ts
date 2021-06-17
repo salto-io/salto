@@ -263,7 +263,7 @@ export const savedcsvimport = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 64,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 64 }),
       },
     }, /* Original description: This field value can be up to 64 characters long.   This field accepts references to the string custom type. */
     datahandling: {
@@ -352,13 +352,13 @@ export const savedcsvimport = new ObjectType({
     multiselectdelimiter: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 1,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 1 }),
       },
     }, /* Original description: This field value can be up to 1 characters long.   The default value is '|'. */
     description: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 499,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 499 }),
       },
     }, /* Original description: This field value can be up to 499 characters long.   This field accepts references to the string custom type. */
     audience: {

@@ -52,7 +52,7 @@ const publisheddashboard_dashboards_dashboard_centercolumn_analytics = new Objec
     name: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 50,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 50 }),
       },
     }, /* Original description: This field value can be up to 50 characters long. */
     height: {
@@ -153,13 +153,15 @@ const publisheddashboard_dashboards_dashboard_centercolumn_customportlet_paramet
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING) /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the scriptcustomfield custom type. */
     value: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts values of the custom field type specified in the id. */
   },
@@ -260,7 +262,7 @@ const publisheddashboard_dashboards_dashboard_centercolumn_customsearch = new Ob
     title: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
       },
     }, /* Original description: This field value can be up to 40 characters long. */
   },
@@ -1472,10 +1474,10 @@ export const publisheddashboard = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custpubdashboard’. */
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING) /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 30,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 30 }),
       },
     }, /* Original description: This field value can be up to 30 characters long.   This field accepts references to the string custom type. */
     center: {
@@ -1495,9 +1497,9 @@ export const publisheddashboard = new ObjectType({
       },
     }, /* Original description: The default value is F. */
     notes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING) /* Original type was single-select list */,
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 4000,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 4000 }),
       },
     }, /* Original description: This field value can be up to 4000 characters long.   This field accepts references to the string custom type. */
     dashboards: {

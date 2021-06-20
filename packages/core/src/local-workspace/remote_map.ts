@@ -484,18 +484,23 @@ remoteMap.RemoteMapCreator => {
         tmpDBConnections[location] = tmpDBConnections[location] ?? {}
         tmpDBConnections[location][tmpLocation] = tmpConnection
       }
-      if (!(location in persistentDBConnections)) {
-        persistentDBConnections[location] = (async () => {
-          if (currnetConnectionsCount > MAX_CONNECTIONS) {
-            throw new Error('Failed to open rocksdb connection - too much open connections already')
-          }
-          await createDBIfNotExist(location)
-          const readOnly = !persistent
-          currnetConnectionsCount += 2
-          return getOpenDBConnection(location, readOnly)
-        })()
+      if (location in persistentDBConnections) {
+        persistentDB = await persistentDBConnections[location]
+        return
       }
-      persistentDB = await persistentDBConnections[location]
+      if (currnetConnectionsCount > MAX_CONNECTIONS) {
+        throw new Error('Failed to open rocksdb connection - too much open connections already')
+      }
+      const connectionPromise = (async () => {
+        currnetConnectionsCount += 2
+        await createDBIfNotExist(location)
+        const readOnly = !persistent
+        return getOpenDBConnection(location, readOnly)
+      })()
+      if (persistent) {
+        persistentDBConnections[location] = connectionPromise
+      }
+      persistentDB = await connectionPromise
     }
     await createDBConnections()
     return {

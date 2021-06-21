@@ -21,7 +21,7 @@ import {
   validateElements, InvalidValueValidationError, CircularReferenceValidationError,
   InvalidValueRangeValidationError, IllegalReferenceValidationError,
   UnresolvedReferenceValidationError, InvalidValueTypeValidationError,
-  InvalidStaticFileError, RegexMismatchValidationError, InvalidValueLengthValidationError, 
+  InvalidStaticFileError, RegexMismatchValidationError, InvalidValueMaxLengthValidationError,
 } from '../src/validator'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
 import { IllegalReference } from '../src/parser/parse'
@@ -90,7 +90,7 @@ describe('Elements validation', () => {
       },
       annotations: {
         withRestriction: '1',
-      }
+      },
     }
   )
 
@@ -909,7 +909,7 @@ describe('Elements validation', () => {
             ])
           )
           expect(errors).toHaveLength(1)
-          expect(errors[0]).toBeInstanceOf(InvalidValueLengthValidationError)
+          expect(errors[0]).toBeInstanceOf(InvalidValueMaxLengthValidationError)
         })
 
         it('should return validation error on max_length validation on an instance through the field type', async () => {
@@ -923,7 +923,7 @@ describe('Elements validation', () => {
             ])
           )
           expect(errors).toHaveLength(1)
-          expect(errors[0]).toBeInstanceOf(InvalidValueLengthValidationError)
+          expect(errors[0]).toBeInstanceOf(InvalidValueMaxLengthValidationError)
         })
 
         it('should return error on max_length validation on a restriction on annotation type of a type', async () => {
@@ -936,7 +936,7 @@ describe('Elements validation', () => {
             ])
           )
           expect(errors).toHaveLength(1)
-          expect(errors[0]).toBeInstanceOf(InvalidValueLengthValidationError)
+          expect(errors[0]).toBeInstanceOf(InvalidValueMaxLengthValidationError)
         })
 
         it('should succeed on max_length validation on an instance through the field type', async () => {

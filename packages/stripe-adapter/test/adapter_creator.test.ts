@@ -21,7 +21,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import StripeAdapter from '../src/adapter'
 import { adapter } from '../src/adapter_creator'
 import { accessTokenCredentialsType } from '../src/auth'
-import { configType } from '../src/config'
+import { configType, DEFAULT_API_DEFINITIONS } from '../src/config'
 import { STRIPE } from '../src/constants'
 import * as connection from '../src/client/connection'
 
@@ -154,6 +154,30 @@ describe('adapter creator', () => {
       ),
       elementsSource: buildElementsSourceFromElements([]),
     })).toThrow(new Error('Duplicate fieldsToHide params found in apiDefinitions for the following types: Product'))
+
+    expect(() => adapter.operations({
+      credentials: new InstanceElement(
+        STRIPE,
+        adapter.authenticationMethods.basic.credentialsType,
+        { token: 'aaa' },
+      ),
+      config: new InstanceElement(
+        STRIPE,
+        adapter.configType as ObjectType,
+        {
+          fetch: {
+            includeTypes: [
+              'stripe.v1__country_specs',
+            ],
+          },
+          apiDefinitions: {
+            ...DEFAULT_API_DEFINITIONS,
+            supportedTypes: [],
+          },
+        },
+      ),
+      elementsSource: buildElementsSourceFromElements([]),
+    })).toThrow(new Error('Invalid type names in fetch.includeTypes: stripe.v1__country_specs are not listed as supported types in apiDefinitions.supportedTypes.'))
   })
 
   it('should validate credentials using createConnection', async () => {

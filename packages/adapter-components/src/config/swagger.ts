@@ -185,10 +185,6 @@ export const validateApiDefinitionConfig = (
   if (invalidTypes.length > 0) {
     throw new Error(`Invalid type names in ${apiDefinitionConfigPath}: ${[...invalidTypes].sort()} were renamed in ${apiDefinitionConfigPath}.typeNameOverrides`)
   }
-  if (adapterApiConfig.supportedTypes !== undefined
-     && adapterApiConfig.supportedTypes.length === 0) {
-    throw new Error(`Empty supportedTypes field in ${apiDefinitionConfigPath}. Should either be undefined or non-empty.`)
-  }
 }
 
 /**
@@ -197,16 +193,17 @@ export const validateApiDefinitionConfig = (
  */
 export const validateFetchConfig = (
   fetchConfigPath: string,
+  apiConfigPath: string,
   userFetchConfig: UserFetchConfig,
   adapterApiConfig: AdapterSwaggerApiConfig,
 ): void => {
   if (adapterApiConfig.supportedTypes !== undefined) {
-    const supportedTypesNames = adapterApiConfig.supportedTypes
+    const supportedTypesNames = new Set(adapterApiConfig.supportedTypes)
     const invalidIncludedTypes = userFetchConfig.includeTypes.filter(
-      name => !supportedTypesNames.includes(name)
+      name => !supportedTypesNames.has(name)
     )
     if (invalidIncludedTypes.length > 0) {
-      throw Error(`Type names are not supported in ${fetchConfigPath}: ${invalidIncludedTypes}`)
+      throw Error(`Invalid type names in ${fetchConfigPath}.includeTypes: ${invalidIncludedTypes} are not listed as supported types in ${apiConfigPath}.supportedTypes.`)
     }
   }
 }

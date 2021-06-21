@@ -299,8 +299,11 @@ export const generateTypes = async (
   fixTypes(definedTypes, types, typeDefaults)
 
   if (supportedTypes !== undefined) {
-    const filteredTypes = await filterTypes(adapterName,
-      Object.values(definedTypes), supportedTypes)
+    const filteredTypes = await filterTypes(
+      adapterName,
+      Object.values(definedTypes),
+      supportedTypes
+    )
 
     return {
       allTypes: _.keyBy(filteredTypes, type => type.elemID.name),

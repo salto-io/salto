@@ -220,46 +220,13 @@ describe('config_swagger', () => {
         },
       )).not.toThrow()
     })
-    it('should throw when supportedTypes is empty', () => {
-      expect(() => validateSwaggerApiDefinitionConfig(
-        'PATH',
-        {
-          swagger: {
-            url: '/a/b/c',
-            additionalTypes: [
-              { typeName: 'abc', cloneFrom: 'def' },
-            ],
-            typeNameOverrides: [
-              { newName: 'aaa', originalName: 'bbb' },
-            ],
-          },
-          typeDefaults: {
-            transformation: {
-              idFields: ['a', 'b'],
-            },
-          },
-          types: {
-            abc: {
-              transformation: {
-                idFields: ['something', 'else'],
-              },
-            },
-            aaa: {
-              transformation: {
-                idFields: ['something'],
-              },
-            },
-          },
-          supportedTypes: [],
-        },
-      )).toThrow(new Error('Empty supportedTypes field in PATH. Should either be undefined or non-empty.'))
-    })
   })
 
   describe('validateFetchConfig', () => {
     it('should validate successfully when supportedTypes is undefined', () => {
       expect(() => validateSwaggerFetchConfig(
-        'PATH',
+        'FETCH_PATH',
+        'API_PATH',
         {
           includeTypes: ['a', 'bla'],
         },
@@ -290,7 +257,8 @@ describe('config_swagger', () => {
 
     it('should validate successfully when values are valid', () => {
       expect(() => validateSwaggerFetchConfig(
-        'PATH',
+        'FETCH_PATH',
+        'API_PATH',
         {
           includeTypes: ['a', 'bla'],
         },
@@ -322,7 +290,8 @@ describe('config_swagger', () => {
 
     it('should throw when there are invalid includeTypes', () => {
       expect(() => validateSwaggerFetchConfig(
-        'PATH',
+        'FETCH_PATH',
+        'API_PATH',
         {
           includeTypes: ['a', 'unknown'],
         },
@@ -349,7 +318,7 @@ describe('config_swagger', () => {
             },
           },
         },
-      )).toThrow(new Error('Type names are not supported in PATH: unknown'))
+      )).toThrow(new Error('Invalid type names in FETCH_PATH.includeTypes: unknown are not listed as supported types in API_PATH.supportedTypes.'))
     })
   })
 })

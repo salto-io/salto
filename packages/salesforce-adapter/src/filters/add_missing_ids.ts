@@ -21,7 +21,7 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { apiName, metadataType } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { getFullName, getInternalId, setInternalId } from './utils'
+import { getFullName, getInternalId, setInternalId, toSaltoWarning } from './utils'
 
 const log = logger(module)
 const { awu, groupByAsync } = collections.asynciterable
@@ -74,17 +74,24 @@ const elementsWithMissingIds = async (elements: Element[]): Promise<Element[]> =
 const filter: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
     if (!config.fetchProfile.isFeatureEnabled('addMissingIds')) {
-      return
+      return undefined
     }
-    const groupedElements = await groupByAsync(
-      await elementsWithMissingIds(elements),
-      metadataType,
-    )
-    log.debug(`Getting missing ids for the following types: ${Object.keys(groupedElements)}`)
-    await Promise.all(
-      Object.entries(groupedElements)
-        .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
-    )
+    try {
+      const groupedElements = await groupByAsync(
+        await elementsWithMissingIds(elements),
+        metadataType,
+      )
+      log.debug(`Getting missing ids for the following types: ${Object.keys(groupedElements)}`)
+      await Promise.all(
+        Object.entries(groupedElements)
+          .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
+      )
+    } catch (error) {
+      return {
+        errors: [toSaltoWarning('unexpected error when adding missing ids')],
+      }
+    }
+    return undefined
   },
 })
 

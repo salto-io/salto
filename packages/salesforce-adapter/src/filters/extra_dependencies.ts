@@ -23,7 +23,7 @@ import { getAllReferencedIds, buildElementsSourceFromElements, extendGeneratedDe
 import { FilterCreator } from '../filter'
 import { metadataType, apiName, isCustomObject } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { getInternalId, buildElementsSourceForFetch, extractFlatCustomObjectFields, hasInternalId } from './utils'
+import { getInternalId, buildElementsSourceForFetch, extractFlatCustomObjectFields, hasInternalId, toSaltoWarning } from './utils'
 
 const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
@@ -189,28 +189,35 @@ const addExtraReferences = async (
 const creator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
     if (!config.fetchProfile.isFeatureEnabled('extraDependencies')) {
-      return
+      return undefined
     }
-    const groupedDeps = await getDependencies(client)
-    const fetchedElements = buildElementsSourceFromElements(elements)
-    const allElements = buildElementsSourceForFetch(elements, config)
+    try {
+      const groupedDeps = await getDependencies(client)
+      const fetchedElements = buildElementsSourceFromElements(elements)
+      const allElements = buildElementsSourceForFetch(elements, config)
 
-    const { elemLookup, customObjectLookup } = await multiIndex.buildMultiIndex<Element>()
-      .addIndex({
-        name: 'elemLookup',
-        filter: hasInternalId,
-        key: async elem => [await metadataType(elem), getInternalId(elem)],
-        map: elem => elem.elemID,
-      })
-      .addIndex({
-        name: 'customObjectLookup',
-        filter: async elem => isCustomObject(elem),
-        key: async elem => [await apiName(elem)],
-        map: elem => elem.elemID,
-      })
-      .process(awu(await allElements.getAll()).flatMap(extractFlatCustomObjectFields))
+      const { elemLookup, customObjectLookup } = await multiIndex.buildMultiIndex<Element>()
+        .addIndex({
+          name: 'elemLookup',
+          filter: hasInternalId,
+          key: async elem => [await metadataType(elem), getInternalId(elem)],
+          map: elem => elem.elemID,
+        })
+        .addIndex({
+          name: 'customObjectLookup',
+          filter: async elem => isCustomObject(elem),
+          key: async elem => [await apiName(elem)],
+          map: elem => elem.elemID,
+        })
+        .process(awu(await allElements.getAll()).flatMap(extractFlatCustomObjectFields))
 
-    await addExtraReferences(groupedDeps, fetchedElements, elemLookup, customObjectLookup)
+      await addExtraReferences(groupedDeps, fetchedElements, elemLookup, customObjectLookup)
+    } catch (error) {
+      return {
+        errors: [toSaltoWarning('unexpected error when getting extra dependencies')],
+      }
+    }
+    return undefined
   },
 })
 

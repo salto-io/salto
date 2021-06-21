@@ -24,6 +24,7 @@ import mockClient from '../client'
 import { mockQueryResult } from '../connection'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { FilterResult } from '../../src/types'
 
 
 describe('profile paths filter', () => {
@@ -88,20 +89,34 @@ describe('profile paths filter', () => {
     await filter.onFetch([instance])
     expect(instance.path).toBeUndefined()
   })
-
-  it('should not run any query when feature is disabled', async () => {
-    (await instance.getType()).annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
-    instance.value[INSTANCE_FULL_NAME_FIELD] = 'PlatformPortal'
-    instance.value[INTERNAL_ID_FIELD] = 'PlatformPortalInternalId'
-    filter = filterCreator({
-      client,
-      config: {
-        ...defaultFilterContext,
-        fetchProfile: buildFetchProfile({ optionalFeatures: { profilePaths: false } }),
-      },
-    }) as FilterWith<'onFetch'>
-    await filter.onFetch([instance])
-    expect(instance.path).toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'test'])
-    expect(connection.query).not.toHaveBeenCalled()
+  describe('when feature is throwing an error', () => {
+    it('should return a warning', async () => {
+      connection.query.mockImplementation(() => {
+        console.log('im here')
+        throw new Error()
+      })
+      const res = await filter.onFetch([instance]) as FilterResult
+      expect(res).toBeDefined()
+      expect(res.errors).toBeDefined()
+      const err = res.errors ?? []
+      expect(err[0].message).toEqual('unexpected error when repalceing path for profile instances')
+    })
+  })
+  describe('when feature is disabled', () => {
+    it('should not run any query when feature is disabled', async () => {
+      (await instance.getType()).annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
+      instance.value[INSTANCE_FULL_NAME_FIELD] = 'PlatformPortal'
+      instance.value[INTERNAL_ID_FIELD] = 'PlatformPortalInternalId'
+      filter = filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({ optionalFeatures: { profilePaths: false } }),
+        },
+      }) as FilterWith<'onFetch'>
+      await filter.onFetch([instance])
+      expect(instance.path).toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'test'])
+      expect(connection.query).not.toHaveBeenCalled()
+    })
   })
 })

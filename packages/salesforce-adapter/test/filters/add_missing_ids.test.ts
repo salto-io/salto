@@ -25,6 +25,7 @@ import {
 } from '../../src/constants'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { FilterResult } from '../../src/types'
 
 
 describe('Internal IDs filter', () => {
@@ -32,6 +33,7 @@ describe('Internal IDs filter', () => {
   type FilterType = FilterWith<'onFetch'>
   let filter: FilterType
   const objTypeID = new ElemID(SALESFORCE, 'Obj')
+  let elements: Element[]
 
   const generateElements = (): Element[] => {
     const objType = new ObjectType({
@@ -103,7 +105,6 @@ describe('Internal IDs filter', () => {
   })
 
   describe('resolve internal ids', () => {
-    let elements: Element[]
     let numElements: number
     let mockListMetadataObjects: jest.Mock
 
@@ -198,6 +199,38 @@ describe('Internal IDs filter', () => {
       const { connection } = mockClient()
       expect(elements[4]).toBeInstanceOf(InstanceElement)
       const inst = elements[4] as InstanceElement
+      filter = filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({ optionalFeatures: { addMissingIds: false } }),
+        },
+      }) as FilterType
+      await filter.onFetch([inst])
+      expect(inst.value[INTERNAL_ID_FIELD]).toBeUndefined()
+      expect(connection.query).not.toHaveBeenCalled()
+    })
+  })
+  describe('when feature is throwing an error', () => {
+    const mockListMetadataObjects: jest.Mock = jest.fn()
+    SalesforceClient.prototype.listMetadataObjects = mockListMetadataObjects
+    it('should return a warning', async () => {
+      const { connection } = mockClient()
+      connection.query.mockImplementation(() => { throw new Error() })
+      const res = await filter.onFetch(elements) as FilterResult
+      expect(res).toBeDefined()
+      expect(res.errors).toBeDefined()
+      const err = res.errors ?? []
+      expect(err[0].message).toEqual('unexpected error when adding missing ids')
+    })
+  })
+  describe('when feature is disabled', () => {
+    const mockListMetadataObjects: jest.Mock = jest.fn()
+    SalesforceClient.prototype.listMetadataObjects = mockListMetadataObjects
+    it('should not run any query', async () => {
+      const { connection } = mockClient()
+      expect(elements[2]).toBeInstanceOf(InstanceElement)
+      const inst = elements[2] as InstanceElement
       filter = filterCreator({
         client,
         config: {

@@ -20,6 +20,7 @@ import {
   TypeElement, BuiltinTypes, ElemID, CoreAnnotationTypes, TypeMap, Value, ReadOnlyElementsSource,
   isReferenceExpression, ReferenceExpression, ChangeDataType, Change, ChangeData,
   isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeElement, CORE_ANNOTATIONS,
+  SaltoError,
 } from '@salto-io/adapter-api'
 import { getParents, buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
@@ -251,4 +252,11 @@ export const isInstanceOfTypeChange = (type: string) => (
   (change: Change): Promise<boolean> => (
     isInstanceOfType(type)(getChangeElement(change))
   )
+)
+
+export const toSaltoWarning = (message: string): SaltoError => (
+  ({
+    message,
+    severity: 'Warning',
+  })
 )

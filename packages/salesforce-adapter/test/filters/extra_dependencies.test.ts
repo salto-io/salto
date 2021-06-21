@@ -28,6 +28,8 @@ import { SalesforceRecord } from '../../src/client/types'
 import { Types } from '../../src/transformers/transformer'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import Connection from '../../src/client/jsforce'
+import { FilterResult } from '../../src/types'
+
 
 const getGeneratedDeps = (elem: Element): ReferenceExpression[] => (
   elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
@@ -320,7 +322,17 @@ describe('extra dependencies filter', () => {
       expect(getGeneratedDeps(workspaceInstance)).toBeUndefined()
     })
   })
-
+  describe('when feature is throwing an error', () => {
+    it('should return a warning', async () => {
+      const { connection } = mockClient()
+      connection.query.mockImplementation(() => { throw new Error() })
+      const res = await filter.onFetch(elements) as FilterResult
+      expect(res).toBeDefined()
+      expect(res.errors).toBeDefined()
+      const err = res.errors ?? []
+      expect(err[0].message).toEqual('unexpected error when getting extra dependencies')
+    })
+  })
   describe('when feature is disabled', () => {
     let connection: MockInterface<Connection>
     beforeEach(async () => {

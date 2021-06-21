@@ -20,7 +20,7 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterCreator, FilterWith } from '../filter'
 import { apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { getInternalId, isInstanceOfType } from './utils'
+import { getInternalId, isInstanceOfType, toSaltoWarning } from './utils'
 import { PROFILE_METADATA_TYPE } from '../constants'
 
 const { awu } = collections.asynciterable
@@ -61,16 +61,23 @@ const replacePath = async (
 const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
     if (!config.fetchProfile.isFeatureEnabled('profilePaths')) {
-      return
+      return undefined
     }
-    const profiles = await awu(elements)
-      .filter(async e => isInstanceOfType(PROFILE_METADATA_TYPE)(e)).toArray()
-    if (profiles.length > 0) {
-      const profileInternalIdToName = await generateProfileInternalIdToName(client)
-      await awu(profiles)
-        .filter(isInstanceElement)
-        .forEach(async inst => replacePath(inst, profileInternalIdToName))
+    try {
+      const profiles = await awu(elements)
+        .filter(async e => isInstanceOfType(PROFILE_METADATA_TYPE)(e)).toArray()
+      if (profiles.length > 0) {
+        const profileInternalIdToName = await generateProfileInternalIdToName(client)
+        await awu(profiles)
+          .filter(isInstanceElement)
+          .forEach(async inst => replacePath(inst, profileInternalIdToName))
+      }
+    } catch (error) {
+      return {
+        errors: [toSaltoWarning('unexpected error when repalceing path for profile instances')],
+      }
     }
+    return undefined
   },
 })
 

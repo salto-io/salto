@@ -102,7 +102,7 @@ salesforce {
         ]
       }
     }
-    fetchAllCustomSettings = false
+    fetchAllCustomSettings = false 
   }
 }
 ```

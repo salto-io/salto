@@ -58,8 +58,11 @@ const replacePath = async (
 /**
  * replace paths for profile instances upon fetch
  */
-const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
+const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
+    if (!config.fetchProfile.isFeatureEnabled('profilePaths')) {
+      return
+    }
     const profiles = await awu(elements)
       .filter(async e => isInstanceOfType(PROFILE_METADATA_TYPE)(e)).toArray()
     if (profiles.length > 0) {

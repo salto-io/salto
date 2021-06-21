@@ -54,6 +54,9 @@ export type MetadataParams = {
 
 export type OptionalFeatures = {
   extraDependencies?: boolean
+  elementsUrl?: boolean
+  profilePaths?: boolean
+  addMissingIds?: boolean
 }
 
 type ObjectIdSettings = {
@@ -388,6 +391,9 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
   elemID: new ElemID(SALESFORCE, 'optionalFeatures'),
   fields: {
     extraDependencies: { refType: BuiltinTypes.BOOLEAN },
+    elementsUrl: { refType: BuiltinTypes.BOOLEAN },
+    profilePaths: { refType: BuiltinTypes.BOOLEAN },
+    addMissingIds: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 

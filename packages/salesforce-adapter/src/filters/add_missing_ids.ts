@@ -71,8 +71,11 @@ const elementsWithMissingIds = async (elements: Element[]): Promise<Element[]> =
 /**
  * Add missing env-specific ids using listMetadataObjects.
  */
-const filter: FilterCreator = ({ client }) => ({
+const filter: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
+    if (!config.fetchProfile.isFeatureEnabled('addMissingIds')) {
+      return
+    }
     const groupedElements = await groupByAsync(
       await elementsWithMissingIds(elements),
       metadataType,

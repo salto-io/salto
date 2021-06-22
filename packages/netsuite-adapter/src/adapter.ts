@@ -173,7 +173,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       fetchQuery
     )
     const importFileCabinetResult = this.client.importFileCabinetContent(fetchQuery)
-    progressReporter.reportProgress({ message: 'Fetching file cabinet instances' })
+    progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
 
     const {
       elements: fileCabinetContent,

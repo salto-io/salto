@@ -22,7 +22,11 @@ import filterCreator from '../../src/filters/profile_paths'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import { mockQueryResult } from '../connection'
-import { defaultFilterContext } from '../utils'
+import { defaultFilterContext, MockInterface } from '../utils'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import Connection from '../../src/client/jsforce'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+
 
 describe('profile paths filter', () => {
   const { client, connection } = mockClient()
@@ -84,5 +88,28 @@ describe('profile paths filter', () => {
     instance.path = undefined
     await filter.onFetch([instance])
     expect(instance.path).toBeUndefined()
+  })
+  
+  describe('when feature is disabled', () => {
+    let elements: Element[]
+    let connection: MockInterface<Connection>
+    beforeEach(async () => {
+      const mockClientInst = mockClient()
+      client = mockClientInst.client
+      connection = mockClientInst.connection
+      filter = filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({ optionalFeatures: { profilePaths: false } }),
+          elementsSource: buildElementsSourceFromElements(elements),
+
+        },
+      }) 
+      await filter.onFetch?.([element])
+    })
+    it('should not run any query', () => {
+      expect(connection.query).not.toHaveBeenCalled()
+    })
   })
 })

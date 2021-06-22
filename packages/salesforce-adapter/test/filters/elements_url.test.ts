@@ -20,14 +20,18 @@ import Connection from '../../src/client/jsforce'
 import SalesforceClient from '../../src/client/client'
 import { Filter } from '../../src/filter'
 import elementsUrlFilter from '../../src/filters/elements_url'
-import { defaultFilterContext } from '../utils'
-
+import { defaultFilterContext, MockInterface } from '../utils'
+import filterCreator from '../../src/filters/elements_url'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 
 describe('elements url filter', () => {
   let filter: Filter
   let client: SalesforceClient
   let connection: Connection
   let standardObject: ObjectType
+  let elements: Element[]
+  
 
   beforeEach(() => {
     ({ connection, client } = mockClient())
@@ -91,5 +95,28 @@ describe('elements url filter', () => {
     expect(filter.onFetch).toBeDefined()
     await filter.onFetch?.([element])
     expect(element.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+  })
+
+  describe('when feature is disabled', () => {
+    let connection: MockInterface<Connection>
+    let elements: Element[]
+    beforeEach(async () => {
+      const mockClientInst = mockClient()
+      client = mockClientInst.client
+      connection = mockClientInst.connection
+      filter = filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({ optionalFeatures: { elementsUrl: false } }),
+          elementsSource: buildElementsSourceFromElements(elements),
+
+        },
+      }) 
+      await filter.onFetch?.([element])
+    })
+    it('should not run any query', () => {
+      expect(connection.query).not.toHaveBeenCalled()
+    })
   })
 })

@@ -23,7 +23,11 @@ import {
   SALESFORCE, API_NAME, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD,
 } from '../../src/constants'
-import { defaultFilterContext } from '../utils'
+import { defaultFilterContext, MockInterface } from '../utils'
+import Connection from '../../src/client/jsforce'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+
 
 describe('Internal IDs filter', () => {
   let client: SalesforceClient
@@ -184,4 +188,24 @@ describe('Internal IDs filter', () => {
       expect(elements[3].annotations?.[INTERNAL_ID_ANNOTATION]).toBeUndefined()
     })
   })
+  describe('when feature is disabled', () => {
+    let connection: MockInterface<Connection>
+    beforeEach(async () => {
+      const mockClientInst = mockClient()
+      client = mockClientInst.client
+      connection = mockClientInst.connection
+      filter = filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({ optionalFeatures: { extraDependencies: false } }),
+          elementsSource: buildElementsSourceFromElements(elements),
+        },
+      }) as FilterType
+      await filter.onFetch(elements)
+    })
+    it('should not run any query', () => {
+      expect(connection.query).not.toHaveBeenCalled()
+    })
+  }) 
 })

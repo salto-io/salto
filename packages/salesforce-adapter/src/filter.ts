@@ -53,7 +53,7 @@ export type FilterCreator = (
   opts: { client: SalesforceClient; config: FilterContext }
 ) => Filter
 
-export const xfiltersRunner = (client: SalesforceClient,
+export const filtersRunner = (client: SalesforceClient,
   config: FilterContext,
   filterCreators: ReadonlyArray<FilterCreator>): Required<Filter> => {
   // Create all filters in advance to allow them to hold context between calls

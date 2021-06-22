@@ -244,8 +244,8 @@ def parse_field_def(type_name, cells, is_attribute, is_inner_type, script_id_pre
             annotations['[CORE_ANNOTATIONS.RESTRICTION]'] = "createRestriction({{ regex: '{0}' }})".format(create_script_id_regex(description))
     if has_length_limitations:
       regex_matches = re.match("[\s\S]*value can be up to (\d*) characters long\.[\s\S]*", description)
-      limit = regex_matches.groups()[0]
-      annotations['[CORE_ANNOTATIONS.RESTRICTION]'] = "createRestriction({{ max_length: {0} }})".format(limit)
+      length_limit = regex_matches.groups()[0]
+      annotations['[CORE_ANNOTATIONS.RESTRICTION]'] = "createRestriction({{ max_length: {0} }})".format(length_limit)
 
     return { NAME: field_name, TYPE: field_type, ANNOTATIONS: annotations, DESCRIPTION: '   '.join(description.splitlines()) }
 

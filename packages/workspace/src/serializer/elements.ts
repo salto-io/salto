@@ -378,7 +378,6 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
         fieldName: v.fieldName,
         value: v.value,
         maxLength: v.max_length,
-
       })
     ),
   }

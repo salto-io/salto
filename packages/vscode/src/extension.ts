@@ -113,6 +113,6 @@ export const activate = async (context: vscode.ExtensionContext): Promise<void> 
   async () => onActivate(context))
 )
 
-export const deactviate = async (): Promise<void> => {
+export const deactivate = async (): Promise<void> => {
   await closeAllRemoteMaps()
 }

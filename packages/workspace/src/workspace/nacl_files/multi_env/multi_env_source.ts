@@ -40,7 +40,7 @@ const { series } = promises.array
 const { resolveValues, mapValuesAsync } = promises.object
 
 export const ENVS_PREFIX = 'envs'
-
+const COMMON_ENV_PREFIX = 'COMMON_'
 
 export const getSourceNameForFilename = (relativeFilename: string, envs: string[], common: string):
 string => {
@@ -179,7 +179,7 @@ const buildMultiEnvSource = (
             .envHashes.get(envName)),
           src1: sources[envName],
           src2Changes: envChanges[commonSourceName] ?? createEmptyChangeSet(await current.envHashes
-            .get(commonSourceName)),
+            .get(COMMON_ENV_PREFIX + commonSourceName)),
           src2: sources[commonSourceName],
         },
         currentElements: envState.elements,
@@ -209,7 +209,7 @@ const buildMultiEnvSource = (
       }
       const commonHash = envChanges[commonSourceName]?.postChangeHash
       if (commonHash) {
-        await current.envHashes.set(commonSourceName, commonHash)
+        await current.envHashes.set(COMMON_ENV_PREFIX + commonSourceName, commonHash)
       }
       await applyChanges({
         mergedChanges: changeResult.mergedChanges,

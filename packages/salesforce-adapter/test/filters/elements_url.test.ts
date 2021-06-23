@@ -20,18 +20,14 @@ import Connection from '../../src/client/jsforce'
 import SalesforceClient from '../../src/client/client'
 import { Filter } from '../../src/filter'
 import elementsUrlFilter from '../../src/filters/elements_url'
-import { defaultFilterContext, MockInterface } from '../utils'
-import filterCreator from '../../src/filters/elements_url'
+import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 
 describe('elements url filter', () => {
   let filter: Filter
   let client: SalesforceClient
   let connection: Connection
   let standardObject: ObjectType
-  let elements: Element[]
-  
 
   beforeEach(() => {
     ({ connection, client } = mockClient())
@@ -97,26 +93,17 @@ describe('elements url filter', () => {
     expect(element.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
   })
 
-  describe('when feature is disabled', () => {
-    let connection: MockInterface<Connection>
-    let elements: Element[]
-    beforeEach(async () => {
-      const mockClientInst = mockClient()
-      client = mockClientInst.client
-      connection = mockClientInst.connection
-      filter = filterCreator({
-        client,
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({ optionalFeatures: { elementsUrl: false } }),
-          elementsSource: buildElementsSourceFromElements(elements),
-
-        },
-      }) 
-      await filter.onFetch?.([element])
+  it('should not run any query when feature is disabled', async () => {
+    connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
+    filter = elementsUrlFilter({
+      client,
+      config: {
+        ...defaultFilterContext,
+        fetchProfile: buildFetchProfile({ optionalFeatures: { elementsUrl: false } }),
+      },
     })
-    it('should not run any query', () => {
-      expect(connection.query).not.toHaveBeenCalled()
-    })
+    await filter.onFetch?.([standardObject])
+    expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+    expect(connection.query).not.toHaveBeenCalled()
   })
 })

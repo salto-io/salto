@@ -23,10 +23,8 @@ import {
   SALESFORCE, API_NAME, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, INTERNAL_ID_ANNOTATION,
   INTERNAL_ID_FIELD,
 } from '../../src/constants'
-import { defaultFilterContext, MockInterface } from '../utils'
-import Connection from '../../src/client/jsforce'
+import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 
 
 describe('Internal IDs filter', () => {
@@ -187,25 +185,20 @@ describe('Internal IDs filter', () => {
       expect(elements[2].annotations?.[INTERNAL_ID_ANNOTATION]).toBeUndefined()
       expect(elements[3].annotations?.[INTERNAL_ID_ANNOTATION]).toBeUndefined()
     })
-  })
-  describe('when feature is disabled', () => {
-    let connection: MockInterface<Connection>
-    beforeEach(async () => {
-      const mockClientInst = mockClient()
-      client = mockClientInst.client
-      connection = mockClientInst.connection
+    it('should not run any query when feature is disabled', async () => {
+      const { connection } = mockClient()
+      expect(elements[2]).toBeInstanceOf(InstanceElement)
+      const inst = elements[2] as InstanceElement
       filter = filterCreator({
         client,
         config: {
           ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({ optionalFeatures: { extraDependencies: false } }),
-          elementsSource: buildElementsSourceFromElements(elements),
+          fetchProfile: buildFetchProfile({ optionalFeatures: { addMissingIds: false } }),
         },
       }) as FilterType
-      await filter.onFetch(elements)
-    })
-    it('should not run any query', () => {
+      await filter.onFetch([inst])
+      expect(inst.value[INTERNAL_ID_FIELD]).toBeUndefined()
       expect(connection.query).not.toHaveBeenCalled()
     })
-  }) 
+  })
 })

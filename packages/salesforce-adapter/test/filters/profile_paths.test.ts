@@ -22,15 +22,13 @@ import filterCreator from '../../src/filters/profile_paths'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import { mockQueryResult } from '../connection'
-import { defaultFilterContext, MockInterface } from '../utils'
+import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import Connection from '../../src/client/jsforce'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 
 
 describe('profile paths filter', () => {
-  const { client, connection } = mockClient()
-  const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+  const { connection, client } = mockClient()
+  let filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
   const origInstance = new InstanceElement(
     'test',
     new ObjectType({ elemID: new ElemID(SALESFORCE, 'instanceType') }),
@@ -40,6 +38,7 @@ describe('profile paths filter', () => {
 
   let instance: InstanceElement
   beforeEach(() => {
+    jest.clearAllMocks()
     instance = origInstance.clone()
     connection.query.mockResolvedValue(mockQueryResult({
       records: [
@@ -89,27 +88,20 @@ describe('profile paths filter', () => {
     await filter.onFetch([instance])
     expect(instance.path).toBeUndefined()
   })
-  
-  describe('when feature is disabled', () => {
-    let elements: Element[]
-    let connection: MockInterface<Connection>
-    beforeEach(async () => {
-      const mockClientInst = mockClient()
-      client = mockClientInst.client
-      connection = mockClientInst.connection
-      filter = filterCreator({
-        client,
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({ optionalFeatures: { profilePaths: false } }),
-          elementsSource: buildElementsSourceFromElements(elements),
 
-        },
-      }) 
-      await filter.onFetch?.([element])
-    })
-    it('should not run any query', () => {
-      expect(connection.query).not.toHaveBeenCalled()
-    })
+  it('should not run any query when feature is disabled', async () => {
+    (await instance.getType()).annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
+    instance.value[INSTANCE_FULL_NAME_FIELD] = 'PlatformPortal'
+    instance.value[INTERNAL_ID_FIELD] = 'PlatformPortalInternalId'
+    filter = filterCreator({
+      client,
+      config: {
+        ...defaultFilterContext,
+        fetchProfile: buildFetchProfile({ optionalFeatures: { profilePaths: false } }),
+      },
+    }) as FilterWith<'onFetch'>
+    await filter.onFetch([instance])
+    expect(instance.path).toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'test'])
+    expect(connection.query).not.toHaveBeenCalled()
   })
 })

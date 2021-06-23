@@ -209,6 +209,24 @@ describe('default fetch routing', () => {
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
   })
 
+  it('should handle ridiculously large changeset without stack overflow', async () => {
+    const change: DetailedChange = {
+      action: 'add',
+      data: { after: newObj },
+      id: newObj.elemID,
+    }
+    const changes: DetailedChange[] = []
+    for (let i = 0; i < 140000; i += 1) {
+      changes.push(change)
+    }
+    await routeChanges(changes, envSource, commonSource, { sec: secEnv }, 'default')
+  })
+
+  it('should handle empty changeset without error', async () => {
+    const changes: DetailedChange[] = []
+    await routeChanges(changes, envSource, commonSource, { sec: secEnv }, 'default')
+  })
+
   it('should route nested add changes to primary env when the containing element is not in common', async () => {
     const change: DetailedChange = {
       action: 'add',

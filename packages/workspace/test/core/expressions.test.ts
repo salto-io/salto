@@ -408,6 +408,36 @@ describe('Test Salto Expressions', () => {
       expect(resObj.annotationRefTypes.a.elemID).toBe(resPrim.elemID)
       expect(resInst.refType.elemID).toBe(resObj.elemID)
     })
+
+    it('should resolve the top level element in a reference', async () => {
+      const refTargetInstObj = new ObjectType({
+        elemID: ElemID.fromFullName('salto.testObj'),
+      })
+      // We need to object types here since if we were to use the same type, it would have been
+      // resolved when `instanceToResolve` would have been resolved.
+      const instanceToResolveObj = new ObjectType({
+        elemID: ElemID.fromFullName('salto.testObj2'),
+      })
+      const refTargetInst = new InstanceElement('rrr', new ReferenceExpression(refTargetInstObj.elemID), {
+        test: 'okok',
+      })
+      const instanceToResolve = new InstanceElement('rrr', new ReferenceExpression(instanceToResolveObj.elemID), {
+        test: refTo(refTargetInst, 'test'),
+      })
+      const elems = [instanceToResolve]
+      const resovledElems = (await awu(await resolve(
+        elems,
+        createInMemoryElementSource(
+          [
+            refTargetInstObj, instanceToResolveObj, refTargetInst, instanceToResolve,
+          ]
+        )
+      )).toArray()) as [InstanceElement]
+      const resolvedRef = resovledElems[0].value.test as ReferenceExpression
+      const resolvedValue = resolvedRef.topLevelParent as InstanceElement
+      const resolvedValueType = await resolvedValue.getType() as ObjectType
+      expect(resolvedValueType).toEqual(refTargetInstObj)
+    })
   })
 
   describe('Template Expression', () => {

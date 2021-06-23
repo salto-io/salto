@@ -90,7 +90,6 @@ describe('workspace', () => {
       }
       `
       await workspace.setNaclFiles({ filename: validation1FileName, buffer })
-      await workspace.validate()
       await workspace.awaitAllUpdates()
       expect((await workspace.errors()).validation).toHaveLength(0)
     })
@@ -213,17 +212,9 @@ describe('workspace', () => {
       await workspace.awaitAllUpdates()
     })
     it('should validate specific files correctly', async () => {
-      await workspace.validate()
       expect((await workspace.errors()).validation).toHaveLength(0)
       const newErrors = await workspace.validateFiles([validation2FileName])
       expect(newErrors.validation).toHaveLength(1)
-      expect(await workspace.errors()).toEqual(newErrors)
-    })
-
-    it('should validate all files correctly', async () => {
-      expect((await workspace.errors()).validation).toHaveLength(1)
-      const newErrors = await workspace.validate()
-      expect(newErrors.validation).toHaveLength(0)
       expect(await workspace.errors()).toEqual(newErrors)
     })
 
@@ -259,7 +250,6 @@ describe('workspace', () => {
       expect(errors.validation).toHaveLength(0)
       const buffer = ''
       await newWorkspace.setNaclFiles({ filename: splitted2FileName, buffer })
-      await workspace.validate()
       await newWorkspace.awaitAllUpdates()
       const newErrors = await newWorkspace.errors()
       expect(newErrors.validation).toHaveLength(1)
@@ -270,7 +260,6 @@ describe('workspace', () => {
       const newWorkspace = new EditorWorkspace(workspaceBaseDir, baseWs)
       const errors = await newWorkspace.errors()
       expect(errors.validation).toHaveLength(0)
-      workspace.validate()
       const newErrors = await workspace.validateFiles([inactiveFileName])
       expect(newErrors.validation).toHaveLength(0)
     })

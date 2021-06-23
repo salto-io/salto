@@ -168,9 +168,9 @@ describe('local state', () => {
       state = localState('empty', '', remoteMapCreator)
     })
 
-    it('should return a hash of an empty state', async () => {
+    it('should return an unedfined hash', async () => {
       const stateHash = await state.getHash()
-      expect(stateHash).toEqual(toMD5(safeJsonStringify([])))
+      expect(stateHash).toBeUndefined()
     })
 
     it('should return an empty array if there is no saved state', async () => {

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import path from 'path'
 import wu from 'wu'
-import { Workspace, nacl, errors, parser, validator, COMMON_ENV_PREFIX } from '@salto-io/workspace'
+import { Workspace, nacl, errors, parser, validator, COMMON_ENV_PREFIX, elementSource } from '@salto-io/workspace'
 import { Element, SaltoError, ElemID, Change, getChangeElement,
   isRemovalChange, isReferenceExpression, isContainerType,
   Value, isModificationChange } from '@salto-io/adapter-api'
@@ -49,7 +49,7 @@ export class EditorWorkspace {
     return this.workspace.elements(false)
   }
 
-  errors(): Promise<errors.Errors> {
+  async errors(): Promise<errors.Errors> {
     if (_.isUndefined(this.wsErrors)) {
       this.wsErrors = this.workspace.errors()
     }
@@ -340,9 +340,12 @@ export class EditorWorkspace {
   }
 
   private async validateFilesImpl(filenames: string[]): Promise<errors.Errors> {
+    if (_.isUndefined(this.wsErrors)) {
+      return this.errors()
+    }
     const relevantFilenames = filenames
       .filter(f => this.isWorkspaceFile(f))
-    const currentErrors = await this.errors()
+    const currentErrors = await this.wsErrors
     const elements = new Set(
       (await this.elementsInFiles(relevantFilenames)).map(e => e.getFullName())
     )

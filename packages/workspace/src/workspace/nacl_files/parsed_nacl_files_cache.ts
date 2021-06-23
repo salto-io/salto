@@ -50,7 +50,7 @@ export type ParsedNaclFileCache = {
   clone: () => ParsedNaclFileCache
   clear: () => Promise<void>
   rename: (name: string) => Promise<void>
-  getHash: () => Promise<string>
+  getHash: () => Promise<string | undefined>
   list: () => Promise<string[]>
   delete: (filename: string) => Promise<void>
   deleteAll: (filenames: string[]) => Promise<void>
@@ -279,6 +279,9 @@ export const createParseResultCache = (
         await awu((await cacheSources).metadata.values()).forEach(value => {
           cachedHash += value.hash
         })
+        if (!cachedHash) {
+          return undefined
+        }
         cachedHash = toMD5(cachedHash)
       }
       return cachedHash

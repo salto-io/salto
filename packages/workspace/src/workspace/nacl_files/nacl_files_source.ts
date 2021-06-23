@@ -48,6 +48,8 @@ const log = logger(module)
 export type RoutingMode = 'isolated' | 'default' | 'align' | 'override'
 
 export const FILE_EXTENSION = '.nacl'
+export const HASH_KEY = 'hash'
+
 const PARSE_CONCURRENCY = 100
 const DUMP_CONCURRENCY = 100
 // TODO: this should moved into cache implemenation
@@ -97,6 +99,7 @@ type NaclFilesState = {
   mergeErrors: RemoteMap<MergeError[]>
   referencedIndex: RemoteMap<string[]>
   searchableNamesIndex: RemoteMap<boolean>
+  metadata: RemoteMap<string>
 }
 
 const cacheResultKey = (naclFile: { filename: string; timestamp?: number; buffer?: string }):
@@ -244,6 +247,12 @@ const createNaclFilesState = async (
     deserialize: async data => data !== '0',
     persistent,
   }),
+  metadata: await remoteMapCreator<string>({
+    namespace: getRemoteMapNamespace('metadata', sourceName),
+    serialize: val => val,
+    deserialize: async data => data,
+    persistent,
+  }),
 })
 
 const buildNaclFilesState = async ({
@@ -252,10 +261,10 @@ const buildNaclFilesState = async ({
   newNaclFiles: ParsedNaclFile[]
   currentState: NaclFilesState
 }): Promise<buildNaclFilesStateResult> => {
-  const preChangeHash = await currentState.parsedNaclFiles.getHash()
+  const preChangeHash = await currentState.metadata.get(HASH_KEY)
+  const cacheValid = (preChangeHash === await currentState.parsedNaclFiles.getHash())
   log.debug('building elements indices for %d NaCl files', newNaclFiles.length)
   const newParsed = _.keyBy(newNaclFiles, parsed => parsed.filename)
-  let sourceCacheValid = true
   const elementsIndexAdditions: Record<string, Set<string>> = {}
   const referencedIndexAdditions: Record<string, Set<string>> = {}
   const elementsIndexDeletions: Record<string, Set<string>> = {}
@@ -345,24 +354,14 @@ const buildNaclFilesState = async ({
     })
   }
 
-  const getNaclFileAndCheckValidity = async (file: ParsedNaclFile):
-    Promise<ParsedNaclFile | undefined> => {
-    // If the cache is already invalid, no need to make the extra test to invalidate it
-    const shouldInvalidateCache = !sourceCacheValid
-      || !(await currentState.parsedNaclFiles.hasValid(cacheResultKey(file)))
-    const res = await currentState.parsedNaclFiles.get(file.filename)
-    // If res is undefined, then the file isn't invalid, it just doesn't exist.
-    if (res !== undefined) {
-      sourceCacheValid = shouldInvalidateCache
-    }
-    return res
-  }
+  const getNaclFile = async (file: ParsedNaclFile):
+    Promise<ParsedNaclFile | undefined> => currentState.parsedNaclFiles.get(file.filename)
 
   const handleAdditionsOrModifications = async (naclFiles:
     AwuIterable<ParsedNaclFile>): Promise<void> => {
     const toAdd: Record<string, ParsedNaclFile> = {}
     await naclFiles.forEach(async naclFile => {
-      const parsedFile = (await getNaclFileAndCheckValidity(naclFile.filename))
+      const parsedFile = (await getNaclFile(naclFile))
       updateIndexOfFile(
         referencedIndexAdditions,
         referencedIndexDeletions,
@@ -372,8 +371,7 @@ const buildNaclFilesState = async ({
       )
 
       const currentNaclFileElements = (await naclFile.elements()) ?? []
-      const oldNaclFileElements = await (await getNaclFileAndCheckValidity(naclFile
-        .filename))?.elements() ?? []
+      const oldNaclFileElements = await (await getNaclFile(naclFile))?.elements() ?? []
       updateIndexOfFile(
         elementsIndexAdditions,
         elementsIndexDeletions,
@@ -401,7 +399,7 @@ const buildNaclFilesState = async ({
   const handleDeletions = async (naclFiles: AwuIterable<ParsedNaclFile>): Promise<void> => {
     const toDelete: string[] = []
     await naclFiles.forEach(async naclFile => {
-      const oldNaclFile = await getNaclFileAndCheckValidity(naclFile)
+      const oldNaclFile = await getNaclFile(naclFile)
       if (oldNaclFile === undefined) {
         return
       }
@@ -467,10 +465,12 @@ const buildNaclFilesState = async ({
     ),
     updateSearchableNamesIndex(changes),
   ])
-
+  if (postChangeHash) {
+    await currentState.metadata.set(HASH_KEY, postChangeHash)
+  }
   return {
     state: currentState,
-    changes: { changes, cacheValid: sourceCacheValid, preChangeHash, postChangeHash },
+    changes: { changes, cacheValid, preChangeHash, postChangeHash },
   }
 }
 
@@ -526,7 +526,6 @@ const buildNaclFilesSource = (
     const preChangeHash = await currentState.parsedNaclFiles.getHash()
     const modifiedNaclFiles: NaclFile[] = []
     if (!ignoreFileChanges) {
-      let wasCacheValid = true
       const cacheFilenames = await currentState.parsedNaclFiles.list()
       const naclFilenames = await naclFilesStore.list()
       const fileNames = new Set()
@@ -535,7 +534,6 @@ const buildNaclFilesSource = (
         const validCache = await currentState.parsedNaclFiles.hasValid(cacheResultKey(naclFile))
         if (!validCache) {
           modifiedNaclFiles.push(naclFile)
-          wasCacheValid = false
         }
         fileNames.add(filename)
       })
@@ -554,7 +552,6 @@ const buildNaclFilesSource = (
         newNaclFiles: parsedModifiedFiles,
         currentState,
       })
-      result.changes.cacheValid = result.changes.cacheValid && wasCacheValid
       result.changes.preChangeHash = preChangeHash
       return result
     }
@@ -787,6 +784,7 @@ const buildNaclFilesSource = (
       await currentState.referencedIndex.flush()
       await currentState.parsedNaclFiles.flush()
       await currentState.searchableNamesIndex.flush()
+      await currentState.metadata.flush()
     },
 
     getErrors: async (): Promise<Errors> => {
@@ -851,6 +849,7 @@ const buildNaclFilesSource = (
         await currentState.referencedIndex.clear()
         await currentState.parsedNaclFiles.clear()
         await currentState.searchableNamesIndex.clear()
+        await currentState.metadata.clear()
       }
       initChanges = undefined
       state = undefined

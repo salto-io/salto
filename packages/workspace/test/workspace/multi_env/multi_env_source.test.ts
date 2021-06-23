@@ -262,8 +262,8 @@ describe('multi env source', () => {
       expect(currentElements).toHaveLength(2)
       const detailedChange = { ...change, id: commonElemID, path: ['test'] } as DetailedChange
       const elementChanges = (await multiEnvSourceWithMockSources
-        .updateNaclFiles([detailedChange])).changes
-      expect(elementChanges).toEqual({ [primarySourceName]: [change] })
+        .updateNaclFiles([detailedChange]))
+      expect(elementChanges[primarySourceName].changes).toEqual([change])
       const mergedSaltoObject = new ObjectType({
         elemID: objectElemID, fields: { ...commonFragment.fields, ...envFragment.fields },
       })
@@ -302,8 +302,9 @@ describe('multi env source', () => {
         id: objectElemID,
       } as DetailedChange
       const elementChanges = (await multiEnvSourceWithMockSources
-        .updateNaclFiles([detailedChange])).changes
-      expect(elementChanges).toEqual({ [primarySourceName]: [_.omit(detailedChange, ['path', 'id'])] })
+        .updateNaclFiles([detailedChange]))
+      expect(Object.keys(elementChanges).length).toEqual(1)
+      expect(elementChanges[primarySourceName].changes).toEqual([_.omit(detailedChange, ['path', 'id'])])
       expect(sortElemArray(await awu(await multiEnvSourceWithMockSources.getAll()).toArray()))
         .toEqual(sortElemArray([envObject, envFragment]))
     })
@@ -370,10 +371,11 @@ describe('multi env source', () => {
       ] as DetailedChange[]
       const elementChanges = (
         await multiEnvSourceWithMockSources.updateNaclFiles(detailedChanges)
-      ).changes
+      )
       const elements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
       expect(
-        _.sortBy(elementChanges[primarySourceName], c => getChangeElement(c).elemID.getFullName())
+        _.sortBy(elementChanges[primarySourceName]
+          .changes, c => getChangeElement(c).elemID.getFullName())
       ).toEqual(_.sortBy(detailedChanges, c => getChangeElement(c).elemID.getFullName())
         .map(dc => _.omit(dc, ['path', 'id'])))
       expect(sortElemArray(elements)).toEqual(sortElemArray([commonObject, newEnvFragment]))
@@ -550,8 +552,8 @@ describe('multi env source', () => {
       expect(currentElements).toHaveLength(2)
       const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles(
         { filename: path.join(ENVS_PREFIX, inactiveSourceName, 'env.nacl'), buffer: 'test' }
-      )).changes
-      expect(elementChanges[primarySourceName]).toEqual(undefined)
+      ))
+      expect(elementChanges).not.toHaveProperty(primarySourceName)
       const elements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
       expect(elements).toHaveLength(2)
     })
@@ -579,8 +581,8 @@ describe('multi env source', () => {
       expect(currentElements).toHaveLength(2)
       const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles(
         { filename: 'test', buffer: 'test' }
-      )).changes
-      expect(elementChanges).toEqual({ [primarySourceName]: [change] })
+      ))[primarySourceName].changes
+      expect(elementChanges).toEqual([change])
       const mergedSaltoObject = new ObjectType({
         elemID: objectElemID, fields: { ...commonFragment.fields, ...envFragment.fields },
       })
@@ -611,8 +613,8 @@ describe('multi env source', () => {
       expect(currentElements).toHaveLength(2)
       const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles(
         { filename: path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'), buffer: 'test' }
-      )).changes
-      expect(elementChanges).toEqual({ [primarySourceName]: [change] })
+      ))
+      expect(elementChanges[primarySourceName].changes).toEqual([change])
       const mergedSaltoObject = new ObjectType({
         elemID: objectElemID, fields: { ...commonFragment.fields, ...envFragment.fields },
       })
@@ -655,8 +657,8 @@ describe('multi env source', () => {
       expect(currentElements).toHaveLength(2)
       const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles(
         { filename: path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'), buffer: 'test' }
-      )).changes
-      expect(elementChanges).toEqual({ [primarySourceName]: [change] })
+      ))
+      expect(elementChanges[primarySourceName].changes).toEqual([change])
       const mergedSaltoObject = new ObjectType({
         elemID: objectElemID, fields: { ...commonFragment.fields, ...envFragment.fields },
       })
@@ -691,8 +693,8 @@ describe('multi env source', () => {
       const elementChanges = (await multiEnvSourceWithMockSources.setNaclFiles(
         { filename: path.join(ENVS_PREFIX, primarySourceName, 'env.nacl'), buffer: 'test' },
         { filename: 'test', buffer: 'test' },
-      )).changes
-      expect(elementChanges).toEqual({ [primarySourceName]: [] })
+      ))
+      expect(elementChanges[primarySourceName].changes).toEqual([])
       expect(sortElemArray(await awu(await multiEnvSourceWithMockSources.getAll()).toArray()))
         .toEqual(sortElemArray(currentElements))
     })
@@ -731,8 +733,8 @@ describe('multi env source', () => {
       const currentElements = await awu(await multiEnvSourceWithMockSources.getAll()).toArray()
       expect(currentElements).toHaveLength(2)
       const elementChanges = (await multiEnvSourceWithMockSources
-        .removeNaclFiles('test.nacl')).changes
-      expect(elementChanges).toEqual({ [primarySourceName]: [change] })
+        .removeNaclFiles('test.nacl'))
+      expect(elementChanges[primarySourceName].changes).toEqual([change])
       expect(await awu(await multiEnvSourceWithMockSources.getAll()).toArray()).toEqual([envObject])
     })
     it('should change inner state upon remove of multiple files', async () => {
@@ -762,8 +764,8 @@ describe('multi env source', () => {
       expect(currentElements).toHaveLength(2)
       const elementChanges = (await multiEnvSourceWithMockSources.removeNaclFiles(
         'test.nacl', path.join(ENVS_PREFIX, primarySourceName, 'env.nacl')
-      )).changes
-      expect(elementChanges).toEqual({ [primarySourceName]: [removalPrimary, removalCommon] })
+      ))
+      expect(elementChanges[primarySourceName].changes).toEqual([removalPrimary, removalCommon])
       expect(await awu(await multiEnvSourceWithMockSources.getAll()).toArray()).toEqual([])
     })
   })

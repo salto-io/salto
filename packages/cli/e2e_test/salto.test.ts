@@ -220,12 +220,6 @@ describe('cli e2e', () => {
     })
     it('should update the object in the Nacl file', async () => {
       const arr = await awu(await (await workspace.elements()).getAll()).toArray()
-      // eslint-disable-next-line no-console
-      console.log(arr.slice(0, 10))
-      // eslint-disable-next-line no-console
-      console.log(arr.slice(-10))
-      // eslint-disable-next-line no-console
-      console.log(newObjectElemName)
       const newObject = await verifyObject(
         arr,
         SALESFORCE,

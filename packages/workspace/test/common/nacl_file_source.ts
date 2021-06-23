@@ -86,7 +86,12 @@ export const createMockNaclFileSource = (
     getElementNaclFiles: jest.fn().mockImplementation(getElementNaclFiles),
     clone: jest.fn().mockImplementation(() => Promise.resolve()),
     getElementReferencedFiles: jest.fn().mockResolvedValue([]),
-    load: jest.fn().mockResolvedValue(currentElements.map(e => createAddChange(e, e.elemID))),
+    load: jest.fn().mockResolvedValue({
+      changes: currentElements.map(e => createAddChange(
+        e, e.elemID
+      )),
+      cacheValid: true,
+    }),
     getSearchableNames: jest.fn().mockResolvedValue(_.uniq(currentElements.flatMap(e => {
       const fieldNames = isObjectType(e)
         ? Object.values(e.fields).map(field => field.elemID.getFullName())

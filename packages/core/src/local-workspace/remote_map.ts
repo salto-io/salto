@@ -108,7 +108,7 @@ export async function *aggregatedIterable(iterators: rocksdb.Iterator[]):
         }
       }
     })
-    const minEntry = min ? latestEntries[minIndex] : undefined
+    const minEntry = min !== undefined ? latestEntries[minIndex] : undefined
     if (minEntry === undefined) {
       done = true
     } else {

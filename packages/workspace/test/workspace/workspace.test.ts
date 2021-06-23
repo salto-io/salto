@@ -572,7 +572,7 @@ describe('workspace', () => {
           action: 'remove',
           data: { before: new ObjectType({ elemID: removedElemID }) },
         } as Change<ObjectType>
-        expect(envChanges[secondarySourceName]).toEqual([change])
+        expect(envChanges[secondarySourceName].changes).toEqual([change])
       })
       it('should not include remove element in the secondary env', async () => {
         expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
@@ -706,7 +706,7 @@ describe('workspace', () => {
       it('should return the changes of secondary envs as well', async () => {
         const envChanges = await wsWithMultipleEnvs.setNaclFiles([changedNaclFile])
         const change = { action: 'add', data: { after: afterObj } } as Change<ObjectType>
-        expect(envChanges[secondarySourceName]).toEqual([change])
+        expect(envChanges[secondarySourceName].changes).toEqual([change])
       })
       it('should include the new elements in the secondary env', async () => {
         expect(await awu(await (

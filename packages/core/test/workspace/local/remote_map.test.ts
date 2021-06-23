@@ -271,6 +271,20 @@ describe('test operations on remote db', () => {
         .toEqual(elements.map(elem => elem.elemID.getFullName()).sort())
     })
 
+    it('should get all entries after inserting empty string key', async () => {
+      await remoteMap.set('', elements[0])
+      await remoteMap.setAll(await createAsyncIterable(elements))
+      const iter = remoteMap.entries()
+      const res: { key: string; value: Element }[] = []
+      for await (const element of iter) {
+        res.push(element)
+      }
+      expect(res.map(elem => elem.key))
+        .toEqual(['', ...elements.map(elem => elem.elemID.getFullName()).sort()])
+      expect(res.map(elem => elem.value.elemID.getFullName()))
+        .toEqual([elements[0], ...elements].map(elem => elem.elemID.getFullName()).sort())
+    })
+
     it('should get all entries - paginated', async () => {
       await remoteMap.setAll(await createAsyncIterable(elements))
       const firstPageRes: { key: string; value: Element }[] = []

@@ -39,7 +39,7 @@ export interface State extends ElementsSource {
   overridePathIndex(unmergedElements: Element[]): Promise<void>
   updatePathIndex(unmergedElements: Element[], servicesToMaintain: string[]): Promise<void>
   getPathIndex(): Promise<PathIndex>
-  getHash(): Promise<string>
+  getHash(): Promise<string | undefined>
   setHash(hash: string): Promise<void>
   getStateSaltoVersion(): Promise<string | undefined>
 }

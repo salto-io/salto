@@ -314,7 +314,7 @@ Type:
 - min: `number` - relevant for number fields, specifies the minimum valid value (inclusive).
 - max: `number`- relevant for number fields, specifies the maximum valid value (inclusive).
 - regex: `string` - relevant for string fields, specifies a pattern that values must match.
-- max_length: `number` - relevant for string fields, specifies the maximum valid string length for the field.
+- max_length: `number` - relevant for string fields, specifies the maximum valid length for the field.
 
 Default: `undefined`
 Applicable to: Fields

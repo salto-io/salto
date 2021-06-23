@@ -24,6 +24,7 @@ import rocksdb from '@salto-io/rocksdb'
 import path from 'path'
 import { readdirSync } from 'fs-extra'
 import { createRemoteMapCreator, RocksDBValue, TMP_DB_DIR } from '../../../src/local-workspace/remote_map'
+// import rockdbImpl from '../../../src/local-workspace/rocksdb'
 
 const { serialize, deserialize } = serialization
 const { awu } = collections.asynciterable
@@ -402,6 +403,7 @@ describe('full integration', () => {
     await promisify(db.close.bind(db))()
   })
 })
+
 afterAll(async () => {
   leveldown.destroy(DB_LOCATION, _error => {
     // nothing to do with error

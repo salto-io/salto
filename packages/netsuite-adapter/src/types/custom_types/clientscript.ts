@@ -249,7 +249,7 @@ const clientscript_scriptcustomfields_scriptcustomfield = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 200 }),
       },
     }, /* Original description: This field value can be up to 200 characters long.   This field accepts references to the string custom type. */
     selectrecordtype: {
@@ -551,10 +551,10 @@ export const clientscript = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
       },
     }, /* Original description: This field value can be up to 40 characters long.   This field accepts references to the string custom type. */
     scriptfile: {
@@ -564,9 +564,9 @@ export const clientscript = new ObjectType({
       },
     }, /* Original description: This field must reference a .js file. */
     description: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
       },
     }, /* Original description: This field value can be up to 999 characters long.   This field accepts references to the string custom type. */
     isinactive: {
@@ -582,7 +582,7 @@ export const clientscript = new ObjectType({
     notifyemails: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
       },
     }, /* Original description: This field value can be up to 999 characters long. */
     notifygroup: {

@@ -21,7 +21,7 @@ import {
   validateElements, InvalidValueValidationError, CircularReferenceValidationError,
   InvalidValueRangeValidationError, IllegalReferenceValidationError,
   UnresolvedReferenceValidationError, InvalidValueTypeValidationError,
-  InvalidStaticFileError, RegexMismatchValidationError,
+  InvalidStaticFileError, RegexMismatchValidationError, InvalidValueMaxLengthValidationError,
 } from '../src/validator'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
 import { IllegalReference } from '../src/parser/parse'
@@ -72,6 +72,28 @@ describe('Elements validation', () => {
     },
   })
 
+  const restrictedStringMaxLengthType = new PrimitiveType({
+    elemID: new ElemID('salto', 'restrictedStringMaxLengthType'),
+    primitive: PrimitiveTypes.STRING,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+        max_length: 4,
+      }),
+    },
+  })
+
+  const objWithRestirctedAnnoType = new ObjectType(
+    {
+      elemID: new ElemID('salesorce', 'objWithRestirctedAnnoType'),
+      annotationRefsOrTypes: {
+        withRestriction: restrictedStringMaxLengthType,
+      },
+      annotations: {
+        withRestriction: '1',
+      },
+    }
+  )
+
   const restrictedRangeNoMinType = new PrimitiveType({
     elemID: new ElemID('salto', 'restrictedRangeNoMinType'),
     primitive: PrimitiveTypes.NUMBER,
@@ -105,6 +127,7 @@ describe('Elements validation', () => {
       rangeNoMin: restrictedRangeNoMinType,
       rangeNoMax: restrictedRangeNoMaxType,
       regexOnlyLower: restrictedRegexOnlyLowerType,
+      maxLength: restrictedStringMaxLengthType,
     },
   })
 
@@ -169,6 +192,17 @@ describe('Elements validation', () => {
           }),
         },
       },
+      restrictStringLength: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            max_length: 5,
+          }),
+        },
+      },
+      restrictedStringMaxLengthType: {
+        refType: createRefToElmWithValue(restrictedStringMaxLengthType),
+      },
       restrictNumberRegex: {
         refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
         annotations: {
@@ -185,6 +219,7 @@ describe('Elements validation', () => {
           rangeNoMin: 5,
           rangeNoMax: 5,
           regexOnlyLower: 'abc',
+          maxLength: '123',
         },
       },
       reqNested: {
@@ -194,6 +229,7 @@ describe('Elements validation', () => {
     annotationRefsOrTypes: {
       nested: simpleType,
       restrictedPrimitive: restrictedType,
+      restrictedStringLengthPrimitive: restrictedStringMaxLengthType,
     },
   })
 
@@ -453,6 +489,7 @@ describe('Elements validation', () => {
         mapOfLists: { nestedList: ['aaa', 'BBB'] },
         listOfMaps: [{ key: 'value' }, { another: 'one' }],
         restrictStr: 'restriction1',
+        restrictedStringMaxLengthType: '1',
       }
     )
 
@@ -859,6 +896,85 @@ describe('Elements validation', () => {
           expect(errors[1].elemID).toEqual(
             extType.elemID.createNestedID('field', 'restrictedAnnotation', 'rangeNoMax')
           )
+        })
+
+        it('should return validation error on max_length validation on an instance through field annotation', async () => {
+          extInst.value.restrictStringLength = 'longer than length limit restriction'
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(1)
+          expect(errors[0]).toBeInstanceOf(InvalidValueMaxLengthValidationError)
+        })
+
+        it('should succeed max_length validation on an instance through field annotation', async () => {
+          extInst.value.restrictStringLength = 'a'
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(0)
+        })
+
+        it('should return validation error on max_length validation on an instance through the field type', async () => {
+          extInst.value.restrictedStringMaxLengthType = 'very long str'
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(1)
+          expect(errors[0]).toBeInstanceOf(InvalidValueMaxLengthValidationError)
+        })
+
+        it('should succeed on max_length validation on an instance through the field type', async () => {
+          extInst.value.restrictedStringMaxLengthType = 'a'
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(0)
+        })
+
+        it('should return error on max_length validation on a restriction on annotation type of a type', async () => {
+          objWithRestirctedAnnoType.annotations.withRestriction = 'toooo longgggg'
+          const errors = await validateElements(
+            [objWithRestirctedAnnoType],
+            createInMemoryElementSource([
+              objWithRestirctedAnnoType,
+              restrictedStringMaxLengthType,
+            ])
+          )
+          expect(errors).toHaveLength(1)
+          expect(errors[0]).toBeInstanceOf(InvalidValueMaxLengthValidationError)
+        })
+
+        it('should succeed on max_length validation on a restriction on annotation type of a type', async () => {
+          objWithRestirctedAnnoType.annotations.withRestriction = 't'
+          const errors = await validateElements(
+            [objWithRestirctedAnnoType],
+            createInMemoryElementSource([
+              objWithRestirctedAnnoType,
+              restrictedStringMaxLengthType,
+            ])
+          )
+          expect(errors).toHaveLength(0)
         })
 
         it('should return an error when annotations value does not match regex restriction', async () => {

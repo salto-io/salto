@@ -56,7 +56,7 @@ field_types_import = '''import { fieldTypes } from '../field_types'
 import_statements_for_type_def_template = '''import {{
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,{list_type_import}
 }} from '@salto-io/adapter-api'
-import {{ createRefToElmWithValue }} from '@salto-io/adapter-utils
+import {{ createRefToElmWithValue }} from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 {enums_import}{field_types_import}
 '''
@@ -244,8 +244,8 @@ def parse_field_def(type_name, cells, is_attribute, is_inner_type, script_id_pre
             annotations['[CORE_ANNOTATIONS.RESTRICTION]'] = "createRestriction({{ regex: '{0}' }})".format(create_script_id_regex(description))
     if has_length_limitations:
       regex_matches = re.match("[\s\S]*value can be up to (\d*) characters long\.[\s\S]*", description)
-      length_limit = regex_matches.groups()[0]
-      annotations['// [CORE_ANNOTATIONS.LENGTH_LIMIT]'] = length_limit
+      max_length = regex_matches.groups()[0]
+      annotations['[CORE_ANNOTATIONS.RESTRICTION]'] = "createRestriction({{ max_length: {0} }})".format(max_length)
 
     return { NAME: field_name, TYPE: field_type, ANNOTATIONS: annotations, DESCRIPTION: '   '.join(description.splitlines()) }
 

@@ -180,7 +180,7 @@ export const applyChanges = async ({
     .map(change => getChangeElement(change)))
 }
 
-const readSourceChanges = async (
+const getElementsToMergeFromChanges = async (
   srcChanges: ChangeSet<Change<Element>>,
   idsExistingOnSecondSourceChanges: Set<string>,
   otherSrcChanges: ReadOnlyElementsSource
@@ -304,10 +304,10 @@ export const mergeChanges = async ({
       }
       src2ChangeIDs.add(id.getFullName())
     })
-    src1ElementsToMerge = await awu(await readSourceChanges(
+    src1ElementsToMerge = await awu(await getElementsToMergeFromChanges(
       src1Changes, src2ChangeIDs, src2,
     )).toArray()
-    src2ElementsToMerge = await awu(await readSourceChanges(
+    src2ElementsToMerge = await awu(await getElementsToMergeFromChanges(
       src2Changes, src1ChangeIDs, src1,
     )).toArray()
   } else {

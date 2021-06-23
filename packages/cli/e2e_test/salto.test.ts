@@ -219,9 +219,8 @@ describe('cli e2e', () => {
         { description: 'To Be Modified' })).toBe(true)
     })
     it('should update the object in the Nacl file', async () => {
-      const arr = await awu(await (await workspace.elements()).getAll()).toArray()
       const newObject = await verifyObject(
-        arr,
+        await awu(await (await workspace.elements()).getAll()).toArray(),
         SALESFORCE,
         newObjectElemName,
         {

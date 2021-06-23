@@ -49,7 +49,7 @@ export class EditorWorkspace {
     return this.workspace.elements(false)
   }
 
-  async errors(): Promise<errors.Errors> {
+  errors(): Promise<errors.Errors> {
     if (_.isUndefined(this.wsErrors)) {
       this.wsErrors = this.workspace.errors()
     }

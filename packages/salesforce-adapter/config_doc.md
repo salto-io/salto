@@ -102,7 +102,7 @@ salesforce {
         ]
       }
     }
-    fetchAllCustomSettings = false 
+    fetchAllCustomSettings = false
   }
 }
 ```
@@ -143,10 +143,9 @@ salesforce {
 | Name                                                        | Default when undefined                           | Description
 | ------------------------------------------------------------| -------------------------------------------------| -----------
 | extraDependencies                                           | true                                             | Find additional dependencies between configuration elements by using the salesforce tooling API
-| elementsUrl                                                 | true                                             | Find additional dependencies between configuration elements by using the salesforce tooling API
-| addMissingIds                                               | true                                             | Find additional dependencies between configuration elements by using the salesforce tooling API
-| profilePaths                                                | true                                             | Find additional dependencies between configuration elements by using the salesforce tooling API
-
+| elementsUrl                                                 | true                                             | Add to elements their service url as an annotaion
+| addMissingIds                                               | true                                             | Add missing internal ids
+| profilePaths                                                | true                                             | Replace paths for profile instances upon fetch
 ### Data management configuration options
 
 | Name                                                        | Default when undefined                           | Description

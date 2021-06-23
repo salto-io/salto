@@ -84,6 +84,15 @@ describe('Internal IDs filter', () => {
           [INSTANCE_FULL_NAME_FIELD]: 'dontChange',
         },
       ),
+      new InstanceElement(
+        'whenEnabledInst',
+        objType,
+        {
+          standard: 'aaa',
+          custom: 'bbb',
+          [INSTANCE_FULL_NAME_FIELD]: 'whenEnabledInst',
+        },
+      ),
     ]
     return [objType, ...instances]
   }
@@ -187,8 +196,8 @@ describe('Internal IDs filter', () => {
     })
     it('should not run any query when feature is disabled', async () => {
       const { connection } = mockClient()
-      expect(elements[2]).toBeInstanceOf(InstanceElement)
-      const inst = elements[2] as InstanceElement
+      expect(elements[4]).toBeInstanceOf(InstanceElement)
+      const inst = elements[4] as InstanceElement
       filter = filterCreator({
         client,
         config: {

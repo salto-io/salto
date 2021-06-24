@@ -679,6 +679,7 @@ export const loadWorkspace = async (
             await s.merged.clear()
             await s.errors.clear()
             await s.validationErrors.clear()
+            await s.metadata.clear()
           })
         await naclFilesSource.clear(args)
       }

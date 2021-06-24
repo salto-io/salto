@@ -29,8 +29,8 @@ const log = logger(module)
 export type ChangeSet<Change> = {
   changes: Change[]
   cacheValid: boolean
-  preChangeHash?: string | undefined
-  postChangeHash?: string | undefined
+  preChangeHash?: string
+  postChangeHash?: string
 }
 
 export const createEmptyChangeSet = (preChangeHash?: string): ChangeSet<Change> => ({
@@ -276,7 +276,7 @@ export const mergeChanges = async ({
   noErrorMergeIds: string[]
 }> => {
   const { src1Changes, src2Changes, src1, src2 } = cacheUpdate
-  const potentialDeletedIds: ElemID[] = []
+  const potentialDeletedIds = new Set<string>()
   const src1ChangeIDs = new Set<string>()
   const preChangeHash = (((src1Changes.preChangeHash || '')
     + (src2Changes.preChangeHash || '')))
@@ -292,7 +292,7 @@ export const mergeChanges = async ({
     src1Changes.changes.forEach(change => {
       const id = getChangeElement(change).elemID
       if (isRemovalChange(change)) {
-        potentialDeletedIds.push(id)
+        potentialDeletedIds.add(id.getFullName())
       }
       src1ChangeIDs.add(id.getFullName())
     })
@@ -300,16 +300,16 @@ export const mergeChanges = async ({
     src2Changes.changes.forEach(change => {
       const id = getChangeElement(change).elemID
       if (isRemovalChange(change)) {
-        potentialDeletedIds.push(id)
+        potentialDeletedIds.add(id.getFullName())
       }
       src2ChangeIDs.add(id.getFullName())
     })
     src1ElementsToMerge = await awu(await getElementsToMergeFromChanges(
       src1Changes, src2ChangeIDs, src2,
-    )).toArray()
+    ))
     src2ElementsToMerge = await awu(await getElementsToMergeFromChanges(
       src2Changes, src1ChangeIDs, src1,
-    )).toArray()
+    ))
   } else {
     src1ElementsToMerge = src1 ? (awu(await src1.getAll()).concat(
       await getContainerTypeChanges(src1Changes.changes)
@@ -326,10 +326,10 @@ export const mergeChanges = async ({
       newMergedElementsResult, preChangeHash, postChangeHash, cacheValid
     )
   }
-  const deleteChanges = await awu(potentialDeletedIds).uniquify(id => id.getFullName())
-    .filter(async id => !(await newMergedElementsResult.merged.has(id.getFullName())))
+  const deleteChanges = await awu(potentialDeletedIds)
+    .filter(async id => !(await newMergedElementsResult.merged.has(id)))
     .map(async id => {
-      const currentElement = await currentElements.get(id)
+      const currentElement = await currentElements.get(ElemID.fromFullName(id))
       return currentElement ? toChange({ before: currentElement, after: undefined }) : undefined
     })
     .filter(values.isDefined)

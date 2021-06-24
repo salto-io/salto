@@ -565,6 +565,8 @@ const buildMultiEnvSource = (
         await s.elements.clear()
         await s.mergeErrors.clear()
       })
+      await currentState.envHashes.flush()
+      await currentState.mergedEnvHashes.flush()
       state = undefined
     },
     rename: async (name: string): Promise<void> => {

@@ -76,10 +76,15 @@ class WalkErrors extends Map<NodeId, Error> {
     super()
   }
 
-  set(nodeId: NodeId, value: Error): this {
+  set(nodeId: NodeId, value: Error, visited: Set<string> = new Set()): this {
+    const idAsString = nodeId.toString()
+    if (visited.has(idAsString)) {
+      return this
+    }
+    visited.add(idAsString)
     super.set(nodeId, value)
     this.nodeMap.getReverse(nodeId).forEach(
-      dependentNode => this.set(dependentNode, new NodeSkippedError(nodeId))
+      dependentNode => this.set(dependentNode, new NodeSkippedError(nodeId), visited)
     )
     return this
   }
@@ -282,7 +287,6 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
           }
         })
     }
-
     next(this.keys())
     errors.throwIfNotEmpty()
   }

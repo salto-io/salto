@@ -27,18 +27,15 @@ export const getCustomGroupIds = async (
   if (Object.keys(customGroupIdFunctions).length === 0) {
     return new Map()
   }
-
   const changesPerAdapter = collections.iterable.groupBy(
     wu(changes.keys()).map(id => ({ id, change: changes.getData(id) })),
     ({ change }) => getChangeElement(change).elemID.adapter,
   )
-
   const changeGroupIds = awu(changesPerAdapter.entries())
     .filter(([adapterName]) => adapterName in customGroupIdFunctions)
     .map(([name, adapterChanges]) => (
       customGroupIdFunctions[name](new Map(adapterChanges.map(({ id, change }) => [id, change])))
     ))
-
   return new Map(
     await awu(changeGroupIds)
       .flatMap(changeIdsMap => [...changeIdsMap.entries()])

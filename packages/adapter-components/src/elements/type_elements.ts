@@ -15,7 +15,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { FieldDefinition, Field, CORE_ANNOTATIONS, TypeElement, isObjectType, isContainerType } from '@salto-io/adapter-api'
+import { FieldDefinition, Field, CORE_ANNOTATIONS, TypeElement, isObjectType, isContainerType, getDeepInnerType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import { FieldToHideType } from '../config/transformation'
@@ -72,7 +72,7 @@ export const filterTypes = async (
 
   const innerObjectTypes = await awu(relevantTypes)
     .filter(isContainerType)
-    .map(async type => type.getInnerType())
+    .map(async type => getDeepInnerType(type))
     .filter(isObjectType)
     .toArray()
 

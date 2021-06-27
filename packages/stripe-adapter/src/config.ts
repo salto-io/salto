@@ -58,7 +58,7 @@ const DEFAULT_SWAGGER_CONFIG: StripeApiConfig['swagger'] = {
   additionalTypes: [],
 }
 
-export const ALL_SUPPORTED_TYPES: string[] = [
+export const ALL_SUPPORTED_TYPES = [
   'country_specs',
   'coupons',
   'plans',
@@ -69,7 +69,7 @@ export const ALL_SUPPORTED_TYPES: string[] = [
   'webhook_endpoints',
 ]
 
-export const DEFAULT_INCLUDE_TYPES: string[] = ALL_SUPPORTED_TYPES
+export const DEFAULT_INCLUDE_TYPES = ALL_SUPPORTED_TYPES
 
 export const DEFAULT_API_DEFINITIONS: StripeApiConfig = {
   swagger: DEFAULT_SWAGGER_CONFIG,

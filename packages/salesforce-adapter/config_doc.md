@@ -143,9 +143,9 @@ salesforce {
 | Name                                                        | Default when undefined                           | Description
 | ------------------------------------------------------------| -------------------------------------------------| -----------
 | extraDependencies                                           | true                                             | Find additional dependencies between configuration elements by using the salesforce tooling API
-| elementsUrl                                                 | true                                             | Add to elements their service url as an annotaion
+| elementsUrls                                                 | true                                             | Populate service URLs for "go to service", which allows getting from a Salto element to its Salesforce URL
 | addMissingIds                                               | true                                             | Add missing internal ids
-| profilePaths                                                | true                                             | Replace paths for profile instances upon fetch
+| profilePaths                                                | true                                             | Update file names for profiles whose API name is different from their display name
 ### Data management configuration options
 
 | Name                                                        | Default when undefined                           | Description

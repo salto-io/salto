@@ -99,7 +99,7 @@ describe('elements url filter', () => {
       client,
       config: {
         ...defaultFilterContext,
-        fetchProfile: buildFetchProfile({ optionalFeatures: { elementsUrl: false } }),
+        fetchProfile: buildFetchProfile({ optionalFeatures: { elementsUrls: false } }),
       },
     })
     await filter.onFetch?.([standardObject])

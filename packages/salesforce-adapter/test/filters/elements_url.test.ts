@@ -21,7 +21,7 @@ import SalesforceClient from '../../src/client/client'
 import { Filter } from '../../src/filter'
 import elementsUrlFilter from '../../src/filters/elements_url'
 import { defaultFilterContext } from '../utils'
-
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 describe('elements url filter', () => {
   let filter: Filter
@@ -91,5 +91,19 @@ describe('elements url filter', () => {
     expect(filter.onFetch).toBeDefined()
     await filter.onFetch?.([element])
     expect(element.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+  })
+
+  it('should not run any query when feature is disabled', async () => {
+    connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
+    filter = elementsUrlFilter({
+      client,
+      config: {
+        ...defaultFilterContext,
+        fetchProfile: buildFetchProfile({ optionalFeatures: { elementsUrls: false } }),
+      },
+    })
+    await filter.onFetch?.([standardObject])
+    expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+    expect(connection.query).not.toHaveBeenCalled()
   })
 })

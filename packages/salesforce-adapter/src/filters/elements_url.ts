@@ -30,6 +30,9 @@ const getRelevantElements = (elements: Element[]): AsyncIterable<Element> =>
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
+    if (!config.fetchProfile.isFeatureEnabled('elementsUrls')) {
+      return
+    }
     const url = await client.getUrl()
     if (url === undefined) {
       log.error('Failed to get salesforce URL')

@@ -24,6 +24,8 @@ import {
   INTERNAL_ID_FIELD,
 } from '../../src/constants'
 import { defaultFilterContext } from '../utils'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+
 
 describe('Internal IDs filter', () => {
   let client: SalesforceClient
@@ -80,6 +82,15 @@ describe('Internal IDs filter', () => {
           custom: 'bbb',
           [INTERNAL_ID_FIELD]: 'already defined',
           [INSTANCE_FULL_NAME_FIELD]: 'dontChange',
+        },
+      ),
+      new InstanceElement(
+        'whenEnabledInst',
+        objType,
+        {
+          standard: 'aaa',
+          custom: 'bbb',
+          [INSTANCE_FULL_NAME_FIELD]: 'whenEnabledInst',
         },
       ),
     ]
@@ -182,6 +193,21 @@ describe('Internal IDs filter', () => {
       expect(elements[1].annotations?.[INTERNAL_ID_ANNOTATION]).toBeUndefined()
       expect(elements[2].annotations?.[INTERNAL_ID_ANNOTATION]).toBeUndefined()
       expect(elements[3].annotations?.[INTERNAL_ID_ANNOTATION]).toBeUndefined()
+    })
+    it('should not run any query when feature is disabled', async () => {
+      const { connection } = mockClient()
+      expect(elements[4]).toBeInstanceOf(InstanceElement)
+      const inst = elements[4] as InstanceElement
+      filter = filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({ optionalFeatures: { addMissingIds: false } }),
+        },
+      }) as FilterType
+      await filter.onFetch([inst])
+      expect(inst.value[INTERNAL_ID_FIELD]).toBeUndefined()
+      expect(connection.query).not.toHaveBeenCalled()
     })
   })
 })

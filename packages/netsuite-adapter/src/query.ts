@@ -14,20 +14,40 @@
 * limitations under the License.
 */
 
-import { collections, regex } from '@salto-io/lowerdash'
-import _ from 'lodash'
-import { FETCH_TARGET } from './constants'
-import { SUPPORTED_TYPES } from './data_elements/types'
+import { regex } from '@salto-io/lowerdash'
+import { INCLUDE, EXCLUDE } from './constants'
 import { customTypes } from './types'
+import { SUPPORTED_TYPES } from './data_elements/types'
 
 export interface ObjectID {
   type: string
   instanceId: string
 }
-
+// deprecated
 export type NetsuiteQueryParameters = {
   types: Record<string, Array<string>>
   filePaths: Array<string>
+}
+
+export type FetchTypeQueryParams = {
+  name: string
+  ids?: string[]
+}
+
+export type QueryParams = {
+  types: FetchTypeQueryParams[]
+  fileCabinet: string[]
+}
+
+export type FetchParams = {
+  [INCLUDE]?: QueryParams
+  [EXCLUDE]?: QueryParams
+}
+
+export const convertToQueryParams = ({ types = {}, filePaths = [] }:
+  Partial<NetsuiteQueryParameters>): QueryParams => {
+  const newTypes = Object.entries(types).map(([name, ids]) => ({ name, ids }))
+  return ({ types: newTypes, fileCabinet: filePaths })
 }
 
 export type NetsuiteQuery = {
@@ -38,44 +58,70 @@ export type NetsuiteQuery = {
   areSomeFilesMatch: () => boolean
 }
 
-export const validateParameters = ({ types = {}, filePaths = [] }:
-  Partial<NetsuiteQueryParameters>): void => {
-  const parameters = { types, filePaths }
+const checkTypeNameRegMatch = (type: FetchTypeQueryParams, str: string): boolean =>
+  new RegExp(`^${type.name}$`).test(str)
 
-  const existingTypes = new Set([...Object.keys(customTypes), ...SUPPORTED_TYPES])
-  const receivedTypes = new Set(Object.keys(parameters.types))
+export const validateParameters = ({ types, fileCabinet }:
+  Partial<QueryParams>): void => {
+  const errMessagePrefix = 'received invalid adapter config input.'
+  if (!Array.isArray(types) || !Array.isArray(fileCabinet)) {
+    const typesErr = !Array.isArray(types) ? ' "types" field is expected to be an array\n' : ''
+    const fileCabinetErr = !Array.isArray(fileCabinet) ? ' "fileCabinet" field is expected to be an array\n' : ''
+    const message = `${errMessagePrefix}${typesErr}${fileCabinetErr}`
+    throw new Error(message)
+  }
+  const corruptedTypesNames = types.filter(obj => (obj.name === undefined || typeof obj.name !== 'string'))
+  if (corruptedTypesNames.length !== 0) {
+    throw new Error(`${errMessagePrefix} Expected type name to be a string, but found:\n${corruptedTypesNames}.`)
+  }
+  const corruptedTypesIds = types.filter(obj => (obj.ids !== undefined && (!Array.isArray(obj.ids) || obj.ids.some(id => typeof id !== 'string'))))
+  if (corruptedTypesIds.length !== 0) {
+    throw new Error(`${errMessagePrefix} Expected type ids to be an array of strings, but found:\n${corruptedTypesIds}.`)
+  }
+  const existingTypes = [...Object.keys(customTypes), ...SUPPORTED_TYPES]
+  const receivedTypes = types.map(obj => obj.name)
+  const idsRegexes = types
+    .map(obj => obj.ids)
+    .flatMap(list => list ?? ['.*'])
 
-  const invalidTypes = collections.set.difference(receivedTypes, existingTypes)
-
-  const invalidRegexes = _.flatten(Object.values(parameters.types))
-    .concat(parameters.filePaths)
+  const invalidRegexes = idsRegexes
+    .concat(fileCabinet)
+    .concat(receivedTypes)
     .filter(reg => !regex.isValidRegex(reg))
 
-  if (invalidRegexes.length !== 0 || invalidTypes.size !== 0) {
-    const invalidRegexesMessage = invalidRegexes.length !== 0 ? ` The following regular expressions are invalid: ${invalidRegexes}.` : ''
-    const invalidTypesMessage = invalidTypes.size !== 0 ? ` The following types do not exist: ${Array.from(invalidTypes)}.` : ''
-    const message = `received invalid ${FETCH_TARGET} input.${invalidRegexesMessage}${invalidTypesMessage}`
-    throw new Error(message)
+  if (invalidRegexes.length !== 0) {
+    throw new Error(`${errMessagePrefix} The following regular expressions are invalid:\n${invalidRegexes}.`)
+  }
+
+  const invalidTypes = receivedTypes
+    .filter(recivedTypeName =>
+      !existingTypes
+        .some(existTypeName => checkTypeNameRegMatch({ name: recivedTypeName }, existTypeName)))
+
+  if (invalidTypes.length !== 0) {
+    throw new Error(`${errMessagePrefix} The following types or regular expressions do not match any supported type:\n${invalidTypes}.`)
   }
 }
 
 export const buildNetsuiteQuery = (
-  { types = {}, filePaths = [] }: Partial<NetsuiteQueryParameters>
+  { types = [], fileCabinet = [] }: Partial<QueryParams>
 ): NetsuiteQuery => {
-  const parameters = { types, filePaths }
+  const matchingTypes = (typeName: string): FetchTypeQueryParams[] =>
+    types.filter(type => checkTypeNameRegMatch(type, typeName))
+  const matchingTypesRegexes = (typeName: string): string[] =>
+    matchingTypes(typeName)
+      .flatMap(type => type.ids ?? ['.*'])
   return {
-    isTypeMatch: typeName => parameters.types[typeName] !== undefined,
-    areAllObjectsMatch: typeName => parameters.types[typeName] !== undefined && parameters.types[typeName].some(pattern => pattern === '.*'),
-    isObjectMatch: objectID => {
-      const regexes = parameters.types[objectID.type]
-      if (regexes === undefined) {
-        return false
-      }
-      return regexes.some(reg => new RegExp(`^${reg}$`).test(objectID.instanceId))
-    },
+    isTypeMatch: typeName => matchingTypes(typeName).length > 0,
+    areAllObjectsMatch: typeName =>
+      matchingTypesRegexes(typeName)
+        .some(id => id === '.*'),
+    isObjectMatch: objectID =>
+      matchingTypesRegexes(objectID.type)
+        .some(reg => new RegExp(`^${reg}$`).test(objectID.instanceId)),
     isFileMatch: filePath =>
-      parameters.filePaths.some(reg => new RegExp(`^${reg}$`).test(filePath)),
-    areSomeFilesMatch: () => parameters.filePaths.length !== 0,
+      fileCabinet.some(reg => new RegExp(`^${reg}$`).test(filePath)),
+    areSomeFilesMatch: () => fileCabinet.length !== 0,
   }
 }
 

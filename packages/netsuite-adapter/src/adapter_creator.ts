@@ -29,8 +29,11 @@ import {
   SUITEAPP_CLIENT_CONFIG,
   USE_CHANGES_DETECTION,
   CONCURRENCY_LIMIT,
+  FETCH,
+  INCLUDE,
+  EXCLUDE,
 } from './constants'
-import { validateParameters } from './query'
+import { validateParameters, convertToQueryParams } from './query'
 import { Credentials, toCredentialsAccountId } from './client/credentials'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import SdfClient from './client/sdf_client'
@@ -86,8 +89,10 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
     }
   }
 
+  const fetchParameters = config?.value?.[FETCH]
   const fetchTargetParameters = config?.value?.[FETCH_TARGET]
-  const skipListParameters = config?.value?.[SKIP_LIST]
+  const skipListParameters = config?.value?.[SKIP_LIST] // support deprecated version
+
   const filePathsRegexSkipList = config?.value?.[FILE_PATHS_REGEX_SKIP_LIST]
     && makeArray(config?.value?.[FILE_PATHS_REGEX_SKIP_LIST])
   const clientConfig = config?.value?.[CLIENT_CONFIG]
@@ -100,11 +105,19 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
       validateRegularExpressions(filePathsRegexSkipList)
     }
     if (fetchTargetParameters !== undefined) {
-      validateParameters(fetchTargetParameters)
+      validateParameters(convertToQueryParams(fetchTargetParameters))
     }
 
     if (skipListParameters !== undefined) {
-      validateParameters(skipListParameters)
+      validateParameters(convertToQueryParams(skipListParameters))
+    }
+
+    if (fetchParameters?.[INCLUDE] !== undefined) {
+      validateParameters(fetchParameters[INCLUDE])
+    }
+
+    if (fetchParameters?.[EXCLUDE] !== undefined) {
+      validateParameters(fetchParameters[EXCLUDE])
     }
 
     const netsuiteConfig: { [K in keyof Required<NetsuiteConfig>]: NetsuiteConfig[K] } = {
@@ -117,6 +130,7 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
       [FETCH_TARGET]: fetchTargetParameters,
       [SKIP_LIST]: skipListParameters,
       [USE_CHANGES_DETECTION]: config?.value?.[USE_CHANGES_DETECTION],
+      [FETCH]: fetchParameters,
     }
 
     Object.keys(config?.value ?? {})

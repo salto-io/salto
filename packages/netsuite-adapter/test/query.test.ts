@@ -14,18 +14,19 @@
 * limitations under the License.
 */
 import { describe } from 'jest-circus'
-import { andQuery, buildNetsuiteQuery, notQuery, validateParameters } from '../src/query'
+import { andQuery, buildNetsuiteQuery, notQuery, validateParameters, convertToQueryParams, FetchTypeQueryParams } from '../src/query'
 
 describe('NetsuiteQuery', () => {
   describe('buildNetsuiteQuery', () => {
     describe('valid query', () => {
       const query = buildNetsuiteQuery({
-        types: {
-          addressForm: ['aaa.*', 'bbb.*'],
-          advancedpdftemplate: ['ccc.*', 'ddd.*'],
-          Account: ['.*'],
-        },
-        filePaths: ['eee.*', 'fff.*'],
+        types: [
+          { name: 'addressForm', ids: ['aaa.*', 'bbb.*'] },
+          { name: 'advancedpdftemplate', ids: ['ccc.*', 'ddd.*'] },
+          { name: 'Account', ids: ['.*'] },
+          { name: 'Account', ids: ['.*'] },
+        ],
+        fileCabinet: ['eee.*', 'fff.*'],
       })
 
       describe('isTypeMatch', () => {
@@ -69,11 +70,11 @@ describe('NetsuiteQuery', () => {
 
         it('when does not` has files match should return false', () => {
           const q = buildNetsuiteQuery({
-            types: {
-              addressForm: ['aaa.*', 'bbb.*'],
-              advancedpdftemplate: ['ccc.*', 'ddd.*'],
-            },
-            filePaths: [],
+            types: [
+              { name: 'addressForm', ids: ['aaa.*', 'bbb.*'] },
+              { name: 'advancedpdftemplate', ids: ['ccc.*', 'ddd.*'] },
+            ],
+            fileCabinet: [],
           })
           expect(q.areSomeFilesMatch()).toBeFalsy()
         })
@@ -84,17 +85,35 @@ describe('NetsuiteQuery', () => {
           expect(query.areAllObjectsMatch('addressForm')).toBeFalsy()
         })
       })
+      describe('validQueryWithOldFormat', () => {
+        const queryOldFormat = buildNetsuiteQuery(convertToQueryParams({
+          types: {
+            addressForm: ['aaa.*', 'bbb.*'],
+          },
+          filePaths: ['eee.*', 'fff.*'],
+        }))
+        it('should match the received types from (old format)', () => {
+          expect(queryOldFormat.isTypeMatch('addressForm')).toBeTruthy()
+        })
+        it('should not match types that were not received (old format)', () => {
+          expect(queryOldFormat.isTypeMatch('wrongType')).toBeFalsy()
+        })
+        it('should match file paths that match the received regexes (old format)', () => {
+          expect(queryOldFormat.isFileMatch('eeeaaa')).toBeTruthy()
+          expect(queryOldFormat.isFileMatch('ffffqqqq')).toBeTruthy()
+        })
+      })
     })
   })
 
   describe('validateParameters', () => {
     it('Valid query should not throw exception', () => {
       expect(() => validateParameters({
-        types: {
-          addressForm: ['aaa.*', 'bbb.*'],
-          advancedpdftemplate: ['ccc.*', 'ddd.*'],
-        },
-        filePaths: ['eee.*', 'fff.*'],
+        types: [
+          { name: 'addressForm', ids: ['aaa.*', 'bbb.*'] },
+          { name: 'advancedpdftemplate', ids: ['ccc.*', 'ddd.*'] },
+        ],
+        fileCabinet: ['eee.*', 'fff.*'],
       })).not.toThrow()
     })
 
@@ -102,10 +121,10 @@ describe('NetsuiteQuery', () => {
       let error: Error | undefined
       try {
         validateParameters({
-          types: {
-            addressForm: ['aa(a.*', 'bbb.*'],
-          },
-          filePaths: ['eee.*', 'f(ff.*'],
+          types: [
+            { name: 'addressForm', ids: ['aa(a.*', 'bbb.*'] },
+          ],
+          fileCabinet: ['eee.*', 'f(ff.*'],
         })
       } catch (e) {
         error = e
@@ -118,14 +137,94 @@ describe('NetsuiteQuery', () => {
       expect(error?.message).not.toContain('eee.*')
     })
 
-    it('Invalid types should throw an error with the types', () => {
+    it('should throw an error when type has invalid "name" reg expression', () => {
       let error: Error | undefined
       try {
         validateParameters({
-          types: {
-            addressForm: ['.*'],
-            invalidType: ['.*'],
+          types: [{
+            name: 'aa(a.*',
+          }],
+          fileCabinet: [],
+        })
+      } catch (e) {
+        error = e
+      }
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('aa(a.*')
+      expect(error?.message).toContain('The following regular expressions are invalid')
+    })
+    it('should throw an error when type has undefined "name"', () => {
+      let error: Error | undefined
+      try {
+        validateParameters({
+          types: [{
+            name: 'aa',
           },
+          {} as unknown as FetchTypeQueryParams],
+          fileCabinet: [],
+        })
+      } catch (e) {
+        error = e
+      }
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('received invalid adapter config input. Expected type name to be a string, but found:')
+    })
+    it('should throw an error when fileCabinet is undefined', () => {
+      let error: Error | undefined
+      try {
+        validateParameters({
+          types: [{
+            name: 'aaa',
+          }],
+        })
+      } catch (e) {
+        error = e
+      }
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('received invalid adapter config input. "fileCabinet" field is expected to be an array')
+    })
+    it('should throw an error when types is undefined', () => {
+      let error: Error | undefined
+      try {
+        validateParameters({
+          fileCabinet: [],
+        })
+      } catch (e) {
+        error = e
+      }
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('received invalid adapter config input. "types" field is expected to be an array')
+    })
+    it('should throw an error when types has invalid ids field', () => {
+      let error: Error | undefined
+      try {
+        validateParameters({
+          types: [{
+            name: 'aaa',
+            ids: ['string', 1],
+          } as unknown as FetchTypeQueryParams],
+          fileCabinet: [],
+        })
+      } catch (e) {
+        error = e
+      }
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('received invalid adapter config input. Expected type ids to be an array of strings, but found:')
+    })
+    it('should throw an error with all invalid types', () => {
+      let error: Error | undefined
+      try {
+        validateParameters({
+          types: [
+            { name: 'addressForm', ids: ['.*'] },
+            { name: 'invalidType', ids: ['.*'] },
+          ],
+          fileCabinet: [],
         })
       } catch (e) {
         error = e
@@ -139,20 +238,20 @@ describe('NetsuiteQuery', () => {
 
   describe('andQuery', () => {
     const firstQuery = buildNetsuiteQuery({
-      types: {
-        addressForm: ['aaa.*'],
-        advancedpdftemplate: ['.*'],
-        Account: ['.*'],
-      },
-      filePaths: ['bbb.*'],
+      types: [
+        { name: 'addressForm', ids: ['aaa.*'] },
+        { name: 'advancedpdftemplate', ids: ['.*'] },
+        { name: 'Account', ids: ['.*'] },
+      ],
+      fileCabinet: ['bbb.*'],
     })
     const secondQuery = buildNetsuiteQuery({
-      types: {
-        addressForm: ['.*ccc'],
-        bankstatementparserplugin: ['.*'],
-        Account: ['.*'],
-      },
-      filePaths: ['.*ddd'],
+      types: [
+        { name: 'addressForm', ids: ['.*ccc'] },
+        { name: 'bankstatementparserplugin', ids: ['.*'] },
+        { name: 'Account', ids: ['.*'] },
+      ],
+      fileCabinet: ['.*ddd'],
     })
     const bothQuery = andQuery(firstQuery, secondQuery)
 
@@ -186,10 +285,10 @@ describe('NetsuiteQuery', () => {
 
   describe('notQuery', () => {
     const query = buildNetsuiteQuery({
-      types: {
-        addressForm: ['aaa.*'],
-      },
-      filePaths: ['bbb.*'],
+      types: [
+        { name: 'addressForm', ids: ['aaa.*'] },
+      ],
+      fileCabinet: ['bbb.*'],
     })
     const inverseQuery = notQuery(query)
 

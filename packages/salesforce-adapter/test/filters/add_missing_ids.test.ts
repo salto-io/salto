@@ -195,21 +195,6 @@ describe('Internal IDs filter', () => {
       expect(elements[2].annotations?.[INTERNAL_ID_ANNOTATION]).toBeUndefined()
       expect(elements[3].annotations?.[INTERNAL_ID_ANNOTATION]).toBeUndefined()
     })
-    it('should not run any query when feature is disabled', async () => {
-      const { connection } = mockClient()
-      expect(elements[4]).toBeInstanceOf(InstanceElement)
-      const inst = elements[4] as InstanceElement
-      filter = filterCreator({
-        client,
-        config: {
-          ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({ optionalFeatures: { addMissingIds: false } }),
-        },
-      }) as FilterType
-      await filter.onFetch([inst])
-      expect(inst.value[INTERNAL_ID_FIELD]).toBeUndefined()
-      expect(connection.query).not.toHaveBeenCalled()
-    })
   })
   describe('when feature is throwing an error', () => {
     const mockListMetadataObjects: jest.Mock = jest.fn()
@@ -227,10 +212,11 @@ describe('Internal IDs filter', () => {
   describe('when feature is disabled', () => {
     const mockListMetadataObjects: jest.Mock = jest.fn()
     SalesforceClient.prototype.listMetadataObjects = mockListMetadataObjects
+    elements = generateElements()
     it('should not run any query', async () => {
       const { connection } = mockClient()
-      expect(elements[2]).toBeInstanceOf(InstanceElement)
-      const inst = elements[2] as InstanceElement
+      expect(elements[3]).toBeInstanceOf(InstanceElement)
+      const inst = elements[3] as InstanceElement
       filter = filterCreator({
         client,
         config: {

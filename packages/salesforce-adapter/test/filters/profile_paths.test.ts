@@ -91,8 +91,10 @@ describe('profile paths filter', () => {
   })
   describe('when feature is throwing an error', () => {
     it('should return a warning', async () => {
+      (await instance.getType()).annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
+      instance.value[INSTANCE_FULL_NAME_FIELD] = 'PlatformPortal'
+      instance.value[INTERNAL_ID_FIELD] = 'PlatformPortalInternalId'
       connection.query.mockImplementation(() => {
-        console.log('im here')
         throw new Error()
       })
       const res = await filter.onFetch([instance]) as FilterResult

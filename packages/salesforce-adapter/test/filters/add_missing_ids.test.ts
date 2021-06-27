@@ -215,8 +215,8 @@ describe('Internal IDs filter', () => {
     elements = generateElements()
     it('should not run any query', async () => {
       const { connection } = mockClient()
-      expect(elements[3]).toBeInstanceOf(InstanceElement)
-      const inst = elements[3] as InstanceElement
+      expect(elements[4]).toBeInstanceOf(InstanceElement)
+      const inst = elements[4] as InstanceElement
       filter = filterCreator({
         client,
         config: {

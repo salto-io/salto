@@ -323,6 +323,8 @@ describe('extra dependencies filter', () => {
     })
   })
   describe('when feature is throwing an error', () => {
+    const mockQueryAll: jest.Mock = jest.fn()
+    SalesforceClient.prototype.queryAll = mockQueryAll
     it('should return a warning', async () => {
       const { connection } = mockClient()
       connection.query.mockImplementation(() => { throw new Error() })

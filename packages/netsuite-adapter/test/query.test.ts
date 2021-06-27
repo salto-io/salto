@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { describe } from 'jest-circus'
-import { andQuery, buildNetsuiteQuery, notQuery, validateParameters, convertToQueryParams, FetchTypeQueryParams } from '../src/query'
+import { andQuery, buildNetsuiteQuery, notQuery, validateFetchParameters, convertToQueryParams, FetchTypeQueryParams } from '../src/query'
 
 describe('NetsuiteQuery', () => {
   describe('buildNetsuiteQuery', () => {
@@ -108,7 +108,7 @@ describe('NetsuiteQuery', () => {
 
   describe('validateParameters', () => {
     it('Valid query should not throw exception', () => {
-      expect(() => validateParameters({
+      expect(() => validateFetchParameters({
         types: [
           { name: 'addressForm', ids: ['aaa.*', 'bbb.*'] },
           { name: 'advancedpdftemplate', ids: ['ccc.*', 'ddd.*'] },
@@ -120,7 +120,7 @@ describe('NetsuiteQuery', () => {
     it('Invalid regexes should throw an error with the regexes', () => {
       let error: Error | undefined
       try {
-        validateParameters({
+        validateFetchParameters({
           types: [
             { name: 'addressForm', ids: ['aa(a.*', 'bbb.*'] },
           ],
@@ -140,7 +140,7 @@ describe('NetsuiteQuery', () => {
     it('should throw an error when type has invalid "name" reg expression', () => {
       let error: Error | undefined
       try {
-        validateParameters({
+        validateFetchParameters({
           types: [{
             name: 'aa(a.*',
           }],
@@ -157,7 +157,7 @@ describe('NetsuiteQuery', () => {
     it('should throw an error when type has undefined "name"', () => {
       let error: Error | undefined
       try {
-        validateParameters({
+        validateFetchParameters({
           types: [{
             name: 'aa',
           },
@@ -174,7 +174,7 @@ describe('NetsuiteQuery', () => {
     it('should throw an error when fileCabinet is undefined', () => {
       let error: Error | undefined
       try {
-        validateParameters({
+        validateFetchParameters({
           types: [{
             name: 'aaa',
           }],
@@ -189,7 +189,7 @@ describe('NetsuiteQuery', () => {
     it('should throw an error when types is undefined', () => {
       let error: Error | undefined
       try {
-        validateParameters({
+        validateFetchParameters({
           fileCabinet: [],
         })
       } catch (e) {
@@ -202,7 +202,7 @@ describe('NetsuiteQuery', () => {
     it('should throw an error when types has invalid ids field', () => {
       let error: Error | undefined
       try {
-        validateParameters({
+        validateFetchParameters({
           types: [{
             name: 'aaa',
             ids: ['string', 1],
@@ -219,7 +219,7 @@ describe('NetsuiteQuery', () => {
     it('should throw an error with all invalid types', () => {
       let error: Error | undefined
       try {
-        validateParameters({
+        validateFetchParameters({
           types: [
             { name: 'addressForm', ids: ['.*'] },
             { name: 'invalidType', ids: ['.*'] },

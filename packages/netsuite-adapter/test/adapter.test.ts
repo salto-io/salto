@@ -18,7 +18,7 @@ import {
   ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult, getChangeElement, FetchOptions,
   ObjectType,
 } from '@salto-io/adapter-api'
-import _, { omit } from 'lodash'
+import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import createClient from './client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
@@ -32,6 +32,7 @@ import {
   EXCLUDE,
   INCLUDE,
   SKIP_LIST,
+  DEPLOY,
 } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import SdfClient, { convertToCustomTypeInfo } from '../src/client/sdf_client'
@@ -88,7 +89,6 @@ describe('Adapter', () => {
         fileCabinet: ['^Some/File/Regex$'],
       },
     },
-    [DEPLOY_REFERENCED_ELEMENTS]: false,
     [CLIENT_CONFIG]: {
       [FETCH_ALL_TYPES_AT_ONCE]: true,
       [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 1,
@@ -205,7 +205,7 @@ describe('Adapter', () => {
 
     describe('fetchConfig', () => {
       const configWithoutFetch = {
-        ...omit(config, FETCH),
+        ..._.omit(config, FETCH),
       }
       const createAdapter = (configInput: NetsuiteConfig): NetsuiteAdapter =>
         new NetsuiteAdapter({
@@ -646,7 +646,9 @@ describe('Adapter', () => {
       const configWithDeployReferencedElements = {
         [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
         [FETCH_ALL_TYPES_AT_ONCE]: true,
-        [DEPLOY_REFERENCED_ELEMENTS]: true,
+        [DEPLOY]: {
+          [DEPLOY_REFERENCED_ELEMENTS]: true,
+        },
       }
       const netsuiteAdapterWithDeployReferencedElements = new NetsuiteAdapter({
         client: new NetsuiteClient(client),

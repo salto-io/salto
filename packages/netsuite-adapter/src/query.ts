@@ -61,7 +61,7 @@ export type NetsuiteQuery = {
 const checkTypeNameRegMatch = (type: FetchTypeQueryParams, str: string): boolean =>
   new RegExp(`^${type.name}$`).test(str)
 
-export const validateParameters = ({ types, fileCabinet }:
+export const validateFetchParameters = ({ types, fileCabinet }:
   Partial<QueryParams>): void => {
   const errMessagePrefix = 'received invalid adapter config input.'
   if (!Array.isArray(types) || !Array.isArray(fileCabinet)) {
@@ -72,11 +72,11 @@ export const validateParameters = ({ types, fileCabinet }:
   }
   const corruptedTypesNames = types.filter(obj => (obj.name === undefined || typeof obj.name !== 'string'))
   if (corruptedTypesNames.length !== 0) {
-    throw new Error(`${errMessagePrefix} Expected type name to be a string, but found:\n${corruptedTypesNames}.`)
+    throw new Error(`${errMessagePrefix} Expected type name to be a string, but found:\n${JSON.stringify(corruptedTypesNames, null, 4)}.`)
   }
   const corruptedTypesIds = types.filter(obj => (obj.ids !== undefined && (!Array.isArray(obj.ids) || obj.ids.some(id => typeof id !== 'string'))))
   if (corruptedTypesIds.length !== 0) {
-    throw new Error(`${errMessagePrefix} Expected type ids to be an array of strings, but found:\n${corruptedTypesIds}.`)
+    throw new Error(`${errMessagePrefix} Expected type ids to be an array of strings, but found:\n${JSON.stringify(corruptedTypesIds, null, 4)}}.`)
   }
   const existingTypes = [...Object.keys(customTypes), ...SUPPORTED_TYPES]
   const receivedTypes = types.map(obj => obj.name)

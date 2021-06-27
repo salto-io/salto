@@ -25,9 +25,14 @@ import SdfClient from '../src/client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
 import {
   TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, SDF_CONCURRENCY_LIMIT,
-  DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES, CLIENT_CONFIG,
+  FETCH_TYPE_TIMEOUT_IN_MINUTES, CLIENT_CONFIG,
   MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST, SUITEAPP_CLIENT_CONFIG,
   SUITEAPP_CONCURRENCY_LIMIT,
+  FETCH,
+  INCLUDE,
+  EXCLUDE,
+  DEPLOY,
+  DEPLOY_REFERENCED_ELEMENTS,
 } from '../src/constants'
 import { mockGetElemIdFunc } from './utils'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
@@ -75,7 +80,6 @@ describe('NetsuiteAdapter creator', () => {
       [SKIP_LIST]: {},
       [TYPES_TO_SKIP]: ['test1'],
       [FILE_PATHS_REGEX_SKIP_LIST]: ['^/Templates.*'],
-      [DEPLOY_REFERENCED_ELEMENTS]: false,
       [CLIENT_CONFIG]: clientConfig,
       notExist: ['not exist'],
     }
@@ -259,7 +263,6 @@ describe('NetsuiteAdapter creator', () => {
           [SKIP_LIST]: {},
           [TYPES_TO_SKIP]: ['test1'],
           [FILE_PATHS_REGEX_SKIP_LIST]: ['^/Templates.*'],
-          [DEPLOY_REFERENCED_ELEMENTS]: false,
           [CLIENT_CONFIG]: clientConfig,
         },
         elementsSource,
@@ -320,6 +323,72 @@ describe('NetsuiteAdapter creator', () => {
         adapter.configType as ObjectType,
         {
           [FILE_PATHS_REGEX_SKIP_LIST]: ['\\'],
+        }
+      )
+      expect(
+        () => adapter.operations({
+          credentials,
+          config: invalidConfig,
+          getElemIdFunc: mockGetElemIdFunc,
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+      ).toThrow()
+    })
+
+    it('should throw an error when include is invalid', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          [FETCH]: {
+            [INCLUDE]: {
+              types: 'supposed to be an array',
+            },
+          },
+        }
+      )
+      expect(
+        () => adapter.operations({
+          credentials,
+          config: invalidConfig,
+          getElemIdFunc: mockGetElemIdFunc,
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+      ).toThrow()
+    })
+
+    it('should throw an error when exclude is invalid', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          [FETCH]: {
+            [EXCLUDE]: {
+              types: [
+                { name: ['should be a string'] },
+              ],
+            },
+          },
+        }
+      )
+      expect(
+        () => adapter.operations({
+          credentials,
+          config: invalidConfig,
+          getElemIdFunc: mockGetElemIdFunc,
+          elementsSource: buildElementsSourceFromElements([]),
+        })
+      ).toThrow()
+    })
+
+    it('should throw an error when deploy section is invalid', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          [DEPLOY]: {
+            [DEPLOY_REFERENCED_ELEMENTS]: 'should be a boolean',
+          },
         }
       )
       expect(

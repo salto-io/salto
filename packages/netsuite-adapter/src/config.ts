@@ -25,7 +25,7 @@ import {
   SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
   CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
   SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
-  CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, SAVED_SEARCH,
+  CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, SAVED_SEARCH, DEPLOY,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams } from './query'
 
@@ -141,7 +141,7 @@ const queryParamsConfigType = new ObjectType({
   },
 })
 
-const fetchDefault: FetchParams = {
+export const fetchDefault: FetchParams = {
   [INCLUDE]: {
     types: [{
       name: '.*',
@@ -154,9 +154,20 @@ const fetchDefault: FetchParams = {
     ],
   },
   [EXCLUDE]: {
-    types: [{
-      name: SAVED_SEARCH,
-    }],
+    types: [
+      { name: SAVED_SEARCH },
+      { name: 'Customer' },
+      { name: 'AccountingPeriod' },
+      { name: 'Employee' },
+      { name: 'Job' },
+      { name: 'ManufacturingCostTemplate' },
+      { name: 'Partner' },
+      { name: 'Solution' },
+
+      // the two below require special features enabled in the account. O.W fetch will fail
+      { name: 'GiftCertificateItem' },
+      { name: 'DownloadItem' },
+    ],
     fileCabinet: [],
   },
 }
@@ -166,6 +177,17 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
   fields: {
     [INCLUDE]: { refType: queryParamsConfigType },
     [EXCLUDE]: { refType: queryParamsConfigType },
+  },
+})
+
+export type DeployParams = {
+  [DEPLOY_REFERENCED_ELEMENTS]?: boolean
+}
+
+const deployConfigType = createMatchingObjectType<DeployParams>({
+  elemID: new ElemID(NETSUITE, 'deployConfig'),
+  fields: {
+    [DEPLOY_REFERENCED_ELEMENTS]: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 
@@ -182,11 +204,8 @@ export const configType = new ObjectType({
     [FILE_PATHS_REGEX_SKIP_LIST]: {
       refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
     },
-    [DEPLOY_REFERENCED_ELEMENTS]: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
-      },
+    [DEPLOY]: {
+      refType: deployConfigType,
     },
     [CONCURRENCY_LIMIT]: {
       refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
@@ -229,7 +248,7 @@ export type SuiteAppClientConfig = {
 export type NetsuiteConfig = {
   [TYPES_TO_SKIP]?: string[]
   [FILE_PATHS_REGEX_SKIP_LIST]?: string[]
-  [DEPLOY_REFERENCED_ELEMENTS]?: boolean
+  [DEPLOY]?: DeployParams
   [CONCURRENCY_LIMIT]?: number
   [CLIENT_CONFIG]?: SdfClientConfig
   [SUITEAPP_CLIENT_CONFIG]?: SuiteAppClientConfig
@@ -237,14 +256,18 @@ export type NetsuiteConfig = {
   [FETCH_TARGET]?: NetsuiteQueryParameters
   [SKIP_LIST]?: NetsuiteQueryParameters
   [USE_CHANGES_DETECTION]?: boolean
+  [DEPLOY_REFERENCED_ELEMENTS]?: boolean
 }
 
 export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from NetSuite.'
   + ' In order to complete the fetch operation, Salto needs to stop managing these items by adding the items to the configuration fetch.exclude.'
 
-export const UPDATE_CONFIG_FORMAT = 'The configuration options "typeToSkip", "filePathRegexSkipList" and "skipList" are deprecated.'
+export const UPDATE_FETCH_CONFIG_FORMAT = 'The configuration options "typeToSkip", "filePathRegexSkipList" and "skipList" are deprecated.'
   + ' To skip items in fetch, please use the "fetch.exclude" option.'
   + ' The following configuration will update the deprecated fields to "fetch.exclude" field.'
+
+export const UPDATE_DEPLOY_CONFIG = 'All deploy\'s configuration flags are under "deploy" configuration.'
++ ' you may leave "deploy" section as undefined to set all deploy\'s configuration flags to their default value.'
 
 const toConfigSuggestions = (
   failedToFetchAllAtOnce: boolean,
@@ -282,7 +305,7 @@ const convertDeprecatedFilePathRegex = (filePathRegex: string): string => {
   return newPathRegex
 }
 
-const combineQueryParams = (
+export const combineQueryParams = (
   first: QueryParams | undefined,
   second: QueryParams | undefined,
 ): QueryParams => {
@@ -396,6 +419,7 @@ const updateConfigFetchFormat = (
   if (configToUpdate.value[SKIP_LIST] === undefined) {
     return false
   }
+
   const typesToExclude: QueryParams = configToUpdate.value[SKIP_LIST] !== undefined
     ? convertToQueryParams(
       configToUpdate.value[SKIP_LIST]
@@ -412,19 +436,49 @@ const updateConfigFetchFormat = (
     }
     return true
   }
+
   const newFetch: FetchParams = {
     [INCLUDE]: fetchDefault[INCLUDE],
-    [EXCLUDE]: typesToExclude,
+    [EXCLUDE]: combineQueryParams(typesToExclude, fetchDefault[EXCLUDE]),
   }
   configToUpdate.value[FETCH] = newFetch
   return true
 }
 
-const updateConfigFormat = (
+const updateConfigDeployFormat = (
   configToUpdate: InstanceElement,
 ): boolean => {
+  const deployReferencedElements = configToUpdate.value[DEPLOY_REFERENCED_ELEMENTS]
+  if (deployReferencedElements === undefined) {
+    return false
+  }
+  // we want to migrate deployReferencedElements only if its value is 'true'
+  // (and not if it evaluated to true)
+  if (deployReferencedElements === true) {
+    configToUpdate.value[DEPLOY] = {
+      [DEPLOY_REFERENCED_ELEMENTS]: deployReferencedElements,
+    }
+  }
+  delete configToUpdate.value[DEPLOY_REFERENCED_ELEMENTS]
+  return true
+}
+
+const updateConfigFormat = (
+  configToUpdate: InstanceElement,
+): { didUpdateFetchFormat: boolean; didUpdateDeployFormat: boolean } => {
   updateConfigSkipListFormat(configToUpdate)
-  return updateConfigFetchFormat(configToUpdate)
+  return {
+    didUpdateFetchFormat: updateConfigFetchFormat(configToUpdate),
+    didUpdateDeployFormat: updateConfigDeployFormat(configToUpdate),
+  }
+}
+
+export const validateDeployParams = ({ deployReferencedElements }:
+  Partial<DeployParams>): void => {
+  if (deployReferencedElements !== undefined
+    && typeof deployReferencedElements !== 'boolean') {
+    throw new Error(`Expected "deployReferencedElements" to be boolean or to be undefined, but received:\n ${deployReferencedElements}`)
+  }
 }
 
 export const getConfigFromConfigChanges = (
@@ -439,7 +493,7 @@ export const getConfigFromConfigChanges = (
     _.pickBy(_.cloneDeep(currentConfig), values.isDefined),
   )
 
-  const didUpdateFetchFormat = updateConfigFormat(conf)
+  const { didUpdateFetchFormat, didUpdateDeployFormat } = updateConfigFormat(conf)
   const didUpdateFromFailures = updateConfigFromFailures(
     failedToFetchAllAtOnce,
     failedFilePaths,
@@ -451,7 +505,10 @@ export const getConfigFromConfigChanges = (
       ? STOP_MANAGING_ITEMS_MSG
       : undefined,
     didUpdateFetchFormat
-      ? UPDATE_CONFIG_FORMAT
+      ? UPDATE_FETCH_CONFIG_FORMAT
+      : undefined,
+    didUpdateDeployFormat
+      ? UPDATE_DEPLOY_CONFIG
       : undefined,
   ].filter(values.isDefined).join(' In addition, ')
 

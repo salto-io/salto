@@ -77,6 +77,7 @@ export const RAW_CONFIG = 'rawConfig'
 export const FETCH = 'fetch'
 export const INCLUDE = 'include'
 export const EXCLUDE = 'exclude'
+export const DEPLOY = 'deploy'
 
 export const CAPTURE = 'capture'
 // e.g. '[scriptid=customworkflow1]' & '[scriptid=customworkflow1.workflowstate17.workflowaction33]'

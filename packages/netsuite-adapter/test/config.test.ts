@@ -16,13 +16,14 @@
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { NetsuiteQueryParameters } from '../src/query'
-import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, UPDATE_CONFIG_FORMAT } from '../src/config'
+import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, UPDATE_FETCH_CONFIG_FORMAT, UPDATE_DEPLOY_CONFIG, combineQueryParams, fetchDefault } from '../src/config'
 import {
   FETCH_ALL_TYPES_AT_ONCE,
-  SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS,
+  SDF_CONCURRENCY_LIMIT,
   FETCH_TYPE_TIMEOUT_IN_MINUTES, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
   CLIENT_CONFIG, SKIP_LIST,
-  TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH, INCLUDE, EXCLUDE, SAVED_SEARCH,
+  TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH,
+  INCLUDE, EXCLUDE, DEPLOY_REFERENCED_ELEMENTS, DEPLOY,
 } from '../src/constants'
 
 describe('config', () => {
@@ -33,28 +34,9 @@ describe('config', () => {
     },
     filePaths: ['SomeRegex'],
   }
-  const defaultFetch = {
-    [INCLUDE]: {
-      types: [{
-        name: '.*',
-      }],
-      fileCabinet: [
-        '^/SuiteScripts/.*',
-        '^/Templates/.*',
-        '^/Web Site Hosting Files/.*',
-        '^/SuiteBundles/.*',
-      ],
-    },
-    [EXCLUDE]: {
-      types: [{
-        name: SAVED_SEARCH,
-      }],
-      fileCabinet: [],
-    },
-  }
+
   const currentConfigWithSkipList = {
     [SKIP_LIST]: skipList,
-    [DEPLOY_REFERENCED_ELEMENTS]: false,
     [CLIENT_CONFIG]: {
       [SDF_CONCURRENCY_LIMIT]: 2,
       [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
@@ -63,7 +45,7 @@ describe('config', () => {
   }
   const currentConfigWithFetch = {
     [FETCH]: {
-      [INCLUDE]: defaultFetch[INCLUDE],
+      [INCLUDE]: fetchDefault[INCLUDE],
       [EXCLUDE]: {
         types: [
           { name: 'testAll', ids: ['.*'] },
@@ -72,7 +54,6 @@ describe('config', () => {
         fileCabinet: ['SomeRegex'],
       },
     },
-    [DEPLOY_REFERENCED_ELEMENTS]: false,
     [CLIENT_CONFIG]: {
       [SDF_CONCURRENCY_LIMIT]: 2,
       [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
@@ -131,7 +112,6 @@ describe('config', () => {
             [INCLUDE]: currentConfigWithFetch[FETCH][INCLUDE],
             [EXCLUDE]: newExclude,
           },
-          [DEPLOY_REFERENCED_ELEMENTS]: false,
           [CLIENT_CONFIG]: {
             [FETCH_ALL_TYPES_AT_ONCE]: false,
             [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
@@ -146,13 +126,14 @@ describe('config', () => {
 
   it('should convert typesToSkip and filePathsRegexSkipList to fetch', () => {
     const newFetch = {
-      [INCLUDE]: defaultFetch[INCLUDE],
-      [EXCLUDE]: {
+      [INCLUDE]: fetchDefault[INCLUDE],
+      [EXCLUDE]: combineQueryParams({
         types: [
           { name: 'someType', ids: ['.*'] },
         ],
         fileCabinet: ['.*someRegex1.*', 'someRegex2.*', '.*someRegex3', 'someRegex4'],
       },
+      fetchDefault[EXCLUDE]),
     }
     const config = {
       ..._.omit(currentConfigWithSkipList, SKIP_LIST),
@@ -166,7 +147,6 @@ describe('config', () => {
         configType,
         {
           [FETCH]: newFetch,
-          [DEPLOY_REFERENCED_ELEMENTS]: false,
           [CLIENT_CONFIG]: {
             [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
             [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
@@ -175,7 +155,44 @@ describe('config', () => {
         }
       ))).toBe(true)
 
-    expect(configChange?.message).toBe(UPDATE_CONFIG_FORMAT)
+    expect(configChange?.message).toBe(UPDATE_FETCH_CONFIG_FORMAT)
+  })
+
+  it('should convert deployReferencedElements when its value is "true" to deploy', () => {
+    const config = {
+      ..._.omit(currentConfigWithFetch, DEPLOY_REFERENCED_ELEMENTS),
+      [DEPLOY_REFERENCED_ELEMENTS]: true,
+    }
+    const configChange = getConfigFromConfigChanges(false, [], {}, config)
+    expect(configChange?.config
+      .isEqual(new InstanceElement(
+        ElemID.CONFIG_NAME,
+        configType,
+        {
+          [FETCH]: configChange?.config.value[FETCH],
+          [CLIENT_CONFIG]: {
+            [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
+            [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
+            [SDF_CONCURRENCY_LIMIT]: 2,
+          },
+          [DEPLOY]: {
+            [DEPLOY_REFERENCED_ELEMENTS]: true,
+          },
+        }
+      ))).toBe(true)
+
+    expect(configChange?.message).toBe(UPDATE_DEPLOY_CONFIG)
+  })
+
+  it('should delete deployReferencedElements when its value is "false" without adding deploy section', () => {
+    const config = {
+      ..._.omit(currentConfigWithFetch, DEPLOY_REFERENCED_ELEMENTS),
+      [DEPLOY_REFERENCED_ELEMENTS]: false,
+    }
+    const configChange = getConfigFromConfigChanges(false, [], {}, config)
+    expect(configChange?.config?.value[DEPLOY_REFERENCED_ELEMENTS]).toBe(undefined)
+    expect(configChange?.config?.value[DEPLOY]).toBe(undefined)
+    expect(configChange?.message).toBe(UPDATE_DEPLOY_CONFIG)
   })
 
   it('should convert skipList to fetch', () => {
@@ -183,8 +200,11 @@ describe('config', () => {
       ...currentConfigWithSkipList,
     }
     const newFetch = {
-      [INCLUDE]: defaultFetch[INCLUDE],
-      [EXCLUDE]: currentConfigWithFetch[FETCH][EXCLUDE],
+      [INCLUDE]: fetchDefault[INCLUDE],
+      [EXCLUDE]: combineQueryParams(
+        currentConfigWithFetch[FETCH][EXCLUDE],
+        fetchDefault[EXCLUDE]
+      ),
     }
 
     const configChange = getConfigFromConfigChanges(false, [], {}, config)
@@ -194,7 +214,6 @@ describe('config', () => {
         configType,
         {
           [FETCH]: newFetch,
-          [DEPLOY_REFERENCED_ELEMENTS]: false,
           [CLIENT_CONFIG]: {
             [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
             [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
@@ -203,7 +222,7 @@ describe('config', () => {
         }
       ))).toBe(true)
 
-    expect(configChange?.message).toBe(UPDATE_CONFIG_FORMAT)
+    expect(configChange?.message).toBe(UPDATE_FETCH_CONFIG_FORMAT)
   })
 
   it('should combine configuration messages when needed', () => {
@@ -218,7 +237,7 @@ describe('config', () => {
 
     const configChange = getConfigFromConfigChanges(false, ['someFailedFile'], {}, config)
 
-    expect(configChange?.message).toBe(`${STOP_MANAGING_ITEMS_MSG} In addition, ${UPDATE_CONFIG_FORMAT}`)
+    expect(configChange?.message).toBe(`${STOP_MANAGING_ITEMS_MSG} In addition, ${UPDATE_FETCH_CONFIG_FORMAT}`)
   })
 
   it('should omit skipList and update "fetch.exclude". config with skipList AND fetch', () => {
@@ -231,7 +250,7 @@ describe('config', () => {
         configType,
         {
           [FETCH]: {
-            [INCLUDE]: defaultFetch[INCLUDE],
+            [INCLUDE]: fetchDefault[INCLUDE],
             [EXCLUDE]: {
               fileCabinet: ['SomeRegex'],
               types: [
@@ -240,7 +259,6 @@ describe('config', () => {
               ],
             },
           },
-          [DEPLOY_REFERENCED_ELEMENTS]: false,
           [CLIENT_CONFIG]: {
             [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
             [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,

@@ -160,7 +160,6 @@ const filterCreator: FilterCreator = () => {
         // override the real admin profile
         await removeAsync(changes, isAdminProfileChange)
       }
-      return []
     },
   }
 }

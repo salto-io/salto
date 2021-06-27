@@ -17,38 +17,26 @@ import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/add_parent_folder'
 import { fileCabinetTypes } from '../../src/types'
 import { PATH, FILE } from '../../src/constants'
-import { OnFetchParameters } from '../../src/filter'
-import NetsuiteClient from '../../src/client/client'
 
 describe('add_parent_folder filter', () => {
   let instance: InstanceElement
-  let onFetchParameters: OnFetchParameters
   beforeEach(() => {
     instance = new InstanceElement(
       'someFile',
       fileCabinetTypes[FILE],
       {}
     )
-
-    onFetchParameters = {
-      elements: [instance],
-      client: {} as NetsuiteClient,
-      elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({ serviceIdsIndex: {}, internalIdsIndex: {} }),
-      },
-      isPartial: false,
-    }
   })
 
   it('should add parent field to file', async () => {
     instance.value[PATH] = '/aa/bb/cc.txt'
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator().onFetch([instance])
     expect(instance.annotations[CORE_ANNOTATIONS.PARENT]).toEqual(['[/aa/bb]'])
   })
 
   it('should not add parent if file is top level', async () => {
     instance.value[PATH] = '/aa'
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator().onFetch([instance])
     expect(instance.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
   })
 })

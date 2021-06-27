@@ -25,10 +25,10 @@ import {
   SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD,
   OBJECTS_PATH, FIELD_ANNOTATIONS, MAX_QUERY_LENGTH,
 } from '../constants'
-import { FilterCreator } from '../filter'
+import { FilterCreator, FilterResult } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
 import { getNamespace, isMasterDetailField, isLookupField } from './utils'
-import { ConfigChangeSuggestion, FilterResult } from '../types'
+import { ConfigChangeSuggestion } from '../types'
 import { DataManagement } from '../fetch_profile/data_management'
 
 const { mapValuesAsync, pickAsync } = promises.object

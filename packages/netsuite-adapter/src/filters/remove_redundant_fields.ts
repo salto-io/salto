@@ -16,15 +16,15 @@
 import { getDeepInnerType, isObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { FilterCreator } from '../filter'
+import { FilterWith } from '../filter'
 
 const { awu } = collections.asynciterable
 
 const REDUNDANT_TYPES = ['NullField', 'CustomFieldList', 'CustomFieldRef']
 
 
-const filterCreator: FilterCreator = () => ({
-  onFetch: async ({ elements }) => {
+const filterCreator = (): FilterWith<'onFetch'> => ({
+  onFetch: async elements => {
     await awu(elements)
       .filter(isObjectType)
       .forEach(async e => {

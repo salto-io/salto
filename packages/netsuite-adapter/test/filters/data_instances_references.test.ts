@@ -50,7 +50,7 @@ describe('data_instances_references', () => {
       { internalId: '1' }
     )
 
-    const onFetchParameters = {
+    const filterOpts = {
       elements: [instance, referencedInstance],
       client: {} as NetsuiteClient,
       elementsSourceIndex: {
@@ -59,7 +59,7 @@ describe('data_instances_references', () => {
       isPartial: false,
       dataTypeNames: new Set<string>(),
     }
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator(filterOpts).onFetch?.([instance, referencedInstance])
     expect((instance.value.field as ReferenceExpression).elemID.getFullName())
       .toBe(referencedInstance.elemID.getFullName())
   })
@@ -71,7 +71,7 @@ describe('data_instances_references', () => {
       { field: { internalId: '1' } }
     )
 
-    const onFetchParameters = {
+    const filterOpts = {
       elements: [instance],
       client: {} as NetsuiteClient,
       elementsSourceIndex: {
@@ -80,7 +80,7 @@ describe('data_instances_references', () => {
       isPartial: false,
       dataTypeNames: new Set<string>(),
     }
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator(filterOpts).onFetch?.([instance])
     expect(instance.value.field.internalId).toBe('1')
   })
 
@@ -97,8 +97,7 @@ describe('data_instances_references', () => {
       { internalId: '1' }
     )
 
-    const onFetchParameters = {
-      elements: [instance],
+    const fetchOpts = {
       client: {} as NetsuiteClient,
       elementsSourceIndex: {
         getIndexes: () => Promise.resolve({ serviceIdsIndex: {},
@@ -109,7 +108,7 @@ describe('data_instances_references', () => {
       isPartial: true,
       dataTypeNames: new Set<string>(),
     }
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator(fetchOpts).onFetch?.([instance])
     expect((instance.value.field as ReferenceExpression).elemID.getFullName())
       .toBe(referencedInstance.elemID.getFullName())
   })
@@ -127,8 +126,7 @@ describe('data_instances_references', () => {
       { internalId: '1' }
     )
 
-    const onFetchParameters = {
-      elements: [instance, referencedInstance],
+    const fetchOpts = {
       client: {} as NetsuiteClient,
       elementsSourceIndex: {
         getIndexes: () => Promise.resolve({ serviceIdsIndex: {}, internalIdsIndex: {} }),
@@ -136,7 +134,7 @@ describe('data_instances_references', () => {
       isPartial: false,
       dataTypeNames: new Set<string>(),
     }
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator(fetchOpts).onFetch?.([instance, referencedInstance])
     expect((instance.value.recordRefList[0] as ReferenceExpression).elemID.getFullName())
       .toBe(referencedInstance.elemID.getFullName())
   })

@@ -20,7 +20,7 @@ import {
 import { applyRecursive } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { FilterCreator } from '../filter'
+import { FilterWith } from '../filter'
 import { dataset_dependencies } from '../types/custom_types/dataset'
 import { savedcsvimport_filemappings } from '../types/custom_types/savedcsvimport'
 import {
@@ -87,13 +87,13 @@ const castAndOrderListsRecursively = async (
 }
 
 
-const filterCreator: FilterCreator = () => ({
+const filterCreator = (): FilterWith<'onFetch'> => ({
   /**
    * Upon fetch, mark values of list type as list and order lists that are fetched unordered
    *
    * @param elements the already fetched elements
    */
-  onFetch: async ({ elements }) => {
+  onFetch: async elements => {
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async inst => castAndOrderListsRecursively(await inst.getType(), inst.value))

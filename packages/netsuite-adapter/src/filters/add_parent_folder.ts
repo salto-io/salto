@@ -16,10 +16,10 @@
 import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
 import path from 'path'
 import { isFileCabinetType } from '../types'
-import { FilterCreator } from '../filter'
+import { FilterWith } from '../filter'
 
-const filterCreator: FilterCreator = () => ({
-  onFetch: async ({ elements }) => {
+const filterCreator = (): FilterWith<'onFetch'> => ({
+  onFetch: async elements => {
     elements
       .filter(isInstanceElement)
       .filter(e => isFileCabinetType(e.refType.elemID))

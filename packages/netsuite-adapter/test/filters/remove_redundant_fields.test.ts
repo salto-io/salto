@@ -15,9 +15,7 @@
 */
 import { ElemID, ObjectType, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/remove_redundant_fields'
-import { OnFetchParameters } from '../../src/filter'
 import { NETSUITE } from '../../src/constants'
-import NetsuiteClient from '../../src/client/client'
 
 describe('removeRedundantFields', () => {
   const typeToRemove = new ObjectType({ elemID: new ElemID(NETSUITE, 'NullField') })
@@ -27,23 +25,13 @@ describe('removeRedundantFields', () => {
       listToRemove: { refType: new ListType(typeToRemove) },
       numberField: { refType: BuiltinTypes.NUMBER },
     } })
-  let onFetchParameters: OnFetchParameters
   let elements: ObjectType[]
 
   beforeEach(() => {
     elements = [typeToRemove, typeWithFieldToRemove]
-    onFetchParameters = {
-      elements,
-      client: {} as NetsuiteClient,
-      elementsSourceIndex: { getIndexes: () => Promise.resolve({
-        serviceIdsIndex: {},
-        internalIdsIndex: {},
-      }) },
-      isPartial: false,
-    }
   })
   it('should remove the types and the fields', async () => {
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator().onFetch?.(elements)
     expect(elements.length).toEqual(1)
     expect(typeWithFieldToRemove.fields.fieldToRemove).toBeUndefined()
     expect(typeWithFieldToRemove.fields.listToRemove).toBeUndefined()

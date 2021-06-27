@@ -15,16 +15,15 @@
 */
 import _ from 'lodash'
 import { Value, ObjectType, ElemID, InstanceElement, Element, isObjectType, ChangeGroup, getChangeElement, DeployResult } from '@salto-io/adapter-api'
-import { findElement } from '@salto-io/adapter-utils'
+import { filter, findElement } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { MetadataInfo } from 'jsforce'
 import { SalesforceRecord } from '../src/client/types'
-import { FilterContext, filtersRunner } from '../src/filter'
+import { FilterContext, FilterResult } from '../src/filter'
 import { SALESFORCE } from '../src/constants'
 import SalesforceAdapter, { DEFAULT_FILTERS } from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import { createInstanceElement, metadataType, apiName, MetadataValues, isInstanceOfCustomObject } from '../src/transformers/transformer'
-import { FilterResult } from '../src/types'
 import { fetchMetadataType } from '../src/fetch'
 import { defaultFilterContext } from '../test/utils'
 
@@ -242,4 +241,5 @@ export const runFiltersOnFetch = async (
   elements: Element[],
   filterCreators = DEFAULT_FILTERS
 ): Promise<void | FilterResult> =>
-  filtersRunner(client, { ...defaultFilterContext, ...context }, filterCreators).onFetch(elements)
+  filter.filtersRunner({ client, config: { ...defaultFilterContext, ...context } }, filterCreators)
+    .onFetch(elements)

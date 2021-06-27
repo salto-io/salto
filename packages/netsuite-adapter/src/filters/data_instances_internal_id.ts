@@ -19,7 +19,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { isDataObjectType } from '../types'
 import { NETSUITE, RECORDS_PATH } from '../constants'
-import { FilterCreator } from '../filter'
+import { FilterWith } from '../filter'
 
 const { awu } = collections.asynciterable
 
@@ -35,8 +35,8 @@ const getSubInstanceName = (path: ElemID, internalId: string): string => {
  * (since the internal id is hidden, and we don't support hidden values in lists,
  * the objects in the list need to be extracted to new instances).
  */
-const filterCreator: FilterCreator = () => ({
-  onFetch: async ({ elements }) => {
+const filterCreator = (): FilterWith<'onFetch'> => ({
+  onFetch: async elements => {
     const recordRefType = elements.find(e => e.elemID.name === 'RecordRef')
 
     const newInstancesMap: Record<string, InstanceElement> = {}

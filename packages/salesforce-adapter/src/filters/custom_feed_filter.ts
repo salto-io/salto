@@ -16,8 +16,7 @@
 import { FileProperties } from 'jsforce-types'
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { findObjectType } from '@salto-io/adapter-utils'
-import { FilterCreator } from '../filter'
-import { FilterResult } from '../types'
+import { FilterCreator, FilterResult } from '../filter'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 import { SALESFORCE } from '../constants'
 

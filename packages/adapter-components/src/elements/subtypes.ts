@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isContainerType, ObjectType } from '@salto-io/adapter-api'
+import { isContainerType, ObjectType, isObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 
 const { awu } = collections.asynciterable
@@ -23,12 +23,12 @@ export const getSubtypes = async (types: ObjectType[]): Promise<ObjectType[]> =>
 
   const findSubtypes = async (type: ObjectType): Promise<void> => {
     await awu(Object.values(type.fields)).forEach(async field => {
-      const filedContainerOrType = await field.getType()
-      const fieldType = isContainerType(filedContainerOrType)
-        ? await filedContainerOrType.getInnerType()
-        : filedContainerOrType
+      const fieldContainerOrType = await field.getType()
+      const fieldType = isContainerType(fieldContainerOrType)
+        ? await fieldContainerOrType.getInnerType()
+        : fieldContainerOrType
 
-      if (!(fieldType instanceof ObjectType)
+      if (!isObjectType(fieldType)
         || fieldType.elemID.getFullName() in subtypes
         || types.includes(fieldType)) {
         return

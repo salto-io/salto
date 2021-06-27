@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType } from '@salto-io/adapter-api'
 import { types, values as lowerDashValues } from '@salto-io/lowerdash'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
-import { AdapterApiConfig, createAdapterApiConfigType, TypeConfig, TypeDefaultsConfig } from './shared'
+import { AdapterApiConfig, createAdapterApiConfigType, TypeConfig, TypeDefaultsConfig, UserFetchConfig } from './shared'
 import { createRequestConfigs, validateRequestConfig } from './request'
 import { createTransformationConfigTypes, validateTransoformationConfig } from './transformation'
 import { findDuplicates } from './validation_utils'
@@ -54,6 +54,9 @@ export type TypeSwaggerDefaultConfig = TypeDefaultsConfig
 
 export type AdapterSwaggerApiConfig = AdapterApiConfig & {
   swagger: SwaggerDefinitionBaseConfig
+
+  // if undefined - generate all types. if defined - should not be empty
+  supportedTypes?: string[]
 }
 export type RequestableAdapterSwaggerApiConfig = AdapterSwaggerApiConfig & {
   types: Record<string, RequestableTypeSwaggerConfig>
@@ -141,8 +144,9 @@ export const createSwaggerAdapterApiConfigType = ({
     additionalFields: {
       ...additionalFields,
       swagger: {
-        refType: createRefToElmWithValue(createSwaggerDefinitionsBaseConfigType(adapter)),
+        refType: createSwaggerDefinitionsBaseConfigType(adapter),
       },
+      supportedTypes: { refType: new ListType(BuiltinTypes.STRING) },
     },
   })
 }
@@ -180,5 +184,26 @@ export const validateApiDefinitionConfig = (
   const invalidTypes = explicitTypes.filter(r => invalidTypeNames.has(r))
   if (invalidTypes.length > 0) {
     throw new Error(`Invalid type names in ${apiDefinitionConfigPath}: ${[...invalidTypes].sort()} were renamed in ${apiDefinitionConfigPath}.typeNameOverrides`)
+  }
+}
+
+/**
+ * Verify that all fetch types are supported.
+ * Note: This validation is only relevant for swagger adapters.
+ */
+export const validateFetchConfig = (
+  fetchConfigPath: string,
+  apiConfigPath: string,
+  userFetchConfig: UserFetchConfig,
+  adapterApiConfig: AdapterSwaggerApiConfig,
+): void => {
+  if (adapterApiConfig.supportedTypes !== undefined) {
+    const supportedTypesNames = new Set(adapterApiConfig.supportedTypes)
+    const invalidIncludedTypes = userFetchConfig.includeTypes.filter(
+      name => !supportedTypesNames.has(name)
+    )
+    if (invalidIncludedTypes.length > 0) {
+      throw Error(`Invalid type names in ${fetchConfigPath}.includeTypes: ${invalidIncludedTypes} are not listed as supported types in ${apiConfigPath}.supportedTypes.`)
+    }
   }
 }

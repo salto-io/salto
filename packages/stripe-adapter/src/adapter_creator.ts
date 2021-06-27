@@ -24,15 +24,13 @@ import StripeAdapter from './adapter'
 import {
   Credentials, accessTokenCredentialsType,
 } from './auth'
-import {
-  configType, StripeConfig, CLIENT_CONFIG, DEFAULT_API_DEFINITIONS, API_DEFINITIONS_CONFIG,
-  StripeApiConfig,
-} from './config'
+import { configType, StripeConfig, CLIENT_CONFIG, DEFAULT_API_DEFINITIONS, API_DEFINITIONS_CONFIG,
+  StripeApiConfig, FETCH_CONFIG, StripeFetchConfig, DEFAULT_INCLUDE_TYPES } from './config'
 import { createConnection } from './client/connection'
 
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
-const { validateSwaggerApiDefinitionConfig } = configUtils
+const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
   token: config.value.token,
@@ -42,10 +40,18 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   const apiDefinitions: StripeApiConfig = _.defaults(
     {}, config?.value?.apiDefinitions, DEFAULT_API_DEFINITIONS
   )
+  const fetch: StripeFetchConfig = _.defaults(
+    {}, config?.value?.fetch, { includeTypes: DEFAULT_INCLUDE_TYPES },
+  )
 
   validateClientConfig(CLIENT_CONFIG, config?.value?.client)
   validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
-
+  validateSwaggerFetchConfig(
+    FETCH_CONFIG,
+    API_DEFINITIONS_CONFIG,
+    fetch,
+    apiDefinitions
+  )
 
   const adapterConfig: { [K in keyof Required<StripeConfig>]: StripeConfig[K] } = {
     client: config?.value?.client,

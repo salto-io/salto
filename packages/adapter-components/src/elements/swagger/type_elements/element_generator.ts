@@ -26,6 +26,7 @@ import {
   SchemaOrReference, SWAGGER_ARRAY, SWAGGER_OBJECT, isArraySchemaObject, SchemasAndRefs,
 } from './swagger_parser'
 import { fixTypes, defineAdditionalTypes } from './type_config_override'
+import { filterTypes } from '../../type_elements'
 
 const { isDefined } = lowerdashValues
 const { isArrayOfType } = lowerdashTypes
@@ -258,6 +259,7 @@ export const generateTypes = async (
     swagger,
     types,
     typeDefaults,
+    supportedTypes,
   }: AdapterSwaggerApiConfig,
   preParsedDefs?: SchemasAndRefs,
 ): Promise<ParsedTypes> => {
@@ -295,6 +297,19 @@ export const generateTypes = async (
     defineAdditionalTypes(adapterName, swagger.additionalTypes, definedTypes, types)
   }
   fixTypes(definedTypes, types, typeDefaults)
+
+  if (supportedTypes !== undefined) {
+    const filteredTypes = await filterTypes(
+      adapterName,
+      Object.values(definedTypes),
+      supportedTypes
+    )
+
+    return {
+      allTypes: _.keyBy(filteredTypes, type => type.elemID.name),
+      parsedConfigs,
+    }
+  }
 
   return {
     allTypes: definedTypes,

@@ -27,7 +27,7 @@ import { createConnection, validateCredentials } from './client/connection'
 
 const log = logger(module)
 const { validateClientConfig, createRetryOptions, DEFAULT_RETRY_OPTS } = clientUtils
-const { validateSwaggerApiDefinitionConfig } = configUtils
+const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => (
   config.value as Credentials
@@ -62,6 +62,7 @@ function validateConfig(config?: Readonly<InstanceElement>): asserts config is J
   getApiDefinitions(apiDefinitions).forEach(swaggerDef => {
     validateSwaggerApiDefinitionConfig('apiDefinitions', swaggerDef)
   })
+  validateSwaggerFetchConfig('fetch', 'apiDefinitions', fetch, apiDefinitions)
   validateFetchConfig(fetch)
 }
 

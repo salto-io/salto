@@ -16,11 +16,16 @@
 import { BuiltinTypes, Field, InstanceElement, isInstanceElement, isObjectType, ListType, ObjectType, ReferenceExpression, TypeElement } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { file } from '../types/file_cabinet_types'
 import { FilterCreator } from '../filter'
 import { INTERNAL_ID_TO_TYPES } from '../data_elements/types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 import { isDataObjectType } from '../types'
+import { SCRIPT_ID } from '../constants'
+
+const log = logger(module)
+
 
 const CUSTOM_FIELD_TYPE_TO_SALTO_TYPE: Record<string, TypeElement> = {
   CHECKBOX: BuiltinTypes.BOOLEAN,
@@ -50,12 +55,15 @@ const SELECT_TYPES = ['MULTISELECT', 'SELECT']
 const getFieldType = (
   fieldInstance: InstanceElement,
   nameToType: Record<string, ObjectType>
-): { fieldType: TypeElement; selectTypeIdAnnotation: string | undefined } => {
+): { fieldType: TypeElement; selectTypeIdAnnotation?: string } => {
   if (SELECT_TYPES.includes(fieldInstance.value.fieldtype)) {
     const types = fieldInstance.value.selectrecordtype in INTERNAL_ID_TO_TYPES
       ? INTERNAL_ID_TO_TYPES[fieldInstance.value.selectrecordtype].map(name => nameToType[name])
       : undefined
 
+    // This can be unknown in two cases: the selectrecordtype points to a type we do not support,
+    // or it points to a type that is represented by many sub types,
+    // e.g., item which is represented by InventoryItem, AssemblyItem, etc..
     const fieldType = types !== undefined && types.length === 1 ? types[0] : BuiltinTypes.UNKNOWN
 
     const selectTypeIdAnnotation = fieldType.elemID.isEqual(BuiltinTypes.UNKNOWN.elemID)
@@ -70,7 +78,11 @@ const getFieldType = (
 
   const fieldType = CUSTOM_FIELD_TYPE_TO_SALTO_TYPE[fieldInstance.value.fieldtype]
     ?? BuiltinTypes.UNKNOWN
-  return { fieldType, selectTypeIdAnnotation: undefined }
+  if (fieldType === undefined) {
+    log.warn(`Did not find the type for ${fieldInstance.value.fieldtype} of instance ${fieldInstance.elemID.getFullName()}`)
+    return { fieldType: BuiltinTypes.UNKNOWN }
+  }
+  return { fieldType }
 }
 
 const addFieldToType = (
@@ -88,7 +100,7 @@ const addFieldToType = (
     fieldType,
     {
       // eslint-disable-next-line camelcase
-      field_instance: new ReferenceExpression(fieldInstance.elemID),
+      field_instance: new ReferenceExpression(fieldInstance.elemID.createNestedID(SCRIPT_ID)),
       // eslint-disable-next-line camelcase
       select_type_id: selectTypeIdAnnotation,
     }
@@ -97,32 +109,30 @@ const addFieldToType = (
 
 const filterCreator: FilterCreator = ({ isPartial, elementsSourceIndex }) => ({
   onFetch: async elements => {
-    const dataTypes = _(elements)
+    const dataTypes = elements
       .filter(isObjectType)
       .filter(isDataObjectType)
-      .value()
 
     const nameToType = _.keyBy(dataTypes, e => e.elemID.name)
 
+    if (isPartial) {
+      Object.entries((await elementsSourceIndex.getIndexes()).customFieldsIndex)
+        .filter(([type]) => type in nameToType)
+        .forEach(([type, fields]) => {
+          fields.forEach(field => addFieldToType(nameToType[type], field, nameToType))
+        })
+    }
+
     const instances = elements.filter(isInstanceElement)
-    _(instances)
+    instances
       .forEach(fieldInstance => {
-        _(getFieldInstanceTypes(fieldInstance))
+        getFieldInstanceTypes(fieldInstance)
           .map(typeName => nameToType[typeName])
           .filter(values.isDefined)
           .forEach(type => {
             addFieldToType(type, fieldInstance, nameToType)
           })
       })
-
-    if (isPartial) {
-      _((await elementsSourceIndex.getIndexes()).customFieldsIndex)
-        .entries()
-        .filter(([type]) => type in nameToType)
-        .forEach(([type, fields]) => {
-          fields.forEach(field => addFieldToType(nameToType[type], field, nameToType))
-        })
-    }
   },
 })
 

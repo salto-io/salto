@@ -15,8 +15,6 @@
 */
 
 import { InstanceElement } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
-import _ from 'lodash'
 import { othercustomfield } from '../types/custom_types/othercustomfield'
 import { INTERNAL_ID_TO_TYPES } from './types'
 
@@ -55,19 +53,20 @@ const CUSTOM_FIELD_TO_TYPE: Record<string, Record<string, string[]>> = {
 }
 
 
-export const getFieldInstanceTypes = (fieldInstance: InstanceElement): string[] => {
-  if (fieldInstance.elemID.typeName in CUSTOM_FIELD_TO_TYPE) {
-    return _(CUSTOM_FIELD_TO_TYPE[fieldInstance.elemID.typeName])
-      .pickBy((_typeName, field) => fieldInstance.value[field])
-      .values()
-      .filter(values.isDefined)
-      .flatten()
-      .value()
+/**
+ * @param instance an instance if a field type (e.g., entitycustomfield, crmcustomfield, etc...)
+ * @returns All the names of types a certain field instance applies too
+ */
+export const getFieldInstanceTypes = (instance: InstanceElement): string[] => {
+  if (instance.elemID.typeName in CUSTOM_FIELD_TO_TYPE) {
+    return Object.entries(CUSTOM_FIELD_TO_TYPE[instance.elemID.typeName])
+      .filter(([fieldName]) => instance.value[fieldName])
+      .flatMap(([_fieldName, typeNames]) => typeNames)
   }
 
-  if (fieldInstance.elemID.typeName === othercustomfield.elemID.name
-    && fieldInstance.value.rectype in INTERNAL_ID_TO_TYPES) {
-    return INTERNAL_ID_TO_TYPES[fieldInstance.value.rectype]
+  if (instance.elemID.typeName === othercustomfield.elemID.name
+    && instance.value.rectype in INTERNAL_ID_TO_TYPES) {
+    return INTERNAL_ID_TO_TYPES[instance.value.rectype]
   }
   return []
 }

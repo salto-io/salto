@@ -115,8 +115,6 @@ describe('elements url filter', () => {
       connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
       const instance = new InstanceElement(ElemID.CONFIG_NAME, new ObjectType({ elemID: new ElemID('salesforce', 'BusinessHoursSettings'), annotations: { metadataType: 'BusinessHoursSettings' } }))
       const res = await filter.onFetch?.([instance]) as FilterResult
-      expect(res).toBeDefined()
-      expect(res.errors).toBeDefined()
       const err = res.errors ?? []
       expect(res.errors).toHaveLength(1)
       expect(err[0]).toEqual({

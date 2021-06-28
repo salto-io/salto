@@ -98,8 +98,6 @@ describe('profile paths filter', () => {
         throw new Error()
       })
       const res = await filter.onFetch([instance]) as FilterResult
-      expect(res).toBeDefined()
-      expect(res.errors).toBeDefined()
       const err = res.errors ?? []
       expect(res.errors).toHaveLength(1)
       expect(err[0]).toEqual({

@@ -18,7 +18,7 @@ import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { lightningElementsUrlRetriever } from '../elements_url_retreiver/elements_url_retreiver'
-import { buildElementsSourceForFetch, extractFlatCustomObjectFields, toSaltoWarning } from './utils'
+import { buildElementsSourceForFetch, extractFlatCustomObjectFields, ensureSafeFilterFetch, ensureFilterEnabled } from './utils'
 
 const { awu } = collections.asynciterable
 
@@ -29,43 +29,40 @@ const getRelevantElements = (elements: Element[]): AsyncIterable<Element> =>
     .flatMap(extractFlatCustomObjectFields)
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
-  onFetch: async (elements: Element[]) => {
-    if (!config.fetchProfile.isFeatureEnabled('elementsUrls')) {
-      return undefined
-    }
-    try {
-      const url = await client.getUrl()
-      if (url === undefined) {
-        log.error('Failed to get salesforce URL')
-        return undefined
-      }
-
-      const referenceElements = buildElementsSourceForFetch(elements, config)
-      const urlRetriever = lightningElementsUrlRetriever(url, id => referenceElements.get(id))
-
-      if (urlRetriever === undefined) {
-        log.error('Failed to get salesforce URL')
-        return undefined
-      }
-
-      const updateElementUrl = async (element: Element): Promise<void> => {
-        const elementURL = await urlRetriever.retrieveUrl(element)
-
-        if (elementURL !== undefined) {
-          element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = elementURL.href
+  onFetch: ensureFilterEnabled(
+    ensureSafeFilterFetch(
+      async (elements: Element[]) => {
+        const url = await client.getUrl()
+        if (url === undefined) {
+          log.error('Failed to get salesforce URL')
+          return undefined
         }
-      }
 
-      await awu(getRelevantElements(elements)).forEach(
-        async element => updateElementUrl(element)
-      )
-    } catch (error) {
-      return {
-        errors: [toSaltoWarning('unexpected error adding services url to elements')],
-      }
-    }
-    return undefined
-  },
+        const referenceElements = buildElementsSourceForFetch(elements, config)
+        const urlRetriever = lightningElementsUrlRetriever(url, id => referenceElements.get(id))
+
+        if (urlRetriever === undefined) {
+          log.error('Failed to get salesforce URL')
+          return undefined
+        }
+
+        const updateElementUrl = async (element: Element): Promise<void> => {
+          const elementURL = await urlRetriever.retrieveUrl(element)
+
+          if (elementURL !== undefined) {
+            element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = elementURL.href
+          }
+        }
+
+        await awu(getRelevantElements(elements)).forEach(
+          async element => updateElementUrl(element)
+        )
+        return undefined
+      },
+      'Failed to unexpected error when adding services url to elements'
+    ),
+    'elementsUrls', config
+  ),
 })
 
 export default filterCreator

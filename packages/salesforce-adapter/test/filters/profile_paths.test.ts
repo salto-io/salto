@@ -101,7 +101,11 @@ describe('profile paths filter', () => {
       expect(res).toBeDefined()
       expect(res.errors).toBeDefined()
       const err = res.errors ?? []
-      expect(err[0].message).toEqual('unexpected error when repalceing path for profile instances')
+      expect(res.errors).toHaveLength(1)
+      expect(err[0]).toEqual({
+        severity: 'Warning',
+        message: 'Failed to unexpected error when repalceing path for profile instances',
+      })
     })
   })
   describe('when feature is disabled', () => {

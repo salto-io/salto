@@ -25,6 +25,7 @@ import {
 import { getParents, buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import { collections } from '@salto-io/lowerdash'
+import { OptionalFeatures } from '../types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION, CUSTOM_FIELD,
@@ -32,7 +33,7 @@ import {
 } from '../constants'
 import { JSONBool, CustomObject } from '../client/types'
 import { metadataType, apiName, defaultApiName, Types, isCustomSettingsObject, isCustomObject } from '../transformers/transformer'
-import { FilterContext } from '../filter'
+import { Filter, FilterContext } from '../filter'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -260,3 +261,30 @@ export const toSaltoWarning = (message: string): SaltoError => (
     severity: 'Warning',
   })
 )
+
+export const ensureSafeFilterFetch = (
+  fetchFilterFunc: Required<Filter>['onFetch'],
+  warningMessage: string,
+): Required<Filter>['onFetch'] =>
+  async elements => {
+    try {
+      return await fetchFilterFunc(elements)
+    } catch (e) {
+      log.error('Failed to run filter with the following error %o, stack %o', e, e.stack)
+      return {
+        errors: [toSaltoWarning(warningMessage)],
+      }
+    }
+  }
+export const ensureFilterEnabled = (
+  fetchFilterFunc: Required<Filter>['onFetch'],
+  filterName: keyof OptionalFeatures,
+  config : FilterContext,
+): Required<Filter>['onFetch'] =>
+  async elements => {
+    if (!config.fetchProfile.isFeatureEnabled(filterName)) {
+      log.debug('skipping %o filter due to configuration', filterName)
+      return undefined
+    }
+    return fetchFilterFunc(elements)
+  }

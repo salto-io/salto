@@ -322,9 +322,11 @@ describe('extra dependencies filter', () => {
       expect(getGeneratedDeps(workspaceInstance)).toBeUndefined()
     })
   })
+
   describe('when feature is throwing an error', () => {
     const mockQueryAll: jest.Mock = jest.fn()
     SalesforceClient.prototype.queryAll = mockQueryAll
+
     it('should return a warning', async () => {
       const { connection } = mockClient()
       connection.query.mockImplementation(() => { throw new Error() })
@@ -332,9 +334,14 @@ describe('extra dependencies filter', () => {
       expect(res).toBeDefined()
       expect(res.errors).toBeDefined()
       const err = res.errors ?? []
-      expect(err[0].message).toEqual('unexpected error when getting extra dependencies')
+      expect(res.errors).toHaveLength(1)
+      expect(err[0]).toEqual({
+        severity: 'Warning',
+        message: 'Failed to unexpected error when getting extra dependencies',
+      })
     })
   })
+
   describe('when feature is disabled', () => {
     let connection: MockInterface<Connection>
     beforeEach(async () => {
@@ -351,6 +358,7 @@ describe('extra dependencies filter', () => {
       }) as FilterType
       await filter.onFetch(elements)
     })
+
     it('should not run any query', () => {
       expect(connection.query).not.toHaveBeenCalled()
     })

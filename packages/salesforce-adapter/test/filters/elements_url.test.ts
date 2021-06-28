@@ -118,7 +118,11 @@ describe('elements url filter', () => {
       expect(res).toBeDefined()
       expect(res.errors).toBeDefined()
       const err = res.errors ?? []
-      expect(err[0].message).toEqual('unexpected error adding services url to elements')
+      expect(res.errors).toHaveLength(1)
+      expect(err[0]).toEqual({
+        severity: 'Warning',
+        message: 'Failed to unexpected error when adding services url to elements',
+      })
     })
   })
   describe('when feature is disabled', () => {

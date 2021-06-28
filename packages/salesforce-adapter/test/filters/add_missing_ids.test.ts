@@ -196,9 +196,11 @@ describe('Internal IDs filter', () => {
       expect(elements[3].annotations?.[INTERNAL_ID_ANNOTATION]).toBeUndefined()
     })
   })
+
   describe('when feature is throwing an error', () => {
     const mockListMetadataObjects: jest.Mock = jest.fn()
     SalesforceClient.prototype.listMetadataObjects = mockListMetadataObjects
+
     it('should return a warning', async () => {
       const { connection } = mockClient()
       connection.query.mockImplementation(() => { throw new Error() })
@@ -206,13 +208,19 @@ describe('Internal IDs filter', () => {
       expect(res).toBeDefined()
       expect(res.errors).toBeDefined()
       const err = res.errors ?? []
-      expect(err[0].message).toEqual('unexpected error when adding missing ids')
+      expect(res.errors).toHaveLength(1)
+      expect(err[0]).toEqual({
+        severity: 'Warning',
+        message: 'Failed to unexpected error when adding missing ids',
+      })
     })
   })
+
   describe('when feature is disabled', () => {
     const mockListMetadataObjects: jest.Mock = jest.fn()
     SalesforceClient.prototype.listMetadataObjects = mockListMetadataObjects
     elements = generateElements()
+
     it('should not run any query', async () => {
       const { connection } = mockClient()
       expect(elements[4]).toBeInstanceOf(InstanceElement)

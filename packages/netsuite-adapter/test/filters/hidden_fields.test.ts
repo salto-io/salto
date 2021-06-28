@@ -15,9 +15,7 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/hidden_fields'
-import NetsuiteClient from '../../src/client/client'
 import { NETSUITE } from '../../src/constants'
-import { OnFetchParameters } from '../../src/filter'
 
 describe('hidden_fields', () => {
   it('should hide requested fields', async () => {
@@ -29,15 +27,7 @@ describe('hidden_fields', () => {
       },
       annotations: { source: 'soap' },
     })
-    const onFetchParameters: OnFetchParameters = {
-      elements: [type],
-      client: {} as NetsuiteClient,
-      elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({ serviceIdsIndex: {}, internalIdsIndex: {} }),
-      },
-      isPartial: false,
-    }
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator().onFetch([type])
     expect(type.fields.internalId.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeTruthy()
     expect(type.fields.otherField.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]).toBeUndefined()
   })

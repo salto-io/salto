@@ -18,11 +18,10 @@ import { collections, values as lowerdashValues, promises } from '@salto-io/lowe
 import { transformValues, TransformFunc, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoError } from '@salto-io/adapter-api'
-import { FilterCreator } from '../filter'
+import { FilterCreator, FilterResult } from '../filter'
 import { apiName, isInstanceOfCustomObject, isCustomObject } from '../transformers/transformer'
 import { FIELD_ANNOTATIONS, KEY_PREFIX, KEY_PREFIX_LENGTH } from '../constants'
 import { isLookupField, isMasterDetailField } from './utils'
-import { FilterResult } from '../types'
 import { DataManagement } from '../fetch_profile/data_management'
 
 const { makeArray } = collections.array

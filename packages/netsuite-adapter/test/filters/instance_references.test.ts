@@ -96,36 +96,35 @@ describe('instance_references filter', () => {
     })
 
     it('should replace path references', async () => {
-      await filterCreator().onFetch({
-        elements: [fileInstance, workflowInstance, instanceWithRefs],
+      await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
-      })
+      }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
 
       expect(instanceWithRefs.value.refToFilePath)
         .toEqual(new ReferenceExpression(fileInstance.elemID.createNestedID(PATH)))
     })
 
     it('should replace scriptid references', async () => {
-      await filterCreator().onFetch({
-        elements: [fileInstance, workflowInstance, instanceWithRefs],
+      await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
-      })
+      }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
+
 
       expect(instanceWithRefs.value.refToScriptId)
         .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID(SCRIPT_ID)))
     })
 
     it('should replace annotations references', async () => {
-      await filterCreator().onFetch({
-        elements: [fileInstance, workflowInstance, instanceWithRefs],
+      await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
-      })
+      }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
+
 
       expect(instanceWithRefs.annotations.refToFilePath)
         .toEqual(new ReferenceExpression(fileInstance.elemID.createNestedID(PATH)))
@@ -134,48 +133,48 @@ describe('instance_references filter', () => {
     })
 
     it('parent should reference the element itself', async () => {
-      await filterCreator().onFetch({
-        elements: [fileInstance, workflowInstance, instanceWithRefs],
+      await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
-      })
+      }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
+
 
       expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.PARENT])
         .toEqual([new ReferenceExpression(fileInstance.elemID)])
     })
 
     it('should replace scriptid with 1 nesting level references', async () => {
-      await filterCreator().onFetch({
-        elements: [fileInstance, workflowInstance, instanceWithRefs],
+      await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
-      })
+      }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
+
 
       expect(instanceWithRefs.value.refToOneLevelNestedScriptId)
         .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', SCRIPT_ID)))
     })
 
     it('should replace scriptid with 2 nesting level references', async () => {
-      await filterCreator().onFetch({
-        elements: [fileInstance, workflowInstance, instanceWithRefs],
+      await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
-      })
+      }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
+
 
       expect(instanceWithRefs.value.refToTwoLevelNestedScriptId)
         .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', 'workflowactions', '0', 'setfieldvalueaction', '0', SCRIPT_ID)))
     })
 
     it('should replace inner scriptid references', async () => {
-      await filterCreator().onFetch({
-        elements: [fileInstance, workflowInstance, instanceWithRefs],
+      await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
-      })
+      }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
+
 
       expect(workflowInstance.value.workflowstates.workflowstate[0].workflowactions[0]
         .setfieldvalueaction[1].field)
@@ -183,24 +182,24 @@ describe('instance_references filter', () => {
     })
 
     it('should not replace scriptid references for unresolved ref', async () => {
-      await filterCreator().onFetch({
-        elements: [fileInstance, workflowInstance, instanceWithRefs],
+      await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
-      })
+      }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
+
 
       expect(instanceWithRefs.value.refToNonExistingScriptId)
         .toEqual('[scriptid=non_existing_script_id]')
     })
 
     it('should not replace path references for unresolved ref', async () => {
-      await filterCreator().onFetch({
-        elements: [fileInstance, workflowInstance, instanceWithRefs],
+      await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
-      })
+      }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
+
 
       expect(instanceWithRefs.value.refToNonExistingPath)
         .toEqual('[/Templates/non.existing]')
@@ -213,12 +212,12 @@ describe('instance_references filter', () => {
         },
         internalIdsIndex: {},
       })
-      await filterCreator().onFetch({
-        elements: [fileInstance, workflowInstance, instanceWithRefs],
+      await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: true,
-      })
+      }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
+
 
       expect(instanceWithRefs.value.refToInstanceInElementSourcePath)
         .toEqual(new ReferenceExpression(instanceInElementsSource.elemID.createNestedID(PATH)))
@@ -231,12 +230,12 @@ describe('instance_references filter', () => {
         },
         internalIdsIndex: {},
       })
-      await filterCreator().onFetch({
-        elements: [fileInstance, workflowInstance, instanceWithRefs],
+      await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
         isPartial: false,
-      })
+      }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
+
 
       expect(instanceWithRefs.value.refToInstanceInElementSourcePath)
         .toEqual('[/Templates/instanceInElementsSource]')

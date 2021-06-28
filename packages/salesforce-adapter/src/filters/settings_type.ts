@@ -16,10 +16,9 @@
 import { Element, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { FilterCreator } from '../filter'
+import { FilterCreator, FilterResult } from '../filter'
 import { createMetadataTypeElements, apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { FilterResult } from '../types'
 import { SETTINGS_METADATA_TYPE } from '../constants'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
 

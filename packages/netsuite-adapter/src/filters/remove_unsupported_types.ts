@@ -17,13 +17,13 @@ import _ from 'lodash'
 import { elements as elementsComponents } from '@salto-io/adapter-components'
 import { isObjectType } from '@salto-io/adapter-api'
 import { NETSUITE } from '../constants'
-import { FilterCreator } from '../filter'
+import { FilterCreator, FilterWith } from '../filter'
 import { getMetadataTypes, isDataObjectType } from '../types'
 import { SUPPORTED_TYPES } from '../data_elements/types'
 
 
-const filterCreator: FilterCreator = () => ({
-  onFetch: async ({ elements, client }) => {
+const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
+  onFetch: async elements => {
     if (!client.isSuiteAppConfigured()) {
       return
     }

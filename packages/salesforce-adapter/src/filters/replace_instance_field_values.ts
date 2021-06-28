@@ -147,7 +147,6 @@ const filter: FilterCreator = ({ config }) => ({
       changes.map(getChangeElement),
       idToApiNameLookUp
     )
-    return []
   },
 })
 

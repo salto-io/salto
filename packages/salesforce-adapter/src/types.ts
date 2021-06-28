@@ -17,7 +17,6 @@ import { createMatchingObjectType, createRefToElmWithValue } from '@salto-io/ada
 import {
   ElemID, ObjectType, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
   FieldDefinition,
-  SaltoError,
 } from '@salto-io/adapter-api'
 import * as constants from './constants'
 import { SALESFORCE } from './constants'
@@ -188,11 +187,6 @@ export type MetadataConfigSuggestion = {
 }
 
 export type ConfigChangeSuggestion = DataManagementConfigSuggestions | MetadataConfigSuggestion
-
-export type FilterResult = {
-  configSuggestions?: ConfigChangeSuggestion[]
-  errors?: SaltoError[]
-}
 
 export const isDataManagementConfigSuggestions = (suggestion: ConfigChangeSuggestion):
   suggestion is DataManagementConfigSuggestions => suggestion.type === 'dataObjectsExclude'

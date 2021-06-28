@@ -75,10 +75,12 @@ export default class ZuoraAdapter implements AdapterOperations {
       paginationFunc: paginate,
     })
     this.filtersRunner = filtersRunner(
-      this.client,
-      this.paginator,
-      config,
-      filterCreators
+      {
+        client: this.client,
+        paginator: this.paginator,
+        config,
+      },
+      filterCreators,
     )
   }
 

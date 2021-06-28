@@ -55,9 +55,11 @@ export default class JiraAdapter implements AdapterOperations {
       { paginationFunc: pageByOffsetWithoutScopes, client: this.client }
     )
     this.filtersRunner = filtersRunner(
-      this.client,
-      this.paginator,
-      config,
+      {
+        client: this.client,
+        paginator: this.paginator,
+        config,
+      },
       filterCreators
     )
   }

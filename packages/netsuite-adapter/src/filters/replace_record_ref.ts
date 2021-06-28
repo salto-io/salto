@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { getMetadataTypes } from '../types'
 import { NETSUITE } from '../constants'
-import { FilterCreator } from '../filter'
+import { FilterWith } from '../filter'
 
 const { awu } = collections.asynciterable
 
@@ -63,8 +63,8 @@ const getFieldType = (
   return typeName !== undefined ? typeMap[typeName] : undefined
 }
 
-const filterCreator: FilterCreator = () => ({
-  onFetch: async ({ elements }) => {
+const filterCreator = (): FilterWith<'onFetch'> => ({
+  onFetch: async elements => {
     const recordRefElemId = new ElemID(NETSUITE, 'RecordRef')
 
     const recordRefType = elements.filter(isObjectType).find(e => e.elemID.isEqual(recordRefElemId))

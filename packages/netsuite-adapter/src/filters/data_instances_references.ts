@@ -18,7 +18,7 @@ import { ElemID, isInstanceElement, isListType, ReferenceExpression, TypeElement
 import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { isDataObjectType } from '../types'
-import { FilterCreator } from '../filter'
+import { FilterCreator, FilterWith } from '../filter'
 import { getDataInstanceId } from '../elements_source_index/elements_source_index'
 
 const { awu } = collections.asynciterable
@@ -57,8 +57,8 @@ const replaceReference: (
   return value
 }
 
-const filterCreator: FilterCreator = () => ({
-  onFetch: async ({ elements, elementsSourceIndex, isPartial }) => {
+const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): FilterWith<'onFetch'> => ({
+  onFetch: async elements => {
     const instances = elements.filter(isInstanceElement)
     const dataInstancesMap: Record<string, { elemID: ElemID }> = isPartial ? _.clone(
       (await elementsSourceIndex.getIndexes()).internalIdsIndex

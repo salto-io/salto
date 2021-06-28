@@ -386,8 +386,6 @@ const filter: FilterCreator = ({ config }) => ({
       ).toArray()
       await updateFieldTypes(instanceType, nonUniqueMapFields, mapFieldDef)
     })
-
-    return []
   },
 })
 

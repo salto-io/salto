@@ -20,15 +20,12 @@ import {
   CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD, ENTRY_FORM, TRANSACTION_FORM, PERMITTED_ROLE,
   RECORD_TYPE,
 } from '../../src/constants'
-import { OnFetchParameters } from '../../src/filter'
-import NetsuiteClient from '../../src/client/client'
 
 describe('consistent_values filter', () => {
   const instanceName = 'instanceName'
   const instanceWithNestedInconsistentValueName = 'instanceWithNestedInconsistentValue'
   let instance: InstanceElement
   let instanceWithNestedInconsistentValue: InstanceElement
-  let onFetchParameters: OnFetchParameters
   beforeEach(() => {
     instance = new InstanceElement(instanceName,
       customTypes[TRANSACTION_FORM],
@@ -48,25 +45,16 @@ describe('consistent_values filter', () => {
         },
       }
     )
-
-    onFetchParameters = {
-      elements: [instance, instanceWithNestedInconsistentValue],
-      client: {} as NetsuiteClient,
-      elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({ serviceIdsIndex: {}, internalIdsIndex: {} }),
-      },
-      isPartial: false,
-    }
   })
 
   it('should modify field with inconsistent value', async () => {
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator().onFetch([instance, instanceWithNestedInconsistentValue])
     expect(instance.value.name).toEqual(instanceName)
     expect(instance.value[RECORD_TYPE]).toEqual('JOURNALENTRY')
   })
 
   it('should modify nested field with inconsistent value', async () => {
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator().onFetch([instance, instanceWithNestedInconsistentValue])
     expect(instanceWithNestedInconsistentValue.value.name)
       .toEqual(instanceWithNestedInconsistentValueName)
     expect(instanceWithNestedInconsistentValue.value.permissions.permission[0][PERMITTED_ROLE])
@@ -75,7 +63,7 @@ describe('consistent_values filter', () => {
 
   it('should not modify field with consistent value', async () => {
     instance.value[RECORD_TYPE] = 'some consistent value'
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator().onFetch([instance, instanceWithNestedInconsistentValue])
     expect(instance.value.name).toEqual(instanceName)
     expect(instance.value[RECORD_TYPE]).toEqual('some consistent value')
   })
@@ -87,10 +75,7 @@ describe('consistent_values filter', () => {
         name: instanceName,
         [RECORD_TYPE]: 'INTERCOMPANYJOURNALENTRY',
       })
-    await filterCreator().onFetch({
-      ...onFetchParameters,
-      elements: [entryFormInstance],
-    })
+    await filterCreator().onFetch([entryFormInstance])
     expect(entryFormInstance.value.name).toEqual(instanceName)
     expect(entryFormInstance.value[RECORD_TYPE]).toEqual('INTERCOMPANYJOURNALENTRY')
   })
@@ -102,10 +87,7 @@ describe('consistent_values filter', () => {
         name: instanceName,
         [RECORD_TYPE]: 'INTERCOMPANYJOURNALENTRY',
       })
-    await filterCreator().onFetch({
-      ...onFetchParameters,
-      elements: [instanceWithNoMappings],
-    })
+    await filterCreator().onFetch([instanceWithNoMappings])
     expect(instanceWithNoMappings.value.name).toEqual(instanceName)
     expect(instanceWithNoMappings.value[RECORD_TYPE]).toEqual('INTERCOMPANYJOURNALENTRY')
   })

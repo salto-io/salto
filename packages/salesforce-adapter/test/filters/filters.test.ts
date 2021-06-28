@@ -25,7 +25,7 @@ import { mockTypes } from '../mock_elements'
 describe('SalesforceAdapter filters', () => {
   describe('when filter methods are implemented', () => {
     let adapter: SalesforceAdapter
-    let filter: MockInterface<FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>>
+    let filter: MockInterface<FilterWith<'onFetch' | 'onDeploy' | 'preDeploy' | 'onPostFetch'>>
     let filterCreator: MockFunction<FilterCreator>
     let connection: ReturnType<typeof mockAdapter>['connection']
     const mockFetchOpts: MockInterface<FetchOptions> = {
@@ -36,7 +36,8 @@ describe('SalesforceAdapter filters', () => {
       filter = {
         onFetch: mockFunction<(typeof filter)['onFetch']>().mockResolvedValue(),
         preDeploy: mockFunction<(typeof filter)['preDeploy']>().mockResolvedValue(),
-        onDeploy: mockFunction<(typeof filter)['onDeploy']>().mockResolvedValue([]),
+        onDeploy: mockFunction<(typeof filter)['onDeploy']>().mockResolvedValue(),
+        onPostFetch: mockFunction<(typeof filter)['onPostFetch']>().mockResolvedValue(),
       }
 
       filterCreator = mockFunction<FilterCreator>().mockReturnValue(filter)

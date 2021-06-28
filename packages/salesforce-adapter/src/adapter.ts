@@ -22,7 +22,7 @@ import { filter, logDuration, resolveChangeElement, restoreChangeElement } from 
 import { MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections, values, promises } from '@salto-io/lowerdash'
+import { collections, values, promises, objects } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
 import { apiName, Types, isMetadataObjectType } from './transformers/transformer'
@@ -74,6 +74,8 @@ import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
+const { concatObjects } = objects
+
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
@@ -221,6 +223,7 @@ export const allSystemFields = [
   'SetupOwnerId',
 ]
 
+
 export default class SalesforceAdapter implements AdapterOperations {
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]
@@ -304,7 +307,8 @@ export default class SalesforceAdapter implements AdapterOperations {
         elementsSource,
       },
     },
-    filterCreators)
+    filterCreators,
+    concatObjects)
     if (getElemIdFunc) {
       Types.setElemIdGetter(getElemIdFunc)
     }

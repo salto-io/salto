@@ -13,8 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { objects } from '@salto-io/lowerdash'
 import each from 'jest-each'
 import { Filter, FilterCreator, filtersRunner } from '../src/filter'
+
+const { concatObjects } = objects
 
 describe('filtersRunner', () => {
   describe('onFetch', () => {
@@ -31,40 +34,42 @@ describe('filtersRunner', () => {
       const filters = [onFetch1, onFetch2]
         .map(f => () => ({ onFetch: f })) as unknown as FilterCreator<FetchResult, {}>[]
 
-      onFetchResults = await filtersRunner({}, filters).onFetch([])
+      onFetchResults = await filtersRunner({}, filters, concatObjects).onFetch([])
     })
 
-    it('should run all onFetch filters', () => {
-      expect(onFetch1).toHaveBeenCalled()
-      expect(onFetch2).toHaveBeenCalled()
-    })
-
-    it('should run concat the results', () => {
+    it('should run onFetchAggregator the results', () => {
       expect(onFetchResults).toEqual({ a: [1, 2] })
     })
   })
 
   each([
+    'onFetch',
     'preDeploy',
     'onDeploy',
     'onPostFetch',
   ]).describe('%s', (operation: keyof Filter<void>) => {
     const operation1 = jest.fn()
     const operation2 = jest.fn()
+    let filterRunnerPromise: Promise<unknown>
 
     beforeEach(async () => {
       jest.resetAllMocks()
-
-      const filters = [operation1, operation2]
-        .map(f => () => ({ [operation]: f }))
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await filtersRunner({}, filters)[operation]({} as any)
+      operation1.mockResolvedValue(undefined)
+      operation2.mockResolvedValue(undefined)
     })
 
-    it(`should run all ${operation} filters`, () => {
-      expect(operation1).toHaveBeenCalled()
-      expect(operation2).toHaveBeenCalled()
+    it(`should run all ${operation} filters in order`, async () => {
+      const operations = [operation1, operation2]
+      const filters = operations
+        .map(f => () => ({ [operation]: f }))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      filterRunnerPromise = filtersRunner({}, filters)[operation]({} as any)
+      const orderedOperations = operation === 'preDeploy' ? [...operations].reverse() : operations
+
+      expect(orderedOperations[0]).toHaveBeenCalled()
+      expect(orderedOperations[1]).not.toHaveBeenCalled()
+      await filterRunnerPromise
+      expect(orderedOperations[1]).toHaveBeenCalled()
     })
   })
 })

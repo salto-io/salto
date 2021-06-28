@@ -19,7 +19,6 @@ import SalesforceClient from './client/client'
 import { FetchProfile } from './fetch_profile/fetch_profile'
 import { ConfigChangeSuggestion } from './types'
 
-
 export type FilterContext = {
   unsupportedSystemFields?: string[]
   systemFields?: string[]

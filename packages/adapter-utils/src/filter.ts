@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import { Element, Change, PostFetchOptions } from '@salto-io/adapter-api'
-import { types, promises, objects, values } from '@salto-io/lowerdash'
+import { types, promises, values } from '@salto-io/lowerdash'
 
-const { concatObjects } = objects
 const { isDefined } = values
 
 // Filters run in a specific order and get a mutable list as input which they may modify
@@ -49,22 +48,21 @@ export const filtersRunner = <
 >(
     opts: T,
     filterCreators: ReadonlyArray<FilterCreator<R, T>>,
+    onFetchAggregator: (results: R[]) => R | void = () => undefined,
   ): Required<Filter<R>> => {
   // Create all filters in advance to allow them to hold context between calls
   const allFilters = filterCreators.map(f => f(opts))
 
-  const filtersWith = <M extends keyof Filter<R>>(m: M):
-  FilterWith<R, M>[] =>
-      types.filterHasMember<Filter<R>, M>(m, allFilters)
+  const filtersWith = <M extends keyof Filter<R>>(m: M): FilterWith<R, M>[] => (
+    types.filterHasMember<Filter<R>, M>(m, allFilters)
+  )
 
   return {
     onFetch: async elements => {
       const filterResults = (await promises.array.series(
         filtersWith('onFetch').map(filter => () => filter.onFetch(elements))
       )).filter(isDefined)
-      return concatObjects(
-        filterResults as Record<string, unknown[] | undefined>[]
-      ) as unknown as R
+      return onFetchAggregator(filterResults)
     },
     /**
      * on preDeploy the filters are run in reverse order and are expected to "undo" any

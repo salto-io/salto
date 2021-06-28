@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, DetailedChange, ElemID } from '@salto-io/adapter-api'
+import { Element, DetailedChange, ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { ElementSelector, selectElementIdsByTraversal, elementSource } from '@salto-io/workspace'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import wu from 'wu'
@@ -42,7 +42,7 @@ const filterRelevantParts = (elementIds: ElemID[],
 // This returns an array rather than iterablebecause it's going to be used
 // in an inMemElementSource any way
 const filterElementsByRelevance = (elements: AsyncIterable<Element>, relevantIds: ElemID[],
-  selectorsToVerify: Set<string>): Promise<Element[]> => {
+  selectorsToVerify: Set<string>, elementsSource: ReadOnlyElementsSource): Promise<Element[]> => {
   const topLevelIds = new Set<string>(relevantIds
     .map(id => id.createTopLevelParentID().parent.getFullName()))
   return awu(elements).filter(elem => topLevelIds.has(elem.elemID.getFullName())).map(elem => {
@@ -52,6 +52,7 @@ const filterElementsByRelevance = (elements: AsyncIterable<Element>, relevantIds
       transformFunc: filterRelevantParts(relevantIds, selectorsToVerify),
       runOnFields: true,
       strict: false,
+      elementsSource,
     })
   }).toArray()
 }
@@ -72,9 +73,9 @@ export const createDiffChanges = async (
     const selectorsToVerify = new Set<string>(elementSelectors
       .map(sel => sel.origin).filter(sel => !sel.includes('*')))
     const toElementsFiltered = await filterElementsByRelevance(await toElementsSrc.getAll(),
-      toElementIdsFiltered, selectorsToVerify)
+      toElementIdsFiltered, selectorsToVerify, toElementsSrc)
     const fromElementsFiltered = await filterElementsByRelevance(await fromElementsSrc.getAll(),
-      fromElementIdsFiltered, selectorsToVerify)
+      fromElementIdsFiltered, selectorsToVerify, fromElementsSrc)
     if (selectorsToVerify.size > 0) {
       throw new Error(`ids not found: ${Array.from(selectorsToVerify)}`)
     }

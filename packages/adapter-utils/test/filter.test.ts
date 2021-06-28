@@ -48,7 +48,7 @@ describe('filtersRunner', () => {
     'preDeploy',
     'onDeploy',
     'onPostFetch',
-  ]).describe('%s', operation => {
+  ]).describe('%s', (operation: keyof Filter<void>) => {
     const operation1 = jest.fn()
     const operation2 = jest.fn()
 
@@ -56,10 +56,10 @@ describe('filtersRunner', () => {
       jest.resetAllMocks()
 
       const filters = [operation1, operation2]
-        .map(f => () => ({ [operation]: f })) as unknown as FilterCreator<void, {}>[]
+        .map(f => () => ({ [operation]: f }))
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await filtersRunner({}, filters)[operation as keyof Filter<void>]({} as any)
+      await filtersRunner({}, filters)[operation]({} as any)
     })
 
     it(`should run all ${operation} filters`, () => {

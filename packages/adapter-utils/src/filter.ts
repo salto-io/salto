@@ -21,11 +21,6 @@ const { isDefined } = values
 
 // Filters run in a specific order and get a mutable list as input which they may modify
 // to affect the overall result as well as the input for subsequent filters.
-// on preDeploy the filters are run in reverse order and are expected to "undo" any relevant change
-// they made in onFetch. because of this, each filter can expect to get in preDeploy a similar
-// value to what it created in onFetch.
-// onDeploy is called in the same order as onFetch and is expected to do basically the same thing
-// that onFetch does but with a different context (on changes instead of on elements)
 // Each filter will be created once and so it may store context between preDeploy and onDeploy.
 // Note that it cannot store context between onFetch and the other callbacks since these run in
 // separate commands
@@ -71,12 +66,30 @@ export const filtersRunner = <
         filterResults as Record<string, unknown[] | undefined>[]
       ) as unknown as R
     },
+    /**
+     * on preDeploy the filters are run in reverse order and are expected to "undo" any
+     * relevant change they made in onFetch. because of this, each filter can expect
+     * to get in preDeploy a similar value to what it created in onFetch.
+     */
     preDeploy: async changes => {
       await promises.array.series(filtersWith('preDeploy').reverse().map(filter => () => filter.preDeploy(changes)))
     },
+    /**
+     * onDeploy is called in the same order as onFetch and is expected to do basically
+     * the same thing that onFetch does but with a different context (on changes instead
+     * of on elements)
+     */
     onDeploy: async changes => {
       await promises.array.series(filtersWith('onDeploy').map(filter => () => filter.onDeploy(changes)))
     },
+    /**
+     * onPostFetch is run after fetch completed for all services, and receives
+     * as context all the elements for the env. It should only be used to change
+     * references, and should not make any changes that other services might rely on.
+     * There is no guarantee on the order in which the onPostFetch operations from
+     * different adapters are performed, only within each adapter.
+     * The filters are run in the same order as onFetch.
+     */
     onPostFetch: async args => {
       await promises.array.series(
         filtersWith('onPostFetch').map(filter => () => filter.onPostFetch(args))

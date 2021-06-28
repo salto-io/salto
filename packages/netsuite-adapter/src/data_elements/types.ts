@@ -15,23 +15,6 @@
 */
 import _ from 'lodash'
 
-export const TYPE_TO_IDENTIFIER: Record<string, string> = {
-  Account: 'acctName',
-  Subsidiary: 'name',
-  Department: 'name',
-  Classification: 'name',
-  Location: 'name',
-  Currency: 'name',
-  Customer: 'entityId',
-  AccountingPeriod: 'periodName',
-  Employee: 'entityId',
-  Job: 'entityId',
-  ManufacturingCostTemplate: 'name',
-  Partner: 'partnerCode',
-  Solution: 'solutionCode',
-}
-
-// Was taken from http://www.netsuiterp.com/2019/05/internal-ids-for-netsuite-record-types.html
 export const TYPES_TO_INTERNAL_ID: Record<string, string> = {
   Account: '-112',
   AccountingPeriod: '-105',
@@ -145,6 +128,40 @@ export const TYPES_TO_INTERNAL_ID: Record<string, string> = {
   WorkOrderClose: '-30',
   WorkOrderCompletion: '-30',
   WorkOrderIssue: '-30',
+  OtherChargeSaleItem: '-10',
+  CheckItem: '-10',
+  CustomSaleItem: '-10',
+  CustomPurchaseItem: '-10',
+  OpportunityItem: '-10',
+  SalesOrderItem: '-10',
+  ItemFulfillmentItem: '-10',
+  InvoiceItem: '-10',
+  CashSaleItem: '-10',
+  EstimateItem: '-10',
+  TransferOrderItem: '-10',
+  InterCompanyTransferOrderItem: '-10',
+  WorkOrderItem: '-10',
+  BinWorksheetItem: '-10',
+  CashRefundItem: '-10',
+  ReturnAuthorizationItem: '-10',
+  CreditMemoItem: '-10',
+  VendorBillItem: '-10',
+  PurchaseOrderItem: '-10',
+  ItemReceiptItem: '-10',
+  VendorCreditItem: '-10',
+  VendorReturnAuthorizationItem: '-10',
+  PurchaseRequisitionItem: '-10',
+  NonInventoryPurchaseItem: '-10',
+  NonInventorySaleItem: '-10',
+  NonInventoryResaleItem: '-10',
+  OtherChargeResaleItem: '-10',
+  OtherChargePurchaseItem: '-10',
+  ServiceResaleItem: '-10',
+  ServicePurchaseItem: '-10',
+  ServiceSaleItem: '-10',
+  TaxGroupTaxItem: '-10',
+  PresentationItem: '-10',
+  TimeItem: '-10',
 }
 
 export const INTERNAL_ID_TO_TYPES: Record<string, string[]> = _(TYPES_TO_INTERNAL_ID)
@@ -152,5 +169,48 @@ export const INTERNAL_ID_TO_TYPES: Record<string, string[]> = _(TYPES_TO_INTERNA
   .groupBy(([_type, internalId]) => internalId)
   .mapValues(values => values.map(([type]) => type))
   .value()
+
+export const ITEM_TYPE_ID = '-10'
+export const TRANSACTION_TYPE_ID = '-30'
+
+export const ITEM_TYPE_TO_SEARCH_STRING: Record<string, string> = {
+  AssemblyItem: '_assembly',
+  DescriptionItem: '_description',
+  DiscountItem: '_discount',
+  KitItem: '_kit',
+  MarkupItem: '_markup',
+  NonInventoryPurchaseItem: '_nonInventoryItem',
+  NonInventorySaleItem: '_nonInventoryItem',
+  NonInventoryResaleItem: '_nonInventoryItem',
+  OtherChargeSaleItem: '_otherCharge',
+  OtherChargeResaleItem: '_otherCharge',
+  OtherChargePurchaseItem: '_otherCharge',
+  PaymentItem: '_payment',
+  ServiceResaleItem: '_service',
+  ServicePurchaseItem: '_service',
+  ServiceSaleItem: '_service',
+  SubtotalItem: '_subtotal',
+  InventoryItem: '_inventoryItem',
+  ItemGroup: '_itemGroup',
+  GiftCertificateItem: '_giftCertificateItem',
+  DownloadItem: '_downloadItem',
+}
+
+export const TYPE_TO_IDENTIFIER: Record<string, string> = {
+  Account: 'acctName',
+  Subsidiary: 'name',
+  Department: 'name',
+  Classification: 'name',
+  Location: 'name',
+  Currency: 'name',
+  Customer: 'entityId',
+  AccountingPeriod: 'periodName',
+  Employee: 'entityId',
+  Job: 'entityId',
+  ManufacturingCostTemplate: 'name',
+  Partner: 'partnerCode',
+  Solution: 'solutionCode',
+  ...Object.fromEntries(Object.keys(ITEM_TYPE_TO_SEARCH_STRING).map(type => [type, 'itemId'])),
+}
 
 export const SUPPORTED_TYPES = Object.keys(TYPES_TO_INTERNAL_ID)

@@ -26,12 +26,14 @@ import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDe
 import { DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess, SearchResponse } from './types'
 import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, SEARCH_RESPONSE_SCHEMA } from './schemas'
 import { InvalidSuiteAppCredentialsError } from '../../types'
+import { INTERNAL_ID_TO_TYPES, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING } from '../../../data_elements/types'
 
 const log = logger(module)
 
-export const TRANSACTION_TYPES = ['SalesOrder']
+export const ITEMS_TYPES = INTERNAL_ID_TO_TYPES[ITEM_TYPE_ID]
 export const WSDL_PATH = `${__dirname}/client/suiteapp_client/soap_client/wsdl/netsuite_1.wsdl`
 
+// When updating the version, we should also update the types in src/data_elements/types.ts
 const NETSUITE_VERSION = '2020_2'
 const SEARCH_PAGE_SIZE = 100
 
@@ -276,30 +278,40 @@ export default class SoapClient {
   }
 
   private static getSearchType(type: string): string {
-    return TRANSACTION_TYPES.includes(type) ? 'TransactionSearch' : `${type}Search`
+    return `${type}Search`
   }
 
-  public async getAllRecords(type: string): Promise<Record<string, unknown>[]> {
-    log.debug(`Getting all records of ${type}`)
+  public async getAllRecords(types: string[]): Promise<Record<string, unknown>[]> {
+    log.debug(`Getting all records of ${types.join(', ')}`)
 
-    const namespace = await this.getTypeNamespace(SoapClient.getSearchType(type))
+    const [itemTypes, otherTypes] = _.partition(types, type => type in ITEM_TYPE_TO_SEARCH_STRING)
 
-    let results: Record<string, unknown>[]
-    if (namespace !== undefined) {
-      results = await this.search(type, namespace)
-    } else {
-      log.debug(`type ${type} does not support 'search' operation. Fallback to 'getAll' request`)
-      results = await this.sendGetAllRequest(type)
+    const typesToSearch: { type: string; subtypes?: string[] }[] = otherTypes
+      .map(type => ({ type }))
+    if (itemTypes.length !== 0) {
+      typesToSearch.push({ type: 'Item', subtypes: Array.from(new Set(itemTypes.map(type => ITEM_TYPE_TO_SEARCH_STRING[type]))) })
     }
 
-    log.debug(`Finished getting all records of ${type}`)
-    return results
+    return (await Promise.all(typesToSearch.map(async ({ type, subtypes }) => {
+      const namespace = await this.getTypeNamespace(SoapClient.getSearchType(type))
+
+      if (namespace !== undefined) {
+        return this.search(type, namespace, subtypes)
+      }
+      log.debug(`type ${type} does not support 'search' operation. Fallback to 'getAll' request`)
+      const records = await this.sendGetAllRequest(type)
+
+      log.debug(`Finished getting all records of ${type}`)
+      return records
+    }))).flat()
   }
 
-  private async search(type: string, namespace: string): Promise<Record<string, unknown>[]> {
-    const initialResponse = await this.sendSearchRequest(type, namespace)
-    log.debug(`Finished sending initial search request for type ${type}`)
-
+  private async search(
+    type: string,
+    namespace: string,
+    subtypes?: string[]
+  ): Promise<Record<string, unknown>[]> {
+    const initialResponse = await this.sendSearchRequest(type, namespace, subtypes)
     const responses = [initialResponse]
 
     if (initialResponse.searchResult.totalPages > 1) {
@@ -345,7 +357,11 @@ export default class SoapClient {
     return response.getAllResult.recordList.record
   }
 
-  private async sendSearchRequest(type: string, namespace: string): Promise<SearchResponse> {
+  private async sendSearchRequest(
+    type: string,
+    namespace: string,
+    subtypes?: string[],
+  ): Promise<SearchResponse> {
     const searchTypeName = SoapClient.getSearchType(type)
     const body = {
       searchRecord: {
@@ -356,11 +372,10 @@ export default class SoapClient {
       },
     }
 
-    if (TRANSACTION_TYPES.includes(type)) {
+    if (subtypes !== undefined) {
       _.assign(body.searchRecord, {
-        'tranSales:basic': {
+        'q1:basic': {
           attributes: {
-            'xmlns:tranSales': `urn:sales_${NETSUITE_VERSION}.transactions.webservices.netsuite.com`,
             'xmlns:platformCommon': `urn:common_${NETSUITE_VERSION}.platform.webservices.netsuite.com`,
             'xmlns:platformCore': `urn:core_${NETSUITE_VERSION}.platform.webservices.netsuite.com`,
           },
@@ -369,7 +384,7 @@ export default class SoapClient {
               'xsi:type': 'platformCore:SearchEnumMultiSelectField',
               operator: 'anyOf',
             },
-            'platformCore:searchValue': type[0].toLowerCase() + type.slice(1),
+            'platformCore:searchValue': subtypes,
           },
         },
       })
@@ -381,10 +396,10 @@ export default class SoapClient {
       SEARCH_RESPONSE_SCHEMA,
       response
     )) {
-      log.error(`Got invalid response from search request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from search request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      log.error(`Got invalid response from search request with SOAP api of type ${type}. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`Got invalid response from search request of type ${type}. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
     }
-
+    log.debug(`Finished sending search request for page 1/${Math.max(response.searchResult.totalPages, 1)} of type ${type}`)
     return response
   }
 

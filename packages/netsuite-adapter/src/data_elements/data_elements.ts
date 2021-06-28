@@ -67,10 +67,27 @@ export const getDataTypes = async (
   return types
 }
 
+const getType = (
+  record: Record<string, unknown>,
+  typesMap: Record<string, ObjectType>
+): ObjectType => {
+  const typeNames = Object.entries(
+    (record as { attributes?: Record<string, unknown> }).attributes ?? {}
+  ).filter(([key, value]) => key.split(':')[1] === 'type' && typeof value === 'string')
+    .map(([_key, value]) => (value as string).split(':')[1])
+
+  if (typeNames.length !== 1 || !(typeNames[0] as string in typesMap)) {
+    log.warn(`Got invalid instance from SOAP request: ${JSON.stringify(record, undefined, 2)}`)
+    throw new Error('Got invalid instance from SOAP request')
+  }
+  return typesMap[typeNames[0] as string]
+}
+
 const createInstance = async (
   record: Record<string, unknown>,
-  type: ObjectType,
+  typesMap: Record<string, ObjectType>,
 ): Promise<InstanceElement> => {
+  const type = getType(record, typesMap)
   const fixedRecord = await transformValues({
     values: record,
     type,
@@ -120,13 +137,14 @@ export const getDataElements = async (
 
   const typesMap = _.keyBy(types, e => e.elemID.name)
 
-  const instances = _.flatten(await Promise.all(typesToFetch
-    .filter(typeName => typeName in typesMap)
-    .map(typeName => client.getAllRecords(typeName)
-      .then(records =>
-        Promise.all(records.map(
-          record => createInstance(record, typesMap[typeName])
-        ))))))
+  const availableTypesToFetch = typesToFetch.filter(typeName => typeName in typesMap)
+
+  if (availableTypesToFetch.length === 0) {
+    return types
+  }
+
+  const instances = await awu((await client.getAllRecords(availableTypesToFetch)))
+    .map(record => createInstance(record, typesMap)).toArray()
 
   return [
     ...types,

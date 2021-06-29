@@ -210,7 +210,6 @@ const creator: FilterCreator = ({ client, config }) => ({
           .process(awu(await allElements.getAll()).flatMap(extractFlatCustomObjectFields))
 
         await addExtraReferences(groupedDeps, fetchedElements, elemLookup, customObjectLookup)
-        return undefined
       },
       'Failed to unexpected error when getting extra dependencies'
     ),

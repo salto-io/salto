@@ -84,7 +84,6 @@ const filter: FilterCreator = ({ client, config }) => ({
           Object.entries(groupedElements)
             .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
         )
-        return undefined
       },
       'Failed to unexpected error when adding missing ids'
     ),

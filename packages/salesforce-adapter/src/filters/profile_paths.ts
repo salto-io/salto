@@ -70,7 +70,6 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
             .filter(isInstanceElement)
             .forEach(async inst => replacePath(inst, profileInternalIdToName))
         }
-        return undefined
       },
       'Failed to unexpected error when repalceing path for profile instances'
     ),

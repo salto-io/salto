@@ -209,7 +209,7 @@ describe('Internal IDs filter', () => {
       expect(res.errors).toHaveLength(1)
       expect(err[0]).toEqual({
         severity: 'Warning',
-        message: 'Failed to unexpected error when adding missing ids',
+        message: 'Encountered an error while trying populate internal IDs for some of your salesforce configuration elements. This might result in some missing configuration dependencies in your workspace and/or affect the availability of the ‘go to service’ functionality.',
       })
     })
   })

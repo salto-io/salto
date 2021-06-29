@@ -20,7 +20,6 @@ import {
   TypeElement, BuiltinTypes, ElemID, CoreAnnotationTypes, TypeMap, Value, ReadOnlyElementsSource,
   isReferenceExpression, ReferenceExpression, ChangeDataType, Change, ChangeData,
   isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeElement, CORE_ANNOTATIONS,
-  SaltoError,
 } from '@salto-io/adapter-api'
 import { getParents, buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
@@ -255,11 +254,19 @@ export const isInstanceOfTypeChange = (type: string) => (
   )
 )
 
-export const ensureSafeFilterFetch = (
-  fetchFilterFunc: Required<Filter>['onFetch'],
-  warningMessage: string,
-): Required<Filter>['onFetch'] =>
+export const ensureSafeFilterFetch = ({
+  fetchFilterFunc, warningMessage, config, filterName,
+}:{
+  fetchFilterFunc: Required<Filter>['onFetch']
+  warningMessage: string
+  filterName: keyof OptionalFeatures
+  config : FilterContext
+}): Required<Filter>['onFetch'] =>
   async elements => {
+    if (!config.fetchProfile.isFeatureEnabled(filterName)) {
+      log.debug('skipping %s filter due to configuration', filterName)
+      return undefined
+    }
     try {
       return await fetchFilterFunc(elements)
     } catch (e) {
@@ -273,17 +280,4 @@ export const ensureSafeFilterFetch = (
         ],
       }
     }
-  }
-
-export const ensureFilterEnabled = (
-  fetchFilterFunc: Required<Filter>['onFetch'],
-  filterName: keyof OptionalFeatures,
-  config : FilterContext,
-): Required<Filter>['onFetch'] =>
-  async elements => {
-    if (!config.fetchProfile.isFeatureEnabled(filterName)) {
-      log.debug('skipping %s filter due to configuration', filterName)
-      return undefined
-    }
-    return fetchFilterFunc(elements)
   }

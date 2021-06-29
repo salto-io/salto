@@ -102,7 +102,7 @@ describe('profile paths filter', () => {
       expect(res.errors).toHaveLength(1)
       expect(err[0]).toEqual({
         severity: 'Warning',
-        message: 'Failed to unexpected error when repalceing path for profile instances',
+        message: 'Failed to update the NaCl file names for some of your salesforce profiles. Therefore, profiles NaCl file names might differ from their display names in some cases.',
       })
     })
   })

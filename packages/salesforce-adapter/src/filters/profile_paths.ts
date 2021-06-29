@@ -20,7 +20,7 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterCreator, FilterWith } from '../filter'
 import { apiName } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { getInternalId, isInstanceOfType, ensureSafeFilterFetch, ensureFilterEnabled } from './utils'
+import { getInternalId, isInstanceOfType, ensureSafeFilterFetch } from './utils'
 import { PROFILE_METADATA_TYPE } from '../constants'
 
 const { awu } = collections.asynciterable
@@ -59,22 +59,21 @@ const replacePath = async (
  * replace paths for profile instances upon fetch
  */
 const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
-  onFetch: ensureFilterEnabled(
-    ensureSafeFilterFetch(
-      async (elements: Element[]) => {
-        const profiles = await awu(elements)
-          .filter(async e => isInstanceOfType(PROFILE_METADATA_TYPE)(e)).toArray()
-        if (profiles.length > 0) {
-          const profileInternalIdToName = await generateProfileInternalIdToName(client)
-          await awu(profiles)
-            .filter(isInstanceElement)
-            .forEach(async inst => replacePath(inst, profileInternalIdToName))
-        }
-      },
-      'Failed to unexpected error when repalceing path for profile instances'
-    ),
-    'profilePaths', config
-  ),
+  onFetch: ensureSafeFilterFetch({
+    warningMessage: 'Failed to update the NaCl file names for some of your salesforce profiles. Therefore, profiles NaCl file names might differ from their display names in some cases.',
+    config,
+    filterName: 'profilePaths',
+    fetchFilterFunc: async (elements: Element[]) => {
+      const profiles = await awu(elements)
+        .filter(async e => isInstanceOfType(PROFILE_METADATA_TYPE)(e)).toArray()
+      if (profiles.length > 0) {
+        const profileInternalIdToName = await generateProfileInternalIdToName(client)
+        await awu(profiles)
+          .filter(isInstanceElement)
+          .forEach(async inst => replacePath(inst, profileInternalIdToName))
+      }
+    },
+  }),
 })
 
 export default filterCreator

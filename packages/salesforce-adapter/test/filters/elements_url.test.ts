@@ -119,7 +119,7 @@ describe('elements url filter', () => {
       expect(res.errors).toHaveLength(1)
       expect(err[0]).toEqual({
         severity: 'Warning',
-        message: 'Failed to unexpected error when adding services url to elements',
+        message: 'Encountered an error while trying to populate URLs for some of your salesforce configuration elements. This might affect the availability of the ‘go to service’ functionality in your workspace.',
       })
     })
   })

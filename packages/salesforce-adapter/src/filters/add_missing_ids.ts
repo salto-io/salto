@@ -21,7 +21,7 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { apiName, metadataType } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
-import { getFullName, getInternalId, setInternalId, ensureSafeFilterFetch, ensureFilterEnabled } from './utils'
+import { getFullName, getInternalId, setInternalId, ensureSafeFilterFetch } from './utils'
 
 const log = logger(module)
 const { awu, groupByAsync } = collections.asynciterable
@@ -72,23 +72,22 @@ const elementsWithMissingIds = async (elements: Element[]): Promise<Element[]> =
  * Add missing env-specific ids using listMetadataObjects.
  */
 const filter: FilterCreator = ({ client, config }) => ({
-  onFetch: ensureFilterEnabled(
-    ensureSafeFilterFetch(
-      async (elements: Element[]) => {
-        const groupedElements = await groupByAsync(
-          await elementsWithMissingIds(elements),
-          metadataType,
-        )
-        log.debug(`Getting missing ids for the following types: ${Object.keys(groupedElements)}`)
-        await Promise.all(
-          Object.entries(groupedElements)
-            .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
-        )
-      },
-      'Failed to unexpected error when adding missing ids'
-    ),
-    'addMissingIds', config
-  ),
+  onFetch: ensureSafeFilterFetch({
+    warningMessage: 'Encountered an error while trying populate internal IDs for some of your salesforce configuration elements. This might result in some missing configuration dependencies in your workspace and/or affect the availability of the ‘go to service’ functionality.',
+    config,
+    filterName: 'addMissingIds',
+    fetchFilterFunc: async (elements: Element[]) => {
+      const groupedElements = await groupByAsync(
+        await elementsWithMissingIds(elements),
+        metadataType,
+      )
+      log.debug(`Getting missing ids for the following types: ${Object.keys(groupedElements)}`)
+      await Promise.all(
+        Object.entries(groupedElements)
+          .map(([typeName, typeElements]) => addMissingIds(client, typeName, typeElements))
+      )
+    },
+  }),
 })
 
 export default filter

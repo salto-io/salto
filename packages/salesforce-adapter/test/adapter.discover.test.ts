@@ -158,10 +158,12 @@ describe('SalesforceAdapter fetch', () => {
       // Note the order here is important because we expect restriction values to be sorted
       expect(getRestriction(flow.fields.enum).values).toEqual(['no', 'yes'])
       expect(flow.path).toEqual([constants.SALESFORCE, constants.TYPES_PATH, 'Flow'])
-      expect(await flow.fields[constants.INSTANCE_FULL_NAME_FIELD].getType())
-        .toEqual(BuiltinTypes.SERVICE_ID)
-      expect((await flow.getAnnotationTypes())[constants.METADATA_TYPE])
-        .toEqual(BuiltinTypes.SERVICE_ID)
+      expect((await flow.fields[constants.INSTANCE_FULL_NAME_FIELD].getType())
+        .annotations?.[CORE_ANNOTATIONS.SERVICE_ID])
+        .toEqual(true)
+      expect((await flow.getAnnotationTypes())[constants.METADATA_TYPE]
+        .annotations?.[CORE_ANNOTATIONS.SERVICE_ID])
+        .toEqual(true)
       expect(flow.annotations[constants.METADATA_TYPE]).toEqual('Flow')
     })
 

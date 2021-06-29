@@ -496,8 +496,12 @@ describe('Custom Objects filter', () => {
         mockSingleSObject('Lead', [])
         await filter.onFetch(result)
         const lead = findElements(result, 'Lead').pop() as ObjectType
-        expect((await lead.getAnnotationTypes())[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
-        expect((await lead.getAnnotationTypes())[METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
+        expect((await lead.getAnnotationTypes())[API_NAME]
+          .annotations?.[CORE_ANNOTATIONS.SERVICE_ID])
+          .toEqual(true)
+        expect((await lead.getAnnotationTypes())[METADATA_TYPE]
+          .annotations?.[CORE_ANNOTATIONS.SERVICE_ID])
+          .toEqual(true)
         expect(lead.annotations[API_NAME]).toEqual('Lead')
         expect(lead.annotations[METADATA_TYPE]).toEqual(CUSTOM_OBJECT)
       })

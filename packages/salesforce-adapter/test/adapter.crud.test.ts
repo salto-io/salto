@@ -236,11 +236,13 @@ describe('SalesforceAdapter CRUD', () => {
         // Verify object creation
         expect(result).toBeInstanceOf(ObjectType)
         expect(result.annotations[constants.API_NAME]).toBe('Test__c')
-        expect(result.annotationRefTypes[constants.API_NAME].elemID)
-          .toEqual(BuiltinTypes.SERVICE_ID.elemID)
+        expect((await result.getAnnotationTypes())[constants.API_NAME]
+          .annotations?.[CORE_ANNOTATIONS.SERVICE_ID])
+          .toEqual(true)
         expect(result.annotations[constants.METADATA_TYPE]).toBe(constants.CUSTOM_OBJECT)
-        expect(result.annotationRefTypes[constants.METADATA_TYPE].elemID)
-          .toEqual(BuiltinTypes.SERVICE_ID.elemID)
+        expect((await result.getAnnotationTypes())[constants.METADATA_TYPE]
+          .annotations?.[CORE_ANNOTATIONS.SERVICE_ID])
+          .toEqual(true)
         const objAnnotations = result.annotations as CustomObject
         expect(objAnnotations.label).toEqual('Test')
         expect(result.annotationRefTypes.label.elemID)

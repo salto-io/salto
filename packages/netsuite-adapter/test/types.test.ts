@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, getRestriction, isPrimitiveType,
+  CORE_ANNOTATIONS, getRestriction, isPrimitiveType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { values, collections } from '@salto-io/lowerdash'
@@ -68,7 +68,8 @@ describe('Types', () => {
       it('should have service_id path field', async () => {
         expect(Object.keys(fileCabinetTypes.file.fields)).toContain(PATH)
         const pathFieldType = await fileCabinetTypes.file.fields[PATH].getType()
-        expect(isPrimitiveType(pathFieldType) && pathFieldType.isEqual(BuiltinTypes.SERVICE_ID))
+        expect(isPrimitiveType(pathFieldType) && pathFieldType
+          .annotations?.[CORE_ANNOTATIONS.SERVICE_ID] === true)
           .toBe(true)
       })
 
@@ -91,7 +92,8 @@ describe('Types', () => {
       it('should have service_id path field', async () => {
         expect(Object.keys(fileCabinetTypes.folder.fields)).toContain(PATH)
         const pathFieldType = await fileCabinetTypes.folder.fields[PATH].getType()
-        expect(isPrimitiveType(pathFieldType) && pathFieldType.isEqual(BuiltinTypes.SERVICE_ID))
+        expect(isPrimitiveType(pathFieldType) && pathFieldType
+          .annotations?.[CORE_ANNOTATIONS.SERVICE_ID] === true)
           .toBe(true)
       })
 

@@ -310,14 +310,6 @@ const addToSource = async ({
       }
       throw new Error(`ElemID ${gids[0].getFullName()} does not exist in origin`)
     }
-    if (!values.isDefined(before)) {
-      // If there is no top level element to merge into, we best let the nacl file source
-      // handle the nested changes
-      return awu(gids).map(async id => createAddChange(
-        valuesOverrides[id.getFullName()] ?? resolvePath(topLevelElement, id),
-        id
-      ))
-    }
     const topLevelIds = gids.filter(id => id.isTopLevel())
     const wrappedElement = !_.isEmpty(topLevelIds)
       ? topLevelElement

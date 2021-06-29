@@ -985,6 +985,9 @@ describe('track', () => {
     fields: {
       str: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          anno: 'anno',
+        },
       },
       num: {
         refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
@@ -1009,6 +1012,9 @@ describe('track', () => {
     fields: {
       str: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          anno: 'anno',
+        },
       },
       num: {
         refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
@@ -1180,8 +1186,8 @@ describe('track', () => {
       { action: 'add', id: splitObjEnv.fields.splitField.elemID.createNestedID('env') },
     ])).toBeTruthy()
   })
-  // eslint-disable-next-line
-  it.skip('should wrap nested ids in an object when moving nested ids of an element with no common fragment and without other parts of the element', async () => {
+
+  it('should wrap nested ids in an object when moving nested ids of an element with no common fragment and without other parts of the element', async () => {
     const changes = await routePromote(
       [
         onlyInEnvObj.fields.str.elemID,
@@ -1270,6 +1276,21 @@ describe('track', () => {
     expect(changes.primarySource).toHaveLength(0)
     expect(changes.commonSource).toHaveLength(0)
     expect(changes.secondarySources?.sec).toHaveLength(0)
+  })
+
+  it('should route a nested field attr where the object does not exists in common', async () => {
+    const annoID = onlyInEnvObj.fields.str.elemID.createNestedID('anno')
+    const changes = await routePromote(
+      [annoID],
+      primarySrc,
+      commonSrc,
+      secondarySources,
+    )
+    expect(changes.primarySource).toHaveLength(1)
+    expect(changes.commonSource).toHaveLength(1)
+    expect(changes.secondarySources?.sec).toHaveLength(0)
+    expect(changes.primarySource?.[0].id).toEqual(annoID)
+    expect(changes.commonSource?.[0].id).toEqual(onlyInEnvObj.elemID)
   })
 })
 
@@ -1454,8 +1475,7 @@ describe('untrack', () => {
     ])).toBeTruthy()
   })
 
-  // eslint-disable-next-line
-  it.skip('should wrap nested ids if the target env does not have the top level element', async () => {
+  it('should wrap nested ids if the target env does not have the top level element', async () => {
     const changes = await routeDemote(
       [onlyInCommon.elemID.createNestedID('attr', 'str')],
       primarySrc,
@@ -1617,8 +1637,7 @@ describe('copyTo', () => {
     ])).toBeTruthy()
   })
 
-  // eslint-disable-next-line
-  it.skip('should wrap nested ids in an object when copying nested ids of an element'
+  it('should wrap nested ids in an object when copying nested ids of an element'
       + ' with no fragment in the target env', async () => {
     const changes = await routeCopyTo(
       [

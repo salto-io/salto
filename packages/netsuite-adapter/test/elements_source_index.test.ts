@@ -15,6 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { entitycustomfield } from '../src/types/custom_types/entitycustomfield'
 import { LAST_FETCH_TIME, NETSUITE, PATH } from '../src/constants'
 import { createElementsSourceIndex } from '../src/elements_source_index/elements_source_index'
 
@@ -73,5 +74,22 @@ describe('createElementsSourceIndex', () => {
     const elementsSourceIndex = createElementsSourceIndex(elementsSource)
     const index = (await elementsSourceIndex.getIndexes()).internalIdsIndex
     expect(index['someType-4']).toEqual({ lastFetchTime: new Date('2021-02-22T18:55:17.949Z'), elemID: new ElemID(NETSUITE, 'someType', 'instance', 'name') })
+  })
+
+  it('should create the right custom fields index', async () => {
+    const instance1 = new InstanceElement('name1', entitycustomfield, { appliestocontact: true, appliestocustomer: false, appliestoemployee: true })
+    const instance2 = new InstanceElement('name2', entitycustomfield, { appliestocontact: true, appliestocustomer: false, appliestoemployee: false })
+    getAllMock.mockImplementation(buildElementsSourceFromElements([
+      instance1,
+      instance2,
+    ]).getAll)
+
+    const elementsSourceIndex = createElementsSourceIndex(elementsSource)
+    const index = (await elementsSourceIndex.getIndexes()).customFieldsIndex
+    expect(index.Contact.map(e => e.elemID.getFullName())).toEqual([instance1, instance2]
+      .map(e => e.elemID.getFullName()))
+
+    expect(index.Employee.map(e => e.elemID.getFullName()))
+      .toEqual([instance1.elemID.getFullName()])
   })
 })

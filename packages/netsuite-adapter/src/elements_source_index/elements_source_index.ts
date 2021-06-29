@@ -21,6 +21,7 @@ import { LAST_FETCH_TIME } from '../constants'
 import { getInstanceServiceIdRecords } from '../filters/instance_references'
 import { serviceId } from '../transformer'
 import { ElementsSourceIndexes, ElementsSourceValue, LazyElementsSourceIndexes } from './types'
+import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -33,6 +34,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
   log.debug('Starting to create elements source index')
   const serviceIdsIndex: Record<string, ElementsSourceValue> = {}
   const internalIdsIndex: Record<string, ElementsSourceValue> = {}
+  const customFieldsIndex: Record<string, InstanceElement[]> = {}
 
   const updateServiceIdIndex = async (element: InstanceElement): Promise<void> => {
     const idRecords = await getInstanceServiceIdRecords(element)
@@ -62,14 +64,25 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     }
   }
 
+  const updateCustomFieldsIndex = (element: InstanceElement): void => {
+    getFieldInstanceTypes(element)
+      .forEach(type => {
+        if (!(type in customFieldsIndex)) {
+          customFieldsIndex[type] = []
+        }
+        customFieldsIndex[type].push(element)
+      })
+  }
+
   await awu(await elementsSource.getAll())
     .filter(isInstanceElement)
     .forEach(async element => {
       await updateServiceIdIndex(element)
       updateInternalIdsIndex(element)
+      updateCustomFieldsIndex(element)
     })
   log.debug('finished creating elements source index')
-  return { serviceIdsIndex, internalIdsIndex }
+  return { serviceIdsIndex, internalIdsIndex, customFieldsIndex }
 }
 
 export const createElementsSourceIndex = (

@@ -99,9 +99,13 @@ primitive_string_type_entry_template = '''  {type_name}: new PrimitiveType({{
   }}),
 '''
 
+enums_values_template = '''export type {type_name}Value = {values}
+'''
+
 enums_file_template = HEADER_FOR_DEFS + COMMON_IMPORT_STATEMENTS_FOR_ENUMS_DEF + SUBTYPES_FOLDER_PATH_DEF + '''{enums_elem_ids}
 export const enums: Record<string, PrimitiveType> = {{
 {enums_entries}}}
+{enums_values}
 '''
 
 inner_types_def_template = '''const {inner_type_name}ElemID = new ElemID(constants.NETSUITE, '{inner_type_name}')
@@ -392,7 +396,7 @@ def parse_netsuite_types(account_id, username, password, secret_key_2fa):
         type_name_to_types_defs = parse_types_definitions(account_id, type_name_to_script_id_prefix)
         logging.info('Parsed objects definitions')
 
-        enum_to_possible_values =  {} # parse_enums(account_id)
+        enum_to_possible_values = parse_enums(account_id)
         logging.info('Parsed enums definitions')
         return type_name_to_types_defs, enum_to_possible_values
     finally:
@@ -405,7 +409,13 @@ def generate_enums_file(enum_to_possible_values):
 
     enums_elem_ids_list = [type_elem_id_template.format(type_name = enum_name) for enum_name in enum_to_possible_values.keys()]
     enums_entries_list = [primitive_string_type_entry_template.format(type_name = enum_name, annotations = create_restriction_annotation(values)) for enum_name, values in enum_to_possible_values.items()]
-    file_content = enums_file_template.format(enums_elem_ids = ''.join(enums_elem_ids_list), enums_entries = ''.join(enums_entries_list))
+    enums_values = ''.join(enums_values_template.format(type_name=enum_name, values=' | '.join(f'\'{value}\'' for value in values)) for enum_name, values in enum_to_possible_values.items() if len(values) != 0)
+
+    file_content = enums_file_template.format(
+      enums_elem_ids = ''.join(enums_elem_ids_list),
+      enums_entries = ''.join(enums_entries_list),
+      enums_values = enums_values,
+    )
     with open(TYPES_DIR + 'enums.ts', 'w') as file:
         file.write(file_content)
 
@@ -640,7 +650,7 @@ webpage = webdriver.Chrome() # the web page is defined here to avoid passing it 
 def main():
     account_id, username, password, secret_key_2fa = (sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
     type_name_to_types_defs, enum_to_possible_values = parse_netsuite_types(account_id, username, password, secret_key_2fa)
-    # generate_enums_file(enum_to_possible_values)
+    generate_enums_file(enum_to_possible_values)
     logging.info('Generated enums file')
     generate_file_per_type(type_name_to_types_defs)
     logging.info('Generated file per Netsuite type')

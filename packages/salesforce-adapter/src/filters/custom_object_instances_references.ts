@@ -194,6 +194,7 @@ const isReferenceField = (field?: Field): boolean => (
 const replaceLookupsWithRefsAndCreateRefMap = (
   instances: InstanceElement[],
   internalToInstance: Record<string, InstanceElement>,
+  dataManagement: DataManagement,
 ): {
   reverseReferencesMap: collections.map.DefaultMap<string, Set<string>>
   missingRefs: MissingRef[]
@@ -208,6 +209,23 @@ const replaceLookupsWithRefsAndCreateRefMap = (
         return value
       }
       const refTo = makeArray(field?.annotations?.[FIELD_ANNOTATIONS.REFERENCE_TO])
+      const ignoredRefTo = refTo.filter(typeName => dataManagement.shouldIgnoreReference(typeName))
+      if (!_.isEmpty(refTo) && ignoredRefTo.length === refTo.length) {
+        log.debug(
+          'Ignored reference to type/s %s from instance - %s',
+          ignoredRefTo.join(', '),
+          instance.elemID.getFullName(),
+        )
+        return value
+      }
+      if (!_.isEmpty(ignoredRefTo)) {
+        log.warn(
+          'Not ignoring reference to type/s %s from instance - %s because some of the refTo is legal (refTo = %s)',
+          ignoredRefTo.join(', '),
+          instance.elemID.getFullName(),
+          refTo.join(', '),
+        )
+      }
       const refTarget = refTo
         .map(typeName => internalToInstance[serializeInternalID(typeName, value)])
         .filter(isDefined)
@@ -301,6 +319,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     const { reverseReferencesMap, missingRefs } = replaceLookupsWithRefsAndCreateRefMap(
       customObjectInstances,
       internalToInstance,
+      dataManagement,
     )
     const instancesWithCollidingElemID = Object
       .values(_.groupBy(

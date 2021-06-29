@@ -87,6 +87,7 @@ export type DataManagementConfig = {
   includeObjects: string[]
   excludeObjects?: string[]
   allowReferenceTo?: string[]
+  ignoreReferenceTo?: string[]
   saltoIDSettings: SaltoIDSettings
 }
 
@@ -285,6 +286,7 @@ const dataManagementType = new ObjectType({
     includeObjects: { type: new ListType(BuiltinTypes.STRING) },
     excludeObjects: { type: new ListType(BuiltinTypes.STRING) },
     allowReferenceTo: { type: new ListType(BuiltinTypes.STRING) },
+    ignoreReferenceTo: { type: new ListType(BuiltinTypes.STRING) },
     saltoIDSettings: {
       type: saltoIDSettingsType,
       annotations: {

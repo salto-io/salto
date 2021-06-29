@@ -33,6 +33,25 @@ describe('Custom Object Instances References filter', () => {
     elemID: new ElemID(SALESFORCE, 'string'),
     primitive: PrimitiveTypes.STRING,
   })
+  const userObjName = 'User'
+  const userElemID = new ElemID(SALESFORCE, userObjName)
+  const userObj = new ObjectType({
+    elemID: userElemID,
+    annotations: {
+      [API_NAME]: userObjName,
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+    },
+    fields: {
+      Id: {
+        type: stringType,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: false,
+          [LABEL]: 'Id',
+          [API_NAME]: 'Id',
+        },
+      },
+    },
+  })
   const masterName = 'masterName'
   const masterElemID = new ElemID(SALESFORCE, masterName)
   const masterObj = new ObjectType({
@@ -115,6 +134,19 @@ describe('Custom Object Instances References filter', () => {
             ],
           },
         },
+        RefToUser: {
+          type: Types.primitiveDataTypes.Lookup,
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+            [LABEL]: 'ref to user',
+            [API_NAME]: 'RefToUser',
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+            referenceTo: [
+              userObjName,
+            ],
+          },
+        },
         MasterDetailExample: {
           refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
           annotations: {
@@ -157,6 +189,7 @@ describe('Custom Object Instances References filter', () => {
       LookupExample: 'refToId',
       MasterDetailExample: 'masterToId',
       NonDeployableLookup: 'ToNothing',
+      RefToUser: 'aaa',
     }
     const refToInstanceName = 'refToInstance'
     const refToInstance = new InstanceElement(
@@ -230,6 +263,7 @@ describe('Custom Object Instances References filter', () => {
       refFromObj,
       refToObj,
       masterObj,
+      userObj,
     ]
     const legalInstances = [
       refToInstance,
@@ -267,6 +301,7 @@ describe('Custom Object Instances References filter', () => {
       expect(elements.find(e => e.elemID.isEqual(refFromElemID))).toMatchObject(refFromObj)
       expect(elements.find(e => e.elemID.isEqual(refToElemID))).toMatchObject(refToObj)
       expect(elements.find(e => e.elemID.isEqual(masterElemID))).toMatchObject(masterObj)
+      expect(elements.find(e => e.elemID.isEqual(userElemID))).toMatchObject(userObj)
 
       // instances with refs to only
       expect(elements.find(e => e.elemID.isEqual(refToInstance.elemID)))
@@ -275,7 +310,7 @@ describe('Custom Object Instances References filter', () => {
         .toMatchObject(masterToInstance)
     })
 
-    it('should replace lookup and master values with reference', () => {
+    it('should replace lookup and master values with reference and not replace ref to user', () => {
       const afterFilterRefToInst = elements.find(e => e.elemID.isEqual(refFromInstance.elemID))
       expect(afterFilterRefToInst).toBeDefined()
       expect(isInstanceElement(afterFilterRefToInst)).toBeTruthy()
@@ -283,6 +318,8 @@ describe('Custom Object Instances References filter', () => {
         .toEqual(new ReferenceExpression(refToInstance.elemID))
       expect((afterFilterRefToInst as InstanceElement).value.MasterDetailExample)
         .toEqual(new ReferenceExpression(masterToInstance.elemID))
+      expect((afterFilterRefToInst as InstanceElement).value.RefToUser)
+        .toEqual('aaa')
     })
 
     it('should drop the referencing instance if ref is to non existing instance', () => {

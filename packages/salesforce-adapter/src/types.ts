@@ -110,6 +110,7 @@ export type DataManagementConfig = {
   includeObjects: string[]
   excludeObjects?: string[]
   allowReferenceTo?: string[]
+  ignoreReferenceTo?: string[]
   saltoIDSettings: SaltoIDSettings
 }
 

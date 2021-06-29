@@ -114,7 +114,14 @@ export const resolveReferenceExpression = async (
     return expression.createWithValue(new UnresolvedReference(fullElemID))
   }
 
-  const value = resolvePath(rootElement, fullElemID)
+  // eslint-disable-next-line no-use-before-define
+  const resolvedRootElement = await resolveElement(
+    rootElement,
+    elementsSource,
+    workingSetElements
+  )
+
+  const value = resolvePath(resolvedRootElement, fullElemID)
 
   if (value === undefined) {
     return expression.createWithValue(new UnresolvedReference(fullElemID))
@@ -134,13 +141,13 @@ export const resolveReferenceExpression = async (
         workingSetElements,
         visited,
       ) ?? value.value,
-      rootElement,
+      resolvedRootElement,
     )
   }
   return (expression as ReferenceExpression).createWithValue(
     await resolveMaybeExpression(value, elementsSource, workingSetElements, visited)
       ?? value,
-    rootElement,
+    resolvedRootElement,
   )
 }
 

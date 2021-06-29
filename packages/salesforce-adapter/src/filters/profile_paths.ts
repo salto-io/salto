@@ -62,9 +62,6 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
   onFetch: ensureFilterEnabled(
     ensureSafeFilterFetch(
       async (elements: Element[]) => {
-        if (!config.fetchProfile.isFeatureEnabled('profilePaths')) {
-          return undefined
-        }
         const profiles = await awu(elements)
           .filter(async e => isInstanceOfType(PROFILE_METADATA_TYPE)(e)).toArray()
         if (profiles.length > 0) {

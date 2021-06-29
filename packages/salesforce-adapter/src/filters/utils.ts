@@ -255,13 +255,6 @@ export const isInstanceOfTypeChange = (type: string) => (
   )
 )
 
-export const toSaltoWarning = (message: string): SaltoError => (
-  ({
-    message,
-    severity: 'Warning',
-  })
-)
-
 export const ensureSafeFilterFetch = (
   fetchFilterFunc: Required<Filter>['onFetch'],
   warningMessage: string,
@@ -272,10 +265,16 @@ export const ensureSafeFilterFetch = (
     } catch (e) {
       log.error('Failed to run filter with the following error %o, stack %o', e, e.stack)
       return {
-        errors: [toSaltoWarning(warningMessage)],
+        errors: [
+          ({
+            message: warningMessage,
+            severity: 'Warning',
+          }),
+        ],
       }
     }
   }
+
 export const ensureFilterEnabled = (
   fetchFilterFunc: Required<Filter>['onFetch'],
   filterName: keyof OptionalFeatures,
@@ -283,7 +282,7 @@ export const ensureFilterEnabled = (
 ): Required<Filter>['onFetch'] =>
   async elements => {
     if (!config.fetchProfile.isFeatureEnabled(filterName)) {
-      log.debug('skipping %o filter due to configuration', filterName)
+      log.debug('skipping %s filter due to configuration', filterName)
       return undefined
     }
     return fetchFilterFunc(elements)

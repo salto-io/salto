@@ -496,8 +496,12 @@ describe('Custom Objects filter', () => {
         mockSingleSObject('Lead', [])
         await filter.onFetch(result)
         const lead = findElements(result, 'Lead').pop() as ObjectType
-        expect((await lead.getAnnotationTypes())[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
-        expect((await lead.getAnnotationTypes())[METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
+        expect((await lead.getAnnotationTypes())[API_NAME]
+          .annotations?.[CORE_ANNOTATIONS.SERVICE_ID])
+          .toEqual(true)
+        expect((await lead.getAnnotationTypes())[METADATA_TYPE]
+          .annotations?.[CORE_ANNOTATIONS.SERVICE_ID])
+          .toEqual(true)
         expect(lead.annotations[API_NAME]).toEqual('Lead')
         expect(lead.annotations[METADATA_TYPE]).toEqual(CUSTOM_OBJECT)
       })
@@ -743,7 +747,7 @@ describe('Custom Objects filter', () => {
         const flowElemID = mockGetElemIdFunc(SALESFORCE, {}, 'flow')
         const flowMetadataType = new ObjectType({ elemID: flowElemID,
           annotations: { [METADATA_TYPE]: 'Flow' },
-          annotationRefsOrTypes: { [METADATA_TYPE]: BuiltinTypes.SERVICE_ID },
+          annotationRefsOrTypes: { [METADATA_TYPE]: Types.primitiveDataTypes.ServiceId },
           path: [SALESFORCE, TYPES_PATH, 'flow'] })
         result.push(flowMetadataType)
 
@@ -1615,8 +1619,8 @@ describe('Custom Objects filter', () => {
           },
         },
         annotationRefsOrTypes: {
-          [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
-          [API_NAME]: BuiltinTypes.SERVICE_ID,
+          [METADATA_TYPE]: Types.primitiveDataTypes.ServiceId,
+          [API_NAME]: Types.primitiveDataTypes.ServiceId,
           [LABEL]: BuiltinTypes.STRING,
           sharingModel: BuiltinTypes.STRING,
         },

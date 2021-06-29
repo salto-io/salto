@@ -39,6 +39,7 @@ const StandardBuiltinTypes = {
   SERVICE_ID: new PrimitiveType({
     elemID: new ElemID(GLOBAL_ADAPTER, 'serviceid'),
     primitive: PrimitiveTypes.STRING,
+    annotations: { [CORE_ANNOTATIONS.SERVICE_ID]: true },
   }),
   JSON: new PrimitiveType({
     elemID: new ElemID(GLOBAL_ADAPTER, 'json'),
@@ -127,6 +128,14 @@ export const BuiltinTypes = {
   HIDDEN_STRING: new PrimitiveType({
     elemID: new ElemID(GLOBAL_ADAPTER, 'hidden_string'),
     primitive: PrimitiveTypes.STRING,
+    annotationRefsOrTypes: StandardCoreAnnotationTypes,
+    annotations: {
+      [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+    },
+  }),
+  HIDDEN_BOOLEAN: new PrimitiveType({
+    elemID: new ElemID(GLOBAL_ADAPTER, 'hidden_boolean'),
+    primitive: PrimitiveTypes.BOOLEAN,
     annotationRefsOrTypes: StandardCoreAnnotationTypes,
     annotations: {
       [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,

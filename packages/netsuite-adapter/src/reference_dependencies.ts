@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import {
-  InstanceElement, isInstanceElement, isPrimitiveType, ElemID, getFieldType, BuiltinTypes,
-  isReferenceExpression, Value,
+  InstanceElement, isInstanceElement, isPrimitiveType, ElemID, getFieldType,
+  isReferenceExpression, Value, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
@@ -40,7 +40,8 @@ export const findDependingInstancesFromRefs = async (
       await topLevelParent.getType(),
       elemId.createTopLevelParentID().path
     )
-    return isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.SERVICE_ID)
+    return (isPrimitiveType(fieldType)
+      && fieldType.annotations?.[CORE_ANNOTATIONS.SERVICE_ID] === true)
   }
 
   const createDependingElementsCallback: TransformFunc = async ({ value }) => {

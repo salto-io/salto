@@ -411,7 +411,8 @@ describe('transformer', () => {
         salesforceIdField = _.cloneDeep(origSalesforceIdField)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceIdField,
           serviceIds, {})
-        expect(await fieldElement.getType()).toEqual(BuiltinTypes.SERVICE_ID)
+        expect((await fieldElement.getType()).annotations?.[CORE_ANNOTATIONS.SERVICE_ID])
+          .toEqual(true)
       })
     })
 
@@ -582,7 +583,7 @@ describe('transformer', () => {
       const objType = new ObjectType({
         elemID,
         annotationRefsOrTypes: {
-          [API_NAME]: BuiltinTypes.SERVICE_ID,
+          [API_NAME]: Types.primitiveDataTypes.ServiceId,
           [METADATA_TYPE]: BuiltinTypes.STRING,
           [DESCRIPTION]: BuiltinTypes.STRING,
         },
@@ -673,7 +674,7 @@ describe('transformer', () => {
           const customSettingsObj = new ObjectType({
             elemID,
             annotationRefsOrTypes: {
-              [API_NAME]: BuiltinTypes.SERVICE_ID,
+              [API_NAME]: Types.primitiveDataTypes.ServiceId,
               [METADATA_TYPE]: BuiltinTypes.STRING,
               [DESCRIPTION]: BuiltinTypes.STRING,
               [CUSTOM_SETTINGS_TYPE]: BuiltinTypes.STRING,
@@ -1133,7 +1134,9 @@ describe('transformer', () => {
   describe('type definitions', () => {
     it('should include apiName annotation with service_id type', async () => {
       await awu(Object.values(Types.getAllFieldTypes())).forEach(async type => {
-        expect((await type.getAnnotationTypes())[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
+        expect((await type.getAnnotationTypes())[API_NAME]
+          .annotations?.[CORE_ANNOTATIONS.SERVICE_ID])
+          .toEqual(true)
       })
     })
   })

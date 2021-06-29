@@ -88,12 +88,12 @@ void => {
     log.debug(`added API_NAME=${fullApiName} to ${elem.elemID.name}`)
   }
   if (!isField(elem) && !elem.annotationRefTypes[API_NAME]) {
-    elem.annotationRefTypes[API_NAME] = createRefToElmWithValue(BuiltinTypes.SERVICE_ID)
+    elem.annotationRefTypes[API_NAME] = createRefToElmWithValue(Types.primitiveDataTypes.ServiceId)
   }
 }
 
 export const addMetadataType = (elem: ObjectType, metadataTypeValue = CUSTOM_OBJECT): void => {
-  setAnnotationDefault(elem, METADATA_TYPE, metadataTypeValue, BuiltinTypes.SERVICE_ID)
+  setAnnotationDefault(elem, METADATA_TYPE, metadataTypeValue, Types.primitiveDataTypes.ServiceId)
 }
 
 export const addDefaults = async (element: ChangeDataType): Promise<void> => {

@@ -54,8 +54,8 @@ const CUSTOM_FIELD_TO_TYPE: Record<string, Record<string, string[]>> = {
 
 
 /**
- * @param instance an instance if a field type (e.g., entitycustomfield, crmcustomfield, etc...)
- * @returns All the names of types a certain field instance applies too
+ * @param instance an instance of a field type (e.g., entitycustomfield, crmcustomfield, etc...)
+ * @returns All the names of types a certain field instance applies to
  */
 export const getFieldInstanceTypes = (instance: InstanceElement): string[] => {
   if (instance.elemID.typeName in CUSTOM_FIELD_TO_TYPE) {

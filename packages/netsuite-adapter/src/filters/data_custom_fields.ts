@@ -23,11 +23,15 @@ import { INTERNAL_ID_TO_TYPES } from '../data_elements/types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 import { isDataObjectType } from '../types'
 import { SCRIPT_ID } from '../constants'
+// eslint-disable-next-line camelcase
+import { generic_customfield_fieldtypeValue } from '../types/enums'
 
 const log = logger(module)
 
+// eslint-disable-next-line camelcase
+type CustomFieldPrimitiveType = Exclude<generic_customfield_fieldtypeValue, 'SELECT' | 'MULTISELECT'>
 
-const CUSTOM_FIELD_TYPE_TO_SALTO_TYPE: Record<string, TypeElement> = {
+const CUSTOM_FIELD_TYPE_TO_SALTO_TYPE: Record<CustomFieldPrimitiveType, TypeElement> = {
   CHECKBOX: BuiltinTypes.BOOLEAN,
   CLOBTEXT: BuiltinTypes.STRING,
   CURRENCY: BuiltinTypes.NUMBER,
@@ -76,7 +80,10 @@ const getFieldType = (
     return { fieldType, selectTypeIdAnnotation }
   }
 
-  const fieldType = CUSTOM_FIELD_TYPE_TO_SALTO_TYPE[fieldInstance.value.fieldtype]
+  const fieldType = CUSTOM_FIELD_TYPE_TO_SALTO_TYPE[
+    // eslint-disable-next-line camelcase
+    fieldInstance.value.fieldtype as CustomFieldPrimitiveType
+  ]
     ?? BuiltinTypes.UNKNOWN
   if (fieldType === undefined) {
     log.warn(`Did not find the type for ${fieldInstance.value.fieldtype} of instance ${fieldInstance.elemID.getFullName()}`)

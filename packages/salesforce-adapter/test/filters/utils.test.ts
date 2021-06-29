@@ -92,8 +92,8 @@ describe('addDefaults', () => {
       })
       it('should add annotation types', () => {
         expect(object.annotationRefTypes).toMatchObject({
-          [API_NAME]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
-          [METADATA_TYPE]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+          [API_NAME]: createRefToElmWithValue(Types.primitiveDataTypes.ServiceId),
+          [METADATA_TYPE]: createRefToElmWithValue(Types.primitiveDataTypes.ServiceId),
           [LABEL]: createRefToElmWithValue(BuiltinTypes.STRING),
           deploymentStatus: createRefToElmWithValue(BuiltinTypes.STRING),
           pluralLabel: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -142,7 +142,7 @@ describe('addDefaults', () => {
       })
       it('should add missing annotation types', () => {
         expect(object.annotationRefTypes).toMatchObject({
-          [API_NAME]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+          [API_NAME]: createRefToElmWithValue(Types.primitiveDataTypes.ServiceId),
           [LABEL]: createRefToElmWithValue(BuiltinTypes.STRING),
         })
         expect(object.annotationRefTypes.nameField?.elemID).toEqual(
@@ -191,8 +191,8 @@ describe('addDefaults', () => {
     })
     it('should add annotation types', () => {
       expect(object.annotationRefTypes).toMatchObject({
-        [API_NAME]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
-        [METADATA_TYPE]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        [API_NAME]: createRefToElmWithValue(Types.primitiveDataTypes.ServiceId),
+        [METADATA_TYPE]: createRefToElmWithValue(Types.primitiveDataTypes.ServiceId),
         [LABEL]: createRefToElmWithValue(BuiltinTypes.STRING),
       })
     })

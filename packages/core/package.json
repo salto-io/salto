@@ -44,7 +44,7 @@
     "@salto-io/netsuite-adapter": "0.2.11",
     "@salto-io/salesforce-adapter": "0.2.11",
     "@salto-io/stripe-adapter": "0.2.11",
-    "@salto-io/rocksdb": "4.1.0-salto-3",
+    "@salto-io/rocksdb": "4.1.0-salto-4",
     "@salto-io/workato-adapter": "0.2.11",
     "@salto-io/workspace": "0.2.11",
     "@salto-io/zuora-billing-adapter": "0.2.11",

@@ -15,8 +15,9 @@
 */
 import { Element, getChangeElement, InstanceElement, isAdditionChange, isModificationChange, isObjectType, isRemovalChange, ChangeError, ChangeValidator, ActionName, isInstanceChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { apiName, isCustom, metadataType } from '../transformers/transformer'
+import { apiName, metadataType } from '../transformers/transformer'
 import { NAMESPACE_SEPARATOR } from '../constants'
+import { INSTANCE_SUFFIXES } from '../types'
 
 
 export const hasNamespace = (customElement: Element): boolean => {
@@ -25,8 +26,14 @@ export const hasNamespace = (customElement: Element): boolean => {
     return false
   }
   const partialFullName = apiNameResult.split('-')[0]
-  const cleanFullName = isCustom(partialFullName)
-    ? partialFullName.slice(0, -3) : partialFullName
+
+  const elementSuffix = INSTANCE_SUFFIXES
+    .map(suffix => `__${suffix}`)
+    .find(suffix => partialFullName.endsWith(suffix))
+
+  const cleanFullName = elementSuffix !== undefined
+    ? partialFullName.slice(0, -elementSuffix.length)
+    : partialFullName
   return cleanFullName.includes(NAMESPACE_SEPARATOR)
 }
 

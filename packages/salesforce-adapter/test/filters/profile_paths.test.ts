@@ -19,12 +19,11 @@ import {
   SALESFORCE,
 } from '../../src/constants'
 import filterCreator, { WARNING_MESSAGE } from '../../src/filters/profile_paths'
-import { FilterWith } from '../../src/filter'
+import { FilterResult, FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import { mockQueryResult } from '../connection'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import { FilterResult } from '../../src/types'
 
 
 describe('profile paths filter', () => {

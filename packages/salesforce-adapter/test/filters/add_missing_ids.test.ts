@@ -15,7 +15,7 @@
 */
 import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, Field } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
-import { FilterWith } from '../../src/filter'
+import { FilterResult, FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator, { WARNING_MESSAGE } from '../../src/filters/add_missing_ids'
 import mockClient from '../client'
@@ -25,7 +25,6 @@ import {
 } from '../../src/constants'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import { FilterResult } from '../../src/types'
 
 
 describe('Internal IDs filter', () => {

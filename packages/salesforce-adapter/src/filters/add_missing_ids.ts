@@ -68,12 +68,14 @@ const elementsWithMissingIds = async (elements: Element[]): Promise<Element[]> =
     .toArray()
 )
 
+export const WARNING_MESSAGE = 'Encountered an error while trying populate internal IDs for some of your salesforce configuration elements. This might result in some missing configuration dependencies in your workspace and/or affect the availability of the ‘go to service’ functionality.'
+
 /**
  * Add missing env-specific ids using listMetadataObjects.
  */
 const filter: FilterCreator = ({ client, config }) => ({
   onFetch: ensureSafeFilterFetch({
-    warningMessage: 'Encountered an error while trying populate internal IDs for some of your salesforce configuration elements. This might result in some missing configuration dependencies in your workspace and/or affect the availability of the ‘go to service’ functionality.',
+    warningMessage: WARNING_MESSAGE,
     config,
     filterName: 'addMissingIds',
     fetchFilterFunc: async (elements: Element[]) => {

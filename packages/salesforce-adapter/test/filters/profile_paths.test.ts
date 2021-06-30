@@ -18,7 +18,7 @@ import {
   INSTANCE_FULL_NAME_FIELD, INTERNAL_ID_FIELD, METADATA_TYPE, PROFILE_METADATA_TYPE, RECORDS_PATH,
   SALESFORCE,
 } from '../../src/constants'
-import filterCreator from '../../src/filters/profile_paths'
+import filterCreator, { WARNING_MESSAGE } from '../../src/filters/profile_paths'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import { mockQueryResult } from '../connection'
@@ -102,7 +102,7 @@ describe('profile paths filter', () => {
       expect(res.errors).toHaveLength(1)
       expect(err[0]).toEqual({
         severity: 'Warning',
-        message: 'Failed to update the NaCl file names for some of your salesforce profiles. Therefore, profiles NaCl file names might differ from their display names in some cases.',
+        message: WARNING_MESSAGE,
       })
     })
   })

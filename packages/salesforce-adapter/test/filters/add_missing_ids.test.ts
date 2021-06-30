@@ -17,7 +17,7 @@ import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, Field } fro
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
-import filterCreator from '../../src/filters/add_missing_ids'
+import filterCreator, { WARNING_MESSAGE } from '../../src/filters/add_missing_ids'
 import mockClient from '../client'
 import {
   SALESFORCE, API_NAME, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, INTERNAL_ID_ANNOTATION,
@@ -209,7 +209,7 @@ describe('Internal IDs filter', () => {
       expect(res.errors).toHaveLength(1)
       expect(err[0]).toEqual({
         severity: 'Warning',
-        message: 'Encountered an error while trying populate internal IDs for some of your salesforce configuration elements. This might result in some missing configuration dependencies in your workspace and/or affect the availability of the ‘go to service’ functionality.',
+        message: WARNING_MESSAGE,
       })
     })
   })

@@ -183,13 +183,14 @@ const addExtraReferences = async (
   })
 }
 
+export const WARNING_MESSAGE = 'Encountered an error while trying to query your salesforce account for additional configuration dependencies.'
+
 /**
  * Add references using the tooling API.
  */
 const creator: FilterCreator = ({ client, config }) => ({
-
   onFetch: ensureSafeFilterFetch({
-    warningMessage: 'Encountered an error while trying to query your salesforce account for additional configuration dependencies.',
+    warningMessage: WARNING_MESSAGE,
     config,
     filterName: 'extraDependencies',
     fetchFilterFunc: async (elements: Element[]) => {

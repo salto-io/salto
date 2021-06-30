@@ -28,16 +28,18 @@ const getRelevantElements = (elements: Element[]): AsyncIterable<Element> =>
   awu(elements)
     .flatMap(extractFlatCustomObjectFields)
 
+export const WARNING_MESSAGE = 'Encountered an error while trying to populate URLs for some of your salesforce configuration elements. This might affect the availability of the ‘go to service’ functionality in your workspace.'
+
 const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: ensureSafeFilterFetch({
-    warningMessage: 'Encountered an error while trying to populate URLs for some of your salesforce configuration elements. This might affect the availability of the ‘go to service’ functionality in your workspace.',
+    warningMessage: WARNING_MESSAGE,
     config,
     filterName: 'elementsUrls',
     fetchFilterFunc: async (elements: Element[]) => {
       const url = await client.getUrl()
       if (url === undefined) {
         log.error('Failed to get salesforce URL')
-        return undefined
+        return
       }
 
       const referenceElements = buildElementsSourceForFetch(elements, config)
@@ -45,7 +47,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
       if (urlRetriever === undefined) {
         log.error('Failed to get salesforce URL')
-        return undefined
+        return
       }
 
       const updateElementUrl = async (element: Element): Promise<void> => {
@@ -59,7 +61,6 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       await awu(getRelevantElements(elements)).forEach(
         async element => updateElementUrl(element)
       )
-      return undefined
     },
 
   }),

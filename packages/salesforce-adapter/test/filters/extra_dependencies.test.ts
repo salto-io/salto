@@ -17,7 +17,7 @@ import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, ReferenceEx
 import { buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
-import filterCreator from '../../src/filters/extra_dependencies'
+import filterCreator, { WARNING_MESSAGE } from '../../src/filters/extra_dependencies'
 import mockClient from '../client'
 import { createMetadataTypeElement, defaultFilterContext, MockInterface } from '../utils'
 import {
@@ -335,7 +335,7 @@ describe('extra dependencies filter', () => {
       expect(res.errors).toHaveLength(1)
       expect(err[0]).toEqual({
         severity: 'Warning',
-        message: 'Encountered an error while trying to query your salesforce account for additional configuration dependencies.',
+        message: WARNING_MESSAGE,
       })
     })
   })

@@ -55,12 +55,14 @@ const replacePath = async (
   }
 }
 
+export const WARNING_MESSAGE = 'Failed to update the NaCl file names for some of your salesforce profiles. Therefore, profiles NaCl file names might differ from their display names in some cases.'
+
 /**
  * replace paths for profile instances upon fetch
  */
 const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
   onFetch: ensureSafeFilterFetch({
-    warningMessage: 'Failed to update the NaCl file names for some of your salesforce profiles. Therefore, profiles NaCl file names might differ from their display names in some cases.',
+    warningMessage: WARNING_MESSAGE,
     config,
     filterName: 'profilePaths',
     fetchFilterFunc: async (elements: Element[]) => {

@@ -49,11 +49,11 @@ export const getMergeableParentID = (
   }
   const nameParts = id.getFullNameParts()
   for (let i = 1; i < nameParts.length; i += 1) {
+    // Its okay to avoid checking the entire id since we will return it anyways
     const mergeableID = ElemID.fromFullNameParts(nameParts.slice(0, i))
-    const restOfParts = nameParts.slice(i)
-    const valuesAtMergableID = topLevelFragments.map(elem => resolvePath(elem, mergeableID))
-    if (valuesAtMergableID.some(_.isArray)) {
-      return { mergeableID, path: restOfParts }
+    const valuesAtMergeableID = topLevelFragments.map(elem => resolvePath(elem, mergeableID))
+    if (valuesAtMergeableID.some(_.isArray)) {
+      return { mergeableID, path: nameParts.slice(i) }
     }
   }
   return { mergeableID: id, path: [] }
@@ -354,7 +354,7 @@ const addToSource = async ({
       // If either the origin or the target source is the common folder, all elements should be
       // mergeable and we shouldn't see merge errors
       throw new Error(
-        `Failed to add ${gids.map(id => id.getFullName())} - unmergable element fragments.`
+        `Failed to add ${gids.map(id => id.getFullName())} - unmergeable element fragments.`
       )
     }
     const after = await awu(mergeResult.merged.values()).peek() as ChangeDataType

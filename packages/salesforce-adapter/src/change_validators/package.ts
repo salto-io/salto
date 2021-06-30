@@ -49,7 +49,7 @@ const packageChangeError = (
   detailedMessage = `Cannot ${action} ${element.elemID.idType} because it is part of a package`,
 ): ChangeError => ({
   elemID: element.elemID,
-  severity: 'Warning',
+  severity: 'Error',
   message: `Cannot change a managed package using Salto. Package namespace: ${getNamespace(element)}`,
   detailedMessage,
 })

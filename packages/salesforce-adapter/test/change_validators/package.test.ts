@@ -48,7 +48,7 @@ describe('package change validator', () => {
         obj.annotate({ [API_NAME]: 'MyNamespace__ObjectName__c' })
         const changeErrors = await packageValidator([toChange({ after: obj })])
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].severity).toEqual('Warning')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(obj.elemID)
       })
 
@@ -59,7 +59,7 @@ describe('package change validator', () => {
           [{ after: obj }, { after: obj.fields.field }].map(toChange)
         )
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].severity).toEqual('Warning')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(obj.fields.field.elemID)
       })
 
@@ -80,7 +80,7 @@ describe('package change validator', () => {
         inst.value[INSTANCE_FULL_NAME_FIELD] = 'MyNamespace__InstanceName__c'
         const changeErrors = await packageValidator([toChange({ after: inst })])
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].severity).toEqual('Warning')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(inst.elemID)
       })
 
@@ -103,7 +103,7 @@ describe('package change validator', () => {
         obj.annotate({ [API_NAME]: 'MyNamespace__ObjectName__c' })
         const changeErrors = await packageValidator([toChange({ before: obj })])
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].severity).toEqual('Warning')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(obj.elemID)
       })
 
@@ -114,9 +114,9 @@ describe('package change validator', () => {
           [{ before: obj }, { before: obj.fields.field }].map(toChange)
         )
         expect(changeErrors).toHaveLength(2)
-        expect(changeErrors[0].severity).toEqual('Warning')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(obj.fields.field.elemID)
-        expect(changeErrors[1].severity).toEqual('Warning')
+        expect(changeErrors[1].severity).toEqual('Error')
         expect(changeErrors[1].elemID).toEqual(obj.elemID)
       })
 
@@ -136,7 +136,7 @@ describe('package change validator', () => {
         inst.value[INSTANCE_FULL_NAME_FIELD] = 'MyNamespace__InstanceName__c'
         const changeErrors = await packageValidator([toChange({ before: inst })])
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].severity).toEqual('Warning')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(inst.elemID)
       })
 
@@ -159,7 +159,7 @@ describe('package change validator', () => {
         const newField = addField('ObjectName__c.MyNamespace__FieldName__c')
         const changeErrors = await packageValidator([toChange({ after: newField })])
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].severity).toEqual('Warning')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(newField.elemID)
       })
 
@@ -187,7 +187,7 @@ describe('package change validator', () => {
         const oldField = addField('ObjectName__c.MyNamespace__FieldName__c')
         const changeErrors = await packageValidator([toChange({ before: oldField })])
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].severity).toEqual('Warning')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(oldField.elemID)
       })
 
@@ -219,7 +219,7 @@ describe('package change validator', () => {
         after.value[PACKAGE_VERSION_FIELD_NAME] = '1.1'
         const changeErrors = await packageValidator([toChange({ before: inst, after })])
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].severity).toEqual('Warning')
+        expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(after.elemID)
       })
     })

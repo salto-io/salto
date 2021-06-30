@@ -17,7 +17,7 @@ import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, ReferenceEx
 import { buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
-import filterCreator from '../../src/filters/extra_dependencies'
+import filterCreator, { WARNING_MESSAGE } from '../../src/filters/extra_dependencies'
 import mockClient from '../client'
 import { createMetadataTypeElement, defaultFilterContext, MockInterface } from '../utils'
 import {
@@ -28,6 +28,8 @@ import { SalesforceRecord } from '../../src/client/types'
 import { Types } from '../../src/transformers/transformer'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import Connection from '../../src/client/jsforce'
+import { FilterResult } from '../../src/types'
+
 
 const getGeneratedDeps = (elem: Element): ReferenceExpression[] => (
   elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
@@ -321,6 +323,23 @@ describe('extra dependencies filter', () => {
     })
   })
 
+  describe('when feature is throwing an error', () => {
+    const mockQueryAll: jest.Mock = jest.fn()
+    SalesforceClient.prototype.queryAll = mockQueryAll
+
+    it('should return a warning', async () => {
+      const { connection } = mockClient()
+      connection.query.mockImplementation(() => { throw new Error() })
+      const res = await filter.onFetch(elements) as FilterResult
+      const err = res.errors ?? []
+      expect(res.errors).toHaveLength(1)
+      expect(err[0]).toEqual({
+        severity: 'Warning',
+        message: WARNING_MESSAGE,
+      })
+    })
+  })
+
   describe('when feature is disabled', () => {
     let connection: MockInterface<Connection>
     beforeEach(async () => {
@@ -337,6 +356,7 @@ describe('extra dependencies filter', () => {
       }) as FilterType
       await filter.onFetch(elements)
     })
+
     it('should not run any query', () => {
       expect(connection.query).not.toHaveBeenCalled()
     })

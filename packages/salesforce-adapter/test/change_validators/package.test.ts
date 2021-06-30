@@ -38,6 +38,12 @@ describe('package change validator', () => {
   }
   describe('onAdd', () => {
     describe('Object', () => {
+      it('should have no change errors when adding an object without namespace with __e suffix', async () => {
+        obj.annotate({ [API_NAME]: 'TestEvent2__e' })
+        const changeErrors = await packageValidator([toChange({ after: obj })])
+        expect(changeErrors).toHaveLength(0)
+      })
+
       it('should have change error when adding an object with namespace', async () => {
         obj.annotate({ [API_NAME]: 'MyNamespace__ObjectName__c' })
         const changeErrors = await packageValidator([toChange({ after: obj })])

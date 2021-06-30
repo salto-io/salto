@@ -21,7 +21,7 @@ import _ from 'lodash'
 import { ConfigChange } from './config_change'
 import { ConfigValidationError, validateRegularExpressions } from './config_validation'
 import { validateDataManagementConfig } from './fetch_profile/data_management'
-import { DataManagementConfig, DATA_CONFIGURATION, DATA_MANAGEMENT, DeprecatedFetchParameters, DeprecatedMetadataParams, FetchParameters, FETCH_CONFIG, INSTANCES_REGEX_SKIPPED_LIST, MetadataParams, METADATA_CONFIG, METADATA_TYPES_SKIPPED_LIST } from './types'
+import { DataManagementConfig, DATA_CONFIGURATION, DATA_MANAGEMENT, DeprecatedFetchParameters, DeprecatedMetadataParams, FetchParameters, FETCH_CONFIG, INSTANCES_REGEX_SKIPPED_LIST, INSTANCE_SUFFIXES, MetadataParams, METADATA_CONFIG, METADATA_TYPES_SKIPPED_LIST } from './types'
 
 export const DEPRECATED_OPTIONS_MESSAGE = 'The configuration options "metadataTypesSkippedList", "instancesRegexSkippedList" and "dataManagement" are deprecated.'
 + ' The following changes will update the deprecated options to the "fetch" configuration option.'
@@ -30,11 +30,6 @@ export const DEPRECATED_OPTIONS_MESSAGE = 'The configuration options "metadataTy
 const { makeArray } = collections.array
 const log = logger(module)
 
-// Based on the list in https://salesforce.stackexchange.com/questions/101844/what-are-the-object-and-field-name-suffixes-that-salesforce-uses-such-as-c-an
-const INSTANCE_SUFFIXES = [
-  'c', 'r', 'ka', 'kav', 'Feed', 'ViewStat', 'VoteStat', 'DataCategorySelection', 'x', 'xo', 'mdt', 'Share', 'Tag',
-  'History', 'pc', 'pr', 'hd', 'hqr', 'hst', 'b', 'latitude__s', 'longitude__s', 'e', 'p', 'ChangeEvent', 'chn',
-]
 export const PACKAGES_INSTANCES_REGEX = `^.+\\.(?!standard_)[^_]+__(?!(${INSTANCE_SUFFIXES.join('|')})([^a-zA-Z\\d_]+|$)).+$`
 
 const DEPRECATED_FIELDS = [

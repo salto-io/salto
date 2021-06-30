@@ -18,11 +18,10 @@ import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectT
 import mockClient from '../client'
 import Connection from '../../src/client/jsforce'
 import SalesforceClient from '../../src/client/client'
-import { Filter } from '../../src/filter'
+import { Filter, FilterResult } from '../../src/filter'
 import elementsUrlFilter, { WARNING_MESSAGE } from '../../src/filters/elements_url'
 import { defaultFilterContext, MockInterface } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import { FilterResult } from '../../src/types'
 import * as ElementsUrlRetrieverModule from '../../src/elements_url_retreiver/elements_url_retreiver'
 
 describe('elements url filter', () => {

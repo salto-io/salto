@@ -461,6 +461,41 @@ describe('Elements validation', () => {
       )
       expect(errors).toHaveLength(1)
     })
+
+    it('should validated unmatched fields and return unresolved reference error', async () => {
+      const object = new ObjectType({
+        elemID: new ElemID('salto', 'test'),
+        fields: {
+          someFiled: {
+            refType: BuiltinTypes.STRING,
+          },
+        },
+      })
+      const objectWithUnMatchedField = new ObjectType({
+        elemID: new ElemID('salto', 'test'),
+        fields: {
+          someFiled: {
+            refType: BuiltinTypes.STRING,
+          },
+          unexpectedFieldWithBadRef: {
+            refType: BuiltinTypes.STRING,
+            annotations: {
+              [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [
+                new ReferenceExpression(new ElemID('salto', 'test', 'field', 'noSuchField')),
+              ],
+            },
+          },
+        },
+      })
+      const errors = await validateElements(
+        [objectWithUnMatchedField],
+        createInMemoryElementSource([
+          object,
+          ...await getFieldsAndAnnoTypes(object),
+        ]),
+      )
+      expect(errors).toHaveLength(1)
+    })
   })
 
   describe('validate instances', () => {

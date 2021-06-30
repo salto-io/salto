@@ -34,15 +34,29 @@ export interface RoutedChanges {
   secondarySources?: Record<string, DetailedChange[]>
 }
 
-const getMergeableParentID = (id: ElemID): {mergeableID: ElemID; path: string[]} => {
-  const isListPart = (part: string): boolean => !Number.isNaN(Number(part))
-  const firstListNamePart = id.getFullNameParts().findIndex(isListPart)
-  if (firstListNamePart < 0) return { mergeableID: id, path: [] }
-  const mergeableNameParts = id.getFullNameParts().slice(0, firstListNamePart)
-  return {
-    mergeableID: ElemID.fromFullNameParts(mergeableNameParts),
-    path: id.getFullNameParts().slice(firstListNamePart),
+type DetailedChangeWithMergeableID<T = Value> = DetailedChange<T> & {
+  mergeableID: ElemID
+  mergeableIDPath: string[]
+}
+
+// Exported for testing
+export const getMergeableParentID = (
+  id: ElemID,
+  topLevelFragments: Element[]
+): {mergeableID: ElemID; path: string[]} => {
+  if (id.isTopLevel()) {
+    return { mergeableID: id, path: [] }
   }
+  const nameParts = id.getFullNameParts()
+  for (let i = 1; i < nameParts.length; i += 1) {
+    // Its okay to avoid checking the entire id since we will return it anyways
+    const mergeableID = ElemID.fromFullNameParts(nameParts.slice(0, i))
+    const valuesAtMergeableID = topLevelFragments.map(elem => resolvePath(elem, mergeableID))
+    if (valuesAtMergeableID.some(_.isArray)) {
+      return { mergeableID, path: nameParts.slice(i) }
+    }
+  }
+  return { mergeableID: id, path: [] }
 }
 
 const filterByFile = async (
@@ -55,7 +69,7 @@ const filterByFile = async (
   async id => !_.isEmpty((fileElements).filter(
     e => resolvePath(
       e,
-      getMergeableParentID(id).mergeableID
+      getMergeableParentID(id, fileElements).mergeableID
     ) !== undefined
   ))
 )
@@ -136,19 +150,19 @@ const createUpdateChanges = async (
 }
 
 const createMergeableChange = async (
-  changes: DetailedChange[],
+  changes: DetailedChangeWithMergeableID[],
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource
 ): Promise<DetailedChange> => {
   const refChange = changes[0]
-  const { mergeableID } = getMergeableParentID(refChange.id)
+  const { mergeableID } = refChange
   // If the mergeableID is a parent of the change id, we need to create
   // the mergeable change by manualy applying the change to the current
   // existing element.
   const base = await commonSource.get(mergeableID) || await primarySource.get(mergeableID)
   const baseAfter = _.cloneDeep(base)
   changes.forEach(change => {
-    const changePath = getMergeableParentID(change.id).path
+    const changePath = change.mergeableIDPath
     if (change.action === 'remove') {
       _.unset(baseAfter, changePath)
     } else {
@@ -340,7 +354,7 @@ const addToSource = async ({
       // If either the origin or the target source is the common folder, all elements should be
       // mergeable and we shouldn't see merge errors
       throw new Error(
-        `Failed to add ${gids.map(id => id.getFullName())} - unmergable element fragments.`
+        `Failed to add ${gids.map(id => id.getFullName())} - unmergeable element fragments.`
       )
     }
     const after = await awu(mergeResult.merged.values()).peek() as ChangeDataType
@@ -418,17 +432,29 @@ export const routeIsolated = async (
 
 const partitionMergeableChanges = async (
   changes: DetailedChange[],
+  primarySource: NaclFilesSource,
   commonSource: NaclFilesSource
-): Promise<[DetailedChange[], DetailedChange[]]> => (
-  promises.array.partition(
-    changes,
-    async change => {
-      const { mergeableID } = getMergeableParentID(change.id)
-      return !_.isEqual(change.id, mergeableID)
-        && !_.isUndefined(await commonSource.get(mergeableID))
+): Promise<[DetailedChangeWithMergeableID[], DetailedChangeWithMergeableID[]]> => {
+  const changesWithMergeableID = await Promise.all(changes.map(async change => {
+    const topLevelID = change.id.createTopLevelParentID().parent
+    const primaryFragment = await primarySource.get(topLevelID)
+    const commonFragment = await commonSource.get(topLevelID)
+    const { mergeableID, path: mergeableIDPath } = getMergeableParentID(
+      change.id, [primaryFragment, commonFragment].filter(values.isDefined)
+    )
+    return {
+      ...change,
+      mergeableID,
+      mergeableIDPath,
     }
+  }))
+
+  return promises.array.partition(
+    changesWithMergeableID,
+    async change => !_.isEqual(change.id, change.mergeableID)
+        && !_.isUndefined(await commonSource.get(change.mergeableID))
   )
-)
+}
 
 const toMergeableChanges = async (
   changes: DetailedChange[],
@@ -441,13 +467,14 @@ const toMergeableChanges = async (
   // 2) It is inside an array
   const [nonMergeableChanges, mergeableChanges] = await partitionMergeableChanges(
     changes,
+    primarySource,
     commonSource
   )
   return [
     ...mergeableChanges,
     ...await awu(Object.values(_.groupBy(
       nonMergeableChanges,
-      c => getMergeableParentID(c.id).mergeableID.getFullName()
+      c => c.mergeableID.getFullName()
     )))
       .map(c => createMergeableChange(c, primarySource, commonSource))
       .toArray(),

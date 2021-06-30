@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
+import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
 import { detailedCompare, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { ModificationDiff, RemovalDiff, AdditionDiff } from '@salto-io/dag'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
-import { routeChanges, routePromote, routeDemote, routeCopyTo } from '../../../src/workspace/nacl_files/multi_env/routers'
+import { routeChanges, routePromote, routeDemote, routeCopyTo, getMergeableParentID } from '../../../src/workspace/nacl_files/multi_env/routers'
 
 const hasChanges = (
   changes: DetailedChange[],
@@ -686,7 +686,7 @@ describe('isolated routing', () => {
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
     expect(routedChanges.primarySource && routedChanges.primarySource[0])
-      .toEqual(change)
+      .toMatchObject(change)
   })
   it('should route an env modification change to env', async () => {
     const newField = new Field(envObj, envField.name, BuiltinTypes.NUMBER)
@@ -706,7 +706,7 @@ describe('isolated routing', () => {
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
     expect(routedChanges.primarySource && routedChanges.primarySource[0])
-      .toEqual(change)
+      .toMatchObject(change)
   })
   it('should route an env remove diff to env', async () => {
     const change: DetailedChange = {
@@ -725,7 +725,7 @@ describe('isolated routing', () => {
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
     expect(routedChanges.primarySource && routedChanges.primarySource[0])
-      .toEqual(change)
+      .toMatchObject(change)
   })
   it('should route a common modification diff to common and revert the change in secondary envs', async () => {
     const specificChange: DetailedChange = {
@@ -837,12 +837,12 @@ describe('isolated routing', () => {
     )
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(1)
-    expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual({
+    expect(routedChanges.primarySource && routedChanges.primarySource[0]).toMatchObject({
       action: 'remove',
       data: { before: envObj },
       id: envObj.elemID,
     })
-    expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual({
+    expect(routedChanges.commonSource && routedChanges.commonSource[0]).toMatchObject({
       action: 'remove',
       data: { before: commonObj },
       id: commonObj.elemID,
@@ -859,12 +859,12 @@ describe('isolated routing', () => {
     const removeChange: DetailedChange = {
       action: 'remove',
       data: { before: 'STR_1' },
-      id: commonInstance.elemID.createNestedID('0').createNestedID('str1'),
+      id: commonInstance.elemID.createNestedID('listField', '0', 'str1'),
     }
     const addChange: DetailedChange = {
       action: 'add',
       data: { after: 'STR_2' },
-      id: commonInstance.elemID.createNestedID('0').createNestedID('str2'),
+      id: commonInstance.elemID.createNestedID('listField', '0', 'str2'),
     }
     const routedChanges = await routeChanges(
       [removeChange, addChange],
@@ -880,9 +880,8 @@ describe('isolated routing', () => {
       id: commonInstance.elemID,
       data: {
         after: new InstanceElement('commonInst', commonObj, {
-          commonField: 'commonField',
           listField: [{
-            str1: 'STR_1',
+            str2: 'STR_2',
           }],
         }),
       },
@@ -892,9 +891,22 @@ describe('isolated routing', () => {
     const commonChange = routedChanges.commonSource && routedChanges.commonSource[0]
     expect(commonChange).toEqual({
       action: 'remove',
+      id: commonInstance.elemID.createNestedID('listField'),
+      data: {
+        before: [{ str1: 'STR_1' }],
+      },
+      path: ['test', 'path'],
+    })
+    const secondaryChange = routedChanges.secondarySources?.sec?.[0]
+    expect(secondaryChange).toEqual({
+      action: 'add',
       id: commonInstance.elemID,
       data: {
-        before: commonInstance,
+        after: new InstanceElement('commonInst', commonObj, {
+          listField: [{
+            str1: 'STR_1',
+          }],
+        }),
       },
       path: ['test', 'path'],
     })
@@ -1688,5 +1700,136 @@ describe('copyTo', () => {
         path: ['other'],
         data: { after: multiFileInstaceOther } },
     ])
+  })
+})
+
+describe('getMergeableParentID', () => {
+  const primitive = new PrimitiveType({
+    elemID: new ElemID('salto', 'prim'),
+    primitive: PrimitiveTypes.STRING,
+  })
+
+  const object = new ObjectType({
+    elemID: new ElemID('salto', 'obj'),
+    fields: {
+      data: {
+        refType: BuiltinTypes.UNKNOWN,
+        annotations: {
+          obj: {
+            key: 'value',
+          },
+          list: [
+            {
+              list: [{
+                key: 'value',
+              }],
+            },
+          ],
+        },
+      },
+    },
+    annotations: {
+      obj: {
+        key: 'value',
+      },
+      list: [
+        {
+          list: [{
+            key: 'value',
+          }],
+        },
+      ],
+      '007': [
+        {
+          '007': [{
+            key: 'value',
+          }],
+        },
+      ],
+      49: {
+        key: 'value',
+      },
+    },
+  })
+
+  const instance = new InstanceElement('inst', object, {
+    data: {
+      obj: {
+        key: 'value',
+      },
+      list: [
+        {
+          list: [{
+            key: 'value',
+          }],
+        },
+      ],
+    },
+  })
+
+  describe('for top level objects', () => {
+    it('should return the original id', () => {
+      expect(getMergeableParentID(primitive.elemID, [primitive]).mergeableID)
+        .toEqual(primitive.elemID)
+      expect(getMergeableParentID(instance.elemID, [instance]).mergeableID)
+        .toEqual(instance.elemID)
+      expect(getMergeableParentID(object.elemID, [object]).mergeableID).toEqual(object.elemID)
+    })
+  })
+
+  describe('in an instance id', () => {
+    it('should return the original id if the path id is mergeable', () => {
+      const mergeableID = instance.elemID.createNestedID('obj', 'key')
+      const res = getMergeableParentID(mergeableID, [instance]).mergeableID
+      expect(res).toEqual(mergeableID)
+    })
+
+    it('should return the highest level non mergeable id', () => {
+      const mergeableID = instance.elemID.createNestedID('data', 'list')
+      const res = getMergeableParentID(mergeableID.createNestedID('0', 'list', '0'), [instance]).mergeableID
+      expect(res).toEqual(mergeableID)
+    })
+  })
+
+  describe('in an object type field', () => {
+    it('should return the original id if the path id is mergeable', () => {
+      const mergeableID = object.fields.data.elemID.createNestedID('obj', 'key')
+      const res = getMergeableParentID(mergeableID, [object]).mergeableID
+      expect(res).toEqual(mergeableID)
+    })
+
+    it('should return the highest level non mergeable id', () => {
+      const mergeableID = object.fields.data.elemID.createNestedID('list')
+      const res = getMergeableParentID(mergeableID.createNestedID('0', 'list', '0'), [object]).mergeableID
+      expect(res).toEqual(mergeableID)
+    })
+  })
+
+  describe('in annotation values', () => {
+    it('should return the original id if the path id is mergeable', () => {
+      const mergeableID = object.elemID.createNestedID('attr', 'obj', 'key')
+      const res = getMergeableParentID(mergeableID, [object]).mergeableID
+      expect(res).toEqual(mergeableID)
+    })
+
+    it('should return the highest level non mergeable id', () => {
+      const mergeableID = object.elemID.createNestedID('attr', 'list')
+      const res = getMergeableParentID(mergeableID.createNestedID('0', 'list', '0'), [object]).mergeableID
+      expect(res).toEqual(mergeableID)
+    })
+  })
+
+  describe('when attr names are numbers', () => {
+    it('should return the original id if the path id is mergeable', () => {
+      const mergeableID = object.elemID.createNestedID('attr', '49', 'key')
+      const res = getMergeableParentID(mergeableID, [object]).mergeableID
+      expect(res).toEqual(mergeableID)
+    })
+
+    it('should return the highest level non mergeable id', () => {
+      const mergeableID = object.elemID.createNestedID('attr', '007')
+      const res = getMergeableParentID(mergeableID.createNestedID('0', '007', '0'), [object]).mergeableID
+      expect(res).toEqual(mergeableID)
+    })
   })
 })

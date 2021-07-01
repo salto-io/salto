@@ -325,7 +325,7 @@ export default class SuiteAppClient {
     return this.soapClient.getNetsuiteWsdl()
   }
 
-  public async getAllRecords(type: string): Promise<Record<string, unknown>[]> {
-    return this.soapClient.getAllRecords(type)
+  public async getAllRecords(types: string[]): Promise<Record<string, unknown>[]> {
+    return this.soapClient.getAllRecords(types)
   }
 }

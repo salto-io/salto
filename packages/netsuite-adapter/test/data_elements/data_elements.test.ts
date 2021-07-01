@@ -104,9 +104,9 @@ describe('data_elements', () => {
     })
 
     it('should return the instances of the types', async () => {
-      getAllRecordsMock.mockImplementation(async type => {
-        if (type === 'Subsidiary') {
-          return [{ name: 'name' }]
+      getAllRecordsMock.mockImplementation(async types => {
+        if (types[0] === 'Subsidiary') {
+          return [{ name: 'name', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }]
         }
         return []
       })
@@ -118,9 +118,9 @@ describe('data_elements', () => {
     })
 
     it('should return only requested instances', async () => {
-      getAllRecordsMock.mockImplementation(async type => {
-        if (type === 'Subsidiary') {
-          return [{ name: 'name1' }, { name: 'name2' }]
+      getAllRecordsMock.mockImplementation(async types => {
+        if (types[0] === 'Subsidiary') {
+          return [{ name: 'name1', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }, { name: 'name2', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }]
         }
         return []
       })
@@ -141,9 +141,9 @@ describe('data_elements', () => {
     })
 
     it('should return only types when no instances match', async () => {
-      getAllRecordsMock.mockImplementation(async type => {
-        if (type === 'Subsidiary') {
-          return [{ name: 'name1' }, { name: 'name2' }]
+      getAllRecordsMock.mockImplementation(async types => {
+        if (types[0] === 'Subsidiary') {
+          return [{ name: 'name1', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }, { name: 'name2', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }]
         }
         return []
       })
@@ -178,9 +178,9 @@ describe('data_elements', () => {
     })
 
     it('should convert attributes into fields', async () => {
-      getAllRecordsMock.mockImplementation(async type => {
-        if (type === 'Subsidiary') {
-          return [{ name: 'name', attributes: { internalId: '1', 'xsi:type': 'Subsidiary' } }]
+      getAllRecordsMock.mockImplementation(async types => {
+        if (types[0] === 'Subsidiary') {
+          return [{ name: 'name', attributes: { internalId: '1', 'xsi:type': 'listAcct:Subsidiary' } }]
         }
         return []
       })
@@ -192,9 +192,9 @@ describe('data_elements', () => {
     })
 
     it('should convert date to string', async () => {
-      getAllRecordsMock.mockImplementation(async type => {
-        if (type === 'Subsidiary') {
-          return [{ name: 'name', date: new Date(2020, 1, 1) }]
+      getAllRecordsMock.mockImplementation(async types => {
+        if (types[0] === 'Subsidiary') {
+          return [{ name: 'name', date: new Date(2020, 1, 1), attributes: { 'xsi:type': 'listAcct:Subsidiary' } }]
         }
         return []
       })
@@ -203,11 +203,11 @@ describe('data_elements', () => {
     })
 
     it('should convert booleans', async () => {
-      getAllRecordsMock.mockImplementation(async type => {
-        if (type === 'Subsidiary') {
+      getAllRecordsMock.mockImplementation(async types => {
+        if (types[0] === 'Subsidiary') {
           return [
-            { name: 'name1', booleanField: 'true' },
-            { name: 'name2', booleanField: 'false' },
+            { name: 'name1', booleanField: 'true', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
+            { name: 'name2', booleanField: 'false', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
           ]
         }
         return []
@@ -218,10 +218,10 @@ describe('data_elements', () => {
     })
 
     it('should convert numbers', async () => {
-      getAllRecordsMock.mockImplementation(async type => {
-        if (type === 'Subsidiary') {
+      getAllRecordsMock.mockImplementation(async types => {
+        if (types[0] === 'Subsidiary') {
           return [
-            { name: 'name', numberField: '1234' },
+            { name: 'name', numberField: '1234', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
           ]
         }
         return []

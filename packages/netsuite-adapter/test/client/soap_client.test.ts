@@ -495,7 +495,7 @@ describe('soap_client', () => {
             someNamespace: {
               complexTypes: {
                 SubsidiarySearch: 'someValue',
-                TransactionSearch: 'someValue',
+                ItemSearch: 'someValue',
               },
             },
           },
@@ -512,10 +512,10 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords('Subsidiary')).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+      await expect(client.getAllRecords(['Subsidiary'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
     })
 
-    it('Should work for transaction type', async () => {
+    it('Should work for item type', async () => {
       searchAsyncMock.mockResolvedValue([{
         searchResult: {
           totalPages: 1,
@@ -525,12 +525,33 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords('SalesOrder')).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+      await expect(client.getAllRecords(['InventoryItem'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+      expect(searchAsyncMock).toHaveBeenCalledWith({
+        searchRecord: {
+          attributes: {
+            'xmlns:q1': 'someNamespace',
+            'xsi:type': 'q1:ItemSearch',
+          },
+          'q1:basic': {
+            attributes: {
+              'xmlns:platformCommon': 'urn:common_2020_2.platform.webservices.netsuite.com',
+              'xmlns:platformCore': 'urn:core_2020_2.platform.webservices.netsuite.com',
+            },
+            'platformCommon:type': {
+              attributes: {
+                operator: 'anyOf',
+                'xsi:type': 'platformCore:SearchEnumMultiSelectField',
+              },
+              'platformCore:searchValue': ['_inventoryItem'],
+            },
+          },
+        },
+      })
     })
 
     it('Should throw an error if got invalid search results', async () => {
       searchAsyncMock.mockResolvedValue([{}])
-      await expect(client.getAllRecords('Subsidiary')).rejects.toThrow()
+      await expect(client.getAllRecords(['Subsidiary'])).rejects.toThrow()
     })
 
     it('Should call all search pages', async () => {
@@ -553,7 +574,7 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords('Subsidiary')).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+      await expect(client.getAllRecords(['Subsidiary'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
     })
 
     it('Should throw an error if got invalid searchMoreWithId results', async () => {
@@ -568,7 +589,7 @@ describe('soap_client', () => {
       }])
 
       searchMoreWithIdAsyncMock.mockResolvedValue([{}])
-      await expect(client.getAllRecords('Subsidiary')).rejects.toThrow()
+      await expect(client.getAllRecords(['Subsidiary'])).rejects.toThrow()
     })
 
     it('Should use getAll if search not supported', async () => {
@@ -581,7 +602,7 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords('Subsidiary')).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+      await expect(client.getAllRecords(['Subsidiary'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
     })
 
     it('Should throw an error if got invalid getAll results', async () => {
@@ -589,7 +610,7 @@ describe('soap_client', () => {
       delete (wsdl as any).definitions.schemas.someNamespace.complexTypes.SubsidiarySearch
 
       getAllAsyncMock.mockResolvedValue([{}])
-      await expect(client.getAllRecords('Subsidiary')).rejects.toThrow()
+      await expect(client.getAllRecords(['Subsidiary'])).rejects.toThrow()
     })
   })
 })

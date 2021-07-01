@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, getChangeElement, InstanceElement, isAdditionChange, isModificationChange, isObjectType, isRemovalChange, ChangeError, ChangeValidator, ActionName, isInstanceChange } from '@salto-io/adapter-api'
+import { Element, getChangeElement, InstanceElement, isAdditionChange, isModificationChange, isRemovalChange, ChangeError, ChangeValidator, ActionName, isInstanceChange, isFieldChange, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { apiName, metadataType } from '../transformers/transformer'
+import { apiName, isCustomObject, metadataType } from '../transformers/transformer'
 import { NAMESPACE_SEPARATOR } from '../constants'
 import { INSTANCE_SUFFIXES } from '../types'
 
@@ -67,6 +67,7 @@ const isInstalledPackageVersionChange = async (
 const changeValidator: ChangeValidator = async changes => {
   const addRemoveErrors = await awu(changes)
     .filter(change => isAdditionChange(change) || isRemovalChange(change))
+    .filter(async change => await isCustomObject(getChangeElement(change)) || isFieldChange(change))
     .filter(change => hasNamespace(getChangeElement(change)))
     .map(change => packageChangeError(change.action, getChangeElement(change)))
     .toArray()

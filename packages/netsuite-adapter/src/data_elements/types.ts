@@ -175,6 +175,8 @@ export const INTERNAL_ID_TO_TYPES: Record<string, string[]> = _(TYPES_TO_INTERNA
 
 export const ITEM_TYPE_TO_SEARCH_STRING: Record<string, string> = {
   AssemblyItem: '_assembly',
+  LotNumberedAssemblyItem: '_assembly',
+  SerializedAssemblyItem: '_assembly',
   DescriptionItem: '_description',
   DiscountItem: '_discount',
   KitItem: '_kit',
@@ -191,6 +193,8 @@ export const ITEM_TYPE_TO_SEARCH_STRING: Record<string, string> = {
   ServiceSaleItem: '_service',
   SubtotalItem: '_subtotal',
   InventoryItem: '_inventoryItem',
+  LotNumberedInventoryItem: '_inventoryItem',
+  SerializedInventoryItem: '_inventoryItem',
   ItemGroup: '_itemGroup',
   GiftCertificateItem: '_giftCertificateItem',
   DownloadItem: '_downloadItem',

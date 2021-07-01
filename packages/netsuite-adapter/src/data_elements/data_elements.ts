@@ -147,7 +147,7 @@ export const getDataElements = async (
     return types
   }
 
-  const instances = await awu((await client.getAllRecords(availableTypesToFetch)))
+  const instances = await awu(await client.getAllRecords(availableTypesToFetch))
     .map(record => createInstance(record, typesMap))
     .toArray()
 

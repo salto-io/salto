@@ -37,6 +37,11 @@ export const WSDL_PATH = `${__dirname}/client/suiteapp_client/soap_client/wsdl/n
 const NETSUITE_VERSION = '2020_2'
 const SEARCH_PAGE_SIZE = 100
 
+type SoapSearchType = {
+  type: string
+  subtypes?: string[]
+}
+
 export default class SoapClient {
   private credentials: SuiteAppCredentials
   private callsLimiter: CallsLimiter
@@ -286,10 +291,10 @@ export default class SoapClient {
 
     const [itemTypes, otherTypes] = _.partition(types, type => type in ITEM_TYPE_TO_SEARCH_STRING)
 
-    const typesToSearch: { type: string; subtypes?: string[] }[] = otherTypes
+    const typesToSearch: SoapSearchType[] = otherTypes
       .map(type => ({ type }))
     if (itemTypes.length !== 0) {
-      typesToSearch.push({ type: 'Item', subtypes: Array.from(new Set(itemTypes.map(type => ITEM_TYPE_TO_SEARCH_STRING[type]))) })
+      typesToSearch.push({ type: 'Item', subtypes: _.uniq(itemTypes.map(type => ITEM_TYPE_TO_SEARCH_STRING[type])) })
     }
 
     return (await Promise.all(typesToSearch.map(async ({ type, subtypes }) => {

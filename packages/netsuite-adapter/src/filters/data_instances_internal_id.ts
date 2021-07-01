@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { naclCase, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -26,7 +26,7 @@ const { awu } = collections.asynciterable
 const isNumberStr = (str: string): boolean => !Number.isNaN(Number(str))
 
 const getSubInstanceName = (path: ElemID, internalId: string): string => {
-  const name = _.findLast(path.getFullNameParts(), part => !isNumberStr(part) && !['customField', 'customFieldList', 'recordRef'].includes(part))
+  const name = _.findLast(path.getFullNameParts(), part => !isNumberStr(part) && part !== 'recordRef')
   return naclCase(`${path.typeName}_${name}_${internalId}`)
 }
 
@@ -37,17 +37,22 @@ const getSubInstanceName = (path: ElemID, internalId: string): string => {
  */
 const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
-    const recordRefType = elements.find(e => e.elemID.name === 'RecordRef')
-
     const newInstancesMap: Record<string, InstanceElement> = {}
 
     const transformIds: TransformFunc = async ({ value, field, path }) => {
-      if ((await field?.getType())?.elemID.name === 'RecordRef') {
+      const fieldType = await field?.getType()
+      if (fieldType?.elemID.name === 'RecordRef') {
         value.id = '[ACCOUNT_SPECIFIC_VALUE]'
       }
 
-      // TODO: remove the ?? recordRefType when custom fields will be appropriately supported
-      const fieldType = await field?.getType() ?? recordRefType
+      if ((field === undefined || fieldType?.elemID.isEqual(BuiltinTypes.UNKNOWN.elemID))
+        && value.internalId !== undefined && !path?.isTopLevel()) {
+        value.internalId = '[ACCOUNT_SPECIFIC_VALUE]'
+        if (value.typeId !== undefined) {
+          value.typeId = '[ACCOUNT_SPECIFIC_VALUE]'
+        }
+      }
+
       const isInsideList = path?.getFullNameParts().some(part => isNumberStr(part))
       if (path !== undefined
         && value.internalId !== undefined

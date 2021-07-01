@@ -23,6 +23,7 @@ import { NETSUITE, RECORDS_PATH } from '../constants'
 import { NetsuiteQuery } from '../query'
 import { TYPE_TO_IDENTIFIER } from './types'
 import NetsuiteClient from '../client/client'
+import { castFieldValue } from './custom_fields'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -103,20 +104,7 @@ const createInstance = async (
         delete value['xsi:type']
       }
 
-      if (value instanceof Date) {
-        return value.toString()
-      }
-
-      if (typeof value === 'string') {
-        const fieldType = await field?.getType()
-        if (fieldType?.elemID.isEqual(BuiltinTypes.BOOLEAN.elemID)) {
-          return value === 'true'
-        }
-        if (fieldType?.elemID.isEqual(BuiltinTypes.NUMBER.elemID)) {
-          return parseInt(value, 10)
-        }
-      }
-      return value
+      return castFieldValue(value, field)
     },
   })
   const id = naclCase(fixedRecord?.[TYPE_TO_IDENTIFIER[type.elemID.name]])

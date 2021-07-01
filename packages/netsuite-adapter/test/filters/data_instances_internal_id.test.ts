@@ -38,6 +38,17 @@ describe('data_instances_internal_id', () => {
     expect(instance.value.recordRef.id).toEqual('[ACCOUNT_SPECIFIC_VALUE]')
   })
 
+  it('should replace internalId for values without fields', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), annotations: { source: 'soap' } }),
+      { recordRef: { internalId: '1' } }
+    )
+
+    await filterCreator().onFetch([instance])
+    expect(instance.value.recordRef.internalId).toEqual('[ACCOUNT_SPECIFIC_VALUE]')
+  })
+
   it('should extract list items with internal id', async () => {
     const instance = new InstanceElement(
       'instance',

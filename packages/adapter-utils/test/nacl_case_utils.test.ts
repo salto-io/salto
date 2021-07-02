@@ -43,6 +43,24 @@ describe('naclCase utils', () => {
       })
     })
 
+    describe('When all characters are digits', () => {
+      const digitOnly = [
+        '1231', '0000', '0123', '6547587474574',
+      ]
+      it('Should append the escaping separator', () => {
+        digitOnly.forEach(name => expect(naclCase(name)).toEqual(`${name}@`))
+      })
+    })
+    describe('When the value is numeric but not all characters are digits', () => {
+      it('Should use regular escaping', () => {
+        expect(naclCase('-1')).toEqual('_1@b')
+        expect(naclCase('+1')).toEqual('_1@ze')
+        expect(naclCase('23a')).toEqual('23a')
+        expect(naclCase('2-3')).toEqual('2_3@b')
+        expect(naclCase('4.5')).toEqual('4_5@v')
+      })
+    })
+
     describe('When all special chars are same and "mapped"', () => {
       it('Should replace special with _, add seperator and mapped val once', () => {
         expect(naclCase('Name Special Char')).toEqual('Name_Special_Char@s')
@@ -95,6 +113,7 @@ describe('naclCase utils', () => {
         expect(pathNaclCase('Lead@1234')).toEqual('Lead')
         expect(pathNaclCase('LALA__Lead__c@12_34')).toEqual('LALA__Lead__c')
         expect(pathNaclCase('NameWithNumber2@12_34')).toEqual('NameWithNumber2')
+        expect(pathNaclCase('0123@')).toEqual('0123')
       })
     })
 

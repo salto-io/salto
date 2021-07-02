@@ -117,6 +117,28 @@ describe('ducktype_instance_elements', () => {
       ))).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'some_other_name_54775'])
     })
+    it('should escape id part when it only contains digits', async () => {
+      const inst = await toInstance({
+        type,
+        transformationConfigByType: {
+          bla: {
+            idFields: ['id'],
+          },
+        },
+        transformationDefaultConfig: {
+          idFields: ['somethingElse'],
+        },
+        defaultName: 'abc',
+        entry,
+      })
+      expect(inst).toBeDefined()
+      expect(inst?.isEqual(new InstanceElement(
+        '54775@',
+        type,
+        entry,
+      ))).toBeTruthy()
+      expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', '54775'])
+    })
     it('should include parent name when nestName is true', async () => {
       const parent = new InstanceElement('abc', type, {})
       const inst = await toInstance({

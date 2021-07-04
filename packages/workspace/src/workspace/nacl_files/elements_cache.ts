@@ -54,6 +54,9 @@ export type CacheChangeSetUpdate = {
   src2: ReadOnlyElementsSource
 }
 
+// The following is a workaound for SALTO-1428 - remove when fixed
+export type MergedRecoveryMode = 'rebuild' | 'clearOnly'
+
 export const buildNewMergedElementsAndErrors = async ({
   afterElements,
   currentElements,
@@ -265,11 +268,15 @@ export const mergeChanges = async ({
   currentElements,
   cachePreChangeHash,
   mergeFunc,
+  // The following is a workaound for SALTO-1428 - remove when fixed
+  recoveryMode,
 }: {
   cacheUpdate: CacheChangeSetUpdate
   currentElements: ReadOnlyElementsSource
   cachePreChangeHash: string | undefined
   mergeFunc: (elements: AsyncIterable<Element>) => Promise<MergeResult>
+  // The following is a workaound for SALTO-1428 - remove when fixed
+  recoveryMode: MergedRecoveryMode
 }): Promise<{
   mergedChanges: ChangeSet<Change>
   mergeErrors: AsyncIterable<RemoteMapEntry<MergeError[], string>>
@@ -311,12 +318,16 @@ export const mergeChanges = async ({
       src2Changes, src1ChangeIDs, src1,
     ))
   } else {
-    src1ElementsToMerge = src1 ? (awu(await src1.getAll()).concat(
-      await getContainerTypeChanges(src1Changes.changes)
-    )) : []
-    src2ElementsToMerge = src2 ? (awu(await src2.getAll()).concat(
-      await getContainerTypeChanges(src2Changes.changes)
-    )) : []
+    // The recovery mode is a workaound for SALTO-1428 - remove when fixed
+    src1ElementsToMerge = src1 && recoveryMode === 'rebuild'
+      ? (awu(await src1.getAll()).concat(
+        await getContainerTypeChanges(src1Changes.changes)
+      )) : []
+    // The recovery mode is a workaound for SALTO-1428 - remove when fixed
+    src2ElementsToMerge = src2 && recoveryMode === 'rebuild'
+      ? (awu(await src2.getAll()).concat(
+        await getContainerTypeChanges(src2Changes.changes)
+      )) : []
   }
   const elementsToMerge = awu(src1ElementsToMerge).concat(src2ElementsToMerge)
   const newMergedElementsResult = await mergeFunc(elementsToMerge.filter(values.isDefined))

@@ -29,7 +29,7 @@ import { mergeElements, MergeError } from '../../../merger'
 import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode, SourceLoadParams } from '../nacl_files_source'
 import { ParsedNaclFile } from '../parsed_nacl_file'
-import { applyChanges, mergeChanges, ChangeSet, createEmptyChangeSet } from '../elements_cache'
+import { applyChanges, mergeChanges, ChangeSet, createEmptyChangeSet, MergedRecoveryMode } from '../elements_cache'
 import { Errors } from '../../errors'
 import { RemoteElementSource, ElementsSource } from '../../elements_source'
 import { serialize, deserializeSingleElement, deserializeMergeErrors } from '../../../serializer/elements'
@@ -101,7 +101,9 @@ const buildMultiEnvSource = (
   commonSourceName: string,
   remoteMapCreator: RemoteMapCreator,
   persistent: boolean,
-  initState?: MultiEnvState
+  initState?: MultiEnvState,
+  // The following is a workaound for SALTO-1428 - remove when fixed
+  mergedRecoveryMode: MergedRecoveryMode = 'rebuild'
 ): MultiEnvSource => {
   let primarySourceName = initPrimarySourceName
   const primarySource = (): NaclFilesSource => sources[primarySourceName]
@@ -202,6 +204,8 @@ const buildMultiEnvSource = (
               )),
           }
         },
+        // The following is a workaound for SALTO-1428 - remove when fixed
+        recoveryMode: mergedRecoveryMode,
       })
       const envHash = envChanges[envName]?.postChangeHash
       if (envHash) {
@@ -603,11 +607,16 @@ export const multiEnvSource = (
   primarySourceName: string,
   commonSourceName: string,
   remoteMapCreator: RemoteMapCreator,
-  persistent: boolean
+  persistent: boolean,
+  // The following is a workaound for SALTO-1428 - remove when fixed
+  mergedRecoveryMode: MergedRecoveryMode = 'rebuild'
 ): MultiEnvSource => buildMultiEnvSource(
   sources,
   primarySourceName,
   commonSourceName,
   remoteMapCreator,
-  persistent
+  persistent,
+  // The following 2 arguments are a workaound for SALTO-1428 - remove when fixed
+  undefined,
+  mergedRecoveryMode
 )

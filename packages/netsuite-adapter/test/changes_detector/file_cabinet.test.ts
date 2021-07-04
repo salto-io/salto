@@ -51,6 +51,7 @@ describe('file_cabinet', () => {
     FROM file
     JOIN mediaitemfolder ON mediaitemfolder.id = file.folder
     WHERE file.lastmodifieddate BETWEEN '1/11/2021' AND '2/23/2021'
+    ORDER BY file.id ASC
   `)
       })
     })
@@ -107,6 +108,7 @@ describe('file_cabinet', () => {
     SELECT appfolder, id
     FROM mediaitemfolder
     WHERE lastmodifieddate BETWEEN '1/11/2021' AND '2/23/2021'
+    ORDER BY id ASC
   `)
       })
     })

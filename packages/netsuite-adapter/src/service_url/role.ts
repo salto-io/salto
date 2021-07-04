@@ -22,7 +22,7 @@ const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
     elements,
     client,
     filter: element => element.refType.elemID.name === 'role',
-    query: 'SELECT id, scriptid FROM role',
+    query: 'SELECT id, scriptid FROM role ORDER BY id ASC',
     generateUrl: id => `app/setup/role.nl?id=${id}`,
   })
 

@@ -160,7 +160,7 @@ SuiteAppFileCabinetOperations => {
   const queryFolders = async (): Promise<FolderResult[]> => {
     if (queryFoldersResults === undefined) {
       const foldersResults = await suiteAppClient.runSuiteQL(`SELECT name, id, bundleable, isinactive, isprivate, description, parent 
-      FROM mediaitemfolder`)
+      FROM mediaitemfolder ORDER BY id ASC`)
 
       if (foldersResults === undefined) {
         throw new Error('Failed to list folders')
@@ -181,7 +181,7 @@ SuiteAppFileCabinetOperations => {
 Promise<FileResult[]> => {
     if (queryFoldersResults === undefined) {
       const filesResults = await suiteAppClient.runSuiteQL(`SELECT name, id, filesize, bundleable, isinactive, isonline, addtimestamptourl, hideinbundle, description, folder 
-    FROM file`)
+    FROM file ORDER BY id ASC`)
 
       if (filesResults === undefined) {
         throw new Error('Failed to list files')

@@ -77,6 +77,12 @@ export default class SuiteAppClient {
     this.soapClient = new SoapClient(this.credentials, this.callsLimiter)
   }
 
+  /**
+   * WARNING:
+   * Due to a bug in NetSuite SuiteQL, make sure to use
+   * ORDER BY <some unique identifier> ASCin your queries.
+   * Otherwise, you might not get all the results.
+   */
   public async runSuiteQL(query: string):
     Promise<Record<string, unknown>[] | undefined> {
     let hasMore = true

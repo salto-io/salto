@@ -57,6 +57,7 @@ const changesDetector: TypeChangesDetector = {
       FROM script
       JOIN systemnote ON systemnote.recordid = script.id
       WHERE systemnote.date BETWEEN '${startDate}' AND '${endDate}' AND systemnote.recordtypeid = -417
+      ORDER BY script.id ASC
     `)
 
     const scriptDeploymentChangesPromise = client.runSuiteQL(`
@@ -65,12 +66,14 @@ const changesDetector: TypeChangesDetector = {
       JOIN systemnote ON systemnote.recordid = scriptdeployment.primarykey
       JOIN script ON scriptdeployment.script = script.id
       WHERE systemnote.date BETWEEN '${startDate}' AND '${endDate}' AND systemnote.recordtypeid = -418
+      ORDER BY scriptdeployment.primarykey ASC
     `)
 
     const scriptFieldsChangesPromise = client.runSuiteQL(`
       SELECT internalid
       FROM customfield
       WHERE fieldtype = 'SCRIPT' AND lastmodifieddate BETWEEN '${startDate}' AND '${endDate}'
+      ORDER BY internalid ASC
     `)
 
     const [

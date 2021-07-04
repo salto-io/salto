@@ -28,6 +28,7 @@ const changesDetector: TypeChangesDetector = {
         SELECT scriptid, lastmodifieddate
         FROM customrecordtype
         WHERE lastmodifieddate BETWEEN '${startDate}' AND '${endDate}'
+        ORDER BY scriptid ASC
       `)
 
     if (results === undefined) {

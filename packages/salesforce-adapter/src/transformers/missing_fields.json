@@ -2015,24 +2015,6 @@
     ]
   },
   {
-    "id": "KnowledgeSettings",
-    "fields": [
-      {
-        "name": "languages",
-        "type": "KnowledgeLanguageSettings"
-      }
-    ]
-  },
-  {
-    "id": "KnowledgeLanguageSettings",
-    "fields": [
-      {
-        "name": "language",
-        "type": "KnowledgeLanguage"
-      }
-    ]
-  },
-  {
     "id": "KnowledgeLanguage",
     "fields": [
       {
@@ -2067,6 +2049,24 @@
       {
         "name": "name",
         "type": "STRING"
+      }
+    ]
+  },
+  {
+    "id": "KnowledgeLanguageSettings",
+    "fields": [
+      {
+        "name": "language",
+        "type": "KnowledgeLanguage"
+      }
+    ]
+  },
+  {
+    "id": "KnowledgeSettings",
+    "fields": [
+      {
+        "name": "languages",
+        "type": "KnowledgeLanguageSettings"
       }
     ]
   },

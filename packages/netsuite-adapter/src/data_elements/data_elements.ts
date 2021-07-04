@@ -24,6 +24,7 @@ import { NetsuiteQuery } from '../query'
 import { TYPE_TO_IDENTIFIER } from './types'
 import NetsuiteClient from '../client/client'
 import { castFieldValue } from './custom_fields'
+import { addIdentifierToRecord, addIdentifierToType } from './multi_fields_identifiers'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -51,6 +52,8 @@ export const getDataTypes = async (
     )
     type.annotations.source = 'soap'
   })
+
+  types.forEach(addIdentifierToType)
 
   types
     .filter(type => TYPE_TO_IDENTIFIER[type.elemID.name] !== undefined)
@@ -108,9 +111,15 @@ const createInstance = async (
       return castFieldValue(value, field)
     },
   })
+
+  if (fixedRecord !== undefined) {
+    addIdentifierToRecord(fixedRecord, type)
+  }
+
   const serviceIdFieldName = TYPE_TO_IDENTIFIER[type.elemID.name]
   const identifierValue = fixedRecord?.[serviceIdFieldName]
   const defaultName = naclCase(identifierValue)
+
   const name = elemIdGetter !== undefined ? elemIdGetter(
     NETSUITE,
     {

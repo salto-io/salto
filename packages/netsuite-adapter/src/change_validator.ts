@@ -22,6 +22,7 @@ import removeListItemValidator from './change_validators/remove_list_item'
 import instanceChangesValidator from './change_validators/instance_changes'
 import fileValidator from './change_validators/file_changes'
 import immutableChangesValidator from './change_validators/immutable_changes'
+import identifierValidator from './change_validators/identifier'
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
 
 
@@ -32,6 +33,7 @@ const changeValidators: ChangeValidator[] = [
   immutableChangesValidator,
   removeListItemValidator,
   fileValidator,
+  identifierValidator,
 ]
 
 const nonSuiteAppValidators: ChangeValidator[] = [

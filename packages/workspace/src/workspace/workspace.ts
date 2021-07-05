@@ -35,7 +35,7 @@ import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_v
 import { WorkspaceConfigSource } from './workspace_config_source'
 import { MergeError, mergeElements } from '../merger'
 import { RemoteElementSource, ElementsSource, mapReadOnlyElementsSource } from './elements_source'
-import { applyChanges, mergeChanges, ChangeSet, createEmptyChangeSet } from './nacl_files/elements_cache'
+import { applyChanges, mergeChanges, ChangeSet, createEmptyChangeSet, MergedRecoveryMode } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
 
@@ -161,6 +161,7 @@ export const loadWorkspace = async (
   remoteMapCreator: RemoteMapCreator,
   ignoreFileChanges = false,
   persistent = true,
+  mergedRecoveryMode: MergedRecoveryMode = 'rebuild'
 ): Promise<Workspace> => {
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
@@ -186,7 +187,8 @@ export const loadWorkspace = async (
     envName ?? currentEnv(),
     enviormentsSources.commonSourceName,
     remoteMapCreator,
-    persistent
+    persistent,
+    mergedRecoveryMode
   )
   let naclFilesSource = createNaclFilesSource()
   let workspaceState: Promise<WorkspaceState> | undefined
@@ -332,6 +334,8 @@ export const loadWorkspace = async (
         currentElements: stateToBuild[envName].merged,
         cachePreChangeHash,
         mergeFunc: elements => mergeElements(elements),
+        // The following is a workaound for SALTO-1428 - remove (this and usages) when fixed
+        recoveryMode: mergedRecoveryMode,
       })
       await applyChanges({
         mergedChanges: changeResult.mergedChanges,
@@ -742,7 +746,8 @@ export const loadWorkspace = async (
         currentEnv(),
         enviormentsSources.commonSourceName,
         remoteMapCreator,
-        persistent
+        persistent,
+        mergedRecoveryMode
       )
     },
     renameEnvironment: async (envName: string, newEnvName: string, newEnvNaclPath? : string) => {
@@ -777,7 +782,8 @@ export const loadWorkspace = async (
         currentEnv(),
         enviormentsSources.commonSourceName,
         remoteMapCreator,
-        persistent
+        persistent,
+        mergedRecoveryMode
       )
     },
     setCurrentEnv: async (env: string, persist = true): Promise<void> => {
@@ -793,7 +799,8 @@ export const loadWorkspace = async (
         currentEnv(),
         enviormentsSources.commonSourceName,
         remoteMapCreator,
-        persistent
+        persistent,
+        mergedRecoveryMode
       )
       workspaceState = undefined
     },

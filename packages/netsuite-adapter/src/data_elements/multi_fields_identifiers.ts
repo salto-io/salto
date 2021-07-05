@@ -22,6 +22,7 @@ import _ from 'lodash'
 export const TYPE_TO_ID_FIELD_PATHS: Record<string, string[][]> = {
   AccountingPeriod: [['periodName'], ['fiscalCalendar', 'name']],
   Nexus: [['country'], ['state', 'name']],
+  Account: [['acctName'], ['acctNumber']],
 }
 
 export const IDENTIFIER_FIELD = 'identifier'

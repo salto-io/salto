@@ -224,7 +224,6 @@ export const ITEM_TYPE_TO_SEARCH_STRING: Record<string, string> = {
 }
 
 export const TYPE_TO_IDENTIFIER: Record<string, string> = {
-  Account: 'acctName',
   Subsidiary: 'name',
   Department: 'name',
   Classification: 'name',

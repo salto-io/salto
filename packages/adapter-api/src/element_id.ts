@@ -273,4 +273,8 @@ export class ElemID {
         && Object.values(INSTANCE_ANNOTATIONS).includes(this.nameParts[1])
       )
   }
+
+  isAnnotationTypeID(): boolean {
+    return this.idType === 'annotation'
+  }
 }

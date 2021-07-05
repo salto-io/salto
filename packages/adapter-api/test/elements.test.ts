@@ -711,6 +711,14 @@ describe('Test elements.ts', () => {
         expect(nonAnno.isAttrID()).toBeFalsy()
       })
     })
+    describe('isAnnotationTypeID', () => {
+      it('should identify annotation type IDs', () => {
+        const objectAnnoType = new ElemID('salto', 'obj', 'annotation', 'something')
+        const nonAnnoType = new ElemID('salto', 'obj', 'attr', 'ok')
+        expect(objectAnnoType.isAnnotationTypeID()).toBeTruthy()
+        expect(nonAnnoType.isAnnotationTypeID()).toBeFalsy()
+      })
+    })
   })
 
   describe('ListType', () => {

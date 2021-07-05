@@ -125,7 +125,12 @@ const savedSearchAudience = new ObjectType({
   annotations: {
   },
   fields: {
-    FIELD_NAME: { refType: BuiltinTypes.STRING },
+    FLAG_AUDIENCE_ALL_CUSTOMERS: { refType: BuiltinTypes.BOOLEAN },
+    FLAG_AUDIENCE_ALL_EMPLOYEES: { refType: BuiltinTypes.BOOLEAN },
+    FLAG_AUDIENCE_ALL_PARTNERS: { refType: BuiltinTypes.BOOLEAN },
+    FLAG_AUDIENCE_ALL_ROLES: { refType: BuiltinTypes.BOOLEAN },
+    FLAG_AUDIENCE_ALL_VENDORS: { refType: BuiltinTypes.BOOLEAN },
+    FIELD_AUDIENCE_ROLES: { refType: BuiltinTypes.STRING },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
 })
@@ -210,12 +215,6 @@ export const savedsearch = new ObjectType({
     FLAG_SEND_ON_UPDATE: { refType: BuiltinTypes.BOOLEAN },
     FLAG_SHOW_AUDIT_TRAIL: { refType: BuiltinTypes.BOOLEAN },
     KEY_AUDIENCE: { refType: BuiltinTypes.NUMBER },
-    FLAG_AUDIENCE_ALL_CUSTOMERS: { refType: BuiltinTypes.BOOLEAN },
-    FLAG_AUDIENCE_ALL_EMPLOYEES: { refType: BuiltinTypes.BOOLEAN },
-    FLAG_AUDIENCE_ALL_PARTNERS: { refType: BuiltinTypes.BOOLEAN },
-    FLAG_AUDIENCE_ALL_ROLES: { refType: BuiltinTypes.BOOLEAN },
-    FLAG_AUDIENCE_ALL_VENDORS: { refType: BuiltinTypes.BOOLEAN },
-    FIELD_AUDIENCE_ROLES: { refType: BuiltinTypes.STRING },
     scriptid: {
       refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {

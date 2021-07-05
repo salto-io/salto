@@ -31,7 +31,7 @@ const savedsearch_returnFieldElemID = new ElemID(constants.NETSUITE, 'savedsearc
 const savedsearch_sortColumnsElemID = new ElemID(constants.NETSUITE, 'savedsearch_sortColumns')
 const savedsearch_alertRecipientsElemID = new ElemID(constants.NETSUITE, 'savedsearch_alertRecipients')
 const savedsearch_filterElemID = new ElemID(constants.NETSUITE, 'savedsearch_filter')
-
+const savedsearch_audienceElemID = new ElemID(constants.NETSUITE, 'savedsearch_audience')
 
 const savedSearchFilterRecord = new ObjectType({
   elemID: savedsearch_filterRecordElemID,
@@ -61,7 +61,7 @@ const savedSearchFilter = new ObjectType({
     FIELD_MODIFIER: { refType: BuiltinTypes.STRING },
     FIELD_ATTRIBUTE: { refType: BuiltinTypes.STRING },
     FIELD_TYPE: { refType: BuiltinTypes.STRING },
-    RECORD: {refType: new ListType(savedSearchFilterRecord)}
+    RECORDS: { refType: new ListType(savedSearchFilterRecord) },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
 })
@@ -120,6 +120,16 @@ const savedSearchAlertRecipients = new ObjectType({
   path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
 })
 
+const savedSearchAudience = new ObjectType({
+  elemID: savedsearch_audienceElemID,
+  annotations: {
+  },
+  fields: {
+    FIELD_NAME: { refType: BuiltinTypes.STRING },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
+})
+
 const savedsearch_dependencies = new ObjectType({
   elemID: savedsearch_dependenciesElemID,
   annotations: {
@@ -136,6 +146,13 @@ const savedsearch_dependencies = new ObjectType({
 })
 
 savedsearchInnerTypes.push(savedsearch_dependencies)
+savedsearchInnerTypes.push(savedSearchAlertRecipients)
+savedsearchInnerTypes.push(savedSearchSortColumns)
+savedsearchInnerTypes.push(savedSearchReturnField)
+savedsearchInnerTypes.push(savedSearchAvailableFilter)
+savedsearchInnerTypes.push(savedSearchFilterRecord)
+savedsearchInnerTypes.push(savedSearchFilter)
+savedsearchInnerTypes.push(savedSearchAudience)
 
 
 export const savedsearch = new ObjectType({
@@ -197,7 +214,7 @@ export const savedsearch = new ObjectType({
     FLAG_AUDIENCE_ALL_EMPLOYEES: { refType: BuiltinTypes.BOOLEAN },
     FLAG_AUDIENCE_ALL_PARTNERS: { refType: BuiltinTypes.BOOLEAN },
     FLAG_AUDIENCE_ALL_ROLES: { refType: BuiltinTypes.BOOLEAN },
-    FLAG_AUDIENCE_ALL_VENDORS: { refType: BuiltinTypes.BOOLEAN} ,
+    FLAG_AUDIENCE_ALL_VENDORS: { refType: BuiltinTypes.BOOLEAN },
     FIELD_AUDIENCE_ROLES: { refType: BuiltinTypes.STRING },
     scriptid: {
       refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
@@ -219,26 +236,29 @@ export const savedsearch = new ObjectType({
       },
     },
     search_filters: {
-      refType: new ListType(savedSearchFilter)
+      refType: new ListType(savedSearchFilter),
     },
     search_summary_filters: {
-      refType: new ListType(savedSearchFilter)
+      refType: new ListType(savedSearchFilter),
     },
     available_filters: {
-      refType: new ListType(savedSearchAvailableFilter)
+      refType: new ListType(savedSearchAvailableFilter),
     },
     return_fields: {
-      refType: new ListType(savedSearchReturnField)
+      refType: new ListType(savedSearchReturnField),
     },
     detail_fields: {
-      refType: new ListType(savedSearchReturnField)
+      refType: new ListType(savedSearchReturnField),
     },
     sort_columns: {
-      refType: savedSearchSortColumns
+      refType: savedSearchSortColumns,
+    },
+    audience: {
+      refType: savedSearchAudience,
     },
     alert_recipients: {
-      refType: new ListType(savedSearchAlertRecipients)
-    }
+      refType: new ListType(savedSearchAlertRecipients),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
 })

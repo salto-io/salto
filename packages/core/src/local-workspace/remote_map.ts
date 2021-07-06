@@ -217,6 +217,15 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
   }
 }
 
+export const replicateDB = async (
+  srcDbLocation: string, dstDbLocation: string, backupDir: string
+): Promise<void> => {
+  const remoteDbImpl = getRemoteDbImpl()
+  await promisify(
+    remoteDbImpl.replicate.bind(remoteDbImpl, srcDbLocation, dstDbLocation, backupDir)
+  )()
+}
+
 const creatorLock = new AsyncLock()
 const withCreatorLock = async (fn: (() => Promise<void>)): Promise<void> => {
   await creatorLock.acquire('createInProgress', fn)

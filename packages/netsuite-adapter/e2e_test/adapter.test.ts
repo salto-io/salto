@@ -18,7 +18,7 @@ import { CredsLease } from '@salto-io/e2e-credentials-store'
 import {
   toChange, FetchResult, InstanceElement, ReferenceExpression, isReferenceExpression,
   isInstanceElement, DeployResult, Values, isStaticFile, StaticFile, FetchOptions, Change,
-  ChangeId, ChangeGroupId,
+  ChangeId, ChangeGroupId, ElemID, ObjectType, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { findElement, naclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -29,7 +29,7 @@ import { customTypes, fileCabinetTypes, getMetadataTypes } from '../src/types'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import {
   CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD, FETCH_ALL_TYPES_AT_ONCE,
-  FILE, FILE_CABINET_PATH_SEPARATOR, FOLDER, PATH, ROLE, SCRIPT_ID,
+  FILE, FILE_CABINET_PATH_SEPARATOR, FOLDER, NETSUITE, PATH, ROLE, SCRIPT_ID,
   SKIP_LIST,
   TRANSACTION_COLUMN_CUSTOM_FIELD, WORKFLOW,
 } from '../src/constants'
@@ -181,6 +181,80 @@ describe('Netsuite adapter E2E with real account', () => {
       }
     )
 
+    const subsidiaryAddressType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'Address'),
+      fields: {
+        country: { refType: BuiltinTypes.STRING },
+        addressee: { refType: BuiltinTypes.STRING },
+        state: { refType: BuiltinTypes.STRING },
+        addrText: { refType: BuiltinTypes.STRING },
+        override: { refType: BuiltinTypes.BOOLEAN },
+      },
+    })
+
+    const subsidiaryType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'Subsidiary'),
+      fields: {
+        internalId: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            isAttribute: true,
+          },
+        },
+        name: { refType: BuiltinTypes.SERVICE_ID },
+        state: { refType: BuiltinTypes.STRING },
+        mainAddress: { refType: subsidiaryAddressType },
+      },
+      annotations: { source: 'soap' },
+    })
+
+    const subsidiaryInstance = new InstanceElement(
+      naclCase(randomString),
+      subsidiaryType,
+      {
+        name: randomString,
+        state: 'AZ',
+        mainAddress: {
+          country: '_uSMinorOutlyingIslands',
+          addressee: 'testSub',
+          state: 'AZ',
+          addrText: 'testSub<br>AZ <br>US Minor Outlying Islands',
+          override: false,
+        },
+      }
+    )
+
+    afterAll(async () => {
+      const revertChanges: Map<ChangeId, Change<InstanceElement>> = new Map([
+        ...withSuiteApp ? [subsidiaryInstance] : [],
+      ].map((instanceToDelete, index) => [
+        index.toString(),
+        toChange({ before: instanceToDelete }),
+      ]))
+
+      if (revertChanges.size === 0) {
+        return
+      }
+
+      const idToGroup = (await adapter?.deployModifiers
+        ?.getChangeGroupIds?.(revertChanges)) as Map<ChangeId, ChangeGroupId>
+      const changesGroups = _(revertChanges)
+        .entries()
+        .groupBy(([id, _change]) => idToGroup.get(id))
+        .mapValues(
+          group => group.map(([_id, change]) => change as unknown as Change<InstanceElement>)
+        )
+        .entries()
+        .value()
+
+      for (const [id, group] of changesGroups) {
+        // eslint-disable-next-line no-await-in-loop
+        await adapter.deploy({
+          changeGroup: { groupID: id, changes: group },
+        })
+      }
+    })
+
     describe('Create records', () => {
       const changes: Map<ChangeId, Change<InstanceElement>> = new Map([
         entityCustomFieldToCreate,
@@ -188,6 +262,7 @@ describe('Netsuite adapter E2E with real account', () => {
         workflowToCreate,
         emailTemplateToCreate,
         fileToCreate,
+        ...withSuiteApp ? [subsidiaryInstance] : [],
       ].map((instanceToCreate, index) => [index.toString(), toChange({ after: instanceToCreate })]))
 
       const folderToModifyBefore = folderToModify.clone()
@@ -373,6 +448,18 @@ describe('Netsuite adapter E2E with real account', () => {
         && sourcefrom.elemID.isEqual(
           entityCustomFieldToCreate.elemID.createNestedID(SCRIPT_ID)
         )).toBe(true)
+      })
+
+      it('should fetch the created subsidiary', async () => {
+        if (withSuiteApp) {
+          const fetchSubsidiary = findElement(
+            fetchedInstances,
+            subsidiaryInstance.elemID
+          ) as InstanceElement
+          subsidiaryInstance.value.internalId = fetchSubsidiary.value.internalId
+          expect(fetchSubsidiary.value.name).toEqual(randomString)
+          expect(fetchSubsidiary.value.internalId).toBeDefined()
+        }
       })
     })
   })

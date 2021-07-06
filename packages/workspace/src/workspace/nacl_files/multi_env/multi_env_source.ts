@@ -29,7 +29,7 @@ import { mergeElements, MergeError } from '../../../merger'
 import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode, SourceLoadParams } from '../nacl_files_source'
 import { ParsedNaclFile } from '../parsed_nacl_file'
-import { createCacheManager, ElementCacheManager, ChangeSet, MergedRecoveryMode, REBUILD_ON_RECOVERY } from '../elements_cache'
+import { createCacheManager, ElementMergeManager, ChangeSet, MergedRecoveryMode, REBUILD_ON_RECOVERY } from '../elements_cache'
 import { Errors } from '../../errors'
 import { RemoteElementSource, ElementsSource } from '../../elements_source'
 import { serialize, deserializeSingleElement, deserializeMergeErrors } from '../../../serializer/elements'
@@ -76,7 +76,7 @@ type SingleState = {
 }
 type MultiEnvState = {
   states: Record<string, SingleState>
-  cacheManager: ElementCacheManager
+  cacheManager: ElementMergeManager
 }
 
 export type EnvsChanges = Record<string, ChangeSet<Change>>
@@ -172,7 +172,7 @@ const buildMultiEnvSource = (
       envName: string
     ): Promise<ChangeSet<Change<ChangeDataType>>> => {
       const envState = current.states[envName]
-      const changeResult = await current.cacheManager.update({
+      const changeResult = await current.cacheManager.mergeComponents({
         src1Changes: envChanges[envName],
         src2Changes: envChanges[commonSourceName],
         src1: sources[envName],

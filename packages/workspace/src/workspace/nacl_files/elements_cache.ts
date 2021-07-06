@@ -19,6 +19,7 @@ import { collections, values } from '@salto-io/lowerdash'
 import { ThenableIterable } from '@salto-io/lowerdash/src/collections/asynciterable'
 
 import _ from 'lodash'
+import AsyncLock from 'async-lock'
 import { MergeError, MergeResult } from '../../merger'
 import { ElementsSource } from '../elements_source'
 import { RemoteMap, RemoteMapEntry, RemoteMapCreator } from '../remote_map'
@@ -150,19 +151,24 @@ export interface Flushable {
   clear: () => Promise<void>
 }
 
-export interface ElementCacheManager {
+export interface ElementMergeManager {
   init: () => Promise<void>
   flush: () => Promise<boolean>
   clear: () => Promise<void>
-  update: (updateParams: CacheChangeSetUpdate) => Promise<ChangeSet<Change>>
+  mergeComponents: (updateParams: CacheChangeSetUpdate) => Promise<ChangeSet<Change>>
   // Hash access functions used when hash is, for some reason, calculated outside of update
   getHash: (prefix: string) => Promise<string | undefined>
   setHash: (prefix: string, value: string) => Promise<void>
 }
 
+const namespaceToManager: Record<string, ElementMergeManager> = {}
+
 export const createCacheManager = async (flushables: Flushable[],
   mapCreator: RemoteMapCreator, namespace: string,
-  recoveryOperation?: string): Promise<ElementCacheManager> => {
+  recoveryOperation?: string): Promise<ElementMergeManager> => {
+  if (Object.keys(namespace).includes(namespace)) {
+    return namespaceToManager[namespace]
+  }
   const hashes = await mapCreator<string>({
     namespace,
     persistent: true,
@@ -305,23 +311,25 @@ export const createCacheManager = async (flushables: Flushable[],
     await currentElements.setAll(awu(mergedChanges.changes).filter(isAdditionOrModificationChange)
       .map(change => getChangeElement(change)))
   }
-  return {
+  const flushLock = new AsyncLock()
+  const mergeManager = {
     init: async () => {
       if (await hashes.get(FLUSH_HASH) === FLUSH_IN_PROGRESS) {
         await clearImpl()
       }
     },
     clear: clearImpl,
-    flush: async () => {
-      await hashes.set(FLUSH_HASH, FLUSH_IN_PROGRESS)
-      await hashes.flush()
-      const hasChanged = (await Promise.all(flushables.map(async f => f.flush())))
-        .some(b => (typeof b !== 'boolean' || b))
-      await hashes.delete(FLUSH_HASH)
-      await hashes.flush()
-      return hasChanged
-    },
-    update: async (cacheUpdate: CacheChangeSetUpdate) => {
+    flush: async () =>
+      flushLock.acquire(FLUSH_HASH, async () => {
+        await hashes.set(FLUSH_HASH, FLUSH_IN_PROGRESS)
+        await hashes.flush()
+        const hasChanged = (await Promise.all(flushables.map(async f => f.flush())))
+          .some(b => (typeof b !== 'boolean' || b))
+        await hashes.delete(FLUSH_HASH)
+        await hashes.flush()
+        return hasChanged
+      }),
+    mergeComponents: async (cacheUpdate: CacheChangeSetUpdate) => {
       const changeResult = await updateCache(cacheUpdate)
       if (cacheUpdate.src1Changes?.postChangeHash) {
         await hashes.set(getSourceHashKey(cacheUpdate.src1Prefix),
@@ -343,6 +351,8 @@ export const createCacheManager = async (flushables: Flushable[],
     getHash: (prefix: string) => hashes.get(getSourceHashKey(prefix)),
     setHash: (prefix: string, value: string) => hashes.set(getSourceHashKey(prefix), value),
   }
+  namespaceToManager[namespace] = mergeManager
+  return mergeManager
 }
 
 

@@ -35,7 +35,7 @@ import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_v
 import { WorkspaceConfigSource } from './workspace_config_source'
 import { MergeError, mergeElements } from '../merger'
 import { RemoteElementSource, ElementsSource, mapReadOnlyElementsSource } from './elements_source'
-import { createCacheManager, ElementCacheManager, ChangeSet, createEmptyChangeSet, MergedRecoveryMode } from './nacl_files/elements_cache'
+import { createCacheManager, ElementMergeManager, ChangeSet, createEmptyChangeSet, MergedRecoveryMode } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
 
@@ -152,7 +152,7 @@ type SingleState = {
 }
 type WorkspaceState = {
   states: Record<string, SingleState>
-  cacheManager: ElementCacheManager
+  cacheManager: ElementMergeManager
 }
 
 export const loadWorkspace = async (
@@ -320,7 +320,7 @@ export const loadWorkspace = async (
           postChangeHash: await state(envName).getHash(),
         }
       }
-      const changeResult = await stateToBuild.cacheManager.update({
+      const changeResult = await stateToBuild.cacheManager.mergeComponents({
         src1Changes: workspaceChanges[envName],
         src2Changes: await completeStateOnlyChanges(stateOnlyChanges[envName]
           ?? createEmptyChangeSet(await stateToBuild.cacheManager

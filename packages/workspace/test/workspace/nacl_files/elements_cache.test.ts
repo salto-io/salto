@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 
-import { ElementCacheManager, createCacheManager, Flushable } from '../../../src/workspace/nacl_files/elements_cache'
+import { ElementMergeManager, createCacheManager, Flushable } from '../../../src/workspace/nacl_files/elements_cache'
 import { persistentMockCreateRemoteMap } from '../../utils'
 
 const NAMESPACE = 'TEST_NAMESPACE'
 
 describe('test cache manager', () => {
-  let manager: ElementCacheManager
+  let manager: ElementMergeManager
   let flushables: Flushable[]
 
   const createFlushable = (): Flushable => ({

@@ -129,7 +129,7 @@ const fixEdgeIndentation = (
 export const groupAnnotationTypeChanges = (fileChanges: DetailedChange[],
   existingFileSourceMap?: SourceMap): DetailedChange[] => {
   const isAnnotationTypeAddChange = (change: DetailedChange): boolean =>
-    change.id.idType === 'annotation' && isAdditionChange(change)
+    change.id.isAnnotationTypeID() && isAdditionChange(change)
 
   const objectHasAnnotationTypesBlock = (topLevelIdFullName: string): boolean =>
     !_.isUndefined(existingFileSourceMap)
@@ -197,7 +197,7 @@ export const updateNaclFileData = async (
     if (elem !== undefined) {
       const changeKey = change.id.name
       const isListElement = changeKey.match(/^\d+$/) !== null
-      if (change.id.idType === 'annotation') {
+      if (change.id.isAnnotationTypeID()) {
         if (isType(elem)) {
           newData = dumpSingleAnnotationType(changeKey, elem, indentationLevel)
         } else {
@@ -300,7 +300,7 @@ export const getChangesToUpdate = (
   const isNestedAddition = (dc: DetailedChange): boolean => (dc.path || false)
     && dc.action === 'add'
     && dc.id.idType !== 'instance'
-    && dc.id.nestingLevel === (dc.id.idType === 'annotation' ? 2 : 1)
+    && dc.id.nestingLevel === (dc.id.isAnnotationTypeID() ? 2 : 1)
     && !parentElementExistsInPath(dc, sourceMap)
 
   const [nestedAdditionsWithPath, otherChanges] = _.partition(

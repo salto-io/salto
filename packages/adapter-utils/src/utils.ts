@@ -497,7 +497,7 @@ export const getPath = (
     return ['fields', fieldName, 'annotations', ...fieldAnnoPath]
   }
 
-  if (isType(rootElement) && fullElemID.idType === 'annotation') {
+  if (isType(rootElement) && fullElemID.isAnnotationTypeID()) {
     const annoTypeName = path[0]
     const annoTypePath = path.slice(1)
     if (_.isEmpty(annoTypePath)) return ['annotationTypes', annoTypeName]

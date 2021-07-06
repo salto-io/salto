@@ -15,7 +15,7 @@
 */
 /* eslint-disable no-underscore-dangle */
 
-import { isInstanceElement, isObjectType, Values } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement, isObjectType, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { ungzip } from 'node-gzip'
 import { xml2js, ElementCompact } from 'xml-js'
@@ -25,9 +25,10 @@ import { savedsearch, savedsearchInnerTypes } from '../types/custom_types/parsed
 
 type attributeValue = string | boolean | number | undefined
 type attributeObject = { _attributes: { clazz:string; field:string }; _text:string }
-type recordObject = { values: { Value:attributeObject[] }}
+type recordObject = { values: { Value:attributeObject[]}}
 type filterObject = { descriptor: { values: { Value: attributeObject[] }}
  values: { values: {Record: recordObject | recordObject[]} }}
+
 const getJson = async (defenition: string): Promise<ElementCompact> => {
   const gzip = Buffer.from(defenition.split('@').slice(-1)[0], 'base64')
   const xmlValue = await ungzip(gzip)
@@ -110,8 +111,22 @@ const getReturnFields = (search: ElementCompact): Values[] => {
   if (search.returnFields.values === undefined) {
     return []
   }
-  return search.returnFields.values.Record
-    .map((record:recordObject) => getObjectFromValues(record.values.Value))
+  if (Array.isArray(search.returnFields.values.Record)) {
+    return search.returnFields.values.Record
+      .map((record:recordObject) => getObjectFromValues(record.values.Value))
+  }
+  return [getObjectFromValues(search.returnFields.values.Record.values.Value)]
+}
+
+const getDetailFields = (search: ElementCompact): Values[] => {
+  if (search.detailFields.values === undefined) {
+    return []
+  }
+  if (Array.isArray(search.detailFields.values.Record)) {
+    return search.detailFields.values.Record
+      .map((record:recordObject) => getObjectFromValues(record.values.Value))
+  }
+  return [getObjectFromValues(search.detailFields.values.Record.values.Value)]
 }
 
 const getSortColumns = (search: ElementCompact): Values => {
@@ -126,29 +141,53 @@ const getAlertRecipients = (search: ElementCompact): Values[] => {
     return []
   }
   return search.alertRecipientFields.values.Record
+    .map((record:recordObject) => record.values.Value)
+    .map((attribute:attributeObject) => Object
+      .fromEntries([[attribute._attributes.field, attribute._text]]))
 }
 
-const filterCreator: FilterCreator = (): FilterWith<'onFetch'> => ({
+const shouldKeepOldDefinition = async (oldDefinition:string,
+  newDefinitions:string):Promise<boolean> => {
+  const oldXml = await getJson(oldDefinition)
+  const newXml = await getJson(newDefinitions)
+  return _.isEqual(getSearchDefinition(oldXml), getSearchDefinition(newXml))
+   && _.isEqual(getSearchDependency(oldXml), getSearchDependency(newXml))
+}
+
+const assignValuesToInstance = async (instance:InstanceElement,
+  oldInstance: InstanceElement):Promise<void> => {
+  const parsedXml = await getJson(instance.value.definition)
+  const searchDefinition = getSearchDefinition(parsedXml)
+  const searchDependency = getSearchDependency(parsedXml)
+  Object.assign(instance.value, getFlags(searchDefinition))
+  Object.assign(instance.value, { search_filters: getFilters(searchDefinition) })
+  Object.assign(instance.value, { search_summary_filters: getSummaryFilters(searchDefinition) })
+  Object.assign(instance.value, { available_filters: getAvailableFilters(searchDefinition) })
+  Object.assign(instance.value, { return_fields: getReturnFields(searchDefinition) })
+  Object.assign(instance.value, { detail_fields: getDetailFields(searchDefinition) })
+  Object.assign(instance.value, { sort_columns: getSortColumns(searchDefinition) })
+  Object.assign(instance.value, { audience: getAudience(searchDependency) })
+  Object.assign(instance.value, { alert_recipients: getAlertRecipients(searchDefinition) })
+  if (await shouldKeepOldDefinition(oldInstance.value.definition, instance.value.definition)) {
+    instance.value.definition = oldInstance.value.definition
+  }
+}
+
+const filterCreator: FilterCreator = ({ elementsSource }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     _.remove(elements, e => isObjectType(e) && e.elemID.name === SAVED_SEARCH)
     elements.push(savedsearch)
     elements.push(...savedsearchInnerTypes)
-    // elements.filter(e => isInstanceElement(e)
-    // && e.elemID.typeName === SAVED_SEARCH).forEach((instance => {
-    //   instance.value = { ...instance.value,
-    // ...get_json(instance.value.definition)}
-    // }))
-    const values = await Promise.all(elements.filter(isInstanceElement)
+    await Promise.all(
+      elements
+        .filter(isInstanceElement)
+        .filter(e => e.elemID.typeName === SAVED_SEARCH)
+        .map(async (instance: InstanceElement) => {
+          await assignValuesToInstance(instance, await elementsSource.get(instance.elemID))
+        })
+    )
+    elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === SAVED_SEARCH)
-      .map(async e => getJson(e.value.definition)))
-    values.map(i => getFlags(getSearchDefinition(i)))
-    values.map(i => getFilters(getSearchDefinition(i)))
-    values.map(i => getSummaryFilters(getSearchDefinition(i)))
-    values.map(i => getAvailableFilters(getSearchDefinition(i)))
-    values.map(i => getReturnFields(getSearchDefinition(i)))
-    values.map(i => getSortColumns(getSearchDefinition(i)))
-    values.map(i => getAlertRecipients(getSearchDefinition(i)))
-    values.map(i => getAudience(getSearchDependency(i)))
   },
 })
 

@@ -62,7 +62,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
           const newInstance = new InstanceElement(
             instanceName,
             fieldType,
-            value,
+            { ...value, isSubInstance: true },
             [NETSUITE, RECORDS_PATH, fieldType.elemID.name, instanceName]
           )
           newInstancesMap[instanceName] = newInstance

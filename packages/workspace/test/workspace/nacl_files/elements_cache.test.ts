@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { ElementMergeManager, createCacheManager, Flushable } from '../../../src/workspace/nacl_files/elements_cache'
+import { ElementMergeManager, createMergeManager, Flushable } from '../../../src/workspace/nacl_files/elements_cache'
 import { persistentMockCreateRemoteMap } from '../../utils'
 
 const NAMESPACE = 'TEST_NAMESPACE'
@@ -31,7 +31,7 @@ describe('test cache manager', () => {
 
   beforeEach(async () => {
     flushables = [createFlushable(), createFlushable(), createFlushable()]
-    manager = await createCacheManager(flushables, persistentMockCreateRemoteMap(), NAMESPACE)
+    manager = await createMergeManager(flushables, persistentMockCreateRemoteMap(), NAMESPACE)
   })
 
   describe('On clear', async () => {

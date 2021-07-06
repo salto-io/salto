@@ -35,7 +35,7 @@ import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_v
 import { WorkspaceConfigSource } from './workspace_config_source'
 import { MergeError, mergeElements } from '../merger'
 import { RemoteElementSource, ElementsSource, mapReadOnlyElementsSource } from './elements_source'
-import { createCacheManager, ElementMergeManager, ChangeSet, createEmptyChangeSet, MergedRecoveryMode } from './nacl_files/elements_cache'
+import { createMergeManager, ElementMergeManager, ChangeSet, createEmptyChangeSet, MergedRecoveryMode } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
 
@@ -152,7 +152,7 @@ type SingleState = {
 }
 type WorkspaceState = {
   states: Record<string, SingleState>
-  cacheManager: ElementMergeManager
+  mergeManager: ElementMergeManager
 }
 
 export const loadWorkspace = async (
@@ -229,15 +229,15 @@ export const loadWorkspace = async (
         }]).toArray())
       const initializedState = {
         states,
-        cacheManager: await createCacheManager(
+        mergeManager: await createMergeManager(
           [...Object.values(states)
             .flatMap(remoteMaps => Object.values(remoteMaps))],
           remoteMapCreator,
-          getRemoteMapNamespace('cacheManager', ALL_ENVS_NAMESPACE),
+          getRemoteMapNamespace('mergeManager', ALL_ENVS_NAMESPACE),
           mergedRecoveryMode,
         ),
       }
-      await initializedState.cacheManager.init()
+      await initializedState.mergeManager.init()
       return initializedState
     }
     const stateToBuild = workspaceState !== undefined
@@ -316,14 +316,14 @@ export const loadWorkspace = async (
             .concat(stateRemovedElementChanges),
           cacheValid: partialStateChanges.cacheValid,
           preChangeHash: partialStateChanges.preChangeHash
-            ?? await stateToBuild.cacheManager.getHash(STATE_SOURCE_PREFIX + envName),
+            ?? await stateToBuild.mergeManager.getHash(STATE_SOURCE_PREFIX + envName),
           postChangeHash: await state(envName).getHash(),
         }
       }
-      const changeResult = await stateToBuild.cacheManager.mergeComponents({
+      const changeResult = await stateToBuild.mergeManager.mergeComponents({
         src1Changes: workspaceChanges[envName],
         src2Changes: await completeStateOnlyChanges(stateOnlyChanges[envName]
-          ?? createEmptyChangeSet(await stateToBuild.cacheManager
+          ?? createEmptyChangeSet(await stateToBuild.mergeManager
             .getHash(STATE_SOURCE_PREFIX + envName))),
         src1: await naclFilesSource.getElementsSource(envName),
         src2: mapReadOnlyElementsSource(
@@ -376,7 +376,7 @@ export const loadWorkspace = async (
         || (stateOnlyChanges[name]?.changes ?? []).length > 0
         // Even without changes, it's possible that things moved between common and env
         || workspaceChanges[name]?.postChangeHash
-          !== await stateToBuild.cacheManager.getHash(MULTI_ENV_SOURCE_PREFIX + name))
+          !== await stateToBuild.mergeManager.getHash(MULTI_ENV_SOURCE_PREFIX + name))
 
     await relevantEnvs.forEach(async envName => { await updateWorkspace(envName) })
     return stateToBuild
@@ -443,7 +443,7 @@ export const loadWorkspace = async (
     const workspaceChanges = await ((await getLoadedNaclFilesSource())
       .updateNaclFiles(visibleChanges, mode))
     const currentStateHash = workspaceState ? await (await workspaceState)
-      .cacheManager.getHash(STATE_SOURCE_PREFIX + currentEnv()) : undefined
+      .mergeManager.getHash(STATE_SOURCE_PREFIX + currentEnv()) : undefined
     const loadedStateHash = await state(currentEnv()).getHash()
     await state(currentEnv()).calculateHash()
     const postChangeHash = await state(currentEnv()).getHash()
@@ -648,7 +648,7 @@ export const loadWorkspace = async (
       await state().flush()
       await (await getLoadedNaclFilesSource()).flush()
       const currentWSState = await getWorkspaceState()
-      await currentWSState.cacheManager.flush()
+      await currentWSState.mergeManager.flush()
     },
     clone: (): Promise<Workspace> => {
       const sources = _.mapValues(enviormentsSources.sources, source =>
@@ -662,7 +662,7 @@ export const loadWorkspace = async (
         if (args.staticResources && !(args.state && args.cache && args.nacl)) {
           throw new Error('Cannot clear static resources without clearing the state, cache and nacls')
         }
-        await currentWSState.cacheManager.clear()
+        await currentWSState.mergeManager.clear()
         await naclFilesSource.clear(args)
       }
       if (args.state) {

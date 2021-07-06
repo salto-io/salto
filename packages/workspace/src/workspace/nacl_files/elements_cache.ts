@@ -163,7 +163,7 @@ export interface ElementMergeManager {
 
 const namespaceToManager: Record<string, ElementMergeManager> = {}
 
-export const createCacheManager = async (flushables: Flushable[],
+export const createMergeManager = async (flushables: Flushable[],
   mapCreator: RemoteMapCreator, namespace: string,
   recoveryOperation?: string): Promise<ElementMergeManager> => {
   if (Object.keys(namespace).includes(namespace)) {

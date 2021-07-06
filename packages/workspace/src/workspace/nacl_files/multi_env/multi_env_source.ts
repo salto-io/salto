@@ -29,7 +29,7 @@ import { mergeElements, MergeError } from '../../../merger'
 import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode, SourceLoadParams } from '../nacl_files_source'
 import { ParsedNaclFile } from '../parsed_nacl_file'
-import { createCacheManager, ElementMergeManager, ChangeSet, MergedRecoveryMode, REBUILD_ON_RECOVERY } from '../elements_cache'
+import { createMergeManager, ElementMergeManager, ChangeSet, MergedRecoveryMode, REBUILD_ON_RECOVERY } from '../elements_cache'
 import { Errors } from '../../errors'
 import { RemoteElementSource, ElementsSource } from '../../elements_source'
 import { serialize, deserializeSingleElement, deserializeMergeErrors } from '../../../serializer/elements'
@@ -76,7 +76,7 @@ type SingleState = {
 }
 type MultiEnvState = {
   states: Record<string, SingleState>
-  cacheManager: ElementMergeManager
+  mergeManager: ElementMergeManager
 }
 
 export type EnvsChanges = Record<string, ChangeSet<Change>>
@@ -151,16 +151,16 @@ const buildMultiEnvSource = (
           ?? (await buildStateForSingleEnv(name))])
         .toArray())
     )
-    let cacheManager = state?.cacheManager
-    if (!cacheManager) {
-      cacheManager = await createCacheManager(Object.values(states)
+    let mergeManager = state?.mergeManager
+    if (!mergeManager) {
+      mergeManager = await createMergeManager(Object.values(states)
         .flatMap(envState => [envState.elements, envState.mergeErrors]),
       remoteMapCreator, getRemoteMapNamespace('cache_manager'), mergedRecoveryMode)
-      cacheManager.init()
+      mergeManager.init()
     }
     const current = {
       states,
-      cacheManager,
+      mergeManager,
     }
     const changesInCommon = (envChanges[commonSourceName]
       ?.changes ?? []).length > 0
@@ -172,7 +172,7 @@ const buildMultiEnvSource = (
       envName: string
     ): Promise<ChangeSet<Change<ChangeDataType>>> => {
       const envState = current.states[envName]
-      const changeResult = await current.cacheManager.mergeComponents({
+      const changeResult = await current.mergeManager.mergeComponents({
         src1Changes: envChanges[envName],
         src2Changes: envChanges[commonSourceName],
         src1: sources[envName],
@@ -369,7 +369,7 @@ const buildMultiEnvSource = (
       commonSource(),
       ...Object.values(secondarySources()),
     ]).forEach(async src => src.flush())
-    await (await getState()).cacheManager.flush()
+    await (await getState()).mergeManager.flush()
   }
 
   const isEmpty = async (env?: string): Promise<boolean> => (
@@ -533,7 +533,7 @@ const buildMultiEnvSource = (
           await s.clear(args)
         })
       const currentState = await getState()
-      await currentState.cacheManager.clear()
+      await currentState.mergeManager.clear()
       state = undefined
     },
     rename: async (name: string): Promise<void> => {

@@ -18,7 +18,7 @@ import { naclCase, TransformFunc, transformValues } from '@salto-io/adapter-util
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { isDataObjectType } from '../types'
-import { NETSUITE, RECORDS_PATH } from '../constants'
+import { ACCOUNT_SPECIFIC_VALUE, NETSUITE, RECORDS_PATH } from '../constants'
 import { FilterWith } from '../filter'
 
 const { awu } = collections.asynciterable
@@ -42,14 +42,14 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
     const transformIds: TransformFunc = async ({ value, field, path }) => {
       const fieldType = await field?.getType()
       if (fieldType?.elemID.name === 'RecordRef') {
-        value.id = '[ACCOUNT_SPECIFIC_VALUE]'
+        value.id = ACCOUNT_SPECIFIC_VALUE
       }
 
       if ((field === undefined || fieldType?.elemID.isEqual(BuiltinTypes.UNKNOWN.elemID))
         && value.internalId !== undefined && !path?.isTopLevel()) {
-        value.internalId = '[ACCOUNT_SPECIFIC_VALUE]'
+        value.internalId = ACCOUNT_SPECIFIC_VALUE
         if (value.typeId !== undefined) {
-          value.typeId = '[ACCOUNT_SPECIFIC_VALUE]'
+          value.typeId = ACCOUNT_SPECIFIC_VALUE
         }
       }
 

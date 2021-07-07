@@ -27,19 +27,19 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     await awu(elements)
       .filter(isInstanceElement)
-      .filter(async e => isDataObjectType(await e.getType()))
-      .forEach(async e => {
-        const type = await e.getType()
+      .filter(async instance => isDataObjectType(await instance.getType()))
+      .forEach(async instance => {
+        const type = await instance.getType()
         const customFields = Object.fromEntries(
-          await awu(makeArray(e.value.customFieldList?.customField))
+          await awu(makeArray(instance.value.customFieldList?.customField))
             .map(async value => {
               const field = type.fields[value.scriptId]
               return [value.scriptId, await castFieldValue(value.value, field)]
             })
             .toArray()
         )
-        _.assign(e.value, customFields)
-        delete e.value.customFieldList
+        _.assign(instance.value, customFields)
+        delete instance.value.customFieldList
       })
   },
 })

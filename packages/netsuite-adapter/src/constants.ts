@@ -78,3 +78,5 @@ export const RAW_CONFIG = 'rawConfig'
 export const CAPTURE = 'capture'
 // e.g. '[scriptid=customworkflow1]' & '[scriptid=customworkflow1.workflowstate17.workflowaction33]'
 export const scriptIdReferenceRegex = new RegExp(`^\\[${SCRIPT_ID}=(?<${CAPTURE}>[a-z0-9_]+(\\.[a-z0-9_]+)*)]$`)
+
+export const ACCOUNT_SPECIFIC_VALUE = '[ACCOUNT_SPECIFIC_VALUE]'

@@ -17,7 +17,7 @@
 import { Field, InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { FilterCreator } from '../filter'
+import { FilterWith } from '../filter'
 import {
   CUSTOM_RECORD_TYPE, ENTRY_FORM, TRANSACTION_FORM, PERMITTED_ROLE, RECORD_TYPE,
 } from '../constants'
@@ -117,7 +117,7 @@ const setConsistentValues = async (instance: InstanceElement): Promise<void> => 
   }) ?? instance.value
 }
 
-const filterCreator: FilterCreator = () => ({
+const filterCreator = (): FilterWith<'onFetch'> => ({
   /**
    * Upon fetch, set fields that are randomly returned with different values but have the same
    * meaning to have a consistent equivalent value so there won't be irrelevant changes upon fetch
@@ -125,7 +125,7 @@ const filterCreator: FilterCreator = () => ({
    *
    * @param elements the already fetched elements
    */
-  onFetch: async ({ elements }) => {
+  onFetch: async elements => {
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(setConsistentValues)

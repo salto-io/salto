@@ -41,7 +41,7 @@ const transactionForm_actionbar_buttons_button = new ObjectType({
     label: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
       },
     }, /* Original description: This field value can be up to 40 characters long. */
     visible: {
@@ -84,13 +84,13 @@ const transactionForm_actionbar_customButtons_customButton = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 99 }),
       },
     }, /* Original description: This field value can be up to 99 characters long. */
     function: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 200 }),
       },
     }, /* Original description: This field value can be up to 200 characters long. */
   },
@@ -128,13 +128,13 @@ const transactionForm_actionbar_customMenu_customMenuItem = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 99 }),
       },
     }, /* Original description: This field value can be up to 99 characters long. */
     function: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 200 }),
       },
     }, /* Original description: This field value can be up to 200 characters long. */
   },
@@ -177,7 +177,7 @@ const transactionForm_actionbar_menu_menuitem = new ObjectType({
     label: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
       },
     }, /* Original description: This field value can be up to 40 characters long. */
     visible: {
@@ -385,10 +385,10 @@ const transactionForm_mainFields_defaultFieldGroup_fields_field = new ObjectType
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -492,10 +492,10 @@ const transactionForm_mainFields_fieldGroup_fields_field = new ObjectType({
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -582,11 +582,11 @@ const transactionForm_mainFields_fieldGroup = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -838,10 +838,10 @@ const transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field = new 
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -945,10 +945,10 @@ const transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_field = new ObjectT
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -1035,11 +1035,11 @@ const transactionForm_tabs_tab_fieldGroups_fieldGroup = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -1103,10 +1103,10 @@ const transactionForm_tabs_tab_subItems_subList_columns_column = new ObjectType(
       },
     }, /* Original description: This field accepts references to the transactioncolumncustomfield custom type.   For information about other possible values, see transactionform_columnid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -1150,10 +1150,10 @@ const transactionForm_tabs_tab_subItems_subList = new ObjectType({
       },
     }, /* Original description: For information about possible values, see transactionform_sublistid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -1189,11 +1189,11 @@ const transactionForm_tabs_tab_subItems_subLists_subList = new ObjectType({
       },
     }, /* Original description: For information about possible values, see transactionform_sublistid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -1242,10 +1242,10 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fie
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -1349,10 +1349,10 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fie
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -1439,11 +1439,11 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup = new Obje
       },
     }, /* Original description: This attribute value can be up to 99 characters long. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -1507,11 +1507,11 @@ const transactionForm_tabs_tab_subItems_subTab = new ObjectType({
       },
     }, /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see transactionform_subtabid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -1575,11 +1575,11 @@ const transactionForm_tabs_tab = new ObjectType({
       },
     }, /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see transactionform_tabid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -1632,10 +1632,10 @@ const transactionForm_totalBox_totalBoxField = new ObjectType({
       },
     }, /* Original description: For information about possible values, see transactionform_totalboxid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -1686,11 +1686,11 @@ export const transactionForm = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   For information about possible values, see transactionform_standard. */
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     recordType: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {

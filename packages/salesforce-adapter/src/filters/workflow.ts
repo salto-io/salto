@@ -243,7 +243,6 @@ const filterCreator: FilterCreator = () => {
       // Remove the changes we generated in preDeploy and replace them with the original changes
       await removeAsync(changes, isWorkflowRelatedChange)
       changes.push(...appliedOriginalChanges)
-      return []
     },
   }
 }

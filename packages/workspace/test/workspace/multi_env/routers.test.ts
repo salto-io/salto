@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
+import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
 import { detailedCompare, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { ModificationDiff, RemovalDiff, AdditionDiff } from '@salto-io/dag'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
-import { routeChanges, routePromote, routeDemote, routeCopyTo } from '../../../src/workspace/nacl_files/multi_env/routers'
+import { routeChanges, routePromote, routeDemote, routeCopyTo, getMergeableParentID } from '../../../src/workspace/nacl_files/multi_env/routers'
 
 const hasChanges = (
   changes: DetailedChange[],
@@ -207,6 +207,24 @@ describe('default fetch routing', () => {
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual(change)
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
+  })
+
+  it('should handle ridiculously large changeset without stack overflow', async () => {
+    const change: DetailedChange = {
+      action: 'add',
+      data: { after: newObj },
+      id: newObj.elemID,
+    }
+    const changes: DetailedChange[] = []
+    for (let i = 0; i < 140000; i += 1) {
+      changes.push(change)
+    }
+    await routeChanges(changes, envSource, commonSource, { sec: secEnv }, 'default')
+  })
+
+  it('should handle empty changeset without error', async () => {
+    const changes: DetailedChange[] = []
+    await routeChanges(changes, envSource, commonSource, { sec: secEnv }, 'default')
   })
 
   it('should route nested add changes to primary env when the containing element is not in common', async () => {
@@ -668,7 +686,7 @@ describe('isolated routing', () => {
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
     expect(routedChanges.primarySource && routedChanges.primarySource[0])
-      .toEqual(change)
+      .toMatchObject(change)
   })
   it('should route an env modification change to env', async () => {
     const newField = new Field(envObj, envField.name, BuiltinTypes.NUMBER)
@@ -688,7 +706,7 @@ describe('isolated routing', () => {
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
     expect(routedChanges.primarySource && routedChanges.primarySource[0])
-      .toEqual(change)
+      .toMatchObject(change)
   })
   it('should route an env remove diff to env', async () => {
     const change: DetailedChange = {
@@ -707,7 +725,7 @@ describe('isolated routing', () => {
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
     expect(routedChanges.primarySource && routedChanges.primarySource[0])
-      .toEqual(change)
+      .toMatchObject(change)
   })
   it('should route a common modification diff to common and revert the change in secondary envs', async () => {
     const specificChange: DetailedChange = {
@@ -819,12 +837,12 @@ describe('isolated routing', () => {
     )
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(1)
-    expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual({
+    expect(routedChanges.primarySource && routedChanges.primarySource[0]).toMatchObject({
       action: 'remove',
       data: { before: envObj },
       id: envObj.elemID,
     })
-    expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual({
+    expect(routedChanges.commonSource && routedChanges.commonSource[0]).toMatchObject({
       action: 'remove',
       data: { before: commonObj },
       id: commonObj.elemID,
@@ -841,12 +859,12 @@ describe('isolated routing', () => {
     const removeChange: DetailedChange = {
       action: 'remove',
       data: { before: 'STR_1' },
-      id: commonInstance.elemID.createNestedID('0').createNestedID('str1'),
+      id: commonInstance.elemID.createNestedID('listField', '0', 'str1'),
     }
     const addChange: DetailedChange = {
       action: 'add',
       data: { after: 'STR_2' },
-      id: commonInstance.elemID.createNestedID('0').createNestedID('str2'),
+      id: commonInstance.elemID.createNestedID('listField', '0', 'str2'),
     }
     const routedChanges = await routeChanges(
       [removeChange, addChange],
@@ -862,9 +880,8 @@ describe('isolated routing', () => {
       id: commonInstance.elemID,
       data: {
         after: new InstanceElement('commonInst', commonObj, {
-          commonField: 'commonField',
           listField: [{
-            str1: 'STR_1',
+            str2: 'STR_2',
           }],
         }),
       },
@@ -874,9 +891,22 @@ describe('isolated routing', () => {
     const commonChange = routedChanges.commonSource && routedChanges.commonSource[0]
     expect(commonChange).toEqual({
       action: 'remove',
+      id: commonInstance.elemID.createNestedID('listField'),
+      data: {
+        before: [{ str1: 'STR_1' }],
+      },
+      path: ['test', 'path'],
+    })
+    const secondaryChange = routedChanges.secondarySources?.sec?.[0]
+    expect(secondaryChange).toEqual({
+      action: 'add',
       id: commonInstance.elemID,
       data: {
-        before: commonInstance,
+        after: new InstanceElement('commonInst', commonObj, {
+          listField: [{
+            str1: 'STR_1',
+          }],
+        }),
       },
       path: ['test', 'path'],
     })
@@ -967,6 +997,9 @@ describe('track', () => {
     fields: {
       str: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          anno: 'anno',
+        },
       },
       num: {
         refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
@@ -991,6 +1024,9 @@ describe('track', () => {
     fields: {
       str: {
         refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          anno: 'anno',
+        },
       },
       num: {
         refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
@@ -1026,6 +1062,7 @@ describe('track', () => {
     },
     annotationRefsOrTypes: {
       env: BuiltinTypes.STRING,
+      internalId: BuiltinTypes.HIDDEN_STRING,
     },
     annotations: {
       env: 'ENV',
@@ -1113,6 +1150,15 @@ describe('track', () => {
     sec: createMockNaclFileSource(secondaryElements, { 'default.nacl': secondaryElements }),
   }
 
+  it('should throw the proper error when trying to move an element which is not in the origin env', async () => {
+    await expect(() => routePromote(
+      [ElemID.fromFullName('salto.noop')],
+      primarySrc,
+      commonSrc,
+      secondarySources
+    )).rejects.toThrow('does not exist in origin')
+  })
+
   it('should move an entire element in two diff files if not in common and split in source', async () => {
     const changes = await routePromote(
       [onlyInEnvElemID],
@@ -1144,17 +1190,18 @@ describe('track', () => {
       secondarySources
     )
     expect(changes.primarySource).toHaveLength(1)
-    expect(changes.commonSource).toHaveLength(5)
+    expect(changes.commonSource).toHaveLength(6)
     expect(hasChanges(changes.commonSource || [], [
       { action: 'add', id: splitObjEnv.elemID.createNestedID('annotation', 'env') },
+      { action: 'add', id: splitObjEnv.elemID.createNestedID('annotation', 'internalId') },
       { action: 'add', id: splitObjEnv.elemID.createNestedID('attr', 'split', 'env') },
       { action: 'add', id: splitObjEnv.elemID.createNestedID('attr', 'env') },
       { action: 'add', id: splitObjEnv.fields.envField.elemID },
       { action: 'add', id: splitObjEnv.fields.splitField.elemID.createNestedID('env') },
     ])).toBeTruthy()
   })
-  // eslint-disable-next-line
-  it.skip('should wrap nested ids in an object when moving nested ids of an element with no common fragment and without other parts of the element', async () => {
+
+  it('should wrap nested ids in an object when moving nested ids of an element with no common fragment and without other parts of the element', async () => {
     const changes = await routePromote(
       [
         onlyInEnvObj.fields.str.elemID,
@@ -1243,6 +1290,21 @@ describe('track', () => {
     expect(changes.primarySource).toHaveLength(0)
     expect(changes.commonSource).toHaveLength(0)
     expect(changes.secondarySources?.sec).toHaveLength(0)
+  })
+
+  it('should route a nested field attr where the object does not exists in common', async () => {
+    const annoID = onlyInEnvObj.fields.str.elemID.createNestedID('anno')
+    const changes = await routePromote(
+      [annoID],
+      primarySrc,
+      commonSrc,
+      secondarySources,
+    )
+    expect(changes.primarySource).toHaveLength(1)
+    expect(changes.commonSource).toHaveLength(1)
+    expect(changes.secondarySources?.sec).toHaveLength(0)
+    expect(changes.primarySource?.[0].id).toEqual(annoID)
+    expect(changes.commonSource?.[0].id).toEqual(onlyInEnvObj.elemID)
   })
 })
 
@@ -1364,6 +1426,15 @@ describe('untrack', () => {
     sec: createMockNaclFileSource(secondaryElements, { 'default.nacl': secondaryElements }),
   }
 
+  it('should throw the proper error when trying to move an element which is not in the origin env', async () => {
+    await expect(() => routeDemote(
+      [ElemID.fromFullName('salto.noop')],
+      primarySrc,
+      commonSrc,
+      secondarySources
+    )).rejects.toThrow('does not exist in origin')
+  })
+
   it('should move add element which is only in common to all envs', async () => {
     const changes = await routeDemote(
       [onlyInCommon.elemID],
@@ -1418,8 +1489,7 @@ describe('untrack', () => {
     ])).toBeTruthy()
   })
 
-  // eslint-disable-next-line
-  it.skip('should wrap nested ids if the target env does not have the top level element', async () => {
+  it('should wrap nested ids if the target env does not have the top level element', async () => {
     const changes = await routeDemote(
       [onlyInCommon.elemID.createNestedID('attr', 'str')],
       primarySrc,
@@ -1541,6 +1611,14 @@ describe('copyTo', () => {
     sec: createMockNaclFileSource(secondaryElements, { 'default.nacl': secondaryElements }),
   }
 
+  it('should throw the proper error when trying to move an element which is not in the origin env', async () => {
+    await expect(() => routeCopyTo(
+      [ElemID.fromFullName('salto.noop')],
+      primarySrc,
+      secondarySources
+    )).rejects.toThrow('does not exist in origin')
+  })
+
   it('should copy an entire element which does not exist in the target env', async () => {
     const changes = await routeCopyTo(
       [onlyInEnv1Obj.elemID],
@@ -1573,8 +1651,7 @@ describe('copyTo', () => {
     ])).toBeTruthy()
   })
 
-  // eslint-disable-next-line
-  it.skip('should wrap nested ids in an object when copying nested ids of an element'
+  it('should wrap nested ids in an object when copying nested ids of an element'
       + ' with no fragment in the target env', async () => {
     const changes = await routeCopyTo(
       [
@@ -1625,5 +1702,136 @@ describe('copyTo', () => {
         path: ['other'],
         data: { after: multiFileInstaceOther } },
     ])
+  })
+})
+
+describe('getMergeableParentID', () => {
+  const primitive = new PrimitiveType({
+    elemID: new ElemID('salto', 'prim'),
+    primitive: PrimitiveTypes.STRING,
+  })
+
+  const object = new ObjectType({
+    elemID: new ElemID('salto', 'obj'),
+    fields: {
+      data: {
+        refType: BuiltinTypes.UNKNOWN,
+        annotations: {
+          obj: {
+            key: 'value',
+          },
+          list: [
+            {
+              list: [{
+                key: 'value',
+              }],
+            },
+          ],
+        },
+      },
+    },
+    annotations: {
+      obj: {
+        key: 'value',
+      },
+      list: [
+        {
+          list: [{
+            key: 'value',
+          }],
+        },
+      ],
+      '007': [
+        {
+          '007': [{
+            key: 'value',
+          }],
+        },
+      ],
+      49: {
+        key: 'value',
+      },
+    },
+  })
+
+  const instance = new InstanceElement('inst', object, {
+    data: {
+      obj: {
+        key: 'value',
+      },
+      list: [
+        {
+          list: [{
+            key: 'value',
+          }],
+        },
+      ],
+    },
+  })
+
+  describe('for top level objects', () => {
+    it('should return the original id', () => {
+      expect(getMergeableParentID(primitive.elemID, [primitive]).mergeableID)
+        .toEqual(primitive.elemID)
+      expect(getMergeableParentID(instance.elemID, [instance]).mergeableID)
+        .toEqual(instance.elemID)
+      expect(getMergeableParentID(object.elemID, [object]).mergeableID).toEqual(object.elemID)
+    })
+  })
+
+  describe('in an instance id', () => {
+    it('should return the original id if the path id is mergeable', () => {
+      const mergeableID = instance.elemID.createNestedID('obj', 'key')
+      const res = getMergeableParentID(mergeableID, [instance]).mergeableID
+      expect(res).toEqual(mergeableID)
+    })
+
+    it('should return the highest level non mergeable id', () => {
+      const mergeableID = instance.elemID.createNestedID('data', 'list')
+      const res = getMergeableParentID(mergeableID.createNestedID('0', 'list', '0'), [instance]).mergeableID
+      expect(res).toEqual(mergeableID)
+    })
+  })
+
+  describe('in an object type field', () => {
+    it('should return the original id if the path id is mergeable', () => {
+      const mergeableID = object.fields.data.elemID.createNestedID('obj', 'key')
+      const res = getMergeableParentID(mergeableID, [object]).mergeableID
+      expect(res).toEqual(mergeableID)
+    })
+
+    it('should return the highest level non mergeable id', () => {
+      const mergeableID = object.fields.data.elemID.createNestedID('list')
+      const res = getMergeableParentID(mergeableID.createNestedID('0', 'list', '0'), [object]).mergeableID
+      expect(res).toEqual(mergeableID)
+    })
+  })
+
+  describe('in annotation values', () => {
+    it('should return the original id if the path id is mergeable', () => {
+      const mergeableID = object.elemID.createNestedID('attr', 'obj', 'key')
+      const res = getMergeableParentID(mergeableID, [object]).mergeableID
+      expect(res).toEqual(mergeableID)
+    })
+
+    it('should return the highest level non mergeable id', () => {
+      const mergeableID = object.elemID.createNestedID('attr', 'list')
+      const res = getMergeableParentID(mergeableID.createNestedID('0', 'list', '0'), [object]).mergeableID
+      expect(res).toEqual(mergeableID)
+    })
+  })
+
+  describe('when attr names are numbers', () => {
+    it('should return the original id if the path id is mergeable', () => {
+      const mergeableID = object.elemID.createNestedID('attr', '49', 'key')
+      const res = getMergeableParentID(mergeableID, [object]).mergeableID
+      expect(res).toEqual(mergeableID)
+    })
+
+    it('should return the highest level non mergeable id', () => {
+      const mergeableID = object.elemID.createNestedID('attr', '007')
+      const res = getMergeableParentID(mergeableID.createNestedID('0', '007', '0'), [object]).mergeableID
+      expect(res).toEqual(mergeableID)
+    })
   })
 })

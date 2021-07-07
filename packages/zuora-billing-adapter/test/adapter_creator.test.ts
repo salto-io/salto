@@ -158,6 +158,43 @@ describe('adapter creator', () => {
       ),
       elementsSource: buildElementsSourceFromElements([]),
     })).toThrow(new Error('Duplicate fieldsToHide params found in apiDefinitions for the following types: CustomObject'))
+
+    expect(() => adapter.operations({
+      credentials: new InstanceElement(
+        ZUORA_BILLING,
+        adapter.authenticationMethods.basic.credentialsType,
+        { clientId: 'id', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
+      ),
+      config: new InstanceElement(
+        ZUORA_BILLING,
+        adapter.configType as ObjectType,
+        {
+          fetch: {
+            includeTypes: [
+              'CatalogProduct',
+            ],
+          },
+          apiDefinitions: {
+            swagger: {
+              url: '/tmp/swagger.yaml',
+            },
+            types: {
+              CustomObject: {
+                transformation: {
+                  dataField: 'definitions',
+                  idFields: ['type'],
+                  fieldsToHide: [
+                    { fieldName: 'a' },
+                  ],
+                },
+              },
+            },
+            supportedTypes: [],
+          },
+        },
+      ),
+      elementsSource: buildElementsSourceFromElements([]),
+    })).toThrow(new Error('Invalid type names in fetch.includeTypes: CatalogProduct are not listed as supported types in apiDefinitions.supportedTypes.'))
   })
 
   it('should throw error on invalid credentials', () => {

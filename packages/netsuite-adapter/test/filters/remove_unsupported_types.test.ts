@@ -14,14 +14,15 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, TypeElement } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/remove_unsupported_types'
 import { NETSUITE } from '../../src/constants'
 import NetsuiteClient from '../../src/client/client'
-import { OnFetchParameters } from '../../src/filter'
+import { FilterOpts } from '../../src/filter'
 import { file } from '../../src/types/file_cabinet_types'
 
 describe('remove_unsupported_types', () => {
-  let onFetchParameters: OnFetchParameters
+  let filterOpts: FilterOpts
   let elements: TypeElement[]
   const sdfType = file
   const supportedSoapType = new ObjectType({ elemID: new ElemID(NETSUITE, 'Subsidiary'), annotations: { source: 'soap' } })
@@ -32,25 +33,26 @@ describe('remove_unsupported_types', () => {
     elements = [sdfType, supportedSoapType, unsupportedSoapType]
     isSuiteAppConfiguredMock.mockReset()
     isSuiteAppConfiguredMock.mockReturnValue(true)
-    onFetchParameters = {
-      elements,
+    filterOpts = {
       client: { isSuiteAppConfigured: isSuiteAppConfiguredMock } as unknown as NetsuiteClient,
       elementsSourceIndex: { getIndexes: () => Promise.resolve({
         serviceIdsIndex: {},
         internalIdsIndex: {},
+        customFieldsIndex: {},
       }) },
+      elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
     }
   })
 
   it('should remove the unsupported types', async () => {
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator(filterOpts).onFetch?.(elements)
     expect(elements.map(e => e.elemID.name)).toEqual(['file', 'Subsidiary'])
   })
 
   it('should do nothing if suiteApp is not installed', async () => {
     isSuiteAppConfiguredMock.mockReturnValue(false)
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator(filterOpts).onFetch?.(elements)
     expect(elements.map(e => e.elemID.name)).toEqual(['file', 'Subsidiary', 'someType'])
   })
 })

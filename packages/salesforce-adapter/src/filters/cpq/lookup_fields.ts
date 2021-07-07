@@ -284,7 +284,6 @@ const filter: FilterCreator = () => ({
       addOrModifyChanges,
       transformFieldLabelsToApiName,
     )
-    return []
   },
 })
 

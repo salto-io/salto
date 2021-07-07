@@ -13,8 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange, ReferenceExpression } from '@salto-io/adapter-api'
 import { merger, createElementSelector, elementSource } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 
@@ -30,13 +29,13 @@ describe('diff', () => {
     elemID: new ElemID('salto', 'nested'),
     fields: {
       str: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: new ReferenceExpression(BuiltinTypes.STRING.elemID),
       },
       num: {
-        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+        refType: new ReferenceExpression(BuiltinTypes.NUMBER.elemID),
       },
       list: {
-        refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
+        refType: new ReferenceExpression(new ListType(BuiltinTypes.NUMBER).elemID),
       },
     },
   })
@@ -48,10 +47,10 @@ describe('diff', () => {
         annotations: {
           description: 'description',
         },
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: new ReferenceExpression(BuiltinTypes.STRING.elemID),
       },
       nested: {
-        refType: createRefToElmWithValue(nestedType),
+        refType: new ReferenceExpression(nestedType.elemID),
       },
     },
     annotationRefsOrTypes: {
@@ -90,10 +89,10 @@ describe('diff', () => {
     elemID: new ElemID('salto', 'multiPathObj'),
     fields: {
       simple: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: new ReferenceExpression(BuiltinTypes.STRING.elemID),
       },
       nested: {
-        refType: createRefToElmWithValue(nestedType),
+        refType: new ReferenceExpression(nestedType.elemID),
       },
     },
     path: ['salto', 'obj', 'multi', 'fields'],

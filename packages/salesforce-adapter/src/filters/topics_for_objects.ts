@@ -137,7 +137,6 @@ const filterCreator: FilterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => (
   onDeploy: async changes => {
     // Remove all the topics for objects instance changes that we added in preDeploy
     await removeAsync(changes, isInstanceOfTypeChange(TOPICS_FOR_OBJECTS_METADATA_TYPE))
-    return []
   },
 })
 

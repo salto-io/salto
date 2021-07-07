@@ -561,7 +561,8 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
     })
 
-    it('should succeed and return failedTypeToInstances', async () => {
+    it('should succeed and return failedTypeToInstances that failed also after retry', async () => {
+      let isFirstFetchAddressFormTry = true
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_OBJECTS) {
           return Promise.resolve({
@@ -577,42 +578,43 @@ describe('netsuite client', () => {
         }
         if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
           if (context.arguments.type === 'addressForm') {
+            const conditionalFailedForm = {
+              customObject: {
+                id: 'b',
+                type: 'addressForm',
+                result: {
+                  code: 'FAILED',
+                  message: 'An unexpected error has occurred',
+                },
+              },
+            }
+            const failedImports = [
+              ...(isFirstFetchAddressFormTry ? [conditionalFailedForm] : []),
+              {
+                customObject: {
+                  id: 'c',
+                  type: 'addressForm',
+                  result: {
+                    code: 'FAILED',
+                    message: 'An unexpected error has occurred',
+                  },
+                },
+              },
+              {
+                customObject: {
+                  id: 'd',
+                  type: 'addressForm',
+                  result: {
+                    code: 'FAILED',
+                    message: 'You cannot download the XML file for this object because it is locked.',
+                  },
+                },
+              },
+            ]
+            isFirstFetchAddressFormTry = false
             return Promise.resolve({
               isSuccess: () => true,
-              data: {
-                failedImports: [
-                  {
-                    customObject: {
-                      id: 'b',
-                      type: 'addressForm',
-                      result: {
-                        code: 'FAILED',
-                        message: 'An unexpected error has occurred',
-                      },
-                    },
-                  },
-                  {
-                    customObject: {
-                      id: 'c',
-                      type: 'addressForm',
-                      result: {
-                        code: 'FAILED',
-                        message: 'An unexpected error has occurred',
-                      },
-                    },
-                  },
-                  {
-                    customObject: {
-                      id: 'd',
-                      type: 'addressForm',
-                      result: {
-                        code: 'FAILED',
-                        message: 'You cannot download the XML file for this object because it is locked.',
-                      },
-                    },
-                  },
-                ],
-              },
+              data: { failedImports },
             })
           }
           if (context.arguments.type === 'advancedpdftemplate') {
@@ -646,7 +648,7 @@ describe('netsuite client', () => {
         failedTypeToInstances,
       } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
       expect(failedTypeToInstances).toEqual({
-        addressForm: ['b', 'c'],
+        addressForm: ['c'],
         advancedpdftemplate: ['a'],
       })
     })

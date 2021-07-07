@@ -15,12 +15,13 @@
 */
 import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
-  ElemIdGetter, Element, ReadOnlyElementsSource,
+  ElemIdGetter, ReadOnlyElementsSource,
   FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS, DeployModifiers,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { filter } from '@salto-io/adapter-utils'
 import {
   createInstanceElement,
 } from './transformer'
@@ -40,8 +41,9 @@ import replaceRecordRef from './filters/replace_record_ref'
 import removeUnsupportedTypes from './filters/remove_unsupported_types'
 import dataInstancesInternalId from './filters/data_instances_internal_id'
 import dataInstancesReferences from './filters/data_instances_references'
-import { FilterCreator } from './filter'
-import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_USE_CHANGES_DETECTION, DEFAULT_DEPLOY_REFERENCED_ELEMENTS } from './config'
+import { Filter, FilterCreator } from './filter'
+import dataCustomFields from './filters/data_custom_fields'
+import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_USE_CHANGES_DETECTION } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
 import { createServerTimeElements, getLastServerTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
@@ -79,7 +81,6 @@ export interface NetsuiteAdapterParams {
 export default class NetsuiteAdapter implements AdapterOperations {
   private readonly client: NetsuiteClient
   private readonly elementsSource: ReadOnlyElementsSource
-  private filtersCreators: FilterCreator[]
   private readonly typesToSkip: string[]
   private readonly filePathRegexSkipList: string[]
   private readonly deployReferencedElements?: boolean
@@ -90,6 +91,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly skipList?: NetsuiteQueryParameters // old version
   private readonly useChangesDetection: boolean
+  private filtersRunner: Required<Filter>
+  private elementsSourceIndex: LazyElementsSourceIndexes
+
 
   public constructor({
     client,
@@ -104,6 +108,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       redundantFields,
       hiddenFields,
       replaceRecordRef,
+      dataCustomFields,
       removeUnsupportedTypes,
       dataInstancesReferences,
       dataInstancesInternalId,
@@ -120,7 +125,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
   }: NetsuiteAdapterParams) {
     this.client = client
     this.elementsSource = elementsSource
-    this.filtersCreators = filtersCreators
     this.typesToSkip = typesToSkip.concat(makeArray(config[TYPES_TO_SKIP]))
     this.filePathRegexSkipList = filePathRegexSkipList
       .concat(makeArray(config[FILE_PATHS_REGEX_SKIP_LIST]))
@@ -133,6 +137,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.useChangesDetection = config[USE_CHANGES_DETECTION] ?? DEFAULT_USE_CHANGES_DETECTION
     this.deployReferencedElements = config[DEPLOY]?.[DEPLOY_REFERENCED_ELEMENTS]
      ?? config[DEPLOY_REFERENCED_ELEMENTS]
+    this.elementsSourceIndex = createElementsSourceIndex(this.elementsSource)
+    this.filtersRunner = filter.filtersRunner({
+      client: this.client,
+      elementsSourceIndex: this.elementsSourceIndex,
+      elementsSource: this.elementsSource,
+      isPartial: this.fetchTarget !== undefined,
+    },
+    filtersCreators)
   }
 
   /**
@@ -141,8 +153,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
    */
 
   public async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
-    const elementsSourceIndex = createElementsSourceIndex(this.elementsSource)
-
     const deprecatedSkipList = buildNetsuiteQuery(convertToQueryParams({
       types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, ['.*']])),
       filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
@@ -160,7 +170,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const {
       changedObjectsQuery,
       serverTime,
-    } = await this.runSuiteAppOperations(fetchQuery, elementsSourceIndex)
+    } = await this.runSuiteAppOperations(fetchQuery, this.elementsSourceIndex)
     fetchQuery = changedObjectsQuery !== undefined
       ? andQuery(changedObjectsQuery, fetchQuery)
       : fetchQuery
@@ -180,19 +190,21 @@ export default class NetsuiteAdapter implements AdapterOperations {
       fetchQuery
     )
     const importFileCabinetResult = this.client.importFileCabinetContent(fetchQuery)
+    progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
+
     const {
       elements: fileCabinetContent,
       failedPaths: failedFilePaths,
     } = await importFileCabinetResult
-    progressReporter.reportProgress({ message: 'Finished fetching file cabinet instances. Fetching custom object instances' })
 
+    progressReporter.reportProgress({ message: 'Fetching instances' })
     const {
       elements: customObjects,
       failedToFetchAllAtOnce,
       failedTypeToInstances,
     } = await getCustomObjectsResult
-    progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
 
+    progressReporter.reportProgress({ message: 'Running filters for additional information' })
     _(Object.values(customTypes))
       .concat(Object.values(fileCabinetTypes))
       .forEach(type => {
@@ -222,12 +234,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ...serverTimeElements,
     ]
 
-    progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
-    await this.runFiltersOnFetch(
-      elements,
-      elementsSourceIndex,
-      isPartial,
-    )
+    await this.filtersRunner.onFetch(elements)
     const updatedConfig = getConfigFromConfigChanges(
       failedToFetchAllAtOnce, failedFilePaths, failedTypeToInstances, this.userConfig
     )
@@ -297,24 +304,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
     //   return { errors: [e], appliedChanges: [] }
     // }
     // return { errors: [], appliedChanges: changeGroup.changes }
-  }
-
-  private async runFiltersOnFetch(
-    elements: Element[],
-    elementsSourceIndex: LazyElementsSourceIndexes,
-    isPartial: boolean,
-  ): Promise<void> {
-    // Fetch filters order is important so they should run one after the other
-    return this.filtersCreators.map(filterCreator => filterCreator()).reduce(
-      (prevRes, filter) => prevRes.then(() =>
-        filter.onFetch({
-          elements,
-          client: this.client,
-          elementsSourceIndex,
-          isPartial,
-        })),
-      Promise.resolve(),
-    )
   }
 
   public get deployModifiers(): DeployModifiers {

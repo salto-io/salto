@@ -18,15 +18,17 @@ import {
   INSTANCE_FULL_NAME_FIELD, INTERNAL_ID_FIELD, METADATA_TYPE, PROFILE_METADATA_TYPE, RECORDS_PATH,
   SALESFORCE,
 } from '../../src/constants'
-import filterCreator from '../../src/filters/profile_paths'
-import { FilterWith } from '../../src/filter'
+import filterCreator, { WARNING_MESSAGE } from '../../src/filters/profile_paths'
+import { FilterResult, FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import { mockQueryResult } from '../connection'
 import { defaultFilterContext } from '../utils'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+
 
 describe('profile paths filter', () => {
-  const { client, connection } = mockClient()
-  const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+  const { connection, client } = mockClient()
+  let filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
   const origInstance = new InstanceElement(
     'test',
     new ObjectType({ elemID: new ElemID(SALESFORCE, 'instanceType') }),
@@ -36,6 +38,7 @@ describe('profile paths filter', () => {
 
   let instance: InstanceElement
   beforeEach(() => {
+    jest.clearAllMocks()
     instance = origInstance.clone()
     connection.query.mockResolvedValue(mockQueryResult({
       records: [
@@ -84,5 +87,39 @@ describe('profile paths filter', () => {
     instance.path = undefined
     await filter.onFetch([instance])
     expect(instance.path).toBeUndefined()
+  })
+  describe('when feature is throwing an error', () => {
+    it('should return a warning', async () => {
+      (await instance.getType()).annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
+      instance.value[INSTANCE_FULL_NAME_FIELD] = 'PlatformPortal'
+      instance.value[INTERNAL_ID_FIELD] = 'PlatformPortalInternalId'
+      connection.query.mockImplementation(() => {
+        throw new Error()
+      })
+      const res = await filter.onFetch([instance]) as FilterResult
+      const err = res.errors ?? []
+      expect(res.errors).toHaveLength(1)
+      expect(err[0]).toEqual({
+        severity: 'Warning',
+        message: WARNING_MESSAGE,
+      })
+    })
+  })
+  describe('when feature is disabled', () => {
+    it('should not run any query when feature is disabled', async () => {
+      (await instance.getType()).annotations[METADATA_TYPE] = PROFILE_METADATA_TYPE
+      instance.value[INSTANCE_FULL_NAME_FIELD] = 'PlatformPortal'
+      instance.value[INTERNAL_ID_FIELD] = 'PlatformPortalInternalId'
+      filter = filterCreator({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({ optionalFeatures: { profilePaths: false } }),
+        },
+      }) as FilterWith<'onFetch'>
+      await filter.onFetch([instance])
+      expect(instance.path).toEqual([SALESFORCE, RECORDS_PATH, PROFILE_METADATA_TYPE, 'test'])
+      expect(connection.query).not.toHaveBeenCalled()
+    })
   })
 })

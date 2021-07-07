@@ -186,10 +186,10 @@ export default class NetsuiteClient {
     return this.suiteAppClient?.getNetsuiteWsdl()
   }
 
-  public async getAllRecords(type: string): Promise<Record<string, unknown>[]> {
+  public async getAllRecords(types: string[]): Promise<Record<string, unknown>[]> {
     if (this.suiteAppClient === undefined) {
       throw new Error('Cannot call getAllRecords when SuiteApp is not installed')
     }
-    return this.suiteAppClient.getAllRecords(type)
+    return this.suiteAppClient.getAllRecords(types)
   }
 }

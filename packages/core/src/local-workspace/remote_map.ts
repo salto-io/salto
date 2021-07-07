@@ -108,7 +108,7 @@ export async function *aggregatedIterable(iterators: rocksdb.Iterator[]):
         }
       }
     })
-    const minEntry = min ? latestEntries[minIndex] : undefined
+    const minEntry = min !== undefined ? latestEntries[minIndex] : undefined
     if (minEntry === undefined) {
       done = true
     } else {
@@ -174,7 +174,7 @@ AsyncIterable<remoteMap.RemoteMapEntry<string>[]> {
 const MAX_CONNECTIONS = 1000
 const persistentDBConnections: Record<string, Promise<rocksdb>> = {}
 const tmpDBConnections: Record<string, Record<string, Promise<rocksdb>>> = {}
-let currnetConnectionsCount = 0
+let currentConnectionsCount = 0
 
 const closeConnection = async (location: string, connection: Promise<rocksdb>): Promise<void> => {
   const dbConnection = await connection
@@ -215,6 +215,15 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
       closeTmpConnection(location, tmpLoc, tmpCon)
     ))
   }
+}
+
+export const replicateDB = async (
+  srcDbLocation: string, dstDbLocation: string, backupDir: string
+): Promise<void> => {
+  const remoteDbImpl = getRemoteDbImpl()
+  await promisify(
+    remoteDbImpl.replicate.bind(remoteDbImpl, srcDbLocation, dstDbLocation, backupDir)
+  )()
 }
 
 const creatorLock = new AsyncLock()
@@ -448,11 +457,11 @@ remoteMap.RemoteMapCreator => {
     const closeImpl = async (): Promise<void> => {
       if (persistentDB.status === 'open') {
         await closeConnection(location, Promise.resolve(persistentDB))
-        currnetConnectionsCount -= 1
+        currentConnectionsCount -= 1
       }
       if (tmpDB.status === 'open') {
         await closeTmpConnection(location, tmpLocation, Promise.resolve(tmpDB))
-        currnetConnectionsCount -= 1
+        currentConnectionsCount -= 1
       }
     }
     const getOpenDBConnection = async (
@@ -488,18 +497,19 @@ remoteMap.RemoteMapCreator => {
         persistentDB = await persistentDBConnections[location]
         return
       }
-      if (currnetConnectionsCount > MAX_CONNECTIONS) {
+      if (currentConnectionsCount > MAX_CONNECTIONS) {
         throw new Error('Failed to open rocksdb connection - too much open connections already')
       }
-      await createDBIfNotExist(location)
-      const readOnly = !persistent
-      const connection = getOpenDBConnection(location, readOnly)
-      persistentDB = await connection
-
-      currnetConnectionsCount += 2
+      const connectionPromise = (async () => {
+        currentConnectionsCount += 2
+        await createDBIfNotExist(location)
+        const readOnly = !persistent
+        return getOpenDBConnection(location, readOnly)
+      })()
       if (persistent) {
-        persistentDBConnections[location] = connection
+        persistentDBConnections[location] = connectionPromise
       }
+      persistentDB = await connectionPromise
     }
     await createDBConnections()
     return {

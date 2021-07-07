@@ -23,6 +23,9 @@ import { NETSUITE } from '../../src/constants'
 import SdfClient from '../../src/client/sdf_client'
 import { getDataElements, getDataTypes } from '../../src/data_elements/data_elements'
 import { NetsuiteQuery } from '../../src/query'
+import { entitycustomfield } from '../../src/types/custom_types/entitycustomfield'
+import { getFieldInstanceTypes } from '../../src/data_elements/custom_fields'
+import { othercustomfield } from '../../src/types/custom_types/othercustomfield'
 
 jest.mock('@salto-io/adapter-components', () => ({
   ...jest.requireActual<{}>('@salto-io/adapter-components'),
@@ -101,9 +104,9 @@ describe('data_elements', () => {
     })
 
     it('should return the instances of the types', async () => {
-      getAllRecordsMock.mockImplementation(async type => {
-        if (type === 'Subsidiary') {
-          return [{ name: 'name' }]
+      getAllRecordsMock.mockImplementation(async types => {
+        if (types[0] === 'Subsidiary') {
+          return [{ name: 'name', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }]
         }
         return []
       })
@@ -115,9 +118,9 @@ describe('data_elements', () => {
     })
 
     it('should return only requested instances', async () => {
-      getAllRecordsMock.mockImplementation(async type => {
-        if (type === 'Subsidiary') {
-          return [{ name: 'name1' }, { name: 'name2' }]
+      getAllRecordsMock.mockImplementation(async types => {
+        if (types[0] === 'Subsidiary') {
+          return [{ name: 'name1', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }, { name: 'name2', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }]
         }
         return []
       })
@@ -138,9 +141,9 @@ describe('data_elements', () => {
     })
 
     it('should return only types when no instances match', async () => {
-      getAllRecordsMock.mockImplementation(async type => {
-        if (type === 'Subsidiary') {
-          return [{ name: 'name1' }, { name: 'name2' }]
+      getAllRecordsMock.mockImplementation(async types => {
+        if (types[0] === 'Subsidiary') {
+          return [{ name: 'name1', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }, { name: 'name2', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }]
         }
         return []
       })
@@ -175,9 +178,9 @@ describe('data_elements', () => {
     })
 
     it('should convert attributes into fields', async () => {
-      getAllRecordsMock.mockImplementation(async type => {
-        if (type === 'Subsidiary') {
-          return [{ name: 'name', attributes: { internalId: '1', 'xsi:type': 'Subsidiary' } }]
+      getAllRecordsMock.mockImplementation(async types => {
+        if (types[0] === 'Subsidiary') {
+          return [{ name: 'name', attributes: { internalId: '1', 'xsi:type': 'listAcct:Subsidiary' } }]
         }
         return []
       })
@@ -189,9 +192,9 @@ describe('data_elements', () => {
     })
 
     it('should convert date to string', async () => {
-      getAllRecordsMock.mockImplementation(async type => {
-        if (type === 'Subsidiary') {
-          return [{ name: 'name', date: new Date(2020, 1, 1) }]
+      getAllRecordsMock.mockImplementation(async types => {
+        if (types[0] === 'Subsidiary') {
+          return [{ name: 'name', date: new Date(2020, 1, 1), attributes: { 'xsi:type': 'listAcct:Subsidiary' } }]
         }
         return []
       })
@@ -200,11 +203,11 @@ describe('data_elements', () => {
     })
 
     it('should convert booleans', async () => {
-      getAllRecordsMock.mockImplementation(async type => {
-        if (type === 'Subsidiary') {
+      getAllRecordsMock.mockImplementation(async types => {
+        if (types[0] === 'Subsidiary') {
           return [
-            { name: 'name1', booleanField: 'true' },
-            { name: 'name2', booleanField: 'false' },
+            { name: 'name1', booleanField: 'true', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
+            { name: 'name2', booleanField: 'false', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
           ]
         }
         return []
@@ -215,16 +218,28 @@ describe('data_elements', () => {
     })
 
     it('should convert numbers', async () => {
-      getAllRecordsMock.mockImplementation(async type => {
-        if (type === 'Subsidiary') {
+      getAllRecordsMock.mockImplementation(async types => {
+        if (types[0] === 'Subsidiary') {
           return [
-            { name: 'name', numberField: '1234' },
+            { name: 'name', numberField: '1234', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
           ]
         }
         return []
       })
       const elements = await getDataElements(client, query)
       expect((elements[1] as InstanceElement).value.numberField).toBe(1234)
+    })
+  })
+
+  describe('getFieldInstanceTypes', () => {
+    it('Should identify field instance with appliesto ', () => {
+      const instance = new InstanceElement('name', entitycustomfield, { appliestocontact: true, appliestocustomer: false, appliestoemployee: true })
+      expect(getFieldInstanceTypes(instance)).toEqual(['Contact', 'Employee'])
+    })
+
+    it('Should identify othercustomfield instance', () => {
+      const instance = new InstanceElement('name', othercustomfield, { rectype: '-112' })
+      expect(getFieldInstanceTypes(instance)).toEqual(['Account'])
     })
   })
 })

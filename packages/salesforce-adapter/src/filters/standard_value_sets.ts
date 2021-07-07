@@ -21,13 +21,13 @@ import {
 import { resolveTypeShallow } from '@salto-io/adapter-utils'
 import { collections, promises } from '@salto-io/lowerdash'
 
-import { FilterCreator } from '../filter'
+import { FilterCreator, FilterResult } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import {
   metadataType, apiName, isCustomObject, Types, isCustom,
 } from '../transformers/transformer'
 import { extractFullNamesFromValueList, isInstanceOfType } from './utils'
-import { ConfigChangeSuggestion, FilterResult } from '../types'
+import { ConfigChangeSuggestion } from '../types'
 import { fetchMetadataInstances } from '../fetch'
 
 const { mapValuesAsync } = promises.object

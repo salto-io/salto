@@ -18,16 +18,20 @@ import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectT
 import mockClient from '../client'
 import Connection from '../../src/client/jsforce'
 import SalesforceClient from '../../src/client/client'
-import { Filter } from '../../src/filter'
-import elementsUrlFilter from '../../src/filters/elements_url'
-import { defaultFilterContext } from '../utils'
-
+import { Filter, FilterResult } from '../../src/filter'
+import elementsUrlFilter, { WARNING_MESSAGE } from '../../src/filters/elements_url'
+import { defaultFilterContext, MockInterface } from '../utils'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import * as ElementsUrlRetrieverModule from '../../src/elements_url_retreiver/elements_url_retreiver'
 
 describe('elements url filter', () => {
   let filter: Filter
   let client: SalesforceClient
-  let connection: Connection
+  let connection: MockInterface<Connection>
   let standardObject: ObjectType
+  const mockQueryAll: jest.Mock = jest.fn()
+  SalesforceClient.prototype.queryAll = mockQueryAll
+
 
   beforeEach(() => {
     ({ connection, client } = mockClient())
@@ -91,5 +95,45 @@ describe('elements url filter', () => {
     expect(filter.onFetch).toBeDefined()
     await filter.onFetch?.([element])
     expect(element.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+  })
+
+  describe('when feature is throwing an error', () => {
+    const elementsUrlRetreiverSpy = jest.spyOn(ElementsUrlRetrieverModule, 'lightningElementsUrlRetriever')
+
+    beforeEach(() => {
+      elementsUrlRetreiverSpy.mockImplementation(() => {
+        throw new Error()
+      })
+    })
+
+    afterEach(() => {
+      elementsUrlRetreiverSpy.mockReset()
+    })
+
+    it('should return a warning', async () => {
+      connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
+      const instance = new InstanceElement(ElemID.CONFIG_NAME, new ObjectType({ elemID: new ElemID('salesforce', 'BusinessHoursSettings'), annotations: { metadataType: 'BusinessHoursSettings' } }))
+      const res = await filter.onFetch?.([instance]) as FilterResult
+      const err = res.errors ?? []
+      expect(res.errors).toHaveLength(1)
+      expect(err[0]).toEqual({
+        severity: 'Warning',
+        message: WARNING_MESSAGE,
+      })
+    })
+  })
+  describe('when feature is disabled', () => {
+    it('should not run any query', async () => {
+      connection.instanceUrl = 'https://salto5-dev-ed.my.salesforce.com'
+      filter = elementsUrlFilter({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({ optionalFeatures: { elementsUrls: false } }),
+        },
+      })
+      await filter.onFetch?.([standardObject])
+      expect(standardObject.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
+    })
   })
 })

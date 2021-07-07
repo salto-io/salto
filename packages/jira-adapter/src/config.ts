@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ObjectType, MapType, ReferenceExpression } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { JIRA } from './constants'
 
@@ -452,47 +452,28 @@ export type JiraConfig = {
 
 const defaultApiDefinitionsType = createSwaggerAdapterApiConfigType({ adapter: JIRA })
 
-// We use this to allow ourselfs to get the IDs of the def fields and enjoy the benefits
-// of the schema validation without having to create uneeded async gets
-const createObjectTypeFromRefType = (refType: ReferenceExpression): ObjectType => (
-  new ObjectType({
-    elemID: refType.elemID,
-  })
-)
-
-const createObjectMapTypeFromRefType = (refType: ReferenceExpression): MapType => (
-  new MapType(new ObjectType({
-    elemID: refType.elemID,
-  }))
-)
-
 const apiDefinitionsType = createMatchingObjectType<JiraApiConfig>({
   elemID: new ElemID(JIRA, 'apiDefinitions'),
   fields: {
     apiVersion: { refType: BuiltinTypes.STRING },
     typeDefaults: {
-      refType: createObjectTypeFromRefType(
-        defaultApiDefinitionsType.fields.typeDefaults.refType
-      ),
+      refType: defaultApiDefinitionsType.fields.typeDefaults.refType,
       annotations: { _required: true },
     },
     types: {
-      refType: createObjectMapTypeFromRefType(
-        defaultApiDefinitionsType.fields.types.refType
-      ),
+      refType: defaultApiDefinitionsType.fields.types.refType,
       annotations: { _required: true },
     },
     jiraSwagger: {
-      refType: createObjectTypeFromRefType(
-        defaultApiDefinitionsType.fields.swagger.refType
-      ),
+      refType: defaultApiDefinitionsType.fields.swagger.refType,
       annotations: { _required: true },
     },
     platformSwagger: {
-      refType: createObjectTypeFromRefType(
-        defaultApiDefinitionsType.fields.swagger.refType
-      ),
+      refType: defaultApiDefinitionsType.fields.swagger.refType,
       annotations: { _required: true },
+    },
+    supportedTypes: {
+      refType: new ListType(BuiltinTypes.STRING),
     },
   },
 })

@@ -43,13 +43,13 @@ const translationcollection_strings_string = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 1000,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 1000 }),
       },
     }, /* Original description: This field value can be up to 1000 characters long. */
     description: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 1000,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 1000 }),
       },
     }, /* Original description: This field value can be up to 1000 characters long. */
   },
@@ -94,7 +94,7 @@ export const translationcollection = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 100,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 100 }),
       },
     }, /* Original description: This field value can be up to 100 characters long.   This field accepts references to the string custom type. */
     defaultlanguage: {
@@ -106,7 +106,7 @@ export const translationcollection = new ObjectType({
     description: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 1000,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 1000 }),
       },
     }, /* Original description: This field value can be up to 1000 characters long.   This field accepts references to the string custom type. */
     strings: {

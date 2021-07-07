@@ -376,7 +376,10 @@ describe('Test utils.ts', () => {
             path: (string | number)[],
             value: Values,
           ): Promise<Field> => {
-            if (typeof path[0] === 'number' && isListType(type)) {
+            if (isListType(type)) {
+              if (typeof path[0] !== 'number') {
+                throw new Error(`type ${type.elemID.getFullName()} is a list type but path part ${path[0]} is not a number`)
+              }
               return getField(
                 (await type.getInnerType() as ObjectType | ContainerType),
                 path.slice(1),

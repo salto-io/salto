@@ -111,8 +111,6 @@ const filterCreator = (): FilterWith<'onDeploy'> => ({
           beforeCustomValues, afterCustomValues
         )
       })
-
-    return []
   },
 })
 

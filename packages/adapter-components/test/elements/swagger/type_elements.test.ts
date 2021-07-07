@@ -350,6 +350,25 @@ describe('swagger_type_elements', () => {
     })
   })
 
+  describe('with supportedTypes', () => {
+    let allTypes: Record<string, TypeElement>
+    beforeAll(async () => {
+      const res = await generateTypes(
+        ADAPTER_NAME,
+        {
+          swagger: { url: `${BASE_DIR}/petstore_swagger.v2.yaml` },
+          typeDefaults: { transformation: { idFields: ['name'] } },
+          types: {},
+          supportedTypes: ['Pet'],
+        },
+      )
+      allTypes = res.allTypes
+    })
+    it('should only generate supported types', () => {
+      expect(Object.keys(allTypes).sort()).toEqual(['Pet', 'Category', 'Tag'].sort())
+    })
+  })
+
   describe('toPrimitiveType', () => {
     it('should return the right primitive type when one is specified', () => {
       expect(toPrimitiveType('string')).toEqual(BuiltinTypes.STRING)

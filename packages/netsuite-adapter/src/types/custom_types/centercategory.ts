@@ -48,7 +48,7 @@ const centercategory_links_link = new ObjectType({
       },
     }, /* Original description: This field is mandatory when the linkobject value is defined.   For information about possible values, see centercategory_tasktype. */
     linklabel: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
@@ -111,7 +111,7 @@ export const centercategory = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 99 }),
       },
     }, /* Original description: This field value can be up to 99 characters long.   This field accepts references to the string custom type. */
     links: {

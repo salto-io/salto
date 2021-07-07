@@ -83,6 +83,7 @@ const ALL = 'ALL'
 const ADDITIONAL_FILE_PATTERN = '.template.'
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
+const READ_CONCURRENCY = 100
 
 const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING', 'WMSSYSTEM', 'BILLINGACCOUNTS']
 const INVALID_DEPENDENCIES_PATTERN = new RegExp(`^.*(<feature required=".*">${INVALID_DEPENDENCIES.join('|')})</feature>.*\n`, 'gm')
@@ -347,18 +348,25 @@ export default class SdfClient {
     const objectsDirPath = SdfClient.getObjectsDirPath(projectName)
     const filenames = await readDir(objectsDirPath)
     const scriptIdToFiles = _.groupBy(filenames, filename => filename.split(FILE_SEPARATOR)[0])
-    const elements = await Promise.all(
-      Object.entries(scriptIdToFiles).map(async ([scriptId, objectFileNames]) => {
-        const [[additionalFilename], [contentFilename]] = _.partition(objectFileNames,
-          filename => filename.includes(ADDITIONAL_FILE_PATTERN))
-        const xmlContent = readFile(osPath.resolve(objectsDirPath, contentFilename))
-        if (_.isUndefined(additionalFilename)) {
-          return convertToCustomTypeInfo((await xmlContent).toString(), scriptId)
-        }
-        const additionalFileContent = readFile(osPath.resolve(objectsDirPath, additionalFilename))
-        return convertToTemplateCustomTypeInfo((await xmlContent).toString(), scriptId,
-          additionalFilename.split(FILE_SEPARATOR)[2], await additionalFileContent)
-      })
+
+    const transformCustomObject = async (
+      scriptId: string, objectFileNames: string[]
+    ): Promise<CustomTypeInfo> => {
+      const [[additionalFilename], [contentFilename]] = _.partition(objectFileNames,
+        filename => filename.includes(ADDITIONAL_FILE_PATTERN))
+      const xmlContent = readFile(osPath.resolve(objectsDirPath, contentFilename))
+      if (_.isUndefined(additionalFilename)) {
+        return convertToCustomTypeInfo((await xmlContent).toString(), scriptId)
+      }
+      const additionalFileContent = readFile(osPath.resolve(objectsDirPath, additionalFilename))
+      return convertToTemplateCustomTypeInfo((await xmlContent).toString(), scriptId,
+        additionalFilename.split(FILE_SEPARATOR)[2], await additionalFileContent)
+    }
+
+    const elements = await withLimitedConcurrency(
+      Object.entries(scriptIdToFiles).map(([scriptId, objectFileNames]) =>
+        () => transformCustomObject(scriptId, objectFileNames)),
+      READ_CONCURRENCY
     )
     await this.projectCleanup(projectName, authId)
     return { elements, failedToFetchAllAtOnce, failedTypeToInstances }
@@ -400,11 +408,27 @@ export default class SdfClient {
     const importObjectsChunk = async (
       { type, ids, index, total }: ObjectsChunk, retry = true
     ): Promise<NetsuiteQueryParameters['types']> => {
+      const retryFetchFailedInstances = async (
+        failedInstancesIds: string[]
+      ): Promise<NetsuiteQueryParameters['types']> => {
+        log.debug('Retrying to fetch failed instances of chunk %d/%d of type %s: %o',
+          index, total, type, failedInstancesIds)
+        const failedTypeToInstancesAfterRetry = await this.runImportObjectsCommand(
+          executor, type, failedInstancesIds.join(' ')
+        )
+        log.debug('Retried to fetch %d failed instances of chunk %d/%d of type: %s.',
+          failedInstancesIds.length, index, total, type)
+        return failedTypeToInstancesAfterRetry
+      }
+
       try {
         log.debug('Starting to fetch chunk %d/%d with %d objects of type: %s', index, total, ids.length, type)
-        const failedTypeToInstances = await this.runImportObjectsCommand(
+        let failedTypeToInstances = await this.runImportObjectsCommand(
           executor, type, ids.join(' ')
         )
+        if (failedTypeToInstances[type]?.length > 0) {
+          failedTypeToInstances = await retryFetchFailedInstances(failedTypeToInstances[type])
+        }
         log.debug('Fetched chunk %d/%d with %d objects of type: %s. failedTypeToInstances: %o',
           index, total, ids.length, type, failedTypeToInstances)
         return failedTypeToInstances
@@ -572,7 +596,8 @@ export default class SdfClient {
           return [`${folderName}${fileName}`, fileAttrsPath]
         })
       )
-      return Promise.all(filePaths.map(async filePath => {
+
+      const transformFile = async (filePath: string): Promise<FileCustomizationInfo> => {
         const attrsPath = filePathToAttrsPath[filePath]
         const xmlContent = readFile(osPath.resolve(fileCabinetDirPath,
           ...attrsPath.split(FILE_CABINET_PATH_SEPARATOR)))
@@ -580,17 +605,28 @@ export default class SdfClient {
         const fileContent = readFile(osPath.resolve(fileCabinetDirPath, ...filePathParts))
         return convertToFileCustomizationInfo((await xmlContent).toString(),
           filePathParts.slice(1), await fileContent)
-      }))
+      }
+
+      return withLimitedConcurrency(
+        filePaths.map(filePath => () => transformFile(filePath)),
+        READ_CONCURRENCY
+      )
     }
 
     const transformFolders = (folderAttrsPaths: string[], fileCabinetDirPath: string):
-      Promise<FolderCustomizationInfo[]> =>
-      Promise.all(folderAttrsPaths.map(async attrsPath => {
-        const folderPathParts = attrsPath.split(FILE_CABINET_PATH_SEPARATOR)
+      Promise<FolderCustomizationInfo[]> => {
+      const transformFolder = async (folderAttrsPath: string): Promise<FolderCustomizationInfo> => {
+        const folderPathParts = folderAttrsPath.split(FILE_CABINET_PATH_SEPARATOR)
         const xmlContent = readFile(osPath.resolve(fileCabinetDirPath, ...folderPathParts))
         return convertToFolderCustomizationInfo((await xmlContent).toString(),
           folderPathParts.slice(1, -2))
-      }))
+      }
+
+      return withLimitedConcurrency(
+        folderAttrsPaths.map(folderAttrsPath => () => transformFolder(folderAttrsPath)),
+        READ_CONCURRENCY
+      )
+    }
 
     const project = await this.initProject()
     const listFilesResults = await this.listFilePaths(project.executor)

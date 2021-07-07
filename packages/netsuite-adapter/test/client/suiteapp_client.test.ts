@@ -17,7 +17,7 @@ import axios from 'axios'
 import Bottleneck from 'bottleneck'
 import _ from 'lodash'
 import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client'
-import { ReadFileEncodingError, ReadFileError } from '../../src/client/suiteapp_client/errors'
+import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../../src/client/suiteapp_client/errors'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import { InvalidSuiteAppCredentialsError } from '../../src/client/types'
 
@@ -52,6 +52,48 @@ describe('SuiteAppClient', () => {
       expect(results).toEqual([{ a: 1 }, { a: 2 }])
       expect(postMock).toHaveBeenCalledWith(
         'https://account-id.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=1000&offset=0',
+        { q: 'query' },
+        {
+          headers: {
+            Authorization: expect.any(String),
+            'Content-Type': 'application/json',
+            prefer: 'transient',
+          },
+        }
+      )
+    })
+
+    it('should merge the two queries results', async () => {
+      postMock.mockResolvedValueOnce({
+        data: {
+          hasMore: false,
+          items: [{ links: [], a: 1 }, { links: [], a: 2 }],
+        },
+      })
+      postMock.mockResolvedValueOnce({
+        data: {
+          hasMore: false,
+          items: [{ links: [], a: 1 }, { links: [], a: 3 }],
+        },
+      })
+
+      const results = await client.runSuiteQL('query')
+
+      expect(results).toEqual([{ a: 1 }, { a: 2 }, { a: 3 }])
+      expect(postMock).toHaveBeenCalledWith(
+        'https://account-id.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=1000&offset=0',
+        { q: 'query' },
+        {
+          headers: {
+            Authorization: expect.any(String),
+            'Content-Type': 'application/json',
+            prefer: 'transient',
+          },
+        }
+      )
+
+      expect(postMock).toHaveBeenCalledWith(
+        'https://account-id.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=999&offset=0',
         { q: 'query' },
         {
           headers: {
@@ -361,6 +403,12 @@ describe('SuiteAppClient', () => {
             {
               status: 'error',
               error: {
+                name: 'INSUFFICIENT_PERMISSION',
+              },
+            },
+            {
+              status: 'error',
+              error: {
                 name: 'OTHER_ERROR',
               },
             },
@@ -368,11 +416,12 @@ describe('SuiteAppClient', () => {
         },
       })
 
-      const results = await client.readFiles([1, 2, 3, 4])
+      const results = await client.readFiles([1, 2, 3, 4, 5])
       expect(results).toEqual([
         Buffer.from('someText1'),
         Buffer.from('someText2'),
         expect.any(ReadFileEncodingError),
+        expect.any(ReadFileInsufficientPermissionError),
         expect.any(ReadFileError),
       ])
 
@@ -381,7 +430,7 @@ describe('SuiteAppClient', () => {
         {
           operation: 'readFile',
           args: {
-            ids: [1, 2, 3, 4],
+            ids: [1, 2, 3, 4, 5],
           },
         },
         {

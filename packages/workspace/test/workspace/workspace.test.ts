@@ -28,7 +28,7 @@ import { collections } from '@salto-io/lowerdash'
 import { ValidationError } from '../../src/validator'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
 import { ConfigSource } from '../../src/workspace/config_source'
-import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
+import { naclFilesSource, NaclFilesSource, ChangeSet } from '../../src/workspace/nacl_files'
 import { State, buildInMemState } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
@@ -500,7 +500,7 @@ describe('workspace', () => {
       const elemMap = await getElemMap(await workspace.elements())
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(Object.keys(lead.fields)).not.toContain('ext_field')
-      expect(changes.default.map(getChangeElement).map(c => c.elemID.getFullName()).sort())
+      expect(changes.default.changes.map(getChangeElement).map(c => c.elemID.getFullName()).sort())
         .toEqual(['salesforce.lead', 'multi.loc'].sort())
     })
 
@@ -572,7 +572,7 @@ describe('workspace', () => {
           action: 'remove',
           data: { before: new ObjectType({ elemID: removedElemID }) },
         } as Change<ObjectType>
-        expect(envChanges[secondarySourceName]).toEqual([change])
+        expect(envChanges[secondarySourceName].changes).toEqual([change])
       })
       it('should not include remove element in the secondary env', async () => {
         expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
@@ -591,7 +591,7 @@ describe('workspace', () => {
     const naclFileStore = mockDirStore()
     let workspace: Workspace
     let elemMap: Record<string, Element>
-    let changes: Record<string, Change<Element>[]>
+    let changes: Record<string, ChangeSet<Change<Element>>>
     const newAddedObject = new ObjectType({ elemID: new ElemID('salesforce', 'new') })
     const salesforceLeadElemID = new ElemID('salesforce', 'lead')
     const salesforceText = new ObjectType({ elemID: new ElemID('salesforce', 'text') })
@@ -610,10 +610,7 @@ describe('workspace', () => {
     beforeAll(async () => {
       workspace = await createWorkspace(naclFileStore)
       await workspace.elements()
-      changes = (
-        await workspace.setNaclFiles([changedNaclFile, newNaclFile, emptyNaclFile])
-      )
-      await workspace.setNaclFiles([changedNaclFile, newNaclFile, emptyNaclFile])
+      changes = await workspace.setNaclFiles([changedNaclFile, newNaclFile, emptyNaclFile])
       elemMap = await getElemMap(await workspace.elements())
     })
 
@@ -641,7 +638,7 @@ describe('workspace', () => {
     })
 
     it('should return the correct changes', async () => {
-      const primaryEnvChanges = changes.default
+      const primaryEnvChanges = changes.default.changes
       expect(primaryEnvChanges).toHaveLength(25)
       expect((primaryEnvChanges.find(c => c.action === 'add') as AdditionChange<Element>).data.after)
         .toEqual(newAddedObject)
@@ -709,7 +706,7 @@ describe('workspace', () => {
       it('should return the changes of secondary envs as well', async () => {
         const envChanges = await wsWithMultipleEnvs.setNaclFiles([changedNaclFile])
         const change = { action: 'add', data: { after: afterObj } } as Change<ObjectType>
-        expect(envChanges[secondarySourceName]).toEqual([change])
+        expect(envChanges[secondarySourceName].changes).toEqual([change])
       })
       it('should include the new elements in the secondary env', async () => {
         expect(await awu(await (
@@ -1724,6 +1721,7 @@ describe('workspace', () => {
         flush: mockFlush,
         list: jest.fn().mockResolvedValue([]),
         getAll: jest.fn().mockResolvedValue([]),
+        getHash: jest.fn().mockResolvedValue(undefined),
       }
       const workspace = await createWorkspace(flushable as unknown as DirectoryStore<string>,
         flushable as unknown as State, undefined, undefined, undefined,
@@ -2483,7 +2481,6 @@ describe('workspace', () => {
     ] as DetailedChange[]
 
     let validationErrs: ReadonlyArray<ValidationError>
-
     beforeAll(async () => {
       workspace = await createWorkspace(naclFileStore)
       // Verify that the two errors we are starting with (that should be deleted in the update

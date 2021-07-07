@@ -94,7 +94,6 @@ const filterCreator: FilterCreator = () => ({
       .forEach(elem => {
         delete elem.annotations[CONTENT_FILENAME_OVERRIDE]
       })
-    return []
   },
 })
 

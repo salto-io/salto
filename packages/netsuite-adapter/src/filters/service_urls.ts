@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { FilterCreator } from '../filter'
+import { FilterCreator, FilterWith } from '../filter'
 import setFileCabinetUrls from '../service_url/file_cabinet'
 import setScriptsUrls from '../service_url/script'
 import setCustomFieldsUrls from '../service_url/custom_field'
@@ -41,8 +41,8 @@ const SERVICE_URL_SETTERS = [
   setConstantUrls,
 ]
 
-const filterCreator: FilterCreator = () => ({
-  onFetch: async ({ elements, client }) => {
+const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
+  onFetch: async elements => {
     if (!client.isSuiteAppConfigured()) {
       return
     }

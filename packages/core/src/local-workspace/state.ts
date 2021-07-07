@@ -233,7 +233,7 @@ export const localState = (
       await inMemState.flush()
       log.debug('finish flushing state')
     },
-    getHash: async (): Promise<string> => inMemState.getHash(),
+    getHash: async (): Promise<string | undefined> => inMemState.getHash(),
     clear: async (): Promise<void> => {
       const stateFiles = await findStateFiles(currentFilePrefix)
       await inMemState.clear()

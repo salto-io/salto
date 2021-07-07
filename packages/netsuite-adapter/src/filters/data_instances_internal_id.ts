@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { naclCase, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { isDataObjectType } from '../types'
 import { NETSUITE, RECORDS_PATH } from '../constants'
-import { FilterCreator } from '../filter'
+import { FilterWith } from '../filter'
 
 const { awu } = collections.asynciterable
 
@@ -27,7 +27,7 @@ const isNumberStr = (str: string): boolean => !Number.isNaN(Number(str))
 
 const getSubInstanceName = (path: ElemID, internalId: string): string => {
   const name = _.findLast(path.getFullNameParts(), part => !isNumberStr(part) && !['customField', 'customFieldList', 'recordRef'].includes(part))
-  return `${path.typeName}_${name}_${internalId}`
+  return naclCase(`${path.typeName}_${name}_${internalId}`)
 }
 
 /**
@@ -35,8 +35,8 @@ const getSubInstanceName = (path: ElemID, internalId: string): string => {
  * (since the internal id is hidden, and we don't support hidden values in lists,
  * the objects in the list need to be extracted to new instances).
  */
-const filterCreator: FilterCreator = () => ({
-  onFetch: async ({ elements }) => {
+const filterCreator = (): FilterWith<'onFetch'> => ({
+  onFetch: async elements => {
     const recordRefType = elements.find(e => e.elemID.name === 'RecordRef')
 
     const newInstancesMap: Record<string, InstanceElement> = {}

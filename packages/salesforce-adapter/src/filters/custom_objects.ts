@@ -980,7 +980,6 @@ const filterCreator: FilterCreator = ({ client, config }) => {
       // Remove the changes we generated in preDeploy and replace them with the original changes
       await removeAsync(changes, isInstanceOfTypeChange(CUSTOM_OBJECT))
       changes.push(...appliedOriginalChanges)
-      return []
     },
   }
 }

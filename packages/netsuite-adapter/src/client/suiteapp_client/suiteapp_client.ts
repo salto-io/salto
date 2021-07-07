@@ -22,6 +22,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { WSDL } from 'soap'
+import { values } from '@salto-io/lowerdash'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails,
   FILES_READ_SCHEMA, HttpMethod, isError, ReadResults, RestletOperation, RestletResults,
   RESTLET_RESULTS_SCHEMA, SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA,
@@ -31,7 +32,7 @@ import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
 import { DEFAULT_CONCURRENCY } from '../../config'
 import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
 import SoapClient from './soap_client/soap_client'
-import { ReadFileEncodingError, ReadFileError } from './errors'
+import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
 
 const PAGE_SIZE = 1000
@@ -79,12 +80,29 @@ export default class SuiteAppClient {
 
   public async runSuiteQL(query: string):
     Promise<Record<string, unknown>[] | undefined> {
+    // There seems to be a bug in Netsuite SuiteQL in which
+    // for each page size we have some results missing.
+    // To handle this we run the query twice with two page sizes and merge the results
+    const results = (await Promise.all([
+      this.runSingleSuiteQL(query, PAGE_SIZE),
+      this.runSingleSuiteQL(query, PAGE_SIZE - 1),
+    ])).flat()
+
+    if (results.some(res => res === undefined)) {
+      return undefined
+    }
+
+    return _.uniqBy(results.filter(values.isDefined), result => safeJsonStringify(result))
+  }
+
+  private async runSingleSuiteQL(query: string, pageSize: number):
+    Promise<Record<string, unknown>[] | undefined> {
     let hasMore = true
     const items: Record<string, unknown>[] = []
-    for (let offset = 0; hasMore; offset += PAGE_SIZE) {
+    for (let offset = 0; hasMore; offset += pageSize) {
       try {
-        // eslint-disable-next-line no-await-in-loop
-        const results = await this.sendSuiteQLRequest(query, offset, PAGE_SIZE)
+      // eslint-disable-next-line no-await-in-loop
+        const results = await this.sendSuiteQLRequest(query, offset, pageSize)
         // For some reason, a "links" field with empty array is returned regardless
         // to the SELECT values in the query.
         items.push(...results.items.map(item => _.omit(item, ['links'])))
@@ -155,6 +173,9 @@ export default class SuiteAppClient {
             return new ReadFileEncodingError(`Received file encoding error: ${JSON.stringify(file.error, undefined, 2)}`)
           }
           log.warn(`Received file read error: ${JSON.stringify(file.error, undefined, 2)}`)
+          if (file.error.name === 'INSUFFICIENT_PERMISSION') {
+            return new ReadFileInsufficientPermissionError(`No permission for reading file: ${JSON.stringify(file.error, undefined, 2)}`)
+          }
           return new ReadFileError(`Received an error while tried to read file: ${JSON.stringify(file.error, undefined, 2)}`)
         }
         return NON_BINARY_FILETYPES.has(file.type) ? Buffer.from(file.content) : Buffer.from(file.content, 'base64')
@@ -304,7 +325,7 @@ export default class SuiteAppClient {
     return this.soapClient.getNetsuiteWsdl()
   }
 
-  public async getAllRecords(type: string): Promise<Record<string, unknown>[]> {
-    return this.soapClient.getAllRecords(type)
+  public async getAllRecords(types: string[]): Promise<Record<string, unknown>[]> {
+    return this.soapClient.getAllRecords(types)
   }
 }

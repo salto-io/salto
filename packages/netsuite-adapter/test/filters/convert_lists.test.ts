@@ -17,13 +17,10 @@ import { InstanceElement } from '@salto-io/adapter-api'
 import { customTypes } from '../../src/types'
 import { DATASET, ENTITY_CUSTOM_FIELD, SAVED_CSV_IMPORT } from '../../src/constants'
 import filterCreator from '../../src/filters/convert_lists'
-import { OnFetchParameters } from '../../src/filter'
-import NetsuiteClient from '../../src/client/client'
 
 describe('convert_lists filter', () => {
   const instanceName = 'instanceName'
   let instance: InstanceElement
-  let onFetchParameters: OnFetchParameters
   beforeEach(() => {
     instance = new InstanceElement(instanceName,
       customTypes[DATASET],
@@ -33,30 +30,22 @@ describe('convert_lists filter', () => {
           dependency: 'singleValue',
         },
       })
-    onFetchParameters = {
-      elements: [instance],
-      client: {} as NetsuiteClient,
-      elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({ serviceIdsIndex: {}, internalIdsIndex: {} }),
-      },
-      isPartial: false,
-    }
   })
 
 
   it('should not modify field with non ListType', async () => {
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator().onFetch([instance])
     expect(instance.value.name).toEqual(instanceName)
   })
 
   it('should modify single value to a singleton in case of ListType', async () => {
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator().onFetch([instance])
     expect(instance.value.dependencies.dependency).toEqual(['singleValue'])
   })
 
   it('should sort primitive list values if in unorderedListFields', async () => {
     instance.value.dependencies.dependency = ['b', 'a', 'c']
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator().onFetch([instance])
     expect(instance.value.dependencies.dependency).toEqual(['a', 'b', 'c'])
   })
 
@@ -77,8 +66,7 @@ describe('convert_lists filter', () => {
           ],
         },
       })
-    onFetchParameters.elements = [savedCsvImportInstance]
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator().onFetch([savedCsvImportInstance])
     expect(savedCsvImportInstance.value.filemappings.filemapping).toEqual([
       {
         file: 'VENDORBILL',
@@ -113,7 +101,7 @@ describe('convert_lists filter', () => {
           roleaccess: roleAccessesValue,
         },
       })
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator().onFetch([instance])
     expect(instance.value.roleaccesses.roleaccess).toEqual(roleAccessesValue)
   })
 })

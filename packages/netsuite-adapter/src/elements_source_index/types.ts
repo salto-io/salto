@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 
 export type ElementsSourceValue = {
   lastFetchTime?: Date
@@ -23,6 +23,7 @@ export type ElementsSourceValue = {
 export type ElementsSourceIndexes = {
   serviceIdsIndex: Record<string, ElementsSourceValue>
   internalIdsIndex: Record<string, ElementsSourceValue>
+  customFieldsIndex: Record<string, InstanceElement[]>
 }
 
 export type LazyElementsSourceIndexes = {

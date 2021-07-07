@@ -197,7 +197,6 @@ const filter: FilterCreator = () => ({
       refListFieldsToTextLists,
     )
     await applyFuncOnCustomScriptFieldChange(addOrModifyChanges, fieldTypeFromLongTextToTextList)
-    return []
   },
 })
 

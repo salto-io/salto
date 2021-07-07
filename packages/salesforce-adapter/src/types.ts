@@ -17,7 +17,6 @@ import { createMatchingObjectType, createRefToElmWithValue } from '@salto-io/ada
 import {
   ElemID, ObjectType, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
   FieldDefinition,
-  SaltoError,
 } from '@salto-io/adapter-api'
 import * as constants from './constants'
 import { SALESFORCE } from './constants'
@@ -38,6 +37,11 @@ export const DATA_MANAGEMENT = 'dataManagement'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
 export const SHOULD_FETCH_ALL_CUSTOM_SETTINGS = 'fetchAllCustomSettings'
 
+// Based on the list in https://salesforce.stackexchange.com/questions/101844/what-are-the-object-and-field-name-suffixes-that-salesforce-uses-such-as-c-an
+export const INSTANCE_SUFFIXES = [
+  'c', 'r', 'ka', 'kav', 'Feed', 'ViewStat', 'VoteStat', 'DataCategorySelection', 'x', 'xo', 'mdt', 'Share', 'Tag',
+  'History', 'pc', 'pr', 'hd', 'hqr', 'hst', 'b', 'latitude__s', 'longitude__s', 'e', 'p', 'ChangeEvent', 'chn',
+]
 
 export type MetadataInstance = {
   metadataType: string
@@ -54,6 +58,9 @@ export type MetadataParams = {
 
 export type OptionalFeatures = {
   extraDependencies?: boolean
+  elementsUrls?: boolean
+  profilePaths?: boolean
+  addMissingIds?: boolean
 }
 
 type ObjectIdSettings = {
@@ -185,11 +192,6 @@ export type MetadataConfigSuggestion = {
 }
 
 export type ConfigChangeSuggestion = DataManagementConfigSuggestions | MetadataConfigSuggestion
-
-export type FilterResult = {
-  configSuggestions?: ConfigChangeSuggestion[]
-  errors?: SaltoError[]
-}
 
 export const isDataManagementConfigSuggestions = (suggestion: ConfigChangeSuggestion):
   suggestion is DataManagementConfigSuggestions => suggestion.type === 'dataObjectsExclude'
@@ -388,6 +390,9 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
   elemID: new ElemID(SALESFORCE, 'optionalFeatures'),
   fields: {
     extraDependencies: { refType: BuiltinTypes.BOOLEAN },
+    elementsUrls: { refType: BuiltinTypes.BOOLEAN },
+    profilePaths: { refType: BuiltinTypes.BOOLEAN },
+    addMissingIds: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 

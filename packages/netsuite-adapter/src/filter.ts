@@ -13,21 +13,28 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element } from '@salto-io/adapter-api'
+import { filter } from '@salto-io/adapter-utils'
+import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import NetsuiteClient from './client/client'
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 
-export type OnFetchParameters = {
-  elements: Element[]
+export type Filter = filter.Filter<void>
+
+export type FilterWith<M extends keyof Filter> = filter.FilterWith<void, M>
+
+export type FilterOpts = {
   client: NetsuiteClient
   elementsSourceIndex: LazyElementsSourceIndexes
+  elementsSource: ReadOnlyElementsSource
   isPartial: boolean
 }
 
-// Filter interface, filters will be activated upon adapter fetch operations.
-// The filter will be responsible for specific business logic.
-export type OnFetchFilter = {
-  onFetch(parameters: OnFetchParameters): Promise<void>
-}
+export type FilterCreator = filter.FilterCreator<
+  void,
+  FilterOpts
+>
 
-export type FilterCreator = () => OnFetchFilter
+export const filtersRunner = (
+  opts: FilterOpts,
+  filterCreators: ReadonlyArray<FilterCreator>,
+): Required<Filter> => filter.filtersRunner(opts, filterCreators)

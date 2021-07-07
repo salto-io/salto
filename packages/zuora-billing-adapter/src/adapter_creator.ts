@@ -24,13 +24,14 @@ import ZuoraAdapter from './adapter'
 import { Credentials, oauthClientCredentialsType, isSandboxSubdomain, toZuoraBaseUrl } from './auth'
 import {
   configType, ZuoraConfig, CLIENT_CONFIG, DEFAULT_API_DEFINITIONS, API_DEFINITIONS_CONFIG,
-  ZuoraApiConfig,
+  ZuoraApiConfig, FETCH_CONFIG, ZuoraFetchConfig, DEFAULT_INCLUDE_TYPES,
+  DEFAULT_SETTINGS_INCLUDE_TYPES,
 } from './config'
 import { createConnection } from './client/connection'
 
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
-const { validateSwaggerApiDefinitionConfig } = configUtils
+const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
   const { clientId, clientSecret, subdomain, production } = config.value
@@ -52,8 +53,21 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     {}, config?.value?.apiDefinitions, DEFAULT_API_DEFINITIONS
   )
 
+  const fetch: ZuoraFetchConfig = _.defaults(
+    {}, config?.value?.fetch, {
+      includeTypes: DEFAULT_INCLUDE_TYPES,
+      settingsIncludeTypes: DEFAULT_SETTINGS_INCLUDE_TYPES,
+    },
+  )
+
   validateClientConfig(CLIENT_CONFIG, config?.value?.client)
   validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
+  validateSwaggerFetchConfig(
+    FETCH_CONFIG,
+    API_DEFINITIONS_CONFIG,
+    fetch,
+    apiDefinitions
+  )
 
   const adapterConfig: { [K in keyof Required<ZuoraConfig>]: ZuoraConfig[K] } = {
     client: config?.value?.client,

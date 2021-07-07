@@ -62,10 +62,12 @@ export default class StripeAdapter implements AdapterOperations {
       paginationFunc: getWithCursorPagination,
     })
     this.filtersRunner = filtersRunner(
-      this.client,
-      this.paginator,
-      config,
-      filterCreators
+      {
+        client: this.client,
+        paginator: this.paginator,
+        config,
+      },
+      filterCreators,
     )
   }
 
@@ -111,10 +113,10 @@ export default class StripeAdapter implements AdapterOperations {
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch stripe account configuration..')
+    progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes, parsedConfigs } = await this.getAllTypes()
-    progressReporter.reportProgress({ message: 'Finished fetching types. Fetching instances' })
+    progressReporter.reportProgress({ message: 'Fetching instances' })
     const instances = await this.getInstances(allTypes, parsedConfigs)
-    progressReporter.reportProgress({ message: 'Finished fetching instances. Running filters for additional information' })
 
     const elements = [
       ...Object.values(allTypes),
@@ -122,6 +124,7 @@ export default class StripeAdapter implements AdapterOperations {
     ]
 
     log.debug('going to run filters on %d fetched elements', elements.length)
+    progressReporter.reportProgress({ message: 'Running filters for additional information' })
     await this.filtersRunner.onFetch(elements)
     return { elements }
   }

@@ -30,7 +30,7 @@ import {
   scriptIdReferenceRegex,
 } from '../constants'
 import { serviceId } from '../transformer'
-import { FilterCreator } from '../filter'
+import { FilterCreator, FilterWith } from '../filter'
 import { isCustomType, typesElementSourceWrapper } from '../types'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 
@@ -149,12 +149,11 @@ const createElementsSourceServiceIdToElemID = async (
     .value()
 }
 
-const filterCreator: FilterCreator = () => ({
-  onFetch: async ({
-    elements,
-    elementsSourceIndex,
-    isPartial,
-  }): Promise<void> => {
+const filterCreator: FilterCreator = ({
+  elementsSourceIndex,
+  isPartial,
+}): FilterWith<'onFetch'> => ({
+  onFetch: async elements => {
     const fetchedElementsServiceIdToElemID = await generateServiceIdToElemID(elements)
     const elementsSourceServiceIdToElemID = await createElementsSourceServiceIdToElemID(
       elementsSourceIndex,

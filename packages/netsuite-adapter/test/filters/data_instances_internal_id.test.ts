@@ -15,7 +15,6 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/data_instances_internal_id'
-import NetsuiteClient from '../../src/client/client'
 import { NETSUITE } from '../../src/constants'
 
 describe('data_instances_internal_id', () => {
@@ -35,16 +34,7 @@ describe('data_instances_internal_id', () => {
       { recordRef: {} }
     )
 
-    const onFetchParameters = {
-      elements: [instance],
-      client: {} as NetsuiteClient,
-      elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({ serviceIdsIndex: {}, internalIdsIndex: {} }),
-      },
-      isPartial: false,
-      dataTypeNames: new Set<string>(),
-    }
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator().onFetch([instance])
     expect(instance.value.recordRef.id).toEqual('[ACCOUNT_SPECIFIC_VALUE]')
   })
 
@@ -56,17 +46,8 @@ describe('data_instances_internal_id', () => {
     )
 
     const elements = [instance]
-    const onFetchParameters = {
-      elements,
-      client: {} as NetsuiteClient,
-      elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({ serviceIdsIndex: {}, internalIdsIndex: {} }),
-      },
-      isPartial: false,
-      dataTypeNames: new Set<string>(),
-    }
 
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator().onFetch(elements)
     expect(elements[1].elemID.name).toBe('type_someList_1')
     expect((instance.value.someList[0] as ReferenceExpression).elemID.getFullName())
       .toBe(elements[1].elemID.getFullName())

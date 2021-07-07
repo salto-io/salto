@@ -58,10 +58,10 @@ const addressForm_mainFields_defaultFieldGroup_fields_field = new ObjectType({
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see addressform_fieldid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -155,10 +155,10 @@ const addressForm_mainFields_fieldGroup_fields_field = new ObjectType({
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see addressform_fieldid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -235,11 +235,11 @@ const addressForm_mainFields_fieldGroup = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     visible: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {
@@ -307,15 +307,15 @@ export const addressForm = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 99 }),
       },
     }, /* Original description: This attribute value can be up to 99 characters long. */
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    },
+    }, /* Original description: This field accepts references to the string custom type. */
     mainFields: {
       refType: createRefToElmWithValue(addressForm_mainFields),
       annotations: {

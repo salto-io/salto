@@ -65,11 +65,13 @@ export default class WorkatoAdapter implements AdapterOperations {
       paginationFunc: paginate,
     })
     this.filtersRunner = filtersRunner(
-      this.client,
-      this.paginator,
       {
-        fetch: config.fetch,
-        apiDefinitions: config.apiDefinitions,
+        client: this.client,
+        paginator: this.paginator,
+        config: {
+          fetch: config.fetch,
+          apiDefinitions: config.apiDefinitions,
+        },
       },
       filterCreators,
     )

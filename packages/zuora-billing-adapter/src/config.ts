@@ -419,7 +419,7 @@ export const DEFAULT_SETTINGS_INCLUDE_TYPES = [
   'UnitsOfMeasureList',
 ]
 
-export const DEFAULT_INCLUDE_TYPES: string[] = [
+export const DEFAULT_INCLUDE_TYPES = [
   'AccountingCodes',
   'AccountingPeriods',
   'CatalogProduct',

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/data_instances_references'
 import NetsuiteClient from '../../src/client/client'
 import { NETSUITE } from '../../src/constants'
@@ -50,16 +51,21 @@ describe('data_instances_references', () => {
       { internalId: '1' }
     )
 
-    const onFetchParameters = {
+    const filterOpts = {
       elements: [instance, referencedInstance],
       client: {} as NetsuiteClient,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({ serviceIdsIndex: {}, internalIdsIndex: {} }),
+        getIndexes: () => Promise.resolve({
+          serviceIdsIndex: {},
+          internalIdsIndex: {},
+          customFieldsIndex: {},
+        }),
       },
+      elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       dataTypeNames: new Set<string>(),
     }
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator(filterOpts).onFetch?.([instance, referencedInstance])
     expect((instance.value.field as ReferenceExpression).elemID.getFullName())
       .toBe(referencedInstance.elemID.getFullName())
   })
@@ -71,16 +77,21 @@ describe('data_instances_references', () => {
       { field: { internalId: '1' } }
     )
 
-    const onFetchParameters = {
+    const filterOpts = {
       elements: [instance],
       client: {} as NetsuiteClient,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({ serviceIdsIndex: {}, internalIdsIndex: {} }),
+        getIndexes: () => Promise.resolve({
+          serviceIdsIndex: {},
+          internalIdsIndex: {},
+          customFieldsIndex: {},
+        }),
       },
+      elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       dataTypeNames: new Set<string>(),
     }
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator(filterOpts).onFetch?.([instance])
     expect(instance.value.field.internalId).toBe('1')
   })
 
@@ -97,19 +108,22 @@ describe('data_instances_references', () => {
       { internalId: '1' }
     )
 
-    const onFetchParameters = {
-      elements: [instance],
+    const fetchOpts = {
       client: {} as NetsuiteClient,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({ serviceIdsIndex: {},
+        getIndexes: () => Promise.resolve({
+          serviceIdsIndex: {},
           internalIdsIndex: {
             'firstType-1': { elemID: referencedInstance.elemID },
-          } }),
+          },
+          customFieldsIndex: {},
+        }),
       },
+      elementsSource: buildElementsSourceFromElements([]),
       isPartial: true,
       dataTypeNames: new Set<string>(),
     }
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator(fetchOpts).onFetch?.([instance])
     expect((instance.value.field as ReferenceExpression).elemID.getFullName())
       .toBe(referencedInstance.elemID.getFullName())
   })
@@ -127,16 +141,20 @@ describe('data_instances_references', () => {
       { internalId: '1' }
     )
 
-    const onFetchParameters = {
-      elements: [instance, referencedInstance],
+    const fetchOpts = {
       client: {} as NetsuiteClient,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({ serviceIdsIndex: {}, internalIdsIndex: {} }),
+        getIndexes: () => Promise.resolve({
+          serviceIdsIndex: {},
+          internalIdsIndex: {},
+          customFieldsIndex: {},
+        }),
       },
+      elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       dataTypeNames: new Set<string>(),
     }
-    await filterCreator().onFetch(onFetchParameters)
+    await filterCreator(fetchOpts).onFetch?.([instance, referencedInstance])
     expect((instance.value.recordRefList[0] as ReferenceExpression).elemID.getFullName())
       .toBe(referencedInstance.elemID.getFullName())
   })

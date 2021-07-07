@@ -18,11 +18,11 @@ import {
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import { logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
+import { filter, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections, values, promises } from '@salto-io/lowerdash'
+import { collections, values, promises, objects } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
 import { apiName, Types, isMetadataObjectType } from './transformers/transformer'
@@ -62,9 +62,9 @@ import valueToStaticFileFilter from './filters/value_to_static_file'
 import convertMapsFilter from './filters/convert_maps'
 import elementsUrlFilter from './filters/elements_url'
 import territoryFilter from './filters/territory'
-import { FetchElements, SalesforceConfig, FilterResult } from './types'
+import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
-import { FilterCreator, Filter, filtersRunner } from './filter'
+import { FilterCreator, Filter, FilterResult } from './filter'
 import { addDefaults } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
@@ -74,6 +74,8 @@ import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
+const { concatObjects } = objects
+
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
@@ -221,6 +223,7 @@ export const allSystemFields = [
   'SetupOwnerId',
 ]
 
+
 export default class SalesforceAdapter implements AdapterOperations {
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]
@@ -294,17 +297,18 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.client = client
 
     this.fetchProfile = buildFetchProfile(config.fetch ?? {})
-    this.filtersRunner = filtersRunner(
-      this.client,
-      {
+    this.filtersRunner = filter.filtersRunner({
+      client: this.client,
+      config: {
         unsupportedSystemFields,
         systemFields,
         useOldProfiles: config.useOldProfiles ?? useOldProfiles,
         fetchProfile: this.fetchProfile,
         elementsSource,
       },
-      filterCreators
-    )
+    },
+    filterCreators,
+    concatObjects)
     if (getElemIdFunc) {
       Types.setElemIdGetter(getElemIdFunc)
     }

@@ -13,10 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, DeployResult, getChangeElement, InstanceElement, isAdditionOrModificationChange, isInstanceChange, StaticFile } from '@salto-io/adapter-api'
+import { Change, DeployResult, getChangeElement, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isStaticFile } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { chunks, promises, values } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
+import { Buffer } from 'buffer'
 import _ from 'lodash'
 import path from 'path'
 import { ReadFileEncodingError } from './client/suiteapp_client/errors'
@@ -117,8 +119,18 @@ export type SuiteAppFileCabinetOperations = {
     => Promise<DeployResult>
 }
 
-const getContent = (content: string | StaticFile): Buffer =>
-  (content instanceof StaticFile ? content.content : Buffer.from(content)) ?? Buffer.from('')
+const getContent = (content: unknown): Buffer => {
+  if (isStaticFile(content)) {
+    return content.content ?? Buffer.from('')
+  }
+  if (typeof content === 'string') {
+    return Buffer.from(content)
+  }
+  if (content === undefined) {
+    return Buffer.from('')
+  }
+  throw new Error(`Got invalid content value: ${safeJsonStringify(content, undefined, 2)}`)
+}
 
 export const isChangeDeployable = (
   change: Change

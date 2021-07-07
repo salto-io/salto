@@ -469,6 +469,20 @@ const validateValue = async (
     ))).flat()
   }
 
+  if (type === BuiltinTypes.UNKNOWN) {
+    if (!_.isObjectLike(value)) {
+      return []
+    }
+    return (await Promise.all(Object.keys(value).map(
+      // eslint-disable-next-line no-use-before-define
+      async k => validateFieldValue(elemID.createNestedID(k),
+        value[k],
+        BuiltinTypes.UNKNOWN,
+        {},
+        elementsSource)
+    ))).flat()
+  }
+
   if (isListType(type)) {
     return (await Promise.all(mapAsArrayWithIds(value, elemID).map(async item => validateValue(
       item.nestedID,

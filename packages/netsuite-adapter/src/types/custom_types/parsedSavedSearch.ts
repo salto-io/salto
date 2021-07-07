@@ -235,28 +235,28 @@ export const savedsearch = new ObjectType({
       },
     },
     search_filters: {
-      refType: new ListType(savedSearchFilter),
+      refType: createRefToElmWithValue(new ListType(savedSearchFilter)),
     },
     search_summary_filters: {
-      refType: new ListType(savedSearchFilter),
+      refType: createRefToElmWithValue(new ListType(savedSearchFilter)),
     },
     available_filters: {
-      refType: new ListType(savedSearchAvailableFilter),
+      refType: createRefToElmWithValue(new ListType(savedSearchAvailableFilter)),
     },
     return_fields: {
-      refType: new ListType(savedSearchReturnField),
+      refType: createRefToElmWithValue(new ListType(savedSearchReturnField)),
     },
     detail_fields: {
-      refType: new ListType(savedSearchReturnField),
+      refType: createRefToElmWithValue(new ListType(savedSearchReturnField)),
     },
     sort_columns: {
-      refType: savedSearchSortColumns,
+      refType: createRefToElmWithValue(savedSearchSortColumns),
     },
     audience: {
-      refType: savedSearchAudience,
+      refType: createRefToElmWithValue(savedSearchAudience),
     },
     alert_recipients: {
-      refType: new ListType(savedSearchAlertRecipients),
+      refType: createRefToElmWithValue(new ListType(savedSearchAlertRecipients)),
     },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],

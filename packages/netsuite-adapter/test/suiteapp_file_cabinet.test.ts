@@ -436,6 +436,19 @@ describe('suiteapp_file_cabinet', () => {
       expect(isChangeDeployable(toChange({ after: deployableInstance }))).toBeTruthy()
       expect(isChangeDeployable(toChange({ before: deployableInstance }))).toBeTruthy()
     })
+
+    it('should throw an error for invalid content', () => {
+      const instance = new InstanceElement(
+        'instance',
+        fileCabinetTypes[FILE],
+        {
+          path: '/Templates/valid1',
+          content: {},
+        }
+      )
+
+      expect(() => isChangeDeployable(toChange({ after: instance }))).toThrow('Got invalid content value: {}')
+    })
   })
 
   describe('deploy', () => {
@@ -588,7 +601,7 @@ describe('suiteapp_file_cabinet', () => {
               file,
               {
                 path: '/instance1/newInstance1',
-                content: Buffer.from('aaa'),
+                content: 'aaa',
                 bundleable: true,
                 isinactive: false,
                 isonline: false,
@@ -603,7 +616,7 @@ describe('suiteapp_file_cabinet', () => {
               {
                 path: '/instance1/newInstance2/newInstance3',
                 description: 'aaa',
-                content: Buffer.from('aaa'),
+                content: 'aaa',
               }
             ),
           }),
@@ -646,7 +659,7 @@ describe('suiteapp_file_cabinet', () => {
               file,
               {
                 path: '/instance1/instance101',
-                content: Buffer.from('aaa'),
+                content: 'aaa',
                 bundleable: true,
                 isinactive: false,
                 isonline: false,
@@ -660,7 +673,7 @@ describe('suiteapp_file_cabinet', () => {
               file,
               {
                 path: '/instance1',
-                content: Buffer.from('aaa'),
+                content: 'aaa',
                 bundleable: true,
                 isinactive: false,
                 isonline: false,
@@ -674,7 +687,7 @@ describe('suiteapp_file_cabinet', () => {
               file,
               {
                 path: '/instance0',
-                content: Buffer.from('aaa'),
+                content: 'aaa',
                 bundleable: true,
                 isinactive: false,
                 isonline: false,

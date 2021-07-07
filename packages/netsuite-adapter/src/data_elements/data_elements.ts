@@ -108,9 +108,9 @@ const createInstance = async (
       return castFieldValue(value, field)
     },
   })
-  const identifierValue = fixedRecord?.[TYPE_TO_IDENTIFIER[type.elemID.name]]
-  const defaultName = naclCase(identifierValue)
   const serviceIdFieldName = TYPE_TO_IDENTIFIER[type.elemID.name]
+  const identifierValue = fixedRecord?.[serviceIdFieldName]
+  const defaultName = naclCase(identifierValue)
   const name = elemIdGetter !== undefined ? elemIdGetter(
     NETSUITE,
     {

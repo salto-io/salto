@@ -15,7 +15,7 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/data_instances_internal_id'
-import { NETSUITE } from '../../src/constants'
+import { ACCOUNT_SPECIFIC_VALUE, NETSUITE } from '../../src/constants'
 
 describe('data_instances_internal_id', () => {
   const recordRefType = new ObjectType({
@@ -35,7 +35,18 @@ describe('data_instances_internal_id', () => {
     )
 
     await filterCreator().onFetch([instance])
-    expect(instance.value.recordRef.id).toEqual('[ACCOUNT_SPECIFIC_VALUE]')
+    expect(instance.value.recordRef.id).toEqual(ACCOUNT_SPECIFIC_VALUE)
+  })
+
+  it('should replace internalId for values without fields', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), annotations: { source: 'soap' } }),
+      { recordRef: { internalId: '1' } }
+    )
+
+    await filterCreator().onFetch([instance])
+    expect(instance.value.recordRef.internalId).toEqual(ACCOUNT_SPECIFIC_VALUE)
   })
 
   it('should extract list items with internal id', async () => {

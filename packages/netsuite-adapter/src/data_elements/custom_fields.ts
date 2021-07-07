@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { InstanceElement } from '@salto-io/adapter-api'
+import { BuiltinTypes, Field, InstanceElement } from '@salto-io/adapter-api'
 import { othercustomfield } from '../types/custom_types/othercustomfield'
 import { INTERNAL_ID_TO_TYPES } from './types'
 
@@ -69,4 +69,21 @@ export const getFieldInstanceTypes = (instance: InstanceElement): string[] => {
     return INTERNAL_ID_TO_TYPES[instance.value.rectype]
   }
   return []
+}
+
+export const castFieldValue = async (value: unknown, field?: Field): Promise<unknown> => {
+  if (value instanceof Date) {
+    return value.toISOString()
+  }
+
+  if (typeof value === 'string') {
+    const fieldType = await field?.getType()
+    if (fieldType?.elemID.isEqual(BuiltinTypes.BOOLEAN.elemID)) {
+      return value === 'true'
+    }
+    if (fieldType?.elemID.isEqual(BuiltinTypes.NUMBER.elemID)) {
+      return parseInt(value, 10)
+    }
+  }
+  return value
 }

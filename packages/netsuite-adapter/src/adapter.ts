@@ -42,7 +42,8 @@ import removeUnsupportedTypes from './filters/remove_unsupported_types'
 import dataInstancesInternalId from './filters/data_instances_internal_id'
 import dataInstancesReferences from './filters/data_instances_references'
 import { Filter, FilterCreator } from './filter'
-import dataCustomFields from './filters/data_custom_fields'
+import dataTypesCustomFields from './filters/data_types_custom_fields'
+import dataInstancesCustomFields from './filters/data_instances_custom_fields'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_USE_CHANGES_DETECTION } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
 import { createServerTimeElements, getLastServerTime } from './server_time'
@@ -108,7 +109,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       redundantFields,
       hiddenFields,
       replaceRecordRef,
-      dataCustomFields,
+      dataTypesCustomFields,
+      dataInstancesCustomFields,
       removeUnsupportedTypes,
       dataInstancesReferences,
       dataInstancesInternalId,

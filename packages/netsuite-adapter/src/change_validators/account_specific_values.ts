@@ -25,10 +25,10 @@ import {
 import { transformValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isCustomType } from '../types'
+import { ACCOUNT_SPECIFIC_VALUE } from '../constants'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
-export const ACCOUNT_SPECIFIC_VALUE = '[ACCOUNT_SPECIFIC_VALUE]'
 
 const hasAccountSpecificValue = async (instance: InstanceElement): Promise<boolean> => {
   let foundAccountSpecificValue = false

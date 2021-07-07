@@ -80,11 +80,14 @@ export default class SuiteAppClient {
   /**
    * WARNING:
    * Due to a bug in NetSuite SuiteQL, make sure to use
-   * ORDER BY <some unique identifier> ASCin your queries.
+   * ORDER BY <some unique identifier> ASC in your queries.
    * Otherwise, you might not get all the results.
    */
   public async runSuiteQL(query: string):
     Promise<Record<string, unknown>[] | undefined> {
+    if (!/ORDER BY .* ASC/.test(query)) {
+      log.warn(`SuiteQL ${query} does not contain ORDER BY <unique identifier> ASC, which can cause the response to not contain all the results`)
+    }
     let hasMore = true
     const items: Record<string, unknown>[] = []
     for (let offset = 0; hasMore; offset += PAGE_SIZE) {

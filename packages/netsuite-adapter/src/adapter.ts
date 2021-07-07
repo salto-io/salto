@@ -28,8 +28,8 @@ import {
 import {
   customTypes, getMetadataTypes, fileCabinetTypes,
 } from './types'
-import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS,
-  INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION } from './constants'
+import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST,
+  INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
@@ -44,7 +44,7 @@ import dataInstancesReferences from './filters/data_instances_references'
 import { Filter, FilterCreator } from './filter'
 import dataCustomFields from './filters/data_custom_fields'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_USE_CHANGES_DETECTION } from './config'
-import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery } from './query'
+import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
 import { createServerTimeElements, getLastServerTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import NetsuiteClient from './client/client'
@@ -83,11 +83,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly elementsSource: ReadOnlyElementsSource
   private readonly typesToSkip: string[]
   private readonly filePathRegexSkipList: string[]
-  private readonly deployReferencedElements: boolean
+  private readonly deployReferencedElements?: boolean
   private readonly userConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
+  private readonly fetchInclude?: QueryParams
+  private readonly fetchExclude?: QueryParams
   private readonly fetchTarget?: NetsuiteQueryParameters
-  private readonly skipList?: NetsuiteQueryParameters
+  private readonly skipList?: NetsuiteQueryParameters // old version
   private readonly useChangesDetection: boolean
   private filtersRunner: Required<Filter>
   private elementsSourceIndex: LazyElementsSourceIndexes
@@ -118,7 +120,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       // If we decide to fetch them we should set the SCRIPT_ID by the xml's filename upon fetch.
     ],
     filePathRegexSkipList = [],
-    deployReferencedElements = DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
     getElemIdFunc,
     config,
   }: NetsuiteAdapterParams) {
@@ -127,12 +128,15 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.typesToSkip = typesToSkip.concat(makeArray(config[TYPES_TO_SKIP]))
     this.filePathRegexSkipList = filePathRegexSkipList
       .concat(makeArray(config[FILE_PATHS_REGEX_SKIP_LIST]))
-    this.deployReferencedElements = config[DEPLOY_REFERENCED_ELEMENTS] ?? deployReferencedElements
     this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
+    this.fetchInclude = config[FETCH]?.[INCLUDE]
+    this.fetchExclude = config[FETCH]?.[EXCLUDE]
     this.fetchTarget = config[FETCH_TARGET]
-    this.skipList = config[SKIP_LIST]
+    this.skipList = config[SKIP_LIST] // old version
     this.useChangesDetection = config[USE_CHANGES_DETECTION] ?? DEFAULT_USE_CHANGES_DETECTION
+    this.deployReferencedElements = config[DEPLOY]?.[DEPLOY_REFERENCED_ELEMENTS]
+     ?? config[DEPLOY_REFERENCED_ELEMENTS]
     this.elementsSourceIndex = createElementsSourceIndex(this.elementsSource)
     this.filtersRunner = filter.filtersRunner({
       client: this.client,
@@ -147,15 +151,18 @@ export default class NetsuiteAdapter implements AdapterOperations {
    * Fetch configuration elements: objects, types and instances for the given Netsuite account.
    * Account credentials were given in the constructor.
    */
+
   public async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
-    const deprecatedSkipList = buildNetsuiteQuery({
+    const deprecatedSkipList = buildNetsuiteQuery(convertToQueryParams({
       types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, ['.*']])),
       filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
-    })
+    }))
 
     let fetchQuery = [
-      this.fetchTarget && buildNetsuiteQuery(this.fetchTarget),
-      this.skipList && notQuery(buildNetsuiteQuery(this.skipList)),
+      this.fetchInclude && buildNetsuiteQuery(this.fetchInclude),
+      this.fetchTarget && buildNetsuiteQuery(convertToQueryParams(this.fetchTarget)),
+      this.fetchExclude && notQuery(buildNetsuiteQuery(this.fetchExclude)),
+      this.skipList && notQuery(buildNetsuiteQuery(convertToQueryParams(this.skipList))),
       notQuery(deprecatedSkipList),
     ].filter(values.isDefined).reduce(andQuery)
 
@@ -283,7 +290,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
 
   public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    return this.client.deploy(changeGroup, this.deployReferencedElements)
+    return this.client.deploy(changeGroup, this.deployReferencedElements
+       ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS)
     // const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
     // const customizationInfosToDeploy = await awu(
     //   await this.getAllRequiredReferencedInstances(changedInstances)

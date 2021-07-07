@@ -176,7 +176,7 @@ describe('netsuite client', () => {
   const typeNames = instancesIds.map(instance => instance.type)
 
   const typeNamesQuery = buildNetsuiteQuery({
-    types: Object.fromEntries(instancesIds.map(id => [id.type, ['.*']])),
+    types: instancesIds.map(instance => ({ name: instance.type, ids: ['.*'] })),
   })
 
   const importObjectsCommandMatcher = expect
@@ -727,9 +727,9 @@ describe('netsuite client', () => {
       })
 
       const query = buildNetsuiteQuery({
-        types: {
-          addressForm: ['a'],
-        },
+        types: [
+          { name: 'addressForm', ids: ['a'] },
+        ],
       })
       await mockClient().getCustomObjects(typeNames, query)
       expect(mockExecuteAction).toHaveBeenCalledWith(expect.objectContaining({
@@ -759,7 +759,7 @@ describe('netsuite client', () => {
     it('should do nothing of no files are matched', async () => {
       const { elements, failedToFetchAllAtOnce } = await mockClient()
         .getCustomObjects(typeNames, buildNetsuiteQuery({
-          types: {},
+          types: [],
         }))
       expect(elements).toHaveLength(0)
       expect(failedToFetchAllAtOnce).toBeFalsy()
@@ -769,7 +769,7 @@ describe('netsuite client', () => {
 
   describe('importFileCabinetContent', () => {
     const allFilesQuery = buildNetsuiteQuery({
-      filePaths: ['.*'],
+      fileCabinet: ['.*'],
     })
 
     let client: SdfClient
@@ -983,7 +983,7 @@ describe('netsuite client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const query = notQuery(buildNetsuiteQuery({
-        filePaths: [MOCK_FILE_PATH],
+        fileCabinet: [MOCK_FILE_PATH],
       }))
       const { elements, failedPaths } = await client.importFileCabinetContent(query)
       expect(readFileMock).toHaveBeenCalledTimes(0)
@@ -999,9 +999,10 @@ describe('netsuite client', () => {
     })
 
     it('should do nothing of no files are matched', async () => {
-      const { elements, failedPaths } = await client.importFileCabinetContent(buildNetsuiteQuery({
-        filePaths: [],
-      }))
+      const { elements, failedPaths } = await client
+        .importFileCabinetContent(buildNetsuiteQuery({
+          fileCabinet: [],
+        }))
 
       expect(elements).toHaveLength(0)
       expect(failedPaths).toHaveLength(0)

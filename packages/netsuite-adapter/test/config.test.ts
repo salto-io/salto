@@ -16,11 +16,14 @@
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { NetsuiteQueryParameters } from '../src/query'
-import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, UPDATE_TO_SKIP_LIST_MSG } from '../src/config'
+import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, UPDATE_FETCH_CONFIG_FORMAT, UPDATE_DEPLOY_CONFIG, combineQueryParams, fetchDefault } from '../src/config'
 import {
-  FETCH_ALL_TYPES_AT_ONCE, SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS,
+  FETCH_ALL_TYPES_AT_ONCE,
+  SDF_CONCURRENCY_LIMIT,
   FETCH_TYPE_TIMEOUT_IN_MINUTES, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
-  CLIENT_CONFIG, SKIP_LIST, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST,
+  CLIENT_CONFIG, SKIP_LIST,
+  TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH,
+  INCLUDE, EXCLUDE, DEPLOY_REFERENCED_ELEMENTS, DEPLOY,
 } from '../src/constants'
 
 describe('config', () => {
@@ -31,9 +34,26 @@ describe('config', () => {
     },
     filePaths: ['SomeRegex'],
   }
-  const currentConfig = {
+
+  const currentConfigWithSkipList = {
     [SKIP_LIST]: skipList,
-    [DEPLOY_REFERENCED_ELEMENTS]: false,
+    [CLIENT_CONFIG]: {
+      [SDF_CONCURRENCY_LIMIT]: 2,
+      [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
+      [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
+    },
+  }
+  const currentConfigWithFetch = {
+    [FETCH]: {
+      [INCLUDE]: fetchDefault[INCLUDE],
+      [EXCLUDE]: {
+        types: [
+          { name: 'testAll', ids: ['.*'] },
+          { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2'] },
+        ],
+        fileCabinet: ['SomeRegex'],
+      },
+    },
     [CLIENT_CONFIG]: {
       [SDF_CONCURRENCY_LIMIT]: 2,
       [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
@@ -47,7 +67,7 @@ describe('config', () => {
   }
 
   it('should return undefined when having no currentConfig suggestions', () => {
-    expect(getConfigFromConfigChanges(false, [], {}, currentConfig)).toBeUndefined()
+    expect(getConfigFromConfigChanges(false, [], {}, currentConfigWithFetch)).toBeUndefined()
   })
 
   it('should return updated currentConfig with defined values when having suggestions and the currentConfig is empty', () => {
@@ -57,9 +77,11 @@ describe('config', () => {
       ElemID.CONFIG_NAME,
       configType,
       {
-        [SKIP_LIST]: {
-          filePaths: [_.escapeRegExp(newFailedFilePath)],
-          types: suggestedSkipListTypes,
+        [FETCH]: {
+          [EXCLUDE]: {
+            types: Object.entries(suggestedSkipListTypes).map(([name, ids]) => ({ name, ids })),
+            fileCabinet: [newFailedFilePath],
+          },
         },
         [CLIENT_CONFIG]: {
           [FETCH_ALL_TYPES_AT_ONCE]: false,
@@ -69,21 +91,27 @@ describe('config', () => {
   })
 
   it('should return updated currentConfig when having suggestions and the currentConfig has values', () => {
-    const newSkipList = _.cloneDeep(skipList)
-    newSkipList.filePaths.push(_.escapeRegExp(newFailedFilePath))
-    newSkipList.types.testExistingPartial.push('scriptid3', 'scriptid4')
-    newSkipList.types.testNew = ['scriptid5', 'scriptid6']
-
+    const newExclude = {
+      types: [
+        { name: 'testAll', ids: ['.*'] },
+        { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2', 'scriptid3', 'scriptid4'] },
+        { name: 'testNew', ids: ['scriptid5', 'scriptid6'] },
+      ],
+      fileCabinet: ['SomeRegex'],
+    }
+    newExclude.fileCabinet.push(_.escapeRegExp(newFailedFilePath))
     const configChange = getConfigFromConfigChanges(
-      true, [newFailedFilePath], suggestedSkipListTypes, currentConfig
+      true, [newFailedFilePath], suggestedSkipListTypes, currentConfigWithFetch
     )
-    expect(configChange?.config)
-      .toEqual(new InstanceElement(
+    expect(configChange?.config
+      .isEqual(new InstanceElement(
         ElemID.CONFIG_NAME,
         configType,
         {
-          [SKIP_LIST]: newSkipList,
-          [DEPLOY_REFERENCED_ELEMENTS]: false,
+          [FETCH]: {
+            [INCLUDE]: currentConfigWithFetch[FETCH][INCLUDE],
+            [EXCLUDE]: newExclude,
+          },
           [CLIENT_CONFIG]: {
             [FETCH_ALL_TYPES_AT_ONCE]: false,
             [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
@@ -91,41 +119,110 @@ describe('config', () => {
             [SDF_CONCURRENCY_LIMIT]: 2,
           },
         }
-      ))
+      ))).toBe(true)
 
     expect(configChange?.message).toBe(STOP_MANAGING_ITEMS_MSG)
   })
 
-  it('should convert typesToSkip and filePathsRegexSkipList to skipList', () => {
-    const newSkipList = {
-      types: {
-        someType: ['.*'],
+  it('should convert typesToSkip and filePathsRegexSkipList to fetch', () => {
+    const newFetch = {
+      [INCLUDE]: fetchDefault[INCLUDE],
+      [EXCLUDE]: combineQueryParams({
+        types: [
+          { name: 'someType', ids: ['.*'] },
+        ],
+        fileCabinet: ['.*someRegex1.*', 'someRegex2.*', '.*someRegex3', 'someRegex4'],
       },
-      filePaths: ['.*someRegex1.*', 'someRegex2.*', '.*someRegex3', 'someRegex4'],
+      fetchDefault[EXCLUDE]),
     }
     const config = {
-      ..._.omit(currentConfig, SKIP_LIST),
+      ..._.omit(currentConfigWithSkipList, SKIP_LIST),
       [TYPES_TO_SKIP]: ['someType'],
       [FILE_PATHS_REGEX_SKIP_LIST]: ['someRegex1', '^someRegex2', 'someRegex3$', '^someRegex4$'],
     }
-
     const configChange = getConfigFromConfigChanges(false, [], {}, config)
-    expect(configChange?.config)
-      .toEqual(new InstanceElement(
+    expect(configChange?.config
+      .isEqual(new InstanceElement(
         ElemID.CONFIG_NAME,
         configType,
         {
-          [SKIP_LIST]: newSkipList,
-          [DEPLOY_REFERENCED_ELEMENTS]: false,
+          [FETCH]: newFetch,
           [CLIENT_CONFIG]: {
             [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
             [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
             [SDF_CONCURRENCY_LIMIT]: 2,
           },
         }
-      ))
+      ))).toBe(true)
 
-    expect(configChange?.message).toBe(UPDATE_TO_SKIP_LIST_MSG)
+    expect(configChange?.message).toBe(UPDATE_FETCH_CONFIG_FORMAT)
+  })
+
+  it('should convert deployReferencedElements when its value is "true" to deploy', () => {
+    const config = {
+      ..._.omit(currentConfigWithFetch, DEPLOY_REFERENCED_ELEMENTS),
+      [DEPLOY_REFERENCED_ELEMENTS]: true,
+    }
+    const configChange = getConfigFromConfigChanges(false, [], {}, config)
+    expect(configChange?.config
+      .isEqual(new InstanceElement(
+        ElemID.CONFIG_NAME,
+        configType,
+        {
+          [FETCH]: configChange?.config.value[FETCH],
+          [CLIENT_CONFIG]: {
+            [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
+            [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
+            [SDF_CONCURRENCY_LIMIT]: 2,
+          },
+          [DEPLOY]: {
+            [DEPLOY_REFERENCED_ELEMENTS]: true,
+          },
+        }
+      ))).toBe(true)
+
+    expect(configChange?.message).toBe(UPDATE_DEPLOY_CONFIG)
+  })
+
+  it('should delete deployReferencedElements when its value is "false" without adding deploy section', () => {
+    const config = {
+      ..._.omit(currentConfigWithFetch, DEPLOY_REFERENCED_ELEMENTS),
+      [DEPLOY_REFERENCED_ELEMENTS]: false,
+    }
+    const configChange = getConfigFromConfigChanges(false, [], {}, config)
+    expect(configChange?.config?.value[DEPLOY_REFERENCED_ELEMENTS]).toBe(undefined)
+    expect(configChange?.config?.value[DEPLOY]).toBe(undefined)
+    expect(configChange?.message).toBe(UPDATE_DEPLOY_CONFIG)
+  })
+
+  it('should convert skipList to fetch', () => {
+    const config = {
+      ...currentConfigWithSkipList,
+    }
+    const newFetch = {
+      [INCLUDE]: fetchDefault[INCLUDE],
+      [EXCLUDE]: combineQueryParams(
+        currentConfigWithFetch[FETCH][EXCLUDE],
+        fetchDefault[EXCLUDE]
+      ),
+    }
+
+    const configChange = getConfigFromConfigChanges(false, [], {}, config)
+    expect(configChange?.config
+      .isEqual(new InstanceElement(
+        ElemID.CONFIG_NAME,
+        configType,
+        {
+          [FETCH]: newFetch,
+          [CLIENT_CONFIG]: {
+            [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
+            [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
+            [SDF_CONCURRENCY_LIMIT]: 2,
+          },
+        }
+      ))).toBe(true)
+
+    expect(configChange?.message).toBe(UPDATE_FETCH_CONFIG_FORMAT)
   })
 
   it('should combine configuration messages when needed', () => {
@@ -133,13 +230,41 @@ describe('config', () => {
     newSkipList.types.someType = ['.*']
     newSkipList.filePaths.push('.*someRegex.*')
     const config = {
-      ...currentConfig,
+      ...currentConfigWithSkipList,
       [TYPES_TO_SKIP]: ['someType'],
       [FILE_PATHS_REGEX_SKIP_LIST]: ['someRegex'],
     }
 
     const configChange = getConfigFromConfigChanges(false, ['someFailedFile'], {}, config)
 
-    expect(configChange?.message).toBe(`${STOP_MANAGING_ITEMS_MSG} In addition, ${UPDATE_TO_SKIP_LIST_MSG}`)
+    expect(configChange?.message).toBe(`${STOP_MANAGING_ITEMS_MSG} In addition, ${UPDATE_FETCH_CONFIG_FORMAT}`)
+  })
+
+  it('should omit skipList and update "fetch.exclude". config with skipList AND fetch', () => {
+    const conf = { ...currentConfigWithFetch,
+      [SKIP_LIST]: currentConfigWithSkipList[SKIP_LIST] }
+    const configChange = getConfigFromConfigChanges(false, [], {}, conf)
+    expect(configChange?.config
+      .isEqual(new InstanceElement(
+        ElemID.CONFIG_NAME,
+        configType,
+        {
+          [FETCH]: {
+            [INCLUDE]: fetchDefault[INCLUDE],
+            [EXCLUDE]: {
+              fileCabinet: ['SomeRegex'],
+              types: [
+                { name: 'testAll', ids: ['.*'] },
+                { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2'] },
+              ],
+            },
+          },
+          [CLIENT_CONFIG]: {
+            [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
+            [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
+            [SDF_CONCURRENCY_LIMIT]: 2,
+          },
+        }
+      ))).toBe(true)
   })
 })

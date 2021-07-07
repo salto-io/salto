@@ -19,16 +19,15 @@ import {
   InstanceElement, ElemID, Value, ObjectType, ListType, BuiltinTypes, CORE_ANNOTATIONS,
   createRestriction, MapType,
 } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { createRefToElmWithValue, createMatchingObjectType } from '@salto-io/adapter-utils'
 import {
   FETCH_ALL_TYPES_AT_ONCE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, NETSUITE,
   SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
   CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
-  SAVED_SEARCH, SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
-  CONCURRENCY_LIMIT, DATASET, WORKBOOK,
+  SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
+  CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, SAVED_SEARCH, DEPLOY,
 } from './constants'
-import { NetsuiteQueryParameters } from './query'
-import { mergeTypeToInstances } from './client/utils'
+import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams } from './query'
 
 const { makeArray } = collections.array
 
@@ -117,21 +116,96 @@ const queryConfigType = new ObjectType({
   },
 })
 
+const fetchTypeQueryParamsConfigType = new ObjectType({
+  elemID: new ElemID(NETSUITE, 'fetchTypeQueryParams'),
+  fields: {
+    name: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+    ids: { refType: new ListType(BuiltinTypes.STRING) },
+  },
+})
+
+const queryParamsConfigType = new ObjectType({
+  elemID: new ElemID(NETSUITE, 'queryParams'),
+  fields: {
+    types: {
+      refType: new ListType(fetchTypeQueryParamsConfigType),
+    },
+    fileCabinet: {
+      refType: new ListType(BuiltinTypes.STRING),
+    },
+  },
+})
+
+export const fetchDefault: FetchParams = {
+  [INCLUDE]: {
+    types: [{
+      name: '.*',
+    }],
+    fileCabinet: [
+      '^/SuiteScripts/.*',
+      '^/Templates/.*',
+      '^/Web Site Hosting Files/.*',
+      '^/SuiteBundles/.*',
+    ],
+  },
+  [EXCLUDE]: {
+    types: [
+      { name: SAVED_SEARCH },
+      { name: 'Customer' },
+      { name: 'AccountingPeriod' },
+      { name: 'Employee' },
+      { name: 'Job' },
+      { name: 'ManufacturingCostTemplate' },
+      { name: 'Partner' },
+      { name: 'Solution' },
+
+      // the two below require special features enabled in the account. O.W fetch will fail
+      { name: 'GiftCertificateItem' },
+      { name: 'DownloadItem' },
+    ],
+    fileCabinet: [],
+  },
+}
+
+const fetchConfigType = createMatchingObjectType<FetchParams>({
+  elemID: new ElemID(NETSUITE, 'fetchConfig'),
+  fields: {
+    [INCLUDE]: { refType: queryParamsConfigType },
+    [EXCLUDE]: { refType: queryParamsConfigType },
+  },
+})
+
+export type DeployParams = {
+  [DEPLOY_REFERENCED_ELEMENTS]?: boolean
+}
+
+const deployConfigType = createMatchingObjectType<DeployParams>({
+  elemID: new ElemID(NETSUITE, 'deployConfig'),
+  fields: {
+    [DEPLOY_REFERENCED_ELEMENTS]: { refType: BuiltinTypes.BOOLEAN },
+  },
+})
+
 const configID = new ElemID(NETSUITE)
 export const configType = new ObjectType({
   elemID: configID,
   fields: {
-    [TYPES_TO_SKIP]: {
-      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+    [FETCH]: {
+      refType: fetchConfigType,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: fetchDefault,
+      },
     },
     [FILE_PATHS_REGEX_SKIP_LIST]: {
       refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
     },
-    [DEPLOY_REFERENCED_ELEMENTS]: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
-      },
+    [DEPLOY]: {
+      refType: deployConfigType,
     },
     [CONCURRENCY_LIMIT]: {
       refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
@@ -154,23 +228,6 @@ export const configType = new ObjectType({
       refType: createRefToElmWithValue(queryConfigType),
     },
 
-    [SKIP_LIST]: {
-      refType: createRefToElmWithValue(queryConfigType),
-      annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: {
-          types: {
-            [DATASET]: ['.*'], // Has a definition field which is a long XML and it contains 'translationScriptId' value that changes every fetch
-            // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch.
-            // Although the SAVED_SEARCH is not editable since it's encrypted, there still might be
-            // a value for specific customers to use it for moving between envs, backup etc.
-            [SAVED_SEARCH]: ['.*'],
-            [WORKBOOK]: ['.*'], // Has a definition field which is a long XML and it contains 'translationScriptId' value that changes every fetch
-          },
-          filePaths: [],
-        },
-      },
-    },
-
     [USE_CHANGES_DETECTION]: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
     },
@@ -191,21 +248,26 @@ export type SuiteAppClientConfig = {
 export type NetsuiteConfig = {
   [TYPES_TO_SKIP]?: string[]
   [FILE_PATHS_REGEX_SKIP_LIST]?: string[]
-  [DEPLOY_REFERENCED_ELEMENTS]?: boolean
+  [DEPLOY]?: DeployParams
   [CONCURRENCY_LIMIT]?: number
   [CLIENT_CONFIG]?: SdfClientConfig
   [SUITEAPP_CLIENT_CONFIG]?: SuiteAppClientConfig
+  [FETCH]?: FetchParams
   [FETCH_TARGET]?: NetsuiteQueryParameters
   [SKIP_LIST]?: NetsuiteQueryParameters
   [USE_CHANGES_DETECTION]?: boolean
+  [DEPLOY_REFERENCED_ELEMENTS]?: boolean
 }
 
 export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from NetSuite.'
-  + ' In order to complete the fetch operation, Salto needs to stop managing these items by adding the items to the configuration skip list.'
+  + ' In order to complete the fetch operation, Salto needs to stop managing these items by adding the items to the configuration fetch.exclude.'
 
-export const UPDATE_TO_SKIP_LIST_MSG = 'The configuration options "typeToSkip" and "filePathRegexSkipList" are deprecated.'
-  + ' To skip items in fetch, please use the "skipList" option.'
-  + ' The following configuration will update the deprecated fields to the "skipList" field.'
+export const UPDATE_FETCH_CONFIG_FORMAT = 'The configuration options "typeToSkip", "filePathRegexSkipList" and "skipList" are deprecated.'
+  + ' To skip items in fetch, please use the "fetch.exclude" option.'
+  + ' The following configuration will update the deprecated fields to "fetch.exclude" field.'
+
+export const UPDATE_DEPLOY_CONFIG = 'All deploy\'s configuration flags are under "deploy" configuration.'
++ ' you may leave "deploy" section as undefined to set all deploy\'s configuration flags to their default value.'
 
 const toConfigSuggestions = (
   failedToFetchAllAtOnce: boolean,
@@ -215,9 +277,14 @@ const toConfigSuggestions = (
   ...(failedToFetchAllAtOnce ? { [FETCH_ALL_TYPES_AT_ONCE]: false } : {}),
   ...(!_.isEmpty(failedFilePaths) || !_.isEmpty(failedTypeToInstances)
     ? {
-      skipList: {
-        filePaths: failedFilePaths.map(_.escapeRegExp),
-        types: failedTypeToInstances,
+      [FETCH]: {
+        [EXCLUDE]: {
+          fileCabinet:
+           failedFilePaths.map(_.escapeRegExp),
+          types:
+           Object.entries(failedTypeToInstances).map(([name, ids]) =>
+             ({ name, ids })),
+        },
       },
     }
     : {}),
@@ -236,6 +303,36 @@ const convertDeprecatedFilePathRegex = (filePathRegex: string): string => {
     : `${newPathRegex}.*`
 
   return newPathRegex
+}
+
+export const combineQueryParams = (
+  first: QueryParams | undefined,
+  second: QueryParams | undefined,
+): QueryParams => {
+  if (first === undefined || second === undefined) {
+    return first ?? second ?? { types: [], fileCabinet: [] }
+  }
+
+  // case where both are defined
+  const newFileCabinet = _(first.fileCabinet)
+    .concat(second.fileCabinet)
+    .uniq()
+    .value()
+  // uniting first's and second's types. without duplications
+  const newTypes: FetchTypeQueryParams[] = _(first.types)
+    .concat(second.types)
+    .groupBy(type => type.name)
+    .map((types, name) => ({
+      name,
+      ids: types.some(type => type.ids === undefined)
+        ? undefined
+        : _.uniq(types.flatMap(type => type.ids as string[])),
+    }))
+    .value()
+  return {
+    fileCabinet: newFileCabinet,
+    types: newTypes,
+  }
 }
 
 const updateConfigFromFailures = (
@@ -258,23 +355,19 @@ const updateConfigFromFailures = (
     }, values.isDefined)
   }
 
-  const currentSkipList = configToUpdate.value[SKIP_LIST]
-  const newSkipList: Partial<NetsuiteQueryParameters> = currentSkipList !== undefined
-    ? _.cloneDeep(currentSkipList)
-    : {}
+  const currentFetch = configToUpdate.value[FETCH]
+  const currentExclude = currentFetch?.[EXCLUDE] !== undefined
+    ? _.cloneDeep(currentFetch[EXCLUDE])
+    : { types: [], fileCabinet: [] }
 
-  const suggestedSkipList: NetsuiteQueryParameters = suggestions.skipList
-  if (suggestedSkipList.filePaths.length > 0) {
-    newSkipList.filePaths = [
-      ...makeArray(newSkipList.filePaths),
-      ...suggestedSkipList.filePaths,
-    ]
-  }
 
-  if (!_.isEmpty(suggestedSkipList.types)) {
-    newSkipList.types = mergeTypeToInstances(newSkipList.types ?? {}, suggestedSkipList.types)
+  const suggestedExclude = suggestions[FETCH]?.[EXCLUDE]
+  const newExclude = combineQueryParams(currentExclude, suggestedExclude)
+
+  configToUpdate.value[FETCH] = {
+    ...(configToUpdate.value[FETCH] ?? {}),
+    [EXCLUDE]: newExclude,
   }
-  configToUpdate.value[SKIP_LIST] = newSkipList
   return true
 }
 
@@ -320,6 +413,74 @@ const updateConfigSkipListFormat = (
   return true
 }
 
+const updateConfigFetchFormat = (
+  configToUpdate: InstanceElement,
+): boolean => {
+  if (configToUpdate.value[SKIP_LIST] === undefined) {
+    return false
+  }
+
+  const typesToExclude: QueryParams = configToUpdate.value[SKIP_LIST] !== undefined
+    ? convertToQueryParams(
+      configToUpdate.value[SKIP_LIST]
+    )
+    : { types: [], fileCabinet: [] }
+
+  delete configToUpdate.value[SKIP_LIST]
+
+  const currentFetch = configToUpdate.value[FETCH]
+  if (currentFetch !== undefined) {
+    configToUpdate.value[FETCH] = {
+      [INCLUDE]: currentFetch[INCLUDE],
+      [EXCLUDE]: combineQueryParams(currentFetch[EXCLUDE], typesToExclude),
+    }
+    return true
+  }
+
+  const newFetch: FetchParams = {
+    [INCLUDE]: fetchDefault[INCLUDE],
+    [EXCLUDE]: combineQueryParams(typesToExclude, fetchDefault[EXCLUDE]),
+  }
+  configToUpdate.value[FETCH] = newFetch
+  return true
+}
+
+const updateConfigDeployFormat = (
+  configToUpdate: InstanceElement,
+): boolean => {
+  const deployReferencedElements = configToUpdate.value[DEPLOY_REFERENCED_ELEMENTS]
+  if (deployReferencedElements === undefined) {
+    return false
+  }
+  // we want to migrate deployReferencedElements only if its value is 'true'
+  // (and not if it evaluated to true)
+  if (deployReferencedElements === true) {
+    configToUpdate.value[DEPLOY] = {
+      [DEPLOY_REFERENCED_ELEMENTS]: deployReferencedElements,
+    }
+  }
+  delete configToUpdate.value[DEPLOY_REFERENCED_ELEMENTS]
+  return true
+}
+
+const updateConfigFormat = (
+  configToUpdate: InstanceElement,
+): { didUpdateFetchFormat: boolean; didUpdateDeployFormat: boolean } => {
+  updateConfigSkipListFormat(configToUpdate)
+  return {
+    didUpdateFetchFormat: updateConfigFetchFormat(configToUpdate),
+    didUpdateDeployFormat: updateConfigDeployFormat(configToUpdate),
+  }
+}
+
+export const validateDeployParams = ({ deployReferencedElements }:
+  Partial<DeployParams>): void => {
+  if (deployReferencedElements !== undefined
+    && typeof deployReferencedElements !== 'boolean') {
+    throw new Error(`Expected "deployReferencedElements" to be boolean or to be undefined, but received:\n ${deployReferencedElements}`)
+  }
+}
+
 export const getConfigFromConfigChanges = (
   failedToFetchAllAtOnce: boolean,
   failedFilePaths: NetsuiteQueryParameters['filePaths'],
@@ -332,19 +493,22 @@ export const getConfigFromConfigChanges = (
     _.pickBy(_.cloneDeep(currentConfig), values.isDefined),
   )
 
+  const { didUpdateFetchFormat, didUpdateDeployFormat } = updateConfigFormat(conf)
   const didUpdateFromFailures = updateConfigFromFailures(
     failedToFetchAllAtOnce,
     failedFilePaths,
     failedTypeToInstances,
     conf
   )
-  const didUpdateSkipListFormat = updateConfigSkipListFormat(conf)
   const message = [
     didUpdateFromFailures
       ? STOP_MANAGING_ITEMS_MSG
       : undefined,
-    didUpdateSkipListFormat
-      ? UPDATE_TO_SKIP_LIST_MSG
+    didUpdateFetchFormat
+      ? UPDATE_FETCH_CONFIG_FORMAT
+      : undefined,
+    didUpdateDeployFormat
+      ? UPDATE_DEPLOY_CONFIG
       : undefined,
   ].filter(values.isDefined).join(' In addition, ')
 

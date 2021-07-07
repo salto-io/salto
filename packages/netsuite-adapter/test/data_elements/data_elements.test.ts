@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { ADAPTER, BuiltinTypes, ElemID, ElemIdGetter, InstanceElement, ObjectType, OBJECT_NAME, OBJECT_SERVICE_ID, toServiceIdsString } from '@salto-io/adapter-api'
 import * as soap from 'soap'
 import Bottleneck from 'bottleneck'
 import { elements as elementsComponents } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import NetsuiteClient from '../../src/client/client'
 import { NETSUITE } from '../../src/constants'
@@ -228,6 +229,38 @@ describe('data_elements', () => {
       })
       const elements = await getDataElements(client, query)
       expect((elements[1] as InstanceElement).value.numberField).toBe(1234)
+    })
+
+    it('should use elemIdGetter', async () => {
+      const elemIDGetter: ElemIdGetter = (adapterName, serviceIds, name) => {
+        if (adapterName === NETSUITE
+          && name === 'name'
+          && _.isEqual(serviceIds, {
+            [ADAPTER]: NETSUITE,
+            name: 'name',
+            [OBJECT_SERVICE_ID]: toServiceIdsString({
+              [ADAPTER]: NETSUITE,
+              [OBJECT_NAME]: 'netsuite.Subsidiary',
+            }),
+          })) {
+          return new ElemID(NETSUITE, 'Subsidiary', 'instance', 'customName')
+        }
+
+        return new ElemID(NETSUITE, 'Subsidiary', 'instance', name)
+      }
+
+      getAllRecordsMock.mockImplementation(async types => {
+        if (types[0] === 'Subsidiary') {
+          return [
+            { name: 'name', numberField: '1234', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
+            { name: 'name2', numberField: '1234', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
+          ]
+        }
+        return []
+      })
+      const elements = await getDataElements(client, query, elemIDGetter)
+      expect(elements[1].elemID).toEqual(new ElemID(NETSUITE, 'Subsidiary', 'instance', 'customName'))
+      expect(elements[2].elemID).toEqual(new ElemID(NETSUITE, 'Subsidiary', 'instance', 'name2'))
     })
   })
 

@@ -155,7 +155,11 @@ const buildMultiEnvSource = (
     if (!mergeManager) {
       mergeManager = await createMergeManager(Object.values(states)
         .flatMap(envState => [envState.elements, envState.mergeErrors]),
-      remoteMapCreator, getRemoteMapNamespace('cache_manager'), mergedRecoveryMode)
+      _.mapKeys(sources, (_source, envName) => (envName === commonSourceName
+        ? COMMON_ENV_PREFIX + commonSourceName : envName)),
+      remoteMapCreator,
+      getRemoteMapNamespace('multi_env_mergeManager'),
+      mergedRecoveryMode)
       mergeManager.init()
     }
     const current = {
@@ -175,8 +179,6 @@ const buildMultiEnvSource = (
       const changeResult = await current.mergeManager.mergeComponents({
         src1Changes: envChanges[envName],
         src2Changes: envChanges[commonSourceName],
-        src1: sources[envName],
-        src2: sources[commonSourceName],
         src1Prefix: envName,
         src2Prefix: COMMON_ENV_PREFIX + commonSourceName,
         currentElements: envState.elements,
@@ -257,12 +259,13 @@ const buildMultiEnvSource = (
   const applyRoutedChanges = async (routedChanges: RoutedChanges):
   Promise<EnvsChanges> => {
     const secondaryChanges = routedChanges.secondarySources || {}
+    const primaryChanges = [...(routedChanges.primarySource ?? [])]
     return {
       ...(await resolveValues({
         [primarySourceName]: primarySource()
-          .updateNaclFiles(routedChanges.primarySource || []),
+          .updateNaclFiles(primaryChanges),
         [commonSourceName]: commonSource()
-          .updateNaclFiles(routedChanges.commonSource || []),
+          .updateNaclFiles(routedChanges.commonSource ?? []),
         ..._.mapValues(secondaryChanges,
           (changes, srcName) => secondarySources()[srcName].updateNaclFiles(changes)),
       })),

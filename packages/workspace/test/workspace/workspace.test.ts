@@ -64,11 +64,12 @@ const newNaclFile = {
 }
 const services = ['salesforce']
 
-const mockWorkspaceConfigSource = (conf?: Values): WorkspaceConfigSource => ({
+const mockWorkspaceConfigSource = (conf?: Values,
+  secondaryEnv?: boolean): WorkspaceConfigSource => ({
   getWorkspaceConfig: jest.fn().mockImplementation(() => ({
     envs: [
       { name: 'default', services },
-      { name: 'inactive', services: [...services, 'hubspot'] },
+      ...(secondaryEnv ? [{ name: 'inactive', services: [...services, 'hubspot'] }] : []),
     ],
     uid: '',
     name: 'test',
@@ -244,7 +245,7 @@ describe('workspace', () => {
         const primaryEnvObj = new ObjectType({ elemID: primaryEnvElemID })
         const secondaryEnvObj = new ObjectType({ elemID: secondaryEnvElemID })
         const newWorkspace = await createWorkspace(
-          undefined, undefined, undefined, undefined, undefined, {
+          undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined, {
             '': {
               naclFiles: createMockNaclFileSource([]),
             },
@@ -355,6 +356,10 @@ describe('workspace', () => {
                 },
               }),
             ]),
+            state: createState([]),
+          },
+          inactive: {
+            naclFiles: createMockNaclFileSource([]),
             state: createState([]),
           },
         },
@@ -529,7 +534,7 @@ describe('workspace', () => {
         wsWithMultipleEnvs = await createWorkspace(
           undefined,
           undefined,
-          undefined,
+          mockWorkspaceConfigSource(undefined, true),
           undefined,
           undefined,
           {
@@ -667,7 +672,7 @@ describe('workspace', () => {
         wsWithMultipleEnvs = await createWorkspace(
           undefined,
           undefined,
-          undefined,
+          mockWorkspaceConfigSource(undefined, true),
           undefined,
           undefined,
           {
@@ -1577,7 +1582,7 @@ describe('workspace', () => {
         wsWithMultipleEnvs = await createWorkspace(
           undefined,
           undefined,
-          undefined,
+          mockWorkspaceConfigSource(undefined, true),
           undefined,
           undefined,
           {
@@ -1645,6 +1650,10 @@ describe('workspace', () => {
               state: createState([]),
             },
             '': {
+              naclFiles: createMockNaclFileSource([]),
+              state: createState([]),
+            },
+            inactive: {
               naclFiles: createMockNaclFileSource([]),
               state: createState([]),
             },
@@ -1743,7 +1752,7 @@ describe('workspace', () => {
     let inactiveNaclFiles: NaclFilesSource
 
     beforeEach(async () => {
-      workspaceConf = mockWorkspaceConfigSource()
+      workspaceConf = mockWorkspaceConfigSource(undefined, true)
       credSource = mockCredentialsSource()
       state = createState([])
       defNaclFiles = createMockNaclFileSource([])
@@ -1827,7 +1836,7 @@ describe('workspace', () => {
       const envName = 'inactive'
 
       beforeAll(async () => {
-        workspaceConf = mockWorkspaceConfigSource()
+        workspaceConf = mockWorkspaceConfigSource(undefined, true)
         credSource = mockCredentialsSource()
         const state = createState([])
         stateClear = jest.spyOn(state, 'clear')
@@ -1890,7 +1899,7 @@ describe('workspace', () => {
     let elementSources: Record<string, EnvironmentSource>
 
     beforeAll(async () => {
-      workspaceConf = mockWorkspaceConfigSource()
+      workspaceConf = mockWorkspaceConfigSource(undefined, true)
       credSource = mockCredentialsSource()
       elementSources = {
         '': {
@@ -1972,7 +1981,7 @@ describe('workspace', () => {
       let naclFiles: NaclFilesSource
 
       beforeEach(async () => {
-        workspaceConf = mockWorkspaceConfigSource()
+        workspaceConf = mockWorkspaceConfigSource(undefined, true)
         credSource = mockCredentialsSource()
         state = createState([])
         stateRename = jest.spyOn(state, 'rename')
@@ -2339,7 +2348,7 @@ describe('workspace', () => {
       const staticFilesSource = mockStaticFilesSource()
       const remoteMapCreator = persistentMockCreateRemoteMap()
       workspace = await createWorkspace(
-        undefined, undefined, undefined, undefined, undefined,
+        undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
         {
           '': {
             naclFiles: await naclFilesSource(
@@ -2549,7 +2558,7 @@ describe('workspace', () => {
       ws = await createWorkspace(
         undefined,
         undefined,
-        undefined,
+        mockWorkspaceConfigSource(undefined, true),
         undefined,
         undefined,
         {

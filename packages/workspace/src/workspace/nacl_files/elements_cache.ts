@@ -26,10 +26,11 @@ import { RemoteMap, RemoteMapEntry, RemoteMapCreator } from '../remote_map'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
-const FLUSH_HASH = 'FLUSH_HASH'
+const MERGER_LOCK = 'MERGER_LOCK'
 const FLUSH_IN_PROGRESS = 'FLUSHING'
 export const REBUILD_ON_RECOVERY = 'rebuild'
 export const CLEAR_ON_RECOVERY = 'clearOnly'
+export const MERGE_MANAGER_SUFFIX = 'merge_manager'
 export type MergedRecoveryMode = 'rebuild' | 'clearOnly'
 
 
@@ -57,13 +58,11 @@ export type CacheUpdate = {
 export type CacheChangeSetUpdate = {
   src1Changes?: ChangeSet<Change<Element>>
   src2Changes?: ChangeSet<Change<Element>>
-  src1: ReadOnlyElementsSource
-  src2: ReadOnlyElementsSource
   src1Prefix: string
   src2Prefix: string
+  mergeFunc: (elements: AsyncIterable<Element>) => Promise<MergeResult>
   currentElements: ElementsSource
   currentErrors: RemoteMap<SaltoError[]>
-  mergeFunc: (elements: AsyncIterable<Element>) => Promise<MergeResult>
 }
 
 const getElementsToMergeFromChanges = async (
@@ -164,13 +163,15 @@ export interface ElementMergeManager {
 const namespaceToManager: Record<string, ElementMergeManager> = {}
 
 export const createMergeManager = async (flushables: Flushable[],
+  sources: Record<string, ReadOnlyElementsSource>,
   mapCreator: RemoteMapCreator, namespace: string,
   recoveryOperation?: string): Promise<ElementMergeManager> => {
-  if (Object.keys(namespace).includes(namespace)) {
-    return namespaceToManager[namespace]
+  const fullNamespace = namespace + MERGE_MANAGER_SUFFIX
+  if (Object.keys(fullNamespace).includes(fullNamespace)) {
+    return namespaceToManager[fullNamespace]
   }
   const hashes = await mapCreator<string>({
-    namespace,
+    namespace: fullNamespace,
     persistent: true,
     serialize: s => s,
     deserialize: async s => s,
@@ -187,8 +188,9 @@ export const createMergeManager = async (flushables: Flushable[],
     mergeErrors: AsyncIterable<RemoteMapEntry<MergeError[], string>>
     noErrorMergeIds: string[]
   }> => {
-    const { src1Changes: possibleSrc1Changes, src2Changes: possibleSrc2Changes,
-      src1, src2 } = cacheUpdate
+    const { src1Changes: possibleSrc1Changes, src2Changes: possibleSrc2Changes } = cacheUpdate
+    const src1 = sources[cacheUpdate.src1Prefix]
+    const src2 = sources[cacheUpdate.src2Prefix]
     const src1Changes = possibleSrc1Changes ?? createEmptyChangeSet(
       await hashes.get(getSourceHashKey(cacheUpdate.src1Prefix))
     )
@@ -311,47 +313,48 @@ export const createMergeManager = async (flushables: Flushable[],
     await currentElements.setAll(awu(mergedChanges.changes).filter(isAdditionOrModificationChange)
       .map(change => getChangeElement(change)))
   }
-  const flushLock = new AsyncLock()
+  const lock = new AsyncLock()
   const mergeManager = {
-    init: async () => {
-      if (await hashes.get(FLUSH_HASH) === FLUSH_IN_PROGRESS) {
+    init: async () => lock.acquire(MERGER_LOCK, async () => {
+      if (await hashes.get(MERGER_LOCK) === FLUSH_IN_PROGRESS) {
         await clearImpl()
       }
-    },
-    clear: clearImpl,
+    }),
+    clear: () => lock.acquire(MERGER_LOCK, clearImpl),
     flush: async () =>
-      flushLock.acquire(FLUSH_HASH, async () => {
-        await hashes.set(FLUSH_HASH, FLUSH_IN_PROGRESS)
+      lock.acquire(MERGER_LOCK, async () => {
+        await hashes.set(MERGER_LOCK, FLUSH_IN_PROGRESS)
         await hashes.flush()
         const hasChanged = (await Promise.all(flushables.map(async f => f.flush())))
           .some(b => (typeof b !== 'boolean' || b))
-        await hashes.delete(FLUSH_HASH)
+        await hashes.delete(MERGER_LOCK)
         await hashes.flush()
         return hasChanged
       }),
-    mergeComponents: async (cacheUpdate: CacheChangeSetUpdate) => {
-      const changeResult = await updateCache(cacheUpdate)
-      if (cacheUpdate.src1Changes?.postChangeHash) {
-        await hashes.set(getSourceHashKey(cacheUpdate.src1Prefix),
-          cacheUpdate.src1Changes.postChangeHash)
-      }
-      if (cacheUpdate.src2Changes?.postChangeHash) {
-        await hashes.set(getSourceHashKey(cacheUpdate.src2Prefix),
-          cacheUpdate.src2Changes.postChangeHash)
-      }
-      await applyChanges({
-        mergedChanges: changeResult.mergedChanges,
-        mergeErrors: changeResult.mergeErrors,
-        noErrorMergeIds: changeResult.noErrorMergeIds,
-        currentElements: cacheUpdate.currentElements,
-        currentErrors: cacheUpdate.currentErrors,
-      })
-      return changeResult.mergedChanges
-    },
+    mergeComponents: async (cacheUpdate: CacheChangeSetUpdate) => lock.acquire(MERGER_LOCK,
+      async () => {
+        const changeResult = await updateCache(cacheUpdate)
+        if (cacheUpdate.src1Changes?.postChangeHash) {
+          await hashes.set(getSourceHashKey(cacheUpdate.src1Prefix),
+            cacheUpdate.src1Changes.postChangeHash)
+        }
+        if (cacheUpdate.src2Changes?.postChangeHash) {
+          await hashes.set(getSourceHashKey(cacheUpdate.src2Prefix),
+            cacheUpdate.src2Changes.postChangeHash)
+        }
+        await applyChanges({
+          mergedChanges: changeResult.mergedChanges,
+          mergeErrors: changeResult.mergeErrors,
+          noErrorMergeIds: changeResult.noErrorMergeIds,
+          currentElements: cacheUpdate.currentElements,
+          currentErrors: cacheUpdate.currentErrors,
+        })
+        return changeResult.mergedChanges
+      }),
     getHash: (prefix: string) => hashes.get(getSourceHashKey(prefix)),
     setHash: (prefix: string, value: string) => hashes.set(getSourceHashKey(prefix), value),
   }
-  namespaceToManager[namespace] = mergeManager
+  namespaceToManager[fullNamespace] = mergeManager
   return mergeManager
 }
 

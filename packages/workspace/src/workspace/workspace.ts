@@ -49,7 +49,6 @@ export const COMMON_ENV_PREFIX = ''
 const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
 const MULTI_ENV_SOURCE_PREFIX = 'multi_env_element_source'
 const STATE_SOURCE_PREFIX = 'state_element_source'
-const ALL_ENVS_NAMESPACE = 'all_envs'
 
 export type SourceFragment = {
   sourceRange: SourceRange
@@ -227,13 +226,27 @@ export const loadWorkspace = async (
             persistent,
           }),
         }]).toArray())
+      const sources: Record<string, ReadOnlyElementsSource> = {}
+      await awu(envs()).forEach(async envName => {
+        sources[MULTI_ENV_SOURCE_PREFIX + envName] = await naclFilesSource
+          .getElementsSource(envName)
+        sources[STATE_SOURCE_PREFIX + envName] = mapReadOnlyElementsSource(
+          state(envName),
+          async element => getElementHiddenParts(
+            element,
+            state(envName),
+            await states[envName].merged.get(element.elemID)
+          )
+        )
+      })
       const initializedState = {
         states,
         mergeManager: await createMergeManager(
           [...Object.values(states)
             .flatMap(remoteMaps => Object.values(remoteMaps))],
+          sources,
           remoteMapCreator,
-          getRemoteMapNamespace('mergeManager', ALL_ENVS_NAMESPACE),
+          'workspaceMergeManager',
           mergedRecoveryMode,
         ),
       }
@@ -325,20 +338,11 @@ export const loadWorkspace = async (
         src2Changes: await completeStateOnlyChanges(stateOnlyChanges[envName]
           ?? createEmptyChangeSet(await stateToBuild.mergeManager
             .getHash(STATE_SOURCE_PREFIX + envName))),
-        src1: await naclFilesSource.getElementsSource(envName),
-        src2: mapReadOnlyElementsSource(
-          state(envName),
-          async element => getElementHiddenParts(
-            element,
-            state(envName),
-            await stateToBuild.states[envName].merged.get(element.elemID)
-          )
-        ),
         src1Prefix: MULTI_ENV_SOURCE_PREFIX + envName,
         src2Prefix: STATE_SOURCE_PREFIX + envName,
+        mergeFunc: elements => mergeElements(elements),
         currentElements: stateToBuild.states[envName].merged,
         currentErrors: stateToBuild.states[envName].errors,
-        mergeFunc: elements => mergeElements(elements),
       })
       if (!changeResult.cacheValid) {
         await stateToBuild.states[envName].validationErrors.clear()

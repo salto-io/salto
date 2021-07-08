@@ -34,6 +34,7 @@ export const createMockNaclFileSource = (
   changes: ChangeSet<Change> = { changes: [], cacheValid: true },
 ): NaclFilesSource => {
   const currentElements = elements
+  const elementSource = createInMemoryElementSource(currentElements)
   const getElementNaclFiles = (elemID: ElemID): string[] =>
     Object.entries(naclFiles).filter(([_filename, fileElements]) => fileElements.find(
       element => resolvePath(element, elemID) !== undefined
@@ -57,7 +58,7 @@ export const createMockNaclFileSource = (
     },
     deleteAll: async (_ids: ThenableIterable<ElemID>) => Promise.resolve(undefined),
     getAll: async () => awu(currentElements),
-    getElementsSource: async () => createInMemoryElementSource(currentElements),
+    getElementsSource: async () => elementSource,
     clear: jest.fn().mockImplementation(() => Promise.resolve()),
     rename: jest.fn().mockImplementation(() => Promise.resolve()),
     flush: jest.fn().mockImplementation(() => Promise.resolve()),

@@ -25,7 +25,7 @@ import {
   SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
   CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
   SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
-  CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, SAVED_SEARCH, DEPLOY,
+  CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, SAVED_SEARCH, DEPLOY, DATASET, WORKBOOK,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams } from './query'
 
@@ -155,6 +155,8 @@ export const fetchDefault: FetchParams = {
   },
   [EXCLUDE]: {
     types: [
+      { name: WORKBOOK },
+      { name: DATASET },
       { name: SAVED_SEARCH },
       { name: 'Customer' },
       { name: 'AccountingPeriod' },

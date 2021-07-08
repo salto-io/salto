@@ -24,7 +24,7 @@ import { parseDefinition } from '../saved_search_parser'
 
 const assignValuesToInstance = async (instance:InstanceElement,
   oldInstance: InstanceElement):Promise<void> => {
-  Object.assign(instance.value, parseDefinition(instance.value.definition))
+  Object.assign(instance.value, await parseDefinition(instance.value.definition))
   if (oldInstance !== undefined) {
     if (await _.isEqual(parseDefinition(oldInstance.value.definition),
       parseDefinition(instance.value.definition))) {

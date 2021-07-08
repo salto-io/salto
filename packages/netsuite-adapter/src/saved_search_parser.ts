@@ -99,8 +99,11 @@ const getAvailableFilters = (search: ElementCompact): Values[] => {
   if (search.availableFilterFields.values === undefined) {
     return []
   }
-  return search.availableFilterFields.values.Record
-    .map((record:recordObject) => getObjectFromValues(record.values.Value))
+  if (Array.isArray(search.availableFilterFields.values.Record)) {
+    return search.availableFilterFields.values.Record
+      .map((record:recordObject) => getObjectFromValues(record.values.Value))
+  }
+  return [getObjectFromValues((search.availableFilterFields.values.Record.values.Value))]
 }
 
 const getReturnFields = (search: ElementCompact): Values[] => {

@@ -27,8 +27,8 @@ const changeValidator: ChangeValidator = async changes => (
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',
-      message: 'Type definitions are read only',
-      detailedMessage: `Changing (${elemID.name}) is not supported`,
+      message: 'Modifing a saved search is not allowed',
+      detailedMessage: `Modifing (${elemID.name}) is not supported`,
     }))
 )
 

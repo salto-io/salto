@@ -46,6 +46,9 @@ const commonObj = new ObjectType({
   },
   annotations: {
     boolean: false,
+    arr: [
+      { a: 'a' },
+    ],
   },
   fields: {
     commonField,
@@ -65,6 +68,9 @@ const sharedObject = new ObjectType({
   },
   annotations: {
     boolean: false,
+    arr: [
+      { a: 'a' },
+    ],
   },
   fields: {
     envField,
@@ -405,7 +411,7 @@ describe('default fetch routing', () => {
 })
 
 describe('align fetch routing', () => {
-  it('should route add changes to common', async () => {
+  it('should route add changes to primary', async () => {
     const change: DetailedChange = {
       action: 'add',
       data: { after: newObj },
@@ -415,6 +421,18 @@ describe('align fetch routing', () => {
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual(change)
+    expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
+  })
+
+  it('should drop add changes if the mergeable id is in common', async () => {
+    const change: DetailedChange = {
+      action: 'add',
+      data: { after: 'B' },
+      id: commonObj.elemID.createNestedID('attr', 'arr', '0', 'b'),
+    }
+    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'align')
+    expect(routedChanges.primarySource).toHaveLength(0)
+    expect(routedChanges.commonSource).toHaveLength(0)
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
   })
 

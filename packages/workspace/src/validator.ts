@@ -20,7 +20,7 @@ import {
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
   Values, isElement, isListType, getRestriction, isVariable, Variable, isPrimitiveValue, ListType,
   isReferenceExpression, StaticFile, isContainerType, isMapType, ObjectType,
-  InstanceAnnotationTypes, GLOBAL_ADAPTER, SaltoError, ReadOnlyElementsSource,
+  InstanceAnnotationTypes, GLOBAL_ADAPTER, SaltoError, ReadOnlyElementsSource, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { toObjectType, createRefToElmWithValue, elementAnnotationTypes } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
@@ -459,9 +459,27 @@ const validateValue = async (
       return [new InvalidValueTypeValidationError({ elemID, value, type: type.elemID })]
     }
     const objType = toObjectType(type, value)
-    return (await Promise.all(Object.keys(value).filter(k => objType.fields[k] !== undefined).map(
+    return (await Promise.all(Object.keys(value).map(
       // eslint-disable-next-line no-use-before-define
-      k => validateFieldValue(elemID.createNestedID(k), value[k], objType.fields[k], elementsSource)
+      async k => validateFieldValue(elemID.createNestedID(k),
+        value[k],
+        (await objType.fields[k]?.getType(elementsSource)) ?? BuiltinTypes.UNKNOWN,
+        objType.fields[k]?.annotations ?? {},
+        elementsSource)
+    ))).flat()
+  }
+
+  if (type === BuiltinTypes.UNKNOWN) {
+    if (!_.isObjectLike(value)) {
+      return []
+    }
+    return (await Promise.all(Object.keys(value).map(
+      // eslint-disable-next-line no-use-before-define
+      async k => validateFieldValue(elemID.createNestedID(k),
+        value[k],
+        BuiltinTypes.UNKNOWN,
+        {},
+        elementsSource)
     ))).flat()
   }
 
@@ -482,17 +500,17 @@ const validateValue = async (
 const validateFieldValue = async (
   elemID: ElemID,
   value: Value,
-  field: Field,
-  elementsSource: ReadOnlyElementsSource
+  fieldType: TypeElement,
+  annotations: Values,
+  elementsSource: ReadOnlyElementsSource,
 ): Promise<ValidationError[]> => {
-  const fieldType = await field.getType(elementsSource)
   if (!isListType(fieldType) && Array.isArray(value) && value.length === 0) {
     // return an error if value is required
     return (
       await validateAnnotationsValue(
         elemID,
         undefined,
-        field.annotations,
+        annotations,
         fieldType,
         elementsSource
       )

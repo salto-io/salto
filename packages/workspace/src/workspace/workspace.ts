@@ -462,7 +462,8 @@ export const loadWorkspace = async (
         postChangeHash: loadedStateHash,
       } },
       validate })
-    return (Object.values(workspaceChanges).flat().length + stateOnlyChanges.length)
+    return (Object.values(workspaceChanges).map(changeSet => changeSet.changes)
+      .flat().length + stateOnlyChanges.length)
   }
   const setNaclFiles = async (naclFiles: NaclFile[], validate = true): Promise<EnvsChanges> => {
     const elementChanges = await (await getLoadedNaclFilesSource()).setNaclFiles(...naclFiles)

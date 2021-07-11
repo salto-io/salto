@@ -13,15 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-/* eslint-disable no-underscore-dangle */
 
-import { InstanceElement, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import { getChangeElement, InstanceElement, isInstanceChange, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { SAVED_SEARCH } from '../constants'
-import { FilterCreator, FilterWith } from '../filter'
+import { FilterCreator } from '../filter'
 import { savedsearch, savedsearchInnerTypes } from '../types/custom_types/parsedSavedSearch'
+import { savedsearch as oldSavedSearch } from '../types/custom_types/savedsearch'
 import { parseDefinition } from '../saved_search_parser'
 
+const { awu } = collections.asynciterable
 const assignValuesToInstance = async (instance:InstanceElement,
   oldInstance: InstanceElement):Promise<void> => {
   Object.assign(instance.value, await parseDefinition(instance.value.definition))
@@ -33,7 +35,13 @@ const assignValuesToInstance = async (instance:InstanceElement,
   }
 }
 
-const filterCreator: FilterCreator = ({ elementsSource }): FilterWith<'onFetch'> => ({
+const removeValuesFromInstace = (instance:InstanceElement):void => {
+  Object.keys(instance.value)
+    .filter(key => !Object.keys(oldSavedSearch.fields).includes(key))
+    .forEach(key => delete instance.value[key])
+}
+
+const filterCreator: FilterCreator = ({ elementsSource }) => ({
   onFetch: async elements => {
     _.remove(elements, e => isObjectType(e) && e.elemID.name === SAVED_SEARCH)
     elements.push(savedsearch)
@@ -48,6 +56,13 @@ const filterCreator: FilterCreator = ({ elementsSource }): FilterWith<'onFetch'>
     )
     elements.filter(isInstanceElement)
       .filter(e => e.elemID.typeName === SAVED_SEARCH)
+  },
+  preDeploy: async changes => {
+    awu(changes)
+      .filter(isInstanceChange)
+      .map(getChangeElement)
+      .filter(instance => instance.elemID.typeName === SAVED_SEARCH)
+      .forEach(instance => removeValuesFromInstace(instance))
   },
 })
 

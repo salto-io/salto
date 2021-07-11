@@ -15,7 +15,7 @@
 */
 import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
-  ElemIdGetter, ReadOnlyElementsSource,
+  ElemIdGetter, ReadOnlyElementsSource, Change,
   FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS, DeployModifiers,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -31,6 +31,7 @@ import {
 import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS,
   INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
+import parseSavedSearch from './filters/parse_saved_searchs'
 import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
 import addParentFolder from './filters/add_parent_folder'
@@ -99,6 +100,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     filtersCreators = [
       // addParentFolder must run before replaceInstanceReferencesFilter
       addParentFolder,
+      parseSavedSearch,
       convertLists,
       consistentValues,
       replaceInstanceReferencesFilter,
@@ -283,7 +285,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
 
   public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    return this.client.deploy(changeGroup, this.deployReferencedElements)
+    const changes = _.cloneDeep(changeGroup.changes) as Change[]
+    await this.filtersRunner.preDeploy(changes)
+    return this.client.deploy(changes, changeGroup.groupID, this.deployReferencedElements)
     // const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
     // const customizationInfosToDeploy = await awu(
     //   await this.getAllRequiredReferencedInstances(changedInstances)

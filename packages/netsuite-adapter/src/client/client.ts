@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, ChangeGroup, DeployResult, getChangeElement, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
+import { AccountId, Change, DeployResult, getChangeElement, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -128,20 +128,20 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async deploy(changeGroup: ChangeGroup, deployReferencedElements: boolean):
+  async deploy(changes: Change[], groupID: string, deployReferencedElements: boolean):
     Promise<DeployResult> {
-    const instancesChanges = changeGroup.changes.filter(isInstanceChange)
+    const instancesChanges = changes.filter(isInstanceChange)
 
-    if (SDF_CHANGE_GROUP_ID === changeGroup.groupID) {
+    if (SDF_CHANGE_GROUP_ID === groupID) {
       return this.sdfDeploy(instancesChanges, deployReferencedElements)
     }
 
     return this.suiteAppFileCabinet !== undefined
       ? this.suiteAppFileCabinet.deploy(
         instancesChanges,
-        GROUP_TO_DEPLOY_TYPE[changeGroup.groupID]
+        GROUP_TO_DEPLOY_TYPE[groupID]
       )
-      : { errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${changeGroup.groupID}" cannot be deployed`)], appliedChanges: [] }
+      : { errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`)], appliedChanges: [] }
   }
 
   public async runSuiteQL(query: string):

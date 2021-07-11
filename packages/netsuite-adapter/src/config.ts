@@ -155,8 +155,15 @@ export const fetchDefault: FetchParams = {
   },
   [EXCLUDE]: {
     types: [
+      // Has a definition field which is a long XML and it contains 'translationScriptId'
+      // value that changes every fetch
       { name: WORKBOOK },
+      // Has a definition field which is a long XML and it contains 'translationScriptId'
+      // value that changes every fetch
       { name: DATASET },
+      // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch.
+      // Although the SAVED_SEARCH is not editable since it's encrypted, there still might be
+      // a value for specific customers to use it for moving between envs, backup etc.
       { name: SAVED_SEARCH },
       { name: 'Customer' },
       { name: 'AccountingPeriod' },

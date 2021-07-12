@@ -15,9 +15,9 @@
 */
 
 import { collections } from '@salto-io/lowerdash'
-import { getChangeElement, InstanceElement, isInstanceChange, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { getChangeElement, InstanceElement, isInstanceChange, isInstanceElement, isObjectType, StaticFile } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { SAVED_SEARCH } from '../constants'
+import { NETSUITE, SAVED_SEARCH } from '../constants'
 import { FilterCreator } from '../filter'
 import { savedsearch, savedsearchInnerTypes } from '../types/custom_types/parsedSavedSearch'
 import { savedsearch as oldSavedSearch } from '../types/custom_types/savedsearch'
@@ -25,21 +25,34 @@ import { parseDefinition } from '../saved_search_parser'
 
 const { awu } = collections.asynciterable
 
+const changeDefinitiontoStaticFile = (instance: InstanceElement):void => {
+  instance.value.definition = new StaticFile({
+    filepath: `${NETSUITE}/${instance.elemID.typeName}/definition_${instance.elemID.name}`,
+    content: instance.value.definition,
+  })
+}
+
+const revertDefinitionToString = (instance: InstanceElement):void => {
+  instance.value.definition = instance.value.definition.content
+}
+
 const assignValuesToInstance = async (instance:InstanceElement,
   oldInstance: InstanceElement):Promise<void> => {
   Object.assign(instance.value, await parseDefinition(instance.value.definition))
-  if (oldInstance !== undefined && oldInstance.value.definition !== undefined) {
-    if (await _.isEqual(parseDefinition(oldInstance.value.definition),
+  if (oldInstance !== undefined && oldInstance.value.definition.content !== undefined) {
+    if (await _.isEqual(parseDefinition(oldInstance.value.definition.content),
       parseDefinition(instance.value.definition))) {
-      instance.value.definition = oldInstance.value.definition
+      instance.value.definition = oldInstance.value.definition.content
     }
   }
+  changeDefinitiontoStaticFile(instance)
 }
 
 const removeValuesFromInstace = (instance:InstanceElement):void => {
   Object.keys(instance.value)
     .filter(key => !Object.keys(oldSavedSearch.fields).includes(key))
     .forEach(key => delete instance.value[key])
+  revertDefinitionToString(instance)
 }
 
 const filterCreator: FilterCreator = ({ elementsSource }) => ({

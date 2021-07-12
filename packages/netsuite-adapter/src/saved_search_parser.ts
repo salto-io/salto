@@ -47,11 +47,18 @@ const getAttributeValue = (attribute: attributeObject): attributeValue => {
   return attribute._text
 }
 
-const getObjectFromValues = (values: attributeObject[]): Values =>
-  Object.fromEntries(values.filter(i => i._text !== undefined)
+const getObjectFromValues = (values: attributeObject[]): Values => {
+  if (values === undefined) {
+    return []
+  }
+  return Object.fromEntries(values.filter(i => i._text !== undefined)
     .map(i => [i._attributes.field, getAttributeValue(i)]))
+}
 
 const getRecordsForFilter = (filter: filterObject): Values[] => {
+  if (filter.values.values === undefined) {
+    return []
+  }
   if (Array.isArray(filter.values.values.Record)) {
     return filter.values.values.Record.map(record => getObjectFromValues(record.values.Value))
   }
@@ -139,10 +146,16 @@ const getAlertRecipients = (search: ElementCompact): Values[] => {
   if (search.alertRecipientFields.values === undefined) {
     return []
   }
-  return search.alertRecipientFields.values.Record
-    .map((record:recordObject) => record.values.Value)
-    .map((attribute:attributeObject) => Object
-      .fromEntries([[attribute._attributes.field, attribute._text]]))
+  if (Array.isArray(search.alertRecipientFields.values.Record)) {
+    return search.alertRecipientFields.values.Record
+      .map((record:recordObject) => record.values.Value)
+      .map((attribute:attributeObject) => Object
+        .fromEntries([[attribute._attributes.field, attribute._text]]))
+  }
+  const singleRecordattribute:attributeObject = search
+    .alertRecipientFields.values.Record.values.Value
+  return [Object.fromEntries([[singleRecordattribute._attributes.field,
+    singleRecordattribute._text]])]
 }
 
 const safeAssignKeyValue = (instance:Values, key: string, value: Values):void => {

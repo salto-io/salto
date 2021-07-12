@@ -252,7 +252,9 @@ const addDifferentElements = (
     return 0
   }
   await awu(iterateTogether(await getFilteredElements(before), await getFilteredElements(after),
-    cmp)).map(handleSpecialIds).forEach(addElementsNodes)
+    cmp))
+    .map(handleSpecialIds)
+    .forEach(addElementsNodes)
   return outputGraph
 }, 'add nodes to graph with action %s for %d elements')
 
@@ -273,11 +275,11 @@ const resolveNodeElements = (
   })
 
   const resolvedBefore = _.keyBy(
-    await resolve(beforeItemsToResolve, before),
+    await resolve(beforeItemsToResolve, before, true),
     e => e.elemID.getFullName()
   ) as Record<string, ChangeDataType>
   const resolvedAfter = _.keyBy(
-    await resolve(afterItemsToResolve, after),
+    await resolve(afterItemsToResolve, after, true),
     e => e.elemID.getFullName()
   ) as Record<string, ChangeDataType>
 
@@ -323,7 +325,7 @@ const addPlanFunctions = (
     changeErrors,
   })
 
-const buildDiffGraph = (
+const buildDiffGraph = async (
   ...transforms: ReadonlyArray<PlanTransformer>
 ): Promise<DiffGraph<ChangeDataType>> => (
   transforms.reduce(

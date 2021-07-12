@@ -487,14 +487,15 @@ remoteMap.RemoteMapCreator => {
       }
     }
     const createDBConnections = async (): Promise<void> => {
+      tmpDBConnections[location] = tmpDBConnections[location] ?? {}
       if (tmpDB === undefined) {
         const tmpConnection = getOpenDBConnection(tmpLocation, false)
         tmpDB = await tmpConnection
-        tmpDBConnections[location] = tmpDBConnections[location] ?? {}
         tmpDBConnections[location][tmpLocation] = tmpConnection
       }
-      if (location in persistentDBConnections) {
-        persistentDB = await persistentDBConnections[location]
+      const mainDBConnections = persistent ? persistentDBConnections : tmpDBConnections[location]
+      if (location in mainDBConnections) {
+        persistentDB = await mainDBConnections[location]
         return
       }
       if (currentConnectionsCount > MAX_CONNECTIONS) {
@@ -506,10 +507,13 @@ remoteMap.RemoteMapCreator => {
         const readOnly = !persistent
         return getOpenDBConnection(location, readOnly)
       })()
-      if (persistent) {
-        persistentDBConnections[location] = connectionPromise
-      }
+      const r = Math.random()
+      console.log("111111", r)
+      mainDBConnections[location] = connectionPromise
+      console.log("222222222", r)
       persistentDB = await connectionPromise
+      console.log("3333333", r)
+
     }
     await createDBConnections()
     return {

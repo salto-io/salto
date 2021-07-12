@@ -29,5 +29,13 @@ describe('modify saved search change validator', () => {
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
     })
+    it('should not have change error when modifying an instance without saved search type', async () => {
+      const instances = Object.values(customTypes)
+        .filter(type => type !== customTypes[SAVED_SEARCH])
+        .map(type => new InstanceElement('test', type))
+      const changeErrors = await savedSearchesModifications(instances
+        .map(instance => toChange({ before: instance, after: instance })))
+      expect(changeErrors).toHaveLength(0)
+    })
   })
 })

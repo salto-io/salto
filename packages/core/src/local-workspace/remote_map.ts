@@ -252,6 +252,8 @@ remoteMap.RemoteMapCreator => {
       locationCaches.set(location, locationCache)
     }
   }
+  let persistentDB: rocksdb
+  let tmpDB: rocksdb
   return async <T, K extends string = string>(
     { namespace,
       batchInterval = 1000,
@@ -273,8 +275,6 @@ remoteMap.RemoteMapCreator => {
         `Invalid namespace: ${namespace}. Must include only alphanumeric characters or -`
       )
     }
-    let persistentDB: rocksdb
-    let tmpDB: rocksdb
 
     const uniqueId = uuidv4()
     const tmpLocation = path.join(locationTmpDir, uniqueId)

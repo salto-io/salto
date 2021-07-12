@@ -2028,6 +2028,7 @@ describe('workspace', () => {
       const verifyRenameFiles = (): void => {
         expect(credSource.rename).toHaveBeenCalledTimes(1)
         expect(stateRename).toHaveBeenCalledTimes(1)
+        expect(naclFiles.load).toHaveBeenCalledTimes(1)
         expect(naclFiles.rename).toHaveBeenCalledTimes(1)
       }
 

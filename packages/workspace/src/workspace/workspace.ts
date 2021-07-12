@@ -771,7 +771,10 @@ export const loadWorkspace = async (
       }
       await config.setWorkspaceConfig(workspaceConfig)
       await credentials.rename(envName, newEnvName)
+
       const environmentSource = enviormentsSources.sources[envName]
+      // ensure that the env is loaded
+      await environmentSource.naclFiles.load({})
       if (environmentSource) {
         await environmentSource.naclFiles.rename(newEnvNaclPath || newEnvName)
         await environmentSource.state?.rename(newEnvName)

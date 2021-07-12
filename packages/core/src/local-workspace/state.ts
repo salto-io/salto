@@ -179,6 +179,16 @@ export const localState = (
       [serviceElements || '[]', safeJsonStringify({ [service]: serviceToDates[service] } || {}),
         serviceToPathIndex[service] || '[]', version].join(EOL))
   }
+  const getFilePathToContent = async (): Promise<[string, string][]> => {
+    const stateTextPerService = await createStateTextPerService()
+    return awu(Object.keys(stateTextPerService))
+      .map(async service => [
+        `${currentFilePrefix}.${service}${ZIPPED_STATE_EXTENSION}`,
+        await generateZipString(stateTextPerService[service]),
+      ] as [string, string]).toArray()
+  }
+  const calculateHashImpl = async (): Promise<void> =>
+    inMemState.setHash(getHashFromContent((await getFilePathToContent()).map(e => e[1])))
 
   return {
     ...inMemState,
@@ -218,22 +228,18 @@ export const localState = (
         return
       }
       await mkdirp(path.dirname(currentFilePrefix))
-      const stateTextPerService = await createStateTextPerService()
-      const filePathToContent = await awu(Object.keys(stateTextPerService))
-        .map(async service => [
-          `${currentFilePrefix}.${service}${ZIPPED_STATE_EXTENSION}`,
-          await generateZipString(stateTextPerService[service]),
-        ] as [string, string]).toArray()
+      const filePathToContent = await getFilePathToContent()
       await awu(filePathToContent).forEach(f => replaceContents(...f))
       if (pathToClean !== '') {
         await rm(pathToClean)
       }
-      await inMemState.setHash(getHashFromContent(filePathToContent.map(e => e[1])))
       await inMemState.setVersion(version)
+      await calculateHashImpl()
       await inMemState.flush()
       log.debug('finish flushing state')
     },
     getHash: async (): Promise<string | undefined> => inMemState.getHash(),
+    calculateHash: calculateHashImpl,
     clear: async (): Promise<void> => {
       const stateFiles = await findStateFiles(currentFilePrefix)
       await inMemState.clear()

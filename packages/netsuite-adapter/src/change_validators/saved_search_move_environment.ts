@@ -22,7 +22,7 @@ import { parseDefinition } from '../saved_search_parser'
 
 const { awu } = collections.asynciterable
 const wasModified = async (instance:InstanceElement):Promise<boolean> => {
-  const parsedDefinition = await parseDefinition(instance.value.definition.content)
+  const parsedDefinition = await parseDefinition(instance.value.definition)
   return Object.keys(parsedDefinition)
     .some((i:string) => !_.isEqual(parsedDefinition[i], instance.value[i]))
 }

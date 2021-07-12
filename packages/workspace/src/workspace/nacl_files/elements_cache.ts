@@ -91,12 +91,13 @@ export const buildNewMergedElementsAndErrors = async ({
     const fullname = id.getFullName()
     if (!sieve.has(fullname)) {
       sieve.add(fullname)
-      const [before, mergedItem, mergeErrors] = await Promise.all([
+      const [before, beforeErrors, mergedItem, mergeErrors] = await Promise.all([
         currentElements.get(id),
+        currentErrors.get(fullname),
         newMergedElementsResult.merged.get(fullname),
         newMergedElementsResult.errors.get(fullname),
       ])
-      if (!isEqualElements(before, mergedItem) || !_.isEmpty(mergeErrors)) {
+      if (!isEqualElements(before, mergedItem) || !_.isEqual(beforeErrors, mergeErrors)) {
         if (mergedItem !== undefined) {
           await currentElements.set(mergedItem)
         } else if (before !== undefined) {
@@ -104,7 +105,9 @@ export const buildNewMergedElementsAndErrors = async ({
         }
         changes.push(toChange({ before, after: mergedItem }))
         if (mergeErrors !== undefined) {
-          await currentErrors.set(fullname, mergeErrors)
+          await currentErrors.set(fullname, mergeErrors ?? [])
+        } else {
+          await currentErrors.delete(fullname)
         }
       }
     }

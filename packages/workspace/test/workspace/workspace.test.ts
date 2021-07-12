@@ -718,6 +718,41 @@ describe('workspace', () => {
         ).list()).toArray()).toEqual([afterObj.elemID])
       })
     })
+
+    describe('when merge errors are fixed', () => {
+      it('should delete fixed merge errors', async () => {
+        const ws = await createWorkspace(naclFileStore)
+        await ws.setNaclFiles([
+          {
+            filename: 'mergeIssue.nacl',
+            buffer: `
+                type salto.dup {
+                  x = "x"
+                }
+
+                type salto.dup {
+                  x = "x"
+                }
+              `,
+          },
+        ])
+
+        expect((await ws.errors()).merge).toHaveLength(1)
+        expect((await ws.errors()).merge[0].message).toContain('duplicate annotation key x')
+        await ws.setNaclFiles([
+          {
+            filename: 'mergeIssue.nacl',
+            buffer: `
+                type salto.dup {
+                  x = "x"
+                }
+              `,
+          },
+        ])
+
+        expect((await ws.errors()).merge).toHaveLength(0)
+      })
+    })
   })
 
   describe('updateNaclFiles', () => {

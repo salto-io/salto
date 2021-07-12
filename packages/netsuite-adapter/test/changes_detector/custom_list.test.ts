@@ -53,6 +53,7 @@ describe('custom_list', () => {
       SELECT scriptid, lastmodifieddate
       FROM customlist
       WHERE lastmodifieddate BETWEEN '1/11/2021' AND '2/23/2021'
+      ORDER BY scriptid ASC
     `)
     })
   })

@@ -55,6 +55,7 @@ describe('custom_record_type', () => {
         SELECT scriptid, lastmodifieddate
         FROM customrecordtype
         WHERE lastmodifieddate BETWEEN '1/11/2021' AND '2/23/2021'
+        ORDER BY scriptid ASC
       `)
     })
   })

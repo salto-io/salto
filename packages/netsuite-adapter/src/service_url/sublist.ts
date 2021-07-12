@@ -23,7 +23,7 @@ const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
     elements,
     client,
     filter: element => element.refType.elemID.name === 'sublist',
-    query: 'SELECT id, scriptid FROM sublist',
+    query: 'SELECT id, scriptid FROM sublist ORDER BY id ASC',
     generateUrl: id => `app/common/custom/sublist.nl?id=${id}`,
   })
 

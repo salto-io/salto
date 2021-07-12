@@ -94,11 +94,13 @@ describe('role', () => {
       FROM role
       JOIN systemnote ON systemnote.recordid = role.id
       WHERE systemnote.date BETWEEN '1/11/2021' AND '2/23/2021' AND systemnote.recordtypeid = -118
+      ORDER BY role.id ASC
     `)
 
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, `
       SELECT scriptid, id
       FROM role
+      ORDER BY id ASC
     `)
 
       expect(runSavedSearchQueryMock).toHaveBeenCalledWith({

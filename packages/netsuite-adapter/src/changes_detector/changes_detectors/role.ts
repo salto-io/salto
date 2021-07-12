@@ -91,6 +91,7 @@ const changesDetector: TypeChangesDetector = {
       FROM role
       JOIN systemnote ON systemnote.recordid = role.id
       WHERE systemnote.date BETWEEN '${startDate}' AND '${endDate}' AND systemnote.recordtypeid = -118
+      ORDER BY role.id ASC
     `)
 
     const permissionChangesPromise = client.runSavedSearchQuery({
@@ -102,6 +103,7 @@ const changesDetector: TypeChangesDetector = {
     const allRolesPromise = client.runSuiteQL(`
       SELECT scriptid, id
       FROM role
+      ORDER BY id ASC
     `)
 
     const [

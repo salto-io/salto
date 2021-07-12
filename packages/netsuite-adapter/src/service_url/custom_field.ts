@@ -48,7 +48,7 @@ const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
     elements,
     client,
     filter: element => FIELD_TYPES.includes(element.refType.elemID.name),
-    query: 'SELECT internalid AS id, scriptid FROM customfield',
+    query: 'SELECT internalid AS id, scriptid FROM customfield ORDER BY internalid ASC',
     generateUrl,
   })
 

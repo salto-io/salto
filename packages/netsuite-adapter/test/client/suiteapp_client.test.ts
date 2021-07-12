@@ -63,48 +63,6 @@ describe('SuiteAppClient', () => {
       )
     })
 
-    it('should merge the two queries results', async () => {
-      postMock.mockResolvedValueOnce({
-        data: {
-          hasMore: false,
-          items: [{ links: [], a: 1 }, { links: [], a: 2 }],
-        },
-      })
-      postMock.mockResolvedValueOnce({
-        data: {
-          hasMore: false,
-          items: [{ links: [], a: 1 }, { links: [], a: 3 }],
-        },
-      })
-
-      const results = await client.runSuiteQL('query')
-
-      expect(results).toEqual([{ a: 1 }, { a: 2 }, { a: 3 }])
-      expect(postMock).toHaveBeenCalledWith(
-        'https://account-id.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=1000&offset=0',
-        { q: 'query' },
-        {
-          headers: {
-            Authorization: expect.any(String),
-            'Content-Type': 'application/json',
-            prefer: 'transient',
-          },
-        }
-      )
-
-      expect(postMock).toHaveBeenCalledWith(
-        'https://account-id.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql?limit=999&offset=0',
-        { q: 'query' },
-        {
-          headers: {
-            Authorization: expect.any(String),
-            'Content-Type': 'application/json',
-            prefer: 'transient',
-          },
-        }
-      )
-    })
-
     it('should return all pages', async () => {
       const items = _.range(1500).map(i => ({ i }))
 

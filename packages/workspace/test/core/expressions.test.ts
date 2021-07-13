@@ -440,7 +440,7 @@ describe('Test Salto Expressions', () => {
       expect(resolvedValueType).toEqual(refTargetInstObj)
     })
 
-    it('should not resolve the top level element in a reference when resolveRoot is true', async () => {
+    it('should not resolve the top level element in a reference when resolveRoot is false', async () => {
       const refTargetInstObj = new ObjectType({
         elemID: ElemID.fromFullName('salto.testObj'),
       })

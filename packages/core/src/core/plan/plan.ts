@@ -325,7 +325,7 @@ const addPlanFunctions = (
     changeErrors,
   })
 
-const buildDiffGraph = async (
+const buildDiffGraph = (
   ...transforms: ReadonlyArray<PlanTransformer>
 ): Promise<DiffGraph<ChangeDataType>> => (
   transforms.reduce(

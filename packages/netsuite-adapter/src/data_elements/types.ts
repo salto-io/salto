@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { IDENTIFIER_FIELD, TYPE_TO_ID_FIELDS } from './multi_fields_identifiers'
+import { IDENTIFIER_FIELD, TYPE_TO_ID_FIELD_PATHS } from './multi_fields_identifiers'
 
 export const ITEM_TYPE_ID = '-10'
 export const TRANSACTION_TYPE_ID = '-30'
@@ -215,7 +215,7 @@ export const TYPE_TO_IDENTIFIER: Record<string, string> = {
   Partner: 'partnerCode',
   Solution: 'solutionCode',
   ...Object.fromEntries(Object.keys(ITEM_TYPE_TO_SEARCH_STRING).map(type => [type, 'itemId'])),
-  ...Object.fromEntries(Object.keys(TYPE_TO_ID_FIELDS).map(type => [type, IDENTIFIER_FIELD])),
+  ...Object.fromEntries(Object.keys(TYPE_TO_ID_FIELD_PATHS).map(type => [type, IDENTIFIER_FIELD])),
 }
 
 export const SUPPORTED_TYPES = Object.keys(TYPES_TO_INTERNAL_ID)

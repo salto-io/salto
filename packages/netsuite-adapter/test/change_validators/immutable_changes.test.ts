@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import immutableChangesValidator from '../../src/change_validators/immutable_changes'
 import { customTypes, fileCabinetTypes } from '../../src/types'
-import { ENTITY_CUSTOM_FIELD, FILE, PATH, SCRIPT_ID } from '../../src/constants'
+import { ENTITY_CUSTOM_FIELD, FILE, NETSUITE, PATH, SCRIPT_ID } from '../../src/constants'
 
 
 describe('customization type change validator', () => {
@@ -99,5 +99,40 @@ describe('customization type change validator', () => {
       [toChange({ before: fileInstance, after })]
     )
     expect(changeErrors).toHaveLength(0)
+  })
+
+  it('should have change error if identifier field has been modified', async () => {
+    const accountingPeriodType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'AccountingPeriod'),
+      fields: {
+        identifier: { refType: BuiltinTypes.SERVICE_ID },
+      },
+      annotations: { source: 'soap' },
+    })
+    const before = new InstanceElement('instance', accountingPeriodType, { identifier: 'a' })
+    const after = new InstanceElement('instance', accountingPeriodType, { identifier: 'b' })
+
+    const changeErrors = await immutableChangesValidator(
+      [toChange({ before, after })]
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].elemID).toEqual(after.elemID)
+  })
+
+  it('should have change error if fields used for identifier fields have been modified', async () => {
+    const accountingPeriodType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'AccountingPeriod'),
+      annotations: { source: 'soap' },
+    })
+    const before = new InstanceElement('instance', accountingPeriodType, { fiscalCalendar: { name: 'a' } })
+    const after = new InstanceElement('instance', accountingPeriodType, { fiscalCalendar: { name: 'b' } })
+
+    const changeErrors = await immutableChangesValidator(
+      [toChange({ before, after })]
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].elemID).toEqual(after.elemID)
   })
 })

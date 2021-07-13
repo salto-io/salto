@@ -19,7 +19,7 @@ import { hash as hashUtils, types } from '@salto-io/lowerdash'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively elements.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
-import { Element, ReadOnlyElementsSource, ObjectType } from './elements'
+import { Element, ReadOnlyElementsSource, ObjectType, TypeElement } from './elements'
 
 export type PrimitiveValue = string | boolean | number
 
@@ -142,6 +142,36 @@ export class VariableExpression extends ReferenceExpression {
   }
 }
 
+export class ReferenceType {
+  constructor(
+    public readonly elemID: ElemID,
+    public readonly type?: TypeElement,
+  ) {}
+
+  get traversalParts(): string[] {
+    return this.elemID.getFullNameParts()
+  }
+
+  async getResolvedType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
+    if (this.type === undefined && elementsSource === undefined) {
+      throw new Error(
+        `Can not resolve Type of referenceType with ElemID ${this.elemID.getFullName()} `
+        + 'without elementsSource cause resType does not exist'
+      )
+    }
+    const type = (await elementsSource?.get(this.elemID)) ?? this.type
+    // When there's no value in the ElementSource & in the Ref
+    // Fallback to a placeholder Type. This resembles the behavior
+    // before the RefType change.
+    if (type === undefined) {
+      return new ObjectType({
+        elemID: this.elemID,
+      })
+    }
+    return type
+  }
+}
+
 // eslint-disable-next-line no-use-before-define
 export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> { }
 
@@ -155,6 +185,11 @@ export const isStaticFile = (value: any): value is StaticFile => (
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isReferenceExpression = (value: any): value is ReferenceExpression => (
   value instanceof ReferenceExpression
+)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isReferenceType = (value: any): value is ReferenceType => (
+  value instanceof ReferenceType
 )
 
 export type TemplatePart = string | Expression

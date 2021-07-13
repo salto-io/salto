@@ -178,12 +178,12 @@ resolveTemplateExpression = async (
   }).toArray())
   .join('')
 
-const resolveElement = async (
-  elementToResolve: Element,
+const resolveElement = async <T extends Element>(
+  elementToResolve: T,
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
   resolveRoot = false
-): Promise<Element> => {
+): Promise<T> => {
   const referenceCloner: TransformFunc = ({ value }) => resolveMaybeExpression(
     value,
     elementsSource,
@@ -192,7 +192,7 @@ const resolveElement = async (
     resolveRoot
   )
   if (workingSetElements[elementToResolve.elemID.getFullName()]?.resolved) {
-    return workingSetElements[elementToResolve.elemID.getFullName()].element
+    return workingSetElements[elementToResolve.elemID.getFullName()].element as T
   }
   if (workingSetElements[elementToResolve.elemID.getFullName()] === undefined) {
     workingSetElements[elementToResolve.elemID.getFullName()] = {
@@ -280,7 +280,7 @@ const resolveElement = async (
     )
   }
 
-  return element
+  return element as T
 }
 
 export const resolve = async (

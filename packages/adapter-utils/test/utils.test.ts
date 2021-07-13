@@ -20,7 +20,7 @@ import {
   isListType, ListType, BuiltinTypes, StaticFile, isPrimitiveType,
   Element, isReferenceExpression, isPrimitiveValue, CORE_ANNOTATIONS, FieldMap, AdditionChange,
   RemovalChange, ModificationChange, isInstanceElement, isObjectType, MapType, isMapType,
-  ContainerType,
+  ContainerType, ReferenceType,
   VariableExpression,
 } from '@salto-io/adapter-api'
 import { AdditionDiff, RemovalDiff, ModificationDiff } from '@salto-io/dag'
@@ -1436,7 +1436,7 @@ describe('Test utils.ts', () => {
       annotationRefsOrTypes: {},
       annotations: {},
     })
-    const otRef = new ReferenceExpression(ot.elemID, ot)
+    const otRef = createRefToElmWithValue(ot)
     const instances = [
       new InstanceElement('1', otRef, {}),
       new InstanceElement('2', otRef, {}),
@@ -1793,7 +1793,7 @@ describe('Test utils.ts', () => {
         base: { refType: createRefToElmWithValue(base) },
       },
     })
-    const nestedTypeRef = new ReferenceExpression(nested.elemID, nested)
+    const nestedTypeRef = createRefToElmWithValue(nested)
     const ins1 = new InstanceElement(
       'ins',
       nestedTypeRef,
@@ -1902,7 +1902,7 @@ describe('Test utils.ts', () => {
 
       const instanceWithNoValues = new InstanceElement(
         'instance',
-        new ReferenceExpression(typeWithNestedDefaults.elemID, typeWithNestedDefaults),
+        typeWithNestedDefaults,
       )
 
       const elements = [instanceWithNoValues]
@@ -2016,12 +2016,11 @@ describe('Test utils.ts', () => {
   describe('getParents', () => {
     let result: ReturnType<typeof getParents>
     const obj = new ObjectType({ elemID: new ElemID('test', 'test') })
-    const objRef = new ReferenceExpression(obj.elemID, obj)
     describe('for an element with parents', () => {
       beforeEach(() => {
         const inst = new InstanceElement(
           'test',
-          objRef,
+          obj,
           {},
           undefined,
           { [CORE_ANNOTATIONS.PARENT]: ['a', 'b'] },
@@ -2036,7 +2035,7 @@ describe('Test utils.ts', () => {
       beforeEach(() => {
         const inst = new InstanceElement(
           'test',
-          objRef,
+          obj,
           {},
         )
         result = getParents(inst)
@@ -2048,15 +2047,12 @@ describe('Test utils.ts', () => {
   })
 
   describe('createRefToElmWithValue', () => {
-    it('Should create a reference with elemID equal to the elements elemID and value equal to the element', () => {
+    it('Should create a referenceType with elemID equal to the elements elemID and value equal to the element', () => {
       const obj = new ObjectType({ elemID: new ElemID('a', 'elemID') })
       const objRef = createRefToElmWithValue(obj)
       expect(objRef.elemID).toEqual(obj.elemID)
-      expect(objRef.value).toEqual(obj)
-      const inst = new InstanceElement('ab', obj)
-      const instRef = createRefToElmWithValue(inst)
-      expect(instRef.elemID).toEqual(inst.elemID)
-      expect(instRef.value).toEqual(inst)
+      expect(objRef.type).toEqual(obj)
+      // TODO: Add tests for all possible TypeElements
     })
   })
 
@@ -2091,10 +2087,10 @@ describe('Test utils.ts', () => {
     const objWithUnresolved = new ObjectType({
       elemID: new ElemID('ad', 'withResolved'),
       fields: {
-        a: { refType: new ReferenceExpression(fieldType.elemID) },
+        a: { refType: new ReferenceType(fieldType.elemID) },
       },
       annotationRefsOrTypes: {
-        annoA: new ReferenceExpression(annoType.elemID),
+        annoA: new ReferenceType(annoType.elemID),
       },
     })
     const instWithResolvedType = new InstanceElement(
@@ -2106,7 +2102,7 @@ describe('Test utils.ts', () => {
     )
     const instWithUnresolvedType = new InstanceElement(
       'resolved',
-      new ReferenceExpression(objWithResolved.elemID),
+      new ReferenceType(objWithResolved.elemID),
       {
         a: 'does not matter',
       }
@@ -2126,7 +2122,7 @@ describe('Test utils.ts', () => {
 
     it('Should resolve ObjectType fields types according to elementsSource', async () => {
       const clonedObj = objWithUnresolved.clone()
-      expect(clonedObj.fields.a.refType.value).toBeUndefined()
+      expect(clonedObj.fields.a.refType.type).toBeUndefined()
       await resolveTypeShallow(clonedObj, elementsSource)
       expect(await clonedObj.fields.a.getType()).toEqual(fieldTypeWithAdditionalField)
       expect((await clonedObj.getAnnotationTypes()).annoA).toEqual(annoTypeWithAdditionalField)
@@ -2140,7 +2136,7 @@ describe('Test utils.ts', () => {
 
     it('Should resolve the type of the InstanceElement according to elementSource', async () => {
       const clonedInst = instWithUnresolvedType.clone()
-      expect(clonedInst.refType.value).toBeUndefined()
+      expect(clonedInst.refType.type).toBeUndefined()
       await resolveTypeShallow(clonedInst, elementsSource)
       expect(await clonedInst.getType()).toEqual(objWithResolvedWithAdditionalField)
     })

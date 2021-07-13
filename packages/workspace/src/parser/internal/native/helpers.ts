@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReferenceExpression, ElemID, Value, ListType, PrimitiveTypes, MapType, VariableExpression } from '@salto-io/adapter-api'
+import { ReferenceExpression, ElemID, Value, ListType, PrimitiveTypes, MapType, VariableExpression, ReferenceType } from '@salto-io/adapter-api'
 import isPromise from 'is-promise'
 import { LexerToken } from './lexer'
 import { SourcePos, IllegalReference, SourceRange } from '../types'
@@ -85,7 +85,7 @@ export const replaceValuePromises = async (context: ParseContext): Promise<void>
 export const createFieldRefType = (
   context: ParseContext,
   blockType: string
-): ReferenceExpression => {
+): ReferenceType => {
   if (blockType.startsWith(Keywords.LIST_PREFIX)
         && blockType.endsWith(Keywords.GENERICS_SUFFIX)) {
     const listType = new ListType(createFieldRefType(
@@ -95,7 +95,7 @@ export const createFieldRefType = (
         blockType.length - Keywords.GENERICS_SUFFIX.length
       )
     ))
-    const listRefType = new ReferenceExpression(listType.elemID)
+    const listRefType = new ReferenceType(listType.elemID)
     context.listTypes[listType.elemID.getFullName()] = listType
     return listRefType
   }
@@ -107,11 +107,11 @@ export const createFieldRefType = (
         blockType.length - Keywords.GENERICS_SUFFIX.length
       )
     ))
-    const mapRefType = new ReferenceExpression(mapType.elemID)
+    const mapRefType = new ReferenceType(mapType.elemID)
     context.mapTypes[mapType.elemID.getFullName()] = mapType
     return mapRefType
   }
-  return new ReferenceExpression(parseElemID(blockType))
+  return new ReferenceType(parseElemID(blockType))
 }
 
 export const primitiveType = (typeName: string): PrimitiveTypes | undefined => {

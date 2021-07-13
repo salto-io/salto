@@ -16,7 +16,7 @@
 /* eslint-disable camelcase */
 import _ from 'lodash'
 import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField } from 'jsforce'
-import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, ReferenceExpression, isContainerType } from '@salto-io/adapter-api'
+import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, isContainerType, ReferenceType } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
 import { TransformFunc, transformElement, naclCase, pathNaclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
 
@@ -1301,7 +1301,7 @@ export type MetadataTypeAnnotations = {
   dirName?: string
 }
 
-export const metadataAnnotationTypes: Record<keyof MetadataTypeAnnotations, ReferenceExpression> = {
+export const metadataAnnotationTypes: Record<keyof MetadataTypeAnnotations, ReferenceType> = {
   [METADATA_TYPE]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
   hasMetaFile: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
   folderType: createRefToElmWithValue(BuiltinTypes.STRING),

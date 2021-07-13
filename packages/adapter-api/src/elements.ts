@@ -21,22 +21,22 @@ import { collections, promises } from '@salto-io/lowerdash'
 import { ElemID, LIST_ID_PREFIX, MAP_ID_PREFIX } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
-import { Values, isEqualValues, Value, ReferenceExpression, isReferenceExpression } from './values'
+import { Values, isEqualValues, Value, ReferenceType, isReferenceType } from './values'
 
 const { awu } = collections.asynciterable
 const { mapValuesAsync } = promises.object
 // This is used to allow contructors Elements with Placeholder types
 // to receive TypeElement and save the appropriate Reference
-const getRefType = (typeOrRef: TypeOrRef): ReferenceExpression =>
-  (isReferenceExpression(typeOrRef)
+const getRefType = (typeOrRef: TypeOrRef): ReferenceType =>
+  (isReferenceType(typeOrRef)
     ? typeOrRef
-    : new ReferenceExpression(typeOrRef.elemID, typeOrRef))
+    : new ReferenceType(typeOrRef.elemID, typeOrRef))
 
 const getRefTypeValue = async (
-  refType: ReferenceExpression,
+  refType: ReferenceType,
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<Value> =>
-  (refType.getResolvedValue(elementsSource))
+  (refType.getResolvedType(elementsSource))
 
 /**
  * An abstract class that represent the base element.
@@ -96,7 +96,7 @@ export abstract class Element {
   async getAnnotationTypes(elementsSource?: ReadOnlyElementsSource): Promise<TypeMap> {
     const annotationTypes = mapValuesAsync(
       this.annotationRefTypes,
-      refType => (refType.getResolvedValue(elementsSource))
+      refType => (refType.getResolvedType(elementsSource))
     )
 
     // eslint-disable-next-line no-use-before-define
@@ -137,14 +137,14 @@ export enum PrimitiveTypes {
 export type ContainerType = ListType | MapType
 export type TypeElement = PrimitiveType | ObjectType | ContainerType
 export type TypeMap = Record<string, TypeElement>
-type TypeOrRef<T extends TypeElement = TypeElement> = T | ReferenceExpression
+type TypeOrRef<T extends TypeElement = TypeElement> = T | ReferenceType
 export type TypeRefMap = Record<string, TypeOrRef>
-export type ReferenceMap = Record<string, ReferenceExpression>
+export type ReferenceMap = Record<string, ReferenceType>
 
 abstract class PlaceholderTypeElement extends Element {
   constructor(
     elemID: ElemID,
-    public refType: ReferenceExpression,
+    public refType: ReferenceType,
     annotationRefsOrTypes?: TypeRefMap,
     annotations?: Values,
     path?: ReadonlyArray<string>,
@@ -170,7 +170,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
   // the constructor and because we currently don't have one, we add an artificial one here
   protected _typeMarker?: T
 
-  public refInnerType: ReferenceExpression
+  public refInnerType: ReferenceType
   public constructor(
     innerTypeOrRef: TypeOrRef<T>
   ) {
@@ -189,7 +189,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
 
   clone(): ListType {
     return new ListType(
-      new ReferenceExpression(this.refInnerType.elemID, this.refInnerType.value)
+      new ReferenceType(this.refInnerType.elemID, this.refInnerType.type)
     )
   }
 
@@ -205,7 +205,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
   setRefInnerType(innerTypeOrRefInnerType: TypeOrRef): void {
     if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
       this.refInnerType = getRefType(innerTypeOrRefInnerType)
-      const innerType = this.refInnerType.value
+      const innerType = this.refInnerType.type
       // eslint-disable-next-line no-use-before-define
       if (innerType !== undefined && isType(innerType)) {
         this.annotations = innerType.annotations
@@ -228,7 +228,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
   // the constructor and because we currently don't have one, we add an artificial one here
   protected _typeMarker?: T
 
-  public refInnerType: ReferenceExpression
+  public refInnerType: ReferenceType
   public constructor(
     innerTypeOrRef: TypeOrRef<T>
   ) {
@@ -247,7 +247,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
 
   clone(): MapType {
     return new MapType(
-      new ReferenceExpression(this.refInnerType.elemID, this.refInnerType.value)
+      new ReferenceType(this.refInnerType.elemID, this.refInnerType.type)
     )
   }
 
@@ -263,7 +263,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
   setRefInnerType(innerTypeOrRefInnerType: TypeOrRef): void {
     if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
       this.refInnerType = getRefType(innerTypeOrRefInnerType)
-      const innerType = this.refInnerType.value
+      const innerType = this.refInnerType.type
       // eslint-disable-next-line no-use-before-define
       if (innerType !== undefined && isType(innerType)) {
         this.annotations = innerType.annotations
@@ -437,7 +437,7 @@ export class ObjectType extends Element {
 export class InstanceElement extends PlaceholderTypeElement {
   constructor(
     name: string,
-    typeOrRefType: ObjectType | ReferenceExpression,
+    typeOrRefType: ObjectType | ReferenceType,
     public value: Values = {},
     path?: ReadonlyArray<string>,
     annotations?: Values,

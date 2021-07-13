@@ -590,7 +590,7 @@ describe('Elements validation', () => {
         it('should succeed when all required fields exist with values', async () => {
           extType.fields.reqNested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
           extType.fields.reqStr.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
           extInst.value.reqStr = 'string'
           extInst.value.reqNested = {
             str: 'str',
@@ -610,7 +610,7 @@ describe('Elements validation', () => {
 
         it('should return error when required primitive field is missing', async () => {
           extType.fields.reqStr.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
           const errors = await validateElements(
             [extInst],
             createInMemoryElementSource([
@@ -629,7 +629,7 @@ describe('Elements validation', () => {
             ...extType.fields.reqNested.annotations,
             [CORE_ANNOTATIONS.REQUIRED]: true,
           }
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
           const errors = await validateElements(
             [extInst],
             createInMemoryElementSource([
@@ -737,7 +737,7 @@ describe('Elements validation', () => {
               values: ['val1', 'val2'],
             })
           extInst.value.restrictStr = 'wrongValue'
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
           expect(await validateElements(
             [extInst],
             createInMemoryElementSource([
@@ -750,7 +750,7 @@ describe('Elements validation', () => {
 
         it('should succeed when restriction values is not a list', async () => {
           extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION] = { values: 'str' }
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
           extInst.value.restrictStr = 'str'
           expect(await validateElements(
             [extInst],
@@ -764,7 +764,7 @@ describe('Elements validation', () => {
 
         it('should succeed when restriction values are not defined and enforce_values is undefined', async () => {
           extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION] = {}
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
           extInst.value.restrictStr = 'str'
           expect(await validateElements(
             [extInst],
@@ -778,7 +778,7 @@ describe('Elements validation', () => {
 
         it('should succeed when restriction values are not defined and _restriction is undefined', async () => {
           delete extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION]
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
           extInst.value.restrictStr = 'str'
           expect(await validateElements(
             [extInst],
@@ -858,7 +858,7 @@ describe('Elements validation', () => {
 
         it('should return an error when fields values do not match restriction values with explicit _restriction.enforce_value', async () => {
           getRestriction(extType.fields.restrictStr).enforce_value = true
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
           await testValuesAreNotListedButEnforced()
         })
 
@@ -1063,7 +1063,7 @@ describe('Elements validation', () => {
           extType.fields.list.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
             values: ['restriction'],
           })
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
 
           expect(await validateElements(
             [extInst],
@@ -1444,7 +1444,7 @@ describe('Elements validation', () => {
       it('should return error for list/object mismatch with empty array on required field', async () => {
         const nestedRequiredType = nestedType.clone()
         nestedRequiredType.fields.nested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-        extInst.refType = new ReferenceExpression(nestedRequiredType.elemID, nestedRequiredType)
+        extInst.refType = createRefToElmWithValue(nestedRequiredType)
         extInst.value = { nested: [] }
         const errors = await validateElements(
           [extInst],
@@ -1459,7 +1459,7 @@ describe('Elements validation', () => {
       it.skip('should return error for list/object mismatch with empty array on required field-object', async () => {
         const requiredType = nestedType.clone()
         requiredType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-        extInst.refType = new ReferenceExpression(requiredType.elemID, requiredType)
+        extInst.refType = createRefToElmWithValue(requiredType)
         extInst.value = []
         const errors = await validateElements(
           [extInst],

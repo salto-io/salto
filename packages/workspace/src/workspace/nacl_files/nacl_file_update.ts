@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionChange, DetailedChange, Value, StaticFile, isStaticFile, ReferenceExpression, isReferenceExpression, placeholderReadonlyElementsSource } from '@salto-io/adapter-api'
+import { getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionChange, DetailedChange, Value, StaticFile, isStaticFile, isReferenceExpression, placeholderReadonlyElementsSource, ReferenceType } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
 import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -208,7 +208,7 @@ export const updateNaclFileData = async (
         if (isType(elem) || isReferenceExpression(elem)) {
           newData = dumpSingleAnnotationType(
             changeKey,
-            new ReferenceExpression(elem.elemID),
+            new ReferenceType(elem.elemID),
             indentationLevel
           )
         } else {

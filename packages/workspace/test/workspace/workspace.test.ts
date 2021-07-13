@@ -19,7 +19,7 @@ import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
   Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
   isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType,
-  ReferenceExpression, Value, INSTANCE_ANNOTATIONS,
+  ReferenceType, Value, INSTANCE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges, createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
@@ -674,7 +674,7 @@ describe('workspace', () => {
       const afterObj = new ObjectType({
         elemID: new ElemID('salesforce', 'lead'),
         fields: {
-          new_base: { refType: new ReferenceExpression(salesforceText.elemID) },
+          new_base: { refType: new ReferenceType(salesforceText.elemID) },
         },
       })
       beforeEach(async () => {
@@ -961,14 +961,14 @@ describe('workspace', () => {
       elemID: ElemID.fromFullName('salesforce.ObjWithFieldTypeWithHidden'),
       fields: {
         fieldWithHidden: {
-          refType: new ReferenceExpression(ElemID.fromFullName('salesforce.FieldTypeWithHidden')),
+          refType: new ReferenceType(ElemID.fromFullName('salesforce.FieldTypeWithHidden')),
           annotations: {
             visible: 'YOU SEE ME',
             hiddenValAnno: 'YOU DO NOT SEE ME',
           },
         },
         fieldWithChangingHidden: {
-          refType: new ReferenceExpression(new ElemID('salesforce', 'FieldTypeWithChangingHidden')),
+          refType: new ReferenceType(new ElemID('salesforce', 'FieldTypeWithChangingHidden')),
           annotations: {
             hiddenSwitchType: 'asd',
             visibleSwitchType: 'asd',
@@ -981,8 +981,8 @@ describe('workspace', () => {
       annotationRefsOrTypes: {
         hiddenSwitchType: BuiltinTypes.STRING,
         visibleSwitchType: BuiltinTypes.HIDDEN_STRING,
-        visibleChangeType: new ReferenceExpression(new ElemID('salesforce', 'VisibleToHiddenType')),
-        hiddenChangeType: new ReferenceExpression(new ElemID('salesforce', 'HiddenToVisibleType')),
+        visibleChangeType: new ReferenceType(new ElemID('salesforce', 'VisibleToHiddenType')),
+        hiddenChangeType: new ReferenceType(new ElemID('salesforce', 'HiddenToVisibleType')),
         visibleChangeAndSwitchType: BuiltinTypes.HIDDEN_STRING,
       },
       annotations: {
@@ -1374,7 +1374,7 @@ describe('workspace', () => {
         id: objWithFieldTypeWithHidden.elemID.createNestedID('annotation', 'visibleChangeAndSwitchType'),
         action: 'modify',
         data: {
-          before: new ReferenceExpression(new ElemID('salesforce', 'VisibleToHiddenType')),
+          before: new ReferenceType(new ElemID('salesforce', 'VisibleToHiddenType')),
           after: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
         },
       },
@@ -3119,7 +3119,7 @@ describe('listUnresolvedReferences', () => {
     })
     const type2 = new ObjectType({
       elemID: new ElemID('salesforce', 'anotherType'),
-      annotations: { _parent: new ReferenceExpression(type1.elemID) },
+      annotations: { _parent: new ReferenceType(type1.elemID) },
       fields: {
         f1: { refType: type1 },
         f2: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
@@ -3131,7 +3131,7 @@ describe('listUnresolvedReferences', () => {
       type1,
       {
         f1: 'aaa',
-        f2: new ReferenceExpression(new ElemID('salesforce', 'someType', 'field', 'f3')),
+        f2: new ReferenceType(new ElemID('salesforce', 'someType', 'field', 'f3')),
         f3: 'ccc',
       },
     )
@@ -3142,9 +3142,9 @@ describe('listUnresolvedReferences', () => {
         f1: {
           f1: 'aaa',
           f2: 'bbb',
-          f3: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'inst1', 'f1')),
+          f3: new ReferenceType(new ElemID('salesforce', 'someType', 'instance', 'inst1', 'f1')),
         },
-        f3: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'inst1')),
+        f3: new ReferenceType(new ElemID('salesforce', 'someType', 'instance', 'inst1')),
       },
     )
     return [type1, type2, inst1, inst2]
@@ -3302,7 +3302,7 @@ describe('listUnresolvedReferences', () => {
       const defaultElements = createEnvElements().slice(3) as InstanceElement[]
       defaultElements[0].value = {
         ...(defaultElements[0] as InstanceElement).value,
-        f3: new ReferenceExpression(new ElemID('salesforce', 'unresolved')),
+        f3: new ReferenceType(new ElemID('salesforce', 'unresolved')),
       }
       const otherElements = createEnvElements().slice(1)
       workspace = await createWorkspace(

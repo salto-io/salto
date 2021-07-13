@@ -21,7 +21,7 @@ import {
   isVariable, isMapType, MapType, isContainerType,
 } from '../src/elements'
 import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
-import { ReferenceExpression } from '../src/values'
+import { ReferenceType } from '../src/values'
 
 describe('Test elements.ts', () => {
   /**   ElemIDs   * */
@@ -48,9 +48,9 @@ describe('Test elements.ts', () => {
     elemID: otID,
     fields: {
       // eslint-disable-next-line camelcase
-      num_field: { refType: new ReferenceExpression(primNum.elemID, primNum) },
+      num_field: { refType: new ReferenceType(primNum.elemID, primNum) },
       // eslint-disable-next-line camelcase
-      str_field: { refType: new ReferenceExpression(primStr.elemID, primStr) },
+      str_field: { refType: new ReferenceType(primStr.elemID, primStr) },
     },
     annotationRefsOrTypes: {},
     annotations: {},
@@ -76,7 +76,7 @@ describe('Test elements.ts', () => {
   describe('isEqualElements and type guards', () => {
     const objT = new ObjectType({
       elemID: new ElemID('test', 'obj'),
-      fields: { str: { refType: new ReferenceExpression(primStr.elemID, primStr) } },
+      fields: { str: { refType: primStr } },
       annotationRefsOrTypes: {
         anno: primStr,
       },
@@ -86,7 +86,7 @@ describe('Test elements.ts', () => {
     const strField = new Field(objT, 'str_field', primStr)
     const lstField = new Field(objT, 'list_field', new ListType(primStr))
     const mapField = new Field(objT, 'map_field', new MapType(primStr))
-    const inst = new InstanceElement('inst', new ReferenceExpression(objT.elemID, objT), { str: 'test' })
+    const inst = new InstanceElement('inst', objT, { str: 'test' })
     const variable = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName'), 3)
 
     it('should identify equal primitive types', () => {
@@ -110,9 +110,9 @@ describe('Test elements.ts', () => {
         elemID: otID,
         fields: {
           // eslint-disable-next-line camelcase
-          num_field: { refType: new ReferenceExpression(primNum.elemID, primNum) },
+          num_field: { refType: primNum },
           // eslint-disable-next-line camelcase
-          str_field: { refType: new ReferenceExpression(primStr.elemID, primStr) },
+          str_field: { refType: primStr },
         },
         annotationRefsOrTypes: {},
         annotations: {},

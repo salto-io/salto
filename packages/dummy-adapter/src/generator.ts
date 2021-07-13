@@ -470,7 +470,7 @@ export const generateElements = async (
     const instanceType = weightedRandomSelect(objectTypes)
     const record = new InstanceElement(
       name,
-      new ReferenceExpression(instanceType.elemID, instanceType),
+      instanceType,
       await generateValue(
         instanceType,
         instanceType.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
@@ -532,7 +532,7 @@ export const generateElements = async (
         if (useOldProfile) {
           return [new InstanceElement(
             name,
-            new ReferenceExpression(oldProfileType.elemID, oldProfileType),
+            oldProfileType,
             {
               fullName: name,
               ObjectLevelPermissions: objectPermissions,
@@ -541,7 +541,7 @@ export const generateElements = async (
             [DUMMY_ADAPTER, 'Records', 'Profile', name],
           )]
         }
-        const profileTypeRef = new ReferenceExpression(profileType.elemID, profileType)
+        const profileTypeRef = createRefToElmWithValue(profileType)
         return [
           new InstanceElement(
             name,

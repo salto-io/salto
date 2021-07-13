@@ -24,7 +24,7 @@ import {
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType,
-  ReadOnlyElementsSource, ReferenceMap, BuiltinTypesRefByFullName,
+  ReadOnlyElementsSource, ReferenceMap, BuiltinTypesRefByFullName, ReferenceType,
 } from '@salto-io/adapter-api'
 
 const { mapValuesAsync } = promises.object
@@ -54,10 +54,10 @@ export const applyFunctionToChangeData = async <T extends Change<unknown>>(
   return change
 }
 
-export const createRefToElmWithValue = (element: Element): ReferenceExpression => (
+export const createRefToElmWithValue = (element: TypeElement): ReferenceType => (
   // For BuiltinTypes we use a hardcoded list of refs with values to avoid duplicate instances
   BuiltinTypesRefByFullName[element.elemID.getFullName()]
-    ?? new ReferenceExpression(element.elemID, element)
+    ?? new ReferenceType(element.elemID, element)
 )
 
 /**
@@ -898,10 +898,10 @@ export const getParents = (instance: Element): Array<Value> => (
 // That's why we need this func and do not use getResolvedValue
 // If we decide switch the getResolvedValue behavior in the future we should lose this
 const getResolvedRef = async (
-  ref: ReferenceExpression,
+  ref: ReferenceType,
   elementsSource: ReadOnlyElementsSource,
-): Promise<ReferenceExpression> => {
-  if (ref.value !== undefined) {
+): Promise<ReferenceType> => {
+  if (ref.type !== undefined) {
     return ref
   }
   const sourceVal = await elementsSource.get(ref.elemID)

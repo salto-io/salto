@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ElemID, INSTANCE_ANNOTATIONS } from './element_id'
 import { Element, TypeMap, ObjectType, PrimitiveType, PrimitiveTypes, ListType } from './elements'
-import { ReferenceExpression } from './values'
+import { ReferenceType } from './values'
 import { CORE_ANNOTATIONS } from './core_annotations'
 
 export { CORE_ANNOTATIONS }
@@ -56,37 +56,37 @@ const restrictionType = new ObjectType({
   fields: {
     // eslint-disable-next-line camelcase
     enforce_value: {
-      refType: new ReferenceExpression(
+      refType: new ReferenceType(
         StandardBuiltinTypes.BOOLEAN.elemID,
         StandardBuiltinTypes.BOOLEAN,
       ),
     },
     values: {
-      refType: new ReferenceExpression(
+      refType: new ReferenceType(
         StandardBuiltinTypes.STRING.elemID,
         StandardBuiltinTypes.STRING,
       ),
     },
     min: {
-      refType: new ReferenceExpression(
+      refType: new ReferenceType(
         StandardBuiltinTypes.NUMBER.elemID,
         StandardBuiltinTypes.NUMBER,
       ),
     },
     max: {
-      refType: new ReferenceExpression(
+      refType: new ReferenceType(
         StandardBuiltinTypes.NUMBER.elemID,
         StandardBuiltinTypes.NUMBER,
       ),
     },
     regex: {
-      refType: new ReferenceExpression(
+      refType: new ReferenceType(
         StandardBuiltinTypes.STRING.elemID,
         StandardBuiltinTypes.STRING,
       ),
     },
     max_length: {
-      refType: new ReferenceExpression(
+      refType: new ReferenceType(
         StandardBuiltinTypes.NUMBER.elemID,
         StandardBuiltinTypes.NUMBER,
       ),
@@ -154,7 +154,7 @@ export const BuiltinTypesByFullName: Record<string, PrimitiveType> = (_.keyBy(
 
 export const BuiltinTypesRefByFullName = _.mapValues(
   BuiltinTypesByFullName,
-  type => new ReferenceExpression(type.elemID, type)
+  type => new ReferenceType(type.elemID, type)
 )
 
 export const InstanceAnnotationTypes: TypeMap = {

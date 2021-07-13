@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange, ReferenceExpression } from '@salto-io/adapter-api'
+import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange, ReferenceType } from '@salto-io/adapter-api'
 import { merger, createElementSelector, elementSource } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 
@@ -29,13 +29,13 @@ describe('diff', () => {
     elemID: new ElemID('salto', 'nested'),
     fields: {
       str: {
-        refType: new ReferenceExpression(BuiltinTypes.STRING.elemID),
+        refType: new ReferenceType(BuiltinTypes.STRING.elemID),
       },
       num: {
-        refType: new ReferenceExpression(BuiltinTypes.NUMBER.elemID),
+        refType: new ReferenceType(BuiltinTypes.NUMBER.elemID),
       },
       list: {
-        refType: new ReferenceExpression(new ListType(BuiltinTypes.NUMBER).elemID),
+        refType: new ReferenceType(new ListType(BuiltinTypes.NUMBER).elemID),
       },
     },
   })
@@ -47,10 +47,10 @@ describe('diff', () => {
         annotations: {
           description: 'description',
         },
-        refType: new ReferenceExpression(BuiltinTypes.STRING.elemID),
+        refType: new ReferenceType(BuiltinTypes.STRING.elemID),
       },
       nested: {
-        refType: new ReferenceExpression(nestedType.elemID),
+        refType: new ReferenceType(nestedType.elemID),
       },
     },
     annotationRefsOrTypes: {
@@ -89,10 +89,10 @@ describe('diff', () => {
     elemID: new ElemID('salto', 'multiPathObj'),
     fields: {
       simple: {
-        refType: new ReferenceExpression(BuiltinTypes.STRING.elemID),
+        refType: new ReferenceType(BuiltinTypes.STRING.elemID),
       },
       nested: {
-        refType: new ReferenceExpression(nestedType.elemID),
+        refType: new ReferenceType(nestedType.elemID),
       },
     },
     path: ['salto', 'obj', 'multi', 'fields'],

@@ -173,6 +173,7 @@ AsyncIterable<remoteMap.RemoteMapEntry<string>[]> {
 
 const MAX_CONNECTIONS = 1000
 const persistentDBConnections: Record<string, Promise<rocksdb>> = {}
+const readonlyDBConnections: Record<string, Promise<rocksdb>> = {}
 const tmpDBConnections: Record<string, Record<string, Promise<rocksdb>>> = {}
 let currentConnectionsCount = 0
 
@@ -487,14 +488,15 @@ remoteMap.RemoteMapCreator => {
       }
     }
     const createDBConnections = async (): Promise<void> => {
+      tmpDBConnections[location] = tmpDBConnections[location] ?? {}
       if (tmpDB === undefined) {
         const tmpConnection = getOpenDBConnection(tmpLocation, false)
         tmpDB = await tmpConnection
-        tmpDBConnections[location] = tmpDBConnections[location] ?? {}
         tmpDBConnections[location][tmpLocation] = tmpConnection
       }
-      if (location in persistentDBConnections) {
-        persistentDB = await persistentDBConnections[location]
+      const mainDBConnections = persistent ? persistentDBConnections : readonlyDBConnections
+      if (location in mainDBConnections) {
+        persistentDB = await mainDBConnections[location]
         return
       }
       if (currentConnectionsCount > MAX_CONNECTIONS) {
@@ -506,9 +508,7 @@ remoteMap.RemoteMapCreator => {
         const readOnly = !persistent
         return getOpenDBConnection(location, readOnly)
       })()
-      if (persistent) {
-        persistentDBConnections[location] = connectionPromise
-      }
+      mainDBConnections[location] = connectionPromise
       persistentDB = await connectionPromise
     }
     await createDBConnections()

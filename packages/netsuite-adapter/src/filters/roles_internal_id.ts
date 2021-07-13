@@ -13,14 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, Field, getChangeElement, isAdditionChange, isInstanceElement } from '@salto-io/adapter-api'
-import _ from 'lodash'
+import { BuiltinTypes, Change, CORE_ANNOTATIONS, Field, getChangeElement, InstanceElement, isAdditionChange, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { role } from '../types/custom_types/role'
 import NetsuiteClient from '../client/client'
+import { ROLE } from '../constants'
 
 const log = logger(module)
+
+const isRoleResultValid = (result: Record<string, unknown>):
+result is { scriptid: string; id: string } => {
+  if ([result.scriptid, result.id].some(val => typeof val !== 'string')) {
+    log.warn('Got invalid result from roles query, %o', result)
+    return false
+  }
+  return true
+}
 
 const getRolesScriptIdsToInternalIds = async (client: NetsuiteClient):
 Promise<Record<string, string>> => {
@@ -32,21 +41,27 @@ Promise<Record<string, string>> => {
 
   return Object.fromEntries(
     rolesResults
-      .filter((res): res is { scriptid: string; id: string } => {
-        if ([res.scriptid, res.id].some(val => typeof val !== 'string')) {
-          log.warn('Got invalid result from roles query, %o', res)
-          return false
-        }
-        return true
-      })
+      .filter(isRoleResultValid)
       .map(res => ([res.scriptid, res.id]))
   )
 }
 
+const getRoleAdditionInstances = (changes: Change[]): InstanceElement[] =>
+  changes
+    .filter(isAdditionChange)
+    .map(getChangeElement)
+    .filter(isInstanceElement)
+    .filter(e => e.elemID.typeName === ROLE)
 
+/**
+ * This filter adds the internal id to role instances
+ * so we will be able to reference them in instances
+ * that are returned from SOAP API (e.g., Employee)
+ */
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async elements => {
-    if (!client.isSuiteAppConfigured() || !elements.some(e => e.elemID.typeName === 'role')) {
+    if (!client.isSuiteAppConfigured()
+    || !elements.some(e => isInstanceElement(e) && e.elemID.typeName === ROLE)) {
       return
     }
     role.fields.internalId = new Field(
@@ -60,34 +75,38 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     elements
       .filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === 'role')
+      .filter(e => e.elemID.typeName === ROLE)
       .forEach(e => {
         e.value.internalId = scriptIdToInternalId[e.value.scriptid]
       })
   },
 
+  /**
+   * This removes the internal id before deploy since we don't want to actually deploy it to SDF
+   */
   preDeploy: async changes => {
-    _(changes)
+    changes
       .map(getChangeElement)
       .filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === 'role')
+      .filter(e => e.elemID.typeName === ROLE)
       .forEach(element => {
         delete element.value.internalId
       })
   },
 
+  /**
+   * This assign the internal id for new role instances created through Salto
+   */
   onDeploy: async changes => {
-    if (!client.isSuiteAppConfigured() || !changes.some(change => isAdditionChange(change) && getChangeElement(change).elemID.typeName === 'role')) {
+    const roleAdditionInstances = getRoleAdditionInstances(changes)
+
+    if (!client.isSuiteAppConfigured() || roleAdditionInstances.length === 0) {
       return
     }
 
     const scriptIdToInternalId = await getRolesScriptIdsToInternalIds(client)
 
-    changes
-      .filter(isAdditionChange)
-      .map(getChangeElement)
-      .filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === 'role')
+    roleAdditionInstances
       .forEach(e => {
         e.value.internalId = scriptIdToInternalId[e.value.scriptid]
       })

@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 
-import { collections } from '@salto-io/lowerdash'
 import { getChangeElement, InstanceElement, isInstanceChange, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { SAVED_SEARCH } from '../constants'
@@ -23,14 +22,12 @@ import { savedsearch, savedsearchInnerTypes } from '../types/custom_types/parsed
 import { savedsearch as oldSavedSearch } from '../types/custom_types/savedsearch'
 import { parseDefinition } from '../saved_search_parser'
 
-const { awu } = collections.asynciterable
-
 const assignValuesToInstance = async (instance:InstanceElement,
   oldInstance: InstanceElement):Promise<void> => {
   Object.assign(instance.value, await parseDefinition(instance.value.definition))
   if (oldInstance !== undefined && oldInstance.value.definition !== undefined) {
-    if (await _.isEqual(parseDefinition(oldInstance.value.definition),
-      parseDefinition(instance.value.definition))) {
+    if (_.isEqual(await parseDefinition(oldInstance.value.definition),
+      await parseDefinition(instance.value.definition))) {
       instance.value.definition = oldInstance.value.definition
     }
   }
@@ -57,11 +54,11 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
     )
   },
   preDeploy: async changes => {
-    awu(changes)
+    const saveSearches = await Promise.all(changes
       .filter(isInstanceChange)
       .map(getChangeElement)
-      .filter(instance => instance.elemID.typeName === SAVED_SEARCH)
-      .forEach(instance => removeValuesFromInstace(instance))
+      .filter(instance => instance.elemID.typeName === SAVED_SEARCH))
+    saveSearches.forEach(instance => removeValuesFromInstace(instance))
   },
 })
 

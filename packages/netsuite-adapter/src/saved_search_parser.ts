@@ -19,6 +19,7 @@ import _ from 'lodash'
 import { ungzip } from 'node-gzip'
 import { xml2js, ElementCompact } from 'xml-js'
 
+type elementParts = { definition: ElementCompact; dependency: ElementCompact[] }
 type attributeValue = string | boolean | number | undefined
 type attributeObject = { _attributes: { clazz:string; field:string }; _text:string }
 type recordObject = { values: { Value:attributeObject[]}}
@@ -165,19 +166,23 @@ const safeAssignKeyValue = (instance:Values, key: string, value: Values):void =>
   Object.assign(instance, { [key]: value })
 }
 
-export const parseDefinition = async (definition:string):Promise<Values> => {
+const getSearchPartsFromDefinition = async (definition:string):Promise<elementParts> => {
   const parsedXml = await getJson(definition)
-  const searchDefinition = getSearchDefinition(parsedXml)
-  const searchDependency = getSearchDependency(parsedXml)
+  return { definition: getSearchDefinition(parsedXml),
+    dependency: getSearchDependency(parsedXml) }
+}
+
+export const parseDefinition = async (definition:string):Promise<Values> => {
+  const searchparts = await getSearchPartsFromDefinition(definition)
   const returnInstance = Object()
-  safeAssignKeyValue(returnInstance, 'search_filter', getFilters(searchDefinition))
-  safeAssignKeyValue(returnInstance, 'search_summary_filters', getSummaryFilters(searchDefinition))
-  safeAssignKeyValue(returnInstance, 'available_filters', getAvailableFilters(searchDefinition))
-  safeAssignKeyValue(returnInstance, 'return_fields', getReturnFields(searchDefinition))
-  safeAssignKeyValue(returnInstance, 'detail_fields', getDetailFields(searchDefinition))
-  safeAssignKeyValue(returnInstance, 'sort_columns', getSortColumns(searchDefinition))
-  safeAssignKeyValue(returnInstance, 'audience:', getAudience(searchDependency))
-  safeAssignKeyValue(returnInstance, 'alert_recipients', getAlertRecipients(searchDefinition))
-  Object.assign(returnInstance, getFlags(searchDefinition))
+  safeAssignKeyValue(returnInstance, 'search_filter', getFilters(searchparts.definition))
+  safeAssignKeyValue(returnInstance, 'search_summary_filters', getSummaryFilters(searchparts.definition))
+  safeAssignKeyValue(returnInstance, 'available_filters', getAvailableFilters(searchparts.definition))
+  safeAssignKeyValue(returnInstance, 'return_fields', getReturnFields(searchparts.definition))
+  safeAssignKeyValue(returnInstance, 'detail_fields', getDetailFields(searchparts.definition))
+  safeAssignKeyValue(returnInstance, 'sort_columns', getSortColumns(searchparts.definition))
+  safeAssignKeyValue(returnInstance, 'audience:', getAudience(searchparts.dependency))
+  safeAssignKeyValue(returnInstance, 'alert_recipients', getAlertRecipients(searchparts.definition))
+  Object.assign(returnInstance, getFlags(searchparts.definition))
   return returnInstance
 }

@@ -194,13 +194,13 @@ export const createMergeManager = async (flushables: Flushable[],
     const src1 = values.isDefined(cacheUpdate.src1Overrides)
       ? mapReadOnlyElementsSource(
         sources[cacheUpdate.src1Prefix],
-        async elem => cacheUpdate.src1Overrides?.[elem.elemID.getFullName()] ?? elem
+        async elem => elem && (cacheUpdate.src1Overrides?.[elem.elemID.getFullName()] ?? elem)
       )
       : sources[cacheUpdate.src1Prefix]
     const src2 = values.isDefined(cacheUpdate.src2Overrides)
       ? mapReadOnlyElementsSource(
         sources[cacheUpdate.src2Prefix],
-        async elem => cacheUpdate.src2Overrides?.[elem.elemID.getFullName()] ?? elem
+        async elem => elem && (cacheUpdate.src2Overrides?.[elem.elemID.getFullName()] ?? elem)
       ) : sources[cacheUpdate.src2Prefix]
     const src1Changes = possibleSrc1Changes ?? createEmptyChangeSet(
       await hashes.get(getSourceHashKey(cacheUpdate.src1Prefix))

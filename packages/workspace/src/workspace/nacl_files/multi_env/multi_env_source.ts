@@ -159,6 +159,7 @@ const buildMultiEnvSource = (
         ? COMMON_ENV_PREFIX + commonSourceName : envName)),
       remoteMapCreator,
       getRemoteMapNamespace('multi_env_mergeManager'),
+      persistent,
       mergedRecoveryMode)
       mergeManager.init()
     }

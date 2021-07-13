@@ -194,7 +194,12 @@ export const loadLocalWorkspace = async (
     persistent
   )
   const ws = await loadWorkspace(
-    workspaceConfig, credentials, elemSources, remoteMapCreator
+    workspaceConfig,
+    credentials,
+    elemSources,
+    remoteMapCreator,
+    false,
+    persistent
   )
 
   return {

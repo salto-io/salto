@@ -247,6 +247,7 @@ export const loadWorkspace = async (
           sources,
           remoteMapCreator,
           'workspaceMergeManager',
+          persistent,
           mergedRecoveryMode,
         ),
       }

@@ -164,7 +164,7 @@ const namespaceToManager: Record<string, ElementMergeManager> = {}
 
 export const createMergeManager = async (flushables: Flushable[],
   sources: Record<string, ReadOnlyElementsSource>,
-  mapCreator: RemoteMapCreator, namespace: string,
+  mapCreator: RemoteMapCreator, namespace: string, persistent: boolean,
   recoveryOperation?: string): Promise<ElementMergeManager> => {
   const fullNamespace = namespace + MERGE_MANAGER_SUFFIX
   if (Object.keys(fullNamespace).includes(fullNamespace)) {
@@ -172,7 +172,7 @@ export const createMergeManager = async (flushables: Flushable[],
   }
   const hashes = await mapCreator<string>({
     namespace: fullNamespace,
-    persistent: true,
+    persistent,
     serialize: s => s,
     deserialize: async s => s,
   })

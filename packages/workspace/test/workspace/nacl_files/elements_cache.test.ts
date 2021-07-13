@@ -31,7 +31,12 @@ describe('test cache manager', () => {
 
   beforeEach(async () => {
     flushables = [createFlushable(), createFlushable(), createFlushable()]
-    manager = await createMergeManager(flushables, {}, persistentMockCreateRemoteMap(), NAMESPACE)
+    manager = await createMergeManager(
+      flushables, {},
+      persistentMockCreateRemoteMap(),
+      NAMESPACE,
+      true
+    )
   })
 
   describe('On clear', async () => {

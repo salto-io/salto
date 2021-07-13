@@ -84,8 +84,10 @@ export type EnvsChanges = Record<string, ChangeSet<Change>>
 export type MultiEnvSource = Omit<NaclFilesSource<EnvsChanges>, 'getAll' | 'getElementsSource'> & {
   getAll: (env?: string) => Promise<AsyncIterable<Element>>
   promote: (ids: ElemID[]) => Promise<EnvsChanges>
-  getElementIdsBySelectors: (selectors: ElementSelector[],
-    commonOnly?: boolean, validateDeterminedSelectors?: boolean) => Promise<AsyncIterable<ElemID>>
+  getElementIdsBySelectors: (
+    selectors: ElementSelector[],
+    commonOnly?: boolean,
+  ) => Promise<AsyncIterable<ElemID>>
   demote: (ids: ElemID[]) => Promise<EnvsChanges>
   demoteAll: () => Promise<EnvsChanges>
   copyTo: (ids: ElemID[], targetEnvs?: string[]) => Promise<EnvsChanges>
@@ -296,7 +298,6 @@ const buildMultiEnvSource = (
   const getElementIdsBySelectors = async (
     selectors: ElementSelector[],
     commonOnly = false,
-    validateDeterminedSelectors = false,
   ): Promise<AsyncIterable<ElemID>> => {
     const relevantSource = commonOnly ? commonSource() : primarySource()
     const elementsFromSource = await getElementsFromSource(relevantSource)
@@ -305,7 +306,6 @@ const buildMultiEnvSource = (
       elementsFromSource,
       relevantSource,
       false,
-      validateDeterminedSelectors,
     )
   }
 

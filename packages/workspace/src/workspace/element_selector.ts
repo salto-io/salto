@@ -193,60 +193,56 @@ const isElementPossiblyParentOfSearchedElement = (
 
 export const selectElementIdsByTraversal = async (
   selectors: ElementSelector[],
-  elementIds: AsyncIterable<ElemID>,
+  elemIDs: AsyncIterable<ElemID>,
   source: ElementsSource,
   compact = false,
-  validateDeterminedSelectors = false,
 ): Promise<AsyncIterable<ElemID>> => {
-  const [selectorsToDetermine, determinedSelectors] = validateDeterminedSelectors ? [selectors, []]
-    : _.partition(selectors, selector => selector.origin.includes('*'))
-  const determinedIds = determinedSelectors.map(selector => selector.origin)
-  let currentIds = determinedIds
-  let idsIterable = awu(determinedIds).map(id => ElemID.fromFullName(id))
-  if (selectorsToDetermine.length === 0) {
-    return awu(idsIterable).uniquify(id => id.getFullName())
+  if (selectors.length === 0) {
+    return awu([])
   }
   const [topLevelSelectors, subElementSelectors] = _.partition(
-    selectorsToDetermine,
+    selectors,
     isTopLevelSelector,
   )
-  if (topLevelSelectors.length !== 0) {
-    const topLevelElements = selectElementsBySelectors({ elementIds, selectors: topLevelSelectors })
-    if (subElementSelectors.length === 0) {
-      idsIterable = awu(idsIterable).concat(topLevelElements)
-      return awu(idsIterable).uniquify(id => id.getFullName())
+
+  const ids = await awu(elemIDs).toArray()
+
+  const getTopLevelIDs = async (): Promise<ElemID[]> => {
+    if (topLevelSelectors.length === 0) {
+      return []
     }
-    const topLevelElementsArr = await awu(topLevelElements).toArray()
-    currentIds = currentIds.concat(topLevelElementsArr.map(id => id.getFullName()))
-    idsIterable = awu(idsIterable).concat(topLevelElementsArr)
+    return awu(selectElementsBySelectors({
+      elementIds: awu(ids),
+      selectors: topLevelSelectors,
+    })).toArray()
   }
+
+  const topLevelIDs = await getTopLevelIDs()
+  const currentIds = new Set(topLevelIDs.map(id => id.getFullName()))
+
   const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)
-  const possibleParentElements = selectElementsBySelectors(
-    { elementIds, selectors: possibleParentSelectors }
+  const possibleParentIDs = selectElementsBySelectors(
+    { elementIds: awu(ids), selectors: possibleParentSelectors }
   )
-  const stillRelevantElements = compact
-    ? awu(possibleParentElements).filter(id => !currentIds.includes(id.getFullName()))
-    : possibleParentElements
-  const subElements: ElemID[] = []
+  const stillRelevantIDs = compact
+    ? awu(possibleParentIDs).filter(id => !currentIds.has(id.getFullName()))
+    : possibleParentIDs
+
+  const subElementIDs: ElemID[] = []
   const selectFromSubElements: TransformFunc = ({ path, value }) => {
     if (path === undefined) {
       return undefined
     }
     const testId = path
     if (subElementSelectors.some(selector => match(testId, selector))) {
-      subElements.push(testId)
+      subElementIDs.push(testId)
       if (compact) {
         return undefined
       }
     }
-    const stillRelevantSelectors = selectorsToDetermine.filter(selector => selector
-      .origin.split(ElemID.NAMESPACE_SEPARATOR).length > testId.getFullNameParts().length)
+    const stillRelevantSelectors = selectors.filter(selector =>
+      selector.origin.split(ElemID.NAMESPACE_SEPARATOR).length > testId.getFullNameParts().length)
     if (stillRelevantSelectors.length === 0) {
-      return undefined
-    }
-    if (compact && determinedIds.includes(testId.getFullName())) {
-      // This can occur if testId is one given as a determined id, so we don't search for it,
-      // but because we just found it while searching, in compact scenario we need to return
       return undefined
     }
     if (isElementPossiblyParentOfSearchedElement(stillRelevantSelectors, testId)) {
@@ -254,8 +250,12 @@ export const selectElementIdsByTraversal = async (
     }
     return undefined
   }
-  await awu(stillRelevantElements).forEach(async elemId => transformElement({
-    element: await source.get(elemId), transformFunc: selectFromSubElements, runOnFields: true,
+
+  await awu(stillRelevantIDs).forEach(async elemId => transformElement({
+    element: await source.get(elemId),
+    transformFunc: selectFromSubElements,
+    runOnFields: true,
+    elementsSource: source,
   }))
-  return awu(idsIterable.concat(subElements)).uniquify(id => id.getFullName())
+  return awu(topLevelIDs.concat(subElementIDs)).uniquify(id => id.getFullName())
 }

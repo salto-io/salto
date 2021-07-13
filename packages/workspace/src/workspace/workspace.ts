@@ -116,8 +116,10 @@ export type Workspace = {
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
-  getElementIdsBySelectors: (selectors: ElementSelector[],
-    commonOnly?: boolean) => Promise<AsyncIterable<ElemID>>
+  getElementIdsBySelectors: (
+    selectors: ElementSelector[],
+    commonOnly?: boolean,
+  ) => Promise<AsyncIterable<ElemID>>
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
   flush: () => Promise<void>
   clone: () => Promise<Workspace>
@@ -637,8 +639,7 @@ export const loadWorkspace = async (
     listNaclFiles: async () => (
       (await getLoadedNaclFilesSource()).listNaclFiles()
     ),
-    getElementIdsBySelectors: async (selectors: ElementSelector[],
-      commonOnly = false) => (
+    getElementIdsBySelectors: async (selectors: ElementSelector[], commonOnly = false) => (
       (await getLoadedNaclFilesSource()).getElementIdsBySelectors(selectors, commonOnly)
     ),
     getElementReferencedFiles: async id => (

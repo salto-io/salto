@@ -61,10 +61,16 @@ export const createDiffChanges = async (
   elementSelectors: ElementSelector[] = [],
 ): Promise<DetailedChange[]> => {
   if (elementSelectors.length > 0) {
-    const toElementIdsFiltered = selectElementIdsByTraversal(elementSelectors,
-      toElements.map(element => ({ elemID: element.elemID, element })), true)
-    const fromElementIdsFiltered = selectElementIdsByTraversal(elementSelectors,
-      fromElements.map(element => ({ elemID: element.elemID, element })), true)
+    const toElementIdsFiltered = selectElementIdsByTraversal(
+      elementSelectors,
+      toElements.map(element => ({ elemID: element.elemID, element })),
+      true,
+    )
+    const fromElementIdsFiltered = selectElementIdsByTraversal(
+      elementSelectors,
+      fromElements.map(element => ({ elemID: element.elemID, element })),
+      true,
+    )
     const selectorsToVerify = new Set<string>(elementSelectors
       .map(sel => sel.origin).filter(sel => !sel.includes('*')))
     const toElementsFiltered = filterElementsByRelevance([...toElements],

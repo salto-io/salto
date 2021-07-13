@@ -116,7 +116,7 @@ const createInstance = async (
   addIdentifierToValues(fixedValues, type)
 
   const serviceIdFieldName = TYPE_TO_IDENTIFIER[type.elemID.name]
-  const identifierValue = fixedValues?.[serviceIdFieldName]
+  const identifierValue = fixedValues[serviceIdFieldName]
   const defaultName = naclCase(identifierValue)
 
   const name = elemIdGetter !== undefined ? elemIdGetter(

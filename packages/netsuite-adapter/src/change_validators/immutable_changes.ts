@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import {
-  ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeElement, InstanceElement,
+  ChangeError, ChangeValidator, CORE_ANNOTATIONS, InstanceElement,
   isInstanceChange, isModificationChange, isReferenceExpression, isServiceId,
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { TYPE_TO_ID_FIELD_PATHS } from '../data_elements/multi_fields_identifiers'
-import { isCustomType, isDataObjectType, isFileCabinetType } from '../types'
+import { isDataObjectType, isFileCabinetType } from '../types'
 
 const { awu } = collections.asynciterable
 
@@ -37,12 +37,6 @@ const changeValidator: ChangeValidator = async changes => (
   awu(changes)
     .filter(isModificationChange)
     .filter(isInstanceChange)
-    .filter(async change => {
-      const instance = getChangeElement(change) as InstanceElement
-      return isCustomType(instance.refType.elemID)
-        || isFileCabinetType(instance.refType.elemID)
-        || isDataObjectType(await instance.getType())
-    })
     .flatMap(async change => {
       const before = change.data.before as InstanceElement
       const after = change.data.after as InstanceElement
@@ -55,10 +49,9 @@ const changeValidator: ChangeValidator = async changes => (
       if (isDataObjectType(await after.getType())
         && after.elemID.typeName in TYPE_TO_ID_FIELD_PATHS) {
         modifiedImmutableFields.push(
-          ..._(TYPE_TO_ID_FIELD_PATHS[after.elemID.typeName])
+          ...TYPE_TO_ID_FIELD_PATHS[after.elemID.typeName]
             .filter(path => _.get(before.value, path) !== _.get(after.value, path))
             .map(path => after.elemID.createNestedID(...path).getFullName())
-            .value()
         )
       }
 

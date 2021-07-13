@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import {
-  BuiltinTypes, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeElement, InstanceElement,
-  isInstanceChange, isModificationChange, isReferenceExpression,
+  ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeElement, InstanceElement,
+  isInstanceChange, isModificationChange, isReferenceExpression, isServiceId,
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -44,7 +44,7 @@ const changeValidator: ChangeValidator = async changes => (
       const before = change.data.before as InstanceElement
       const after = change.data.after as InstanceElement
       const modifiedImmutableFields = await awu(Object.values((await after.getType()).fields))
-        .filter(async field => await field.getType() === BuiltinTypes.SERVICE_ID)
+        .filter(async field => isServiceId(await field.getType()))
         .filter(field => before.value[field.name] !== after.value[field.name])
         .map(field => field.name)
         .toArray()

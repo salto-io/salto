@@ -17,10 +17,10 @@ import wu from 'wu'
 import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
 import {
-  Element, ElemID, AdapterOperations, Values, ServiceIds, BuiltinTypes, ObjectType,
+  Element, ElemID, AdapterOperations, Values, ServiceIds, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
-  ProgressReporter, ReferenceMap, ReadOnlyElementsSource,
+  ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
@@ -541,19 +541,21 @@ export const fetchChanges = async (
 
 const id = (elemID: ElemID): string => elemID.getFullName()
 
-const getServiceIdsFromAnnotations = (annotationRefTypes: ReferenceMap, annotations: Values,
+const getServiceIdsFromAnnotations = (annotationRefTypes: TypeMap, annotations: Values,
   elemID: ElemID): ServiceIds =>
   _(Object.entries(annotationRefTypes))
     .filter(([_annotationName, annotationRefType]) =>
-      (annotationRefType.elemID.isEqual(BuiltinTypes.SERVICE_ID.elemID)))
+      (isServiceId(annotationRefType)))
     .map(([annotationName, _annotationType]) =>
       [annotationName, annotations[annotationName] || id(elemID)])
     .fromPairs()
     .value()
 
-const getObjectServiceId = (objectType: ObjectType): string => {
-  const serviceIds = getServiceIdsFromAnnotations(objectType.annotationRefTypes,
-    objectType.annotations, objectType.elemID)
+const getObjectServiceId = async (objectType: ObjectType,
+  elementsSource: ReadOnlyElementsSource): Promise<string> => {
+  const serviceIds = getServiceIdsFromAnnotations(await objectType
+    .getAnnotationTypes(elementsSource),
+  objectType.annotations, objectType.elemID)
   if (_.isEmpty(serviceIds)) {
     serviceIds[OBJECT_NAME] = id(objectType.elemID)
   }
@@ -561,13 +563,14 @@ const getObjectServiceId = (objectType: ObjectType): string => {
   return toServiceIdsString(serviceIds)
 }
 
+
 const getFieldServiceId = async (
   objectServiceId: string,
   field: Field,
   elementsSource: ReadOnlyElementsSource,
 ): Promise<string> => {
   const serviceIds = getServiceIdsFromAnnotations(
-    (await field.getType(elementsSource)).annotationRefTypes,
+    (await (await field.getType(elementsSource)).getAnnotationTypes(elementsSource)),
     field.annotations,
     field.elemID
   )
@@ -584,18 +587,17 @@ const getInstanceServiceId = async (
   elementsSource: ReadOnlyElementsSource,
 ): Promise<string> => {
   const instType = await instanceElement.getType(elementsSource)
-  const serviceIds = _(Object.entries(instType.fields))
-    .filter(([_fieldName, field]) =>
-      (field.refType.elemID.isEqual(BuiltinTypes.SERVICE_ID.elemID)))
+  const serviceIds = Object.fromEntries(await awu(Object.entries(instType.fields))
+    .filter(async ([_fieldName, field]) =>
+      (isServiceId(await field.getType(elementsSource))))
     .map(([fieldName, _field]) =>
       [fieldName, instanceElement.value[fieldName] || id(instanceElement.elemID)])
-    .fromPairs()
-    .value()
+    .toArray())
   if (_.isEmpty(serviceIds)) {
     serviceIds[INSTANCE_NAME] = id(instanceElement.elemID)
   }
   serviceIds[ADAPTER] = instanceElement.elemID.adapter
-  serviceIds[OBJECT_SERVICE_ID] = getObjectServiceId(instType)
+  serviceIds[OBJECT_SERVICE_ID] = await getObjectServiceId(instType, elementsSource)
   return toServiceIdsString(serviceIds)
 }
 
@@ -607,7 +609,7 @@ export const generateServiceIdToStateElemId = async (
     .filter(elem => isInstanceElement(elem) || isObjectType(elem))
     .flatMap(async elem => {
       if (isObjectType(elem)) {
-        const objectServiceId = getObjectServiceId(elem)
+        const objectServiceId = await getObjectServiceId(elem, elementsSource)
         const fieldPairs = await Promise.all(Object.values(elem.fields)
           .map(async field => [
             await getFieldServiceId(objectServiceId, field, elementsSource),

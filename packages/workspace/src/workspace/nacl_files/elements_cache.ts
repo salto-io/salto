@@ -21,7 +21,7 @@ import { ThenableIterable } from '@salto-io/lowerdash/src/collections/asyncitera
 import _ from 'lodash'
 import AsyncLock from 'async-lock'
 import { MergeError, MergeResult } from '../../merger'
-import { ElementsSource } from '../elements_source'
+import { ElementsSource, mapReadOnlyElementsSource } from '../elements_source'
 import { RemoteMap, RemoteMapEntry, RemoteMapCreator } from '../remote_map'
 
 const { awu } = collections.asynciterable
@@ -58,6 +58,8 @@ export type CacheUpdate = {
 export type CacheChangeSetUpdate = {
   src1Changes?: ChangeSet<Change<Element>>
   src2Changes?: ChangeSet<Change<Element>>
+  src1Overrides?: Record<string, Element>
+  src2Overrides?: Record<string, Element>
   src1Prefix: string
   src2Prefix: string
   mergeFunc: (elements: AsyncIterable<Element>) => Promise<MergeResult>
@@ -189,8 +191,17 @@ export const createMergeManager = async (flushables: Flushable[],
     noErrorMergeIds: string[]
   }> => {
     const { src1Changes: possibleSrc1Changes, src2Changes: possibleSrc2Changes } = cacheUpdate
-    const src1 = sources[cacheUpdate.src1Prefix]
-    const src2 = sources[cacheUpdate.src2Prefix]
+    const src1 = values.isDefined(cacheUpdate.src1Overrides)
+      ? mapReadOnlyElementsSource(
+        sources[cacheUpdate.src1Prefix],
+        async elem => elem && (cacheUpdate.src1Overrides?.[elem.elemID.getFullName()] ?? elem)
+      )
+      : sources[cacheUpdate.src1Prefix]
+    const src2 = values.isDefined(cacheUpdate.src2Overrides)
+      ? mapReadOnlyElementsSource(
+        sources[cacheUpdate.src2Prefix],
+        async elem => elem && (cacheUpdate.src2Overrides?.[elem.elemID.getFullName()] ?? elem)
+      ) : sources[cacheUpdate.src2Prefix]
     const src1Changes = possibleSrc1Changes ?? createEmptyChangeSet(
       await hashes.get(getSourceHashKey(cacheUpdate.src1Prefix))
     )
@@ -239,7 +250,9 @@ export const createMergeManager = async (flushables: Flushable[],
         deleted1.forEach(d => potentialDeletedIds.add(d))
         deleted2.forEach(d => potentialDeletedIds.add(d))
         src1ElementsToMerge = await awu(await getElementsToMergeFromChanges(
-          src1Changes, src2ChangeIDs, src2,
+          src1Changes,
+          src2ChangeIDs,
+          src2,
         ))
         src2ElementsToMerge = await awu(await getElementsToMergeFromChanges(
           src2Changes, src1ChangeIDs, src1,

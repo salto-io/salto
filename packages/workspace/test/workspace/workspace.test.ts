@@ -285,7 +285,7 @@ describe('workspace', () => {
 
   describe('getSearchableNames', () => {
     let workspace: Workspace
-    const TOTAL_NUM_ELEMENETS = 54
+    const TOTAL_NUM_ELEMENETS = 57
 
     it('should return names of top level elements and fields', async () => {
       workspace = await createWorkspace()
@@ -486,7 +486,7 @@ describe('workspace', () => {
   describe('removeNaclFiles', () => {
     let dirStore: DirectoryStore<string>
     let workspace: Workspace
-    const removedPaths = ['file.nacl', 'willbempty.nacl']
+    const removedPaths = ['file.nacl', 'willbempty.nacl', 'fieldsWithHidden.nacl']
 
     beforeEach(async () => {
       dirStore = mockDirStore()
@@ -629,7 +629,7 @@ describe('workspace', () => {
         'salesforce.new': newAddedObject,
         'salesforce.RenamedType1': new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType1') }),
       }
-      expect(Object.keys(refMap).sort()).toEqual(Object.keys(elemMap).sort())
+      expect(elemMap.nonempty).not.toBeDefined()
       Object.keys(refMap).forEach(
         key => expect(elemMap[key].isEqual(refMap[key])).toBeTruthy()
       )
@@ -950,6 +950,19 @@ describe('workspace', () => {
         [CORE_ANNOTATIONS.HIDDEN]: true,
       }
     )
+
+    const objWithFieldTypeWithHidden = new ObjectType({
+      elemID: ElemID.fromFullName('salesforce.ObjWithFieldTypeWithHidden'),
+      fields: {
+        fieldWithHidden: {
+          refType: new ReferenceExpression(ElemID.fromFullName('salesforce.FieldTypeWithHidden')),
+          annotations: {
+            visible: 'YOU SEE ME',
+            hiddenValAnno: 'YOU DO NOT SEE ME',
+          },
+        },
+      },
+    })
 
     const renamedTypes = {
       before: new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType1') }),
@@ -1278,6 +1291,14 @@ describe('workspace', () => {
           before: queueHiddenInstanceToRemove,
         },
       },
+      // Remove a field with hidden annotations
+      {
+        id: objWithFieldTypeWithHidden.fields.fieldWithHidden.elemID,
+        action: 'remove',
+        data: {
+          before: objWithFieldTypeWithHidden.fields.fieldWithHidden,
+        },
+      },
     ]
 
     let clonedChanges: DetailedChange[]
@@ -1301,7 +1322,7 @@ describe('workspace', () => {
     let elemMapWithHidden: Record<string, Element>
     let workspace: Workspace
     let numResults: number
-    const numExpectedChanges = 34
+    const numExpectedChanges = 35
     const dirStore = mockDirStore()
 
     beforeAll(async () => {
@@ -1337,6 +1358,7 @@ describe('workspace', () => {
         queueHiddenInstance,
         queueSobjectHiddenSubType,
         queueHiddenInstanceToRemove,
+        objWithFieldTypeWithHidden,
       ])
 
       workspace = await createWorkspace(dirStore, state)
@@ -1610,6 +1632,13 @@ describe('workspace', () => {
       expect(elemMap[queueHiddenInstanceToRemove.elemID.getFullName()]).toBeUndefined()
       const elem = await workspace.getValue(queueHiddenInstanceToRemove.elemID)
       expect(elem).toBeUndefined()
+    })
+
+    it('should remove fields that were removed from the nacls even if they have hidden annotations', async () => {
+      expect(elemMap[objWithFieldTypeWithHidden.elemID.getFullName()]).toBeDefined()
+      const elem = await workspace.getValue(objWithFieldTypeWithHidden.elemID) as ObjectType
+      expect(elem).toBeDefined()
+      expect(elem.fields.fieldWithHidden).toBeUndefined()
     })
 
     describe('on secondary envs', () => {

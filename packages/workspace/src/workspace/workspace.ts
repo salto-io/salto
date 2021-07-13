@@ -334,11 +334,27 @@ export const loadWorkspace = async (
           postChangeHash: await state(envName).getHash(),
         }
       }
+
+      const workspaceChangedElements = _.keyBy(
+        await awu(workspaceChanges[envName]?.changes ?? [])
+          .map(change => (isRemovalChange(change) ? undefined : getChangeElement(change)))
+          .filter(values.isDefined)
+          .map(async workspaceElement => getElementHiddenParts(
+            await state(envName).get(workspaceElement.elemID) ?? workspaceElement,
+            state(envName),
+            workspaceElement
+          ))
+          .filter(values.isDefined)
+          .toArray(),
+        elem => elem.elemID.getFullName()
+      )
+
       const changeResult = await stateToBuild.mergeManager.mergeComponents({
         src1Changes: workspaceChanges[envName],
         src2Changes: await completeStateOnlyChanges(stateOnlyChanges[envName]
           ?? createEmptyChangeSet(await stateToBuild.mergeManager
             .getHash(STATE_SOURCE_PREFIX + envName))),
+        src2Overrides: workspaceChangedElements,
         src1Prefix: MULTI_ENV_SOURCE_PREFIX + envName,
         src2Prefix: STATE_SOURCE_PREFIX + envName,
         mergeFunc: elements => mergeElements(elements),

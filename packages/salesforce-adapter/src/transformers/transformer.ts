@@ -824,10 +824,14 @@ const toRecord = (
   instance: InstanceElement,
   fieldAnnotationToFilterBy: string,
 ): SalesforceRecord => {
+  const valsWithNulls = {
+    ..._.mapValues(instance.type.fields, () => null),
+    ...instance.value,
+  }
   const filteredRecordValues = {
     [CUSTOM_OBJECT_ID_FIELD]: instance.value[CUSTOM_OBJECT_ID_FIELD],
     ..._.pickBy(
-      instance.value,
+      valsWithNulls,
       (_v, k) => instance.type.fields[k]?.annotations[fieldAnnotationToFilterBy]
     ),
   }

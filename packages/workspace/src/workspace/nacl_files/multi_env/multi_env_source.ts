@@ -18,8 +18,8 @@ import path from 'path'
 import wu from 'wu'
 
 import { Element, ElemID, getChangeElement, Value,
-  DetailedChange, Change, ChangeDataType } from '@salto-io/adapter-api'
-import { promises, collections } from '@salto-io/lowerdash'
+  DetailedChange, Change, ChangeDataType, StaticFile } from '@salto-io/adapter-api'
+import { promises, collections, values } from '@salto-io/lowerdash'
 import { applyInstanceDefaults } from '@salto-io/adapter-utils'
 import { RemoteMap, RemoteMapCreator, mapRemoteMapResult } from '../../remote_map'
 import { ElementSelector, selectElementIdsByTraversal } from '../../element_selector'
@@ -121,13 +121,28 @@ const buildMultiEnvSource = (
     [commonSourceName]: sources[commonSourceName],
   })
 
+  const getStaticFileByHash = (
+    filePath: string,
+    encoding: BufferEncoding,
+    hash: string
+  ): Promise<StaticFile | undefined> => awu(Object.values(getActiveSources()))
+    .map(src => src.getStaticFileByHash(filePath, encoding, hash))
+    .find(values.isDefined)
+
   const buildStateForSingleEnv = async (
     envName: string,
   ): Promise<SingleState> => {
     const elements = new RemoteElementSource(await remoteMapCreator<Element>({
       namespace: getRemoteMapNamespace('merged', envName),
       serialize: element => serialize([element], 'keepRef'),
-      deserialize: deserializeSingleElement,
+      deserialize: s => deserializeSingleElement(
+        s,
+        async staticFile => await getStaticFileByHash(
+          staticFile.filepath,
+          staticFile.encoding,
+          staticFile.hash
+        ) ?? staticFile
+      ),
       persistent,
     }))
     return {
@@ -566,6 +581,7 @@ const buildMultiEnvSource = (
       const naclSource = env === undefined ? primarySource() : sources[env]
       return naclSource === undefined ? [] : naclSource.getSearchableNames()
     },
+    getStaticFileByHash,
   }
 }
 

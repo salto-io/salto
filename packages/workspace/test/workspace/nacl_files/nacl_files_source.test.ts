@@ -19,7 +19,7 @@ import _ from 'lodash'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
 import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
-import { StaticFilesSource } from '../../../src/workspace/static_files'
+import { StaticFilesSource, MissingStaticFile } from '../../../src/workspace/static_files'
 import { ParsedNaclFileCache, createParseResultCache } from '../../../src/workspace/nacl_files/parsed_nacl_files_cache'
 
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../utils'
@@ -472,6 +472,55 @@ describe('Nacl Files Source', () => {
         false
       )
       await expect(nonPSrc.flush()).rejects.toThrow()
+    })
+  })
+
+  describe('getStaticFileByHash', () => {
+    const staticFileSource = mockStaticFilesSource()
+    const staticFile = new StaticFile({
+      content: Buffer.from(''),
+      filepath: 'aaa.txt',
+      encoding: 'utf-8',
+      hash: 'aaa',
+    })
+    it('should return the file it is present and the hashes match', async () => {
+      staticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(staticFile)
+      const src = await naclFilesSource(
+        '',
+        mockDirStore,
+        staticFileSource,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+        false
+      )
+      expect(await src.getStaticFileByHash(
+        staticFile.filepath, staticFile.encoding, staticFile.hash
+      )).toEqual(staticFile)
+    })
+    it('should return undefined if the file is invalid', async () => {
+      staticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
+      const src = await naclFilesSource(
+        '',
+        mockDirStore,
+        staticFileSource,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+        false
+      )
+      expect(await src.getStaticFileByHash(
+        'nope.txt', staticFile.encoding, staticFile.hash
+      )).not.toBeDefined()
+    })
+    it('should return undefined if the hahes do not match', async () => {
+      staticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(staticFile)
+      const src = await naclFilesSource(
+        '',
+        mockDirStore,
+        staticFileSource,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+        false
+      )
+      expect(await src.getStaticFileByHash(
+        staticFile.filepath, staticFile.encoding, 'otherhash'
+      )).not.toBeDefined()
     })
   })
 })

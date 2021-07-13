@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, Element, Change, isObjectType } from '@salto-io/adapter-api'
+import { ElemID, Element, Change, isObjectType, isStaticFile } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -22,6 +22,7 @@ import { Errors } from '../../src/workspace/errors'
 import { SourceRange } from '../../src/parser/internal/types'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { createAddChange } from '../../src/workspace/nacl_files/multi_env/projections'
+import { mockStaticFilesSource } from '../utils'
 
 const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
@@ -32,6 +33,7 @@ export const createMockNaclFileSource = (
   errors: Errors = new Errors({ merge: [], parse: [], validation: [] }),
   sourceRanges?: SourceRange[],
   changes: ChangeSet<Change> = { changes: [], cacheValid: true },
+  staticFileSource = mockStaticFilesSource()
 ): NaclFilesSource => {
   const currentElements = elements
   const elementSource = createInMemoryElementSource(currentElements)
@@ -99,5 +101,11 @@ export const createMockNaclFileSource = (
         : []
       return [e.elemID.getFullName(), ...fieldNames]
     }))),
+    getStaticFileByHash: async (filePath, enc, hash) => {
+      const sfile = await staticFileSource.getStaticFile(filePath, enc)
+      return isStaticFile(sfile) && sfile.hash === hash
+        ? sfile
+        : undefined
+    },
   })
 }

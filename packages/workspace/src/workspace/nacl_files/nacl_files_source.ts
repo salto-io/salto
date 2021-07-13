@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import { Element, ElemID, Value, DetailedChange, isElement, getChangeElement, isObjectType,
   isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, isVariable, Change,
   placeholderReadonlyElementsSource, ObjectType, isModificationChange,
-  isObjectTypeChange, toChange, isAdditionChange } from '@salto-io/adapter-api'
+  isObjectTypeChange, toChange, isAdditionChange, StaticFile, isStaticFile } from '@salto-io/adapter-api'
 import { resolvePath, TransformFuncArgs, transformElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { promises, values, collections } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
@@ -90,6 +90,11 @@ export type NaclFilesSource<Changes=ChangeSet<Change>> = Omit<ElementsSource, 'c
   getElementsSource: () => Promise<ElementsSource>
   load: (args: SourceLoadParams) => Promise<Changes>
   getSearchableNames(): Promise<string[]>
+  getStaticFileByHash: (
+    filePath: string,
+    encoding: BufferEncoding,
+    hash: string
+  ) => Promise<StaticFile | undefined>
 }
 
 type NaclFilesState = {
@@ -918,6 +923,13 @@ const buildNaclFilesSource = (
     },
     getSearchableNames: async (): Promise<string[]> =>
       (awu((await getState())?.searchableNamesIndex?.keys() ?? []).toArray()),
+    getStaticFileByHash: async (filePath, encoding, hash) => {
+      const staticFile = await staticFilesSource.getStaticFile(filePath, encoding)
+      if (isStaticFile(staticFile) && staticFile.hash === hash) {
+        return staticFile
+      }
+      return undefined
+    },
   }
 }
 

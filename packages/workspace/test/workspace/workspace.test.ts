@@ -96,7 +96,6 @@ const createState = (
   servicesUpdateDate: new InMemoryRemoteMap(),
   saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
 }), persistent)
-
 const createWorkspace = async (
   dirStore?: DirectoryStore<string>,
   state?: State,

@@ -54,11 +54,11 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
     )
   },
   preDeploy: async changes => {
-    const saveSearches = await Promise.all(changes
+    changes
       .filter(isInstanceChange)
       .map(getChangeElement)
-      .filter(instance => instance.elemID.typeName === SAVED_SEARCH))
-    saveSearches.forEach(instance => removeValuesFromInstace(instance))
+      .filter(instance => instance.elemID.typeName === SAVED_SEARCH)
+      .forEach(instance => removeValuesFromInstace(instance))
   },
 })
 

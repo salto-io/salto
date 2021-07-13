@@ -20,7 +20,7 @@ import {
   Element, ElemID, AdapterOperations, Values, ServiceIds, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
-  ProgressReporter, ReadOnlyElementsSource, TypeMap, CORE_ANNOTATIONS,
+  ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
@@ -545,7 +545,7 @@ const getServiceIdsFromAnnotations = (annotationRefTypes: TypeMap, annotations: 
   elemID: ElemID): ServiceIds =>
   _(Object.entries(annotationRefTypes))
     .filter(([_annotationName, annotationRefType]) =>
-      (annotationRefType.annotations?.[CORE_ANNOTATIONS.SERVICE_ID] === true))
+      (isServiceId(annotationRefType)))
     .map(([annotationName, _annotationType]) =>
       [annotationName, annotations[annotationName] || id(elemID)])
     .fromPairs()
@@ -589,7 +589,7 @@ const getInstanceServiceId = async (
   const instType = await instanceElement.getType(elementsSource)
   const serviceIds = Object.fromEntries(await awu(Object.entries(instType.fields))
     .filter(async ([_fieldName, field]) =>
-      ((await field.getType(elementsSource)).annotations?.[CORE_ANNOTATIONS.SERVICE_ID] === true))
+      (isServiceId(await field.getType(elementsSource))))
     .map(([fieldName, _field]) =>
       [fieldName, instanceElement.value[fieldName] || id(instanceElement.elemID)])
     .toArray())

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values, CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction, ListType, createRestriction } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values, CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction, ListType, createRestriction, isServiceId } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { Field as SalesforceField } from 'jsforce'
 import { restoreValues, resolveValues, createRefToElmWithValue } from '@salto-io/adapter-utils'
@@ -411,7 +411,7 @@ describe('transformer', () => {
         salesforceIdField = _.cloneDeep(origSalesforceIdField)
         const fieldElement = getSObjectFieldElement(dummyElem, salesforceIdField,
           serviceIds, {})
-        expect((await fieldElement.getType()).annotations?.[CORE_ANNOTATIONS.SERVICE_ID])
+        expect(isServiceId((await fieldElement.getType())))
           .toEqual(true)
       })
     })
@@ -1134,8 +1134,7 @@ describe('transformer', () => {
   describe('type definitions', () => {
     it('should include apiName annotation with service_id type', async () => {
       await awu(Object.values(Types.getAllFieldTypes())).forEach(async type => {
-        expect((await type.getAnnotationTypes())[API_NAME]
-          .annotations?.[CORE_ANNOTATIONS.SERVICE_ID])
+        expect(isServiceId((await type.getAnnotationTypes())[API_NAME]))
           .toEqual(true)
       })
     })

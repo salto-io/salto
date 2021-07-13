@@ -135,6 +135,10 @@ export const BuiltinTypes = {
   }),
 }
 
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export const isServiceId = (type: any): boolean =>
+  type.annotations?.[CORE_ANNOTATIONS.SERVICE_ID] ?? false
+
 export const BuiltinTypesByFullName: Record<string, PrimitiveType> = (_.keyBy(
   Object.values(BuiltinTypes),
   builtinType => builtinType.elemID.getFullName(),

@@ -15,7 +15,7 @@
 */
 import {
   InstanceElement, isInstanceElement, isPrimitiveType, ElemID, getFieldType,
-  isReferenceExpression, Value, CORE_ANNOTATIONS,
+  isReferenceExpression, Value, isServiceId,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
@@ -41,7 +41,7 @@ export const findDependingInstancesFromRefs = async (
       elemId.createTopLevelParentID().path
     )
     return (isPrimitiveType(fieldType)
-      && fieldType.annotations?.[CORE_ANNOTATIONS.SERVICE_ID] === true)
+      && isServiceId(fieldType))
   }
 
   const createDependingElementsCallback: TransformFunc = async ({ value }) => {

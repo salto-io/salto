@@ -19,6 +19,7 @@ import {
   CORE_ANNOTATIONS, Value, isInstanceElement,
   ReferenceExpression, isListType, FieldDefinition, toChange, Change, ModificationChange,
   getChangeElement,
+  isServiceId,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -496,11 +497,9 @@ describe('Custom Objects filter', () => {
         mockSingleSObject('Lead', [])
         await filter.onFetch(result)
         const lead = findElements(result, 'Lead').pop() as ObjectType
-        expect((await lead.getAnnotationTypes())[API_NAME]
-          .annotations?.[CORE_ANNOTATIONS.SERVICE_ID])
+        expect(isServiceId((await lead.getAnnotationTypes())[API_NAME]))
           .toEqual(true)
-        expect((await lead.getAnnotationTypes())[METADATA_TYPE]
-          .annotations?.[CORE_ANNOTATIONS.SERVICE_ID])
+        expect(isServiceId((await lead.getAnnotationTypes())[METADATA_TYPE]))
           .toEqual(true)
         expect(lead.annotations[API_NAME]).toEqual('Lead')
         expect(lead.annotations[METADATA_TYPE]).toEqual(CUSTOM_OBJECT)

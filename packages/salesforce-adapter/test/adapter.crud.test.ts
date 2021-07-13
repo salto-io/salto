@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeElement, Values, Change, toChange, ChangeGroup, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeElement, Values, Change, toChange, ChangeGroup, isAdditionOrModificationChange, isServiceId } from '@salto-io/adapter-api'
 import { MetadataInfo, SaveResult, Package } from 'jsforce'
 import JSZip from 'jszip'
 import xmlParser from 'fast-xml-parser'
@@ -236,12 +236,10 @@ describe('SalesforceAdapter CRUD', () => {
         // Verify object creation
         expect(result).toBeInstanceOf(ObjectType)
         expect(result.annotations[constants.API_NAME]).toBe('Test__c')
-        expect((await result.getAnnotationTypes())[constants.API_NAME]
-          .annotations?.[CORE_ANNOTATIONS.SERVICE_ID])
+        expect((isServiceId((await result.getAnnotationTypes())[constants.API_NAME])))
           .toEqual(true)
         expect(result.annotations[constants.METADATA_TYPE]).toBe(constants.CUSTOM_OBJECT)
-        expect((await result.getAnnotationTypes())[constants.METADATA_TYPE]
-          .annotations?.[CORE_ANNOTATIONS.SERVICE_ID])
+        expect(isServiceId((await result.getAnnotationTypes())[constants.METADATA_TYPE]))
           .toEqual(true)
         const objAnnotations = result.annotations as CustomObject
         expect(objAnnotations.label).toEqual('Test')

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, InstanceElement, toChange } from '@salto-io/adapter-api'
+import { AdditionChange, ElemID, InstanceElement, isObjectType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/parse_saved_searchs'
 import { customTypes } from '../../src/types'
@@ -29,6 +29,19 @@ jest.mock('../../src/saved_search_parser', () => ({
 describe('parse_saved_searches filter', () => {
   let instance: InstanceElement
   let sourceInstance: InstanceElement
+  let fetchOpts = {
+    client: {} as NetsuiteClient,
+    elementsSourceIndex: {
+      getIndexes: () => Promise.resolve({
+        serviceIdsIndex: {},
+        internalIdsIndex: {},
+        customFieldsIndex: {},
+      }),
+    },
+    elementsSource: buildElementsSourceFromElements([]),
+    isPartial: false,
+    dataTypeNames: new Set<string>(),
+  }
   beforeEach(() => {
     instance = new InstanceElement(
       'someSearch',
@@ -42,25 +55,20 @@ describe('parse_saved_searches filter', () => {
     )
     sourceInstance.value.definition = 'testDefinition'
   })
+  it('test onFetch removes old object type', async () => {
+    const savedSearchObject = new ObjectType({ elemID: new ElemID('netsuite', SAVED_SEARCH), fields: {} })
+    const elements = [savedSearchObject]
+    await filterCreator(fetchOpts).onFetch?.(elements)
+    expect(elements.filter(isObjectType)
+      .filter(e => e.elemID.typeName === SAVED_SEARCH))
+      .not.toEqual(savedSearchObject)
+  })
   it('test onFetch adds definition values', async () => {
-    const fetchOpts = {
-      client: {} as NetsuiteClient,
-      elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          internalIdsIndex: {},
-          customFieldsIndex: {},
-        }),
-      },
-      elementsSource: buildElementsSourceFromElements([]),
-      isPartial: false,
-      dataTypeNames: new Set<string>(),
-    }
     await filterCreator(fetchOpts).onFetch?.([instance])
     expect(instance.value.test).toEqual('test')
   })
   it('test onFetch keeps old definition', async () => {
-    const fetchOpts = {
+    fetchOpts = {
       client: {} as NetsuiteClient,
       elementsSourceIndex: {
         getIndexes: () => Promise.resolve({
@@ -77,19 +85,6 @@ describe('parse_saved_searches filter', () => {
     expect(instance.value.definition).toEqual('testDefinition')
   })
   it('test preDeploy removes values', async () => {
-    const fetchOpts = {
-      client: {} as NetsuiteClient,
-      elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          internalIdsIndex: {},
-          customFieldsIndex: {},
-        }),
-      },
-      elementsSource: buildElementsSourceFromElements([sourceInstance]),
-      isPartial: false,
-      dataTypeNames: new Set<string>(),
-    }
     instance.value.test = 'toBeRemoved'
     const change = toChange({ after: instance }) as AdditionChange<InstanceElement>
     expect(change.data.after.value.test).toEqual('toBeRemoved')

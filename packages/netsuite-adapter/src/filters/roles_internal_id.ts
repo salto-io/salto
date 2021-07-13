@@ -31,6 +31,9 @@ result is { scriptid: string; id: string } => {
   return true
 }
 
+const isRoleInstance = (element: unknown): element is InstanceElement =>
+  isInstanceElement(element) && element.elemID.typeName === ROLE
+
 const getRolesScriptIdsToInternalIds = async (client: NetsuiteClient):
 Promise<Record<string, string>> => {
   const rolesResults = await client.runSuiteQL('SELECT scriptid, id FROM role ORDER BY id ASC')
@@ -50,8 +53,7 @@ const getRoleAdditionInstances = (changes: Change[]): InstanceElement[] =>
   changes
     .filter(isAdditionChange)
     .map(getChangeElement)
-    .filter(isInstanceElement)
-    .filter(e => e.elemID.typeName === ROLE)
+    .filter(isRoleInstance)
 
 /**
  * This filter adds the internal id to role instances
@@ -61,7 +63,7 @@ const getRoleAdditionInstances = (changes: Change[]): InstanceElement[] =>
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async elements => {
     if (!client.isSuiteAppConfigured()
-    || !elements.some(e => isInstanceElement(e) && e.elemID.typeName === ROLE)) {
+    || !elements.some(isRoleInstance)) {
       return
     }
     role.fields.internalId = new Field(

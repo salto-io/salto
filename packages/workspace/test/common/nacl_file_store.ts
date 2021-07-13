@@ -215,6 +215,23 @@ type salesforce.lead {
   'willbempty.nacl': 'type nonempty { a = 2 }',
   'renamed_type.nacl': `type salesforce.RenamedType1 {
   }`,
+  'fieldsWithHidden.nacl': `
+  type salesforce.FieldTypeWithHidden {
+    annotations {
+      salesforce.HiddenVal hiddenValAnno {
+      }
+      string visible {
+
+      }
+    }
+  }
+
+  type salesforce.ObjWithFieldTypeWithHidden {
+    salesforce.FieldTypeWithHidden fieldWithHidden {
+      visible = "YOU SEE ME"
+    }
+  }
+  `,
 }
 
 export const mockDirStore = (

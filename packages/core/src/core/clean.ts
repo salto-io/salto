@@ -17,6 +17,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { Workspace, WorkspaceComponents } from '@salto-io/workspace'
+import { cleanDatabases } from '../local-workspace/remote_map'
 import { getDefaultAdapterConfig } from './adapters'
 
 const { awu } = collections.asynciterable
@@ -40,4 +41,7 @@ export const cleanWorkspace = async (
     })
   }
   await workspace.flush()
+  if (cleanArgs.cache === true) {
+    await cleanDatabases()
+  }
 }

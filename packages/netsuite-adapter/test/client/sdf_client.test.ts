@@ -803,7 +803,7 @@ describe('netsuite client', () => {
       })
       const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toEqual(fileCabinetTopLevelFolders)
+      expect(failedPaths).toEqual(fileCabinetTopLevelFolders.map(folderPath => `^${folderPath}.*`))
     })
 
     it('should fail when SETUP_ACCOUNT has failed', async () => {

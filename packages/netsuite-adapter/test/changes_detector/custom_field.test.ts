@@ -52,6 +52,7 @@ describe('custom_field', () => {
       SELECT scriptid, lastmodifieddate
       FROM customfield
       WHERE lastmodifieddate BETWEEN '1/11/2021' AND '2/23/2021'
+      ORDER BY scriptid ASC
     `)
     })
   })

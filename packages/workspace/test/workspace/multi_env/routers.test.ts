@@ -1062,6 +1062,7 @@ describe('track', () => {
     },
     annotationRefsOrTypes: {
       env: BuiltinTypes.STRING,
+      internalId: BuiltinTypes.HIDDEN_STRING,
     },
     annotations: {
       env: 'ENV',
@@ -1189,9 +1190,10 @@ describe('track', () => {
       secondarySources
     )
     expect(changes.primarySource).toHaveLength(1)
-    expect(changes.commonSource).toHaveLength(5)
+    expect(changes.commonSource).toHaveLength(6)
     expect(hasChanges(changes.commonSource || [], [
       { action: 'add', id: splitObjEnv.elemID.createNestedID('annotation', 'env') },
+      { action: 'add', id: splitObjEnv.elemID.createNestedID('annotation', 'internalId') },
       { action: 'add', id: splitObjEnv.elemID.createNestedID('attr', 'split', 'env') },
       { action: 'add', id: splitObjEnv.elemID.createNestedID('attr', 'env') },
       { action: 'add', id: splitObjEnv.fields.envField.elemID },

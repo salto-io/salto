@@ -74,7 +74,13 @@ export const FETCH_TARGET = 'fetchTarget'
 export const SKIP_LIST = 'skipList'
 export const USE_CHANGES_DETECTION = 'useChangesDetection'
 export const RAW_CONFIG = 'rawConfig'
+export const FETCH = 'fetch'
+export const INCLUDE = 'include'
+export const EXCLUDE = 'exclude'
+export const DEPLOY = 'deploy'
 
 export const CAPTURE = 'capture'
 // e.g. '[scriptid=customworkflow1]' & '[scriptid=customworkflow1.workflowstate17.workflowaction33]'
 export const scriptIdReferenceRegex = new RegExp(`^\\[${SCRIPT_ID}=(?<${CAPTURE}>[a-z0-9_]+(\\.[a-z0-9_]+)*)]$`)
+
+export const ACCOUNT_SPECIFIC_VALUE = '[ACCOUNT_SPECIFIC_VALUE]'

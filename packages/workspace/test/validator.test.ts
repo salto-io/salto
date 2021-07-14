@@ -912,6 +912,20 @@ describe('Elements validation', () => {
           expect(errors[0]).toBeInstanceOf(InvalidValueMaxLengthValidationError)
         })
 
+        it('should not return validation error on max_length validation if value is not a string', async () => {
+          extInst.value.restrictStringLength = {}
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(1)
+          expect(errors[0]).not.toBeInstanceOf(InvalidValueMaxLengthValidationError)
+        })
+
         it('should succeed max_length validation on an instance through field annotation', async () => {
           extInst.value.restrictStringLength = 'a'
           const errors = await validateElements(
@@ -1868,6 +1882,103 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID)
           .toEqual(unresolvedRefInAnnoInst.elemID.createNestedID(CORE_ANNOTATIONS.PARENT, '1'))
+      })
+    })
+
+    describe('validate fields that are unmatched to ObjectType', () => {
+      const someType = new ObjectType({
+        elemID: new ElemID('salto', 'test'),
+        fields: {
+          someField: {
+            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          },
+        },
+      })
+
+      it('should validate unmatched field with legal value with no errors', async () => {
+        const instanceWithUnMatchedField = new InstanceElement(
+          'instanceWithUnMatchedAndUnresolvedField',
+          someType,
+          {
+            someField: 'str',
+            unExpectedField: 3,
+          }
+        )
+        const errors = await validateElements(
+          [instanceWithUnMatchedField],
+          createInMemoryElementSource([
+            someType,
+            ...await getFieldsAndAnnoTypes(someType),
+          ]),
+        )
+        expect(errors).toHaveLength(0)
+      })
+
+      it('should validated unmatched fields and return unresolved reference error', async () => {
+        const instanceWithUnMatchedAndUnresolvedField = new InstanceElement(
+          'instanceWithUnMatchedAndUnresolvedField',
+          someType,
+          {
+            someField: 'str',
+            unExpectedField: new ReferenceExpression(new ElemID('salto', 'test', 'field', 'noSuchField')),
+          }
+        )
+        const errors = await validateElements(
+          [instanceWithUnMatchedAndUnresolvedField],
+          createInMemoryElementSource([
+            someType,
+            ...await getFieldsAndAnnoTypes(someType),
+          ]),
+        )
+        expect(errors).toHaveLength(1)
+      })
+
+      it('should validated unmatched nested fields and return unresolved reference error', async () => {
+        const instanceWithUnMatchedAndUnresolvedField = new InstanceElement(
+          'instanceWithUnMatchedAndUnresolvedField',
+          someType,
+          {
+            someField: 'str',
+            nested: {
+              unExpectedField: new ReferenceExpression(new ElemID('salto', 'test', 'field', 'noSuchField')),
+            },
+          }
+        )
+        const errors = await validateElements(
+          [instanceWithUnMatchedAndUnresolvedField],
+          createInMemoryElementSource([
+            someType,
+            ...await getFieldsAndAnnoTypes(someType),
+          ]),
+        )
+        expect(errors).toHaveLength(1)
+      })
+
+      it('should validated unmatched nested fields when some are resolved and some are not and return error for all unresolved unmatched nested fields', async () => {
+        const instanceWithUnMatchedAndUnresolvedField = new InstanceElement(
+          'instanceWithUnMatchedAndUnresolvedField',
+          someType,
+          {
+            someField: 'str',
+            unExpectedResolvedField: 2,
+            nested: {
+              unExpectedField: new ReferenceExpression(new ElemID('salto', 'test', 'field', 'noSuchField')),
+              nested2: {
+                resolvedField: 'str',
+                unResolvedField: new ReferenceExpression(new ElemID('salto', 'test', 'field', 'noSuchField')),
+                unResolvedField2: new ReferenceExpression(new ElemID('salto', 'test', 'field', 'noSuchField')),
+              },
+            },
+          }
+        )
+        const errors = await validateElements(
+          [instanceWithUnMatchedAndUnresolvedField],
+          createInMemoryElementSource([
+            someType,
+            ...await getFieldsAndAnnoTypes(someType),
+          ]),
+        )
+        expect(errors).toHaveLength(3)
       })
     })
   })

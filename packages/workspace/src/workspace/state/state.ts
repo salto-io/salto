@@ -41,6 +41,7 @@ export interface State extends ElementsSource {
   getPathIndex(): Promise<PathIndex>
   getHash(): Promise<string | undefined>
   setHash(hash: string): Promise<void>
+  calculateHash(): Promise<void>
   getStateSaltoVersion(): Promise<string | undefined>
 }
 

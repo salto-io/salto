@@ -176,7 +176,7 @@ describe('netsuite client', () => {
   const typeNames = instancesIds.map(instance => instance.type)
 
   const typeNamesQuery = buildNetsuiteQuery({
-    types: Object.fromEntries(instancesIds.map(id => [id.type, ['.*']])),
+    types: instancesIds.map(instance => ({ name: instance.type, ids: ['.*'] })),
   })
 
   const importObjectsCommandMatcher = expect
@@ -568,20 +568,20 @@ describe('netsuite client', () => {
           return Promise.resolve({
             isSuccess: () => true,
             data: [
-              { type: 'addressForm', scriptId: 'a' },
-              { type: 'addressForm', scriptId: 'b' },
-              { type: 'addressForm', scriptId: 'c' },
-              { type: 'addressForm', scriptId: 'd' },
+              { type: 'savedcsvimport', scriptId: 'a' },
+              { type: 'savedcsvimport', scriptId: 'b' },
+              { type: 'savedcsvimport', scriptId: 'c' },
+              { type: 'savedcsvimport', scriptId: 'd' },
               { type: 'advancedpdftemplate', scriptId: 'a' },
             ],
           })
         }
         if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
-          if (context.arguments.type === 'addressForm') {
+          if (context.arguments.type === 'savedcsvimport') {
             const conditionalFailedForm = {
               customObject: {
                 id: 'b',
-                type: 'addressForm',
+                type: 'csvimport',
                 result: {
                   code: 'FAILED',
                   message: 'An unexpected error has occurred',
@@ -593,7 +593,7 @@ describe('netsuite client', () => {
               {
                 customObject: {
                   id: 'c',
-                  type: 'addressForm',
+                  type: 'csvimport',
                   result: {
                     code: 'FAILED',
                     message: 'An unexpected error has occurred',
@@ -603,7 +603,7 @@ describe('netsuite client', () => {
               {
                 customObject: {
                   id: 'd',
-                  type: 'addressForm',
+                  type: 'csvimport',
                   result: {
                     code: 'FAILED',
                     message: 'You cannot download the XML file for this object because it is locked.',
@@ -644,11 +644,17 @@ describe('netsuite client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
 
+      const query = buildNetsuiteQuery({
+        types: [
+          { name: 'savedcsvimport' },
+          { name: 'advancedpdftemplate' },
+        ],
+      })
       const {
         failedTypeToInstances,
-      } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
+      } = await mockClient().getCustomObjects(typeNames, query)
       expect(failedTypeToInstances).toEqual({
-        addressForm: ['c'],
+        savedcsvimport: ['c'],
         advancedpdftemplate: ['a'],
       })
     })
@@ -727,9 +733,9 @@ describe('netsuite client', () => {
       })
 
       const query = buildNetsuiteQuery({
-        types: {
-          addressForm: ['a'],
-        },
+        types: [
+          { name: 'addressForm', ids: ['a'] },
+        ],
       })
       await mockClient().getCustomObjects(typeNames, query)
       expect(mockExecuteAction).toHaveBeenCalledWith(expect.objectContaining({
@@ -759,7 +765,7 @@ describe('netsuite client', () => {
     it('should do nothing of no files are matched', async () => {
       const { elements, failedToFetchAllAtOnce } = await mockClient()
         .getCustomObjects(typeNames, buildNetsuiteQuery({
-          types: {},
+          types: [],
         }))
       expect(elements).toHaveLength(0)
       expect(failedToFetchAllAtOnce).toBeFalsy()
@@ -769,7 +775,7 @@ describe('netsuite client', () => {
 
   describe('importFileCabinetContent', () => {
     const allFilesQuery = buildNetsuiteQuery({
-      filePaths: ['.*'],
+      fileCabinet: ['.*'],
     })
 
     let client: SdfClient
@@ -797,7 +803,7 @@ describe('netsuite client', () => {
       })
       const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toEqual(fileCabinetTopLevelFolders)
+      expect(failedPaths).toEqual(fileCabinetTopLevelFolders.map(folderPath => `^${folderPath}.*`))
     })
 
     it('should fail when SETUP_ACCOUNT has failed', async () => {
@@ -983,7 +989,7 @@ describe('netsuite client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const query = notQuery(buildNetsuiteQuery({
-        filePaths: [MOCK_FILE_PATH],
+        fileCabinet: [MOCK_FILE_PATH],
       }))
       const { elements, failedPaths } = await client.importFileCabinetContent(query)
       expect(readFileMock).toHaveBeenCalledTimes(0)
@@ -999,9 +1005,10 @@ describe('netsuite client', () => {
     })
 
     it('should do nothing of no files are matched', async () => {
-      const { elements, failedPaths } = await client.importFileCabinetContent(buildNetsuiteQuery({
-        filePaths: [],
-      }))
+      const { elements, failedPaths } = await client
+        .importFileCabinetContent(buildNetsuiteQuery({
+          fileCabinet: [],
+        }))
 
       expect(elements).toHaveLength(0)
       expect(failedPaths).toHaveLength(0)

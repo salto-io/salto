@@ -16,12 +16,13 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { Group } from '@salto-io/dag'
-import { isListType, Change, ChangeDataType, toChange } from '@salto-io/adapter-api'
+import { isListType, Change, ChangeDataType, toChange, ObjectType, ElemID, getChangeElement } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem } from '../../common/plan'
 import { planGenerators } from '../../common/plan_generator'
 import { PlanItem } from '../../../src/core/plan'
-import { addPlanItemAccessors } from '../../../src/core/plan/plan_item'
+import { addPlanItemAccessors, filterPlanItem } from '../../../src/core/plan/plan_item'
 
 describe('PlanItem', () => {
   const allElements = mock.getAllElements()
@@ -165,6 +166,80 @@ describe('PlanItem', () => {
       expect(fromListChange.action).toEqual('modify')
       expect(fromListChange.id).toEqual(changedElem.fields.rooms.elemID)
       expect(isListType(await _.get(fromListChange.data, 'after').getType())).toBeFalsy()
+    })
+  })
+
+  describe('filter plan item', () => {
+    const objToModify = new ObjectType({
+      elemID: ElemID.fromFullName('salto.modify'),
+      annotations: {
+        str: 'modify me',
+      },
+    })
+    const objToFilter = new ObjectType({
+      elemID: ElemID.fromFullName('salto.filter'),
+      annotations: {
+        str: 'after',
+      },
+    })
+    const objToKeep = new ObjectType({
+      elemID: ElemID.fromFullName('salto.keep'),
+      annotations: {
+        str: 'keep',
+      },
+    })
+    const items = new Map([
+      [objToModify.elemID.getFullName(), toChange({ before: objToModify })],
+      [objToFilter.elemID.getFullName(), toChange({ before: objToFilter })],
+      [objToKeep.elemID.getFullName(), toChange({ before: objToKeep })],
+    ])
+    const planItem = addPlanItemAccessors({
+      groupKey: 'key',
+      items,
+    })
+
+    const copyItem = _.cloneDeep(planItem)
+
+    let modifiedPlanItem: PlanItem
+
+    beforeAll(async () => {
+      modifiedPlanItem = await filterPlanItem(
+        planItem,
+        async change => {
+          const fullName = getChangeElement(change).elemID.getFullName()
+          if (fullName === 'salto.modify') {
+            return applyFunctionToChangeData(change, elem => {
+              const clone = elem.clone()
+              clone.annotations.str = 'modified!'
+              return clone
+            })
+          }
+          if (fullName === 'salto.filter') {
+            return undefined
+          }
+          return change
+        }
+      )
+    })
+    it('should replace the changes with modified changes', () => {
+      const modified = wu(modifiedPlanItem.changes())
+        .find(change => getChangeElement(change).elemID.getFullName() === 'salto.modify')
+      expect(modified).toBeDefined()
+      expect(getChangeElement(modified as Change).annotations.str).toEqual('modified!')
+    })
+    it('should filter out changes where before and after were set as undefined', () => {
+      const droped = wu(modifiedPlanItem.changes())
+        .find(change => getChangeElement(change).elemID.getFullName() === 'salto.filter')
+      expect(droped).not.toBeDefined()
+    })
+    it('should keep changes that were not modified by the callback', () => {
+      const kept = wu(modifiedPlanItem.changes())
+        .find(change => getChangeElement(change).elemID.getFullName() === 'salto.keep')
+      expect(kept).toBeDefined()
+      expect(getChangeElement(kept as Change).annotations.str).toEqual('keep')
+    })
+    it('should not modify the original plan item', () => {
+      expect(planItem).toEqual(copyItem)
     })
   })
 })

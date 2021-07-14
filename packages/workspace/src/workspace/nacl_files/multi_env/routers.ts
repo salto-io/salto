@@ -111,7 +111,11 @@ const separateChangeByFiles = async (
         change,
         changeData => filterByFile(change.id, changeData, fileElements),
       )
-      if (!isEmptyChangeElm && isEmptyChangeElement(getChangeElement(filteredChange))) {
+      if (
+        !isEmptyChangeElm
+        && !filteredChange.id.isAnnotationTypeID()
+        && isEmptyChangeElement(getChangeElement(filteredChange))
+      ) {
         return undefined
       }
       return { ...filteredChange, path: toPathHint(filename) }

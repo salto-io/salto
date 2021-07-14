@@ -53,6 +53,11 @@ const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
 const log = logger(module)
 
+const FAILED_TYPE_NAME_TO_REAL_NAME: Record<string, string> = {
+  csvimport: 'savedcsvimport',
+  plugintypeimpl: 'pluginimplementation',
+}
+
 export type SdfClientOpts = {
   credentials: SdfCredentials
   config?: SdfClientConfig
@@ -502,14 +507,20 @@ export default class SdfClient {
       .filter(failedImport => {
         if (failedImport.customObject.result.message.includes('unexpected error')) {
           log.debug('Failed to fetch (%s) instance with id (%s) due to SDF unexpected error',
-            failedImport.customObject.type, failedImport.customObject.id)
+            SdfClient.fixTypeName(failedImport.customObject.type), failedImport.customObject.id)
           return true
         }
         return false
       })
-      .groupBy(failedImport => failedImport.customObject.type)
+      .groupBy(failedImport => SdfClient.fixTypeName(failedImport.customObject.type))
       .mapValues(failedImports => failedImports.map(failedImport => failedImport.customObject.id))
       .value()
+  }
+
+  private static fixTypeName(typeName: string): string {
+    // For some type names, SDF might return different names in its
+    // error response, so we replace it with the original name
+    return FAILED_TYPE_NAME_TO_REAL_NAME[typeName] ?? typeName
   }
 
   async listInstances(
@@ -537,7 +548,7 @@ export default class SdfClient {
           this.executeProjectAction(COMMANDS.LIST_FILES, { folder }, executor)
             .catch(() => {
               log.debug(`Adding ${folder} path to skip list`)
-              failedPaths.push(folder)
+              failedPaths.push(`^${folder}.*`)
               return undefined
             }))
     )).filter(values.isDefined)

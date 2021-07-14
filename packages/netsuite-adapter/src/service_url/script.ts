@@ -36,7 +36,7 @@ const setServiceUrl: ServiceUrlSetter = async (elements, client) =>
     elements,
     client,
     filter: element => SUPPORTED_TYPES.includes(element.refType.elemID.name),
-    query: 'SELECT id, scriptid FROM script',
+    query: 'SELECT id, scriptid FROM script ORDER BY id ASC',
     generateUrl,
   })
 

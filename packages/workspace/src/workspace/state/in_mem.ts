@@ -101,6 +101,8 @@ export const buildInMemState = (
     rename: () => Promise.resolve(),
     getHash: async () => (await stateData()).saltoMetadata.get('hash'),
     setHash: setHashImpl,
+    // hash doesn't get calculated in memory
+    calculateHash: async () => Promise.resolve(),
     getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
     setVersion: async (version: string) => (await stateData()).saltoMetadata.set('version', version),
   }

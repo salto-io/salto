@@ -22,7 +22,6 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { WSDL } from 'soap'
-import { values } from '@salto-io/lowerdash'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails,
   FILES_READ_SCHEMA, HttpMethod, isError, ReadResults, RestletOperation, RestletResults,
   RESTLET_RESULTS_SCHEMA, SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA,
@@ -78,31 +77,23 @@ export default class SuiteAppClient {
     this.soapClient = new SoapClient(this.credentials, this.callsLimiter)
   }
 
+  /**
+   * WARNING:
+   * Due to a bug in NetSuite SuiteQL, make sure to use
+   * ORDER BY <some unique identifier> ASC in your queries.
+   * Otherwise, you might not get all the results.
+   */
   public async runSuiteQL(query: string):
     Promise<Record<string, unknown>[] | undefined> {
-    // There seems to be a bug in Netsuite SuiteQL in which
-    // for each page size we have some results missing.
-    // To handle this we run the query twice with two page sizes and merge the results
-    const results = (await Promise.all([
-      this.runSingleSuiteQL(query, PAGE_SIZE),
-      this.runSingleSuiteQL(query, PAGE_SIZE - 1),
-    ])).flat()
-
-    if (results.some(res => res === undefined)) {
-      return undefined
+    if (!/ORDER BY .* ASC/.test(query)) {
+      log.warn(`SuiteQL ${query} does not contain ORDER BY <unique identifier> ASC, which can cause the response to not contain all the results`)
     }
-
-    return _.uniqBy(results.filter(values.isDefined), result => safeJsonStringify(result))
-  }
-
-  private async runSingleSuiteQL(query: string, pageSize: number):
-    Promise<Record<string, unknown>[] | undefined> {
     let hasMore = true
     const items: Record<string, unknown>[] = []
-    for (let offset = 0; hasMore; offset += pageSize) {
+    for (let offset = 0; hasMore; offset += PAGE_SIZE) {
       try {
-      // eslint-disable-next-line no-await-in-loop
-        const results = await this.sendSuiteQLRequest(query, offset, pageSize)
+        // eslint-disable-next-line no-await-in-loop
+        const results = await this.sendSuiteQLRequest(query, offset, PAGE_SIZE)
         // For some reason, a "links" field with empty array is returned regardless
         // to the SELECT values in the query.
         items.push(...results.items.map(item => _.omit(item, ['links'])))

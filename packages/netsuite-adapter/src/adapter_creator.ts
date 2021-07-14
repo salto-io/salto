@@ -20,17 +20,22 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { SdkDownloadService } from '@salto-io/suitecloud-cli'
 import Bottleneck from 'bottleneck'
-import { configType, DEFAULT_CONCURRENCY, NetsuiteConfig } from './config'
+import { configType, DEFAULT_CONCURRENCY, NetsuiteConfig, validateDeployParams } from './config'
 import {
-  NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, DEPLOY_REFERENCED_ELEMENTS, CLIENT_CONFIG,
+  NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, CLIENT_CONFIG,
   FETCH_TARGET,
   FETCH_ALL_TYPES_AT_ONCE,
   SKIP_LIST,
   SUITEAPP_CLIENT_CONFIG,
   USE_CHANGES_DETECTION,
   CONCURRENCY_LIMIT,
+  FETCH,
+  INCLUDE,
+  EXCLUDE,
+  DEPLOY,
+  DEPLOY_REFERENCED_ELEMENTS,
 } from './constants'
-import { validateParameters } from './query'
+import { validateFetchParameters, convertToQueryParams } from './query'
 import { Credentials, toCredentialsAccountId } from './client/credentials'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import SdfClient from './client/sdf_client'
@@ -75,8 +80,13 @@ export const defaultCredentialsType = new ObjectType({
   annotations: {},
 })
 
-const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
-  NetsuiteConfig => {
+
+const getFilePathRegexSkipList = (config: Readonly<InstanceElement> |
+  undefined): string[] | undefined => config?.value?.[FILE_PATHS_REGEX_SKIP_LIST]
+    && makeArray(config?.value?.[FILE_PATHS_REGEX_SKIP_LIST])
+
+const validateConfig = (config: Readonly<InstanceElement> | undefined):
+  void => {
   const validateRegularExpressions = (regularExpressions: string[]): void => {
     const invalidRegularExpressions = regularExpressions
       .filter(strRegex => !regex.isValidRegex(strRegex))
@@ -85,38 +95,57 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
       throw Error(errMessage)
     }
   }
-
+  const fetchParameters = config?.value?.[FETCH]
   const fetchTargetParameters = config?.value?.[FETCH_TARGET]
-  const skipListParameters = config?.value?.[SKIP_LIST]
-  const filePathsRegexSkipList = config?.value?.[FILE_PATHS_REGEX_SKIP_LIST]
-    && makeArray(config?.value?.[FILE_PATHS_REGEX_SKIP_LIST])
+  const skipListParameters = config?.value?.[SKIP_LIST] // support deprecated version
+  const deployParams = config?.value?.[DEPLOY]
+  const filePathsRegexSkipList = getFilePathRegexSkipList(config)
   const clientConfig = config?.value?.[CLIENT_CONFIG]
   if (clientConfig?.[FETCH_ALL_TYPES_AT_ONCE] && fetchTargetParameters !== undefined) {
     log.warn(`${FETCH_ALL_TYPES_AT_ONCE} is not supported with ${FETCH_TARGET}. Ignoring ${FETCH_ALL_TYPES_AT_ONCE}`)
     clientConfig[FETCH_ALL_TYPES_AT_ONCE] = false
   }
-  try {
-    if (filePathsRegexSkipList !== undefined) {
-      validateRegularExpressions(filePathsRegexSkipList)
-    }
-    if (fetchTargetParameters !== undefined) {
-      validateParameters(fetchTargetParameters)
-    }
+  if (filePathsRegexSkipList !== undefined) {
+    validateRegularExpressions(filePathsRegexSkipList)
+  }
+  if (fetchTargetParameters !== undefined) {
+    validateFetchParameters(convertToQueryParams(fetchTargetParameters))
+  }
 
-    if (skipListParameters !== undefined) {
-      validateParameters(skipListParameters)
-    }
+  if (skipListParameters !== undefined) {
+    validateFetchParameters(convertToQueryParams(skipListParameters))
+  }
+
+  if (fetchParameters?.[INCLUDE] !== undefined) {
+    validateFetchParameters(fetchParameters[INCLUDE])
+  }
+
+  if (fetchParameters?.[EXCLUDE] !== undefined) {
+    validateFetchParameters(fetchParameters[EXCLUDE])
+  }
+
+  if (deployParams !== undefined) {
+    validateDeployParams(deployParams)
+  }
+}
+
+const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
+  NetsuiteConfig => {
+  try {
+    validateConfig(config)
 
     const netsuiteConfig: { [K in keyof Required<NetsuiteConfig>]: NetsuiteConfig[K] } = {
       [TYPES_TO_SKIP]: config?.value?.[TYPES_TO_SKIP] && makeArray(config?.value?.[TYPES_TO_SKIP]),
+      [DEPLOY]: config?.value?.[DEPLOY],
       [DEPLOY_REFERENCED_ELEMENTS]: config?.value?.[DEPLOY_REFERENCED_ELEMENTS],
       [CONCURRENCY_LIMIT]: config?.value?.[CONCURRENCY_LIMIT],
-      [FILE_PATHS_REGEX_SKIP_LIST]: filePathsRegexSkipList,
+      [FILE_PATHS_REGEX_SKIP_LIST]: getFilePathRegexSkipList(config),
       [CLIENT_CONFIG]: config?.value?.[CLIENT_CONFIG],
       [SUITEAPP_CLIENT_CONFIG]: config?.value?.[SUITEAPP_CLIENT_CONFIG],
-      [FETCH_TARGET]: fetchTargetParameters,
-      [SKIP_LIST]: skipListParameters,
+      [FETCH_TARGET]: config?.value?.[FETCH_TARGET],
+      [SKIP_LIST]: config?.value?.[SKIP_LIST], // support deprecated version
       [USE_CHANGES_DETECTION]: config?.value?.[USE_CHANGES_DETECTION],
+      [FETCH]: config?.value?.[FETCH],
     }
 
     Object.keys(config?.value ?? {})

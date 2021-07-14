@@ -15,13 +15,13 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import filterCreator from '../../src/filters/data_custom_fields'
+import filterCreator from '../../src/filters/data_types_custom_fields'
 import NetsuiteClient from '../../src/client/client'
 import { NETSUITE } from '../../src/constants'
 import { entitycustomfield } from '../../src/types/custom_types/entitycustomfield'
 import { FilterOpts } from '../../src/filter'
 
-describe('data_custom_fields', () => {
+describe('data_types_custom_fields', () => {
   let filterOpts: FilterOpts
   let type: ObjectType
   let instance: InstanceElement

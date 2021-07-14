@@ -28,6 +28,7 @@ export const getChangedFiles: FileCabinetChangesDetector = async (client, dateRa
     FROM file
     JOIN mediaitemfolder ON mediaitemfolder.id = file.folder
     WHERE file.lastmodifieddate BETWEEN '${startDate}' AND '${endDate}'
+    ORDER BY file.id ASC
   `)
 
   if (results === undefined) {
@@ -56,6 +57,7 @@ export const getChangedFolders: FileCabinetChangesDetector = async (client, date
     SELECT appfolder, id
     FROM mediaitemfolder
     WHERE lastmodifieddate BETWEEN '${startDate}' AND '${endDate}'
+    ORDER BY id ASC
   `)
 
   if (results === undefined) {

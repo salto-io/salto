@@ -36,5 +36,5 @@ export {
 export { localDirectoryStore } from './src/local-workspace/dir_store'
 export { WORKSPACE_CONFIG_NAME, USER_CONFIG_NAME, ADAPTERS_CONFIG_NAME, ENVS_CONFIG_NAME, workspaceConfigTypes, EnvsConfig } from './src/local-workspace/workspace_config_types'
 export {
-  createRemoteMapCreator, closeAllRemoteMaps, closeRemoteMapsOfLocation,
+  createRemoteMapCreator, closeAllRemoteMaps, closeRemoteMapsOfLocation, replicateDB,
 } from './src/local-workspace/remote_map'

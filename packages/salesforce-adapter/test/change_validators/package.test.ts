@@ -18,7 +18,7 @@ import packageValidator, {
   INSTALLED_PACKAGE_METADATA,
   PACKAGE_VERSION_FIELD_NAME,
 } from '../../src/change_validators/package'
-import { API_NAME, INSTANCE_FULL_NAME_FIELD, METADATA_TYPE } from '../../src/constants'
+import { API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, METADATA_TYPE } from '../../src/constants'
 
 describe('package change validator', () => {
   let obj: ObjectType
@@ -38,12 +38,27 @@ describe('package change validator', () => {
   }
   describe('onAdd', () => {
     describe('Object', () => {
-      it('should have change error when adding an object with namespace', async () => {
-        obj.annotate({ [API_NAME]: 'MyNamespace__ObjectName__c' })
+      it('should have no change errors when adding an object without namespace with __e suffix', async () => {
+        obj.annotate({ [API_NAME]: 'TestEvent2__e' })
+        const changeErrors = await packageValidator([toChange({ after: obj })])
+        expect(changeErrors).toHaveLength(0)
+      })
+
+      it('should have change error when adding a custom object with namespace', async () => {
+        obj.annotate({
+          [API_NAME]: 'MyNamespace__ObjectName__c',
+          [METADATA_TYPE]: CUSTOM_OBJECT,
+        })
         const changeErrors = await packageValidator([toChange({ after: obj })])
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(obj.elemID)
+      })
+
+      it('should have no change errors when adding an object with namespace', async () => {
+        obj.annotate({ [API_NAME]: 'MyNamespace__ObjectName__c' })
+        const changeErrors = await packageValidator([toChange({ after: obj })])
+        expect(changeErrors).toHaveLength(0)
       })
 
       it('should have change error when adding an object containing field with namespace', async () => {
@@ -70,12 +85,10 @@ describe('package change validator', () => {
     })
 
     describe('Instance', () => {
-      it('should have change error when adding an instance with namespace', async () => {
+      it('should not have change errors when adding an instance with namespace', async () => {
         inst.value[INSTANCE_FULL_NAME_FIELD] = 'MyNamespace__InstanceName__c'
         const changeErrors = await packageValidator([toChange({ after: inst })])
-        expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].severity).toEqual('Error')
-        expect(changeErrors[0].elemID).toEqual(inst.elemID)
+        expect(changeErrors).toHaveLength(0)
       })
 
       it('should have no change errors when adding an instance without namespace', async () => {
@@ -93,8 +106,17 @@ describe('package change validator', () => {
 
   describe('onRemove', () => {
     describe('Object', () => {
-      it('should have change error when removing an object with namespace', async () => {
+      it('should have no change errors when removing an object with namespace', async () => {
         obj.annotate({ [API_NAME]: 'MyNamespace__ObjectName__c' })
+        const changeErrors = await packageValidator([toChange({ before: obj })])
+        expect(changeErrors).toHaveLength(0)
+      })
+
+      it('should have change error when removing an object with namespace', async () => {
+        obj.annotate({
+          [API_NAME]: 'MyNamespace__ObjectName__c',
+          [METADATA_TYPE]: CUSTOM_OBJECT,
+        })
         const changeErrors = await packageValidator([toChange({ before: obj })])
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
@@ -125,25 +147,11 @@ describe('package change validator', () => {
         expect(changeErrors).toHaveLength(0)
       })
     })
-    describe('Instance', () => {
-      it('should have change error when removing an instance with namespace', async () => {
-        inst.value[INSTANCE_FULL_NAME_FIELD] = 'MyNamespace__InstanceName__c'
-        const changeErrors = await packageValidator([toChange({ before: inst })])
-        expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].severity).toEqual('Error')
-        expect(changeErrors[0].elemID).toEqual(inst.elemID)
-      })
 
-      it('should have no change errors when removing an instance without namespace', async () => {
-        inst.value[INSTANCE_FULL_NAME_FIELD] = 'InstanceName__c'
-        const changeErrors = await packageValidator([toChange({ before: inst })])
-        expect(changeErrors).toHaveLength(0)
-      })
-
-      it('should have no change errors when removing an instance without fullName', async () => {
-        const changeErrors = await packageValidator([toChange({ before: inst })])
-        expect(changeErrors).toHaveLength(0)
-      })
+    it('should have no change errors when removing an instance with namespace', async () => {
+      inst.value[INSTANCE_FULL_NAME_FIELD] = 'MyNamespace__InstanceName__c'
+      const changeErrors = await packageValidator([toChange({ before: inst })])
+      expect(changeErrors).toHaveLength(0)
     })
   })
 

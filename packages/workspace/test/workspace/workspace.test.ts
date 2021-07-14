@@ -64,11 +64,12 @@ const newNaclFile = {
 }
 const services = ['salesforce']
 
-const mockWorkspaceConfigSource = (conf?: Values): WorkspaceConfigSource => ({
+const mockWorkspaceConfigSource = (conf?: Values,
+  secondaryEnv?: boolean): WorkspaceConfigSource => ({
   getWorkspaceConfig: jest.fn().mockImplementation(() => ({
     envs: [
       { name: 'default', services },
-      { name: 'inactive', services: [...services, 'hubspot'] },
+      ...(secondaryEnv ? [{ name: 'inactive', services: [...services, 'hubspot'] }] : []),
     ],
     uid: '',
     name: 'test',
@@ -244,7 +245,7 @@ describe('workspace', () => {
         const primaryEnvObj = new ObjectType({ elemID: primaryEnvElemID })
         const secondaryEnvObj = new ObjectType({ elemID: secondaryEnvElemID })
         const newWorkspace = await createWorkspace(
-          undefined, undefined, undefined, undefined, undefined, {
+          undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined, {
             '': {
               naclFiles: createMockNaclFileSource([]),
             },
@@ -284,7 +285,7 @@ describe('workspace', () => {
 
   describe('getSearchableNames', () => {
     let workspace: Workspace
-    const TOTAL_NUM_ELEMENETS = 54
+    const TOTAL_NUM_ELEMENETS = 57
 
     it('should return names of top level elements and fields', async () => {
       workspace = await createWorkspace()
@@ -297,13 +298,15 @@ describe('workspace', () => {
       const accountIntSett = await workspace.getValue(new ElemID('salesforce', 'AccountIntelligenceSettings')) as ObjectType
       const searchableNames = await workspace.getSearchableNames()
       expect(searchableNames.includes(accountIntSett.elemID.getFullName())).toBeTruthy()
-      await workspace.updateNaclFiles([{
+      const numResults = await workspace.updateNaclFiles([{
         id: accountIntSett.elemID,
         action: 'remove',
         data: { before: accountIntSett },
       }])
       const numOfFields = Object.values(accountIntSett.fields).length
       const searchableNamesAfter = await workspace.getSearchableNames()
+      // One change in workspace, one in state.
+      expect(numResults).toEqual(2)
       expect(searchableNamesAfter.length).toEqual(TOTAL_NUM_ELEMENETS - (numOfFields + 1))
       expect(searchableNamesAfter.includes(accountIntSett.elemID.getFullName())).toBeFalsy()
       Object.values(accountIntSett.fields).forEach(field => {
@@ -318,11 +321,12 @@ describe('workspace', () => {
         elemID: newElemID,
         fields: { aaa: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) } },
       })
-      await workspace.updateNaclFiles([{
+      const numResults = await workspace.updateNaclFiles([{
         id: newElemID,
         action: 'add',
         data: { after: newObject },
       }])
+      expect(numResults).toEqual(1)
       const searchableNamesAfter = await workspace.getSearchableNames()
       expect(searchableNamesAfter.length).toEqual(TOTAL_NUM_ELEMENETS + 2)
     })
@@ -355,6 +359,10 @@ describe('workspace', () => {
                 },
               }),
             ]),
+            state: createState([]),
+          },
+          inactive: {
+            naclFiles: createMockNaclFileSource([]),
             state: createState([]),
           },
         },
@@ -478,7 +486,7 @@ describe('workspace', () => {
   describe('removeNaclFiles', () => {
     let dirStore: DirectoryStore<string>
     let workspace: Workspace
-    const removedPaths = ['file.nacl', 'willbempty.nacl']
+    const removedPaths = ['file.nacl', 'willbempty.nacl', 'fieldsWithHidden.nacl']
 
     beforeEach(async () => {
       dirStore = mockDirStore()
@@ -529,7 +537,7 @@ describe('workspace', () => {
         wsWithMultipleEnvs = await createWorkspace(
           undefined,
           undefined,
-          undefined,
+          mockWorkspaceConfigSource(undefined, true),
           undefined,
           undefined,
           {
@@ -621,7 +629,7 @@ describe('workspace', () => {
         'salesforce.new': newAddedObject,
         'salesforce.RenamedType1': new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType1') }),
       }
-      expect(Object.keys(refMap).sort()).toEqual(Object.keys(elemMap).sort())
+      expect(elemMap.nonempty).not.toBeDefined()
       Object.keys(refMap).forEach(
         key => expect(elemMap[key].isEqual(refMap[key])).toBeTruthy()
       )
@@ -667,7 +675,7 @@ describe('workspace', () => {
         wsWithMultipleEnvs = await createWorkspace(
           undefined,
           undefined,
-          undefined,
+          mockWorkspaceConfigSource(undefined, true),
           undefined,
           undefined,
           {
@@ -716,6 +724,41 @@ describe('workspace', () => {
         expect(await awu(await (
           await wsWithMultipleEnvs.elements(true, secondarySourceName)
         ).list()).toArray()).toEqual([afterObj.elemID])
+      })
+    })
+
+    describe('when merge errors are fixed', () => {
+      it('should delete fixed merge errors', async () => {
+        const ws = await createWorkspace(naclFileStore)
+        await ws.setNaclFiles([
+          {
+            filename: 'mergeIssue.nacl',
+            buffer: `
+                type salto.dup {
+                  x = "x"
+                }
+
+                type salto.dup {
+                  x = "x"
+                }
+              `,
+          },
+        ])
+
+        expect((await ws.errors()).merge).toHaveLength(1)
+        expect((await ws.errors()).merge[0].message).toContain('duplicate annotation key x')
+        await ws.setNaclFiles([
+          {
+            filename: 'mergeIssue.nacl',
+            buffer: `
+                type salto.dup {
+                  x = "x"
+                }
+              `,
+          },
+        ])
+
+        expect((await ws.errors()).merge).toHaveLength(0)
       })
     })
   })
@@ -907,6 +950,19 @@ describe('workspace', () => {
         [CORE_ANNOTATIONS.HIDDEN]: true,
       }
     )
+
+    const objWithFieldTypeWithHidden = new ObjectType({
+      elemID: ElemID.fromFullName('salesforce.ObjWithFieldTypeWithHidden'),
+      fields: {
+        fieldWithHidden: {
+          refType: new ReferenceExpression(ElemID.fromFullName('salesforce.FieldTypeWithHidden')),
+          annotations: {
+            visible: 'YOU SEE ME',
+            hiddenValAnno: 'YOU DO NOT SEE ME',
+          },
+        },
+      },
+    })
 
     const renamedTypes = {
       before: new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType1') }),
@@ -1235,6 +1291,14 @@ describe('workspace', () => {
           before: queueHiddenInstanceToRemove,
         },
       },
+      // Remove a field with hidden annotations
+      {
+        id: objWithFieldTypeWithHidden.fields.fieldWithHidden.elemID,
+        action: 'remove',
+        data: {
+          before: objWithFieldTypeWithHidden.fields.fieldWithHidden,
+        },
+      },
     ]
 
     let clonedChanges: DetailedChange[]
@@ -1257,6 +1321,8 @@ describe('workspace', () => {
     let elemMap: Record<string, Element>
     let elemMapWithHidden: Record<string, Element>
     let workspace: Workspace
+    let numResults: number
+    const numExpectedChanges = 35
     const dirStore = mockDirStore()
 
     beforeAll(async () => {
@@ -1292,12 +1358,13 @@ describe('workspace', () => {
         queueHiddenInstance,
         queueSobjectHiddenSubType,
         queueHiddenInstanceToRemove,
+        objWithFieldTypeWithHidden,
       ])
 
       workspace = await createWorkspace(dirStore, state)
 
       clonedChanges = _.cloneDeep(changes)
-      await workspace.updateNaclFiles(clonedChanges)
+      numResults = await workspace.updateNaclFiles(clonedChanges)
       elemMap = await getElemMap(await workspace.elements(false))
       elemMapWithHidden = await getElemMap(await workspace.elements())
       lead = elemMap['salesforce.lead'] as ObjectType
@@ -1325,7 +1392,12 @@ describe('workspace', () => {
         'salesforce.ObjWithDoublyNestedHidden.instance.instWithDoublyNestedHidden'
       ] as InstanceElement
     })
-
+    it('should have right number of results', () => {
+      // This is just meant to test that calculating number of changes works,
+      // and could possibly change. If you get a failure here and the number
+      // of changes you get seems ok, you can just change numExpectedChanges
+      expect(numResults).toEqual(numExpectedChanges)
+    })
     it('should not cause parse errors', async () => {
       expect((await workspace.errors()).parse).toHaveLength(0)
     })
@@ -1543,11 +1615,12 @@ describe('workspace', () => {
         data: { before: 'foo', after: 'blabla' },
       }
 
-      await workspace.updateNaclFiles([change1, change2])
+      const numResultsInChange = await workspace.updateNaclFiles([change1, change2])
       lead = findElement(
         await awu(await (await workspace.elements()).getAll()).toArray(),
         new ElemID('salesforce', 'lead')
       ) as ObjectType
+      expect(numResultsInChange).toEqual(2)
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('blabla')
     })
 
@@ -1559,6 +1632,13 @@ describe('workspace', () => {
       expect(elemMap[queueHiddenInstanceToRemove.elemID.getFullName()]).toBeUndefined()
       const elem = await workspace.getValue(queueHiddenInstanceToRemove.elemID)
       expect(elem).toBeUndefined()
+    })
+
+    it('should remove fields that were removed from the nacls even if they have hidden annotations', async () => {
+      expect(elemMap[objWithFieldTypeWithHidden.elemID.getFullName()]).toBeDefined()
+      const elem = await workspace.getValue(objWithFieldTypeWithHidden.elemID) as ObjectType
+      expect(elem).toBeDefined()
+      expect(elem.fields.fieldWithHidden).toBeUndefined()
     })
 
     describe('on secondary envs', () => {
@@ -1577,7 +1657,7 @@ describe('workspace', () => {
         wsWithMultipleEnvs = await createWorkspace(
           undefined,
           undefined,
-          undefined,
+          mockWorkspaceConfigSource(undefined, true),
           undefined,
           undefined,
           {
@@ -1645,6 +1725,10 @@ describe('workspace', () => {
               state: createState([]),
             },
             '': {
+              naclFiles: createMockNaclFileSource([]),
+              state: createState([]),
+            },
+            inactive: {
               naclFiles: createMockNaclFileSource([]),
               state: createState([]),
             },
@@ -1743,7 +1827,7 @@ describe('workspace', () => {
     let inactiveNaclFiles: NaclFilesSource
 
     beforeEach(async () => {
-      workspaceConf = mockWorkspaceConfigSource()
+      workspaceConf = mockWorkspaceConfigSource(undefined, true)
       credSource = mockCredentialsSource()
       state = createState([])
       defNaclFiles = createMockNaclFileSource([])
@@ -1827,7 +1911,7 @@ describe('workspace', () => {
       const envName = 'inactive'
 
       beforeAll(async () => {
-        workspaceConf = mockWorkspaceConfigSource()
+        workspaceConf = mockWorkspaceConfigSource(undefined, true)
         credSource = mockCredentialsSource()
         const state = createState([])
         stateClear = jest.spyOn(state, 'clear')
@@ -1890,7 +1974,7 @@ describe('workspace', () => {
     let elementSources: Record<string, EnvironmentSource>
 
     beforeAll(async () => {
-      workspaceConf = mockWorkspaceConfigSource()
+      workspaceConf = mockWorkspaceConfigSource(undefined, true)
       credSource = mockCredentialsSource()
       elementSources = {
         '': {
@@ -1972,7 +2056,7 @@ describe('workspace', () => {
       let naclFiles: NaclFilesSource
 
       beforeEach(async () => {
-        workspaceConf = mockWorkspaceConfigSource()
+        workspaceConf = mockWorkspaceConfigSource(undefined, true)
         credSource = mockCredentialsSource()
         state = createState([])
         stateRename = jest.spyOn(state, 'rename')
@@ -1982,6 +2066,7 @@ describe('workspace', () => {
       const verifyRenameFiles = (): void => {
         expect(credSource.rename).toHaveBeenCalledTimes(1)
         expect(stateRename).toHaveBeenCalledTimes(1)
+        expect(naclFiles.load).toHaveBeenCalledTimes(1)
         expect(naclFiles.rename).toHaveBeenCalledTimes(1)
       }
 
@@ -2339,7 +2424,7 @@ describe('workspace', () => {
       const staticFilesSource = mockStaticFilesSource()
       const remoteMapCreator = persistentMockCreateRemoteMap()
       workspace = await createWorkspace(
-        undefined, undefined, undefined, undefined, undefined,
+        undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
         {
           '': {
             naclFiles: await naclFilesSource(
@@ -2481,14 +2566,19 @@ describe('workspace', () => {
     ] as DetailedChange[]
 
     let validationErrs: ReadonlyArray<ValidationError>
+    let resultNumber: number
     beforeAll(async () => {
       workspace = await createWorkspace(naclFileStore)
       // Verify that the two errors we are starting with (that should be deleted in the update
       // since the update resolves them ) are present. This check will help debug situations in
       // which the entier flow is broken and errors are not created at all...
       expect((await workspace.errors()).validation).toHaveLength(2)
-      await workspace.updateNaclFiles(changes)
+      resultNumber = await workspace.updateNaclFiles(changes)
       validationErrs = (await workspace.errors()).validation
+    })
+
+    it('returns correct number of actual changes', () => {
+      expect(resultNumber).toEqual(changes.length)
     })
 
     it('create validation errors in the updated elements', () => {
@@ -2549,7 +2639,7 @@ describe('workspace', () => {
       ws = await createWorkspace(
         undefined,
         undefined,
-        undefined,
+        mockWorkspaceConfigSource(undefined, true),
         undefined,
         undefined,
         {

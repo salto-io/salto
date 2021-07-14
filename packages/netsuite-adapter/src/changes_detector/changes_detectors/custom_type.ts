@@ -29,6 +29,7 @@ const getChanges = async (type: string, client: NetsuiteClient, dateRange: DateR
       SELECT scriptid, lastmodifieddate
       FROM ${type}
       WHERE lastmodifieddate BETWEEN '${startDate}' AND '${endDate}'
+      ORDER BY scriptid ASC
     `)
 
   if (results === undefined) {

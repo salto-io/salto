@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, DeployResult, getChangeElement, InstanceElement, isAdditionOrModificationChange, isInstanceChange, StaticFile } from '@salto-io/adapter-api'
+import { Change, DeployResult, getChangeElement, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isStaticFile } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { chunks, promises, values } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
@@ -117,8 +118,18 @@ export type SuiteAppFileCabinetOperations = {
     => Promise<DeployResult>
 }
 
-const getContent = (content: string | StaticFile): Buffer =>
-  (content instanceof StaticFile ? content.content : Buffer.from(content)) ?? Buffer.from('')
+const getContent = (content: unknown): Buffer => {
+  if (isStaticFile(content)) {
+    return content.content ?? Buffer.from('')
+  }
+  if (typeof content === 'string') {
+    return Buffer.from(content)
+  }
+  if (content === undefined) {
+    return Buffer.from('')
+  }
+  throw new Error(`Got invalid content value: ${safeJsonStringify(content, undefined, 2)}`)
+}
 
 export const isChangeDeployable = (
   change: Change
@@ -160,7 +171,7 @@ SuiteAppFileCabinetOperations => {
   const queryFolders = async (): Promise<FolderResult[]> => {
     if (queryFoldersResults === undefined) {
       const foldersResults = await suiteAppClient.runSuiteQL(`SELECT name, id, bundleable, isinactive, isprivate, description, parent 
-      FROM mediaitemfolder`)
+      FROM mediaitemfolder ORDER BY id ASC`)
 
       if (foldersResults === undefined) {
         throw new Error('Failed to list folders')
@@ -181,7 +192,7 @@ SuiteAppFileCabinetOperations => {
 Promise<FileResult[]> => {
     if (queryFoldersResults === undefined) {
       const filesResults = await suiteAppClient.runSuiteQL(`SELECT name, id, filesize, bundleable, isinactive, isonline, addtimestamptourl, hideinbundle, description, folder 
-    FROM file`)
+    FROM file ORDER BY id ASC`)
 
       if (filesResults === undefined) {
         throw new Error('Failed to list files')

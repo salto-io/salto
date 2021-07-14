@@ -14,13 +14,14 @@
 * limitations under the License.
 */
 import {
-  BuiltinTypes, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeElement, InstanceElement,
-  isInstanceChange, isModificationChange, isReferenceExpression,
+  ChangeError, ChangeValidator, CORE_ANNOTATIONS, InstanceElement,
+  isInstanceChange, isModificationChange, isReferenceExpression, isServiceId,
 } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { isCustomType, isFileCabinetType } from '../types'
+import { TYPE_TO_ID_FIELD_PATHS } from '../data_elements/multi_fields_identifiers'
+import { isDataObjectType, isFileCabinetType } from '../types'
 
 const { awu } = collections.asynciterable
 
@@ -36,18 +37,23 @@ const changeValidator: ChangeValidator = async changes => (
   awu(changes)
     .filter(isModificationChange)
     .filter(isInstanceChange)
-    .filter(change => {
-      const instance = getChangeElement(change) as InstanceElement
-      return isCustomType(instance.refType.elemID) || isFileCabinetType(instance.refType.elemID)
-    })
     .flatMap(async change => {
       const before = change.data.before as InstanceElement
       const after = change.data.after as InstanceElement
       const modifiedImmutableFields = await awu(Object.values((await after.getType()).fields))
-        .filter(async field => await field.getType() === BuiltinTypes.SERVICE_ID)
+        .filter(async field => isServiceId(await field.getType()))
         .filter(field => before.value[field.name] !== after.value[field.name])
-        .map(field => field.name)
+        .map(field => field.elemID.getFullName())
         .toArray()
+
+      if (isDataObjectType(await after.getType())
+        && after.elemID.typeName in TYPE_TO_ID_FIELD_PATHS) {
+        modifiedImmutableFields.push(
+          ...TYPE_TO_ID_FIELD_PATHS[after.elemID.typeName]
+            .filter(path => _.get(before.value, path) !== _.get(after.value, path))
+            .map(path => after.elemID.createNestedID(...path).getFullName())
+        )
+      }
 
       // parent annotations in file cabinet instances
       if (isFileCabinetType(after.refType.elemID)
@@ -55,7 +61,9 @@ const changeValidator: ChangeValidator = async changes => (
           getParents(before).map(getReferenceIdentifier),
           getParents(after).map(getReferenceIdentifier),
         )) {
-        modifiedImmutableFields.push(CORE_ANNOTATIONS.PARENT)
+        modifiedImmutableFields.push(
+          after.elemID.createNestedID(CORE_ANNOTATIONS.PARENT).getFullName()
+        )
       }
       return modifiedImmutableFields.map(modifiedField => ({
         elemID: after.elemID,

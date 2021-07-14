@@ -31,6 +31,7 @@ type Resolver<T> = (
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
   visited?: Set<string>,
+  resolveRoot?: boolean
 ) => Promise<Value>
 
 export class UnresolvedReference {
@@ -64,6 +65,7 @@ const resolveMaybeExpression: Resolver<Value> = async (
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
   visited: Set<string> = new Set<string>(),
+  resolveRoot = false
 ): Promise<Value> => {
   if (isReferenceExpression(value)) {
     // eslint-disable-next-line no-use-before-define
@@ -72,11 +74,18 @@ const resolveMaybeExpression: Resolver<Value> = async (
       elementsSource,
       workingSetElements,
       visited,
+      resolveRoot
     )
   }
 
   if (value instanceof TemplateExpression) {
-    return resolveTemplateExpression(value, elementsSource, workingSetElements, visited)
+    return resolveTemplateExpression(
+      value,
+      elementsSource,
+      workingSetElements,
+      visited,
+      resolveRoot
+    )
   }
 
   if (isElement(value)) {
@@ -95,6 +104,7 @@ export const resolveReferenceExpression = async (
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
   visited: Set<string> = new Set<string>(),
+  resolveRoot = false
 ): Promise<ReferenceExpression> => {
   const { traversalParts } = expression
   const traversal = traversalParts.join(ElemID.NAMESPACE_SEPARATOR)
@@ -115,13 +125,14 @@ export const resolveReferenceExpression = async (
   }
 
   // eslint-disable-next-line no-use-before-define
-  const resolvedRootElement = await resolveElement(
+  const resolvedRootElement = resolveRoot ? await resolveElement(
     rootElement,
     elementsSource,
     workingSetElements
-  )
+  ) : undefined
 
-  const value = resolvePath(resolvedRootElement, fullElemID)
+  const value = resolvePath(rootElement, fullElemID)
+
 
   if (value === undefined) {
     return expression.createWithValue(new UnresolvedReference(fullElemID))
@@ -140,12 +151,13 @@ export const resolveReferenceExpression = async (
         elementsSource,
         workingSetElements,
         visited,
+        resolveRoot
       ) ?? value.value,
       resolvedRootElement,
     )
   }
   return (expression as ReferenceExpression).createWithValue(
-    await resolveMaybeExpression(value, elementsSource, workingSetElements, visited)
+    await resolveMaybeExpression(value, elementsSource, workingSetElements, visited, resolveRoot)
       ?? value,
     resolvedRootElement,
   )
@@ -156,10 +168,11 @@ resolveTemplateExpression = async (
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
   visited: Set<string> = new Set<string>(),
+  resolveRoot = false
 ): Promise<Value> => (await awu(expression.parts)
   .map(async p => {
     const res = await resolveMaybeExpression(
-      p, elementsSource, workingSetElements, visited
+      p, elementsSource, workingSetElements, visited, resolveRoot
     )
     return res ? res?.value ?? res : p
   }).toArray())
@@ -169,12 +182,14 @@ const resolveElement = async (
   elementToResolve: Element,
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
+  resolveRoot = false
 ): Promise<Element> => {
   const referenceCloner: TransformFunc = ({ value }) => resolveMaybeExpression(
     value,
     elementsSource,
     workingSetElements,
     undefined,
+    resolveRoot
   )
   if (workingSetElements[elementToResolve.elemID.getFullName()]?.resolved) {
     return workingSetElements[elementToResolve.elemID.getFullName()].element
@@ -197,7 +212,7 @@ const resolveElement = async (
   element.annotationRefTypes = await mapValuesAsync(
     elementAnnoTypes,
     async type => createRefToElmWithValue(
-      await resolveElement(type, elementsSource, workingSetElements)
+      await resolveElement(type, elementsSource, workingSetElements, resolveRoot)
     )
   )
 
@@ -216,6 +231,7 @@ const resolveElement = async (
         await element.getInnerType(elementsSource),
         elementsSource,
         workingSetElements,
+        resolveRoot
       )
     )
   }
@@ -226,6 +242,7 @@ const resolveElement = async (
         await element.getType(elementsSource),
         elementsSource,
         workingSetElements,
+        resolveRoot
       )
     )
   }
@@ -248,12 +265,19 @@ const resolveElement = async (
         field,
         elementsSource,
         workingSetElements,
+        resolveRoot
       )
     ) as Record<string, Field>
   }
 
   if (isVariable(element)) {
-    element.value = await resolveMaybeExpression(element.value, elementsSource, workingSetElements)
+    element.value = await resolveMaybeExpression(
+      element.value,
+      elementsSource,
+      workingSetElements,
+      new Set(),
+      resolveRoot
+    )
   }
 
   return element
@@ -262,6 +286,7 @@ const resolveElement = async (
 export const resolve = async (
   elements: Element[],
   elementsSource: ReadOnlyElementsSource,
+  resolveRoot = false
 ): Promise<Element[]> => {
   const elementsToResolve = elements.map(_.clone)
   const resolvedElements = await awu(elementsToResolve)
@@ -278,7 +303,8 @@ export const resolve = async (
   await awu(elementsToResolve).forEach(e => resolveElement(
     e,
     contextedElementsGetter,
-    resolvedElements
+    resolvedElements,
+    resolveRoot
   ))
   return elementsToResolve
 }

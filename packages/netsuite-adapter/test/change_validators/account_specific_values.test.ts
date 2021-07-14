@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
-import accountSpecificValueValidator, { ACCOUNT_SPECIFIC_VALUE } from '../../src/change_validators/account_specific_values'
+import accountSpecificValueValidator from '../../src/change_validators/account_specific_values'
 import { customTypes, fileCabinetTypes } from '../../src/types'
-import { FILE, PATH, SCRIPT_ID, WORKFLOW } from '../../src/constants'
+import { ACCOUNT_SPECIFIC_VALUE, FILE, PATH, SCRIPT_ID, WORKFLOW } from '../../src/constants'
 
 
 describe('account specific value validator', () => {

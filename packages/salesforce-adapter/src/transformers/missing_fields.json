@@ -2015,6 +2015,62 @@
     ]
   },
   {
+    "id": "KnowledgeLanguage",
+    "fields": [
+      {
+        "name": "active",
+        "type": "boolean"
+      },
+      {
+        "name": "defaultAssignee",
+        "type": "STRING"
+      },
+      {
+        "name": "defaultAssigneeType",
+        "type": "STRING",
+        "picklistValues": [
+          "User",
+          "Queue"
+        ]
+      },
+      {
+        "name": "defaultReviewer",
+        "type": "STRING"
+      },
+      {
+        "name": "defaultReviewerType",
+        "type": "STRING"
+        ,
+        "picklistValues": [
+          "User",
+          "Queue"
+        ]
+      },
+      {
+        "name": "name",
+        "type": "STRING"
+      }
+    ]
+  },
+  {
+    "id": "KnowledgeLanguageSettings",
+    "fields": [
+      {
+        "name": "language",
+        "type": "KnowledgeLanguage"
+      }
+    ]
+  },
+  {
+    "id": "KnowledgeSettings",
+    "fields": [
+      {
+        "name": "languages",
+        "type": "KnowledgeLanguageSettings"
+      }
+    ]
+  },
+  {
     "id": "PermissionSet",
     "fields": [
       {

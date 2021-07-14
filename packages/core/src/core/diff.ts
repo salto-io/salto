@@ -13,13 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, DetailedChange, ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { Element, DetailedChange, ElemID, ReadOnlyElementsSource, isAdditionChange, isRemovalChange, Change } from '@salto-io/adapter-api'
 import { ElementSelector, selectElementIdsByTraversal, elementSource } from '@salto-io/workspace'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
-import { getDetailedChanges } from './fetch'
-import { IDFilter } from './plan/plan'
+import { IDFilter, getPlan, Plan } from './plan/plan'
+import { filterPlanItem } from './plan/plan_item'
 
 const { awu } = collections.asynciterable
 
@@ -27,11 +27,10 @@ const isIdRelevant = (relevantIds: ElemID[], id: ElemID): boolean =>
   relevantIds.some(elemId =>
     id.isParentOf(elemId) || elemId.getFullName() === id.getFullName() || elemId.isParentOf(id))
 
-const filterRelevantParts = (elementIds: ElemID[],
-  selectorsToVerify: Set<string>): TransformFunc => ({ path, value }) => {
+const filterRelevantParts = (
+  elementIds: ElemID[],
+): TransformFunc => ({ path, value }) => {
   if (path !== undefined) {
-    const id = path.getFullName()
-    selectorsToVerify.delete(id)
     if (isIdRelevant(elementIds, path)) {
       return value
     }
@@ -39,22 +38,93 @@ const filterRelevantParts = (elementIds: ElemID[],
   return undefined
 }
 
-// This returns an array rather than iterablebecause it's going to be used
-// in an inMemElementSource any way
-const filterElementsByRelevance = (elements: AsyncIterable<Element>, relevantIds: ElemID[],
-  selectorsToVerify: Set<string>, elementsSource: ReadOnlyElementsSource): Promise<Element[]> => {
-  const topLevelIds = new Set<string>(relevantIds
-    .map(id => id.createTopLevelParentID().parent.getFullName()))
-  return awu(elements).filter(elem => topLevelIds.has(elem.elemID.getFullName())).map(elem => {
-    selectorsToVerify.delete(elem.elemID.getFullName())
+const filterElementByRelevance = async (
+  elem: Element,
+  relevantIds: ElemID[],
+  topLevelIds: Set<string>,
+  elementsSource: ReadOnlyElementsSource
+): Promise<Element | undefined> => {
+  if (topLevelIds.has(elem.elemID.getFullName())) {
     return transformElement({
       element: elem,
-      transformFunc: filterRelevantParts(relevantIds, selectorsToVerify),
+      transformFunc: filterRelevantParts(relevantIds),
       runOnFields: true,
       strict: false,
       elementsSource,
     })
-  }).toArray()
+  }
+  return undefined
+}
+
+const filterPlanItemsByRelevance = async (
+  plan: Plan,
+  toElementsSrc: elementSource.ElementsSource,
+  fromElementsSrc: elementSource.ElementsSource,
+  toElementIdsFiltered: ElemID[],
+  fromElementIdsFiltered: ElemID[],
+): Promise<DetailedChange[]> => {
+  const toTopLevelElementIdsFiltered = new Set<string>(toElementIdsFiltered
+    .map(id => id.createTopLevelParentID().parent.getFullName()))
+  const fromTopLevelElementIdsFiltered = new Set<string>(fromElementIdsFiltered
+    .map(id => id.createTopLevelParentID().parent.getFullName()))
+  return awu(plan.itemsByEvalOrder())
+    .map(item => filterPlanItem(
+      item,
+      async change => {
+        const before = isAdditionChange(change)
+          ? undefined : await filterElementByRelevance(
+            change.data.before,
+            toElementIdsFiltered,
+            toTopLevelElementIdsFiltered,
+            toElementsSrc
+          )
+        const after = isRemovalChange(change)
+          ? undefined : await filterElementByRelevance(
+            change.data.after,
+            fromElementIdsFiltered,
+            fromTopLevelElementIdsFiltered,
+            fromElementsSrc
+          )
+        if (after === undefined && before === undefined) {
+          return undefined
+        }
+        return {
+          ...change,
+          data: { before, after },
+        } as Change
+      }
+    ))
+    .flatMap(planItem => planItem.detailedChanges())
+    .toArray()
+}
+
+const verifyExactSelectorsExistance = async (
+  elementSelectors: ElementSelector[],
+  toElementsSrc: elementSource.ElementsSource,
+  fromElementsSrc: elementSource.ElementsSource,
+): Promise<void> => {
+  const selectorsToVerify = new Set<string>(elementSelectors
+    .map(sel => sel.origin).filter(sel => !sel.includes('*')))
+
+  const missingSelectors = await awu(selectorsToVerify.values())
+    .filter(async selector => {
+      const id = ElemID.fromFullName(selector)
+      return (await toElementsSrc.get(id) === undefined
+        && await fromElementsSrc.get(id) === undefined)
+    })
+    .toArray()
+  if (missingSelectors.length > 0) {
+    throw new Error(`ids not found: ${Array.from(missingSelectors)}`)
+  }
+}
+
+const getFilteredIds = async (
+  elementSelectors: ElementSelector[],
+  src: elementSource.ElementsSource
+): Promise<ElemID[]> => {
+  const elementIDs = awu(await src.list())
+  return awu(await selectElementIdsByTraversal(elementSelectors,
+    elementIDs, src, true)).toArray()
 }
 
 export const createDiffChanges = async (
@@ -63,31 +133,26 @@ export const createDiffChanges = async (
   elementSelectors: ElementSelector[] = [],
   topLevelFilters: IDFilter[] = []
 ): Promise<DetailedChange[]> => {
+  const plan = await getPlan({
+    before: toElementsSrc,
+    after: fromElementsSrc,
+    topLevelFilters,
+  })
+
   if (elementSelectors.length > 0) {
-    const toElements = awu(await toElementsSrc.list())
-    const fromElements = awu(await fromElementsSrc.list())
-    const toElementIdsFiltered = await awu(await selectElementIdsByTraversal(elementSelectors,
-      toElements, toElementsSrc, true)).toArray()
-    const fromElementIdsFiltered = await awu(await selectElementIdsByTraversal(elementSelectors,
-      fromElements, fromElementsSrc, true)).toArray()
-    const selectorsToVerify = new Set<string>(elementSelectors
-      .map(sel => sel.origin).filter(sel => !sel.includes('*')))
-    const toElementsFiltered = await filterElementsByRelevance(await toElementsSrc.getAll(),
-      toElementIdsFiltered, selectorsToVerify, toElementsSrc)
-    const fromElementsFiltered = await filterElementsByRelevance(await fromElementsSrc.getAll(),
-      fromElementIdsFiltered, selectorsToVerify, fromElementsSrc)
-    if (selectorsToVerify.size > 0) {
-      throw new Error(`ids not found: ${Array.from(selectorsToVerify)}`)
-    }
-    return wu(await getDetailedChanges(
-      elementSource.createInMemoryElementSource(toElementsFiltered),
-      elementSource.createInMemoryElementSource(fromElementsFiltered),
-      topLevelFilters
-    )).toArray()
+    await verifyExactSelectorsExistance(elementSelectors, toElementsSrc, fromElementsSrc)
+    const toElementIdsFiltered = await getFilteredIds(elementSelectors, toElementsSrc)
+    const fromElementIdsFiltered = await getFilteredIds(elementSelectors, fromElementsSrc)
+    return filterPlanItemsByRelevance(
+      plan,
+      toElementsSrc,
+      fromElementsSrc,
+      toElementIdsFiltered,
+      fromElementIdsFiltered
+    )
   }
-  return wu(await getDetailedChanges(
-    toElementsSrc,
-    fromElementsSrc,
-    topLevelFilters
-  )).toArray()
+  return wu(plan.itemsByEvalOrder())
+    .map(item => item.detailedChanges())
+    .flatten()
+    .toArray()
 }

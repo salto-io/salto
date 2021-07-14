@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ObjectType, Element, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, Element, BuiltinTypes, ReferenceExpression, ElemIdGetter, ADAPTER, OBJECT_SERVICE_ID, toServiceIdsString, OBJECT_NAME, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { elements as elementsComponents } from '@salto-io/adapter-components'
 import _ from 'lodash'
@@ -23,11 +23,21 @@ import { NETSUITE, RECORDS_PATH } from '../constants'
 import { NetsuiteQuery } from '../query'
 import { TYPE_TO_IDENTIFIER } from './types'
 import NetsuiteClient from '../client/client'
+import { castFieldValue } from './custom_fields'
+import { addIdentifierToValues, addIdentifierToType } from './multi_fields_identifiers'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
 
 export type DataTypeConfig = Record<string, string[]>
+
+const setTypeSourceAnnotation = (type: ObjectType): void => {
+  type.annotationRefTypes.source = new ReferenceExpression(
+    BuiltinTypes.HIDDEN_STRING.elemID,
+    BuiltinTypes.HIDDEN_STRING
+  )
+  type.annotations.source = 'soap'
+}
 
 export const getDataTypes = async (
   client: NetsuiteClient
@@ -44,11 +54,8 @@ export const getDataTypes = async (
   const types = await elementsComponents.soap.extractTypes(NETSUITE, wsdl)
 
   types.forEach(type => {
-    type.annotationRefTypes.source = new ReferenceExpression(
-      BuiltinTypes.HIDDEN_STRING.elemID,
-      BuiltinTypes.HIDDEN_STRING
-    )
-    type.annotations.source = 'soap'
+    setTypeSourceAnnotation(type)
+    addIdentifierToType(type)
   })
 
   types
@@ -68,12 +75,10 @@ export const getDataTypes = async (
 }
 
 const getType = (
-  record: Record<string, unknown>,
+  values: Values,
   typesMap: Record<string, ObjectType>
 ): ObjectType => {
-  const attributes = record.attributes as Record<string, unknown> | undefined
-
-  const typeNames: string[] = Object.entries(attributes ?? {})
+  const typeNames: string[] = Object.entries(values.attributes ?? {})
     .filter(([key, value]) => key.split(':')[1] === 'type' && typeof value === 'string')
     .map(([_key, value]) => {
       const valueStr = value as string
@@ -81,19 +86,20 @@ const getType = (
     })
 
   if (typeNames.length !== 1 || !(typeNames[0] in typesMap)) {
-    log.warn(`Got invalid instance from SOAP request: ${JSON.stringify(record, undefined, 2)}`)
+    log.warn(`Got invalid instance from SOAP request: ${JSON.stringify(values, undefined, 2)}`)
     throw new Error('Got invalid instance from SOAP request')
   }
   return typesMap[typeNames[0]]
 }
 
 const createInstance = async (
-  record: Record<string, unknown>,
+  values: Values,
   typesMap: Record<string, ObjectType>,
+  elemIdGetter?: ElemIdGetter,
 ): Promise<InstanceElement> => {
-  const type = getType(record, typesMap)
-  const fixedRecord = await transformValues({
-    values: record,
+  const type = getType(values, typesMap)
+  const fixedValues = await transformValues({
+    values,
     type,
     strict: false,
     transformFunc: async ({ value, field }) => {
@@ -103,34 +109,41 @@ const createInstance = async (
         delete value['xsi:type']
       }
 
-      if (value instanceof Date) {
-        return value.toString()
-      }
-
-      if (typeof value === 'string') {
-        const fieldType = await field?.getType()
-        if (fieldType?.elemID.isEqual(BuiltinTypes.BOOLEAN.elemID)) {
-          return value === 'true'
-        }
-        if (fieldType?.elemID.isEqual(BuiltinTypes.NUMBER.elemID)) {
-          return parseInt(value, 10)
-        }
-      }
-      return value
+      return castFieldValue(value, field)
     },
-  })
-  const id = naclCase(fixedRecord?.[TYPE_TO_IDENTIFIER[type.elemID.name]])
+  }) ?? values
+
+  addIdentifierToValues(fixedValues, type)
+
+  const serviceIdFieldName = TYPE_TO_IDENTIFIER[type.elemID.name]
+  const identifierValue = fixedValues[serviceIdFieldName]
+  const defaultName = naclCase(identifierValue)
+
+  const name = elemIdGetter !== undefined ? elemIdGetter(
+    NETSUITE,
+    {
+      [ADAPTER]: NETSUITE,
+      [serviceIdFieldName]: identifierValue,
+      [OBJECT_SERVICE_ID]: toServiceIdsString({
+        [ADAPTER]: NETSUITE,
+        [OBJECT_NAME]: type.elemID.getFullName(),
+      }),
+    },
+    defaultName
+  ).name : defaultName
+
   return new InstanceElement(
-    id,
+    name,
     type,
-    fixedRecord,
-    [NETSUITE, RECORDS_PATH, type.elemID.name, pathNaclCase(id)],
+    fixedValues,
+    [NETSUITE, RECORDS_PATH, type.elemID.name, pathNaclCase(name)],
   )
 }
 
 export const getDataElements = async (
   client: NetsuiteClient,
   query: NetsuiteQuery,
+  elemIdGetter?: ElemIdGetter,
 ): Promise<Element[]> => {
   const types = await getDataTypes(client)
 
@@ -147,9 +160,8 @@ export const getDataElements = async (
     return types
   }
 
-  const instances = await awu(await client.getAllRecords(availableTypesToFetch))
-    .map(record => createInstance(record, typesMap))
-    .toArray()
+  const instances = await Promise.all((await client.getAllRecords(availableTypesToFetch))
+    .map(record => createInstance(record, typesMap, elemIdGetter)))
 
   return [
     ...types,

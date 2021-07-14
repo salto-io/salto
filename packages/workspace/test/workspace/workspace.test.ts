@@ -19,7 +19,7 @@ import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
   Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
   isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType,
-  Value, ReferenceType,
+  Value, TypeReference,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges, createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
@@ -668,7 +668,7 @@ describe('workspace', () => {
       const afterObj = new ObjectType({
         elemID: new ElemID('salesforce', 'lead'),
         fields: {
-          new_base: { refType: new ReferenceType(salesforceText.elemID) },
+          new_base: { refType: new TypeReference(salesforceText.elemID) },
         },
       })
       beforeEach(async () => {

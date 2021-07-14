@@ -21,7 +21,7 @@ import {
   isVariable, isMapType, MapType, isContainerType,
 } from '../src/elements'
 import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
-import { ReferenceType } from '../src/values'
+import { TypeReference } from '../src/values'
 
 describe('Test elements.ts', () => {
   /**   ElemIDs   * */
@@ -48,9 +48,9 @@ describe('Test elements.ts', () => {
     elemID: otID,
     fields: {
       // eslint-disable-next-line camelcase
-      num_field: { refType: new ReferenceType(primNum.elemID, primNum) },
+      num_field: { refType: new TypeReference(primNum.elemID, primNum) },
       // eslint-disable-next-line camelcase
-      str_field: { refType: new ReferenceType(primStr.elemID, primStr) },
+      str_field: { refType: new TypeReference(primStr.elemID, primStr) },
     },
     annotationRefsOrTypes: {},
     annotations: {},

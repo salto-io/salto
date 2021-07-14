@@ -20,7 +20,7 @@ import {
   isListType, ListType, BuiltinTypes, StaticFile, isPrimitiveType,
   Element, isReferenceExpression, isPrimitiveValue, CORE_ANNOTATIONS, FieldMap, AdditionChange,
   RemovalChange, ModificationChange, isInstanceElement, isObjectType, MapType, isMapType,
-  ContainerType, ReferenceType,
+  ContainerType, TypeReference,
   VariableExpression,
 } from '@salto-io/adapter-api'
 import { AdditionDiff, RemovalDiff, ModificationDiff } from '@salto-io/dag'
@@ -2087,10 +2087,10 @@ describe('Test utils.ts', () => {
     const objWithUnresolved = new ObjectType({
       elemID: new ElemID('ad', 'withResolved'),
       fields: {
-        a: { refType: new ReferenceType(fieldType.elemID) },
+        a: { refType: new TypeReference(fieldType.elemID) },
       },
       annotationRefsOrTypes: {
-        annoA: new ReferenceType(annoType.elemID),
+        annoA: new TypeReference(annoType.elemID),
       },
     })
     const instWithResolvedType = new InstanceElement(
@@ -2102,7 +2102,7 @@ describe('Test utils.ts', () => {
     )
     const instWithUnresolvedType = new InstanceElement(
       'resolved',
-      new ReferenceType(objWithResolved.elemID),
+      new TypeReference(objWithResolved.elemID),
       {
         a: 'does not matter',
       }

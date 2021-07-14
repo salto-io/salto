@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Field, isObjectType, PrimitiveTypes, isPrimitiveType, Element, isInstanceElement, Value, INSTANCE_ANNOTATIONS, isReferenceExpression, isField, ElemID, ReferenceMap, ReferenceType } from '@salto-io/adapter-api'
+import { Field, isObjectType, PrimitiveTypes, isPrimitiveType, Element, isInstanceElement, Value, INSTANCE_ANNOTATIONS, isReferenceExpression, isField, ElemID, ReferenceMap, TypeReference } from '@salto-io/adapter-api'
 import { promises, collections } from '@salto-io/lowerdash'
 
 
@@ -90,7 +90,7 @@ const dumpFieldBlock = async (field: Field, functions: Functions): Promise<Dumpe
   blocks: [],
 })
 
-const dumpAnnotationTypeBlock = (key: string, refType: ReferenceType): DumpedHclBlock =>
+const dumpAnnotationTypeBlock = (key: string, refType: TypeReference): DumpedHclBlock =>
   ({
     type: dumpElemID(refType.elemID),
     labels: [key],
@@ -168,7 +168,7 @@ export const dumpElements = async (
   )
 
 export const dumpSingleAnnotationType = (
-  name: string, refType: ReferenceType, indentationLevel = 0
+  name: string, refType: TypeReference, indentationLevel = 0
 ): string =>
   hclDump(wrapBlocks([dumpAnnotationTypeBlock(name, refType)]), indentationLevel)
 

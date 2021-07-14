@@ -142,7 +142,7 @@ export class VariableExpression extends ReferenceExpression {
   }
 }
 
-export class ReferenceType {
+export class TypeReference {
   constructor(
     public readonly elemID: ElemID,
     public readonly type?: TypeElement,
@@ -188,8 +188,8 @@ export const isReferenceExpression = (value: any): value is ReferenceExpression 
 )
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isReferenceType = (value: any): value is ReferenceType => (
-  value instanceof ReferenceType
+export const isTypeReference = (value: any): value is TypeReference => (
+  value instanceof TypeReference
 )
 
 export type TemplatePart = string | Expression

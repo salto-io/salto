@@ -21,19 +21,19 @@ import { collections, promises } from '@salto-io/lowerdash'
 import { ElemID, LIST_ID_PREFIX, MAP_ID_PREFIX } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
-import { Values, isEqualValues, Value, ReferenceType, isReferenceType } from './values'
+import { Values, isEqualValues, Value, TypeReference, isTypeReference } from './values'
 
 const { awu } = collections.asynciterable
 const { mapValuesAsync } = promises.object
 // This is used to allow contructors Elements with Placeholder types
 // to receive TypeElement and save the appropriate Reference
-const getRefType = (typeOrRef: TypeOrRef): ReferenceType =>
-  (isReferenceType(typeOrRef)
+const getRefType = (typeOrRef: TypeOrRef): TypeReference =>
+  (isTypeReference(typeOrRef)
     ? typeOrRef
-    : new ReferenceType(typeOrRef.elemID, typeOrRef))
+    : new TypeReference(typeOrRef.elemID, typeOrRef))
 
 const getRefTypeValue = async (
-  refType: ReferenceType,
+  refType: TypeReference,
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<Value> =>
   (refType.getResolvedType(elementsSource))
@@ -137,14 +137,14 @@ export enum PrimitiveTypes {
 export type ContainerType = ListType | MapType
 export type TypeElement = PrimitiveType | ObjectType | ContainerType
 export type TypeMap = Record<string, TypeElement>
-type TypeOrRef<T extends TypeElement = TypeElement> = T | ReferenceType
+type TypeOrRef<T extends TypeElement = TypeElement> = T | TypeReference
 export type TypeRefMap = Record<string, TypeOrRef>
-export type ReferenceMap = Record<string, ReferenceType>
+export type ReferenceMap = Record<string, TypeReference>
 
 abstract class PlaceholderTypeElement extends Element {
   constructor(
     elemID: ElemID,
-    public refType: ReferenceType,
+    public refType: TypeReference,
     annotationRefsOrTypes?: TypeRefMap,
     annotations?: Values,
     path?: ReadonlyArray<string>,
@@ -170,7 +170,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
   // the constructor and because we currently don't have one, we add an artificial one here
   protected _typeMarker?: T
 
-  public refInnerType: ReferenceType
+  public refInnerType: TypeReference
   public constructor(
     innerTypeOrRef: TypeOrRef<T>
   ) {
@@ -189,7 +189,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
 
   clone(): ListType {
     return new ListType(
-      new ReferenceType(this.refInnerType.elemID, this.refInnerType.type)
+      new TypeReference(this.refInnerType.elemID, this.refInnerType.type)
     )
   }
 
@@ -228,7 +228,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
   // the constructor and because we currently don't have one, we add an artificial one here
   protected _typeMarker?: T
 
-  public refInnerType: ReferenceType
+  public refInnerType: TypeReference
   public constructor(
     innerTypeOrRef: TypeOrRef<T>
   ) {
@@ -247,7 +247,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
 
   clone(): MapType {
     return new MapType(
-      new ReferenceType(this.refInnerType.elemID, this.refInnerType.type)
+      new TypeReference(this.refInnerType.elemID, this.refInnerType.type)
     )
   }
 
@@ -437,7 +437,7 @@ export class ObjectType extends Element {
 export class InstanceElement extends PlaceholderTypeElement {
   constructor(
     name: string,
-    typeOrRefType: ObjectType | ReferenceType,
+    typeOrRefType: ObjectType | TypeReference,
     public value: Values = {},
     path?: ReadonlyArray<string>,
     annotations?: Values,

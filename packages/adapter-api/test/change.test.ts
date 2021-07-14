@@ -17,7 +17,7 @@ import { ObjectType, InstanceElement, PrimitiveType, PrimitiveTypes, Field } fro
 import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
 import { getChangeElement, Change, isInstanceChange, isObjectTypeChange, isFieldChange, toChange, isAdditionChange, isRemovalChange, isModificationChange, getAllChangeElements } from '../src/change'
-import { ReferenceType } from '../src/values'
+import { TypeReference } from '../src/values'
 
 describe('change.ts', () => {
   const objElemID = new ElemID('adapter', 'type')
@@ -29,7 +29,7 @@ describe('change.ts', () => {
       },
     },
   })
-  const inst = new InstanceElement('inst', new ReferenceType(obj.elemID, obj), { field: 'val' })
+  const inst = new InstanceElement('inst', new TypeReference(obj.elemID, obj), { field: 'val' })
 
   it('should getChangeElement for removal change', () => {
     const elem = getChangeElement({

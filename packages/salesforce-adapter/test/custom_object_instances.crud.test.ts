@@ -85,6 +85,14 @@ describe('Custom Object Instances CRUD', () => {
           [constants.API_NAME]: 'Address',
         },
       },
+      FieldWithNoValue: {
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+          [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          [constants.API_NAME]: 'FieldWithNoValue',
+        },
+      },
       Name: {
         type: Types.compoundDataTypes.Name,
         annotations: {
@@ -443,6 +451,8 @@ describe('Custom Object Instances CRUD', () => {
             // Because it turns into an update it should send it
             expect(updateCall[3][0].NotCreatable).toBeDefined()
             expect(updateCall[3][0].NotCreatable).toEqual('DontSendMeOnCreate')
+            // Should deploy fields with no values as null
+            expect(updateCall[3][0].FieldWithNoValue).toBeNull()
           })
 
           it('Should call load operation with insert for the "new" record', () => {
@@ -457,6 +467,8 @@ describe('Custom Object Instances CRUD', () => {
             expect(insertCall[3][0].NotCreatable).toBeUndefined()
             expect(insertCall[3][0].AnotherField).toBeDefined()
             expect(insertCall[3][0].AnotherField).toEqual('Type')
+            // Should deploy fields with no values as null
+            expect(insertCall[3][0].FieldWithNoValue).toBeNull()
           })
 
           it('Should have result with 2 applied changes, add 2 instances with new Id', async () => {

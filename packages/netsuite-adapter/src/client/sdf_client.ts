@@ -548,7 +548,7 @@ export default class SdfClient {
           this.executeProjectAction(COMMANDS.LIST_FILES, { folder }, executor)
             .catch(() => {
               log.debug(`Adding ${folder} path to skip list`)
-              failedPaths.push(folder)
+              failedPaths.push(`^${folder}.*`)
               return undefined
             }))
     )).filter(values.isDefined)

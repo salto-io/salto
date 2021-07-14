@@ -27,14 +27,16 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
     if (!client.isSuiteAppConfigured()) {
       return
     }
-    const sdfTypeNames = new Set(getMetadataTypes().map(e => e.elemID.getFullName()))
+    const sdfTypeNames = new Set(getMetadataTypes().map(e => e.elemID.getFullName().toLowerCase()))
     const supportedDataTypes = (await elementsComponents
       .filterTypes(
         NETSUITE,
-        elements.filter(isObjectType).filter(isDataObjectType),
+        elements
+          .filter(isObjectType)
+          .filter(isDataObjectType),
         SUPPORTED_TYPES
       ))
-      .filter(e => !sdfTypeNames.has(e.elemID.getFullName()))
+      .filter(e => !sdfTypeNames.has(e.elemID.getFullName().toLowerCase()))
 
     _.remove(elements, e => isObjectType(e) && isDataObjectType(e))
     elements.push(...supportedDataTypes)

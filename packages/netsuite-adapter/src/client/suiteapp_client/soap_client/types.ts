@@ -106,3 +106,13 @@ export type GetAllResponse = {
     }
   }
 }
+
+export const SOAP_FIELDS_TYPES = {
+  BOOLEAN: 'platformCore:BooleanCustomFieldRef',
+  STRING: 'platformCore:StringCustomFieldRef',
+  DOUBLE: 'platformCore:DoubleCustomFieldRef',
+  DATE: 'platformCore:DateCustomFieldRef',
+  SELECT: 'platformCore:SelectCustomFieldRef',
+  LONG: 'platformCore:LongCustomFieldRef',
+  MULTISELECT: 'platformCore:MultiSelectCustomFieldRef',
+}

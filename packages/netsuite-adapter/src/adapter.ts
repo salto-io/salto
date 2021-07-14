@@ -16,7 +16,8 @@
 import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
   ElemIdGetter, ReadOnlyElementsSource,
-  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS, DeployModifiers,
+  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS, DeployModifiers, Change, getChangeElement,
+  Element,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -44,6 +45,9 @@ import dataInstancesReferences from './filters/data_instances_references'
 import dataTypesCustomFields from './filters/data_types_custom_fields'
 import dataInstancesCustomFields from './filters/data_instances_custom_fields'
 import rolesInternalId from './filters/roles_internal_id'
+import dataInstancesAttributes from './filters/data_instances_attributes'
+import dataInstancesNullFields from './filters/data_instances_null_fields'
+import dataInstancesDiff from './filters/data_instances_diff'
 import { Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_USE_CHANGES_DETECTION } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
@@ -101,6 +105,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     client,
     elementsSource,
     filtersCreators = [
+      dataInstancesDiff,
       // addParentFolder must run before replaceInstanceReferencesFilter
       addParentFolder,
       convertLists,
@@ -108,11 +113,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
       replaceInstanceReferencesFilter,
       serviceUrls,
       rolesInternalId,
+      dataInstancesAttributes,
       redundantFields,
       hiddenFields,
       replaceRecordRef,
       dataTypesCustomFields,
       dataInstancesCustomFields,
+      dataInstancesCustomFields,
+      dataInstancesNullFields,
       removeUnsupportedTypes,
       dataInstancesReferences,
       dataInstancesInternalId,
@@ -186,7 +194,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const isPartial = this.fetchTarget !== undefined
 
     // TODO: Replace when data instances are ready
-    // const dataElementsPromise = await getDataElements(this.client, fetchQuery)
+    // const dataElementsPromise = await getDataElements(this.client, fetchQuery,
+    // this.getElemIdFunc)
     const dataElementsPromise = await getDataTypes(this.client)
 
     const getCustomObjectsResult = this.client.getCustomObjects(
@@ -294,8 +303,30 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
 
   public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    return this.client.deploy(changeGroup, this.deployReferencedElements
-       ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS)
+    const changes = changeGroup.changes
+      .map(change => ({
+        action: change.action,
+        data: _.mapValues(change.data, (element: Element) => element.clone()),
+      })) as Change[]
+
+    await this.filtersRunner.preDeploy(changes)
+
+    const { errors, appliedChanges: appliedChangesBeforeRestore } = await this.client.deploy(
+      changes,
+      changeGroup.groupID,
+      this.deployReferencedElements ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
+    )
+
+    const ids = appliedChangesBeforeRestore.map(
+      change => getChangeElement(change).elemID.getFullName()
+    )
+
+    return {
+      errors,
+      appliedChanges: changeGroup.changes.filter(
+        change => ids.includes(getChangeElement(change).elemID.getFullName())
+      ),
+    }
     // const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
     // const customizationInfosToDeploy = await awu(
     //   await this.getAllRequiredReferencedInstances(changedInstances)

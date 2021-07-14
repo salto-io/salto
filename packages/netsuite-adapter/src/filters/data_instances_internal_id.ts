@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { naclCase, TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, naclCase, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { isDataObjectType } from '../types'
@@ -48,9 +48,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       if ((field === undefined || fieldType?.elemID.isEqual(BuiltinTypes.UNKNOWN.elemID))
         && value.internalId !== undefined && !path?.isTopLevel()) {
         value.internalId = ACCOUNT_SPECIFIC_VALUE
-        if (value.typeId !== undefined) {
-          value.typeId = ACCOUNT_SPECIFIC_VALUE
-        }
+        delete value.typeId
       }
 
       const isInsideList = path?.getFullNameParts().some(part => isNumberStr(part))
@@ -90,6 +88,42 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       })
 
     elements.push(...Object.values(newInstancesMap))
+  },
+
+  preDeploy: async changes => {
+    await awu(changes)
+      .forEach(async change =>
+        applyFunctionToChangeData(
+          change,
+          async element => {
+            if (!isInstanceElement(element) || !isDataObjectType(await element.getType())) {
+              return element
+            }
+
+            element.value = await transformValues({
+              values: element.value,
+              type: await element.getType(),
+              strict: false,
+              pathID: element.elemID,
+              transformFunc: async ({ value, field, path }) => {
+                const fieldType = path?.isTopLevel()
+                  ? await element.getType()
+                  : await field?.getType()
+
+                if (fieldType?.elemID.name === 'RecordRef') {
+                  if (value.id !== '[ACCOUNT_SPECIFIC_VALUE]') {
+                    value.internalId = value.id
+                  }
+                  delete value.id
+                }
+
+                return value
+              },
+            }) ?? element.value
+
+            return element
+          }
+        ))
   },
 })
 

@@ -13,15 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getDeepInnerType, isObjectType } from '@salto-io/adapter-api'
+import { getDeepInnerType, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { transformValues } from '@salto-io/adapter-utils'
 import { FilterWith } from '../filter'
+import { isDataObjectType } from '../types'
 
 const { awu } = collections.asynciterable
 
 const REDUNDANT_TYPES = ['NullField', 'CustomFieldList', 'CustomFieldRef']
-
+const REDUNDANT_FIELDS = ['lastModifiedDate', 'dateCreated']
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
@@ -29,11 +31,28 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       .filter(isObjectType)
       .forEach(async e => {
         e.fields = Object.fromEntries(await awu(Object.entries(e.fields))
-          .filter(async ([_name, field]) => {
+          .filter(async ([name, field]) => {
             const fieldType = await getDeepInnerType(await field.getType())
-            return !REDUNDANT_TYPES.includes(fieldType.elemID.name)
+            return !REDUNDANT_FIELDS.includes(name)
+              && !REDUNDANT_TYPES.includes(fieldType.elemID.name)
           }).toArray())
       })
+
+    await awu(elements)
+      .filter(isInstanceElement)
+      .filter(async e => isDataObjectType(await e.getType()))
+      .forEach(async e => {
+        e.value = await transformValues({
+          values: e.value,
+          type: await e.getType(),
+          transformFunc: ({ value, path }) => (
+            path?.name === undefined || !REDUNDANT_FIELDS.includes(path.name) ? value : undefined
+          ),
+          strict: false,
+          pathID: e.elemID,
+        }) ?? e.value
+      })
+
 
     _.remove(elements, e => REDUNDANT_TYPES.includes(e.elemID.name))
   },

@@ -13,18 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, BuiltinTypes, ListType } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, ListType, InstanceElement } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/remove_redundant_fields'
 import { NETSUITE } from '../../src/constants'
 
 describe('removeRedundantFields', () => {
   const typeToRemove = new ObjectType({ elemID: new ElemID(NETSUITE, 'NullField') })
-  const typeWithFieldToRemove = new ObjectType({ elemID: new ElemID(NETSUITE, 'typeWithFieldToRemove'),
+  const typeWithFieldToRemove = new ObjectType({
+    elemID: new ElemID(NETSUITE, 'typeWithFieldToRemove'),
     fields: {
       fieldToRemove: { refType: typeToRemove },
       listToRemove: { refType: new ListType(typeToRemove) },
       numberField: { refType: BuiltinTypes.NUMBER },
-    } })
+    },
+    annotations: { source: 'soap' },
+  })
   let elements: ObjectType[]
 
   beforeEach(() => {
@@ -36,5 +39,18 @@ describe('removeRedundantFields', () => {
     expect(typeWithFieldToRemove.fields.fieldToRemove).toBeUndefined()
     expect(typeWithFieldToRemove.fields.listToRemove).toBeUndefined()
     expect(typeWithFieldToRemove.fields.numberField).toBeDefined()
+  })
+
+  it('should remove redundant fields without types', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      typeWithFieldToRemove,
+      {
+        lastModifiedDate: 'aaa',
+        shouldNotRemove: 'bbb',
+      }
+    )
+    await filterCreator().onFetch([instance])
+    expect(instance.value).toEqual({ shouldNotRemove: 'bbb' })
   })
 })

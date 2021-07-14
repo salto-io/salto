@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 import * as soap from 'soap'
-import _ from 'lodash'
+import { ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
 import { ExistingFileCabinetInstanceDetails } from '../../src/client/suiteapp_client/types'
 import { ReadFileError } from '../../src/client/suiteapp_client/errors'
 import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client'
 import { InvalidSuiteAppCredentialsError } from '../../src/client/types'
+import { NETSUITE } from '../../src/constants'
 
 describe('soap_client', () => {
   const addListAsyncMock = jest.fn()
@@ -34,7 +35,19 @@ describe('soap_client', () => {
 
   beforeEach(() => {
     jest.resetAllMocks()
-    wsdl = {}
+    wsdl = {
+      definitions: {
+        schemas: {
+          someNamespace: {
+            complexTypes: {
+              SubsidiarySearch: 'someValue',
+              ItemSearch: 'someValue',
+            },
+          },
+        },
+      },
+    }
+
     createClientAsyncMock.mockResolvedValue({
       addListAsync: addListAsyncMock,
       updateListAsync: updateListAsyncMock,
@@ -488,20 +501,6 @@ describe('soap_client', () => {
   })
 
   describe('getAllRecords', () => {
-    beforeEach(() => {
-      _.assign(wsdl, {
-        definitions: {
-          schemas: {
-            someNamespace: {
-              complexTypes: {
-                SubsidiarySearch: 'someValue',
-                ItemSearch: 'someValue',
-              },
-            },
-          },
-        },
-      })
-    })
     it('Should return record using search', async () => {
       searchAsyncMock.mockResolvedValue([{
         searchResult: {
@@ -611,6 +610,99 @@ describe('soap_client', () => {
 
       getAllAsyncMock.mockResolvedValue([{}])
       await expect(client.getAllRecords(['Subsidiary'])).rejects.toThrow()
+    })
+  })
+
+  describe('updateInstances', () => {
+    const subType = new ObjectType({ elemID: new ElemID(NETSUITE, 'SubType') })
+    const subsidiaryType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'Subsidiary'),
+      fields: {
+        obj: { refType: subType },
+        objList: { refType: new ListType(subType) },
+        ref: {
+          refType: new ObjectType({ elemID: new ElemID(NETSUITE, 'Subsidiary') }),
+          annotations: { isReference: true },
+        },
+      },
+    })
+
+    it('should return the id is success and the error if fails', async () => {
+      updateListAsyncMock.mockResolvedValue([{
+        writeResponseList: {
+          writeResponse: [
+            {
+              status: { attributes: { isSuccess: 'true' } },
+              baseRef: {
+                attributes: {
+                  internalId: '1',
+                },
+              },
+            },
+            {
+              status: {
+                attributes: { isSuccess: 'false' },
+                statusDetail: [{ code: 'SOME_ERROR', message: 'Some Error Message' }],
+              },
+            },
+          ],
+          status: { attributes: { isSuccess: 'true' } },
+        },
+      }])
+
+      const instance1 = new InstanceElement(
+        'instance1',
+        subsidiaryType,
+        {
+          name: 'name',
+          obj: {},
+          objList: [{}],
+          ref: {},
+        }
+      )
+
+      const instance2 = new InstanceElement(
+        'instance2',
+        subsidiaryType,
+        { name: 'name' }
+      )
+      expect(await client.updateInstances([
+        instance1,
+        instance2,
+      ])).toEqual([
+        1,
+        new Error(`SOAP api call to update record instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
+      ])
+    })
+
+    it('should throw an error if request fails', async () => {
+      updateListAsyncMock.mockResolvedValue([{
+        writeResponseList: {
+          status: {
+            attributes: { isSuccess: 'false' },
+            statusDetail: [{ code: 'SOME_ERROR', message: 'SOME_ERROR' }],
+          },
+        },
+      }])
+
+      await expect(client.updateInstances([
+        new InstanceElement(
+          'instance',
+          subsidiaryType,
+          { name: 'name' }
+        ),
+      ])).rejects.toThrow('Failed to updateList: error code: SOME_ERROR, error message: SOME_ERROR')
+    })
+
+    it('should throw an error if received invalid response', async () => {
+      updateListAsyncMock.mockResolvedValue([{}])
+      await expect(client.updateInstances([
+        new InstanceElement(
+          'instance',
+          subsidiaryType,
+          { name: 'name' },
+        ),
+      ])).rejects.toThrow('Got invalid response from updateList request. Errors:')
     })
   })
 })

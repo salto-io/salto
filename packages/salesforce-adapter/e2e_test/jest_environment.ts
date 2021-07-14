@@ -48,7 +48,7 @@ export const credsSpec = (envName?: string): CredsSpec<UsernamePasswordCredentia
       return {
         username: envUtils.required(userEnvVarName),
         password: envUtils.required(passwordEnvVarName),
-        apiToken: env[tokenEnvVarName] ?? '',
+        apiToken: envUtils.optional(tokenEnvVarName),
         isSandbox: envUtils.bool(sandboxEnvVarName),
       }
     },

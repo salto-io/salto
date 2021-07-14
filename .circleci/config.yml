@@ -165,7 +165,7 @@ jobs:
           command: yarn test --reporters=default --reporters=jest-junit --coverage=false
           no_output_timeout: 20m
           environment:
-            RUN_E2E_TESTS: '1'
+            SALTO_RUN_E2E_TESTS: '1'
             SALTO_LOG_LEVEL: 'info'
             # enable telemetry for end2end so we can count more events
             # webpack configuration is irrelevant in this case and therefore

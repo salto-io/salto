@@ -115,7 +115,7 @@
         "watch-ts": "tsc -b -w",
         "clean": "rm -rf ./dist .eslintcache",
         "test": "jest --passWithNoTests",
-        "e2e-test": "RUN_E2E_TESTS=1 jest",
+        "e2e-test": "SALTO_RUN_E2E_TESTS=1 jest",
         "clean-ts": "../../build_utils/clean-old-ts.sh",
         "clean-ts-test": "yarn clean-ts && yarn test",
         "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",

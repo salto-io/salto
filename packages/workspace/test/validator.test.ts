@@ -912,6 +912,20 @@ describe('Elements validation', () => {
           expect(errors[0]).toBeInstanceOf(InvalidValueMaxLengthValidationError)
         })
 
+        it('should not return validation error on max_length validation if value is not a string', async () => {
+          extInst.value.restrictStringLength = {}
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst,
+              extType,
+              ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(1)
+          expect(errors[0]).not.toBeInstanceOf(InvalidValueMaxLengthValidationError)
+        })
+
         it('should succeed max_length validation on an instance through field annotation', async () => {
           extInst.value.restrictStringLength = 'a'
           const errors = await validateElements(

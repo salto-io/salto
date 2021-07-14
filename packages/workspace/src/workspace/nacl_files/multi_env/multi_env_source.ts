@@ -305,7 +305,7 @@ const buildMultiEnvSource = (
       selectors,
       elementsFromSource,
       relevantSource,
-      false,
+      true,
     )
   }
 

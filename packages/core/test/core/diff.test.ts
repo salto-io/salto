@@ -207,7 +207,7 @@ describe('diff', () => {
       beforeAll(async () => {
         nestedID = singlePathInstMerged.elemID
           .createNestedID('nested')
-          .createNestedID('str')
+          // .createNestedID('str') // TODO fix
         const selectors = [
           createElementSelector(singlePathObjMerged.elemID.getFullName()),
           createElementSelector(nestedID.getFullName()),
@@ -225,7 +225,7 @@ describe('diff', () => {
         expect(changes.find(c => c.id.isEqual(singlePathObjMerged.elemID))).toBeTruthy()
       })
       it('should create partial changes for elements that pass nested filters', () => {
-        expect(changes.find(c => c.id.isEqual(nestedID))).toBeTruthy()
+        expect(changes.find(c => c.id.isEqual(nestedID.createNestedID('str')))).toBeTruthy()
       })
     })
     describe('check diff handling of selectors', () => {

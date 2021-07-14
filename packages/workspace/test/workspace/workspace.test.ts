@@ -45,6 +45,7 @@ import { resolve } from '../../src/expressions'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { InMemoryRemoteMap, RemoteMapCreator, RemoteMap, CreateRemoteMapParams } from '../../src/workspace/remote_map'
 import { Path } from '../../src/workspace/path_index'
+import { mockState } from '../common/state'
 
 const { awu } = collections.asynciterable
 
@@ -2772,5 +2773,45 @@ describe('non persistent workspace', () => {
     const nonPWorkspace = await createWorkspace(undefined, undefined, undefined, undefined,
       undefined, undefined, undefined, false)
     await expect(() => nonPWorkspace.flush()).rejects.toThrow()
+  })
+})
+
+describe('stateOnly update', () => {
+  let ws: Workspace
+  let resElement: Element
+  beforeAll(async () => {
+    const objectWithHidden = new ObjectType({
+      elemID: ElemID.fromFullName('salto.withhidden'),
+      annotationRefsOrTypes: {
+        hidden: BuiltinTypes.HIDDEN_STRING,
+        visible: BuiltinTypes.STRING,
+      },
+      annotations: {
+        hidden: 'hidden',
+        visible: 'visible',
+      },
+    })
+    const state = mockState([objectWithHidden])
+    ws = await createWorkspace(undefined, state)
+    const changes: DetailedChange[] = [
+      {
+        action: 'add',
+        data: {
+          after: objectWithHidden,
+        },
+        id: objectWithHidden.elemID,
+        path: ['salto', 'objwithhidden.nacl'],
+      },
+    ]
+    await ws.updateNaclFiles(changes, 'default', true)
+    resElement = await ws.getValue(objectWithHidden.elemID)
+    expect(resElement).toBeDefined()
+  })
+  it('should update the hidden changes in the workspace cache', () => {
+    expect(resElement.annotations.hidden).toBeDefined()
+  })
+
+  it('should not apply the workspace changes', () => {
+    expect(resElement.annotations.visible).not.toBeDefined()
   })
 })

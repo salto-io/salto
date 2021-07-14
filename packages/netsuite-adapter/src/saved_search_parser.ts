@@ -96,6 +96,9 @@ const getSummaryFilters = (search: ElementCompact): Values => {
 }
 
 const getAudience = (search: ElementCompact[]): Values => {
+  if (!Array.isArray(search)) {
+    return []
+  }
   const record = search.filter(i => Object.keys(i).includes('Record'))[0]
   if (record === undefined) {
     return []
@@ -144,7 +147,8 @@ const getSortColumns = (search: ElementCompact): Values => {
 }
 
 const getAlertRecipients = (search: ElementCompact): Values[] => {
-  if (search.alertRecipientFields.values === undefined) {
+  if (search.alertRecipientFields === undefined
+    || search.alertRecipientFields.values === undefined) {
     return []
   }
   if (Array.isArray(search.alertRecipientFields.values.Record)) {

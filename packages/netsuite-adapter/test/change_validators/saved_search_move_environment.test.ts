@@ -32,7 +32,9 @@ describe('move environment saved search change validator', () => {
       instance.value.test = 'test'
       const changeErrors = await savedSearchesMoveEnvironment([
         toChange({ after: instance })])
-      expect(changeErrors).toHaveLength(0)
+      expect(changeErrors).toHaveLength(1)
+      expect(changeErrors[0].severity).toEqual('Warning')
+      expect(changeErrors[0].elemID).toEqual(instance.elemID)
     })
     it('should have change error when moving an instance with incorrect definition', async () => {
       const instance = new InstanceElement('test', customTypes[SAVED_SEARCH])

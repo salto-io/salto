@@ -27,6 +27,23 @@ const wasModified = async (instance:InstanceElement):Promise<boolean> => {
     .some((i:string) => !_.isEqual(parsedDefinition[i], instance.value[i]))
 }
 
+const getChangeError = async (instance: InstanceElement):Promise<ChangeError> => {
+  if (await wasModified(instance)) {
+    return ({
+      elemID: instance.elemID,
+      severity: 'Error',
+      message: 'Modified added saved searches cannot be deployed.',
+      detailedMessage: `Changing (${instance.elemID.name}) is not supported`,
+    } as ChangeError)
+  }
+  return ({
+    elemID: instance.elemID,
+    severity: 'Warning',
+    message: 'Added saved searches might be curropted when moving to a new environment.',
+    detailedMessage: `Instance (${instance.elemID.name}) might be Corrupted after this operation`,
+  } as ChangeError)
+}
+
 
 const changeValidator: ChangeValidator = async changes => (
   awu(changes)
@@ -34,13 +51,7 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(isInstanceChange)
     .map(getChangeElement)
     .filter(instance => instance.elemID.typeName === SAVED_SEARCH)
-    .filter(async instance => wasModified(instance))
-    .map(async instance => ({
-      elemID: instance.elemID,
-      severity: 'Error',
-      message: 'Modified added saved searches cannot be deployed.',
-      detailedMessage: `Changing (${instance.elemID.name}) is not supported`,
-    } as ChangeError))
+    .map(getChangeError)
     .toArray()
 )
 

@@ -634,6 +634,17 @@ describe('swagger_instance_elements', () => {
             food2: { id: 'f2' },
           },
         ]
+        yield [
+          {
+            id: '33',
+            name: 'def',
+            owners: [
+              { name: 'o3', bla: 'BLA', x: { nested: 'value' } },
+            ],
+            food1: { id: 'f1' },
+            food2: { id: 'f2' },
+          },
+        ]
       })
       const res = await getAllInstances({
         paginator: mockPaginator,
@@ -659,11 +670,12 @@ describe('swagger_instance_elements', () => {
           PetList,
         },
       })
-      expect(res).toHaveLength(3)
+      expect(res).toHaveLength(4)
       expect(res.map(e => e.elemID.getFullName())).toEqual([
         `${ADAPTER_NAME}.Pet.instance.dog`,
         `${ADAPTER_NAME}.Pet.instance.cat`,
         `${ADAPTER_NAME}.Pet.instance.mouse`,
+        `${ADAPTER_NAME}.Pet.instance.33@`, // digit-only ids should be escaped
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(1)
       expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet_list', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })

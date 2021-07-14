@@ -53,6 +53,7 @@ const defaultNaclCaseMapping = {
   '~': 'zb',
   '$': 'zc',
   ',': 'zd',
+  '+': 'ze',
 } as Record<string, string>
 
 const suffixFromList = (specialCharsMappingList: string[]): string => {
@@ -74,6 +75,10 @@ export const naclCase = (name?: string): string => {
   // then add a special chars mapping after the separator for uniqueness
   if (name === undefined) {
     return ''
+  }
+  if (/^\d+$/.test(name)) {
+    // use suffix to avoid having a digit-only identifier
+    return `${name}${NACL_ESCAPING_SUFFIX_SEPARATOR}`
   }
   const specialCharsMappingList: string[] = []
   const replaceChar = (char: string): string => {

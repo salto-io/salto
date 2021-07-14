@@ -440,4 +440,15 @@ describe('select elements recursively', () => {
     ))
     expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
   })
+  it('should return empty list on empty selector list', async () => {
+    const elementIds = (await selectElementIdsByTraversal(
+      [],
+      [mockInstance, mockType].map(element => ({
+        elemID: element.elemID,
+        element,
+      })),
+      false,
+    ))
+    expect(elementIds).toHaveLength(0)
+  })
 })

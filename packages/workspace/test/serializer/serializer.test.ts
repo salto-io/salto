@@ -20,7 +20,7 @@ import {
   VariableExpression, StaticFile, MapType, BuiltinTypes, isContainerType, isObjectType,
   Element,
   isReferenceExpression,
-  ReferenceType,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import { createRefToElmWithValue, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -215,19 +215,19 @@ describe('State/cache serialization', () => {
       // we need to make sure the types are empty as well... Not just the refs
       .map(e => {
         if (isInstanceElement(e)) {
-          e.refType = new ReferenceType(e.refType.elemID)
+          e.refType = new TypeReference(e.refType.elemID)
         }
         if (isContainerType(e)) {
-          e.refInnerType = new ReferenceType(e.refInnerType.elemID)
+          e.refInnerType = new TypeReference(e.refInnerType.elemID)
         }
         if (isObjectType(e)) {
           Object.values(e.fields).forEach(field => {
-            field.refType = new ReferenceType(field.refType.elemID)
+            field.refType = new TypeReference(field.refType.elemID)
           })
         }
         e.annotationRefTypes = _.mapValues(
           e.annotationRefTypes,
-          refType => new ReferenceType(refType.elemID)
+          refType => new TypeReference(refType.elemID)
         )
         return e
       })

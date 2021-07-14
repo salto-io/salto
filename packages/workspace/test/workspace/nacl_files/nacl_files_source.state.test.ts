@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ModificationChange, InstanceElement, RemovalChange, ObjectType,
-  ElemID, AdditionChange, DetailedChange, BuiltinTypes, getChangeElement, ReferenceType } from '@salto-io/adapter-api'
+  ElemID, AdditionChange, DetailedChange, BuiltinTypes, getChangeElement, TypeReference } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
@@ -362,15 +362,15 @@ describe('Nacl Files Source', () => {
               before: new ObjectType({
                 elemID: objType1ElemID,
                 fields: {
-                  a: { refType: new ReferenceType(BuiltinTypes.STRING.elemID) },
-                  b: { refType: new ReferenceType((BuiltinTypes.NUMBER.elemID)) },
+                  a: { refType: new TypeReference(BuiltinTypes.STRING.elemID) },
+                  b: { refType: new TypeReference((BuiltinTypes.NUMBER.elemID)) },
                 },
               }),
               after: new ObjectType({
                 elemID: objType1ElemID,
                 fields: {
                   b: {
-                    refType: new ReferenceType((BuiltinTypes.NUMBER.elemID)),
+                    refType: new TypeReference((BuiltinTypes.NUMBER.elemID)),
                   },
                 },
               }),
@@ -380,10 +380,10 @@ describe('Nacl Files Source', () => {
                 elemID: objType2ElemID,
                 fields: {
                   a: {
-                    refType: new ReferenceType((BuiltinTypes.NUMBER.elemID)),
+                    refType: new TypeReference((BuiltinTypes.NUMBER.elemID)),
                   },
                   c: {
-                    refType: new ReferenceType((BuiltinTypes.STRING.elemID)),
+                    refType: new TypeReference((BuiltinTypes.STRING.elemID)),
                   },
                 },
               }),
@@ -391,10 +391,10 @@ describe('Nacl Files Source', () => {
                 elemID: objType2ElemID,
                 fields: {
                   d: {
-                    refType: new ReferenceType((BuiltinTypes.STRING.elemID)),
+                    refType: new TypeReference((BuiltinTypes.STRING.elemID)),
                   },
                   c: {
-                    refType: new ReferenceType((BuiltinTypes.STRING.elemID)),
+                    refType: new TypeReference((BuiltinTypes.STRING.elemID)),
                   },
                 },
               }),

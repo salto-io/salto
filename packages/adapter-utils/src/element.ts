@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, FieldDefinition, PrimitiveType, ListType, MapType, PrimitiveTypes, TypeElement, ReferenceType } from '@salto-io/adapter-api'
+import { ObjectType, FieldDefinition, PrimitiveType, ListType, MapType, PrimitiveTypes, TypeElement, TypeReference } from '@salto-io/adapter-api'
 import { types } from '@salto-io/lowerdash'
 
 type SaltoPrimitiveTypeForType<T> = (
@@ -50,7 +50,7 @@ type ObjectTypeCtorForType<T> = (
   & {
     fields: {
       [K in keyof Required<T>]: FieldDefinition &
-        { refType: SaltoTypeForType<T[K]> | ReferenceType } &
+        { refType: SaltoTypeForType<T[K]> | TypeReference } &
         SaltoAnnotationsForField<T, K>
     }
   }

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, ReferenceType } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, TypeReference } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import {
   updatePathIndex, getElementsPathHints, PathIndex, getFromPathIndex, Path,
@@ -94,7 +94,7 @@ const multiPathInstanceTypeID = new ElemID('salto', 'obj')
 
 const multiPathInstanceA = new InstanceElement(
   'inst',
-  new ReferenceType(multiPathInstanceTypeID),
+  new TypeReference(multiPathInstanceTypeID),
   {
     a: 'A',
   },
@@ -103,7 +103,7 @@ const multiPathInstanceA = new InstanceElement(
 
 const multiPathInstanceB = new InstanceElement(
   'inst',
-  new ReferenceType(multiPathInstanceTypeID),
+  new TypeReference(multiPathInstanceTypeID),
   {
     b: 'B',
   },

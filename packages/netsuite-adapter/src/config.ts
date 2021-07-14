@@ -149,7 +149,6 @@ export const fetchDefault: FetchParams = {
     fileCabinet: [
       '^/SuiteScripts/.*',
       '^/Templates/.*',
-      '^/Web Site Hosting Files/.*',
       '^/SuiteBundles/.*',
     ],
   },

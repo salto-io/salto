@@ -102,15 +102,7 @@ const createInstance = async (
     values,
     type,
     strict: false,
-    transformFunc: async ({ value, field }) => {
-      if (typeof value === 'object' && 'attributes' in value) {
-        _.assign(value, value.attributes)
-        delete value.attributes
-        delete value['xsi:type']
-      }
-
-      return castFieldValue(value, field)
-    },
+    transformFunc: async ({ value, field }) => castFieldValue(value, field),
   }) ?? values
 
   addIdentifierToValues(fixedValues, type)

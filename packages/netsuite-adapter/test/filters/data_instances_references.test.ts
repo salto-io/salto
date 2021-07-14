@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/data_instances_references'
 import NetsuiteClient from '../../src/client/client'
@@ -34,128 +34,198 @@ describe('data_instances_references', () => {
     elemID: new ElemID(NETSUITE, 'secondType'),
     fields: {
       field: { refType: firstType },
-      recordRefList: { refType: new ListType(firstType) },
+      recordRefList: { refType: new ListType(firstType), annotations: { isReference: true } },
     },
     annotations: { source: 'soap' },
   })
-  it('should replace with reference', async () => {
-    const instance = new InstanceElement(
-      'instance',
-      secondType,
-      { field: { internalId: '1' } }
-    )
+  describe('onFetch', () => {
+    it('should replace with reference', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        secondType,
+        { field: { internalId: '1' } }
+      )
 
-    const referencedInstance = new InstanceElement(
-      'referencedInstance',
-      firstType,
-      { internalId: '1' }
-    )
+      const referencedInstance = new InstanceElement(
+        'referencedInstance',
+        firstType,
+        { internalId: '1' }
+      )
 
-    const filterOpts = {
-      elements: [instance, referencedInstance],
-      client: {} as NetsuiteClient,
-      elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          internalIdsIndex: {},
-          customFieldsIndex: {},
-        }),
-      },
-      elementsSource: buildElementsSourceFromElements([]),
-      isPartial: false,
-      dataTypeNames: new Set<string>(),
-    }
-    await filterCreator(filterOpts).onFetch?.([instance, referencedInstance])
-    expect((instance.value.field as ReferenceExpression).elemID.getFullName())
-      .toBe(referencedInstance.elemID.getFullName())
+      const filterOpts = {
+        client: {} as NetsuiteClient,
+        elementsSourceIndex: {
+          getIndexes: () => Promise.resolve({
+            serviceIdsIndex: {},
+            internalIdsIndex: {},
+            customFieldsIndex: {},
+          }),
+        },
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }
+      await filterCreator(filterOpts).onFetch?.([instance, referencedInstance])
+      expect((instance.value.field as ReferenceExpression).elemID.getFullName())
+        .toBe(referencedInstance.elemID.getFullName())
+    })
+
+    it('should change nothing if reference was not found', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        secondType,
+        { field: { internalId: '1' } }
+      )
+
+      const fetchOpts = {
+        elements: [instance],
+        client: {} as NetsuiteClient,
+        elementsSourceIndex: {
+          getIndexes: () => Promise.resolve({
+            serviceIdsIndex: {},
+            internalIdsIndex: {},
+            customFieldsIndex: {},
+          }),
+        },
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }
+      await filterCreator(fetchOpts).onFetch?.([instance])
+      expect(instance.value.field.internalId).toBe('1')
+    })
+
+    it('should use the elementsSource if partial', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        secondType,
+        { field: { internalId: '1' } }
+      )
+
+      const referencedInstance = new InstanceElement(
+        'referencedInstance',
+        firstType,
+        { internalId: '1' }
+      )
+
+      const fetchOpts = {
+        client: {} as NetsuiteClient,
+        elementsSourceIndex: {
+          getIndexes: () => Promise.resolve({
+            serviceIdsIndex: {},
+            internalIdsIndex: {
+              'firstType-1': { elemID: referencedInstance.elemID },
+            },
+            customFieldsIndex: {},
+          }),
+        },
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: true,
+      }
+      await filterCreator(fetchOpts).onFetch?.([instance])
+      expect((instance.value.field as ReferenceExpression).elemID.getFullName())
+        .toBe(referencedInstance.elemID.getFullName())
+    })
+
+    it('should replace recordRefList references', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        secondType,
+        { recordRefList: { recordRef: [{ internalId: '1' }] } }
+      )
+
+      const referencedInstance = new InstanceElement(
+        'referencedInstance',
+        firstType,
+        { internalId: '1' }
+      )
+
+      const fetchOpts = {
+        client: {} as NetsuiteClient,
+        elementsSourceIndex: {
+          getIndexes: () => Promise.resolve({
+            serviceIdsIndex: {},
+            internalIdsIndex: {},
+            customFieldsIndex: {},
+          }),
+        },
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }
+      await filterCreator(fetchOpts).onFetch?.([instance, referencedInstance])
+      expect((instance.value.recordRefList[0] as ReferenceExpression).elemID.getFullName())
+        .toBe(referencedInstance.elemID.getFullName())
+    })
   })
 
-  it('should change nothing if reference was not found', async () => {
-    const instance = new InstanceElement(
-      'instance',
-      secondType,
-      { field: { internalId: '1' } }
-    )
+  describe('preDeploy', () => {
+    it('should replace references with ids', async () => {
+      const referencedInstance = new InstanceElement(
+        'referencedInstance',
+        firstType,
+        { internalId: '1' }
+      )
 
-    const filterOpts = {
-      elements: [instance],
-      client: {} as NetsuiteClient,
-      elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          internalIdsIndex: {},
-          customFieldsIndex: {},
-        }),
-      },
-      elementsSource: buildElementsSourceFromElements([]),
-      isPartial: false,
-      dataTypeNames: new Set<string>(),
-    }
-    await filterCreator(filterOpts).onFetch?.([instance])
-    expect(instance.value.field.internalId).toBe('1')
-  })
+      const instance = new InstanceElement(
+        'instance',
+        secondType,
+        { field: new ReferenceExpression(referencedInstance.elemID, referencedInstance) }
+      )
 
-  it('should use the elementsSource if partial', async () => {
-    const instance = new InstanceElement(
-      'instance',
-      secondType,
-      { field: { internalId: '1' } }
-    )
+      const fetchOpts = {
+        client: {} as NetsuiteClient,
+        elementsSourceIndex: {
+          getIndexes: () => Promise.resolve({
+            serviceIdsIndex: {},
+            internalIdsIndex: {},
+            customFieldsIndex: {},
+          }),
+        },
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }
+      await filterCreator(fetchOpts).preDeploy?.([toChange({ before: instance, after: instance })])
+      expect(instance.value).toEqual({
+        field: {
+          internalId: '1',
+        },
+      })
+    })
 
-    const referencedInstance = new InstanceElement(
-      'referencedInstance',
-      firstType,
-      { internalId: '1' }
-    )
+    it('should replace references array with ids', async () => {
+      const referencedInstance = new InstanceElement(
+        'referencedInstance',
+        firstType,
+        { internalId: '1' }
+      )
 
-    const fetchOpts = {
-      client: {} as NetsuiteClient,
-      elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          internalIdsIndex: {
-            'firstType-1': { elemID: referencedInstance.elemID },
-          },
-          customFieldsIndex: {},
-        }),
-      },
-      elementsSource: buildElementsSourceFromElements([]),
-      isPartial: true,
-      dataTypeNames: new Set<string>(),
-    }
-    await filterCreator(fetchOpts).onFetch?.([instance])
-    expect((instance.value.field as ReferenceExpression).elemID.getFullName())
-      .toBe(referencedInstance.elemID.getFullName())
-  })
+      const instance = new InstanceElement(
+        'instance',
+        secondType,
+        { recordRefList: [new ReferenceExpression(referencedInstance.elemID, referencedInstance)] }
+      )
 
-  it('should replace recordRefList references', async () => {
-    const instance = new InstanceElement(
-      'instance',
-      secondType,
-      { recordRefList: { recordRef: [{ internalId: '1' }] } }
-    )
-
-    const referencedInstance = new InstanceElement(
-      'referencedInstance',
-      firstType,
-      { internalId: '1' }
-    )
-
-    const fetchOpts = {
-      client: {} as NetsuiteClient,
-      elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          internalIdsIndex: {},
-          customFieldsIndex: {},
-        }),
-      },
-      elementsSource: buildElementsSourceFromElements([]),
-      isPartial: false,
-      dataTypeNames: new Set<string>(),
-    }
-    await filterCreator(fetchOpts).onFetch?.([instance, referencedInstance])
-    expect((instance.value.recordRefList[0] as ReferenceExpression).elemID.getFullName())
-      .toBe(referencedInstance.elemID.getFullName())
+      const fetchOpts = {
+        client: {} as NetsuiteClient,
+        elementsSourceIndex: {
+          getIndexes: () => Promise.resolve({
+            serviceIdsIndex: {},
+            internalIdsIndex: {},
+            customFieldsIndex: {},
+          }),
+        },
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }
+      await filterCreator(fetchOpts).preDeploy?.([
+        toChange({ before: instance, after: instance }),
+        toChange({ before: firstType, after: firstType }),
+      ])
+      expect(instance.value).toEqual({
+        recordRefList: {
+          'platformCore:recordRef': [{
+            attributes: { internalId: '1' },
+          }],
+        },
+      })
+    })
   })
 })

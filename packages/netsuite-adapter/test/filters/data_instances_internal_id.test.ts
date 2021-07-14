@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/data_instances_internal_id'
 import { ACCOUNT_SPECIFIC_VALUE, NETSUITE } from '../../src/constants'
 
@@ -27,41 +27,74 @@ describe('data_instances_internal_id', () => {
       },
     },
   })
-  it('should add account specific value to record refs', async () => {
-    const instance = new InstanceElement(
-      'instance',
-      new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { recordRef: { refType: recordRefType } }, annotations: { source: 'soap' } }),
-      { recordRef: {} }
-    )
+  describe('onFetch', () => {
+    it('should add account specific value to record refs', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { recordRef: { refType: recordRefType } }, annotations: { source: 'soap' } }),
+        { recordRef: {} }
+      )
 
-    await filterCreator().onFetch([instance])
-    expect(instance.value.recordRef.id).toEqual(ACCOUNT_SPECIFIC_VALUE)
+      await filterCreator().onFetch([instance])
+      expect(instance.value.recordRef.id).toEqual(ACCOUNT_SPECIFIC_VALUE)
+    })
+
+    it('should replace internalId for values without fields', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), annotations: { source: 'soap' } }),
+        { recordRef: { internalId: '1' } }
+      )
+
+      await filterCreator().onFetch([instance])
+      expect(instance.value.recordRef.internalId).toEqual(ACCOUNT_SPECIFIC_VALUE)
+    })
+
+    it('should extract list items with internal id', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { someList: { refType: new ListType(recordRefType) } }, annotations: { source: 'soap' } }),
+        { someList: [{ internalId: '1' }, { internalId: '1' }] }
+      )
+
+      const elements = [instance]
+
+      await filterCreator().onFetch(elements)
+      expect(elements[1].elemID.name).toBe('type_someList_1')
+      expect((instance.value.someList[0] as ReferenceExpression).elemID.getFullName())
+        .toBe(elements[1].elemID.getFullName())
+      expect(elements.length).toBe(2)
+    })
   })
 
-  it('should replace internalId for values without fields', async () => {
-    const instance = new InstanceElement(
-      'instance',
-      new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), annotations: { source: 'soap' } }),
-      { recordRef: { internalId: '1' } }
-    )
+  describe('preDeploy', () => {
+    const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { recordRef: { refType: recordRefType } }, annotations: { source: 'soap' } })
 
-    await filterCreator().onFetch([instance])
-    expect(instance.value.recordRef.internalId).toEqual(ACCOUNT_SPECIFIC_VALUE)
-  })
+    it('should replace internalId with id', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        type,
+        { recordRef: { internalId: '1', id: '2' } }
+      )
 
-  it('should extract list items with internal id', async () => {
-    const instance = new InstanceElement(
-      'instance',
-      new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { someList: { refType: new ListType(recordRefType) } }, annotations: { source: 'soap' } }),
-      { someList: [{ internalId: '1' }, { internalId: '1' }] }
-    )
+      await filterCreator().preDeploy?.([
+        toChange({ before: instance.clone(), after: instance }),
+        toChange({ before: type, after: type }),
+      ])
+      expect(instance.value).toEqual({ recordRef: { internalId: '2' } })
+    })
 
-    const elements = [instance]
+    it('should use internalId when id not set', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        type,
+        { recordRef: { internalId: '1', id: '[ACCOUNT_SPECIFIC_VALUE]' } }
+      )
 
-    await filterCreator().onFetch(elements)
-    expect(elements[1].elemID.name).toBe('type_someList_1')
-    expect((instance.value.someList[0] as ReferenceExpression).elemID.getFullName())
-      .toBe(elements[1].elemID.getFullName())
-    expect(elements.length).toBe(2)
+      await filterCreator().preDeploy?.([
+        toChange({ before: instance.clone(), after: instance }),
+      ])
+      expect(instance.value).toEqual({ recordRef: { internalId: '1' } })
+    })
   })
 })

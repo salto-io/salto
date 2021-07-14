@@ -13,17 +13,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import SdfClient from '../../src/client/sdf_client'
 import * as suiteAppFileCabinet from '../../src/suiteapp_file_cabinet'
 import NetsuiteClient from '../../src/client/client'
+import { SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../../src/group_changes'
+import { NETSUITE } from '../../src/constants'
 
 describe('NetsuiteClient', () => {
   const sdfClient = {
     getCredentials: () => ({ accountId: 'someId' }),
   } as unknown as SdfClient
 
-  const suiteAppClient = {} as SuiteAppClient
+  const updateInstancesMock = jest.fn()
+
+  const suiteAppClient = {
+    updateInstances: updateInstancesMock,
+  } as unknown as SuiteAppClient
 
   const getPathToIdMapMock = jest.fn()
   jest.spyOn(suiteAppFileCabinet, 'createSuiteAppFileCabinetOperations').mockReturnValue({
@@ -46,6 +53,45 @@ describe('NetsuiteClient', () => {
     it('should return undefined when failed to get map', async () => {
       getPathToIdMapMock.mockResolvedValue(undefined)
       expect(await client.getPathInternalId('/some/path1')).toBeUndefined()
+    })
+  })
+
+  describe('deploy', () => {
+    const type = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'Subsidiary'),
+    })
+    const instance1 = new InstanceElement(
+      'instance1',
+      type,
+    )
+
+    const instance2 = new InstanceElement(
+      'instance2',
+      type,
+    )
+    const change1 = toChange({ before: instance1, after: instance1 })
+    const change2 = toChange({ before: instance2, after: instance2 })
+    it('should return error if suiteApp is not installed', async () => {
+      const clientWithoutSuiteApp = new NetsuiteClient(sdfClient)
+      const results = await clientWithoutSuiteApp.deploy(
+        [change1, change2],
+        SUITEAPP_UPDATING_RECORDS_GROUP_ID,
+        false,
+      )
+      expect(results).toEqual({
+        errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_RECORDS_GROUP_ID}" cannot be deployed`)],
+        appliedChanges: [],
+      })
+    })
+    it('should use updateInstances for data instances modifications', async () => {
+      updateInstancesMock.mockResolvedValue([1, new Error('error')])
+      const results = await client.deploy(
+        [change1, change2],
+        SUITEAPP_UPDATING_RECORDS_GROUP_ID,
+        false,
+      )
+      expect(results.appliedChanges).toEqual([change1])
+      expect(results.errors).toEqual([new Error('error')])
     })
   })
 })

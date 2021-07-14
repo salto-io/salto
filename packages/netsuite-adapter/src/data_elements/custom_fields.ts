@@ -15,8 +15,12 @@
 */
 
 import { BuiltinTypes, Field, InstanceElement } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { SOAP_FIELDS_TYPES } from '../client/suiteapp_client/soap_client/types'
 import { othercustomfield } from '../types/custom_types/othercustomfield'
 import { INTERNAL_ID_TO_TYPES } from './types'
+
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?([+-]\d{2}:\d{2})?$/
 
 const CUSTOM_FIELD_TO_TYPE: Record<string, Record<string, string[]>> = {
   entitycustomfield: {
@@ -82,8 +86,35 @@ export const castFieldValue = async (value: unknown, field?: Field): Promise<unk
       return value === 'true'
     }
     if (fieldType?.elemID.isEqual(BuiltinTypes.NUMBER.elemID)) {
-      return parseInt(value, 10)
+      return parseFloat(value)
     }
   }
   return value
+}
+
+export const getSoapType = (value: unknown): string => {
+  if (typeof value === 'number') {
+    if (Number.isInteger(value)) {
+      return SOAP_FIELDS_TYPES.LONG
+    }
+    return SOAP_FIELDS_TYPES.DOUBLE
+  }
+
+  if (_.isPlainObject(value)) {
+    return SOAP_FIELDS_TYPES.SELECT
+  }
+
+  if (Array.isArray(value)) {
+    return SOAP_FIELDS_TYPES.MULTISELECT
+  }
+
+  if (typeof value === 'boolean') {
+    return SOAP_FIELDS_TYPES.BOOLEAN
+  }
+
+  if (typeof value === 'string' && DATE_REGEX.test(value)) {
+    return SOAP_FIELDS_TYPES.DATE
+  }
+
+  return SOAP_FIELDS_TYPES.STRING
 }

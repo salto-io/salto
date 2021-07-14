@@ -52,7 +52,7 @@ export const file = new ObjectType({
       },
     },
     description: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       annotations: {
       },
     },

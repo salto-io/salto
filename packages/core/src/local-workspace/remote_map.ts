@@ -523,10 +523,17 @@ remoteMap.RemoteMapCreator => {
         throw new Error('Failed to open rocksdb connection - too much open connections already')
       }
       const connectionPromise = (async () => {
-        currentConnectionsCount += 2
-        await createDBIfNotExist(location)
-        const readOnly = !persistent
-        return getOpenDBConnection(location, readOnly)
+        try {
+          currentConnectionsCount += 2
+          await createDBIfNotExist(location)
+          const readOnly = !persistent
+          return await getOpenDBConnection(location, readOnly)
+        } catch (e) {
+          if (e.message.includes('LOCK: Resource temporarily unavailable')) {
+            throw new Error('Salto local database locked. Could another Salto process be open?')
+          }
+          throw e
+        }
       })()
       mainDBConnections[location] = connectionPromise
       persistentDB = await connectionPromise

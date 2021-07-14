@@ -55,6 +55,7 @@ const CUSTOM_FIELD_TYPE_TO_SALTO_TYPE: Record<CustomFieldPrimitiveType, TypeElem
 }
 
 const SELECT_TYPES = ['MULTISELECT', 'SELECT']
+export const CUSTOM_FIELD_PREFIX = 'custom_'
 
 const getFieldType = (
   fieldInstance: InstanceElement,
@@ -97,7 +98,7 @@ const addFieldToType = (
   fieldInstance: InstanceElement,
   nameToType: Record<string, ObjectType>,
 ): void => {
-  const fieldName = fieldInstance.value.scriptid
+  const fieldName = `${CUSTOM_FIELD_PREFIX}${fieldInstance.value.scriptid}`
 
   const { fieldType, selectTypeIdAnnotation } = getFieldType(fieldInstance, nameToType)
 

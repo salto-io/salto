@@ -16,14 +16,16 @@
 import { isInstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { isDataObjectType } from '../types'
-import { castFieldValue } from '../data_elements/custom_fields'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterWith } from '../filter'
+import { isDataObjectType } from '../types'
+import { castFieldValue, getSoapType } from '../data_elements/custom_fields'
+import { CUSTOM_FIELD_PREFIX } from './data_types_custom_fields'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
-const filterCreator = (): FilterWith<'onFetch'> => ({
+const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   onFetch: async elements => {
     await awu(elements)
       .filter(isInstanceElement)
@@ -33,14 +35,50 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         const customFields = Object.fromEntries(
           await awu(makeArray(instance.value.customFieldList?.customField))
             .map(async value => {
-              const field = type.fields[value.scriptId]
-              return [value.scriptId, await castFieldValue(value.value, field)]
+              const fieldName = `${CUSTOM_FIELD_PREFIX}${value.scriptId}`
+              const field = type.fields[fieldName]
+              return [fieldName, await castFieldValue(value.value, field)]
             })
             .toArray()
         )
         _.assign(instance.value, customFields)
         delete instance.value.customFieldList
       })
+  },
+
+  preDeploy: async changes => {
+    await awu(changes)
+      .forEach(async change =>
+        applyFunctionToChangeData(
+          change,
+          async element => {
+            if (!isInstanceElement(element) || !isDataObjectType(await element.getType())) {
+              return element
+            }
+            const customFields = _.pickBy(
+              element.value,
+              (_value, key) => key.startsWith(CUSTOM_FIELD_PREFIX),
+            )
+            if (_.isEmpty(customFields)) {
+              return element
+            }
+
+            element.value.customFieldList = {
+              'platformCore:customField': _(customFields)
+                .entries()
+                .map(([key, customField]) => ({
+                  attributes: {
+                    scriptId: key.slice(CUSTOM_FIELD_PREFIX.length, key.length),
+                    'xsi:type': getSoapType(customField),
+                  },
+                  'platformCore:value': customField,
+                })).value(),
+            }
+
+            _(customFields).keys().forEach(key => delete element.value[key])
+            return element
+          }
+        ))
   },
 })
 

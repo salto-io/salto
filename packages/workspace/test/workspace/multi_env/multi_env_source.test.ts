@@ -842,13 +842,61 @@ describe('multi env source', () => {
       )
     })
   })
+  describe('getElementIdsBySelectors', () => {
+    describe('commonOnly=false', () => {
+      it('should extract the proper ids with overlaps when compact=false', async () => {
+        const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
+        const res = await awu(await source.getElementIdsBySelectors(selectors)).toArray()
+        expect(res.map(id => id.getFullName()).sort()).toEqual([
+          envElemID,
+          envElemID.createNestedID('field', 'field'),
+          objectElemID,
+          objectElemID.createNestedID('field', 'envField'),
+        ].map(id => id.getFullName()))
+      })
+      it('should extract the proper ids without overlaps when compact=true', async () => {
+        const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
+        const res = await awu(
+          await source.getElementIdsBySelectors(selectors, false, true)
+        ).toArray()
+        expect(res.map(id => id.getFullName()).sort()).toEqual([
+          envElemID,
+          objectElemID,
+        ].map(id => id.getFullName()))
+      })
+    })
+    describe('commonOnly=true', () => {
+      it('should extract the proper ids with overlaps when compact=false', async () => {
+        const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
+        const res = await awu(await source.getElementIdsBySelectors(selectors, true)).toArray()
+        expect(res.map(id => id.getFullName()).sort()).toEqual([
+          commonObject.elemID,
+          commonObject.elemID.createNestedID('field', 'field'),
+          objectElemID,
+          objectElemID.createNestedID('field', 'commonField'),
+        ].map(id => id.getFullName()))
+      })
+      it('should extract the proper ids without overlaps when compact=true', async () => {
+        const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
+        const res = await awu(
+          await source.getElementIdsBySelectors(selectors, true, true)
+        ).toArray()
+        expect(res.map(id => id.getFullName()).sort()).toEqual([
+          commonObject.elemID,
+          objectElemID,
+        ].map(id => id.getFullName()))
+      })
+    })
+  })
   describe('promote', () => {
     it('should route promote the proper ids', async () => {
-      const selectors = createElementSelectors(['salto.*']).validSelectors
+      const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
       jest.spyOn(routers, 'routePromote').mockImplementationOnce(
         () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
       )
-      await source.promote(await awu(await source.getElementIdsBySelectors(selectors)).toArray())
+      await source.promote(
+        await awu(await source.getElementIdsBySelectors(selectors, false, true)).toArray()
+      )
       expect(routers.routePromote).toHaveBeenCalledWith(
         [envElemID, objectElemID], envSource, commonSource, { inactive: inactiveSource }
       )
@@ -856,12 +904,13 @@ describe('multi env source', () => {
   })
   describe('demote', () => {
     it('should route demote the proper ids', async () => {
-      const selectors = createElementSelectors(['salto.*']).validSelectors
+      const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
       jest.spyOn(routers, 'routeDemote').mockImplementationOnce(
         () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
       )
-      await source.demote(await awu(await source.getElementIdsBySelectors(selectors, true))
-        .toArray())
+      await source.demote(await awu(
+        await source.getElementIdsBySelectors(selectors, true, true)
+      ).toArray())
       expect(routers.routeDemote).toHaveBeenCalledWith(
         [commonObject.elemID, objectElemID], envSource, commonSource, { inactive: inactiveSource }
       )

@@ -106,7 +106,7 @@ const moveElement = async (
 ): Promise<CliExitCode> => {
   try {
     const elemIds = await awu(
-      await workspace.getElementIdsBySelectors(elmSelectors, to === 'envs')
+      await workspace.getElementIdsBySelectors(elmSelectors, to === 'envs', true)
     ).toArray()
 
     if (!await shouldMoveElements(to, elemIds, cliOutput, force)) {
@@ -285,7 +285,7 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
 
   try {
     const elemIds = await awu(
-      await workspace.getElementIdsBySelectors(validSelectors)
+      await workspace.getElementIdsBySelectors(validSelectors, false, true)
     ).toArray()
     if (!await shouldCloneElements(toEnvs, elemIds, output, force ?? false)) {
       return CliExitCode.Success

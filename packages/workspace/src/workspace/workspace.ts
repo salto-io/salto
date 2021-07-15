@@ -317,7 +317,7 @@ export const loadWorkspace = async (
       ): Promise<ChangeSet<Change<Element>>> => {
         const cacheValid = initBuild
           ? await stateToBuild.mergeManager.getHash(STATE_SOURCE_PREFIX + envName)
-            === await state(envName).getHash()
+            === await state(envName).getHash() && partialStateChanges.cacheValid
           : true
         // We identify a first nacl load when the state is empty, and all of the changes
         // are visible (which indicates a nacl load and not a first 'fetch' in which the

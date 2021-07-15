@@ -15,8 +15,9 @@
 */
 import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
-  ElemIdGetter, ReadOnlyElementsSource,
-  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS, DeployModifiers,
+  ElemIdGetter, ReadOnlyElementsSource, Change,
+  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS,
+  DeployModifiers, InstanceElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -31,6 +32,7 @@ import {
 import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST,
   INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
+import parseSavedSearch from './filters/parse_saved_searchs'
 import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
 import addParentFolder from './filters/add_parent_folder'
@@ -103,6 +105,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     filtersCreators = [
       // addParentFolder must run before replaceInstanceReferencesFilter
       addParentFolder,
+      parseSavedSearch,
       convertLists,
       consistentValues,
       replaceInstanceReferencesFilter,
@@ -294,8 +297,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
 
   public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    return this.client.deploy(changeGroup, this.deployReferencedElements
-       ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS)
+    const changes = changeGroup.changes
+      .map(change => ({
+        action: change.action,
+        data: _.mapValues(change.data, (element: InstanceElement) => element.clone()),
+      })) as Change[]
+    await this.filtersRunner.preDeploy(changes)
+    return this.client.deploy(changes, changeGroup.groupID, this.deployReferencedElements
+      ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS)
     // const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
     // const customizationInfosToDeploy = await awu(
     //   await this.getAllRequiredReferencedInstances(changedInstances)

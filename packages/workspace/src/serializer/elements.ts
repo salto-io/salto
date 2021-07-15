@@ -21,7 +21,7 @@ import {
   ReferenceExpression, TemplateExpression, VariableExpression,
   isReferenceExpression, Variable, StaticFile, isStaticFile,
   isInstanceElement, isPrimitiveType,
-  FieldDefinition, isObjectType, Values, Value, TypeRefMap,
+  FieldDefinition, isObjectType, Values, Value, TypeRefMap, TypeReference, isTypeReference,
 } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { DuplicateAnnotationError, MergeError, isMergeError } from '../merger/internal/common'
@@ -64,6 +64,7 @@ const NameToType = {
   Field: Field,
   TemplateExpression: TemplateExpression,
   ReferenceExpression: ReferenceExpression,
+  TypeReference: TypeReference,
   VariableExpression: VariableExpression,
   StaticFile: StaticFile,
   DuplicateAnnotationError: DuplicateAnnotationError,
@@ -152,6 +153,15 @@ export const serialize = <T = Element>(
       ? new PrimitiveType({ elemID: v.elemID, primitive: v.primitive })
       : new ObjectType({ elemID: v.elemID })
   )
+  const referenceTypeReplacer = (e: TypeReference):
+  TypeReference & SerializedClass => {
+    if (referenceSerializerMode === 'keepRef') {
+      if (isType(e.type) && !isContainerType(e.type)) {
+        return saltoClassReplacer(new TypeReference(e.elemID, resolveCircles(e.type)))
+      }
+    }
+    return saltoClassReplacer(new TypeReference(e.elemID))
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const replacer = (v: any, k: any): any => {
@@ -161,6 +171,9 @@ export const serialize = <T = Element>(
       }
       if (isReferenceExpression(v)) {
         return referenceExpressionReplacer(v)
+      }
+      if (isTypeReference(v)) {
+        return referenceTypeReplacer(v)
       }
       if (isStaticFile(v)) {
         return staticFileReplacer(v)
@@ -198,12 +211,15 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
     return new ReferenceExpression(reviveElemID(elemID))
   }
 
-  const reviveRefType = (v: Value): ReferenceExpression => {
-    if (v.refType) {
-      return v.refType
+  const reviveRefTypeOfElement = (v: Value): TypeReference => {
+    if (v.refType !== undefined) {
+      return new TypeReference(reviveElemID(v.refType.elemID))
     }
     return createRefToElmWithValue(v.type)
   }
+
+  const reviveRefType = (v: Value): TypeReference =>
+    (new TypeReference(reviveElemID(v.elemID)))
 
   const reviveAnnotationRefTypes = (v: Value): TypeRefMap => {
     if (v.annotationRefTypes) {
@@ -212,9 +228,9 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
     return v.annotationTypes
   }
 
-  const reviveRefInnerType = (v: Value): ReferenceExpression => {
+  const reviveRefInnerType = (v: Value): TypeReference => {
     if (v.refInnerType) {
-      return new ReferenceExpression(v.refInnerType.elemID)
+      return new TypeReference(v.refInnerType.elemID)
     }
     return createRefToElmWithValue(v.innerType)
   }
@@ -222,7 +238,7 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
   const revivers: ReviverMap = {
     InstanceElement: v => new InstanceElement(
       reviveElemID(v.elemID).name,
-      reviveRefType(v),
+      reviveRefTypeOfElement(v),
       v.value,
       undefined,
       v.annotations,
@@ -249,13 +265,14 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
     ListType: v => new ListType(reviveRefInnerType(v)),
     MapType: v => new MapType(reviveRefInnerType(v)),
     Field: v => ({
-      refType: reviveRefType(v),
+      refType: reviveRefTypeOfElement(v),
       annotations: v.annotations,
     }),
     TemplateExpression: v => (
       new TemplateExpression({ parts: v.parts })
     ),
     ReferenceExpression: reviveReferenceExpression,
+    TypeReference: reviveRefType,
     VariableExpression: v => (
       new VariableExpression(reviveElemID(v.elemID ?? v.elemId))
     ),

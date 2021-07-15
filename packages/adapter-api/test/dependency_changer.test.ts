@@ -16,7 +16,6 @@
 import { dependencyChange, isDependentAction, addReferenceDependency, addParentDependency, isFieldChangeEntry, ChangeEntry, isInstanceChangeEntry, isObjectTypeChangeEntry } from '../src/dependency_changer'
 import { Change } from '../src/change'
 import { Field, ObjectType, InstanceElement } from '../src/elements'
-import { ReferenceExpression } from '../src/values'
 import { ElemID } from '../src/element_id'
 
 describe('Dependency changer utility functions', () => {
@@ -60,7 +59,7 @@ describe('Dependency changer utility functions', () => {
   describe('change entry filter functions', () => {
     const testType = new ObjectType({ elemID: new ElemID('', 'test') })
     const testField = new Field(testType, 'field', testType)
-    const testInst = new InstanceElement('inst', new ReferenceExpression(testType.elemID, testType))
+    const testInst = new InstanceElement('inst', testType)
     const toChangeEntry = <T>(elem: T): ChangeEntry<T> => (
       [1, { action: 'add', data: { after: elem } }]
     )

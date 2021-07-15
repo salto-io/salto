@@ -1334,7 +1334,7 @@ describe('transformer', () => {
       const fieldWithNestedReference = mockValueTypeField({
         fields: [referenceField],
         name: 'FieldWithNestedReference',
-        soapType: 'FieldWithNestedReferenceType',
+        soapType: 'FieldWithNestedTypeReference',
       })
       const elements = await createMetadataTypeElements({
         name: 'BaseType',

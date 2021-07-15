@@ -162,7 +162,8 @@ const isEqualsNode = async (
 const addDifferentElements = (
   before: ReadOnlyElementsSource,
   after: ReadOnlyElementsSource,
-  topLevelFilters: IDFilter[]
+  topLevelFilters: IDFilter[],
+  numElements: number
 ): PlanTransformer => graph => log.time(async () => {
   const outputGraph = graph.clone()
   const sieve = new Set<string>()
@@ -256,7 +257,7 @@ const addDifferentElements = (
     .map(handleSpecialIds)
     .forEach(addElementsNodes)
   return outputGraph
-}, 'add nodes to graph with action %s for %d elements')
+}, 'add nodes to graph with for %d elements', numElements)
 
 const resolveNodeElements = (
   before: ReadOnlyElementsSource,
@@ -409,27 +410,31 @@ export const getPlan = async ({
   dependencyChangers = defaultDependencyChangers,
   customGroupIdFunctions = {},
   topLevelFilters = [],
-}: GetPlanParameters): Promise<Plan> => log.time(async () => {
-  const diffGraph = await buildDiffGraph(
-    addDifferentElements(before, after, topLevelFilters),
-    resolveNodeElements(before, after),
-    addModifyNodes(addNodeDependencies(dependencyChangers)),
-  )
-  const filterResult = await filterInvalidChanges(
-    before, after, diffGraph, changeValidators,
-  )
-  const customGroupKeys = await getCustomGroupIds(
-    // We need to resolve the fileted graph again.
-    // Will be removed once the everything will use element source.
-    await resolveNodeElements(before, after)(
-      filterResult.validDiffGraph
-    ),
-    customGroupIdFunctions,
-  )
-  // build graph
-  const groupedGraph = removeRedundantFieldChanges(
-    buildGroupedGraphFromDiffGraph(filterResult.validDiffGraph, customGroupKeys)
-  )
-  // build plan
-  return addPlanFunctions(groupedGraph, filterResult.changeErrors)
-}, 'get plan with %o -> %o elements')
+}: GetPlanParameters): Promise<Plan> => {
+  const numBeforeElements = await awu(await before.list()).length()
+  const numAfterElements = await awu(await after.list()).length()
+  return log.time(async () => {
+    const diffGraph = await buildDiffGraph(
+      addDifferentElements(before, after, topLevelFilters, numBeforeElements + numAfterElements),
+      resolveNodeElements(before, after),
+      addModifyNodes(addNodeDependencies(dependencyChangers)),
+    )
+    const filterResult = await filterInvalidChanges(
+      before, after, diffGraph, changeValidators,
+    )
+    const customGroupKeys = await getCustomGroupIds(
+      // We need to resolve the fileted graph again.
+      // Will be removed once the everything will use element source.
+      await resolveNodeElements(before, after)(
+        filterResult.validDiffGraph
+      ),
+      customGroupIdFunctions,
+    )
+    // build graph
+    const groupedGraph = removeRedundantFieldChanges(
+      buildGroupedGraphFromDiffGraph(filterResult.validDiffGraph, customGroupKeys)
+    )
+    // build plan
+    return addPlanFunctions(groupedGraph, filterResult.changeErrors)
+  }, 'get plan with %o -> %o elements', numBeforeElements, numAfterElements)
+}

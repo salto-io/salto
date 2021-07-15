@@ -22,7 +22,6 @@ import { remoteMap } from '@salto-io/workspace'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import type rocksdb from '@salto-io/rocksdb'
 import path from 'path'
-import fs from 'fs'
 
 
 const { asynciterable } = collections
@@ -68,7 +67,7 @@ class DBLockError extends Error {
   }
 }
 
-const getTmpLocationForLoc = (location: string): string => path.join(location, TMP_DB_DIR)
+const getDBTmpDir = (location: string): string => path.join(location, TMP_DB_DIR)
 
 const readIteratorNext = (iterator: rocksdb
   .Iterator): Promise<remoteMap.RemoteMapEntry<string> | undefined> =>
@@ -207,14 +206,17 @@ const deleteLocation = async (location: string): Promise<void> => {
   }
 }
 
-const closeConnection = async (location: string, connection: Promise<rocksdb>,
-  deleteDB = false): Promise<void> => {
+const closeConnection = async (location: string, connection: Promise<rocksdb>): Promise<void> => {
   const dbConnection = await connection
   await promisify(dbConnection.close.bind(dbConnection))()
-  if (deleteDB === true) {
-    await deleteLocation(location)
-  }
   delete persistentDBConnections[location]
+}
+
+const deleteDB = async (location: string): Promise<void> => {
+  if (location in persistentDBConnections) {
+    await closeConnection(location, persistentDBConnections[location])
+  }
+  await deleteLocation(location)
 }
 
 const closeTmpConnection = async (
@@ -242,9 +244,9 @@ export const closeAllRemoteMaps = async (): Promise<void> => {
 export const cleanDatabases = async (): Promise<void> => {
   const persistentDBs = Object.entries(persistentDBConnections)
   await closeAllRemoteMaps()
-  await awu(persistentDBs).forEach(async ([loc, connection]) => {
-    const tmpDir = getTmpLocationForLoc(loc)
-    await awu(fs.readdirSync(tmpDir)).forEach(async tmpLoc => {
+  await awu(persistentDBs).forEach(async ([loc]) => {
+    const tmpDir = getDBTmpDir(loc)
+    await awu(await fileUtils.readDir(tmpDir)).forEach(async tmpLoc => {
       try {
         await deleteLocation(path.join(tmpDir, tmpLoc))
       } catch (e) {
@@ -255,7 +257,7 @@ export const cleanDatabases = async (): Promise<void> => {
       }
     })
     delete tmpDBConnections[loc]
-    await closeConnection(loc, connection, true)
+    await deleteDB(loc)
   })
 }
 
@@ -362,7 +364,7 @@ remoteMap.RemoteMapCreator => {
     remoteMap.CreateRemoteMapParams<T>
   ): Promise<remoteMap.RemoteMap<T, K> > => {
     const delKeys = new Set<string>()
-    const locationTmpDir = getTmpLocationForLoc(location)
+    const locationTmpDir = getDBTmpDir(location)
     if (!await fileUtils.exists(location)) {
       await fileUtils.mkdirp(location)
     }

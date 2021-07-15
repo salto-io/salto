@@ -298,7 +298,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
     const changes = changeGroup.changes
-      .filter(isInstanceChange)
       .map(change => ({
         action: change.action,
         data: _.mapValues(change.data, (element: InstanceElement) => element.clone()),

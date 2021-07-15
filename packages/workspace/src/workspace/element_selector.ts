@@ -193,37 +193,41 @@ const isElementPossiblyParentOfSearchedElement = (
   selectors.some(selector => match(testId, createSameDepthSelector(selector, testId)))
 
 export const selectElementIdsByTraversal = (
-  selectors: ElementSelector[], elements: ElementIDToValue[],
+  selectors: ElementSelector[],
+  elements: ElementIDToValue[],
   compact = false,
-  validateDeterminedSelectors = false,
 ): ElemID[] => {
-  const [selectorsToDetermine, determinedSelectors] = validateDeterminedSelectors ? [selectors, []]
-    : _.partition(selectors, selector => selector.origin.includes('*'))
-  const determinedIds = determinedSelectors.map(selector => selector.origin)
-  const ids = new Set(determinedIds)
-  if (selectorsToDetermine.length === 0) {
-    return [...ids].map(id => ElemID.fromFullName(id))
+  if (selectors.length === 0) {
+    return []
   }
-  const [topLevelSelectors, subElementSelectors] = _.partition(selectorsToDetermine,
-    isTopLevelSelector)
-  if (topLevelSelectors.length !== 0) {
-    const { elements: topLevelElements } = selectElementsBySelectors({
-      elementIds: elements, selectors: topLevelSelectors, validateSelectors: false,
-    })
-    topLevelElements.forEach(element => ids.add(element.elemID.getFullName()))
-    if (subElementSelectors.length === 0) {
-      return [...ids].map(id => ElemID.fromFullName(id))
+  const [topLevelSelectors, subElementSelectors] = _.partition(
+    selectors,
+    isTopLevelSelector,
+  )
+
+  const getTopLevelIDs = (): ElementIDToValue[] => {
+    if (topLevelSelectors.length === 0) {
+      return []
     }
+    return selectElementsBySelectors({
+      elementIds: elements,
+      selectors: topLevelSelectors,
+      validateSelectors: false,
+    }).elements
   }
+
+  const ids = new Set(getTopLevelIDs().map(id => id.elemID.getFullName()))
+
   const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)
-  const possibleParentElements = selectElementsBySelectors({
-    elementIds: elements, selectors: possibleParentSelectors, validateSelectors: false,
+  const possibleParentIDs = selectElementsBySelectors({
+    elementIds: elements,
+    selectors: possibleParentSelectors,
+    validateSelectors: false,
   }).elements
-  const stillRelevantElements = compact ? possibleParentElements
-    .filter(id => !ids.has(id.elemID.getFullName())) : possibleParentElements
-  if (stillRelevantElements.length === 0) {
-    return [...ids].map(id => ElemID.fromFullName(id))
-  }
+  const stillRelevantIDs = (compact
+    ? possibleParentIDs.filter(id => !ids.has(id.elemID.getFullName()))
+    : possibleParentIDs)
+
   const selectFromSubElements: TransformFunc = ({ path, value }) => {
     if (path === undefined) {
       return undefined
@@ -235,14 +239,9 @@ export const selectElementIdsByTraversal = (
         return undefined
       }
     }
-    const stillRelevantSelectors = selectorsToDetermine.filter(selector => selector
-      .origin.split(ElemID.NAMESPACE_SEPARATOR).length > testId.getFullNameParts().length)
+    const stillRelevantSelectors = selectors.filter(selector =>
+      selector.origin.split(ElemID.NAMESPACE_SEPARATOR).length > testId.getFullNameParts().length)
     if (stillRelevantSelectors.length === 0) {
-      return undefined
-    }
-    if (compact && determinedIds.includes(testId.getFullName())) {
-      // This can occur if testId is one given as a determined id, so we don't search for it,
-      // but because we just found it while searching, in compact scenario we need to return
       return undefined
     }
     if (isElementPossiblyParentOfSearchedElement(stillRelevantSelectors, testId)) {
@@ -250,7 +249,8 @@ export const selectElementIdsByTraversal = (
     }
     return undefined
   }
-  stillRelevantElements.forEach(elemContainer => transformElement({
+
+  stillRelevantIDs.forEach(elemContainer => transformElement({
     element: elemContainer.element, transformFunc: selectFromSubElements, runOnFields: true,
   }))
   return [...ids].map(id => ElemID.fromFullName(id))

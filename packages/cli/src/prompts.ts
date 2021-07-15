@@ -261,7 +261,7 @@ ${Prompts.LIST_IDS(ids)}
   public static readonly SHOULD_MOVE_QUESTION = (to: string): string =>
     Prompts.SHOULD_RUN_ELEMENTS_OPERATION(`move to ${to}`)
 
-  public static readonly NO_ELEMENTS_MESSAGE = `Did not find any configuration elements that matches your criteria.
+  public static readonly NO_ELEMENTS_MESSAGE = `Did not find any configuration elements that match your criteria.
 Nothing to do.
 `
 

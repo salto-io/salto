@@ -425,28 +425,30 @@ describe('select elements recursively', () => {
       }))))
     expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.instance.mockInstance.bool')])
   })
-  it('should just return element id if validateDeterminedSelectors is false', async () => {
-    const selectors = createElementSelectors([
-      'mockAdapter.test.instance.mockInstance.thispropertydoesntexist',
-    ]).validSelectors
-    const elementIds = (await selectElementIdsByTraversal(selectors,
-      [mockInstance, mockType].map(element => ({
-        elemID: element.elemID,
-        element,
-      }))))
-    expect(elementIds).toEqual([ElemID
-      .fromFullName('mockAdapter.test.instance.mockInstance.thispropertydoesntexist')])
-  })
-  it('should not return non-existant element id if validateDeterminedSelectors is true', async () => {
+  it('should not return non-existent element id', async () => {
     const selectors = createElementSelectors([
       'mockAdapter.test.instance.mockInstance.thispropertydoesntexist',
       'mockAdapter.test.field.strMap',
     ]).validSelectors
-    const elementIds = (await selectElementIdsByTraversal(selectors,
+    const elementIds = (await selectElementIdsByTraversal(
+      selectors,
       [mockInstance, mockType].map(element => ({
         elemID: element.elemID,
         element,
-      })), false, true))
+      })),
+      false,
+    ))
     expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
+  })
+  it('should return empty list on empty selector list', async () => {
+    const elementIds = (await selectElementIdsByTraversal(
+      [],
+      [mockInstance, mockType].map(element => ({
+        elemID: element.elemID,
+        element,
+      })),
+      false,
+    ))
+    expect(elementIds).toHaveLength(0)
   })
 })

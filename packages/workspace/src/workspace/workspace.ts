@@ -112,8 +112,9 @@ export type Workspace = {
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
-  getElementIdsBySelectors: (selectors: ElementSelector[],
-    commonOnly?: boolean) => Promise<ElemID[]>
+  getElementIdsBySelectors: (
+    selectors: ElementSelector[], commonOnly?: boolean,
+  ) => Promise<ElemID[]>
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
   flush: () => Promise<void>
   clone: () => Promise<Workspace>
@@ -380,9 +381,9 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     getSourceMap: (filename: string) => naclFilesSource.getSourceMap(filename),
     getSourceRanges: (elemID: ElemID) => naclFilesSource.getSourceRanges(elemID),
     listNaclFiles: () => naclFilesSource.listNaclFiles(),
-    getElementIdsBySelectors: async (selectors: ElementSelector[],
-      commonOnly = false, validateElementIdsExist = false) => naclFilesSource
-      .getElementIdsBySelectors(selectors, commonOnly, validateElementIdsExist),
+    getElementIdsBySelectors: async (selectors: ElementSelector[], commonOnly = false) => (
+      naclFilesSource.getElementIdsBySelectors(selectors, commonOnly)
+    ),
     getElementReferencedFiles: id => naclFilesSource.getElementReferencedFiles(id),
     getElementNaclFiles: id => naclFilesSource.getElementNaclFiles(id),
     getTotalSize: () => naclFilesSource.getTotalSize(),

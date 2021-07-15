@@ -73,8 +73,11 @@ type MultiEnvState = {
 type MultiEnvSource = Omit<NaclFilesSource, 'getAll'> & {
   getAll: (env?: string) => Promise<Element[]>
   promote: (ids: ElemID[]) => Promise<void>
-  getElementIdsBySelectors: (selectors: ElementSelector[],
-    commonOnly?: boolean, validateDeterminedSelectors?: boolean) => Promise<ElemID[]>
+  getElementIdsBySelectors: (
+    selectors: ElementSelector[],
+    commonOnly?: boolean,
+    validateDeterminedSelectors?: boolean,
+  ) => Promise<ElemID[]>
   demote: (ids: ElemID[]) => Promise<void>
   demoteAll: () => Promise<void>
   copyTo: (ids: ElemID[], targetEnvs?: string[]) => Promise<void>
@@ -233,10 +236,18 @@ const buildMultiEnvSource = (
   const getElementsFromSource = async (source: NaclFilesSource): Promise<ElementIDToValue[]> =>
     (await source.getAll()).map(elem => ({ elemID: elem.elemID, element: elem }))
 
-  const getElementIdsBySelectors = async (selectors: ElementSelector[],
-    commonOnly = false, validateDeterminedSelectors = false): Promise<ElemID[]> =>
-    selectElementIdsByTraversal(selectors, await getElementsFromSource(commonOnly
-      ? commonSource() : primarySource()), false, validateDeterminedSelectors)
+  const getElementIdsBySelectors = async (
+    selectors: ElementSelector[], commonOnly = false,
+  ): Promise<ElemID[]> =>
+    selectElementIdsByTraversal(
+      selectors,
+      await getElementsFromSource(
+        commonOnly
+          ? commonSource()
+          : primarySource()
+      ),
+      false,
+    )
 
   const promote = async (ids: ElemID[]): Promise<void> => {
     const routedChanges = await routePromote(

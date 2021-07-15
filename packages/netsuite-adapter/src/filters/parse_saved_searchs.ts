@@ -22,10 +22,10 @@ import { savedsearch, savedsearchInnerTypes } from '../types/custom_types/parsed
 import { savedsearch as oldSavedSearch } from '../types/custom_types/savedsearch'
 import { parseDefinition } from '../saved_search_parser'
 
-const assignValuesToInstance = async (instance:InstanceElement,
-  oldInstance: InstanceElement):Promise<void> => {
+const assignSavedSearchValues = async (instance:InstanceElement,
+  oldInstance: InstanceElement | undefined): Promise<void> => {
   Object.assign(instance.value, await parseDefinition(instance.value.definition))
-  if (oldInstance !== undefined && oldInstance.value.definition !== undefined) {
+  if (oldInstance?.value.definition !== undefined) {
     if (_.isEqual(await parseDefinition(oldInstance.value.definition),
       await parseDefinition(instance.value.definition))) {
       instance.value.definition = oldInstance.value.definition
@@ -33,7 +33,7 @@ const assignValuesToInstance = async (instance:InstanceElement,
   }
 }
 
-const removeValuesFromInstace = (instance:InstanceElement):void => {
+const removeValuesFromInstance = (instance:InstanceElement): void => {
   Object.keys(instance.value)
     .filter(key => !Object.keys(oldSavedSearch.fields).includes(key))
     .forEach(key => delete instance.value[key])
@@ -49,7 +49,7 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
         .filter(isInstanceElement)
         .filter(e => e.elemID.typeName === SAVED_SEARCH)
         .map(async (instance: InstanceElement) => {
-          await assignValuesToInstance(instance, await elementsSource.get(instance.elemID))
+          await assignSavedSearchValues(instance, await elementsSource.get(instance.elemID))
         })
     )
   },
@@ -58,7 +58,7 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
       .filter(isInstanceChange)
       .map(getChangeElement)
       .filter(instance => instance.elemID.typeName === SAVED_SEARCH)
-      .forEach(instance => removeValuesFromInstace(instance))
+      .forEach(instance => removeValuesFromInstance(instance))
   },
 })
 

@@ -16,7 +16,8 @@
 import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
   ElemIdGetter, ReadOnlyElementsSource, Change,
-  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS, DeployModifiers,
+  FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS,
+  DeployModifiers, isInstanceChange, InstanceElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -296,7 +297,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
 
   public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    const changes = _.cloneDeep(changeGroup.changes) as Change[]
+    const changes = changeGroup.changes
+      .filter(isInstanceChange)
+      .map(change => ({
+        action: change.action,
+        data: _.mapValues(change.data, (element: InstanceElement) => element.clone()),
+      })) as Change[]
     await this.filtersRunner.preDeploy(changes)
     return this.client.deploy(changes, changeGroup.groupID, this.deployReferencedElements
       ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS)

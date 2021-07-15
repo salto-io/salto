@@ -19,15 +19,15 @@ import _ from 'lodash'
 import { ungzip } from 'node-gzip'
 import { xml2js, ElementCompact } from 'xml-js'
 
-type elementParts = { definition: ElementCompact; dependency: ElementCompact[] }
-type attributeValue = string | boolean | number | undefined
-type attributeObject = { _attributes: { clazz:string; field:string }; _text:string }
-type recordObject = { values: { Value:attributeObject[]}}
-type filterObject = { descriptor: { values: { Value: attributeObject[] }}
- values: { values: {Record: recordObject | recordObject[]} }}
+type ElementParts = { definition: ElementCompact; dependency: ElementCompact[] }
+type AttributeValue = string | boolean | number | undefined
+type AttributeObject = { _attributes: { clazz:string; field:string }; _text:string }
+type RecordObject = { values: { Value:AttributeObject[]}}
+type FilterObject = { descriptor: { values: { Value: AttributeObject[] }}
+ values: { values: {Record: RecordObject | RecordObject[]} }}
 
-const getJson = async (defenition: string): Promise<ElementCompact> => {
-  const gzip = Buffer.from(defenition.split('@').slice(-1)[0], 'base64')
+const getJson = async (definition: string): Promise<ElementCompact> => {
+  const gzip = Buffer.from(definition.split('@').slice(-1)[0], 'base64')
   const xmlValue = await ungzip(gzip)
   return xml2js(xmlValue.toString(), { compact: true })
 }
@@ -38,7 +38,7 @@ const getSearchDefinition = (search: ElementCompact): ElementCompact =>
 const getSearchDependency = (search: ElementCompact): ElementCompact[] =>
   search['nssoc:SerializedObjectContainer']['nssoc:dependencies']['nssoc:dependency']
 
-const getAttributeValue = (attribute: attributeObject): attributeValue => {
+const getAttributeValue = (attribute: AttributeObject): AttributeValue => {
   if (attribute._attributes.clazz === 'boolean') {
     return attribute._text === 'true'
   }
@@ -48,7 +48,7 @@ const getAttributeValue = (attribute: attributeObject): attributeValue => {
   return attribute._text
 }
 
-const getObjectFromValues = (values: attributeObject[]): Values => {
+const getObjectFromValues = (values: AttributeObject[]): Values => {
   if (values === undefined) {
     return []
   }
@@ -56,7 +56,7 @@ const getObjectFromValues = (values: attributeObject[]): Values => {
     .map(i => [i._attributes.field, getAttributeValue(i)]))
 }
 
-const getRecordsForFilter = (filter: filterObject): Values[] => {
+const getRecordsForFilter = (filter: FilterObject): Values[] => {
   if (filter.values.values === undefined) {
     return []
   }
@@ -66,7 +66,7 @@ const getRecordsForFilter = (filter: filterObject): Values[] => {
   return [getObjectFromValues(filter.values.values.Record.values.Value)]
 }
 
-const getFilter = (filter: filterObject): Values =>
+const getFilter = (filter: FilterObject): Values =>
   Object.assign(getObjectFromValues(filter.descriptor.values.Value),
     { RECORDS: getRecordsForFilter(filter) })
 
@@ -112,7 +112,7 @@ const getAvailableFilters = (search: ElementCompact): Values[] => {
   }
   if (Array.isArray(search.availableFilterFields.values.Record)) {
     return search.availableFilterFields.values.Record
-      .map((record:recordObject) => getObjectFromValues(record.values.Value))
+      .map((record:RecordObject) => getObjectFromValues(record.values.Value))
   }
   return [getObjectFromValues((search.availableFilterFields.values.Record.values.Value))]
 }
@@ -123,7 +123,7 @@ const getReturnFields = (search: ElementCompact): Values[] => {
   }
   if (Array.isArray(search.returnFields.values.Record)) {
     return search.returnFields.values.Record
-      .map((record:recordObject) => getObjectFromValues(record.values.Value))
+      .map((record:RecordObject) => getObjectFromValues(record.values.Value))
   }
   return [getObjectFromValues(search.returnFields.values.Record.values.Value)]
 }
@@ -134,7 +134,7 @@ const getDetailFields = (search: ElementCompact): Values[] => {
   }
   if (Array.isArray(search.detailFields.values.Record)) {
     return search.detailFields.values.Record
-      .map((record:recordObject) => getObjectFromValues(record.values.Value))
+      .map((record:RecordObject) => getObjectFromValues(record.values.Value))
   }
   return [getObjectFromValues(search.detailFields.values.Record.values.Value)]
 }
@@ -153,11 +153,11 @@ const getAlertRecipients = (search: ElementCompact): Values[] => {
   }
   if (Array.isArray(search.alertRecipientFields.values.Record)) {
     return search.alertRecipientFields.values.Record
-      .map((record:recordObject) => record.values.Value)
-      .map((attribute:attributeObject) => Object
+      .map((record:RecordObject) => record.values.Value)
+      .map((attribute:AttributeObject) => Object
         .fromEntries([[attribute._attributes.field, attribute._text]]))
   }
-  const singleRecordattribute:attributeObject = search
+  const singleRecordattribute:AttributeObject = search
     .alertRecipientFields.values.Record.values.Value
   return [Object.fromEntries([[singleRecordattribute._attributes.field,
     singleRecordattribute._text]])]
@@ -170,7 +170,7 @@ const safeAssignKeyValue = (instance:Values, key: string, value: Values):void =>
   Object.assign(instance, { [key]: value })
 }
 
-const getSearchPartsFromDefinition = async (definition:string):Promise<elementParts> => {
+const getSearchPartsFromDefinition = async (definition:string):Promise<ElementParts> => {
   const parsedXml = await getJson(definition)
   return { definition: getSearchDefinition(parsedXml),
     dependency: getSearchDependency(parsedXml) }
@@ -178,7 +178,7 @@ const getSearchPartsFromDefinition = async (definition:string):Promise<elementPa
 
 export const parseDefinition = async (definition:string):Promise<Values> => {
   const searchparts = await getSearchPartsFromDefinition(definition)
-  const returnInstance = Object()
+  const returnInstance = {}
   safeAssignKeyValue(returnInstance, 'search_filter', getFilters(searchparts.definition))
   safeAssignKeyValue(returnInstance, 'search_summary_filters', getSummaryFilters(searchparts.definition))
   safeAssignKeyValue(returnInstance, 'available_filters', getAvailableFilters(searchparts.definition))

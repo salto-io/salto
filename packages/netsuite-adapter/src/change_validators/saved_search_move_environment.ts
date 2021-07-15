@@ -21,26 +21,27 @@ import { SAVED_SEARCH } from '../constants'
 import { parseDefinition } from '../saved_search_parser'
 
 const { awu } = collections.asynciterable
+
 const wasModified = async (instance:InstanceElement):Promise<boolean> => {
   const parsedDefinition = await parseDefinition(instance.value.definition)
   return Object.keys(parsedDefinition)
-    .some((i:string) => !_.isEqual(parsedDefinition[i], instance.value[i]))
+    .some(key => !_.isEqual(parsedDefinition[key], instance.value[key]))
 }
 
-const getChangeError = async (instance: InstanceElement):Promise<ChangeError> => {
+const getChangeError = async (instance: InstanceElement): Promise<ChangeError> => {
   if (await wasModified(instance)) {
     return ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Modified added saved searches cannot be deployed.',
+      message: 'Modified saved searches cannot be deployed.',
       detailedMessage: `Changing (${instance.elemID.name}) is not supported`,
     } as ChangeError)
   }
   return ({
     elemID: instance.elemID,
     severity: 'Warning',
-    message: 'Added saved searches might be curropted when moving to a new environment.',
-    detailedMessage: `Instance (${instance.elemID.name}) might be Corrupted after this operation`,
+    message: 'Beware that saved searches might reference internal ids that are not correct for the current environment. It is recommended that you verify the deployment in NetSuite UI.',
+    detailedMessage: `Instance (${instance.elemID.name}) should be reviewed in NetSuite UI to make sure internal ids did not mix between environments`,
   } as ChangeError)
 }
 

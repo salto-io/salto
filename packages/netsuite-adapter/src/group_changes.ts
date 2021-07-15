@@ -27,7 +27,6 @@ export const SDF_CHANGE_GROUP_ID = 'SDF'
 export const SUITEAPP_CREATING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Creating Files'
 export const SUITEAPP_UPDATING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Updating Files'
 export const SUITEAPP_DELETING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Deleting Files'
-export const SUITEAPP_UPDATING_RECORDS_GROUP_ID = 'Salto SuiteApp - Records - Updating Records'
 
 export const SUITEAPP_GROUPS = [
   SUITEAPP_CREATING_FILES_GROUP_ID,

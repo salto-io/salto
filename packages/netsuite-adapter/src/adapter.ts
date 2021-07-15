@@ -17,7 +17,7 @@ import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
   ElemIdGetter, ReadOnlyElementsSource, Change,
   FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS,
-  DeployModifiers, isInstanceChange, InstanceElement,
+  DeployModifiers, InstanceElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'

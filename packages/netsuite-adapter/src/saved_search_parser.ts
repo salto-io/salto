@@ -50,14 +50,10 @@ const getAttributeValue = (attribute: AttributeObject): AttributeValue => {
   return attribute._text
 }
 
-const getObjectFromValues = (values: RecordValueObject): Values => {
-  if (values === undefined) {
-    return []
-  }
-  return Object.fromEntries(collections.array.makeArray(values)
+const getObjectFromValues = (values: RecordValueObject): Values =>
+  Object.fromEntries(collections.array.makeArray(values)
     .filter(i => i._text !== undefined)
     .map(i => [i._attributes.field, getAttributeValue(i)]))
-}
 
 const getFilterRecords = (filter: FilterObject): Values[] =>
   collections.array.makeArray(filter.values.values?.Record)
@@ -78,21 +74,8 @@ const extractSearchRecordsValues = (search: ElementCompact): Values[] =>
     .map(record => getObjectFromValues(record.values.Value))
 
 const getAudience = (search: ElementCompact[]): Values => {
-  if (!Array.isArray(search)) {
-    return []
-  }
-  const record = search.filter(i => Object.keys(i).includes('Record'))[0]
-  if (record === undefined) {
-    return []
-  }
-  return getObjectFromValues(record.Record.values.Value)
-}
-
-const getSortColumns = (search: ElementCompact): Values => {
-  if (search.sortColumns.values === undefined) {
-    return []
-  }
-  return getObjectFromValues(search.sortColumns.values.Record.values.Value)
+  const record = collections.array.makeArray(search).filter(i => Object.keys(i).includes('Record'))[0]
+  return record === undefined ? [] : getObjectFromValues(record.Record.values.Value)
 }
 
 const getAlertRecipients = (search: ElementCompact): Values[] => {
@@ -125,7 +108,7 @@ export const parseDefinition = async (definition:string):Promise<Values> => {
   safeAssignKeyValue(returnInstance, 'available_filters', extractSearchRecordsValues(searchParts.definition.availableFilterFields))
   safeAssignKeyValue(returnInstance, 'return_fields', extractSearchRecordsValues(searchParts.definition.returnFields))
   safeAssignKeyValue(returnInstance, 'detail_fields', extractSearchRecordsValues(searchParts.definition.detailFields))
-  safeAssignKeyValue(returnInstance, 'sort_columns', getSortColumns(searchParts.definition))
+  safeAssignKeyValue(returnInstance, 'sort_columns', extractSearchRecordsValues(searchParts.definition.sortColumns))
   safeAssignKeyValue(returnInstance, 'audience:', getAudience(searchParts.dependency))
   safeAssignKeyValue(returnInstance, 'alert_recipients', getAlertRecipients(searchParts.definition))
   Object.assign(returnInstance, getFlags(searchParts.definition))

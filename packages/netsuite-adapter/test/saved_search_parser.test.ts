@@ -16,6 +16,7 @@
 import * as savedSearchParser from '../src/saved_search_parser'
 import * as testConsts from './saved_search_definition'
 
+jest.setTimeout(1000000)
 describe('saved search parser tests', () => {
   it('test parse definition1', async () => {
     const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.emptyDefinition)
@@ -28,5 +29,9 @@ describe('saved search parser tests', () => {
   it('test parse singles definition', async () => {
     const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.singlesDefinition)
     expect(parsedDefinition).toEqual(testConsts.singlesDefinitionOutcome)
+  })
+  it('test parse edge case definition', async () => {
+    const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.edgeCaseDefinition)
+    expect(parsedDefinition).toEqual(testConsts.edgeCaseDefinitionOutcome)
   })
 })

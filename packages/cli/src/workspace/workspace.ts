@@ -277,8 +277,7 @@ export const applyChangesToWorkspace = async ({
   const results = await updateWorkspace({
     workspace,
     output,
-    changes:
-    changesToApply,
+    changes: changesToApply,
     mode,
     force,
   })

@@ -136,6 +136,7 @@ export const createDiffChanges = async (
   const plan = await getPlan({
     before: toElementsSrc,
     after: fromElementsSrc,
+    dependencyChangers: [],
     topLevelFilters,
   })
 

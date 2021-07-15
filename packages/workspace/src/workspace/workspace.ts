@@ -261,6 +261,8 @@ export const loadWorkspace = async (
       await initializedState.mergeManager.init()
       return initializedState
     }
+
+    const initBuild = workspaceState === undefined
     const stateToBuild = workspaceState !== undefined
       ? await workspaceState
       : await initState()
@@ -316,6 +318,10 @@ export const loadWorkspace = async (
       const completeStateOnlyChanges = async (
         partialStateChanges: ChangeSet<Change<Element>>
       ): Promise<ChangeSet<Change<Element>>> => {
+        const cacheValid = initBuild
+          ? await stateToBuild.mergeManager.getHash(STATE_SOURCE_PREFIX + envName)
+            === await state(envName).getHash() && partialStateChanges.cacheValid
+          : true
         // We identify a first nacl load when the state is empty, and all of the changes
         // are visible (which indicates a nacl load and not a first 'fetch' in which the
         // hidden changes won't be empty)
@@ -335,7 +341,7 @@ export const loadWorkspace = async (
           changes: partialStateChanges.changes
             .concat(initHiddenElementsChanges)
             .concat(stateRemovedElementChanges),
-          cacheValid: partialStateChanges.cacheValid,
+          cacheValid,
           preChangeHash: partialStateChanges.preChangeHash
             ?? await stateToBuild.mergeManager.getHash(STATE_SOURCE_PREFIX + envName),
           postChangeHash: await state(envName).getHash(),
@@ -358,9 +364,12 @@ export const loadWorkspace = async (
 
       const changeResult = await stateToBuild.mergeManager.mergeComponents({
         src1Changes: workspaceChanges[envName],
-        src2Changes: await completeStateOnlyChanges(stateOnlyChanges[envName]
-          ?? createEmptyChangeSet(await stateToBuild.mergeManager
-            .getHash(STATE_SOURCE_PREFIX + envName))),
+        src2Changes: await completeStateOnlyChanges(
+          stateOnlyChanges[envName]
+          ?? createEmptyChangeSet(
+            await state(envName).getHash()
+          )
+        ),
         src2Overrides: workspaceChangedElements,
         src1Prefix: MULTI_ENV_SOURCE_PREFIX + envName,
         src2Prefix: STATE_SOURCE_PREFIX + envName,

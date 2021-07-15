@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ListMetadataQuery, RetrieveResult } from 'jsforce-types'
 import { collections, values } from '@salto-io/lowerdash'
 import { Values, InstanceElement, ElemID } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion, configType, isDataManagementConfigSuggestions, isMetadataConfigSuggestions, SalesforceConfig } from './types'
+import { ConfigChangeSuggestion, configType, isDataManagementConfigSuggestions, isMetadataConfigSuggestions, SalesforceConfig, DataManagementConfig } from './types'
 import * as constants from './constants'
 
 const { isDefined } = values
@@ -131,7 +131,7 @@ export const getConfigFromConfigChanges = (
   const data = currentDataManagement === undefined ? undefined : _.pickBy({
     ...currentDataManagement,
     ...dataManagementOverrides,
-  }, isDefined)
+  }, isDefined) as DataManagementConfig | undefined
 
   return {
     config: new InstanceElement(

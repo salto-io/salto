@@ -111,6 +111,7 @@ export type DataManagementConfig = {
   excludeObjects?: string[]
   allowReferenceTo?: string[]
   saltoIDSettings: SaltoIDSettings
+  showReadOnlyValues?: boolean
 }
 
 export type FetchParameters = {

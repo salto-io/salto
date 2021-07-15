@@ -52,6 +52,7 @@ import foreignKeyReferencesFilter from './filters/foreign_key_references'
 import valueSetFilter from './filters/value_set'
 import cpqLookupFieldsFilter from './filters/cpq/lookup_fields'
 import cpqCustomScriptFilter from './filters/cpq/custom_script'
+import hideReadOnlyValuesFilter from './filters/cpq/hide_read_only_values'
 import customFeedFilterFilter, { CUSTOM_FEED_FILTER_METADATA_TYPE } from './filters/custom_feed_filter'
 import extraDependenciesFilter from './filters/extra_dependencies'
 import staticResourceFileExtFilter from './filters/static_resource_file_ext'
@@ -113,6 +114,7 @@ export const DEFAULT_FILTERS = [
   profilePathsFilter,
   territoryFilter,
   elementsUrlFilter,
+  hideReadOnlyValuesFilter,
   // The following filters should remain last in order to make sure they fix all elements
   convertListsFilter,
   convertTypeFilter,

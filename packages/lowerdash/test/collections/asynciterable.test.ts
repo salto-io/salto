@@ -20,7 +20,7 @@ const { asynciterable } = collections
 const {
   handleErrorsAsync,
   findAsync, mapAsync, toArrayAsync, toAsyncIterable, concatAsync,
-  filterAsync, flattenAsync, awu, isEmptyAsync, peekAsync, takeAsync,
+  filterAsync, flattenAsync, awu, isEmptyAsync, lengthAsync, peekAsync, takeAsync,
   zipSortedAsync, someAsync, everyAsync, forEachAsync, groupByAsync,
   keyByAsync, iterateTogether, flatMapAsync,
 } = asynciterable
@@ -92,6 +92,16 @@ describe('asynciterable', () => {
 
     it('should return false if the it is not empty', async () => {
       expect(await isEmptyAsync(toAsyncIterable([1]))).toBeFalsy()
+    })
+  })
+
+  describe('lengthAsync', () => {
+    it('should return the length of an array', async () => {
+      expect(await lengthAsync(toAsyncIterable([1, 2, 3]))).toBe(3)
+      expect(await lengthAsync(toAsyncIterable([]))).toBe(0)
+      expect(await lengthAsync(toAsyncIterable([1]))).toBe(1)
+      expect(await lengthAsync(toAsyncIterable([3, 2, 5, 7, 19, 80]))).toBe(6)
+      expect(await awu([1, 2, 3]).length()).toBe(3)
     })
   })
 

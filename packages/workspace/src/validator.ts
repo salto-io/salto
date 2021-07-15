@@ -470,7 +470,7 @@ const validateValue = async (
   }
 
   if (type === BuiltinTypes.UNKNOWN) {
-    if (!_.isObjectLike(value)) {
+    if (!_.isPlainObject(value)) {
       return []
     }
     return (await Promise.all(Object.keys(value).map(

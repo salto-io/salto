@@ -39,7 +39,7 @@ const withRetry = async <TReturn = boolean>(
   const { strategy: retryStrategy, description } = { ...DEFAULT_OPTS, ...opts }
   let retry: RetryStrategy
   const attempt = async (): Promise<TReturn> => {
-    const result = await predicate()
+    const result = await predicate().catch(() => undefined)
     if (result) return result
     retry = retry ?? retryStrategy()
     const retryIn = retry()

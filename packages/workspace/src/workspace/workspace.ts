@@ -119,6 +119,7 @@ export type Workspace = {
   getElementIdsBySelectors: (
     selectors: ElementSelector[],
     commonOnly?: boolean,
+    compact?: boolean,
   ) => Promise<AsyncIterable<ElemID>>
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
   flush: () => Promise<void>
@@ -639,8 +640,10 @@ export const loadWorkspace = async (
     listNaclFiles: async () => (
       (await getLoadedNaclFilesSource()).listNaclFiles()
     ),
-    getElementIdsBySelectors: async (selectors: ElementSelector[], commonOnly = false) => (
-      (await getLoadedNaclFilesSource()).getElementIdsBySelectors(selectors, commonOnly)
+    getElementIdsBySelectors: async (
+      selectors: ElementSelector[], commonOnly = false, compact = false,
+    ) => (
+      (await getLoadedNaclFilesSource()).getElementIdsBySelectors(selectors, commonOnly, compact)
     ),
     getElementReferencedFiles: async id => (
       (await getLoadedNaclFilesSource()).getElementReferencedFiles(id)

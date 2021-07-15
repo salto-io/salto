@@ -87,6 +87,7 @@ export type MultiEnvSource = Omit<NaclFilesSource<EnvsChanges>, 'getAll' | 'getE
   getElementIdsBySelectors: (
     selectors: ElementSelector[],
     commonOnly?: boolean,
+    compact?: boolean,
   ) => Promise<AsyncIterable<ElemID>>
   demote: (ids: ElemID[]) => Promise<EnvsChanges>
   demoteAll: () => Promise<EnvsChanges>
@@ -295,12 +296,13 @@ const buildMultiEnvSource = (
   const getElementIdsBySelectors = async (
     selectors: ElementSelector[],
     commonOnly = false,
+    compact = false,
   ): Promise<AsyncIterable<ElemID>> => {
     const relevantSource = commonOnly ? commonSource() : primarySource()
     return selectElementIdsByTraversal(
       selectors,
       relevantSource,
-      true,
+      compact,
     )
   }
 

@@ -193,7 +193,6 @@ const isElementPossiblyParentOfSearchedElement = (
 
 export const selectElementIdsByTraversal = async (
   selectors: ElementSelector[],
-  elemIDs: AsyncIterable<ElemID>,
   source: ElementsSource,
   compact = false,
 ): Promise<AsyncIterable<ElemID>> => {
@@ -205,14 +204,12 @@ export const selectElementIdsByTraversal = async (
     isTopLevelSelector,
   )
 
-  const ids = await awu(elemIDs).toArray()
-
   const getTopLevelIDs = async (): Promise<ElemID[]> => {
     if (topLevelSelectors.length === 0) {
       return []
     }
     return awu(selectElementsBySelectors({
-      elementIds: awu(ids),
+      elementIds: awu(await source.list()),
       selectors: topLevelSelectors,
     })).toArray()
   }
@@ -221,9 +218,10 @@ export const selectElementIdsByTraversal = async (
   const currentIds = new Set(topLevelIDs.map(id => id.getFullName()))
 
   const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)
-  const possibleParentIDs = selectElementsBySelectors(
-    { elementIds: awu(ids), selectors: possibleParentSelectors }
-  )
+  const possibleParentIDs = selectElementsBySelectors({
+    elementIds: awu(await source.list()),
+    selectors: possibleParentSelectors,
+  })
   const stillRelevantIDs = compact
     ? awu(possibleParentIDs).filter(id => !currentIds.has(id.getFullName()))
     : possibleParentIDs

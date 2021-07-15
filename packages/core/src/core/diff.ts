@@ -101,10 +101,9 @@ const filterPlanItemsByRelevance = async (
 const getFilteredIds = async (
   elementSelectors: ElementSelector[],
   src: elementSource.ElementsSource
-): Promise<ElemID[]> => {
-  const elementIDs = awu(await src.list())
-  return awu(await selectElementIdsByTraversal(elementSelectors, elementIDs, src, true)).toArray()
-}
+): Promise<ElemID[]> => (
+  awu(await selectElementIdsByTraversal(elementSelectors, src, true)).toArray()
+)
 
 export const createDiffChanges = async (
   toElementsSrc: elementSource.ElementsSource,

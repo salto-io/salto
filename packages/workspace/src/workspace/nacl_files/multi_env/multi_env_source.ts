@@ -292,18 +292,13 @@ const buildMultiEnvSource = (
     return buildRes.changes
   }
 
-  const getElementsFromSource = async (source: NaclFilesSource):
-    Promise<AsyncIterable<ElemID>> => awu((await source.list()))
-
   const getElementIdsBySelectors = async (
     selectors: ElementSelector[],
     commonOnly = false,
   ): Promise<AsyncIterable<ElemID>> => {
     const relevantSource = commonOnly ? commonSource() : primarySource()
-    const elementsFromSource = await getElementsFromSource(relevantSource)
     return selectElementIdsByTraversal(
       selectors,
-      elementsFromSource,
       relevantSource,
       true,
     )

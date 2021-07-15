@@ -334,11 +334,9 @@ describe.skip('validation tests', () => {
 })
 describe('select elements recursively', () => {
   const testElements = [mockInstance, mockType]
-  const testElementIds = testElements.map(element => element.elemID)
   const testSelect = async (selectors: ElementSelector[], compact = false): Promise<ElemID[]> =>
     awu(await selectElementIdsByTraversal(
       selectors,
-      awu(testElementIds),
       createInMemoryElementSource(testElements),
       compact,
     )).toArray()
@@ -415,7 +413,6 @@ describe('select elements recursively', () => {
     ]).validSelectors
     const elementIds = await awu(await selectElementIdsByTraversal(
       selectors,
-      awu([mockInstance, mockType]).map(element => element.elemID),
       createInMemoryElementSource([mockInstance, mockType]),
       false,
     )).toArray()

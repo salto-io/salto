@@ -102,7 +102,11 @@ export type Workspace = {
   transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>>
   transformError: (error: SaltoError) => Promise<WorkspaceError<SaltoError>>
-  updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<number>
+  updateNaclFiles: (
+    changes: DetailedChange[],
+    mode?: RoutingMode,
+    stateOnly? : boolean
+  ) => Promise<number>
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
@@ -450,19 +454,27 @@ export const loadWorkspace = async (
       return after !== undefined ? [toChange({ before, after })] : []
     }).toArray()
   }
-
-  const updateNaclFiles = async (
-    changes: DetailedChange[],
-    mode?: RoutingMode,
+  const updateNaclFiles = async ({
+    changes,
+    mode,
+    stateOnly = false,
     validate = true,
-  ): Promise<number> => {
+  } : {
+      changes: DetailedChange[]
+      mode?: RoutingMode
+      validate?: boolean
+      stateOnly?: boolean
+    }) : Promise<number> => {
     const { visible: visibleChanges, hidden: hiddenChanges } = await handleHiddenChanges(
       changes,
       state(),
       (await getLoadedNaclFilesSource()).getAll,
     )
     const workspaceChanges = await ((await getLoadedNaclFilesSource())
-      .updateNaclFiles(visibleChanges, mode))
+      .updateNaclFiles(
+        stateOnly ? [] : visibleChanges,
+        mode
+      ))
     const currentStateHash = workspaceState ? await (await workspaceState)
       .mergeManager.getHash(STATE_SOURCE_PREFIX + currentEnv()) : undefined
     const loadedStateHash = await state(currentEnv()).getHash()
@@ -614,7 +626,7 @@ export const loadWorkspace = async (
     // source so we need to wrap all of the function calls to make sure we are forwarding the method
     // invocations to the proper source.
     setNaclFiles,
-    updateNaclFiles,
+    updateNaclFiles: (changes, mode, stateOnly) => updateNaclFiles({ changes, mode, stateOnly }),
     removeNaclFiles,
     getSourceMap: async (filename: string) => (
       (await getLoadedNaclFilesSource()).getSourceMap(filename)

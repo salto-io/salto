@@ -21,6 +21,59 @@ jest.mock('../../src/retry/strategies', () => ({
 }))
 
 describe('withRetry', () => {
+  describe('when the predicate promise first fails', () => {
+    let predicate: jest.Mock<Promise<string | false>>
+
+    beforeEach(async () => {
+      predicate = jest.fn(() => (predicate.mock.calls.length > 2 ? Promise.resolve('ok') : Promise.reject(new Error('oh no'))))
+    })
+
+    describe('when waitStrategy returns an error', () => {
+      let result: Promise<unknown>
+
+      beforeEach(() => {
+        result = withRetry(() => Promise.resolve(false), {
+          strategy: () => () => 'testing error',
+          description: 'my action',
+        })
+      })
+
+      it(
+        'should throw WaitError',
+        () => expect(result).rejects.toThrow(RetryError)
+      )
+
+      it(
+        'should include the strategy\'s error message in the thrown error',
+        () => expect(result).rejects.toThrow(/my action\b.*\btesting error/)
+      )
+    })
+
+    describe('when waitStrategy returns a number', () => {
+      let result: string | false
+      let setTimeout: jest.SpyInstance
+
+      beforeEach(async () => {
+        setTimeout = jest.spyOn(global, 'setTimeout')
+        result = await withRetry(predicate, {
+          strategy: () => () => 3,
+        })
+      })
+
+      it('should wait for the returned interval', () => {
+        expect(setTimeout).toHaveBeenCalled()
+        expect(setTimeout.mock.calls[0][1]).toEqual(3)
+      })
+
+      it('should call the predicate again', () => {
+        expect(predicate).toHaveBeenCalledTimes(3)
+      })
+
+      it('should return the predicate\'s value', () => {
+        expect(result).toEqual('ok')
+      })
+    })
+  })
   describe('when the predicate first returns false', () => {
     let predicate: jest.Mock<Promise<string | false>>
 

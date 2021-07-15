@@ -22,7 +22,6 @@ import { remoteMap } from '@salto-io/workspace'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import type rocksdb from '@salto-io/rocksdb'
 import path from 'path'
-import fs from 'fs'
 
 
 const { asynciterable } = collections
@@ -217,7 +216,7 @@ export const cleanDatabases = async (): Promise<void> => {
   await closeAllRemoteMaps()
   await awu(persistentDBs).forEach(async ([loc, connection]) => {
     const tmpDir = getTmpLocationForLoc(loc)
-    await awu(fs.readdirSync(tmpDir)).forEach(tmpLoc =>
+    await awu(await fileUtils.readDir(tmpDir)).forEach(tmpLoc =>
       promisify(getRemoteDbImpl().destroy.bind(getRemoteDbImpl(), path.join(tmpDir, tmpLoc)))())
     delete tmpDBConnections[loc]
     await closeConnection(loc, connection, true)

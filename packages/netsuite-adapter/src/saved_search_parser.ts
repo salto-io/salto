@@ -15,6 +15,7 @@
 */
 /* eslint-disable no-underscore-dangle */
 import { Values } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ungzip } from 'node-gzip'
 import { xml2js, ElementCompact } from 'xml-js'
@@ -56,44 +57,23 @@ const getObjectFromValues = (values: AttributeObject[]): Values => {
     .map(i => [i._attributes.field, getAttributeValue(i)]))
 }
 
-const getRecordsForFilter = (filter: FilterObject): Values[] => {
-  if (filter.values.values === undefined) {
-    return []
-  }
-  if (Array.isArray(filter.values.values.Record)) {
-    return filter.values.values.Record.map(record => getObjectFromValues(record.values.Value))
-  }
-  return [getObjectFromValues(filter.values.values.Record.values.Value)]
-}
+const getRecords = (filter: FilterObject): Values[] =>
+  collections.array.makeArray(filter.values.values?.Record)
+    .map(record => getObjectFromValues(record.values.Value))
 
 const getFilter = (filter: FilterObject): Values =>
   Object.assign(getObjectFromValues(filter.descriptor.values.Value),
-    { RECORDS: getRecordsForFilter(filter) })
+    { RECORDS: getRecords(filter) })
 
-const getFilters = (search: ElementCompact): Values[] => {
-  if (search.filters.values === undefined) {
-    return []
-  }
-  const searchFilter = search.filters.values.SearchFilter
-  if (Array.isArray(searchFilter)) {
-    return searchFilter.map(getFilter)
-  }
-  return [getFilter(searchFilter)]
-}
+const extractSearchDefinitionValues = (search: ElementCompact): Values[] =>
+  collections.array.makeArray(search.values?.SearchFilter).map(getFilter)
 
 const getFlags = (search: ElementCompact): Values =>
   getObjectFromValues(search.descriptor.values.Value)
 
-const getSummaryFilters = (search: ElementCompact): Values => {
-  if (search.summaryFilters.values === undefined) {
-    return []
-  }
-  const searchFilter = search.summaryFilters.values.SearchFilter
-  if (Array.isArray(searchFilter)) {
-    return searchFilter.map(getFilter)
-  }
-  return [getFilter(searchFilter)]
-}
+const extractSearchRecordsValues = (search: ElementCompact): Values[] =>
+  collections.array.makeArray(search.values?.Record)
+    .map(record => getObjectFromValues(record.values.Value))
 
 const getAudience = (search: ElementCompact[]): Values => {
   if (!Array.isArray(search)) {
@@ -104,39 +84,6 @@ const getAudience = (search: ElementCompact[]): Values => {
     return []
   }
   return getObjectFromValues(record.Record.values.Value)
-}
-
-const getAvailableFilters = (search: ElementCompact): Values[] => {
-  if (search.availableFilterFields.values === undefined) {
-    return []
-  }
-  if (Array.isArray(search.availableFilterFields.values.Record)) {
-    return search.availableFilterFields.values.Record
-      .map((record:RecordObject) => getObjectFromValues(record.values.Value))
-  }
-  return [getObjectFromValues((search.availableFilterFields.values.Record.values.Value))]
-}
-
-const getReturnFields = (search: ElementCompact): Values[] => {
-  if (search.returnFields.values === undefined) {
-    return []
-  }
-  if (Array.isArray(search.returnFields.values.Record)) {
-    return search.returnFields.values.Record
-      .map((record:RecordObject) => getObjectFromValues(record.values.Value))
-  }
-  return [getObjectFromValues(search.returnFields.values.Record.values.Value)]
-}
-
-const getDetailFields = (search: ElementCompact): Values[] => {
-  if (search.detailFields.values === undefined) {
-    return []
-  }
-  if (Array.isArray(search.detailFields.values.Record)) {
-    return search.detailFields.values.Record
-      .map((record:RecordObject) => getObjectFromValues(record.values.Value))
-  }
-  return [getObjectFromValues(search.detailFields.values.Record.values.Value)]
 }
 
 const getSortColumns = (search: ElementCompact): Values => {
@@ -151,16 +98,17 @@ const getAlertRecipients = (search: ElementCompact): Values[] => {
     || search.alertRecipientFields.values === undefined) {
     return []
   }
-  if (Array.isArray(search.alertRecipientFields.values.Record)) {
-    return search.alertRecipientFields.values.Record
-      .map((record:RecordObject) => record.values.Value)
-      .map((attribute:AttributeObject) => Object
-        .fromEntries([[attribute._attributes.field, attribute._text]]))
-  }
-  const singleRecordattribute:AttributeObject = search
-    .alertRecipientFields.values.Record.values.Value
-  return [Object.fromEntries([[singleRecordattribute._attributes.field,
-    singleRecordattribute._text]])]
+  return getRecords(search.alertRecipientFields)
+  // if (Array.isArray(search.alertRecipientFields.values.Record)) {
+  //   return search.alertRecipientFields.values.Record
+  //     .map((record:RecordObject) => record.values.Value)
+  //     .map((attribute:AttributeObject) => Object
+  //       .fromEntries([[attribute._attributes.field, attribute._text]]))
+  // }
+  // const singleRecordattribute:AttributeObject = search
+  //   .alertRecipientFields.values.Record.values.Value
+  // return [Object.fromEntries([[singleRecordattribute._attributes.field,
+  //   singleRecordattribute._text]])]
 }
 
 const safeAssignKeyValue = (instance:Values, key: string, value: Values):void => {
@@ -179,11 +127,11 @@ const getSearchPartsFromDefinition = async (definition:string):Promise<ElementPa
 export const parseDefinition = async (definition:string):Promise<Values> => {
   const searchparts = await getSearchPartsFromDefinition(definition)
   const returnInstance = {}
-  safeAssignKeyValue(returnInstance, 'search_filter', getFilters(searchparts.definition))
-  safeAssignKeyValue(returnInstance, 'search_summary_filters', getSummaryFilters(searchparts.definition))
-  safeAssignKeyValue(returnInstance, 'available_filters', getAvailableFilters(searchparts.definition))
-  safeAssignKeyValue(returnInstance, 'return_fields', getReturnFields(searchparts.definition))
-  safeAssignKeyValue(returnInstance, 'detail_fields', getDetailFields(searchparts.definition))
+  safeAssignKeyValue(returnInstance, 'search_filter', extractSearchDefinitionValues(searchparts.definition.filters))
+  safeAssignKeyValue(returnInstance, 'search_summary_filters', extractSearchDefinitionValues(searchparts.definition.summaryFilters))
+  safeAssignKeyValue(returnInstance, 'available_filters', extractSearchRecordsValues(searchparts.definition.availableFilterFields))
+  safeAssignKeyValue(returnInstance, 'return_fields', extractSearchRecordsValues(searchparts.definition.returnFields))
+  safeAssignKeyValue(returnInstance, 'detail_fields', extractSearchRecordsValues(searchparts.definition.detailFields))
   safeAssignKeyValue(returnInstance, 'sort_columns', getSortColumns(searchparts.definition))
   safeAssignKeyValue(returnInstance, 'audience:', getAudience(searchparts.dependency))
   safeAssignKeyValue(returnInstance, 'alert_recipients', getAlertRecipients(searchparts.definition))

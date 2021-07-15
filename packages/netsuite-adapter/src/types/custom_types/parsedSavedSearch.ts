@@ -23,29 +23,29 @@ import * as constants from '../../constants'
 
 export const savedsearchInnerTypes: ObjectType[] = []
 
-const savedsearchElemID = new ElemID(constants.NETSUITE, 'savedsearch')
-const savedsearch_dependenciesElemID = new ElemID(constants.NETSUITE, 'savedsearch_dependencies')
-const savedsearch_filterRecordElemID = new ElemID(constants.NETSUITE, 'savedsearch_filterRecord')
-const savedsearch_availableFilterElemID = new ElemID(constants.NETSUITE, 'savedsearch_availableFilter')
-const savedsearch_returnFieldElemID = new ElemID(constants.NETSUITE, 'savedsearch_returnField')
-const savedsearch_sortColumnsElemID = new ElemID(constants.NETSUITE, 'savedsearch_sortColumns')
-const savedsearch_alertRecipientsElemID = new ElemID(constants.NETSUITE, 'savedsearch_alertRecipients')
-const savedsearch_filterElemID = new ElemID(constants.NETSUITE, 'savedsearch_filter')
-const savedsearch_audienceElemID = new ElemID(constants.NETSUITE, 'savedsearch_audience')
+const savedSearchElemID = new ElemID(constants.NETSUITE, 'savedsearch')
+const savedSearchDependenciesElemID = new ElemID(constants.NETSUITE, 'savedsearch_dependencies')
+const savedSearchFilterRecordElemID = new ElemID(constants.NETSUITE, 'savedsearch_filterRecord')
+const savedSearchAvailableFilterElemID = new ElemID(constants.NETSUITE, 'savedsearch_availableFilter')
+const savedSearchReturnFieldElemID = new ElemID(constants.NETSUITE, 'savedsearch_returnField')
+const savedSearchSortColumnsElemID = new ElemID(constants.NETSUITE, 'savedsearch_sortColumns')
+const savedSearchAlertRecipientsElemID = new ElemID(constants.NETSUITE, 'savedsearch_alertRecipients')
+const savedSearchFilterElemID = new ElemID(constants.NETSUITE, 'savedsearch_filter')
+const savedSearchAudienceElemID = new ElemID(constants.NETSUITE, 'savedsearch_audience')
 
 const savedSearchFilterRecord = new ObjectType({
-  elemID: savedsearch_filterRecordElemID,
+  elemID: savedSearchFilterRecordElemID,
   annotations: {
   },
   fields: {
     KEY_ID: { refType: BuiltinTypes.NUMBER },
     FIELD_VALUE: { refType: BuiltinTypes.STRING },
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, savedSearchElemID.name],
 })
 
 const savedSearchFilter = new ObjectType({
-  elemID: savedsearch_filterElemID,
+  elemID: savedSearchFilterElemID,
   annotations: {
   },
   fields: {
@@ -63,11 +63,11 @@ const savedSearchFilter = new ObjectType({
     FIELD_TYPE: { refType: BuiltinTypes.STRING },
     RECORDS: { refType: new ListType(savedSearchFilterRecord) },
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, savedSearchElemID.name],
 })
 
 const savedSearchAvailableFilter = new ObjectType({
-  elemID: savedsearch_availableFilterElemID,
+  elemID: savedSearchAvailableFilterElemID,
   annotations: {
   },
   fields: {
@@ -77,11 +77,11 @@ const savedSearchAvailableFilter = new ObjectType({
     FLAG_FOOTER: { refType: BuiltinTypes.BOOLEAN },
     FLAG_FOOTER_MULTI_SELECT: { refType: BuiltinTypes.BOOLEAN },
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, savedSearchElemID.name],
 })
 
 const savedSearchReturnField = new ObjectType({
-  elemID: savedsearch_returnFieldElemID,
+  elemID: savedSearchReturnFieldElemID,
   annotations: {
   },
   fields: {
@@ -95,11 +95,11 @@ const savedSearchReturnField = new ObjectType({
     FIELD_FORMULA_ERROR: { refType: BuiltinTypes.BOOLEAN },
     FIELD_ORDERED_BY_ALIAS: { refType: BuiltinTypes.STRING },
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, savedSearchElemID.name],
 })
 
 const savedSearchSortColumns = new ObjectType({
-  elemID: savedsearch_sortColumnsElemID,
+  elemID: savedSearchSortColumnsElemID,
   annotations: {
   },
   fields: {
@@ -107,21 +107,21 @@ const savedSearchSortColumns = new ObjectType({
     FILELD_ORDER: { refType: BuiltinTypes.NUMBER },
     FLAG_DESCENDING: { refType: BuiltinTypes.BOOLEAN },
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, savedSearchElemID.name],
 })
 
 const savedSearchAlertRecipients = new ObjectType({
-  elemID: savedsearch_alertRecipientsElemID,
+  elemID: savedSearchAlertRecipientsElemID,
   annotations: {
   },
   fields: {
     FIELD_NAME: { refType: BuiltinTypes.STRING },
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, savedSearchElemID.name],
 })
 
 const savedSearchAudience = new ObjectType({
-  elemID: savedsearch_audienceElemID,
+  elemID: savedSearchAudienceElemID,
   annotations: {
   },
   fields: {
@@ -132,11 +132,11 @@ const savedSearchAudience = new ObjectType({
     FLAG_AUDIENCE_ALL_VENDORS: { refType: BuiltinTypes.BOOLEAN },
     FIELD_AUDIENCE_ROLES: { refType: BuiltinTypes.STRING },
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, savedSearchElemID.name],
 })
 
 const savedsearch_dependencies = new ObjectType({
-  elemID: savedsearch_dependenciesElemID,
+  elemID: savedSearchDependenciesElemID,
   annotations: {
   },
   fields: {
@@ -147,7 +147,7 @@ const savedsearch_dependencies = new ObjectType({
       },
     }, /* Original description: This definition field is set by defining a saved search in NetSuite. For more information, see Defining a Saved Search.   To redefine a saved search, you should customize it in NetSuite and then import the savedsearch object into the SDF project again. You must not manually edit saved searches in SDF. Modifications to the system-generated XML may result in validation and deployment failures. For more information, see Saved Searches as XML Definitions.   This field only accepts references to any custom type. */
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, savedSearchElemID.name],
 })
 
 savedsearchInnerTypes.push(savedsearch_dependencies)
@@ -161,7 +161,7 @@ savedsearchInnerTypes.push(savedSearchAudience)
 
 
 export const savedsearch = new ObjectType({
-  elemID: savedsearchElemID,
+  elemID: savedSearchElemID,
   annotations: {
   },
   fields: {
@@ -259,5 +259,5 @@ export const savedsearch = new ObjectType({
       refType: createRefToElmWithValue(new ListType(savedSearchAlertRecipients)),
     },
   },
-  path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
+  path: [constants.NETSUITE, constants.TYPES_PATH, savedSearchElemID.name],
 })

@@ -21,7 +21,7 @@ import { ungzip } from 'node-gzip'
 import { xml2js, ElementCompact } from 'xml-js'
 
 type ElementParts = { definition: ElementCompact; dependency: ElementCompact[] }
-type AttributeValue = string | boolean | number | undefined
+type AttributeValue = string | boolean | number
 type AttributeObject = { _attributes: { clazz:string; field:string }; _text:string }
 type RecordValueObject = AttributeObject[] | AttributeObject
 type RecordObject = { values: { Value:RecordValueObject}}

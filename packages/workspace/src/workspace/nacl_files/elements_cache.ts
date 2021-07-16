@@ -219,6 +219,16 @@ export const createMergeManager = async (flushables: Flushable[],
     const cacheValid = ((!preChangeHash && !cachePreChangeHash)
       || preChangeHash === cachePreChangeHash)
       && src1Changes.cacheValid && src2Changes.cacheValid
+    if (!src1Changes.cacheValid) {
+      log.debug(`Invalid cache: ${cacheUpdate.src1Prefix}`)
+    }
+    if (!src2Changes.cacheValid) {
+      log.debug(`Invalid cache: ${cacheUpdate.src2Prefix}`)
+    }
+    if (!(preChangeHash === cachePreChangeHash)) {
+      log.debug(`Invalid cache merge between ${cacheUpdate.src1Prefix} and ${cacheUpdate.src2Prefix}`)
+      log.debug(`Prechange hash: ${cachePreChangeHash} and update merged hash: ${preChangeHash}`)
+    }
     const getElementsToMerge = async (): Promise<{
       src1ElementsToMerge: ThenableIterable<Element>
       src2ElementsToMerge: ThenableIterable<Element>
@@ -258,6 +268,7 @@ export const createMergeManager = async (flushables: Flushable[],
           src2Changes, src1ChangeIDs, src1,
         ))
       } else {
+        log.warn(`Invalid data detected in local cache ${namespace}. Rebuilding cache.`)
         src1ElementsToMerge = (src1 && recoveryOperation === REBUILD_ON_RECOVERY)
           ? (awu(await src1.getAll()).concat(await getContainerTypeChanges(src1Changes.changes)))
           : []
@@ -330,18 +341,21 @@ export const createMergeManager = async (flushables: Flushable[],
   const mergeManager = {
     init: async () => lock.acquire(MERGER_LOCK, async () => {
       if (await hashes.get(MERGER_LOCK) === FLUSH_IN_PROGRESS) {
+        log.warn(`Clearing all databases under namespace: ${namespace} due to previous incomplete operation.`)
         await clearImpl()
       }
     }),
     clear: () => lock.acquire(MERGER_LOCK, clearImpl),
     flush: async () =>
       lock.acquire(MERGER_LOCK, async () => {
+        log.debug(`Started flushing hashes under namespace ${namespace}.`)
         await hashes.set(MERGER_LOCK, FLUSH_IN_PROGRESS)
         await hashes.flush()
         const hasChanged = (await Promise.all(flushables.map(async f => f.flush())))
           .some(b => (typeof b !== 'boolean' || b))
         await hashes.delete(MERGER_LOCK)
         await hashes.flush()
+        log.debug(`Successfully flushed hashes under namespace ${namespace}.`)
         return hasChanged
       }),
     mergeComponents: async (cacheUpdate: CacheChangeSetUpdate) => lock.acquire(MERGER_LOCK,

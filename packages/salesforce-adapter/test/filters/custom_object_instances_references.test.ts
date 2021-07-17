@@ -43,7 +43,7 @@ describe('Custom Object Instances References filter', () => {
     },
     fields: {
       Id: {
-        type: stringType,
+        refType: createRefToElmWithValue(stringType),
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [LABEL]: 'Id',
@@ -135,7 +135,7 @@ describe('Custom Object Instances References filter', () => {
           },
         },
         RefToUser: {
-          type: Types.primitiveDataTypes.Lookup,
+          refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [LABEL]: 'ref to user',

@@ -87,7 +87,7 @@ describe('Custom Object Instances CRUD', () => {
         },
       },
       FieldWithNoValue: {
-        type: BuiltinTypes.STRING,
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,

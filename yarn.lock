@@ -1635,6 +1635,17 @@
     requirejs "2.3.6"
     xml2js "0.4.19"
 
+"@salto-io/marketo-adapter@0.2.13":
+  version "0.2.13"
+  resolved "https://registry.yarnpkg.com/@salto-io/marketo-adapter/-/marketo-adapter-0.2.13.tgz#b1cc6d46df00ba06a41a4a60e5bb00fd22e8dbca"
+  integrity sha512-VDFFY+HAzalA0i6VOxoeIQVMijxjWt+fXlZcGfoCm0lnyjBRKdcU+qDq/34xJ/5fVnhu3Mtowpr1oJLhqk/1/w==
+  dependencies:
+    "@salto-io/adapter-api" "0.2.13"
+    "@salto-io/adapter-utils" "0.2.13"
+    axios "^0.21.1"
+    axios-retry "^3.1.9"
+    lodash "^4.17.21"
+
 "@salto-io/rocksdb@4.1.0-salto-5":
   version "4.1.0-salto-5"
   resolved "https://registry.yarnpkg.com/@salto-io/rocksdb/-/rocksdb-4.1.0-salto-5.tgz#35d1585a032376d0ae91f4a041801eb3217e6346"

@@ -41,7 +41,7 @@
     "lodash": "^4.17.21"
   },
   "devDependencies": {
-    "@salto-io/e2e-credentials-store": "0.2.11",
+    "@salto-io/e2e-credentials-store": "0.2.13",
     "@types/jest": "^26.0.20",
     "@types/lodash": "^4.14.168",
     "@typescript-eslint/eslint-plugin": "4.22.1",

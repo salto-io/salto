@@ -26,21 +26,19 @@ import { ParsedNaclFile } from './parsed_nacl_file'
 const { toMD5 } = hash
 const { awu } = collections.asynciterable
 
-type FileCacheMetdata = {
-  timestamp: number
+type FileCacheMetadata = {
   hash: string
 }
 
-export type ParseResultKey = {
+type ParseResultKey = {
   filename: string
-  lastModified: number
-  buffer?: ContentType
+  buffer?: string
 }
 
 type CacheSources = {
   elements: RemoteMap<Element[]>
   sourceMap: RemoteMap<SourceMap>
-  metadata: RemoteMap<FileCacheMetdata>
+  metadata: RemoteMap<FileCacheMetadata>
   errors: RemoteMap<ParseError[]>
   referenced: RemoteMap<string[]>
 }
@@ -68,14 +66,6 @@ const isMD5Equal = (
   ? false
   : (hash.toMD5(buffer) === cacheMD5))
 
-const isCacheDataRelevant = (
-  key: ParseResultKey,
-  fileCacheMetadata: FileCacheMetdata,
-): boolean => (
-  fileCacheMetadata.timestamp >= key.lastModified
-  || isMD5Equal(fileCacheMetadata.hash, key.buffer)
-)
-
 const parseNaclFileFromCacheSources = async (
   cacheSources: CacheSources,
   filename: string,
@@ -85,7 +75,6 @@ const parseNaclFileFromCacheSources = async (
   data: {
     errors: async () => (await cacheSources.errors.get(filename) ?? []),
     referenced: () => cacheSources.referenced.get(filename),
-    timestamp: async () => (await cacheSources.metadata.get(filename))?.timestamp,
   },
   sourceMap: () => cacheSources.sourceMap.get(filename),
 })
@@ -101,10 +90,10 @@ const getMetadata = async (
   cacheName: string,
   remoteMapCreator: RemoteMapCreator,
   persistent: boolean
-): Promise<RemoteMap<FileCacheMetdata>> => (
+): Promise<RemoteMap<FileCacheMetadata>> => (
   remoteMapCreator({
     namespace: getRemoteMapCacheNamespace(cacheName, 'metadata'),
-    serialize: (val: FileCacheMetdata) => safeJsonStringify(val),
+    serialize: (val: FileCacheMetadata) => safeJsonStringify(val),
     deserialize: data => JSON.parse(data),
     persistent,
   })
@@ -198,10 +187,7 @@ export const createParseResultCache = (
         await sourceMap.delete(value.filename)
       }
       await elements.set(value.filename, (await value.elements()) ?? [])
-      await metadata.set(filename, {
-        hash: hash.toMD5(value.buffer ?? ''),
-        timestamp: (await value.data.timestamp()) ?? Date.now(),
-      })
+      await metadata.set(filename, { hash: hash.toMD5(value.buffer ?? '') })
     },
     putAll: async (files: Record<string, ParsedNaclFile>): Promise<void> => {
       const { metadata, errors, referenced, sourceMap, elements } = await cacheSources
@@ -241,10 +227,7 @@ export const createParseResultCache = (
           const value = files[file]
           return {
             key: file,
-            value: {
-              hash: hash.toMD5(value.buffer ?? ''),
-              timestamp: (await value.data.timestamp()) ?? Date.now(),
-            },
+            value: { hash: hash.toMD5(value.buffer ?? '') },
           }
         }))
     },
@@ -253,7 +236,7 @@ export const createParseResultCache = (
       if (fileMetadata === undefined) {
         return false
       }
-      return isCacheDataRelevant(key, fileMetadata)
+      return isMD5Equal(fileMetadata.hash, key.buffer)
     },
     getAllErrors: async (): Promise<ParseError[]> =>
       (await awu((await cacheSources).errors.values()).toArray()).flat(),

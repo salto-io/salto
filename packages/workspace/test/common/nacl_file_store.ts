@@ -271,7 +271,6 @@ export const mockParseCache = (): ParsedNaclFileCache => ({
     data: {
       errors: () => Promise.resolve([]),
       referenced: () => Promise.resolve([]),
-      timestamp: () => Promise.resolve(0),
     },
   }),
   flush: () => Promise.resolve(undefined),

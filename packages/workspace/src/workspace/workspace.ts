@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
   Value, isElement, isInstanceElement, toChange, isRemovalChange, getChangeElement,
-  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile } from '@salto-io/adapter-api'
+  ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { applyDetailedChanges, resolvePath, setPath } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
@@ -241,14 +241,10 @@ export const loadWorkspace = async (
                 // TODO: we might need to pass static file reviver to the deserialization func
                 deserialize: s => deserializeSingleElement(
                   s,
-                  async staticFile => await envSrc.getStaticFileByHash(
+                  async staticFile => await envSrc.getStaticFile(
                     staticFile.filepath,
                     staticFile.encoding,
-                    staticFile.hash
-                  ) ?? new StaticFile({
-                    filepath: staticFile.filepath,
-                    hash: '',
-                  })
+                  ) ?? staticFile
                 ),
                 persistent,
               })

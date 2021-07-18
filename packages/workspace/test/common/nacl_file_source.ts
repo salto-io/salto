@@ -108,9 +108,9 @@ export const createMockNaclFileSource = (
         : []
       return [e.elemID.getFullName(), ...fieldNames]
     }))),
-    getStaticFileByHash: async (filePath, enc, hash) => {
+    getStaticFile: async (filePath, enc) => {
       const sfile = await staticFileSource.getStaticFile(filePath, enc)
-      return isStaticFile(sfile) && sfile.hash === hash
+      return isStaticFile(sfile)
         ? sfile
         : undefined
     },

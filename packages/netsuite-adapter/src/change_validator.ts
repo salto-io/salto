@@ -20,7 +20,6 @@ import removeCustomTypesValidator from './change_validators/remove_custom_types'
 import removeFileCabinetValidator from './change_validators/remove_file_cabinet'
 import removeListItemValidator from './change_validators/remove_list_item'
 import instanceChangesValidator from './change_validators/instance_changes'
-import saveSearchModification from './change_validators/saved_search_modifications'
 import saveSearchMoveEnvironment from './change_validators/saved_search_move_environment'
 import fileValidator from './change_validators/file_changes'
 import immutableChangesValidator from './change_validators/immutable_changes'
@@ -31,7 +30,6 @@ const changeValidators: ChangeValidator[] = [
   accountSpecificValuesValidator,
   removeCustomTypesValidator,
   instanceChangesValidator,
-  saveSearchModification,
   saveSearchMoveEnvironment,
   immutableChangesValidator,
   removeListItemValidator,

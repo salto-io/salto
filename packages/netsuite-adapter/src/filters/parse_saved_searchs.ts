@@ -18,9 +18,9 @@ import { getChangeElement, InstanceElement, isInstanceChange, isInstanceElement,
 import _ from 'lodash'
 import { SAVED_SEARCH } from '../constants'
 import { FilterCreator } from '../filter'
-import { savedsearch, savedsearchInnerTypes } from '../types/custom_types/parsedSavedSearch'
+import { savedsearch, savedsearchInnerTypes } from '../saved_search_parsing/parsed_saved_search'
 import { savedsearch as oldSavedSearch } from '../types/custom_types/savedsearch'
-import { parseDefinition } from '../saved_search_parser'
+import { parseDefinition } from '../saved_search_parsing/saved_search_parser'
 
 
 const cloneSavedSearch = (instance: InstanceElement): InstanceElement =>

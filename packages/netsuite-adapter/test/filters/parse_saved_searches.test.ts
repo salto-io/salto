@@ -20,7 +20,7 @@ import { customTypes } from '../../src/types'
 import NetsuiteClient from '../../src/client/client'
 import { SAVED_SEARCH } from '../../src/constants'
 
-jest.mock('../../src/saved_search_parser', () => ({
+jest.mock('../../src/saved_search_parsing/saved_search_parser', () => ({
   parseDefinition: jest.fn().mockResolvedValue({
     test: 'test',
   }),

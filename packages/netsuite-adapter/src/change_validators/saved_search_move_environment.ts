@@ -18,7 +18,7 @@ import { ChangeValidator, getChangeElement,
   isAdditionChange, InstanceElement, isInstanceChange, ChangeError } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { SAVED_SEARCH } from '../constants'
-import { parseDefinition } from '../saved_search_parser'
+import { parseDefinition } from '../saved_search_parsing/saved_search_parser'
 
 const { awu } = collections.asynciterable
 

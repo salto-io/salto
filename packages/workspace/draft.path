@@ -1,0 +1,83 @@
+diff --git a/packages/adapter-api/src/values.ts b/packages/adapter-api/src/values.ts
+index 8a8f2b603..249787973 100644
+--- a/packages/adapter-api/src/values.ts
++++ b/packages/adapter-api/src/values.ts
+@@ -81,7 +81,7 @@ export class StaticFile {
+ export class ReferenceExpression {
+   constructor(
+     public readonly elemID: ElemID,
+-    private resValue?: Value,
++    public resValue?: Value,
+     public readonly topLevelParent?: Element
+   ) {}
+ 
+diff --git a/packages/workspace/src/expressions.ts b/packages/workspace/src/expressions.ts
+index e228081b4..3cc52d08c 100644
+--- a/packages/workspace/src/expressions.ts
++++ b/packages/workspace/src/expressions.ts
+@@ -184,17 +184,21 @@ const resolveElement = async (
+   workingSetElements: Record<string, WorkingSetElement>,
+   resolveRoot = false
+ ): Promise<Element> => {
+-  const referenceCloner: TransformFunc = async ({ value }) => {
+-    if (typeof value === 'object') {
+-      await Promise.all(Object.keys(value).map(async key => {
+-        value[key] = await resolveMaybeExpression(
+-          value[key],
+-          elementsSource,
+-          workingSetElements,
+-          undefined,
+-          resolveRoot
+-        )
+-      }))
++  const clonedRefs: Record<string, ReferenceExpression> = {}
++
++  // const referenceCloner: TransformFunc = ({ value }) => resolveMaybeExpression(
++  //   value,
++  //   elementsSource,
++  //   workingSetElements,
++  //   undefined,
++  //   resolveRoot
++  // )
++
++  const referenceCloner: TransformFunc = ({ value }) => {
++    if (isReferenceExpression(value)) {
++      clonedRefs[value.elemID.getFullName()] = clonedRefs[value.elemID.getFullName()] 
++        || new ReferenceExpression(value.elemID)
++      return clonedRefs[value.elemID.getFullName()]
+     }
+     return value
+   }
+@@ -284,7 +288,9 @@ const resolveElement = async (
+       resolveRoot
+     )
+   }
+-
++  await awu(Object.values(clonedRefs)).forEach(async ref => {
++    ref.resValue = await resolveMaybeExpression(ref, elementsSource, workingSetElements, new Set(), resolveRoot)
++  })
+   return element
+ }
+ 
+@@ -293,7 +299,7 @@ export const resolve = async (
+   elementsSource: ReadOnlyElementsSource,
+   resolveRoot = false
+ ): Promise<Element[]> => {
+-  const elementsToResolve = elements.map(e => e.clone())
++  const elementsToResolve = elements.map(_.clone)
+   const resolvedElements = await awu(elementsToResolve)
+     .map(element => ({ element }))
+     .keyBy(
+diff --git a/packages/workspace/test/core/expressions.test.ts b/packages/workspace/test/core/expressions.test.ts
+index 54b939964..bae6da293 100644
+--- a/packages/workspace/test/core/expressions.test.ts
++++ b/packages/workspace/test/core/expressions.test.ts
+@@ -468,7 +468,7 @@ describe('Test Salto Expressions', () => {
+       expect(resolvedRef.topLevelParent).not.toBeDefined()
+     })
+ 
+-    it('should resolve instance with references to itself', async () => {
++    fit('should resolve instance with references to itself', async () => {
+       const type = new ObjectType({ elemID: new ElemID('adapter', 'type') })
+       const instance = new InstanceElement(
+         'instance',

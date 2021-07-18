@@ -250,7 +250,7 @@ const createUpdateChanges = async (
     .map(async ([parentID, elementAdditions]) => {
       const valuesOverrides = Object.fromEntries(elementAdditions
         .filter(isAdditionChange)
-        .map(addition => addition.data.after))
+        .map(addition => [addition.id.getFullName(), addition.data.after]))
       valuesOverrides[parentID] = await commonSource.get(ElemID.fromFullName(parentID))
       return addToSource({
         ids: elementAdditions.map(c => c.id),

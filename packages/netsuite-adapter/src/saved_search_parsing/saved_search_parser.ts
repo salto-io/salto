@@ -59,9 +59,14 @@ const getFilterRecords = (filter: FilterObject): Values[] =>
   collections.array.makeArray(filter.values.values?.Record)
     .map(record => getObjectFromValues(record.values.Value))
 
-const getFilter = (filter: FilterObject): Values =>
-  Object.assign(getObjectFromValues(filter.descriptor.values.Value),
-    { RECORDS: getFilterRecords(filter) })
+const getFilter = (filter: FilterObject): Values => {
+  const parsedFilter = getObjectFromValues(filter.descriptor.values.Value)
+  const records = getFilterRecords(filter)
+  if (!_.isEmpty(records)) {
+    Object.assign(parsedFilter, { RECORDS: records })
+  }
+  return parsedFilter
+}
 
 const extractSearchDefinitionValues = (search: ElementCompact): Values[] =>
   collections.array.makeArray(search.values?.SearchFilter).map(getFilter)
@@ -87,20 +92,20 @@ const getAlertRecipients = (search: ElementCompact): Values[] => {
     .map((record:RecordObject) => getObjectFromValues(record.values.Value))
 }
 
-const safeAssignKeyValue = (instance:Values, key: string, value: Values):void => {
+const safeAssignKeyValue = (instance:Values, key: string, value: Values): void => {
   if (Array.isArray(value) && _.isEmpty(value)) {
     return
   }
   Object.assign(instance, { [key]: value })
 }
 
-const getSearchPartsFromDefinition = async (definition:string):Promise<ElementParts> => {
+const getSearchPartsFromDefinition = async (definition:string): Promise<ElementParts> => {
   const parsedXml = await getJson(definition)
   return { definition: getSearchDefinition(parsedXml),
     dependency: getSearchDependency(parsedXml) }
 }
 
-export const parseDefinition = async (definition:string):Promise<Values> => {
+export const parseDefinition = async (definition:string): Promise<Values> => {
   const searchParts = await getSearchPartsFromDefinition(definition)
   const returnInstance = {}
   safeAssignKeyValue(returnInstance, 'search_filter', extractSearchDefinitionValues(searchParts.definition.filters))

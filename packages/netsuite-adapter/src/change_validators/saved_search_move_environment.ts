@@ -22,7 +22,7 @@ import { parseDefinition } from '../saved_search_parsing/saved_search_parser'
 
 const { awu } = collections.asynciterable
 
-const wasModified = async (instance:InstanceElement):Promise<boolean> => {
+const wasModified = async (instance:InstanceElement): Promise<boolean> => {
   const parsedDefinition = await parseDefinition(instance.value.definition)
   return Object.keys(parsedDefinition)
     .some(key => !_.isEqual(parsedDefinition[key], instance.value[key]))
@@ -34,14 +34,14 @@ const getChangeError = async (instance: InstanceElement): Promise<ChangeError> =
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Modified saved searches cannot be deployed.',
-      detailedMessage: `Changing (${instance.elemID.name}) is not supported`,
+      detailedMessage: `Changing (${instance.elemID.getFullName()}) is not supported`,
     } as ChangeError)
   }
   return ({
     elemID: instance.elemID,
     severity: 'Warning',
     message: 'Beware that saved searches might reference internal ids that are not correct for the current environment. It is recommended that you verify the deployment in NetSuite UI.',
-    detailedMessage: `Instance (${instance.elemID.name}) should be reviewed in NetSuite UI to make sure internal ids did not mix between environments`,
+    detailedMessage: `Instance (${instance.elemID.getFullName()}) should be reviewed in NetSuite UI to make sure internal ids did not mix between environments`,
   } as ChangeError)
 }
 

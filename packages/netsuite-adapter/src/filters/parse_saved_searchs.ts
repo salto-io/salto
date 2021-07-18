@@ -24,6 +24,8 @@ import { parseDefinition } from '../saved_search_parsing/saved_search_parser'
 
 
 const cloneSavedSearch = (instance: InstanceElement): InstanceElement =>
+// We create another element not using element.clone because
+// we need the new element to have a parsed save search type.
   new InstanceElement(instance.elemID.name, savedsearch, instance.value,
     instance.path, instance.annotations)
 

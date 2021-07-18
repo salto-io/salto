@@ -46,4 +46,25 @@ describe('move environment saved search change validator', () => {
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
     })
   })
+  describe('onModify', () => {
+    it('should have warning change error when moving an instance with correct definition', async () => {
+      const instance = new InstanceElement('test', customTypes[SAVED_SEARCH])
+      instance.value.definition = 'string'
+      instance.value.test = 'test'
+      const changeErrors = await savedSearchesMoveEnvironment([
+        toChange({ before: instance, after: instance })])
+      expect(changeErrors).toHaveLength(1)
+      expect(changeErrors[0].severity).toEqual('Warning')
+      expect(changeErrors[0].elemID).toEqual(instance.elemID)
+    })
+    it('should have change error when moving an instance with incorrect definition', async () => {
+      const instance = new InstanceElement('test', customTypes[SAVED_SEARCH])
+      instance.value.definition = 'string'
+      const changeErrors = await savedSearchesMoveEnvironment([
+        toChange({ before: instance, after: instance })])
+      expect(changeErrors).toHaveLength(1)
+      expect(changeErrors[0].severity).toEqual('Error')
+      expect(changeErrors[0].elemID).toEqual(instance.elemID)
+    })
+  })
 })

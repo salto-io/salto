@@ -135,7 +135,7 @@ const savedSearchAudience = new ObjectType({
   path: [constants.NETSUITE, constants.TYPES_PATH, savedSearchElemID.name],
 })
 
-const savedsearch_dependencies = new ObjectType({
+const savedSearchDependencies = new ObjectType({
   elemID: savedSearchDependenciesElemID,
   annotations: {
   },
@@ -150,7 +150,7 @@ const savedsearch_dependencies = new ObjectType({
   path: [constants.NETSUITE, constants.TYPES_PATH, savedSearchElemID.name],
 })
 
-savedsearchInnerTypes.push(savedsearch_dependencies)
+savedsearchInnerTypes.push(savedSearchDependencies)
 savedsearchInnerTypes.push(savedSearchAlertRecipients)
 savedsearchInnerTypes.push(savedSearchSortColumns)
 savedsearchInnerTypes.push(savedSearchReturnField)
@@ -230,7 +230,7 @@ export const savedsearch = new ObjectType({
       },
     },
     dependencies: {
-      refType: createRefToElmWithValue(savedsearch_dependencies),
+      refType: createRefToElmWithValue(savedSearchDependencies),
       annotations: {
       },
     },

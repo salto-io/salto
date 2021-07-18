@@ -16,9 +16,8 @@
 import * as savedSearchParser from '../src/saved_search_parsing/saved_search_parser'
 import * as testConsts from './saved_search_definition'
 
-jest.setTimeout(1000000)
 describe('saved search parser tests', () => {
-  it('test parse definition1', async () => {
+  it('test parse empty definition', async () => {
     const parsedDefinition = await savedSearchParser.parseDefinition(testConsts.emptyDefinition)
     expect(parsedDefinition).toEqual(testConsts.emptyDefinitionOutcome)
   })

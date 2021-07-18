@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import path from 'path'
-import { Element, ElemID, BuiltinTypes, ObjectType, DetailedChange, Change, getChangeElement } from '@salto-io/adapter-api'
+import { Element, ElemID, BuiltinTypes, ObjectType, DetailedChange, Change, getChangeElement, StaticFile } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -27,6 +27,8 @@ import { ValidationError } from '../../../src/validator'
 import { MergeError } from '../../../src/merger'
 import { expectToContainAllItems } from '../../common/helpers'
 import { InMemoryRemoteMap } from '../../../src/workspace/remote_map'
+import { mockStaticFilesSource } from '../../utils'
+import { MissingStaticFile } from '../../../src/workspace/static_files'
 
 const { awu } = collections.asynciterable
 jest.mock('@salto-io/adapter-utils', () => ({
@@ -154,17 +156,24 @@ const emptySource = createMockNaclFileSource(
   commonErrors,
   []
 )
+const commonSrcStaticFileSource = mockStaticFilesSource()
 const commonSource = createMockNaclFileSource(
   [commonObject, commonFragment],
   commonNaclFiles,
   commonErrors,
-  [commonSourceRange]
+  [commonSourceRange],
+  { changes: [], cacheValid: true },
+  commonSrcStaticFileSource
 )
+
+const envSrcStaticFileSource = mockStaticFilesSource()
 const envSource = createMockNaclFileSource(
   [envObject, envFragment],
   envNaclFiles,
   envErrors,
-  [envSourceRange]
+  [envSourceRange],
+  { changes: [], cacheValid: true },
+  envSrcStaticFileSource
 )
 const inactiveSource = createMockNaclFileSource(
   [inactiveObject, inactiveFragment],
@@ -842,13 +851,61 @@ describe('multi env source', () => {
       )
     })
   })
+  describe('getElementIdsBySelectors', () => {
+    describe('commonOnly=false', () => {
+      it('should extract the proper ids with overlaps when compact=false', async () => {
+        const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
+        const res = await awu(await source.getElementIdsBySelectors(selectors)).toArray()
+        expect(res.map(id => id.getFullName()).sort()).toEqual([
+          envElemID,
+          envElemID.createNestedID('field', 'field'),
+          objectElemID,
+          objectElemID.createNestedID('field', 'envField'),
+        ].map(id => id.getFullName()))
+      })
+      it('should extract the proper ids without overlaps when compact=true', async () => {
+        const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
+        const res = await awu(
+          await source.getElementIdsBySelectors(selectors, false, true)
+        ).toArray()
+        expect(res.map(id => id.getFullName()).sort()).toEqual([
+          envElemID,
+          objectElemID,
+        ].map(id => id.getFullName()))
+      })
+    })
+    describe('commonOnly=true', () => {
+      it('should extract the proper ids with overlaps when compact=false', async () => {
+        const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
+        const res = await awu(await source.getElementIdsBySelectors(selectors, true)).toArray()
+        expect(res.map(id => id.getFullName()).sort()).toEqual([
+          commonObject.elemID,
+          commonObject.elemID.createNestedID('field', 'field'),
+          objectElemID,
+          objectElemID.createNestedID('field', 'commonField'),
+        ].map(id => id.getFullName()))
+      })
+      it('should extract the proper ids without overlaps when compact=true', async () => {
+        const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
+        const res = await awu(
+          await source.getElementIdsBySelectors(selectors, true, true)
+        ).toArray()
+        expect(res.map(id => id.getFullName()).sort()).toEqual([
+          commonObject.elemID,
+          objectElemID,
+        ].map(id => id.getFullName()))
+      })
+    })
+  })
   describe('promote', () => {
     it('should route promote the proper ids', async () => {
-      const selectors = createElementSelectors(['salto.*']).validSelectors
+      const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
       jest.spyOn(routers, 'routePromote').mockImplementationOnce(
         () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
       )
-      await source.promote(await awu(await source.getElementIdsBySelectors(selectors)).toArray())
+      await source.promote(
+        await awu(await source.getElementIdsBySelectors(selectors, false, true)).toArray()
+      )
       expect(routers.routePromote).toHaveBeenCalledWith(
         [envElemID, objectElemID], envSource, commonSource, { inactive: inactiveSource }
       )
@@ -856,12 +913,13 @@ describe('multi env source', () => {
   })
   describe('demote', () => {
     it('should route demote the proper ids', async () => {
-      const selectors = createElementSelectors(['salto.*']).validSelectors
+      const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
       jest.spyOn(routers, 'routeDemote').mockImplementationOnce(
         () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
       )
-      await source.demote(await awu(await source.getElementIdsBySelectors(selectors, true))
-        .toArray())
+      await source.demote(await awu(
+        await source.getElementIdsBySelectors(selectors, true, true)
+      ).toArray())
       expect(routers.routeDemote).toHaveBeenCalledWith(
         [commonObject.elemID, objectElemID], envSource, commonSource, { inactive: inactiveSource }
       )
@@ -890,6 +948,57 @@ describe('multi env source', () => {
         false
       )
       await expect(() => nonPSource.flush()).rejects.toThrow()
+    })
+  })
+
+  describe('getStaticFileByHash', () => {
+    const staticFile = new StaticFile({
+      content: Buffer.from(''),
+      filepath: 'aaa.txt',
+      encoding: 'utf-8',
+      hash: 'aaa',
+    })
+    it('should return the file it is present in the common source and the hashes match', async () => {
+      commonSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(staticFile)
+      envSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
+      const src = multiEnvSource(
+        sources,
+        activePrefix,
+        commonPrefix,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+        false
+      )
+      expect(await src.getStaticFileByHash(
+        staticFile.filepath, staticFile.encoding, staticFile.hash
+      )).toEqual(staticFile)
+    })
+    it('should return the file it is present in the env source and the hashes match', async () => {
+      commonSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
+      envSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(staticFile)
+      const src = multiEnvSource(
+        sources,
+        activePrefix,
+        commonPrefix,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+        false
+      )
+      expect(await src.getStaticFileByHash(
+        staticFile.filepath, staticFile.encoding, staticFile.hash
+      )).toEqual(staticFile)
+    })
+    it('should return undefined if the hahes do not match', async () => {
+      commonSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
+      envSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(staticFile)
+      const src = multiEnvSource(
+        sources,
+        activePrefix,
+        commonPrefix,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+        false
+      )
+      expect(await src.getStaticFileByHash(
+        staticFile.filepath, staticFile.encoding, 'nohash'
+      )).not.toBeDefined()
     })
   })
 })

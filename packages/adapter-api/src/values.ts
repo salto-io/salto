@@ -82,7 +82,7 @@ export class ReferenceExpression {
   constructor(
     public readonly elemID: ElemID,
     private resValue?: Value,
-    public readonly topLevelParent?: Element
+    public topLevelParent?: Element
   ) {}
 
   /**
@@ -106,11 +106,15 @@ export class ReferenceExpression {
       : this.resValue
   }
 
+  set value(value: Value) {
+    this.resValue = value
+  }
+
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<Value> {
     if (this.resValue === undefined && elementsSource === undefined) {
       throw new Error(
         `Can not resolve value of reference with ElemID ${this.elemID.getFullName()} `
-        + 'without elementsSource cause value does not exist'
+        + 'without elementsSource because value does not exist'
       )
     }
     const value = (await elementsSource?.get(this.elemID)) ?? this.value

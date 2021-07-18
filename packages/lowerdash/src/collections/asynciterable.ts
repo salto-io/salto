@@ -163,6 +163,14 @@ export async function *flattenAsync<T>(
   }
 }
 
+export const lengthAsync = async <T>(itr: ThenableIterable<T>): Promise<number> => {
+  let len = 0
+  await forEachAsync(itr, async _item => {
+    len += 1
+  })
+  return len
+}
+
 export const peekAsync = async <T>(itr: ThenableIterable<T>): Promise<T | undefined> => {
   for await (const item of itr) {
     return item
@@ -331,6 +339,7 @@ export type AwuIterable<T> = AsyncIterable<T> & {
   forEach(mapFunc: (t: T, index: number) => Thenable<unknown>): Promise<void>
   isEmpty(): Promise<boolean>
   peek(): Promise<T | undefined>
+  length(): Promise<number>
   take(maxItems: number): AwuIterable<T>
   // This is the way wu handles the flat function types as well...
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -360,6 +369,7 @@ export const awu = <T>(itr: ThenableIterable<T>): AwuIterable<T> => {
     flatMap: mapFunc => awu(flattenAsync(mapAsync(itr, mapFunc))),
     forEach: mapFunc => forEachAsync(itr, mapFunc),
     isEmpty: () => isEmptyAsync(itr),
+    length: () => lengthAsync(itr),
     peek: () => peekAsync(itr),
     take: maxItems => awu(takeAsync(itr, maxItems)),
     flat: () => awu(flattenAsync(itr)),

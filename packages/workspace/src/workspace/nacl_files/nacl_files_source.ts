@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import { Element, ElemID, Value, DetailedChange, isElement, getChangeElement, isObjectType,
   isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, isVariable, Change,
   placeholderReadonlyElementsSource, ObjectType, isModificationChange,
-  isObjectTypeChange, toChange, isAdditionChange } from '@salto-io/adapter-api'
+  isObjectTypeChange, toChange, isAdditionChange, StaticFile, isStaticFile } from '@salto-io/adapter-api'
 import { resolvePath, TransformFuncArgs, transformElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { promises, values, collections } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
@@ -37,7 +37,7 @@ import { serialize, deserializeMergeErrors, deserializeSingleElement } from '../
 import { Functions } from '../../parser/functions'
 import { RemoteMap, RemoteMapCreator } from '../remote_map'
 import { ParsedNaclFile } from './parsed_nacl_file'
-import { ParsedNaclFileCache, ParseResultKey, createParseResultCache } from './parsed_nacl_files_cache'
+import { ParsedNaclFileCache, createParseResultCache } from './parsed_nacl_files_cache'
 
 const { awu, concatAsync } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
@@ -59,7 +59,6 @@ const UPDATE_INDEX_CONCURRENCY = 100
 export type NaclFile = {
   buffer: string
   filename: string
-  timestamp?: number
 }
 export type SourceLoadParams = {
   ignoreFileChanges?: boolean
@@ -90,6 +89,11 @@ export type NaclFilesSource<Changes=ChangeSet<Change>> = Omit<ElementsSource, 'c
   getElementsSource: () => Promise<ElementsSource>
   load: (args: SourceLoadParams) => Promise<Changes>
   getSearchableNames(): Promise<string[]>
+  getStaticFileByHash: (
+    filePath: string,
+    encoding: BufferEncoding,
+    hash: string
+  ) => Promise<StaticFile | undefined>
 }
 
 type NaclFilesState = {
@@ -101,13 +105,6 @@ type NaclFilesState = {
   searchableNamesIndex: RemoteMap<boolean>
   metadata: RemoteMap<string>
 }
-
-const cacheResultKey = (naclFile: { filename: string; timestamp?: number; buffer?: string }):
- ParseResultKey => ({
-  filename: naclFile.filename,
-  lastModified: naclFile.timestamp ?? Date.now(),
-  buffer: naclFile.buffer,
-})
 
 const getRemoteMapNamespace = (namespace: string, name: string): string =>
   `naclFileSource-${name}-${namespace}`
@@ -161,7 +158,6 @@ export const toParsedNaclFile = async (
   filename: naclFile.filename,
   elements: () => awu(parseResult.elements).toArray(),
   data: {
-    timestamp: () => Promise.resolve(naclFile.timestamp),
     errors: () => Promise.resolve(parseResult.errors),
     referenced: () => awu(parseResult.elements).flatMap(getElementReferenced).toArray(),
   },
@@ -178,7 +174,7 @@ const parseNaclFiles = async (
   naclFiles: NaclFile[], cache: ParsedNaclFileCache, functions: Functions
 ): Promise<ParsedNaclFile[]> =>
   withLimitedConcurrency(naclFiles.map(naclFile => async () => {
-    const hasValid = await cache.hasValid(cacheResultKey(naclFile))
+    const hasValid = await cache.hasValid(naclFile)
     const cachedResult = hasValid && await cache.get(naclFile.filename)
     return (cachedResult && values.isDefined(cachedResult))
       ? cachedResult : toParsedNaclFile(naclFile, await parseNaclFile(naclFile, functions))
@@ -527,11 +523,12 @@ const buildNaclFilesSource = (
     const modifiedNaclFiles: NaclFile[] = []
     if (!ignoreFileChanges) {
       const cacheFilenames = await currentState.parsedNaclFiles.list()
-      const naclFilenames = await naclFilesStore.list()
+      const naclFilenames = new Set(await naclFilesStore.list())
       const fileNames = new Set()
       await awu(cacheFilenames).forEach(async filename => {
-        const naclFile = await naclFilesStore.get(filename) ?? { filename, buffer: '' }
-        const validCache = await currentState.parsedNaclFiles.hasValid(cacheResultKey(naclFile))
+        const naclFile = (naclFilenames.has(filename) && await naclFilesStore.get(filename))
+          || { filename, buffer: '' }
+        const validCache = await currentState.parsedNaclFiles.hasValid(naclFile)
         if (!validCache) {
           modifiedNaclFiles.push(naclFile)
         }
@@ -629,20 +626,16 @@ const buildNaclFilesSource = (
     change: AdditionDiff<Element>,
     fileData: string,
   ): Promise<ParsedNaclFile> => {
-    const elements = [
-      (change as AdditionDiff<Element>).data.after,
-    ]
-    const parsed = {
+    const elements = [change.data.after]
+    return {
       filename,
       elements: () => Promise.resolve(elements),
       data: {
-        timestamp: () => Promise.resolve(Date.now()),
         errors: () => Promise.resolve([]),
         referenced: () => awu(elements).flatMap(getElementReferenced).toArray(),
       },
       buffer: fileData,
     }
-    return parsed
   }
 
   const setNaclFiles = async (
@@ -740,7 +733,7 @@ const buildNaclFilesSource = (
       log.debug('going to update %d NaCl files', updatedNaclFiles.length)
       // The map is to avoid saving unnecessary fields in the nacl files
       await setNaclFiles(
-        ...updatedNaclFiles.map(file => _.pick(file, ['buffer', 'filename', 'timestamp']))
+        ...updatedNaclFiles.map(file => _.pick(file, ['buffer', 'filename']))
       )
       const res = await buildNaclFilesStateInner(updatedNaclFiles)
       state = Promise.resolve(res.state)
@@ -918,6 +911,13 @@ const buildNaclFilesSource = (
     },
     getSearchableNames: async (): Promise<string[]> =>
       (awu((await getState())?.searchableNamesIndex?.keys() ?? []).toArray()),
+    getStaticFileByHash: async (filePath, encoding, hash) => {
+      const staticFile = await staticFilesSource.getStaticFile(filePath, encoding)
+      if (isStaticFile(staticFile) && staticFile.hash === hash) {
+        return staticFile
+      }
+      return undefined
+    },
   }
 }
 

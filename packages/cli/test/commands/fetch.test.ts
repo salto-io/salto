@@ -273,7 +273,7 @@ describe('fetch command', () => {
           })
           it('should deploy all changes', () => {
             expect(workspace.updateNaclFiles).toHaveBeenCalledWith(
-              changes.map(change => change.change), 'default',
+              changes.map(change => change.change), 'default'
             )
           })
         })
@@ -299,7 +299,7 @@ describe('fetch command', () => {
           })
           it('should forward strict mode', () => {
             expect(workspace.updateNaclFiles).toHaveBeenCalledWith(
-              changes.map(change => change.change), 'isolated',
+              changes.map(change => change.change), 'isolated'
             )
           })
         })
@@ -325,7 +325,7 @@ describe('fetch command', () => {
           })
           it('should forward align mode', () => {
             expect(workspace.updateNaclFiles).toHaveBeenCalledWith(
-              changes.map(change => change.change), 'align',
+              changes.map(change => change.change), 'align'
             )
           })
         })
@@ -351,7 +351,7 @@ describe('fetch command', () => {
           })
           it('should forward override mode', () => {
             expect(workspace.updateNaclFiles).toHaveBeenCalledWith(
-              changes.map(change => change.change), 'override',
+              changes.map(change => change.change), 'override'
             )
           })
         })
@@ -394,8 +394,10 @@ describe('fetch command', () => {
             it('should return OK status when state is updated', () => {
               expect(result).toBe(CliExitCode.Success)
             })
-            it('should not apply any changes', async () => {
-              expect(workspace.updateNaclFiles).not.toHaveBeenCalled()
+            it('should not apply changes in stateOnlyMode', async () => {
+              expect(workspace.updateNaclFiles).toHaveBeenCalledWith(
+                changes.map(change => change.change), 'default', true
+              )
             })
           })
           describe('when state failed to update', () => {
@@ -421,9 +423,6 @@ describe('fetch command', () => {
             it('should return AppError status when state is updated', () => {
               expect(result).toBe(CliExitCode.AppError)
             })
-            it('should not apply any changes', async () => {
-              expect(workspace.updateNaclFiles).not.toHaveBeenCalled()
-            })
           })
         })
         describe('when initial workspace is empty', () => {
@@ -448,7 +447,7 @@ describe('fetch command', () => {
           })
           it('should deploy all changes', () => {
             expect(workspace.updateNaclFiles).toHaveBeenCalledWith(
-              changes.map(change => change.change), 'default',
+              changes.map(change => change.change), 'default'
             )
           })
         })
@@ -473,7 +472,8 @@ describe('fetch command', () => {
                 stateOnly: false,
                 regenerateSaltoIds: false,
               })
-              expect(workspace.updateNaclFiles).toHaveBeenCalledWith([changes[0].change], 'default')
+              expect(workspace.updateNaclFiles)
+                .toHaveBeenCalledWith([changes[0].change], 'default')
             })
 
             it('should exit if errors identified in workspace after update', async () => {
@@ -503,7 +503,8 @@ describe('fetch command', () => {
                 stateOnly: false,
                 regenerateSaltoIds: false,
               })
-              expect(workspace.updateNaclFiles).toHaveBeenCalledWith([changes[0].change], 'default')
+              expect(workspace.updateNaclFiles)
+                .toHaveBeenCalledWith([changes[0].change], 'default')
               expect(res).toBe(CliExitCode.AppError)
 
               abortIfErrorCallback.mockRestore()
@@ -532,7 +533,8 @@ describe('fetch command', () => {
                 stateOnly: false,
                 regenerateSaltoIds: false,
               })
-              expect(workspace.updateNaclFiles).toHaveBeenCalledWith([changes[0].change], 'default')
+              expect(workspace.updateNaclFiles)
+                .toHaveBeenCalledWith([changes[0].change], 'default')
               expect(res).toBe(CliExitCode.Success)
             })
           })

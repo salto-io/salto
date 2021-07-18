@@ -160,12 +160,14 @@ describe('diff', () => {
         singlePathObjMerged,
         multiPathInstMerged,
         singlePathInstMerged,
+        nestedType,
       ]
       singlePathInstMergedAfter.value.nested.str = 'modified'
       beforeElements = [
         multiPathObjMerged,
         singlePathInstMergedAfter,
         multiPathInstMerged,
+        nestedType,
       ]
     })
 

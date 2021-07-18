@@ -18,8 +18,8 @@ import path from 'path'
 import wu from 'wu'
 
 import { Element, ElemID, getChangeElement, Value,
-  DetailedChange, Change, ChangeDataType } from '@salto-io/adapter-api'
-import { promises, collections } from '@salto-io/lowerdash'
+  DetailedChange, Change, ChangeDataType, StaticFile } from '@salto-io/adapter-api'
+import { promises, collections, values } from '@salto-io/lowerdash'
 import { applyInstanceDefaults } from '@salto-io/adapter-utils'
 import { RemoteMap, RemoteMapCreator, mapRemoteMapResult } from '../../remote_map'
 import { ElementSelector, selectElementIdsByTraversal } from '../../element_selector'
@@ -84,8 +84,11 @@ export type EnvsChanges = Record<string, ChangeSet<Change>>
 export type MultiEnvSource = Omit<NaclFilesSource<EnvsChanges>, 'getAll' | 'getElementsSource'> & {
   getAll: (env?: string) => Promise<AsyncIterable<Element>>
   promote: (ids: ElemID[]) => Promise<EnvsChanges>
-  getElementIdsBySelectors: (selectors: ElementSelector[],
-    commonOnly?: boolean, validateDeterminedSelectors?: boolean) => Promise<AsyncIterable<ElemID>>
+  getElementIdsBySelectors: (
+    selectors: ElementSelector[],
+    commonOnly?: boolean,
+    compact?: boolean,
+  ) => Promise<AsyncIterable<ElemID>>
   demote: (ids: ElemID[]) => Promise<EnvsChanges>
   demoteAll: () => Promise<EnvsChanges>
   copyTo: (ids: ElemID[], targetEnvs?: string[]) => Promise<EnvsChanges>
@@ -121,13 +124,28 @@ const buildMultiEnvSource = (
     [commonSourceName]: sources[commonSourceName],
   })
 
+  const getStaticFileByHash = (
+    filePath: string,
+    encoding: BufferEncoding,
+    hash: string
+  ): Promise<StaticFile | undefined> => awu(Object.values(getActiveSources()))
+    .map(src => src.getStaticFileByHash(filePath, encoding, hash))
+    .find(values.isDefined)
+
   const buildStateForSingleEnv = async (
     envName: string,
   ): Promise<SingleState> => {
     const elements = new RemoteElementSource(await remoteMapCreator<Element>({
       namespace: getRemoteMapNamespace('merged', envName),
       serialize: element => serialize([element], 'keepRef'),
-      deserialize: deserializeSingleElement,
+      deserialize: s => deserializeSingleElement(
+        s,
+        async staticFile => await getStaticFileByHash(
+          staticFile.filepath,
+          staticFile.encoding,
+          staticFile.hash
+        ) ?? staticFile
+      ),
       persistent,
     }))
     return {
@@ -290,22 +308,16 @@ const buildMultiEnvSource = (
     return buildRes.changes
   }
 
-  const getElementsFromSource = async (source: NaclFilesSource):
-    Promise<AsyncIterable<ElemID>> => awu((await source.list()))
-
   const getElementIdsBySelectors = async (
     selectors: ElementSelector[],
     commonOnly = false,
-    validateDeterminedSelectors = false,
+    compact = false,
   ): Promise<AsyncIterable<ElemID>> => {
     const relevantSource = commonOnly ? commonSource() : primarySource()
-    const elementsFromSource = await getElementsFromSource(relevantSource)
     return selectElementIdsByTraversal(
       selectors,
-      elementsFromSource,
       relevantSource,
-      false,
-      validateDeterminedSelectors,
+      compact,
     )
   }
 
@@ -566,6 +578,7 @@ const buildMultiEnvSource = (
       const naclSource = env === undefined ? primarySource() : sources[env]
       return naclSource === undefined ? [] : naclSource.getSearchableNames()
     },
+    getStaticFileByHash,
   }
 }
 

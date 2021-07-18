@@ -184,13 +184,26 @@ const resolveElement = async (
   workingSetElements: Record<string, WorkingSetElement>,
   resolveRoot = false
 ): Promise<Element> => {
-  const referenceCloner: TransformFunc = ({ value }) => resolveMaybeExpression(
-    value,
-    elementsSource,
-    workingSetElements,
-    undefined,
-    resolveRoot
-  )
+  const clonedRefs: Record<string, ReferenceExpression> = {}
+
+  const referenceCloner: TransformFunc = ({ value }) => {
+    if (isReferenceExpression(value)) {
+      clonedRefs[value.elemID.getFullName()] = clonedRefs[value.elemID.getFullName()]
+        || _.clone(value)
+      return clonedRefs[value.elemID.getFullName()]
+    }
+    if (value instanceof TemplateExpression) {
+      return resolveTemplateExpression(
+        value,
+        elementsSource,
+        workingSetElements,
+        undefined,
+        resolveRoot
+      )
+    }
+    return value
+  }
+
   if (workingSetElements[elementToResolve.elemID.getFullName()]?.resolved) {
     return workingSetElements[elementToResolve.elemID.getFullName()].element
   }
@@ -201,9 +214,6 @@ const resolveElement = async (
   }
 
   const { element } = workingSetElements[elementToResolve.elemID.getFullName()]
-  if (workingSetElements[element.elemID.getFullName()] === undefined) {
-    workingSetElements[element.elemID.getFullName()] = { element }
-  }
   // Mark this as resolved before resolving to prevent cycles
   workingSetElements[element.elemID.getFullName()].resolved = true
 
@@ -280,6 +290,17 @@ const resolveElement = async (
     )
   }
 
+  await awu(Object.values(clonedRefs)).forEach(async ref => {
+    const resolvedRef = await resolveMaybeExpression(
+      ref,
+      elementsSource,
+      workingSetElements,
+      new Set(),
+      resolveRoot
+    )
+    ref.value = resolvedRef.value
+    ref.topLevelParent = resolvedRef.topLevelParent
+  })
   return element
 }
 

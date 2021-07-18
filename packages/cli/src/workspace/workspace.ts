@@ -206,6 +206,11 @@ export const updateStateOnly = async (ws: Workspace,
   try {
     log.info('applying %d changes to state only', changes.length)
     await logWorkspaceUpdates(ws, changes)
+    await ws.updateNaclFiles(
+      changes.map(change => change.change),
+      'default',
+      true
+    )
     await ws.flush()
     return true
   } catch (e) {
@@ -234,7 +239,7 @@ export const updateWorkspace = async ({
     await logWorkspaceUpdates(workspace, changes)
     numberOfAppliedChanges = await workspace.updateNaclFiles(
       changes.map(c => c.change),
-      mode
+      mode,
     )
     const { status, errors } = await validateWorkspace(workspace)
     const formattedErrors = await formatWorkspaceErrors(workspace, errors)
@@ -269,7 +274,13 @@ export const applyChangesToWorkspace = async ({
   cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
   const updatingWsEmitter = new StepEmitter<number>()
   applyProgress.emit('workspaceWillBeUpdated', updatingWsEmitter, changes.length, changesToApply.length)
-  const results = await updateWorkspace({ workspace, output, changes: changesToApply, mode, force })
+  const results = await updateWorkspace({
+    workspace,
+    output,
+    changes: changesToApply,
+    mode,
+    force,
+  })
 
   if (results.success) {
     updatingWsEmitter.emit('completed', results.numberOfAppliedChanges)

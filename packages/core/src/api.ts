@@ -45,7 +45,6 @@ import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_k
 import { createDiffChanges } from './core/diff'
 
 export { cleanWorkspace } from './core/clean'
-export { listUnresolvedReferences } from './core/list'
 
 const { awu } = collections.asynciterable
 const log = logger(module)

@@ -16,12 +16,8 @@
 import { Element } from '@salto-io/adapter-api'
 import { SourceMap, ParseError } from '../../parser'
 
-
-export type ParsedNaclFileDataKeys = 'errors' | 'timestamp' | 'referenced'
-
 export type ParsedNaclFileData = {
   errors: () => Promise<ParseError[] | undefined>
-  timestamp: () => Promise<number | undefined>
   referenced: () => Promise<string[] | undefined>
 }
 

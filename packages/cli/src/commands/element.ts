@@ -16,7 +16,6 @@
 import _ from 'lodash'
 import open from 'open'
 import { ElemID, isElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { listUnresolvedReferences } from '@salto-io/core'
 import { Workspace, ElementSelector, createElementSelectors } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -106,7 +105,7 @@ const moveElement = async (
 ): Promise<CliExitCode> => {
   try {
     const elemIds = await awu(
-      await workspace.getElementIdsBySelectors(elmSelectors, to === 'envs')
+      await workspace.getElementIdsBySelectors(elmSelectors, to === 'envs', true)
     ).toArray()
 
     if (!await shouldMoveElements(to, elemIds, cliOutput, force)) {
@@ -285,7 +284,7 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
 
   try {
     const elemIds = await awu(
-      await workspace.getElementIdsBySelectors(validSelectors)
+      await workspace.getElementIdsBySelectors(validSelectors, false, true)
     ).toArray()
     if (!await shouldCloneElements(toEnvs, elemIds, output, force ?? false)) {
       return CliExitCode.Success
@@ -362,7 +361,7 @@ export const listUnresolvedAction: WorkspaceCommandAction<ElementListUnresolvedA
   outputLine(emptyLine(), output)
 
   try {
-    const { found, missing } = await listUnresolvedReferences(workspace, completeFrom)
+    const { found, missing } = await workspace.listUnresolvedReferences(completeFrom)
 
     if (missing.length === 0 && found.length === 0) {
       outputLine(Prompts.LIST_UNRESOLVED_NONE(workspace.currentEnv()), output)

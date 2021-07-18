@@ -872,10 +872,14 @@ const toRecord = async (
   fieldAnnotationToFilterBy: string,
 ): Promise<SalesforceRecord> => {
   const instanceType = await instance.getType()
+  const valsWithNulls = {
+    ..._.mapValues(instanceType.fields, () => null),
+    ...instance.value,
+  }
   const filteredRecordValues = {
     [CUSTOM_OBJECT_ID_FIELD]: instance.value[CUSTOM_OBJECT_ID_FIELD],
     ..._.pickBy(
-      instance.value,
+      valsWithNulls,
       (_v, k) => (instanceType).fields[k]?.annotations[fieldAnnotationToFilterBy]
     ),
   }

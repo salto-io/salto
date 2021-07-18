@@ -334,15 +334,11 @@ describe.skip('validation tests', () => {
 })
 describe('select elements recursively', () => {
   const testElements = [mockInstance, mockType]
-  const testElementIds = testElements.map(element => element.elemID)
-  const testSelect = async (selectors: ElementSelector[],
-    compact = false, validateDeterminedSelectors = false): Promise<ElemID[]> =>
+  const testSelect = async (selectors: ElementSelector[], compact = false): Promise<ElemID[]> =>
     awu(await selectElementIdsByTraversal(
       selectors,
-      awu(testElementIds),
       createInMemoryElementSource(testElements),
       compact,
-      validateDeterminedSelectors
     )).toArray()
   it('finds subElements one and two layers deep', async () => {
     const selectors = createElementSelectors([
@@ -410,27 +406,16 @@ describe('select elements recursively', () => {
     const elementIds = await testSelect(selectors, true)
     expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.instance.mockInstance.bool')])
   })
-  it('should just return element id if validateDeterminedSelectors is false', async () => {
-    const selectors = createElementSelectors([
-      'mockAdapter.test.instance.mockInstance.thispropertydoesntexist',
-    ]).validSelectors
-    const elementIds = await awu((await selectElementIdsByTraversal(
-      selectors,
-      awu([mockInstance, mockType]).map(element => (element.elemID)),
-      createInMemoryElementSource([mockInstance, mockType])
-    ))).toArray()
-    expect(elementIds).toEqual([ElemID
-      .fromFullName('mockAdapter.test.instance.mockInstance.thispropertydoesntexist')])
-  })
-  it('should not return non-existant element id if validateDeterminedSelectors is true', async () => {
+  it('should not return non-existent element id', async () => {
     const selectors = createElementSelectors([
       'mockAdapter.test.instance.mockInstance.thispropertydoesntexist',
       'mockAdapter.test.field.strMap',
     ]).validSelectors
-    const elementIds = await awu(await selectElementIdsByTraversal(selectors,
-      awu([mockInstance, mockType]).map(element => element.elemID),
+    const elementIds = await awu(await selectElementIdsByTraversal(
+      selectors,
       createInMemoryElementSource([mockInstance, mockType]),
-      false, true)).toArray()
+      false,
+    )).toArray()
     expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
   })
 })

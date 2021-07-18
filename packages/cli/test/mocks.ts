@@ -363,6 +363,7 @@ export const mockWorkspace = ({
     getValue: mockFunction<Workspace['getValue']>(),
     getSearchableNames: mockFunction<Workspace['getSearchableNames']>(),
     getSearchableNamesOfEnv: mockFunction<Workspace['getSearchableNamesOfEnv']>(),
+    listUnresolvedReferences: mockFunction<Workspace['listUnresolvedReferences']>(),
   }
 }
 

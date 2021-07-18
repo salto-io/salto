@@ -238,9 +238,21 @@ export const routeOverride = async (
 export const routeAlign = async (
   change: DetailedChange,
   primarySource: NaclFilesSource,
+  commonSource: NaclFilesSource
 ): Promise<RoutedChanges> => {
   // All add changes to the current active env specific folder
+  // unless it is an unmergeable id, and the mergeableID is in common
   if (change.action === 'add') {
+    const topLevelID = change.id.createTopLevelParentID().parent
+    const commonTopLevel = await commonSource.get(topLevelID)
+    const primaryTopLevel = await primarySource.get(topLevelID)
+    const { mergeableID } = getMergeableParentID(
+      change.id,
+      [commonTopLevel, primaryTopLevel].filter(values.isDefined)
+    )
+    if (values.isDefined(await commonSource.get(mergeableID))) {
+      return {}
+    }
     return { primarySource: [change] }
   }
   // We drop the common projection of the change
@@ -499,7 +511,7 @@ export const routeChanges = async (
   const routedChanges = await awu(changes).map(c => {
     switch (mode) {
       case 'isolated': return routeIsolated(c, primarySource, commonSource, secondarySources)
-      case 'align': return routeAlign(c, primarySource)
+      case 'align': return routeAlign(c, primarySource, commonSource)
       case 'override': return routeOverride(c, primarySource, commonSource, secondarySources)
       default: return routeDefault(c, primarySource, commonSource, secondarySources)
     }

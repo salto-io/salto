@@ -98,34 +98,12 @@ const filterPlanItemsByRelevance = async (
     .toArray()
 }
 
-const verifyExactSelectorsExistance = async (
-  elementSelectors: ElementSelector[],
-  toElementsSrc: elementSource.ElementsSource,
-  fromElementsSrc: elementSource.ElementsSource,
-): Promise<void> => {
-  const selectorsToVerify = new Set<string>(elementSelectors
-    .map(sel => sel.origin).filter(sel => !sel.includes('*')))
-
-  const missingSelectors = await awu(selectorsToVerify.values())
-    .filter(async selector => {
-      const id = ElemID.fromFullName(selector)
-      return (await toElementsSrc.get(id) === undefined
-        && await fromElementsSrc.get(id) === undefined)
-    })
-    .toArray()
-  if (missingSelectors.length > 0) {
-    throw new Error(`ids not found: ${Array.from(missingSelectors)}`)
-  }
-}
-
 const getFilteredIds = async (
   elementSelectors: ElementSelector[],
   src: elementSource.ElementsSource
-): Promise<ElemID[]> => {
-  const elementIDs = awu(await src.list())
-  return awu(await selectElementIdsByTraversal(elementSelectors,
-    elementIDs, src, true)).toArray()
-}
+): Promise<ElemID[]> => (
+  awu(await selectElementIdsByTraversal(elementSelectors, src, true)).toArray()
+)
 
 export const createDiffChanges = async (
   toElementsSrc: elementSource.ElementsSource,
@@ -136,11 +114,11 @@ export const createDiffChanges = async (
   const plan = await getPlan({
     before: toElementsSrc,
     after: fromElementsSrc,
+    dependencyChangers: [],
     topLevelFilters,
   })
 
   if (elementSelectors.length > 0) {
-    await verifyExactSelectorsExistance(elementSelectors, toElementsSrc, fromElementsSrc)
     const toElementIdsFiltered = await getFilteredIds(elementSelectors, toElementsSrc)
     const fromElementIdsFiltered = await getFilteredIds(elementSelectors, fromElementsSrc)
     return filterPlanItemsByRelevance(

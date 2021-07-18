@@ -532,10 +532,11 @@ const buildNaclFilesSource = (
     const modifiedNaclFiles: NaclFile[] = []
     if (!ignoreFileChanges) {
       const cacheFilenames = await currentState.parsedNaclFiles.list()
-      const naclFilenames = await naclFilesStore.list()
+      const naclFilenames = new Set(await naclFilesStore.list())
       const fileNames = new Set()
       await awu(cacheFilenames).forEach(async filename => {
-        const naclFile = await naclFilesStore.get(filename) ?? { filename, buffer: '' }
+        const naclFile = (naclFilenames.has(filename) && await naclFilesStore.get(filename))
+          || { filename, buffer: '' }
         const validCache = await currentState.parsedNaclFiles.hasValid(cacheResultKey(naclFile))
         if (!validCache) {
           modifiedNaclFiles.push(naclFile)

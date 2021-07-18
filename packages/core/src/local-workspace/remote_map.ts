@@ -53,6 +53,16 @@ const getRemoteDbImpl = (): any => {
   return rocksdbImpl
 }
 
+const isDBLockErr = (error: Error): boolean => (
+  error.message.includes('LOCK: Resource temporarily unavailable')
+)
+
+class DBLockError extends Error {
+  constructor() {
+    super('Salto local database locked. Could another Salto process be open?')
+  }
+}
+
 const getTmpLocationForLoc = (location: string): string => path.join(location, TMP_DB_DIR)
 
 const readIteratorNext = (iterator: rocksdb
@@ -218,8 +228,18 @@ export const cleanDatabases = async (): Promise<void> => {
   await closeAllRemoteMaps()
   await awu(persistentDBs).forEach(async ([loc, connection]) => {
     const tmpDir = getTmpLocationForLoc(loc)
-    await awu(fs.readdirSync(tmpDir)).forEach(tmpLoc =>
-      promisify(getRemoteDbImpl().destroy.bind(getRemoteDbImpl(), path.join(tmpDir, tmpLoc)))())
+    await awu(fs.readdirSync(tmpDir)).forEach(async tmpLoc => {
+      try {
+        await promisify(
+          getRemoteDbImpl().destroy.bind(getRemoteDbImpl(), 
+          path.join(tmpDir, tmpLoc)))()
+      } catch (e) {
+        if (isDBLockErr(e)) {
+          throw new DBLockError()
+        }
+        throw e
+      }
+    })
     delete tmpDBConnections[loc]
     await closeConnection(loc, connection, true)
   })
@@ -529,8 +549,8 @@ remoteMap.RemoteMapCreator => {
           const readOnly = !persistent
           return await getOpenDBConnection(location, readOnly)
         } catch (e) {
-          if (e.message.includes('LOCK: Resource temporarily unavailable')) {
-            throw new Error('Salto local database locked. Could another Salto process be open?')
+          if (isDBLockErr(e)) {
+            throw new DBLockError()
           }
           throw e
         }

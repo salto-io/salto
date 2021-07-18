@@ -328,10 +328,15 @@ export const loadWorkspace = async (
       const completeStateOnlyChanges = async (
         partialStateChanges: ChangeSet<Change<Element>>
       ): Promise<ChangeSet<Change<Element>>> => {
+        const cachedHash = await stateToBuild.mergeManager.getHash(STATE_SOURCE_PREFIX + envName)
+        const stateHash = await state(envName).getHash()
         const cacheValid = initBuild
-          ? await stateToBuild.mergeManager.getHash(STATE_SOURCE_PREFIX + envName)
-            === await state(envName).getHash() && partialStateChanges.cacheValid
+          ? cachedHash === stateHash && partialStateChanges.cacheValid
           : true
+        if (!cacheValid) {
+          log.warn('Local state cache did not match local file system state. Resetting cache.')
+          log.debug(`Cached hash: ${cachedHash}, stateHash: ${stateHash}.`)
+        }
         // We identify a first nacl load when the state is empty, and all of the changes
         // are visible (which indicates a nacl load and not a first 'fetch' in which the
         // hidden changes won't be empty)

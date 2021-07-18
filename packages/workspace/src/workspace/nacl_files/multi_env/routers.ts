@@ -170,7 +170,7 @@ const addToSource = async ({
   valuesOverrides?: Record<string, Value>
 }): Promise<DetailedChange[]> => {
   const idsByParent = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
-  const fullChanges = _.flatten(await Promise.all(Object.values(idsByParent).map(async gids => {
+  const fullChanges = await awu(Object.values(idsByParent)).flatMap(async gids => {
     const topLevelGid = gids[0].createTopLevelParentID().parent
     const topLevelElement = valuesOverrides[topLevelGid.getFullName()]
       ?? await originSource.get(topLevelGid)
@@ -191,7 +191,7 @@ const addToSource = async ({
         })),
         topLevelElement
       )
-    if (before === undefined) {
+    if (!values.isDefined(before)) {
       return [createAddChange(wrappedElement, topLevelElement.elemID)]
     }
     if (overrideTargetElements) {
@@ -202,24 +202,25 @@ const addToSource = async ({
         topLevelElement as ChangeDataType,
       ))
     }
+
     const mergeResult = await mergeElements(awu([
       before,
       wrappedElement,
     ]))
-    if (await (awu(mergeResult.errors.values()).length()) > 0) {
+    if (!(await awu(mergeResult.errors.values()).flat().isEmpty())) {
       // If either the origin or the target source is the common folder, all elements should be
       // mergeable and we shouldn't see merge errors
       throw new Error(
         `Failed to add ${gids.map(id => id.getFullName())} - unmergeable element fragments.`
       )
     }
-    const after = (await awu(mergeResult.merged.values()).toArray())[0] as ChangeDataType
+    const after = await awu(mergeResult.merged.values()).peek() as ChangeDataType
     return detailedCompare(before, after, true)
-  })))
-  return (await Promise.all(fullChanges.map(change => separateChangeByFiles(
+  }).flatMap(change => separateChangeByFiles(
     change,
     change.action === 'remove' ? targetSource : originSource
-  )))).flat()
+  )).toArray()
+  return fullChanges
 }
 
 const createUpdateChanges = async (

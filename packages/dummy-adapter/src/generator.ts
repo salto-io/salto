@@ -296,8 +296,8 @@ export const generateElements = async (
     weightedRandomSelect(objByRank.filter(rank => rank.length > 0))
   ) || defaultObj
 
-  const generateValue = async (ref: TypeElement): Promise<Value> => {
-    if (staticFileIds.has(ref.elemID.getFullName())) {
+  const generateValue = async (ref: TypeElement, isHidden?: boolean): Promise<Value> => {
+    if (staticFileIds.has(ref.elemID.getFullName()) && isHidden !== true) {
       const content = generateFileContent()
       return new StaticFile({
         content,
@@ -305,7 +305,7 @@ export const generateElements = async (
         filepath: [getName(), 'txt'].join('.'),
       })
     }
-    if (referenceFields.has(ref.elemID.getFullName())) {
+    if (referenceFields.has(ref.elemID.getFullName()) && isHidden !== true) {
       return new ReferenceExpression(chooseObjIgnoreRank().elemID)
     }
     if (isPrimitiveType(ref)) {
@@ -317,19 +317,30 @@ export const generateElements = async (
       }
     }
     if (isObjectType(ref)) {
-      return mapValuesAsync(ref.fields, async field => generateValue(await field.getType()))
+      return mapValuesAsync(ref.fields, async field => generateValue(
+        await field.getType(),
+        isHidden
+        || (await field.getType()).annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
+        || ref.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
+      ))
     }
     if (isListType(ref)) {
       return Promise.all(
         arrayOf(getListLength(),
-          async () => generateValue(await ref.getInnerType()))
+          async () => generateValue(
+            await ref.getInnerType(),
+            isHidden || (await ref.getInnerType()).annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
+          ))
       )
     }
     if (isMapType(ref)) {
       return Object.fromEntries(
         (await Promise.all(
           arrayOf(getListLength(),
-            async () => generateValue(await ref.getInnerType()))
+            async () => generateValue(
+              await ref.getInnerType(),
+              isHidden || (await ref.getInnerType()).annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
+            ))
         ))
           .map(
             (val, index) => [`k${index}`, val]
@@ -341,14 +352,16 @@ export const generateElements = async (
   }
 
   const generateAnnotations = async (annoTypes: TypeMap, hidden = false): Promise<Values> => {
-    const anno = await mapValuesAsync(annoTypes, type => generateValue(type))
+    const anno = await mapValuesAsync(annoTypes, type => generateValue(type, hidden))
     if (hidden) {
       anno[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
     }
     return anno
   }
 
-  const generateFields = async (): Promise<Record<string, FieldDefinition>> => Object.fromEntries(
+  const generateFields = async (
+    inHiddenObj = false
+  ): Promise<Record<string, FieldDefinition>> => Object.fromEntries(
     await Promise.all(arrayOf(
       normalRandom(defaultParams.fieldsNumMean, defaultParams.fieldsNumStd) + 1,
       async () => {
@@ -359,7 +372,8 @@ export const generateElements = async (
           annotations: await generateAnnotations(
             // don't generate random annotations for builtin types, even if they
             // support additional annotation types
-            fieldType === BuiltinTypes.HIDDEN_STRING ? {} : await fieldType.getAnnotationTypes()
+            fieldType === BuiltinTypes.HIDDEN_STRING ? {} : await fieldType.getAnnotationTypes(),
+            inHiddenObj
           ),
         }]
       }
@@ -391,7 +405,8 @@ export const generateElements = async (
       })
       await updateElementRank(element)
       if (element.primitive === PrimitiveTypes.STRING
-        && Math.random() < 1) { // defaultParams.staticFileFreq) {
+        && Math.random() < 1
+      ) { // defaultParams.staticFileFreq) {
         staticFileIds.add(element.elemID.getFullName())
       } else if (Math.random() < defaultParams.staticFileFreq) {
         referenceFields.add(element.elemID.getFullName())
@@ -409,7 +424,7 @@ export const generateElements = async (
       )
       const objType = new ObjectType({
         elemID: new ElemID(DUMMY_ADAPTER, name),
-        fields: await generateFields(),
+        fields: await generateFields(true),
         annotationRefsOrTypes,
         annotations: await generateAnnotations(annotationRefsOrTypes, true),
         path: [DUMMY_ADAPTER, 'Types', name],
@@ -455,7 +470,10 @@ export const generateElements = async (
     const record = new InstanceElement(
       name,
       new ReferenceExpression(instanceType.elemID, instanceType),
-      await generateValue(instanceType),
+      await generateValue(
+        instanceType,
+        instanceType.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
+      ),
       [DUMMY_ADAPTER, 'Records', instanceType.elemID.name, name]
     )
     if (Math.random() < defaultParams.parentFreq) {

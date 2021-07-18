@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
   Value, isElement, isInstanceElement, toChange, isRemovalChange, getChangeElement,
-  ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { applyDetailedChanges, resolvePath, setPath } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
@@ -245,7 +245,10 @@ export const loadWorkspace = async (
                     staticFile.filepath,
                     staticFile.encoding,
                     staticFile.hash
-                  ) ?? staticFile
+                  ) ?? new StaticFile({
+                    filepath: staticFile.filepath,
+                    hash: '',
+                  })
                 ),
                 persistent,
               })
@@ -472,13 +475,10 @@ export const loadWorkspace = async (
     return naclFilesSource
   }
 
-  const elements = async (env?: string): Promise<ElementsSource> => {
-    // eslint-disable-next-line no-console
-    console.log(env)
-    // eslint-disable-next-line no-console
-    console.log(Object.keys(await (await getWorkspaceState()).states))
-    return (await getWorkspaceState()).states[env ?? currentEnv()].merged
-  }
+  const elements = async (
+    env?: string
+  ): Promise<ElementsSource> => (await getWorkspaceState())
+    .states[env ?? currentEnv()].merged
 
   const getStateOnlyChanges = async (
     hiddenChanges: DetailedChange[],

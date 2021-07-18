@@ -258,6 +258,10 @@ export const savedsearch = new ObjectType({
     alert_recipients: {
       refType: createRefToElmWithValue(new ListType(savedSearchAlertRecipients)),
     },
+    [constants.LAST_FETCH_TIME]: {
+      refType: BuiltinTypes.STRING,
+      annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedSearchElemID.name],
 })

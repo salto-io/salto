@@ -82,7 +82,7 @@ export class ReferenceExpression {
   constructor(
     public readonly elemID: ElemID,
     private resValue?: Value,
-    public readonly topLevelParent?: Element
+    public topLevelParent?: Element
   ) {}
 
   /**
@@ -104,6 +104,10 @@ export class ReferenceExpression {
     return (this.resValue instanceof ReferenceExpression)
       ? this.resValue.value
       : this.resValue
+  }
+
+  set value(value: Value) {
+    this.resValue = value
   }
 
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<Value> {

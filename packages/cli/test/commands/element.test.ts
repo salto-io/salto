@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import open from 'open'
-import * as core from '@salto-io/core'
 import { ElemID, ObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { errors } from '@salto-io/workspace'
+import { errors, UnresolvedElemIDs } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { CliExitCode } from '../../src/types'
 import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction, openAction } from '../../src/commands/element'
@@ -27,7 +26,7 @@ import { formatTargetEnvRequired } from '../../src/formatter'
 
 const { awu } = collections.asynciterable
 
-const mockedList: typeof core.listUnresolvedReferences = (_workspace, completeFromEnv) => (
+const mockedList = async (completeFromEnv?: string): Promise<UnresolvedElemIDs> => (
   completeFromEnv !== undefined
     ? Promise.resolve({
       found: [new ElemID('salesforce', 'aaa'), new ElemID('salesforce', 'bbb', 'instance', 'ccc')],
@@ -39,10 +38,6 @@ const mockedList: typeof core.listUnresolvedReferences = (_workspace, completeFr
     })
 )
 jest.mock('open')
-jest.mock('@salto-io/core', () => ({
-  ...jest.requireActual<{}>('@salto-io/core'),
-  listUnresolvedReferences: jest.fn().mockImplementation((_ws, env) => mockedList(_ws, env)),
-}))
 describe('Element command group', () => {
   describe('Clone command', () => {
     const cloneName = 'clone'
@@ -76,6 +71,7 @@ describe('Element command group', () => {
         output = cliArgs.output
         const workspace = mocks.mockWorkspace({})
         workspace.getElementIdsBySelectors.mockResolvedValue(awu([new ElemID('salto', 'Account')]))
+        workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.flush.mockRejectedValue(new Error('Oy Vey Zmir'))
         result = await cloneAction({
           ...mocks.mockCliCommandArgs(cloneName, cliArgs),
@@ -156,6 +152,7 @@ describe('Element command group', () => {
 
         const cliArgs = mocks.mockCliArgs()
         workspace = mocks.mockWorkspace({})
+        workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.getElementIdsBySelectors.mockResolvedValue(awu([selector]))
         result = await cloneAction({
           ...mocks.mockCliCommandArgs(cloneName, cliArgs),
@@ -187,6 +184,7 @@ describe('Element command group', () => {
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         workspace = mocks.mockWorkspace({})
+        workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.getElementIdsBySelectors.mockResolvedValue(awu([selector]))
         result = await cloneAction({
           ...mocks.mockCliCommandArgs(cloneName, cliArgs),
@@ -375,6 +373,7 @@ Cloning the specified elements to inactive.
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         workspace = mocks.mockWorkspace({})
+        workspace.listUnresolvedReferences.mockImplementation(mockedList)
         result = await moveToEnvsAction({
           ...mocks.mockCliCommandArgs(moveToEnvsName, cliArgs),
           input: {
@@ -409,6 +408,7 @@ Cloning the specified elements to inactive.
         jest.spyOn(callbacks, 'getUserBooleanInput').mockImplementationOnce(() => Promise.resolve(false))
         const cliArgs = mocks.mockCliArgs()
         workspace = mocks.mockWorkspace({})
+        workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.getElementIdsBySelectors = jest.fn().mockResolvedValue([selector])
         result = await moveToEnvsAction({
           ...mocks.mockCliCommandArgs(moveToEnvsName, cliArgs),
@@ -438,6 +438,7 @@ Cloning the specified elements to inactive.
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         workspace = mocks.mockWorkspace({})
+        workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.getElementIdsBySelectors = jest.fn().mockResolvedValue([selector])
         result = await moveToEnvsAction({
           ...mocks.mockCliCommandArgs(moveToEnvsName, cliArgs),
@@ -480,6 +481,7 @@ Moving the specified elements to envs.
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         const workspace = mocks.mockWorkspace({})
+        workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.getElementIdsBySelectors.mockResolvedValue(awu([new ElemID('salto', 'Account')]))
         workspace.flush.mockRejectedValue(new Error('Oy Vey Zmir'))
         result = await moveToCommonAction({
@@ -510,6 +512,7 @@ Moving the specified elements to envs.
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         workspace = mocks.mockWorkspace({})
+        workspace.listUnresolvedReferences.mockImplementation(mockedList)
         result = await moveToCommonAction({
           ...mocks.mockCliCommandArgs(moveToCommonName, cliArgs),
           input: {
@@ -545,6 +548,7 @@ Moving the specified elements to envs.
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         workspace = mocks.mockWorkspace({})
+        workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.getElementIdsBySelectors.mockResolvedValue(awu([selector]))
         result = await moveToCommonAction({
           ...mocks.mockCliCommandArgs(moveToCommonName, cliArgs),
@@ -581,6 +585,7 @@ Moving the specified elements to envs.
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         workspace = mocks.mockWorkspace({})
+        workspace.listUnresolvedReferences.mockImplementation(mockedList)
         workspace.getElementIdsBySelectors.mockResolvedValue(awu([selector]))
         result = await moveToCommonAction({
           ...mocks.mockCliCommandArgs(moveToCommonName, cliArgs),
@@ -617,8 +622,6 @@ Moving the specified elements to common.
 
   describe('list-unresolved command', () => {
     const listUnresolvedName = 'list-unresolved'
-    const mockListUnresolved = core.listUnresolvedReferences as jest.MockedFunction<
-      typeof core.listUnresolvedReferences>
 
     describe('success - all unresolved references are found in complete-from', () => {
       let result: CliExitCode
@@ -631,6 +634,7 @@ Moving the specified elements to common.
         userBooleanInput = jest.spyOn(callbacks, 'getUserBooleanInput')
         userBooleanInput.mockRestore()
         workspace = mocks.mockWorkspace({})
+        workspace.listUnresolvedReferences.mockImplementation(mockedList)
         // Should ignore unresolved reference errors
         workspace.errors.mockResolvedValue(mocks.mockErrors([
           new errors.UnresolvedReferenceValidationError({
@@ -661,7 +665,7 @@ Moving the specified elements to common.
       })
 
       it('should call listUnresolvedReferences', () => {
-        expect(core.listUnresolvedReferences).toHaveBeenCalledWith(workspace, 'inactive')
+        expect(workspace.listUnresolvedReferences).toHaveBeenCalledWith('inactive')
       })
 
       it('should print found to console', () => {
@@ -679,7 +683,7 @@ Moving the specified elements to common.
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         workspace = mocks.mockWorkspace({})
-        mockListUnresolved.mockImplementationOnce(() => Promise.resolve({
+        workspace.listUnresolvedReferences.mockImplementationOnce(() => Promise.resolve({
           found: [],
           missing: [],
         }))
@@ -695,7 +699,7 @@ Moving the specified elements to common.
         expect(result).toBe(CliExitCode.Success)
       })
       it('should call listUnresolvedReferences', () => {
-        expect(core.listUnresolvedReferences).toHaveBeenCalledWith(workspace, undefined)
+        expect(workspace.listUnresolvedReferences).toHaveBeenCalledWith(undefined)
       })
 
       it('should print list to console', () => {
@@ -711,7 +715,7 @@ Moving the specified elements to common.
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         workspace = mocks.mockWorkspace({})
-        mockListUnresolved.mockImplementationOnce(() => Promise.resolve({
+        workspace.listUnresolvedReferences.mockImplementationOnce(() => Promise.resolve({
           found: [new ElemID('salesforce', 'aaa'), new ElemID('salesforce', 'bbb', 'instance', 'ccc')],
           missing: [new ElemID('salesforce', 'fail')],
         }))
@@ -728,7 +732,7 @@ Moving the specified elements to common.
         expect(result).toBe(CliExitCode.Success)
       })
       it('should call listUnresolvedReferences', () => {
-        expect(core.listUnresolvedReferences).toHaveBeenCalledWith(workspace, 'inactive')
+        expect(workspace.listUnresolvedReferences).toHaveBeenCalledWith('inactive')
       })
 
       it('should print list to console', () => {
@@ -745,7 +749,7 @@ Moving the specified elements to common.
         const cliArgs = mocks.mockCliArgs()
         output = cliArgs.output
         workspace = mocks.mockWorkspace({})
-        mockListUnresolved.mockImplementationOnce(() => {
+        workspace.listUnresolvedReferences.mockImplementationOnce(() => {
           throw new Error('oh no')
         })
 
@@ -762,7 +766,7 @@ Moving the specified elements to common.
         expect(result).toBe(CliExitCode.AppError)
       })
       it('should call listUnresolvedReferences', () => {
-        expect(core.listUnresolvedReferences).toHaveBeenCalledWith(workspace, 'inactive')
+        expect(workspace.listUnresolvedReferences).toHaveBeenCalledWith('inactive')
       })
 
       it('should print the error', () => {

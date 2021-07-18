@@ -19,10 +19,12 @@ import { DataManagementConfig } from '../types'
 
 const { makeArray } = collections.array
 
+const defaultIgnoreReferenceTo = ['User']
 
 export type DataManagement = {
   isObjectMatch: (name: string) => boolean
   isReferenceAllowed: (name: string) => boolean
+  shouldIgnoreReference: (name: string) => boolean
   getObjectIdsFields: (name: string) => string[]
   showReadOnlyValues?: boolean
 }
@@ -34,6 +36,9 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
 
     isReferenceAllowed: name => params.allowReferenceTo?.some(re => new RegExp(`^${re}$`).test(name))
       ?? false,
+
+    shouldIgnoreReference: name =>
+      (params.ignoreReferenceTo ?? defaultIgnoreReferenceTo).includes(name),
 
     getObjectIdsFields: name => {
       const matchedOverride = params.saltoIDSettings.overrides

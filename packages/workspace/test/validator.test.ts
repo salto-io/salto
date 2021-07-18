@@ -55,9 +55,9 @@ describe('Elements validation', () => {
     },
   })
 
-  const hasSimpleTypeElemID = new ElemID('netsuite', 'hasSimple')
-  const hasSimpleTypeField = new ObjectType({
-    elemID: hasSimpleTypeElemID,
+  const withSimpleTypeElemID = new ElemID('netsuite', 'hasSimple')
+  const withSimpleTypeField = new ObjectType({
+    elemID: withSimpleTypeElemID,
     fields: {
       simple: { refType: createRefToElmWithValue(simpleType) },
     },
@@ -680,7 +680,7 @@ describe('Elements validation', () => {
         it('should not return validation errors when the value is a legal reference', async () => {
           const refInst = new InstanceElement(
             'instWithRef',
-            hasSimpleTypeField,
+            withSimpleTypeField,
             {
               simple: new ReferenceExpression(varInst.elemID, varInst),
             }
@@ -690,17 +690,17 @@ describe('Elements validation', () => {
             createInMemoryElementSource([
               refInst,
               simpleType,
-              hasSimpleTypeField,
+              withSimpleTypeField,
               varInst,
-              ...await getFieldsAndAnnoTypes(hasSimpleTypeField),
+              ...await getFieldsAndAnnoTypes(withSimpleTypeField),
             ])
           )).toHaveLength(0)
         })
 
-        it('should not return validation errors even when the value is a ilegal reference', async () => {
+        it('should not return validation errors even when the value is an ilegal reference', async () => {
           const refInst = new InstanceElement(
             'instWithRef',
-            hasSimpleTypeField,
+            withSimpleTypeField,
             {
               simple: new ReferenceExpression(illegalValueVarInst.elemID, illegalValueVarInst),
             }
@@ -710,9 +710,9 @@ describe('Elements validation', () => {
             createInMemoryElementSource([
               refInst,
               simpleType,
-              hasSimpleTypeField,
+              withSimpleTypeField,
               varInst,
-              ...await getFieldsAndAnnoTypes(hasSimpleTypeField),
+              ...await getFieldsAndAnnoTypes(withSimpleTypeField),
             ])
           )).toHaveLength(0)
         })

@@ -35,6 +35,8 @@ const assignSavedSearchValues = async (instance:InstanceElement,
   if (oldInstance?.value.definition !== undefined) {
     if (_.isEqual(await parseDefinition(oldInstance.value.definition),
       await parseDefinition(instance.value.definition))) {
+      // In case the parsed definitions are equal that mean there is no reason
+      // to change the definition string and create a change in the file.
       instance.value.definition = oldInstance.value.definition
     }
   }

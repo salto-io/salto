@@ -3,7 +3,7 @@ version: 2.1
 orbs:
   win: circleci/windows@2.2.0
   aws-s3: circleci/aws-s3@1.0.15
-  aws-cli: circleci/aws-cli@1.3.0
+  aws-cli: circleci/aws-cli@2.0.3
   coveralls: coveralls/coveralls@1.0.6
 
 commands:
@@ -31,7 +31,7 @@ commands:
 
     steps:
       - aws-cli/install:
-          version: "2"
+          version: 2.2.2
       - aws-cli/setup:
           aws-region: AWS_DEFAULT_REGION
       - set_s3_pkg_urls
@@ -148,7 +148,7 @@ jobs:
       - set_s3_pkg_urls
 
       - aws-cli/install:
-          version: "2"
+          version: 2.2.2
       - aws-cli/setup:
           aws-region: AWS_DEFAULT_REGION
 

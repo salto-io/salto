@@ -60,7 +60,8 @@ export const recoverInvalidItemDefinition = (context: ParseContext): void => {
   // No need to consume if this is a CCURLY as it will be handled by the caller
 }
 
-export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID, isAnnotationBlock?: boolean): ConsumerReturnType<{
+// (context: ParseContext, idPrefix: ElemID, isAnnotationBlock?: boolean): ConsumerReturnType
+export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID): ConsumerReturnType<{
     attrs: Values
     fields: Record<string, {refType: ReferenceExpression; annotations? : Values}>
     annotationRefTypes: ReferenceMap
@@ -75,9 +76,7 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID, isAnno
   while (context.lexer.peek() && context.lexer.peek()?.type !== TOKEN_TYPES.CCURLY) {
     const defTokens = consumeWords(context)
     if (isAttrDef(defTokens.value, context)) {
-      if (isAnnotationBlock) {
-        
-      }
+      // if (isAnnotationBlock) { }
       // Consume Attr!
       const key = defTokens.value[0]
       const attrID = attrIDPrefix.createNestedID(key)
@@ -96,7 +95,8 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID, isAnno
       registerRange(context, attrID, { start: defTokens.range.start, end: consumedValue.range.end })
     } else if (isAnnotationBlockDef(idPrefix, defTokens.value, context)) {
       const annoBlockID = idPrefix.createNestedID('annotation')
-      const consumedBlock = consumeBlockBody(context, annoBlockID, true)
+      const consumedBlock = consumeBlockBody(context, annoBlockID)
+      // const consumedBlock = consumeBlockBody(context, annoBlockID, true)
       if (!_.isEmpty(consumedBlock.value.attrs)) {
         context.errors.push(invalidAttrDefinitionInAnnotationBlock({
           ...consumedBlock.range,

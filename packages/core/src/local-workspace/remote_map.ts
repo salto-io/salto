@@ -231,8 +231,9 @@ export const cleanDatabases = async (): Promise<void> => {
     await awu(fs.readdirSync(tmpDir)).forEach(async tmpLoc => {
       try {
         await promisify(
-          getRemoteDbImpl().destroy.bind(getRemoteDbImpl(), 
-          path.join(tmpDir, tmpLoc)))()
+          getRemoteDbImpl().destroy.bind(getRemoteDbImpl(),
+            path.join(tmpDir, tmpLoc))
+        )()
       } catch (e) {
         if (isDBLockErr(e)) {
           throw new DBLockError()

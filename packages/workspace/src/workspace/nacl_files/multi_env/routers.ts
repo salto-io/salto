@@ -174,7 +174,11 @@ const addToSource = async ({
     const topLevelGid = gids[0].createTopLevelParentID().parent
     const topLevelElement = valuesOverrides[topLevelGid.getFullName()]
       ?? await originSource.get(topLevelGid)
-    if (topLevelElement === undefined) {
+    const before = await targetSource.get(topLevelGid)
+    if (!values.isDefined(topLevelElement)) {
+      if (values.isDefined(before)) {
+        return []
+      }
       throw new Error(`ElemID ${gids[0].getFullName()} does not exist in origin`)
     }
     const topLevelIds = gids.filter(id => id.isTopLevel())
@@ -187,7 +191,6 @@ const addToSource = async ({
         })),
         topLevelElement
       )
-    const before = await targetSource.get(topLevelElement.elemID)
     if (before === undefined) {
       return [createAddChange(wrappedElement, topLevelElement.elemID)]
     }

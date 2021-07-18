@@ -15,20 +15,25 @@
 */
 import wu from 'wu'
 import {
-  Change, ChangeGroupIdFunction, ChangeId, getChangeElement, isAdditionChange, isInstanceElement,
+  Change, ChangeGroupIdFunction, getChangeElement, isAdditionChange, isInstanceElement,
   isModificationChange,
   isRemovalChange,
 } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import * as suiteAppFileCabinet from './suiteapp_file_cabinet'
-import { customTypes, fileCabinetTypes, isFileCabinetInstance } from './types'
+import { customTypes, fileCabinetTypes, isDataObjectType, isFileCabinetInstance } from './types'
+
+const { awu } = collections.asynciterable
 
 export const SDF_CHANGE_GROUP_ID = 'SDF'
 export const SUITEAPP_CREATING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Creating Files'
 export const SUITEAPP_UPDATING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Updating Files'
 export const SUITEAPP_DELETING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Deleting Files'
+export const SUITEAPP_CREATING_RECORDS_GROUP_ID = 'Salto SuiteApp - Records - Creating Records'
+export const SUITEAPP_UPDATING_RECORDS_GROUP_ID = 'Salto SuiteApp - Records - Updating Records'
+export const SUITEAPP_DELETING_RECORDS_GROUP_ID = 'Salto SuiteApp - Records - Deleting Records'
 
-export const SUITEAPP_GROUPS = [
+export const SUITEAPP_FILE_CABINET_GROUPS = [
   SUITEAPP_CREATING_FILES_GROUP_ID,
   SUITEAPP_UPDATING_FILES_GROUP_ID,
   SUITEAPP_DELETING_FILES_GROUP_ID,
@@ -77,20 +82,44 @@ const getChangeGroupIdsWithSuiteApp: ChangeGroupIdFunction = async changes => {
         && !suiteAppFileCabinet.isChangeDeployable(change))
   }
 
+  const isSuiteAppRecordChange = async (change: Change): Promise<boolean> => {
+    const changeElement = getChangeElement(change)
+    return isInstanceElement(changeElement)
+    && isDataObjectType(await changeElement.getType())
+  }
+
+  const isSuiteAppRecordAddition = async (change: Change): Promise<boolean> =>
+    await isSuiteAppRecordChange(change)
+    && isAdditionChange(change)
+
+  const isSuiteAppRecordModification = async (change: Change): Promise<boolean> =>
+    await isSuiteAppRecordChange(change)
+    && isModificationChange(change)
+
+  const isSuiteAppRecordDeletion = async (change: Change): Promise<boolean> =>
+    await isSuiteAppRecordChange(change)
+    && isRemovalChange(change)
+
   const conditionsToGroups = [
     { condition: isSuiteAppFileCabinetAddition, group: SUITEAPP_CREATING_FILES_GROUP_ID },
     { condition: isSuiteAppFileCabinetModification, group: SUITEAPP_UPDATING_FILES_GROUP_ID },
     { condition: isSuiteAppFileCabinetDeletion, group: SUITEAPP_DELETING_FILES_GROUP_ID },
+    { condition: isSuiteAppRecordAddition, group: SUITEAPP_CREATING_RECORDS_GROUP_ID },
+    { condition: isSuiteAppRecordModification, group: SUITEAPP_UPDATING_RECORDS_GROUP_ID },
+    { condition: isSuiteAppRecordDeletion, group: SUITEAPP_DELETING_RECORDS_GROUP_ID },
     { condition: isSdfChange, group: SDF_CHANGE_GROUP_ID },
   ]
 
   return new Map(
-    wu(changes.entries())
-      .map(([id, change]): undefined | [ChangeId, string] => {
-        const group = conditionsToGroups.find(({ condition }) => condition(change))?.group
+    await awu(changes.entries())
+      .map(async ([id, change]): Promise<[collections.set.SetId, string] | undefined> => {
+        const group = (await awu(conditionsToGroups).find(
+          ({ condition }) => condition(change)
+        ))?.group
         return group !== undefined ? [id, group] : undefined
       })
       .filter(values.isDefined)
+      .toArray()
   )
 }
 

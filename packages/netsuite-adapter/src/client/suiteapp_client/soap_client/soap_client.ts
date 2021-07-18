@@ -19,6 +19,9 @@ import crypto from 'crypto'
 import path from 'path'
 import * as soap from 'soap'
 import _ from 'lodash'
+import { InstanceElement, isListType, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import uuidv4 from 'uuid/v4'
 import { SuiteAppCredentials, toUrlAccountId } from '../../credentials'
 import { CONSUMER_KEY, CONSUMER_SECRET } from '../constants'
 import { ReadFileError } from '../errors'
@@ -27,6 +30,10 @@ import { DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGe
 import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, SEARCH_RESPONSE_SCHEMA } from './schemas'
 import { InvalidSuiteAppCredentialsError } from '../../types'
 import { INTERNAL_ID_TO_TYPES, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING } from '../../../data_elements/types'
+
+const { awu } = collections.asynciterable
+const { makeArray } = collections.array
+
 
 const log = logger(module)
 
@@ -309,6 +316,94 @@ export default class SoapClient {
       log.debug(`Finished getting all records of ${type}`)
       return records
     }))).flat()
+  }
+
+  private async convertToSoapRecord(
+    values: Record<string, unknown> & { attributes?: Record<string, unknown> },
+    type: ObjectType,
+    isTopLevel = true,
+    isRecordRef = false,
+  ): Promise<Record<string, unknown>> {
+    const typeName = isRecordRef ? 'RecordRef' : (type.elemID.name[0].toUpperCase() + type.elemID.name.slice(1))
+    // Namespace alias must start with a character (and not a number)
+    const namespaceAlias = `pre${uuidv4()}`
+
+    return {
+      attributes: {
+        ...values.attributes ?? {},
+        [`xmlns:${namespaceAlias}`]: await this.getTypeNamespace(typeName),
+        ...isTopLevel ? { 'xsi:type': `${namespaceAlias}:${typeName}` } : {},
+
+      },
+      ...Object.fromEntries(await awu(Object.entries(values))
+        .filter(([key]) => key !== 'attributes')
+        .map(async ([key, value]) => {
+          const updateKey = !key.includes(':') ? `${namespaceAlias}:${key}` : key
+          const fieldType = await type.fields[key]?.getType()
+
+          if (isObjectType(fieldType) && _.isPlainObject(value)) {
+            return [
+              updateKey,
+              await this.convertToSoapRecord(
+                value as Record<string, unknown>,
+                fieldType,
+                false,
+                Boolean(type.fields[key]?.annotations.isReference)
+              ),
+            ]
+          }
+
+          if (isListType(fieldType)) {
+            const innerType = await fieldType.getInnerType()
+            if (isObjectType(innerType)) {
+              return [updateKey, await awu(makeArray(value)).map(
+                async val => this.convertToSoapRecord(
+                  val as Record<string, unknown>,
+                  innerType,
+                  false
+                )
+              ).toArray()]
+            }
+          }
+
+          return [updateKey, value]
+        }).toArray()),
+    }
+  }
+
+  public async updateInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+    const body = {
+      attributes: {
+        'xmlns:platformCore': `urn:core_${NETSUITE_VERSION}.platform.webservices.netsuite.com`,
+      },
+      record: await awu(instances).map(
+        async instance => this.convertToSoapRecord(instance.value, await instance.getType())
+      ).toArray(),
+    }
+    const response = await this.sendSoapRequest('updateList', body)
+    if (!this.ajv.validate<DeployListResults>(
+      DEPLOY_LIST_SCHEMA,
+      response
+    )) {
+      log.error(`Got invalid response from updateList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`Got invalid response from updateList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    }
+
+    if (!isDeployListSuccess(response)) {
+      const { code, message } = response.writeResponseList.status.statusDetail[0]
+      log.error(`Failed to updateList: error code: ${code}, error message: ${message}`)
+      throw new Error(`Failed to updateList: error code: ${code}, error message: ${message}`)
+    }
+
+    return response.writeResponseList.writeResponse.map((writeResponse, index) => {
+      if (!isWriteResponseSuccess(writeResponse)) {
+        const { code, message } = writeResponse.status.statusDetail[0]
+
+        log.error(`SOAP api call to update record instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
+        return Error(`SOAP api call to update record instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
+      }
+      return parseInt(writeResponse.baseRef.attributes.internalId, 10)
+    })
   }
 
   private async search(

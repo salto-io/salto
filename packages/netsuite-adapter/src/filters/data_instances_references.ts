@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, isInstanceElement, isListType, ReferenceExpression, TypeElement, Value } from '@salto-io/adapter-api'
-import { TransformFunc, transformValues } from '@salto-io/adapter-utils'
+import { ElemID, isInstanceElement, isListType, isReferenceExpression, ReferenceExpression, TypeElement, Value } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { isDataObjectType } from '../types'
 import { FilterCreator, FilterWith } from '../filter'
@@ -85,6 +85,46 @@ const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): Filte
         }) ?? instance.value
         instance.value = values
       })
+  },
+
+  preDeploy: async changes => {
+    await awu(changes)
+      .forEach(async change =>
+        applyFunctionToChangeData(
+          change,
+          async element => {
+            if (!isInstanceElement(element) || !isDataObjectType(await element.getType())) {
+              return element
+            }
+
+            element.value = await transformValues({
+              values: element.value,
+              type: await element.getType(),
+              strict: false,
+              pathID: element.elemID,
+              transformFunc: async ({ value, field }) => {
+                if (isReferenceExpression(value)) {
+                  return { internalId: (await value.getResolvedValue()).value.internalId }
+                }
+                if (Array.isArray(value) && field?.annotations.isReference) {
+                  return {
+                    'platformCore:recordRef': await awu(value).map(
+                      async val => (isReferenceExpression(val)
+                        ? {
+                          attributes: {
+                            internalId: (await val.getResolvedValue()).value.internalId,
+                          },
+                        } : val)
+                    ).toArray(),
+                  }
+                }
+                return value
+              },
+            }) ?? element.value
+
+            return element
+          }
+        ))
   },
 })
 

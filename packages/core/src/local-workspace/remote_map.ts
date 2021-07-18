@@ -59,7 +59,8 @@ const isDBLockErr = (error: Error): boolean => (
 
 class DBLockError extends Error {
   constructor() {
-    super('Salto local database locked. Could another Salto process be open?')
+    super('Salto local database locked. Could another Salto process '
+    + 'or a process using Salto be open?')
   }
 }
 

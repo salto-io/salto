@@ -136,7 +136,7 @@ const buildMultiEnvSource = (
       .filter(values.isDefined)
     if (sourcesFiles.length > 1
       && !_.every(sourcesFiles, sf => sf.hash === sourcesFiles[0].hash)) {
-      log.warn(`Found two different hashes for static file ${filePath}`)
+      log.warn(`Found different hashes for static file ${filePath}`)
     }
     return sourcesFiles[0]
   }

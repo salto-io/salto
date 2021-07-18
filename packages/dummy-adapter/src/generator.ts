@@ -297,7 +297,7 @@ export const generateElements = async (
   ) || defaultObj
 
   const generateValue = async (ref: TypeElement, isHidden?: boolean): Promise<Value> => {
-    if (staticFileIds.has(ref.elemID.getFullName()) && isHidden !== true) {
+    if (staticFileIds.has(ref.elemID.getFullName()) && !isHidden) {
       const content = generateFileContent()
       return new StaticFile({
         content,
@@ -305,7 +305,7 @@ export const generateElements = async (
         filepath: [getName(), 'txt'].join('.'),
       })
     }
-    if (referenceFields.has(ref.elemID.getFullName()) && isHidden !== true) {
+    if (referenceFields.has(ref.elemID.getFullName()) && !isHidden) {
       return new ReferenceExpression(chooseObjIgnoreRank().elemID)
     }
     if (isPrimitiveType(ref)) {

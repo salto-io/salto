@@ -13,12 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeElement, ElemID, Value, DetailedChange, ChangeDataType, Element, isObjectType, isPrimitiveType, isInstanceElement, isField } from '@salto-io/adapter-api'
+import { getChangeElement, ElemID, Value, DetailedChange, ChangeDataType, Element, isObjectType, isPrimitiveType, isInstanceElement, isField, isAdditionChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import path from 'path'
 import { promises, values } from '@salto-io/lowerdash'
 import { resolvePath, filterByID, detailedCompare, applyFunctionToChangeData } from '@salto-io/adapter-utils'
-import { AdditionDiff } from '@salto-io/dag'
 import {
   projectChange, projectElementOrValueToEnv, createAddChange, createRemoveChange,
 } from './projections'
@@ -227,12 +226,12 @@ const createUpdateChanges = async (
         && change.id.nestingLevel > 0
         && !(await targetSource.get(change.id.createParentID())))
   )
-  const [fullNestedAdditions, partialyNestedAdditions] = await promises.array.partition(
+  const [fullyNestedAdditions, partiallyNestedAdditions] = await promises.array.partition(
     nestedAdditions,
     async change => !(await targetSource.get(change.id.createTopLevelParentID().parent))
   )
 
-  const modifiedFullyNestedAdditions = await Promise.all(_(fullNestedAdditions)
+  const modifiedFullyNestedAdditions = await Promise.all(_(fullyNestedAdditions)
     .groupBy(addition => addition.id.createTopLevelParentID().parent.getFullName())
     .entries()
     .map(async ([parentID, elementAdditions]) => {
@@ -245,14 +244,13 @@ const createUpdateChanges = async (
     })
     .value())
 
-  const modifiedPartiallyNestedAdditions = await Promise.all(_(partialyNestedAdditions)
+  const modifiedPartiallyNestedAdditions = await Promise.all(_(partiallyNestedAdditions)
     .groupBy(addition => addition.id.createTopLevelParentID().parent.getFullName())
     .entries()
     .map(async ([parentID, elementAdditions]) => {
-      const valuesOverrides = elementAdditions.reduce((acc, addition) => {
-        acc[addition.id.getFullName()] = (addition as AdditionDiff<Value>).data.after
-        return acc
-      }, {} as Record<string, Value>)
+      const valuesOverrides = Object.fromEntries(elementAdditions
+        .filter(isAdditionChange)
+        .map(addition => addition.data.after))
       valuesOverrides[parentID] = await commonSource.get(ElemID.fromFullName(parentID))
       return addToSource({
         ids: elementAdditions.map(c => c.id),

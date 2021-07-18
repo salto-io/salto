@@ -281,8 +281,7 @@ describe('diff', () => {
           .sort()).toEqual([nestedID, simpleId].sort())
       })
 
-      // eslint-disable-next-line
-      it.skip('includes field inner annotations when the field is selected', async () => {
+      it('includes field inner annotations when the field is selected', async () => {
         const newSinglePathObjMerged = singlePathObjMerged.clone() as ObjectType
         newSinglePathObjMerged.fields.simple.annotations.description = 'new description'
         const simpleFieldId = newSinglePathObjMerged.elemID.createNestedID('field', 'simple')

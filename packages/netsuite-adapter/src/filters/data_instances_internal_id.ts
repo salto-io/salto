@@ -35,7 +35,7 @@ const getSubInstanceName = (path: ElemID, internalId: string): string => {
  * (since the internal id is hidden, and we don't support hidden values in lists,
  * the objects in the list need to be extracted to new instances).
  */
-const filterCreator = (): FilterWith<'onFetch'> => ({
+const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   onFetch: async elements => {
     const newInstancesMap: Record<string, InstanceElement> = {}
 

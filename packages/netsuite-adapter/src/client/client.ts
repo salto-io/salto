@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, DeployResult, getChangeElement, InstanceElement, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+import { AccountId, Change, DeployResult, getChangeElement, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
 import { WSDL } from 'soap'
+import _ from 'lodash'
 import { NetsuiteQuery } from '../query'
 import { Credentials, toUrlAccountId } from './credentials'
 import SdfClient from './sdf_client'
@@ -157,13 +158,16 @@ export default class NetsuiteClient {
       return { errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`)], appliedChanges: [] }
     }
 
-    const elements = changes.map(getChangeElement).filter(isInstanceElement)
-    const updateResults = await this.suiteAppClient.updateInstances(elements)
-    const appliedChanges = updateResults
-      .map((result, index) => (typeof result === 'number' ? changes[index] : undefined))
+    const instanceChanges = changes.filter(isInstanceChange)
+    const instances = instanceChanges.map(getChangeElement)
+    const updateResults = await this.suiteAppClient.updateInstances(instances)
+    const results = updateResults
+      .map((result, index) => (typeof result === 'number' ? instanceChanges[index] : result))
       .filter(values.isDefined)
 
-    const errors = updateResults.filter(res => res instanceof Error) as Error[]
+    const [errors, appliedChanges] = _.partition(
+      results, res => res instanceof Error
+    ) as [Error[], Change[]]
 
     return { errors, appliedChanges }
   }

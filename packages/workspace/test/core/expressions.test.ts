@@ -467,6 +467,30 @@ describe('Test Salto Expressions', () => {
       const resolvedRef = resovledElems[0].value.test as ReferenceExpression
       expect(resolvedRef.topLevelParent).not.toBeDefined()
     })
+
+    it('should resolve instance with references to itself', async () => {
+      const type = new ObjectType({ elemID: new ElemID('adapter', 'type') })
+      const instance = new InstanceElement(
+        'instance',
+        type,
+        {
+          a: {
+            ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'b')),
+          },
+          b: {
+            ref: new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'instance', 'c')),
+          },
+          c: 2,
+        },
+      )
+      const [resolvedInstance] = await resolve([instance], createInMemoryElementSource([
+        instance,
+        type,
+        ...await getFieldsAndAnnoTypes(type),
+      ])) as [InstanceElement]
+      expect(resolvedInstance.value.b.ref.value).toBe(2)
+      expect(resolvedInstance.value.a.ref.value.ref.value).toBe(2)
+    })
   })
 
   describe('Template Expression', () => {

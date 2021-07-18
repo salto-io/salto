@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
+import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange, PrimitiveType, PrimitiveTypes, isField, getChangeElement, Change } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
 import { ModificationDiff, RemovalDiff, AdditionDiff } from '@salto-io/dag'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
@@ -162,6 +162,25 @@ const commonObjWithList = new ObjectType({
   },
 })
 
+const partiallyCommonObjID = new ElemID('salto', 'partiallyCommon')
+const partiallyCommonObjEnv = new ObjectType({
+  elemID: partiallyCommonObjID,
+  fields: {
+    field: {
+      type: BuiltinTypes.STRING,
+    },
+  },
+})
+
+const partiallyCommonObjCommon = new ObjectType({
+  elemID: partiallyCommonObjID,
+  fields: {
+    commonField: {
+      type: BuiltinTypes.STRING,
+    },
+  },
+})
+
 const commonSource = createMockNaclFileSource(
   [
     commonObj,
@@ -171,6 +190,7 @@ const commonSource = createMockNaclFileSource(
     commonOnlyObject,
     commonCommonOnlyFieldObject,
     commonObjWithList,
+    partiallyCommonObjCommon,
   ],
   {
     'test/path.nacl': [commonObj, commonInstance, commonOnlyObject],
@@ -181,12 +201,23 @@ const commonSource = createMockNaclFileSource(
     'test/inst2.nacl': [splitInstance2],
     'test/onlyfields.nacl': [commonCommonOnlyFieldObject],
     'test/withlists.nacl': [commonObjWithList],
+    'test/partially.nacl': [partiallyCommonObjCommon],
   }
 )
 
 const envOnlyID = new ElemID('salto', 'envOnly')
 const envOnlyObj = new ObjectType({ elemID: envOnlyID })
-const envSource = createMockNaclFileSource([envObj, envOnlyObj, envCommonOnlyFieldObject])
+const envSource = createMockNaclFileSource([
+  envObj,
+  envOnlyObj,
+  envCommonOnlyFieldObject,
+  partiallyCommonObjEnv,
+], {
+  'test:/envObj.nacl': [envObj],
+  'test:/envOnlyObj.nacl': [envOnlyObj],
+  'test:/envCommonOnlyFieldObject.nacl': [envCommonOnlyFieldObject],
+  'test:/partiallyCommonObjEnv.nacl': [partiallyCommonObjEnv],
+})
 const secEnv = createMockNaclFileSource([envObj, envCommonOnlyFieldObject])
 
 describe('default fetch routing', () => {
@@ -411,7 +442,7 @@ describe('default fetch routing', () => {
 })
 
 describe('align fetch routing', () => {
-  it('should route add changes to primary', async () => {
+  it('should route add changes to primary source', async () => {
     const change: DetailedChange = {
       action: 'add',
       data: { after: newObj },
@@ -433,6 +464,21 @@ describe('align fetch routing', () => {
     const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'align')
     expect(routedChanges.primarySource).toHaveLength(0)
     expect(routedChanges.commonSource).toHaveLength(0)
+    expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
+  })
+
+  it('should route add changes to primary source and wrap if direct parent is missing', async () => {
+    const change: DetailedChange = {
+      action: 'add',
+      data: { after: 'TEST' },
+      id: partiallyCommonObjCommon.fields.commonField.elemID.createNestedID('test'),
+    }
+    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'align')
+    expect(routedChanges.primarySource).toHaveLength(1)
+    expect(routedChanges.commonSource).toHaveLength(0)
+    const primaryChange = routedChanges.primarySource && routedChanges.primarySource[0]
+    expect(primaryChange?.id).toEqual(partiallyCommonObjCommon.fields.commonField.elemID)
+    expect(isField(getChangeElement(primaryChange as Change<Field>))).toBeTruthy()
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
   })
 

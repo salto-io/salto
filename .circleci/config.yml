@@ -225,6 +225,12 @@ jobs:
     steps:
       - set_s3_pkg_urls
 
+      - aws-cli/install:
+          version: 2.2.2
+
+      - aws-cli/setup:
+          aws-region: AWS_DEFAULT_REGION
+
       - aws-s3/copy:
           from: ${S3_PKG_HASH_PREFIX}/cli/linux/salto
           to: .

@@ -147,9 +147,9 @@ export const fetchDefault: FetchParams = {
       name: '.*',
     }],
     fileCabinet: [
-      '^/SuiteScripts/.*',
-      '^/Templates/.*',
-      '^/SuiteBundles/.*',
+      '^/SuiteScripts(/.*)?',
+      '^/Templates(/.*)?',
+      '^/SuiteBundles(/.*)?',
     ],
   },
   [EXCLUDE]: {

@@ -26,7 +26,7 @@ jest.mock('../../src/saved_search_parser', () => ({
 
 describe('move environment saved search change validator', () => {
   describe('onAdd', () => {
-    it('should not have change error when moving an instance with correct definition', async () => {
+    it('should have warning change error when moving an instance with correct definition', async () => {
       const instance = new InstanceElement('test', customTypes[SAVED_SEARCH])
       instance.value.definition = 'string'
       instance.value.test = 'test'

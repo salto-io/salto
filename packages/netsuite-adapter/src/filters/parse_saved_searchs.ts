@@ -22,6 +22,11 @@ import { savedsearch, savedsearchInnerTypes } from '../types/custom_types/parsed
 import { savedsearch as oldSavedSearch } from '../types/custom_types/savedsearch'
 import { parseDefinition } from '../saved_search_parser'
 
+
+const cloneSavedSearch = (instance: InstanceElement): InstanceElement =>
+  new InstanceElement(instance.elemID.name, savedsearch, instance.value,
+    instance.path, instance.annotations)
+
 const assignSavedSearchValues = async (instance:InstanceElement,
   oldInstance: InstanceElement | undefined): Promise<void> => {
   Object.assign(instance.value, await parseDefinition(instance.value.definition))
@@ -42,16 +47,20 @@ const removeValuesFromInstance = (instance:InstanceElement): void => {
 const filterCreator: FilterCreator = ({ elementsSource }) => ({
   onFetch: async elements => {
     _.remove(elements, e => isObjectType(e) && e.elemID.name === SAVED_SEARCH)
+    const instances = _.remove(elements, e => isInstanceElement(e)
+     && e.elemID.typeName === SAVED_SEARCH)
     elements.push(savedsearch)
     elements.push(...savedsearchInnerTypes)
-    await Promise.all(
-      elements
+    const parsedInstances = await Promise.all(
+      instances
         .filter(isInstanceElement)
-        .filter(e => e.elemID.typeName === SAVED_SEARCH)
+        .map(cloneSavedSearch)
         .map(async (instance: InstanceElement) => {
           await assignSavedSearchValues(instance, await elementsSource.get(instance.elemID))
+          return instance
         })
     )
+    elements.push(...parsedInstances)
   },
   preDeploy: async changes => {
     changes

@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/netsuite-adapter",
-  "version": "0.2.13",
+  "version": "0.3.0",
   "license": "Apache-2.0",
   "description": "Salto Netsuite adapter",
   "repository": {
@@ -30,14 +30,14 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.2.13",
-    "@salto-io/adapter-components": "0.2.13",
-    "@salto-io/adapter-utils": "0.2.13",
-    "@salto-io/e2e-credentials-store": "0.2.13",
-    "@salto-io/file": "0.2.13",
-    "@salto-io/logging": "0.2.13",
-    "@salto-io/lowerdash": "0.2.13",
-    "@salto-io/suitecloud-cli": "1.1.2-salto-8",
+    "@salto-io/adapter-api": "0.3.0",
+    "@salto-io/adapter-components": "0.3.0",
+    "@salto-io/adapter-utils": "0.3.0",
+    "@salto-io/e2e-credentials-store": "0.3.0",
+    "@salto-io/file": "0.3.0",
+    "@salto-io/logging": "0.3.0",
+    "@salto-io/lowerdash": "0.3.0",
+    "@salto-io/suitecloud-cli": "1.1.2-salto-9",
     "ajv": "^7.1.1",
     "async-lock": "^1.2.4",
     "axios": "^0.21.1",
@@ -52,7 +52,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/e2e-credentials-store": "0.2.13",
+    "@salto-io/e2e-credentials-store": "0.3.0",
     "@types/async-lock": "^1.1.2",
     "@types/he": "^1.1.1",
     "@types/jest": "^26.0.20",

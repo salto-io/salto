@@ -671,7 +671,7 @@ describe('soap_client', () => {
         instance2,
       ])).toEqual([
         1,
-        new Error(`SOAP api call to update record instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
+        new Error(`SOAP api call updateList for instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
       ])
     })
 
@@ -764,7 +764,7 @@ describe('soap_client', () => {
         instance2,
       ])).toEqual([
         1,
-        new Error(`SOAP api call to add record instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
+        new Error(`SOAP api call addList for instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
       ])
     })
 
@@ -865,7 +865,7 @@ describe('soap_client', () => {
         instance2,
       ])).toEqual([
         1,
-        new Error(`SOAP api call to delete record instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
+        new Error(`SOAP api call deleteList for instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
       ])
     })
 

@@ -29,7 +29,7 @@ import { SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { GetCustomObjectsResult, ImportFileCabinetResult } from './types'
 import { getAllReferencedInstances, getRequiredReferencedInstances } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
-import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
+import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
 import { DeployResult } from '../types'
 
 const { awu } = collections.asynciterable
@@ -186,7 +186,11 @@ export default class NetsuiteClient {
       return this.suiteAppClient.addInstances(elements)
     }
 
-    return this.suiteAppClient?.deleteInstances(elements)
+    if (groupID.startsWith(SUITEAPP_DELETING_RECORDS_GROUP_ID)) {
+      return this.suiteAppClient.deleteInstances(elements)
+    }
+
+    throw new Error(`Cannot deploy group ID: ${groupID}`)
   }
 
   public async runSuiteQL(query: string):

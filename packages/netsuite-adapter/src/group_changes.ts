@@ -87,15 +87,14 @@ const getChangesChunks = async (
   await awu(changes)
     .filter(change => isInstanceChange(change.change))
     .forEach(async change => {
-      const dependencies = await getRecordDependencies(
-        getChangeElement(change.change as Change<InstanceElement>)
-      )
+      const instance = getChangeElement(change.change) as InstanceElement
+      const dependencies = await getRecordDependencies(instance)
       if (dependencies.some(dependency => iteratedIds.has(dependency))) {
         changesChunks.push([])
         iteratedIds.clear()
       }
       changesChunks[changesChunks.length - 1].push(change.id)
-      iteratedIds.add(getChangeElement(change.change).elemID.getFullName())
+      iteratedIds.add(instance.elemID.getFullName())
     })
 
   return changesChunks

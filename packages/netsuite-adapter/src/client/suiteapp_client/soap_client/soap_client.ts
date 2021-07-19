@@ -371,6 +371,33 @@ export default class SoapClient {
     }
   }
 
+  private async runDeployAction(instances: InstanceElement[], body: Record<string, unknown>, action: 'updateList' | 'addList' | 'deleteList'): Promise<(number | Error)[]> {
+    const response = await this.sendSoapRequest(action, body)
+    if (!this.ajv.validate<DeployListResults>(
+      DEPLOY_LIST_SCHEMA,
+      response
+    )) {
+      log.error(`Got invalid response from ${action} request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`Got invalid response from ${action} request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    }
+
+    if (!isDeployListSuccess(response)) {
+      const { code, message } = response.writeResponseList.status.statusDetail[0]
+      log.error(`Failed to ${action}: error code: ${code}, error message: ${message}`)
+      throw new Error(`Failed to ${action}: error code: ${code}, error message: ${message}`)
+    }
+
+    return response.writeResponseList.writeResponse.map((writeResponse, index) => {
+      if (!isWriteResponseSuccess(writeResponse)) {
+        const { code, message } = writeResponse.status.statusDetail[0]
+
+        log.error(`SOAP api call ${action} for instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
+        return Error(`SOAP api call ${action} for instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
+      }
+      return parseInt(writeResponse.baseRef.attributes.internalId, 10)
+    })
+  }
+
   public async updateInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     const body = {
       attributes: {
@@ -380,30 +407,7 @@ export default class SoapClient {
         async instance => this.convertToSoapRecord(instance.value, await instance.getType())
       ).toArray(),
     }
-    const response = await this.sendSoapRequest('updateList', body)
-    if (!this.ajv.validate<DeployListResults>(
-      DEPLOY_LIST_SCHEMA,
-      response
-    )) {
-      log.error(`Got invalid response from updateList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from updateList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-    }
-
-    if (!isDeployListSuccess(response)) {
-      const { code, message } = response.writeResponseList.status.statusDetail[0]
-      log.error(`Failed to updateList: error code: ${code}, error message: ${message}`)
-      throw new Error(`Failed to updateList: error code: ${code}, error message: ${message}`)
-    }
-
-    return response.writeResponseList.writeResponse.map((writeResponse, index) => {
-      if (!isWriteResponseSuccess(writeResponse)) {
-        const { code, message } = writeResponse.status.statusDetail[0]
-
-        log.error(`SOAP api call to update record instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
-        return Error(`SOAP api call to update record instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
-      }
-      return parseInt(writeResponse.baseRef.attributes.internalId, 10)
-    })
+    return this.runDeployAction(instances, body, 'updateList')
   }
 
   public async addInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
@@ -415,31 +419,7 @@ export default class SoapClient {
         async instance => this.convertToSoapRecord(instance.value, await instance.getType())
       ).toArray(),
     }
-
-    const response = await this.sendSoapRequest('addList', body)
-    if (!this.ajv.validate<DeployListResults>(
-      DEPLOY_LIST_SCHEMA,
-      response
-    )) {
-      log.error(`Got invalid response from addList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from addList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-    }
-
-    if (!isDeployListSuccess(response)) {
-      const { code, message } = response.writeResponseList.status.statusDetail[0]
-      log.error(`Failed to addList: error code: ${code}, error message: ${message}`)
-      throw new Error(`Failed to addList: error code: ${code}, error message: ${message}`)
-    }
-
-    return response.writeResponseList.writeResponse.map((writeResponse, index) => {
-      if (!isWriteResponseSuccess(writeResponse)) {
-        const { code, message } = writeResponse.status.statusDetail[0]
-
-        log.error(`SOAP api call to add record instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
-        return Error(`SOAP api call to add record instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
-      }
-      return parseInt(writeResponse.baseRef.attributes.internalId, 10)
-    })
+    return this.runDeployAction(instances, body, 'addList')
   }
 
   public async deleteInstances(instances: InstanceElement[]):
@@ -451,32 +431,8 @@ export default class SoapClient {
       })),
     }
 
-    const response = await this.sendSoapRequest('deleteList', body)
-    if (!this.ajv.validate<DeployListResults>(
-      DEPLOY_LIST_SCHEMA,
-      response
-    )) {
-      log.error(`Got invalid response from deleteList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from deleteList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-    }
-
-    if (!isDeployListSuccess(response)) {
-      const { code, message } = response.writeResponseList.status.statusDetail[0]
-
-      log.error(`Failed to deleteList: error code: ${code}, error message: ${message}`)
-      throw new Error(`Failed to deleteList: error code: ${code}, error message: ${message}`)
-    }
-
-    return response.writeResponseList.writeResponse.map((writeResponse, index) => {
-      if (!isWriteResponseSuccess(writeResponse)) {
-        const { code, message } = writeResponse.status.statusDetail[0]
-        log.error(`SOAP api call to delete record instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
-        return Error(`SOAP api call to delete record instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
-      }
-      return parseInt(writeResponse.baseRef.attributes.internalId, 10)
-    })
+    return this.runDeployAction(instances, body, 'deleteList')
   }
-
 
   private async search(
     type: string,

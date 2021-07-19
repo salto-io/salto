@@ -324,11 +324,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
     )
 
     const appliedChanges = changeGroup.changes
+      .filter(change => ids.includes(getChangeElement(change).elemID.getFullName()))
       .map(change => ({
         action: change.action,
         data: _.mapValues(change.data, (element: Element) => element.clone()),
       } as Change))
-      .filter(change => ids.includes(getChangeElement(change).elemID.getFullName()))
 
     await this.filtersRunner.onDeploy(appliedChanges, deployResult)
 

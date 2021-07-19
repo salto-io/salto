@@ -14,12 +14,11 @@
 * limitations under the License.
 */
 import { getChangeElement, isAdditionChange, isInstanceElement } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { FilterWith } from '../filter'
 
 const filterCreator = (): FilterWith<'onDeploy'> => ({
   onDeploy: async (changes, { elemIdToInternalId = {} }) => {
-    _(changes)
+    changes
       .filter(isAdditionChange)
       .map(getChangeElement)
       .filter(isInstanceElement)

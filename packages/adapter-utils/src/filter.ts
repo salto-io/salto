@@ -36,7 +36,7 @@ export type FilterWith<
   T extends FilterResult | void,
   // eslint-disable-next-line no-use-before-define
   M extends keyof Filter<T, DeployResult>,
-  DeployResult=void,
+  DeployResult = void,
 > = types.HasMember<Filter<T, DeployResult>, M>
 
 export type FilterCreator<

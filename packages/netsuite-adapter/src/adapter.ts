@@ -48,6 +48,7 @@ import rolesInternalId from './filters/roles_internal_id'
 import dataInstancesAttributes from './filters/data_instances_attributes'
 import dataInstancesNullFields from './filters/data_instances_null_fields'
 import dataInstancesDiff from './filters/data_instances_diff'
+import addInternalId from './filters/add_internal_ids'
 import { Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_USE_CHANGES_DETECTION } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
@@ -124,6 +125,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       removeUnsupportedTypes,
       dataInstancesReferences,
       dataInstancesInternalId,
+      addInternalId,
     ],
     typesToSkip = [
       INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard
@@ -303,29 +305,36 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
 
   public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    const changes = changeGroup.changes
+    const changesToDeploy = changeGroup.changes
       .map(change => ({
         action: change.action,
         data: _.mapValues(change.data, (element: Element) => element.clone()),
       })) as Change[]
 
-    await this.filtersRunner.preDeploy(changes)
+    await this.filtersRunner.preDeploy(changesToDeploy)
 
-    const { errors, appliedChanges: appliedChangesBeforeRestore } = await this.client.deploy(
-      changes,
+    const deployResult = await this.client.deploy(
+      changesToDeploy,
       changeGroup.groupID,
       this.deployReferencedElements ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
     )
 
-    const ids = appliedChangesBeforeRestore.map(
+    const ids = deployResult.appliedChanges.map(
       change => getChangeElement(change).elemID.getFullName()
     )
 
+    const appliedChanges = changeGroup.changes
+      .filter(change => ids.includes(getChangeElement(change).elemID.getFullName()))
+      .map(change => ({
+        action: change.action,
+        data: _.mapValues(change.data, (element: Element) => element.clone()),
+      } as Change))
+
+    await this.filtersRunner.onDeploy(appliedChanges, deployResult)
+
     return {
-      errors,
-      appliedChanges: changeGroup.changes.filter(
-        change => ids.includes(getChangeElement(change).elemID.getFullName())
-      ),
+      errors: deployResult.errors,
+      appliedChanges,
     }
     // const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
     // const customizationInfosToDeploy = await awu(

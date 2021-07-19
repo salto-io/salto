@@ -18,7 +18,7 @@ import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import SdfClient from '../../src/client/sdf_client'
 import * as suiteAppFileCabinet from '../../src/suiteapp_file_cabinet'
 import NetsuiteClient from '../../src/client/client'
-import { SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../../src/group_changes'
+import { SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../../src/group_changes'
 import { NETSUITE } from '../../src/constants'
 
 describe('NetsuiteClient', () => {
@@ -27,9 +27,13 @@ describe('NetsuiteClient', () => {
   } as unknown as SdfClient
 
   const updateInstancesMock = jest.fn()
+  const addInstancesMock = jest.fn()
+  const deleteInstancesMock = jest.fn()
 
   const suiteAppClient = {
     updateInstances: updateInstancesMock,
+    addInstances: addInstancesMock,
+    deleteInstances: deleteInstancesMock,
   } as unknown as SuiteAppClient
 
   const getPathToIdMapMock = jest.fn()
@@ -80,6 +84,7 @@ describe('NetsuiteClient', () => {
       )
       expect(results).toEqual({
         errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_RECORDS_GROUP_ID}" cannot be deployed`)],
+        elemIdToInternalId: {},
         appliedChanges: [],
       })
     })
@@ -91,6 +96,36 @@ describe('NetsuiteClient', () => {
         false,
       )
       expect(results.appliedChanges).toEqual([change1])
+      expect(results.errors).toEqual([new Error('error')])
+      expect(results.elemIdToInternalId).toEqual({ [instance1.elemID.getFullName()]: '1' })
+    })
+
+    it('should use addInstances for data instances creations', async () => {
+      addInstancesMock.mockResolvedValue([1, new Error('error')])
+      const results = await client.deploy(
+        [
+          toChange({ after: instance1 }),
+          toChange({ after: instance2 }),
+        ],
+        SUITEAPP_CREATING_RECORDS_GROUP_ID,
+        false,
+      )
+      expect(results.appliedChanges).toEqual([toChange({ after: instance1 })])
+      expect(results.errors).toEqual([new Error('error')])
+      expect(results.elemIdToInternalId).toEqual({ [instance1.elemID.getFullName()]: '1' })
+    })
+
+    it('should use deleteInstances for data instances deletions', async () => {
+      deleteInstancesMock.mockResolvedValue([1, new Error('error')])
+      const results = await client.deploy(
+        [
+          toChange({ before: instance1 }),
+          toChange({ before: instance2 }),
+        ],
+        SUITEAPP_DELETING_RECORDS_GROUP_ID,
+        false,
+      )
+      expect(results.appliedChanges).toEqual([toChange({ before: instance1 })])
       expect(results.errors).toEqual([new Error('error')])
     })
   })

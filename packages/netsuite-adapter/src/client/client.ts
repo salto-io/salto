@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, DeployResult, getChangeElement, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeElement, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
@@ -29,7 +29,8 @@ import { SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { GetCustomObjectsResult, ImportFileCabinetResult } from './types'
 import { getAllReferencedInstances, getRequiredReferencedInstances } from '../reference_dependencies'
 import { getLookUpName, toCustomizationInfo } from '../transformer'
-import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
+import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
+import { DeployResult } from '../types'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -150,18 +151,12 @@ export default class NetsuiteClient {
   }
 
   private async deployRecords(changes: Change[], groupID: string): Promise<DeployResult> {
-    if (groupID !== SUITEAPP_UPDATING_RECORDS_GROUP_ID) {
-      throw new Error(`Group id "${groupID}" is not supported`)
-    }
-
-    if (this.suiteAppClient === undefined) {
-      return { errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`)], appliedChanges: [] }
-    }
-
     const instanceChanges = changes.filter(isInstanceChange)
     const instances = instanceChanges.map(getChangeElement)
-    const updateResults = await this.suiteAppClient.updateInstances(instances)
-    const results = updateResults
+
+    const deployResults = await this.runDeployRecordsOperation(instances, groupID)
+
+    const results = deployResults
       .map((result, index) => (typeof result === 'number' ? instanceChanges[index] : result))
       .filter(values.isDefined)
 
@@ -169,7 +164,33 @@ export default class NetsuiteClient {
       results, res => res instanceof Error
     ) as [Error[], Change[]]
 
-    return { errors, appliedChanges }
+    const elemIdToInternalId = Object.fromEntries(deployResults
+      .map((result, index) => (typeof result === 'number' ? [instances[index].elemID.getFullName(), result.toString()] : undefined))
+      .filter(values.isDefined))
+
+
+    return { errors, appliedChanges, elemIdToInternalId }
+  }
+
+  private async runDeployRecordsOperation(elements: InstanceElement[], groupID: string):
+  Promise<(number | Error)[]> {
+    if (this.suiteAppClient === undefined) {
+      return [new Error(`Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`)]
+    }
+
+    if (groupID.startsWith(SUITEAPP_UPDATING_RECORDS_GROUP_ID)) {
+      return this.suiteAppClient.updateInstances(elements)
+    }
+
+    if (groupID.startsWith(SUITEAPP_CREATING_RECORDS_GROUP_ID)) {
+      return this.suiteAppClient.addInstances(elements)
+    }
+
+    if (groupID.startsWith(SUITEAPP_DELETING_RECORDS_GROUP_ID)) {
+      return this.suiteAppClient.deleteInstances(elements)
+    }
+
+    throw new Error(`Cannot deploy group ID: ${groupID}`)
   }
 
   public async runSuiteQL(query: string):

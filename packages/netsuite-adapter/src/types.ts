@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, isInstanceElement, ObjectType, TypeElement, ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { DeployResult as AdapterApiDeployResult, Element, InstanceElement, isInstanceElement, ObjectType, TypeElement, ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { file, folder } from './types/file_cabinet_types'
@@ -285,4 +285,8 @@ export const typesElementSourceWrapper = (
     has: async elemID => typesByKey[elemID.getFullName()] !== undefined,
     list: async () => awu(Object.keys(typesByKey).map(ElemID.fromFullName)),
   }
+}
+
+export type DeployResult = AdapterApiDeployResult & {
+  elemIdToInternalId?: Record<string, string>
 }

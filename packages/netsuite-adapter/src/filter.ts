@@ -17,10 +17,11 @@ import { filter } from '@salto-io/adapter-utils'
 import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import NetsuiteClient from './client/client'
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
+import { DeployResult } from './types'
 
-export type Filter = filter.Filter<void>
+export type Filter = filter.Filter<void, DeployResult>
 
-export type FilterWith<M extends keyof Filter> = filter.FilterWith<void, M>
+export type FilterWith<M extends keyof Filter> = filter.FilterWith<void, M, DeployResult>
 
 export type FilterOpts = {
   client: NetsuiteClient
@@ -31,7 +32,8 @@ export type FilterOpts = {
 
 export type FilterCreator = filter.FilterCreator<
   void,
-  FilterOpts
+  FilterOpts,
+  DeployResult
 >
 
 export const filtersRunner = (

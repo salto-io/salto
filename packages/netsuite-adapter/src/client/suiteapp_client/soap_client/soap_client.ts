@@ -162,12 +162,12 @@ export default class SoapClient {
       : SoapClient.convertToFolderRecord(fileCabinetInstance)
   }
 
-  private static convertToDeletionFileCabinetRecord(fileCabinetInstance:
-    { id: number; type: 'file' | 'folder' }): object {
+  private static convertToDeletionRecord(instance:
+    { id: number; type: string }): object {
     return {
       attributes: {
-        type: fileCabinetInstance.type,
-        internalId: fileCabinetInstance.id,
+        type: instance.type,
+        internalId: instance.id,
         'xsi:type': 'q1:RecordRef',
         'xmlns:q1': `urn:core_${NETSUITE_VERSION}.platform.webservices.netsuite.com`,
       },
@@ -209,7 +209,7 @@ export default class SoapClient {
   public async deleteFileCabinetInstances(instances: ExistingFileCabinetInstanceDetails[]):
   Promise<(number | Error)[]> {
     const body = {
-      baseRef: instances.map(SoapClient.convertToDeletionFileCabinetRecord),
+      baseRef: instances.map(SoapClient.convertToDeletionRecord),
     }
 
     const response = await this.sendSoapRequest('deleteList', body)
@@ -371,6 +371,33 @@ export default class SoapClient {
     }
   }
 
+  private async runDeployAction(instances: InstanceElement[], body: Record<string, unknown>, action: 'updateList' | 'addList' | 'deleteList'): Promise<(number | Error)[]> {
+    const response = await this.sendSoapRequest(action, body)
+    if (!this.ajv.validate<DeployListResults>(
+      DEPLOY_LIST_SCHEMA,
+      response
+    )) {
+      log.error(`Got invalid response from ${action} request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+      throw new Error(`Got invalid response from ${action} request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    }
+
+    if (!isDeployListSuccess(response)) {
+      const { code, message } = response.writeResponseList.status.statusDetail[0]
+      log.error(`Failed to ${action}: error code: ${code}, error message: ${message}`)
+      throw new Error(`Failed to ${action}: error code: ${code}, error message: ${message}`)
+    }
+
+    return response.writeResponseList.writeResponse.map((writeResponse, index) => {
+      if (!isWriteResponseSuccess(writeResponse)) {
+        const { code, message } = writeResponse.status.statusDetail[0]
+
+        log.error(`SOAP api call ${action} for instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
+        return Error(`SOAP api call ${action} for instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
+      }
+      return parseInt(writeResponse.baseRef.attributes.internalId, 10)
+    })
+  }
+
   public async updateInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     const body = {
       attributes: {
@@ -380,30 +407,31 @@ export default class SoapClient {
         async instance => this.convertToSoapRecord(instance.value, await instance.getType())
       ).toArray(),
     }
-    const response = await this.sendSoapRequest('updateList', body)
-    if (!this.ajv.validate<DeployListResults>(
-      DEPLOY_LIST_SCHEMA,
-      response
-    )) {
-      log.error(`Got invalid response from updateList request with in SOAP api. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
-      throw new Error(`Got invalid response from updateList request. Errors: ${this.ajv.errorsText()}. Response: ${JSON.stringify(response, undefined, 2)}`)
+    return this.runDeployAction(instances, body, 'updateList')
+  }
+
+  public async addInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+    const body = {
+      attributes: {
+        'xmlns:platformCore': `urn:core_${NETSUITE_VERSION}.platform.webservices.netsuite.com`,
+      },
+      record: await awu(instances).map(
+        async instance => this.convertToSoapRecord(instance.value, await instance.getType())
+      ).toArray(),
+    }
+    return this.runDeployAction(instances, body, 'addList')
+  }
+
+  public async deleteInstances(instances: InstanceElement[]):
+  Promise<(number | Error)[]> {
+    const body = {
+      baseRef: instances.map(instance => SoapClient.convertToDeletionRecord({
+        id: instance.value.attributes.internalId,
+        type: instance.elemID.typeName[0].toLowerCase() + instance.elemID.typeName.slice(1),
+      })),
     }
 
-    if (!isDeployListSuccess(response)) {
-      const { code, message } = response.writeResponseList.status.statusDetail[0]
-      log.error(`Failed to updateList: error code: ${code}, error message: ${message}`)
-      throw new Error(`Failed to updateList: error code: ${code}, error message: ${message}`)
-    }
-
-    return response.writeResponseList.writeResponse.map((writeResponse, index) => {
-      if (!isWriteResponseSuccess(writeResponse)) {
-        const { code, message } = writeResponse.status.statusDetail[0]
-
-        log.error(`SOAP api call to update record instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
-        return Error(`SOAP api call to update record instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
-      }
-      return parseInt(writeResponse.baseRef.attributes.internalId, 10)
-    })
+    return this.runDeployAction(instances, body, 'deleteList')
   }
 
   private async search(

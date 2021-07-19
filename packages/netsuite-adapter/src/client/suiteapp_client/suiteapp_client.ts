@@ -324,4 +324,12 @@ export default class SuiteAppClient {
   public async updateInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     return this.soapClient.updateInstances(instances)
   }
+
+  public async addInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+    return this.soapClient.addInstances(instances)
+  }
+
+  public async deleteInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+    return this.soapClient.deleteInstances(instances)
+  }
 }

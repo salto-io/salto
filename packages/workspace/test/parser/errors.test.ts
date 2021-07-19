@@ -462,6 +462,37 @@ describe('parsing errors', () => {
         expect(Object.keys(element.annotationRefTypes)).toEqual(['my'])
       })
     })
+    describe('when there annotation values inside annotation type definitions', () => {
+      const nacl = `
+      type baby.you {
+          annotations {
+            can.drive my {
+              car = "Yes"
+            }
+          }
+      }
+    `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should create an error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { byte: 72, col: 26, line: 4 },
+          end: { byte: 113, col: 14, line: 6 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].message).toBe('Can not define an annotation values inside annotation type definitions')
+        expect(res.errors[0].summary).toBe('Invalid annotations block')
+      })
+      it('should still create the element properly', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+        const element = (await awu(res.elements).toArray())[0] as ObjectType
+        expect(element.elemID.getFullName()).toEqual('baby.you')
+        expect(Object.keys(element.annotationRefTypes)).toEqual(['my'])
+      })
+    })
     describe('when there are duplicated annotation type blocks', () => {
       const nacl = `
       type baby.you {

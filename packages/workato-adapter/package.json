@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/workato-adapter",
-  "version": "0.2.13",
+  "version": "0.2.14",
   "license": "Apache-2.0",
   "description": "Salto Workato adapter",
   "repository": {
@@ -30,11 +30,11 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.2.13",
-    "@salto-io/adapter-components": "0.2.13",
-    "@salto-io/adapter-utils": "0.2.13",
-    "@salto-io/logging": "0.2.13",
-    "@salto-io/lowerdash": "0.2.13",
+    "@salto-io/adapter-api": "0.2.14",
+    "@salto-io/adapter-components": "0.2.14",
+    "@salto-io/adapter-utils": "0.2.14",
+    "@salto-io/logging": "0.2.14",
+    "@salto-io/lowerdash": "0.2.14",
     "lodash": "^4.17.21"
   },
   "devDependencies": {

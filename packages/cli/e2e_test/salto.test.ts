@@ -22,8 +22,6 @@ import { testHelpers as salesforceTestHelpers, SalesforceClient, UsernamePasswor
 import { Plan, SALTO_HOME_VAR } from '@salto-io/core'
 import { Workspace, parser } from '@salto-io/workspace'
 // eslint-disable-next-line no-restricted-imports
-import { Types } from '@salto-io/salesforce-adapter/dist/src/transformers/transformer'
-// eslint-disable-next-line no-restricted-imports
 import {
   API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE, SALESFORCE_CUSTOM_SUFFIX,
   API_NAME_SEPARATOR, OBJECTS_PATH, METADATA_TYPE, CUSTOM_FIELD,
@@ -227,7 +225,7 @@ describe('cli e2e', () => {
         SALESFORCE,
         newObjectElemName,
         {
-          [API_NAME]: Types.primitiveDataTypes.ServiceId,
+          [API_NAME]: BuiltinTypes.SERVICE_ID,
           [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
         },
         { [API_NAME]: newObjectApiName, [METADATA_TYPE]: CUSTOM_OBJECT },
@@ -296,8 +294,8 @@ describe('cli e2e', () => {
         SALESFORCE,
         newObjectElemName,
         {
-          [API_NAME]: Types.primitiveDataTypes.ServiceId,
-          [METADATA_TYPE]: Types.primitiveDataTypes.ServiceId,
+          [API_NAME]: BuiltinTypes.SERVICE_ID,
+          [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
           enableFeeds: BuiltinTypes.BOOLEAN,
         },
         { [API_NAME]: newObjectApiName, [METADATA_TYPE]: CUSTOM_OBJECT },

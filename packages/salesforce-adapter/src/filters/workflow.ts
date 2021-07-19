@@ -15,7 +15,7 @@
 */
 import {
   Element, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression,
-  ObjectType, getChangeElement, Change, isAdditionChange, ElemID,
+  ObjectType, getChangeElement, Change, isAdditionChange, BuiltinTypes, ElemID,
 } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections, promises } from '@salto-io/lowerdash'
@@ -33,7 +33,6 @@ import { FilterCreator } from '../filter'
 import {
   apiName, metadataType, createInstanceElement, metadataAnnotationTypes, MetadataTypeAnnotations,
   toMetadataInfo,
-  Types,
 } from '../transformers/transformer'
 import { fullApiName, parentApiName, getDataFromChanges, isInstanceOfTypeChange, isInstanceOfType } from './utils'
 
@@ -126,9 +125,7 @@ const createDummyWorkflowInstance = async (
   const workflowType = new ObjectType({
     elemID: new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE),
     fields: {
-      [INSTANCE_FULL_NAME_FIELD]: {
-        refType: createRefToElmWithValue(Types.primitiveDataTypes.ServiceId),
-      },
+      [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID) },
       ..._.mapValues(
         WORKFLOW_FIELD_TO_TYPE,
         typeName => (

@@ -16,7 +16,7 @@
 import { ObjectType, ElemID, InstanceElement, isObjectType, BuiltinTypes, toChange, Change, getChangeElement, isInstanceChange } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { metadataType, apiName, MetadataTypeAnnotations, Types } from '../../src/transformers/transformer'
+import { metadataType, apiName, MetadataTypeAnnotations } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
@@ -50,7 +50,7 @@ describe('Topics for objects filter', () => {
       [ENABLE_TOPICS]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
       [ENTITY_API_NAME]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       [constants.INSTANCE_FULL_NAME_FIELD]: {
-        refType: createRefToElmWithValue(Types.primitiveDataTypes.ServiceId),
+        refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
       },
     },
     annotationRefsOrTypes: {},

@@ -50,9 +50,7 @@ describe('extra dependencies filter', () => {
       {
         fields: {
           fieldName: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          [INSTANCE_FULL_NAME_FIELD]: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.ServiceId),
-          },
+          [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID) },
         },
       }
     )

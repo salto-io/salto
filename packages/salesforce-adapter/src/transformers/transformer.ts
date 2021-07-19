@@ -1011,7 +1011,7 @@ export const toCustomProperties = async (
 export const getValueTypeFieldElement = (parent: ObjectType, field: ValueTypeField,
   knownTypes: Map<string, TypeElement>, additionalAnnotations?: Values): Field => {
   const naclFieldType = (field.name === INSTANCE_FULL_NAME_FIELD)
-    ? Types.primitiveDataTypes.ServiceId
+    ? BuiltinTypes.SERVICE_ID
     : knownTypes.get(field.soapType) || Types.get(field.soapType, false)
   const annotations: Values = {
     ...(additionalAnnotations || {}),
@@ -1314,7 +1314,7 @@ export type MetadataTypeAnnotations = {
 }
 
 export const metadataAnnotationTypes: Record<keyof MetadataTypeAnnotations, ReferenceExpression> = {
-  [METADATA_TYPE]: createRefToElmWithValue(Types.primitiveDataTypes.ServiceId),
+  [METADATA_TYPE]: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
   hasMetaFile: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
   folderType: createRefToElmWithValue(BuiltinTypes.STRING),
   folderContentType: createRefToElmWithValue(BuiltinTypes.STRING),

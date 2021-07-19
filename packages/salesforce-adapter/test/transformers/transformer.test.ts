@@ -583,7 +583,7 @@ describe('transformer', () => {
       const objType = new ObjectType({
         elemID,
         annotationRefsOrTypes: {
-          [API_NAME]: Types.primitiveDataTypes.ServiceId,
+          [API_NAME]: BuiltinTypes.SERVICE_ID,
           [METADATA_TYPE]: BuiltinTypes.STRING,
           [DESCRIPTION]: BuiltinTypes.STRING,
         },
@@ -674,7 +674,7 @@ describe('transformer', () => {
           const customSettingsObj = new ObjectType({
             elemID,
             annotationRefsOrTypes: {
-              [API_NAME]: Types.primitiveDataTypes.ServiceId,
+              [API_NAME]: BuiltinTypes.SERVICE_ID,
               [METADATA_TYPE]: BuiltinTypes.STRING,
               [DESCRIPTION]: BuiltinTypes.STRING,
               [CUSTOM_SETTINGS_TYPE]: BuiltinTypes.STRING,

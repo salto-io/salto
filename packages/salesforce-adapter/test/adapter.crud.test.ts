@@ -641,7 +641,7 @@ describe('SalesforceAdapter CRUD', () => {
               token: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
               sandbox: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
               [constants.INSTANCE_FULL_NAME_FIELD]: {
-                refType: createRefToElmWithValue(Types.primitiveDataTypes.ServiceId),
+                refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
               },
             },
             annotationRefsOrTypes: {},
@@ -882,14 +882,14 @@ describe('SalesforceAdapter CRUD', () => {
             elemID: mockElemID,
             fields: {
               [constants.INSTANCE_FULL_NAME_FIELD]: {
-                refType: createRefToElmWithValue(Types.primitiveDataTypes.ServiceId),
+                refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
               },
               [customLabelsFieldName]: {
                 refType: createRefToElmWithValue(new ObjectType({
                   elemID: mockElemID,
                   fields: {
                     [constants.INSTANCE_FULL_NAME_FIELD]: {
-                      refType: createRefToElmWithValue(Types.primitiveDataTypes.ServiceId),
+                      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
                     },
                   },
                   annotations: {

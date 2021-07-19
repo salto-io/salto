@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, TypeElement, ListType } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, TypeElement, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { SALESFORCE, INSTANCE_FULL_NAME_FIELD, ASSIGNMENT_RULES_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, SETTINGS_METADATA_TYPE } from '../src/constants'
-import { MetadataTypeAnnotations, MetadataObjectType, Types } from '../src/transformers/transformer'
+import { MetadataTypeAnnotations, MetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
 import { WORKFLOW_FIELD_TO_TYPE } from '../src/filters/workflow'
@@ -34,7 +34,7 @@ const createMetadataObjectType = (
   ...params,
   fields: {
     [INSTANCE_FULL_NAME_FIELD]: {
-      refType: createRefToElmWithValue(Types.primitiveDataTypes.ServiceId),
+      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
     },
     ...params.fields,
   },

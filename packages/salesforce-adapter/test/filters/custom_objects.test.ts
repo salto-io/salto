@@ -746,7 +746,7 @@ describe('Custom Objects filter', () => {
         const flowElemID = mockGetElemIdFunc(SALESFORCE, {}, 'flow')
         const flowMetadataType = new ObjectType({ elemID: flowElemID,
           annotations: { [METADATA_TYPE]: 'Flow' },
-          annotationRefsOrTypes: { [METADATA_TYPE]: Types.primitiveDataTypes.ServiceId },
+          annotationRefsOrTypes: { [METADATA_TYPE]: BuiltinTypes.SERVICE_ID },
           path: [SALESFORCE, TYPES_PATH, 'flow'] })
         result.push(flowMetadataType)
 
@@ -1618,8 +1618,8 @@ describe('Custom Objects filter', () => {
           },
         },
         annotationRefsOrTypes: {
-          [METADATA_TYPE]: Types.primitiveDataTypes.ServiceId,
-          [API_NAME]: Types.primitiveDataTypes.ServiceId,
+          [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
+          [API_NAME]: BuiltinTypes.SERVICE_ID,
           [LABEL]: BuiltinTypes.STRING,
           sharingModel: BuiltinTypes.STRING,
         },

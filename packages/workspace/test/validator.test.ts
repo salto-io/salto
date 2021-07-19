@@ -697,7 +697,7 @@ describe('Elements validation', () => {
           )).toHaveLength(0)
         })
 
-        it('should not return validation errors even when the value is an ilegal reference', async () => {
+        it('should not return validation errors even when the value is an illegal reference', async () => {
           const refInst = new InstanceElement(
             'instWithRef',
             withSimpleTypeField,

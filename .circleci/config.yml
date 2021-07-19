@@ -56,7 +56,7 @@ jobs:
       - restore_cache:
           keys:
             - v1-project-{{ .Branch }}
-            - v1-project-master
+            - v1-project-main
 
       - checkout
 
@@ -374,7 +374,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - main
           requires:
             - build
             - unit_test
@@ -384,7 +384,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - main
           requires:
             - build
             - unit_test

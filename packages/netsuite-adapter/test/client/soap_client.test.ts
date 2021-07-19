@@ -705,4 +705,208 @@ describe('soap_client', () => {
       ])).rejects.toThrow('Got invalid response from updateList request. Errors:')
     })
   })
+
+  describe('addInstances', () => {
+    const subType = new ObjectType({ elemID: new ElemID(NETSUITE, 'SubType') })
+    const subsidiaryType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'Subsidiary'),
+      fields: {
+        obj: { refType: subType },
+        objList: { refType: new ListType(subType) },
+        ref: {
+          refType: new ObjectType({ elemID: new ElemID(NETSUITE, 'Subsidiary') }),
+          annotations: { isReference: true },
+        },
+      },
+    })
+
+    it('should return the id is success and the error if fails', async () => {
+      addListAsyncMock.mockResolvedValue([{
+        writeResponseList: {
+          writeResponse: [
+            {
+              status: { attributes: { isSuccess: 'true' } },
+              baseRef: {
+                attributes: {
+                  internalId: '1',
+                },
+              },
+            },
+            {
+              status: {
+                attributes: { isSuccess: 'false' },
+                statusDetail: [{ code: 'SOME_ERROR', message: 'Some Error Message' }],
+              },
+            },
+          ],
+          status: { attributes: { isSuccess: 'true' } },
+        },
+      }])
+
+      const instance1 = new InstanceElement(
+        'instance1',
+        subsidiaryType,
+        {
+          name: 'name',
+          obj: {},
+          objList: [{}],
+          ref: {},
+        }
+      )
+
+      const instance2 = new InstanceElement(
+        'instance2',
+        subsidiaryType,
+        { name: 'name' }
+      )
+      expect(await client.addInstances([
+        instance1,
+        instance2,
+      ])).toEqual([
+        1,
+        new Error(`SOAP api call to add record instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
+      ])
+    })
+
+    it('should throw an error if request fails', async () => {
+      addListAsyncMock.mockResolvedValue([{
+        writeResponseList: {
+          status: {
+            attributes: { isSuccess: 'false' },
+            statusDetail: [{ code: 'SOME_ERROR', message: 'SOME_ERROR' }],
+          },
+        },
+      }])
+
+      await expect(client.addInstances([
+        new InstanceElement(
+          'instance',
+          subsidiaryType,
+          { name: 'name' }
+        ),
+      ])).rejects.toThrow('Failed to addList: error code: SOME_ERROR, error message: SOME_ERROR')
+    })
+
+    it('should throw an error if received invalid response', async () => {
+      addListAsyncMock.mockResolvedValue([{}])
+      await expect(client.addInstances([
+        new InstanceElement(
+          'instance',
+          subsidiaryType,
+          { name: 'name' },
+        ),
+      ])).rejects.toThrow('Got invalid response from addList request. Errors:')
+    })
+  })
+
+  describe('deleteInstances', () => {
+    const subType = new ObjectType({ elemID: new ElemID(NETSUITE, 'SubType') })
+    const subsidiaryType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'Subsidiary'),
+      fields: {
+        obj: { refType: subType },
+        objList: { refType: new ListType(subType) },
+        ref: {
+          refType: new ObjectType({ elemID: new ElemID(NETSUITE, 'Subsidiary') }),
+          annotations: { isReference: true },
+        },
+      },
+    })
+
+    it('should return the id is success and the error if fails', async () => {
+      deleteListAsyncMock.mockResolvedValue([{
+        writeResponseList: {
+          writeResponse: [
+            {
+              status: { attributes: { isSuccess: 'true' } },
+              baseRef: {
+                attributes: {
+                  internalId: '1',
+                },
+              },
+            },
+            {
+              status: {
+                attributes: { isSuccess: 'false' },
+                statusDetail: [{ code: 'SOME_ERROR', message: 'Some Error Message' }],
+              },
+            },
+          ],
+          status: { attributes: { isSuccess: 'true' } },
+        },
+      }])
+
+      const instance1 = new InstanceElement(
+        'instance1',
+        subsidiaryType,
+        {
+          name: 'name',
+          obj: {},
+          objList: [{}],
+          ref: {},
+          attributes: {
+            internalId: '1',
+          },
+        }
+      )
+
+      const instance2 = new InstanceElement(
+        'instance2',
+        subsidiaryType,
+        {
+          name: 'name',
+          attributes: {
+            internalId: '2',
+          },
+        }
+      )
+      expect(await client.deleteInstances([
+        instance1,
+        instance2,
+      ])).toEqual([
+        1,
+        new Error(`SOAP api call to delete record instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
+      ])
+    })
+
+    it('should throw an error if request fails', async () => {
+      deleteListAsyncMock.mockResolvedValue([{
+        writeResponseList: {
+          status: {
+            attributes: { isSuccess: 'false' },
+            statusDetail: [{ code: 'SOME_ERROR', message: 'SOME_ERROR' }],
+          },
+        },
+      }])
+
+      await expect(client.deleteInstances([
+        new InstanceElement(
+          'instance',
+          subsidiaryType,
+          {
+            name: 'name',
+            attributes: {
+              internalId: '1',
+            },
+          }
+        ),
+      ])).rejects.toThrow('Failed to deleteList: error code: SOME_ERROR, error message: SOME_ERROR')
+    })
+
+    it('should throw an error if received invalid response', async () => {
+      deleteListAsyncMock.mockResolvedValue([{}])
+      await expect(client.deleteInstances([
+        new InstanceElement(
+          'instance',
+          subsidiaryType,
+          {
+            name: 'name',
+            attributes: {
+              internalId: '1',
+            },
+          }
+        ),
+      ])).rejects.toThrow('Got invalid response from deleteList request. Errors:')
+    })
+  })
 })

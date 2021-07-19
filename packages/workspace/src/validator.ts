@@ -68,7 +68,7 @@ const validateAnnotations = async (
   elementsSource: ReadOnlyElementsSource
 ):
 Promise<ValidationError[]> => {
-  if (isObjectType(type)) {
+  if (isObjectType(type) && !isReferenceExpression(value)) {
     return awu(Object.keys(type.fields)).flatMap(
       // eslint-disable-next-line no-use-before-define
       async k => validateFieldAnnotations(

@@ -304,8 +304,8 @@ describe('Transformer', () => {
         const result = await createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
           mockGetElemIdFunc)
         expect(result.path)
-          .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates',
-            'Inner EmailTemplates Folder', 'content.html'])
+          .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E_mail_Templates',
+            'Inner_EmailTemplates_Folder', 'content_html'])
       })
 
       it('should create instance path correctly for file instance when it has . prefix', async () => {
@@ -314,7 +314,7 @@ describe('Transformer', () => {
         const result = await createInstanceElement(fileCustomizationInfoWithDotPrefix,
           fileCabinetTypes[FILE], mockGetElemIdFunc)
         expect(result.path).toEqual(
-          [NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', '_hiddenFolder', '_hiddenFile.xml']
+          [NETSUITE, FILE_CABINET_PATH, 'Templates', 'E_mail_Templates', '_hiddenFolder', '_hiddenFile_xml']
         )
       })
 
@@ -325,8 +325,8 @@ describe('Transformer', () => {
           mockGetElemIdFunc
         )
         expect(result.path)
-          .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates',
-            'Inner EmailTemplates Folder'])
+          .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E_mail_Templates',
+            'Inner_EmailTemplates_Folder'])
       })
 
       it('should create instance path correctly for folder instance when it has . prefix', async () => {
@@ -335,7 +335,7 @@ describe('Transformer', () => {
         const result = await createInstanceElement(folderCustomizationInfoWithDotPrefix,
           fileCabinetTypes[FOLDER], mockGetElemIdFunc)
         expect(result.path)
-          .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', '_hiddenFolder'])
+          .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E_mail_Templates', '_hiddenFolder'])
       })
 
       it('should transform path field correctly', async () => {

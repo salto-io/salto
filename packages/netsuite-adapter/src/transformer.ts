@@ -63,7 +63,9 @@ export const createInstanceElement = async (customizationInfo: CustomizationInfo
 
   const getInstancePath = (instanceName: string): string[] =>
     (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)
-      ? [NETSUITE, FILE_CABINET_PATH, ...customizationInfo.path.map(removeDotPrefix)]
+      ? [NETSUITE, FILE_CABINET_PATH, ...customizationInfo.path.map(
+        pathPart => pathNaclCase(naclCase(removeDotPrefix(pathPart)))
+      )]
       : [NETSUITE, RECORDS_PATH, type.elemID.name, instanceName])
 
   const transformPrimitive: TransformFunc = async ({ value, field }) => {

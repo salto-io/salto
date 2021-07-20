@@ -98,7 +98,7 @@ describe('SalesforceAdapter filters', () => {
 
       it('should call onDeploy with the changes set by preDeploy', () => {
         expect(filter.onDeploy).toHaveBeenCalledTimes(1)
-        expect(filter.onDeploy).toHaveBeenCalledWith([replacementChange])
+        expect(filter.onDeploy).toHaveBeenCalledWith([replacementChange], undefined)
       })
 
       it('should create the filter only once', () => {

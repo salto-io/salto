@@ -89,10 +89,9 @@ export type NaclFilesSource<Changes=ChangeSet<Change>> = Omit<ElementsSource, 'c
   getElementsSource: () => Promise<ElementsSource>
   load: (args: SourceLoadParams) => Promise<Changes>
   getSearchableNames(): Promise<string[]>
-  getStaticFileByHash: (
+  getStaticFile: (
     filePath: string,
     encoding: BufferEncoding,
-    hash: string
   ) => Promise<StaticFile | undefined>
 }
 
@@ -911,9 +910,9 @@ const buildNaclFilesSource = (
     },
     getSearchableNames: async (): Promise<string[]> =>
       (awu((await getState())?.searchableNamesIndex?.keys() ?? []).toArray()),
-    getStaticFileByHash: async (filePath, encoding, hash) => {
+    getStaticFile: async (filePath, encoding) => {
       const staticFile = await staticFilesSource.getStaticFile(filePath, encoding)
-      if (isStaticFile(staticFile) && staticFile.hash === hash) {
+      if (isStaticFile(staticFile)) {
         return staticFile
       }
       return undefined

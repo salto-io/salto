@@ -25,37 +25,42 @@ const { isDefined } = values
 // separate commands
 export type FilterResult = Record<string, unknown[] | undefined>
 
-export type Filter<T extends FilterResult | void> = Partial<{
+export type Filter<T extends FilterResult | void, DeployResult=void> = Partial<{
   onFetch(elements: Element[]): Promise<T | void>
   preDeploy(changes: Change[]): Promise<void>
-  onDeploy(changes: Change[]): Promise<void>
+  onDeploy(changes: Change[], deployResult: DeployResult): Promise<void>
   onPostFetch(args: PostFetchOptions): Promise<void>
 }>
 
 export type FilterWith<
   T extends FilterResult | void,
-  M extends keyof Filter<T>
-> = types.HasMember<Filter<T>, M>
+  // eslint-disable-next-line no-use-before-define
+  M extends keyof Filter<T, DeployResult>,
+  DeployResult = void,
+> = types.HasMember<Filter<T, DeployResult>, M>
 
 export type FilterCreator<
   R extends FilterResult | void,
   T,
-> = (opts: T) => Filter<R>
+  DeployResult=void,
+> = (opts: T) => Filter<R, DeployResult>
 
 export const filtersRunner = <
   R extends FilterResult | void,
   T,
+  DeployResult=void,
 >(
     opts: T,
-    filterCreators: ReadonlyArray<FilterCreator<R, T>>,
+    filterCreators: ReadonlyArray<FilterCreator<R, T, DeployResult>>,
     onFetchAggregator: (results: R[]) => R | void = () => undefined,
-  ): Required<Filter<R>> => {
+  ): Required<Filter<R, DeployResult>> => {
   // Create all filters in advance to allow them to hold context between calls
   const allFilters = filterCreators.map(f => f(opts))
 
-  const filtersWith = <M extends keyof Filter<R>>(m: M): FilterWith<R, M>[] => (
-    types.filterHasMember<Filter<R>, M>(m, allFilters)
-  )
+  const filtersWith = <M extends keyof Filter<R, DeployResult>>(m: M):
+    FilterWith<R, M, DeployResult>[] => (
+      types.filterHasMember<Filter<R, DeployResult>, M>(m, allFilters)
+    )
 
   return {
     onFetch: async elements => {
@@ -77,8 +82,8 @@ export const filtersRunner = <
      * the same thing that onFetch does but with a different context (on changes instead
      * of on elements)
      */
-    onDeploy: async changes => {
-      await promises.array.series(filtersWith('onDeploy').map(filter => () => filter.onDeploy(changes)))
+    onDeploy: async (changes, deployResult) => {
+      await promises.array.series(filtersWith('onDeploy').map(filter => () => filter.onDeploy(changes, deployResult)))
     },
     /**
      * onPostFetch is run after fetch completed for all services, and receives

@@ -241,10 +241,9 @@ export const loadWorkspace = async (
                 // TODO: we might need to pass static file reviver to the deserialization func
                 deserialize: s => deserializeSingleElement(
                   s,
-                  async staticFile => await envSrc.getStaticFileByHash(
+                  async staticFile => await envSrc.getStaticFile(
                     staticFile.filepath,
                     staticFile.encoding,
-                    staticFile.hash
                   ) ?? staticFile
                 ),
                 persistent,
@@ -472,13 +471,10 @@ export const loadWorkspace = async (
     return naclFilesSource
   }
 
-  const elements = async (env?: string): Promise<ElementsSource> => {
-    // eslint-disable-next-line no-console
-    console.log(env)
-    // eslint-disable-next-line no-console
-    console.log(Object.keys(await (await getWorkspaceState()).states))
-    return (await getWorkspaceState()).states[env ?? currentEnv()].merged
-  }
+  const elements = async (
+    env?: string
+  ): Promise<ElementsSource> => (await getWorkspaceState())
+    .states[env ?? currentEnv()].merged
 
   const getStateOnlyChanges = async (
     hiddenChanges: DetailedChange[],

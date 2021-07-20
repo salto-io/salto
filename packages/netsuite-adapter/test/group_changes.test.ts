@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, Change, StaticFile } from '@salto-io/adapter-api'
-import { getChangeGroupIdsFunc, SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../src/group_changes'
+import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, Change, StaticFile, ReferenceExpression } from '@salto-io/adapter-api'
+import { getChangeGroupIdsFunc, SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../src/group_changes'
 import { customTypes, fileCabinetTypes } from '../src/types'
 import { ENTITY_CUSTOM_FIELD, FILE, NETSUITE } from '../src/constants'
 
@@ -126,6 +126,40 @@ describe('Group Changes with Salto suiteApp', () => {
     }
   )
 
+  const subsidiaryType = new ObjectType({
+    elemID: new ElemID(NETSUITE, 'Subsidiary'),
+    annotations: { source: 'soap' },
+  })
+
+  const newDataInstance1 = new InstanceElement(
+    'newDataInstance1',
+    subsidiaryType,
+  )
+  const newDataInstance2 = new InstanceElement(
+    'newDataInstance2',
+    subsidiaryType,
+  )
+  const newDataInstance3 = new InstanceElement(
+    'newDataInstance3',
+    subsidiaryType,
+    { value: new ReferenceExpression(newDataInstance1.elemID) },
+  )
+  const newDataInstance4 = new InstanceElement(
+    'newDataInstance3',
+    subsidiaryType,
+    { value: new ReferenceExpression(newDataInstance2.elemID) },
+  )
+
+  const modifiedDataInstance = new InstanceElement(
+    'modifiedDataInstance',
+    subsidiaryType,
+  )
+
+  const deletedDataInstance = new InstanceElement(
+    'deletedDataInstance',
+    subsidiaryType,
+  )
+
   let changeGroupIds: Map<ChangeId, ChangeGroupId>
 
 
@@ -146,6 +180,15 @@ describe('Group Changes with Salto suiteApp', () => {
       ],
       [sdfFileInstance1.elemID.getFullName(), toChange({ after: sdfFileInstance1 })],
       [sdfFileInstance2.elemID.getFullName(), toChange({ after: sdfFileInstance2 })],
+      [newDataInstance1.elemID.getFullName(), toChange({ after: newDataInstance1 })],
+      [newDataInstance2.elemID.getFullName(), toChange({ after: newDataInstance2 })],
+      [newDataInstance3.elemID.getFullName(), toChange({ after: newDataInstance3 })],
+      [newDataInstance4.elemID.getFullName(), toChange({ after: newDataInstance4 })],
+      [modifiedDataInstance.elemID.getFullName(), toChange({
+        before: modifiedDataInstance,
+        after: modifiedDataInstance,
+      })],
+      [deletedDataInstance.elemID.getFullName(), toChange({ before: deletedDataInstance })],
     ]))
   })
 
@@ -178,6 +221,26 @@ describe('Group Changes with Salto suiteApp', () => {
 
     expect(changeGroupIds.get(sdfFileInstance2.elemID.getFullName()))
       .toEqual(SDF_CHANGE_GROUP_ID)
+  })
+
+  it('should set correct group id for data instances', () => {
+    expect(changeGroupIds.get(newDataInstance1.elemID.getFullName()))
+      .toEqual(`${SUITEAPP_CREATING_RECORDS_GROUP_ID} - 1/2`)
+
+    expect(changeGroupIds.get(newDataInstance2.elemID.getFullName()))
+      .toEqual(`${SUITEAPP_CREATING_RECORDS_GROUP_ID} - 1/2`)
+
+    expect(changeGroupIds.get(newDataInstance3.elemID.getFullName()))
+      .toEqual(`${SUITEAPP_CREATING_RECORDS_GROUP_ID} - 2/2`)
+
+    expect(changeGroupIds.get(newDataInstance4.elemID.getFullName()))
+      .toEqual(`${SUITEAPP_CREATING_RECORDS_GROUP_ID} - 2/2`)
+
+    expect(changeGroupIds.get(modifiedDataInstance.elemID.getFullName()))
+      .toEqual(SUITEAPP_UPDATING_RECORDS_GROUP_ID)
+
+    expect(changeGroupIds.get(deletedDataInstance.elemID.getFullName()))
+      .toEqual(SUITEAPP_DELETING_RECORDS_GROUP_ID)
   })
 
   it('should not set group id for non SDF types instances', () => {

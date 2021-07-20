@@ -439,10 +439,20 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
           const fieldRealType = getFieldType(element, field, typeMap)
           if (fieldRealType !== undefined) {
             if ((await field.getType()).elemID.isEqual(recordRefElemId)) {
-              newField = new Field(element, name, fieldRealType, field.annotations)
+              newField = new Field(
+                element,
+                name,
+                fieldRealType,
+                { ...field.annotations, isReference: true }
+              )
             }
             if ((await field.getType()).elemID.isEqual(new ElemID(NETSUITE, 'RecordRefList'))) {
-              newField = new Field(element, name, new ListType(fieldRealType), field.annotations)
+              newField = new Field(
+                element,
+                name,
+                new ListType(fieldRealType),
+                { ...field.annotations, isReference: true }
+              )
             }
           }
           return [name, newField]

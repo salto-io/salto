@@ -9,8 +9,8 @@ fi
 
 CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 
-if [ "$CURRENT_BRANCH" != "master" ]; then
-  echo >&2 "Must be on branch master (current branch: $CURRENT_BRANCH), aborting"
+if [ "$CURRENT_BRANCH" != "main" ]; then
+  echo >&2 "Must be on branch main (current branch: $CURRENT_BRANCH), aborting"
   exit 1
 fi
 

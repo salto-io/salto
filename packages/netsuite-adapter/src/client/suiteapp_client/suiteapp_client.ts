@@ -22,6 +22,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { WSDL } from 'soap'
+import { InstanceElement } from '@salto-io/adapter-api'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails,
   FILES_READ_SCHEMA, HttpMethod, isError, ReadResults, RestletOperation, RestletResults,
   RESTLET_RESULTS_SCHEMA, SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA,
@@ -318,5 +319,17 @@ export default class SuiteAppClient {
 
   public async getAllRecords(types: string[]): Promise<Record<string, unknown>[]> {
     return this.soapClient.getAllRecords(types)
+  }
+
+  public async updateInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+    return this.soapClient.updateInstances(instances)
+  }
+
+  public async addInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+    return this.soapClient.addInstances(instances)
+  }
+
+  public async deleteInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+    return this.soapClient.deleteInstances(instances)
   }
 }

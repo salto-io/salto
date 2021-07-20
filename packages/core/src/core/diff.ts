@@ -44,7 +44,7 @@ const filterElementByRelevance = async (
   topLevelIds: Set<string>,
   elementsSource: ReadOnlyElementsSource
 ): Promise<Element | undefined> => {
-  if (topLevelIds.has(elem.elemID.getFullName())) {
+  if (topLevelIds.has(elem.elemID.createTopLevelParentID().parent.getFullName())) {
     return transformElement({
       element: elem,
       transformFunc: filterRelevantParts(relevantIds),

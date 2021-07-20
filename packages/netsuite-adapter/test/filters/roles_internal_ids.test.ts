@@ -115,7 +115,13 @@ describe('roles_internal_ids', () => {
         isSuiteAppConfigured: () => true,
       } as unknown as NetsuiteClient
 
-      await filterCreator({ client } as FilterOpts).onDeploy?.([toChange({ after: instance })])
+      await filterCreator({ client } as FilterOpts).onDeploy?.(
+        [toChange({ after: instance })],
+        {
+          appliedChanges: [],
+          errors: [],
+        },
+      )
       expect(instance.value.internalId).toBe('1')
     })
 
@@ -131,7 +137,13 @@ describe('roles_internal_ids', () => {
         isSuiteAppConfigured: () => false,
       } as unknown as NetsuiteClient
 
-      await filterCreator({ client } as FilterOpts).onDeploy?.([toChange({ after: instance })])
+      await filterCreator({ client } as FilterOpts).onDeploy?.(
+        [toChange({ after: instance })],
+        {
+          appliedChanges: [],
+          errors: [],
+        },
+      )
       expect(instance.value.internalId).toBeUndefined()
     })
   })

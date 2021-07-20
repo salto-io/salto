@@ -19,6 +19,7 @@ import wu from 'wu'
 
 import { Element, ElemID, getChangeElement, Value,
   DetailedChange, Change, ChangeDataType, StaticFile } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { promises, collections, values } from '@salto-io/lowerdash'
 import { applyInstanceDefaults } from '@salto-io/adapter-utils'
 import { RemoteMap, RemoteMapCreator, mapRemoteMapResult } from '../../remote_map'
@@ -34,6 +35,7 @@ import { Errors } from '../../errors'
 import { RemoteElementSource, ElementsSource } from '../../elements_source'
 import { serialize, deserializeSingleElement, deserializeMergeErrors } from '../../../serializer/elements'
 
+const log = logger(module)
 const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 const { series } = promises.array
@@ -81,7 +83,8 @@ type MultiEnvState = {
 
 export type EnvsChanges = Record<string, ChangeSet<Change>>
 
-export type MultiEnvSource = Omit<NaclFilesSource<EnvsChanges>, 'getAll' | 'getElementsSource'> & {
+export type MultiEnvSource = Omit<NaclFilesSource<EnvsChanges>
+  , 'getAll' | 'getElementsSource'> & {
   getAll: (env?: string) => Promise<AsyncIterable<Element>>
   promote: (ids: ElemID[]) => Promise<EnvsChanges>
   getElementIdsBySelectors: (
@@ -124,13 +127,19 @@ const buildMultiEnvSource = (
     [commonSourceName]: sources[commonSourceName],
   })
 
-  const getStaticFileByHash = (
+  const getStaticFile = async (
     filePath: string,
     encoding: BufferEncoding,
-    hash: string
-  ): Promise<StaticFile | undefined> => awu(Object.values(getActiveSources()))
-    .map(src => src.getStaticFileByHash(filePath, encoding, hash))
-    .find(values.isDefined)
+  ): Promise<StaticFile | undefined> => {
+    const sourcesFiles = (await Promise.all(Object.values(getActiveSources())
+      .map(src => src.getStaticFile(filePath, encoding))))
+      .filter(values.isDefined)
+    if (sourcesFiles.length > 1
+      && !_.every(sourcesFiles, sf => sf.hash === sourcesFiles[0].hash)) {
+      log.warn(`Found different hashes for static file ${filePath}`)
+    }
+    return sourcesFiles[0]
+  }
 
   const buildStateForSingleEnv = async (
     envName: string,
@@ -140,10 +149,9 @@ const buildMultiEnvSource = (
       serialize: element => serialize([element], 'keepRef'),
       deserialize: s => deserializeSingleElement(
         s,
-        async staticFile => await getStaticFileByHash(
+        async staticFile => await getStaticFile(
           staticFile.filepath,
           staticFile.encoding,
-          staticFile.hash
         ) ?? staticFile
       ),
       persistent,
@@ -578,7 +586,7 @@ const buildMultiEnvSource = (
       const naclSource = env === undefined ? primarySource() : sources[env]
       return naclSource === undefined ? [] : naclSource.getSearchableNames()
     },
-    getStaticFileByHash,
+    getStaticFile,
   }
 }
 

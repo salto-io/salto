@@ -629,7 +629,7 @@ remoteMap.RemoteMapCreator => {
               resolve(!error && value !== undefined)
             })
           })
-        return hasKeyImpl(keyToTempDBKey(key), tmpDB)
+        return (await hasKeyImpl(keyToTempDBKey(key), tmpDB))
           || hasKeyImpl(keyToDBKey(key), persistentDB)
       },
       isEmpty: async (): Promise<boolean> => awu(keysImpl({ first: 1 })).isEmpty(),
@@ -655,7 +655,7 @@ remoteMap.ReadOnlyRemoteMapCreator => {
       }
       return createIterator(keyPrefix, normalizedOpts, db)
     }
-    const createDBConnections = async (): Promise<void> => {
+    const createDBConnection = async (): Promise<void> => {
       if (currentConnectionsCount > MAX_CONNECTIONS) {
         throw new Error('Failed to open rocksdb connection - too much open connections already')
       }
@@ -668,7 +668,7 @@ remoteMap.ReadOnlyRemoteMapCreator => {
     }
     const closeImpl = async (): Promise<void> => {
       if (db.status === 'open') {
-        await closeConnection(location, Promise.resolve(db))
+        await promisify(db.close.bind(db))()
         currentConnectionsCount -= 1
       }
     }
@@ -732,7 +732,7 @@ remoteMap.ReadOnlyRemoteMapCreator => {
             )
         ))
     }
-    await createDBConnections()
+    await createDBConnection()
     return {
       get: getImpl,
       getMany: async (keys: string[]): Promise<(T | undefined)[]> =>

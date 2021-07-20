@@ -19,6 +19,7 @@ import * as values from '../values'
 
 type Thenable<T> = T | Promise<T>
 export type ThenableIterable<T> = Iterable<T> | AsyncIterable<T>
+export type IterableArgument<T> = ThenableIterable<T> | Promise<ThenableIterable<T>>
 
 const isAsyncIterable = <T>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -31,11 +32,11 @@ const isIterable = <T>(
 ): itr is Iterable<T> => itr[Symbol.iterator] !== undefined
 
 export const findAsync = async <T>(
-  i: ThenableIterable<T>,
+  i: IterableArgument<T>,
   pred: (value: T, index: number) => Thenable<unknown>,
 ): Promise<T | undefined> => {
   let index = 0
-  for await (const v of i) {
+  for await (const v of await i) {
     if (await pred(v, index)) {
       return v
     }
@@ -45,11 +46,11 @@ export const findAsync = async <T>(
 }
 
 export async function *mapAsync<T, U>(
-  itr: ThenableIterable<T>,
+  itr: IterableArgument<T>,
   mapFunc: (t: T, index: number) => Thenable<U>,
 ): AsyncIterable<U> {
   let index = 0
-  for await (const curr of itr) {
+  for await (const curr of await itr) {
     yield mapFunc(curr, index)
     index += 1
   }
@@ -70,56 +71,63 @@ export async function *flatMapAsync<T, U>(
 }
 
 export const forEachAsync = async <T>(
-  itr: ThenableIterable<T>,
+  itr: IterableArgument<T>,
   mapFunc: (t: T, index: number) => Thenable<unknown>,
 ): Promise<void> => {
   let index = 0
-  for await (const curr of itr) {
+  for await (const curr of await itr) {
     await mapFunc(curr, index)
     index += 1
   }
 }
 
-export async function *toAsyncIterable<T>(iterable: Iterable<T>): AsyncIterable<T> {
-  for (const item of iterable) {
-    yield item
+export async function *toAsyncIterable<T>(iterable: IterableArgument<T>): AsyncIterable<T> {
+  const resolvedIterable = await iterable
+  if (isAsyncIterable(resolvedIterable)) {
+    for await (const item of resolvedIterable as AsyncIterable<T>) {
+      yield item
+    }
+  } else {
+    for (const item of resolvedIterable as Iterable<T>) {
+      yield item
+    }
   }
 }
 
 export const toArrayAsync = async <T>(
-  iterable: ThenableIterable<T>,
+  iterable: IterableArgument<T>,
 ): Promise<Array<T>> => {
   const res: T[] = []
-  for await (const curr of iterable) {
+  for await (const curr of await iterable) {
     res.push(curr)
   }
   return res
 }
 
 export async function *concatAsync<T>(
-  ...iterables: ThenableIterable<T>[]
+  ...iterables: IterableArgument<T>[]
 ): AsyncIterable<T> {
   for (const itr of iterables) {
     // eslint-disable-next-line no-await-in-loop
-    for await (const item of itr) {
+    for await (const item of await itr) {
       yield item
     }
   }
 }
 export function filterAsync<T, S extends T>(
-  itr: ThenableIterable<T>,
+  itr: IterableArgument<T>,
   filterFunc: (t: T, index: number) => t is S
 ): AsyncIterable<S>
 export function filterAsync<T>(
-  itr: ThenableIterable<T>,
+  itr: IterableArgument<T>,
   filterFunc: (t: T, index: number) => Thenable<boolean>
 ): AsyncIterable<T>
 export async function *filterAsync<T>(
-  itr: ThenableIterable<T>,
+  itr: IterableArgument<T>,
   filterFunc: (t: T, index: number) => unknown
 ): AsyncIterable<T> {
   let index = 0
-  for await (const item of itr) {
+  for await (const item of await itr) {
     if (await filterFunc(item, index)) {
       yield item
     }
@@ -147,11 +155,11 @@ export const handleErrorsAsync = <T>(
   })
 
 export async function *flattenAsync<T>(
-  ...iterables: ThenableIterable<ThenableIterable<T> | T>[]
+  ...iterables: IterableArgument<ThenableIterable<T> | T>[]
 ): AsyncIterable<T> {
   for (const itr of iterables) {
     // eslint-disable-next-line no-await-in-loop
-    for await (const nestedItr of itr) {
+    for await (const nestedItr of await itr) {
       if (isAsyncIterable(nestedItr) || isIterable(nestedItr)) {
         for await (const item of nestedItr) {
           yield item
@@ -163,31 +171,34 @@ export async function *flattenAsync<T>(
   }
 }
 
-export const lengthAsync = async <T>(itr: ThenableIterable<T>): Promise<number> => {
+export const lengthAsync = async <T>(itr: IterableArgument<T>): Promise<number> => {
   let len = 0
-  await forEachAsync(itr, async _item => {
+  await forEachAsync(await itr, async _item => {
     len += 1
   })
   return len
 }
 
-export const peekAsync = async <T>(itr: ThenableIterable<T>): Promise<T | undefined> => {
-  for await (const item of itr) {
+export const peekAsync = async <T>(itr: IterableArgument<T>): Promise<T | undefined> => {
+  for await (const item of await itr) {
     return item
   }
   return undefined
 }
 
 export const isEmptyAsync = async <T>(
-  itr: ThenableIterable<T>
-): Promise<boolean> => (await peekAsync(itr)) === undefined
+  itr: IterableArgument<T>
+): Promise<boolean> => (await peekAsync(await itr)) === undefined
 
 export async function *takeAsync<T>(
-  itr: ThenableIterable<T>,
+  itr: IterableArgument<T>,
   maxItems: number
 ): AsyncIterable<T> {
   let counter = 0
-  const it = isAsyncIterable(itr) ? itr[Symbol.asyncIterator]() : itr[Symbol.iterator]()
+  const resolvedIter = await itr
+  const it = isAsyncIterable(resolvedIter)
+    ? (resolvedIter)[Symbol.asyncIterator]()
+    : (resolvedIter)[Symbol.iterator]()
   let item: IteratorResult<T>
   // eslint-disable-next-line
   while (!(item = await it.next()).done && counter < maxItems) {
@@ -237,11 +248,11 @@ export async function *zipSortedAsync<T, V>(
 }
 
 export const groupByAsync = async <T>(
-  itr: ThenableIterable<T>,
+  itr: IterableArgument<T>,
   groupFunc: (t: T) => Thenable<string>
 ): Promise<Record<string, T[]>> => {
   const res: Record<string, T[]> = {}
-  for await (const t of itr) {
+  for await (const t of await itr) {
     const key = await groupFunc(t)
     res[key] = res[key] || []
     res[key].push(t)
@@ -250,19 +261,19 @@ export const groupByAsync = async <T>(
 }
 
 export const keyByAsync = async<T>(
-  itr: ThenableIterable<T>,
+  itr: IterableArgument<T>,
   keyFunc: (t: T) => Thenable<string>
 ): Promise<Record<string, T>> => Object.fromEntries(
   await toArrayAsync(mapAsync(itr, async t => [await keyFunc(t), t]))
 )
 
 export const someAsync = async<T>(
-  itr: ThenableIterable<T>,
+  itr: IterableArgument<T>,
   func: (t: T, i: number) => Thenable<unknown>
 ): Promise<boolean> => await findAsync(mapAsync(itr, func), res => res) !== undefined
 
 export const everyAsync = async<T>(
-  itr: ThenableIterable<T>,
+  itr: IterableArgument<T>,
   func: (t: T) => Thenable<unknown>
 ): Promise<boolean> => !(await someAsync(itr, async t => !(await func(t))))
 
@@ -331,7 +342,7 @@ export async function *iterateTogether<T>(before: AsyncIterable<T>,
   }
 }
 
-const uniquify = <T, K>(vals: ThenableIterable<T>, toSetType: (val: T) => K): AsyncIterable<T> => {
+const uniquify = <T, K>(vals: IterableArgument<T>, toSetType: (val: T) => K): AsyncIterable<T> => {
   const uniques = new Set<K>()
   return filterAsync(vals, val => {
     if (uniques.has(toSetType(val))) {
@@ -369,16 +380,17 @@ export type AwuIterable<T> = AsyncIterable<T> & {
   ): Promise<U>
 }
 
-export const awu = <T>(itr: ThenableIterable<T>): AwuIterable<T> => {
+export const awu = <T>(itr: IterableArgument<T>): AwuIterable<T> => {
   function awuFilter<S extends T>(filterFunc: (t: T, index: number) => t is S): AwuIterable<S>
   function awuFilter(filterFunc: (t: T, index: number) => Thenable<boolean>): AwuIterable<T> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return awu(filterAsync(itr, filterFunc as any))
   }
   return {
-    [Symbol.asyncIterator]: () => (isAsyncIterable(itr)
-      ? itr[Symbol.asyncIterator]()
-      : toAsyncIterable(itr)[Symbol.asyncIterator]()),
+    [Symbol.asyncIterator]: () =>
+      ((isAsyncIterable(itr)
+        ? itr[Symbol.asyncIterator]()
+        : toAsyncIterable(itr)[Symbol.asyncIterator]())),
     filter: awuFilter,
     concat: (...iterables) => awu(concatAsync(itr, ...iterables)),
     toArray: () => toArrayAsync(itr),

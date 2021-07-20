@@ -83,9 +83,9 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
   ]
   const elmSource: ReadOnlyElementsSource = {
     get: async elemID => srcElements.find(e => e.elemID.isEqual(elemID)),
-    getAll: async () => awu(srcElements),
+    getAll: () => awu(srcElements),
     has: async elemID => srcElements.find(e => e.elemID.isEqual(elemID)) !== undefined,
-    list: async () => awu(srcElements).map(e => e.elemID),
+    list: () => awu(srcElements).map(e => e.elemID),
   }
   describe('isElement func', () => {
     it('should return false for undefined', () => {

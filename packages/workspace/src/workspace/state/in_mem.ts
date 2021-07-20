@@ -54,8 +54,9 @@ export const buildInMemState = (
   const setHashImpl = async (newHash: string): Promise<void> => (await stateData())
     .saltoMetadata.set('hash', newHash)
   return {
-    getAll: async (): Promise<AsyncIterable<Element>> => (await stateData()).elements.getAll(),
-    list: async (): Promise<AsyncIterable<ElemID>> => (await stateData()).elements.list(),
+    getAll: (): AsyncIterable<Element> => awu((async () => (await stateData())
+      .elements.getAll())()),
+    list: (): AsyncIterable<ElemID> => awu((async () => (await stateData()).elements.list())()),
     get: async (id: ElemID): Promise<Element | undefined> => (await stateData()).elements.get(id),
     has: async (id: ElemID): Promise<boolean> => (await stateData()).elements.has(id),
     delete: async (id: ElemID): Promise<void> => (await stateData()).elements.delete(id),

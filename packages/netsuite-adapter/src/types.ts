@@ -99,9 +99,9 @@ export const typesElementSourceWrapper = (
   )
   return {
     get: async elemID => typesByKey[elemID.getFullName()],
-    getAll: async () => awu(Object.values(typesByKey)),
+    getAll: () => awu(Object.values(typesByKey)),
     has: async elemID => typesByKey[elemID.getFullName()] !== undefined,
-    list: async () => awu(Object.keys(typesByKey).map(ElemID.fromFullName)),
+    list: () => awu(Object.keys(typesByKey).map(ElemID.fromFullName)),
   }
 }
 

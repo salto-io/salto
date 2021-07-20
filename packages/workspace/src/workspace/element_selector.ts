@@ -268,7 +268,7 @@ export const selectElementIdsByTraversal = async ({
 
   const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)
   const possibleParentIDs = selectElementsBySelectors({
-    elementIds: awu(await source.list()),
+    elementIds: awu(source.list()),
     selectors: possibleParentSelectors,
     referenceSourcesIndex,
   })

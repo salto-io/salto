@@ -507,14 +507,14 @@ const buildNaclFilesSource = (
   staticFilesSource: StaticFilesSource,
   remoteMapCreator: RemoteMapCreator,
   persistent: boolean,
-  initState?: Promise<NaclFilesState>,
+  initState?: NaclFilesState,
 ): NaclFilesSource => {
   const functions: Functions = getFunctions(staticFilesSource)
 
   let state = initState
   let initChanges: ChangeSet<Change> | undefined
 
-  const getState = (): Promise<NaclFilesState> => {
+  const getState = (): NaclFilesState => {
     if (_.isUndefined(state)) {
       throw new Error('can not get state before load was invoked')
     }
@@ -595,7 +595,7 @@ const buildNaclFilesSource = (
   const getParsedNaclFile = async (filename: string): Promise<ParsedNaclFile | undefined> => {
     // We don't want to parse all nacl files here when we want only parsedResult of one file.
     if (state !== undefined) {
-      return (await getState()).parsedNaclFiles.get(filename)
+      return (getState()).parsedNaclFiles.get(filename)
     }
     const naclFile = await getNaclFile(filename)
     if (naclFile === undefined) return undefined
@@ -604,11 +604,11 @@ const buildNaclFilesSource = (
 
   const getElementNaclFiles = async (elemID: ElemID): Promise<string[]> => {
     const topLevelID = elemID.createTopLevelParentID()
-    const topLevelFiles = await (await getState()).elementsIndex.get(
+    const topLevelFiles = await (getState()).elementsIndex.get(
       topLevelID.parent.getFullName()
     ) ?? []
     return (await Promise.all(topLevelFiles.map(async filename => {
-      const fragments = await (await (await getState()).parsedNaclFiles.get(filename)).elements()
+      const fragments = await (await (getState()).parsedNaclFiles.get(filename)).elements()
       return values.isDefined(
         await awu(fragments ?? []).find(fragment => resolvePath(fragment, elemID) !== undefined)
       ) ? filename : undefined
@@ -617,11 +617,11 @@ const buildNaclFilesSource = (
 
   const getElementReferencedFiles = async (
     elemID: ElemID
-  ): Promise<string[]> => await (await getState()).referencedIndex.get(elemID.getFullName()) ?? []
+  ): Promise<string[]> => await (getState()).referencedIndex.get(elemID.getFullName()) ?? []
 
   const getSourceMap = async (filename: string): Promise<SourceMap> => {
     // Need to check if need an extra hasValid check here
-    const parsedNaclFile = await (await getState()).parsedNaclFiles.get(filename)
+    const parsedNaclFile = await (getState()).parsedNaclFiles.get(filename)
     const naclFileSourceMap = await parsedNaclFile.sourceMap?.()
     if (values.isDefined(naclFileSourceMap)) {
       return naclFileSourceMap
@@ -633,7 +633,7 @@ const buildNaclFilesSource = (
     }
     const parsedResult = await parseNaclFile(naclFile, functions)
     const newParsedNaclFile = await toParsedNaclFile(naclFile, parsedResult)
-    await (await getState()).parsedNaclFiles.put(filename, newParsedNaclFile)
+    await (getState()).parsedNaclFiles.put(filename, newParsedNaclFile)
     return parsedResult.sourceMap
   }
 
@@ -696,7 +696,7 @@ const buildNaclFilesSource = (
         .flatMap(elemID => getElementNaclFiles(elemID.createTopLevelParentID().parent))
         .toArray()
     )
-    const { parsedNaclFiles } = await getState()
+    const { parsedNaclFiles } = getState()
     const changedFileToSourceMap: Record<string, SourceMap> = Object.fromEntries(
       (await withLimitedConcurrency(naclFiles
         .map(naclFile => async () => {
@@ -761,7 +761,7 @@ const buildNaclFilesSource = (
         ...updatedNaclFiles.map(file => _.pick(file, ['buffer', 'filename']))
       )
       const res = await buildNaclFilesStateInner(updatedNaclFiles)
-      state = Promise.resolve(res.state)
+      state = res.state
       res.changes.preChangeHash = preChangeHash
       res.changes.postChangeHash = await ((await state).parsedNaclFiles.getHash())
       return res.changes
@@ -773,29 +773,29 @@ const buildNaclFilesSource = (
   }
 
   return {
-    list: async (): Promise<AsyncIterable<ElemID>> =>
-      awu((await getState()).elementsIndex.keys()).map(name => ElemID.fromFullName(name)),
-    has: async (id: ElemID): Promise<boolean> => (await getState()).mergedElements.has(id),
-    delete: async (id: ElemID): Promise<void> => (await getState()).mergedElements.delete(id),
-    deleteAll: async (ids: ThenableIterable<ElemID>): Promise<void> => (await getState())
+    list: (): AsyncIterable<ElemID> =>
+      awu((getState()).elementsIndex.keys()).map(name => ElemID.fromFullName(name)),
+    has: async (id: ElemID): Promise<boolean> => (getState()).mergedElements.has(id),
+    delete: async (id: ElemID): Promise<void> => (getState()).mergedElements.delete(id),
+    deleteAll: async (ids: ThenableIterable<ElemID>): Promise<void> => (getState())
       .mergedElements.deleteAll(ids),
-    set: async (element: Element): Promise<void> => (await getState()).mergedElements.set(element),
-    setAll: async (elements: ThenableIterable<Element>): Promise<void> => (await getState())
+    set: async (element: Element): Promise<void> => (getState()).mergedElements.set(element),
+    setAll: async (elements: ThenableIterable<Element>): Promise<void> => (getState())
       .mergedElements.setAll(elements),
     get: async (id: ElemID): Promise<Element | Value> => {
-      const currentState = await getState()
+      const currentState = getState()
       const { parent, path } = id.createTopLevelParentID()
       const baseElement = await currentState.mergedElements.get(parent)
       return baseElement && !_.isEmpty(path) ? resolvePath(baseElement, id) : baseElement
     },
-    getAll: async (): Promise<AsyncIterable<Element>> => (
-      (await getState()).mergedElements.getAll()
+    getAll: (): AsyncIterable<Element> => (
+      (getState()).mergedElements.getAll()
     ),
 
     flush: async (): Promise<void> => {
       await naclFilesStore.flush()
       await staticFilesSource.flush()
-      const currentState = await getState()
+      const currentState = getState()
       await currentState.elementsIndex.flush()
       await currentState.mergeErrors.flush()
       await currentState.mergedElements.flush()
@@ -806,7 +806,7 @@ const buildNaclFilesSource = (
     },
 
     getErrors: async (): Promise<Errors> => {
-      const currentState = await getState()
+      const currentState = getState()
       const [parseErrors, mergeErrors] = await Promise.all([
         currentState.parsedNaclFiles.getAllErrors(),
         awu(currentState.mergeErrors.values()).flat().toArray(),
@@ -818,7 +818,7 @@ const buildNaclFilesSource = (
       })
     },
 
-    listNaclFiles: async (): Promise<string[]> => (await getState()).parsedNaclFiles.list(),
+    listNaclFiles: async (): Promise<string[]> => (getState()).parsedNaclFiles.list(),
 
     getTotalSize: async (): Promise<number> =>
       _.sum(await Promise.all([naclFilesStore.getTotalSize(), staticFilesSource.getTotalSize()])),
@@ -837,12 +837,12 @@ const buildNaclFilesSource = (
     },
 
     removeNaclFiles: async (...names: string[]) => {
-      const preChangeHash = await (await getState()).parsedNaclFiles.getHash()
+      const preChangeHash = await (getState()).parsedNaclFiles.getHash()
       await awu(names).forEach(name => naclFilesStore.delete(name))
       const res = await buildNaclFilesStateInner(
-        await parseNaclFiles(names.map(filename => ({ filename, buffer: '' })), (await getState()).parsedNaclFiles, functions),
+        await parseNaclFiles(names.map(filename => ({ filename, buffer: '' })), (getState()).parsedNaclFiles, functions),
       )
-      state = Promise.resolve(res.state)
+      state = res.state
       res.changes.preChangeHash = preChangeHash
       return res.changes
     },
@@ -860,7 +860,7 @@ const buildNaclFilesSource = (
         await naclFilesStore.clear()
       }
       if (args.cache) {
-        const currentState = await getState()
+        const currentState = getState()
         await currentState.elementsIndex.clear()
         await currentState.mergeErrors.clear()
         await currentState.mergedElements.clear()
@@ -876,7 +876,7 @@ const buildNaclFilesSource = (
     rename: async (name: string) => {
       await naclFilesStore.rename(name)
       await staticFilesSource.rename(name)
-      const currentState = await getState()
+      const currentState = getState()
       await currentState.parsedNaclFiles.rename(getRemoteMapNamespace('parsed_nacl_files', name))
       const newCurrentState = await createNaclFilesState(
         remoteMapCreator,
@@ -907,7 +907,7 @@ const buildNaclFilesSource = (
         currentState.searchableNamesIndex.entries()
       )
       await currentState.searchableNamesIndex.clear()
-      state = Promise.resolve(newCurrentState)
+      state = newCurrentState
     },
 
     clone: () => buildNaclFilesSource(
@@ -922,26 +922,26 @@ const buildNaclFilesSource = (
     setNaclFiles: async (...naclFiles) => {
       await setNaclFiles(...naclFiles)
       const res = await buildNaclFilesStateInner(
-        await parseNaclFiles(naclFiles, (await getState()).parsedNaclFiles, functions)
+        await parseNaclFiles(naclFiles, (getState()).parsedNaclFiles, functions)
       )
-      state = Promise.resolve(res.state)
+      state = res.state
       return res.changes
     },
     getSourceMap,
     getElementNaclFiles,
     getElementReferencedFiles,
     isEmpty: () => naclFilesStore.isEmpty(),
-    getElementsSource: async () => (await getState()).mergedElements,
+    getElementsSource: async () => getState().mergedElements,
     load: async ({ ignoreFileChanges = false }: SourceLoadParams) => {
       if (initChanges === undefined) {
         const res = await buildNaclFilesStateInner([], ignoreFileChanges)
-        state = Promise.resolve(res.state)
+        state = res.state
         initChanges = res.changes
       }
       return initChanges
     },
     getSearchableNames: async (): Promise<string[]> =>
-      (awu((await getState())?.searchableNamesIndex?.keys() ?? []).toArray()),
+      (awu(getState()?.searchableNamesIndex?.keys() ?? []).toArray()),
     getStaticFile: async (filePath, encoding) => {
       const staticFile = await staticFilesSource.getStaticFile(filePath, encoding)
       if (isStaticFile(staticFile)) {
@@ -987,6 +987,6 @@ export const naclFilesSource = async (
     staticFilesSource,
     remoteMapCreator,
     persistent,
-    state !== undefined ? Promise.resolve(state) : undefined,
+    state !== undefined ? state : undefined,
   )
 }

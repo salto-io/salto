@@ -57,9 +57,9 @@ export const buildElementsSourceFromElements = (
   }
 
   self = {
-    getAll: async () => getElements(),
+    getAll: () => getElements(),
     get: async id => elementsMap[id.getFullName()] ?? fallbackSource?.get(id),
-    list: async () => getIds(),
+    list: () => getIds(),
     has: async id => isIDInElementsMap(id) || (fallbackSource?.has(id) ?? false),
   }
   return self

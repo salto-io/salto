@@ -299,11 +299,11 @@ export class EditorWorkspace {
     return (await this.workspace.listNaclFiles()).map(filename => this.editorFilename(filename))
   }
 
-  async getElements(filename: string): Promise<AsyncIterable<Element>> {
-    const elements = await (
-      await this.workspace.getParsedNaclFile(this.workspaceFilename(filename))
-      )?.elements() ?? []
-    return awu(elements)
+  getElements(filename: string): AsyncIterable<Element> {
+    return awu((async () =>
+      await (await this.workspace.getParsedNaclFile(this
+        .workspaceFilename(filename)))?.elements() ?? []
+    )())
   }
 
   async getSourceMap(filename: string): Promise<parser.SourceMap> {

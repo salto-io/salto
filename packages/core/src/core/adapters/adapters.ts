@@ -149,7 +149,7 @@ const filterElementsSource = (
   const isRelevantID = (elemID: ElemID): boolean =>
     (elemID.adapter === adapterName || elemID.adapter === GLOBAL_ADAPTER)
   return {
-    getAll: async () => {
+    getAll: () => {
       async function *getElements(): AsyncIterable<Element> {
         for await (const element of await elementsSource.getAll()) {
           if (isRelevantID(element.elemID)) {
@@ -160,7 +160,7 @@ const filterElementsSource = (
       return getElements()
     },
     get: async id => (isRelevantID(id) ? elementsSource.get(id) : undefined),
-    list: async () => {
+    list: () => {
       async function *getIds(): AsyncIterable<ElemID> {
         for await (const element of await elementsSource.getAll()) {
           if (isRelevantID(element.elemID)) {

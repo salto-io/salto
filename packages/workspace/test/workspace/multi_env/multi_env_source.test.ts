@@ -1023,7 +1023,7 @@ describe('multi env source', () => {
   })
   describe('demoteAll', () => {
     it('should route demote all the proper ids', async () => {
-      jest.spyOn(commonSource, 'list').mockImplementationOnce(() => Promise.resolve(awu([envElemID, objectElemID])))
+      jest.spyOn(commonSource, 'list').mockImplementationOnce(() => awu([envElemID, objectElemID]))
       jest.spyOn(routers, 'routeDemote').mockImplementationOnce(
         () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
       )

@@ -268,9 +268,9 @@ const addDifferentElements = (
     }
     return elementPair
   }
-  const getFilteredElements = async (source: ReadOnlyElementsSource):
-    Promise<AsyncIterable<ChangeDataType>> =>
-    (awu(await source.getAll()).filter(async elem =>
+  const getFilteredElements = (source: ReadOnlyElementsSource):
+    AsyncIterable<ChangeDataType> =>
+    (awu(source.getAll()).filter(async elem =>
       _.every(await Promise.all(
         topLevelFilters.map(filter => filter(elem.elemID))
       )))) as AsyncIterable<ChangeDataType>

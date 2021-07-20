@@ -118,7 +118,7 @@ export type MultiEnvSource = {
     encoding: BufferEncoding,
     env: string
   ) => Promise<StaticFile | undefined>
-  getAll: (env: string) => Promise<AsyncIterable<Element>>
+  getAll: (env?: string) => AsyncIterable<Element>
   promote: (
     env: string,
     idsToMove: ElemID[],
@@ -266,12 +266,12 @@ const buildMultiEnvSource = (
                 element,
                 { get: async id => (await plainResult.merged.get(id.getFullName()))
                     ?? envState.elements.get(id),
-                getAll: async () => awu(plainResult.merged.values())
-                  .concat(await envState.elements.getAll()),
+                getAll: () => awu(plainResult.merged.values())
+                  .concat(envState.elements.getAll()),
                 has: async id => (await plainResult.merged.has(id.getFullName()))
                     || envState.elements.has(id),
-                list: async () => awu(plainResult.merged.values())
-                  .map(e => e.elemID).concat(await envState.elements.list()) }
+                list: () => awu(plainResult.merged.values())
+                  .map(e => e.elemID).concat(envState.elements.list()) }
               )),
           }
         },
@@ -598,7 +598,28 @@ const buildMultiEnvSource = (
     copyTo,
     sync,
     isEmpty,
-    getAll: async (env: string): Promise<AsyncIterable<Element>> =>
+    list: (): AsyncIterable<ElemID> =>
+      awu((async () => (await getState()).states[primarySourceName].elements.list())()),
+    isEmpty,
+    get: async (id: ElemID): Promise<Element | Value> => (
+      (await getState()).states[primarySourceName].elements.get(id)
+    ),
+    has: async (id: ElemID): Promise<boolean> => (
+      (await getState()).states[primarySourceName].elements.has(id)
+    ),
+    delete: async (id: ElemID): Promise<void> => (
+      (await getState()).states[primarySourceName].elements.delete(id)
+    ),
+    deleteAll: async (ids: ThenableIterable<ElemID>): Promise<void> => (
+      (await getState()).states[primarySourceName].elements.deleteAll(ids)
+    ),
+    set: async (elem: Element): Promise<void> => (
+      (await getState()).states[primarySourceName].elements.set(elem)
+    ),
+    setAll: async (elements: ThenableIterable<Element>): Promise<void> => (
+      (await getState()).states[primarySourceName].elements.setAll(elements)
+    ),
+    getAll: async (env: string): AsyncIterable<Element> =>
       (await getState()).states[env].elements.getAll(),
     listNaclFiles: async (env: string): Promise<string[]> => (
       awu(Object.entries(getActiveSources(env)))

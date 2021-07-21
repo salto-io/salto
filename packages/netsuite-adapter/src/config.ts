@@ -25,7 +25,7 @@ import {
   SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
   CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
   SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
-  CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, SAVED_SEARCH, DEPLOY, DATASET, WORKBOOK,
+  CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, DEPLOY, DATASET, WORKBOOK,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams } from './query'
 
@@ -160,10 +160,6 @@ export const fetchDefault: FetchParams = {
       // Has a definition field which is a long XML and it contains 'translationScriptId'
       // value that changes every fetch
       { name: DATASET },
-      // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch.
-      // Although the SAVED_SEARCH is not editable since it's encrypted, there still might be
-      // a value for specific customers to use it for moving between envs, backup etc.
-      { name: SAVED_SEARCH },
       { name: 'Customer' },
       { name: 'AccountingPeriod' },
       { name: 'Employee' },

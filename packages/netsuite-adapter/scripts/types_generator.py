@@ -658,6 +658,7 @@ def main():
     logging.info('Generated Types file')
     logging.info('Done!')
     logging.info('VALIDATE file & folder TYPES THEY WERE NOT GENERATED USING THE SCRIPT!')
+    logging.info('After you generated the types fetch saved search from our development account and make sure that it parses correctly, if not, please edit its type definition at parsed_saved_search.ts')
 
 
 main()

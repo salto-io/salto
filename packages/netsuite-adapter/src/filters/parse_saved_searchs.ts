@@ -43,9 +43,7 @@ const assignSavedSearchValues = async (instance:InstanceElement,
 }
 
 const removeValuesFromInstance = (instance:InstanceElement): void => {
-  Object.keys(instance.value)
-    .filter(key => !Object.keys(oldSavedSearch.fields).includes(key))
-    .forEach(key => delete instance.value[key])
+  instance.value = _.pickBy(instance.value, (_val, key) => key in oldSavedSearch.fields)
 }
 
 const filterCreator: FilterCreator = ({ elementsSource }) => ({

@@ -20,7 +20,7 @@ import {
   ObjectType, InstanceElement, isType, isElement, isContainerType,
   ReferenceExpression, TemplateExpression, VariableExpression,
   isReferenceExpression, Variable, StaticFile, isStaticFile,
-  BuiltinTypes, TypeElement, isInstanceElement, isPrimitiveType,
+  BuiltinTypes, TypeElement, isInstanceElement, isPrimitiveType, TypeMap,
 } from '@salto-io/adapter-api'
 
 import { InvalidStaticFile } from '../workspace/static_files/common'
@@ -159,6 +159,26 @@ const reviveElemID = (v: {[key: string]: any}): ElemID => (
   new ElemID(v.adapter, v.typeName, v.idType, ...v.nameParts)
 )
 
+const reviveType = (v: {[key: string]: any}): ObjectType => (
+  v.type ?? new ObjectType({
+    elemID: v.refType.elemId
+  })
+)
+const reviveInnerType = (v: {[key: string]: any}): ObjectType => (
+  v.innerType ?? new ObjectType({
+    elemID: v.innerRefType.elemId
+  })
+)
+const reviveAnnotationTypes = (v: {[key: string]: any}): TypeMap => {
+  console.log(v)
+  return v.annotationTypes ?? _.mapValues(
+    v.annotationRefTypes,
+    anno => new ObjectType({
+      elemID: anno.elemId
+    })
+  )
+}
+
 export const deserialize = async (
   data: string,
   staticFileReviver?: StaticFileReviver,
@@ -168,7 +188,7 @@ export const deserialize = async (
   const revivers: ReviverMap = {
     InstanceElement: v => new InstanceElement(
       reviveElemID(v.elemID).name,
-      v.type,
+      reviveType(v),
       v.value,
       undefined,
       v.annotations,
@@ -176,7 +196,7 @@ export const deserialize = async (
     ObjectType: v => new ObjectType({
       elemID: reviveElemID(v.elemID),
       fields: v.fields,
-      annotationTypes: v.annotationTypes,
+      annotationTypes: reviveAnnotationTypes(v),
       annotations: v.annotations,
       isSettings: v.isSettings,
     }),
@@ -186,29 +206,29 @@ export const deserialize = async (
     PrimitiveType: v => new PrimitiveType({
       elemID: reviveElemID(v.elemID),
       primitive: v.primitive,
-      annotationTypes: v.annotationTypes,
+      annotationTypes: reviveAnnotationTypes(v),
       annotations: v.annotations,
     }),
     ListType: v => new ListType(
-      v.innerType
+      reviveInnerType(v)
     ),
     MapType: v => new MapType(
-      v.innerType
+      reviveInnerType(v)
     ),
     Field: v => new Field(
       new ObjectType({ elemID: reviveElemID(v.elemID).createParentID() }),
       v.name,
-      v.type,
+      reviveType(v),
       v.annotations,
     ),
     TemplateExpression: v => (
       new TemplateExpression({ parts: v.parts })
     ),
     ReferenceExpression: v => (
-      new ReferenceExpression(reviveElemID(v.elemId))
+      new ReferenceExpression(reviveElemID(v.elemId ?? v.elemID))
     ),
     VariableExpression: v => (
-      new VariableExpression(reviveElemID(v.elemId))
+      new VariableExpression(reviveElemID(v.elemId ?? v.elemID))
     ),
     StaticFile: v => {
       const staticFile = new StaticFile(

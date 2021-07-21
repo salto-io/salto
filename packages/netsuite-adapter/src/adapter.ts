@@ -32,6 +32,7 @@ import {
 import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST,
   INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
+import parseSavedSearch from './filters/parse_saved_searchs'
 import convertLists from './filters/convert_lists'
 import consistentValues from './filters/consistent_values'
 import addParentFolder from './filters/add_parent_folder'
@@ -109,6 +110,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       dataInstancesDiff,
       // addParentFolder must run before replaceInstanceReferencesFilter
       addParentFolder,
+      parseSavedSearch,
       convertLists,
       consistentValues,
       replaceInstanceReferencesFilter,

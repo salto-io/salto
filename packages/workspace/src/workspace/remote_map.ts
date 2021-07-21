@@ -51,6 +51,11 @@ export interface CreateRemoteMapParams<T> {
   deserialize: (s: string) => Promise<T>
 }
 
+export interface CreateReadOnlyRemoteMapParams<T> {
+  namespace: string
+  deserialize: (s: string) => Promise<T>
+}
+
 export type RemoteMapIterator<T, Opts> = Opts extends PagedIterationOpts
   ? AsyncIterable<T[]> : Opts extends IterationOpts
   ? AsyncIterable<T> : never
@@ -83,6 +88,9 @@ export type RemoteMapCreator = <T, K extends string = string>(
   opts: CreateRemoteMapParams<T>
 ) => Promise<RemoteMap<T, K>>
 
+export type ReadOnlyRemoteMapCreator = <T, K extends string = string>(
+  opts: CreateReadOnlyRemoteMapParams<T>
+) => Promise<RemoteMap<T, K>>
 export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMap<T, K> {
   private data: Map<K, T>
   constructor(data: RemoteMapEntry<T, K>[] = []) {

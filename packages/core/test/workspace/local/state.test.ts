@@ -256,7 +256,8 @@ describe('local state', () => {
 
   it('should throw an error if the state nacl file is not valid', async () => {
     const state = localState('error', '', remoteMapCreator)
-    await expect(state.getAll()).toThrow()
+    // Since awaiting only happens on the first iteration, we call it
+    await expect(state.getAll()[Symbol.asyncIterator]().next()).rejects.toThrow()
   })
 
   it('should write file on flush and update version', async () => {

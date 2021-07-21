@@ -602,4 +602,10 @@ describe('asynciterable', () => {
       })
     })
   })
+  describe('toAsyncIterable handnling of Promise of asyncIterable', () => {
+    it('should await the promise and handle the iterale', async () => {
+      expect(await awu(toAsyncIterable(Promise.resolve(toAsyncIterable([1, 2, 5, 3]))))
+        .toArray()).toEqual([1, 2, 5, 3])
+    })
+  })
 })

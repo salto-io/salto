@@ -125,7 +125,7 @@ describe('data_elements', () => {
       const elements = await getDataElements(client, query)
       expect(elements[0].elemID.getFullNameParts()).toEqual([NETSUITE, 'Subsidiary'])
       expect(elements[1].elemID.getFullNameParts()).toEqual([NETSUITE, 'Subsidiary', 'instance', 'name'])
-      expect((elements[1] as InstanceElement).value).toEqual({ name: 'name' })
+      expect((elements[1] as InstanceElement).value).toEqual({ name: 'name', attributes: { 'xsi:type': 'listAcct:Subsidiary' } })
     })
 
     it('should add identifier if necessary', async () => {
@@ -213,20 +213,6 @@ describe('data_elements', () => {
         client,
         query,
       )).rejects.toThrow()
-    })
-
-    it('should convert attributes into fields', async () => {
-      getAllRecordsMock.mockImplementation(async types => {
-        if (types[0] === 'Subsidiary') {
-          return [{ name: 'name', attributes: { internalId: '1', 'xsi:type': 'listAcct:Subsidiary' } }]
-        }
-        return []
-      })
-      const elements = await getDataElements(client, query)
-      expect((elements[1] as InstanceElement).value).toEqual({
-        name: 'name',
-        internalId: '1',
-      })
     })
 
     it('should convert date to string', async () => {

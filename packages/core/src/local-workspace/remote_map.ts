@@ -53,6 +53,17 @@ const getRemoteDbImpl = (): any => {
   return rocksdbImpl
 }
 
+const isDBLockErr = (error: Error): boolean => (
+  error.message.includes('LOCK: Resource temporarily unavailable')
+)
+
+class DBLockError extends Error {
+  constructor() {
+    super('Salto local database locked. Could another Salto process '
+    + 'or a process using Salto be open?')
+  }
+}
+
 const getTmpLocationForLoc = (location: string): string => path.join(location, TMP_DB_DIR)
 
 const readIteratorNext = (iterator: rocksdb
@@ -218,8 +229,19 @@ export const cleanDatabases = async (): Promise<void> => {
   await closeAllRemoteMaps()
   await awu(persistentDBs).forEach(async ([loc, connection]) => {
     const tmpDir = getTmpLocationForLoc(loc)
-    await awu(fs.readdirSync(tmpDir)).forEach(tmpLoc =>
-      promisify(getRemoteDbImpl().destroy.bind(getRemoteDbImpl(), path.join(tmpDir, tmpLoc)))())
+    await awu(fs.readdirSync(tmpDir)).forEach(async tmpLoc => {
+      try {
+        await promisify(
+          getRemoteDbImpl().destroy.bind(getRemoteDbImpl(),
+            path.join(tmpDir, tmpLoc))
+        )()
+      } catch (e) {
+        if (isDBLockErr(e)) {
+          throw new DBLockError()
+        }
+        throw e
+      }
+    })
     delete tmpDBConnections[loc]
     await closeConnection(loc, connection, true)
   })
@@ -251,6 +273,50 @@ const creatorLock = new AsyncLock()
 const withCreatorLock = async (fn: (() => Promise<void>)): Promise<void> => {
   await creatorLock.acquire('createInProgress', fn)
 }
+
+const createDBIfNotExist = async (loc: string): Promise<void> => {
+  const newDb: rocksdb = getRemoteDbImpl()(loc)
+  try {
+    await promisify(newDb.open.bind(newDb, { readOnly: true }))()
+    await promisify(newDb.close.bind(newDb))()
+  } catch (e) {
+    if (newDb.status === 'new') {
+      await withCreatorLock(async () => {
+        await promisify(newDb.open.bind(newDb))()
+        await promisify(newDb.close.bind(newDb))()
+      })
+    }
+  }
+}
+
+const getOpenDBConnection = async (
+  loc: string,
+  isReadOnly: boolean
+): Promise<rocksdb> => {
+  const newDb = getRemoteDbImpl()(loc)
+  await promisify(newDb.open.bind(newDb, { readOnly: isReadOnly }))()
+  return newDb
+}
+
+const getKeyPrefix = (namespace: string): string =>
+  namespace.concat(NAMESPACE_SEPARATOR)
+
+const getFullDBKey = (namespace: string, key: string): string =>
+  getKeyPrefix(namespace).concat(key)
+
+const getPrefixEndCondition = (prefix: string): string => prefix
+  .substring(0, prefix.length - 1).concat((String
+    .fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1)))
+
+const createIterator = (prefix: string, opts: CreateIteratorOpts, connection: rocksdb):
+rocksdb.Iterator =>
+  connection.iterator({
+    keys: opts.keys,
+    values: opts.values,
+    lte: getPrefixEndCondition(prefix),
+    ...(opts.after !== undefined ? { gt: opts.after } : { gte: prefix }),
+    ...(opts.first !== undefined ? { limit: opts.first } : {}),
+  })
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 const locationCaches = new LRU<string, LRU<string, any>>({ max: 10 })
@@ -299,27 +365,15 @@ remoteMap.RemoteMapCreator => {
 
     const uniqueId = uuidv4()
     const tmpLocation = path.join(locationTmpDir, uniqueId)
-    const keyPrefix = namespace.concat(NAMESPACE_SEPARATOR)
+    const keyPrefix = getKeyPrefix(namespace)
     const tempKeyPrefix = TEMP_PREFIX.concat(UNIQUE_ID_SEPARATOR, uniqueId, UNIQUE_ID_SEPARATOR,
       keyPrefix)
-    const keyToDBKey = (key: string): string => namespace.concat(NAMESPACE_SEPARATOR, key)
+    const keyToDBKey = (key: string): string => getFullDBKey(namespace, key)
     const keyToTempDBKey = (key: string): string => tempKeyPrefix.concat(key)
     // We calculate a different key according to whether we're
     // looking for a temp value or a regular value
     const getAppropriateKey = (key: string, temp = false): string =>
       (temp ? keyToTempDBKey(key) : keyToDBKey(key))
-    const getPrefixEndCondition = (prefix: string): string => prefix
-      .substring(0, prefix.length - 1).concat((String
-        .fromCharCode(prefix.charCodeAt(prefix.length - 1) + 1)))
-    const createIterator = (prefix: string, opts: CreateIteratorOpts, connection: rocksdb):
-    rocksdb.Iterator =>
-      connection.iterator({
-        keys: opts.keys,
-        values: opts.values,
-        lte: getPrefixEndCondition(prefix),
-        ...(opts.after !== undefined ? { gt: opts.after } : { gte: prefix }),
-        ...(opts.first !== undefined ? { limit: opts.first } : {}),
-      })
 
     const createTempIterator = (opts: CreateIteratorOpts): rocksdb.Iterator => {
       const normalizedOpts = {
@@ -393,7 +447,9 @@ remoteMap.RemoteMapCreator => {
       return awu(aggregatedIterablesWithPages(
         tempOnly ? [tempIter] : [tempIter, iter],
         opts.pageSize
-      )).map(async entries => Promise.all(entries.map(entry => deserialize(entry.value))))
+      )).map(async entries => Promise.all(
+        entries.filter(entry => !delKeys.has(entry.key)).map(entry => deserialize(entry.value))
+      ))
     }
     const entriesImpl = (iterationOpts?: remoteMap.IterationOpts):
     AsyncIterable<remoteMap.RemoteMapEntry<T, K>> => {
@@ -401,6 +457,7 @@ remoteMap.RemoteMapCreator => {
       const tempIter = createTempIterator(opts)
       const iter = createPersistentIterator(opts)
       return awu(aggregatedIterable([tempIter, iter]))
+        .filter(entry => !delKeys.has(entry.key))
         .map(
           async entry => ({ key: entry.key as K, value: await deserialize(entry.value) })
         )
@@ -446,7 +503,8 @@ remoteMap.RemoteMapCreator => {
       const tempKeyIter = createTempIterator(opts)
       const keyIter = createPersistentIterator(opts)
       return awu(aggregatedIterablesWithPages([tempKeyIter, keyIter], opts.pageSize))
-        .map(async entries => entries.map(entry => entry.key as K))
+        .map(async entries =>
+          entries.map(entry => entry.key as K).filter(key => !delKeys.has(key)))
     }
     const getImpl = (key: string): Promise<T | undefined> => new Promise(resolve => {
       if (delKeys.has(key)) {
@@ -485,28 +543,6 @@ remoteMap.RemoteMapCreator => {
         currentConnectionsCount -= 1
       }
     }
-    const getOpenDBConnection = async (
-      loc: string,
-      isReadOnly: boolean
-    ): Promise<rocksdb> => {
-      const newDb = getRemoteDbImpl()(loc)
-      await promisify(newDb.open.bind(newDb, { readOnly: isReadOnly }))()
-      return newDb
-    }
-    const createDBIfNotExist = async (loc: string): Promise<void> => {
-      const newDb: rocksdb = getRemoteDbImpl()(loc)
-      try {
-        await promisify(newDb.open.bind(newDb, { readOnly: true }))()
-        await promisify(newDb.close.bind(newDb))()
-      } catch (e) {
-        if (newDb.status === 'new') {
-          await withCreatorLock(async () => {
-            await promisify(newDb.open.bind(newDb))()
-            await promisify(newDb.close.bind(newDb))()
-          })
-        }
-      }
-    }
     const createDBConnections = async (): Promise<void> => {
       tmpDBConnections[location] = tmpDBConnections[location] ?? {}
       if (tmpDB === undefined) {
@@ -529,8 +565,8 @@ remoteMap.RemoteMapCreator => {
           const readOnly = !persistent
           return await getOpenDBConnection(location, readOnly)
         } catch (e) {
-          if (e.message.includes('LOCK: Resource temporarily unavailable')) {
-            throw new Error('Salto local database locked. Could another Salto process be open?')
+          if (isDBLockErr(e)) {
+            throw new DBLockError()
           }
           throw e
         }
@@ -609,16 +645,164 @@ remoteMap.RemoteMapCreator => {
         if (locationCache.has(keyToTempDBKey(key))) {
           return true
         }
-        const hasKeyImpl = (k: string, db: rocksdb): boolean => {
-          let val: RocksDBValue
-          db.get(k, async (error, value) => {
-            val = error ? undefined : value
+        const hasKeyImpl = async (k: string, db: rocksdb): Promise<boolean> =>
+          new Promise(resolve => {
+            db.get(k, async (error, value) => {
+              resolve(!error && value !== undefined)
+            })
           })
-          return val !== undefined
-        }
-        return hasKeyImpl(keyToTempDBKey(key), tmpDB)
+        return (await hasKeyImpl(keyToTempDBKey(key), tmpDB))
           || hasKeyImpl(keyToDBKey(key), persistentDB)
       },
+      isEmpty: async (): Promise<boolean> => awu(keysImpl({ first: 1 })).isEmpty(),
+    }
+  }
+}
+
+export const createReadOnlyRemoteMapCreator = (location: string):
+remoteMap.ReadOnlyRemoteMapCreator => {
+  const notImplemented = (opName: string): void => {
+    throw new Error(`${opName} is invalid operation on read only remote map`)
+  }
+  let db: rocksdb
+  return async <T, K extends string = string>({
+    namespace, deserialize,
+  }: remoteMap.CreateReadOnlyRemoteMapParams<T>): Promise<remoteMap.RemoteMap<T, K> > => {
+    const keyToDBKey = (key: string): string => getFullDBKey(namespace, key)
+    const keyPrefix = getKeyPrefix(namespace)
+    const createDBIterator = (opts: CreateIteratorOpts): rocksdb.Iterator => {
+      const normalizedOpts = {
+        ...opts,
+        ...(opts.after ? { after: keyToDBKey(opts.after) } : {}),
+      }
+      return createIterator(keyPrefix, normalizedOpts, db)
+    }
+    const createDBConnection = async (): Promise<void> => {
+      if (currentConnectionsCount > MAX_CONNECTIONS) {
+        throw new Error('Failed to open rocksdb connection - too much open connections already')
+      }
+      const connectionPromise = (async () => {
+        currentConnectionsCount += 1
+        await createDBIfNotExist(location)
+        return getOpenDBConnection(location, true)
+      })()
+      db = await connectionPromise
+    }
+    const closeImpl = async (): Promise<void> => {
+      if (db.status === 'open') {
+        await promisify(db.close.bind(db))()
+        currentConnectionsCount -= 1
+      }
+    }
+    const keysImpl = (iterationOpts?: remoteMap.IterationOpts): AsyncIterable<K> => {
+      const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
+      const keyIter = createDBIterator(opts)
+      return awu(aggregatedIterable([keyIter]))
+        .map(async (entry: remoteMap.RemoteMapEntry<string>) => entry.key as K)
+    }
+    const keysPagesImpl = (iterationOpts?: remoteMap.IterationOpts):
+    AsyncIterable<K[]> => {
+      const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
+      const keyIter = createDBIterator(opts)
+      return awu(aggregatedIterablesWithPages([keyIter], opts.pageSize))
+        .map(async entries => entries.map(entry => entry.key as K))
+    }
+    const getImpl = (key: string): Promise<T | undefined> => new Promise(resolve => {
+      const resolveRet = async (value: Buffer | string): Promise<void> => {
+        resolve(await deserialize(value.toString()))
+      }
+      db.get(keyToDBKey(key), async (error, value) => {
+        if (error) {
+          resolve(undefined)
+        } else {
+          await resolveRet(value)
+        }
+      })
+    })
+    const valuesImpl = (iterationOpts?: remoteMap.IterationOpts):
+    AsyncIterable<T> => {
+      const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
+      const iter = createDBIterator(opts)
+      return awu(aggregatedIterable([iter]))
+        .map(async entry => deserialize(entry.value))
+    }
+    const valuesPagesImpl = (iterationOpts?: remoteMap.IterationOpts):
+    AsyncIterable<T[]> => {
+      const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
+      const iter = createDBIterator(opts)
+      return awu(aggregatedIterablesWithPages([iter], opts.pageSize))
+        .map(async entries => Promise.all(entries.map(entry => deserialize(entry.value))))
+    }
+    const entriesImpl = (iterationOpts?: remoteMap.IterationOpts):
+    AsyncIterable<remoteMap.RemoteMapEntry<T, K>> => {
+      const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
+      const iter = createDBIterator(opts)
+      return awu(aggregatedIterable([iter]))
+        .map(
+          async entry => ({ key: entry.key as K, value: await deserialize(entry.value) })
+        )
+    }
+    const entriesPagesImpl = (iterationOpts?: remoteMap.IterationOpts):
+    AsyncIterable<remoteMap.RemoteMapEntry<T, K>[]> => {
+      const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
+      const iter = createDBIterator(opts)
+      return awu(aggregatedIterablesWithPages([iter], opts.pageSize))
+        .map(entries => Promise.all(
+          entries
+            .map(
+              async entry => ({ key: entry.key as K, value: await deserialize(entry.value) })
+            )
+        ))
+    }
+    await createDBConnection()
+    return {
+      get: getImpl,
+      getMany: async (keys: string[]): Promise<(T | undefined)[]> =>
+        withLimitedConcurrency(keys.map(k => () => getImpl(k)), GET_CONCURRENCY),
+      values: <Opts extends remoteMap.IterationOpts>(iterationOpts?: Opts) => {
+        if (iterationOpts && remoteMap.isPagedIterationOpts(iterationOpts)) {
+          return valuesPagesImpl(iterationOpts) as remoteMap.RemoteMapIterator<T, Opts>
+        }
+        return valuesImpl(iterationOpts)
+      },
+      entries: <Opts extends remoteMap.IterationOpts>(
+        iterationOpts?: Opts
+      ): remoteMap.RemoteMapIterator<remoteMap.RemoteMapEntry<T, K>, Opts> => {
+        if (iterationOpts && remoteMap.isPagedIterationOpts(iterationOpts)) {
+          return entriesPagesImpl(
+            iterationOpts
+          ) as remoteMap.RemoteMapIterator<remoteMap.RemoteMapEntry<T, K>, Opts>
+        }
+        return entriesImpl(
+          iterationOpts
+        ) as remoteMap.RemoteMapIterator<remoteMap.RemoteMapEntry<T, K>, Opts>
+      },
+      set: async (_key: string, _element: T): Promise<void> => { notImplemented('set') },
+      setAll: async (
+        _entries: AsyncIterable<remoteMap.RemoteMapEntry<T, K>>, _temp = true
+      ): Promise<void> => { notImplemented('setAll') },
+      deleteAll: async (_iterator: AsyncIterable<K>) => { notImplemented('deleteAll') },
+      keys: <Opts extends remoteMap.IterationOpts>(
+        iterationOpts?: Opts
+      ): remoteMap.RemoteMapIterator<K, Opts> => {
+        if (iterationOpts && remoteMap.isPagedIterationOpts(iterationOpts)) {
+          return keysPagesImpl(iterationOpts) as remoteMap.RemoteMapIterator<K, Opts>
+        }
+        return keysImpl(iterationOpts) as remoteMap.RemoteMapIterator<K, Opts>
+      },
+      flush: async () => {
+        notImplemented('flush')
+        return false
+      },
+      revert: async () => { notImplemented('revert') },
+      clear: async () => { notImplemented('clear') },
+      delete: async (_key: string) => { notImplemented('delete') },
+      close: closeImpl,
+      has: async (key: string): Promise<boolean> => new Promise(resolve => {
+        db.get(keyToDBKey(key), async (error, value) => {
+          resolve(!error && value !== undefined)
+        })
+      }),
       isEmpty: async (): Promise<boolean> => awu(keysImpl({ first: 1 })).isEmpty(),
     }
   }

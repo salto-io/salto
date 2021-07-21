@@ -48,14 +48,14 @@ describe('data_types_custom_fields', () => {
   it('should add integer field', async () => {
     instance.value.fieldtype = 'INTEGER'
     await filterCreator(filterOpts).onFetch?.([type, instance, Account])
-    expect((await type.fields.someid.getType()).elemID.getFullName())
+    expect((await type.fields.custom_someid.getType()).elemID.getFullName())
       .toBe(BuiltinTypes.NUMBER.elemID.getFullName())
   })
 
   it('should add unknown field', async () => {
     instance.value.fieldtype = 'UNKNOWN'
     await filterCreator(filterOpts).onFetch?.([type, instance, Account])
-    expect((await type.fields.someid.getType()).elemID.getFullName())
+    expect((await type.fields.custom_someid.getType()).elemID.getFullName())
       .toBe(BuiltinTypes.UNKNOWN.elemID.getFullName())
   })
 
@@ -63,7 +63,7 @@ describe('data_types_custom_fields', () => {
     instance.value.fieldtype = 'SELECT'
     instance.value.selectrecordtype = '-112'
     await filterCreator(filterOpts).onFetch?.([type, instance, Account])
-    expect((await type.fields.someid.getType()).elemID.getFullName())
+    expect((await type.fields.custom_someid.getType()).elemID.getFullName())
       .toBe(Account.elemID.getFullName())
   })
 
@@ -71,7 +71,7 @@ describe('data_types_custom_fields', () => {
     instance.value.fieldtype = 'MULTISELECT'
     instance.value.selectrecordtype = '-112'
     await filterCreator(filterOpts).onFetch?.([type, instance, Account])
-    expect((await type.fields.someid.getType()).elemID.getFullName())
+    expect((await type.fields.custom_someid.getType()).elemID.getFullName())
       .toBe(new ListType(Account).elemID.getFullName())
   })
 
@@ -79,7 +79,7 @@ describe('data_types_custom_fields', () => {
     instance.value.fieldtype = 'MULTISELECT'
     instance.value.selectrecordtype = '-999'
     await filterCreator(filterOpts).onFetch?.([type, instance, Account])
-    expect((await type.fields.someid.getType()).elemID.getFullName())
+    expect((await type.fields.custom_someid.getType()).elemID.getFullName())
       .toBe(new ListType(BuiltinTypes.UNKNOWN).elemID.getFullName())
   })
 
@@ -98,7 +98,7 @@ describe('data_types_custom_fields', () => {
       isPartial: true,
     }
     await filterCreator(filterOpts).onFetch?.([type, Account])
-    expect((await type.fields.someid.getType()).elemID.getFullName())
+    expect((await type.fields.custom_someid.getType()).elemID.getFullName())
       .toBe(BuiltinTypes.NUMBER.elemID.getFullName())
   })
 })

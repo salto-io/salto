@@ -968,8 +968,8 @@ describe('multi env source', () => {
         () => Promise.resolve(new InMemoryRemoteMap()),
         false
       )
-      expect(await src.getStaticFileByHash(
-        staticFile.filepath, staticFile.encoding, staticFile.hash
+      expect(await src.getStaticFile(
+        staticFile.filepath, staticFile.encoding
       )).toEqual(staticFile)
     })
     it('should return the file it is present in the env source and the hashes match', async () => {
@@ -982,23 +982,9 @@ describe('multi env source', () => {
         () => Promise.resolve(new InMemoryRemoteMap()),
         false
       )
-      expect(await src.getStaticFileByHash(
-        staticFile.filepath, staticFile.encoding, staticFile.hash
+      expect(await src.getStaticFile(
+        staticFile.filepath, staticFile.encoding
       )).toEqual(staticFile)
-    })
-    it('should return undefined if the hahes do not match', async () => {
-      commonSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
-      envSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(staticFile)
-      const src = multiEnvSource(
-        sources,
-        activePrefix,
-        commonPrefix,
-        () => Promise.resolve(new InMemoryRemoteMap()),
-        false
-      )
-      expect(await src.getStaticFileByHash(
-        staticFile.filepath, staticFile.encoding, 'nohash'
-      )).not.toBeDefined()
     })
   })
 })

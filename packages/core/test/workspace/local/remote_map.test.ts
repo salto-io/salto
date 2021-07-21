@@ -23,7 +23,12 @@ import { serialization, remoteMap as rm, merger } from '@salto-io/workspace'
 import rocksdb from '@salto-io/rocksdb'
 import path from 'path'
 import { readdirSync } from 'fs-extra'
-import { createRemoteMapCreator, RocksDBValue, TMP_DB_DIR } from '../../../src/local-workspace/remote_map'
+import {
+  createRemoteMapCreator,
+  createReadOnlyRemoteMapCreator,
+  RocksDBValue,
+  TMP_DB_DIR,
+} from '../../../src/local-workspace/remote_map'
 // import rockdbImpl from '../../../src/local-workspace/rocksdb'
 
 const { serialize, deserialize } = serialization
@@ -47,6 +52,7 @@ const createElements = async (): Promise<Element[]> => {
 const DB_LOCATION = '/tmp/test_db'
 
 let remoteMap: rm.RemoteMap<Element>
+let readOnlyRemoteMap: rm.RemoteMap<Element>
 
 const createMap = async (
   namespace: string,
@@ -58,6 +64,12 @@ const createMap = async (
     serialize: elem => serialize([elem]),
     deserialize: async elemStr => ((await deserialize(elemStr)) as Element[])[0],
     persistent,
+  })
+
+const createReadOnlyMap = async (namespace: string): Promise<rm.RemoteMap<Element>> =>
+  createReadOnlyRemoteMapCreator(DB_LOCATION)({
+    namespace,
+    deserialize: async elemStr => ((await deserialize(elemStr)) as Element[])[0],
   })
 
 async function *createAsyncIterable(iterable: Element[]):
@@ -75,12 +87,17 @@ describe('test operations on remote db', () => {
     elements = await createElements()
     sortedElements = _.sortBy(elements, e => e.elemID.getFullName())
       .map(e => e.elemID.getFullName())
-    remoteMap = await createMap(`${Math.random().toString(36).substring(2, 15)} -_${Math.random()
-      .toString(36).substring(2, 15)}`)
+    const namespace = `${Math.random().toString(36).substring(2, 15)} -_${Math.random()
+      .toString(36).substring(2, 15)}`
+    remoteMap = await createMap(namespace)
+    await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
+    await remoteMap.flush()
+    readOnlyRemoteMap = await createReadOnlyMap(namespace)
   })
   afterEach(async () => {
     await remoteMap.revert()
     await remoteMap.close()
+    await readOnlyRemoteMap.close()
   })
 
   it('finds an item after it is set', async () => {
@@ -92,15 +109,25 @@ describe('test operations on remote db', () => {
       await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
       expect(await remoteMap.get(elements[0].elemID.getFullName())).toEqual(elements[0])
     })
-
     it('get non existent key', async () => {
       const id = 'not.exist'
       const element = await remoteMap.get(id)
       expect(element).toBeUndefined()
     })
+    describe('read only', () => {
+      it('should get an item after it is set', async () => {
+        const res = await readOnlyRemoteMap.get(elements[0].elemID.getFullName())
+        expect(res?.elemID.getFullName()).toEqual(elements[0].elemID.getFullName())
+      })
+      it('get non existent key', async () => {
+        const id = 'not.exist'
+        const element = await readOnlyRemoteMap.get(id)
+        expect(element).toBeUndefined()
+      })
+    })
   })
   describe('getMany', () => {
-    it('should get an item after it is set', async () => {
+    it('should get items after set', async () => {
       await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
       const anotherElemID = 'dummy.bla'
       await remoteMap.set(anotherElemID, elements[0])
@@ -113,6 +140,16 @@ describe('test operations on remote db', () => {
       const id = 'not.exist'
       expect(await remoteMap.getMany([id, elements[0].elemID.getFullName()]))
         .toEqual([undefined, elements[0]])
+    })
+    describe('read only', () => {
+      it('should get items after set', async () => {
+        const anotherElemID = 'dummy.bla'
+        const res = await readOnlyRemoteMap.getMany(
+          [elements[0].elemID.getFullName(), anotherElemID]
+        )
+        expect(res.map(e => e?.elemID?.getFullName()))
+          .toEqual([elements[0].elemID.getFullName(), undefined])
+      })
     })
   })
 
@@ -133,6 +170,11 @@ describe('test operations on remote db', () => {
         elements.slice(0, 1).map(elem => elem.elemID.getFullName())
       )
     })
+    describe('read only', () => {
+      it('should throw an error', async () => {
+        await expect(readOnlyRemoteMap.delete(elements[0].elemID.getFullName())).rejects.toThrow()
+      })
+    })
   })
 
   describe('clear', () => {
@@ -141,6 +183,11 @@ describe('test operations on remote db', () => {
       expect(await awu(remoteMap.keys()).toArray()).not.toHaveLength(0)
       await remoteMap.clear()
       expect(await awu(remoteMap.keys()).toArray()).toHaveLength(0)
+    })
+    describe('read only', () => {
+      it('should throw an error', async () => {
+        await expect(readOnlyRemoteMap.clear()).rejects.toThrow()
+      })
     })
   })
 
@@ -153,16 +200,34 @@ describe('test operations on remote db', () => {
     it('should return false if key does not exist', async () => {
       expect(await remoteMap.has('not-exist')).toEqual(false)
     })
+    describe('read only', () => {
+      it('should return true if key exists', async () => {
+        expect(await readOnlyRemoteMap.has(elements[0].elemID.getFullName())).toEqual(true)
+      })
+      it('should return false if key does not exist', async () => {
+        expect(await readOnlyRemoteMap.has('not-exist')).toEqual(false)
+      })
+    })
   })
 
   describe('isEmpty', () => {
     it('should return true if the remote map is empty', async () => {
-      expect(await remoteMap.isEmpty()).toEqual(true)
+      const emptyRemoteMap = await createMap('test')
+      const res = await emptyRemoteMap.isEmpty()
+      await emptyRemoteMap.close()
+      expect(res).toEqual(true)
     })
 
     it('should return false if the remote map is not empty', async () => {
-      await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
       expect(await remoteMap.isEmpty()).toEqual(false)
+    })
+    describe('read only', () => {
+      it('should return true if the remote map is empty', async () => {
+        expect(await (await createReadOnlyMap('test')).isEmpty()).toEqual(true)
+      })
+      it('should return false if the remote map is not empty', async () => {
+        expect(await readOnlyRemoteMap.isEmpty()).toEqual(false)
+      })
     })
   })
 
@@ -208,6 +273,12 @@ describe('test operations on remote db', () => {
       expect(pages).toHaveLength(5)
       expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
       expect(_.flatten(pages)).toEqual(sortedElements)
+    })
+    describe('read only', () => {
+      it('should list all keys', async () => {
+        const res = await awu(readOnlyRemoteMap.keys()).toArray()
+        expect(res).toEqual(elements.map(elem => elem.elemID.getFullName()).sort())
+      })
     })
   })
 
@@ -255,6 +326,13 @@ describe('test operations on remote db', () => {
       expect(pages).toHaveLength(5)
       expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
       expect(_.flatten(pages).map(e => e.elemID.getFullName())).toEqual(sortedElements)
+    })
+    describe('read only', () => {
+      it('should get all values', async () => {
+        const res = await awu(readOnlyRemoteMap.values()).toArray()
+        expect(res.map(elem => elem.elemID.getFullName()))
+          .toEqual(elements.map(elem => elem.elemID.getFullName()).sort())
+      })
     })
   })
 
@@ -326,8 +404,23 @@ describe('test operations on remote db', () => {
       expect(pages.slice(0, -1).every(page => page.length === 3)).toBeTruthy()
       expect(_.flatten(pages).map(e => e.key)).toEqual(sortedElements)
     })
+    describe('read only', () => {
+      it('should get all entries', async () => {
+        const res = await awu(readOnlyRemoteMap.entries()).toArray()
+        expect(res.map(elem => elem.key))
+          .toEqual(elements.map(elem => elem.elemID.getFullName()).sort())
+        expect(res.map(elem => elem.value.elemID.getFullName()))
+          .toEqual(elements.map(elem => elem.elemID.getFullName()).sort())
+      })
+    })
   })
-
+  describe('flush', () => {
+    describe('read only', () => {
+      it('should throw an error', async () => {
+        await expect(readOnlyRemoteMap.flush()).rejects.toThrow()
+      })
+    })
+  })
 
   it('when overriden, returns new value', async () => {
     await remoteMap.setAll(createAsyncIterable(elements))
@@ -352,15 +445,13 @@ describe('test operations on remote db', () => {
 
 describe('non persistent mode', () => {
   it('should throw an error if flush is called', async () => {
-    const readOnlyRemoteMap = await createMap(DB_LOCATION, false)
-    await expect(() => readOnlyRemoteMap.flush()).rejects.toThrow()
+    await expect(async () => (await createMap(DB_LOCATION, false)).flush()).rejects.toThrow()
   })
 
   it('should destroy the tmp storage dirs after the connection is closed', async () => {
     const tmpDir = path.join(DB_LOCATION, TMP_DB_DIR)
     const preDirs = readdirSync(tmpDir)
-    const readOnlyRemoteMap = await createMap(DB_LOCATION, false)
-    await readOnlyRemoteMap.close()
+    await (await createMap(DB_LOCATION, false)).close()
     const postDirs = readdirSync(tmpDir)
     expect(preDirs).toEqual(postDirs)
   })

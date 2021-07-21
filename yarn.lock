@@ -1632,17 +1632,6 @@
     requirejs "2.3.6"
     xml2js "0.4.19"
 
-"@salto-io/marketo-adapter@0.2.13":
-  version "0.2.13"
-  resolved "https://registry.yarnpkg.com/@salto-io/marketo-adapter/-/marketo-adapter-0.2.13.tgz#b1cc6d46df00ba06a41a4a60e5bb00fd22e8dbca"
-  integrity sha512-VDFFY+HAzalA0i6VOxoeIQVMijxjWt+fXlZcGfoCm0lnyjBRKdcU+qDq/34xJ/5fVnhu3Mtowpr1oJLhqk/1/w==
-  dependencies:
-    "@salto-io/adapter-api" "0.2.13"
-    "@salto-io/adapter-utils" "0.2.13"
-    axios "^0.21.1"
-    axios-retry "^3.1.9"
-    lodash "^4.17.21"
-
 "@salto-io/rocksdb@4.1.0-salto-5":
   version "4.1.0-salto-5"
   resolved "https://registry.yarnpkg.com/@salto-io/rocksdb/-/rocksdb-4.1.0-salto-5.tgz#35d1585a032376d0ae91f4a041801eb3217e6346"
@@ -1652,13 +1641,13 @@
     napi-macros "~2.0.0"
     node-gyp-build "~4.1.0"
 
-"@salto-io/suitecloud-cli@1.1.2-salto-8":
-  version "1.1.2-salto-8"
-  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.1.2-salto-8.tgz#5108949e863f7f978416a73358be6ab0ce89b393"
-  integrity sha512-d2zaKfzLoW++WXnif3xJWtXJwfNzOhEQ+bKCpXOg34vjkWa2m0SnLD4Ul37cskF3Il1xiEixuli+mytVkSOAuA==
+"@salto-io/suitecloud-cli@1.1.2-salto-9":
+  version "1.1.2-salto-9"
+  resolved "https://registry.yarnpkg.com/@salto-io/suitecloud-cli/-/suitecloud-cli-1.1.2-salto-9.tgz#38b9d4cba03072ed3c74fefc032e4b8db478be98"
+  integrity sha512-y7WapkcfrCfBjFHzBG9LvB/KmIZDISNOUUlvSZtiL4R3R43AZKpmGrVwVqOoanD5cztIwQMeF5K9VG/AGcn64Q==
   dependencies:
     "@oracle/suitecloud-cli-localserver-command" "^1.1.1"
-    "@salto-io/logging" "^0.2.8"
+    "@salto-io/logging" "<0.4.0"
     chalk "^4.0.0"
     cli-spinner "^0.2.10"
     commander "^5.1.0"

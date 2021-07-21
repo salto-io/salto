@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { detailedCompare } from '@salto-io/adapter-utils'
-import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange, PrimitiveType, PrimitiveTypes, isField, getChangeElement, Change } from '@salto-io/adapter-api'
+import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange, PrimitiveType, PrimitiveTypes, isField, getChangeElement, Change, ReferenceExpression, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { ModificationDiff, RemovalDiff, AdditionDiff } from '@salto-io/dag'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
 import { routeChanges, routePromote, routeDemote, routeCopyTo, getMergeableParentID } from '../../../src/workspace/nacl_files/multi_env/routers'
@@ -585,6 +585,24 @@ describe('align fetch routing', () => {
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual(change)
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
+  })
+  it('should route add changes of instance annotations to env as annotations in a wrapped instance', async () => {
+    const change: DetailedChange = {
+      action: 'add',
+      data: { after: [new ReferenceExpression(commonObj.elemID)] },
+      id: commonInstance.elemID.createNestedID(INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES),
+    }
+    const routedChanges = await routeChanges([change], envSource, commonSource, {}, 'align')
+    expect(routedChanges.commonSource).toHaveLength(0)
+    expect(routedChanges.primarySource).toHaveLength(1)
+    const envChange = routedChanges.primarySource?.[0] as DetailedChange
+    expect(envChange.action).toEqual('add')
+    const envChangeInstance = getChangeElement(envChange) as InstanceElement
+    expect(envChangeInstance).toBeInstanceOf(InstanceElement)
+    expect(envChangeInstance.annotations).toHaveProperty(
+      INSTANCE_ANNOTATIONS.GENERATED_DEPENDENCIES,
+      change.data.after,
+    )
   })
 })
 

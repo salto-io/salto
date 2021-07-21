@@ -94,15 +94,22 @@ const createInstanceElementFromNestedAdditions = (
   path?: string[]
 ): InstanceElement => {
   const value = {}
+  const annotations = {}
   nestedValues.forEach(nestedValue => {
     const inValuePath = nestedValue.id.createTopLevelParentID().path
-    _.set(value, inValuePath, nestedValue.value)
+    _.set(
+      nestedValue.id.isAttrID() ? annotations : value,
+      inValuePath,
+      nestedValue.value,
+    )
   })
+
   return new InstanceElement(
     commonInstance.elemID.name,
     commonInstance.refType,
     value,
-    path
+    path,
+    annotations,
   )
 }
 

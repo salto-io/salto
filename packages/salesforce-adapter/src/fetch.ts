@@ -113,14 +113,6 @@ const getAuditAnnotations = (fileProperties: FileProperties): Record<string, str
   }
 )
 
-// const addAuditAnnotations = (element: InstanceElement,
-//   fileProperties: FileProperties | undefined): void => {
-//   if (fileProperties === undefined) {
-//     return
-//   }
-//   Object.assign(element.annotations, getAuditAnnotations(fileProperties))
-// }
-
 export const fetchMetadataInstances = async ({
   client, metadataType, fileProps, metadataQuery,
 }: {
@@ -162,8 +154,6 @@ export const fetchMetadataInstances = async ({
     .map(m => createInstanceElement(m, metadataType,
     filePropertiesMap[m.fullName]?.namespacePrefix,
     getAuditAnnotations(filePropertiesMap[m.fullName])))
-  // elements.forEach(element => addAuditAnnotations(element,
-  //   filePropertiesMap[element.elemID.name]))
   return {
     elements,
     configChanges: makeArray(errors)

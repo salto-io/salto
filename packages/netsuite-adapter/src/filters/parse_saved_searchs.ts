@@ -18,7 +18,7 @@ import { getChangeElement, InstanceElement, isInstanceChange, isInstanceElement,
 import _ from 'lodash'
 import { SAVED_SEARCH } from '../constants'
 import { FilterCreator } from '../filter'
-import { savedsearch, savedsearchInnerTypes } from '../saved_search_parsing/parsed_saved_search'
+import { savedsearch, savedsearchInnerTypes, savedSearchDependenciesElemID } from '../saved_search_parsing/parsed_saved_search'
 import { savedsearch as oldSavedSearch } from '../types/custom_types/savedsearch'
 import { parseDefinition } from '../saved_search_parsing/saved_search_parser'
 
@@ -49,6 +49,7 @@ const removeValuesFromInstance = (instance:InstanceElement): void => {
 const filterCreator: FilterCreator = ({ elementsSource }) => ({
   onFetch: async elements => {
     _.remove(elements, e => isObjectType(e) && e.elemID.name === SAVED_SEARCH)
+    _.remove(elements, e => isObjectType(e) && e.elemID.isEqual(savedSearchDependenciesElemID))
     const instances = _.remove(elements, e => isInstanceElement(e)
      && e.elemID.typeName === SAVED_SEARCH)
     elements.push(savedsearch)

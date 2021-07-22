@@ -396,9 +396,9 @@ export class Types {
     [BUSINESS_STATUS]: Types.BusinessStatusType,
     [SECURITY_CLASSIFICATION]: Types.SecurityClassificationType,
     [COMPLIANCE_GROUP]: BuiltinTypes.STRING,
-    [FIELD_ANNOTATIONS.CREATABLE]: BuiltinTypes.BOOLEAN,
-    [FIELD_ANNOTATIONS.UPDATEABLE]: BuiltinTypes.BOOLEAN,
-    [FIELD_ANNOTATIONS.QUERYABLE]: BuiltinTypes.BOOLEAN,
+    [FIELD_ANNOTATIONS.CREATABLE]: BuiltinTypes.HIDDEN_BOOLEAN,
+    [FIELD_ANNOTATIONS.UPDATEABLE]: BuiltinTypes.HIDDEN_BOOLEAN,
+    [FIELD_ANNOTATIONS.QUERYABLE]: BuiltinTypes.HIDDEN_BOOLEAN,
     [INTERNAL_ID_ANNOTATION]: BuiltinTypes.HIDDEN_STRING,
     [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
     [FIELD_ANNOTATIONS.TRACK_TRENDING]: BuiltinTypes.BOOLEAN,
@@ -628,6 +628,14 @@ export class Types {
     AnyType: new PrimitiveType({
       elemID: new ElemID(SALESFORCE, INTERNAL_FIELD_TYPE_NAMES.ANY),
       primitive: PrimitiveTypes.UNKNOWN,
+      annotationRefsOrTypes: {
+        ...Types.commonAnnotationTypes,
+      },
+    }),
+    ServiceId: new PrimitiveType({
+      elemID: new ElemID(SALESFORCE, 'serviceid'),
+      primitive: PrimitiveTypes.STRING,
+      annotations: { [CORE_ANNOTATIONS.SERVICE_ID]: true },
       annotationRefsOrTypes: {
         ...Types.commonAnnotationTypes,
       },
@@ -1149,7 +1157,7 @@ export const getSObjectFieldElement = (
     // returned from the API is string)
     naclFieldType = getFieldType(FIELD_TYPE_NAMES.AUTONUMBER)
   } else if (field.idLookup && field.type === 'id') {
-    naclFieldType = BuiltinTypes.SERVICE_ID
+    naclFieldType = Types.primitiveDataTypes.ServiceId
   } else if (field.type === 'string' && !field.compoundFieldName) { // string
     naclFieldType = getFieldType(FIELD_TYPE_NAMES.TEXT)
   } else if ((field.type === 'double' && !field.compoundFieldName)) {

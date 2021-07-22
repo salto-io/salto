@@ -141,6 +141,14 @@ export const BuiltinTypes = {
       [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
     },
   }),
+  HIDDEN_BOOLEAN: new PrimitiveType({
+    elemID: new ElemID(GLOBAL_ADAPTER, 'hidden_boolean'),
+    primitive: PrimitiveTypes.BOOLEAN,
+    annotationRefsOrTypes: StandardCoreAnnotationTypes,
+    annotations: {
+      [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+    },
+  }),
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */

@@ -19,15 +19,41 @@ import { NETSUITE } from '../../src/constants'
 
 
 describe('subInstances change validator', () => {
-  it('should have change error if a sub-instance has been modified', async () => {
-    const accountingPeriodType = new ObjectType({ elemID: new ElemID(NETSUITE, 'AccountingPeriod') })
-    const before = new InstanceElement('instance', accountingPeriodType, { isSubInstance: true })
+  describe('should have change error if a sub-instance has been modified', () => {
+    let accountingPeriodType: ObjectType
+    let accountingPeriodInstance: InstanceElement
 
-    const changeErrors = await subInstancesValidator(
-      [toChange({ before })]
-    )
-    expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Error')
-    expect(changeErrors[0].elemID).toEqual(before.elemID)
+    beforeEach(() => {
+      accountingPeriodType = new ObjectType({ elemID: new ElemID(NETSUITE, 'AccountingPeriod') })
+      accountingPeriodInstance = new InstanceElement('instance', accountingPeriodType, { isSubInstance: true })
+    })
+    it('removal', async () => {
+      const changeErrors = await subInstancesValidator(
+        [toChange({ before: accountingPeriodInstance })]
+      )
+      expect(changeErrors).toHaveLength(1)
+      expect(changeErrors[0].severity).toEqual('Error')
+      expect(changeErrors[0].elemID).toEqual(accountingPeriodInstance.elemID)
+    })
+
+    it('modification', async () => {
+      const after = accountingPeriodInstance.clone()
+      after.value.isSubInstance = false
+      const changeErrors = await subInstancesValidator(
+        [toChange({ before: accountingPeriodInstance, after })]
+      )
+      expect(changeErrors).toHaveLength(1)
+      expect(changeErrors[0].severity).toEqual('Error')
+      expect(changeErrors[0].elemID).toEqual(accountingPeriodInstance.elemID)
+    })
+
+    it('addition', async () => {
+      const changeErrors = await subInstancesValidator(
+        [toChange({ after: accountingPeriodInstance })]
+      )
+      expect(changeErrors).toHaveLength(1)
+      expect(changeErrors[0].severity).toEqual('Error')
+      expect(changeErrors[0].elemID).toEqual(accountingPeriodInstance.elemID)
+    })
   })
 })

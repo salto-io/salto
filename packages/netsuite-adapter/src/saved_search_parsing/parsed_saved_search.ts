@@ -24,7 +24,7 @@ import * as constants from '../constants'
 export const savedsearchInnerTypes: ObjectType[] = []
 
 const savedSearchElemID = new ElemID(constants.NETSUITE, 'savedsearch')
-const savedSearchDependenciesElemID = new ElemID(constants.NETSUITE, 'savedsearch_dependencies')
+export const savedSearchDependenciesElemID = new ElemID(constants.NETSUITE, 'savedsearch_dependencies')
 const savedSearchFilterRecordElemID = new ElemID(constants.NETSUITE, 'savedsearch_filterRecord')
 const savedSearchAvailableFilterElemID = new ElemID(constants.NETSUITE, 'savedsearch_availableFilter')
 const savedSearchReturnFieldElemID = new ElemID(constants.NETSUITE, 'savedsearch_returnField')

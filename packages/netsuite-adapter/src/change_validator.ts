@@ -23,6 +23,7 @@ import instanceChangesValidator from './change_validators/instance_changes'
 import saveSearchMoveEnvironment from './change_validators/saved_search_move_environment'
 import fileValidator from './change_validators/file_changes'
 import immutableChangesValidator from './change_validators/immutable_changes'
+import subInstancesValidator from './change_validators/subinstances'
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
 
 
@@ -34,6 +35,7 @@ const changeValidators: ChangeValidator[] = [
   immutableChangesValidator,
   removeListItemValidator,
   fileValidator,
+  subInstancesValidator,
 ]
 
 const nonSuiteAppValidators: ChangeValidator[] = [

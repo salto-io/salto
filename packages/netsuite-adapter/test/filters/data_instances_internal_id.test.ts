@@ -61,6 +61,7 @@ describe('data_instances_internal_id', () => {
 
       await filterCreator().onFetch(elements)
       expect(elements[1].elemID.name).toBe('type_someList_1')
+      expect(elements[1].value.isSubInstance).toBeTruthy()
       expect((instance.value.someList[0] as ReferenceExpression).elemID.getFullName())
         .toBe(elements[1].elemID.getFullName())
       expect(elements.length).toBe(2)

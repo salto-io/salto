@@ -159,25 +159,29 @@ const reviveElemID = (v: {[key: string]: any}): ElemID => (
   new ElemID(v.adapter, v.typeName, v.idType, ...v.nameParts)
 )
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const reviveType = (v: {[key: string]: any}): ObjectType => (
   v.type ?? new ObjectType({
-    elemID: v.refType.elemId
+    elemID: v.refType.elemId,
   })
 )
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const reviveInnerType = (v: {[key: string]: any}): ObjectType => (
   v.innerType ?? new ObjectType({
-    elemID: v.innerRefType.elemId
+    elemID: v.innerRefType.elemId,
   })
 )
-const reviveAnnotationTypes = (v: {[key: string]: any}): TypeMap => {
-  console.log(v)
-  return v.annotationTypes ?? _.mapValues(
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const reviveAnnotationTypes = (v: {[key: string]: any}): TypeMap => (
+  v.annotationTypes ?? _.mapValues(
     v.annotationRefTypes,
     anno => new ObjectType({
-      elemID: anno.elemId
+      elemID: anno.elemId,
     })
   )
-}
+)
 
 export const deserialize = async (
   data: string,

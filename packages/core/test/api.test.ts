@@ -15,7 +15,6 @@
 */
 import _ from 'lodash'
 import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import * as api from '../src/api'
@@ -91,11 +90,11 @@ describe('api.ts', () => {
     elemID: new ElemID(mockService, 'dummyHidden'),
     fields: {
       hidden: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
       },
       regField: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
       },
     },

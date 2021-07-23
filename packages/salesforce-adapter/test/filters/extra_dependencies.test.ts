@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FilterResult, FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator, { WARNING_MESSAGE } from '../../src/filters/extra_dependencies'
@@ -49,8 +49,8 @@ describe('extra dependencies filter', () => {
       'meta',
       {
         fields: {
-          fieldName: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID) },
+          fieldName: { refType: BuiltinTypes.STRING },
+          [INSTANCE_FULL_NAME_FIELD]: { refType: BuiltinTypes.SERVICE_ID },
         },
       }
     )
@@ -63,14 +63,14 @@ describe('extra dependencies filter', () => {
       },
       fields: {
         first: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+          refType: Types.primitiveDataTypes.Text,
           annotations: {
             [API_NAME]: 'obj__c.first__c',
             [INTERNAL_ID_ANNOTATION]: 'first field',
           },
         },
         second: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.Number),
+          refType: Types.primitiveDataTypes.Number,
           annotations: {
             [API_NAME]: 'obj__c.second__c',
             [INTERNAL_ID_ANNOTATION]: 'second field',
@@ -86,7 +86,7 @@ describe('extra dependencies filter', () => {
       },
       fields: {
         custom: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+          refType: Types.primitiveDataTypes.Text,
           annotations: {
             [API_NAME]: 'Lead.custom__c',
             [INTERNAL_ID_ANNOTATION]: 'lead field',

@@ -322,7 +322,7 @@ describe('workspace', () => {
       const newElemID = new ElemID('salesforce', 'new')
       const newObject = new ObjectType({
         elemID: newElemID,
-        fields: { aaa: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) } },
+        fields: { aaa: { refType: BuiltinTypes.NUMBER } },
       })
       const updateNaclFilesREsult = await workspace.updateNaclFiles([{
         id: newElemID,
@@ -360,7 +360,7 @@ describe('workspace', () => {
                 elemID: new ElemID('salto', 'obj'),
                 fields: {
                   field: {
-                    refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+                    refType: BuiltinTypes.NUMBER,
                   },
                 },
               }),
@@ -449,7 +449,7 @@ describe('workspace', () => {
             annotations: {
               [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
             },
-            refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+            refType: BuiltinTypes.NUMBER,
           },
         },
       })
@@ -613,9 +613,9 @@ describe('workspace', () => {
       elemID: salesforceLeadElemID,
       fields: {
         // eslint-disable-next-line camelcase
-        new_base: { refType: createRefToElmWithValue(salesforceText) },
+        new_base: { refType: salesforceText },
         // eslint-disable-next-line camelcase
-        ext_field: { refType: createRefToElmWithValue(salesforceText), annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'foo' } },
+        ext_field: { refType: salesforceText, annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'foo' } },
       },
     })
     const multiLocElemID = new ElemID('multi', 'loc')
@@ -812,7 +812,7 @@ describe('workspace', () => {
 
     const objFieldWithHiddenAnnotationType = new ObjectType({
       elemID: new ElemID('salesforce', 'SomeObj'),
-      fields: { aaa: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) } },
+      fields: { aaa: { refType: BuiltinTypes.NUMBER } },
       annotations: {
         hiddenStrAnno: 'some value',
       },
@@ -3117,9 +3117,9 @@ describe('listUnresolvedReferences', () => {
     const type1 = new ObjectType({
       elemID: new ElemID('salesforce', 'someType'),
       fields: {
-        f1: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-        f2: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-        f3: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+        f1: { refType: BuiltinTypes.NUMBER },
+        f2: { refType: BuiltinTypes.NUMBER },
+        f3: { refType: BuiltinTypes.NUMBER },
       },
     })
     const type2 = new ObjectType({
@@ -3127,7 +3127,7 @@ describe('listUnresolvedReferences', () => {
       annotations: { _parent: new TypeReference(type1.elemID) },
       fields: {
         f1: { refType: type1 },
-        f2: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+        f2: { refType: BuiltinTypes.NUMBER },
         f3: { refType: type1 },
       },
     })

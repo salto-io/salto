@@ -65,14 +65,14 @@ describe('Salto Dump', () => {
     elemID: new ElemID('salesforce', 'test'),
     fields: {
       name: {
-        refType: createRefToElmWithValue(strType),
+        refType: strType,
         annotations: { label: 'Name' },
       },
-      num: { refType: createRefToElmWithValue(numType) },
-      list: { refType: createRefToElmWithValue(new ListType(strType)) },
-      map: { refType: createRefToElmWithValue(new MapType(strType)) },
+      num: { refType: numType },
+      list: { refType: new ListType(strType) },
+      map: { refType: new MapType(strType) },
       field: {
-        refType: createRefToElmWithValue(fieldType),
+        refType: fieldType,
         annotations: {
           alice: 1,
           bob: 2,

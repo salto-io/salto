@@ -665,13 +665,13 @@ const createCustomObjectInstance = (values: MetadataValues): InstanceElement => 
     } as MetadataTypeAnnotations,
     fields: {
       [DEPLOY_WRAPPER_INSTANCE_MARKER]: {
-        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        refType: BuiltinTypes.BOOLEAN,
         annotations: {
           [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
         },
       },
       fields: {
-        refType: createRefToElmWithValue(new ListType(customFieldType)),
+        refType: new ListType(customFieldType),
       },
       ..._.mapValues(
         NESTED_INSTANCE_VALUE_TO_TYPE_NAME,

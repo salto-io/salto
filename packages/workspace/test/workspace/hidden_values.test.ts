@@ -15,7 +15,6 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeElement, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { mockState } from '../common/state'
 import { MergeResult } from '../../src/merger'
@@ -40,7 +39,7 @@ describe('mergeWithHidden', () => {
         elemID: new ElemID('test', 'type'),
         fields: {
           f1: {
-            refType: createRefToElmWithValue(fieldType),
+            refType: fieldType,
             annotations: { hiddenAnno: 'asd' },
           },
         },
@@ -65,7 +64,7 @@ describe('mergeWithHidden', () => {
       const workspaceType = new ObjectType({
         elemID: new ElemID('test', 'type'),
         fields: {
-          test: { refType: createRefToElmWithValue(workspaceFieldType) },
+          test: { refType: workspaceFieldType },
         },
       })
       const stateFieldType = getFieldType('text', PrimitiveTypes.STRING)
@@ -73,7 +72,7 @@ describe('mergeWithHidden', () => {
         ...workspaceType,
         fields: {
           test: {
-            refType: createRefToElmWithValue(stateFieldType),
+            refType: stateFieldType,
             annotations: { hiddenAnno: 'asd' },
           },
         },
@@ -134,7 +133,7 @@ describe('mergeWithHidden', () => {
         elemID: new ElemID('test', 'type'),
         fields: {
           field: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
           },
         },
       })
@@ -143,7 +142,7 @@ describe('mergeWithHidden', () => {
         elemID: new ElemID('test', 'type'),
         fields: {
           field: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
             annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' },
           },
         },
@@ -173,7 +172,7 @@ describe('handleHiddenChanges', () => {
       instanceType = new ObjectType({
         elemID: new ElemID('test', 'type'),
         fields: {
-          val: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          val: { refType: BuiltinTypes.STRING },
         },
       })
       instance = new InstanceElement(
@@ -275,7 +274,7 @@ describe('handleHiddenChanges', () => {
         elemID: new ElemID('test', 'type'),
         fields: {
           field: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
             annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' },
           },
         },
@@ -310,8 +309,8 @@ describe('handleHiddenChanges', () => {
         new ObjectType({
           elemID: new ElemID('test', 'type'),
           fields: {
-            val: { refType: createRefToElmWithValue(refTargetType) },
-            ref: { refType: createRefToElmWithValue(refTargetType) },
+            val: { refType: refTargetType },
+            ref: { refType: refTargetType },
           },
         }),
         { val: 'asd' },

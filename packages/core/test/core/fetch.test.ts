@@ -24,7 +24,6 @@ import {
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { elementSource } from '@salto-io/workspace'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents, getAdaptersFirstFetchPartial,
@@ -47,7 +46,7 @@ describe('fetch', () => {
     elemID: testID,
     fields: {
       test: {
-        refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { annotation: 'value' },
       },
     },
@@ -59,7 +58,7 @@ describe('fetch', () => {
   const newTypeID = new ElemID('dummy', 'new')
   const newTypeBase = new ObjectType({
     elemID: newTypeID,
-    fields: { base: { refType: utils.createRefToElmWithValue(BuiltinTypes.STRING) } },
+    fields: { base: { refType: BuiltinTypes.STRING } },
     path: ['path', 'base'],
   })
 
@@ -68,17 +67,17 @@ describe('fetch', () => {
     elemID: anotherTypeID,
     fields: {
       reg: {
-        refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       notHidden: {
-        refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       hidden: {
-        refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
       },
       hiddenValue: {
-        refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
       },
     },
@@ -97,19 +96,19 @@ describe('fetch', () => {
 
   const newTypeBaseModified = new ObjectType({
     elemID: newTypeID,
-    fields: { base: { refType: utils.createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) } },
+    fields: { base: { refType: new ListType(BuiltinTypes.STRING) } },
     path: ['path', 'base'],
   })
   const newTypeExt = new ObjectType({
     elemID: newTypeID,
-    fields: { ext: { refType: utils.createRefToElmWithValue(BuiltinTypes.STRING) } },
+    fields: { ext: { refType: BuiltinTypes.STRING } },
     path: ['path', 'ext'],
   })
   const newTypeMerged = new ObjectType({
     elemID: newTypeID,
     fields: {
-      base: { refType: utils.createRefToElmWithValue(BuiltinTypes.STRING) },
-      ext: { refType: utils.createRefToElmWithValue(BuiltinTypes.STRING) },
+      base: { refType: BuiltinTypes.STRING },
+      ext: { refType: BuiltinTypes.STRING },
     },
   })
 
@@ -201,7 +200,7 @@ describe('fetch', () => {
           new ObjectType({
             elemID: new ElemID('dummy', 'type'),
             fields: {
-              field: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+              field: { refType: BuiltinTypes.NUMBER },
             },
           }),
           { field: new ReferenceExpression(new ElemID('dummy', 'type', 'instance', 'referenced', 'field')) }
@@ -212,7 +211,7 @@ describe('fetch', () => {
           new ObjectType({
             elemID: new ElemID('dummy', 'type'),
             fields: {
-              field: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+              field: { refType: BuiltinTypes.NUMBER },
             },
           }),
           { field: 5 }
@@ -301,7 +300,7 @@ describe('fetch', () => {
         elemID: configElemID,
         fields: {
           test: {
-            refType: utils.createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+            refType: new ListType(BuiltinTypes.STRING),
           },
         },
       })
@@ -697,7 +696,7 @@ describe('fetch', () => {
       const typeElemID = new ElemID('adapter', 'elem_id_name')
       const serviceIdField = {
         name: SERVICE_ID_FIELD_NAME,
-        refType: utils.createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        refType: BuiltinTypes.SERVICE_ID,
       }
       const origRegularFieldType = new PrimitiveType({
         elemID: new ElemID('adapter', 'regular'),
@@ -731,7 +730,7 @@ describe('fetch', () => {
       beforeEach(() => {
         obj = origObj.clone()
         regularFieldType = origRegularFieldType.clone()
-        regularFieldDef = { name: REGULAR_FIELD_NAME, refType: utils.createRefToElmWithValue(regularFieldType), annotations: { [SERVICE_ID_ANNOTATION]: 'FieldServiceId' } }
+        regularFieldDef = { name: REGULAR_FIELD_NAME, refType: regularFieldType, annotations: { [SERVICE_ID_ANNOTATION]: 'FieldServiceId' } }
         instance = new InstanceElement('instance_elem_id_name', obj, { [SERVICE_ID_FIELD_NAME]: 'serviceIdValue' })
         elements = [obj, regularFieldType, instance]
         elementsSource = createElementSource(elements)
@@ -827,7 +826,7 @@ describe('fetch', () => {
         expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(instance.elemID)
       })
       it('should generate for InstanceElement with no SERVICE_ID value & field', async () => {
-        serviceIdField.refType = utils.createRefToElmWithValue(BuiltinTypes.STRING)
+        serviceIdField.refType = BuiltinTypes.STRING
         addField(obj, serviceIdField)
         delete instance.value[SERVICE_ID_FIELD_NAME]
 

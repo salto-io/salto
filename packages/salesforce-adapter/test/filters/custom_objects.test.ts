@@ -65,14 +65,14 @@ describe('Custom Objects filter', () => {
       if (name === NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS) {
         const listViewFilterElemId = new ElemID(SALESFORCE, 'ListViewFilter')
         return {
-          [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          columns: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          [INSTANCE_FULL_NAME_FIELD]: { refType: BuiltinTypes.STRING },
+          columns: { refType: BuiltinTypes.STRING },
           filters: {
             refType: createRefToElmWithValue(new ObjectType({
               elemID: listViewFilterElemId,
               fields: {
-                field: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-                value: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+                field: { refType: BuiltinTypes.STRING },
+                value: { refType: BuiltinTypes.STRING },
               },
             })),
           },
@@ -80,15 +80,15 @@ describe('Custom Objects filter', () => {
       }
       if (name === NESTED_INSTANCE_VALUE_NAME.FIELD_SETS) {
         return {
-          availableFields: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          displayedFields: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          availableFields: { refType: BuiltinTypes.STRING },
+          displayedFields: { refType: BuiltinTypes.STRING },
+          [INSTANCE_FULL_NAME_FIELD]: { refType: BuiltinTypes.STRING },
         }
       }
       if (name === NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS) {
         return {
-          fields: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          fields: { refType: BuiltinTypes.STRING },
+          [INSTANCE_FULL_NAME_FIELD]: { refType: BuiltinTypes.STRING },
         }
       }
       return {}
@@ -112,10 +112,10 @@ describe('Custom Objects filter', () => {
       elemID: CUSTOM_OBJECT_TYPE_ID,
       fields: {
         ...innerMetadataTypesFromInstance,
-        [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        pluralLabel: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        enableFeeds: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-        [CUSTOM_SETTINGS_TYPE]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        [INSTANCE_FULL_NAME_FIELD]: { refType: BuiltinTypes.STRING },
+        pluralLabel: { refType: BuiltinTypes.STRING },
+        enableFeeds: { refType: BuiltinTypes.BOOLEAN },
+        [CUSTOM_SETTINGS_TYPE]: { refType: BuiltinTypes.STRING },
       },
       annotations: {
         [METADATA_TYPE]: CUSTOM_OBJECT,
@@ -1605,15 +1605,15 @@ describe('Custom Objects filter', () => {
         elemID: new ElemID(SALESFORCE, 'Test'),
         fields: {
           MyField: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+            refType: Types.primitiveDataTypes.Text,
             annotations: { [API_NAME]: 'Test__c.MyField__c' },
           },
           Master: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
+            refType: Types.primitiveDataTypes.MasterDetail,
             annotations: { [API_NAME]: 'Test__c.Master__c' },
           },
           SysField: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.AutoNumber),
+            refType: Types.primitiveDataTypes.AutoNumber,
             annotations: { [API_NAME]: 'Test__c.SysField' },
           },
         },

@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, Element, InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { MetadataInfo } from 'jsforce'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -47,8 +46,8 @@ const createPicklistObjectType = (
   elemID: mockElemID,
   fields: { state: {
     refType: isMultiPicklist
-      ? createRefToElmWithValue(Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.MULTIPICKLIST])
-      : createRefToElmWithValue(Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST]),
+      ? Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.MULTIPICKLIST]
+      : Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST],
     annotations: {
       [CORE_ANNOTATIONS.REQUIRED]: false,
       [constants.API_NAME]: apiName,

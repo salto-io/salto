@@ -108,7 +108,7 @@ const isInstanceOfCustomScript = async (element: Element): Promise<boolean> =>
     && await apiName(await element.getType()) === CPQ_CUSTOM_SCRIPT)
 
 const isCustomScriptType = async (objType: ObjectType): Promise<boolean> =>
-  isCustomObject(objType) && await apiName(objType) === CPQ_CUSTOM_SCRIPT
+  await isCustomObject(objType) && await apiName(objType) === CPQ_CUSTOM_SCRIPT
 
 const getCustomScriptObjectChange = async (
   changes: ReadonlyArray<Change<ChangeDataType>>

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, Value, CORE_ANNOTATIONS, isInstanceElement, Field, isObjectType, ListType, TypeElement } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterWith } from '../../src/filter'
 import filterCreator, { addReferences } from '../../src/filters/field_references'
@@ -32,7 +32,7 @@ const customObjectType = new ObjectType({
   elemID: CUSTOM_OBJECT_TYPE_ID,
   fields: {
     [INSTANCE_FULL_NAME_FIELD]: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
   },
   annotations: {

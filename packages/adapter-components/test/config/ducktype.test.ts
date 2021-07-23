@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ObjectType, BuiltinTypes, MapType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { createDucktypeAdapterApiConfigType, createUserFetchConfigType, validateDuckTypeFetchConfig } from '../../src/config'
 
 describe('config_ducktype', () => {
@@ -47,10 +46,10 @@ describe('config_ducktype', () => {
       const configType = createDucktypeAdapterApiConfigType({
         adapter: 'myAdapter',
         additionalRequestFields: {
-          a: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          a: { refType: BuiltinTypes.STRING },
         },
         additionalTransformationFields: {
-          b: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+          b: { refType: BuiltinTypes.NUMBER },
         },
       })
       expect(Object.keys(configType.fields)).toHaveLength(3)

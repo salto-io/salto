@@ -18,7 +18,6 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 import { enums } from '../enums'
 
@@ -33,43 +32,43 @@ const customrecordtype_customrecordcustomfields_customrecordcustomfield_customfi
   },
   fields: {
     fldfilter: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     fldfilterchecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fldfiltercomparetype: {
-      refType: createRefToElmWithValue(enums.generic_customfield_fldfiltercomparetype),
+      refType: enums.generic_customfield_fldfiltercomparetype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
     fldfiltersel: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     fldfilterval: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     fldfilternotnull: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fldfilternull: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fldcomparefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
@@ -87,7 +86,7 @@ const customrecordtype_customrecordcustomfields_customrecordcustomfield_customfi
   },
   fields: {
     customfieldfilter: {
-      refType: createRefToElmWithValue(new ListType(customrecordtype_customrecordcustomfields_customrecordcustomfield_customfieldfilters_customfieldfilter)),
+      refType: new ListType(customrecordtype_customrecordcustomfields_customrecordcustomfield_customfieldfilters_customfieldfilter),
       annotations: {
       },
     },
@@ -105,19 +104,19 @@ const customrecordtype_customrecordcustomfields_customrecordcustomfield_roleacce
   },
   fields: {
     role: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
     accesslevel: {
-      refType: createRefToElmWithValue(enums.generic_accesslevel_searchlevel),
+      refType: enums.generic_accesslevel_searchlevel,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
     searchlevel: {
-      refType: createRefToElmWithValue(enums.generic_accesslevel_searchlevel),
+      refType: enums.generic_accesslevel_searchlevel,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -136,7 +135,7 @@ const customrecordtype_customrecordcustomfields_customrecordcustomfield_roleacce
   },
   fields: {
     roleaccess: {
-      refType: createRefToElmWithValue(new ListType(customrecordtype_customrecordcustomfields_customrecordcustomfield_roleaccesses_roleaccess)),
+      refType: new ListType(customrecordtype_customrecordcustomfields_customrecordcustomfield_roleaccesses_roleaccess),
       annotations: {
       },
     },
@@ -154,207 +153,207 @@ const customrecordtype_customrecordcustomfields_customrecordcustomfield = new Ob
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custrecord’. */
     fieldtype: {
-      refType: createRefToElmWithValue(enums.generic_customfield_fieldtype),
+      refType: enums.generic_customfield_fieldtype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 200 }),
       },
     }, /* Original description: This field value can be up to 200 characters long.   This field accepts references to the string custom type. */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
     applyformatting: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     defaultchecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     defaultselection: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     defaultvalue: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     description: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     displaytype: {
-      refType: createRefToElmWithValue(enums.generic_customfield_displaytype),
+      refType: enums.generic_customfield_displaytype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
     dynamicdefault: {
-      refType: createRefToElmWithValue(enums.generic_customfield_dynamicdefault),
+      refType: enums.generic_customfield_dynamicdefault,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
     help: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
     linktext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     minvalue: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     maxvalue: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     storevalue: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     accesslevel: {
-      refType: createRefToElmWithValue(enums.generic_accesslevel_searchlevel),
+      refType: enums.generic_accesslevel_searchlevel,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
     checkspelling: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     encryptatrest: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displayheight: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     }, /* Original description: This field value must be greater than or equal to 0. */
     displaywidth: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     }, /* Original description: This field value must be greater than or equal to 0. */
     globalsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     isformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     ismandatory: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     maxlength: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     onparentdelete: {
-      refType: createRefToElmWithValue(enums.generic_customfield_onparentdelete),
+      refType: enums.generic_customfield_onparentdelete,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_onparentdelete. */
     searchcomparefield: {
-      refType: createRefToElmWithValue(enums.generic_standard_field),
+      refType: enums.generic_standard_field,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
     searchdefault: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     searchlevel: {
-      refType: createRefToElmWithValue(enums.generic_accesslevel_searchlevel),
+      refType: enums.generic_accesslevel_searchlevel,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
     showinlist: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     sourcefilterby: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the customrecordcustomfield custom type.   For information about other possible values, see generic_standard_field. */
     sourcefrom: {
-      refType: createRefToElmWithValue(enums.generic_standard_field),
+      refType: enums.generic_standard_field,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
     sourcelist: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the customrecordcustomfield custom type.   For information about other possible values, see generic_standard_field. */
     isparent: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     parentsubtab: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see generic_tab_parent. */
     subtab: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the subtab custom type. */
     allowquickadd: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     rolerestrict: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     customfieldfilters: {
-      refType: createRefToElmWithValue(customrecordtype_customrecordcustomfields_customrecordcustomfield_customfieldfilters),
+      refType: customrecordtype_customrecordcustomfields_customrecordcustomfield_customfieldfilters,
       annotations: {
       },
     },
     roleaccesses: {
-      refType: createRefToElmWithValue(customrecordtype_customrecordcustomfields_customrecordcustomfield_roleaccesses),
+      refType: customrecordtype_customrecordcustomfields_customrecordcustomfield_roleaccesses,
       annotations: {
       },
     },
@@ -372,7 +371,7 @@ const customrecordtype_customrecordcustomfields = new ObjectType({
   },
   fields: {
     customrecordcustomfield: {
-      refType: createRefToElmWithValue(new ListType(customrecordtype_customrecordcustomfields_customrecordcustomfield)),
+      refType: new ListType(customrecordtype_customrecordcustomfields_customrecordcustomfield),
       annotations: {
       },
     },
@@ -390,29 +389,29 @@ const customrecordtype_instances_instance = new ObjectType({
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
     altname: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is available when the includename value is equal to T.   This field is available when the enablenumbering value is equal to T.   This field is mandatory when the includename value is equal to T.   This field is mandatory when the enablenumbering value is equal to T. */
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is available when the includename value is equal to T.   This field is available when the enablenumbering value is equal to F.   This field is mandatory when the includename value is equal to T.   This field is mandatory when the enablenumbering value is equal to F. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     parent: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is available when the hierarchical value is equal to T.   This field accepts references to the instance custom type. */
@@ -430,7 +429,7 @@ const customrecordtype_instances = new ObjectType({
   },
   fields: {
     instance: {
-      refType: createRefToElmWithValue(new ListType(customrecordtype_instances_instance)),
+      refType: new ListType(customrecordtype_instances_instance),
       annotations: {
       },
     },
@@ -448,19 +447,19 @@ const customrecordtype_links_link = new ObjectType({
   },
   fields: {
     linkcategory: {
-      refType: createRefToElmWithValue(enums.generic_centercategory),
+      refType: enums.generic_centercategory,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_centercategory. */
     linktasktype: {
-      refType: createRefToElmWithValue(enums.customrecordtype_tasktype),
+      refType: enums.customrecordtype_tasktype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see customrecordtype_tasktype. */
     linklabel: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
@@ -478,7 +477,7 @@ const customrecordtype_links = new ObjectType({
   },
   fields: {
     link: {
-      refType: createRefToElmWithValue(new ListType(customrecordtype_links_link)),
+      refType: new ListType(customrecordtype_links_link),
       annotations: {
       },
     },
@@ -496,19 +495,19 @@ export const customrecordtype_permissions_permission = new ObjectType({
   },
   fields: {
     permittedrole: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
     permittedlevel: {
-      refType: createRefToElmWithValue(enums.generic_permission_level),
+      refType: enums.generic_permission_level,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_permission_level.   The default value is 'NONE'. */
     restriction: {
-      refType: createRefToElmWithValue(enums.role_restrict),
+      refType: enums.role_restrict,
       annotations: {
       },
     }, /* Original description: For information about possible values, see role_restrict. */
@@ -526,7 +525,7 @@ const customrecordtype_permissions = new ObjectType({
   },
   fields: {
     permission: {
-      refType: createRefToElmWithValue(new ListType(customrecordtype_permissions_permission)),
+      refType: new ListType(customrecordtype_permissions_permission),
       annotations: {
       },
     },
@@ -544,31 +543,31 @@ const customrecordtype_recordsublists_recordsublist = new ObjectType({
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
     recordsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     recorddescr: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     recordtab: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the subtab custom type. */
     recordfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the customrecordcustomfield custom type.   For information about other possible values, see generic_standard_field. */
@@ -586,7 +585,7 @@ const customrecordtype_recordsublists = new ObjectType({
   },
   fields: {
     recordsublist: {
-      refType: createRefToElmWithValue(new ListType(customrecordtype_recordsublists_recordsublist)),
+      refType: new ListType(customrecordtype_recordsublists_recordsublist),
       annotations: {
       },
     },
@@ -604,20 +603,20 @@ const customrecordtype_subtabs_subtab = new ObjectType({
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
     tabtitle: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     tabparent: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the subtab custom type. */
@@ -635,7 +634,7 @@ const customrecordtype_subtabs = new ObjectType({
   },
   fields: {
     subtab: {
-      refType: createRefToElmWithValue(new ListType(customrecordtype_subtabs_subtab)),
+      refType: new ListType(customrecordtype_subtabs_subtab),
       annotations: {
       },
     },
@@ -652,7 +651,7 @@ export const customrecordtype = new ObjectType({
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -660,238 +659,238 @@ export const customrecordtype = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customrecord’. */
     recordname: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
       },
     }, /* Original description: This field value can be up to 40 characters long.   This field is available when the customsegment value is equal to   This field is mandatory when the customsegment value is equal to   This field accepts references to the string custom type. */
     customsegment: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the customsegment custom type.   If this field appears in the project, you must reference the CUSTOMSEGMENTS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CUSTOMSEGMENTS must be enabled for this field to appear in your account. */
     accesstype: {
-      refType: createRefToElmWithValue(enums.customrecordtype_accesstype),
+      refType: enums.customrecordtype_accesstype,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   For information about possible values, see customrecordtype_accesstype.   The default value is 'CUSTRECORDENTRYPERM'. */
     allowattachments: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     allowinlineediting: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     allowinlinedeleting: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     allowinlinedetaching: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     allowmobileaccess: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is F. */
     allownumberingoverride: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is F. */
     allowquickadd: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     allowquicksearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     allowuiaccess: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is T. */
     description: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to */
     enabledle: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T.   If this field appears in the project, you must reference the EXTREMELIST feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. EXTREMELIST must be enabled for this field to appear in your account. */
     enablekeywords: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     enablemailmerge: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the MAILMERGE feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MAILMERGE must be enabled for this field to appear in your account. */
     enablenametranslation: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is F.   If this field appears in the project, you must reference the MULTILANGUAGE feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MULTILANGUAGE must be enabled for this field to appear in your account. */
     enablenumbering: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is F. */
     enableoptimisticlocking: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     enablesystemnotes: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     hierarchical: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is F. */
     numberingprefix: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to */
     numberingsuffix: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to */
     numberingmindigits: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to */
     numberinginit: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to */
     icon: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
+      refType: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
       },
     },
     iconbuiltin: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     iconindex: {
-      refType: createRefToElmWithValue(enums.generic_custom_record_icon),
+      refType: enums.generic_custom_record_icon,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_custom_record_icon. */
     includeinsearchmenu: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     includename: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is T. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is F. */
     isordered: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is F. */
     showcreationdate: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     showcreationdateonlist: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     showid: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is F. */
     showlastmodified: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     showlastmodifiedonlist: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     shownotes: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     showowner: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     showownerallowchange: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     showowneronlist: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     customrecordcustomfields: {
-      refType: createRefToElmWithValue(customrecordtype_customrecordcustomfields),
+      refType: customrecordtype_customrecordcustomfields,
       annotations: {
       },
     },
     instances: {
-      refType: createRefToElmWithValue(customrecordtype_instances),
+      refType: customrecordtype_instances,
       annotations: {
       },
     },
     links: {
-      refType: createRefToElmWithValue(customrecordtype_links),
+      refType: customrecordtype_links,
       annotations: {
       },
     },
     permissions: {
-      refType: createRefToElmWithValue(customrecordtype_permissions),
+      refType: customrecordtype_permissions,
       annotations: {
       },
     },
     recordsublists: {
-      refType: createRefToElmWithValue(customrecordtype_recordsublists),
+      refType: customrecordtype_recordsublists,
       annotations: {
       },
     },
     subtabs: {
-      refType: createRefToElmWithValue(customrecordtype_subtabs),
+      refType: customrecordtype_subtabs,
       annotations: {
       },
     },

@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ObjectType, Element, ElemID, BuiltinTypes, CORE_ANNOTATIONS, InstanceElement, ReadOnlyElementsSource, isInstanceElement } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { NETSUITE } from './constants'
 
@@ -29,7 +28,7 @@ export const createServerTimeElements = (time: Date): Element[] => {
     elemID: new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME),
     isSettings: true,
     fields: {
-      serverTime: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      serverTime: { refType: BuiltinTypes.STRING },
     },
     annotations: {
       [CORE_ANNOTATIONS.HIDDEN]: true,

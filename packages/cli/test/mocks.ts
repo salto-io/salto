@@ -25,9 +25,9 @@ import {
   Plan, PlanItem, EVENT_TYPES, DeployResult,
   telemetrySender, Telemetry, Tags, TelemetryEvent, CommandConfig,
 } from '@salto-io/core'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { Workspace, errors as wsErrors, state as wsState, parser, remoteMap, elementSource, pathIndex } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import realCli from '../src/cli'
 import commandDefinitions from '../src/commands/index'
@@ -35,7 +35,6 @@ import { CommandOrGroupDef, CommandArgs } from '../src/command_builder'
 import { Spinner, SpinnerCreator } from '../src/types'
 import { getCliTelemetry } from '../src/telemetry'
 import { version as currentVersion } from '../src/generated/version.json'
-
 
 const { InMemoryRemoteMap } = remoteMap
 const { createInMemoryElementSource } = elementSource
@@ -197,8 +196,8 @@ export const elements = (): Element[] => {
   const saltoAddr = new ObjectType({
     elemID: addrElemID,
     fields: {
-      country: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      city: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      country: { refType: BuiltinTypes.STRING },
+      city: { refType: BuiltinTypes.STRING },
     },
   })
   saltoAddr.annotationRefTypes.label = createRefToElmWithValue(BuiltinTypes.STRING)
@@ -207,9 +206,9 @@ export const elements = (): Element[] => {
   const saltoOffice = new ObjectType({
     elemID: officeElemID,
     fields: {
-      name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      name: { refType: BuiltinTypes.STRING },
       location: {
-        refType: createRefToElmWithValue(saltoAddr),
+        refType: saltoAddr,
         annotations: {
           label: 'Office Location',
           description: 'A location of an office',
@@ -227,19 +226,19 @@ export const elements = (): Element[] => {
     elemID: employeeElemID,
     fields: {
       name: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { _required: true },
       },
       nicknames: {
-        refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+        refType: new ListType(BuiltinTypes.STRING),
         annotations: {},
       },
       company: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { _default: 'salto' },
       },
       office: {
-        refType: createRefToElmWithValue(saltoOffice),
+        refType: saltoOffice,
         annotations: {
           label: 'Based In',
           name: {
@@ -375,13 +374,13 @@ export const mockCredentialsType = (adapterName: string): AdapterAuthentication 
   return { basic: { credentialsType: new ObjectType({
     elemID: configID,
     fields: {
-      username: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      password: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      username: { refType: BuiltinTypes.STRING },
+      password: { refType: BuiltinTypes.STRING },
       token: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {},
       },
-      sandbox: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      sandbox: { refType: BuiltinTypes.BOOLEAN },
     },
   }) } }
 }
@@ -393,16 +392,16 @@ export const mockOauthCredentialsType = (adapterName: string,
     credentialsType: new ObjectType({
       elemID: new ElemID(adapterName),
       fields: {
-        accessToken: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        instanceUrl: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        accessToken: { refType: BuiltinTypes.STRING },
+        instanceUrl: { refType: BuiltinTypes.STRING },
       },
     }),
     oauthRequestParameters: new ObjectType({
       elemID: new ElemID(adapterName),
       fields: {
-        consumerKey: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        port: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-        isSandbox: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+        consumerKey: { refType: BuiltinTypes.STRING },
+        port: { refType: BuiltinTypes.NUMBER },
+        isSandbox: { refType: BuiltinTypes.BOOLEAN },
       },
     }),
     createOAuthRequest: jest.fn().mockReturnValue(oauthParameters),
@@ -421,10 +420,10 @@ export const mockConfigType = (adapterName: string): ObjectType => {
   return new ObjectType({
     elemID: configID,
     fields: {
-      username: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      password: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      token: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      sandbox: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      username: { refType: BuiltinTypes.STRING },
+      password: { refType: BuiltinTypes.STRING },
+      token: { refType: BuiltinTypes.STRING },
+      sandbox: { refType: BuiltinTypes.BOOLEAN },
     },
     annotationRefsOrTypes: {},
     annotations: {},
@@ -489,7 +488,7 @@ export const configChangePlan = (): { plan: Plan; updatedConfig: InstanceElement
     elemID: configElemID,
     fields: {
       test: {
-        refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+        refType: new ListType(BuiltinTypes.STRING),
       },
     },
   })

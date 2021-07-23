@@ -15,8 +15,8 @@
 */
 import _ from 'lodash'
 import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement, ServiceIds, BuiltinTypes } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { ConfigChangeSuggestion, isDataManagementConfigSuggestions } from '../../src/types'
 import { getNamespaceFromString } from '../../src/filters/utils'
 import { FilterResult, FilterWith } from '../../src/filter'
@@ -39,10 +39,10 @@ jest.mock('../../src/constants', () => ({
   MAX_IDS_PER_INSTANCES_QUERY: 2,
 }))
 
-const stringType = createRefToElmWithValue(new PrimitiveType({
+const stringType = new PrimitiveType({
   elemID: new ElemID(SALESFORCE, 'string'),
   primitive: PrimitiveTypes.STRING,
-}))
+})
 
 const createCustomObject = (
   name: string,
@@ -381,7 +381,7 @@ describe('Custom Object Instances filter', () => {
       const withAddressName = `${testNamespace}__withAddress__c`
       const objWithAddressField = createCustomObject(withAddressName, {
         OtherAddress: {
-          refType: createRefToElmWithValue(Types.compoundDataTypes.Address),
+          refType: Types.compoundDataTypes.Address,
           annotations: {
             [LABEL]: 'Address',
             [API_NAME]: 'OtherAddress',
@@ -562,7 +562,7 @@ describe('Custom Object Instances filter', () => {
         refFromAndToObjectName,
         {
           Parent: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
+            refType: Types.primitiveDataTypes.MasterDetail,
             annotations: {
               [LABEL]: 'parent field',
               [API_NAME]: 'Parent',
@@ -570,7 +570,7 @@ describe('Custom Object Instances filter', () => {
             },
           },
           Pricebook2Id: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
+            refType: Types.primitiveDataTypes.Lookup,
             annotations: {
               [LABEL]: 'Pricebook2Id field',
               [API_NAME]: 'Pricebook2Id',
@@ -585,7 +585,7 @@ describe('Custom Object Instances filter', () => {
         namespacedRefFromName,
         {
           Parent: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
+            refType: Types.primitiveDataTypes.MasterDetail,
             annotations: {
               [LABEL]: 'parent field',
               [API_NAME]: 'Parent',
@@ -593,7 +593,7 @@ describe('Custom Object Instances filter', () => {
             },
           },
           Pricebook2Id: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
+            refType: Types.primitiveDataTypes.Lookup,
             annotations: {
               [LABEL]: 'Pricebook2Id field',
               [API_NAME]: 'Pricebook2Id',
@@ -643,7 +643,7 @@ describe('Custom Object Instances filter', () => {
       refFromObjectName,
       {
         Parent: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
+          refType: Types.primitiveDataTypes.MasterDetail,
           annotations: {
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
@@ -661,7 +661,7 @@ describe('Custom Object Instances filter', () => {
       parentObjectName,
       {
         Grandparent: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
+          refType: Types.primitiveDataTypes.MasterDetail,
           annotations: {
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
@@ -676,7 +676,7 @@ describe('Custom Object Instances filter', () => {
       pricebookEntryName,
       {
         Pricebook2Id: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
+          refType: Types.primitiveDataTypes.Lookup,
           annotations: {
             [LABEL]: 'Pricebook2Id field',
             [API_NAME]: 'Pricebook2Id',
@@ -691,7 +691,7 @@ describe('Custom Object Instances filter', () => {
       productName,
       {
         ProductCode: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [LABEL]: 'ProductCode field',
             [API_NAME]: 'ProductCode',
@@ -705,7 +705,7 @@ describe('Custom Object Instances filter', () => {
       SBQQCustomActionName,
       {
         SBQQ__Location__c: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.Checkbox),
+          refType: Types.primitiveDataTypes.Checkbox,
           annotations: {
             [LABEL]: 'Location checkbox field',
             [API_NAME]: 'SBQQ__Location__c',
@@ -719,7 +719,7 @@ describe('Custom Object Instances filter', () => {
           },
         },
         SBQQ__DisplayOrder__c: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.Number),
+          refType: Types.primitiveDataTypes.Number,
           annotations: {
             [LABEL]: 'Display order',
             [API_NAME]: 'SBQQ__DisplayOrder__c',
@@ -733,7 +733,7 @@ describe('Custom Object Instances filter', () => {
       grandsonObjectName,
       {
         Parent: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
+          refType: Types.primitiveDataTypes.MasterDetail,
           annotations: {
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
@@ -748,7 +748,7 @@ describe('Custom Object Instances filter', () => {
       orphanObjectName,
       {
         Parent: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
+          refType: Types.primitiveDataTypes.MasterDetail,
           annotations: {
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
@@ -766,7 +766,7 @@ describe('Custom Object Instances filter', () => {
       notQueryableIdFieldsName,
       {
         NotQueryable: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [LABEL]: 'not queryable',
             [API_NAME]: 'NotQueryable',

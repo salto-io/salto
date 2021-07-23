@@ -17,7 +17,7 @@
 import _ from 'lodash'
 import { ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, isObjectType, getDeepInnerType, BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, isListType, TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, StaticFile, isContainerType, isMapType } from '@salto-io/adapter-api'
 import { TransformFunc, transformValues, GetLookupNameFunc, toObjectType, naclCase, pathNaclCase,
-  safeJsonStringify, createRefToElmWithValue } from '@salto-io/adapter-utils'
+  safeJsonStringify } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
 import { isFormInstance } from '../filters/form_field'
 import {
@@ -91,12 +91,12 @@ export class Types {
     new ObjectType({
       elemID: optionsElemID,
       fields: {
-        [OPTIONS_FIELDS.LABEL]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        [OPTIONS_FIELDS.VALUE]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        [OPTIONS_FIELDS.READONLY]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-        [OPTIONS_FIELDS.DISPLAYORDER]: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-        [OPTIONS_FIELDS.HIDDEN]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-        [OPTIONS_FIELDS.DESCRIPTION]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        [OPTIONS_FIELDS.LABEL]: { refType: BuiltinTypes.STRING },
+        [OPTIONS_FIELDS.VALUE]: { refType: BuiltinTypes.STRING },
+        [OPTIONS_FIELDS.READONLY]: { refType: BuiltinTypes.BOOLEAN },
+        [OPTIONS_FIELDS.DISPLAYORDER]: { refType: BuiltinTypes.NUMBER },
+        [OPTIONS_FIELDS.HIDDEN]: { refType: BuiltinTypes.BOOLEAN },
+        [OPTIONS_FIELDS.DESCRIPTION]: { refType: BuiltinTypes.STRING },
       },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, optionsElemID.name],
     })
@@ -106,22 +106,22 @@ export class Types {
       elemID: fieldFilterElemID,
       fields: {
         [FIELD_FILTER_FIELDS.OPERATOR]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [FIELD_FILTER_FIELDS.STRVALUE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [FIELD_FILTER_FIELDS.STRVALUES]: {
-          refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+          refType: new ListType(BuiltinTypes.STRING),
         },
         [FIELD_FILTER_FIELDS.BOOLVALUE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [FIELD_FILTER_FIELDS.NUMBERVALUE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [FIELD_FILTER_FIELDS.NUMVALUES]: {
-          refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
+          refType: new ListType(BuiltinTypes.NUMBER),
         },
       },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, fieldFilterElemID.name],
@@ -132,13 +132,13 @@ export class Types {
         elemID: contactPropertyOverridesElemID,
         fields: {
           [CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL]: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
           },
           [CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER]: {
-            refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+            refType: BuiltinTypes.NUMBER,
           },
           [CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS]: {
-            refType: createRefToElmWithValue(new ListType(Types.optionsType)),
+            refType: new ListType(Types.optionsType),
           },
         },
         path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, contactPropertyOverridesElemID.name],
@@ -152,34 +152,34 @@ export class Types {
       fields: {
         // TODO: This is not really a string
         [FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES]: {
-          refType: createRefToElmWithValue(Types.contactPropertyOverridesType),
+          refType: Types.contactPropertyOverridesType,
         },
         [FORM_PROPERTY_FIELDS.DEFAULTVALUE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [FORM_PROPERTY_FIELDS.PLACEHOLDER]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [FORM_PROPERTY_INNER_FIELDS.HELPTEXT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [FORM_PROPERTY_FIELDS.REQUIRED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [FORM_PROPERTY_FIELDS.SELECTEDOPTIONS]: {
-          refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+          refType: new ListType(BuiltinTypes.STRING),
         },
         [FORM_PROPERTY_FIELDS.ISSMARTFIELD]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         ...isFatherProperty
           ? {
             [FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS]:
               {
-                refType: createRefToElmWithValue(new ListType(Types.dependentFormFieldFiltersType)),
+                refType: new ListType(Types.dependentFormFieldFiltersType),
               },
           }
           : {},
@@ -197,19 +197,19 @@ export class Types {
       elemID: dependentFormFieldFiltersElemID,
       fields: {
         [DEPENDENT_FIELD_FILTER_FIELDS.FORMFIELDACTION]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
         [DEPENDENT_FIELD_FILTER_FIELDS.FILTERS]: {
-          refType: createRefToElmWithValue(new ListType(Types.fieldFilterType)),
+          refType: new ListType(Types.fieldFilterType),
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
         [DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD]: {
-          refType: createRefToElmWithValue(Types.dependeeFormFieldType),
+          refType: Types.dependeeFormFieldType,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
@@ -227,7 +227,7 @@ export class Types {
     new ObjectType({
       elemID: richTextElemID,
       fields: {
-        [RICHTEXT_FIELDS.CONTENT]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        [RICHTEXT_FIELDS.CONTENT]: { refType: BuiltinTypes.STRING },
       },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, richTextElemID.name],
     })
@@ -237,16 +237,16 @@ export class Types {
       elemID: propertyGroupElemID,
       fields: {
         [FORM_PROPERTY_GROUP_FIELDS.DEFAULT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [FORM_PROPERTY_GROUP_FIELDS.FIELDS]: {
-          refType: createRefToElmWithValue(new ListType(Types.dependentFormFieldType)),
+          refType: new ListType(Types.dependentFormFieldType),
         },
         [FORM_PROPERTY_GROUP_FIELDS.ISSMARTGROUP]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [FORM_PROPERTY_GROUP_FIELDS.RICHTEXT]: {
-          refType: createRefToElmWithValue(Types.richTextType),
+          refType: Types.richTextType,
         },
       },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, propertyGroupElemID.name],
@@ -257,10 +257,10 @@ export class Types {
       elemID: eventAnchorElemID,
       fields: {
         [EVENTANCHOR_FIELDS.CONTACTPROPERTYANCHOR]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [EVENTANCHOR_FIELDS.STATICDATEANCHOR]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
       },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, eventAnchorElemID.name],
@@ -271,13 +271,13 @@ export class Types {
       elemID: anchorSettingElemID,
       fields: {
         [ANCHOR_SETTING_FIELDS.EXECTIMEOFDAY]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [ANCHOR_SETTING_FIELDS.EXECTIMEINMINUTES]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [ANCHOR_SETTING_FIELDS.BOUNDARY]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
       },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, anchorSettingElemID.name],
@@ -288,17 +288,17 @@ export class Types {
       elemID: criteriaElemID,
       fields: {
         [CRITERIA_FIELDS.FILTERFAMILY]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
-        [CRITERIA_FIELDS.OPERATOR]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        [CRITERIA_FIELDS.PROPERTY]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        [CRITERIA_FIELDS.OPERATOR]: { refType: BuiltinTypes.STRING },
+        [CRITERIA_FIELDS.PROPERTY]: { refType: BuiltinTypes.STRING },
         [CRITERIA_FIELDS.PROPERTYOBJECTTYPE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
-        [CRITERIA_FIELDS.TYPE]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        [CRITERIA_FIELDS.VALUE]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        [CRITERIA_FIELDS.TYPE]: { refType: BuiltinTypes.STRING },
+        [CRITERIA_FIELDS.VALUE]: { refType: BuiltinTypes.STRING },
         [CRITERIA_FIELDS.WITHINTIMEMODE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
       },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, criteriaElemID.name],
@@ -309,21 +309,21 @@ export class Types {
       const actionType = new ObjectType({
         elemID: actionElemID,
         fields: {
-          [ACTION_FIELDS.TYPE]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          [ACTION_FIELDS.ACTIONID]: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-          [ACTION_FIELDS.DELAYMILLS]: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-          [ACTION_FIELDS.STEPID]: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+          [ACTION_FIELDS.TYPE]: { refType: BuiltinTypes.STRING },
+          [ACTION_FIELDS.ACTIONID]: { refType: BuiltinTypes.NUMBER },
+          [ACTION_FIELDS.DELAYMILLS]: { refType: BuiltinTypes.NUMBER },
+          [ACTION_FIELDS.STEPID]: { refType: BuiltinTypes.NUMBER },
           [ACTION_FIELDS.ANCHORSETTING]: {
-            refType: createRefToElmWithValue(Types.anchorSettingType),
+            refType: Types.anchorSettingType,
           },
-          [ACTION_FIELDS.FILTERSLISTID]: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+          [ACTION_FIELDS.FILTERSLISTID]: { refType: BuiltinTypes.NUMBER },
           [ACTION_FIELDS.FILTERS]: {
-            refType: createRefToElmWithValue(new ListType(new ListType(Types.criteriaType))),
+            refType: new ListType(new ListType(Types.criteriaType)),
           },
-          [ACTION_FIELDS.PROPERTYNAME]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          [ACTION_FIELDS.BODY]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          [ACTION_FIELDS.NEWVALUE]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          [ACTION_FIELDS.STATICTO]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          [ACTION_FIELDS.PROPERTYNAME]: { refType: BuiltinTypes.STRING },
+          [ACTION_FIELDS.BODY]: { refType: BuiltinTypes.STRING },
+          [ACTION_FIELDS.NEWVALUE]: { refType: BuiltinTypes.STRING },
+          [ACTION_FIELDS.STATICTO]: { refType: BuiltinTypes.STRING },
         },
         path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, actionElemID.name],
       })
@@ -350,13 +350,13 @@ export class Types {
       elemID: nurtureTimeRangeElemID,
       fields: {
         [NURTURETIMERANGE_FIELDS.ENABLED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [NURTURETIMERANGE_FIELDS.STARTHOUR]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [NURTURETIMERANGE_FIELDS.STOPHOUR]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
       },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, nurtureTimeRangeElemID.name],
@@ -367,16 +367,16 @@ export class Types {
       elemID: contactListIdsElemID,
       fields: {
         [CONTACTLISTIDS_FIELDS.ENROLLED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [CONTACTLISTIDS_FIELDS.ACTIVE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [CONTACTLISTIDS_FIELDS.SUCCEEDED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [CONTACTLISTIDS_FIELDS.COMPLETED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
       },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, contactListIdsElemID.name],
@@ -387,7 +387,7 @@ export class Types {
       elemID: rssToEmailTimingElemID,
       fields: {
         [RSSTOEMAILTIMING_FIELDS.REPEATS]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
               values: ['instant', 'daily', 'weekly', 'monthly'],
@@ -395,13 +395,13 @@ export class Types {
           },
         },
         [RSSTOEMAILTIMING_FIELDS.REPEATS_ON_MONTHLY]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [RSSTOEMAILTIMING_FIELDS.REPEATS_ON_WEEKLY]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [RSSTOEMAILTIMING_FIELDS.TIME]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
       },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, rssToEmailTimingElemID.name],
@@ -416,50 +416,48 @@ export class Types {
       elemID: formElemID,
       fields: {
         [FORM_FIELDS.GUID]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [FORM_FIELDS.NAME]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
-        [FORM_FIELDS.CSSCLASS]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        [FORM_FIELDS.REDIRECT]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        [FORM_FIELDS.SUBMITTEXT]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        [FORM_FIELDS.CSSCLASS]: { refType: BuiltinTypes.STRING },
+        [FORM_FIELDS.REDIRECT]: { refType: BuiltinTypes.STRING },
+        [FORM_FIELDS.SUBMITTEXT]: { refType: BuiltinTypes.STRING },
         [FORM_FIELDS.NOTIFYRECIPIENTS]: {
-          refType: createRefToElmWithValue(
-            new ListType(Types.fieldTypes[FIELD_TYPES.USERIDENTIFIER]),
-          ),
+          refType: new ListType(Types.fieldTypes[FIELD_TYPES.USERIDENTIFIER]),
         },
         [FORM_FIELDS.IGNORECURRENTVALUES]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [FORM_FIELDS.DELETABLE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [FORM_FIELDS.INLINEMESSAGE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [FORM_FIELDS.FORMFIELDGROUPS]: {
-          refType: createRefToElmWithValue(new ListType(Types.propertyGroupType)),
+          refType: new ListType(Types.propertyGroupType),
         },
         [FORM_FIELDS.CAPTCHAENABLED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [FORM_FIELDS.CREATEDAT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
-        [FORM_FIELDS.CLONEABLE]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-        [FORM_FIELDS.STYLE]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        [FORM_FIELDS.EDITABLE]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-        [FORM_FIELDS.THEMENAME]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        [FORM_FIELDS.CLONEABLE]: { refType: BuiltinTypes.BOOLEAN },
+        [FORM_FIELDS.STYLE]: { refType: BuiltinTypes.STRING },
+        [FORM_FIELDS.EDITABLE]: { refType: BuiltinTypes.BOOLEAN },
+        [FORM_FIELDS.THEMENAME]: { refType: BuiltinTypes.STRING },
       },
       path: [HUBSPOT, TYPES_PATH, formElemID.name],
     }),
@@ -467,25 +465,25 @@ export class Types {
       elemID: workflowsElemID,
       fields: {
         [WORKFLOWS_FIELDS.ID]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [WORKFLOWS_FIELDS.NAME]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
         [WORKFLOWS_FIELDS.SEGMENTCRITERIA]: {
-          refType: createRefToElmWithValue(new ListType(new ListType(Types.criteriaType))),
+          refType: new ListType(new ListType(Types.criteriaType)),
         },
         [WORKFLOWS_FIELDS.GOALCRITERIA]: {
-          refType: createRefToElmWithValue(new ListType(new ListType(Types.criteriaType))),
+          refType: new ListType(new ListType(Types.criteriaType)),
         },
         [WORKFLOWS_FIELDS.TYPE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
               enforce_value: false,
@@ -493,51 +491,51 @@ export class Types {
             }),
           },
         },
-        [WORKFLOWS_FIELDS.ENABLED]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+        [WORKFLOWS_FIELDS.ENABLED]: { refType: BuiltinTypes.BOOLEAN },
         [WORKFLOWS_FIELDS.INSERTEDAT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [WORKFLOWS_FIELDS.UPDATEDAT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [WORKFLOWS_FIELDS.CONTACTLISTIDS]: {
-          refType: createRefToElmWithValue(Types.contactListIdsType),
+          refType: Types.contactListIdsType,
         },
         [WORKFLOWS_FIELDS.INTERNAL]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [WORKFLOWS_FIELDS.ONLYEXECONBIZDAYS]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [WORKFLOWS_FIELDS.NURTURETIMERANGE]: {
-          refType: createRefToElmWithValue(Types.nurtureTimeRangeType),
+          refType: Types.nurtureTimeRangeType,
         },
         [WORKFLOWS_FIELDS.ACTIONS]: {
-          refType: createRefToElmWithValue(new ListType(Types.actionType)),
+          refType: new ListType(Types.actionType),
         },
         [WORKFLOWS_FIELDS.LISTENING]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [WORKFLOWS_FIELDS.EVENTANCHOR]: {
-          refType: createRefToElmWithValue(Types.eventAnchorType),
+          refType: Types.eventAnchorType,
         },
         [WORKFLOWS_FIELDS.ALLOWCONTACTTOTRIGGERMULTIPLETIMES]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [WORKFLOWS_FIELDS.ONLYENROLLMANUALLY]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [WORKFLOWS_FIELDS.ENROLLONCRITERIAUPDATE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [WORKFLOWS_FIELDS.SUPRESSIONLISTIDS]: {
-          refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
+          refType: new ListType(BuiltinTypes.NUMBER),
         },
       },
       path: [HUBSPOT, TYPES_PATH, workflowsElemID.name],
@@ -546,34 +544,34 @@ export class Types {
       elemID: marketingEmailElemID,
       fields: {
         [MARKETING_EMAIL_FIELDS.AB]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [MARKETING_EMAIL_FIELDS.ABHOURSWAIT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [MARKETING_EMAIL_FIELDS.ABVARIATION]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [MARKETING_EMAIL_FIELDS.ABSAMPLESIZEDEFAULT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['master', 'variant'] }),
           },
         },
         [MARKETING_EMAIL_FIELDS.ABSAMPLINGDEFAULT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['master', 'variant'] }),
           },
         },
         [MARKETING_EMAIL_FIELDS.ABSTATUS]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['master', 'variant'] }),
           },
         },
         [MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: false,
             [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -582,55 +580,55 @@ export class Types {
           },
         },
         [MARKETING_EMAIL_FIELDS.ABTESTID]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [MARKETING_EMAIL_FIELDS.ABSOLUTEURL]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS]: {
-          refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
+          refType: new ListType(BuiltinTypes.NUMBER),
         },
         [MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.ARCHIVED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [MARKETING_EMAIL_FIELDS.AUTHOR]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.AUTHORAT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.AUTHOREMAIL]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.AUTHORNAME]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.AUTHORUSERID]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
               values: ['instant', 'daily', 'weekly', 'monthly'],
@@ -638,49 +636,49 @@ export class Types {
           },
         },
         [MARKETING_EMAIL_FIELDS.BLOGRSSSETTINGS]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [MARKETING_EMAIL_FIELDS.CAMPAIGN]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.CAMPAIGNNAME]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [MARKETING_EMAIL_FIELDS.CLONEDFROM]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [MARKETING_EMAIL_FIELDS.CREATEPAGE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [MARKETING_EMAIL_FIELDS.CREATED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.DOMAIN]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.EMAILBODY]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.EMAILNOTE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.EMAILTYPE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
               enforce_value: false,
@@ -692,7 +690,7 @@ export class Types {
           },
         },
         [MARKETING_EMAIL_FIELDS.FEEDBACKEMAILCATEGORY]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
               enforce_value: false,
@@ -701,88 +699,88 @@ export class Types {
           },
         },
         [MARKETING_EMAIL_FIELDS.FEEDBACKSURVEYID]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [MARKETING_EMAIL_FIELDS.FLEXAREAS]: {
-          refType: createRefToElmWithValue(BuiltinTypes.JSON),
+          refType: BuiltinTypes.JSON,
         },
         [MARKETING_EMAIL_FIELDS.FOLDERID]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [MARKETING_EMAIL_FIELDS.FREEZEDATE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.FROMNAME]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.HTMLTITLE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.ID]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.ISGRAYMAILSUPPRESSIONENABLED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [MARKETING_EMAIL_FIELDS.ISLOCALTIMEZONESEND]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [MARKETING_EMAIL_FIELDS.ISPUBLISHED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [MARKETING_EMAIL_FIELDS.ISRECIPIENTFATIGUESUPPRESSIONENABLED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [MARKETING_EMAIL_FIELDS.LEADFLOWID]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [MARKETING_EMAIL_FIELDS.LIVEDOMAIN]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.MAILINGLISTSEXCLUDED]: {
-          refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
+          refType: new ListType(BuiltinTypes.NUMBER),
         },
         [MARKETING_EMAIL_FIELDS.MAILINGLISTSINCLUDED]: {
-          refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
+          refType: new ListType(BuiltinTypes.NUMBER),
         },
         [MARKETING_EMAIL_FIELDS.MAXRSSENTRIES]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [MARKETING_EMAIL_FIELDS.METADESCRIPTION]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.NAME]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.PAGEEXPIRYDATE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.PAGEEXPIRYREDIRECTEID]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.PAGEREDIRECTED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [MARKETING_EMAIL_FIELDS.PREVIEWKEY]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
               enforce_value: false,
@@ -792,80 +790,80 @@ export class Types {
           },
         },
         [MARKETING_EMAIL_FIELDS.PUBLISHDATE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.PUBLISHEDAT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.PUBLISHEDBYID]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.PUBLISHEDBYNAME]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.PUBLISHIMMEDIATELY]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [MARKETING_EMAIL_FIELDS.PUBLISHEDURL]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.REPLYTO]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.RESOLVEDDOMAIN]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.RSSEMAILAUTHORLINETEMPLATE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.RSSEMAILBLOGIMAGEMAXWIDTH]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [MARKETING_EMAIL_FIELDS.RSSEMAILBYTEXT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.RSSEMAILCLICKTHROUGHTEXT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.RSSEMAILCOMMENTTEXT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATEENABLED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [MARKETING_EMAIL_FIELDS.RSSEMAILURL]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.RSSTOEMAILTIMING]: {
-          refType: createRefToElmWithValue(Types.rssToEmailTimingType),
+          refType: Types.rssToEmailTimingType,
         },
         [MARKETING_EMAIL_FIELDS.SLUG]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         // TODO: Understand this and convert to a list of smart fields
         [MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS]: {
-          refType: createRefToElmWithValue(BuiltinTypes.JSON),
+          refType: BuiltinTypes.JSON,
         },
         [MARKETING_EMAIL_FIELDS.STYLESETTINGS]: {
-          refType: createRefToElmWithValue(BuiltinTypes.JSON),
+          refType: BuiltinTypes.JSON,
         },
         [MARKETING_EMAIL_FIELDS.SUBCATEGORY]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
               enforce_value: false,
@@ -879,63 +877,61 @@ export class Types {
           },
         },
         [MARKETING_EMAIL_FIELDS.SUBJECT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.SUBSCRIPTION]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [MARKETING_EMAIL_FIELDS.SUBSCRIPTIONBLOGID]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [MARKETING_EMAIL_FIELDS.SUBSCRIPTIONNAME]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.TEMPLATEPATH]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.TRANSACTIONAL]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [MARKETING_EMAIL_FIELDS.UNPUBLISHEDAT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.UPDATED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.UPDATEDBYID]: {
-          refType: createRefToElmWithValue(
-            Types.fieldTypes[FIELD_TYPES.USERIDENTIFIER]
-          ),
+          refType: Types.fieldTypes[FIELD_TYPES.USERIDENTIFIER],
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [MARKETING_EMAIL_FIELDS.URL]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [MARKETING_EMAIL_FIELDS.USERSSHEADLINEASSUBJECT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         // TODO: Consider converting to emails list
         [MARKETING_EMAIL_FIELDS.VIDSEXCLUDED]: {
-          refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
+          refType: new ListType(BuiltinTypes.NUMBER),
         },
         // TODO: Consider converting to emails list
         [MARKETING_EMAIL_FIELDS.VIDSINCLUDED]: {
-          refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
+          refType: new ListType(BuiltinTypes.NUMBER),
         },
         [MARKETING_EMAIL_FIELDS.WIDGETS]: {
-          refType: createRefToElmWithValue(BuiltinTypes.JSON),
+          refType: BuiltinTypes.JSON,
         },
         // TODO: Convert to reference
         [MARKETING_EMAIL_FIELDS.WORKFLOWNAMES]: {
-          refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+          refType: new ListType(BuiltinTypes.STRING),
         },
       },
       path: [HUBSPOT, TYPES_PATH, marketingEmailElemID.name],
@@ -944,25 +940,25 @@ export class Types {
       elemID: contactPropertyElemID,
       fields: {
         [CONTACT_PROPERTY_FIELDS.NAME]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
         [CONTACT_PROPERTY_FIELDS.LABEL]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [CONTACT_PROPERTY_FIELDS.DESCRIPTION]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [CONTACT_PROPERTY_FIELDS.GROUPNAME]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
         [CONTACT_PROPERTY_FIELDS.TYPE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -971,7 +967,7 @@ export class Types {
           },
         },
         [CONTACT_PROPERTY_FIELDS.FIELDTYPE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -980,58 +976,58 @@ export class Types {
           },
         },
         [CONTACT_PROPERTY_FIELDS.OPTIONS]: {
-          refType: createRefToElmWithValue(new ListType(Types.optionsType)),
+          refType: new ListType(Types.optionsType),
         },
         [CONTACT_PROPERTY_FIELDS.DELETED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [CONTACT_PROPERTY_FIELDS.FORMFIELD]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
         [CONTACT_PROPERTY_FIELDS.DISPLAYORDER]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.DEFAULT]: -1,
           },
         },
         [CONTACT_PROPERTY_FIELDS.READONLYVALUE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
           annotations: {
             [CORE_ANNOTATIONS.DEFAULT]: false,
           },
         },
         [CONTACT_PROPERTY_FIELDS.READONLYDEFINITION]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
           annotations: {
             [CORE_ANNOTATIONS.DEFAULT]: false,
           },
         },
         [CONTACT_PROPERTY_FIELDS.HIDDEN]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
           annotations: {
             [CORE_ANNOTATIONS.DEFAULT]: false,
           },
         },
         [CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
           annotations: {
             [CORE_ANNOTATIONS.DEFAULT]: false,
           },
         },
         [CONTACT_PROPERTY_FIELDS.CALCULATED]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
         },
         [CONTACT_PROPERTY_FIELDS.CREATEDAT]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
           annotations: {
             [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
           },
         },
         [CONTACT_PROPERTY_FIELDS.EXTERNALOPTIONS]: {
-          refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+          refType: BuiltinTypes.BOOLEAN,
           annotations: {
             [CORE_ANNOTATIONS.DEFAULT]: false,
           },

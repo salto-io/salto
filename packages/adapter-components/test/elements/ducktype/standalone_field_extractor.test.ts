@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { extractStandaloneFields } from '../../../src/elements/ducktype/standalone_field_extractor'
 
 const ADAPTER_NAME = 'myAdapter'
@@ -24,16 +23,16 @@ describe('Extract standalone fields', () => {
     const recipeType = new ObjectType({
       elemID: new ElemID(ADAPTER_NAME, 'recipe'),
       fields: {
-        name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        code: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        name: { refType: BuiltinTypes.STRING },
+        code: { refType: BuiltinTypes.STRING },
       },
     })
     const connectionType = new ObjectType({
       elemID: new ElemID(ADAPTER_NAME, 'connection'),
       fields: {
-        name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        application: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        code: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        name: { refType: BuiltinTypes.STRING },
+        application: { refType: BuiltinTypes.STRING },
+        code: { refType: BuiltinTypes.STRING },
       },
     })
     const instances = [
@@ -129,13 +128,12 @@ describe('Extract standalone fields', () => {
       expect(codeType.isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'recipe__code'),
         fields: {
-          flat: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          nested: { refType: createRefToElmWithValue(new ObjectType({
+          nested: { refType: new ObjectType({
             elemID: new ElemID(ADAPTER_NAME, 'recipe__code__nested'),
             fields: {
-              inner: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+              inner: { refType: BuiltinTypes.STRING },
             },
-          })) },
+          }) },
         },
       }))).toBeTruthy()
     })
@@ -209,15 +207,15 @@ describe('Extract standalone fields', () => {
       expect(codeType.isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'recipe__code'),
         fields: {
-          flat: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          nested: { refType: createRefToElmWithValue(new ObjectType({
+          flat: { refType: BuiltinTypes.STRING },
+          nested: { refType: new ObjectType({
             elemID: new ElemID(ADAPTER_NAME, 'recipe__code__nested'),
             fields: {
-              inner: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+              inner: { refType: BuiltinTypes.STRING },
             },
-          })) },
+          }) },
         },
-      }))).toBeTruthy()
+      })).toBeTruthy()
     })
 
     it('should create new recipe__code instances and reference them', () => {

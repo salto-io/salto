@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { InstanceElement, ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, StaticFile, ChangeError, toChange } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import jsonTypeValidator from '../../src/change_validators/json_type'
 
 const invalidJSON = '{'
@@ -30,7 +29,7 @@ describe('json type change validator', () => {
     object = new ObjectType({
       elemID: new ElemID('hubspot', 'obj'),
       fields: { f: {
-        refType: createRefToElmWithValue(BuiltinTypes.JSON),
+        refType: BuiltinTypes.JSON,
         annotations: {
           name: 'f',
           _readOnly: false,

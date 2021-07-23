@@ -34,14 +34,14 @@ describe('Elements validation', () => {
     elemID: baseElemID,
     fields: {
       str: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['str'] }),
         },
       },
-      num: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+      num: { refType: BuiltinTypes.NUMBER },
       bool: {
-        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        refType: BuiltinTypes.BOOLEAN,
         annotations: { _required: true },
       },
     },
@@ -59,7 +59,7 @@ describe('Elements validation', () => {
   const withSimpleTypeField = new ObjectType({
     elemID: withSimpleTypeElemID,
     fields: {
-      simple: { refType: createRefToElmWithValue(simpleType) },
+      simple: { refType: simpleType },
     },
   })
 
@@ -145,39 +145,39 @@ describe('Elements validation', () => {
     elemID: nestedElemID,
     fields: {
       nested: {
-        refType: createRefToElmWithValue(simpleType),
+        refType: simpleType,
         annotations: {
           annonum: 1,
           annoboolean: true,
         },
       },
-      flatstr: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      flatnum: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-      flatbool: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-      list: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
+      flatstr: { refType: BuiltinTypes.STRING },
+      flatnum: { refType: BuiltinTypes.NUMBER },
+      flatbool: { refType: BuiltinTypes.BOOLEAN },
+      list: { refType: new ListType(BuiltinTypes.STRING) },
       listOfList: {
-        refType: createRefToElmWithValue(new ListType(new ListType(BuiltinTypes.STRING))),
+        refType: new ListType(new ListType(BuiltinTypes.STRING)),
       },
       listOfListOfList: {
-        refType: createRefToElmWithValue(
+        refType:
           new ListType(new ListType(new ListType(BuiltinTypes.STRING)))
-        ),
+        ,
       },
-      listOfObject: { refType: createRefToElmWithValue(new ListType(simpleType)) },
-      map: { refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)) },
-      mapOfObject: { refType: createRefToElmWithValue(new MapType(simpleType)) },
+      listOfObject: { refType: new ListType(simpleType) },
+      map: { refType: new MapType(BuiltinTypes.STRING) },
+      mapOfObject: { refType: new MapType(simpleType) },
       mapOfMaps: {
-        refType: createRefToElmWithValue(new MapType(new MapType(BuiltinTypes.STRING))),
+        refType: new MapType(new MapType(BuiltinTypes.STRING)),
       },
       mapOfLists: {
-        refType: createRefToElmWithValue(new MapType(new ListType(BuiltinTypes.STRING))),
+        refType: new MapType(new ListType(BuiltinTypes.STRING)),
       },
       listOfMaps: {
-        refType: createRefToElmWithValue(new ListType(new MapType(BuiltinTypes.STRING))),
+        refType: new ListType(new MapType(BuiltinTypes.STRING)),
       },
-      reqStr: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      reqStr: { refType: BuiltinTypes.STRING },
       restrictStr: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             values: ['restriction1', 'restriction2'],
@@ -185,7 +185,7 @@ describe('Elements validation', () => {
         },
       },
       restrictNumber: {
-        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+        refType: BuiltinTypes.NUMBER,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             min: 0,
@@ -194,7 +194,7 @@ describe('Elements validation', () => {
         },
       },
       restrictStringRegex: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             regex: '^[a-z0-9]*$',
@@ -202,7 +202,7 @@ describe('Elements validation', () => {
         },
       },
       restrictStringLength: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             max_length: 5,
@@ -210,10 +210,10 @@ describe('Elements validation', () => {
         },
       },
       restrictedStringMaxLengthType: {
-        refType: createRefToElmWithValue(restrictedStringMaxLengthType),
+        refType: restrictedStringMaxLengthType,
       },
       restrictNumberRegex: {
-        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+        refType: BuiltinTypes.NUMBER,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             regex: '^1[0-9]*$',
@@ -221,7 +221,7 @@ describe('Elements validation', () => {
         },
       },
       restrictedAnnotation: {
-        refType: createRefToElmWithValue(restrictedAnnotation),
+        refType: restrictedAnnotation,
         annotations: {
           temp: 'val1',
           range: 5,
@@ -232,7 +232,7 @@ describe('Elements validation', () => {
         },
       },
       reqNested: {
-        refType: createRefToElmWithValue(simpleType),
+        refType: simpleType,
       },
     },
     annotationRefsOrTypes: {
@@ -249,7 +249,7 @@ describe('Elements validation', () => {
   const noRestrictionsType = new ObjectType({
     elemID: noResElemID,
     fields: {
-      someVal: { refType: createRefToElmWithValue(emptyType) },
+      someVal: { refType: emptyType },
     },
   })
 
@@ -362,7 +362,7 @@ describe('Elements validation', () => {
         annotationRefsOrTypes: {
           notList: new ObjectType({
             elemID,
-            fields: { simple: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
+            fields: { simple: { refType: BuiltinTypes.STRING } },
           }),
         },
         annotations: {
@@ -407,7 +407,7 @@ describe('Elements validation', () => {
         annotationRefsOrTypes: {
           notList: new ObjectType({
             elemID,
-            fields: { simple: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
+            fields: { simple: { refType: BuiltinTypes.STRING } },
           }),
         },
         annotations: {
@@ -1156,10 +1156,10 @@ describe('Elements validation', () => {
           },
           fields: {
             someFile: {
-              refType: createRefToElmWithValue(new PrimitiveType({
+              refType: new PrimitiveType({
                 elemID: new ElemID('salesforce', 'string'),
                 primitive: PrimitiveTypes.STRING,
-              })),
+              }),
             },
           },
         })
@@ -1186,10 +1186,10 @@ describe('Elements validation', () => {
           },
           fields: {
             someFile: {
-              refType: createRefToElmWithValue(new PrimitiveType({
+              refType: new PrimitiveType({
                 elemID: new ElemID('salesforce', 'string'),
                 primitive: PrimitiveTypes.STRING,
-              })),
+              }),
             },
           },
         })
@@ -1684,7 +1684,7 @@ describe('Elements validation', () => {
         const unknownObj = new ObjectType({
           elemID: new ElemID('salto', 'unknown'),
           fields: {
-            unknown: { refType: createRefToElmWithValue(BuiltinTypes.UNKNOWN) },
+            unknown: { refType: BuiltinTypes.UNKNOWN },
           },
         })
 
@@ -1939,7 +1939,7 @@ describe('Elements validation', () => {
         elemID: new ElemID('salto', 'test'),
         fields: {
           someField: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
           },
         },
       })

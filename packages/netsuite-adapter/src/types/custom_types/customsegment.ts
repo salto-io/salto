@@ -18,7 +18,6 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 import { enums } from '../enums'
 
@@ -33,23 +32,23 @@ const customsegment_permissions_permission = new ObjectType({
   },
   fields: {
     role: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
     valuemgmtaccesslevel: {
-      refType: createRefToElmWithValue(enums.generic_permission_level),
+      refType: enums.generic_permission_level,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_permission_level.   The default value is 'NONE'. */
     recordaccesslevel: {
-      refType: createRefToElmWithValue(enums.customsegment_access_search_level),
+      refType: enums.customsegment_access_search_level,
       annotations: {
       },
     }, /* Original description: For information about possible values, see customsegment_access_search_level. */
     searchaccesslevel: {
-      refType: createRefToElmWithValue(enums.customsegment_access_search_level),
+      refType: enums.customsegment_access_search_level,
       annotations: {
       },
     }, /* Original description: For information about possible values, see customsegment_access_search_level. */
@@ -67,7 +66,7 @@ const customsegment_permissions = new ObjectType({
   },
   fields: {
     permission: {
-      refType: createRefToElmWithValue(new ListType(customsegment_permissions_permission)),
+      refType: new ListType(customsegment_permissions_permission),
       annotations: {
       },
     },
@@ -85,13 +84,13 @@ const customsegment_segmentapplication_crm_applications_application = new Object
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(enums.customsegment_crm_application_id),
+      refType: enums.customsegment_crm_application_id,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see customsegment_crm_application_id. */
     isapplied: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -110,7 +109,7 @@ const customsegment_segmentapplication_crm_applications = new ObjectType({
   },
   fields: {
     application: {
-      refType: createRefToElmWithValue(new ListType(customsegment_segmentapplication_crm_applications_application)),
+      refType: new ListType(customsegment_segmentapplication_crm_applications_application),
       annotations: {
       },
     },
@@ -128,12 +127,12 @@ const customsegment_segmentapplication_crm = new ObjectType({
   },
   fields: {
     sourcelist: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the crmcustomfield custom type.   For information about other possible values, see customsegment_crm_sourcelist. */
     applications: {
-      refType: createRefToElmWithValue(customsegment_segmentapplication_crm_applications),
+      refType: customsegment_segmentapplication_crm_applications,
       annotations: {
       },
     },
@@ -151,19 +150,19 @@ const customsegment_segmentapplication_customrecords_applications_application = 
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the customrecordtype custom type. */
     isapplied: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: The default value is F. */
     sourcelist: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is available when the isapplied value is equal to T.   This field accepts references to the customrecordcustomfield custom type. */
@@ -181,7 +180,7 @@ const customsegment_segmentapplication_customrecords_applications = new ObjectTy
   },
   fields: {
     application: {
-      refType: createRefToElmWithValue(new ListType(customsegment_segmentapplication_customrecords_applications_application)),
+      refType: new ListType(customsegment_segmentapplication_customrecords_applications_application),
       annotations: {
       },
     },
@@ -199,7 +198,7 @@ const customsegment_segmentapplication_customrecords = new ObjectType({
   },
   fields: {
     applications: {
-      refType: createRefToElmWithValue(customsegment_segmentapplication_customrecords_applications),
+      refType: customsegment_segmentapplication_customrecords_applications,
       annotations: {
       },
     },
@@ -217,13 +216,13 @@ const customsegment_segmentapplication_entities_applications_application = new O
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(enums.customsegment_entities_application_id),
+      refType: enums.customsegment_entities_application_id,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see customsegment_entities_application_id. */
     isapplied: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -242,7 +241,7 @@ const customsegment_segmentapplication_entities_applications = new ObjectType({
   },
   fields: {
     application: {
-      refType: createRefToElmWithValue(new ListType(customsegment_segmentapplication_entities_applications_application)),
+      refType: new ListType(customsegment_segmentapplication_entities_applications_application),
       annotations: {
       },
     },
@@ -260,12 +259,12 @@ const customsegment_segmentapplication_entities = new ObjectType({
   },
   fields: {
     sourcelist: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the entitycustomfield custom type.   For information about other possible values, see customsegment_entities_sourcelist. */
     applications: {
-      refType: createRefToElmWithValue(customsegment_segmentapplication_entities_applications),
+      refType: customsegment_segmentapplication_entities_applications,
       annotations: {
       },
     },
@@ -283,13 +282,13 @@ const customsegment_segmentapplication_items_applications_application = new Obje
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(enums.customsegment_items_application_id),
+      refType: enums.customsegment_items_application_id,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see customsegment_items_application_id. */
     isapplied: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -308,7 +307,7 @@ const customsegment_segmentapplication_items_applications = new ObjectType({
   },
   fields: {
     application: {
-      refType: createRefToElmWithValue(new ListType(customsegment_segmentapplication_items_applications_application)),
+      refType: new ListType(customsegment_segmentapplication_items_applications_application),
       annotations: {
       },
     },
@@ -326,18 +325,18 @@ const customsegment_segmentapplication_items = new ObjectType({
   },
   fields: {
     subtype: {
-      refType: createRefToElmWithValue(enums.customsegment_items_subtype),
+      refType: enums.customsegment_items_subtype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see customsegment_items_subtype.   The default value is 'BOTH'. */
     sourcelist: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the itemcustomfield custom type.   For information about other possible values, see customsegment_items_sourcelist. */
     applications: {
-      refType: createRefToElmWithValue(customsegment_segmentapplication_items_applications),
+      refType: customsegment_segmentapplication_items_applications,
       annotations: {
       },
     },
@@ -355,13 +354,13 @@ const customsegment_segmentapplication_transactionbody_applications_application 
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the customtransactiontype custom type.   For information about other possible values, see customsegment_transactionbody_application_id. */
     isapplied: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -380,7 +379,7 @@ export const customsegment_segmentapplication_transactionbody_applications = new
   },
   fields: {
     application: {
-      refType: createRefToElmWithValue(new ListType(customsegment_segmentapplication_transactionbody_applications_application)),
+      refType: new ListType(customsegment_segmentapplication_transactionbody_applications_application),
       annotations: {
       },
     },
@@ -398,12 +397,12 @@ const customsegment_segmentapplication_transactionbody = new ObjectType({
   },
   fields: {
     sourcelist: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the transactionbodycustomfield custom type.   For information about other possible values, see customsegment_transactionbody_sourcelist. */
     applications: {
-      refType: createRefToElmWithValue(customsegment_segmentapplication_transactionbody_applications),
+      refType: customsegment_segmentapplication_transactionbody_applications,
       annotations: {
       },
     },
@@ -421,13 +420,13 @@ const customsegment_segmentapplication_transactionline_applications_application 
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the customtransactiontype custom type.   For information about other possible values, see customsegment_transactionline_application_id. */
     isapplied: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -446,7 +445,7 @@ export const customsegment_segmentapplication_transactionline_applications = new
   },
   fields: {
     application: {
-      refType: createRefToElmWithValue(new ListType(customsegment_segmentapplication_transactionline_applications_application)),
+      refType: new ListType(customsegment_segmentapplication_transactionline_applications_application),
       annotations: {
       },
     },
@@ -464,12 +463,12 @@ const customsegment_segmentapplication_transactionline = new ObjectType({
   },
   fields: {
     sourcelist: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   For information about other possible values, see customsegment_transactionline_sourcelist. */
     applications: {
-      refType: createRefToElmWithValue(customsegment_segmentapplication_transactionline_applications),
+      refType: customsegment_segmentapplication_transactionline_applications,
       annotations: {
       },
     },
@@ -487,32 +486,32 @@ const customsegment_segmentapplication = new ObjectType({
   },
   fields: {
     crm: {
-      refType: createRefToElmWithValue(customsegment_segmentapplication_crm),
+      refType: customsegment_segmentapplication_crm,
       annotations: {
       },
     },
     customrecords: {
-      refType: createRefToElmWithValue(customsegment_segmentapplication_customrecords),
+      refType: customsegment_segmentapplication_customrecords,
       annotations: {
       },
     },
     entities: {
-      refType: createRefToElmWithValue(customsegment_segmentapplication_entities),
+      refType: customsegment_segmentapplication_entities,
       annotations: {
       },
     },
     items: {
-      refType: createRefToElmWithValue(customsegment_segmentapplication_items),
+      refType: customsegment_segmentapplication_items,
       annotations: {
       },
     },
     transactionbody: {
-      refType: createRefToElmWithValue(customsegment_segmentapplication_transactionbody),
+      refType: customsegment_segmentapplication_transactionbody,
       annotations: {
       },
     },
     transactionline: {
-      refType: createRefToElmWithValue(customsegment_segmentapplication_transactionline),
+      refType: customsegment_segmentapplication_transactionline,
       annotations: {
       },
     },
@@ -529,7 +528,7 @@ export const customsegment = new ObjectType({
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -537,82 +536,82 @@ export const customsegment = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 19 characters long.   The default value is ‘cseg’. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
       },
     }, /* Original description: This field value can be up to 40 characters long. */
     recordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the customrecordtype custom type. */
     filteredby: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the customsegment custom type.   For information about other possible values, see customsegment_parent. */
     fieldtype: {
-      refType: createRefToElmWithValue(enums.customsegment_fieldtype),
+      refType: enums.customsegment_fieldtype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see customsegment_fieldtype. */
     description: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
       },
     }, /* Original description: This field value can be up to 999 characters long. */
     help: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 999 }),
       },
     }, /* Original description: This field value can be up to 999 characters long. */
     hasglimpact: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     ismandatory: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displaytype: {
-      refType: createRefToElmWithValue(enums.customsegment_displaytype),
+      refType: enums.customsegment_displaytype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see customsegment_displaytype.   The default value is 'NORMAL'. */
     defaultselection: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is available when the fieldtype value is not equal to MULTISELECT.   This field accepts references to the instance custom type. */
     defaultrecordaccesslevel: {
-      refType: createRefToElmWithValue(enums.customsegment_access_search_level),
+      refType: enums.customsegment_access_search_level,
       annotations: {
       },
     }, /* Original description: For information about possible values, see customsegment_access_search_level. */
     defaultsearchaccesslevel: {
-      refType: createRefToElmWithValue(enums.customsegment_access_search_level),
+      refType: enums.customsegment_access_search_level,
       annotations: {
       },
     }, /* Original description: For information about possible values, see customsegment_access_search_level. */
     valuesdisplayorder: {
-      refType: createRefToElmWithValue(enums.customsegment_valuesdisplayorder),
+      refType: enums.customsegment_valuesdisplayorder,
       annotations: {
       },
     }, /* Original description: For information about possible values, see customsegment_valuesdisplayorder. */
     permissions: {
-      refType: createRefToElmWithValue(customsegment_permissions),
+      refType: customsegment_permissions,
       annotations: {
       },
     },
     segmentapplication: {
-      refType: createRefToElmWithValue(customsegment_segmentapplication),
+      refType: customsegment_segmentapplication,
       annotations: {
       },
     },

@@ -15,7 +15,6 @@
 */
 
 import { BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ListType, ObjectType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { SALESFORCE, SUBTYPES_PATH, TYPES_PATH, IS_ATTRIBUTE, METADATA_TYPE } from '../constants'
 
 const subTypesPath = [SALESFORCE, TYPES_PATH, SUBTYPES_PATH]
@@ -23,7 +22,7 @@ const subTypesPath = [SALESFORCE, TYPES_PATH, SUBTYPES_PATH]
 const lightningComponentBundleObjectType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleObject'),
   fields: {
-    object: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    object: { refType: BuiltinTypes.STRING },
   },
   annotations: {
     [METADATA_TYPE]: 'LightningComponentBundleObject',
@@ -36,68 +35,68 @@ const lightningComponentBundlePropertyType = new ObjectType({
   fields: {
     datasource: {
       // SALTO-861: retrieved as string delimited by ',' but is a list
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     default: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     description: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     max: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     min: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [IS_ATTRIBUTE]: true,
       },
     },
     placeholder: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     required: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     role: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     type: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [IS_ATTRIBUTE]: true,
@@ -119,7 +118,7 @@ const lightningComponentBundleSupportedFormFactorType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleSupportedFormFactor'),
   fields: {
     type: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['Small', 'Large'] }),
@@ -137,9 +136,7 @@ const lightningComponentBundleSupportedFormFactorsType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'LightningComponentBundleSupportedFormFactors'),
   fields: {
     supportedFormFactor: {
-      refType: createRefToElmWithValue(
-        new ListType(lightningComponentBundleSupportedFormFactorType)
-      ),
+      refType: new ListType(lightningComponentBundleSupportedFormFactorType),
     },
   },
   annotations: {
@@ -153,25 +150,25 @@ const lightningComponentBundleTargetConfigType = new ObjectType({
   fields: {
     targets: {
       // SALTO-861: retrieved as string delimited by ',' but is a list
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     configurationEditor: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [IS_ATTRIBUTE]: true,
       },
     },
     objects: {
-      refType: createRefToElmWithValue(new ListType(lightningComponentBundleObjectType)),
+      refType: new ListType(lightningComponentBundleObjectType),
     },
     property: {
-      refType: createRefToElmWithValue(lightningComponentBundlePropertyType),
+      refType: lightningComponentBundlePropertyType,
     },
     supportedFormFactors: {
-      refType: createRefToElmWithValue(lightningComponentBundleSupportedFormFactorsType),
+      refType: lightningComponentBundleSupportedFormFactorsType,
     },
   },
   annotations: {
@@ -186,7 +183,7 @@ export const allMissingSubTypes = [
     elemID: new ElemID(SALESFORCE, 'TargetConfigs'),
     fields: {
       targetConfig: {
-        refType: createRefToElmWithValue(new ListType(lightningComponentBundleTargetConfigType)),
+        refType: new ListType(lightningComponentBundleTargetConfigType),
       },
     },
     annotations: {

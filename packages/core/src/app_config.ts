@@ -17,7 +17,7 @@ import os from 'os'
 import * as path from 'path'
 import uuidv4 from 'uuid/v4'
 import { CORE_ANNOTATIONS, BuiltinTypes, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { createRefToElmWithValue, applyInstancesDefaults } from '@salto-io/adapter-utils'
+import { applyInstancesDefaults, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { replaceContents, exists, mkdirp, readFile } from '@salto-io/file'
 import { parser } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
@@ -93,15 +93,15 @@ export const saltoAppConfigType = new ObjectType({
   elemID: saltoConfigElemID,
   fields: {
     installationID: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: requireAnno,
     },
     telemetry: {
-      refType: createRefToElmWithValue(BuiltinTypes.JSON),
+      refType: BuiltinTypes.JSON,
       annotations: requireAnno,
     },
     command: {
-      refType: createRefToElmWithValue(BuiltinTypes.JSON),
+      refType: BuiltinTypes.JSON,
       annotations: { [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_COMMAND_CONFIG },
     },
   },

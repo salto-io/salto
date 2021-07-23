@@ -16,7 +16,6 @@
 
 import { WorkspaceConfig } from '@salto-io/workspace'
 import { InstanceElement, ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 
 export type WorkspaceMetadataConfig = Pick<
   WorkspaceConfig, 'uid' | 'name' | 'staleStateThresholdMinutes'
@@ -35,7 +34,7 @@ const userDataConfigElemID = new ElemID(USER_CONFIG_NAME)
 const userDataConfigType = new ObjectType({
   elemID: userDataConfigElemID,
   fields: {
-    currentEnv: { refType: createRefToElmWithValue(BuiltinTypes.STRING), annotations: requireAnno },
+    currentEnv: { refType: BuiltinTypes.STRING, annotations: requireAnno },
   },
   isSettings: true,
 })
@@ -43,8 +42,8 @@ const envConfigElemID = new ElemID(ENVS_CONFIG_NAME, 'env')
 const envConfigType = new ObjectType({
   elemID: envConfigElemID,
   fields: {
-    name: { refType: createRefToElmWithValue(BuiltinTypes.STRING), annotations: requireAnno },
-    services: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
+    name: { refType: BuiltinTypes.STRING, annotations: requireAnno },
+    services: { refType: new ListType(BuiltinTypes.STRING) },
   },
 })
 
@@ -53,7 +52,7 @@ const envsConfigType = new ObjectType({
   elemID: envsConfigElemID,
   fields: {
     // Once we have map type we can have here map env name -> env config
-    envs: { refType: createRefToElmWithValue(new ListType(envConfigType)) },
+    envs: { refType: new ListType(envConfigType) },
   },
   isSettings: true,
 })
@@ -62,9 +61,9 @@ const workspaceMetatadataConfigElemID = new ElemID(WORKSPACE_CONFIG_NAME)
 const workspaceMetadataConfigType = new ObjectType({
   elemID: workspaceMetatadataConfigElemID,
   fields: {
-    uid: { refType: createRefToElmWithValue(BuiltinTypes.STRING), annotations: requireAnno },
-    name: { refType: createRefToElmWithValue(BuiltinTypes.STRING), annotations: requireAnno },
-    staleStateThresholdMinutes: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+    uid: { refType: BuiltinTypes.STRING, annotations: requireAnno },
+    name: { refType: BuiltinTypes.STRING, annotations: requireAnno },
+    staleStateThresholdMinutes: { refType: BuiltinTypes.NUMBER },
   },
   isSettings: true,
 })

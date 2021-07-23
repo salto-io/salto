@@ -15,7 +15,6 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { buildDataManagement } from '../../../src/fetch_profile/data_management'
 import { SaltoIDSettings, DataManagementConfig } from '../../../src/types'
 import { FilterWith } from '../../../src/filter'
@@ -37,21 +36,21 @@ describe('hide read only values filter', () => {
     elemID: mockCustomElemenID,
     fields: {
       readOnlyField: {
-        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+        refType: Types.primitiveDataTypes.Text,
         annotations: {
           [FIELD_ANNOTATIONS.CREATABLE]: false,
           [FIELD_ANNOTATIONS.UPDATEABLE]: false,
         },
       },
       nonCreateableField: {
-        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+        refType: Types.primitiveDataTypes.Text,
         annotations: {
           [FIELD_ANNOTATIONS.CREATABLE]: false,
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,
         },
       },
       nonUpdateableField: {
-        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+        refType: Types.primitiveDataTypes.Text,
         annotations: {
           [FIELD_ANNOTATIONS.CREATABLE]: true,
           [FIELD_ANNOTATIONS.UPDATEABLE]: false,
@@ -63,21 +62,21 @@ describe('hide read only values filter', () => {
     elemID: mockCustomElemenID,
     fields: {
       readOnlyField: {
-        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+        refType: Types.primitiveDataTypes.Text,
         annotations: {
           [FIELD_ANNOTATIONS.CREATABLE]: false,
           [FIELD_ANNOTATIONS.UPDATEABLE]: false,
         },
       },
       nonCreateableField: {
-        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+        refType: Types.primitiveDataTypes.Text,
         annotations: {
           [FIELD_ANNOTATIONS.CREATABLE]: false,
           [FIELD_ANNOTATIONS.UPDATEABLE]: true,
         },
       },
       nonUpdateableField: {
-        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+        refType: Types.primitiveDataTypes.Text,
         annotations: {
           [FIELD_ANNOTATIONS.CREATABLE]: true,
           [FIELD_ANNOTATIONS.UPDATEABLE]: false,

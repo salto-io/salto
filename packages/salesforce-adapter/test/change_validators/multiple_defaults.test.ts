@@ -139,9 +139,9 @@ describe('multiple defaults change validator', () => {
           fields: { customValue: { refType: createRefToElmWithValue(new ListType(new ObjectType({
             elemID: new ElemID(SALESFORCE, 'CustomValue'),
             fields: {
-              fullName: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-              default: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-              label: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+              fullName: { refType: BuiltinTypes.STRING },
+              default: { refType: BuiltinTypes.BOOLEAN },
+              label: { refType: BuiltinTypes.STRING },
             },
             annotations: {
               [METADATA_TYPE]: 'CustomValue',
@@ -204,7 +204,7 @@ describe('multiple defaults change validator', () => {
           fields: {
             applicationVisibilities: { refType: createRefToElmWithValue(new MapType(new ObjectType({
               elemID: new ElemID(SALESFORCE, 'ProfileApplicationVisibility'),
-              fields: { default: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) } },
+              fields: { default: { refType: BuiltinTypes.BOOLEAN } },
               annotations: {
                 [METADATA_TYPE]: 'ProfileApplicationVisibility',
               },
@@ -212,7 +212,7 @@ describe('multiple defaults change validator', () => {
             recordTypeVisibilities: { refType: createRefToElmWithValue(
               new MapType(new MapType(new ObjectType({
                 elemID: new ElemID(SALESFORCE, 'ProfileRecordTypeVisibility'),
-                fields: { default: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) } },
+                fields: { default: { refType: BuiltinTypes.BOOLEAN } },
                 annotations: {
                   [METADATA_TYPE]: 'ProfileRecordTypeVisibility',
                 },

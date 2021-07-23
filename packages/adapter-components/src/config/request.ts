@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, MapType, ListType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { findDuplicates } from './validation_utils'
 
 export const ARG_PLACEHOLDER_MATCHER = /\{([\w_]+)\}/g
@@ -74,13 +73,13 @@ export const createRequestConfigs = (
     elemID: new ElemID(adapter, 'dependsOnFromConfig'),
     fields: {
       type: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
       field: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
@@ -91,13 +90,13 @@ export const createRequestConfigs = (
     elemID: new ElemID(adapter, 'dependsOnConfig'),
     fields: {
       pathParam: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
       from: {
-        refType: createRefToElmWithValue(dependsOnFromConfig),
+        refType: dependsOnFromConfig,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
@@ -107,16 +106,16 @@ export const createRequestConfigs = (
 
   const sharedEndpointFields: Record<string, FieldDefinition> = {
     queryParams: {
-      refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)),
+      refType: new MapType(BuiltinTypes.STRING),
     },
     recursiveQueryByResponseField: {
-      refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)),
+      refType: new MapType(BuiltinTypes.STRING),
     },
     paginationField: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
     dependsOn: {
-      refType: createRefToElmWithValue(new ListType(dependsOnConfigType)),
+      refType: new ListType(dependsOnConfigType),
     },
     ...additionalFields,
   }
@@ -125,7 +124,7 @@ export const createRequestConfigs = (
     elemID: new ElemID(adapter, 'requestConfig'),
     fields: {
       url: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },

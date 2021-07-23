@@ -42,7 +42,7 @@ const commonFragment = new ObjectType({
   elemID: objectElemID,
   fields: {
     commonField: {
-      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
   },
 })
@@ -50,7 +50,7 @@ const envFragment = new ObjectType({
   elemID: objectElemID,
   fields: {
     envField: {
-      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
   },
 })
@@ -58,7 +58,7 @@ const inactiveFragment = new ObjectType({
   elemID: objectElemID,
   fields: {
     inactiveField: {
-      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
   },
 })
@@ -67,7 +67,7 @@ const commonObject = new ObjectType({
   elemID: commonElemID,
   fields: {
     field: {
-      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
   },
 })
@@ -97,7 +97,7 @@ const envObject = new ObjectType({
   elemID: envElemID,
   fields: {
     field: {
-      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
   },
 })
@@ -126,7 +126,7 @@ const inactiveObject = new ObjectType({
   elemID: inactiveElemID,
   fields: {
     field: {
-      refType: utils.createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
   },
 })
@@ -323,7 +323,7 @@ describe('multi env source', () => {
         fields: {
           ...envFragment.fields,
           field1: {
-            refType: utils.createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+            refType: BuiltinTypes.SERVICE_ID,
           },
         },
       })
@@ -636,7 +636,7 @@ describe('multi env source', () => {
         fields: {
           ...envObject.fields,
           field1: {
-            refType: utils.createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+            refType: BuiltinTypes.BOOLEAN,
           },
         },
       })

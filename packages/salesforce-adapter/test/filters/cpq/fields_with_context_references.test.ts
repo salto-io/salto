@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, Element, InstanceElement, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../../src/filter'
 import SalesforceClient from '../../../src/client/client'
 import { SALESFORCE, CPQ_PRODUCT_RULE, CPQ_LOOKUP_OBJECT_NAME, API_NAME, METADATA_TYPE, CUSTOM_OBJECT, CPQ_LOOKUP_QUERY, CPQ_LOOKUP_PRODUCT_FIELD, CPQ_LOOKUP_FIELD, CPQ_LOOKUP_MESSAGE_FIELD, API_NAME_SEPARATOR } from '../../../src/constants'
@@ -36,13 +35,13 @@ describe('fields with context references filter', () => {
     elemID: mockLookupDataElemID,
     fields: {
       product: {
-        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+        refType: Types.primitiveDataTypes.Text,
         annotations: {
           [API_NAME]: [lookupDataName, 'product'].join(API_NAME_SEPARATOR),
         },
       },
       message: {
-        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+        refType: Types.primitiveDataTypes.Text,
         annotations: {
           [API_NAME]: [lookupDataName, 'message'].join(API_NAME_SEPARATOR),
         },
@@ -59,19 +58,19 @@ describe('fields with context references filter', () => {
     elemID: mockProductRuleElemID,
     fields: {
       [CPQ_LOOKUP_OBJECT_NAME]: {
-        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+        refType: Types.primitiveDataTypes.Text,
         annotations: {
           [API_NAME]: CPQ_LOOKUP_OBJECT_NAME,
         },
       },
       [CPQ_LOOKUP_PRODUCT_FIELD]: {
-        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+        refType: Types.primitiveDataTypes.Text,
         annotations: {
           [API_NAME]: [CPQ_PRODUCT_RULE, CPQ_LOOKUP_PRODUCT_FIELD].join(API_NAME_SEPARATOR),
         },
       },
       [CPQ_LOOKUP_MESSAGE_FIELD]: {
-        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+        refType: Types.primitiveDataTypes.Text,
         annotations: {
           [API_NAME]: [CPQ_PRODUCT_RULE, CPQ_LOOKUP_MESSAGE_FIELD].join(API_NAME_SEPARATOR),
         },
@@ -88,13 +87,13 @@ describe('fields with context references filter', () => {
     elemID: mockLookupQueryElemID,
     fields: {
       [CPQ_LOOKUP_FIELD]: {
-        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+        refType: Types.primitiveDataTypes.Text,
         annotations: {
           [API_NAME]: [CPQ_LOOKUP_QUERY, CPQ_LOOKUP_FIELD].join(API_NAME_SEPARATOR),
         },
       },
       anotherField: {
-        refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+        refType: Types.primitiveDataTypes.Text,
         annotations: {
           [API_NAME]: [CPQ_LOOKUP_QUERY, 'anotherField'].join(API_NAME_SEPARATOR),
         },

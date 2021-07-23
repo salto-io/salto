@@ -18,7 +18,6 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 import { enums } from '../enums'
 import { fieldTypes } from '../field_types'
@@ -34,19 +33,19 @@ const workflow_initcondition_parameters_parameter = new ObjectType({
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -64,7 +63,7 @@ const workflow_initcondition_parameters = new ObjectType({
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -82,18 +81,18 @@ const workflow_initcondition = new ObjectType({
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_initcondition_parameters),
+      refType: workflow_initcondition_parameters,
       annotations: {
       },
     },
@@ -111,25 +110,25 @@ const workflow_recurrence_daily = new ObjectType({
   },
   fields: {
     startdate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     starttime: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     everyxdays: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field value must range from 1 through 1000. (inclusive) */
     enddate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -147,13 +146,13 @@ const workflow_recurrence_every30minutes = new ObjectType({
   },
   fields: {
     startdate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     enddate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -171,19 +170,19 @@ const workflow_recurrence_everyweekday = new ObjectType({
   },
   fields: {
     startdate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     starttime: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     enddate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -201,31 +200,31 @@ const workflow_recurrence_monthly = new ObjectType({
   },
   fields: {
     startdate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     starttime: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     dayofmonth: {
-      refType: createRefToElmWithValue(enums.generic_day_of_month),
+      refType: enums.generic_day_of_month,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_day_of_month. */
     everyxmonths: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field value must range from 1 through 1000. (inclusive) */
     enddate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -243,37 +242,37 @@ const workflow_recurrence_monthlydayofweek = new ObjectType({
   },
   fields: {
     startdate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     starttime: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     orderofweek: {
-      refType: createRefToElmWithValue(enums.workflow_order_of_week),
+      refType: enums.workflow_order_of_week,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_order_of_week. */
     dayofweek: {
-      refType: createRefToElmWithValue(enums.generic_day_of_week),
+      refType: enums.generic_day_of_week,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_day_of_week. */
     everyxmonths: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field value must range from 1 through 1000. (inclusive) */
     enddate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -291,13 +290,13 @@ const workflow_recurrence_single = new ObjectType({
   },
   fields: {
     startdate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     starttime: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -316,67 +315,67 @@ const workflow_recurrence_weekly = new ObjectType({
   },
   fields: {
     startdate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     starttime: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     everyxweeks: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field value must range from 1 through 1000. (inclusive) */
     sunday: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: The default value is F. */
     monday: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: The default value is F. */
     tuesday: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: The default value is F. */
     wednesday: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: The default value is F. */
     thursday: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: The default value is F. */
     friday: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: The default value is F. */
     saturday: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: The default value is F. */
     enddate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -394,31 +393,31 @@ const workflow_recurrence_yearly = new ObjectType({
   },
   fields: {
     startdate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     starttime: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     month: {
-      refType: createRefToElmWithValue(enums.generic_month),
+      refType: enums.generic_month,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_month. */
     dayofmonth: {
-      refType: createRefToElmWithValue(enums.generic_day_of_month),
+      refType: enums.generic_day_of_month,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_day_of_month. */
     enddate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -436,37 +435,37 @@ const workflow_recurrence_yearlydayofweek = new ObjectType({
   },
   fields: {
     startdate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     starttime: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     orderofweek: {
-      refType: createRefToElmWithValue(enums.generic_order_of_week),
+      refType: enums.generic_order_of_week,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_order_of_week. */
     dayofweek: {
-      refType: createRefToElmWithValue(enums.generic_day_of_week),
+      refType: enums.generic_day_of_week,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_day_of_week. */
     month: {
-      refType: createRefToElmWithValue(enums.generic_month),
+      refType: enums.generic_month,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_month. */
     enddate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -484,47 +483,47 @@ const workflow_recurrence = new ObjectType({
   },
   fields: {
     daily: {
-      refType: createRefToElmWithValue(workflow_recurrence_daily),
+      refType: workflow_recurrence_daily,
       annotations: {
       },
     },
     every30minutes: {
-      refType: createRefToElmWithValue(workflow_recurrence_every30minutes),
+      refType: workflow_recurrence_every30minutes,
       annotations: {
       },
     },
     everyweekday: {
-      refType: createRefToElmWithValue(workflow_recurrence_everyweekday),
+      refType: workflow_recurrence_everyweekday,
       annotations: {
       },
     },
     monthly: {
-      refType: createRefToElmWithValue(workflow_recurrence_monthly),
+      refType: workflow_recurrence_monthly,
       annotations: {
       },
     },
     monthlydayofweek: {
-      refType: createRefToElmWithValue(workflow_recurrence_monthlydayofweek),
+      refType: workflow_recurrence_monthlydayofweek,
       annotations: {
       },
     },
     single: {
-      refType: createRefToElmWithValue(workflow_recurrence_single),
+      refType: workflow_recurrence_single,
       annotations: {
       },
     },
     weekly: {
-      refType: createRefToElmWithValue(workflow_recurrence_weekly),
+      refType: workflow_recurrence_weekly,
       annotations: {
       },
     },
     yearly: {
-      refType: createRefToElmWithValue(workflow_recurrence_yearly),
+      refType: workflow_recurrence_yearly,
       annotations: {
       },
     },
     yearlydayofweek: {
-      refType: createRefToElmWithValue(workflow_recurrence_yearlydayofweek),
+      refType: workflow_recurrence_yearlydayofweek,
       annotations: {
       },
     },
@@ -542,43 +541,43 @@ const workflow_workflowcustomfields_workflowcustomfield_customfieldfilters_custo
   },
   fields: {
     fldfilter: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     fldfilterchecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fldfiltercomparetype: {
-      refType: createRefToElmWithValue(enums.generic_customfield_fldfiltercomparetype),
+      refType: enums.generic_customfield_fldfiltercomparetype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
     fldfiltersel: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     fldfilterval: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     fldfilternotnull: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fldfilternull: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fldcomparefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
@@ -596,7 +595,7 @@ const workflow_workflowcustomfields_workflowcustomfield_customfieldfilters = new
   },
   fields: {
     customfieldfilter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowcustomfields_workflowcustomfield_customfieldfilters_customfieldfilter)),
+      refType: new ListType(workflow_workflowcustomfields_workflowcustomfield_customfieldfilters_customfieldfilter),
       annotations: {
       },
     },
@@ -614,19 +613,19 @@ const workflow_workflowcustomfields_workflowcustomfield_roleaccesses_roleaccess 
   },
   fields: {
     role: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
     accesslevel: {
-      refType: createRefToElmWithValue(enums.generic_accesslevel_searchlevel),
+      refType: enums.generic_accesslevel_searchlevel,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
     searchlevel: {
-      refType: createRefToElmWithValue(enums.generic_accesslevel_searchlevel),
+      refType: enums.generic_accesslevel_searchlevel,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -645,7 +644,7 @@ const workflow_workflowcustomfields_workflowcustomfield_roleaccesses = new Objec
   },
   fields: {
     roleaccess: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowcustomfields_workflowcustomfield_roleaccesses_roleaccess)),
+      refType: new ListType(workflow_workflowcustomfields_workflowcustomfield_roleaccesses_roleaccess),
       annotations: {
       },
     },
@@ -663,97 +662,97 @@ const workflow_workflowcustomfields_workflowcustomfield = new ObjectType({
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 42 characters long.   The default value is ‘custworkflow’. */
     fieldtype: {
-      refType: createRefToElmWithValue(enums.generic_customfield_fieldtype),
+      refType: enums.generic_customfield_fieldtype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 200 }),
       },
     }, /* Original description: This field value can be up to 200 characters long.   This field accepts references to the string custom type. */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
     applyformatting: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     defaultchecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     defaultselection: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     defaultvalue: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     description: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     displaytype: {
-      refType: createRefToElmWithValue(enums.generic_customfield_displaytype),
+      refType: enums.generic_customfield_displaytype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
     dynamicdefault: {
-      refType: createRefToElmWithValue(enums.generic_customfield_dynamicdefault),
+      refType: enums.generic_customfield_dynamicdefault,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
     help: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
     linktext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     minvalue: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     maxvalue: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     storevalue: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     customfieldfilters: {
-      refType: createRefToElmWithValue(workflow_workflowcustomfields_workflowcustomfield_customfieldfilters),
+      refType: workflow_workflowcustomfields_workflowcustomfield_customfieldfilters,
       annotations: {
       },
     },
     roleaccesses: {
-      refType: createRefToElmWithValue(workflow_workflowcustomfields_workflowcustomfield_roleaccesses),
+      refType: workflow_workflowcustomfields_workflowcustomfield_roleaccesses,
       annotations: {
       },
     },
@@ -771,7 +770,7 @@ const workflow_workflowcustomfields = new ObjectType({
   },
   fields: {
     workflowcustomfield: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowcustomfields_workflowcustomfield)),
+      refType: new ListType(workflow_workflowcustomfields_workflowcustomfield),
       annotations: {
       },
     },
@@ -789,19 +788,19 @@ const workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_init
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -819,7 +818,7 @@ const workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_init
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -837,18 +836,18 @@ const workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_init
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -866,50 +865,50 @@ const workflow_workflowstates_workflowstate_workflowactions_addbuttonaction = ne
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     saverecordfirst: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     checkconditionbeforeexecution: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initcondition,
       annotations: {
       },
     },
@@ -927,19 +926,19 @@ const workflow_workflowstates_workflowstate_workflowactions_confirmaction_initco
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -957,7 +956,7 @@ const workflow_workflowstates_workflowstate_workflowactions_confirmaction_initco
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_confirmaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_confirmaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -975,18 +974,18 @@ const workflow_workflowstates_workflowstate_workflowactions_confirmaction_initco
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_confirmaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_confirmaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -1004,50 +1003,50 @@ const workflow_workflowstates_workflowstate_workflowactions_confirmaction = new 
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     messagetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     clienttriggerfieldssublist: {
-      refType: createRefToElmWithValue(enums.workflow_sublists),
+      refType: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the clienttriggerfieldsissublistfield value is equal to T.   This field is mandatory when the clienttriggerfieldsissublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
     clienttriggerfieldsissublistfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the triggertype value is present in workflowaction_triggertype_client.   The default value is F. */
     clienttriggerfields: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_confirmaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_confirmaction_initcondition,
       annotations: {
       },
     },
@@ -1065,43 +1064,43 @@ const workflow_workflowstates_workflowstate_workflowactions_createlineaction_fie
   },
   fields: {
     targetfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     valuechecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
     valuedate: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuedate),
+      refType: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
     valueselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuejoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valueformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -1119,7 +1118,7 @@ const workflow_workflowstates_workflowstate_workflowactions_createlineaction_fie
   },
   fields: {
     fieldsetting: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_createlineaction_fieldsettings_fieldsetting)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_createlineaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
@@ -1137,19 +1136,19 @@ const workflow_workflowstates_workflowstate_workflowactions_createlineaction_ini
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -1167,7 +1166,7 @@ const workflow_workflowstates_workflowstate_workflowactions_createlineaction_ini
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_createlineaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_createlineaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -1185,18 +1184,18 @@ const workflow_workflowstates_workflowstate_workflowactions_createlineaction_ini
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_createlineaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_createlineaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -1214,50 +1213,50 @@ const workflow_workflowstates_workflowstate_workflowactions_createlineaction = n
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     sublist: {
-      refType: createRefToElmWithValue(enums.workflow_sublists),
+      refType: enums.workflow_sublists,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_sublists.   The default value is 'item'. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     position: {
-      refType: createRefToElmWithValue(enums.workflowaction_createline_position),
+      refType: enums.workflowaction_createline_position,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_createline_position.   The default value is 'AFTERLASTLINE'. */
     fieldsettings: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_createlineaction_fieldsettings),
+      refType: workflow_workflowstates_workflowstate_workflowactions_createlineaction_fieldsettings,
       annotations: {
       },
     },
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_createlineaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_createlineaction_initcondition,
       annotations: {
       },
     },
@@ -1275,43 +1274,43 @@ const workflow_workflowstates_workflowstate_workflowactions_createrecordaction_f
   },
   fields: {
     targetfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     valuechecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
     valuedate: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuedate),
+      refType: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
     valueselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuejoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valueformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -1329,7 +1328,7 @@ const workflow_workflowstates_workflowstate_workflowactions_createrecordaction_f
   },
   fields: {
     fieldsetting: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_createrecordaction_fieldsettings_fieldsetting)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_createrecordaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
@@ -1347,19 +1346,19 @@ const workflow_workflowstates_workflowstate_workflowactions_createrecordaction_i
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -1377,7 +1376,7 @@ const workflow_workflowstates_workflowstate_workflowactions_createrecordaction_i
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_createrecordaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_createrecordaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -1395,18 +1394,18 @@ const workflow_workflowstates_workflowstate_workflowactions_createrecordaction_i
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_createrecordaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_createrecordaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -1424,75 +1423,75 @@ const workflow_workflowstates_workflowstate_workflowactions_createrecordaction =
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     recordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see generic_standard_recordtype. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     scheduledelay: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeofday: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     schedulerecurrence: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeunit: {
-      refType: createRefToElmWithValue(enums.workflow_timeunit),
+      refType: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
     schedulemode: {
-      refType: createRefToElmWithValue(enums.workflowaction_radioschedulemode),
+      refType: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     resultfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     fieldsettings: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_createrecordaction_fieldsettings),
+      refType: workflow_workflowstates_workflowstate_workflowactions_createrecordaction_fieldsettings,
       annotations: {
       },
     },
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_createrecordaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_createrecordaction_initcondition,
       annotations: {
       },
     },
@@ -1510,19 +1509,19 @@ const workflow_workflowstates_workflowstate_workflowactions_customaction_initcon
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -1540,7 +1539,7 @@ const workflow_workflowstates_workflowstate_workflowactions_customaction_initcon
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_customaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_customaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -1558,18 +1557,18 @@ const workflow_workflowstates_workflowstate_workflowactions_customaction_initcon
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_customaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_customaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -1587,43 +1586,43 @@ const workflow_workflowstates_workflowstate_workflowactions_customaction_paramet
   },
   fields: {
     targetparameter: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     valuechecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
     valuedate: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuedate),
+      refType: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
     valueselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuejoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valueformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -1641,7 +1640,7 @@ const workflow_workflowstates_workflowstate_workflowactions_customaction_paramet
   },
   fields: {
     parametersetting: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_customaction_parametersettings_parametersetting)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_customaction_parametersettings_parametersetting),
       annotations: {
       },
     },
@@ -1659,75 +1658,75 @@ const workflow_workflowstates_workflowstate_workflowactions_customaction = new O
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     scripttype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the workflowactionscript custom type. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     scheduledelay: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeofday: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     schedulerecurrence: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeunit: {
-      refType: createRefToElmWithValue(enums.workflow_timeunit),
+      refType: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
     schedulemode: {
-      refType: createRefToElmWithValue(enums.workflowaction_radioschedulemode),
+      refType: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     resultfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_customaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_customaction_initcondition,
       annotations: {
       },
     },
     parametersettings: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_customaction_parametersettings),
+      refType: workflow_workflowstates_workflowstate_workflowactions_customaction_parametersettings,
       annotations: {
       },
     },
@@ -1745,19 +1744,19 @@ const workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initc
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -1775,7 +1774,7 @@ const workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initc
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -1793,18 +1792,18 @@ const workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initc
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -1822,49 +1821,49 @@ const workflow_workflowstates_workflowstate_workflowactions_gotopageaction = new
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     targetpage: {
-      refType: createRefToElmWithValue(enums.generic_standard_task),
+      refType: enums.generic_standard_task,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the targetpageobject value is not defined.   For information about possible values, see generic_standard_task. */
     targetpageobject: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the targetpage value is not defined.   This field accepts references to the following custom types:   workflowactionscript   usereventscript   scriptdeployment   suitelet   scheduledscript   savedsearch   restlet   portlet   massupdatescript   mapreducescript   customrecordtype   clientscript   centertab   bundleinstallationscript */
     targetpagetasktype: {
-      refType: createRefToElmWithValue(enums.centercategory_tasktype),
+      refType: enums.centercategory_tasktype,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the targetpageobject value is defined.   For information about possible values, see centercategory_tasktype. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initcondition,
       annotations: {
       },
     },
@@ -1882,43 +1881,43 @@ const workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_fie
   },
   fields: {
     targetfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     valuechecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
     valuedate: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuedate),
+      refType: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
     valueselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuejoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valueformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -1936,7 +1935,7 @@ const workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_fie
   },
   fields: {
     fieldsetting: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_fieldsettings_fieldsetting)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
@@ -1954,19 +1953,19 @@ const workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_ini
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -1984,7 +1983,7 @@ const workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_ini
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -2002,18 +2001,18 @@ const workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_ini
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -2031,60 +2030,60 @@ const workflow_workflowstates_workflowstate_workflowactions_gotorecordaction = n
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     recordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see generic_standard_recordtype. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     recordidfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     recordidjoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     ineditmode: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fieldsettings: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_fieldsettings),
+      refType: workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_fieldsettings,
       annotations: {
       },
     },
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_initcondition,
       annotations: {
       },
     },
@@ -2102,19 +2101,19 @@ const workflow_workflowstates_workflowstate_workflowactions_initiateworkflowacti
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -2132,7 +2131,7 @@ const workflow_workflowstates_workflowstate_workflowactions_initiateworkflowacti
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -2150,18 +2149,18 @@ const workflow_workflowstates_workflowstate_workflowactions_initiateworkflowacti
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -2179,43 +2178,43 @@ const workflow_workflowstates_workflowstate_workflowactions_initiateworkflowacti
   },
   fields: {
     targetworkflowfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     valuechecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
     valuedate: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuedate),
+      refType: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
     valueselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuejoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valueformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -2233,7 +2232,7 @@ const workflow_workflowstates_workflowstate_workflowactions_initiateworkflowacti
   },
   fields: {
     workflowfieldsetting: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_workflowfieldsettings_workflowfieldsetting)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_workflowfieldsettings_workflowfieldsetting),
       annotations: {
       },
     },
@@ -2251,70 +2250,70 @@ const workflow_workflowstates_workflowstate_workflowactions_initiateworkflowacti
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     initiatedworkflow: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the workflow custom type. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     scheduledelay: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeofday: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     schedulerecurrence: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeunit: {
-      refType: createRefToElmWithValue(enums.workflow_timeunit),
+      refType: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
     schedulemode: {
-      refType: createRefToElmWithValue(enums.workflowaction_radioschedulemode),
+      refType: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_initcondition,
       annotations: {
       },
     },
     workflowfieldsettings: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_workflowfieldsettings),
+      refType: workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_workflowfieldsettings,
       annotations: {
       },
     },
@@ -2332,19 +2331,19 @@ const workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_ini
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -2362,7 +2361,7 @@ const workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_ini
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -2380,18 +2379,18 @@ const workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_ini
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -2409,34 +2408,34 @@ const workflow_workflowstates_workflowstate_workflowactions_lockrecordaction = n
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_initcondition,
       annotations: {
       },
     },
@@ -2454,19 +2453,19 @@ const workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_i
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -2484,7 +2483,7 @@ const workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_i
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -2502,18 +2501,18 @@ const workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_i
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -2531,40 +2530,40 @@ const workflow_workflowstates_workflowstate_workflowactions_removebuttonaction =
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     buttonid: {
-      refType: createRefToElmWithValue(enums.workflowaction_buttonid),
+      refType: enums.workflowaction_buttonid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_buttonid. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_initcondition,
       annotations: {
       },
     },
@@ -2582,19 +2581,19 @@ const workflow_workflowstates_workflowstate_workflowactions_returnusererroractio
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -2612,7 +2611,7 @@ const workflow_workflowstates_workflowstate_workflowactions_returnusererroractio
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_returnusererroraction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_returnusererroraction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -2630,18 +2629,18 @@ const workflow_workflowstates_workflowstate_workflowactions_returnusererroractio
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_returnusererroraction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_returnusererroraction_initcondition_parameters,
       annotations: {
       },
     },
@@ -2659,55 +2658,55 @@ const workflow_workflowstates_workflowstate_workflowactions_returnusererroractio
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     errortext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     clienttriggerfieldssublist: {
-      refType: createRefToElmWithValue(enums.workflow_sublists),
+      refType: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the clienttriggerfieldsissublistfield value is equal to T.   This field is mandatory when the clienttriggerfieldsissublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
     clienttriggerfieldsissublistfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the triggertype value is present in workflowaction_triggertype_client.   The default value is F. */
     clienttriggerfields: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_returnusererroraction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_returnusererroraction_initcondition,
       annotations: {
       },
     },
@@ -2725,19 +2724,19 @@ const workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailact
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -2755,7 +2754,7 @@ const workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailact
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -2773,18 +2772,18 @@ const workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailact
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -2802,84 +2801,84 @@ const workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailact
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     recipientfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     scheduledelay: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeofday: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     schedulerecurrence: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeunit: {
-      refType: createRefToElmWithValue(enums.workflow_timeunit),
+      refType: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
     schedulemode: {
-      refType: createRefToElmWithValue(enums.workflowaction_radioschedulemode),
+      refType: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     resultfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     recipientiscurrentrecord: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     recipientjoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     campaignevent: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: Note Account-specific values are not supported by SDF. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_initcondition,
       annotations: {
       },
     },
@@ -2897,19 +2896,19 @@ const workflow_workflowstates_workflowstate_workflowactions_sendemailaction_init
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -2927,7 +2926,7 @@ const workflow_workflowstates_workflowstate_workflowactions_sendemailaction_init
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_sendemailaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_sendemailaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -2945,18 +2944,18 @@ const workflow_workflowstates_workflowstate_workflowactions_sendemailaction_init
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_sendemailaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_sendemailaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -2974,171 +2973,171 @@ const workflow_workflowstates_workflowstate_workflowactions_sendemailaction = ne
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     sendertype: {
-      refType: createRefToElmWithValue(enums.workflowaction_sendertype),
+      refType: enums.workflowaction_sendertype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_sendertype. */
     recipienttype: {
-      refType: createRefToElmWithValue(enums.workflowaction_recipienttype),
+      refType: enums.workflowaction_recipienttype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_recipienttype. */
     sender: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the sendertype value is equal to SPECIFIC.   Note Account-specific values are not supported by SDF. */
     senderfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the sendertype value is equal to FIELD.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     recipient: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to SPECIFIC.   Note Account-specific values are not supported by SDF. */
     recipientemail: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to ADDRESS. */
     recipientfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to FIELD.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     template: {
-      refType: createRefToElmWithValue(enums.generic_standard_template),
+      refType: enums.generic_standard_template,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the usetemplate value is equal to T.   For information about possible values, see generic_standard_template. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     scheduledelay: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeofday: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     schedulerecurrence: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeunit: {
-      refType: createRefToElmWithValue(enums.workflow_timeunit),
+      refType: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
     schedulemode: {
-      refType: createRefToElmWithValue(enums.workflowaction_radioschedulemode),
+      refType: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     senderjoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     recipientjoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     recipientccemail: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     recipientbccemail: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     usetemplate: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     subject: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     body: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     includerecordlink: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     attachmenttype: {
-      refType: createRefToElmWithValue(enums.workflowaction_attachmenttype),
+      refType: enums.workflowaction_attachmenttype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_attachmenttype. */
     attachmentfile: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
+      refType: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
       },
     },
     attachmentjoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     attachmentfield: {
-      refType: createRefToElmWithValue(enums.generic_standard_field),
+      refType: enums.generic_standard_field,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
     includetransaction: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     includeformat: {
-      refType: createRefToElmWithValue(enums.workflowaction_transtatementtype),
+      refType: enums.workflowaction_transtatementtype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_transtatementtype. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_sendemailaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_sendemailaction_initcondition,
       annotations: {
       },
     },
@@ -3156,19 +3155,19 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelactio
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -3186,7 +3185,7 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelactio
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -3204,18 +3203,18 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelactio
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -3233,70 +3232,70 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelactio
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     field: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     clienttriggerfieldssublist: {
-      refType: createRefToElmWithValue(enums.workflow_sublists),
+      refType: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the clienttriggerfieldsissublistfield value is equal to T.   This field is mandatory when the clienttriggerfieldsissublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
     sublist: {
-      refType: createRefToElmWithValue(enums.workflow_sublists),
+      refType: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the issublistfield value is equal to T.   This field is mandatory when the issublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
     clienttriggerfieldsissublistfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the triggertype value is present in workflowaction_triggertype_client.   The default value is F. */
     clienttriggerfields: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     issublistfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displaylabel: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initcondition,
       annotations: {
       },
     },
@@ -3314,19 +3313,19 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -3344,7 +3343,7 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -3362,18 +3361,18 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -3391,71 +3390,71 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     field: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     displaytype: {
-      refType: createRefToElmWithValue(enums.workflowaction_displaytype),
+      refType: enums.workflowaction_displaytype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_displaytype. */
     clienttriggerfieldssublist: {
-      refType: createRefToElmWithValue(enums.workflow_sublists),
+      refType: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the clienttriggerfieldsissublistfield value is equal to T.   This field is mandatory when the clienttriggerfieldsissublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
     sublist: {
-      refType: createRefToElmWithValue(enums.workflow_sublists),
+      refType: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the issublistfield value is equal to T.   This field is mandatory when the issublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
     clienttriggerfieldsissublistfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the triggertype value is present in workflowaction_triggertype_client.   The default value is F. */
     clienttriggerfields: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     issublistfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction_initcondition,
       annotations: {
       },
     },
@@ -3473,19 +3472,19 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryact
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -3503,7 +3502,7 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryact
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -3521,18 +3520,18 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryact
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -3550,70 +3549,70 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryact
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     field: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     clienttriggerfieldssublist: {
-      refType: createRefToElmWithValue(enums.workflow_sublists),
+      refType: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the clienttriggerfieldsissublistfield value is equal to T.   This field is mandatory when the clienttriggerfieldsissublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
     sublist: {
-      refType: createRefToElmWithValue(enums.workflow_sublists),
+      refType: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the issublistfield value is equal to T.   This field is mandatory when the issublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
     clienttriggerfieldsissublistfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the triggertype value is present in workflowaction_triggertype_client.   The default value is F. */
     clienttriggerfields: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     issublistfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     ismandatory: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction_initcondition,
       annotations: {
       },
     },
@@ -3631,19 +3630,19 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -3661,7 +3660,7 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -3679,18 +3678,18 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -3708,125 +3707,125 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction 
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     field: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     clienttriggerfieldssublist: {
-      refType: createRefToElmWithValue(enums.workflow_sublists),
+      refType: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the clienttriggerfieldsissublistfield value is equal to T.   This field is mandatory when the clienttriggerfieldsissublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
     clienttriggerfieldsissublistfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the triggertype value is present in workflowaction_triggertype_client.   The default value is F. */
     clienttriggerfields: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     scheduledelay: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeofday: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     schedulerecurrence: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeunit: {
-      refType: createRefToElmWithValue(enums.workflow_timeunit),
+      refType: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
     schedulemode: {
-      refType: createRefToElmWithValue(enums.workflowaction_radioschedulemode),
+      refType: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     valuetype: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuetype),
+      refType: enums.workflowaction_valuetype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuetype. */
     valuetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     valuechecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     valueselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuemultiselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuedate: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuedate),
+      refType: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
     valuejoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valueformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_initcondition,
       annotations: {
       },
     },
@@ -3844,19 +3843,19 @@ const workflow_workflowstates_workflowstate_workflowactions_showmessageaction_in
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -3874,7 +3873,7 @@ const workflow_workflowstates_workflowstate_workflowactions_showmessageaction_in
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_showmessageaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_showmessageaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -3892,18 +3891,18 @@ const workflow_workflowstates_workflowstate_workflowactions_showmessageaction_in
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_showmessageaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_showmessageaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -3921,50 +3920,50 @@ const workflow_workflowstates_workflowstate_workflowactions_showmessageaction = 
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     messagetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     clienttriggerfieldssublist: {
-      refType: createRefToElmWithValue(enums.workflow_sublists),
+      refType: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the clienttriggerfieldsissublistfield value is equal to T.   This field is mandatory when the clienttriggerfieldsissublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
     clienttriggerfieldsissublistfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the triggertype value is present in workflowaction_triggertype_client.   The default value is F. */
     clienttriggerfields: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_showmessageaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_showmessageaction_initcondition,
       annotations: {
       },
     },
@@ -3982,19 +3981,19 @@ const workflow_workflowstates_workflowstate_workflowactions_subscribetorecordact
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -4012,7 +4011,7 @@ const workflow_workflowstates_workflowstate_workflowactions_subscribetorecordact
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -4030,18 +4029,18 @@ const workflow_workflowstates_workflowstate_workflowactions_subscribetorecordact
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -4059,64 +4058,64 @@ const workflow_workflowstates_workflowstate_workflowactions_subscribetorecordact
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     scheduledelay: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeofday: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     schedulerecurrence: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeunit: {
-      refType: createRefToElmWithValue(enums.workflow_timeunit),
+      refType: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
     schedulemode: {
-      refType: createRefToElmWithValue(enums.workflowaction_radioschedulemode),
+      refType: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     recordfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction_initcondition,
       annotations: {
       },
     },
@@ -4134,43 +4133,43 @@ const workflow_workflowstates_workflowstate_workflowactions_transformrecordactio
   },
   fields: {
     targetfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     valuechecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
     valuedate: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuedate),
+      refType: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
     valueselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuejoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valueformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -4188,7 +4187,7 @@ const workflow_workflowstates_workflowstate_workflowactions_transformrecordactio
   },
   fields: {
     fieldsetting: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_fieldsettings_fieldsetting)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
@@ -4206,19 +4205,19 @@ const workflow_workflowstates_workflowstate_workflowactions_transformrecordactio
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -4236,7 +4235,7 @@ const workflow_workflowstates_workflowstate_workflowactions_transformrecordactio
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -4254,18 +4253,18 @@ const workflow_workflowstates_workflowstate_workflowactions_transformrecordactio
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -4283,80 +4282,80 @@ const workflow_workflowstates_workflowstate_workflowactions_transformrecordactio
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     recordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see generic_standard_recordtype. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     scheduledelay: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeofday: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     schedulerecurrence: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeunit: {
-      refType: createRefToElmWithValue(enums.workflow_timeunit),
+      refType: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
     schedulemode: {
-      refType: createRefToElmWithValue(enums.workflowaction_radioschedulemode),
+      refType: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     resultfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     isredirectwithoutsaving: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fieldsettings: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_fieldsettings),
+      refType: workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_fieldsettings,
       annotations: {
       },
     },
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_initcondition,
       annotations: {
       },
     },
@@ -4374,30 +4373,30 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     saverecordfirst: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     checkconditionbeforeexecution: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
@@ -4415,43 +4414,43 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     targetfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     valuechecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
     valuedate: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuedate),
+      refType: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
     valueselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuejoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valueformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -4469,7 +4468,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     fieldsetting: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineaction_fieldsettings_fieldsetting)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
@@ -4487,30 +4486,30 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     sublist: {
-      refType: createRefToElmWithValue(enums.workflow_sublists),
+      refType: enums.workflow_sublists,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_sublists.   The default value is 'item'. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     position: {
-      refType: createRefToElmWithValue(enums.workflowaction_createline_position),
+      refType: enums.workflowaction_createline_position,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_createline_position.   The default value is 'AFTERLASTLINE'. */
     fieldsettings: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineaction_fieldsettings),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineaction_fieldsettings,
       annotations: {
       },
     },
@@ -4528,43 +4527,43 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     targetfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     valuechecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
     valuedate: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuedate),
+      refType: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
     valueselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuejoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valueformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -4582,7 +4581,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     fieldsetting: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordaction_fieldsettings_fieldsetting)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
@@ -4600,30 +4599,30 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     recordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see generic_standard_recordtype. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     resultfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     fieldsettings: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordaction_fieldsettings),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordaction_fieldsettings,
       annotations: {
       },
     },
@@ -4641,43 +4640,43 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     targetparameter: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     valuechecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
     valuedate: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuedate),
+      refType: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
     valueselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuejoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valueformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -4695,7 +4694,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     parametersetting: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction_parametersettings_parametersetting)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction_parametersettings_parametersetting),
       annotations: {
       },
     },
@@ -4713,30 +4712,30 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     scripttype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the workflowactionscript custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     resultfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     parametersettings: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction_parametersettings),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction_parametersettings,
       annotations: {
       },
     },
@@ -4754,29 +4753,29 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     targetpage: {
-      refType: createRefToElmWithValue(enums.generic_standard_task),
+      refType: enums.generic_standard_task,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the targetpageobject value is not defined.   For information about possible values, see generic_standard_task. */
     targetpageobject: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the targetpage value is not defined.   This field accepts references to the following custom types:   workflowactionscript   usereventscript   scriptdeployment   suitelet   scheduledscript   savedsearch   restlet   portlet   massupdatescript   mapreducescript   customrecordtype   clientscript   centertab   bundleinstallationscript */
     targetpagetasktype: {
-      refType: createRefToElmWithValue(enums.centercategory_tasktype),
+      refType: enums.centercategory_tasktype,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the targetpageobject value is defined.   For information about possible values, see centercategory_tasktype. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -4794,43 +4793,43 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     targetfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     valuechecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
     valuedate: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuedate),
+      refType: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
     valueselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuejoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valueformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -4848,7 +4847,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     fieldsetting: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotorecordaction_fieldsettings_fieldsetting)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotorecordaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
@@ -4866,40 +4865,40 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     recordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see generic_standard_recordtype. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     recordidfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     recordidjoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     ineditmode: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fieldsettings: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotorecordaction_fieldsettings),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotorecordaction_fieldsettings,
       annotations: {
       },
     },
@@ -4917,19 +4916,19 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -4947,7 +4946,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -4965,18 +4964,18 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initcondition_parameters,
       annotations: {
       },
     },
@@ -4994,43 +4993,43 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     targetworkflowfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     valuechecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
     valuedate: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuedate),
+      refType: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
     valueselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuejoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valueformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -5048,7 +5047,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     workflowfieldsetting: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction_workflowfieldsettings_workflowfieldsetting)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction_workflowfieldsettings_workflowfieldsetting),
       annotations: {
       },
     },
@@ -5066,25 +5065,25 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     initiatedworkflow: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the workflow custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     workflowfieldsettings: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction_workflowfieldsettings),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction_workflowfieldsettings,
       annotations: {
       },
     },
@@ -5102,14 +5101,14 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -5127,20 +5126,20 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     buttonid: {
-      refType: createRefToElmWithValue(enums.workflowaction_buttonid),
+      refType: enums.workflowaction_buttonid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_buttonid. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -5158,20 +5157,20 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     errortext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -5189,39 +5188,39 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     recipientfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     resultfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     recipientiscurrentrecord: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     recipientjoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     campaignevent: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: Note Account-specific values are not supported by SDF. */
@@ -5239,126 +5238,126 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     sendertype: {
-      refType: createRefToElmWithValue(enums.workflowaction_sendertype),
+      refType: enums.workflowaction_sendertype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_sendertype. */
     recipienttype: {
-      refType: createRefToElmWithValue(enums.workflowaction_recipienttype),
+      refType: enums.workflowaction_recipienttype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_recipienttype. */
     sender: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the sendertype value is equal to SPECIFIC.   Note Account-specific values are not supported by SDF. */
     senderfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the sendertype value is equal to FIELD.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     recipient: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to SPECIFIC.   Note Account-specific values are not supported by SDF. */
     recipientemail: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to ADDRESS. */
     recipientfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to FIELD.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     template: {
-      refType: createRefToElmWithValue(enums.generic_standard_template),
+      refType: enums.generic_standard_template,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the usetemplate value is equal to T.   For information about possible values, see generic_standard_template. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     senderjoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     recipientjoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     recipientccemail: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     recipientbccemail: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     usetemplate: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     subject: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     body: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     includerecordlink: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     attachmenttype: {
-      refType: createRefToElmWithValue(enums.workflowaction_attachmenttype),
+      refType: enums.workflowaction_attachmenttype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_attachmenttype. */
     attachmentfile: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
+      refType: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
       },
     },
     attachmentjoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     attachmentfield: {
-      refType: createRefToElmWithValue(enums.generic_standard_field),
+      refType: enums.generic_standard_field,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
     includetransaction: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     includeformat: {
-      refType: createRefToElmWithValue(enums.workflowaction_transtatementtype),
+      refType: enums.workflowaction_transtatementtype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_transtatementtype. */
@@ -5376,35 +5375,35 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     field: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     sublist: {
-      refType: createRefToElmWithValue(enums.workflow_sublists),
+      refType: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the issublistfield value is equal to T.   This field is mandatory when the issublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     issublistfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displaylabel: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
@@ -5422,36 +5421,36 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     field: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     displaytype: {
-      refType: createRefToElmWithValue(enums.workflowaction_displaytype),
+      refType: enums.workflowaction_displaytype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_displaytype. */
     sublist: {
-      refType: createRefToElmWithValue(enums.workflow_sublists),
+      refType: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the issublistfield value is equal to T.   This field is mandatory when the issublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     issublistfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -5469,35 +5468,35 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     field: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     sublist: {
-      refType: createRefToElmWithValue(enums.workflow_sublists),
+      refType: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the issublistfield value is equal to T.   This field is mandatory when the issublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     issublistfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     ismandatory: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -5515,65 +5514,65 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     field: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     valuetype: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuetype),
+      refType: enums.workflowaction_valuetype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuetype. */
     valuetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     valuechecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     valueselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuemultiselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuedate: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuedate),
+      refType: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
     valuejoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valueformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -5591,19 +5590,19 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     recordfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
@@ -5621,43 +5620,43 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     targetfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     valuechecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
     valuedate: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuedate),
+      refType: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
     valueselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuejoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valueformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -5675,7 +5674,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     fieldsetting: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordaction_fieldsettings_fieldsetting)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
@@ -5693,35 +5692,35 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     recordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see generic_standard_recordtype. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     resultfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     isredirectwithoutsaving: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fieldsettings: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordaction_fieldsettings),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordaction_fieldsettings,
       annotations: {
       },
     },
@@ -5739,149 +5738,149 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup 
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     scheduletimeofday: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the schedulemode value is equal to TIMEOFDAY. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     scheduledelay: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     schedulerecurrence: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeunit: {
-      refType: createRefToElmWithValue(enums.workflow_timeunit),
+      refType: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
     schedulemode: {
-      refType: createRefToElmWithValue(enums.workflowaction_radioschedulemode),
+      refType: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     addbuttonaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_addbuttonaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_addbuttonaction),
       annotations: {
       },
     },
     createlineaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineaction),
       annotations: {
       },
     },
     createrecordaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordaction),
       annotations: {
       },
     },
     customaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction),
       annotations: {
       },
     },
     gotopageaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotopageaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotopageaction),
       annotations: {
       },
     },
     gotorecordaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotorecordaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotorecordaction),
       annotations: {
       },
     },
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initcondition,
       annotations: {
       },
     },
     initiateworkflowaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction),
       annotations: {
       },
     },
     lockrecordaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_lockrecordaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_lockrecordaction),
       annotations: {
       },
     },
     removebuttonaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_removebuttonaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_removebuttonaction),
       annotations: {
       },
     },
     returnusererroraction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_returnusererroraction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_returnusererroraction),
       annotations: {
       },
     },
     sendcampaignemailaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_sendcampaignemailaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_sendcampaignemailaction),
       annotations: {
       },
     },
     sendemailaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_sendemailaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_sendemailaction),
       annotations: {
       },
     },
     setdisplaylabelaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setdisplaylabelaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setdisplaylabelaction),
       annotations: {
       },
     },
     setdisplaytypeaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setdisplaytypeaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setdisplaytypeaction),
       annotations: {
       },
     },
     setfieldmandatoryaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setfieldmandatoryaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setfieldmandatoryaction),
       annotations: {
       },
     },
     setfieldvalueaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setfieldvalueaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setfieldvalueaction),
       annotations: {
       },
     },
     subscribetorecordaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_subscribetorecordaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_subscribetorecordaction),
       annotations: {
       },
     },
     transformrecordaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordaction),
       annotations: {
       },
     },
@@ -5899,43 +5898,43 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     targetfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     valuechecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
     valuedate: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuedate),
+      refType: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
     valueselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuejoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valueformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
@@ -5953,7 +5952,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     fieldsetting: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_fieldsettings_fieldsetting)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
@@ -5971,19 +5970,19 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -6001,7 +6000,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -6019,18 +6018,18 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -6048,40 +6047,40 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     recordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see generic_standard_recordtype. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     resultfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     fieldsettings: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_fieldsettings),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_fieldsettings,
       annotations: {
       },
     },
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_initcondition,
       annotations: {
       },
     },
@@ -6099,19 +6098,19 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -6129,7 +6128,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -6147,18 +6146,18 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_initcondition_parameters,
       annotations: {
       },
     },
@@ -6176,19 +6175,19 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -6206,7 +6205,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -6224,18 +6223,18 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction_initcondition_parameters,
       annotations: {
       },
     },
@@ -6253,30 +6252,30 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     errortext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction_initcondition,
       annotations: {
       },
     },
@@ -6294,19 +6293,19 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -6324,7 +6323,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -6342,18 +6341,18 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -6371,136 +6370,136 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     sendertype: {
-      refType: createRefToElmWithValue(enums.workflowaction_sendertype),
+      refType: enums.workflowaction_sendertype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_sendertype. */
     recipienttype: {
-      refType: createRefToElmWithValue(enums.workflowaction_recipienttype),
+      refType: enums.workflowaction_recipienttype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_recipienttype. */
     sender: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the sendertype value is equal to SPECIFIC.   Note Account-specific values are not supported by SDF. */
     senderfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the sendertype value is equal to FIELD.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     recipient: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to SPECIFIC.   Note Account-specific values are not supported by SDF. */
     recipientemail: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to ADDRESS. */
     recipientfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to FIELD.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     template: {
-      refType: createRefToElmWithValue(enums.generic_standard_template),
+      refType: enums.generic_standard_template,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the usetemplate value is equal to T.   For information about possible values, see generic_standard_template. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     senderjoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     recipientjoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     recipientccemail: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     recipientbccemail: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     usetemplate: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     subject: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     body: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     includerecordlink: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     attachmenttype: {
-      refType: createRefToElmWithValue(enums.workflowaction_attachmenttype),
+      refType: enums.workflowaction_attachmenttype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_attachmenttype. */
     attachmentfile: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
+      refType: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
       },
     },
     attachmentjoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     attachmentfield: {
-      refType: createRefToElmWithValue(enums.generic_standard_field),
+      refType: enums.generic_standard_field,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
     includetransaction: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     includeformat: {
-      refType: createRefToElmWithValue(enums.workflowaction_transtatementtype),
+      refType: enums.workflowaction_transtatementtype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_transtatementtype. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction_initcondition,
       annotations: {
       },
     },
@@ -6518,19 +6517,19 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -6548,7 +6547,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -6566,18 +6565,18 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction_initcondition_parameters,
       annotations: {
       },
     },
@@ -6595,75 +6594,75 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     field: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     valuetype: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuetype),
+      refType: enums.workflowaction_valuetype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuetype. */
     valuetext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     valuechecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     valueselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuemultiselect: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     valuedate: {
-      refType: createRefToElmWithValue(enums.workflowaction_valuedate),
+      refType: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
     valuejoinfield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valuefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     valueformula: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction_initcondition,
       annotations: {
       },
     },
@@ -6681,85 +6680,85 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
     sublist: {
-      refType: createRefToElmWithValue(enums.workflow_sublists),
+      refType: enums.workflow_sublists,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_sublists. */
     scheduletimeofday: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the schedulemode value is equal to TIMEOFDAY. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     scheduledelay: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     schedulerecurrence: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     scheduletimeunit: {
-      refType: createRefToElmWithValue(enums.workflow_timeunit),
+      refType: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
     schedulemode: {
-      refType: createRefToElmWithValue(enums.workflowaction_radioschedulemode),
+      refType: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     createrecordaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction),
       annotations: {
       },
     },
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_initcondition,
       annotations: {
       },
     },
     returnusererroraction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction),
       annotations: {
       },
     },
     sendemailaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction),
       annotations: {
       },
     },
     setfieldvalueaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction),
       annotations: {
       },
     },
@@ -6777,119 +6776,119 @@ const workflow_workflowstates_workflowstate_workflowactions = new ObjectType({
   },
   fields: {
     triggertype: {
-      refType: createRefToElmWithValue(enums.workflowaction_triggertype),
+      refType: enums.workflowaction_triggertype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_triggertype. */
     addbuttonaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_addbuttonaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_addbuttonaction),
       annotations: {
       },
     },
     confirmaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_confirmaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_confirmaction),
       annotations: {
       },
     },
     createlineaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_createlineaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_createlineaction),
       annotations: {
       },
     },
     createrecordaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_createrecordaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_createrecordaction),
       annotations: {
       },
     },
     customaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_customaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_customaction),
       annotations: {
       },
     },
     gotopageaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_gotopageaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_gotopageaction),
       annotations: {
       },
     },
     gotorecordaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_gotorecordaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_gotorecordaction),
       annotations: {
       },
     },
     initiateworkflowaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction),
       annotations: {
       },
     },
     lockrecordaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_lockrecordaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_lockrecordaction),
       annotations: {
       },
     },
     removebuttonaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_removebuttonaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_removebuttonaction),
       annotations: {
       },
     },
     returnusererroraction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_returnusererroraction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_returnusererroraction),
       annotations: {
       },
     },
     sendcampaignemailaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction),
       annotations: {
       },
     },
     sendemailaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_sendemailaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_sendemailaction),
       annotations: {
       },
     },
     setdisplaylabelaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction),
       annotations: {
       },
     },
     setdisplaytypeaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction),
       annotations: {
       },
     },
     setfieldmandatoryaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction),
       annotations: {
       },
     },
     setfieldvalueaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction),
       annotations: {
       },
     },
     showmessageaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_showmessageaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_showmessageaction),
       annotations: {
       },
     },
     subscribetorecordaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction),
       annotations: {
       },
     },
     transformrecordaction: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_transformrecordaction)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_transformrecordaction),
       annotations: {
       },
     },
     workflowactiongroup: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup),
       annotations: {
       },
     },
     workflowsublistactiongroup: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup),
       annotations: {
       },
     },
@@ -6907,43 +6906,43 @@ const workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowst
   },
   fields: {
     fldfilter: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     fldfilterchecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fldfiltercomparetype: {
-      refType: createRefToElmWithValue(enums.generic_customfield_fldfiltercomparetype),
+      refType: enums.generic_customfield_fldfiltercomparetype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
     fldfiltersel: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     fldfilterval: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     fldfilternotnull: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fldfilternull: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fldcomparefield: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
@@ -6961,7 +6960,7 @@ const workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowst
   },
   fields: {
     customfieldfilter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_customfieldfilters_customfieldfilter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_customfieldfilters_customfieldfilter),
       annotations: {
       },
     },
@@ -6979,19 +6978,19 @@ const workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowst
   },
   fields: {
     role: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
     accesslevel: {
-      refType: createRefToElmWithValue(enums.generic_accesslevel_searchlevel),
+      refType: enums.generic_accesslevel_searchlevel,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
     searchlevel: {
-      refType: createRefToElmWithValue(enums.generic_accesslevel_searchlevel),
+      refType: enums.generic_accesslevel_searchlevel,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -7010,7 +7009,7 @@ const workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowst
   },
   fields: {
     roleaccess: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_roleaccesses_roleaccess)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_roleaccesses_roleaccess),
       annotations: {
       },
     },
@@ -7028,97 +7027,97 @@ const workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowst
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 41 characters long.   The default value is ‘custwfstate’. */
     fieldtype: {
-      refType: createRefToElmWithValue(enums.generic_customfield_fieldtype),
+      refType: enums.generic_customfield_fieldtype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 200 }),
       },
     }, /* Original description: This field value can be up to 200 characters long.   This field accepts references to the string custom type. */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
     applyformatting: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     defaultchecked: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     defaultselection: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     defaultvalue: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     description: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     displaytype: {
-      refType: createRefToElmWithValue(enums.generic_customfield_displaytype),
+      refType: enums.generic_customfield_displaytype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
     dynamicdefault: {
-      refType: createRefToElmWithValue(enums.generic_customfield_dynamicdefault),
+      refType: enums.generic_customfield_dynamicdefault,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
     help: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
     linktext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     minvalue: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     maxvalue: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     storevalue: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     customfieldfilters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_customfieldfilters),
+      refType: workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_customfieldfilters,
       annotations: {
       },
     },
     roleaccesses: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_roleaccesses),
+      refType: workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_roleaccesses,
       annotations: {
       },
     },
@@ -7136,7 +7135,7 @@ const workflow_workflowstates_workflowstate_workflowstatecustomfields = new Obje
   },
   fields: {
     workflowstatecustomfield: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield),
       annotations: {
       },
     },
@@ -7154,19 +7153,19 @@ const workflow_workflowstates_workflowstate_workflowtransitions_workflowtransiti
   },
   fields: {
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */),
+      refType: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
     selectrecordtype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
@@ -7184,7 +7183,7 @@ const workflow_workflowstates_workflowstate_workflowtransitions_workflowtransiti
   },
   fields: {
     parameter: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition_parameters_parameter)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition_parameters_parameter),
       annotations: {
       },
     },
@@ -7202,18 +7201,18 @@ const workflow_workflowstates_workflowstate_workflowtransitions_workflowtransiti
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(enums.workflow_condition_type),
+      refType: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
     formula: {
-      refType: createRefToElmWithValue(fieldTypes.cdata),
+      refType: fieldTypes.cdata,
       annotations: {
       },
     },
     parameters: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition_parameters),
+      refType: workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition_parameters,
       annotations: {
       },
     },
@@ -7231,65 +7230,65 @@ const workflow_workflowstates_workflowstate_workflowtransitions_workflowtransiti
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowtransition’. */
     tostate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the workflowstate custom type. */
     eventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
     contexttypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     conditionsavedsearch: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     triggertype: {
-      refType: createRefToElmWithValue(enums.workflowtransition_triggertype),
+      refType: enums.workflowtransition_triggertype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowtransition_triggertype. */
     waitforworkflow: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the workflow custom type. */
     waitforworkflowstate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the workflowstate custom type. */
     buttonaction: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   addbuttonaction   addbuttonaction */
     scheduledelay: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     scheduletimeunit: {
-      refType: createRefToElmWithValue(enums.workflow_timeunit),
+      refType: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition),
+      refType: workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition,
       annotations: {
       },
     },
@@ -7307,7 +7306,7 @@ const workflow_workflowstates_workflowstate_workflowtransitions = new ObjectType
   },
   fields: {
     workflowtransition: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition),
       annotations: {
       },
     },
@@ -7325,50 +7324,50 @@ const workflow_workflowstates_workflowstate = new ObjectType({
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowstate’. */
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     description: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     donotexitworkflow: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     positionx: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     positiony: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
     workflowactions: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate_workflowactions)),
+      refType: new ListType(workflow_workflowstates_workflowstate_workflowactions),
       annotations: {
       },
     },
     workflowstatecustomfields: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowstatecustomfields),
+      refType: workflow_workflowstates_workflowstate_workflowstatecustomfields,
       annotations: {
       },
     },
     workflowtransitions: {
-      refType: createRefToElmWithValue(workflow_workflowstates_workflowstate_workflowtransitions),
+      refType: workflow_workflowstates_workflowstate_workflowtransitions,
       annotations: {
       },
     },
@@ -7386,7 +7385,7 @@ const workflow_workflowstates = new ObjectType({
   },
   fields: {
     workflowstate: {
-      refType: createRefToElmWithValue(new ListType(workflow_workflowstates_workflowstate)),
+      refType: new ListType(workflow_workflowstates_workflowstate),
       annotations: {
       },
     },
@@ -7403,7 +7402,7 @@ export const workflow = new ObjectType({
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -7411,104 +7410,104 @@ export const workflow = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customworkflow’. */
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     recordtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see generic_standard_recordtype. */
     description: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     initcontexts: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
     initeventtypes: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflow_eventtype. */
     initsavedsearchcondition: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     initsavedsearchfilter: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
     inittriggertype: {
-      refType: createRefToElmWithValue(enums.workflow_triggertype),
+      refType: enums.workflow_triggertype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_triggertype. */
     initoncreate: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     initonvieworupdate: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     initlocalizationcontext: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was multi-select list */),
+      refType: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see countries. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     islogenabled: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     releasestatus: {
-      refType: createRefToElmWithValue(enums.workflow_releasestatus),
+      refType: enums.workflow_releasestatus,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_releasestatus.   The default value is 'NOTINITIATING'. */
     runasadmin: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     keephistory: {
-      refType: createRefToElmWithValue(enums.workflow_keephistory),
+      refType: enums.workflow_keephistory,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_keephistory.   The default value is 'ONLYWHENTESTING'. */
     initcondition: {
-      refType: createRefToElmWithValue(workflow_initcondition),
+      refType: workflow_initcondition,
       annotations: {
       },
     },
     recurrence: {
-      refType: createRefToElmWithValue(workflow_recurrence),
+      refType: workflow_recurrence,
       annotations: {
       },
     },
     workflowcustomfields: {
-      refType: createRefToElmWithValue(workflow_workflowcustomfields),
+      refType: workflow_workflowcustomfields,
       annotations: {
       },
     },
     workflowstates: {
-      refType: createRefToElmWithValue(workflow_workflowstates),
+      refType: workflow_workflowstates,
       annotations: {
       },
     },

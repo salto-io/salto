@@ -50,7 +50,7 @@ describe('addDefaults', () => {
       const obj = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'test'),
         fields: {
-          a: { refType: createRefToElmWithValue(Types.primitiveDataTypes.Text) },
+          a: { refType: Types.primitiveDataTypes.Text },
         },
         annotations: {
           [API_NAME]: 'test',
@@ -73,7 +73,7 @@ describe('addDefaults', () => {
         object = new ObjectType({
           elemID: new ElemID(SALESFORCE, 'test'),
           fields: {
-            a: { refType: createRefToElmWithValue(Types.primitiveDataTypes.Text) },
+            a: { refType: Types.primitiveDataTypes.Text },
           },
         })
 
@@ -161,7 +161,7 @@ describe('addDefaults', () => {
         object = new ObjectType({
           elemID: new ElemID(SALESFORCE, 'test'),
           fields: {
-            a: { refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail) },
+            a: { refType: Types.primitiveDataTypes.MasterDetail },
           },
         })
         await addDefaults(object)

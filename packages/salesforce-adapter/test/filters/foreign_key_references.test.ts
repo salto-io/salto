@@ -15,7 +15,6 @@
 */
 import _ from 'lodash'
 import { InstanceElement, ObjectType, ElemID, BuiltinTypes, ReferenceExpression, ListType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import { INSTANCE_FULL_NAME_FIELD, SALESFORCE, FOREIGN_KEY_DOMAIN } from '../../src/constants'
 import referenceAnnotationfilterCreator from '../../src/filters/reference_annotations'
@@ -52,13 +51,13 @@ describe('foregin_key_references filter', () => {
             annotations: {
               [FOREIGN_KEY_DOMAIN]: [objTypeID.typeName],
             },
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
           },
           [invalidRefFieldName]: {
             annotations: {
               [FOREIGN_KEY_DOMAIN]: ['nonExistingType'],
             },
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
           },
         },
       }
@@ -67,25 +66,25 @@ describe('foregin_key_references filter', () => {
       'obj',
       {
         fields: {
-          reg: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          reg: { refType: BuiltinTypes.STRING },
           [parentObjFieldName]: {
             annotations: {
               [FOREIGN_KEY_DOMAIN]: [objTypeID.typeName],
             },
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
           },
           [invalidRefFieldName]: {
             annotations: {
               [FOREIGN_KEY_DOMAIN]: ['nonExistingType'],
             },
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
           },
-          parentObjNested: { refType: createRefToElmWithValue(nestedType) },
+          parentObjNested: { refType: nestedType },
           parentObjArr: {
             annotations: {
               [FOREIGN_KEY_DOMAIN]: [objTypeID.typeName],
             },
-            refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+            refType: new ListType(BuiltinTypes.STRING),
           },
         },
       }

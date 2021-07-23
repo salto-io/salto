@@ -71,8 +71,8 @@ describe('filterInvalidChanges', () => {
     const newInvalidObj = new ObjectType({
       elemID: new ElemID('salto', 'new_invalid_obj'),
       fields: {
-        valid: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        invalid: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        valid: { refType: BuiltinTypes.STRING },
+        invalid: { refType: BuiltinTypes.STRING },
       },
       annotations: { value: 'value' },
     })
@@ -97,8 +97,8 @@ describe('filterInvalidChanges', () => {
     const newValidObj = new ObjectType({
       elemID: new ElemID('salto', 'new_valid_obj'),
       fields: {
-        valid: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        invalid: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        valid: { refType: BuiltinTypes.STRING },
+        invalid: { refType: BuiltinTypes.STRING },
       },
       annotations: { value: 'value' },
     })
@@ -267,7 +267,7 @@ describe('filterInvalidChanges', () => {
     const beforeInvalidObj = new ObjectType({
       elemID: new ElemID('salto', 'before_invalid_obj'),
       fields: {
-        invalid: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        invalid: { refType: BuiltinTypes.STRING },
       },
     })
     const beforeInvalidField = beforeInvalidObj.fields.invalid

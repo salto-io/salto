@@ -18,7 +18,6 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 import { enums } from '../enums'
 
@@ -33,19 +32,19 @@ const transactionForm_actionbar_buttons_button = new ObjectType({
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(enums.transactionform_buttonid),
+      refType: enums.transactionform_buttonid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see transactionform_buttonid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
       },
     }, /* Original description: This field value can be up to 40 characters long. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
@@ -63,7 +62,7 @@ const transactionForm_actionbar_buttons = new ObjectType({
   },
   fields: {
     button: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_actionbar_buttons_button)),
+      refType: new ListType(transactionForm_actionbar_buttons_button),
       annotations: {
       },
     },
@@ -81,14 +80,14 @@ const transactionForm_actionbar_customButtons_customButton = new ObjectType({
   },
   fields: {
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 99 }),
       },
     }, /* Original description: This field value can be up to 99 characters long. */
     function: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 200 }),
       },
@@ -107,7 +106,7 @@ const transactionForm_actionbar_customButtons = new ObjectType({
   },
   fields: {
     customButton: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_actionbar_customButtons_customButton)),
+      refType: new ListType(transactionForm_actionbar_customButtons_customButton),
       annotations: {
       },
     },
@@ -125,14 +124,14 @@ const transactionForm_actionbar_customMenu_customMenuItem = new ObjectType({
   },
   fields: {
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 99 }),
       },
     }, /* Original description: This field value can be up to 99 characters long. */
     function: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 200 }),
       },
@@ -151,7 +150,7 @@ const transactionForm_actionbar_customMenu = new ObjectType({
   },
   fields: {
     customMenuItem: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_actionbar_customMenu_customMenuItem)),
+      refType: new ListType(transactionForm_actionbar_customMenu_customMenuItem),
       annotations: {
       },
     },
@@ -169,19 +168,19 @@ const transactionForm_actionbar_menu_menuitem = new ObjectType({
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(enums.transactionform_buttonid),
+      refType: enums.transactionform_buttonid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see transactionform_buttonid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
       },
     }, /* Original description: This field value can be up to 40 characters long. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
@@ -199,7 +198,7 @@ const transactionForm_actionbar_menu = new ObjectType({
   },
   fields: {
     menuitem: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_actionbar_menu_menuitem)),
+      refType: new ListType(transactionForm_actionbar_menu_menuitem),
       annotations: {
       },
     },
@@ -217,22 +216,22 @@ const transactionForm_actionbar = new ObjectType({
   },
   fields: {
     buttons: {
-      refType: createRefToElmWithValue(transactionForm_actionbar_buttons),
+      refType: transactionForm_actionbar_buttons,
       annotations: {
       },
     },
     customButtons: {
-      refType: createRefToElmWithValue(transactionForm_actionbar_customButtons),
+      refType: transactionForm_actionbar_customButtons,
       annotations: {
       },
     },
     customMenu: {
-      refType: createRefToElmWithValue(transactionForm_actionbar_customMenu),
+      refType: transactionForm_actionbar_customMenu,
       annotations: {
       },
     },
     menu: {
-      refType: createRefToElmWithValue(transactionForm_actionbar_menu),
+      refType: transactionForm_actionbar_menu,
       annotations: {
       },
     },
@@ -250,23 +249,23 @@ const transactionForm_buttons_standardButtons_button = new ObjectType({
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(enums.transactionform_buttonid),
+      refType: enums.transactionform_buttonid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see transactionform_buttonid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     style: {
-      refType: createRefToElmWithValue(enums.form_buttonstyle),
+      refType: enums.form_buttonstyle,
       annotations: {
       },
     }, /* Original description: For information about possible values, see form_buttonstyle.   The default value is 'BUTTON'. */
@@ -284,7 +283,7 @@ const transactionForm_buttons_standardButtons = new ObjectType({
   },
   fields: {
     button: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_buttons_standardButtons_button)),
+      refType: new ListType(transactionForm_buttons_standardButtons_button),
       annotations: {
       },
     },
@@ -302,7 +301,7 @@ const transactionForm_buttons = new ObjectType({
   },
   fields: {
     standardButtons: {
-      refType: createRefToElmWithValue(transactionForm_buttons_standardButtons),
+      refType: transactionForm_buttons_standardButtons,
       annotations: {
       },
     },
@@ -320,7 +319,7 @@ const transactionForm_customCode = new ObjectType({
   },
   fields: {
     scriptFile: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was filereference */),
+      refType: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
       },
     }, /* Original description: This field must reference a .js file. */
@@ -338,12 +337,12 @@ const transactionForm_linkedForms_linkedForm = new ObjectType({
   },
   fields: {
     type: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the customtransactiontype custom type.   For information about other possible values, see transactionform_trantype. */
     form: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the custom type.   For information about other possible values, see transactionform_standard. */
@@ -361,7 +360,7 @@ const transactionForm_linkedForms = new ObjectType({
   },
   fields: {
     linkedForm: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_linkedForms_linkedForm)),
+      refType: new ListType(transactionForm_linkedForms_linkedForm),
       annotations: {
       },
     },
@@ -379,53 +378,53 @@ const transactionForm_mainFields_defaultFieldGroup_fields_field = new ObjectType
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     mandatory: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displayType: {
-      refType: createRefToElmWithValue(enums.form_displaytype),
+      refType: enums.form_displaytype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
     columnBreak: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     spaceBefore: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     sameRowAsPrevious: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     quickAdd: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     checkBoxDefault: {
-      refType: createRefToElmWithValue(enums.transactionform_checkboxdefault),
+      refType: enums.transactionform_checkboxdefault,
       annotations: {
       },
     }, /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'UNCHECKED'. */
@@ -443,14 +442,14 @@ const transactionForm_mainFields_defaultFieldGroup_fields = new ObjectType({
   },
   fields: {
     position: {
-      refType: createRefToElmWithValue(enums.form_fieldposition),
+      refType: enums.form_fieldposition,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
     field: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_mainFields_defaultFieldGroup_fields_field)),
+      refType: new ListType(transactionForm_mainFields_defaultFieldGroup_fields_field),
       annotations: {
       },
     },
@@ -468,7 +467,7 @@ const transactionForm_mainFields_defaultFieldGroup = new ObjectType({
   },
   fields: {
     fields: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_mainFields_defaultFieldGroup_fields)),
+      refType: new ListType(transactionForm_mainFields_defaultFieldGroup_fields),
       annotations: {
       },
     },
@@ -486,53 +485,53 @@ const transactionForm_mainFields_fieldGroup_fields_field = new ObjectType({
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     mandatory: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displayType: {
-      refType: createRefToElmWithValue(enums.form_displaytype),
+      refType: enums.form_displaytype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
     columnBreak: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     spaceBefore: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     sameRowAsPrevious: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     quickAdd: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     checkBoxDefault: {
-      refType: createRefToElmWithValue(enums.transactionform_checkboxdefault),
+      refType: enums.transactionform_checkboxdefault,
       annotations: {
       },
     }, /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'UNCHECKED'. */
@@ -550,14 +549,14 @@ const transactionForm_mainFields_fieldGroup_fields = new ObjectType({
   },
   fields: {
     position: {
-      refType: createRefToElmWithValue(enums.form_fieldposition),
+      refType: enums.form_fieldposition,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
     field: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_mainFields_fieldGroup_fields_field)),
+      refType: new ListType(transactionForm_mainFields_fieldGroup_fields_field),
       annotations: {
       },
     },
@@ -575,35 +574,35 @@ const transactionForm_mainFields_fieldGroup = new ObjectType({
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 99 characters long. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     showTitle: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     singleColumn: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fields: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_mainFields_fieldGroup_fields)),
+      refType: new ListType(transactionForm_mainFields_fieldGroup_fields),
       annotations: {
       },
     },
@@ -621,12 +620,12 @@ const transactionForm_mainFields = new ObjectType({
   },
   fields: {
     fieldGroup: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_mainFields_fieldGroup)),
+      refType: new ListType(transactionForm_mainFields_fieldGroup),
       annotations: {
       },
     },
     defaultFieldGroup: {
-      refType: createRefToElmWithValue(transactionForm_mainFields_defaultFieldGroup),
+      refType: transactionForm_mainFields_defaultFieldGroup,
       annotations: {
       },
     },
@@ -644,12 +643,12 @@ const transactionForm_preferences_preference = new ObjectType({
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -667,7 +666,7 @@ const transactionForm_preferences = new ObjectType({
   },
   fields: {
     preference: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_preferences_preference)),
+      refType: new ListType(transactionForm_preferences_preference),
       annotations: {
       },
     },
@@ -685,12 +684,12 @@ const transactionForm_printingType_advanced = new ObjectType({
   },
   fields: {
     printTemplate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the advancedpdftemplate custom type.   For information about other possible values, see transactionform_advancedtemplate.   If this field appears in the project, you must reference the ADVANCEDPRINTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ADVANCEDPRINTING must be enabled for this field to appear in your account. */
     emailTemplate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the advancedpdftemplate custom type.   For information about other possible values, see transactionform_advancedtemplate.   If this field appears in the project, you must reference the ADVANCEDPRINTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ADVANCEDPRINTING must be enabled for this field to appear in your account. */
@@ -708,12 +707,12 @@ const transactionForm_printingType_basic = new ObjectType({
   },
   fields: {
     pdfLayout: {
-      refType: createRefToElmWithValue(enums.transactionform_pdflayout),
+      refType: enums.transactionform_pdflayout,
       annotations: {
       },
     }, /* Original description: For information about possible values, see transactionform_pdflayout. */
     htmlLayout: {
-      refType: createRefToElmWithValue(enums.transactionform_htmllayout),
+      refType: enums.transactionform_htmllayout,
       annotations: {
       },
     }, /* Original description: For information about possible values, see transactionform_htmllayout. */
@@ -731,12 +730,12 @@ const transactionForm_printingType = new ObjectType({
   },
   fields: {
     advanced: {
-      refType: createRefToElmWithValue(transactionForm_printingType_advanced),
+      refType: transactionForm_printingType_advanced,
       annotations: {
       },
     },
     basic: {
-      refType: createRefToElmWithValue(transactionForm_printingType_basic),
+      refType: transactionForm_printingType_basic,
       annotations: {
       },
     },
@@ -754,7 +753,7 @@ const transactionForm_quickViewFields_field = new ObjectType({
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -773,7 +772,7 @@ const transactionForm_quickViewFields = new ObjectType({
   },
   fields: {
     field: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_quickViewFields_field)),
+      refType: new ListType(transactionForm_quickViewFields_field),
       annotations: {
       },
     },
@@ -791,12 +790,12 @@ const transactionForm_roles_role = new ObjectType({
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see transactionform_roleid. */
     preferred: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -814,7 +813,7 @@ const transactionForm_roles = new ObjectType({
   },
   fields: {
     role: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_roles_role)),
+      refType: new ListType(transactionForm_roles_role),
       annotations: {
       },
     },
@@ -832,53 +831,53 @@ const transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field = new 
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     mandatory: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displayType: {
-      refType: createRefToElmWithValue(enums.form_displaytype),
+      refType: enums.form_displaytype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
     columnBreak: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     spaceBefore: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     sameRowAsPrevious: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     quickAdd: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     checkBoxDefault: {
-      refType: createRefToElmWithValue(enums.transactionform_checkboxdefault),
+      refType: enums.transactionform_checkboxdefault,
       annotations: {
       },
     }, /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'USE_FIELD_DEFAULT'. */
@@ -896,14 +895,14 @@ const transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields = new Object
   },
   fields: {
     position: {
-      refType: createRefToElmWithValue(enums.form_fieldposition),
+      refType: enums.form_fieldposition,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
     field: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field)),
+      refType: new ListType(transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field),
       annotations: {
       },
     },
@@ -921,7 +920,7 @@ const transactionForm_tabs_tab_fieldGroups_defaultFieldGroup = new ObjectType({
   },
   fields: {
     fields: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields)),
+      refType: new ListType(transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields),
       annotations: {
       },
     },
@@ -939,53 +938,53 @@ const transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_field = new ObjectT
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     mandatory: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displayType: {
-      refType: createRefToElmWithValue(enums.form_displaytype),
+      refType: enums.form_displaytype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
     columnBreak: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     spaceBefore: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     sameRowAsPrevious: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     quickAdd: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     checkBoxDefault: {
-      refType: createRefToElmWithValue(enums.transactionform_checkboxdefault),
+      refType: enums.transactionform_checkboxdefault,
       annotations: {
       },
     }, /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'USE_FIELD_DEFAULT'. */
@@ -1003,14 +1002,14 @@ const transactionForm_tabs_tab_fieldGroups_fieldGroup_fields = new ObjectType({
   },
   fields: {
     position: {
-      refType: createRefToElmWithValue(enums.form_fieldposition),
+      refType: enums.form_fieldposition,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
     field: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_field)),
+      refType: new ListType(transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_field),
       annotations: {
       },
     },
@@ -1028,35 +1027,35 @@ const transactionForm_tabs_tab_fieldGroups_fieldGroup = new ObjectType({
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 99 characters long. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     showTitle: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     singleColumn: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fields: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_fieldGroups_fieldGroup_fields)),
+      refType: new ListType(transactionForm_tabs_tab_fieldGroups_fieldGroup_fields),
       annotations: {
       },
     },
@@ -1074,12 +1073,12 @@ const transactionForm_tabs_tab_fieldGroups = new ObjectType({
   },
   fields: {
     fieldGroup: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_fieldGroups_fieldGroup)),
+      refType: new ListType(transactionForm_tabs_tab_fieldGroups_fieldGroup),
       annotations: {
       },
     },
     defaultFieldGroup: {
-      refType: createRefToElmWithValue(transactionForm_tabs_tab_fieldGroups_defaultFieldGroup),
+      refType: transactionForm_tabs_tab_fieldGroups_defaultFieldGroup,
       annotations: {
       },
     },
@@ -1097,18 +1096,18 @@ const transactionForm_tabs_tab_subItems_subList_columns_column = new ObjectType(
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the transactioncolumncustomfield custom type.   For information about other possible values, see transactionform_columnid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
@@ -1126,7 +1125,7 @@ const transactionForm_tabs_tab_subItems_subList_columns = new ObjectType({
   },
   fields: {
     column: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_subItems_subList_columns_column)),
+      refType: new ListType(transactionForm_tabs_tab_subItems_subList_columns_column),
       annotations: {
       },
     },
@@ -1144,28 +1143,28 @@ const transactionForm_tabs_tab_subItems_subList = new ObjectType({
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(enums.transactionform_sublistid),
+      refType: enums.transactionform_sublistid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see transactionform_sublistid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     neverEmpty: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     columns: {
-      refType: createRefToElmWithValue(transactionForm_tabs_tab_subItems_subList_columns),
+      refType: transactionForm_tabs_tab_subItems_subList_columns,
       annotations: {
       },
     },
@@ -1183,24 +1182,24 @@ const transactionForm_tabs_tab_subItems_subLists_subList = new ObjectType({
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(enums.transactionform_sublistid),
+      refType: enums.transactionform_sublistid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see transactionform_sublistid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     neverEmpty: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
@@ -1218,7 +1217,7 @@ const transactionForm_tabs_tab_subItems_subLists = new ObjectType({
   },
   fields: {
     subList: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_subItems_subLists_subList)),
+      refType: new ListType(transactionForm_tabs_tab_subItems_subLists_subList),
       annotations: {
       },
     },
@@ -1236,53 +1235,53 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fie
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     mandatory: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displayType: {
-      refType: createRefToElmWithValue(enums.form_displaytype),
+      refType: enums.form_displaytype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
     columnBreak: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     spaceBefore: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     sameRowAsPrevious: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     quickAdd: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     checkBoxDefault: {
-      refType: createRefToElmWithValue(enums.transactionform_checkboxdefault),
+      refType: enums.transactionform_checkboxdefault,
       annotations: {
       },
     }, /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'USE_FIELD_DEFAULT'. */
@@ -1300,14 +1299,14 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fie
   },
   fields: {
     position: {
-      refType: createRefToElmWithValue(enums.form_fieldposition),
+      refType: enums.form_fieldposition,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
     field: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_field)),
+      refType: new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_field),
       annotations: {
       },
     },
@@ -1325,7 +1324,7 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup = n
   },
   fields: {
     fields: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields)),
+      refType: new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields),
       annotations: {
       },
     },
@@ -1343,53 +1342,53 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fie
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     mandatory: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     displayType: {
-      refType: createRefToElmWithValue(enums.form_displaytype),
+      refType: enums.form_displaytype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
     columnBreak: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     spaceBefore: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     sameRowAsPrevious: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     quickAdd: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     checkBoxDefault: {
-      refType: createRefToElmWithValue(enums.transactionform_checkboxdefault),
+      refType: enums.transactionform_checkboxdefault,
       annotations: {
       },
     }, /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'USE_FIELD_DEFAULT'. */
@@ -1407,14 +1406,14 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields = n
   },
   fields: {
     position: {
-      refType: createRefToElmWithValue(enums.form_fieldposition),
+      refType: enums.form_fieldposition,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
     field: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_field)),
+      refType: new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_field),
       annotations: {
       },
     },
@@ -1432,35 +1431,35 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup = new Obje
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 99 characters long. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     showTitle: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     singleColumn: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fields: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields)),
+      refType: new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields),
       annotations: {
       },
     },
@@ -1478,12 +1477,12 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups = new ObjectType({
   },
   fields: {
     fieldGroup: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup)),
+      refType: new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup),
       annotations: {
       },
     },
     defaultFieldGroup: {
-      refType: createRefToElmWithValue(transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup),
+      refType: transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup,
       annotations: {
       },
     },
@@ -1501,29 +1500,29 @@ const transactionForm_tabs_tab_subItems_subTab = new ObjectType({
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see transactionform_subtabid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     neverEmpty: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     fieldGroups: {
-      refType: createRefToElmWithValue(transactionForm_tabs_tab_subItems_subTab_fieldGroups),
+      refType: transactionForm_tabs_tab_subItems_subTab_fieldGroups,
       annotations: {
       },
     },
@@ -1541,17 +1540,17 @@ const transactionForm_tabs_tab_subItems = new ObjectType({
   },
   fields: {
     subList: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_subItems_subList)),
+      refType: new ListType(transactionForm_tabs_tab_subItems_subList),
       annotations: {
       },
     },
     subLists: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_subItems_subLists)),
+      refType: new ListType(transactionForm_tabs_tab_subItems_subLists),
       annotations: {
       },
     },
     subTab: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab_subItems_subTab)),
+      refType: new ListType(transactionForm_tabs_tab_subItems_subTab),
       annotations: {
       },
     },
@@ -1569,29 +1568,29 @@ const transactionForm_tabs_tab = new ObjectType({
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see transactionform_tabid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
     fieldGroups: {
-      refType: createRefToElmWithValue(transactionForm_tabs_tab_fieldGroups),
+      refType: transactionForm_tabs_tab_fieldGroups,
       annotations: {
       },
     },
     subItems: {
-      refType: createRefToElmWithValue(transactionForm_tabs_tab_subItems),
+      refType: transactionForm_tabs_tab_subItems,
       annotations: {
       },
     },
@@ -1609,7 +1608,7 @@ const transactionForm_tabs = new ObjectType({
   },
   fields: {
     tab: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_tabs_tab)),
+      refType: new ListType(transactionForm_tabs_tab),
       annotations: {
       },
     },
@@ -1627,17 +1626,17 @@ const transactionForm_totalBox_totalBoxField = new ObjectType({
   },
   fields: {
     id: {
-      refType: createRefToElmWithValue(enums.transactionform_totalboxid),
+      refType: enums.transactionform_totalboxid,
       annotations: {
       },
     }, /* Original description: For information about possible values, see transactionform_totalboxid. */
     label: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the string custom type. */
     visible: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
@@ -1655,7 +1654,7 @@ const transactionForm_totalBox = new ObjectType({
   },
   fields: {
     totalBoxField: {
-      refType: createRefToElmWithValue(new ListType(transactionForm_totalBox_totalBoxField)),
+      refType: new ListType(transactionForm_totalBox_totalBoxField),
       annotations: {
       },
     },
@@ -1672,7 +1671,7 @@ export const transactionForm = new ObjectType({
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -1680,109 +1679,109 @@ export const transactionForm = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custform’. */
     standard: {
-      refType: createRefToElmWithValue(enums.transactionform_standard),
+      refType: enums.transactionform_standard,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   For information about possible values, see transactionform_standard. */
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     recordType: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     },
     inactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     preferred: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     storedWithRecord: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     mainFields: {
-      refType: createRefToElmWithValue(transactionForm_mainFields),
+      refType: transactionForm_mainFields,
       annotations: {
       },
     },
     tabs: {
-      refType: createRefToElmWithValue(transactionForm_tabs),
+      refType: transactionForm_tabs,
       annotations: {
       },
     },
     customCode: {
-      refType: createRefToElmWithValue(transactionForm_customCode),
+      refType: transactionForm_customCode,
       annotations: {
       },
     },
     quickViewFields: {
-      refType: createRefToElmWithValue(transactionForm_quickViewFields),
+      refType: transactionForm_quickViewFields,
       annotations: {
       },
     },
     actionbar: {
-      refType: createRefToElmWithValue(transactionForm_actionbar),
+      refType: transactionForm_actionbar,
       annotations: {
       },
     },
     disclaimer: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     address: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     },
     allowAddMultiple: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     emailMessageTemplate: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the emailtemplate custom type. */
     printingType: {
-      refType: createRefToElmWithValue(transactionForm_printingType),
+      refType: transactionForm_printingType,
       annotations: {
       },
     },
     totalBox: {
-      refType: createRefToElmWithValue(transactionForm_totalBox),
+      refType: transactionForm_totalBox,
       annotations: {
       },
     },
     linkedForms: {
-      refType: createRefToElmWithValue(transactionForm_linkedForms),
+      refType: transactionForm_linkedForms,
       annotations: {
       },
     },
     roles: {
-      refType: createRefToElmWithValue(transactionForm_roles),
+      refType: transactionForm_roles,
       annotations: {
       },
     },
     preferences: {
-      refType: createRefToElmWithValue(transactionForm_preferences),
+      refType: transactionForm_preferences,
       annotations: {
       },
     },
     buttons: {
-      refType: createRefToElmWithValue(transactionForm_buttons),
+      refType: transactionForm_buttons,
       annotations: {
       },
     },

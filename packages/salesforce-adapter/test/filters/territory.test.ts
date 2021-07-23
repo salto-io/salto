@@ -40,9 +40,9 @@ describe('territory filter', () => {
         {
           fields: {
             customFields: {
-              refType: createRefToElmWithValue(new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') })),
+              refType: new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') }),
             },
-            description: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+            description: { refType: BuiltinTypes.STRING },
           },
         }
       )
@@ -90,9 +90,9 @@ describe('territory filter', () => {
         {
           fields: {
             customFields: {
-              refType: createRefToElmWithValue(new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') })),
+              refType: new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') }),
             },
-            description: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+            description: { refType: BuiltinTypes.STRING },
           },
           annotations: {
             suffix: 'territory2',
@@ -116,7 +116,7 @@ describe('territory filter', () => {
         {
           fields: {
             description: {
-              refType: createRefToElmWithValue(BuiltinTypes.STRING),
+              refType: BuiltinTypes.STRING,
             },
           },
           annotations: {
@@ -137,10 +137,10 @@ describe('territory filter', () => {
         {
           fields: {
             customFields: {
-              refType: createRefToElmWithValue(new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') })),
+              refType: new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') }),
             },
             description: {
-              refType: createRefToElmWithValue(BuiltinTypes.STRING),
+              refType: BuiltinTypes.STRING,
             },
           },
         }

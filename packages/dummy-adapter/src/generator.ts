@@ -21,7 +21,6 @@ import {
   getDeepInnerType, isContainerType, MapType, isMapType, ProgressReporter,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'
 import { collections, promises } from '@salto-io/lowerdash'
 import fs from 'fs'
@@ -115,7 +114,7 @@ const getDataPath = (): string => process.env.SALTO_DUMMY_ADAPTER_DATA_PATH
 const defaultObj = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'DEFAULT'),
   fields: {
-    legit: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    legit: { refType: BuiltinTypes.STRING },
   },
   annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://www.salto.io/' },
   path: [DUMMY_ADAPTER, 'Default', 'Default'],
@@ -124,10 +123,10 @@ const defaultObj = new ObjectType({
 const permissionsType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'Permissions'),
   fields: {
-    name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-    read: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-    write: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-    edit: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+    name: { refType: BuiltinTypes.STRING },
+    read: { refType: BuiltinTypes.BOOLEAN },
+    write: { refType: BuiltinTypes.BOOLEAN },
+    edit: { refType: BuiltinTypes.BOOLEAN },
   },
   path: [DUMMY_ADAPTER, 'Default', 'Permissions'],
 })
@@ -135,8 +134,8 @@ const permissionsType = new ObjectType({
 const layoutAssignmentsType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'LayoutAssignments'),
   fields: {
-    layout: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-    recordType: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    layout: { refType: BuiltinTypes.STRING },
+    recordType: { refType: BuiltinTypes.STRING },
   },
   path: [DUMMY_ADAPTER, 'Default', 'LayoutAssignments'],
 })
@@ -144,8 +143,8 @@ const layoutAssignmentsType = new ObjectType({
 const oldProfileType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'Profile'),
   fields: {
-    ObjectLevelPermissions: { refType: createRefToElmWithValue(new ListType(permissionsType)) },
-    FieldLevelPermissions: { refType: createRefToElmWithValue(new ListType(permissionsType)) },
+    ObjectLevelPermissions: { refType: new ListType(permissionsType) },
+    FieldLevelPermissions: { refType: new ListType(permissionsType) },
   },
   path: [DUMMY_ADAPTER, 'Default', 'Profile'],
 })
@@ -154,13 +153,13 @@ const profileType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER, 'Profile'),
   fields: {
     ObjectLevelPermissions: {
-      refType: createRefToElmWithValue(new MapType(permissionsType)),
+      refType: new MapType(permissionsType),
     },
     FieldLevelPermissions: {
-      refType: createRefToElmWithValue(new MapType(new MapType(permissionsType))),
+      refType: new MapType(new MapType(permissionsType)),
     },
     LayoutAssignments: {
-      refType: createRefToElmWithValue(new MapType(new ListType(layoutAssignmentsType))),
+      refType: new MapType(new ListType(layoutAssignmentsType)),
     },
   },
   path: [DUMMY_ADAPTER, 'Default', 'Profile'],
@@ -369,7 +368,7 @@ export const generateElements = async (
         const name = getName()
         const fieldType = getFieldType(true)
         return [name, {
-          refType: createRefToElmWithValue(fieldType),
+          refType: fieldType,
           annotations: await generateAnnotations(
             // don't generate random annotations for builtin types, even if they
             // support additional annotation types
@@ -628,16 +627,16 @@ export const generateElements = async (
       elemID: new ElemID(DUMMY_ADAPTER, 'EnvObj'),
       fields: {
         SharedField: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         SharedButDiffField: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [`${envID}Field`]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [`${envID}FieldWithHidden`]: {
-          refType: createRefToElmWithValue(PrimWithHiddenAnnos),
+          refType: PrimWithHiddenAnnos,
           annotations: {
             SharedHidden: 'HIDDEN!',
             DiffHidden: `${envID}-HIDDENNNN!!!!`,
@@ -677,7 +676,7 @@ export const generateElements = async (
       elemID: new ElemID(DUMMY_ADAPTER, `${envID}EnvObj`),
       fields: {
         Field: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
       },
       path: [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvObj`],

@@ -926,9 +926,9 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         await client.listMetadataObjects({ type: 'CustomObject' }))
         .result.map(fileProp => [fileProp.fullName, fileProp]))
       const customFields = await (await client.listMetadataObjects({ type: 'CustomField' })).result
-      const customFieldsMap = _(customFields).groupBy((i:FileProperties) => i.fullName.split('.')[0])
+      const customFieldsMap = _(customFields).groupBy((fileProps:FileProperties) => fileProps.fullName.split('.')[0])
         .mapValues((values: FileProperties[]) => _.keyBy(values,
-          (w:FileProperties) => w.fullName.split('.')[1])).value()
+          (fileProps:FileProperties) => fileProps.fullName.split('.')[1])).value()
 
       const typesFromInstance = await typesToMergeFromInstance()
       const newElements: Element[] = await createFromSObjectsAndInstances(

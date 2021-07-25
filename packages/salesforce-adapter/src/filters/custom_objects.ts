@@ -918,6 +918,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
           await fixTypesDefinitions(typesFromInstance)
           return typesFromInstance
         }
+
         const typesFromInstance = await getAllTypesFromInstance()
         const nestedMetadataTypes = _.pick(typesFromInstance,
           Object.keys(NESTED_INSTANCE_VALUE_TO_TYPE_NAME)) as Record<string, ObjectType>
@@ -947,6 +948,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         customTypeFilePropertiesMap,
         customFieldsFilePropertiesMap
       )
+
       const objectTypeNames = new Set(Object.keys(sObjects))
       await awu(Object.entries(customObjectInstances))
         .forEach(async ([instanceApiName, instance]) => {

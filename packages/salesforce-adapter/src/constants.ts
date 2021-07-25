@@ -59,7 +59,6 @@ export enum FIELD_TYPE_NAMES {
 export enum INTERNAL_FIELD_TYPE_NAMES {
   UNKNOWN = 'Unknown', // internal-only placeholder for fields whose type is unknown
   ANY = 'AnyType',
-  SERVICE_ID = 'ServiceId',
 }
 
 export type ALL_FIELD_TYPE_NAMES = FIELD_TYPE_NAMES | INTERNAL_FIELD_TYPE_NAMES

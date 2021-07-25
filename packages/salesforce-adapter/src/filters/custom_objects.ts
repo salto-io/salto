@@ -521,16 +521,17 @@ const createFromSObjectsAndInstances = async (
   instances: Record<string, InstanceElement>,
   typesFromInstance: TypesFromInstance,
   systemFields: string[],
-  filePropertiesMap: Record<string, FileProperties>,
-  customFieldsMap: Record<string, Record<string, FileProperties>>
+  customObjectFilePropertiesMap: Record<string, FileProperties>,
+  customFieldsFilePropertiesMap: Record<string, Record<string, FileProperties>>
 ): Promise<Element[]> =>
   awu(sObjects).flatMap(async ({ name, label, custom, keyPrefix, fields }) => {
     const object = await createObjectType({ name, label, keyPrefix, fields, systemFields })
-    Object.assign(object.annotations, getAuditAnnotations(filePropertiesMap[object.elemID.name]))
+    Object.assign(object.annotations,
+      getAuditAnnotations(customObjectFilePropertiesMap[object.elemID.name]))
 
     const instance = instances[name]
-    if (Object.keys(customFieldsMap).includes(name)) {
-      addAuditAnnotationsToFields(customFieldsMap[name], object)
+    if (Object.keys(customFieldsFilePropertiesMap).includes(name)) {
+      addAuditAnnotationsToFields(customFieldsFilePropertiesMap[name], object)
     }
     if (!instance) {
       return [object]
@@ -650,6 +651,26 @@ const shouldIncludeFieldChange = (fieldsToSkip: ReadonlyArray<string>) => (
     )
   }
 )
+
+const getCustomObjectFileProperties = async (client: SalesforceClient):
+  Promise<Record<string, FileProperties>> => {
+  const { result, errors } = await client.listMetadataObjects({ type: 'CustomObject' })
+  if (errors && errors.length > 0) {
+    log.debug(`Encountered errors while listing file properties for CustomObjects: ${errors}`)
+  }
+  return Object.fromEntries(result.map(fileProp => [fileProp.fullName, fileProp]))
+}
+
+const getCustomFieldFileProperties = async (client: SalesforceClient):
+  Promise<Record<string, Record<string, FileProperties>>> => {
+  const { result, errors } = await client.listMetadataObjects({ type: 'CustomField' })
+  if (errors && errors.length > 0) {
+    log.debug(`Encountered errors while listing file properties for CustomFields: ${errors}`)
+  }
+  return _(result).groupBy((fileProps:FileProperties) => fileProps.fullName.split('.')[0])
+    .mapValues((values: FileProperties[]) => _.keyBy(values,
+      (fileProps:FileProperties) => fileProps.fullName.split('.')[1])).value()
+}
 
 const getNestedCustomObjectValues = async (
   fullName: string,
@@ -922,13 +943,8 @@ const filterCreator: FilterCreator = ({ client, config }) => {
           nestedMetadataTypes,
         }
       }
-      const filePropertiesMap = Object.fromEntries((
-        await client.listMetadataObjects({ type: 'CustomObject' }))
-        .result.map(fileProp => [fileProp.fullName, fileProp]))
-      const customFields = await (await client.listMetadataObjects({ type: 'CustomField' })).result
-      const customFieldsMap = _(customFields).groupBy((fileProps:FileProperties) => fileProps.fullName.split('.')[0])
-        .mapValues((values: FileProperties[]) => _.keyBy(values,
-          (fileProps:FileProperties) => fileProps.fullName.split('.')[1])).value()
+      const customTypeFilePropertiesMap = await getCustomObjectFileProperties(client)
+      const customFieldsFilePropertiesMap = await getCustomFieldFileProperties(client)
 
       const typesFromInstance = await typesToMergeFromInstance()
       const newElements: Element[] = await createFromSObjectsAndInstances(
@@ -936,8 +952,8 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         customObjectInstances,
         typesFromInstance,
         config.systemFields ?? [],
-        filePropertiesMap,
-        customFieldsMap
+        customTypeFilePropertiesMap,
+        customFieldsFilePropertiesMap
       )
       const objectTypeNames = new Set(Object.keys(sObjects))
       await awu(Object.entries(customObjectInstances))

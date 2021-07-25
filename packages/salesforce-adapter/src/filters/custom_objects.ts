@@ -505,7 +505,7 @@ const addAuditAnnotationsToField = (fileProperties: FileProperties, field: Field
 const addAuditAnnotationsToFields = (fileProperties: Record<string,
   FileProperties>, object: ObjectType): void => {
   _.values(fileProperties)
-    .forEach(i => addAuditAnnotationsToField(i, object.fields[i.fullName.split('.')[1]]))
+    .forEach(fileProp => addAuditAnnotationsToField(fileProp, object.fields[fileProp.fullName.split('.')[1]]))
 }
 
 const createFromSObjectsAndInstances = async (

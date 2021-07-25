@@ -539,9 +539,8 @@ const createFromSObjectsAndInstances = async (
     await mergeCustomObjectWithInstance(
       object, instance, annotationTypes
     )
-    const createdInstances = await createNestedMetadataInstances(instance, object,
-      typesFromInstance.nestedMetadataTypes)
-    return [object, ...createdInstances]
+    return [object, ...await createNestedMetadataInstances(instance, object,
+      typesFromInstance.nestedMetadataTypes)]
   }).toArray()
 
 const removeIrrelevantElements = async (elements: Element[]): Promise<void> => {

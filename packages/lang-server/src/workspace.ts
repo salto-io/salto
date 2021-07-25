@@ -21,7 +21,7 @@ import { Element, SaltoError, ElemID, Change, getChangeElement,
   isRemovalChange, isReferenceExpression, isContainerType,
   Value, isModificationChange } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
-import { transformElement, detailedCompare, TransformFunc } from '@salto-io/adapter-utils'
+import { detailedCompare, transformElement, TransformFunc } from '@salto-io/adapter-utils'
 
 
 const { validateElements } = validator
@@ -40,9 +40,11 @@ export class EditorWorkspace {
   private pendingSets: {[key: string]: nacl.NaclFile} = {}
   private pendingDeletes: Set<string> = new Set<string>()
   private wsErrors?: Promise<Readonly<errors.Errors>>
+  private runValidation: boolean
 
-  constructor(public baseDir: string, workspace: Workspace) {
+  constructor(public baseDir: string, workspace: Workspace, runValidation = true) {
     this.workspace = workspace
+    this.runValidation = runValidation
   }
 
   get elements(): Promise<elementSource.ElementsSource> {
@@ -50,7 +52,7 @@ export class EditorWorkspace {
   }
 
   errors(): Promise<errors.Errors> {
-    if (_.isUndefined(this.wsErrors)) {
+    if (!this.runValidation || _.isUndefined(this.wsErrors)) {
       this.wsErrors = this.workspace.errors()
     }
     return this.wsErrors
@@ -235,7 +237,7 @@ export class EditorWorkspace {
       this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
       // We start by running all deleted
-      const shouldCalcValidation = this.wsErrors === undefined
+      const shouldCalcValidation = this.wsErrors === undefined && this.runValidation
       const removeChanges = (!_.isEmpty(opDeletes))
         ? (await this.workspace.removeNaclFiles([...opDeletes], shouldCalcValidation))[env].changes
         : []
@@ -244,7 +246,7 @@ export class EditorWorkspace {
         ? (await this.workspace
           .setNaclFiles(Object.values(opUpdates), shouldCalcValidation))[env]?.changes ?? []
         : []
-      if (this.wsErrors !== undefined) {
+      if (this.runValidation && this.wsErrors !== undefined) {
         const validation = await this.getValidationErrors(
           [...opDeletes, ...Object.keys(opUpdates)].filter(f => this.isWorkspaceFile(f)),
           [...removeChanges, ...updateChanges],
@@ -340,7 +342,7 @@ export class EditorWorkspace {
   }
 
   private async validateFilesImpl(filenames: string[]): Promise<errors.Errors> {
-    if (_.isUndefined(this.wsErrors)) {
+    if (!this.runValidation || _.isUndefined(this.wsErrors)) {
       return this.errors()
     }
     const relevantFilenames = filenames

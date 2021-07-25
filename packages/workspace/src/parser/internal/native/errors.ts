@@ -91,12 +91,6 @@ export const multipleAnnotationBlocks = (range: SourceRange): ParseError => crea
   'Invalid annotations block, only one annotation block can be defined in a fragment.',
 )
 
-export const annotationInAnnotationBlocks = (range: SourceRange): ParseError => createError(
-  range,
-  'Invalid annotations block',
-  'Can not define an annotation values inside annotation type definitions',
-)
-
 export const multiplFieldDefinitions = (
   range: SourceRange,
   fieldName: string

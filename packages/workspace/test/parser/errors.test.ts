@@ -448,8 +448,8 @@ describe('parsing errors', () => {
       it('should create an error', () => {
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
-          start: { byte: 45, col: 23, line: 3 },
-          end: { byte: 123, col: 12, line: 7 },
+          start: { byte: 100, col: 13, line: 6 },
+          end: { byte: 111, col: 24, line: 6 },
           filename: 'file.nacl',
         })
         expect(res.errors[0].message).toBe('Invalid annotations block, unexpected attribute definition.')
@@ -479,11 +479,11 @@ describe('parsing errors', () => {
       it('should create an error', () => {
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
-          start: { byte: 72, col: 26, line: 4 },
-          end: { byte: 113, col: 14, line: 6 },
+          start: { byte: 88, col: 15, line: 5 },
+          end: { byte: 99, col: 26, line: 5 },
           filename: 'file.nacl',
         })
-        expect(res.errors[0].message).toBe('Can not define an annotation values inside annotation type definitions')
+        expect(res.errors[0].message).toBe('Invalid annotations block, unexpected attribute definition.')
         expect(res.errors[0].summary).toBe('Invalid annotations block')
       })
       it('should still create the element properly', async () => {

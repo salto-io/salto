@@ -19,7 +19,7 @@ import { TOKEN_TYPES } from '../lexer'
 import { ParseContext, ConsumerReturnType } from '../types'
 import { positionAtEnd, registerRange, createFieldRefType, addValuePromiseWatcher, positionAtStart } from '../helpers'
 import { consumeWords, consumeValue } from './values'
-import { duplicatedAttribute, invalidAttrDefinitionInAnnotationBlock, multipleAnnotationBlocks, annotationInAnnotationBlocks, invalidNestedBlock, invalidFieldAnnotationBlock, multiplFieldDefinitions, invalidBlockItem } from '../errors'
+import { duplicatedAttribute, invalidAttrDefinitionInAnnotationBlock, multipleAnnotationBlocks, invalidNestedBlock, invalidFieldAnnotationBlock, multiplFieldDefinitions, invalidBlockItem } from '../errors'
 
 
 export const isAttrDef = (defWords: string[], context: ParseContext): boolean => (
@@ -81,6 +81,13 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID,
       const attrID = attrIDPrefix.createNestedID(key)
       context.lexer.next() // Process the '=' token (which was checked in the if condition)
       const consumedValue = consumeValue(context, attrID)
+      if (isAnnotationBlock && !_.isEmpty(consumedValue.value)) {
+        context.errors.push(invalidAttrDefinitionInAnnotationBlock({
+          start: defTokens.range.start,
+          end: consumedValue.range.end,
+          filename: context.filename,
+        }))
+      }
       if (attrs[key] === undefined) {
         attrs[key] = consumedValue.value
       } else {
@@ -95,12 +102,6 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID,
     } else if (isAnnotationBlockDef(idPrefix, defTokens.value, context)) {
       const annoBlockID = idPrefix.createNestedID('annotation')
       const consumedBlock = consumeBlockBody(context, annoBlockID, true)
-      if (!_.isEmpty(consumedBlock.value.attrs)) {
-        context.errors.push(invalidAttrDefinitionInAnnotationBlock({
-          ...consumedBlock.range,
-          filename: context.filename,
-        }))
-      }
       if (annotationRefTypes === undefined) {
         annotationRefTypes = _.mapValues(consumedBlock.value.fields, fieldData => fieldData.refType)
       } else {
@@ -116,13 +117,7 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID,
     } else if (isFieldBlock(defTokens.value, context)) {
       const [fieldType, fieldName] = defTokens.value
       const fieldID = fieldIDPrefix.createNestedID(fieldName)
-      const consumedBlock = consumeBlockBody(context, fieldID)
-      if (isAnnotationBlock && !_.isEmpty(consumedBlock.value.attrs)) {
-        context.errors.push(annotationInAnnotationBlocks({
-          ...consumedBlock.range,
-          filename: context.filename,
-        }))
-      }
+      const consumedBlock = consumeBlockBody(context, fieldID, isAnnotationBlock)
       if (!_.isEmpty(consumedBlock.value.fields)) {
         context.errors.push(invalidNestedBlock({
           ...consumedBlock.range,

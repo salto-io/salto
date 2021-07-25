@@ -22,9 +22,10 @@ import {
   isAdditionChange,
   isAdditionOrModificationChange,
   isInstanceChange,
+  ModificationChange,
+  toChange,
 } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
-import _ from 'lodash'
 import { removeIdenticalValues } from '../filters/data_instances_diff'
 import { isDataObjectType } from '../types'
 
@@ -50,16 +51,21 @@ const changeValidator: ChangeValidator = async changes => (
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
+    .filter(async change => isDataObjectType(
+      await getChangeElement<InstanceElement>(change).getType()
+    ))
     .map(change => {
       if (isAdditionChange(change)) {
         return change
       }
-      const modificationChange = _.cloneDeep(change)
+      const modificationChange = toChange({
+        before: change.data.before.clone(),
+        after: change.data.after.clone(),
+      }) as ModificationChange<InstanceElement>
       removeIdenticalValues(modificationChange)
       return modificationChange
     })
     .map(change => getChangeElement<InstanceElement>(change))
-    .filter(async instance => isDataObjectType(await instance.getType()))
     .filter(hasUnresolvedAccountSpecificValue)
     .map((instance): ChangeError => ({
       elemID: instance.elemID,

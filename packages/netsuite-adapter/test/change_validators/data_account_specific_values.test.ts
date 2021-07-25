@@ -82,7 +82,7 @@ describe('data account specific value validator', () => {
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
   })
 
-  it('should have ChangeError if a field with ACCOUNT_SPECIFIC_VALUE was not changed', async () => {
+  it('should not have ChangeError if a field with ACCOUNT_SPECIFIC_VALUE was not changed', async () => {
     const before = new InstanceElement(
       'instance',
       new ObjectType({ elemID: new ElemID(NETSUITE, 'someType'), annotations: { source: 'soap' } }),

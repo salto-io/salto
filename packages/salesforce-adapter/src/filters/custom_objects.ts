@@ -45,6 +45,7 @@ import {
   toMetadataInfo,
   isFieldOfCustomObject,
   createInstanceServiceIds,
+  getAuditAnnotations,
 } from '../transformers/transformer'
 import {
   id, addApiName, addMetadataType, addLabel, getNamespace, boolValue,
@@ -496,15 +497,6 @@ const fetchSObjects = async (
 
   return _.groupBy(sobjectsDescriptions, e => e.name)
 }
-
-const getAuditAnnotations = (fileProperties: FileProperties): Record<string, string> => (
-  {
-    [CORE_ANNOTATIONS.CREATED_BY_NAME]: fileProperties.createdByName,
-    [CORE_ANNOTATIONS.CREATED_BY_DATE]: fileProperties.createdDate,
-    [CORE_ANNOTATIONS.CHANGED_BY_NAME]: fileProperties.lastModifiedByName,
-    [CORE_ANNOTATIONS.CHANGED_BY_DATE]: fileProperties.lastModifiedDate,
-  }
-)
 
 const addAuditAnnotationsToField = (fileProperties: FileProperties, field: Field): void => {
   Object.assign(field.annotations, getAuditAnnotations(fileProperties))

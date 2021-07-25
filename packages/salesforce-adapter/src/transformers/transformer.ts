@@ -15,7 +15,7 @@
 */
 /* eslint-disable camelcase */
 import _ from 'lodash'
-import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField } from 'jsforce'
+import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField, FileProperties } from 'jsforce'
 import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, ReferenceExpression, isContainerType } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
 import { TransformFunc, transformElement, naclCase, pathNaclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
@@ -1387,6 +1387,15 @@ export const createInstanceElement = (
     annotations,
   ) as MetadataInstanceElement
 }
+
+export const getAuditAnnotations = (fileProperties: FileProperties): Record<string, string> => (
+  {
+    [CORE_ANNOTATIONS.CREATED_BY_NAME]: fileProperties.createdByName,
+    [CORE_ANNOTATIONS.CREATED_BY_DATE]: fileProperties.createdDate,
+    [CORE_ANNOTATIONS.CHANGED_BY_NAME]: fileProperties.lastModifiedByName,
+    [CORE_ANNOTATIONS.CHANGED_BY_DATE]: fileProperties.lastModifiedDate,
+  }
+)
 
 const createIdField = (parent: ObjectType): void => {
   parent.fields[INTERNAL_ID_FIELD] = new Field(

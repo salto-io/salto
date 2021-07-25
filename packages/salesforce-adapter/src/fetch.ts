@@ -16,14 +16,14 @@
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { FileProperties, MetadataObject } from 'jsforce-types'
-import { CORE_ANNOTATIONS, InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FetchElements, ConfigChangeSuggestion } from './types'
 import { METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
-import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements } from './transformers/transformer'
+import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuditAnnotations } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 import { MetadataQuery } from './fetch_profile/metadata_query'
 
@@ -102,15 +102,6 @@ const getFullName = (obj: FileProperties): string => {
 
 const getNamespace = (obj: FileProperties): string => (
   obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
-)
-
-const getAuditAnnotations = (fileProperties: FileProperties): Record<string, string> => (
-  {
-    [CORE_ANNOTATIONS.CREATED_BY_NAME]: fileProperties.createdByName,
-    [CORE_ANNOTATIONS.CREATED_BY_DATE]: fileProperties.createdDate,
-    [CORE_ANNOTATIONS.CHANGED_BY_NAME]: fileProperties.lastModifiedByName,
-    [CORE_ANNOTATIONS.CHANGED_BY_DATE]: fileProperties.lastModifiedDate,
-  }
 )
 
 export const fetchMetadataInstances = async ({

@@ -173,6 +173,13 @@ type salesforce.HiddenToVisibleVal {
   }
 }
 
+type salesforce.HiddenToVisibleType is string {
+  ${CORE_ANNOTATIONS.HIDDEN_VALUE} = true
+}
+
+type salesforce.VisibleToHiddenType is string {
+}
+
 type salesforce.NestedHiddenVal {
   annotations {
     salesforce.HiddenVal hidden_val_anno {
@@ -226,9 +233,39 @@ type salesforce.lead {
     }
   }
 
+  type salesforce.FieldTypeWithChangingHidden {
+    annotations {
+      hidden_string hiddenSwitchType {
+      }
+      string visibleSwitchType {
+      }
+      salesforce.VisibleToHiddenType visibleChangeType {
+      }
+      salesforce.HiddenToVisibleType hiddenTypeChange {
+      }
+    }
+  }
+
   type salesforce.ObjWithFieldTypeWithHidden {
+    annotations {
+      hidden_string hiddenSwitchType {
+      }
+      string visibleSwitchType {
+      }
+      salesforce.VisibleToHiddenType visibleChangeType {
+      }
+      salesforce.HiddenToVisibleType hiddenTypeChange {
+      }
+    }
+    visibleSwitchType = "asd"
+    visibleChangeType = "asd"
+
     salesforce.FieldTypeWithHidden fieldWithHidden {
       visible = "YOU SEE ME"
+    }
+    salesforce.FieldTypeWithChangingHidden fieldWithChangingHidden {
+      visibleSwitchType = "asd"
+      visibleChangeType = "asd"
     }
   }
   `,

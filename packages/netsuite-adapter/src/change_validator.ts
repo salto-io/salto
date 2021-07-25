@@ -16,6 +16,7 @@
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
 import accountSpecificValuesValidator from './change_validators/account_specific_values'
+import dataAccountSpecificValuesValidator from './change_validators/data_account_specific_values'
 import removeCustomTypesValidator from './change_validators/remove_custom_types'
 import removeFileCabinetValidator from './change_validators/remove_file_cabinet'
 import removeListItemValidator from './change_validators/remove_list_item'
@@ -29,6 +30,7 @@ import { validateDependsOnInvalidElement } from './change_validators/dependencie
 
 const changeValidators: ChangeValidator[] = [
   accountSpecificValuesValidator,
+  dataAccountSpecificValuesValidator,
   removeCustomTypesValidator,
   instanceChangesValidator,
   saveSearchMoveEnvironment,

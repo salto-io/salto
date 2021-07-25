@@ -522,15 +522,15 @@ const createFromSObjectsAndInstances = async (
   typesFromInstance: TypesFromInstance,
   systemFields: string[],
   filePropertiesMap: Record<string, FileProperties>,
-  customFields: Record<string, Record<string, FileProperties>>
+  customFieldsMap: Record<string, Record<string, FileProperties>>
 ): Promise<Element[]> =>
   awu(sObjects).flatMap(async ({ name, label, custom, keyPrefix, fields }) => {
     const object = await createObjectType({ name, label, keyPrefix, fields, systemFields })
     Object.assign(object.annotations, getAuditAnnotations(filePropertiesMap[object.elemID.name]))
 
     const instance = instances[name]
-    if (Object.keys(customFields).includes(name)) {
-      addAuditAnnotationsToFields(customFields[name], object)
+    if (Object.keys(customFieldsMap).includes(name)) {
+      addAuditAnnotationsToFields(customFieldsMap[name], object)
     }
     if (!instance) {
       return [object]
@@ -927,7 +927,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         await client.listMetadataObjects({ type: 'CustomObject' }))
         .result.map(fileProp => [fileProp.fullName, fileProp]))
       const customFields = await (await client.listMetadataObjects({ type: 'CustomField' })).result
-      const bla = _(customFields).groupBy((i:FileProperties) => i.fullName.split('.')[0])
+      const customFieldsMap = _(customFields).groupBy((i:FileProperties) => i.fullName.split('.')[0])
         .mapValues((values: FileProperties[]) => _.keyBy(values,
           (w:FileProperties) => w.fullName.split('.')[1])).value()
 
@@ -938,7 +938,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         typesFromInstance,
         config.systemFields ?? [],
         filePropertiesMap,
-        bla
+        customFieldsMap
       )
       const objectTypeNames = new Set(Object.keys(sObjects))
       await awu(Object.entries(customObjectInstances))

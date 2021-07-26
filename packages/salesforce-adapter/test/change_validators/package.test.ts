@@ -19,6 +19,8 @@ import packageValidator, {
   PACKAGE_VERSION_FIELD_NAME,
 } from '../../src/change_validators/package'
 import { API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, METADATA_TYPE } from '../../src/constants'
+import { Types } from '../../src/transformers/transformer'
+import { createField } from '../utils'
 
 describe('package change validator', () => {
   let obj: ObjectType
@@ -156,6 +158,19 @@ describe('package change validator', () => {
   })
 
   describe('onUpdate', () => {
+    describe('modify field', () => {
+      it('should have change error when modifing a field type', async () => {
+        const beforeField = createField(obj, Types.primitiveDataTypes.Lookup, 'Standard')
+        const afterField = beforeField.clone()
+        afterField.annotations.modifyMe = 'modified'
+        afterField.refType = 
+        const changeErrors = await packageValidator([toChange({ beforeField, afterField })])
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toEqual(beforeField.elemID)
+      })
+    })
+
     describe('add field', () => {
       it('should have change error when adding a field with namespace to an object', async () => {
         const newField = addField('ObjectName__c.MyNamespace__FieldName__c')

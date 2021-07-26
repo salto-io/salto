@@ -44,7 +44,6 @@ import {
 } from './helpers/workspace'
 import { instanceExists, objectExists, getSalesforceCredsInstance } from './helpers/salesforce'
 
-
 const { awu } = collections.asynciterable
 // let lastPlan: Plan
 let credsLease: CredsLease<UsernamePasswordCredentials>

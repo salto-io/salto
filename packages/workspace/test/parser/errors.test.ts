@@ -448,8 +448,39 @@ describe('parsing errors', () => {
       it('should create an error', () => {
         expect(res.errors).toHaveLength(1)
         expect(res.errors[0].subject).toEqual({
-          start: { byte: 45, col: 23, line: 3 },
-          end: { byte: 123, col: 12, line: 7 },
+          start: { byte: 100, col: 13, line: 6 },
+          end: { byte: 111, col: 24, line: 6 },
+          filename: 'file.nacl',
+        })
+        expect(res.errors[0].message).toBe('Invalid annotations block, unexpected attribute definition.')
+        expect(res.errors[0].summary).toBe('Invalid annotations block')
+      })
+      it('should still create the element properly', async () => {
+        expect(await awu(res.elements).toArray()).toHaveLength(1)
+        const element = (await awu(res.elements).toArray())[0] as ObjectType
+        expect(element.elemID.getFullName()).toEqual('baby.you')
+        expect(Object.keys(element.annotationRefTypes)).toEqual(['my'])
+      })
+    })
+    describe('when there annotation values inside annotation type definitions', () => {
+      const nacl = `
+      type baby.you {
+          annotations {
+            can.drive my {
+              car = "Yes"
+            }
+          }
+      }
+    `
+      let res: ParseResult
+      beforeAll(async () => {
+        res = await parse(Buffer.from(nacl), 'file.nacl', {})
+      })
+      it('should create an error', () => {
+        expect(res.errors).toHaveLength(1)
+        expect(res.errors[0].subject).toEqual({
+          start: { byte: 88, col: 15, line: 5 },
+          end: { byte: 99, col: 26, line: 5 },
           filename: 'file.nacl',
         })
         expect(res.errors[0].message).toBe('Invalid annotations block, unexpected attribute definition.')

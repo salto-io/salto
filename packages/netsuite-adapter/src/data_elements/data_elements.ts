@@ -101,7 +101,7 @@ const createInstances = async (
   const fixedValuesList = await awu(valuesList).map(async values => {
     const type = getType(values, typesMap)
     return {
-      record: await transformValues({
+      values: await transformValues({
         values,
         type,
         strict: false,
@@ -113,9 +113,9 @@ const createInstances = async (
 
   addIdentifierToValues(fixedValuesList)
 
-  return fixedValuesList.map(({ record, type }) => {
+  return fixedValuesList.map(({ values, type }) => {
     const serviceIdFieldName = getTypeIdentifier(type)
-    const identifierValue = record[serviceIdFieldName]
+    const identifierValue = values[serviceIdFieldName]
     const defaultName = naclCase(identifierValue)
 
     const name = elemIdGetter !== undefined ? elemIdGetter(
@@ -134,7 +134,7 @@ const createInstances = async (
     return new InstanceElement(
       name,
       type,
-      record,
+      values,
       [NETSUITE, RECORDS_PATH, type.elemID.name, pathNaclCase(name)],
     )
   })

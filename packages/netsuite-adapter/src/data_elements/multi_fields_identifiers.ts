@@ -15,7 +15,6 @@
 */
 import { BuiltinTypes, Field, ObjectType, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { getDataInstanceId } from '../elements_source_index/elements_source_index'
 import { IDENTIFIER_FIELD, TYPE_TO_IDENTIFIER, TYPE_TO_ID_FIELD_PATHS } from './types'
@@ -32,61 +31,60 @@ export const addIdentifierToType = (type: ObjectType): void => {
 }
 
 const getIdentifierWithoutParent = (
-  record: Values,
+  values: Values,
   type: ObjectType
 ): string => {
   if (!(type.elemID.name in TYPE_TO_ID_FIELD_PATHS)) {
-    return record[TYPE_TO_IDENTIFIER[type.elemID.name]]
+    return values[TYPE_TO_IDENTIFIER[type.elemID.name]]
   }
 
   return TYPE_TO_ID_FIELD_PATHS[type.elemID.name]
-    .map(fieldPath => _.get(record, fieldPath))
-    .filter(values.isDefined)
+    .map(fieldPath => _.get(values, fieldPath))
+    .filter(value => value !== undefined)
     .join('_')
 }
 
 const getFullIdentifier = (
-  record: Values,
+  values: Values,
   type: ObjectType,
-  internalIdToExternalId: Record<string, Values>
+  internalIdToValues: Record<string, Values>
 ): string => {
-  const currentInstanceId = getIdentifierWithoutParent(record, type)
-  if (record.parent === undefined) {
+  const currentInstanceId = getIdentifierWithoutParent(values, type)
+  if (values.parent === undefined) {
     return currentInstanceId
   }
 
-  const parent = internalIdToExternalId[
-    getDataInstanceId(record.parent.attributes.internalId, type)
+  const parent = internalIdToValues[
+    getDataInstanceId(values.parent.attributes.internalId, type)
   ]
   if (parent === undefined) {
-    log.warn(`Could not find parent with id ${record.parent.attributes.internalId} of instance with id ${record.attributes.internalId} of type ${type.elemID.getFullName()}`)
-    return `${record.parent.attributes.internalId}_${currentInstanceId}`
+    log.warn(`Could not find parent with id ${values.parent.attributes.internalId} of instance with id ${values.attributes.internalId} of type ${type.elemID.getFullName()}`)
+    return `${values.parent.attributes.internalId}_${currentInstanceId}`
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  return `${getFullIdentifier(parent, type, internalIdToExternalId)}_${currentInstanceId}`
+  return `${getFullIdentifier(parent, type, internalIdToValues)}_${currentInstanceId}`
 }
 
 export const addIdentifierToValues = (
-  valuesList: { type: ObjectType; record: Values }[],
+  valuesList: { type: ObjectType; values: Values }[],
 ): void => {
   const valuesListWithIdentifier = valuesList.filter(
     ({ type }) => type.fields[IDENTIFIER_FIELD] !== undefined
   )
 
-  const internalIdToExternalId = _(valuesListWithIdentifier)
-    .keyBy(({ type, record }) => getDataInstanceId(record.attributes.internalId, type))
-    .mapValues(({ record }) => record)
-    .value()
+  const internalIdToValues = Object.fromEntries(
+    valuesListWithIdentifier
+      .map(({ type, values }) => [getDataInstanceId(values.attributes.internalId, type), values])
+  )
 
 
-  const identifiers = valuesListWithIdentifier.map(({ record, type }) =>
-    getFullIdentifier(record, type, internalIdToExternalId))
+  const identifiers = valuesListWithIdentifier.map(({ values, type }) =>
+    getFullIdentifier(values, type, internalIdToValues))
 
   // We first get all the identifiers and then set it in valuesListWithIdentifier
-  // because `getFullIdentifier` uses record to generate the id and editing before
-  // generating all the records can cause duplication in the identifier parts
-  valuesListWithIdentifier.forEach(({ record }, i) => {
-    record[IDENTIFIER_FIELD] = identifiers[i]
+  // because `getFullIdentifier` uses values to generate the id and editing before
+  // generating all the identifiers can cause duplication in the identifier parts
+  valuesListWithIdentifier.forEach(({ values }, i) => {
+    values[IDENTIFIER_FIELD] = identifiers[i]
   })
 }

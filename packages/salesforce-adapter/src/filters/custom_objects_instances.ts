@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { collections, values, promises, chunks } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { InstanceElement, ObjectType, Element, Field } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, Element, Field, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
 import { createInvlidIdFieldConfigChange, createUnresolvedRefIdFieldConfigChange } from '../config_change'
 import SalesforceClient from '../client/client'
@@ -54,6 +54,7 @@ export type CustomObjectFetchSetting = {
 const defaultRecordKeysToOmit = ['attributes']
 const nameSeparator = '___'
 const detectsParentsIndicator = '##allMasterDetailFields##'
+const getIDsAndNamesOfUsersQuery = 'SELECT Id,Name FROM User'
 
 const isReferenceField = (field: Field): boolean => (
   isMasterDetailField(field) || isLookupField(field)
@@ -106,6 +107,13 @@ const getFieldNamesForQuery = async (field: Field): Promise<string[]> => (
     : [await apiName(field, true)]
 )
 
+const conditionQueries = (query: string, conditionSets: Record<string,
+  string>[], maxQueryLen = MAX_QUERY_LENGTH): string[] => {
+  const selectWhereStr = `${query} WHERE `
+  const whereConditions = getWhereConditions(conditionSets, maxQueryLen - selectWhereStr.length)
+  return whereConditions.map(whereCondition => `${selectWhereStr}${whereCondition}`)
+}
+
 /**
  * Build a set of queries that select records.
  *
@@ -127,9 +135,7 @@ export const buildSelectQueries = async (
   if (conditionSets === undefined || conditionSets.length === 0) {
     return [selectStr]
   }
-  const selectWhereStr = `${selectStr} WHERE `
-  const whereConditions = getWhereConditions(conditionSets, maxQueryLen - selectWhereStr.length)
-  return whereConditions.map(whereCondition => `${selectWhereStr}${whereCondition}`)
+  return conditionQueries(selectStr, conditionSets, maxQueryLen)
 }
 
 const buildQueryStrings = async (
@@ -139,6 +145,15 @@ const buildQueryStrings = async (
 ): Promise<string[]> => (
   buildSelectQueries(typeName, fields, ids?.map(id => ({ Id: `'${id}'` })))
 )
+
+const queryClient = async (client: SalesforceClient,
+  queries: string[]): Promise<SalesforceRecord[]> => {
+  const recordsIterables = await Promise.all(queries.map(async query => client.queryAll(query)))
+  const records = (await Promise.all(
+    recordsIterables.map(async recordsIterable => (await toArrayAsync(recordsIterable)).flat())
+  )).flat()
+  return records
+}
 
 const getRecords = async (
   client: SalesforceClient,
@@ -152,10 +167,7 @@ const getRecords = async (
     return {}
   }
   const queries = await buildQueryStrings(typeName, queryableFields, ids)
-  const recordsIterables = await Promise.all(queries.map(async query => client.queryAll(query)))
-  const records = (await Promise.all(
-    recordsIterables.map(async recordsIterable => (await toArrayAsync(recordsIterable)).flat())
-  )).flat()
+  const records = await queryClient(client, queries)
   log.debug(`Fetched ${records.length} records of type ${typeName}`)
   return _.keyBy(
     records,
@@ -427,6 +439,32 @@ export const getIdFields = async (
   return { idFields: idFieldsWithParents.map(fieldName => type.fields[fieldName]) }
 }
 
+const moveAuditFieldsToAnnotations = (instance: InstanceElement,
+  IDToNameMap: Record<string, string>): void => {
+  instance.annotations[CORE_ANNOTATIONS.CREATED_BY_DATE] = instance.value.CreatedDate
+  instance.annotations[CORE_ANNOTATIONS.CREATED_BY_NAME] = IDToNameMap[instance.value.CreatedById]
+  instance.annotations[CORE_ANNOTATIONS.CHANGED_BY_DATE] = instance.value.LastModifiedDate
+  instance.annotations[CORE_ANNOTATIONS.CHANGED_BY_NAME] = IDToNameMap[
+    instance.value.LastModifiedById]
+  delete instance.value.CreatedDate
+  delete instance.value.LastModifiedDate
+}
+
+const moveInstancesAuditFieldsToAnnotations = (instances: InstanceElement[],
+  IDToNameMap: Record<string, string>): void => {
+  instances.forEach(instance => moveAuditFieldsToAnnotations(instance, IDToNameMap))
+}
+
+const getIDToNameMap = async (client: SalesforceClient,
+  instances: InstanceElement[]): Promise<Record<string, string>> => {
+  const instancesIDs = Array.from(new Set(instances.map(instance => [instance.value.CreatedById,
+    instance.value.LastModifiedById]).flat()).values())
+  const queries = conditionQueries(getIDsAndNamesOfUsersQuery,
+    instancesIDs.map(id => ({ Id: `'${id}'` })))
+  const records = await queryClient(client, queries)
+  return Object.fromEntries(records.map(record => [record.Id, record.Name]))
+}
+
 export const getCustomObjectsFetchSettings = async (
   types: ObjectType[],
   dataManagement: DataManagement,
@@ -471,6 +509,8 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       client,
       validChangesFetchSettings,
     )
+    const IDToNameMap = await getIDToNameMap(client, instances)
+    moveInstancesAuditFieldsToAnnotations(instances, IDToNameMap)
     elements.push(...instances)
     log.debug(`Fetched ${instances.length} instances of Custom Objects`)
     const invalidFieldSuggestions = await awu(invalidFetchSettings)

@@ -505,6 +505,7 @@ const addAuditAnnotationsToField = (fileProperties: FileProperties, field: Field
 const addAuditAnnotationsToFields = (fileProperties: Record<string,
   FileProperties>, object: ObjectType): void => {
   _.values(fileProperties)
+    .filter(fileProp => object.fields[fileProp.fullName.split('.')[1]] !== undefined)
     .forEach(fileProp => addAuditAnnotationsToField(fileProp, object.fields[fileProp.fullName.split('.')[1]]))
 }
 

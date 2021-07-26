@@ -78,21 +78,21 @@ describe('data_instances_internal_id', () => {
       expect(elements.length).toBe(2)
     })
 
-    it('list item type should be record type if the original type is an SDF type', async () => {
+    it('type should be record type if the original type is an SDF type', async () => {
       const instance = new InstanceElement(
         'instance',
-        new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { someList: { refType: new ListType(role) } }, annotations: { source: 'soap' } }),
-        { someList: [{ internalId: '1' }, { internalId: '1' }] }
+        new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { someValue: { refType: role } }, annotations: { source: 'soap' } }),
+        { someValue: { internalId: '1' } }
       )
 
       const elements = [instance, recordRefType]
 
       await filterCreator().onFetch(elements)
       expect(elements.length).toBe(3)
-      expect(elements[2].elemID.name).toBe('type_someList_1')
+      expect(elements[2].elemID.name).toBe('type_someValue_1')
       expect(elements[2].elemID.typeName).toBe('RecordRef')
       expect((elements[2] as InstanceElement).value.isSubInstance).toBeTruthy()
-      expect((instance.value.someList[0] as ReferenceExpression).elemID.getFullName())
+      expect((instance.value.someValue as ReferenceExpression).elemID.getFullName())
         .toBe(elements[2].elemID.getFullName())
     })
   })

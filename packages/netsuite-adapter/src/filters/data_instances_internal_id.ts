@@ -17,7 +17,7 @@ import { BuiltinTypes, ElemID, InstanceElement, isInstanceElement, isObjectType,
 import { applyFunctionToChangeData, naclCase, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { customTypes, isDataObjectType } from '../types'
+import { isCustomType, isDataObjectType, isFileCabinetType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE, NETSUITE, RECORDS_PATH } from '../constants'
 import { FilterWith } from '../filter'
 
@@ -56,7 +56,9 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
       if (path !== undefined
         && value.internalId !== undefined
         && isObjectType(fieldType)
-        && isInsideList) {
+        && (isInsideList
+          || isCustomType(fieldType.elemID)
+          || isFileCabinetType(fieldType.elemID))) {
         const instanceName = getSubInstanceName(path, value.internalId)
 
         if (!(instanceName in newInstancesMap)) {
@@ -65,7 +67,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
             // If the fieldType is an SDF type we replace it with RecordRef to avoid validation
             // errors because SDF types has fields with a "required" annotation which might not
             // be fulfilled
-            fieldType.elemID.name in customTypes
+            (isCustomType(fieldType.elemID) || isFileCabinetType(fieldType.elemID))
               && recordRefType !== undefined
               ? recordRefType : fieldType,
             { ...value, isSubInstance: true },

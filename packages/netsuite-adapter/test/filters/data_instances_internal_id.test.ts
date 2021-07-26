@@ -88,12 +88,12 @@ describe('data_instances_internal_id', () => {
       const elements = [instance, recordRefType]
 
       await filterCreator().onFetch(elements)
+      expect(elements.length).toBe(3)
       expect(elements[2].elemID.name).toBe('type_someList_1')
       expect(elements[2].elemID.typeName).toBe('RecordRef')
       expect((elements[2] as InstanceElement).value.isSubInstance).toBeTruthy()
       expect((instance.value.someList[0] as ReferenceExpression).elemID.getFullName())
         .toBe(elements[2].elemID.getFullName())
-      expect(elements.length).toBe(3)
     })
   })
 

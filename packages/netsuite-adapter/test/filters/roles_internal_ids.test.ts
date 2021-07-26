@@ -21,6 +21,9 @@ import { FilterOpts } from '../../src/filter'
 
 describe('roles_internal_ids', () => {
   describe('on fetch', () => {
+    beforeEach(() => {
+      delete role.fields.internalId
+    })
     it('should add the internal id to roles instances', async () => {
       const instance = new InstanceElement(
         'role',
@@ -35,6 +38,7 @@ describe('roles_internal_ids', () => {
 
       await filterCreator({ client } as FilterOpts).onFetch?.([instance])
       expect(instance.value.internalId).toBe('1')
+      expect(role.fields.internalId).toBeDefined()
     })
 
     it('should do nothing if suiteapp is not configured', async () => {
@@ -51,6 +55,7 @@ describe('roles_internal_ids', () => {
 
       await filterCreator({ client } as FilterOpts).onFetch?.([instance])
       expect(instance.value.internalId).toBeUndefined()
+      expect(role.fields.internalId).toBeDefined()
     })
 
     it('should do nothing if query failed', async () => {
@@ -67,6 +72,7 @@ describe('roles_internal_ids', () => {
 
       await filterCreator({ client } as FilterOpts).onFetch?.([instance])
       expect(instance.value.internalId).toBeUndefined()
+      expect(role.fields.internalId).toBeDefined()
     })
 
     it('should do nothing if got invalid results', async () => {
@@ -83,6 +89,7 @@ describe('roles_internal_ids', () => {
 
       await filterCreator({ client } as FilterOpts).onFetch?.([instance])
       expect(instance.value.internalId).toBeUndefined()
+      expect(role.fields.internalId).toBeDefined()
     })
   })
 

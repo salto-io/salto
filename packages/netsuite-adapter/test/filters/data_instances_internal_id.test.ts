@@ -16,6 +16,7 @@
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/data_instances_internal_id'
 import { ACCOUNT_SPECIFIC_VALUE, NETSUITE } from '../../src/constants'
+import { role } from '../../src/types/custom_types/role'
 
 describe('data_instances_internal_id', () => {
   const recordRefType = new ObjectType({
@@ -51,9 +52,18 @@ describe('data_instances_internal_id', () => {
     })
 
     it('should extract list items with internal id', async () => {
+      const SubsidiaryType = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'Subsidiary'),
+        fields: {
+          internalId: {
+            refType: BuiltinTypes.STRING,
+            annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+          },
+        },
+      })
       const instance = new InstanceElement(
         'instance',
-        new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { someList: { refType: new ListType(recordRefType) } }, annotations: { source: 'soap' } }),
+        new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { someList: { refType: new ListType(SubsidiaryType) } }, annotations: { source: 'soap' } }),
         { someList: [{ internalId: '1' }, { internalId: '1' }] }
       )
 
@@ -61,10 +71,29 @@ describe('data_instances_internal_id', () => {
 
       await filterCreator().onFetch(elements)
       expect(elements[1].elemID.name).toBe('type_someList_1')
+      expect(elements[1].elemID.typeName).toBe('Subsidiary')
       expect(elements[1].value.isSubInstance).toBeTruthy()
       expect((instance.value.someList[0] as ReferenceExpression).elemID.getFullName())
         .toBe(elements[1].elemID.getFullName())
       expect(elements.length).toBe(2)
+    })
+
+    it('list item type should be record type if the original type is an SDF type', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID(NETSUITE, 'type'), fields: { someList: { refType: new ListType(role) } }, annotations: { source: 'soap' } }),
+        { someList: [{ internalId: '1' }, { internalId: '1' }] }
+      )
+
+      const elements = [instance, recordRefType]
+
+      await filterCreator().onFetch(elements)
+      expect(elements.length).toBe(3)
+      expect(elements[2].elemID.name).toBe('type_someList_1')
+      expect(elements[2].elemID.typeName).toBe('RecordRef')
+      expect((elements[2] as InstanceElement).value.isSubInstance).toBeTruthy()
+      expect((instance.value.someList[0] as ReferenceExpression).elemID.getFullName())
+        .toBe(elements[2].elemID.getFullName())
     })
   })
 

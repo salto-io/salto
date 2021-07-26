@@ -17,7 +17,7 @@ import { BuiltinTypes, ElemID, InstanceElement, isInstanceElement, isObjectType,
 import { applyFunctionToChangeData, naclCase, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { isDataObjectType } from '../types'
+import { customTypes, isDataObjectType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE, NETSUITE, RECORDS_PATH } from '../constants'
 import { FilterWith } from '../filter'
 
@@ -38,6 +38,7 @@ const getSubInstanceName = (path: ElemID, internalId: string): string => {
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   onFetch: async elements => {
     const newInstancesMap: Record<string, InstanceElement> = {}
+    const recordRefType = elements.filter(isObjectType).find(e => e.elemID.name === 'RecordRef')
 
     const transformIds: TransformFunc = async ({ value, field, path }) => {
       const fieldType = await field?.getType()
@@ -61,7 +62,12 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
         if (!(instanceName in newInstancesMap)) {
           const newInstance = new InstanceElement(
             instanceName,
-            fieldType,
+            // If the fieldType is an SDF type we replace it with RecordRef to avoid validation
+            // errors because SDF types has fields with a "required" annotation which might not
+            // be fulfilled
+            fieldType.elemID.name in customTypes
+              && recordRefType !== undefined
+              ? recordRefType : fieldType,
             { ...value, isSubInstance: true },
             [NETSUITE, RECORDS_PATH, fieldType.elemID.name, instanceName]
           )

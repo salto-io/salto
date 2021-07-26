@@ -46,14 +46,14 @@ export const getNamespace = async (customElement: Element): Promise<string> =>
 export const PACKAGE_VERSION_FIELD_NAME = 'version_number'
 export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
 
-const packageChangeError = (
+const packageChangeError = async (
   action: ActionName,
   element: Element,
   detailedMessage = `Cannot ${action} ${element.elemID.idType} because it is part of a package`,
-): ChangeError => ({
+): Promise<ChangeError> => ({
   elemID: element.elemID,
   severity: 'Error',
-  message: `Cannot change a managed package using Salto. Package namespace: ${getNamespace(element)}`,
+  message: `Cannot change a managed package using Salto. Package namespace: ${(await getNamespace(element))}`,
   detailedMessage,
 })
 
@@ -69,7 +69,7 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(change => isAdditionChange(change) || isRemovalChange(change))
     .filter(async change => await isCustomObject(getChangeElement(change)) || isFieldChange(change))
     .filter(change => hasNamespace(getChangeElement(change)))
-    .map(change => packageChangeError(change.action, getChangeElement(change)))
+    .map(async change => packageChangeError(change.action, getChangeElement(change)))
     .toArray()
 
   const removeObjectWithPackageFieldsErrors = awu(changes)
@@ -79,7 +79,7 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(async obj =>
       !(await hasNamespace(obj))
       && awu(Object.values(obj.fields)).some(hasNamespace))
-    .map(obj => packageChangeError(
+    .map(async obj => packageChangeError(
       'remove',
       obj,
       'Cannot remove type because some of its fields belong to a managed package',
@@ -90,7 +90,7 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(isInstanceChange)
     .filter(isModificationChange)
     .filter(change => isInstalledPackageVersionChange(change.data))
-    .map(change => packageChangeError(
+    .map(async change => packageChangeError(
       change.action,
       getChangeElement(change),
       'Cannot change installed package version',

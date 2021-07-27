@@ -974,6 +974,7 @@ describe('workspace', () => {
             visibleSwitchType: 'asd',
             visibleChangeType: 'asd',
             hiddenTypeChange: 'asd',
+            visibleChangeAndSwitchType: 'asd',
           },
         },
       },
@@ -982,12 +983,14 @@ describe('workspace', () => {
         visibleSwitchType: BuiltinTypes.HIDDEN_STRING,
         visibleChangeType: new ReferenceExpression(new ElemID('salesforce', 'VisibleToHiddenType')),
         hiddenTypeChange: new ReferenceExpression(new ElemID('salesforce', 'HiddenToVisibleType')),
+        visibleChangeAndSwitchType: BuiltinTypes.HIDDEN_STRING,
       },
       annotations: {
         hiddenSwitchType: 'asd',
         visibleSwitchType: 'asd',
         visibleChangeType: 'asd',
         hiddenTypeChange: 'asd',
+        visibleChangeAndSwitchType: 'asd',
       },
     })
 
@@ -1342,7 +1345,7 @@ describe('workspace', () => {
         },
       },
       { // Switch hidden annotation type to visible type for type annotation
-        id: new ElemID('salesforce', 'ObjWithFieldTypeWithHidden', 'annotation', 'visibleSwitchType'),
+        id: objWithFieldTypeWithHidden.elemID.createNestedID('annotation', 'visibleSwitchType'),
         action: 'modify',
         data: {
           before: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -1350,11 +1353,19 @@ describe('workspace', () => {
         },
       },
       { // Switch hidden annotation type to visible type for type annotation
-        id: new ElemID('salesforce', 'ObjWithFieldTypeWithHidden', 'annotation', 'hiddenSwitchType'),
+        id: objWithFieldTypeWithHidden.elemID.createNestedID('annotation', 'hiddenSwitchType'),
         action: 'modify',
         data: {
           before: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
           after: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+      },
+      { // Switch visible annotation type to hidden when the same type changes to hidden as well
+        id: objWithFieldTypeWithHidden.elemID.createNestedID('annotation', 'visibleChangeAndSwitchType'),
+        action: 'modify',
+        data: {
+          before: new ReferenceExpression(new ElemID('salesforce', 'VisibleToHiddenType')),
+          after: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
         },
       },
       { // Change type with annotation value from visible to hidden

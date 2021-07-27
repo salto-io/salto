@@ -262,21 +262,24 @@ const isAnnotationTypeChange = (
 )
 
 type EffectOnHidden = 'hide' | 'unHide' | 'none'
-const getTypeChangeEffectOnHidden = (state: State) => async (
+const getTypeChangeEffectOnHidden = (
+  state: State,
+  visibleElementSource: ReadOnlyElementsSource,
+) => async (
   change: DetailedChange & ModificationChange<ReferenceExpression>,
 ): Promise<EffectOnHidden> => {
-  const getType = (elem: ReferenceExpression): Promise<TypeElement> => (
-    elem.getResolvedValue(state)
-  )
-  const { before, after } = change.data
-  const [beforeType, afterType] = await Promise.all([getType(before), getType(after)])
+  const { before, after } = change.data as ModificationChange<ReferenceExpression>['data']
+  const beforeType = await before.getResolvedValue(visibleElementSource)
+  const afterType = await after.getResolvedValue(state)
   if (!isType(beforeType) || !isType(afterType)) {
     // Should never happen
     log.warn(
-      'reference in change on %s did not resolve to type element. before: %o after: %o',
+      'type change on %s, one of the type IDs did not resolve to a type element. before: %s (isType=%s). after: %s (isType=%s)',
       change.id.getFullName(),
-      beforeType,
-      afterType,
+      before.elemID.getFullName(),
+      isType(beforeType),
+      after.elemID.getFullName(),
+      isType(afterType),
     )
     return 'none'
   }
@@ -304,7 +307,7 @@ const groupAnnotationIdsByParentAndName = (ids: ElemID[]): Record<string, Set<st
 const getHiddenFieldAndAnnotationValueChanges = async (
   changes: DetailedChange[],
   state: State,
-  getWorkspaceElements: () => Promise<AsyncIterable<Element>>,
+  visibleElementSource: ReadOnlyElementsSource,
 ): Promise<DetailedChange[]> => {
   // TODO hide fields marked with _hidden=true
 
@@ -321,7 +324,7 @@ const getHiddenFieldAndAnnotationValueChanges = async (
   const annotationTypeChanges = changes.filter(isAnnotationTypeChange)
 
   const annotationTypeChangesByHiddenEffect = await awu(annotationTypeChanges)
-    .groupBy(getTypeChangeEffectOnHidden(state))
+    .groupBy(getTypeChangeEffectOnHidden(state, visibleElementSource))
 
   const noRelevantChanges = (
     _.isEmpty(fieldHiddenValueChanges)
@@ -359,6 +362,24 @@ const getHiddenFieldAndAnnotationValueChanges = async (
     annotationTypeChangesByHiddenEffect?.unHide.map(change => change.id) ?? []
   )
 
+  log.debug('Handling changes in hidden values and annotations:')
+  log.debug('fields to hide: [%s]', [...hideFieldIds.values()].join(', '))
+  log.debug('fields to unHide: [%s]', [...unHideFieldIds.values()].join(', '))
+  log.debug('types to hide: [%s]', [...hideTypeIds.values()].join(', '))
+  log.debug('types to unHide: [%s]', [...unHideTypeIds.values()].join(', '))
+  log.debug(
+    'annotation types to hide: [%s]',
+    Object.entries(annotationTypesToHide)
+      .flatMap(([typeName, annotationName]) => `${typeName}.annotation.${annotationName}`)
+      .join(', '),
+  )
+  log.debug(
+    'annotation types to unHide: [%s]',
+    Object.entries(annotationTypesToUnHide)
+      .flatMap(([typeName, annotationName]) => `${typeName}.annotation.${annotationName}`)
+      .join(', '),
+  )
+
   const hiddenValueChanges: DetailedChange[] = []
   const createHiddenValueChangeIfNeeded: TransformFunc = ({ value, field, path }) => {
     if (path === undefined) {
@@ -368,13 +389,13 @@ const getHiddenFieldAndAnnotationValueChanges = async (
       // Handle annotation values that now have a different type
       // Note we have to do this first because when transforming fields the "field" we get here
       // is undefined
-      const attrsToHide = annotationTypesToHide[value.refType.elemID.getFullName()]
-      const attrsToUnHide = annotationTypesToUnHide[value.refType.elemID.getFullName()]
-      if (attrsToHide !== undefined || attrsToUnHide !== undefined) {
+      const annotationsToHide = annotationTypesToHide[value.refType.elemID.getFullName()]
+      const annotationsToUnHide = annotationTypesToUnHide[value.refType.elemID.getFullName()]
+      if (annotationsToHide !== undefined || annotationsToUnHide !== undefined) {
         Object.entries(value.annotations).forEach(([name, attrValue]) => {
-          if (attrsToHide?.has(name)) {
+          if (annotationsToHide?.has(name)) {
             hiddenValueChanges.push(createRemoveChange(attrValue, path.createNestedID(name)))
-          } else if (attrsToUnHide?.has(name)) {
+          } else if (annotationsToUnHide?.has(name)) {
             hiddenValueChanges.push(createAddChange(attrValue, path.createNestedID(name)))
           }
         })
@@ -408,7 +429,8 @@ const getHiddenFieldAndAnnotationValueChanges = async (
         return undefined
       }
     }
-    // Handle annotation values on fields where the type is the same, but the type itself changed
+    // Handle annotation values on fields where the annotation type has the same ID, but the type
+    // itself has changed
     if (path.idType === 'field') {
       if (hideTypeIds.has(fieldTypeId)) {
         hiddenValueChanges.push(createRemoveChange(value, path))
@@ -421,17 +443,13 @@ const getHiddenFieldAndAnnotationValueChanges = async (
 
   // In order to support making a field/annotation visible we must traverse all state elements
   // to find all the hidden values we need to add.
-  // Theoretically in order to hide values we would need to iterate the workspace elements
+  // Theoretically in order to hide values we would need to iterate the visible elements
   // but since we assume a redundant remove change is handled gracefully, we optimize this
   // by only iterating the state elements and creating remove changes for values that are
   // newly hidden, some of these remove changes may be redundant (if the value we
-  // are trying to hide was already removed manually from the workspace element)
-  const workspaceElementIds = new Set(
-    await awu(await getWorkspaceElements()).map(element => element.elemID.getFullName()).toArray()
-  )
-  const stateElements = await state.getAll()
-  await awu(stateElements)
-    .filter(element => workspaceElementIds.has(element.elemID.getFullName()))
+  // are trying to hide was already removed manually from the visible element)
+  await awu(await state.getAll())
+    .filter(element => visibleElementSource.has(element.elemID))
     .forEach(async element => {
       await transformElement({
         element,
@@ -476,11 +494,11 @@ const removeDuplicateChanges = (
 const mergeWithHiddenChangeSideEffects = async (
   changes: DetailedChange[],
   state: State,
-  getWorkspaceElements: () => Promise<AsyncIterable<Element>>,
+  visibleElementSource: ReadOnlyElementsSource,
 ): Promise<DetailedChange[]> => {
   const additionalChanges = [
     ...await getHiddenTypeChanges(changes, state),
-    ...await getHiddenFieldAndAnnotationValueChanges(changes, state, getWorkspaceElements),
+    ...await getHiddenFieldAndAnnotationValueChanges(changes, state, visibleElementSource),
   ]
   // Additional changes may override / be overridden by original changes, so if we add new changes
   // we have to make sure we remove duplicates
@@ -755,10 +773,10 @@ export const filterOutHiddenChanges = async (
 export const handleHiddenChanges = async (
   changes: DetailedChange[],
   state: State,
-  getWorkspaceElements: () => Promise<AsyncIterable<Element>>,
+  visibleElementSource: ReadOnlyElementsSource,
 ): Promise<{visible: DetailedChange[]; hidden: DetailedChange[]}> => {
   const changesWithHiddenAnnotationChanges = await mergeWithHiddenChangeSideEffects(
-    changes, state, getWorkspaceElements,
+    changes, state, visibleElementSource,
   )
   const filteredChanges = await filterOutHiddenChanges(changesWithHiddenAnnotationChanges, state)
   return {

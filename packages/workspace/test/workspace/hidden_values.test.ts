@@ -14,11 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeElement, Element, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeElement, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { mockState } from '../common/state'
-import { mockFunction } from '../common/helpers'
 import { MergeResult } from '../../src/merger'
 import { mergeWithHidden, handleHiddenChanges } from '../../src/workspace/hidden_values'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
@@ -200,7 +199,7 @@ describe('handleHiddenChanges', () => {
         result = await handleHiddenChanges(
           [change],
           mockState(),
-          mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+          createInMemoryElementSource(),
         )
         expect(result.visible).toHaveLength(1)
         expect(result.hidden).toHaveLength(1)
@@ -229,7 +228,7 @@ describe('handleHiddenChanges', () => {
         result = await handleHiddenChanges(
           [change],
           mockState([instanceType, instance]),
-          mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+          createInMemoryElementSource(),
         )
       })
       it('should not have a visible change', () => {
@@ -259,7 +258,7 @@ describe('handleHiddenChanges', () => {
         const res = (await handleHiddenChanges(
           [change],
           mockState([instanceType, instance]),
-          mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+          createInMemoryElementSource(),
         ))
         expect(res.visible).toHaveLength(1)
         expect(res.hidden).toHaveLength(1)
@@ -289,7 +288,7 @@ describe('handleHiddenChanges', () => {
       result = await handleHiddenChanges(
         [change],
         mockState([object]),
-        mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+        createInMemoryElementSource(),
       )
     })
 
@@ -334,7 +333,7 @@ describe('handleHiddenChanges', () => {
         result = await handleHiddenChanges(
           [change],
           mockState([instance]),
-          mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+          createInMemoryElementSource(),
         )
         expect(result.visible).toHaveLength(1)
         expect(result.hidden).toHaveLength(0)
@@ -360,7 +359,7 @@ describe('handleHiddenChanges', () => {
         result = await handleHiddenChanges(
           [change],
           mockState([instance]),
-          mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+          createInMemoryElementSource(),
         )
         expect(result.visible).toHaveLength(1)
         expect(result.hidden).toHaveLength(0)
@@ -391,7 +390,7 @@ describe('handleHiddenChanges', () => {
       const result = await handleHiddenChanges(
         [change],
         mockState([]),
-        mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+        createInMemoryElementSource(),
       )
       expect(result.visible.length).toBe(1)
       expect(result.hidden.length).toBe(0)
@@ -423,7 +422,7 @@ describe('handleHiddenChanges', () => {
       const result = await handleHiddenChanges(
         [change],
         mockState([stateInstance]),
-        mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+        createInMemoryElementSource(),
       )
       expect(result.visible.length).toBe(1)
       expect(result.hidden.length).toBe(0)

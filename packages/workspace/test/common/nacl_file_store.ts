@@ -256,9 +256,12 @@ type salesforce.lead {
       }
       salesforce.HiddenToVisibleType hiddenTypeChange {
       }
+      salesforce.VisibleToHiddenType visibleChangeAndSwitchType {
+      }
     }
     visibleSwitchType = "asd"
     visibleChangeType = "asd"
+    visibleChangeAndSwitchType = "asd"
 
     salesforce.FieldTypeWithHidden fieldWithHidden {
       visible = "YOU SEE ME"

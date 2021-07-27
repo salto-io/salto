@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import packageValidator, {
   INSTALLED_PACKAGE_METADATA,
   PACKAGE_VERSION_FIELD_NAME,
@@ -159,12 +160,15 @@ describe('package change validator', () => {
 
   describe('onUpdate', () => {
     describe('modify field', () => {
-      it('should have change error when modifing a field type', async () => {
-        const beforeField = createField(obj, Types.primitiveDataTypes.Lookup, 'Standard')
+      it('should have change error when modifing a type of field with namespace', async () => {
+        obj.annotate({ [API_NAME]: 'ObjectName__c' })
+        const beforeField = createField(obj, Types.primitiveDataTypes.Lookup, `${obj.annotations[API_NAME]}.MyNamespace__FieldName__c`)
         const afterField = beforeField.clone()
         afterField.annotations.modifyMe = 'modified'
-        afterField.refType = 
-        const changeErrors = await packageValidator([toChange({ beforeField, afterField })])
+        afterField.refType = createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail)
+        const changeErrors = await packageValidator(
+          [toChange({ before: beforeField, after: afterField })]
+        )
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(beforeField.elemID)

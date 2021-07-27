@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ADAPTER, BuiltinTypes, ElemID, ElemIdGetter, InstanceElement, ObjectType, OBJECT_NAME, OBJECT_SERVICE_ID, toServiceIdsString } from '@salto-io/adapter-api'
+import { ADAPTER, BuiltinTypes, ElemID, ElemIdGetter, Field, InstanceElement, ObjectType, OBJECT_NAME, OBJECT_SERVICE_ID, toServiceIdsString } from '@salto-io/adapter-api'
 import * as soap from 'soap'
 import Bottleneck from 'bottleneck'
 import { elements as elementsComponents } from '@salto-io/adapter-components'
@@ -128,7 +128,7 @@ describe('data_elements', () => {
       expect((elements[1] as InstanceElement).value).toEqual({ name: 'name', attributes: { 'xsi:type': 'listAcct:Subsidiary' } })
     })
 
-    it('should add identifier if necessary', async () => {
+    it('should add identifier if type has more than one identifier fields', async () => {
       const accountingPeriodType = new ObjectType({
         elemID: new ElemID(NETSUITE, 'AccountingPeriod'),
         fields: {
@@ -153,6 +153,49 @@ describe('data_elements', () => {
 
       const elements = await getDataElements(client, query)
       expect((elements[1] as InstanceElement).value.identifier).toEqual('name_fiscal')
+    })
+
+    it('should add identifier if type has a parent', async () => {
+      const type = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'Subsidiary'),
+        fields: {
+          name: { refType: BuiltinTypes.STRING },
+        },
+      })
+      type.fields.parent = new Field(type, 'parent', type)
+
+      extractTypesMock.mockResolvedValue([type])
+
+      getAllRecordsMock.mockImplementation(async types => {
+        if (types[0] === 'Subsidiary') {
+          return [{
+            name: 'child',
+            attributes: { 'xsi:type': 'listAcct:Subsidiary', internalId: '2' },
+            parent: {
+              attributes: {
+                internalId: '1',
+              },
+            },
+          }, {
+            name: 'parent',
+            attributes: { 'xsi:type': 'listAcct:Subsidiary', internalId: '1' },
+          }, {
+            name: 'child_without_parent',
+            attributes: { 'xsi:type': 'listAcct:Subsidiary', internalId: '3' },
+            parent: {
+              attributes: {
+                internalId: '4',
+              },
+            },
+          }]
+        }
+        return []
+      })
+
+      const elements = await getDataElements(client, query)
+      expect((elements[1] as InstanceElement).value.identifier).toEqual('parent_child')
+      expect((elements[2] as InstanceElement).value.identifier).toEqual('parent')
+      expect((elements[3] as InstanceElement).value.identifier).toEqual('4_child_without_parent')
     })
 
     it('should return only requested instances', async () => {

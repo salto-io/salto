@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Change, isEqualElements, toChange, ElemID, isContainerType, SaltoError, ReadOnlyElementsSource, getChangeElement, isAdditionOrModificationChange, isRemovalChange } from '@salto-io/adapter-api'
+import { Element, Change, isEqualElements, toChange, ElemID, isContainerType, SaltoError, ReadOnlyElementsSource, getChangeElement, isAdditionOrModificationChange, isRemovalChange, isAdditionChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import { ThenableIterable } from '@salto-io/lowerdash/src/collections/asynciterable'
@@ -28,6 +28,7 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 const MERGER_LOCK = 'MERGER_LOCK'
 const FLUSH_IN_PROGRESS = 'FLUSHING'
+export const MAX_LOG_ON_MERGE = 100
 export const REBUILD_ON_RECOVERY = 'rebuild'
 export const CLEAR_ON_RECOVERY = 'clearOnly'
 export const MERGE_MANAGER_SUFFIX = 'merge_manager'
@@ -325,17 +326,55 @@ export const createMergeManager = async (flushables: Flushable[],
     currentElements: ElementsSource
     currentErrors: RemoteMap<SaltoError[]>
   }): Promise<void> => {
+    log.debug('Applying merged changes to cache.')
     if (!mergedChanges.cacheValid) {
+      log.debug('Clearing due to cache invalidation')
       await currentErrors.clear()
       await currentElements.clear()
     } else {
+      const deletedIds: string[] = []
+      let numDeleted = 0
       await currentElements.deleteAll(awu(mergedChanges.changes).filter(isRemovalChange)
-        .map(change => getChangeElement(change).elemID))
+        .map(change => {
+          const { elemID } = getChangeElement(change)
+          if (numDeleted < MAX_LOG_ON_MERGE) {
+            deletedIds.push(elemID.getFullName())
+          }
+          numDeleted += 1
+          return elemID
+        }))
+      if (numDeleted !== 0) {
+        log.debug(`Deleted ${numDeleted} elements. The first ${deletedIds.length} ids are: ${deletedIds.join(', ')}`)
+      }
       await currentErrors.deleteAll(awu(noErrorMergeIds))
     }
     await currentErrors.setAll(awu(mergeErrors))
+    const addedIds: string[] = []
+    let numAdded = 0
+    const modifiedIds: string[] = []
+    let numModified = 0
     await currentElements.setAll(awu(mergedChanges.changes).filter(isAdditionOrModificationChange)
-      .map(change => getChangeElement(change)))
+      .map(change => {
+        const elem = getChangeElement(change)
+        if (isAdditionChange(change)) {
+          if (numAdded < MAX_LOG_ON_MERGE) {
+            addedIds.push(elem.elemID.getFullName())
+          }
+          numAdded += 1
+        } else {
+          if (numModified < MAX_LOG_ON_MERGE) {
+            modifiedIds.push(elem.elemID.getFullName())
+          }
+          numModified += 1
+        }
+        return elem
+      }))
+    if (numModified !== 0) {
+      log.debug(`Modified ${numModified} elements. The first ${modifiedIds.length} ids are: ${modifiedIds.join(', ')}`)
+    }
+    if (numAdded !== 0) {
+      log.debug(`Added ${numAdded} elements. The first ${addedIds.length} ids are: ${addedIds.join(', ')}`)
+    }
   }
   const lock = new AsyncLock()
   const mergeManager = {
@@ -360,6 +399,7 @@ export const createMergeManager = async (flushables: Flushable[],
       }),
     mergeComponents: async (cacheUpdate: CacheChangeSetUpdate) => lock.acquire(MERGER_LOCK,
       async () => {
+        log.debug(`Merging components: ${cacheUpdate.src1Prefix}, ${cacheUpdate.src2Prefix}`)
         const changeResult = await updateCache(cacheUpdate)
         if (cacheUpdate.src1Changes?.postChangeHash) {
           await hashes.set(getSourceHashKey(cacheUpdate.src1Prefix),

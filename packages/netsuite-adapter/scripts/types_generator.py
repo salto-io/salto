@@ -231,8 +231,9 @@ def parse_field_def(type_name, cells, is_attribute, is_inner_type, script_id_pre
         # extract script_id for top level types from the description since the script_ids prefixes aren't accurate in https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=subsect_1537555588.html
         script_id_prefix_from_description = extract_default_value_from_field_description(description)
         script_id_prefix_from_doc = remove_script_id_underscore_suffix(script_id_prefix_from_description if script_id_prefix_from_description is not None else script_id_prefix)
-        correct_script_id_prefix = type_name_to_special_script_id_prefix[type_name] if (type_name in type_name_to_special_script_id_prefix) else script_id_prefix_from_doc
-        return '^{0}[0-9a-z_]+'.format(correct_script_id_prefix)
+        if (type_name in type_name_to_special_script_id_prefix):
+            return type_name_to_special_script_id_prefix[type_name]
+        return '^{0}[0-9a-z_]+'.format(script_id_prefix_from_doc)
 
     field_name = cells[0].text
     description = cells[3].text
@@ -641,8 +642,9 @@ field_name_to_type_name = {
 }
 
 type_name_to_special_script_id_prefix = {
-    'customtransactiontype': '(customtransaction|customsale|custompurchase)', # https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=section_1520439377.html
-    'kpiscorecard': '(custkpiscorecard|kpiscorecard)', # The kpiscorecard prefix appeared when fetching the Extended Dev account
+    'customtransactiontype': '^(customtransaction|customsale|custompurchase)[0-9a-z_]+', # https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=section_1520439377.html
+    'kpiscorecard': '^(custkpiscorecard|kpiscorecard)[0-9a-z_]+', # The kpiscorecard prefix appeared when fetching the Extended Dev account
+    'emailtemplate': 'standardemailtemplate|standardpaymentlinktransactionemailtemplate|^custemailtmpl[0-9a-z_]+', # The standardemailtemplate scriptid appeared to a certain customer's account & standardpaymentlinktransactionemailtemplate appeared when fetching from 2021.2 release preview
 }
 
 

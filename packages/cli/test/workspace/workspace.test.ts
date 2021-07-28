@@ -28,7 +28,10 @@ const mockWsFunctions = {
   envs: mockFunction<Workspace['envs']>().mockReturnValue(['default']),
   currentEnv: mockFunction<Workspace['currentEnv']>().mockReturnValue('default'),
   errors: mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors([])),
-  updateNaclFiles: mockFunction<Workspace['updateNaclFiles']>(),
+  updateNaclFiles: mockFunction<Workspace['updateNaclFiles']>().mockResolvedValue({
+    naclFilesChangesCount: 0,
+    stateOnlyChangesCount: 0,
+  }),
   isEmpty: mockFunction<Workspace['isEmpty']>().mockResolvedValue(false),
   flush: mockFunction<Workspace['flush']>(),
   transformError: mockFunction<Workspace['transformError']>().mockImplementation(

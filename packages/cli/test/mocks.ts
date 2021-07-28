@@ -331,7 +331,10 @@ export const mockWorkspace = ({
     transformError: mockFunction<Workspace['transformError']>().mockImplementation(
       async error => ({ ...error, sourceFragments: [] })
     ),
-    updateNaclFiles: mockFunction<Workspace['updateNaclFiles']>(),
+    updateNaclFiles: mockFunction<Workspace['updateNaclFiles']>().mockResolvedValue({
+      naclFilesChangesCount: 0,
+      stateOnlyChangesCount: 0,
+    }),
     listNaclFiles: mockFunction<Workspace['listNaclFiles']>().mockResolvedValue([]),
     getTotalSize: mockFunction<Workspace['getTotalSize']>().mockResolvedValue(0),
     getNaclFile: mockFunction<Workspace['getNaclFile']>(),

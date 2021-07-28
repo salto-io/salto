@@ -59,7 +59,7 @@ const getChangeLogString = (change: Change): string => {
 }
 
 const logChange = (change: Change): void => {
-  log.info(getChangeLogString(change))
+  log.debug(getChangeLogString(change))
 }
 
 export const logChanges = (changes: Change[]): void => {

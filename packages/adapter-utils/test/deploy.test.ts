@@ -23,7 +23,7 @@ describe('logChanges', () => {
 
   beforeEach(() => {
     const testLogger = logger('adapter-utils/deploy')
-    spyLogger = jest.spyOn(testLogger, 'info')
+    spyLogger = jest.spyOn(testLogger, 'debug')
   })
   it('logChanges log string is correct', () => {
     const testType = new ObjectType({ elemID: new ElemID('test', 'type') })

@@ -183,7 +183,7 @@ describe('deploy command', () => {
         workspace.errors.mockResolvedValueOnce(
           mocks.mockErrors([{ severity: 'Error', message: '' }])
         )
-        return 0
+        return { naclFilesChangesCount: 0, stateOnlyChangesCount: 0 }
       })
       mockGetUserBooleanInput.mockReturnValue(true)
     })

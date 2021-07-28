@@ -34,7 +34,7 @@ import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
-  COMMON_ENV_PREFIX, UnresolvedElemIDs } from '../../src/workspace/workspace'
+  COMMON_ENV_PREFIX, UnresolvedElemIDs, UpdateNaclFilesResult } from '../../src/workspace/workspace'
 import { DeleteCurrentEnvError,
   UnknownEnvError, EnvDuplicationError, ServiceDuplicationError } from '../../src/workspace/errors'
 import { StaticFilesSource } from '../../src/workspace/static_files'
@@ -1321,8 +1321,11 @@ describe('workspace', () => {
     let elemMap: Record<string, Element>
     let elemMapWithHidden: Record<string, Element>
     let workspace: Workspace
-    let numResults: number
-    const numExpectedChanges = 35
+    let updateNaclFileResults: UpdateNaclFilesResult
+    const expectedUpdateNaclFileResult: UpdateNaclFilesResult = {
+      naclFilesChangesCount: 10,
+      stateOnlyChangesCount: 10,
+    }
     const dirStore = mockDirStore()
 
     beforeAll(async () => {
@@ -1364,7 +1367,7 @@ describe('workspace', () => {
       workspace = await createWorkspace(dirStore, state)
 
       clonedChanges = _.cloneDeep(changes)
-      numResults = await workspace.updateNaclFiles(clonedChanges)
+      updateNaclFileResults = await workspace.updateNaclFiles(clonedChanges)
       elemMap = await getElemMap(await workspace.elements(false))
       elemMapWithHidden = await getElemMap(await workspace.elements())
       lead = elemMap['salesforce.lead'] as ObjectType
@@ -1396,7 +1399,7 @@ describe('workspace', () => {
       // This is just meant to test that calculating number of changes works,
       // and could possibly change. If you get a failure here and the number
       // of changes you get seems ok, you can just change numExpectedChanges
-      expect(numResults).toEqual(numExpectedChanges)
+      expect(updateNaclFileResults).toEqual(expectedUpdateNaclFileResult)
     })
     it('should not cause parse errors', async () => {
       expect((await workspace.errors()).parse).toHaveLength(0)
@@ -2566,7 +2569,7 @@ describe('workspace', () => {
     ] as DetailedChange[]
 
     let validationErrs: ReadonlyArray<ValidationError>
-    let resultNumber: number
+    let resultNumber: UpdateNaclFilesResult
     beforeAll(async () => {
       workspace = await createWorkspace(naclFileStore)
       // Verify that the two errors we are starting with (that should be deleted in the update
@@ -2578,7 +2581,7 @@ describe('workspace', () => {
     })
 
     it('returns correct number of actual changes', () => {
-      expect(resultNumber).toEqual(changes.length)
+      expect(resultNumber.naclFilesChangesCount).toEqual(changes.length)
     })
 
     it('create validation errors in the updated elements', () => {

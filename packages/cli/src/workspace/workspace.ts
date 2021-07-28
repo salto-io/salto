@@ -234,13 +234,13 @@ export const updateWorkspace = async ({
   mode = 'default',
 }: UpdateWorkspaceParams): Promise<{ success: boolean; numberOfAppliedChanges: number }> => {
   let numberOfAppliedChanges = 0
-
   if (changes.length > 0) {
     await logWorkspaceUpdates(workspace, changes)
-    numberOfAppliedChanges = await workspace.updateNaclFiles(
+    const { naclFilesChangesCount, stateOnlyChangesCount } = await workspace.updateNaclFiles(
       changes.map(c => c.change),
       mode,
     )
+    numberOfAppliedChanges = naclFilesChangesCount + stateOnlyChangesCount
     const { status, errors } = await validateWorkspace(workspace)
     const formattedErrors = await formatWorkspaceErrors(workspace, errors)
     await printWorkspaceErrors(status, formattedErrors, output)

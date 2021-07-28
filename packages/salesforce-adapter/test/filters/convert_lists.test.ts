@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, Value, isListType, isObjectType, ListType, MapType, isMapType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, Value, isListType, isObjectType, ListType, MapType, isMapType, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { makeFilter, UnorderedList } from '../../src/filters/convert_lists'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'

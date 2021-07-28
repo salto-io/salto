@@ -17,7 +17,6 @@
 
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
-
 import { ElemID, LIST_ID_PREFIX, MAP_ID_PREFIX } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
@@ -25,6 +24,15 @@ import { Values, isEqualValues, Value, TypeReference, isTypeReference } from './
 
 const { awu } = collections.asynciterable
 const { mapValuesAsync } = promises.object
+
+export const BuiltinTypesRefByFullName: Record<string, TypeReference> = {}
+
+export const createRefToElmWithValue = (element: TypeElement): TypeReference => (
+  // For BuiltinTypes we use a hardcoded list of refs with values to avoid duplicate instances
+  BuiltinTypesRefByFullName[element.elemID.getFullName()]
+    ?? new TypeReference(element.elemID, element)
+)
+
 // This is used to allow contructors Elements with Placeholder types
 // to receive TypeElement and save the appropriate Reference
 const getRefType = (typeOrRef: TypeOrRef): TypeReference =>

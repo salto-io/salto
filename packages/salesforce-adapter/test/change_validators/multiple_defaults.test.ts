@@ -15,9 +15,9 @@
 */
 import {
   ChangeError, ElemID, Field, InstanceElement, ListType, ObjectType, toChange,
-  BuiltinTypes, MapType,
+  BuiltinTypes, MapType, createRefToElmWithValue,
 } from '@salto-io/adapter-api'
-import { safeJsonStringify, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import multipleDefaultsValidator from '../../src/change_validators/multiple_deafults'
 import { createField } from '../utils'

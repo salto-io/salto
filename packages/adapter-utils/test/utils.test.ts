@@ -20,8 +20,7 @@ import {
   isListType, ListType, BuiltinTypes, StaticFile, isPrimitiveType,
   Element, isReferenceExpression, isPrimitiveValue, CORE_ANNOTATIONS, FieldMap, AdditionChange,
   RemovalChange, ModificationChange, isInstanceElement, isObjectType, MapType, isMapType,
-  ContainerType, TypeReference,
-  VariableExpression,
+  ContainerType, TypeReference, createRefToElmWithValue, VariableExpression,
 } from '@salto-io/adapter-api'
 import { AdditionDiff, RemovalDiff, ModificationDiff } from '@salto-io/dag'
 import { collections } from '@salto-io/lowerdash'
@@ -31,7 +30,7 @@ import {
   findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath, ResolveValuesFunc,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
-  transformElement, toObjectType, getParents, createRefToElmWithValue, resolveTypeShallow,
+  transformElement, toObjectType, getParents, resolveTypeShallow,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 import { mockFunction, MockFunction } from './common'

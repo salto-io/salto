@@ -20,12 +20,12 @@ import {
   BuiltinTypes, Change, Element, ElemID, getChangeElement, InstanceElement,
   ObjectType, CORE_ANNOTATIONS, SaltoError, Values, ListType, DetailedChange,
   AdapterAuthentication, OAuthRequestParameters, OauthAccessTokenResponse,
+  createRefToElmWithValue,
 } from '@salto-io/adapter-api'
 import {
   Plan, PlanItem, EVENT_TYPES, DeployResult,
   telemetrySender, Telemetry, Tags, TelemetryEvent, CommandConfig,
 } from '@salto-io/core'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { Workspace, errors as wsErrors, state as wsState, parser, remoteMap, elementSource, pathIndex } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'

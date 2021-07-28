@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values, CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction, ListType, createRestriction, isServiceId } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values, CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction, ListType, createRestriction, isServiceId, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { Field as SalesforceField } from 'jsforce'
-import { restoreValues, resolveValues, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { restoreValues, resolveValues } from '@salto-io/adapter-utils'
 
 import {
   getSObjectFieldElement, Types, toCustomField, toCustomProperties, instancesToUpdateRecords,

@@ -20,8 +20,9 @@ import {
   ReferenceExpression, isListType, FieldDefinition, toChange, Change, ModificationChange,
   getChangeElement,
   isServiceId,
+  createRefToElmWithValue,
 } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'

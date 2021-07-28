@@ -13,8 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, ReferenceExpression, MapType, isContainerType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, ReferenceExpression, MapType, isContainerType, createRefToElmWithValue } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as TestHelpers from '../common/helpers'
 import { parse } from '../../src/parser'

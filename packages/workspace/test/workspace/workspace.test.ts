@@ -19,9 +19,9 @@ import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
   Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
   isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType,
-  Value, TypeReference, INSTANCE_ANNOTATIONS, ReferenceExpression,
+  Value, TypeReference, INSTANCE_ANNOTATIONS, ReferenceExpression, createRefToElmWithValue
 } from '@salto-io/adapter-api'
-import { findElement, applyDetailedChanges, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { findElement, applyDetailedChanges } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
 import { METADATA_TYPE, INTERNAL_ID_ANNOTATION } from '@salto-io/salesforce-adapter/dist/src/constants'
 import { collections } from '@salto-io/lowerdash'

@@ -18,10 +18,10 @@ import _ from 'lodash'
 import {
   Element, ObjectType, isContainerType, MapType, ListType, InstanceElement,
   Values, isAdditionOrModificationChange, isInstanceChange, getChangeElement, Change, isMapType,
-  isListType, isInstanceElement,
+  isListType, isInstanceElement, createRefToElmWithValue,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { naclCase, applyFunctionToChangeData, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 
 import { FilterCreator } from '../filter'

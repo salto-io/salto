@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, INSTANCE_ANNOTATIONS } from './element_id'
-import { Element, TypeMap, ObjectType, PrimitiveType, PrimitiveTypes, ListType } from './elements'
+import { Element, TypeMap, ObjectType, PrimitiveType, PrimitiveTypes, ListType, BuiltinTypesRefByFullName } from './elements'
 import { TypeReference } from './values'
 import { CORE_ANNOTATIONS } from './core_annotations'
 
@@ -152,10 +152,15 @@ export const BuiltinTypesByFullName: Record<string, PrimitiveType> = (_.keyBy(
   builtinType => builtinType.elemID.getFullName(),
 ))
 
-export const BuiltinTypesRefByFullName = _.mapValues(
-  BuiltinTypesByFullName,
-  type => new TypeReference(type.elemID, type)
-)
+// This is a pretty big hack: the map is created in elements, because it is used in
+// the Element constructor. But it can only be initialized here, after types have been defined.
+// Specifically, PrimitiveType needs to be defined before this is initialized, and PrimitiveType
+// inherits Element. To solve this, we would need to unite three modules: builtins, values,
+// and element. Even then, we would need to initialize an empty record, and only add values into it
+// after all necessary classes have been defined.
+Object.entries(BuiltinTypesByFullName).forEach(([name, type]) => {
+  BuiltinTypesRefByFullName[name] = new TypeReference(type.elemID, type)
+})
 
 export const InstanceAnnotationTypes: TypeMap = {
   [INSTANCE_ANNOTATIONS.DEPENDS_ON]: new ListType(dependencyType),

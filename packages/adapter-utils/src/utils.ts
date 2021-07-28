@@ -54,12 +54,6 @@ export const applyFunctionToChangeData = async <T extends Change<unknown>>(
   return change
 }
 
-export const createRefToElmWithValue = (element: TypeElement): TypeReference => (
-  // For BuiltinTypes we use a hardcoded list of refs with values to avoid duplicate instances
-  BuiltinTypesRefByFullName[element.elemID.getFullName()]
-    ?? new TypeReference(element.elemID, element)
-)
-
 /**
  * Generate synthetic object types for validating / transforming map type values.
  *

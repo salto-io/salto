@@ -37,7 +37,7 @@ export const emailtemplate = new ObjectType({
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custemailtmpl[0-9a-z_]+' }),
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: 'standardemailtemplate|standardpaymentlinktransactionemailtemplate|^custemailtmpl[0-9a-z_]+' }),
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custemailtmpl’. */
     name: {

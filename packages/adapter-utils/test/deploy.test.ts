@@ -13,9 +13,34 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement, DeployResult, getChangeElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { deployInstance, ChangeOperations } from '../src/deploy'
+import { ObjectType, ElemID, InstanceElement, DeployResult, getChangeElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import { deployInstance, ChangeOperations, logChanges } from '../src/deploy'
 import { mockFunction, toChangeGroup, MockInterface } from './common'
+
+describe('logChanges', () => {
+  let spyLogger: jest.SpyInstance
+
+  beforeEach(() => {
+    const testLogger = logger('adapter-utils/deploy')
+    spyLogger = jest.spyOn(testLogger, 'info')
+  })
+  it('logChanges log string is correct', () => {
+    const testType = new ObjectType({ elemID: new ElemID('test', 'type') })
+    const testInst = new InstanceElement(
+      'test',
+      new ReferenceExpression(testType.elemID, testType),
+      { val: 'some value' },
+      ['a', 'b', 'c']
+    )
+    logChanges([toChange({ after: testInst }),
+      toChange({ before: testInst }),
+      toChange({ before: testInst, after: testInst })])
+    expect(spyLogger).toHaveBeenCalledWith('Deploying add change in file: a/b/c')
+    expect(spyLogger).toHaveBeenCalledWith('Deploying remove change in file: a/b/c')
+    expect(spyLogger).toHaveBeenCalledWith('Deploying modify change in file: a/b/c')
+  })
+})
 
 describe('deployInstance', () => {
   const testType = new ObjectType({ elemID: new ElemID('test', 'type') })

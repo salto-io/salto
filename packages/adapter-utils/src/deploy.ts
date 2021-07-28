@@ -13,7 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeGroup, DeployResult, isInstanceChange, InstanceElement } from '@salto-io/adapter-api'
+import { ChangeGroup, DeployResult, isInstanceChange, InstanceElement, Change, getAllChangeElements } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+
+const log = logger(module)
 
 export type ChangeOperations = {
   add: (elem: InstanceElement) => Promise<InstanceElement>
@@ -45,4 +48,20 @@ export const deployInstance = async (
   } catch (e) {
     return { appliedChanges: [], errors: [e] }
   }
+}
+
+const getChangeLogString = (change: Change): string => {
+  const elementPath = getAllChangeElements(change)
+    .map(element => element.path)
+    .filter(path => path !== undefined)
+    .map(path => path?.join('/'))[0]
+  return `Deploying ${change.action} change in file: ${elementPath}`
+}
+
+const logChange = (change: Change): void => {
+  log.info(getChangeLogString(change))
+}
+
+export const logChanges = (changes: Change[]): void => {
+  changes.forEach(logChange)
 }

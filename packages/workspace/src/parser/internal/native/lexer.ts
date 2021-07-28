@@ -47,7 +47,6 @@ export const rules: Record<string, moo.Rules> = {
     [TOKEN_TYPES.MULTILINE_START]: { match: /'''[ \t]*[(\r\n)(\n)]/, lineBreaks: true, push: 'multilineString' },
     [TOKEN_TYPES.DOUBLE_QUOTES]: { match: '"', push: 'string' },
     [TOKEN_TYPES.NUMBER]: /-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+-]?\d+)?/,
-    [TOKEN_TYPES.BOOLEAN]: new RegExp(`${TRUE}|${FALSE}`),
     [TOKEN_TYPES.LEFT_PAREN]: '(',
     [TOKEN_TYPES.RIGHT_PAREN]: ')',
     [TOKEN_TYPES.ARR_OPEN]: '[',

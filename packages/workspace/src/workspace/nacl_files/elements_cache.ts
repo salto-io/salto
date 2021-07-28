@@ -327,54 +327,32 @@ export const createMergeManager = async (flushables: Flushable[],
     currentErrors: RemoteMap<SaltoError[]>
   }): Promise<void> => {
     log.debug('Applying merged changes to cache.')
+    const logChanges = (changes: Change<Element>[]): void => {
+      const numIdsToLog = Math.min(changes.length, MAX_LOG_ON_MERGE)
+      if (numIdsToLog > 0) {
+        log.debug(`Change type: ${changes[0].action}, on ${changes.length} elements. The first ${numIdsToLog} ids are: ${changes.splice(0, numIdsToLog)
+          .map(change => getChangeElement(change).elemID.getFullName()).join(', ')}`)
+      }
+    }
     if (!mergedChanges.cacheValid) {
       log.debug('Clearing due to cache invalidation')
       await currentErrors.clear()
       await currentElements.clear()
     } else {
-      const deletedIds: string[] = []
-      let numDeleted = 0
-      await currentElements.deleteAll(awu(mergedChanges.changes).filter(isRemovalChange)
-        .map(change => {
-          const { elemID } = getChangeElement(change)
-          if (numDeleted < MAX_LOG_ON_MERGE) {
-            deletedIds.push(elemID.getFullName())
-          }
-          numDeleted += 1
-          return elemID
-        }))
-      if (numDeleted !== 0) {
-        log.debug(`Deleted ${numDeleted} elements. The first ${deletedIds.length} ids are: ${deletedIds.join(', ')}`)
-      }
-      await currentErrors.deleteAll(awu(noErrorMergeIds))
+      const removalChanges = mergedChanges.changes.filter(isRemovalChange)
+      await currentElements.deleteAll(removalChanges.map(change => getChangeElement(change).elemID))
+      logChanges(removalChanges)
+      await currentErrors.deleteAll(noErrorMergeIds)
     }
-    await currentErrors.setAll(awu(mergeErrors))
-    const addedIds: string[] = []
-    let numAdded = 0
-    const modifiedIds: string[] = []
-    let numModified = 0
-    await currentElements.setAll(awu(mergedChanges.changes).filter(isAdditionOrModificationChange)
-      .map(change => {
-        const elem = getChangeElement(change)
-        if (isAdditionChange(change)) {
-          if (numAdded < MAX_LOG_ON_MERGE) {
-            addedIds.push(elem.elemID.getFullName())
-          }
-          numAdded += 1
-        } else {
-          if (numModified < MAX_LOG_ON_MERGE) {
-            modifiedIds.push(elem.elemID.getFullName())
-          }
-          numModified += 1
-        }
-        return elem
-      }))
-    if (numModified !== 0) {
-      log.debug(`Modified ${numModified} elements. The first ${modifiedIds.length} ids are: ${modifiedIds.join(', ')}`)
-    }
-    if (numAdded !== 0) {
-      log.debug(`Added ${numAdded} elements. The first ${addedIds.length} ids are: ${addedIds.join(', ')}`)
-    }
+    await currentErrors.setAll(mergeErrors)
+    const additionOrModificationChanges = mergedChanges.changes
+      .filter(isAdditionOrModificationChange)
+    const [additionChanges, modificationChanges] = _.partition(additionOrModificationChanges,
+      isAdditionChange)
+    await currentElements.setAll(additionOrModificationChanges
+      .map(change => getChangeElement(change)))
+    logChanges(additionChanges)
+    logChanges(modificationChanges)
   }
   const lock = new AsyncLock()
   const mergeManager = {

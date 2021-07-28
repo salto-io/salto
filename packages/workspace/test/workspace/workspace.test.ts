@@ -298,7 +298,7 @@ describe('workspace', () => {
       const accountIntSett = await workspace.getValue(new ElemID('salesforce', 'AccountIntelligenceSettings')) as ObjectType
       const searchableNames = await workspace.getSearchableNames()
       expect(searchableNames.includes(accountIntSett.elemID.getFullName())).toBeTruthy()
-      const numResults = await workspace.updateNaclFiles([{
+      const updateNaclFileResults = await workspace.updateNaclFiles([{
         id: accountIntSett.elemID,
         action: 'remove',
         data: { before: accountIntSett },
@@ -306,7 +306,10 @@ describe('workspace', () => {
       const numOfFields = Object.values(accountIntSett.fields).length
       const searchableNamesAfter = await workspace.getSearchableNames()
       // One change in workspace, one in state.
-      expect(numResults).toEqual(2)
+      expect(updateNaclFileResults).toEqual({
+        naclFilesChangesCount: 1,
+        stateOnlyChangesCount: 1,
+      })
       expect(searchableNamesAfter.length).toEqual(TOTAL_NUM_ELEMENETS - (numOfFields + 1))
       expect(searchableNamesAfter.includes(accountIntSett.elemID.getFullName())).toBeFalsy()
       Object.values(accountIntSett.fields).forEach(field => {
@@ -321,12 +324,15 @@ describe('workspace', () => {
         elemID: newElemID,
         fields: { aaa: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) } },
       })
-      const numResults = await workspace.updateNaclFiles([{
+      const updateNaclFilesREsult = await workspace.updateNaclFiles([{
         id: newElemID,
         action: 'add',
         data: { after: newObject },
       }])
-      expect(numResults).toEqual(1)
+      expect(updateNaclFilesREsult).toEqual({
+        naclFilesChangesCount: 1,
+        stateOnlyChangesCount: 0,
+      })
       const searchableNamesAfter = await workspace.getSearchableNames()
       expect(searchableNamesAfter.length).toEqual(TOTAL_NUM_ELEMENETS + 2)
     })
@@ -1323,8 +1329,8 @@ describe('workspace', () => {
     let workspace: Workspace
     let updateNaclFileResults: UpdateNaclFilesResult
     const expectedUpdateNaclFileResult: UpdateNaclFilesResult = {
-      naclFilesChangesCount: 10,
-      stateOnlyChangesCount: 10,
+      naclFilesChangesCount: 20,
+      stateOnlyChangesCount: 15,
     }
     const dirStore = mockDirStore()
 
@@ -1618,12 +1624,15 @@ describe('workspace', () => {
         data: { before: 'foo', after: 'blabla' },
       }
 
-      const numResultsInChange = await workspace.updateNaclFiles([change1, change2])
+      const updateNaclFilesResult = await workspace.updateNaclFiles([change1, change2])
       lead = findElement(
         await awu(await (await workspace.elements()).getAll()).toArray(),
         new ElemID('salesforce', 'lead')
       ) as ObjectType
-      expect(numResultsInChange).toEqual(2)
+      expect(updateNaclFilesResult).toEqual({
+        naclFilesChangesCount: 2,
+        stateOnlyChangesCount: 0,
+      })
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('blabla')
     })
 
@@ -1700,7 +1709,10 @@ describe('workspace', () => {
         expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
           .list()).toArray())
           .not.toContainEqual(change.id)
-        expect(await wsWithMultipleEnvs.updateNaclFiles([change], 'override')).toEqual(2)
+        expect(await wsWithMultipleEnvs.updateNaclFiles([change], 'override')).toEqual({
+          naclFilesChangesCount: 2,
+          stateOnlyChangesCount: 0,
+        })
         expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
           .list()).toArray())
           .toContainEqual(change.id)

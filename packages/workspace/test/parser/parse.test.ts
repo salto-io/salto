@@ -778,6 +778,17 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
     const result = await parse(Buffer.from(body), 'none', functions)
     expect(result.errors).not.toHaveLength(0)
   })
+
+  if (!useLegacyParser) {
+    it('should parse instance name that starts with boolean', async () => {
+      const body = `
+    salesforce.someType false_string {}
+    `
+      const result = await parse(Buffer.from(body), 'none', functions)
+      expect(result.errors).toHaveLength(0)
+    })
+  }
+
   describe('tokenizeContent', () => {
     it('seperate and token each part of a line correctly', () => {
       expect(Array.from(tokenizeContent('aaa   bbb ccc.ddd   "eee fff  ggg.hhh"'))).toEqual([

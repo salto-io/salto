@@ -22,7 +22,7 @@ import {
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { filter } from '@salto-io/adapter-utils'
+import { filter, logChanges } from '@salto-io/adapter-utils'
 import {
   createInstanceElement,
 } from './transformer'
@@ -314,6 +314,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       })) as Change[]
 
     await this.filtersRunner.preDeploy(changesToDeploy)
+
+    logChanges(changesToDeploy)
 
     const deployResult = await this.client.deploy(
       changesToDeploy,

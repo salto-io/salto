@@ -18,7 +18,7 @@ import {
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import { filter, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
+import { filter, logChanges, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -374,6 +374,8 @@ export default class SalesforceAdapter implements AdapterOperations {
 
     await awu(resolvedChanges).filter(isAdditionChange).map(getChangeElement).forEach(addDefaults)
     await this.filtersRunner.preDeploy(resolvedChanges)
+
+    logChanges(resolvedChanges)
 
     const result = await isCustomObjectInstanceChanges(resolvedChanges)
       ? await deployCustomObjectInstancesGroup(

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { FileProperties, MetadataObject } from 'jsforce-types'
+import { FileProperties, MetadataInfo, MetadataObject } from 'jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -104,6 +104,16 @@ const getNamespace = (obj: FileProperties): string => (
   obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
 )
 
+const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
+  filePropertiesMap: Record<string, FileProperties>, metadataType: ObjectType): InstanceElement => {
+  if (filePropertiesMap[metadata.fullName]?.id) {
+    Object.assign(metadata, { [INTERNAL_ID_FIELD]: filePropertiesMap[metadata.fullName]?.id })
+  }
+  return createInstanceElement(metadata, metadataType,
+    filePropertiesMap[metadata.fullName]?.namespacePrefix,
+    getAuditAnnotations(filePropertiesMap[metadata.fullName]))
+}
+
 export const fetchMetadataInstances = async ({
   client, metadataType, fileProps, metadataQuery,
 }: {
@@ -133,18 +143,11 @@ export const fetchMetadataInstances = async ({
     ).map(({ name }) => name)
   )
 
-  const filePropertiesMap = Object.fromEntries(
-    fileProps
-      .map(props => [getFullName(props), props])
-  )
+  const filePropertiesMap = _.keyBy(fileProps, getFullName)
   const elements = metadataInfos
     .filter(m => !_.isEmpty(m))
     .filter(m => m.fullName !== undefined)
-    .map(m => (filePropertiesMap[m.fullName]?.id
-      ? { ...m, [INTERNAL_ID_FIELD]: filePropertiesMap[m.fullName]?.id } : m))
-    .map(m => createInstanceElement(m, metadataType,
-    filePropertiesMap[m.fullName]?.namespacePrefix,
-    getAuditAnnotations(filePropertiesMap[m.fullName])))
+    .map(m => getInstanceFromMetadataInformation(m, filePropertiesMap, metadataType))
   return {
     elements,
     configChanges: makeArray(errors)

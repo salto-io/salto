@@ -419,10 +419,10 @@ describe('Custom Object Instances filter', () => {
         })
 
         it('should add audit annotations to data instances', () => {
-          expect(instances[0].annotations[CORE_ANNOTATIONS.CREATED_BY_DATE]).toEqual('create_date')
-          expect(instances[0].annotations[CORE_ANNOTATIONS.CREATED_BY_NAME]).toEqual('Name')
-          expect(instances[0].annotations[CORE_ANNOTATIONS.CHANGED_BY_DATE]).toEqual('modified_date')
-          expect(instances[0].annotations[CORE_ANNOTATIONS.CHANGED_BY_NAME]).toEqual('Name')
+          expect(instances[0].annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual('create_date')
+          expect(instances[0].annotations[CORE_ANNOTATIONS.CREATED_BY]).toEqual('Name')
+          expect(instances[0].annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('modified_date')
+          expect(instances[0].annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual('Name')
         })
 
         it('should call query with the object fields', () => {

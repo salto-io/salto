@@ -340,10 +340,10 @@ describe('SalesforceAdapter fetch', () => {
         const { elements: result } = await adapter.fetch(mockFetchOpts)
         const flow = findElements(result, 'Flow', 'FlowInstance').pop() as InstanceElement
         expect((await flow.getType()).elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
-        expect(flow.annotations[CORE_ANNOTATIONS.CREATED_BY_NAME]).toEqual('test')
-        expect(flow.annotations[CORE_ANNOTATIONS.CREATED_BY_DATE]).toEqual('2020-05-01T14:31:36.000Z')
-        expect(flow.annotations[CORE_ANNOTATIONS.CHANGED_BY_NAME]).toEqual('test')
-        expect(flow.annotations[CORE_ANNOTATIONS.CHANGED_BY_DATE]).toEqual('2020-05-01T14:41:36.000Z')
+        expect(flow.annotations[CORE_ANNOTATIONS.CREATED_BY]).toEqual('test')
+        expect(flow.annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual('2020-05-01T14:31:36.000Z')
+        expect(flow.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual('test')
+        expect(flow.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('2020-05-01T14:41:36.000Z')
       })
 
       it('should not fetch excluded namespaces', async () => {

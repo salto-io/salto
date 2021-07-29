@@ -1382,10 +1382,10 @@ export const createInstanceElement = (
 
 export const getAuditAnnotations = (fileProperties: FileProperties): Record<string, string> => (
   {
-    [CORE_ANNOTATIONS.CREATED_BY_NAME]: fileProperties?.createdByName,
-    [CORE_ANNOTATIONS.CREATED_BY_DATE]: fileProperties?.createdDate,
-    [CORE_ANNOTATIONS.CHANGED_BY_NAME]: fileProperties?.lastModifiedByName,
-    [CORE_ANNOTATIONS.CHANGED_BY_DATE]: fileProperties?.lastModifiedDate,
+    [CORE_ANNOTATIONS.CREATED_BY]: fileProperties?.createdByName,
+    [CORE_ANNOTATIONS.CREATED_AT]: fileProperties?.createdDate,
+    [CORE_ANNOTATIONS.CHANGED_BY]: fileProperties?.lastModifiedByName,
+    [CORE_ANNOTATIONS.CHANGED_AT]: fileProperties?.lastModifiedDate,
   }
 )
 

@@ -441,10 +441,10 @@ export const getIdFields = async (
 
 const moveAuditFieldsToAnnotations = (instance: InstanceElement,
   IDToNameMap: Record<string, string>): void => {
-  instance.annotations[CORE_ANNOTATIONS.CREATED_BY_DATE] = instance.value.CreatedDate
-  instance.annotations[CORE_ANNOTATIONS.CREATED_BY_NAME] = IDToNameMap[instance.value.CreatedById]
-  instance.annotations[CORE_ANNOTATIONS.CHANGED_BY_DATE] = instance.value.LastModifiedDate
-  instance.annotations[CORE_ANNOTATIONS.CHANGED_BY_NAME] = IDToNameMap[
+  instance.annotations[CORE_ANNOTATIONS.CREATED_AT] = instance.value.CreatedDate
+  instance.annotations[CORE_ANNOTATIONS.CREATED_BY] = IDToNameMap[instance.value.CreatedById]
+  instance.annotations[CORE_ANNOTATIONS.CHANGED_AT] = instance.value.LastModifiedDate
+  instance.annotations[CORE_ANNOTATIONS.CHANGED_BY] = IDToNameMap[
     instance.value.LastModifiedById]
   delete instance.value.CreatedDate
   delete instance.value.LastModifiedDate

@@ -550,14 +550,14 @@ describe('Custom Objects filter', () => {
         const newFilter = filterCreator({ client, config: defaultFilterContext }) as typeof filter
         await newFilter.onFetch(elements)
         const custom = elements.filter(o => o.elemID.name === 'Custom__c').pop() as ObjectType
-        expect(custom.annotations[CORE_ANNOTATIONS.CREATED_BY_NAME]).toEqual('created_name')
-        expect(custom.annotations[CORE_ANNOTATIONS.CREATED_BY_DATE]).toEqual('created_date')
-        expect(custom.annotations[CORE_ANNOTATIONS.CHANGED_BY_NAME]).toEqual('modified_name')
-        expect(custom.annotations[CORE_ANNOTATIONS.CHANGED_BY_DATE]).toEqual('modified_date')
-        expect(custom.fields.StringField__c.annotations[CORE_ANNOTATIONS.CREATED_BY_NAME]).toEqual('created_name_field')
-        expect(custom.fields.StringField__c.annotations[CORE_ANNOTATIONS.CREATED_BY_DATE]).toEqual('created_date_field')
-        expect(custom.fields.StringField__c.annotations[CORE_ANNOTATIONS.CHANGED_BY_NAME]).toEqual('modified_name_field')
-        expect(custom.fields.StringField__c.annotations[CORE_ANNOTATIONS.CHANGED_BY_DATE]).toEqual('modified_date_field')
+        expect(custom.annotations[CORE_ANNOTATIONS.CREATED_BY]).toEqual('created_name')
+        expect(custom.annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual('created_date')
+        expect(custom.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual('modified_name')
+        expect(custom.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('modified_date')
+        expect(custom.fields.StringField__c.annotations[CORE_ANNOTATIONS.CREATED_BY]).toEqual('created_name_field')
+        expect(custom.fields.StringField__c.annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual('created_date_field')
+        expect(custom.fields.StringField__c.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual('modified_name_field')
+        expect(custom.fields.StringField__c.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('modified_date_field')
       })
 
       it('should use existing elemID when fetching custom object', async () => {

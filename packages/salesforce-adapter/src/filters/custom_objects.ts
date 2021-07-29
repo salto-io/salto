@@ -63,6 +63,7 @@ import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
 import { CustomObject } from '../client/types'
 import { WORKFLOW_FIELD_TO_TYPE, WORKFLOW_TYPE_TO_FIELD, WORKFLOW_DIR_NAME } from './workflow'
 
+type FilePropertiesMap = Record<string, FileProperties>
 const log = logger(module)
 const { makeArray } = collections.array
 const { awu, groupByAsync, keyByAsync } = collections.asynciterable
@@ -498,15 +499,20 @@ const fetchSObjects = async (
   return _.groupBy(sobjectsDescriptions, e => e.name)
 }
 
+const getObjectFieldByFileProperties = (fileProperties: FileProperties,
+  object: ObjectType): Field =>
+  object.fields[fileProperties.fullName.split('.')[1]]
+
 const addAuditAnnotationsToField = (fileProperties: FileProperties, field: Field): void => {
   Object.assign(field.annotations, getAuditAnnotations(fileProperties))
 }
 
-const addAuditAnnotationsToFields = (fileProperties: Record<string,
-  FileProperties>, object: ObjectType): void => {
-  _.values(fileProperties)
-    .filter(fileProp => object.fields[fileProp.fullName.split('.')[1]] !== undefined)
-    .forEach(fileProp => addAuditAnnotationsToField(fileProp, object.fields[fileProp.fullName.split('.')[1]]))
+const addAuditAnnotationsToFields = (fileProperties: FilePropertiesMap,
+  object: ObjectType): void => {
+  Object.values(fileProperties)
+    .filter(fileProp => getObjectFieldByFileProperties(fileProp, object) !== undefined)
+    .forEach(fileProp => addAuditAnnotationsToField(fileProp,
+      getObjectFieldByFileProperties(fileProp, object)))
 }
 
 const createFromSObjectsAndInstances = async (
@@ -514,8 +520,8 @@ const createFromSObjectsAndInstances = async (
   instances: Record<string, InstanceElement>,
   typesFromInstance: TypesFromInstance,
   systemFields: string[],
-  customObjectFilePropertiesMap: Record<string, FileProperties>,
-  customFieldsFilePropertiesMap: Record<string, Record<string, FileProperties>>
+  customObjectFilePropertiesMap: FilePropertiesMap,
+  customFieldsFilePropertiesMap: Record<string, FilePropertiesMap>
 ): Promise<Element[]> =>
   awu(sObjects).flatMap(async ({ name, label, custom, keyPrefix, fields }) => {
     const object = await createObjectType({ name, label, keyPrefix, fields, systemFields })
@@ -523,7 +529,7 @@ const createFromSObjectsAndInstances = async (
       getAuditAnnotations(customObjectFilePropertiesMap[object.elemID.name]))
 
     const instance = instances[name]
-    if (Object.keys(customFieldsFilePropertiesMap).includes(name)) {
+    if (name in customFieldsFilePropertiesMap) {
       addAuditAnnotationsToFields(customFieldsFilePropertiesMap[name], object)
     }
     if (!instance) {
@@ -646,16 +652,16 @@ const shouldIncludeFieldChange = (fieldsToSkip: ReadonlyArray<string>) => (
 )
 
 const getCustomObjectFileProperties = async (client: SalesforceClient):
-  Promise<Record<string, FileProperties>> => {
+  Promise<FilePropertiesMap> => {
   const { result, errors } = await client.listMetadataObjects({ type: 'CustomObject' })
   if (errors && errors.length > 0) {
     log.debug(`Encountered errors while listing file properties for CustomObjects: ${errors}`)
   }
-  return Object.fromEntries(result.map(fileProp => [fileProp.fullName, fileProp]))
+  return _.keyBy(result, fileProp => fileProp.fullName)
 }
 
 const getCustomFieldFileProperties = async (client: SalesforceClient):
-  Promise<Record<string, Record<string, FileProperties>>> => {
+  Promise<Record<string, FilePropertiesMap>> => {
   const { result, errors } = await client.listMetadataObjects({ type: 'CustomField' })
   if (errors && errors.length > 0) {
     log.debug(`Encountered errors while listing file properties for CustomFields: ${errors}`)

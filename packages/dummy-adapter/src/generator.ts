@@ -117,6 +117,7 @@ const defaultObj = new ObjectType({
   fields: {
     legit: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
   },
+  annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://www.salto.io/' },
   path: [DUMMY_ADAPTER, 'Default', 'Default'],
 })
 

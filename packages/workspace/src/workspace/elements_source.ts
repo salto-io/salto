@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Element, ElemID, Value, BuiltinTypesByFullName, ListType, MapType, isContainerType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { RemoteMap, InMemoryRemoteMap } from './remote_map'
 import { Keywords } from '../parser/language'
@@ -160,13 +160,14 @@ export const createInMemoryElementSource = (
 
 export const mapReadOnlyElementsSource = (
   source: ReadOnlyElementsSource,
-  func: (orig: Element) => Promise<Element>
+  func: (orig: Element) => Promise<Element | undefined>
 ): ReadOnlyElementsSource => ({
   get: async id => {
     const origValue = await source.get(id)
     return origValue !== undefined ? func(origValue) : undefined
   },
-  getAll: async () => awu(await source.getAll()).map(async element => func(element)),
+  getAll: async () => awu(await source.getAll()).map(async element => func(element))
+    .filter(values.isDefined),
   has: id => source.has(id),
   list: () => source.list(),
 })

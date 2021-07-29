@@ -22,7 +22,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource } from '@salto-io/workspace'
+import { Workspace, ElementSelector, elementSource, hiddenValues } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -250,10 +250,16 @@ export const restore = async (
 ): Promise<LocalChange[]> => {
   log.debug('restore starting..')
   const fetchServices = servicesFilters ?? workspace.services()
+  const state = workspace.state()
   const changes = await createRestoreChanges(
-    await workspace.elements(),
-    workspace.state(),
-    await workspace.state().getPathIndex(),
+    await workspace.elements(false),
+    elementSource.mapReadOnlyElementsSource(
+      state,
+      async elem => ((await hiddenValues.isHidden(elem, state))
+        ? undefined
+        : hiddenValues.removeHiddenFromElement(elem, state))
+    ),
+    await state.getPathIndex(),
     elementSelectors,
     fetchServices
   )

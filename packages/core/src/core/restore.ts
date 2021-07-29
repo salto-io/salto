@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, DetailedChange } from '@salto-io/adapter-api'
+import { ElemID, DetailedChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { pathIndex, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
+import { pathIndex, ElementSelector, remoteMap } from '@salto-io/workspace'
 import { createDiffChanges } from './diff'
 
 const { awu } = collections.asynciterable
@@ -47,8 +47,8 @@ const splitChangeByPath = async (
 }
 
 export const createRestoreChanges = async (
-  workspaceElements: elementSource.ElementsSource,
-  state: elementSource.ElementsSource,
+  workspaceElements: ReadOnlyElementsSource,
+  state: ReadOnlyElementsSource,
   index: remoteMap.RemoteMap<pathIndex.Path[]>,
   elementSelectors: ElementSelector[] = [],
   services?: readonly string[]

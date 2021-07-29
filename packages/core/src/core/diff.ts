@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Element, DetailedChange, ElemID, ReadOnlyElementsSource, isAdditionChange, isRemovalChange, Change } from '@salto-io/adapter-api'
-import { ElementSelector, selectElementIdsByTraversal, elementSource } from '@salto-io/workspace'
+import { ElementSelector, selectElementIdsByTraversal } from '@salto-io/workspace'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
@@ -58,8 +58,8 @@ const filterElementByRelevance = async (
 
 const filterPlanItemsByRelevance = async (
   plan: Plan,
-  toElementsSrc: elementSource.ElementsSource,
-  fromElementsSrc: elementSource.ElementsSource,
+  toElementsSrc: ReadOnlyElementsSource,
+  fromElementsSrc: ReadOnlyElementsSource,
   toElementIdsFiltered: ElemID[],
   fromElementIdsFiltered: ElemID[],
 ): Promise<DetailedChange[]> => {
@@ -100,14 +100,14 @@ const filterPlanItemsByRelevance = async (
 
 const getFilteredIds = async (
   elementSelectors: ElementSelector[],
-  src: elementSource.ElementsSource
+  src: ReadOnlyElementsSource
 ): Promise<ElemID[]> => (
   awu(await selectElementIdsByTraversal(elementSelectors, src, true)).toArray()
 )
 
 export const createDiffChanges = async (
-  toElementsSrc: elementSource.ElementsSource,
-  fromElementsSrc: elementSource.ElementsSource,
+  toElementsSrc: ReadOnlyElementsSource,
+  fromElementsSrc: ReadOnlyElementsSource,
   elementSelectors: ElementSelector[] = [],
   topLevelFilters: IDFilter[] = []
 ): Promise<DetailedChange[]> => {

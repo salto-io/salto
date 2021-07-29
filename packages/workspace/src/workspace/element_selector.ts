@@ -14,10 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ElemIDTypes, Value, ElemIDType } from '@salto-io/adapter-api'
+import { ElemID, ElemIDTypes, Value, ElemIDType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { ElementsSource } from './elements_source'
 
 const { asynciterable } = collections
 const { awu } = asynciterable
@@ -193,7 +192,7 @@ const isElementPossiblyParentOfSearchedElement = (
 
 export const selectElementIdsByTraversal = async (
   selectors: ElementSelector[],
-  source: ElementsSource,
+  source: ReadOnlyElementsSource,
   compact = false,
 ): Promise<AsyncIterable<ElemID>> => {
   if (selectors.length === 0) {

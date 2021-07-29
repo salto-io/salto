@@ -34,7 +34,7 @@ import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
-  COMMON_ENV_PREFIX, UnresolvedElemIDs } from '../../src/workspace/workspace'
+  COMMON_ENV_PREFIX, UnresolvedElemIDs, UpdateNaclFilesResult } from '../../src/workspace/workspace'
 import { DeleteCurrentEnvError,
   UnknownEnvError, EnvDuplicationError, ServiceDuplicationError } from '../../src/workspace/errors'
 import { StaticFilesSource } from '../../src/workspace/static_files'
@@ -298,7 +298,7 @@ describe('workspace', () => {
       const accountIntSett = await workspace.getValue(new ElemID('salesforce', 'AccountIntelligenceSettings')) as ObjectType
       const searchableNames = await workspace.getSearchableNames()
       expect(searchableNames.includes(accountIntSett.elemID.getFullName())).toBeTruthy()
-      const numResults = await workspace.updateNaclFiles([{
+      const updateNaclFileResults = await workspace.updateNaclFiles([{
         id: accountIntSett.elemID,
         action: 'remove',
         data: { before: accountIntSett },
@@ -306,7 +306,10 @@ describe('workspace', () => {
       const numOfFields = Object.values(accountIntSett.fields).length
       const searchableNamesAfter = await workspace.getSearchableNames()
       // One change in workspace, one in state.
-      expect(numResults).toEqual(2)
+      expect(updateNaclFileResults).toEqual({
+        naclFilesChangesCount: 1,
+        stateOnlyChangesCount: 1,
+      })
       expect(searchableNamesAfter.length).toEqual(TOTAL_NUM_ELEMENETS - (numOfFields + 1))
       expect(searchableNamesAfter.includes(accountIntSett.elemID.getFullName())).toBeFalsy()
       Object.values(accountIntSett.fields).forEach(field => {
@@ -321,12 +324,15 @@ describe('workspace', () => {
         elemID: newElemID,
         fields: { aaa: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) } },
       })
-      const numResults = await workspace.updateNaclFiles([{
+      const updateNaclFilesREsult = await workspace.updateNaclFiles([{
         id: newElemID,
         action: 'add',
         data: { after: newObject },
       }])
-      expect(numResults).toEqual(1)
+      expect(updateNaclFilesREsult).toEqual({
+        naclFilesChangesCount: 1,
+        stateOnlyChangesCount: 0,
+      })
       const searchableNamesAfter = await workspace.getSearchableNames()
       expect(searchableNamesAfter.length).toEqual(TOTAL_NUM_ELEMENETS + 2)
     })
@@ -1321,8 +1327,11 @@ describe('workspace', () => {
     let elemMap: Record<string, Element>
     let elemMapWithHidden: Record<string, Element>
     let workspace: Workspace
-    let numResults: number
-    const numExpectedChanges = 35
+    let updateNaclFileResults: UpdateNaclFilesResult
+    const expectedUpdateNaclFileResult: UpdateNaclFilesResult = {
+      naclFilesChangesCount: 20,
+      stateOnlyChangesCount: 15,
+    }
     const dirStore = mockDirStore()
 
     beforeAll(async () => {
@@ -1364,7 +1373,7 @@ describe('workspace', () => {
       workspace = await createWorkspace(dirStore, state)
 
       clonedChanges = _.cloneDeep(changes)
-      numResults = await workspace.updateNaclFiles(clonedChanges)
+      updateNaclFileResults = await workspace.updateNaclFiles(clonedChanges)
       elemMap = await getElemMap(await workspace.elements(false))
       elemMapWithHidden = await getElemMap(await workspace.elements())
       lead = elemMap['salesforce.lead'] as ObjectType
@@ -1396,7 +1405,7 @@ describe('workspace', () => {
       // This is just meant to test that calculating number of changes works,
       // and could possibly change. If you get a failure here and the number
       // of changes you get seems ok, you can just change numExpectedChanges
-      expect(numResults).toEqual(numExpectedChanges)
+      expect(updateNaclFileResults).toEqual(expectedUpdateNaclFileResult)
     })
     it('should not cause parse errors', async () => {
       expect((await workspace.errors()).parse).toHaveLength(0)
@@ -1615,12 +1624,15 @@ describe('workspace', () => {
         data: { before: 'foo', after: 'blabla' },
       }
 
-      const numResultsInChange = await workspace.updateNaclFiles([change1, change2])
+      const updateNaclFilesResult = await workspace.updateNaclFiles([change1, change2])
       lead = findElement(
         await awu(await (await workspace.elements()).getAll()).toArray(),
         new ElemID('salesforce', 'lead')
       ) as ObjectType
-      expect(numResultsInChange).toEqual(2)
+      expect(updateNaclFilesResult).toEqual({
+        naclFilesChangesCount: 2,
+        stateOnlyChangesCount: 0,
+      })
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('blabla')
     })
 
@@ -1697,7 +1709,10 @@ describe('workspace', () => {
         expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
           .list()).toArray())
           .not.toContainEqual(change.id)
-        expect(await wsWithMultipleEnvs.updateNaclFiles([change], 'override')).toEqual(2)
+        expect(await wsWithMultipleEnvs.updateNaclFiles([change], 'override')).toEqual({
+          naclFilesChangesCount: 2,
+          stateOnlyChangesCount: 0,
+        })
         expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
           .list()).toArray())
           .toContainEqual(change.id)
@@ -2566,7 +2581,7 @@ describe('workspace', () => {
     ] as DetailedChange[]
 
     let validationErrs: ReadonlyArray<ValidationError>
-    let resultNumber: number
+    let resultNumber: UpdateNaclFilesResult
     beforeAll(async () => {
       workspace = await createWorkspace(naclFileStore)
       // Verify that the two errors we are starting with (that should be deleted in the update
@@ -2578,7 +2593,7 @@ describe('workspace', () => {
     })
 
     it('returns correct number of actual changes', () => {
-      expect(resultNumber).toEqual(changes.length)
+      expect(resultNumber.naclFilesChangesCount).toEqual(changes.length)
     })
 
     it('create validation errors in the updated elements', () => {

@@ -83,6 +83,11 @@ export type UnresolvedElemIDs = {
   missing: ElemID[]
 }
 
+export type UpdateNaclFilesResult = {
+  naclFilesChangesCount: number
+  stateOnlyChangesCount: number
+}
+
 export type Workspace = {
   uid: string
   name: string
@@ -111,7 +116,7 @@ export type Workspace = {
     changes: DetailedChange[],
     mode?: RoutingMode,
     stateOnly? : boolean
-  ) => Promise<number>
+  ) => Promise<UpdateNaclFilesResult>
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
@@ -513,7 +518,7 @@ export const loadWorkspace = async (
       mode?: RoutingMode
       validate?: boolean
       stateOnly?: boolean
-    }) : Promise<number> => {
+    }) : Promise<UpdateNaclFilesResult> => {
     const { visible: visibleChanges, hidden: hiddenChanges } = await handleHiddenChanges(
       changes,
       state(),
@@ -538,8 +543,12 @@ export const loadWorkspace = async (
         postChangeHash,
       } },
       validate })
-    return (Object.values(workspaceChanges).map(changeSet => changeSet.changes)
-      .flat().length + stateOnlyChanges.length)
+    return {
+      naclFilesChangesCount: Object.values(workspaceChanges)
+        .map(changeSet => changeSet.changes)
+        .flat().length,
+      stateOnlyChangesCount: stateOnlyChanges.length,
+    }
   }
   const setNaclFiles = async (naclFiles: NaclFile[], validate = true): Promise<EnvsChanges> => {
     const elementChanges = await (await getLoadedNaclFilesSource()).setNaclFiles(...naclFiles)

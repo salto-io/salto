@@ -61,7 +61,7 @@ import { createElementsSourceIndex } from './elements_source_index/elements_sour
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import getChangeValidator from './change_validator'
 import { getChangeGroupIdsFunc } from './group_changes'
-import { getDataTypes } from './data_elements/data_elements'
+import { getDataElements } from './data_elements/data_elements'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -197,10 +197,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const isPartial = this.fetchTarget !== undefined
 
-    // TODO: Replace when data instances are ready
-    // const dataElementsPromise = await getDataElements(this.client, fetchQuery,
-    // this.getElemIdFunc)
-    const dataElementsPromise = await getDataTypes(this.client)
+    const dataElementsPromise = await getDataElements(this.client, fetchQuery,
+      this.getElemIdFunc)
 
     const getCustomObjectsResult = this.client.getCustomObjects(
       Object.keys(customTypes),

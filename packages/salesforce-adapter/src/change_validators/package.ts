@@ -69,7 +69,7 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(change => isAdditionChange(change) || isRemovalChange(change))
     .filter(async change => await isCustomObject(getChangeElement(change)) || isFieldChange(change))
     .filter(change => hasNamespace(getChangeElement(change)))
-    .map(async change => packageChangeError(change.action, getChangeElement(change)))
+    .map(change => packageChangeError(change.action, getChangeElement(change)))
     .toArray()
 
   const removeObjectWithPackageFieldsErrors = awu(changes)
@@ -79,7 +79,7 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(async obj =>
       !(await hasNamespace(obj))
       && awu(Object.values(obj.fields)).some(hasNamespace))
-    .map(async obj => packageChangeError(
+    .map(obj => packageChangeError(
       'remove',
       obj,
       'Cannot remove type because some of its fields belong to a managed package',
@@ -90,7 +90,7 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(isInstanceChange)
     .filter(isModificationChange)
     .filter(change => isInstalledPackageVersionChange(change.data))
-    .map(async change => packageChangeError(
+    .map(change => packageChangeError(
       change.action,
       getChangeElement(change),
       'Cannot change installed package version',

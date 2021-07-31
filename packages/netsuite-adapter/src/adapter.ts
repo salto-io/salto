@@ -49,6 +49,7 @@ import rolesInternalId from './filters/roles_internal_id'
 import dataInstancesAttributes from './filters/data_instances_attributes'
 import dataInstancesNullFields from './filters/data_instances_null_fields'
 import dataInstancesDiff from './filters/data_instances_diff'
+import dataInstancesIdentifiers from './filters/data_instances_identifiers'
 import addInternalId from './filters/add_internal_ids'
 import { Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_USE_CHANGES_DETECTION } from './config'
@@ -107,6 +108,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     client,
     elementsSource,
     filtersCreators = [
+      dataInstancesIdentifiers,
       dataInstancesDiff,
       // addParentFolder must run before replaceInstanceReferencesFilter
       addParentFolder,

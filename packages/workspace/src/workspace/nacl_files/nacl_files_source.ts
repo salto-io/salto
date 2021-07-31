@@ -460,7 +460,7 @@ const buildNaclFilesState = async ({
     ),
     updateSearchableNamesIndex(changes),
   ])
-  if (postChangeHash) {
+  if (postChangeHash && (postChangeHash !== preChangeHash)) {
     await currentState.metadata.set(HASH_KEY, postChangeHash)
   }
   return {

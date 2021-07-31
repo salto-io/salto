@@ -57,6 +57,10 @@ const isDBLockErr = (error: Error): boolean => (
   error.message.includes('LOCK: Resource temporarily unavailable')
 )
 
+const isDBNotExistErr = (error: Error): boolean => (
+  error.message.includes('LOCK: No such file or directory')
+)
+
 class DBLockError extends Error {
   constructor() {
     super('Salto local database locked. Could another Salto process '
@@ -192,12 +196,23 @@ const readonlyDBConnections: Record<string, Promise<rocksdb>> = {}
 const tmpDBConnections: Record<string, Record<string, Promise<rocksdb>>> = {}
 let currentConnectionsCount = 0
 
+const deleteLocation = async (location: string): Promise<void> => {
+  try {
+    await promisify(getRemoteDbImpl().destroy.bind(getRemoteDbImpl(), location))()
+  } catch (e) {
+    // If the DB does not exist, we don't want to throw error upon destory
+    if (!isDBNotExistErr(e)) {
+      throw e
+    }
+  }
+}
+
 const closeConnection = async (location: string, connection: Promise<rocksdb>,
   deleteDB = false): Promise<void> => {
   const dbConnection = await connection
   await promisify(dbConnection.close.bind(dbConnection))()
   if (deleteDB === true) {
-    await promisify(getRemoteDbImpl().destroy.bind(getRemoteDbImpl(), location))()
+    await deleteLocation(location)
   }
   delete persistentDBConnections[location]
 }
@@ -209,7 +224,7 @@ const closeTmpConnection = async (
 ): Promise<void> => {
   const dbConnection = await connection
   await promisify(dbConnection.close.bind(dbConnection))()
-  await promisify(getRemoteDbImpl().destroy.bind(getRemoteDbImpl(), tmpLocation))()
+  await deleteLocation(tmpLocation)
   delete (tmpDBConnections[location] ?? {})[tmpLocation]
 }
 
@@ -231,10 +246,7 @@ export const cleanDatabases = async (): Promise<void> => {
     const tmpDir = getTmpLocationForLoc(loc)
     await awu(fs.readdirSync(tmpDir)).forEach(async tmpLoc => {
       try {
-        await promisify(
-          getRemoteDbImpl().destroy.bind(getRemoteDbImpl(),
-            path.join(tmpDir, tmpLoc))
-        )()
+        await deleteLocation(path.join(tmpDir, tmpLoc))
       } catch (e) {
         if (isDBLockErr(e)) {
           throw new DBLockError()
@@ -620,12 +632,12 @@ remoteMap.RemoteMapCreator => {
           [createTempIterator({ keys: true, values: true })]
         )), false)
         await clearImpl(tmpDB, tempKeyPrefix)
-        const readRes = await batchUpdate(
+        const deleteRes = await batchUpdate(
           awu(delKeys.keys()).map(async key => ({ key, value: key })),
           false,
           DELETE_OPERATION
         )
-        return writeRes || readRes
+        return writeRes || deleteRes
       },
       revert: async () => {
         locationCache.reset()

@@ -49,7 +49,7 @@ export const createDucktypeAdapterApiConfigType = ({
   const requestTypes = createRequestConfigs(adapter, additionalRequestFields)
   const transformationTypes = createTransformationConfigTypes(adapter, {
     hasDynamicFields: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-    sourceTypeName: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    sourceTypeName: { refType: BuiltinTypes.STRING },
     ...additionalTransformationFields,
   })
   return createAdapterApiConfigType({

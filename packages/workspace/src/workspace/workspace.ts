@@ -367,7 +367,6 @@ export const loadWorkspace = async (
         // hidden changes won't be empty)
         const isFirstInitFromNacls = _.isEmpty(partialStateChanges.changes)
           && (await stateToBuild.states[envName].merged.isEmpty())
-
         const initHiddenElementsChanges = isFirstInitFromNacls
           ? await awu(await state(envName).getAll())
             .filter(element => isHidden(element, state(envName)))
@@ -377,8 +376,19 @@ export const loadWorkspace = async (
         const stateRemovedElementChanges = (workspaceChanges[envName] ?? createEmptyChangeSet())
           .changes.filter(change => isRemovalChange(change)
             && getChangeElement(change).elemID.isTopLevel())
+        const stateChangesForExistingNaclElements = await awu(partialStateChanges.changes)
+          .filter(async change => {
+            const changeElement = getChangeElement(change)
+            const changeID = changeElement.elemID
+            const hasNaclFragment = await source.get(changeID)
+            const isHiddenElement = await isHidden(changeElement)
+            return isRemovalChange(change)
+            || hasNaclFragment
+            || isHiddenElement
+          }).toArray()
+
         return {
-          changes: partialStateChanges.changes
+          changes: stateChangesForExistingNaclElements
             .concat(initHiddenElementsChanges)
             .concat(stateRemovedElementChanges),
           cacheValid,
@@ -505,7 +515,8 @@ export const loadWorkspace = async (
         state(),
         before
       )
-      return after !== undefined ? [toChange({ before, after })] : []
+      // return after !== undefined ? [toChange({ before, after })] : []
+      return [toChange({ before, after })]
     }).toArray()
   }
   const updateNaclFiles = async ({

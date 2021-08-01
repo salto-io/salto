@@ -142,6 +142,116 @@ describe('ducktype_type_elements', () => {
         },
       }))).toBeTruthy()
     })
+    it('should generate types with correct names when sourceTypeName is used', () => {
+      const entries = [
+        {
+          id: 41619,
+          api_collection_id: 11815,
+          flow_id: 1381119,
+          flow_ids: [1381119, 1382229],
+          name: 'ab321',
+          method: 'GET',
+          url: 'https://some.url.com/a/bbb/user/{id}',
+          legacy_url: null,
+          base_path: '/a/bbb/user/{id}',
+          path: 'user/{id}',
+          active: false,
+          legacy: false,
+          created_at: '2020-12-21T16:08:03.762-08:00',
+          updated_at: '2020-12-21T16:08:03.762-08:00',
+        },
+        {
+          id: 54775,
+          api_collection_id: 22,
+          flow_id: 890,
+          flow_ids: [890, 980],
+          name: 'some other name',
+          field_with_complex_type: {
+            number: 53,
+            nested_type: {
+              val: 'agds',
+              another_val: 'dgadgasg',
+            },
+          },
+          field_with_complex_list_type: [{
+            number: 53,
+          }],
+        },
+        {
+          field_with_complex_type: {
+            number: 222,
+            nested_type: {
+              val: 'agds',
+              another_val: 7,
+              abc: 'abc',
+              unknown: null,
+            },
+          },
+        },
+      ]
+      const { type, nestedTypes } = generateType({
+        adapterName: ADAPTER_NAME,
+        name: 'typeName',
+        entries,
+        hasDynamicFields: false,
+        isSubType: false,
+        transformationConfigByType: {
+          renamedComplex: {
+            sourceTypeName: 'renamedTypeName__field_with_complex_type',
+          },
+          renamedTypeName: {
+            sourceTypeName: 'typeName',
+          },
+        },
+        transformationDefaultConfig: { idFields: [] },
+      })
+      expect(type.isEqual(new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'renamedTypeName'),
+        fields: {
+          id: { refType: BuiltinTypes.NUMBER },
+          api_collection_id: { refType: BuiltinTypes.NUMBER },
+          flow_id: { refType: BuiltinTypes.NUMBER },
+          flow_ids: { refType: new ListType(BuiltinTypes.NUMBER) },
+          name: { refType: BuiltinTypes.STRING },
+          method: { refType: BuiltinTypes.STRING },
+          url: { refType: BuiltinTypes.STRING },
+          legacy_url: { refType: BuiltinTypes.UNKNOWN },
+          base_path: { refType: BuiltinTypes.STRING },
+          path: { refType: BuiltinTypes.STRING },
+          active: { refType: BuiltinTypes.BOOLEAN },
+          legacy: { refType: BuiltinTypes.BOOLEAN },
+          created_at: { refType: BuiltinTypes.STRING },
+          updated_at: { refType: BuiltinTypes.STRING },
+          field_with_complex_type: { refType: nestedTypes[0] },
+          field_with_complex_list_type: {
+            refType: new ListType(nestedTypes[2]),
+          },
+        },
+      }))).toBeTruthy()
+      expect(nestedTypes).toHaveLength(3)
+      expect(nestedTypes[0].isEqual(new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'renamedComplex'),
+        fields: {
+          number: { refType: BuiltinTypes.NUMBER },
+          nested_type: { refType: nestedTypes[1] },
+        },
+      }))).toBeTruthy()
+      expect(nestedTypes[1].isEqual(new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'renamedComplex__nested_type'),
+        fields: {
+          val: { refType: BuiltinTypes.STRING },
+          another_val: { refType: BuiltinTypes.UNKNOWN },
+          abc: { refType: BuiltinTypes.STRING },
+          unknown: { refType: BuiltinTypes.UNKNOWN },
+        },
+      }))).toBeTruthy()
+      expect(nestedTypes[2].isEqual(new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'renamedTypeName__field_with_complex_list_type'),
+        fields: {
+          number: { refType: BuiltinTypes.NUMBER },
+        },
+      }))).toBeTruthy()
+    })
     it('should annotate fields marked as fieldsToHide with _hidden_value', () => {
       const entries = [
         {

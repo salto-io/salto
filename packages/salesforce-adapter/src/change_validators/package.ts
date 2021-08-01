@@ -46,14 +46,14 @@ export const getNamespace = async (customElement: Element): Promise<string> =>
 export const PACKAGE_VERSION_FIELD_NAME = 'version_number'
 export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
 
-const packageChangeError = (
+const packageChangeError = async (
   action: ActionName,
   element: Element,
   detailedMessage = `Cannot ${action} ${element.elemID.idType} because it is part of a package`,
-): ChangeError => ({
+): Promise<ChangeError> => ({
   elemID: element.elemID,
   severity: 'Error',
-  message: `Cannot change a managed package using Salto. Package namespace: ${getNamespace(element)}`,
+  message: `Cannot change a managed package using Salto. Package namespace: ${(await getNamespace(element))}`,
   detailedMessage,
 })
 

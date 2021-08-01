@@ -24,8 +24,8 @@ export const CORE_ANNOTATIONS = {
   GENERATED_DEPENDENCIES: '_generated_dependencies',
   SERVICE_URL: '_service_url',
   SERVICE_ID: '_service_id',
-  CREATED_BY_NAME: '_created_by_name',
-  CREATED_BY_DATE: '_created_by_date',
-  CHANGED_BY_NAME: '_changed_by_name',
-  CHANGED_BY_DATE: '_changed_by_date',
+  CREATED_BY: '_created_by',
+  CREATED_AT: '_created_at',
+  CHANGED_BY: '_changed_by',
+  CHANGED_AT: '_changed_at',
 }

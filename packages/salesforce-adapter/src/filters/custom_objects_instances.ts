@@ -446,8 +446,6 @@ const moveAuditFieldsToAnnotations = (instance: InstanceElement,
   instance.annotations[CORE_ANNOTATIONS.CHANGED_AT] = instance.value.LastModifiedDate
   instance.annotations[CORE_ANNOTATIONS.CHANGED_BY] = IDToNameMap[
     instance.value.LastModifiedById]
-  delete instance.value.CreatedDate
-  delete instance.value.LastModifiedDate
 }
 
 const moveInstancesAuditFieldsToAnnotations = (instances: InstanceElement[],
@@ -457,8 +455,9 @@ const moveInstancesAuditFieldsToAnnotations = (instances: InstanceElement[],
 
 const getIDToNameMap = async (client: SalesforceClient,
   instances: InstanceElement[]): Promise<Record<string, string>> => {
-  const instancesIDs = Array.from(new Set(instances.map(instance => [instance.value.CreatedById,
-    instance.value.LastModifiedById]).flat()).values())
+  const instancesIDs = Array.from(new Set(
+    instances.flatMap(instance => [instance.value.CreatedById, instance.value.LastModifiedById])
+  ))
   const queries = conditionQueries(getIDsAndNamesOfUsersQuery,
     instancesIDs.map(id => ({ Id: `'${id}'` })))
   const records = await queryClient(client, queries)

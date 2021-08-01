@@ -23,7 +23,6 @@ import { logger } from '@salto-io/logging'
 import WorkatoClient from './client/client'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { WorkatoConfig } from './config'
-import extractFieldsFilter from './filters/extract_fields'
 import fieldReferencesFilter from './filters/field_references'
 import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
 import { WORKATO } from './constants'
@@ -36,7 +35,6 @@ const { returnFullEntry, simpleGetArgs } = elementUtils
 const { getAllElements } = elementUtils.ducktype
 
 export const DEFAULT_FILTERS = [
-  extractFieldsFilter,
   fieldReferencesFilter,
   recipeCrossServiceReferencesFilter,
 ]

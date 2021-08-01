@@ -13,30 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
-import WorkatoClient from '../../src/client/client'
-import { paginate } from '../../src/client/pagination'
-import filterCreator from '../../src/filters/extract_fields'
-import { DEFAULT_TYPES, DEFAULT_ID_FIELDS } from '../../src/config'
-import { WORKATO } from '../../src/constants'
+import { extractStandaloneFields } from '../../../src/elements/ducktype/standalone_field_extractor'
 
-describe('Extract fields filter', () => {
-  let client: WorkatoClient
-  type FilterType = filterUtils.FilterWith<'onFetch'>
-  let filter: FilterType
+const ADAPTER_NAME = 'myAdapter'
 
+describe('Extract standalone fields', () => {
   const generateElements = (jsonCode: boolean): Element[] => {
     const recipeType = new ObjectType({
-      elemID: new ElemID(WORKATO, 'recipe'),
+      elemID: new ElemID(ADAPTER_NAME, 'recipe'),
       fields: {
         name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
         code: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
       },
     })
     const connectionType = new ObjectType({
-      elemID: new ElemID(WORKATO, 'connection'),
+      elemID: new ElemID(ADAPTER_NAME, 'connection'),
       fields: {
         name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
         application: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
@@ -70,73 +63,44 @@ describe('Extract fields filter', () => {
       ),
     ]
     const typeWithNoInstances = new ObjectType({
-      elemID: new ElemID(WORKATO, 'typeWithNoInstances'),
+      elemID: new ElemID(ADAPTER_NAME, 'typeWithNoInstances'),
     })
     return [recipeType, connectionType, ...instances, typeWithNoInstances]
   }
 
-  beforeAll(() => {
-    client = new WorkatoClient({
-      credentials: { username: 'a', token: 'b' },
-    })
-    filter = filterCreator({
-      client,
-      paginator: clientUtils.createPaginator({
-        client,
-        paginationFunc: paginate,
-      }),
-      config: {
-        fetch: {
-          includeTypes: ['connection', 'recipe'],
-        },
-        apiDefinitions: {
-          typeDefaults: {
-            transformation: {
-              idFields: DEFAULT_ID_FIELDS,
-            },
-          },
-          types: {
-            ...DEFAULT_TYPES,
-            nonexistentType: {
-              request: {
-                url: '/something',
-              },
-              transformation: {
-                fieldsToOmit: [
-                  { fieldName: 'created_at', fieldType: 'string' },
-                  { fieldName: 'updated_at', fieldType: 'string' },
-                  { fieldName: 'last_run_at' },
-                  { fieldName: 'job_succeeded_count' },
-                  { fieldName: 'job_failed_count' },
-                ],
-                standaloneFields: [
-                  { fieldName: 'code', parseJSON: true },
-                ],
-              },
-            },
-            typeWithNoInstances: {
-              transformation: {
-                standaloneFields: [
-                  { fieldName: 'something' },
-                ],
-              },
-            },
-            // override existing type with nonexistent standalone field
-            connection: {
-              request: {
-                url: '/connections',
-              },
-              transformation: {
-                standaloneFields: [
-                  { fieldName: 'nonexistent' },
-                ],
-              },
-            },
-          },
-        },
-      },
-    }) as FilterType
-  })
+  const transformationDefaultConfig = {
+    idFields: ['id'],
+  }
+  const transformationConfigByType = {
+    recipe: {
+      standaloneFields: [
+        { fieldName: 'code', parseJSON: true },
+      ],
+    },
+    nonexistentType: {
+      fieldsToOmit: [
+        { fieldName: 'created_at', fieldType: 'string' },
+        { fieldName: 'updated_at', fieldType: 'string' },
+        { fieldName: 'last_run_at' },
+        { fieldName: 'job_succeeded_count' },
+        { fieldName: 'job_failed_count' },
+      ],
+      standaloneFields: [
+        { fieldName: 'code', parseJSON: true },
+      ],
+    },
+    typeWithNoInstances: {
+      standaloneFields: [
+        { fieldName: 'something' },
+      ],
+    },
+    // override existing type with nonexistent standalone field
+    connection: {
+      standaloneFields: [
+        { fieldName: 'nonexistent' },
+      ],
+    },
+  }
 
   describe('extract code fields to their own instances when the value is an object', () => {
     let elements: Element[]
@@ -147,7 +111,12 @@ describe('Extract fields filter', () => {
       elements = generateElements(false)
       origInstances = elements.filter(isInstanceElement).map(e => e.clone())
       numElements = elements.length
-      await filter.onFetch(elements)
+      await extractStandaloneFields({
+        elements,
+        adapterName: ADAPTER_NAME,
+        transformationConfigByType,
+        transformationDefaultConfig,
+      })
     })
 
     it('should add two types and two instances', () => {
@@ -158,11 +127,11 @@ describe('Extract fields filter', () => {
       expect(await recipeType.fields.code.getType()).toBeInstanceOf(ObjectType)
       const codeType = await recipeType.fields.code.getType() as ObjectType
       expect(codeType.isEqual(new ObjectType({
-        elemID: new ElemID(WORKATO, 'recipe__code'),
+        elemID: new ElemID(ADAPTER_NAME, 'recipe__code'),
         fields: {
           flat: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
           nested: { refType: createRefToElmWithValue(new ObjectType({
-            elemID: new ElemID(WORKATO, 'recipe__code__nested'),
+            elemID: new ElemID(ADAPTER_NAME, 'recipe__code__nested'),
             fields: {
               inner: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
             },
@@ -222,7 +191,12 @@ describe('Extract fields filter', () => {
       elements = generateElements(true)
       origInstances = elements.filter(isInstanceElement).map(e => e.clone())
       numElements = elements.length
-      await filter.onFetch(elements)
+      await extractStandaloneFields({
+        elements,
+        adapterName: ADAPTER_NAME,
+        transformationConfigByType,
+        transformationDefaultConfig,
+      })
     })
 
     it('should add two types and two instances', () => {
@@ -233,11 +207,11 @@ describe('Extract fields filter', () => {
       expect(await recipeType.fields.code.getType()).toBeInstanceOf(ObjectType)
       const codeType = await recipeType.fields.code.getType() as ObjectType
       expect(codeType.isEqual(new ObjectType({
-        elemID: new ElemID(WORKATO, 'recipe__code'),
+        elemID: new ElemID(ADAPTER_NAME, 'recipe__code'),
         fields: {
           flat: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
           nested: { refType: createRefToElmWithValue(new ObjectType({
-            elemID: new ElemID(WORKATO, 'recipe__code__nested'),
+            elemID: new ElemID(ADAPTER_NAME, 'recipe__code__nested'),
             fields: {
               inner: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
             },
@@ -299,7 +273,12 @@ describe('Extract fields filter', () => {
       recipe456.value.code = 'invalid'
       origInstances = elements.filter(isInstanceElement).map(e => e.clone())
       numElements = elements.length
-      await filter.onFetch(elements)
+      await extractStandaloneFields({
+        elements,
+        adapterName: ADAPTER_NAME,
+        transformationConfigByType,
+        transformationDefaultConfig,
+      })
     })
 
     it('should not modify elements', () => {
@@ -325,7 +304,12 @@ describe('Extract fields filter', () => {
       recipe456.value.code = '{invalid'
       origInstances = elements.filter(isInstanceElement).map(e => e.clone())
       numElements = elements.length
-      await filter.onFetch(elements)
+      await extractStandaloneFields({
+        elements,
+        adapterName: ADAPTER_NAME,
+        transformationConfigByType,
+        transformationDefaultConfig,
+      })
     })
 
     it('should not modify elements', () => {

@@ -14,5 +14,6 @@
 * limitations under the License.
 */
 export { toInstance } from './instance_elements'
+export { extractStandaloneFields } from './standalone_field_extractor'
 export { getAllElements, getTypeAndInstances } from './transformer'
 export { generateType, toNestedTypeName } from './type_elements'

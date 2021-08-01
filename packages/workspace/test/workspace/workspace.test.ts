@@ -1496,7 +1496,7 @@ describe('workspace', () => {
       // of changes you get seems ok, you can just change numExpectedChanges
       expect(updateNaclFileResults).toEqual({
         naclFilesChangesCount: 23,
-        stateOnlyChangesCount: 15,
+        stateOnlyChangesCount: 20,
       })
     })
     it('should not cause parse errors', async () => {

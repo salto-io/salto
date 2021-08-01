@@ -973,7 +973,7 @@ describe('workspace', () => {
             hiddenSwitchType: 'asd',
             visibleSwitchType: 'asd',
             visibleChangeType: 'asd',
-            hiddenTypeChange: 'asd',
+            hiddenChangeType: 'asd',
             visibleChangeAndSwitchType: 'asd',
           },
         },
@@ -982,14 +982,14 @@ describe('workspace', () => {
         hiddenSwitchType: BuiltinTypes.STRING,
         visibleSwitchType: BuiltinTypes.HIDDEN_STRING,
         visibleChangeType: new ReferenceExpression(new ElemID('salesforce', 'VisibleToHiddenType')),
-        hiddenTypeChange: new ReferenceExpression(new ElemID('salesforce', 'HiddenToVisibleType')),
+        hiddenChangeType: new ReferenceExpression(new ElemID('salesforce', 'HiddenToVisibleType')),
         visibleChangeAndSwitchType: BuiltinTypes.HIDDEN_STRING,
       },
       annotations: {
         hiddenSwitchType: 'asd',
         visibleSwitchType: 'asd',
         visibleChangeType: 'asd',
-        hiddenTypeChange: 'asd',
+        hiddenChangeType: 'asd',
         visibleChangeAndSwitchType: 'asd',
       },
     })
@@ -1475,7 +1475,7 @@ describe('workspace', () => {
       // and could possibly change. If you get a failure here and the number
       // of changes you get seems ok, you can just change numExpectedChanges
       expect(updateNaclFileResults).toEqual({
-        naclFilesChangesCount: 20,
+        naclFilesChangesCount: 23,
         stateOnlyChangesCount: 15,
       })
     })
@@ -1723,6 +1723,36 @@ describe('workspace', () => {
       const elem = await workspace.getValue(objWithFieldTypeWithHidden.elemID) as ObjectType
       expect(elem).toBeDefined()
       expect(elem.fields.fieldWithHidden).toBeUndefined()
+    })
+
+    it('should hide annotation values when they switch type to hidden', () => {
+      const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
+      expect(obj).toBeDefined()
+      expect(obj.annotations).not.toHaveProperty('visibleSwitchType')
+      expect(obj.fields.fieldWithChangingHidden.annotations).not.toHaveProperty('visibleSwitchType')
+    })
+    it('should add annotation values when they switch type to visible', () => {
+      const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
+      expect(obj).toBeDefined()
+      expect(obj.annotations).toHaveProperty('hiddenSwitchType')
+      expect(obj.fields.fieldWithChangingHidden.annotations).toHaveProperty('hiddenSwitchType')
+    })
+    it('should hide annotation values when their type changes to hidden', () => {
+      const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
+      expect(obj).toBeDefined()
+      expect(obj.annotations).not.toHaveProperty('visibleChangeType')
+      expect(obj.fields.fieldWithChangingHidden.annotations).not.toHaveProperty('visibleChangeType')
+    })
+    it('should add annotation values when their type changes to visible', () => {
+      const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
+      expect(obj).toBeDefined()
+      expect(obj.annotations).toHaveProperty('hiddenChangeType')
+      expect(obj.fields.fieldWithChangingHidden.annotations).toHaveProperty('hiddenChangeType')
+    })
+    it('should hide annotation values when they switch type to hidden and the source type changes', () => {
+      const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
+      expect(obj).toBeDefined()
+      expect(obj.annotations).not.toHaveProperty('visibleChangeAndSwitchType')
     })
 
     describe('on secondary envs', () => {

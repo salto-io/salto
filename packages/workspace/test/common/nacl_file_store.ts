@@ -241,7 +241,7 @@ type salesforce.lead {
       }
       salesforce.VisibleToHiddenType visibleChangeType {
       }
-      salesforce.HiddenToVisibleType hiddenTypeChange {
+      salesforce.HiddenToVisibleType hiddenChangeType {
       }
     }
   }
@@ -254,7 +254,7 @@ type salesforce.lead {
       }
       salesforce.VisibleToHiddenType visibleChangeType {
       }
-      salesforce.HiddenToVisibleType hiddenTypeChange {
+      salesforce.HiddenToVisibleType hiddenChangeType {
       }
       salesforce.VisibleToHiddenType visibleChangeAndSwitchType {
       }

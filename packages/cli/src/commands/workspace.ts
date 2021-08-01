@@ -16,18 +16,18 @@
 import { EOL } from 'os'
 import { cleanWorkspace } from '@salto-io/core'
 import { WorkspaceComponents } from '@salto-io/workspace'
-import { errorOutputLine, outputLine } from '../outputer'
 import { getUserBooleanInput } from '../callbacks'
-import { formatCleanWorkspace, formatCancelCommand, header, formatStepStart, formatStepFailed, formatStepCompleted } from '../formatter'
+import { header, formatCleanWorkspace, formatCancelCommand, formatStepStart, formatStepFailed, formatStepCompleted } from '../formatter'
+import { outputLine, errorOutputLine } from '../outputer'
 import Prompts from '../prompts'
 import { CliExitCode } from '../types'
-import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
+import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 
 type CleanArgs = {
   force: boolean
 } & WorkspaceComponents
 
-export const action: WorkspaceCommandAction<CleanArgs> = async ({
+export const cleanAction: WorkspaceCommandAction<CleanArgs> = async ({
   input: { force, ...cleanArgs },
   output,
   workspace,
@@ -66,7 +66,7 @@ export const action: WorkspaceCommandAction<CleanArgs> = async ({
   return CliExitCode.Success
 }
 
-const cleanDef = createWorkspaceCommand({
+const wsCleanDef = createWorkspaceCommand({
   properties: {
     name: 'clean',
     description: 'Maintenance command for cleaning workspace data. This operation cannot be undone, it\'s highly recommended to backup the workspace data before executing it.',
@@ -121,7 +121,18 @@ const cleanDef = createWorkspaceCommand({
       },
     ],
   },
-  action,
+  action: cleanAction,
 })
 
-export default cleanDef
+// Group definition
+const wsGroupDef = createCommandGroupDef({
+  properties: {
+    name: 'workspace',
+    description: 'Workspace Admin commands',
+  },
+  subCommands: [
+    wsCleanDef,
+  ],
+})
+
+export default wsGroupDef

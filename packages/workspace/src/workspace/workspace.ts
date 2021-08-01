@@ -522,7 +522,7 @@ export const loadWorkspace = async (
     const { visible: visibleChanges, hidden: hiddenChanges } = await handleHiddenChanges(
       changes,
       state(),
-      (await getLoadedNaclFilesSource()).getAll,
+      await getLoadedNaclFilesSource(),
     )
     const workspaceChanges = await ((await getLoadedNaclFilesSource())
       .updateNaclFiles(

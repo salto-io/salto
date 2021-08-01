@@ -285,7 +285,7 @@ describe('workspace', () => {
 
   describe('getSearchableNames', () => {
     let workspace: Workspace
-    const TOTAL_NUM_ELEMENETS = 57
+    const TOTAL_NUM_ELEMENETS = 61
 
     it('should return names of top level elements and fields', async () => {
       workspace = await createWorkspace()
@@ -653,7 +653,7 @@ describe('workspace', () => {
 
     it('should return the correct changes', async () => {
       const primaryEnvChanges = changes.default.changes
-      expect(primaryEnvChanges).toHaveLength(25)
+      expect(primaryEnvChanges).toHaveLength(27)
       expect((primaryEnvChanges.find(c => c.action === 'add') as AdditionChange<Element>).data.after)
         .toEqual(newAddedObject)
       const multiLocChange = primaryEnvChanges
@@ -967,6 +967,30 @@ describe('workspace', () => {
             hiddenValAnno: 'YOU DO NOT SEE ME',
           },
         },
+        fieldWithChangingHidden: {
+          refType: new ReferenceExpression(new ElemID('salesforce', 'FieldTypeWithChangingHidden')),
+          annotations: {
+            hiddenSwitchType: 'asd',
+            visibleSwitchType: 'asd',
+            visibleChangeType: 'asd',
+            hiddenChangeType: 'asd',
+            visibleChangeAndSwitchType: 'asd',
+          },
+        },
+      },
+      annotationRefsOrTypes: {
+        hiddenSwitchType: BuiltinTypes.STRING,
+        visibleSwitchType: BuiltinTypes.HIDDEN_STRING,
+        visibleChangeType: new ReferenceExpression(new ElemID('salesforce', 'VisibleToHiddenType')),
+        hiddenChangeType: new ReferenceExpression(new ElemID('salesforce', 'HiddenToVisibleType')),
+        visibleChangeAndSwitchType: BuiltinTypes.HIDDEN_STRING,
+      },
+      annotations: {
+        hiddenSwitchType: 'asd',
+        visibleSwitchType: 'asd',
+        visibleChangeType: 'asd',
+        hiddenChangeType: 'asd',
+        visibleChangeAndSwitchType: 'asd',
       },
     })
 
@@ -1070,7 +1094,6 @@ describe('workspace', () => {
         id: new ElemID('salesforce', 'lead', 'attr', 'bobo'),
         action: 'add',
         data: { after: 'baba' },
-
       },
       {
         path: ['other', 'boo'],
@@ -1305,6 +1328,56 @@ describe('workspace', () => {
           before: objWithFieldTypeWithHidden.fields.fieldWithHidden,
         },
       },
+      { // Change visible annotation type to hidden type for field annotation
+        id: new ElemID('salesforce', 'FieldTypeWithChangingHidden', 'annotation', 'visibleSwitchType'),
+        action: 'modify',
+        data: {
+          before: createRefToElmWithValue(BuiltinTypes.STRING),
+          after: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
+        },
+      },
+      { // Change hidden annotation type to visible type for field annotation
+        id: new ElemID('salesforce', 'FieldTypeWithChangingHidden', 'annotation', 'hiddenSwitchType'),
+        action: 'modify',
+        data: {
+          before: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
+          after: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+      },
+      { // Switch hidden annotation type to visible type for type annotation
+        id: objWithFieldTypeWithHidden.elemID.createNestedID('annotation', 'visibleSwitchType'),
+        action: 'modify',
+        data: {
+          before: createRefToElmWithValue(BuiltinTypes.STRING),
+          after: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
+        },
+      },
+      { // Switch hidden annotation type to visible type for type annotation
+        id: objWithFieldTypeWithHidden.elemID.createNestedID('annotation', 'hiddenSwitchType'),
+        action: 'modify',
+        data: {
+          before: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
+          after: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+      },
+      { // Switch visible annotation type to hidden when the same type changes to hidden as well
+        id: objWithFieldTypeWithHidden.elemID.createNestedID('annotation', 'visibleChangeAndSwitchType'),
+        action: 'modify',
+        data: {
+          before: new ReferenceExpression(new ElemID('salesforce', 'VisibleToHiddenType')),
+          after: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
+        },
+      },
+      { // Change type with annotation value from visible to hidden
+        id: new ElemID('salesforce', 'VisibleToHiddenType', 'attr', CORE_ANNOTATIONS.HIDDEN_VALUE),
+        action: 'add',
+        data: { after: true },
+      },
+      { // Change type with annotation value from hidden to visible
+        id: new ElemID('salesforce', 'HiddenToVisibleType', 'attr', CORE_ANNOTATIONS.HIDDEN_VALUE),
+        action: 'remove',
+        data: { before: true },
+      },
     ]
 
     let clonedChanges: DetailedChange[]
@@ -1328,10 +1401,6 @@ describe('workspace', () => {
     let elemMapWithHidden: Record<string, Element>
     let workspace: Workspace
     let updateNaclFileResults: UpdateNaclFilesResult
-    const expectedUpdateNaclFileResult: UpdateNaclFilesResult = {
-      naclFilesChangesCount: 20,
-      stateOnlyChangesCount: 15,
-    }
     const dirStore = mockDirStore()
 
     beforeAll(async () => {
@@ -1405,7 +1474,10 @@ describe('workspace', () => {
       // This is just meant to test that calculating number of changes works,
       // and could possibly change. If you get a failure here and the number
       // of changes you get seems ok, you can just change numExpectedChanges
-      expect(updateNaclFileResults).toEqual(expectedUpdateNaclFileResult)
+      expect(updateNaclFileResults).toEqual({
+        naclFilesChangesCount: 23,
+        stateOnlyChangesCount: 15,
+      })
     })
     it('should not cause parse errors', async () => {
       expect((await workspace.errors()).parse).toHaveLength(0)
@@ -1651,6 +1723,36 @@ describe('workspace', () => {
       const elem = await workspace.getValue(objWithFieldTypeWithHidden.elemID) as ObjectType
       expect(elem).toBeDefined()
       expect(elem.fields.fieldWithHidden).toBeUndefined()
+    })
+
+    it('should hide annotation values when they switch type to hidden', () => {
+      const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
+      expect(obj).toBeDefined()
+      expect(obj.annotations).not.toHaveProperty('visibleSwitchType')
+      expect(obj.fields.fieldWithChangingHidden.annotations).not.toHaveProperty('visibleSwitchType')
+    })
+    it('should add annotation values when they switch type to visible', () => {
+      const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
+      expect(obj).toBeDefined()
+      expect(obj.annotations).toHaveProperty('hiddenSwitchType')
+      expect(obj.fields.fieldWithChangingHidden.annotations).toHaveProperty('hiddenSwitchType')
+    })
+    it('should hide annotation values when their type changes to hidden', () => {
+      const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
+      expect(obj).toBeDefined()
+      expect(obj.annotations).not.toHaveProperty('visibleChangeType')
+      expect(obj.fields.fieldWithChangingHidden.annotations).not.toHaveProperty('visibleChangeType')
+    })
+    it('should add annotation values when their type changes to visible', () => {
+      const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
+      expect(obj).toBeDefined()
+      expect(obj.annotations).toHaveProperty('hiddenChangeType')
+      expect(obj.fields.fieldWithChangingHidden.annotations).toHaveProperty('hiddenChangeType')
+    })
+    it('should hide annotation values when they switch type to hidden and the source type changes', () => {
+      const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
+      expect(obj).toBeDefined()
+      expect(obj.annotations).not.toHaveProperty('visibleChangeAndSwitchType')
     })
 
     describe('on secondary envs', () => {

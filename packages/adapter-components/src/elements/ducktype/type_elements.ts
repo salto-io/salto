@@ -130,8 +130,8 @@ const generateTypeRenameConfig = (
 ): Record<string, string> => (
   Object.fromEntries(
     Object.entries(transformationConfigByType)
-      .map(([origTypeName, { typeNameOverrideFrom }]) => ([typeNameOverrideFrom, origTypeName]))
-      .filter(([typeNameOverrideFrom]) => typeNameOverrideFrom !== undefined)
+      .map(([origTypeName, { sourceTypeName }]) => ([sourceTypeName, origTypeName]))
+      .filter(([sourceTypeName]) => sourceTypeName !== undefined)
   )
 )
 

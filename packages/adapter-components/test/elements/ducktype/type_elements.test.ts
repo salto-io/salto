@@ -142,7 +142,7 @@ describe('ducktype_type_elements', () => {
         },
       }))).toBeTruthy()
     })
-    it('should generate types with correct names when typeNameOverrideFrom is used', () => {
+    it('should generate types with correct names when sourceTypeName is used', () => {
       const entries = [
         {
           id: 41619,
@@ -197,10 +197,10 @@ describe('ducktype_type_elements', () => {
         isSubType: false,
         transformationConfigByType: {
           renamedComplex: {
-            typeNameOverrideFrom: 'renamedTypeName__field_with_complex_type',
+            sourceTypeName: 'renamedTypeName__field_with_complex_type',
           },
           renamedTypeName: {
-            typeNameOverrideFrom: 'typeName',
+            sourceTypeName: 'typeName',
           },
         },
         transformationDefaultConfig: { idFields: [] },

@@ -22,7 +22,7 @@ import { createRequestConfigs } from './request'
 type DuckTypeTransformationExtra = {
   // types that contain a single object with dynamic keys (map type)
   hasDynamicFields?: boolean
-  typeNameOverrideFrom?: string
+  sourceTypeName?: string
 }
 export type DuckTypeTransformationConfig = TransformationConfig & DuckTypeTransformationExtra
 export type DuckTypeTransformationDefaultConfig = (
@@ -49,7 +49,7 @@ export const createDucktypeAdapterApiConfigType = ({
   const requestTypes = createRequestConfigs(adapter, additionalRequestFields)
   const transformationTypes = createTransformationConfigTypes(adapter, {
     hasDynamicFields: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-    typeNameOverrideFrom: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    sourceTypeName: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
     ...additionalTransformationFields,
   })
   return createAdapterApiConfigType({

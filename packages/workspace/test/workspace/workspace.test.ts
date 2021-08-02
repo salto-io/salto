@@ -19,7 +19,7 @@ import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
   Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
   isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType,
-  ReferenceExpression, Value,
+  ReferenceExpression, Value, INSTANCE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges, createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
@@ -994,6 +994,16 @@ describe('workspace', () => {
       },
     })
 
+    const nonHiddenObjWithOnlyHiddeNotInNacl = new ObjectType({
+      elemID: ElemID.fromFullName('salesforce.nonHiddenObjWithOnlyHiddeNotInNacl'),
+      annotationRefsOrTypes: {
+        hidden: BuiltinTypes.HIDDEN_STRING,
+      },
+      annotations: {
+        hidden: 'hidden',
+      },
+    })
+
     const renamedTypes = {
       before: new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType1') }),
       after: new ObjectType({ elemID: new ElemID('salesforce', 'RenamedType2'), path: ['renamed_type'] }),
@@ -1378,6 +1388,15 @@ describe('workspace', () => {
         action: 'remove',
         data: { before: true },
       },
+      {
+        id: nonHiddenObjWithOnlyHiddeNotInNacl.elemID.createNestedID('attr', 'hidden'),
+        action: 'modify',
+        path: ['should', 'not', 'matter'],
+        data: {
+          before: 'hidden',
+          after: 'changed',
+        },
+      },
     ]
 
     let clonedChanges: DetailedChange[]
@@ -1437,6 +1456,7 @@ describe('workspace', () => {
         queueSobjectHiddenSubType,
         queueHiddenInstanceToRemove,
         objWithFieldTypeWithHidden,
+        nonHiddenObjWithOnlyHiddeNotInNacl,
       ])
 
       workspace = await createWorkspace(dirStore, state)
@@ -1476,7 +1496,7 @@ describe('workspace', () => {
       // of changes you get seems ok, you can just change numExpectedChanges
       expect(updateNaclFileResults).toEqual({
         naclFilesChangesCount: 23,
-        stateOnlyChangesCount: 15,
+        stateOnlyChangesCount: 20,
       })
     })
     it('should not cause parse errors', async () => {
@@ -1753,6 +1773,9 @@ describe('workspace', () => {
       const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
       expect(obj).toBeDefined()
       expect(obj.annotations).not.toHaveProperty('visibleChangeAndSwitchType')
+    })
+    it('should not modify elements which are not hidden and are not in the nacls', () => {
+      expect(elemMap[nonHiddenObjWithOnlyHiddeNotInNacl.elemID.getFullName()]).not.toBeDefined()
     })
 
     describe('on secondary envs', () => {
@@ -2894,41 +2917,191 @@ describe('non persistent workspace', () => {
 
 describe('stateOnly update', () => {
   let ws: Workspace
-  let resElement: Element
+
+  const objectWithHiddenToAdd = new ObjectType({
+    elemID: ElemID.fromFullName('salto.withhiddenToAdd'),
+    annotationRefsOrTypes: {
+      hidden: BuiltinTypes.HIDDEN_STRING,
+      visible: BuiltinTypes.STRING,
+    },
+    annotations: {
+      hidden: 'hidden',
+      visible: 'visible',
+    },
+  })
+  const hiddenInstToAdd = new InstanceElement('hiddenToAdd', objectWithHiddenToAdd, {
+    key: 'value',
+  }, [], {
+    [INSTANCE_ANNOTATIONS.HIDDEN]: true,
+  })
+
+  const objectWithHiddenToModify = new ObjectType({
+    elemID: ElemID.fromFullName('salto.withhiddenToModify'),
+    annotationRefsOrTypes: {
+      hidden: BuiltinTypes.HIDDEN_STRING,
+      visible: BuiltinTypes.STRING,
+    },
+    annotations: {
+      hidden: 'hidden',
+      visible: 'visible',
+    },
+  })
+
+  const hiddenInstToModify = new InstanceElement('hiddenToModify', objectWithHiddenToModify, {
+    key: 'value',
+  }, [], {
+    [INSTANCE_ANNOTATIONS.HIDDEN]: true,
+  })
+
+  const objectWithHiddenToRemove = new ObjectType({
+    elemID: ElemID.fromFullName('salto.withhiddenToRemove'),
+    annotationRefsOrTypes: {
+      hidden: BuiltinTypes.HIDDEN_STRING,
+      visible: BuiltinTypes.STRING,
+    },
+    annotations: {
+      hidden: 'hidden',
+      visible: 'visible',
+    },
+  })
+
+  const hiddenInstToRemove = new InstanceElement('hiddenToRemove', objectWithHiddenToRemove, {
+    key: 'value',
+  }, [], {
+    [INSTANCE_ANNOTATIONS.HIDDEN]: true,
+  })
+
   beforeAll(async () => {
-    const objectWithHidden = new ObjectType({
-      elemID: ElemID.fromFullName('salto.withhidden'),
-      annotationRefsOrTypes: {
-        hidden: BuiltinTypes.HIDDEN_STRING,
-        visible: BuiltinTypes.STRING,
-      },
-      annotations: {
-        hidden: 'hidden',
-        visible: 'visible',
-      },
+    const state = mockState([
+      objectWithHiddenToModify,
+      objectWithHiddenToRemove,
+      hiddenInstToModify,
+      hiddenInstToRemove,
+    ].map(e => e.clone()))
+    const dirStore = mockDirStore([], false, {
+      'salto/objwithhidden.nacl': `
+        type salto.withhiddenToModify {
+          annotations {
+            hidden_string hidden {
+            }
+            string visible {
+            }
+          }
+          visible = "visible"
+        }
+        type salto.withhiddenToRemove {
+          annotations {
+            hidden_string hidden {
+            }
+            string visible {
+            }
+          }
+          visible = "visible"
+        }
+      `,
     })
-    const state = mockState([objectWithHidden])
-    ws = await createWorkspace(undefined, state)
+    ws = await createWorkspace(dirStore, state)
     const changes: DetailedChange[] = [
       {
         action: 'add',
         data: {
-          after: objectWithHidden,
+          after: objectWithHiddenToAdd,
         },
-        id: objectWithHidden.elemID,
+        id: objectWithHiddenToAdd.elemID,
         path: ['salto', 'objwithhidden.nacl'],
+      },
+      {
+        action: 'add',
+        data: {
+          after: hiddenInstToAdd,
+        },
+        id: hiddenInstToAdd.elemID,
+        path: ['salto', 'inst.nacl'],
+      },
+      {
+        action: 'modify',
+        data: {
+          before: 'hidden',
+          after: 'changed',
+        },
+        id: objectWithHiddenToModify.elemID.createNestedID('attr', 'hidden'),
+      },
+      {
+        action: 'modify',
+        data: {
+          before: 'visible',
+          after: 'changed',
+        },
+        id: objectWithHiddenToModify.elemID.createNestedID('attr', 'visible'),
+      },
+      {
+        action: 'modify',
+        data: {
+          before: 'value',
+          after: 'changed',
+        },
+        id: hiddenInstToModify.elemID.createNestedID('key'),
+      },
+      {
+        action: 'remove',
+        data: {
+          before: 'hidden',
+        },
+        id: objectWithHiddenToRemove.elemID.createNestedID('attr', 'hidden'),
+      },
+      {
+        action: 'remove',
+        data: {
+          before: 'visible',
+        },
+        id: objectWithHiddenToRemove.elemID.createNestedID('attr', 'visible'),
+      },
+      {
+        action: 'remove',
+        data: {
+          before: 'value',
+        },
+        id: hiddenInstToRemove.elemID.createNestedID('key'),
       },
     ]
     await ws.updateNaclFiles(changes, 'default', true)
-    resElement = await ws.getValue(objectWithHidden.elemID)
-    expect(resElement).toBeDefined()
-  })
-  it('should update the hidden changes in the workspace cache', () => {
-    expect(resElement.annotations.hidden).toBeDefined()
   })
 
-  it('should not apply the workspace changes', () => {
-    expect(resElement.annotations.visible).not.toBeDefined()
+  it('should update add changes for state only elements in the workspace cache', async () => {
+    const resElement = await ws.getValue(hiddenInstToAdd.elemID)
+    expect(resElement).toBeDefined()
+  })
+
+  it('should not apply add chabges to the workspace for non hidden elements', async () => {
+    const resElement = await ws.getValue(objectWithHiddenToAdd.elemID)
+    expect(resElement).not.toBeDefined()
+  })
+
+  it('should update only the hidden parts modifications of elements that have a visible part in the workspace cache', async () => {
+    const resElement = await ws.getValue(objectWithHiddenToModify.elemID)
+    expect(resElement).toBeDefined()
+    expect(resElement.annotations.hidden).toEqual('changed')
+    expect(resElement.annotations.visible).not.toEqual('changed')
+  })
+
+
+  it('should update hidden elements modifications in the workspace cache', async () => {
+    const resElement = await ws.getValue(hiddenInstToModify.elemID)
+    expect(resElement).toBeDefined()
+    expect(resElement.value.key).toEqual('changed')
+  })
+
+  it('should update remove changes for hidden types in the ws cache', async () => {
+    const resElement = await ws.getValue(hiddenInstToRemove.elemID)
+    expect(resElement).toBeDefined()
+    expect(resElement.value.key).not.toBeDefined()
+  })
+
+  it('should update remove changes only for for hidden parts of elements with a visible part in the ws cache', async () => {
+    const resElement = await ws.getValue(objectWithHiddenToRemove.elemID)
+    expect(resElement).toBeDefined()
+    expect(resElement.annotations.hidden).not.toBeDefined()
+    expect(resElement.annotations.visible).toBeDefined()
   })
 })
 describe('listUnresolvedReferences', () => {

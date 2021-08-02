@@ -43,6 +43,7 @@ const log = logger(module)
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
+const { partition } = promises.array
 
 export const ADAPTERS_CONFIGS_PATH = 'adapters'
 export const COMMON_ENV_PREFIX = ''
@@ -367,7 +368,6 @@ export const loadWorkspace = async (
         // hidden changes won't be empty)
         const isFirstInitFromNacls = _.isEmpty(partialStateChanges.changes)
           && (await stateToBuild.states[envName].merged.isEmpty())
-
         const initHiddenElementsChanges = isFirstInitFromNacls
           ? await awu(await state(envName).getAll())
             .filter(element => isHidden(element, state(envName)))
@@ -377,8 +377,25 @@ export const loadWorkspace = async (
         const stateRemovedElementChanges = (workspaceChanges[envName] ?? createEmptyChangeSet())
           .changes.filter(change => isRemovalChange(change)
             && getChangeElement(change).elemID.isTopLevel())
+        // To preserve the old ws functionality - hidden values should be added to the workspace
+        // cache only if their top level element is in the nacls, or they are marked as hidden
+        // (SAAS-2639)
+        const [stateChangesForExistingNaclElements, dropedStateOnlyChange] = await partition(
+          partialStateChanges.changes,
+          async change => {
+            const changeElement = getChangeElement(change)
+            const changeID = changeElement.elemID
+            return isRemovalChange(change)
+            || await source.get(changeID)
+            || isHidden(changeElement, state(envName))
+          }
+        )
+
+        log.debug('droped hidden changes due to missing nacl element for ids:',
+          dropedStateOnlyChange.map(getChangeElement).map(elem => elem.elemID.getFullName()))
+
         return {
-          changes: partialStateChanges.changes
+          changes: stateChangesForExistingNaclElements
             .concat(initHiddenElementsChanges)
             .concat(stateRemovedElementChanges),
           cacheValid,
@@ -505,7 +522,7 @@ export const loadWorkspace = async (
         state(),
         before
       )
-      return after !== undefined ? [toChange({ before, after })] : []
+      return [toChange({ before, after })]
     }).toArray()
   }
   const updateNaclFiles = async ({

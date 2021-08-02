@@ -58,24 +58,31 @@ const formatContext = (context: Value): string => {
   return safeJsonStringify(context)
 }
 
-const createChangeError = (field: Field, contexts: string[], instance?: InstanceElement):
+const createInstanceChangeError = (field: Field, contexts: string[], instance: InstanceElement):
   ChangeError => {
-  const instanceName = instance?.elemID.name
-
+  const instanceName = instance.elemID.name
   return {
-    elemID: instance?.elemID ?? field.elemID,
+    elemID: instance.elemID,
     severity: 'Warning',
-    message: `There cannot be more than one 'default' field set to 'true'. Field name: ${field.name} in${instanceName ? ` instance: ${instanceName}` : ''} type ${field.parent.elemID.name}.`,
-    detailedMessage: `There cannot be more than one 'default' ${field.name} in${instanceName ? ` instance: ${instanceName}` : ''} type ${field.parent.elemID.name}. The following ${fieldNameToInnerContextField[field.name] ?? LABEL}s are set to default: ${contexts}`,
+    message: `There cannot be more than one 'default' field set to 'true'. Field name: ${field.name} in instance: ${instanceName} type ${field.parent.elemID.name}.`,
+    detailedMessage: `There cannot be more than one 'default' ${field.name} in instance: ${instanceName} type ${field.parent.elemID.name}. The following ${fieldNameToInnerContextField[field.name] ?? LABEL}s are set to default: ${contexts}`,
   }
 }
+
+const createFieldChangeError = (field: Field, contexts: string[]):
+  ChangeError => ({
+  elemID: field.elemID,
+  severity: 'Warning',
+  message: `There cannot be more than one 'default' field set to 'true'. Field name: ${field.name} in type ${field.parent.elemID.name}.`,
+  detailedMessage: `There cannot be more than one 'default' ${field.name} in type ${field.parent.elemID.name}. The following ${fieldNameToInnerContextField[field.name] ?? LABEL}s are set to default: ${contexts}`,
+})
 
 const getPicklistMultipleDefaultsErrors = (field: FieldWithValueSet): ChangeError[] => {
   const contexts = field.annotations.valueSet
     .filter(obj => obj.default)
     .map(obj => obj[LABEL])
     .map(formatContext)
-  return contexts.length > 1 ? [createChangeError(field, contexts)] : []
+  return contexts.length > 1 ? [createFieldChangeError(field, contexts)] : []
 }
 
 const getInstancesMultipleDefaultsErrors = async (
@@ -108,7 +115,7 @@ const getInstancesMultipleDefaultsErrors = async (
         .map(formatContext)
       return contexts.length > 1
         ? [
-          createChangeError((
+          createInstanceChangeError((
             await after.getType()).fields[fieldName],
           contexts,
           after),

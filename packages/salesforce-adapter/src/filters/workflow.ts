@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import {
-  Element, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression,
-  ObjectType, getChangeElement, Change, isAdditionChange, BuiltinTypes, ElemID,
+  Element, InstanceElement, isInstanceElement, isObjectType,
+  ObjectType, getChangeElement, Change, BuiltinTypes, ElemID,
 } from '@salto-io/adapter-api'
 import { collections, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -137,7 +137,7 @@ const createDummyWorkflowInstance = async (
       metadataType: 'Workflow',
       dirName: 'workflows',
       suffix: 'workflow',
-    } as MetadataTypeAnnotations,
+    },
   })
 
   return createInstanceElement(
@@ -149,20 +149,17 @@ const createDummyWorkflowInstance = async (
 const createWorkflowChange = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
 ): Promise<Change<InstanceElement>> => {
-  const workflowChange = await awu(changes).find(isInstanceOfTypeChange(WORKFLOW_METADATA_TYPE))
-
-  const parent = workflowChange === undefined
-    ? await createDummyWorkflowInstance(changes)
-    : getChangeElement(workflowChange)
+  const parent = await createDummyWorkflowInstance(changes)
   const after = await createPartialWorkflowInstance(parent, changes, 'after')
-  if (workflowChange !== undefined && isAdditionChange(workflowChange)) {
-    return { action: 'add', data: { after } }
-  }
   // we assume the only possible changes are in nested instances and we omit the nested instance
   // fields from the parent when we create the partial instance. so we can use the same parent as
   // the after instance here
   const before = await createPartialWorkflowInstance(parent, changes, 'before')
-
+  /*
+   * we won't be able to know if the change was add or modified
+   * it does not matter in this use case since changes
+   * will go to salesforce upsert or add API anyway.
+   */
   return { action: 'modify', data: { before, after } }
 }
 
@@ -191,16 +188,14 @@ const filterCreator: FilterCreator = () => {
             log.debug('failed to find object type for %s', fieldType)
             return []
           }
+          const workflowApiName = await apiName(workflowInst)
           const innerInstances = await Promise.all(makeArray(workflowInst.value[fieldName])
-            .map(async innerValue => {
-              innerValue[INSTANCE_FULL_NAME_FIELD] = fullApiName(await apiName(workflowInst),
-                innerValue[INSTANCE_FULL_NAME_FIELD])
-              return createInstanceElement(innerValue, objType)
-            }))
-          if (!_.isEmpty(innerInstances)) {
-            workflowInst.value[fieldName] = innerInstances
-              .map(s => new ReferenceExpression(s.elemID))
-          }
+            .map(async innerValue => createInstanceElement(
+              { ...innerValue,
+                [INSTANCE_FULL_NAME_FIELD]: fullApiName(workflowApiName,
+                  innerValue[INSTANCE_FULL_NAME_FIELD]) },
+              objType,
+            )))
 
           return innerInstances
         })
@@ -211,6 +206,7 @@ const filterCreator: FilterCreator = () => {
         .flatMap(wfInst => splitWorkflow(wfInst))
         .toArray()
 
+      await removeAsync(elements, isWorkflowInstance)
       elements.push(...additionalElements)
     },
 

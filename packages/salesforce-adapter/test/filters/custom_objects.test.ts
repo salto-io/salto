@@ -31,7 +31,7 @@ import {
   API_NAME, FORMULA, LOOKUP_FILTER_FIELDS, CUSTOM_SETTINGS_TYPE,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, VALUE_SET_FIELDS,
   CUSTOM_VALUE, VALUE_SET_DEFINITION_FIELDS,
-  OBJECTS_PATH, INSTALLED_PACKAGES_PATH, TYPES_PATH, RECORDS_PATH, WORKFLOW_METADATA_TYPE,
+  OBJECTS_PATH, INSTALLED_PACKAGES_PATH, TYPES_PATH, RECORDS_PATH,
   ASSIGNMENT_RULES_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE, QUICK_ACTION_METADATA_TYPE,
   CUSTOM_TAB_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
 } from '../../src/constants'
@@ -45,7 +45,6 @@ import filterCreator, {
 import { FilterWith } from '../../src/filter'
 import { isCustom, Types, createInstanceElement, MetadataTypeAnnotations, metadataType } from '../../src/transformers/transformer'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../../src/metadata_deploy'
-import { WORKFLOW_DIR_NAME } from '../../src/filters/workflow'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 const { awu } = collections.asynciterable
@@ -1366,29 +1365,6 @@ describe('Custom Objects filter', () => {
           [METADATA_TYPE]: CUSTOM_OBJECT,
         },
         path: [SALESFORCE, OBJECTS_PATH, 'Lead', 'BLA'],
-      })
-
-      describe('Workflow', () => {
-        const workflowType = new ObjectType({
-          elemID: new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE),
-          annotations: { [METADATA_TYPE]: WORKFLOW_METADATA_TYPE },
-        })
-        const workflowInstance = new InstanceElement('Lead',
-          workflowType, { [INSTANCE_FULL_NAME_FIELD]: 'Lead' })
-
-        beforeEach(async () => {
-          await filter.onFetch([workflowInstance, workflowType, leadType])
-        })
-
-        it('should set workflow instance path correctly', async () => {
-          expect(workflowInstance.path)
-            .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', WORKFLOW_DIR_NAME, WORKFLOW_METADATA_TYPE])
-        })
-
-        it('should add PARENT annotation to workflow instance', async () => {
-          expect(workflowInstance.annotations[CORE_ANNOTATIONS.PARENT])
-            .toContainEqual(new ReferenceExpression(leadType.elemID))
-        })
       })
 
       describe('AssignmentRules', () => {

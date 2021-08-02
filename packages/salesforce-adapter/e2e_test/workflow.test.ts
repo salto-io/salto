@@ -20,7 +20,6 @@ import {
   findElements as findElementsByID, findElement,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
 import { MetadataInfo } from 'jsforce-types'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { testHelpers } from '../index'
@@ -32,8 +31,8 @@ import {
   WORKFLOW_FIELD_TO_TYPE,
 } from '../src/filters/workflow'
 import {
-  SALESFORCE, INSTANCE_FULL_NAME_FIELD, WORKFLOW_METADATA_TYPE,
-  WORKFLOW_FIELD_UPDATE_METADATA_TYPE, WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_TASK_METADATA_TYPE,
+  SALESFORCE, INSTANCE_FULL_NAME_FIELD, WORKFLOW_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
+  WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_TASK_METADATA_TYPE, WORKFLOW_ACTION_ALERT_METADATA_TYPE,
 } from '../src/constants'
 import SalesforceAdapter from '../src/adapter'
 import { findElements } from '../test/utils'
@@ -41,8 +40,6 @@ import {
   getMetadataInstance, getMetadata, removeMetadataIfAlreadyExists, createAndVerify,
   removeElementAndVerify, fetchTypes, runFiltersOnFetch,
 } from './utils'
-
-const { makeArray } = collections.array
 
 describe('workflow filter', () => {
   // Set long timeout as we communicate with salesforce API
@@ -68,10 +65,10 @@ describe('workflow filter', () => {
   const baseCustomObject = 'Lead'
 
   describe('should fetch Workflow instances', () => {
-    let workflow: InstanceElement
+    let workflows: Element[]
 
     const verifyHasWorkflowAlert = async (): Promise<void> => {
-      await client.upsert('WorkflowAlert', {
+      await client.upsert(WORKFLOW_ACTION_ALERT_METADATA_TYPE, {
         fullName: `${baseCustomObject}.TestWorkflowAlert`,
         description: 'E2E Fetch WorkflowAlert',
         protected: false,
@@ -164,11 +161,12 @@ describe('workflow filter', () => {
       return verifyHasWorkflowRule() // WorkflowRule depends on Alert, FieldUpdate & Task
     }
 
-    const verifySubInstance = (subField: string, subName: string,
-      subDescription: string): void => {
-      expect(workflow.value[subField]).toBeDefined()
-      const subElemId = makeArray(workflow.value[subField])
-        .find((ref: {elemID: ElemID}) => ref.elemID.name === subName)?.elemID
+    const verifySubInstance = (
+      subFieldName: string,
+      subName: readonly string[],
+      subDescription: string,
+    ): void => {
+      const subElemId = new ElemID('salesforce', subFieldName, 'instance', ...subName)
       const [subInstance] = findElementsByID(fetchResult, subElemId) as Iterable<InstanceElement>
       expect(subInstance.value.description).toEqual(subDescription)
     }
@@ -183,36 +181,35 @@ describe('workflow filter', () => {
       expect(rawWorkflowInstance).toBeDefined()
       fetchResult = [...rawWorkflowTypes, rawWorkflowInstance as InstanceElement]
       await runFiltersOnFetch(client, {}, fetchResult)
-      const workflows = findElements(fetchResult, WORKFLOW_METADATA_TYPE, baseCustomObject)
-      workflow = workflows[0] as InstanceElement
+      workflows = findElements(fetchResult, WORKFLOW_METADATA_TYPE, baseCustomObject)
     })
     describe('fetch workflow', () => {
-      it('should fetch workflow', async () => {
-        expect(workflow.value[INSTANCE_FULL_NAME_FIELD]).toBe(baseCustomObject)
+      it('should remove workflow instance', async () => {
+        expect(workflows).toHaveLength(0)
       })
     })
     describe('fetch workflow alerts', () => {
       it('should fetch workflow alerts', async () => {
-        verifySubInstance(WORKFLOW_ALERTS_FIELD, `${baseCustomObject}_TestWorkflowAlert@v`,
+        verifySubInstance(WORKFLOW_ACTION_ALERT_METADATA_TYPE, [`${baseCustomObject}_TestWorkflowAlert@v`],
           'E2E Fetch WorkflowAlert')
       })
     })
     describe('fetch workflow field updates', () => {
       it('should fetch workflow field updates', async () => {
-        verifySubInstance(WORKFLOW_FIELD_UPDATES_FIELD,
-          `${baseCustomObject}_TestWorkflowFieldUpdate@v`,
+        verifySubInstance(WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
+          [`${baseCustomObject}_TestWorkflowFieldUpdate@v`],
           'E2E Fetch WorkflowFieldUpdate')
       })
     })
     describe('fetch workflow task', () => {
       it('should fetch workflow task', async () => {
-        verifySubInstance(WORKFLOW_TASKS_FIELD, `${baseCustomObject}_TestWorkflowTask@v`,
+        verifySubInstance(WORKFLOW_TASK_METADATA_TYPE, [`${baseCustomObject}_TestWorkflowTask@v`],
           'E2E Fetch WorkflowTask')
       })
     })
     describe('fetch workflow rule', () => {
       it('should fetch workflow rule', async () => {
-        verifySubInstance(WORKFLOW_RULES_FIELD, `${baseCustomObject}_TestWorkflowRule@v`,
+        verifySubInstance(WORKFLOW_RULE_METADATA_TYPE, [`${baseCustomObject}_TestWorkflowRule@v`],
           'E2E Fetch WorkflowRule')
       })
     })

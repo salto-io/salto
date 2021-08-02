@@ -212,7 +212,6 @@ The following types are supported in the language:
 | `Map`       | "Map\<string\>" mapField {}| {<br>&nbsp;&nbsp;a = "A"<br>&nbsp;&nbsp;b = "B"<br>} | A map/dictionary with string keys, and values of the specified type
 | `unknown`   | unknown anyType          | anything       | a field value which is not validated, and can hold any type of data.
 | `json`      | json value {}            | "{ \"a\": 12 }"| A string value that expects the value to be in JSON format
-| `serviceid` | serviceid myid {}        | "ID"           | A string value that denotes an ID in the service (used by adapters to distinguish ID fields from other fields)
 
 
 ## Language features
@@ -283,6 +282,7 @@ Currently the following core annotations are supported:
 - [_parent](#_parent)
 - [_generated_dependencies / _depends_on](#_generated_dependencies-_depends_on)
 - [_service_url](#_service_url)
+- [_is_service_id](#_is_service_id)
 
 #### `_required`
 This annotation is used on field blocks to specify that an instance must contain a value for this field.
@@ -439,6 +439,26 @@ type salto.example {
 #### _service_url
 This is a hidden annotation (will not be seen in NaCl) that is used to store a URL for an element.
 Elements that have this annotation can support the "Go To Service" feature in Salto enabled editors.
+
+#### _is_service_id
+This boolean annotation is being used to identify fields or types as ServiceId. a ServiceId is a value that denotes an ID in the service (used by adapters to distinguish ID fields from other fields). 
+There is no need to set this annotation to false, since leaving it undefined as its default value will yield some results as 'false'.
+
+Type: `boolean`
+Default: `undefined`
+Applicable to: Types, Fields
+Example:
+```HCL
+type serviceIdTypeExample {
+  _is_service_id = true
+}
+
+type salto.example {
+  string fieldWithServiceIdAnno {
+    _is_service_id = true
+  }
+}
+```
 
 
 #### Adapter-specific annotations example

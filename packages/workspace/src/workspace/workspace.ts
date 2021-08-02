@@ -43,6 +43,7 @@ const log = logger(module)
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
+const { partition } = promises.array
 
 export const ADAPTERS_CONFIGS_PATH = 'adapters'
 export const COMMON_ENV_PREFIX = ''
@@ -376,16 +377,22 @@ export const loadWorkspace = async (
         const stateRemovedElementChanges = (workspaceChanges[envName] ?? createEmptyChangeSet())
           .changes.filter(change => isRemovalChange(change)
             && getChangeElement(change).elemID.isTopLevel())
-        const stateChangesForExistingNaclElements = await awu(partialStateChanges.changes)
-          .filter(async change => {
+        // To preserve the old ws functionality - hidden values should be added to the workspace
+        // cache only if their top level element is in the nacls, or they are marked as hidden
+        // (SAAS-2639)
+        const [stateChangesForExistingNaclElements, dropedStateOnlyChange] = await partition(
+          partialStateChanges.changes,
+          async change => {
             const changeElement = getChangeElement(change)
             const changeID = changeElement.elemID
-            const hasNaclFragment = await source.get(changeID)
-            const isHiddenElement = await isHidden(changeElement)
             return isRemovalChange(change)
-            || hasNaclFragment
-            || isHiddenElement
-          }).toArray()
+            || await source.get(changeID)
+            || isHidden(changeElement, state(envName))
+          }
+        )
+
+        log.debug('droped hidden changes due to missing nacl element for ids:',
+          dropedStateOnlyChange.map(getChangeElement).map(elem => elem.elemID.getFullName()))
 
         return {
           changes: stateChangesForExistingNaclElements
@@ -515,7 +522,6 @@ export const loadWorkspace = async (
         state(),
         before
       )
-      // return after !== undefined ? [toChange({ before, after })] : []
       return [toChange({ before, after })]
     }).toArray()
   }

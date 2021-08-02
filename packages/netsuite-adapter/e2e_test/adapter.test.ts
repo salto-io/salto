@@ -209,7 +209,7 @@ describe('Netsuite adapter E2E with real account', () => {
     })
 
     const subsidiaryInstance = new InstanceElement(
-      naclCase(randomString),
+      naclCase(`Parent Company_${randomString}`),
       subsidiaryType,
       {
         name: randomString,
@@ -223,7 +223,6 @@ describe('Netsuite adapter E2E with real account', () => {
         },
       }
     )
-
     afterAll(async () => {
       const revertChanges: Map<ChangeId, Change<InstanceElement>> = new Map([
         ...withSuiteApp ? [subsidiaryInstance] : [],

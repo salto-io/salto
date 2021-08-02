@@ -23,7 +23,7 @@ import { isDataObjectType } from '../types'
 const { awu } = collections.asynciterable
 
 const REDUNDANT_TYPES = ['NullField', 'CustomFieldList', 'CustomFieldRef']
-const REDUNDANT_FIELDS = ['lastModifiedDate', 'dateCreated']
+const REDUNDANT_FIELDS = ['lastModifiedDate', 'dateCreated', 'createdDate', 'daysOverdue']
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async elements => {

@@ -29,16 +29,6 @@ describe('multiple defaults change validator', () => {
     after: Field | InstanceElement):
       Promise<ReadonlyArray<ChangeError>> =>
     multipleDefaultsValidator([toChange({ before, after })])
-  const createChangeField = (name: string, type: ObjectType): Field => (
-    new Field(type, name, new ListType(new ObjectType(
-      { elemID: new ElemID(SALESFORCE, 'valuesList'),
-        fields: {
-          fullName: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          default: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-          label: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        } }
-    )))
-  )
   describe('in custom fields', () => {
     let obj: ObjectType
     beforeEach(() => {
@@ -179,7 +169,6 @@ describe('multiple defaults change validator', () => {
               label: 'lala',
             },
           ] }, type)
-        createChangeField('customValue', type)
         const afterInstance = createAfterInstance(beforeInstance)
         const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
         expect(changeErrors).toHaveLength(1)
@@ -257,7 +246,6 @@ describe('multiple defaults change validator', () => {
           }, type)
 
           const afterInstance = createAfterInstance(beforeInstance)
-          createChangeField('applicationVisibilities', type)
           const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
@@ -309,7 +297,6 @@ describe('multiple defaults change validator', () => {
           }, type)
 
           const afterInstance = createAfterInstance(beforeInstance)
-          createChangeField('recordTypeVisibilities', type)
           const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
@@ -374,8 +361,6 @@ describe('multiple defaults change validator', () => {
           }, type)
 
           const afterInstance = createAfterInstance(beforeInstance)
-          createChangeField('recordTypeVisibilities', type)
-          createChangeField('applicationVisibilities', type)
           const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
           const changeErrorsIds = changeErrors.map(error => safeJsonStringify(error.elemID))
           expect(changeErrors).toHaveLength(2)

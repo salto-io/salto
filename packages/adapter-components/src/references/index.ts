@@ -13,10 +13,5 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * as auth from './src/auth'
-export * as changeValidators from './src/change_validators'
-export * as client from './src/client'
-export * as config from './src/config'
-export * as elements from './src/elements'
-export * as filterUtils from './src/filter_utils'
-export * as references from './src/references'
+export { addReferences } from './field_references'
+export { FieldReferenceDefinition } from './reference_mapping'

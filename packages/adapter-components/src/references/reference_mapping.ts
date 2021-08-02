@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Field, Value } from '@salto-io/adapter-api'
+import { Field, Value, Element } from '@salto-io/adapter-api'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 
+export type ApiNameFunc = (elem: Element) => string
 type LookupFunc = (val: Value, context?: string) => string
 
 export type ReferenceSerializationStrategy = {
@@ -24,7 +25,7 @@ export type ReferenceSerializationStrategy = {
   lookup: LookupFunc
 }
 
-type ReferenceSerializationStrategyName = 'fullValue' | 'id'
+type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name'
 const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
@@ -34,6 +35,10 @@ const ReferenceSerializationStrategyLookup: Record<
   },
   id: {
     serialize: ({ ref }) => ref.value.value.id,
+    lookup: val => val,
+  },
+  name: {
+    serialize: ({ ref }) => ref.value.value.name,
     lookup: val => val,
   },
 }
@@ -53,16 +58,6 @@ type SourceDef = {
 /**
  * A rule defining how to convert values to reference expressions (on fetch),
  * and reference expressions back to values (on deploy).
- */
-export type FieldReferenceDefinition = {
-  src: SourceDef
-  serializationStrategy?: ReferenceSerializationStrategyName
-  // If target is missing, the definition is used for resolving
-  target?: ReferenceTargetDefinition
-}
-
-/**
- * The rules for finding and resolving values into (and back from) reference expressions.
  * Overlaps between rules are allowed, and the first successful conversion wins.
  * Current order (defined by generateReferenceResolverFinder):
  *  1. Exact field names take precedence over regexp
@@ -72,13 +67,15 @@ export type FieldReferenceDefinition = {
  * 1. An element matching the rule is found.
  * 2. Resolving the resulting reference expression back returns the original value.
  */
-export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
-  {
-    src: { field: 'product', parentTypes: ['plan', 'price'] },
-    serializationStrategy: 'id',
-    target: { type: 'product' },
-  },
-]
+export type FieldReferenceDefinition = {
+  src: SourceDef
+  serializationStrategy?: ReferenceSerializationStrategyName
+  // If target is missing, the definition is used for resolving
+  target?: ReferenceTargetDefinition
+}
+
+// We can extract the api name from the elem id as long as we don't support renaming
+const apiName: ApiNameFunc = elem => elem.elemID.name
 
 export class FieldReferenceResolver {
   src: SourceDef
@@ -102,7 +99,7 @@ export class FieldReferenceResolver {
   match(field: Field): boolean {
     return (
       field.name === this.src.field
-      && this.src.parentTypes.includes(field.parent.elemID.name)
+      && this.src.parentTypes.includes(apiName(field.parent))
     )
   }
 }
@@ -113,7 +110,7 @@ export type ReferenceResolverFinder = (field: Field) => FieldReferenceResolver[]
  * Generates a function that filters the relevant resolvers for a given field.
  */
 export const generateReferenceResolverFinder = (
-  defs = fieldNameToTypeMappingDefs,
+  defs: FieldReferenceDefinition[],
 ): ReferenceResolverFinder => {
   const referenceDefinitions = defs.map(
     def => FieldReferenceResolver.create(def)

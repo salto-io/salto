@@ -99,6 +99,9 @@
 		{
 			"name": "stripe-adapter",
 			"path": "packages/stripe-adapter"
+		},
+		{
+			"path": "temp"
 		}
 	],
 	"settings": {

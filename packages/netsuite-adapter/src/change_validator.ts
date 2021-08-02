@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { createChangeValidator } from '@salto-io/adapter-utils'
 import accountSpecificValuesValidator from './change_validators/account_specific_values'
 import dataAccountSpecificValuesValidator from './change_validators/data_account_specific_values'
 import removeCustomTypesValidator from './change_validators/remove_custom_types'
@@ -25,10 +25,12 @@ import saveSearchMoveEnvironment from './change_validators/saved_search_move_env
 import fileValidator from './change_validators/file_changes'
 import immutableChangesValidator from './change_validators/immutable_changes'
 import subInstancesValidator from './change_validators/subinstances'
+import safeDeployValidator from './change_validators/safe_deploy'
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
+import NetsuiteClient from './client/client'
 
 
-const changeValidators: ChangeValidator[] = [
+const changeValidators = [
   accountSpecificValuesValidator,
   dataAccountSpecificValuesValidator,
   removeCustomTypesValidator,
@@ -38,6 +40,7 @@ const changeValidators: ChangeValidator[] = [
   removeListItemValidator,
   fileValidator,
   subInstancesValidator,
+  safeDeployValidator,
 ]
 
 const nonSuiteAppValidators: ChangeValidator[] = [
@@ -48,12 +51,15 @@ const nonSuiteAppValidators: ChangeValidator[] = [
  * This method runs all change validators and then walks recursively on all references of the valid
  * changes to detect changes that depends on invalid ones and then generate errors for them as well
  */
-const getChangeValidator: (withSuiteApp: boolean) => ChangeValidator = withSuiteApp =>
+const getChangeValidator: (client: NetsuiteClient) => ChangeValidator = client =>
   async changes => {
-    const validators = withSuiteApp
+    const validators = client.isSuiteAppConfigured()
       ? changeValidators
       : [...changeValidators, ...nonSuiteAppValidators]
-    const changeErrors = await createChangeValidator(validators)(changes)
+
+    const changeErrors = _.flatten(await Promise.all(validators
+      .map(validator => validator(changes, client))))
+
     const invalidElementIds = changeErrors.map(error => error.elemID.getFullName())
     return changeErrors.concat(await validateDependsOnInvalidElement(invalidElementIds, changes))
   }

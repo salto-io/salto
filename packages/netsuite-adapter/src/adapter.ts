@@ -354,7 +354,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   public get deployModifiers(): DeployModifiers {
     return {
-      changeValidator: getChangeValidator(this.client.isSuiteAppConfigured()),
+      changeValidator: getChangeValidator(this.client),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
     }
   }

@@ -62,8 +62,10 @@ import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
 import { CustomObject } from '../client/types'
 import { WORKFLOW_FIELD_TO_TYPE, WORKFLOW_TYPE_TO_FIELD, WORKFLOW_DIR_NAME } from './workflow'
+import { file } from 'jszip'
 
 type FilePropertiesMap = Record<string, FileProperties>
+type FieldFileNameParts = {fieldName: string; objectName: string}
 const log = logger(module)
 const { makeArray } = collections.array
 const { awu, groupByAsync, keyByAsync } = collections.asynciterable
@@ -499,9 +501,13 @@ const fetchSObjects = async (
   return _.groupBy(sobjectsDescriptions, e => e.name)
 }
 
+const getFieldNameParts = (fileProperties: FileProperties): FieldFileNameParts =>
+  ({ fieldName: fileProperties.fullName.split('.')[1],
+    objectName: fileProperties.fullName.split('.')[0] } as FieldFileNameParts)
+
 const getObjectFieldByFileProperties = (fileProperties: FileProperties,
   object: ObjectType): Field =>
-  object.fields[fileProperties.fullName.split('.')[1]]
+  object.fields[getFieldNameParts(fileProperties).fieldName]
 
 const addAuditAnnotationsToField = (fileProperties: FileProperties, field: Field): void => {
   Object.assign(field.annotations, getAuditAnnotations(fileProperties))
@@ -666,9 +672,9 @@ const getCustomFieldFileProperties = async (client: SalesforceClient):
   if (errors && errors.length > 0) {
     log.debug(`Encountered errors while listing file properties for CustomFields: ${errors}`)
   }
-  return _(result).groupBy((fileProps:FileProperties) => fileProps.fullName.split('.')[0])
+  return _(result).groupBy((fileProps:FileProperties) => getFieldNameParts(fileProps).objectName)
     .mapValues((values: FileProperties[]) => _.keyBy(values,
-      (fileProps:FileProperties) => fileProps.fullName.split('.')[1])).value()
+      (fileProps:FileProperties) => getFieldNameParts(fileProps).fieldName)).value()
 }
 
 const getNestedCustomObjectValues = async (

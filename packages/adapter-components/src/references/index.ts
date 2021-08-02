@@ -14,4 +14,4 @@
 * limitations under the License.
 */
 export { addReferences } from './field_references'
-export { generateReferenceResolverFinder, FieldReferenceDefinition } from './reference_mapping'
+export { FieldReferenceDefinition } from './reference_mapping'

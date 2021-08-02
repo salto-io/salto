@@ -86,8 +86,8 @@ const replaceReferenceValues = async (
 
   const transformPrimitive: TransformFunc = async ({ value, field }) => (
     (
-      !_.isUndefined(field)
-      && ((_.isString(value) || _.isNumber(value)))
+      field !== undefined
+      && (_.isString(value) || _.isNumber(value))
     )
       ? replacePrimitive(value, field)
       : value

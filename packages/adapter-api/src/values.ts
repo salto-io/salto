@@ -146,33 +146,20 @@ export class VariableExpression extends ReferenceExpression {
   }
 }
 
-export class TypeReference {
+export class TypeReference extends ReferenceExpression {
   constructor(
     public readonly elemID: ElemID,
     public readonly type?: TypeElement,
-  ) {}
+  ) {
+    super(elemID, type)
+  }
 
   get traversalParts(): string[] {
     return this.elemID.getFullNameParts()
   }
 
-  async getResolvedType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
-    if (this.type === undefined && elementsSource === undefined) {
-      throw new Error(
-        `Can not resolve Type of referenceType with ElemID ${this.elemID.getFullName()} `
-        + 'without elementsSource because type does not exist'
-      )
-    }
-    const type = (await elementsSource?.get(this.elemID)) ?? this.type
-    // When there's no value in the ElementSource & in the Ref
-    // Fallback to a placeholder Type. This resembles the behavior
-    // before the RefType change.
-    if (type === undefined) {
-      return new ObjectType({
-        elemID: this.elemID,
-      })
-    }
-    return type
+  async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
+    return super.getResolvedValue(elementsSource)
   }
 }
 

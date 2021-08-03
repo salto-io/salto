@@ -36,7 +36,7 @@ const getRefTypeValue = async (
   refType: TypeReference,
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<Value> =>
-  (refType.getResolvedType(elementsSource))
+  (refType.getResolvedValue(elementsSource))
 
 /**
  * An abstract class that represent the base element.
@@ -96,7 +96,7 @@ export abstract class Element {
   async getAnnotationTypes(elementsSource?: ReadOnlyElementsSource): Promise<TypeMap> {
     const annotationTypes = mapValuesAsync(
       this.annotationRefTypes,
-      refType => (refType.getResolvedType(elementsSource))
+      refType => (refType.getResolvedValue(elementsSource))
     )
 
     // eslint-disable-next-line no-use-before-define

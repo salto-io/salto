@@ -257,8 +257,8 @@ const isAnnotationTypeChange = (
 ): change is DetailedChange & ModificationChange<ReferenceExpression> => (
   isModificationChange(change)
   && change.id.isAnnotationTypeID()
-  && isReferenceExpression(change.data.before)
-  && isReferenceExpression(change.data.after)
+  && (isReferenceExpression(change.data.before))
+  && (isReferenceExpression(change.data.after))
 )
 
 type EffectOnHidden = 'hide' | 'unHide' | 'none'
@@ -361,7 +361,6 @@ const getHiddenFieldAndAnnotationValueChanges = async (
     // This should be the common case where there are no changes to the hidden annotation
     return []
   }
-
   const annotationTypesToHide = groupAnnotationIdsByParentAndName(
     annotationTypeChangesByHiddenEffect?.hide.map(change => change.id) ?? []
   )

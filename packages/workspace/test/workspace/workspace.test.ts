@@ -34,9 +34,9 @@ import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
-  COMMON_ENV_PREFIX, UnresolvedElemIDs, UpdateNaclFilesResult } from '../../src/workspace/workspace'
+  COMMON_ENV_PREFIX, UnresolvedElemIDs, UpdateNaclFilesResult, isValidEnvName } from '../../src/workspace/workspace'
 import { DeleteCurrentEnvError,
-  UnknownEnvError, EnvDuplicationError, ServiceDuplicationError } from '../../src/workspace/errors'
+  UnknownEnvError, EnvDuplicationError, ServiceDuplicationError, InvalidEnvNameError } from '../../src/workspace/errors'
 import { StaticFilesSource } from '../../src/workspace/static_files'
 import * as dump from '../../src/parser/dump'
 import { mockDirStore } from '../common/nacl_file_store'
@@ -2036,8 +2036,13 @@ describe('workspace', () => {
       const envsNames = envs.map((e: {name: string}) => e.name)
       expect(envsNames.includes('new')).toBeTruthy()
     })
-    it('should throw envDuplicationError', async () => {
+    it('should throw EnvDuplicationError', async () => {
       await expect(workspace.addEnvironment('new')).rejects.toEqual(new EnvDuplicationError('new'))
+    })
+    it('should throw InvalidEnvNameError', async () => {
+      const invalidEnvName = 'invalid:env'
+      await expect(workspace.addEnvironment(invalidEnvName))
+        .rejects.toEqual(new InvalidEnvNameError(invalidEnvName))
     })
   })
 
@@ -3338,5 +3343,19 @@ describe('listUnresolvedReferences', () => {
         new ElemID('salesforce', 'unresolved'),
       ])
     })
+  })
+})
+describe('isValidEnvName', () => {
+  it('should be valid env names', () => {
+    expect(isValidEnvName('Production')).toEqual(true)
+    expect(isValidEnvName('legit env name')).toEqual(true)
+    expect(isValidEnvName('My Amazing production!!')).toEqual(true)
+    expect(isValidEnvName('Prod 22.02.2022')).toEqual(true)
+    expect(isValidEnvName('Salto_2-UAT')).toEqual(true)
+  })
+  it('should not be valid env name', () => {
+    expect(isValidEnvName('why?')).toEqual(false)
+    expect(isValidEnvName('no:pe')).toEqual(false)
+    expect(isValidEnvName('100%')).toEqual(false)
   })
 })

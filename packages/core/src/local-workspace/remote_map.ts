@@ -369,9 +369,9 @@ remoteMap.RemoteMapCreator => {
     if (!await fileUtils.exists(locationTmpDir)) {
       await fileUtils.mkdirp(locationTmpDir)
     }
-    if (!/^[a-z0-9-_\s/]+$/i.test(namespace)) {
+    if (/^[:]+$/i.test(namespace)) {
       throw new Error(
-        `Invalid namespace: ${namespace}. Must include only alphanumeric characters or -`
+        `Invalid namespace: ${namespace}. Should not include the character ':'`
       )
     }
 

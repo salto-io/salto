@@ -48,6 +48,12 @@ export class EnvDuplicationError extends Error {
   }
 }
 
+export class InvalidEnvNameError extends Error {
+  constructor(envName: string) {
+    super(`${envName} is an invalid name.\nEnvironment name should includes only alphanumeric characters or one of the following characters: _-.!`)
+  }
+}
+
 export class ServiceDuplicationError extends Error {
   constructor(service: string) {
     super(`${service} is already defined in this workspace`)

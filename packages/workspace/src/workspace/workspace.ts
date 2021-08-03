@@ -29,7 +29,8 @@ import { multiEnvSource, getSourceNameForFilename, MultiEnvSource, EnvsChanges }
 import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
 import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
 import { ElementSelector } from './element_selector'
-import { Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError, DeleteCurrentEnvError } from './errors'
+import { Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError,
+  DeleteCurrentEnvError, InvalidEnvNameError } from './errors'
 import { EnvConfig } from './config/workspace_config_types'
 import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
@@ -50,6 +51,9 @@ export const COMMON_ENV_PREFIX = ''
 const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
 const MULTI_ENV_SOURCE_PREFIX = 'multi_env_element_source'
 const STATE_SOURCE_PREFIX = 'state_element_source'
+
+export const isValidEnvName = (envName: string): boolean =>
+  /^[a-z0-9-_.!\s/]+$/i.test(envName)
 
 export type SourceFragment = {
   sourceRange: SourceRange
@@ -802,6 +806,9 @@ export const loadWorkspace = async (
     addEnvironment: async (env: string): Promise<void> => {
       if (workspaceConfig.envs.map(e => e.name).includes(env)) {
         throw new EnvDuplicationError(env)
+      }
+      if (!isValidEnvName(env)) {
+        throw new InvalidEnvNameError(env)
       }
       // Need to make sure everything is loaded before we add the new env.
       await getWorkspaceState()

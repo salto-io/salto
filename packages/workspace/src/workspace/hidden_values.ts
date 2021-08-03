@@ -363,10 +363,10 @@ const getHiddenFieldAndAnnotationValueChanges = async (
   }
 
   const annotationTypesToHide = groupAnnotationIdsByParentAndName(
-    annotationTypeChangesByHiddenEffect?.hide.map(change => change.id) ?? []
+    annotationTypeChangesByHiddenEffect.hide?.map(change => change.id) ?? []
   )
   const annotationTypesToUnHide = groupAnnotationIdsByParentAndName(
-    annotationTypeChangesByHiddenEffect?.unHide.map(change => change.id) ?? []
+    annotationTypeChangesByHiddenEffect.unHide?.map(change => change.id) ?? []
   )
 
   log.debug('Handling changes in hidden values and annotations:')

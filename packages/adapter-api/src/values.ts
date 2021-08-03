@@ -160,7 +160,7 @@ export class TypeReference {
     if (this.type === undefined && elementsSource === undefined) {
       throw new Error(
         `Can not resolve Type of referenceType with ElemID ${this.elemID.getFullName()} `
-        + 'without elementsSource cause resType does not exist'
+        + 'without elementsSource because type does not exist'
       )
     }
     const type = (await elementsSource?.get(this.elemID)) ?? this.type

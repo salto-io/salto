@@ -187,8 +187,11 @@ describe('fields with context references filter', () => {
           .toEqual(productRuleValues.SBQQ__LookupProductField__c)
       })
       it('Should replace value of field that exists in lookup object with reference', () => {
-        expect(productRule.value.SBQQ__LookupMessageField__c)
-          .toEqual(new ReferenceExpression(mockLookupDataObject.fields.message.elemID))
+        const value = productRule.value.SBQQ__LookupMessageField__c
+        expect(value)
+          .toBeInstanceOf(ReferenceExpression)
+        expect((value as ReferenceExpression).elemID.getFullName())
+          .toEqual(mockLookupDataObject.fields.message.elemID.getFullName())
       })
     })
 
@@ -207,8 +210,11 @@ describe('fields with context references filter', () => {
           .toEqual(productRuleValues.SBQQ__LookupProductField__c)
       })
       it('Should replace value of field that exists in lookup object with reference', () => {
-        expect(productRule.value.SBQQ__LookupMessageField__c)
-          .toEqual(new ReferenceExpression(mockLookupDataObject.fields.message.elemID))
+        const value = productRule.value.SBQQ__LookupMessageField__c
+        expect(value)
+          .toBeInstanceOf(ReferenceExpression)
+        expect((value as ReferenceExpression).elemID.getFullName())
+          .toEqual(mockLookupDataObject.fields.message.elemID.getFullName())
       })
     })
   })

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { Field, isElement, Value, Element } from '@salto-io/adapter-api'
+import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -97,21 +98,6 @@ export type ReferenceContextStrategyName = (
   | 'parentInputObjectLookup' | 'parentOutputObjectLookup'
 )
 
-type PickOne<T, K extends keyof T> = Pick<T, K> & { [P in keyof Omit<T, K>]?: never };
-type MetadataTypeArgs = {
-  type: string
-  typeContext: ReferenceContextStrategyName
-}
-type MetadataParentArgs = {
-  parent?: string
-  parentContext?: ReferenceContextStrategyName
-}
-type ReferenceTargetDefinition = {
-  name?: string
-} & (PickOne<MetadataTypeArgs, 'type'> | PickOne<MetadataTypeArgs, 'typeContext'>)
-  & (PickOne<MetadataParentArgs, 'parent'> | PickOne<MetadataParentArgs, 'parentContext'>)
-export type ExtendedReferenceTargetDefinition = ReferenceTargetDefinition & { lookup: LookupFunc }
-
 type SourceDef = {
   field: string | RegExp
   parentTypes: string[]
@@ -125,7 +111,7 @@ export type FieldReferenceDefinition = {
   src: SourceDef
   serializationStrategy?: ReferenceSerializationStrategyName
   // If target is missing, the definition is used for resolving
-  target?: ReferenceTargetDefinition
+  target?: referenceUtils.ReferenceTargetDefinition<ReferenceContextStrategyName>
 }
 
 /**
@@ -466,7 +452,7 @@ const matchApiName = async (elem: Element, types: string[]): Promise<boolean> =>
 export class FieldReferenceResolver {
   src: SourceDef
   serializationStrategy: ReferenceSerializationStrategy
-  target?: ExtendedReferenceTargetDefinition
+  target?: referenceUtils.ExtendedReferenceTargetDefinition<ReferenceContextStrategyName>
 
   constructor(def: FieldReferenceDefinition) {
     this.src = def.src

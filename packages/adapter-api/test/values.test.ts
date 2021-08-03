@@ -117,12 +117,12 @@ describe('Values', () => {
 
     it('should throw error when no element source and no type', async () => {
       const ref = new TypeReference(elemID)
-      await expect(ref.getResolvedType()).rejects.toEqual(new Error(`Can not resolve Type of referenceType with ElemID ${elemID.getFullName()} without elementsSource because type does not exist`))
+      await expect(ref.getResolvedValue()).rejects.toEqual(new Error(`Can not resolve value of reference with ElemID ${elemID.getFullName()} without elementsSource because value does not exist`))
     })
 
     it('should resolve with element source if possible', async () => {
       const ref = new TypeReference(elemID, BuiltinTypes.STRING)
-      expect(await ref.getResolvedType({
+      expect(await ref.getResolvedValue({
         list: jest.fn(),
         get: async () => BuiltinTypes.NUMBER,
         has: jest.fn(),
@@ -132,7 +132,7 @@ describe('Values', () => {
 
     it('should resolve without element source if it returns undefined', async () => {
       const ref = new TypeReference(elemID, BuiltinTypes.STRING)
-      expect(await ref.getResolvedType({
+      expect(await ref.getResolvedValue({
         list: jest.fn(),
         get: async () => undefined,
         has: jest.fn(),
@@ -142,7 +142,7 @@ describe('Values', () => {
 
     it('should return empty obj with ID if element returns undefined and type doesnt exist', async () => {
       const ref = new TypeReference(elemID)
-      const res = await ref.getResolvedType({
+      const res = await ref.getResolvedValue({
         list: jest.fn(),
         get: async () => undefined,
         has: jest.fn(),

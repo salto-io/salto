@@ -253,7 +253,7 @@ export const createParseResultCache = (
         .forEach(async source => source.delete(filename)))
     },
     deleteAll: async (filenames: string[]): Promise<void> =>
-      (awu(Object.values(await cacheSources)).forEach(async source =>
+      (awu(Object.values(await cacheSources)).forEach(source =>
         source.deleteAll(filenames))),
     getHash: async () => {
       if (!cachedHash) {

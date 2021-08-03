@@ -29,7 +29,7 @@ const filterCreator = (): FilterWith<'preDeploy'> => ({
       .filter(async change => isDataObjectType(
         await getChangeElement<InstanceElement>(change).getType()
       ))
-      .forEach(async change =>
+      .forEach(change =>
         applyFunctionToChangeData<Change<InstanceElement>>(
           change,
           element => {

@@ -59,7 +59,7 @@ const neighborContextFunc = ({
   contextFieldName: string
   levelsUp?: number
   contextValueMapper?: ContextValueMapperFunc
-}): ContextFunc => (({ instance, elemByElemID, fieldPath }) => {
+}): ContextFunc => (async ({ instance, elemByElemID, fieldPath }) => {
   if (fieldPath === undefined || contextFieldName === undefined) {
     return undefined
   }
@@ -100,7 +100,7 @@ const neighborContextFunc = ({
   const contextPath = getParent(fieldPath, levelsUp).createNestedID(contextFieldName)
   const context = resolvePath(instance, contextPath)
   const contextStr = isReferenceExpression(context)
-    ? resolveReference(context, contextPath)
+    ? await resolveReference(context, contextPath)
     : context
   return contextValueMapper ? contextValueMapper(contextStr) : contextStr
 })

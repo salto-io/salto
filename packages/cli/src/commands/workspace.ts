@@ -128,7 +128,7 @@ const wsCleanDef = createWorkspaceCommand({
 const wsGroupDef = createCommandGroupDef({
   properties: {
     name: 'workspace',
-    description: 'Workspace Admin commands',
+    description: 'Workspace administration commands',
   },
   subCommands: [
     wsCleanDef,

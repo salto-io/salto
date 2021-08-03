@@ -29,16 +29,6 @@ describe('multiple defaults change validator', () => {
     after: Field | InstanceElement):
       Promise<ReadonlyArray<ChangeError>> =>
     multipleDefaultsValidator([toChange({ before, after })])
-  const createChangeField = (name: string, type: ObjectType): Field => (
-    new Field(type, name, new ListType(new ObjectType(
-      { elemID: new ElemID(SALESFORCE, 'valuesList'),
-        fields: {
-          fullName: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          default: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-          label: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        } }
-    )))
-  )
   describe('in custom fields', () => {
     let obj: ObjectType
     beforeEach(() => {
@@ -179,12 +169,11 @@ describe('multiple defaults change validator', () => {
               label: 'lala',
             },
           ] }, type)
-        const changeField = createChangeField('customValue', type)
         const afterInstance = createAfterInstance(beforeInstance)
         const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
         expect(changeErrors).toHaveLength(1)
         const [changeError] = changeErrors
-        expect(changeError.elemID).toEqual(changeField.elemID)
+        expect(changeError.elemID).toEqual(afterInstance.elemID)
         expect(changeError.severity).toEqual('Warning')
       })
       it('should not have error for <= 1 default values GlobalValueSet', async () => {
@@ -257,11 +246,10 @@ describe('multiple defaults change validator', () => {
           }, type)
 
           const afterInstance = createAfterInstance(beforeInstance)
-          const changeField = createChangeField('applicationVisibilities', type)
           const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
-          expect(changeError.elemID).toEqual(changeField.elemID)
+          expect(changeError.elemID).toEqual(afterInstance.elemID)
           expect(changeError.severity).toEqual('Warning')
         })
 
@@ -309,11 +297,10 @@ describe('multiple defaults change validator', () => {
           }, type)
 
           const afterInstance = createAfterInstance(beforeInstance)
-          const changeField = createChangeField('recordTypeVisibilities', type)
           const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
-          expect(changeError.elemID).toEqual(changeField.elemID)
+          expect(changeError.elemID).toEqual(afterInstance.elemID)
           expect(changeError.severity).toEqual('Warning')
         })
 
@@ -374,15 +361,13 @@ describe('multiple defaults change validator', () => {
           }, type)
 
           const afterInstance = createAfterInstance(beforeInstance)
-          const changeFieldRecordType = createChangeField('recordTypeVisibilities', type)
-          const changeFieldApplication = createChangeField('applicationVisibilities', type)
           const changeErrors = await runChangeValidatorOnUpdate(beforeInstance, afterInstance)
           const changeErrorsIds = changeErrors.map(error => safeJsonStringify(error.elemID))
           expect(changeErrors).toHaveLength(2)
 
           // doesn't work without the JsonStringify
-          expect(changeErrorsIds).toContain(safeJsonStringify(changeFieldRecordType.elemID))
-          expect(changeErrorsIds).toContain(safeJsonStringify(changeFieldApplication.elemID))
+          expect(changeErrorsIds).toContain(safeJsonStringify(afterInstance.elemID))
+          expect(changeErrorsIds).toContain(safeJsonStringify(afterInstance.elemID))
           changeErrors.forEach(error => {
             expect(error.severity).toEqual('Warning')
           })

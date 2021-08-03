@@ -1569,7 +1569,7 @@ describe('Custom Objects filter', () => {
       })
 
       describe('in partial fetch', () => {
-        beforeEach(() => {
+        beforeEach(async () => {
           const elementsSource = buildElementsSourceFromElements([leadType])
           filter = filterCreator({
             client,
@@ -1579,7 +1579,7 @@ describe('Custom Objects filter', () => {
               elementsSource,
             },
           }) as typeof filter
-          filter.onFetch([sharingRulesType, sharingRulesInstance])
+          await filter.onFetch([sharingRulesType, sharingRulesInstance])
         })
         it('should set instance path', () => {
           expect(sharingRulesInstance.path).toEqual(

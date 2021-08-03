@@ -187,7 +187,7 @@ const buildMultiEnvSource = (
       getRemoteMapNamespace('multi_env_mergeManager'),
       persistent,
       mergedRecoveryMode)
-      mergeManager.init()
+      await mergeManager.init()
     }
     const current = {
       states,

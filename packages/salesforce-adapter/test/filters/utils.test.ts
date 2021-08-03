@@ -35,10 +35,10 @@ describe('addDefaults', () => {
   })
   describe('when called with custom object instance', () => {
     let instance: InstanceElement
-    beforeEach(() => {
+    beforeEach(async () => {
       const customObj = createCustomObjectType('test', {})
       instance = new InstanceElement('test', customObj)
-      addDefaults(instance)
+      await addDefaults(instance)
     })
     it('should not add api name', () => {
       expect(instance.value).not.toHaveProperty(INSTANCE_FULL_NAME_FIELD)

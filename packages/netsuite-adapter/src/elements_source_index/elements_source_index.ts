@@ -78,7 +78,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     .filter(isInstanceElement)
     .forEach(async element => {
       await updateServiceIdIndex(element)
-      updateInternalIdsIndex(element)
+      await updateInternalIdsIndex(element)
       updateCustomFieldsIndex(element)
     })
   log.debug('finished creating elements source index')

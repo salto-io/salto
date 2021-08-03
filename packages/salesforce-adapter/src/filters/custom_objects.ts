@@ -677,10 +677,10 @@ const createCustomObjectInstance = (values: MetadataValues): InstanceElement => 
       ..._.mapValues(
         NESTED_INSTANCE_VALUE_TO_TYPE_NAME,
         fieldType => ({
-          refType: createRefToElmWithValue(new ListType(new ObjectType({
+          refType: new ListType(new ObjectType({
             elemID: new ElemID(SALESFORCE, fieldType),
             annotations: { [METADATA_TYPE]: fieldType },
-          }))),
+          })),
         })
       ),
     },

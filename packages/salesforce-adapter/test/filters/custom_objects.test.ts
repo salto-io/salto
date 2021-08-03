@@ -20,7 +20,6 @@ import {
   ReferenceExpression, isListType, FieldDefinition, toChange, Change, ModificationChange,
   getChangeElement,
   isServiceId,
-  createRefToElmWithValue,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -69,13 +68,13 @@ describe('Custom Objects filter', () => {
           [INSTANCE_FULL_NAME_FIELD]: { refType: BuiltinTypes.STRING },
           columns: { refType: BuiltinTypes.STRING },
           filters: {
-            refType: createRefToElmWithValue(new ObjectType({
+            refType: new ObjectType({
               elemID: listViewFilterElemId,
               fields: {
                 field: { refType: BuiltinTypes.STRING },
                 value: { refType: BuiltinTypes.STRING },
               },
-            })),
+            }),
           },
         }
       }
@@ -100,11 +99,11 @@ describe('Custom Objects filter', () => {
         .map(([annotationName, typeName]) => ([
           annotationName,
           {
-            refType: createRefToElmWithValue(new ObjectType({
+            refType: new ObjectType({
               elemID: new ElemID(SALESFORCE, typeName),
               fields: generateInnerMetadataTypeFields(annotationName),
               annotations: { metadataType: typeName } as MetadataTypeAnnotations,
-            })),
+            }),
           },
         ]))
     )

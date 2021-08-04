@@ -57,7 +57,6 @@ const defaultNaclCaseMapping = {
   '~': 'zb',
   '$': 'zc',
   ',': 'zd',
-  '+': 'ze',
 } as Record<string, string>
 
 const suffixFromList = (specialCharsMappingList: string[]): string => {

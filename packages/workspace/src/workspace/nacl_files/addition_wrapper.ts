@@ -93,6 +93,7 @@ const createInstanceElementFromNestedAdditions = (
   commonInstance: InstanceElement,
   path?: string[]
 ): InstanceElement => {
+  // IDs inside instances can be of values or annotations, we need to keep them separate
   const value = {}
   const annotations = {}
   nestedValues.forEach(nestedValue => {

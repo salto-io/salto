@@ -25,7 +25,7 @@ import saveSearchMoveEnvironment from './change_validators/saved_search_move_env
 import fileValidator from './change_validators/file_changes'
 import immutableChangesValidator from './change_validators/immutable_changes'
 import subInstancesValidator from './change_validators/subinstances'
-import safeDeployValidator from './change_validators/safe_deploy'
+import safeDeployValidator, { FetchByQueryFunc } from './change_validators/safe_deploy'
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
 import NetsuiteClient from './client/client'
 
@@ -51,17 +51,18 @@ const nonSuiteAppValidators: ChangeValidator[] = [
  * This method runs all change validators and then walks recursively on all references of the valid
  * changes to detect changes that depends on invalid ones and then generate errors for them as well
  */
-const getChangeValidator: (client: NetsuiteClient) => ChangeValidator = client =>
-  async changes => {
-    const validators = client.isSuiteAppConfigured()
-      ? changeValidators
-      : [...changeValidators, ...nonSuiteAppValidators]
+const getChangeValidator: (client: NetsuiteClient, fetchByQuery?: FetchByQueryFunc) =>
+  ChangeValidator = (client, fetchByQuery) =>
+    async changes => {
+      const validators = client.isSuiteAppConfigured()
+        ? changeValidators
+        : [...changeValidators, ...nonSuiteAppValidators]
 
-    const changeErrors = _.flatten(await Promise.all(validators
-      .map(validator => validator(changes, client))))
+      const changeErrors = _.flatten(await Promise.all(validators
+        .map(validator => validator(changes, fetchByQuery))))
 
-    const invalidElementIds = changeErrors.map(error => error.elemID.getFullName())
-    return changeErrors.concat(await validateDependsOnInvalidElement(invalidElementIds, changes))
-  }
+      const invalidElementIds = changeErrors.map(error => error.elemID.getFullName())
+      return changeErrors.concat(await validateDependsOnInvalidElement(invalidElementIds, changes))
+    }
 
 export default getChangeValidator

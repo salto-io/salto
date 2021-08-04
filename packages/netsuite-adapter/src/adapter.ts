@@ -17,7 +17,7 @@ import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
   ElemIdGetter, ReadOnlyElementsSource,
   FetchOptions, Field, BuiltinTypes, CORE_ANNOTATIONS, DeployModifiers, Change, getChangeElement,
-  Element,
+  Element, ProgressReporter,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -61,6 +61,7 @@ import { createDateRange } from './changes_detector/date_formats'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import getChangeValidator from './change_validator'
+import { FetchByQueryReturnType } from './change_validators/safe_deploy'
 import { getChangeGroupIdsFunc } from './group_changes'
 import { getDataElements } from './data_elements/data_elements'
 
@@ -165,31 +166,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
     filtersCreators)
   }
 
-  /**
-   * Fetch configuration elements: objects, types and instances for the given Netsuite account.
-   * Account credentials were given in the constructor.
-   */
-
-  public async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
-    const deprecatedSkipList = buildNetsuiteQuery(convertToQueryParams({
-      types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, ['.*']])),
-      filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
-    }))
-
-    let fetchQuery = [
-      this.fetchInclude && buildNetsuiteQuery(this.fetchInclude),
-      this.fetchTarget && buildNetsuiteQuery(convertToQueryParams(this.fetchTarget)),
-      this.fetchExclude && notQuery(buildNetsuiteQuery(this.fetchExclude)),
-      this.skipList && notQuery(buildNetsuiteQuery(convertToQueryParams(this.skipList))),
-      notQuery(deprecatedSkipList),
-    ].filter(values.isDefined).reduce(andQuery)
-
-
+  public fetchByQuery = async (fetchQuery: NetsuiteQuery, progressReporter: ProgressReporter):
+    Promise<FetchByQueryReturnType> => {
     const {
       changedObjectsQuery,
       serverTime,
     } = await this.runSuiteAppOperations(fetchQuery, this.elementsSourceIndex)
-    fetchQuery = changedObjectsQuery !== undefined
+    const updatedFetchQuery = changedObjectsQuery !== undefined
       ? andQuery(changedObjectsQuery, fetchQuery)
       : fetchQuery
 
@@ -204,9 +187,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const getCustomObjectsResult = this.client.getCustomObjects(
       Object.keys(customTypes),
-      fetchQuery
+      updatedFetchQuery
     )
-    const importFileCabinetResult = this.client.importFileCabinetContent(fetchQuery)
+    const importFileCabinetResult = this.client.importFileCabinetContent(updatedFetchQuery)
     progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
 
     const {
@@ -252,6 +235,42 @@ export default class NetsuiteAdapter implements AdapterOperations {
     ]
 
     await this.filtersRunner.onFetch(elements)
+
+    return {
+      failedToFetchAllAtOnce,
+      failedFilePaths,
+      failedTypeToInstances,
+      elements,
+    }
+  }
+
+  /**
+   * Fetch configuration elements: objects, types and instances for the given Netsuite account.
+   * Account credentials were given in the constructor.
+   */
+
+  public async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
+    const deprecatedSkipList = buildNetsuiteQuery(convertToQueryParams({
+      types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, ['.*']])),
+      filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
+    }))
+    console.log('fetchTarget: %', this.fetchTarget)
+
+    const fetchQuery = [
+      this.fetchInclude && buildNetsuiteQuery(this.fetchInclude),
+      this.fetchTarget && buildNetsuiteQuery(convertToQueryParams(this.fetchTarget)),
+      this.fetchExclude && notQuery(buildNetsuiteQuery(this.fetchExclude)),
+      this.skipList && notQuery(buildNetsuiteQuery(convertToQueryParams(this.skipList))),
+      notQuery(deprecatedSkipList),
+    ].filter(values.isDefined).reduce(andQuery)
+
+    const isPartial = this.fetchTarget !== undefined
+
+    const { failedToFetchAllAtOnce,
+      failedFilePaths,
+      failedTypeToInstances,
+      elements } = await this.fetchByQuery(fetchQuery, progressReporter)
+
     const updatedConfig = getConfigFromConfigChanges(
       failedToFetchAllAtOnce, failedFilePaths, failedTypeToInstances, this.userConfig
     )
@@ -354,7 +373,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   public get deployModifiers(): DeployModifiers {
     return {
-      changeValidator: getChangeValidator(this.client),
+      changeValidator: getChangeValidator(this.client, this.fetchByQuery),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
     }
   }

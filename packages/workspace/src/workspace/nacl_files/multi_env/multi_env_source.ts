@@ -83,13 +83,15 @@ type MultiEnvState = {
 
 export type EnvsChanges = Record<string, ChangeSet<Change>>
 
+export type FromSource = 'env' | 'common' | 'both'
+
 export type MultiEnvSource = Omit<NaclFilesSource<EnvsChanges>
   , 'getAll' | 'getElementsSource'> & {
   getAll: (env?: string) => Promise<AsyncIterable<Element>>
   promote: (ids: ElemID[]) => Promise<EnvsChanges>
   getElementIdsBySelectors: (
     selectors: ElementSelector[],
-    commonOnly?: boolean,
+    fromSoruce?: FromSource,
     compact?: boolean,
   ) => Promise<AsyncIterable<ElemID>>
   demote: (ids: ElemID[]) => Promise<EnvsChanges>
@@ -316,12 +318,28 @@ const buildMultiEnvSource = (
     return buildRes.changes
   }
 
+  const getElementsSource = async (env?: string): Promise<ElementsSource> => (
+    (await getState()).states[env ?? primarySourceName].elements
+  )
+
   const getElementIdsBySelectors = async (
     selectors: ElementSelector[],
-    commonOnly = false,
+    fromSource = 'env',
     compact = false,
   ): Promise<AsyncIterable<ElemID>> => {
-    const relevantSource = commonOnly ? commonSource() : primarySource()
+    let relevantSource: ElementsSource
+    switch (fromSource) {
+      case 'env': {
+        relevantSource = primarySource()
+        break
+      }
+      case 'common': {
+        relevantSource = commonSource()
+        break
+      }
+      default: relevantSource = await getElementsSource()
+    }
+
     return selectElementIdsByTraversal(
       selectors,
       relevantSource,
@@ -451,6 +469,7 @@ const buildMultiEnvSource = (
     getNaclFile,
     updateNaclFiles,
     flush,
+    getElementsSource,
     getElementIdsBySelectors,
     promote,
     demote,
@@ -479,9 +498,6 @@ const buildMultiEnvSource = (
     ),
     getAll: async (env?: string): Promise<AsyncIterable<Element>> =>
       (await getState()).states[env ?? primarySourceName].elements.getAll(),
-    getElementsSource: async (env?: string) => (
-      (await getState()).states[env ?? primarySourceName].elements
-    ),
     listNaclFiles: async (): Promise<string[]> => (
       awu(Object.entries(getActiveSources()))
         .flatMap(async ([prefix, source]) => (

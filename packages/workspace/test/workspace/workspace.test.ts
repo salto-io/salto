@@ -19,7 +19,7 @@ import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
   Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
   isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType,
-  Value, TypeReference, INSTANCE_ANNOTATIONS,
+  Value, TypeReference, INSTANCE_ANNOTATIONS, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges, createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
@@ -3131,7 +3131,7 @@ describe('listUnresolvedReferences', () => {
       type1,
       {
         f1: 'aaa',
-        f2: new TypeReference(new ElemID('salesforce', 'someType', 'field', 'f3')),
+        f2: new ReferenceExpression(new ElemID('salesforce', 'someType', 'field', 'f3')),
         f3: 'ccc',
       },
     )
@@ -3142,7 +3142,7 @@ describe('listUnresolvedReferences', () => {
         f1: {
           f1: 'aaa',
           f2: 'bbb',
-          f3: new TypeReference(new ElemID('salesforce', 'someType', 'instance', 'inst1', 'f1')),
+          f3: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'inst1', 'f1')),
         },
         f3: new TypeReference(new ElemID('salesforce', 'someType', 'instance', 'inst1')),
       },

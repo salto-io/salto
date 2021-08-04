@@ -120,6 +120,13 @@ describe('Values', () => {
       await expect(ref.getResolvedValue()).rejects.toEqual(new Error(`Can not resolve value of reference with ElemID ${elemID.getFullName()} without elementsSource because value does not exist`))
     })
 
+    it('should throw error when no elemID is not top level', async () => {
+      const createReference = (): TypeReference => { 
+        return new TypeReference(ElemID.fromFullName('A.nested.instance.id.should.throw.error'))
+      }
+      await expect(createReference).toThrow(new Error(`Invalid id for type reference: ${elemID.getFullName()} Type reference must be top level.`))
+    })
+
     it('should resolve with element source if possible', async () => {
       const ref = new TypeReference(elemID, BuiltinTypes.STRING)
       expect(await ref.getResolvedValue({

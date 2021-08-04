@@ -152,10 +152,11 @@ export class TypeReference extends ReferenceExpression {
     public readonly type?: TypeElement,
   ) {
     super(elemID, type)
-  }
-
-  get traversalParts(): string[] {
-    return this.elemID.getFullNameParts()
+    if (!elemID.isTopLevel()) {
+      throw new Error(
+        `Invalid id for type reference: ${elemID.getFullName()}. Type reference must be top level.`
+      )
+    }
   }
 
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {

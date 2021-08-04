@@ -2052,7 +2052,6 @@ describe('Test utils.ts', () => {
       const objRef = createRefToElmWithValue(obj)
       expect(objRef.elemID).toEqual(obj.elemID)
       expect(objRef.type).toEqual(obj)
-      // TODO: Add tests for all possible TypeElements
     })
   })
 

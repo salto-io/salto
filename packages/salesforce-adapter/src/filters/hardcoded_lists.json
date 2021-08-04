@@ -137,6 +137,7 @@
   "salesforce.Profile.field.pageAccesses",
   "salesforce.Profile.field.recordTypeVisibilities",
   "salesforce.Profile.field.userPermissions",
+  "salesforce.QuickAction.field.fieldOverrides",
   "salesforce.QuickActionLayout.field.quickActionLayoutColumns",
   "salesforce.QuickActionLayoutColumn.field.quickActionLayoutItems",
   "salesforce.QuickActionList.field.quickActionListItems",

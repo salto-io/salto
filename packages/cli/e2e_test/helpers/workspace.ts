@@ -229,7 +229,7 @@ export const runClean = async ({
   ]
   return runCommand({
     workspacePath,
-    args: ['clean', '-f', ...options],
+    args: ['workspace', 'clean', '-f', ...options],
   })
 }
 

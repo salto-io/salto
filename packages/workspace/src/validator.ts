@@ -21,11 +21,11 @@ import {
   Values, isElement, isListType, getRestriction, isVariable, Variable, isPrimitiveValue, ListType,
   isReferenceExpression, StaticFile, isContainerType, isMapType, ObjectType,
   InstanceAnnotationTypes, GLOBAL_ADAPTER, SaltoError, ReadOnlyElementsSource, BuiltinTypes,
-  isPlaceholderObjectType,
+  isPlaceholderObjectType, UnresolvedReference,
 } from '@salto-io/adapter-api'
 import { toObjectType, elementAnnotationTypes } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
-import { UnresolvedReference, resolve, CircularReference } from './expressions'
+import { resolve, CircularReference } from './expressions'
 import { IllegalReference } from './parser/parse'
 
 const { awu } = collections.asynciterable

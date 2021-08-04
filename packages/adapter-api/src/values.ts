@@ -78,6 +78,11 @@ export class StaticFile {
   }
 }
 
+export class UnresolvedReference {
+  constructor(public target: ElemID) {
+  }
+}
+
 export class ReferenceExpression {
   constructor(
     public readonly elemID: ElemID,

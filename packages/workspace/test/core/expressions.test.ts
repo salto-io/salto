@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes, TypeReference } from '@salto-io/adapter-api'
 import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl, getFieldsAndAnnoTypes } from '../utils'
@@ -418,10 +418,10 @@ describe('Test Salto Expressions', () => {
       const instanceToResolveObj = new ObjectType({
         elemID: ElemID.fromFullName('salto.testObj2'),
       })
-      const refTargetInst = new InstanceElement('rrr', new ReferenceExpression(refTargetInstObj.elemID), {
+      const refTargetInst = new InstanceElement('rrr', new TypeReference(refTargetInstObj.elemID), {
         test: 'okok',
       })
-      const instanceToResolve = new InstanceElement('rrr', new ReferenceExpression(instanceToResolveObj.elemID), {
+      const instanceToResolve = new InstanceElement('rrr', new TypeReference(instanceToResolveObj.elemID), {
         test: refTo(refTargetInst, 'test'),
       })
       const elems = [instanceToResolve]
@@ -449,10 +449,10 @@ describe('Test Salto Expressions', () => {
       const instanceToResolveObj = new ObjectType({
         elemID: ElemID.fromFullName('salto.testObj2'),
       })
-      const refTargetInst = new InstanceElement('rrr', new ReferenceExpression(refTargetInstObj.elemID), {
+      const refTargetInst = new InstanceElement('rrr', new TypeReference(refTargetInstObj.elemID), {
         test: 'okok',
       })
-      const instanceToResolve = new InstanceElement('rrr', new ReferenceExpression(instanceToResolveObj.elemID), {
+      const instanceToResolve = new InstanceElement('rrr', new TypeReference(instanceToResolveObj.elemID), {
         test: refTo(refTargetInst, 'test'),
       })
       const elems = [instanceToResolve]

@@ -16,7 +16,8 @@
 
 import { ElemID } from '../src/element_id'
 import { StaticFile, isEqualValues, VariableExpression,
-  ReferenceExpression, isStaticFile, calculateStaticFileHash, isPrimitiveValue, TemplateExpression } from '../src/values'
+  ReferenceExpression, isStaticFile, calculateStaticFileHash, isPrimitiveValue, TemplateExpression, TypeReference } from '../src/values'
+import { BuiltinTypes } from '../src/builtins'
 
 describe('Values', () => {
   describe('ReferenceExpression.createWithValue', () => {
@@ -108,6 +109,52 @@ describe('Values', () => {
       it('should return false', () => {
         nonPrimitiveValues.forEach(val => expect(isPrimitiveValue(val)).toBeFalsy())
       })
+    })
+  })
+  describe('TypeReference', () => {
+    const idString = 'salesforce.someid'
+    const elemID = ElemID.fromFullName(idString)
+
+    it('should throw error when no element source and no type', async () => {
+      const ref = new TypeReference(elemID)
+      await expect(ref.getResolvedValue()).rejects.toEqual(new Error(`Can not resolve value of reference with ElemID ${elemID.getFullName()} without elementsSource because value does not exist`))
+    })
+
+    it('should throw error when no elemID is not top level', async () => {
+      const createReference = (): TypeReference =>
+        new TypeReference(ElemID.fromFullName('A.nested.instance.id.should.throw.error'))
+      await expect(createReference).toThrow(new Error('Invalid id for type reference: A.nested.instance.id.should.throw.error. Type reference must be top level.'))
+    })
+
+    it('should resolve with element source if possible', async () => {
+      const ref = new TypeReference(elemID, BuiltinTypes.STRING)
+      expect(await ref.getResolvedValue({
+        list: jest.fn(),
+        get: async () => BuiltinTypes.NUMBER,
+        has: jest.fn(),
+        getAll: jest.fn(),
+      })).toEqual(BuiltinTypes.NUMBER)
+    })
+
+    it('should resolve without element source if it returns undefined', async () => {
+      const ref = new TypeReference(elemID, BuiltinTypes.STRING)
+      expect(await ref.getResolvedValue({
+        list: jest.fn(),
+        get: async () => undefined,
+        has: jest.fn(),
+        getAll: jest.fn(),
+      })).toEqual(BuiltinTypes.STRING)
+    })
+
+    it('should return empty obj with ID if element returns undefined and type doesnt exist', async () => {
+      const ref = new TypeReference(elemID)
+      const res = await ref.getResolvedValue({
+        list: jest.fn(),
+        get: async () => undefined,
+        has: jest.fn(),
+        getAll: jest.fn(),
+      })
+      expect(res.elemID.getFullName()).toEqual(elemID.getFullName())
     })
   })
 })

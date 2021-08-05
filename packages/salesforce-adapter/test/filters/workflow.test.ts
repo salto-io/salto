@@ -20,7 +20,7 @@ import {
   getChangeElement, ModificationChange, isModificationChange, Value, isListType, ListType,
 } from '@salto-io/adapter-api'
 import {
-  findElement,
+  findElement, createRefToElmWithValue,
 } from '@salto-io/adapter-utils'
 
 import { FilterWith } from '../../src/filter'
@@ -46,7 +46,7 @@ describe('Workflow filter', () => {
   const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   const dummyElemID = new ElemID(SALESFORCE, 'dummy')
   const dummyObj = new ObjectType({ elemID: dummyElemID })
-  const dummyRefToObj = new ReferenceExpression(dummyElemID, dummyObj)
+  const dummyRefToObj = createRefToElmWithValue(dummyObj)
 
   const workflowInstanceName = 'Account'
   const generateWorkFlowInstance = (): InstanceElement => (

@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
-import { restlet } from '../../src/types/custom_types/restlet'
+import { restlet } from '../../src/autogen/types/custom_types/restlet'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/script'
-import { emailcaptureplugin } from '../../src/types/custom_types/emailcaptureplugin'
-import { plugintype } from '../../src/types/custom_types/plugintype'
+import { emailcaptureplugin } from '../../src/autogen/types/custom_types/emailcaptureplugin'
+import { plugintype } from '../../src/autogen/types/custom_types/plugintype'
 
 
 describe('setScriptsUrls', () => {

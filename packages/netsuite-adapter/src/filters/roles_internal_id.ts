@@ -16,7 +16,7 @@
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, Field, getChangeElement, InstanceElement, isAdditionChange, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { role } from '../types/custom_types/role'
+import { role } from '../autogen/types/custom_types/role'
 import NetsuiteClient from '../client/client'
 import { ROLE } from '../constants'
 

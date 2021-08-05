@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
-import { role } from '../../src/types/custom_types/role'
+import { role } from '../../src/autogen/types/custom_types/role'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/role'
 

@@ -15,7 +15,7 @@
 */
 
 import { CORE_ANNOTATIONS, isObjectType } from '@salto-io/adapter-api'
-import { CustomType } from '../types'
+import { CustomType } from '../autogen/types'
 import { ServiceUrlSetter } from './types'
 
 const TYPE_TO_URL: Record<CustomType | 'file' | 'folder', string| undefined> = {

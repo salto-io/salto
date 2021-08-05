@@ -15,7 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { entitycustomfield } from '../src/types/custom_types/entitycustomfield'
+import { entitycustomfield } from '../src/autogen/types/custom_types/entitycustomfield'
 import { LAST_FETCH_TIME, NETSUITE, PATH } from '../src/constants'
 import { createElementsSourceIndex } from '../src/elements_source_index/elements_source_index'
 

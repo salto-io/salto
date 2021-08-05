@@ -24,9 +24,9 @@ import { NETSUITE } from '../../src/constants'
 import SdfClient from '../../src/client/sdf_client'
 import { getDataElements, getDataTypes } from '../../src/data_elements/data_elements'
 import { NetsuiteQuery } from '../../src/query'
-import { entitycustomfield } from '../../src/types/custom_types/entitycustomfield'
+import { entitycustomfield } from '../../src/autogen/types/custom_types/entitycustomfield'
 import { getFieldInstanceTypes } from '../../src/data_elements/custom_fields'
-import { othercustomfield } from '../../src/types/custom_types/othercustomfield'
+import { othercustomfield } from '../../src/autogen/types/custom_types/othercustomfield'
 
 jest.mock('@salto-io/adapter-components', () => ({
   ...jest.requireActual<{}>('@salto-io/adapter-components'),

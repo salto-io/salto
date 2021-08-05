@@ -7,11 +7,13 @@ import re
 import sys
 import time
 import logging
+from pathlib import Path
+
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
 
 SCRIPT_DIR = os.path.dirname(__file__)
-SRC_DIR = os.path.join(SCRIPT_DIR, '../src/')
+SRC_DIR = os.path.join(SCRIPT_DIR, '../src/autogen/')
 TYPES_DIR = os.path.join(SRC_DIR, 'types/')
 CUSTOM_TYPES_DIR = os.path.join(TYPES_DIR, 'custom_types/')
 
@@ -50,13 +52,13 @@ LICENSE_HEADER = '''/*
 list_type_import = ' ListType,'
 enums_import = '''import { enums } from '../enums'
 '''
-field_types_import = '''import { fieldTypes } from '../field_types'
+field_types_import = '''import { fieldTypes } from '../../../types/field_types'
 '''
 
 import_statements_for_type_def_template = '''import {{
   BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,{list_type_import}
 }} from '@salto-io/adapter-api'
-import * as constants from '../../constants'
+import * as constants from '../../../constants'
 {enums_import}{field_types_import}
 '''
 
@@ -65,7 +67,7 @@ type_inner_types_array_template = '''export const {type_name}InnerTypes: ObjectT
 '''
 
 COMMON_IMPORT_STATEMENTS_FOR_ENUMS_DEF = '''import {{ CORE_ANNOTATIONS, createRestriction, ElemID, PrimitiveType, PrimitiveTypes }} from '@salto-io/adapter-api'
-import * as constants from '../constants'
+import * as constants from '../../constants'
 
 '''
 
@@ -104,8 +106,7 @@ enums_values_template = '''export type {type_name}Value = {values}
 enums_file_template = HEADER_FOR_DEFS + COMMON_IMPORT_STATEMENTS_FOR_ENUMS_DEF + SUBTYPES_FOLDER_PATH_DEF + '''{enums_elem_ids}
 export const enums: Record<string, PrimitiveType> = {{
 {enums_entries}}}
-{enums_values}
-'''
+{enums_values}'''
 
 inner_types_def_template = '''const {inner_type_name}ElemID = new ElemID(constants.NETSUITE, '{inner_type_name}')
 {type_def}
@@ -150,12 +151,8 @@ custom_types_map_entry_template = '''  {type_name},
 type_inner_types_vars_template = '''  ...{type_name}InnerTypes,
 '''
 
-types_file_template = LICENSE_HEADER + '''import {{ ObjectType, TypeElement }} from '@salto-io/adapter-api'
-import _ from 'lodash'
-import {{ file, folder }} from './types/file_cabinet_types'
-{import_types_statements}import {{ fieldTypes }} from './types/field_types'
-import {{ enums }} from './types/enums'
-
+types_file_template = LICENSE_HEADER + '''import {{ ObjectType }} from '@salto-io/adapter-api'
+{import_types_statements}
 
 export type CustomType = {custom_type_value}
 
@@ -165,27 +162,8 @@ export type CustomType = {custom_type_value}
 export const customTypes: Readonly<Record<string, ObjectType>> = {{
 {custom_types_map_entries}}}
 
-const innerCustomTypes: ObjectType[] = [
+export const innerCustomTypes: ObjectType[] = [
 {all_inner_types_vars}]
-
-export const fileCabinetTypes: Readonly<Record<string, ObjectType>> = {{
-  file,
-  folder,
-}}
-
-export const isCustomType = (typeElemID: ElemID): boolean =>
-  !_.isUndefined(customTypes[typeElemID.name])
-
-export const isFileCabinetType = (typeElemID: ElemID): boolean =>
-  !_.isUndefined(fileCabinetTypes[ypeElemID.name])
-
-export const getMetadataTypes = (): TypeElement[] => [
-  ...Object.values(customTypes),
-  ...innerCustomTypes,
-  ...Object.values(enums),
-  ...Object.values(fileCabinetTypes),
-  ...Object.values(fieldTypes),
-]
 '''
 
 default_value_pattern = re.compile("[\s\S]*The default value is '?‘?([-|#\w]*)’?'?\.[\s\S]*") # e.g. ‘MIDDLE’, 'NORMAL', T, '|', '#000000', 'windows-1252'
@@ -416,6 +394,7 @@ def generate_enums_file(enum_to_possible_values):
       enums_entries = ''.join(enums_entries_list),
       enums_values = enums_values,
     )
+    Path(TYPES_DIR).mkdir(parents=True, exist_ok=True)
     with open(TYPES_DIR + 'enums.ts', 'w') as file:
         file.write(file_content)
 
@@ -513,6 +492,7 @@ def generate_file_per_type(type_name_to_types_defs):
             enums_import = enums_import if 'enums.' in file_data else '',
             field_types_import = field_types_import if 'fieldTypes.' in file_data else '')
         type_def_file_content = HEADER_FOR_DEFS + import_statements + file_data
+        Path(CUSTOM_TYPES_DIR).mkdir(parents=True, exist_ok=True)
         with open(CUSTOM_TYPES_DIR + type_name + '.ts', 'w') as file:
             file.write(type_def_file_content)
 

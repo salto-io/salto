@@ -16,7 +16,7 @@
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/data_instances_internal_id'
 import { ACCOUNT_SPECIFIC_VALUE, NETSUITE } from '../../src/constants'
-import { role } from '../../src/types/custom_types/role'
+import { role } from '../../src/autogen/types/custom_types/role'
 
 describe('data_instances_internal_id', () => {
   const recordRefType = new ObjectType({

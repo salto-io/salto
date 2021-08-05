@@ -14,16 +14,16 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
-import { crmcustomfield } from '../../src/types/custom_types/crmcustomfield'
+import { crmcustomfield } from '../../src/autogen/types/custom_types/crmcustomfield'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/custom_field'
-import { entitycustomfield } from '../../src/types/custom_types/entitycustomfield'
-import { itemcustomfield } from '../../src/types/custom_types/itemcustomfield'
-import { itemnumbercustomfield } from '../../src/types/custom_types/itemnumbercustomfield'
-import { itemoptioncustomfield } from '../../src/types/custom_types/itemoptioncustomfield'
-import { othercustomfield } from '../../src/types/custom_types/othercustomfield'
-import { transactionbodycustomfield } from '../../src/types/custom_types/transactionbodycustomfield'
-import { transactioncolumncustomfield } from '../../src/types/custom_types/transactioncolumncustomfield'
+import { entitycustomfield } from '../../src/autogen/types/custom_types/entitycustomfield'
+import { itemcustomfield } from '../../src/autogen/types/custom_types/itemcustomfield'
+import { itemnumbercustomfield } from '../../src/autogen/types/custom_types/itemnumbercustomfield'
+import { itemoptioncustomfield } from '../../src/autogen/types/custom_types/itemoptioncustomfield'
+import { othercustomfield } from '../../src/autogen/types/custom_types/othercustomfield'
+import { transactionbodycustomfield } from '../../src/autogen/types/custom_types/transactionbodycustomfield'
+import { transactioncolumncustomfield } from '../../src/autogen/types/custom_types/transactioncolumncustomfield'
 
 
 describe('setCustomFieldsUrls', () => {

@@ -39,7 +39,7 @@ describe('test cache manager', () => {
     )
   })
 
-  describe('On clear', async () => {
+  describe('On clear', () => {
     it('calls clear on each flushable', async () => {
       await manager.clear()
       await Promise.all(flushables.map(async flushable => {
@@ -47,7 +47,7 @@ describe('test cache manager', () => {
       }))
     })
   })
-  describe('On flush', async () => {
+  describe('On flush', () => {
     it('If flush was successful, doesnt clear on init', async () => {
       await manager.flush()
       await Promise.all(flushables.map(async flushable => {

@@ -39,7 +39,7 @@ import {
 import { DuplicateInstanceKeyError } from '../../src/merger/internal/instances'
 import { MultiplePrimitiveTypesError } from '../../src/merger/internal/primitives'
 import { DuplicateVariableNameError } from '../../src/merger/internal/variables'
-import { CircularReferenceValidationError, IllegalReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, InvalidStaticFileError } from '../../src/validator'
+import { CircularReferenceValidationError, IllegalReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, InvalidStaticFileError, InvalidTypeValidationError } from '../../src/validator'
 import { UnresolvedReferenceValidationError } from '../../src/errors'
 import { MissingStaticFile } from '../../src/workspace/static_files'
 
@@ -470,6 +470,9 @@ describe('State/cache serialization', () => {
         maxValue: 6,
         minValue: 4,
       }),
+      new InvalidTypeValidationError(
+        new ElemID('salto', 'InvalidTypeValidationError'),
+      ),
     ], err => err.elemID.getFullName())
 
     it('should serialize and deserialize correctly', async () => {

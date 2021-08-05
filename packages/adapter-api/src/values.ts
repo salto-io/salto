@@ -19,7 +19,7 @@ import { hash as hashUtils, types } from '@salto-io/lowerdash'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively elements.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
-import { Element, ReadOnlyElementsSource, ObjectType, TypeElement } from './elements'
+import { Element, ReadOnlyElementsSource, PlaceholderObjectType, TypeElement } from './elements'
 
 export type PrimitiveValue = string | boolean | number
 
@@ -122,7 +122,7 @@ export class ReferenceExpression {
     // Fallback to a placeholder Type. This resembles the behavior
     // before the RefType change.
     if (value === undefined) {
-      return new ObjectType({
+      return new PlaceholderObjectType({
         elemID: this.elemID,
       })
     }

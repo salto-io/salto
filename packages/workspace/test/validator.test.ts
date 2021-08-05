@@ -2029,6 +2029,21 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(3)
       })
     })
+
+    it('should throw an error when an instance type is not found', async () => {
+      const instance = new InstanceElement(
+        'name',
+        new ReferenceExpression(new ElemID('instance', 'notExists')),
+      )
+      const errors = await validateElements(
+        [instance],
+        createInMemoryElementSource([
+          instance,
+        ]),
+      )
+      expect(errors).toHaveLength(1)
+      expect(errors[0].message).toBe('Error validating "instance.notExists.instance.name": type notExists of instance name does not exist')
+    })
   })
 
   describe('InvalidStaticFileError', () => {

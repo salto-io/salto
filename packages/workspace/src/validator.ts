@@ -21,7 +21,7 @@ import {
   Values, isElement, isListType, getRestriction, isVariable, Variable, isPrimitiveValue, ListType,
   isReferenceExpression, StaticFile, isContainerType, isMapType, ObjectType,
   InstanceAnnotationTypes, GLOBAL_ADAPTER, SaltoError, ReadOnlyElementsSource, BuiltinTypes,
-  PLACEHOLDER_VALUE,
+  isPlaceholderObjectType,
 } from '@salto-io/adapter-api'
 import { toObjectType, elementAnnotationTypes } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
@@ -586,7 +586,7 @@ const validateInstanceType = async (
   elementsSource: ReadOnlyElementsSource
 ): Promise<ValidationError[]> => {
   const type = await element.getType(elementsSource)
-  if (type.annotations.type === PLACEHOLDER_VALUE) {
+  if (isPlaceholderObjectType(type)) {
     return [new InvalidTypeValidationError(element.elemID)]
   }
   return []

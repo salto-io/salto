@@ -431,6 +431,9 @@ export class ObjectType extends Element {
   }
 }
 
+export class PlaceholderObjectType extends ObjectType {
+}
+
 export class InstanceElement extends Element {
   public refType: TypeReference
   constructor(
@@ -503,6 +506,10 @@ export function isInstanceElement(element: any): element is InstanceElement {
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isObjectType(element: any): element is ObjectType {
   return element instanceof ObjectType
+}
+
+export function isPlaceholderObjectType(element: unknown): element is PlaceholderObjectType {
+  return element instanceof PlaceholderObjectType
 }
 
 export function isPrimitiveType(

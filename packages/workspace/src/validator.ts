@@ -582,12 +582,11 @@ const instanceAnnotationsType = new ObjectType({
   ),
 })
 const validateInstanceType = async (
-  element: InstanceElement,
-  elementsSource: ReadOnlyElementsSource
+  elemID: ElemID,
+  type: ObjectType,
 ): Promise<ValidationError[]> => {
-  const type = await element.getType(elementsSource)
   if (isPlaceholderObjectType(type)) {
-    return [new InvalidTypeValidationError(element.elemID)]
+    return [new InvalidTypeValidationError(elemID)]
   }
   return []
 }
@@ -595,18 +594,19 @@ const validateInstanceType = async (
 const validateInstanceElements = async (
   element: InstanceElement,
   elementsSource: ReadOnlyElementsSource
-): Promise<ValidationError[]> =>
-  [
+): Promise<ValidationError[]> => {
+  const type = await element.getType(elementsSource)
+  return [
     ...await validateValue(
       element.elemID,
       element.value,
-      await element.getType(elementsSource),
+      type,
       elementsSource
     ),
     ...await validateAnnotations(
       element.elemID,
       element.value,
-      await element.getType(elementsSource),
+      type,
       elementsSource,
     ),
     ...await validateValue(
@@ -616,10 +616,11 @@ const validateInstanceElements = async (
       elementsSource,
     ),
     ...await validateInstanceType(
-      element,
-      elementsSource,
+      element.elemID,
+      type,
     ),
   ]
+}
 
 const validateVariableValue = (elemID: ElemID, value: Value): ValidationError[] => {
   if (isReferenceExpression(value)) {

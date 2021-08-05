@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, Value, isListType, isObjectType, ListType, MapType, isMapType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, Value, isListType, isObjectType, ListType, MapType, isMapType, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { makeFilter, UnorderedList } from '../../src/filters/convert_lists'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -30,17 +29,17 @@ describe('convert lists filter', () => {
     elemID: mockObjNoInstancesId,
     fields: {
       single: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
     },
   })
 
   const innerFields = {
     key: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
     list: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
   }
 
@@ -51,16 +50,16 @@ describe('convert lists filter', () => {
 
   const fieldTypeFields = {
     key: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
     value: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
     list: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
     strMap: {
-      refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)),
+      refType: new MapType(BuiltinTypes.STRING),
     },
   }
 
@@ -69,7 +68,7 @@ describe('convert lists filter', () => {
     fields: {
       ...fieldTypeFields,
       listOfObj: {
-        refType: createRefToElmWithValue(mockInnerFieldType),
+        refType: mockInnerFieldType,
       },
     },
   })
@@ -82,7 +81,7 @@ describe('convert lists filter', () => {
     fields: {
       ...fieldTypeFields,
       listOfObj: {
-        refType: createRefToElmWithValue(mockInnerFieldTypeB),
+        refType: mockInnerFieldTypeB,
       },
     },
   })
@@ -92,10 +91,10 @@ describe('convert lists filter', () => {
     elemID: mockObjToSortId,
     fields: {
       sortByMe: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       other: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
     },
   })
@@ -105,7 +104,7 @@ describe('convert lists filter', () => {
     elemID: nestedMockObjToSortId,
     fields: {
       nestedAnnoToSort: {
-        refType: createRefToElmWithValue(mockTypeToSort),
+        refType: mockTypeToSort,
       },
     },
   })
@@ -125,7 +124,7 @@ describe('convert lists filter', () => {
     elemID: mockObjId,
     fields: {
       applicationVisibilities: {
-        refType: createRefToElmWithValue(new MapType(mockFieldType)),
+        refType: new MapType(mockFieldType),
       },
     },
     annotations: {
@@ -136,31 +135,31 @@ describe('convert lists filter', () => {
     elemID: mockObjId,
     fields: {
       lst: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       mockFieldMap: {
-        refType: createRefToElmWithValue(new MapType(mockFieldType)),
+        refType: new MapType(mockFieldType),
       },
       single: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       ordered: {
-        refType: createRefToElmWithValue(mockFieldType),
+        refType: mockFieldType,
       },
       unordered: {
-        refType: createRefToElmWithValue(mockFieldType),
+        refType: mockFieldType,
       },
       singleHardcoded: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       singleObjHardcoded: {
-        refType: createRefToElmWithValue(mockFieldTypeB),
+        refType: mockFieldTypeB,
       },
       emptyHardcoded: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       fieldWithAnnotations: {
-        refType: createRefToElmWithValue(mockFieldTypeWithAnnotations),
+        refType: mockFieldTypeWithAnnotations,
         annotations: {
           annotationToSort: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
           otherAnnotation: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],

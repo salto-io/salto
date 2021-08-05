@@ -16,7 +16,6 @@
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { getTypeAndInstances, getAllElements } from '../../../src/elements/ducktype'
 import * as typeElements from '../../../src/elements/ducktype/type_elements'
 import * as instanceElements from '../../../src/elements/ducktype/instance_elements'
@@ -42,7 +41,7 @@ describe('ducktype_transformer', () => {
         return {
           type: new ObjectType({
             elemID: new ElemID(adapterName, name),
-            fields: { someNested: { refType: createRefToElmWithValue(someNested) } },
+            fields: { someNested: { refType: someNested } },
           }),
           nestedTypes: [someNested, anotherNested],
         }

@@ -22,7 +22,7 @@ import {
   isReferenceExpression,
   TypeReference,
 } from '@salto-io/adapter-api'
-import { createRefToElmWithValue, safeJsonStringify } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl } from '../utils'
 
@@ -49,8 +49,8 @@ describe('State/cache serialization', () => {
     elemID: new ElemID('salesforce', 'string'),
     primitive: PrimitiveTypes.STRING,
     annotationRefsOrTypes: {
-      anno: createRefToElmWithValue(BuiltinTypes.STRING),
-      hiddenAnno: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
+      anno: BuiltinTypes.STRING,
+      hiddenAnno: BuiltinTypes.HIDDEN_STRING,
     },
     annotations: {
       anno: 'type annotation',
@@ -78,21 +78,21 @@ describe('State/cache serialization', () => {
     elemID: new ElemID('salesforce', 'test'),
     fields: {
       name: {
-        refType: createRefToElmWithValue(strType),
+        refType: strType,
         annotations: { label: 'Name' },
       },
       file: {
-        refType: createRefToElmWithValue(strType),
+        refType: strType,
         annotations: { label: 'File' },
       },
       num: {
-        refType: createRefToElmWithValue(numType),
+        refType: numType,
       },
       list: {
-        refType: createRefToElmWithValue(strListType),
+        refType: strListType,
       },
       map: {
-        refType: createRefToElmWithValue(strMapType),
+        refType: strMapType,
       },
     },
   })
@@ -348,7 +348,7 @@ describe('State/cache serialization', () => {
         elemID: new ElemID('salesforce', 'test'),
         fields: {
           lazyFile: {
-            refType: createRefToElmWithValue(strType),
+            refType: strType,
             annotations: { label: 'Lazy File' },
           },
         },

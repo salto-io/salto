@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, MapType, ListType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { findDataField, returnFullEntry } from '../../src/elements/field_finder'
 
 const ADAPTER_NAME = 'myAdapter'
@@ -22,20 +21,20 @@ const ADAPTER_NAME = 'myAdapter'
 const nestedType = new ObjectType({
   elemID: new ElemID(ADAPTER_NAME, 'nested'),
   fields: {
-    str: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-    list: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)) },
+    str: { refType: BuiltinTypes.STRING },
+    list: { refType: new ListType(BuiltinTypes.NUMBER) },
   },
 })
 
 const sampleType = new ObjectType({
   elemID: new ElemID(ADAPTER_NAME, 'bla'),
   fields: {
-    str: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    str: { refType: BuiltinTypes.STRING },
     nested: {
-      refType: createRefToElmWithValue(nestedType),
+      refType: nestedType,
     },
-    nestedList: { refType: createRefToElmWithValue(new ListType(nestedType)) },
-    nestedMap: { refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)) },
+    nestedList: { refType: new ListType(nestedType) },
+    nestedMap: { refType: new MapType(BuiltinTypes.STRING) },
   },
 })
 

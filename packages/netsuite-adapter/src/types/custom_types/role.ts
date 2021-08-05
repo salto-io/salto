@@ -18,7 +18,6 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 import { enums } from '../enums'
 
@@ -33,19 +32,19 @@ const role_permissions_permission = new ObjectType({
   },
   fields: {
     permkey: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customsegment   customrecordtype   For information about other possible values, see generic_permission. */
     permlevel: {
-      refType: createRefToElmWithValue(enums.generic_permission_level),
+      refType: enums.generic_permission_level,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_permission_level. */
     restriction: {
-      refType: createRefToElmWithValue(enums.role_restrict),
+      refType: enums.role_restrict,
       annotations: {
       },
     }, /* Original description: For information about possible values, see role_restrict. */
@@ -63,7 +62,7 @@ const role_permissions = new ObjectType({
   },
   fields: {
     permission: {
-      refType: createRefToElmWithValue(new ListType(role_permissions_permission)),
+      refType: new ListType(role_permissions_permission),
       annotations: {
       },
     },
@@ -81,24 +80,24 @@ const role_recordrestrictions_recordrestriction = new ObjectType({
   },
   fields: {
     segment: {
-      refType: createRefToElmWithValue(enums.role_restrictionsegment),
+      refType: enums.role_restrictionsegment,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see role_restrictionsegment. */
     restriction: {
-      refType: createRefToElmWithValue(enums.role_restrictions),
+      refType: enums.role_restrictions,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see role_restrictions. */
     viewingallowed: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the restriction value is not equal to DEFAULTTOOWN.   The default value is F. */
     itemsrestricted: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the restriction value is not equal to DEFAULTTOOWN.   The default value is F. */
@@ -116,7 +115,7 @@ const role_recordrestrictions = new ObjectType({
   },
   fields: {
     recordrestriction: {
-      refType: createRefToElmWithValue(new ListType(role_recordrestrictions_recordrestriction)),
+      refType: new ListType(role_recordrestrictions_recordrestriction),
       annotations: {
       },
     },
@@ -133,7 +132,7 @@ export const role = new ObjectType({
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -141,109 +140,109 @@ export const role = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customrole’. */
     centertype: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the center custom type.   For information about other possible values, see role_centertype. */
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     tfaduration: {
-      refType: createRefToElmWithValue(enums.tfaduration),
+      refType: enums.tfaduration,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the tfarequired value is not equal to OFF.   For information about possible values, see tfaduration.   The default value is '0'. */
     employeerestriction: {
-      refType: createRefToElmWithValue(enums.role_fullrestrictions),
+      refType: enums.role_fullrestrictions,
       annotations: {
       },
     }, /* Original description: For information about possible values, see role_fullrestrictions. */
     employeeviewingallowed: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the employeerestriction value is not equal to any of the following lists or values: DEFAULTTOOWN, NONE.   The default value is F. */
     ispartnerrole: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     issalesrole: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     issupportrole: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     issuerole: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: If this field appears in the project, you must reference the ISSUEDB feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ISSUEDB must be enabled for this field to appear in your account. */
     restricttimeandexpenses: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     employeeselectionunrestricted: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     isinactive: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     subsidiaryviewingallowed: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the SUBSIDIARIES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. SUBSIDIARIES must be enabled for this field to appear in your account. */
     subsidiaryoption: {
-      refType: createRefToElmWithValue(enums.rolesubsidiaryoption),
+      refType: enums.rolesubsidiaryoption,
       annotations: {
       },
     }, /* Original description: For information about possible values, see rolesubsidiaryoption.   The default value is 'ALL'.   If this field appears in the project, you must reference the SUBSIDIARIES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. SUBSIDIARIES must be enabled for this field to appear in your account. */
     issinglesignononly: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     iswebserviceonlyrole: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the WEBSERVICES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. WEBSERVICES must be enabled for this field to appear in your account. */
     restrictbydevice: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
     restrictip: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the IPADDRESSRULES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. IPADDRESSRULES must be enabled for this field to appear in your account. */
     tfarequired: {
-      refType: createRefToElmWithValue(enums.tfarequired),
+      refType: enums.tfarequired,
       annotations: {
       },
     }, /* Original description: For information about possible values, see tfarequired.   The default value is 'OFF'. */
     permissions: {
-      refType: createRefToElmWithValue(role_permissions),
+      refType: role_permissions,
       annotations: {
       },
     },
     recordrestrictions: {
-      refType: createRefToElmWithValue(role_recordrestrictions),
+      refType: role_recordrestrictions,
       annotations: {
       },
     },

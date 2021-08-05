@@ -15,7 +15,6 @@
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement, ListType } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/field_references'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
@@ -57,39 +56,39 @@ describe('Field references filter', () => {
   const apiClientType = new ObjectType({
     elemID: new ElemID(WORKATO, 'api_client'),
     fields: {
-      id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+      id: { refType: BuiltinTypes.NUMBER },
     },
   })
   const apiCollectionType = new ObjectType({
     elemID: new ElemID(WORKATO, 'api_collection'),
     fields: {
-      id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+      id: { refType: BuiltinTypes.NUMBER },
       // eslint-disable-next-line camelcase
-      api_client_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+      api_client_id: { refType: BuiltinTypes.NUMBER },
     },
   })
   const folderType = new ObjectType({
     elemID: new ElemID(WORKATO, 'folder'),
     fields: {
-      id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+      id: { refType: BuiltinTypes.NUMBER },
       // eslint-disable-next-line camelcase
-      parent_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+      parent_id: { refType: BuiltinTypes.NUMBER },
     },
   })
   const apiAccessProfileType = new ObjectType({
     elemID: new ElemID(WORKATO, 'api_access_profile'),
     fields: {
       // eslint-disable-next-line camelcase
-      api_client_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+      api_client_id: { refType: BuiltinTypes.NUMBER },
       // eslint-disable-next-line camelcase
-      api_collection_ids: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)) },
+      api_collection_ids: { refType: new ListType(BuiltinTypes.NUMBER) },
     },
   })
   const apiEndpointType = new ObjectType({
     elemID: new ElemID(WORKATO, 'api_endpoint'),
     fields: {
       // eslint-disable-next-line camelcase
-      flow_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+      flow_id: { refType: BuiltinTypes.NUMBER },
     },
   })
 

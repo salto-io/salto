@@ -20,8 +20,9 @@ import {
   TypeElement, BuiltinTypes, ElemID, CoreAnnotationTypes, TypeMap, Value, ReadOnlyElementsSource,
   isReferenceExpression, ReferenceExpression, ChangeDataType, Change, ChangeData,
   isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeElement, CORE_ANNOTATIONS,
+  createRefToElmWithValue,
 } from '@salto-io/adapter-api'
-import { getParents, buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { getParents, buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import { collections } from '@salto-io/lowerdash'
 import { OptionalFeatures } from '../types'

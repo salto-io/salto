@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ObjectType, InstanceElement, Element, BuiltinTypes, CORE_ANNOTATIONS, createRestriction } from '@salto-io/adapter-api'
-import { findElement, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { findElement } from '@salto-io/adapter-utils'
 import filterCreator, { ANIMATION_FREQUENCY, ANIMATION_RULE_TYPE_ID, RECORD_TYPE_CONTEXT } from '../../src/filters/animation_rules'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -25,7 +25,7 @@ describe('animation rules filter', () => {
     elemID: ANIMATION_RULE_TYPE_ID,
     fields: {
       [ANIMATION_FREQUENCY]: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             values: ['always', 'often', 'rarely', 'sometimes'],
@@ -33,7 +33,7 @@ describe('animation rules filter', () => {
         },
       },
       [RECORD_TYPE_CONTEXT]: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             values: ['All', 'Custom', 'Master'],

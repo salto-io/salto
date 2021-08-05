@@ -22,7 +22,7 @@ import {
   isReferenceExpression, StaticFile, isContainerType, isMapType, ObjectType,
   InstanceAnnotationTypes, GLOBAL_ADAPTER, SaltoError, ReadOnlyElementsSource, BuiltinTypes,
 } from '@salto-io/adapter-api'
-import { toObjectType, createRefToElmWithValue, elementAnnotationTypes } from '@salto-io/adapter-utils'
+import { toObjectType, elementAnnotationTypes } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
 import { IllegalReference } from './parser/parse'
@@ -567,7 +567,7 @@ const instanceAnnotationsType = new ObjectType({
   elemID: new ElemID(GLOBAL_ADAPTER, 'instanceAnnotations'), // dummy elemID, it's not really used
   fields: Object.fromEntries(
     Object.entries(InstanceAnnotationTypes)
-      .map(([name, type]) => [name, { refType: createRefToElmWithValue(type) }])
+      .map(([name, type]) => [name, { refType: type }])
   ),
 })
 

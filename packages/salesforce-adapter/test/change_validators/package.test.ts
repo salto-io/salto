@@ -13,8 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, toChange, createRefToElmWithValue } from '@salto-io/adapter-api'
 import packageValidator, {
   INSTALLED_PACKAGE_METADATA,
   PACKAGE_VERSION_FIELD_NAME,

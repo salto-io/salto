@@ -20,8 +20,9 @@ import {
   BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement, Values, ReadOnlyElementsSource,
   ReferenceExpression, ListType, Change, getChangeElement, isField, isObjectTypeChange,
   isAdditionOrRemovalChange, isFieldChange, isRemovalChange, isInstanceChange, toChange,
+  createRefToElmWithValue,
 } from '@salto-io/adapter-api'
-import { findObjectType, transformValues, getParents, pathNaclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { findObjectType, transformValues, getParents, pathNaclCase } from '@salto-io/adapter-utils'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
@@ -665,21 +666,21 @@ const createCustomObjectInstance = (values: MetadataValues): InstanceElement => 
     } as MetadataTypeAnnotations,
     fields: {
       [DEPLOY_WRAPPER_INSTANCE_MARKER]: {
-        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        refType: BuiltinTypes.BOOLEAN,
         annotations: {
           [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
         },
       },
       fields: {
-        refType: createRefToElmWithValue(new ListType(customFieldType)),
+        refType: new ListType(customFieldType),
       },
       ..._.mapValues(
         NESTED_INSTANCE_VALUE_TO_TYPE_NAME,
         fieldType => ({
-          refType: createRefToElmWithValue(new ListType(new ObjectType({
+          refType: new ListType(new ObjectType({
             elemID: new ElemID(SALESFORCE, fieldType),
             annotations: { [METADATA_TYPE]: fieldType },
-          }))),
+          })),
         })
       ),
     },

@@ -20,7 +20,7 @@ import {
   TypeElement, isObjectType, getRestriction, StaticFile, isStaticFile, getChangeElement,
   Change, FetchOptions, ProgressReporter,
 } from '@salto-io/adapter-api'
-import { findElement, naclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { findElement, naclCase } from '@salto-io/adapter-utils'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
@@ -467,10 +467,10 @@ describe('Salesforce adapter E2E with real account', () => {
           enableHistory: BuiltinTypes.BOOLEAN,
           nameField: new ObjectType({ elemID: nameFieldElemID,
             fields: {
-              [constants.LABEL]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-              type: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-              displayFormat: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-              startingNumber: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+              [constants.LABEL]: { refType: BuiltinTypes.STRING },
+              type: { refType: BuiltinTypes.STRING },
+              displayFormat: { refType: BuiltinTypes.STRING },
+              startingNumber: { refType: BuiltinTypes.NUMBER },
             } }),
         },
         annotations: {
@@ -487,14 +487,14 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         fields: {
           description: {
-            refType: createRefToElmWithValue(stringType),
+            refType: stringType,
             annotations: {
               [constants.DEFAULT_VALUE_FORMULA]: '"test"',
               [constants.LABEL]: 'description label',
             },
           },
           formula: {
-            refType: createRefToElmWithValue(stringType),
+            refType: stringType,
             annotations: {
               [constants.LABEL]: 'Test formula',
               [constants.FORMULA]: '"some text"',
@@ -545,7 +545,7 @@ describe('Salesforce adapter E2E with real account', () => {
         },
         fields: {
           description: {
-            refType: createRefToElmWithValue(stringType),
+            refType: stringType,
             annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'description__c'),
               [constants.LABEL]: 'test label',
@@ -567,13 +567,13 @@ describe('Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         fields: {
           address: {
-            refType: createRefToElmWithValue(stringType),
+            refType: stringType,
             annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
             },
           },
           banana: {
-            refType: createRefToElmWithValue(stringType),
+            refType: stringType,
             annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
             },
@@ -597,13 +597,13 @@ describe('Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         fields: {
           banana: {
-            refType: createRefToElmWithValue(stringType),
+            refType: stringType,
             annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
             },
           },
           description: {
-            refType: createRefToElmWithValue(stringType),
+            refType: stringType,
           },
         },
         annotations: {
@@ -778,24 +778,24 @@ describe('Salesforce adapter E2E with real account', () => {
       const nameFieldType = new ObjectType({
         elemID: new ElemID(constants.SALESFORCE, 'NameField'),
         fields: {
-          [constants.LABEL]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          type: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          displayFormat: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          startingNumber: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+          [constants.LABEL]: { refType: BuiltinTypes.STRING },
+          type: { refType: BuiltinTypes.STRING },
+          displayFormat: { refType: BuiltinTypes.STRING },
+          startingNumber: { refType: BuiltinTypes.NUMBER },
         },
       })
       const testElement = new ObjectType({
         elemID: new ElemID(constants.SALESFORCE, 'test modify annotations'),
         fields: {
           address: {
-            refType: createRefToElmWithValue(stringType),
+            refType: stringType,
             annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
               [constants.LABEL]: 'Address',
             },
           },
           banana: {
-            refType: createRefToElmWithValue(stringType),
+            refType: stringType,
             annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
               [constants.LABEL]: 'Banana',
@@ -898,7 +898,7 @@ describe('Salesforce adapter E2E with real account', () => {
         elemID: mockElemID,
         fields: {
           address: {
-            refType: createRefToElmWithValue(stringType),
+            refType: stringType,
             annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
               [constants.LABEL]: 'Field Label',
@@ -2317,7 +2317,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const oldElement = new ObjectType({
         elemID: mockElemID,
         fields: { [fieldName]: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
+          refType: Types.primitiveDataTypes.Lookup,
           annotations: {
             [constants.API_NAME]: lookupFieldApiFullName,
             [constants.LABEL]: fieldName,

@@ -18,7 +18,6 @@
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 import { enums } from '../enums'
 
@@ -33,21 +32,21 @@ const translationcollection_strings_string = new ObjectType({
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 60 characters long. */
     defaulttranslation: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 1000 }),
       },
     }, /* Original description: This field value can be up to 1000 characters long. */
     description: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 1000 }),
       },
@@ -66,7 +65,7 @@ const translationcollection_strings = new ObjectType({
   },
   fields: {
     string: {
-      refType: createRefToElmWithValue(new ListType(translationcollection_strings_string)),
+      refType: new ListType(translationcollection_strings_string),
       annotations: {
       },
     },
@@ -83,7 +82,7 @@ export const translationcollection = new ObjectType({
   },
   fields: {
     scriptid: {
-      refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+      refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
@@ -91,26 +90,26 @@ export const translationcollection = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 60 characters long.   The default value is ‘custcollection’. */
     name: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 100 }),
       },
     }, /* Original description: This field value can be up to 100 characters long.   This field accepts references to the string custom type. */
     defaultlanguage: {
-      refType: createRefToElmWithValue(enums.translationcollection_defaultlanguage),
+      refType: enums.translationcollection_defaultlanguage,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see translationcollection_defaultlanguage. */
     description: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
+      refType: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 1000 }),
       },
     }, /* Original description: This field value can be up to 1000 characters long.   This field accepts references to the string custom type. */
     strings: {
-      refType: createRefToElmWithValue(translationcollection_strings),
+      refType: translationcollection_strings,
       annotations: {
       },
     },

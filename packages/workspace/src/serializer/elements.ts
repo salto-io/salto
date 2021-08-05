@@ -23,7 +23,6 @@ import {
   isInstanceElement, isPrimitiveType,
   FieldDefinition, isObjectType, Values, Value, TypeRefMap, TypeReference, isTypeReference,
 } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { DuplicateAnnotationError, MergeError, isMergeError } from '../merger/internal/common'
 import { DuplicateInstanceKeyError } from '../merger/internal/instances'
 import { DuplicateAnnotationFieldDefinitionError, ConflictingFieldTypesError,
@@ -215,7 +214,7 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
     if (v.refType !== undefined) {
       return new TypeReference(reviveElemID(v.refType.elemID))
     }
-    return createRefToElmWithValue(v.type)
+    return v.type
   }
 
   const reviveRefType = (v: Value): TypeReference =>
@@ -232,7 +231,7 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
     if (v.refInnerType) {
       return new TypeReference(v.refInnerType.elemID)
     }
-    return createRefToElmWithValue(v.innerType)
+    return v.innerType
   }
 
   const revivers: ReviverMap = {

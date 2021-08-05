@@ -14,22 +14,21 @@
 * limitations under the License.
 */
 import { InstanceElement, StaticFile, ElemID, BuiltinTypes, ObjectType, ListType, toChange, DetailedChange } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { getNestedStaticFiles, getChangeLocations, DetailedChangeWithSource } from '../../../src/workspace/nacl_files/nacl_file_update'
 
 const mockType = new ObjectType({
   elemID: new ElemID('salto', 'mock'),
   fields: {
-    file: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-    numArray: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)) },
-    strArray: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
+    file: { refType: BuiltinTypes.STRING },
+    numArray: { refType: new ListType(BuiltinTypes.NUMBER) },
+    strArray: { refType: new ListType(BuiltinTypes.STRING) },
     obj: {
-      refType: createRefToElmWithValue(new ListType(new ObjectType({
+      refType: new ListType(new ObjectType({
         elemID: new ElemID('salto', 'obj'),
         fields: {
-          field: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          field: { refType: BuiltinTypes.STRING },
         },
-      }))),
+      })),
     },
   },
   path: ['this', 'is', 'happening'],

@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, BuiltinTypes, ElemID, ObjectType, InstanceElement, PrimitiveType, ListType, MapType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 
 type AllElementsTypes = [PrimitiveType, ObjectType, ObjectType,
     ObjectType, InstanceElement, ListType, MapType]
@@ -23,8 +22,8 @@ export const getAllElements = (): AllElementsTypes => {
   const saltoAddr = new ObjectType({
     elemID: addrElemID,
     fields: {
-      country: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      city: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      country: { refType: BuiltinTypes.STRING },
+      city: { refType: BuiltinTypes.STRING },
     },
     annotationRefsOrTypes: { label: BuiltinTypes.STRING },
   })
@@ -33,16 +32,16 @@ export const getAllElements = (): AllElementsTypes => {
   const saltoOffice = new ObjectType({
     elemID: officeElemID,
     fields: {
-      name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      name: { refType: BuiltinTypes.STRING },
       location: {
-        refType: createRefToElmWithValue(saltoAddr),
+        refType: saltoAddr,
         annotations: {
           label: 'Office Location',
           description: 'A location of an office',
         },
       },
-      rooms: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
-      seats: { refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)) },
+      rooms: { refType: new ListType(BuiltinTypes.STRING) },
+      seats: { refType: new MapType(BuiltinTypes.STRING) },
     },
     annotationRefsOrTypes: {
       label: BuiltinTypes.STRING,
@@ -60,19 +59,19 @@ export const getAllElements = (): AllElementsTypes => {
     elemID: employeeElemID,
     fields: {
       name: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { _required: true },
       },
       nicknames: {
-        refType: createRefToElmWithValue(stringListType),
+        refType: stringListType,
         annotations: {},
       },
       company: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { _default: 'salto' },
       },
       office: {
-        refType: createRefToElmWithValue(saltoOffice),
+        refType: saltoOffice,
         annotations: {
           label: 'Based In',
           name: {

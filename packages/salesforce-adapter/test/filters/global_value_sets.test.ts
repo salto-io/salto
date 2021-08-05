@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, Element, InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import filterCreator,
@@ -51,9 +50,7 @@ const createPicklistObjectType = (
   elemID: mockElemID,
   fields: {
     state: {
-      refType: createRefToElmWithValue(
-        Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST],
-      ),
+      refType: Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST],
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: false,
         [constants.API_NAME]: apiName,
@@ -63,7 +60,7 @@ const createPicklistObjectType = (
       },
     },
     regular: {
-      refType: createRefToElmWithValue(Types.primitiveDataTypes.Number),
+      refType: Types.primitiveDataTypes.Number,
       annotations: {
         [constants.API_NAME]: 'Test__c.regular__c',
       },

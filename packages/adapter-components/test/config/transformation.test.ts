@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ListType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { createTransformationConfigTypes, validateTransoformationConfig } from '../../src/config'
 
 describe('config_transformation', () => {
@@ -39,7 +38,7 @@ describe('config_transformation', () => {
     it('should include additional fields when added', () => {
       const { transformation, transformationDefault } = createTransformationConfigTypes(
         'myAdapter',
-        { a: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
+        { a: { refType: BuiltinTypes.STRING } },
       )
       expect(Object.keys(transformation.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToHide', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
       expect(transformation.fields.a.refType.elemID).toEqual(BuiltinTypes.STRING.elemID)

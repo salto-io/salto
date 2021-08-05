@@ -13,8 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, ReferenceExpression, MapType, isContainerType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, ReferenceExpression, MapType, isContainerType, createRefToElmWithValue } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as TestHelpers from '../common/helpers'
 import { parse } from '../../src/parser'
@@ -65,14 +64,14 @@ describe('Salto Dump', () => {
     elemID: new ElemID('salesforce', 'test'),
     fields: {
       name: {
-        refType: createRefToElmWithValue(strType),
+        refType: strType,
         annotations: { label: 'Name' },
       },
-      num: { refType: createRefToElmWithValue(numType) },
-      list: { refType: createRefToElmWithValue(new ListType(strType)) },
-      map: { refType: createRefToElmWithValue(new MapType(strType)) },
+      num: { refType: numType },
+      list: { refType: new ListType(strType) },
+      map: { refType: new MapType(strType) },
       field: {
-        refType: createRefToElmWithValue(fieldType),
+        refType: fieldType,
         annotations: {
           alice: 1,
           bob: 2,

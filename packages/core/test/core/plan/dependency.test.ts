@@ -16,7 +16,6 @@
 import wu from 'wu'
 import { DiffGraph, DataNodeMap, DiffNode } from '@salto-io/dag'
 import { ChangeDataType, Change, ObjectType, InstanceElement, ElemID, ReferenceExpression, BuiltinTypes, PrimitiveType, PrimitiveTypes, CORE_ANNOTATIONS, DependencyChange, ChangeId, toChange } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { addNodeDependencies, addAfterRemoveDependency, addFieldToObjectDependency, addTypeDependency, addReferencesDependency } from '../../../src/core/plan/dependency'
 import { getAllElements } from '../../common/elements'
 
@@ -270,9 +269,9 @@ describe('dependency changers', () => {
       testType = new ObjectType({
         elemID: testTypeId,
         fields: {
-          ref: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          ref: { refType: BuiltinTypes.STRING },
           fieldWithRef: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
             annotations: { fieldRef: new ReferenceExpression(fieldRefType.elemID) },
           },
         },

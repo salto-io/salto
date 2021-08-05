@@ -16,9 +16,9 @@
 /* eslint-disable camelcase */
 import _ from 'lodash'
 import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField } from 'jsforce'
-import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, isContainerType, TypeReference } from '@salto-io/adapter-api'
+import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, isContainerType, TypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
-import { TransformFunc, transformElement, naclCase, pathNaclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { TransformFunc, transformElement, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 
 import { CustomObject, CustomField, SalesforceRecord } from '../client/types'
 import {
@@ -187,9 +187,9 @@ export class Types {
   private static filterItemType = new ObjectType({
     elemID: Types.filterItemElemID,
     fields: {
-      [FILTER_ITEM_FIELDS.FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [FILTER_ITEM_FIELDS.FIELD]: { refType: BuiltinTypes.STRING },
       [FILTER_ITEM_FIELDS.OPERATION]: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             values: [
@@ -199,8 +199,8 @@ export class Types {
           }),
         },
       },
-      [FILTER_ITEM_FIELDS.VALUE_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      [FILTER_ITEM_FIELDS.VALUE]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [FILTER_ITEM_FIELDS.VALUE_FIELD]: { refType: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.VALUE]: { refType: BuiltinTypes.STRING },
     },
     annotations: {
       [API_NAME]: 'FilterItem',
@@ -211,21 +211,21 @@ export class Types {
   private static lookupFilterType = new ObjectType({
     elemID: Types.lookupFilterElemID,
     fields: {
-      [LOOKUP_FILTER_FIELDS.ACTIVE]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      [LOOKUP_FILTER_FIELDS.ACTIVE]: { refType: BuiltinTypes.BOOLEAN },
       [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       [LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: {
-        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        refType: BuiltinTypes.BOOLEAN,
       },
       [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: {
-        refType: createRefToElmWithValue(new ListType(Types.filterItemType)),
+        refType: new ListType(Types.filterItemType),
       },
     },
     annotations: {
@@ -239,9 +239,9 @@ export class Types {
     fields: {
       // todo: currently this field is populated with the referenced field's API name,
       //  should be modified to elemID reference once we'll use HIL
-      [VALUE_SETTINGS_FIELDS.VALUE_NAME]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [VALUE_SETTINGS_FIELDS.VALUE_NAME]: { refType: BuiltinTypes.STRING },
       [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: {
-        refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+        refType: new ListType(BuiltinTypes.STRING),
       },
     },
     annotations: {
@@ -253,11 +253,11 @@ export class Types {
   private static valueSetType = new ObjectType({
     elemID: Types.valueSetElemID,
     fields: {
-      [CUSTOM_VALUE.FULL_NAME]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      [CUSTOM_VALUE.LABEL]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      [CUSTOM_VALUE.DEFAULT]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-      [CUSTOM_VALUE.IS_ACTIVE]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-      [CUSTOM_VALUE.COLOR]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [CUSTOM_VALUE.FULL_NAME]: { refType: BuiltinTypes.STRING },
+      [CUSTOM_VALUE.LABEL]: { refType: BuiltinTypes.STRING },
+      [CUSTOM_VALUE.DEFAULT]: { refType: BuiltinTypes.BOOLEAN },
+      [CUSTOM_VALUE.IS_ACTIVE]: { refType: BuiltinTypes.BOOLEAN },
+      [CUSTOM_VALUE.COLOR]: { refType: BuiltinTypes.STRING },
     },
   })
 
@@ -269,10 +269,10 @@ export class Types {
     elemID: Types.fieldDependencyElemID,
     fields: {
       [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: {
-        refType: createRefToElmWithValue(new ListType(Types.valueSettingsType)),
+        refType: new ListType(Types.valueSettingsType),
       },
     },
   })
@@ -311,16 +311,16 @@ export class Types {
     elemID: Types.rollupSummaryFilterItemsElemID,
     fields: {
       [FILTER_ITEM_FIELDS.FIELD]: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       [FILTER_ITEM_FIELDS.OPERATION]: {
-        refType: createRefToElmWithValue(Types.rollupSummaryFilterItemOperationType),
+        refType: Types.rollupSummaryFilterItemOperationType,
       },
       [FILTER_ITEM_FIELDS.VALUE]: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       [FILTER_ITEM_FIELDS.VALUE_FIELD]: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
     },
   })
@@ -662,19 +662,19 @@ export class Types {
 
   private static nameInnerFields = {
     [NAME_FIELDS.FIRST_NAME]: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
     [NAME_FIELDS.LAST_NAME]: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
     [NAME_FIELDS.SALUTATION]: {
-      refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
+      refType: Types.primitiveDataTypes.Picklist,
     },
     [NAME_FIELDS.MIDDLE_NAME]: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
     [NAME_FIELDS.SUFFIX]: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
   }
 
@@ -684,28 +684,28 @@ export class Types {
       elemID: addressElemID,
       fields: {
         [ADDRESS_FIELDS.CITY]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [ADDRESS_FIELDS.COUNTRY]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [ADDRESS_FIELDS.GEOCODE_ACCURACY]: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
+          refType: Types.primitiveDataTypes.Picklist,
         },
         [ADDRESS_FIELDS.LATITUDE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [ADDRESS_FIELDS.LONGITUDE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [ADDRESS_FIELDS.POSTAL_CODE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [ADDRESS_FIELDS.STATE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         [ADDRESS_FIELDS.STREET]: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.TextArea),
+          refType: Types.primitiveDataTypes.TextArea,
         },
       },
       annotationRefsOrTypes: {
@@ -731,10 +731,10 @@ export class Types {
       elemID: geoLocationElemID,
       fields: {
         [GEOLOCATION_FIELDS.LATITUDE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
         [GEOLOCATION_FIELDS.LONGITUDE]: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
       },
       annotationRefsOrTypes: {

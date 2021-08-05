@@ -19,7 +19,7 @@ import {
   InstanceElement, ElemID, Value, ObjectType, ListType, BuiltinTypes, CORE_ANNOTATIONS,
   createRestriction, MapType,
 } from '@salto-io/adapter-api'
-import { createRefToElmWithValue, createMatchingObjectType } from '@salto-io/adapter-utils'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import {
   FETCH_ALL_TYPES_AT_ONCE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, NETSUITE,
   SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
@@ -43,13 +43,13 @@ const clientConfigType = new ObjectType({
   elemID: new ElemID(NETSUITE, 'clientConfig'),
   fields: {
     [FETCH_ALL_TYPES_AT_ONCE]: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_FETCH_ALL_TYPES_AT_ONCE,
       },
     },
     [FETCH_TYPE_TIMEOUT_IN_MINUTES]: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
         // We set DEFAULT_COMMAND_TIMEOUT_IN_MINUTES to FETCH_TYPE_TIMEOUT_IN_MINUTES since we did
         // not want to have a disrupting change to existing WSs with renaming this annotation.
@@ -60,7 +60,7 @@ const clientConfigType = new ObjectType({
       },
     },
     [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -69,7 +69,7 @@ const clientConfigType = new ObjectType({
       },
     },
     [SDF_CONCURRENCY_LIMIT]: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_CONCURRENCY,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -85,7 +85,7 @@ const suiteAppClientConfigType = new ObjectType({
   elemID: new ElemID(NETSUITE, 'suiteAppClientConfig'),
   fields: {
     [SUITEAPP_CONCURRENCY_LIMIT]: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_CONCURRENCY,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -101,14 +101,14 @@ const queryConfigType = new ObjectType({
   elemID: new ElemID(NETSUITE, 'queryConfig'),
   fields: {
     types: {
-      refType: createRefToElmWithValue(new MapType(new ListType(BuiltinTypes.STRING))),
+      refType: new MapType(new ListType(BuiltinTypes.STRING)),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: {},
       },
     },
 
     filePaths: {
-      refType: createRefToElmWithValue((new ListType(BuiltinTypes.STRING))),
+      refType: (new ListType(BuiltinTypes.STRING)),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [],
       },
@@ -206,13 +206,13 @@ export const configType = new ObjectType({
       },
     },
     [FILE_PATHS_REGEX_SKIP_LIST]: {
-      refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+      refType: new ListType(BuiltinTypes.STRING),
     },
     [DEPLOY]: {
       refType: deployConfigType,
     },
     [CONCURRENCY_LIMIT]: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           min: 1,
@@ -221,19 +221,19 @@ export const configType = new ObjectType({
       },
     },
     [CLIENT_CONFIG]: {
-      refType: createRefToElmWithValue(clientConfigType),
+      refType: clientConfigType,
     },
 
     [SUITEAPP_CLIENT_CONFIG]: {
-      refType: createRefToElmWithValue(suiteAppClientConfigType),
+      refType: suiteAppClientConfigType,
     },
 
     [FETCH_TARGET]: {
-      refType: createRefToElmWithValue(queryConfigType),
+      refType: queryConfigType,
     },
 
     [USE_CHANGES_DETECTION]: {
-      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      refType: BuiltinTypes.BOOLEAN,
     },
   },
 })

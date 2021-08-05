@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ObjectType, BuiltinTypes, MapType, ListType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { createRequestConfigs, validateRequestConfig } from '../../src/config'
 
 describe('config_request', () => {
@@ -67,7 +66,7 @@ describe('config_request', () => {
     it('should include additional fields when added', () => {
       const { request, requestDefault } = createRequestConfigs(
         'myAdapter',
-        { a: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
+        { a: { refType: BuiltinTypes.STRING } },
       )
       expect(Object.keys(request.fields)).toHaveLength(6)
       expect(Object.keys(request.fields).sort()).toEqual(['a', 'dependsOn', 'paginationField', 'queryParams', 'recursiveQueryByResponseField', 'url'])

@@ -14,14 +14,13 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, BuiltinTypes } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from './constants'
 
 export const usernameTokenCredentialsType = new ObjectType({
   elemID: new ElemID(constants.WORKATO),
   fields: {
-    username: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-    token: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    username: { refType: BuiltinTypes.STRING },
+    token: { refType: BuiltinTypes.STRING },
   },
 })
 

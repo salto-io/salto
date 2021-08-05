@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, PrimitiveType, PrimitiveTypes, BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 
 const sfText = new PrimitiveType({
   elemID: new ElemID('salesforce', 'Text'),
@@ -38,8 +37,8 @@ const sfRole = new ObjectType({
     dirName: 'roles',
   },
   fields: {
-    description: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-    name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+    description: { refType: BuiltinTypes.STRING },
+    name: { refType: BuiltinTypes.STRING },
   },
 })
 
@@ -51,11 +50,11 @@ export const customObject = (
     elemID,
     fields: {
       alpha: {
-        refType: createRefToElmWithValue(sfText),
+        refType: sfText,
         annotations: { label: data.alphaLabel },
       },
       beta: {
-        refType: createRefToElmWithValue(sfText),
+        refType: sfText,
         annotations: { label: data.betaLabel },
       },
     },

@@ -24,7 +24,7 @@ import {
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType,
-  ReadOnlyElementsSource, ReferenceMap, BuiltinTypesRefByFullName, TypeReference,
+  ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue,
 } from '@salto-io/adapter-api'
 
 const { mapValuesAsync } = promises.object
@@ -53,12 +53,6 @@ export const applyFunctionToChangeData = async <T extends Change<unknown>>(
   }
   return change
 }
-
-export const createRefToElmWithValue = (element: TypeElement): TypeReference => (
-  // For BuiltinTypes we use a hardcoded list of refs with values to avoid duplicate instances
-  BuiltinTypesRefByFullName[element.elemID.getFullName()]
-    ?? new TypeReference(element.elemID, element)
-)
 
 /**
  * Generate synthetic object types for validating / transforming map type values.

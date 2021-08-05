@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { SALESFORCE, FIELD_ANNOTATIONS, FOREIGN_KEY_DOMAIN } from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
@@ -47,14 +46,14 @@ describe('reference_annotations filter', () => {
                 'something',
               ],
             },
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
           },
         },
       }
     )
     objType = createMetadataTypeElement(
       objTypeName,
-      { fields: { reg: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } } }
+      { fields: { reg: { refType: BuiltinTypes.STRING } } }
     )
     const elements = [nestedType, objType]
     await filter.onFetch(elements)

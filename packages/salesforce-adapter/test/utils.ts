@@ -19,7 +19,7 @@ import {
   CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
 import {
-  findElements as findElementsByID, buildElementsSourceFromElements, createRefToElmWithValue,
+  findElements as findElementsByID, buildElementsSourceFromElements,
 } from '@salto-io/adapter-utils'
 import JSZip from 'jszip'
 import * as constants from '../src/constants'
@@ -158,9 +158,9 @@ export const generateProfileType = (useMaps = false, preDeploy = false): ObjectT
   const ProfileApplicationVisibility = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'ProfileApplicationVisibility'),
     fields: {
-      application: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      default: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-      visible: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      application: { refType: BuiltinTypes.STRING },
+      default: { refType: BuiltinTypes.BOOLEAN },
+      visible: { refType: BuiltinTypes.BOOLEAN },
     },
     annotations: {
       [constants.METADATA_TYPE]: 'ProfileApplicationVisibility',
@@ -169,8 +169,8 @@ export const generateProfileType = (useMaps = false, preDeploy = false): ObjectT
   const ProfileLayoutAssignment = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'ProfileLayoutAssignment'),
     fields: {
-      layout: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      recordType: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      layout: { refType: BuiltinTypes.STRING },
+      recordType: { refType: BuiltinTypes.STRING },
     },
     annotations: {
       [constants.METADATA_TYPE]: 'ProfileLayoutAssignment',
@@ -179,9 +179,9 @@ export const generateProfileType = (useMaps = false, preDeploy = false): ObjectT
   const ProfileFieldLevelSecurity = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'ProfileFieldLevelSecurity'),
     fields: {
-      field: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      editable: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-      readable: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
+      field: { refType: BuiltinTypes.STRING },
+      editable: { refType: BuiltinTypes.BOOLEAN },
+      readable: { refType: BuiltinTypes.BOOLEAN },
     },
     annotations: {
       [constants.METADATA_TYPE]: 'ProfileFieldLevelSecurity',
@@ -198,17 +198,17 @@ export const generateProfileType = (useMaps = false, preDeploy = false): ObjectT
     elemID: new ElemID(constants.SALESFORCE, constants.PROFILE_METADATA_TYPE),
     fields: {
       [constants.INSTANCE_FULL_NAME_FIELD]: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       applicationVisibilities: { refType: useMaps
-        ? createRefToElmWithValue(new MapType(ProfileApplicationVisibility))
-        : createRefToElmWithValue(ProfileApplicationVisibility) },
+        ? new MapType(ProfileApplicationVisibility)
+        : ProfileApplicationVisibility },
       layoutAssignments: { refType: useMaps
-        ? createRefToElmWithValue(new MapType(new ListType(ProfileLayoutAssignment)))
-        : createRefToElmWithValue(new ListType(ProfileLayoutAssignment)) },
+        ? new MapType(new ListType(ProfileLayoutAssignment))
+        : new ListType(ProfileLayoutAssignment) },
       fieldPermissions: { refType: useMaps
-        ? createRefToElmWithValue(new MapType(new MapType(ProfileFieldLevelSecurity)))
-        : createRefToElmWithValue(fieldPermissionsNonMapType) },
+        ? new MapType(new MapType(ProfileFieldLevelSecurity))
+        : fieldPermissionsNonMapType },
     },
     annotations: {
       [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
@@ -235,7 +235,7 @@ export const createCustomSettingsObject = (
   const namespace = getNamespaceFromString(name)
   const basicFields = {
     Id: {
-      refType: createRefToElmWithValue(idType),
+      refType: idType,
       label: 'id',
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -244,7 +244,7 @@ export const createCustomSettingsObject = (
       },
     },
     Name: {
-      refType: createRefToElmWithValue(stringType),
+      refType: stringType,
       label: 'Name',
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -256,7 +256,7 @@ export const createCustomSettingsObject = (
     // eslint-disable-next-line camelcase
     TestField__c: {
       label: 'TestField',
-      refType: createRefToElmWithValue(stringType),
+      refType: stringType,
       annotations: {
         [constants.LABEL]: 'TestField',
         [constants.API_NAME]: `${name}.TestField__c`,

@@ -17,7 +17,7 @@ import {
   ChangeError, ElemID, Field, InstanceElement, ListType, ObjectType, toChange,
   BuiltinTypes, MapType,
 } from '@salto-io/adapter-api'
-import { safeJsonStringify, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import multipleDefaultsValidator from '../../src/change_validators/multiple_deafults'
 import { createField } from '../utils'
@@ -136,17 +136,17 @@ describe('multiple defaults change validator', () => {
       let type: ObjectType
       beforeEach(() => {
         type = new ObjectType({ elemID: new ElemID(SALESFORCE, 'GlobalValueSet'),
-          fields: { customValue: { refType: createRefToElmWithValue(new ListType(new ObjectType({
+          fields: { customValue: { refType: new ListType(new ObjectType({
             elemID: new ElemID(SALESFORCE, 'CustomValue'),
             fields: {
-              fullName: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-              default: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-              label: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+              fullName: { refType: BuiltinTypes.STRING },
+              default: { refType: BuiltinTypes.BOOLEAN },
+              label: { refType: BuiltinTypes.STRING },
             },
             annotations: {
               [METADATA_TYPE]: 'CustomValue',
             },
-          }))) } } })
+          })) } } })
       })
 
       const createAfterInstance = (beforeInstance: InstanceElement): InstanceElement => {
@@ -202,22 +202,21 @@ describe('multiple defaults change validator', () => {
         type = new ObjectType({
           elemID: new ElemID(SALESFORCE, 'Profile'),
           fields: {
-            applicationVisibilities: { refType: createRefToElmWithValue(new MapType(new ObjectType({
+            applicationVisibilities: { refType: new MapType(new ObjectType({
               elemID: new ElemID(SALESFORCE, 'ProfileApplicationVisibility'),
-              fields: { default: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) } },
+              fields: { default: { refType: BuiltinTypes.BOOLEAN } },
               annotations: {
                 [METADATA_TYPE]: 'ProfileApplicationVisibility',
               },
-            }))) },
-            recordTypeVisibilities: { refType: createRefToElmWithValue(
+            })) },
+            recordTypeVisibilities: { refType:
               new MapType(new MapType(new ObjectType({
                 elemID: new ElemID(SALESFORCE, 'ProfileRecordTypeVisibility'),
-                fields: { default: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) } },
+                fields: { default: { refType: BuiltinTypes.BOOLEAN } },
                 annotations: {
                   [METADATA_TYPE]: 'ProfileRecordTypeVisibility',
                 },
-              })))
-            ) },
+              }))) },
           },
           annotations: {
             [METADATA_TYPE]: 'Profile',

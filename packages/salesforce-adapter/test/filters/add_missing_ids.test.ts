@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, Field } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FilterResult, FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator, { WARNING_MESSAGE } from '../../src/filters/add_missing_ids'
@@ -40,19 +39,19 @@ describe('Internal IDs filter', () => {
       elemID: objTypeID,
       fields: {
         standard: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         custom: {
           annotations: {
             [API_NAME]: 'Obj.custom__c',
           },
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         special: {
           annotations: {
             [API_NAME]: 'pre__Obj.special__c',
           },
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
       },
     })

@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, StaticFile } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import {
   CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, DATASET, ENTITY_CUSTOM_FIELD, FILE, PATH, SCRIPT_ID, WORKBOOK,
   TRANSACTION_COLUMN_CUSTOM_FIELD, TRANSACTION_BODY_CUSTOM_FIELD,
@@ -50,7 +49,7 @@ describe('reference dependencies', () => {
     'anotherAdapterInstance',
     new ObjectType({ elemID: new ElemID('another', 'type'),
       fields: {
-        id: { refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID) },
+        id: { refType: BuiltinTypes.SERVICE_ID },
       } }),
     { id: 'serviceIdValue' },
   )

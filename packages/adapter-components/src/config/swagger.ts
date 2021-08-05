@@ -16,7 +16,6 @@
 import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType } from '@salto-io/adapter-api'
 import { types, values as lowerDashValues } from '@salto-io/lowerdash'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { AdapterApiConfig, createAdapterApiConfigType, TypeConfig, TypeDefaultsConfig, UserFetchConfig } from './shared'
 import { createRequestConfigs, validateRequestConfig } from './request'
 import { createTransformationConfigTypes, validateTransoformationConfig } from './transformation'
@@ -69,13 +68,13 @@ const createSwaggerDefinitionsBaseConfigType = (
     elemID: new ElemID(adapter, 'typeNameOverrideConfig'),
     fields: {
       originalName: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
       newName: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
@@ -87,13 +86,13 @@ const createSwaggerDefinitionsBaseConfigType = (
     elemID: new ElemID(adapter, 'additionalTypeConfig'),
     fields: {
       typeName: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
       cloneFrom: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
@@ -105,16 +104,16 @@ const createSwaggerDefinitionsBaseConfigType = (
     elemID: new ElemID(adapter, 'swaggerDefinitionBaseConfig'),
     fields: {
       url: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: true,
         },
       },
       typeNameOverrides: {
-        refType: createRefToElmWithValue(new ListType(typeNameOverrideConfig)),
+        refType: new ListType(typeNameOverrideConfig),
       },
       additionalTypes: {
-        refType: createRefToElmWithValue(new ListType(additionalTypeConfig)),
+        refType: new ListType(additionalTypeConfig),
       },
     },
   })

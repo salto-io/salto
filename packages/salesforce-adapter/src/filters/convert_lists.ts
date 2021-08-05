@@ -16,9 +16,9 @@
 import _ from 'lodash'
 import {
   ElemID, Element, isObjectType, Field, Values, Value, ObjectType, isInstanceElement,
-  isListType, ListType, isElement, isContainerType,
+  isListType, ListType, isElement, isContainerType, createRefToElmWithValue,
 } from '@salto-io/adapter-api'
-import { applyRecursive, resolvePath, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { applyRecursive, resolvePath } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { SALESFORCE, PROFILE_METADATA_TYPE } from '../constants'

@@ -18,7 +18,7 @@ import { BuiltinTypes, CORE_ANNOTATIONS } from '../src/builtins'
 import {
   Field, InstanceElement, ObjectType, PrimitiveType, isObjectType, isInstanceElement,
   PrimitiveTypes, ListType, isPrimitiveType, isType, isListType, isEqualElements, Variable,
-  isVariable, isMapType, MapType, isContainerType,
+  isVariable, isMapType, MapType, isContainerType, createRefToElmWithValue,
 } from '../src/elements'
 import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
 import { TypeReference } from '../src/values'
@@ -756,6 +756,15 @@ describe('Test elements.ts', () => {
       it('should throw error if new innerType has wrong elemID', () => {
         expect(() => { mapType.setRefInnerType(ot) }).toThrow()
       })
+    })
+  })
+
+  describe('createRefToElmWithValue', () => {
+    it('Should create a reference with elemID equal to the elements elemID and value equal to the element', () => {
+      const obj = new ObjectType({ elemID: new ElemID('a', 'elemID') })
+      const objRef = createRefToElmWithValue(obj)
+      expect(objRef.elemID).toEqual(obj.elemID)
+      expect(objRef.value).toEqual(obj)
     })
   })
 })

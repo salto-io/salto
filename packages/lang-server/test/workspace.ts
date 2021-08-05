@@ -36,7 +36,7 @@ const { awu } = collections.asynciterable
 // RB const configID = new ElemID(SERVICES[0])
 // RB const mockConfigType = new ObjectType({
 // RB   elemID: configID,
-// RB   fields: { username: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
+// RB   fields: { username: { refType: BuiltinTypes.STRING } },
 // RB })
 // RB const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, {
 // RB   username: 'test@test',

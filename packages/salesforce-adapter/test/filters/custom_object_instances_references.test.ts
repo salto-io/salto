@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { Element, ElemID, ObjectType, PrimitiveTypes, PrimitiveType, CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, isInstanceElement, SaltoError } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
@@ -43,7 +42,7 @@ describe('Custom Object Instances References filter', () => {
     },
     fields: {
       Id: {
-        refType: createRefToElmWithValue(stringType),
+        refType: stringType,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [LABEL]: 'Id',
@@ -62,7 +61,7 @@ describe('Custom Object Instances References filter', () => {
     },
     fields: {
       Id: {
-        refType: createRefToElmWithValue(stringType),
+        refType: stringType,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [LABEL]: 'Id',
@@ -81,7 +80,7 @@ describe('Custom Object Instances References filter', () => {
     },
     fields: {
       Id: {
-        refType: createRefToElmWithValue(stringType),
+        refType: stringType,
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [LABEL]: 'Id',
@@ -101,7 +100,7 @@ describe('Custom Object Instances References filter', () => {
       },
       fields: {
         Id: {
-          refType: createRefToElmWithValue(stringType),
+          refType: stringType,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: false,
             [LABEL]: 'Id',
@@ -109,7 +108,7 @@ describe('Custom Object Instances References filter', () => {
           },
         },
         LookupExample: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
+          refType: Types.primitiveDataTypes.Lookup,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [LABEL]: 'lookup',
@@ -122,7 +121,7 @@ describe('Custom Object Instances References filter', () => {
           },
         },
         NonDeployableLookup: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
+          refType: Types.primitiveDataTypes.Lookup,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [LABEL]: 'lookup',
@@ -135,7 +134,7 @@ describe('Custom Object Instances References filter', () => {
           },
         },
         RefToUser: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
+          refType: Types.primitiveDataTypes.Lookup,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [LABEL]: 'ref to user',
@@ -148,7 +147,7 @@ describe('Custom Object Instances References filter', () => {
           },
         },
         MasterDetailExample: {
-          refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
+          refType: Types.primitiveDataTypes.MasterDetail,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [LABEL]: 'detailfOfMaster',

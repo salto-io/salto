@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, TypeReference } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import {
   updatePathIndex, getElementsPathHints, PathIndex, getFromPathIndex, Path,
 } from '../../src/workspace/path_index'
@@ -24,13 +23,13 @@ const nestedType = new ObjectType({
   elemID: new ElemID('salto', 'nested'),
   fields: {
     str: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
     num: {
-      refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+      refType: BuiltinTypes.NUMBER,
     },
     list: {
-      refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
+      refType: new ListType(BuiltinTypes.NUMBER),
     },
   },
 })
@@ -39,10 +38,10 @@ const singlePathObject = new ObjectType({
   elemID: new ElemID('salto', 'singlePathObj'),
   fields: {
     simple: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
     nested: {
-      refType: createRefToElmWithValue(nestedType),
+      refType: nestedType,
     },
   },
   annotationRefsOrTypes: {
@@ -84,7 +83,7 @@ const multiPathFieldsObj = new ObjectType({
   elemID: multiPathObjID,
   fields: {
     field: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
   },
   path: ['salto', 'obj', 'multi', 'fields'],

@@ -54,9 +54,8 @@ field_types_import = '''import { fieldTypes } from '../field_types'
 '''
 
 import_statements_for_type_def_template = '''import {{
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,{list_type_import}
+  BuiltinTypes, createRefToElmWithValue, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,{list_type_import}
 }} from '@salto-io/adapter-api'
-import {{ createRefToElmWithValue }} from '@salto-io/adapter-utils'
 import * as constants from '../../constants'
 {enums_import}{field_types_import}
 '''

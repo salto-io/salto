@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, Element, InstanceElement } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { makeFilter } from '../../src/filters/remove_fields_and_values'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -26,8 +25,8 @@ describe('remove fields filter', () => {
   const mockType = new ObjectType({
     elemID: mockObjId,
     fields: {
-      existing: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      remove: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      existing: { refType: BuiltinTypes.STRING },
+      remove: { refType: BuiltinTypes.STRING },
     },
     annotations: {
       [constants.METADATA_TYPE]: 'typeRemoval',
@@ -36,8 +35,8 @@ describe('remove fields filter', () => {
   const mockNestedType = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'nested'),
     fields: {
-      existing: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      remove: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      existing: { refType: BuiltinTypes.STRING },
+      remove: { refType: BuiltinTypes.STRING },
     },
     annotations: {
       [constants.METADATA_TYPE]: 'nested',
@@ -48,10 +47,10 @@ describe('remove fields filter', () => {
   const mockTypeWithInstance = new ObjectType({
     elemID: mockObjIdWithInstance,
     fields: {
-      existing: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      removeAlsoFromInstance: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      removeAlsoFromInstance2: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      withNested: { refType: createRefToElmWithValue(mockNestedType) },
+      existing: { refType: BuiltinTypes.STRING },
+      removeAlsoFromInstance: { refType: BuiltinTypes.STRING },
+      removeAlsoFromInstance2: { refType: BuiltinTypes.STRING },
+      withNested: { refType: mockNestedType },
     },
     annotations: {
       [constants.METADATA_TYPE]: 'typeWithInstance',

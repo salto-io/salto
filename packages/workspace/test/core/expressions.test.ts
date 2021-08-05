@@ -15,7 +15,6 @@
 */
 import _ from 'lodash'
 import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes, TypeReference } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl, getFieldsAndAnnoTypes } from '../utils'
 import { resolve, UnresolvedReference, CircularReference } from '../../src/expressions'
@@ -42,7 +41,7 @@ describe('Test Salto Expressions', () => {
       elemID: objElemID,
       fields: {
         value: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
       },
     })
@@ -51,14 +50,14 @@ describe('Test Salto Expressions', () => {
       elemID: baseElemID,
       fields: {
         simple: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: { anno: 'field_anno' },
         },
         obj: {
-          refType: createRefToElmWithValue(objType),
+          refType: objType,
         },
         arr: {
-          refType: createRefToElmWithValue(listString),
+          refType: listString,
         },
       },
       annotations: {
@@ -124,7 +123,7 @@ describe('Test Salto Expressions', () => {
       elemID: objectRefID,
       fields: {
         ref: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: { anno: refTo(base, 'attr', 'anno') },
         },
       },
@@ -389,7 +388,7 @@ describe('Test Salto Expressions', () => {
       )
       const newObjType = new ObjectType({
         elemID: new ElemID('test', 'obj'),
-        fields: { f: { refType: createRefToElmWithValue(primType) } },
+        fields: { f: { refType: primType } },
         annotationRefsOrTypes: { a: primType },
       })
       const inst = new InstanceElement('test', newObjType, { f: 1 })

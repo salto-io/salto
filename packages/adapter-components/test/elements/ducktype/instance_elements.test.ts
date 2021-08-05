@@ -15,7 +15,6 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line
 import { toInstance } from '../../../src/elements/ducktype'
 import { RECORDS_PATH } from '../../../src/elements/constants'
@@ -27,10 +26,10 @@ const type = new ObjectType({
   elemID: new ElemID(ADAPTER_NAME, 'bla'),
   // not exhaustive - only has the field ids that are needed for the tests
   fields: {
-    id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-    api_collection_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+    id: { refType: BuiltinTypes.NUMBER },
+    api_collection_id: { refType: BuiltinTypes.NUMBER },
     field_with_complex_type: {
-      refType: createRefToElmWithValue(BuiltinTypes.UNKNOWN),
+      refType: BuiltinTypes.UNKNOWN,
     }, // incorrect type
   },
 })

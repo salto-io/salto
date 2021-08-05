@@ -19,6 +19,7 @@ import {
   Value, isPrimitiveType, isObjectType, isListType, TypeMap, Values,
   CORE_ANNOTATIONS, StaticFile, calculateStaticFileHash, ReferenceExpression,
   getDeepInnerType, isContainerType, MapType, isMapType, ProgressReporter,
+  createRefToElmWithValue,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { uniqueNamesGenerator, adjectives, colors, names } from 'unique-names-generator'

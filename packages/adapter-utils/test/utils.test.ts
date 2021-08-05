@@ -2045,18 +2045,6 @@ describe('Test utils.ts', () => {
     })
   })
 
-<<<<<<< HEAD
-  describe('createRefToElmWithValue', () => {
-    it('Should create a referenceType with elemID equal to the elements elemID and value equal to the element', () => {
-      const obj = new ObjectType({ elemID: new ElemID('a', 'elemID') })
-      const objRef = createRefToElmWithValue(obj)
-      expect(objRef.elemID).toEqual(obj.elemID)
-      expect(objRef.type).toEqual(obj)
-    })
-  })
-
-=======
->>>>>>> 4a62b9df... fix Adam CR
   describe('resolveTypeShallow', () => {
     const cloneAndAddField = (objectType: ObjectType): ObjectType => {
       const clonedObj = objectType.clone()

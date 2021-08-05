@@ -18,9 +18,10 @@ import { collections } from '@salto-io/lowerdash'
 import {
   ElemID, InstanceElement, ObjectType, Element, ReferenceExpression, isInstanceElement, Change,
   getChangeElement, ModificationChange, isModificationChange, Value, isListType, ListType,
+  createRefToElmWithValue,
 } from '@salto-io/adapter-api'
 import {
-  findElement, createRefToElmWithValue,
+  findElement,
 } from '@salto-io/adapter-utils'
 
 import { FilterWith } from '../../src/filter'

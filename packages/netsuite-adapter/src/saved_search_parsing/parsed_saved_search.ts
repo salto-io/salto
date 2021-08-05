@@ -16,9 +16,8 @@
 /* eslint-disable max-len */
 /* eslint-disable camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType, createRefToElmWithValue,
 } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import * as constants from '../constants'
 
 export const savedsearchInnerTypes: ObjectType[] = []

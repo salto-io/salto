@@ -19,7 +19,7 @@ import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
   Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
   isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType,
-  Value, TypeReference, INSTANCE_ANNOTATIONS, ReferenceExpression, createRefToElmWithValue
+  Value, TypeReference, INSTANCE_ANNOTATIONS, ReferenceExpression, createRefToElmWithValue,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports

@@ -125,9 +125,25 @@ describe('Extract standalone fields', () => {
       const recipeType = elements[0] as ObjectType
       expect(await recipeType.fields.code.getType()).toBeInstanceOf(ObjectType)
       const codeType = await recipeType.fields.code.getType() as ObjectType
+      // eslint-disable-next-line no-console
+      console.log(codeType)
+      // eslint-disable-next-line no-console
+      console.log(new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'recipe__code'),
+        fields: {
+          flat: { refType: BuiltinTypes.STRING },
+          nested: { refType: new ObjectType({
+            elemID: new ElemID(ADAPTER_NAME, 'recipe__code__nested'),
+            fields: {
+              inner: { refType: BuiltinTypes.STRING },
+            },
+          }) },
+        },
+      }))
       expect(codeType.isEqual(new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'recipe__code'),
         fields: {
+          flat: { refType: BuiltinTypes.STRING },
           nested: { refType: new ObjectType({
             elemID: new ElemID(ADAPTER_NAME, 'recipe__code__nested'),
             fields: {
@@ -215,7 +231,7 @@ describe('Extract standalone fields', () => {
             },
           }) },
         },
-      })).toBeTruthy()
+      }))).toBeTruthy()
     })
 
     it('should create new recipe__code instances and reference them', () => {

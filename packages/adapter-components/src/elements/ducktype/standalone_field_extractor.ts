@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, ObjectType, Element } from '@salto-io/adapter-api'
+import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, ObjectType, Element, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { StandaloneFieldConfigType, TransformationConfig, TransformationDefaultConfig } from '../../config'
@@ -89,7 +89,7 @@ const addFieldTypeAndInstances = async ({
     transformationConfigByType,
     transformationDefaultConfig,
   })
-  type.fields[fieldName].refType = fieldType.type
+  type.fields[fieldName].refType = createRefToElmWithValue(fieldType.type)
   elements.push(fieldType.type, ...fieldType.nestedTypes)
 
   await awu(instancesWithValues).forEach(async inst => {

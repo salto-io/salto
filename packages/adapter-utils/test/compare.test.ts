@@ -15,9 +15,8 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, InstanceElement, DetailedChange, PrimitiveType, BuiltinTypes,
-  PrimitiveTypes, Field, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
+  PrimitiveTypes, Field, INSTANCE_ANNOTATIONS, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '../src/compare'
-import { createRefToElmWithValue } from '../src/utils'
 
 describe('detailedCompare', () => {
   const hasChange = (changes: DetailedChange[], action: string, id: ElemID): boolean => (

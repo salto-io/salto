@@ -24,7 +24,7 @@ import {
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType,
-  ReadOnlyElementsSource, ReferenceMap, BuiltinTypesRefByFullName, TypeReference,
+  ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue,
 } from '@salto-io/adapter-api'
 
 const { mapValuesAsync } = promises.object

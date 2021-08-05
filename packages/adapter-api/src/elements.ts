@@ -149,27 +149,6 @@ type TypeOrRef<T extends TypeElement = TypeElement> = T | TypeReference
 export type TypeRefMap = Record<string, TypeOrRef>
 export type ReferenceMap = Record<string, TypeReference>
 
-abstract class PlaceholderTypeElement extends Element {
-  constructor(
-    elemID: ElemID,
-    public refType: TypeReference,
-    annotationRefsOrTypes?: TypeRefMap,
-    annotations?: Values,
-    path?: ReadonlyArray<string>,
-  ) {
-    super({ elemID, annotationRefsOrTypes, annotations, path })
-  }
-
-  async getType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
-    const type = await getRefTypeValue(this.refType, elementsSource)
-    // eslint-disable-next-line no-use-before-define
-    if (!isType(type)) {
-      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-TypeElement`)
-    }
-    return type
-  }
-}
-
 export class ListType<T extends TypeElement = TypeElement> extends Element {
   // This unused value which is always undefined is only here to allow us to enforce
   // the inner type T in createMatchingObjectType. without this member the only information
@@ -286,7 +265,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
 /**
  * Represents a field inside a type
  */
-export class Field extends PlaceholderTypeElement {
+export class Field {
   public constructor(
     public parent: ObjectType,
     public name: string,
@@ -305,6 +284,15 @@ export class Field extends PlaceholderTypeElement {
     return this.refType.elemID.isEqual(other.refType.elemID)
       && this.elemID.isEqual(other.elemID)
       && isEqualValues(this.annotations, other.annotations)
+  }
+
+  async getType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
+    const type = await getRefTypeValue(this.refType, elementsSource)
+    // eslint-disable-next-line no-use-before-define
+    if (!isType(type)) {
+      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-TypeElement`)
+    }
+    return type
   }
 
   /**
@@ -442,7 +430,7 @@ export class ObjectType extends Element {
   }
 }
 
-export class InstanceElement extends PlaceholderTypeElement {
+export class InstanceElement {
   constructor(
     name: string,
     typeOrRefType: ObjectType | TypeReference,

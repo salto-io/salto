@@ -1017,7 +1017,7 @@ Moving the specified elements to common.
       })
 
       it('should print to stdout', () => {
-        expect(output.stdout.content).toContain('The following configuration elements met your selector(s)')
+        expect(output.stdout.content).toContain('The following configuration elements match the search criteria')
       })
     })
   })

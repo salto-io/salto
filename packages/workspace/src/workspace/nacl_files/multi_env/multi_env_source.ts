@@ -322,24 +322,26 @@ const buildMultiEnvSource = (
     (await getState()).states[env ?? primarySourceName].elements
   )
 
-  const getElementIdsBySelectors = async (
-    selectors: ElementSelector[],
-    fromSource = 'env',
-    compact = false,
-  ): Promise<AsyncIterable<ElemID>> => {
-    let relevantSource: ElementsSource
+  const determineSource = async (fromSource: FromSource): Promise<ElementsSource> => {
     switch (fromSource) {
       case 'env': {
-        relevantSource = primarySource()
-        break
+        return primarySource()
       }
       case 'common': {
-        relevantSource = commonSource()
-        break
+        return commonSource()
       }
-      default: relevantSource = await getElementsSource()
+      default: {
+        return getElementsSource()
+      }
     }
+  }
 
+  const getElementIdsBySelectors = async (
+    selectors: ElementSelector[],
+    fromSource: FromSource = 'env',
+    compact = false,
+  ): Promise<AsyncIterable<ElemID>> => {
+    const relevantSource: ElementsSource = await determineSource(fromSource)
     return selectElementIdsByTraversal(
       selectors,
       relevantSource,

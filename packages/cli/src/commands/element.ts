@@ -531,7 +531,7 @@ const listElementsDef = createWorkspaceCommand({
         name: 'mode',
         alias: 'm',
         required: false,
-        description: 'Choose a list mode. Options - [regular, common, env]',
+        description: 'Choose a list mode. Options - [both, common, env]',
         type: 'string',
         choices: ['both', 'common', 'env'],
         default: 'both',

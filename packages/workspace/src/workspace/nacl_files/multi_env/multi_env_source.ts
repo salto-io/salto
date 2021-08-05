@@ -83,7 +83,7 @@ type MultiEnvState = {
 
 export type EnvsChanges = Record<string, ChangeSet<Change>>
 
-export type FromSource = 'env' | 'common' | 'both'
+export type FromSource = 'env' | 'common' | 'all'
 
 export type MultiEnvSource = Omit<NaclFilesSource<EnvsChanges>
   , 'getAll' | 'getElementsSource'> & {

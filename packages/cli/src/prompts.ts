@@ -261,7 +261,7 @@ ${Prompts.LIST_IDS(ids)}
 
   public static readonly LIST_MESSAGE = (
     ids: readonly string[]
-  ): string => `The following configuration elements match the search criteria:
+  ): string => `The following configuration elements were found:
 ${Prompts.LIST_IDS(ids)}
 
 

@@ -899,7 +899,7 @@ describe('multi env source', () => {
     describe('from=both should select both env and common elements', () => {
       it('should extract the proper ids with overlaps when compact=false', async () => {
         const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
-        const res = await awu(await source.getElementIdsBySelectors(selectors, 'both')).toArray()
+        const res = await awu(await source.getElementIdsBySelectors(selectors, 'all')).toArray()
         expect(res.map(id => id.getFullName()).sort()).toEqual([
           commonObject.elemID,
           commonObject.elemID.createNestedID('field', 'field'),
@@ -913,7 +913,7 @@ describe('multi env source', () => {
       it('should extract the proper ids without overlaps when compact=true', async () => {
         const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
         const res = await awu(
-          await source.getElementIdsBySelectors(selectors, 'both', true)
+          await source.getElementIdsBySelectors(selectors, 'all', true)
         ).toArray()
         expect(res.map(id => id.getFullName()).sort()).toEqual([
           commonObject.elemID,

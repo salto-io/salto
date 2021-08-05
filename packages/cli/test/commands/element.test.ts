@@ -968,7 +968,7 @@ Moving the specified elements to common.
           ...mocks.mockCliCommandArgs(moveToCommonName, cliArgs),
           input: {
             elementSelector: ['a.b.c.d', 'e.f.g.h'],
-            mode: 'both',
+            mode: 'all',
           },
           workspace,
         })
@@ -1017,7 +1017,7 @@ Moving the specified elements to common.
       })
 
       it('should print to stdout', () => {
-        expect(output.stdout.content).toContain('The following configuration elements match the search criteria')
+        expect(output.stdout.content).toContain('The following configuration elements were found')
       })
     })
   })

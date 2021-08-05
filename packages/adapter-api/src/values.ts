@@ -26,6 +26,8 @@ export type PrimitiveValue = string | boolean | number
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export type Value = any
 
+export const PLACEHOLDER_VALUE = 'placeholder'
+
 export interface Values {
   [key: string]: Value
 }
@@ -124,6 +126,9 @@ export class ReferenceExpression {
     if (value === undefined) {
       return new ObjectType({
         elemID: this.elemID,
+        annotations: {
+          type: PLACEHOLDER_VALUE,
+        },
       })
     }
     return value

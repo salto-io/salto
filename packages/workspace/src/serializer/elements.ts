@@ -31,7 +31,7 @@ import { DuplicateVariableNameError } from '../merger/internal/variables'
 import { MultiplePrimitiveTypesError } from '../merger/internal/primitives'
 
 import { InvalidStaticFile } from '../workspace/static_files/common'
-import { ValidationError, InvalidValueValidationError, InvalidValueTypeValidationError, InvalidStaticFileError, CircularReferenceValidationError, IllegalReferenceValidationError, UnresolvedReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, InvalidValueMaxLengthValidationError, isValidationError } from '../validator'
+import { ValidationError, InvalidValueValidationError, InvalidValueTypeValidationError, InvalidStaticFileError, CircularReferenceValidationError, IllegalReferenceValidationError, UnresolvedReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, InvalidValueMaxLengthValidationError, isValidationError, InvalidTypeValidationError } from '../validator'
 
 const { awu } = collections.asynciterable
 // There are two issues with naive json stringification:
@@ -84,6 +84,7 @@ const NameToType = {
   RegexMismatchValidationError: RegexMismatchValidationError,
   InvalidValueRangeValidationError: InvalidValueRangeValidationError,
   InvalidValueMaxLengthValidationError: InvalidValueMaxLengthValidationError,
+  InvalidTypeValidationError: InvalidTypeValidationError,
 }
 const nameToTypeEntries = Object.entries(NameToType)
 const possibleTypes = Object.values(NameToType)
@@ -395,6 +396,11 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
         value: v.value,
         maxLength: v.maxLength,
       })
+    ),
+    InvalidTypeValidationError: v => (
+      new InvalidTypeValidationError(
+        reviveElemID(v.elemID),
+      )
     ),
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

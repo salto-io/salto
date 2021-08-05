@@ -21,6 +21,7 @@ import {
   Values, isElement, isListType, getRestriction, isVariable, Variable, isPrimitiveValue, ListType,
   isReferenceExpression, StaticFile, isContainerType, isMapType, ObjectType,
   InstanceAnnotationTypes, GLOBAL_ADAPTER, SaltoError, ReadOnlyElementsSource, BuiltinTypes,
+  PLACEHOLDER_VALUE,
 } from '@salto-io/adapter-api'
 import { toObjectType, elementAnnotationTypes } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
@@ -104,6 +105,16 @@ export class InvalidValueValidationError extends ValidationError {
     this.value = value
     this.fieldName = fieldName
     this.expectedValue = expectedValue
+  }
+}
+
+export class InvalidTypeValidationError extends ValidationError {
+  constructor(readonly elemID: ElemID) {
+    super({
+      elemID,
+      error: `type ${elemID.typeName} of instance ${elemID.name} does not exist`,
+      severity: 'Warning',
+    })
   }
 }
 
@@ -570,6 +581,16 @@ const instanceAnnotationsType = new ObjectType({
       .map(([name, type]) => [name, { refType: type }])
   ),
 })
+const validateInstanceType = async (
+  element: InstanceElement,
+  elementsSource: ReadOnlyElementsSource
+): Promise<ValidationError[]> => {
+  const type = await element.getType(elementsSource)
+  if (type.annotations.type === PLACEHOLDER_VALUE) {
+    return [new InvalidTypeValidationError(element.elemID)]
+  }
+  return []
+}
 
 const validateInstanceElements = async (
   element: InstanceElement,
@@ -592,6 +613,10 @@ const validateInstanceElements = async (
       element.elemID,
       element.annotations,
       instanceAnnotationsType,
+      elementsSource,
+    ),
+    ...await validateInstanceType(
+      element,
       elementsSource,
     ),
   ]

@@ -254,7 +254,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, ['.*']])),
       filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
     }))
-    console.log('fetchTarget: %', this.fetchTarget)
 
     const fetchQuery = [
       this.fetchInclude && buildNetsuiteQuery(this.fetchInclude),

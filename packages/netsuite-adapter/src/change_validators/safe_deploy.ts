@@ -72,16 +72,17 @@ const changeValidator: QueryChangeValidator = async (changes: ReadonlyArray<Chan
       modificationInstanceChanges.map(change => change.data.before),
       fetchByQuery
     )
-
     modificationInstanceChanges.forEach(change => {
-      const serviceInstance = serviceInstances.find(instance =>
-        change.data.before.annotations.internalId === instance.annotations.internalId)
+      const matchingServiceInstances = serviceInstances
+        .filter(instance => change.data.before.elemID.name === instance.elemID.name)
+        .filter(instance => change.data.before.elemID.typeName === instance.elemID.typeName)
 
-      if (serviceInstance === undefined) {
-        throw new Error(`Could not find the instance ${change.data.before.elemID.name} in the service`)
+      if (matchingServiceInstances.length !== 1) {
+        throw new Error(`Failed to find the instance ${change.data.before.elemID.name} in the service, or could not match it exactly`)
       }
+      const matchingServiceInstance = matchingServiceInstances[0]
 
-      if (!areInstancesEqual(change.data.before, serviceInstance)) {
+      if (!areInstancesEqual(change.data.before, matchingServiceInstance)) {
         errors.push({
           elemID: change.data.after.elemID,
           severity: 'Warning',

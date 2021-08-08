@@ -16,8 +16,18 @@
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement, ListType, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { addReferences } from '../../src/references/field_references'
 import { FieldReferenceDefinition } from '../../src/references/reference_mapping'
+import { ContextValueMapperFunc, ContextFunc, neighborContextGetter, contextStrategyDefaultLookup } from '../../src/references'
 
 const ADAPTER_NAME = 'myAdapter'
+
+const neighborContextFunc = (args: {
+  contextFieldName: string
+  levelsUp?: number
+  contextValueMapper?: ContextValueMapperFunc
+}): ContextFunc => neighborContextGetter({
+  ...args,
+  getLookUpName: async val => val,
+})
 
 describe('Field references', () => {
   const apiClientType = new ObjectType({
@@ -59,6 +69,57 @@ describe('Field references', () => {
     },
   })
 
+  const brandType = new ObjectType({
+    elemID: new ElemID(ADAPTER_NAME, 'brand'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+    },
+  })
+  const groupType = new ObjectType({
+    elemID: new ElemID(ADAPTER_NAME, 'group'),
+    fields: {
+      id: { refType: BuiltinTypes.NUMBER },
+    },
+  })
+  const someTypeWithValue = new ObjectType({
+    elemID: new ElemID(ADAPTER_NAME, 'typeWithValue'),
+    fields: {
+      // eslint-disable-next-line camelcase
+      value: { refType: BuiltinTypes.UNKNOWN },
+      bla: { refType: BuiltinTypes.STRING },
+    },
+  })
+  const someTypeWithNestedValuesAndSubject = new ObjectType({
+    elemID: new ElemID(ADAPTER_NAME, 'typeWithValueAndSubject'),
+    fields: {
+      // eslint-disable-next-line camelcase
+      valueList: { refType: new ListType(someTypeWithValue) },
+      subject: { refType: BuiltinTypes.STRING },
+    },
+  })
+  const someTypeWithNestedValueList = new ObjectType({
+    elemID: new ElemID(ADAPTER_NAME, 'typeWithValueList'),
+    fields: {
+      // eslint-disable-next-line camelcase
+      list: { refType: new ListType(someTypeWithValue) },
+      type: { refType: BuiltinTypes.STRING },
+    },
+  })
+  const someTypeWithNestedListOfValuesAndValue = new ObjectType({
+    elemID: new ElemID(ADAPTER_NAME, 'typeWithNestedValues'),
+    fields: {
+      value: { refType: BuiltinTypes.STRING },
+      values: { refType: new ListType(someTypeWithNestedValueList) },
+    },
+  })
+  const type1 = new ObjectType({
+    elemID: new ElemID(ADAPTER_NAME, 'type1'),
+    fields: {
+      nestedValues: { refType: new ListType(someTypeWithNestedListOfValuesAndValue) },
+      subjectAndValues: { refType: new ListType(someTypeWithNestedValuesAndSubject) },
+    },
+  })
+
   const generateElements = (
   ): Element[] => ([
     apiClientType,
@@ -78,11 +139,49 @@ describe('Field references', () => {
     apiEndpointType,
     // eslint-disable-next-line camelcase
     new InstanceElement('ep1', apiEndpointType, { flow_id: 123 }),
+    brandType,
+    groupType,
+    someTypeWithValue,
+    someTypeWithNestedValuesAndSubject,
+    someTypeWithNestedValueList,
+    someTypeWithNestedListOfValuesAndValue,
+    type1,
+    new InstanceElement('brand1', brandType, { id: 1001 }),
+    new InstanceElement('brand2', brandType, { id: 1002 }),
+    new InstanceElement('group3', groupType, { id: 2003 }),
+    new InstanceElement('group4', groupType, { id: 2004 }),
+    new InstanceElement('inst1', type1, {
+      subjectAndValues: [
+        {
+          valueList: [{ value: 1001, bla: 'ignore' }],
+          subject: 'brand_id',
+        },
+        {
+          valueList: [{ value: 4007, bla: 'ignore' }],
+          subject: 'unrelated',
+        },
+      ],
+      nestedValues: [
+        {
+          value: 'brand_id',
+          values: [
+            { list: [{ value: 1001 }, { value: 123 }], type: 'ignore' },
+            { list: [{ value: 123 }, { value: 1002 }], type: 'ignore' },
+          ],
+        },
+        {
+          value: 'group_id',
+          values: [
+            { list: [{ value: '2003' }], type: 'ignore' },
+          ],
+        },
+      ],
+    }),
   ])
 
   describe('addReferences', () => {
     let elements: Element[]
-    const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
+    const fieldNameToTypeMappingDefs: FieldReferenceDefinition<'none' | 'parentSubject' | 'parentValue'>[] = [
       {
         src: { field: 'api_client_id', parentTypes: ['api_access_profile'] },
         serializationStrategy: 'id',
@@ -108,11 +207,25 @@ describe('Field references', () => {
         serializationStrategy: 'id',
         target: { type: 'folder' },
       },
+      {
+        src: { field: 'value' },
+        serializationStrategy: 'id',
+        target: { typeContext: 'parentSubject' },
+      },
+      {
+        src: { field: 'value' },
+        serializationStrategy: 'id',
+        target: { typeContext: 'parentValue' },
+      },
     ]
 
     beforeAll(async () => {
       elements = generateElements()
-      await addReferences(elements, fieldNameToTypeMappingDefs)
+      await addReferences(elements, fieldNameToTypeMappingDefs, undefined, {
+        none: contextStrategyDefaultLookup.none,
+        parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: val => val.replace('_id', '') }),
+        parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: val => val.replace('_id', '') }),
+      })
     })
 
     it('should resolve field values when referenced element exists', () => {
@@ -131,6 +244,18 @@ describe('Field references', () => {
       expect(folders).toHaveLength(2)
       expect(folders[1].value.parent_id).toBeInstanceOf(ReferenceExpression)
       expect(folders[1].value.parent_id.elemID.getFullName()).toEqual('myAdapter.folder.instance.folder11')
+
+      const inst = elements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'inst1'
+      )[0] as InstanceElement
+      expect(inst.value.nestedValues[0].values[0].list[0].value).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value.nestedValues[0].values[0].list[0].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand1')
+      expect(inst.value.nestedValues[0].values[1].list[1].value).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value.nestedValues[0].values[1].list[1].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand2')
+      expect(inst.value.nestedValues[1].values[0].list[0].value).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value.nestedValues[1].values[0].list[0].value.elemID.getFullName()).toEqual('myAdapter.group.instance.group3')
+      expect(inst.value.subjectAndValues[0].valueList[0].value).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value.subjectAndValues[0].valueList[0].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand1')
     })
 
     it('should not resolve fields in unexpected types even if field name matches', () => {

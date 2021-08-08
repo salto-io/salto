@@ -13,22 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Field, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, Field, InstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { FileProperties } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import _, { partial } from 'lodash'
-// import { collections } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { getAuditAnnotations, isInstanceOfCustomObject } from '../transformers/transformer'
 import { FilterCreator, FilterWith } from '../filter'
 import SalesforceClient from '../client/client'
-import { ensureSafeFilterFetch } from './utils'
+import { conditionQueries, ensureSafeFilterFetch, queryClient } from './utils'
 
-// const { awu } = collections.asynciterable
+const { awu } = collections.asynciterable
 
 type FilePropertiesMap = Record<string, FileProperties>
 type FieldFileNameParts = {fieldName: string; objectName: string}
 const log = logger(module)
-// const getIDsAndNamesOfUsersQuery = 'SELECT Id,Name FROM User'
+const GetIDsAndNamesOfUsersQuery = 'SELECT Id,Name FROM User'
 
 const getFieldNameParts = (fileProperties: FileProperties): FieldFileNameParts =>
   ({ fieldName: fileProperties.fullName.split('.')[1],
@@ -83,30 +83,30 @@ const elementAuditInformationSupplier = (customTypeFilePropertiesMap: FileProper
   }
 }
 
-// const getIDToNameMap = async (client: SalesforceClient,
-//   instances: InstanceElement[]): Promise<Record<string, string>> => {
-//   const instancesIDs = Array.from(new Set(
-//     instances.flatMap(instance => [instance.value.CreatedById, instance.value.LastModifiedById])
-//   ))
-//   const queries = conditionQueries(getIDsAndNamesOfUsersQuery,
-//     instancesIDs.map(id => ({ Id: `'${id}'` })))
-//   const records = await queryClient(client, queries)
-//   return Object.fromEntries(records.map(record => [record.Id, record.Name]))
-// }
+const getIDToNameMap = async (client: SalesforceClient,
+  instances: InstanceElement[]): Promise<Record<string, string>> => {
+  const instancesIDs = Array.from(new Set(
+    instances.flatMap(instance => [instance.value.CreatedById, instance.value.LastModifiedById])
+  ))
+  const queries = conditionQueries(GetIDsAndNamesOfUsersQuery,
+    instancesIDs.map(id => ({ Id: `'${id}'` })))
+  const records = await queryClient(client, queries)
+  return Object.fromEntries(records.map(record => [record.Id, record.Name]))
+}
 
-// const moveAuditFieldsToAnnotations = (instance: InstanceElement,
-//   IDToNameMap: Record<string, string>): void => {
-//   instance.annotations[CORE_ANNOTATIONS.CREATED_AT] = instance.value.CreatedDate
-//   instance.annotations[CORE_ANNOTATIONS.CREATED_BY] = IDToNameMap[instance.value.CreatedById]
-//   instance.annotations[CORE_ANNOTATIONS.CHANGED_AT] = instance.value.LastModifiedDate
-//   instance.annotations[CORE_ANNOTATIONS.CHANGED_BY] = IDToNameMap[
-//     instance.value.LastModifiedById]
-// }
+const moveAuditFieldsToAnnotations = (instance: InstanceElement,
+  IDToNameMap: Record<string, string>): void => {
+  instance.annotations[CORE_ANNOTATIONS.CREATED_AT] = instance.value.CreatedDate
+  instance.annotations[CORE_ANNOTATIONS.CREATED_BY] = IDToNameMap[instance.value.CreatedById]
+  instance.annotations[CORE_ANNOTATIONS.CHANGED_AT] = instance.value.LastModifiedDate
+  instance.annotations[CORE_ANNOTATIONS.CHANGED_BY] = IDToNameMap[
+    instance.value.LastModifiedById]
+}
 
-// const moveInstancesAuditFieldsToAnnotations = (instances: InstanceElement[],
-//   IDToNameMap: Record<string, string>): void => {
-//   instances.forEach(instance => moveAuditFieldsToAnnotations(instance, IDToNameMap))
-// }
+const moveInstancesAuditFieldsToAnnotations = (instances: InstanceElement[],
+  IDToNameMap: Record<string, string>): void => {
+  instances.forEach(instance => moveAuditFieldsToAnnotations(instance, IDToNameMap))
+}
 
 export const WARNING_MESSAGE = 'Encountered an error while trying to populate audit information in some of you salesforce configuration elements.'
 
@@ -124,11 +124,10 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
       const supplyAuditAnnotations = partial(elementAuditInformationSupplier,
         customTypeFilePropertiesMap, customFieldsFilePropertiesMap)
       elements.forEach(supplyAuditAnnotations)
-      Promise.all(elements.filter(isInstanceOfCustomObject))
-      // const customObjectInstances = await awu(elements).filter(isInstanceOfCustomObject)
-      //   .toArray() as InstanceElement[]
-      // const IDToNameMap = await getIDToNameMap(client, customObjectInstances)
-      // moveInstancesAuditFieldsToAnnotations(customObjectInstances, IDToNameMap)
+      const customObjectInstances = await awu(elements).filter(isInstanceOfCustomObject)
+        .toArray() as InstanceElement[]
+      const IDToNameMap = await getIDToNameMap(client, customObjectInstances)
+      moveInstancesAuditFieldsToAnnotations(customObjectInstances, IDToNameMap)
     },
   }),
 })

@@ -23,18 +23,21 @@ import {
 } from '@salto-io/adapter-api'
 import { getParents, buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
-import { collections } from '@salto-io/lowerdash'
+import { chunks, collections } from '@salto-io/lowerdash'
+import { SalesforceClient } from 'index'
 import { OptionalFeatures } from '../types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION, CUSTOM_FIELD,
   KEY_PREFIX,
+  MAX_QUERY_LENGTH,
 } from '../constants'
-import { JSONBool, CustomObject } from '../client/types'
+import { JSONBool, CustomObject, SalesforceRecord } from '../client/types'
 import { metadataType, apiName, defaultApiName, Types, isCustomSettingsObject, isCustomObject } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 
-const { awu } = collections.asynciterable
+const { toArrayAsync, awu } = collections.asynciterable
+const { weightedChunks } = chunks
 const log = logger(module)
 
 export const id = (elem: Element): string => elem.elemID.getFullName()
@@ -218,6 +221,54 @@ export const extractFlatCustomObjectFields = async (elem: Element): Promise<Elem
     ? [elem, ...Object.values(elem.fields)]
     : [elem]
 )
+
+export const getWhereConditions = (
+  conditionSets: Record<string, string>[],
+  maxLen: number
+): string[] => {
+  const keys = _.uniq(conditionSets.flatMap(Object.keys))
+  const constConditionPartLen = (
+    _.sumBy(keys, key => `${key} IN ()`.length)
+    + (' AND '.length * (keys.length - 1))
+  )
+
+  const conditionChunks = weightedChunks(
+    conditionSets,
+    maxLen - constConditionPartLen,
+    // Note - this calculates the condition length as if all values are added to the query.
+    // the actual query might end up being shorter if some of the values are not unique.
+    // this can be optimized in the future if needed
+    condition => _.sumBy(Object.values(condition), val => `${val},`.length),
+  )
+  const r = conditionChunks.map(conditionChunk => {
+    const conditionsByKey = _.groupBy(
+      conditionChunk.flatMap(Object.entries),
+      ([keyName]) => keyName
+    )
+    return Object.entries(conditionsByKey)
+      .map(([keyName, conditionValues]) => (
+        `${keyName} IN (${_.uniq(conditionValues.map(val => val[1])).join(',')})`
+      ))
+      .join(' AND ')
+  })
+  return r
+}
+
+export const conditionQueries = (query: string, conditionSets: Record<string,
+  string>[], maxQueryLen = MAX_QUERY_LENGTH): string[] => {
+  const selectWhereStr = `${query} WHERE `
+  const whereConditions = getWhereConditions(conditionSets, maxQueryLen - selectWhereStr.length)
+  return whereConditions.map(whereCondition => `${selectWhereStr}${whereCondition}`)
+}
+
+export const queryClient = async (client: SalesforceClient,
+  queries: string[]): Promise<SalesforceRecord[]> => {
+  const recordsIterables = await Promise.all(queries.map(async query => client.queryAll(query)))
+  const records = (await Promise.all(
+    recordsIterables.map(async recordsIterable => (await toArrayAsync(recordsIterable)).flat())
+  )).flat()
+  return records
+}
 
 export const buildElementsSourceForFetch = (
   elements: ReadonlyArray<Element>,

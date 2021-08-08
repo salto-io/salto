@@ -30,7 +30,7 @@ import layoutFilter from './filters/layouts'
 import customObjectsFilter, { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from './filters/custom_objects'
 import customSettingsFilter from './filters/custom_settings_filter'
 import customObjectsSplitFilter from './filters/custom_object_split'
-import auditInformation from './filters/audit_information'
+import auditInformationFilter from './filters/audit_information'
 import profileInstanceSplitFilter from './filters/profile_instance_split'
 import customObjectsInstancesFilter from './filters/custom_objects_instances'
 import profilePermissionsFilter from './filters/profile_permissions'
@@ -87,7 +87,6 @@ export const DEFAULT_FILTERS = [
   workflowFilter,
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   customObjectsFilter,
-  auditInformation,
   // customSettingsFilter depends on customObjectsFilter
   customSettingsFilter,
   // customObjectsInstancesFilter depends on customObjectsFilter
@@ -116,6 +115,7 @@ export const DEFAULT_FILTERS = [
   profilePathsFilter,
   territoryFilter,
   elementsUrlFilter,
+  auditInformationFilter,
   hideReadOnlyValuesFilter,
   // The following filters should remain last in order to make sure they fix all elements
   convertListsFilter,

@@ -34,7 +34,7 @@ import {
   OBJECTS_PATH, INSTALLED_PACKAGES_PATH, TYPES_PATH, RECORDS_PATH, WORKFLOW_METADATA_TYPE,
   ASSIGNMENT_RULES_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE, QUICK_ACTION_METADATA_TYPE,
   CUSTOM_TAB_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE,
-  SHARING_RULES_TYPE, CUSTOM_FIELD,
+  SHARING_RULES_TYPE,
 } from '../../src/constants'
 import mockAdapter from '../adapter'
 import { findElements, createValueSetEntry, defaultFilterContext } from '../utils'
@@ -511,53 +511,6 @@ describe('Custom Objects filter', () => {
         await filter.onFetch(result)
         const lead = findElements(result, 'Lead').pop() as ObjectType
         expect(lead.annotations[LABEL]).toEqual('Lead Label')
-      })
-      it('should add audit annotations when fetching custom object', async () => {
-        mockSingleSObject('Custom__c', [
-          {
-            name: 'StringField__c',
-            type: 'string',
-            label: 'Stringo',
-          },
-        ])
-        connection.metadata.list = jest.fn()
-          .mockImplementation(async ([{ type }]) => {
-            if (type === CUSTOM_OBJECT) {
-              return [{ fullName: 'Custom__c',
-                createdByName: 'created_name',
-                createdDate: 'created_date',
-                lastModifiedByName: 'modified_name',
-                lastModifiedDate: 'modified_date' }]
-            }
-            if (type === CUSTOM_FIELD) {
-              return [{ fullName: 'Custom__c.StringField__c',
-                createdByName: 'created_name_field',
-                createdDate: 'created_date_field',
-                lastModifiedByName: 'modified_name_field',
-                lastModifiedDate: 'modified_date_field' }]
-            }
-            return []
-          })
-        const instance = new InstanceElement(
-          'Custom__c',
-          new ObjectType({
-            elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT),
-            annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
-          }),
-          { [INSTANCE_FULL_NAME_FIELD]: 'Custom__c' },
-        )
-        const elements: Element[] = [instance]
-        const newFilter = filterCreator({ client, config: defaultFilterContext }) as typeof filter
-        await newFilter.onFetch(elements)
-        const custom = elements.filter(o => o.elemID.name === 'Custom__c').pop() as ObjectType
-        expect(custom.annotations[CORE_ANNOTATIONS.CREATED_BY]).toEqual('created_name')
-        expect(custom.annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual('created_date')
-        expect(custom.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual('modified_name')
-        expect(custom.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('modified_date')
-        expect(custom.fields.StringField__c.annotations[CORE_ANNOTATIONS.CREATED_BY]).toEqual('created_name_field')
-        expect(custom.fields.StringField__c.annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual('created_date_field')
-        expect(custom.fields.StringField__c.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual('modified_name_field')
-        expect(custom.fields.StringField__c.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('modified_date_field')
       })
 
       it('should use existing elemID when fetching custom object', async () => {

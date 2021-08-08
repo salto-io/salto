@@ -71,15 +71,15 @@ const getCustomFieldFileProperties = async (client: SalesforceClient):
 }
 
 
-const elementAuditInformationSupplier = (customTypeFilePropertiesMap: FilePropertiesMap,
+const objectAuditInformationSupplier = (customTypeFilePropertiesMap: FilePropertiesMap,
   customFieldsFilePropertiesMap: Record<string, FilePropertiesMap>,
-  element: Element): void => {
-  if (element.elemID.name in customTypeFilePropertiesMap) {
-    Object.assign(element.annotations,
-      getAuditAnnotations(customTypeFilePropertiesMap[element.elemID.name]))
+  object: ObjectType): void => {
+  if (object.elemID.name in customTypeFilePropertiesMap) {
+    Object.assign(object.annotations,
+      getAuditAnnotations(customTypeFilePropertiesMap[object.elemID.name]))
   }
-  if (element.elemID.name in customFieldsFilePropertiesMap && isObjectType(element)) {
-    addAuditAnnotationsToFields(customFieldsFilePropertiesMap[element.elemID.name], element)
+  if (object.elemID.name in customFieldsFilePropertiesMap) {
+    addAuditAnnotationsToFields(customFieldsFilePropertiesMap[object.elemID.name], object)
   }
 }
 
@@ -121,9 +121,10 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
     fetchFilterFunc: async (elements: Element[]) => {
       const customTypeFilePropertiesMap = await getCustomObjectFileProperties(client)
       const customFieldsFilePropertiesMap = await getCustomFieldFileProperties(client)
-      const supplyAuditAnnotations = partial(elementAuditInformationSupplier,
+      const supplyAuditAnnotations = partial(objectAuditInformationSupplier,
         customTypeFilePropertiesMap, customFieldsFilePropertiesMap)
-      elements.forEach(supplyAuditAnnotations)
+      elements.filter(isObjectType)
+        .forEach(supplyAuditAnnotations)
       const customObjectInstances = await awu(elements).filter(isInstanceOfCustomObject)
         .toArray() as InstanceElement[]
       const IDToNameMap = await getIDToNameMap(client, customObjectInstances)

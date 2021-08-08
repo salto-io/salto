@@ -29,7 +29,7 @@ describe('audit information test', () => {
   let filter: Filter
   let client: SalesforceClient
   let connection: MockInterface<Connection>
-  let standardObject: ObjectType
+  let customObject: ObjectType
   const objectProperties = { fullName: 'Custom__c',
     createdByName: 'created_name',
     createdDate: 'created_date',
@@ -69,7 +69,7 @@ describe('audit information test', () => {
         return []
       })
     filter = auditInformation({ client, config: defaultFilterContext })
-    standardObject = new ObjectType({
+    customObject = new ObjectType({
       elemID: new ElemID('salesforce', 'Custom__c'),
       annotations: { metadataType: 'CustomObject' },
       fields: {
@@ -79,12 +79,12 @@ describe('audit information test', () => {
   })
 
   it('should add instance annotations to custom object', async () => {
-    await filter.onFetch?.([standardObject])
-    checkElementAnnotations(standardObject, objectProperties)
-    checkElementAnnotations(standardObject.fields.StringField__c, fieldProperties)
+    await filter.onFetch?.([customObject])
+    checkElementAnnotations(customObject, objectProperties)
+    checkElementAnnotations(customObject.fields.StringField__c, fieldProperties)
   })
   describe('when feature is disabled', () => {
-    it('should not run any query', async () => {
+    it('should not add any annotations', async () => {
       filter = auditInformation({
         client,
         config: {
@@ -92,8 +92,8 @@ describe('audit information test', () => {
           fetchProfile: buildFetchProfile({ optionalFeatures: { auditInformation: false } }),
         },
       })
-      await filter.onFetch?.([standardObject])
-      expect(standardObject.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
+      await filter.onFetch?.([customObject])
+      expect(customObject.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
     })
   })
 })

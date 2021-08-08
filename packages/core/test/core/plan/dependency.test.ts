@@ -16,7 +16,7 @@
 import wu from 'wu'
 import { DiffGraph, DataNodeMap, DiffNode } from '@salto-io/dag'
 import { ChangeDataType, Change, ObjectType, InstanceElement, ElemID, ReferenceExpression, BuiltinTypes, PrimitiveType, PrimitiveTypes, CORE_ANNOTATIONS, DependencyChange, ChangeId, toChange } from '@salto-io/adapter-api'
-import { addNodeDependencies, addAfterRemoveDependency, addFieldToObjectDependency, addTypeDependency, addReferencesDependency } from '../../../src/core/plan/dependency'
+import { addNodeDependencies, addAfterRemoveDependency, addFieldToObjectDependency, addTypeDependency, addReferencesDependency, addInstanceToFieldsDependency } from '../../../src/core/plan/dependency'
 import { getAllElements } from '../../common/elements'
 
 describe('addNodeDependencies', () => {
@@ -246,6 +246,22 @@ describe('dependency changers', () => {
         expect(dependencyChanges[0].dependency.source).toEqual(0)
         expect(dependencyChanges[0].dependency.target).toEqual(1)
       })
+    })
+  })
+
+  describe('addInstanceToFieldsDependency', () => {
+    beforeEach(async () => {
+      const inputChanges = new Map<number, Change>([
+        [0, toChange({ after: saltoEmployeeInstance })],
+        [1, toChange({ after: saltoEmployee.fields.office })],
+      ])
+      dependencyChanges = [...await addInstanceToFieldsDependency(inputChanges, new Map())]
+    })
+    it('should add dependency from instance to field', () => {
+      expect(dependencyChanges).toHaveLength(1)
+      expect(dependencyChanges[0].action).toEqual('add')
+      expect(dependencyChanges[0].dependency.source).toEqual(0)
+      expect(dependencyChanges[0].dependency.target).toEqual(1)
     })
   })
 

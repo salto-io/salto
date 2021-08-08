@@ -212,6 +212,7 @@ The following types are supported in the language:
 | `Map`       | "Map\<string\>" mapField {}| {<br>&nbsp;&nbsp;a = "A"<br>&nbsp;&nbsp;b = "B"<br>} | A map/dictionary with string keys, and values of the specified type
 | `unknown`   | unknown anyType          | anything       | a field value which is not validated, and can hold any type of data.
 | `json`      | json value {}            | "{ \"a\": 12 }"| A string value that expects the value to be in JSON format
+| `serviceid` | serviceid myid {}        | "ID"           | A string value that denotes an ID in the service (used by adapters to distinguish ID fields from other fields)
 
 
 ## Language features
@@ -441,11 +442,10 @@ This is a hidden annotation (will not be seen in NaCl) that is used to store a U
 Elements that have this annotation can support the "Go To Service" feature in Salto enabled editors.
 
 #### _is_service_id
-This boolean annotation is being used to identify fields or types as ServiceId. a ServiceId is a value that denotes an ID in the service (used by adapters to distinguish ID fields from other fields). 
-There is no need to set this annotation to false, since leaving it undefined as its default value will yield some results as 'false'.
+This boolean annotation is used to identify fields or types as ServiceId. a ServiceId is a value that denotes an ID in the service (used by adapters to distinguish ID fields from other fields). 
 
 Type: `boolean`
-Default: `undefined`
+Default: `false`
 Applicable to: Types, Fields
 Example:
 ```HCL

@@ -148,12 +148,12 @@ describe('Field references', () => {
     type1,
     new InstanceElement('brand1', brandType, { id: 1001 }),
     new InstanceElement('brand2', brandType, { id: 1002 }),
-    new InstanceElement('group3', groupType, { id: 2003 }),
-    new InstanceElement('group4', groupType, { id: 2004 }),
+    new InstanceElement('group3', groupType, { id: '2003' }),
+    new InstanceElement('group4', groupType, { id: '2004' }),
     new InstanceElement('inst1', type1, {
       subjectAndValues: [
         {
-          valueList: [{ value: 1001, bla: 'ignore' }],
+          valueList: [{ value: '1001', bla: 'ignore' }],
           subject: 'brand_id',
         },
         {

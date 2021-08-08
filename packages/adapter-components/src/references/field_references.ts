@@ -45,7 +45,7 @@ export const replaceReferenceValues = async <
     const findElem = (value: string, targetType?: string): Element | undefined => (
       targetType !== undefined
         // TODO make the field we're using to look up more explicit
-        ? elemLookupMaps.map(lookup => lookup.get(targetType, value)).find(isDefined)
+        ? elemLookupMaps.map(lookup => lookup.get(targetType, _.toString(value))).find(isDefined)
         : undefined
     )
 
@@ -76,10 +76,10 @@ export const replaceReferenceValues = async <
       if (elem === undefined) {
         return undefined
       }
-      const res = (await serializer.serialize({
+      const res = (_.toString(await serializer.serialize({
         ref: new ReferenceExpression(elem.elemID, elem),
         field,
-      }) === val) ? new ReferenceExpression(elem.elemID, elem) : undefined
+      })) === _.toString(val)) ? new ReferenceExpression(elem.elemID, elem) : undefined
       if (res !== undefined) {
         fieldsWithResolvedReferences.add(field.elemID.getFullName())
       }
@@ -146,7 +146,7 @@ export const addReferences = async <
   fieldsToGroupBy.forEach(fieldName => indexer.addIndex({
     name: `${fieldName}Lookup`,
     filter: e => isInstanceElement(e) && e.value[fieldName] !== undefined,
-    key: (inst: InstanceElement) => [inst.refType.elemID.name, inst.value[fieldName]],
+    key: (inst: InstanceElement) => [inst.refType.elemID.name, _.toString(inst.value[fieldName])],
   }))
   const { elemByElemID, ...fieldLookups } = await indexer.process(awu(elements))
 

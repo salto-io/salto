@@ -680,6 +680,11 @@ export const formatInvalidElementCommand = (command: string): string => [
   emptyLine(),
 ].join('\n')
 
+export const formatListFailed = (command: string): string => [
+  formatSimpleError(Prompts.LIST_FAILED(command)),
+  emptyLine(),
+].join('\n')
+
 export const formatCleanWorkspace = (
   cleanArgs: WorkspaceComponents
 ): string => {

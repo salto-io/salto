@@ -25,7 +25,7 @@ import { ValidationError, validateElements, isUnresolvedRefError } from '../vali
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
-import { multiEnvSource, getSourceNameForFilename, MultiEnvSource, EnvsChanges } from './nacl_files/multi_env/multi_env_source'
+import { multiEnvSource, getSourceNameForFilename, MultiEnvSource, EnvsChanges, FromSource } from './nacl_files/multi_env/multi_env_source'
 import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
 import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
 import { ElementSelector } from './element_selector'
@@ -133,7 +133,7 @@ export type Workspace = {
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementIdsBySelectors: (
     selectors: ElementSelector[],
-    commonOnly?: boolean,
+    from?: FromSource,
     compact?: boolean,
   ) => Promise<AsyncIterable<ElemID>>
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
@@ -717,9 +717,9 @@ export const loadWorkspace = async (
       (await getLoadedNaclFilesSource()).listNaclFiles()
     ),
     getElementIdsBySelectors: async (
-      selectors: ElementSelector[], commonOnly = false, compacted = false,
+      selectors: ElementSelector[], from, compacted = false,
     ) => (
-      (await getLoadedNaclFilesSource()).getElementIdsBySelectors(selectors, commonOnly, compacted)
+      (await getLoadedNaclFilesSource()).getElementIdsBySelectors(selectors, from, compacted)
     ),
     getElementReferencedFiles: async id => (
       (await getLoadedNaclFilesSource()).getElementReferencedFiles(id)

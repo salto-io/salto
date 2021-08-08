@@ -259,6 +259,14 @@ ${Prompts.LIST_IDS(ids)}
   ): string => `Moving the specified elements to ${to}.
 `
 
+  public static readonly LIST_MESSAGE = (
+    ids: readonly string[]
+  ): string => `The following configuration elements were found:
+${Prompts.LIST_IDS(ids)}
+
+
+`
+
   private static readonly SHOULD_RUN_ELEMENTS_OPERATION = (operation: string): string =>
     `Would you like to complete the ${operation} operation?`
 
@@ -272,6 +280,10 @@ Nothing to do.
   public static readonly MOVE_FAILED = (
     error: string
   ): string => `Failed to move the specified elements: ${error}`
+
+  public static readonly LIST_FAILED = (
+    error: string
+  ): string => `Failed to list elements for the given selector(s): ${error}`
 
   public static readonly LIST_UNRESOLVED_FAILED = (
     error: string

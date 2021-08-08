@@ -441,6 +441,22 @@ This is a hidden annotation (will not be seen in NaCl) that is used to store a U
 Elements that have this annotation can support the "Go To Service" feature in Salto enabled editors.
 
 
+#### _created_by
+This is a hidden annotation (will not be seen in NaCl) that is used to store a name of the user who created this element.
+
+
+#### _created_at
+This is a hidden annotation (will not be seen in NaCl) that is used to store the time the element was made.
+
+
+#### _changed_by
+This is a hidden annotation (will not be seen in NaCl) that is used to store a name of the user who last changed this element.
+
+
+#### _changed_at
+This is a hidden annotation (will not be seen in NaCl) that is used to store the last time this element was changed.
+
+
 #### Adapter-specific annotations example
 Below we will use examples from the Salesforce adapter.
 In Salesforce it is possible to define custom types, these types have "label"s which are the names of these types as they show up in the salesforce UI. because of that, the Salto salesforce adapter supports a "label" annotation on custom types:

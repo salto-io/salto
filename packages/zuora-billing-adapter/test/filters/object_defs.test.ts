@@ -305,7 +305,7 @@ describe('Object defs filter', () => {
       client,
       paginator: clientUtils.createPaginator({
         client,
-        paginationFunc: clientUtils.getWithCursorPagination,
+        paginationFunc: clientUtils.getWithCursorPagination(),
       }),
       config: {
         fetch: {

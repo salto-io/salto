@@ -59,7 +59,7 @@ describe('Unordered lists filter', () => {
       client,
       paginator: clientUtils.createPaginator({
         client,
-        paginationFunc: clientUtils.getWithCursorPagination,
+        paginationFunc: clientUtils.getWithCursorPagination(),
       }),
       config: {
         fetch: {

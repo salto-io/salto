@@ -24,7 +24,7 @@ export const paginate: clientUtils.GetAllItemsFunc = async function *paginate({
 }) {
   if (getParams?.paginationField?.includes('next')) {
     // special handling for endpoints that use descending ids, like the recipes endpoint
-    yield* getWithCursorPagination({ client, pageSize, getParams })
+    yield* getWithCursorPagination()({ client, pageSize, getParams })
   } else {
     yield* getWithPageOffsetAndLastPagination(0)({ client, pageSize, getParams })
   }

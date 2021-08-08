@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, ObjectType, Element, createRefToElmWithValue } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { StandaloneFieldConfigType, TransformationConfig, TransformationDefaultConfig } from '../../config'
 import { generateType, toNestedTypeName } from './type_elements'
@@ -23,6 +23,8 @@ import { toInstance } from './instance_elements'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
+const { isDefined } = lowerdashValues
 
 const convertStringToObject = (
   inst: InstanceElement,
@@ -83,7 +85,7 @@ const addFieldTypeAndInstances = async ({
   const fieldType = generateType({
     adapterName,
     name: toNestedTypeName(typeName, fieldName),
-    entries: instancesWithValues.map(inst => inst.value[fieldName]),
+    entries: instancesWithValues.flatMap(inst => inst.value[fieldName]),
     hasDynamicFields: false,
     isSubType: true,
     transformationConfigByType,
@@ -93,22 +95,31 @@ const addFieldTypeAndInstances = async ({
   elements.push(fieldType.type, ...fieldType.nestedTypes)
 
   await awu(instancesWithValues).forEach(async inst => {
-    const fieldInstance = await toInstance({
-      entry: inst.value[fieldName],
-      type: fieldType.type,
-      defaultName: 'unnamed',
-      parent: inst,
-      nestName: true,
-      transformationConfigByType,
-      transformationDefaultConfig,
-    })
-    if (fieldInstance === undefined) {
-      // cannot happen
-      log.error('unexpected empty nested field %s for instance %s', fieldName, inst.elemID.getFullName())
-      return
+    const fieldInstances = await awu(makeArray(inst.value[fieldName])).map(async val => {
+      const fieldInstance = await toInstance({
+        entry: val,
+        type: fieldType.type,
+        defaultName: 'unnamed',
+        parent: inst,
+        nestName: true,
+        transformationConfigByType,
+        transformationDefaultConfig,
+      })
+      if (fieldInstance === undefined) {
+        // cannot happen
+        log.error('unexpected empty nested field %s for instance %s', fieldName, inst.elemID.getFullName())
+        return undefined
+      }
+      return fieldInstance
+    }).filter(isDefined).toArray()
+    const refs = fieldInstances.map(refInst => new ReferenceExpression(refInst.elemID))
+    if (Array.isArray(inst.value[fieldName])) {
+      inst.value[fieldName] = refs
+    } else {
+      // eslint-disable-next-line prefer-destructuring
+      inst.value[fieldName] = refs[0]
     }
-    inst.value[fieldName] = new ReferenceExpression(fieldInstance.elemID)
-    elements.push(fieldInstance)
+    elements.push(...fieldInstances)
   })
   return elements
 }
@@ -148,7 +159,6 @@ export const extractStandaloneFields = async ({
     .forEach(async ([typeName, standaloneFields]) => {
       const type = allTypes[typeName]
       if (type === undefined) {
-        log.error('could not find type %s', typeName)
         return
       }
       const instances = allInstancesbyType[type.elemID.getFullName()] ?? []

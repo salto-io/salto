@@ -178,29 +178,34 @@ export const getWithPageOffsetAndLastPagination: ((firstPage: number) => GetAllI
   }
 )
 
+export type PathCheckerFunc = (current: string, next: string) => boolean
+const defaultPathChecker: PathCheckerFunc = (current, next) => (current === next)
+
 /**
  * Make paginated requests using the specified paginationField, assuming the next page is specified
  * as either a full URL or just the path and query prameters.
  * Only supports next pages under the same endpoint (and uses the same host).
  */
-export const getWithCursorPagination: GetAllItemsFunc = async function *getWithCursor(args) {
-  const nextPageCursorPages: PaginationFunc = ({
-    responseData, getParams, currentParams,
-  }) => {
-    const { paginationField, url } = getParams
-    const nextPagePath = _.get(responseData, paginationField)
-    if (_.isString(nextPagePath)) {
-      const nextPage = new URL(nextPagePath, 'http://localhost')
-      if (nextPage.pathname !== url) {
-        log.error('unexpected next page received for endpoint %s params %o: %s', url, currentParams, nextPage.pathname)
-        throw new Error(`unexpected next page received for endpoint ${url}: ${nextPage.pathname}`)
+export const getWithCursorPagination: ((pathChecker?: PathCheckerFunc) => GetAllItemsFunc) = (
+  (pathChecker = defaultPathChecker) => async function *getWithCursor(args) {
+    const nextPageCursorPages: PaginationFunc = ({
+      responseData, getParams, currentParams,
+    }) => {
+      const { paginationField, url } = getParams
+      const nextPagePath = _.get(responseData, paginationField)
+      if (_.isString(nextPagePath)) {
+        const nextPage = new URL(nextPagePath, 'http://localhost')
+        if (!pathChecker(url, nextPage.pathname)) {
+          log.error('unexpected next page received for endpoint %s params %o: %s', url, currentParams, nextPage.pathname)
+          throw new Error(`unexpected next page received for endpoint ${url}: ${nextPage.pathname}`)
+        }
+        return [{ ...currentParams, ...Object.fromEntries(nextPage.searchParams.entries()) }]
       }
-      return [{ ...currentParams, ...Object.fromEntries(nextPage.searchParams.entries()) }]
+      return []
     }
-    return []
+    yield* traverseRequests(nextPageCursorPages)(args)
   }
-  yield* traverseRequests(nextPageCursorPages)(args)
-}
+)
 
 export const getWithOffsetAndLimit: GetAllItemsFunc = args => {
   // Hard coded "isLast" and "values" in order to fit the configuration scheme which only allows

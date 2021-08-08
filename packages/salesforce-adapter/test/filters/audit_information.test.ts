@@ -14,16 +14,17 @@
 * limitations under the License.
 */
 
-
-import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, PrimitiveType, PrimitiveTypes, ReferenceExpression } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, PrimitiveType, PrimitiveTypes, ReferenceExpression, InstanceElement } from '@salto-io/adapter-api'
 import mockClient from '../client'
 import Connection from '../../src/client/jsforce'
 import SalesforceClient from '../../src/client/client'
-import { Filter } from '../../src/filter'
-import auditInformation from '../../src/filters/audit_information'
+import * as utils from '../../src/filters/utils'
+import { Filter, FilterResult } from '../../src/filter'
+import auditInformation, { WARNING_MESSAGE } from '../../src/filters/audit_information'
 import { defaultFilterContext, MockInterface } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { CUSTOM_FIELD, CUSTOM_OBJECT } from '../../src/constants'
+import * as transformer from '../../src/transformers/transformer'
 
 describe('audit information test', () => {
   let filter: Filter
@@ -77,11 +78,48 @@ describe('audit information test', () => {
       },
     })
   })
+  afterEach(() => {
+    jest.resetAllMocks()
+  })
 
-  it('should add instance annotations to custom object', async () => {
+  it('should add audit annotations to custom object', async () => {
     await filter.onFetch?.([customObject])
     checkElementAnnotations(customObject, objectProperties)
     checkElementAnnotations(customObject.fields.StringField__c, fieldProperties)
+  })
+  it('should add annotations to to custom object instances', async () => {
+    jest.spyOn(transformer, 'isInstanceOfCustomObject').mockResolvedValue(true)
+    const TestCustomRecords = [
+      {
+        Id: 'creator_id',
+        Name: 'created_name',
+      },
+      {
+        Id: 'modifier_id',
+        Name: 'modified_name',
+      },
+    ]
+    jest.spyOn(utils, 'queryClient').mockResolvedValue(TestCustomRecords)
+    const testType = new ObjectType({ elemID: new ElemID('', 'test') })
+    const testInst = new InstanceElement('Custom__c', new ReferenceExpression(testType.elemID, testType),
+      { CreatedDate: 'created_date',
+        CreatedById: 'creator_id',
+        LastModifiedDate: 'modified_date',
+        LastModifiedById: 'modifier_id' })
+    await filter.onFetch?.([testInst])
+    checkElementAnnotations(testInst, objectProperties)
+  })
+  it('should return a warning', async () => {
+    jest.spyOn(transformer, 'isInstanceOfCustomObject').mockImplementation(() => {
+      throw new Error()
+    })
+    const res = await filter.onFetch?.([customObject]) as FilterResult
+    const err = res.errors ?? []
+    expect(res.errors).toHaveLength(1)
+    expect(err[0]).toEqual({
+      severity: 'Warning',
+      message: WARNING_MESSAGE,
+    })
   })
   describe('when feature is disabled', () => {
     it('should not add any annotations', async () => {
@@ -93,7 +131,7 @@ describe('audit information test', () => {
         },
       })
       await filter.onFetch?.([customObject])
-      expect(customObject.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toBeUndefined()
+      checkElementAnnotations(customObject, {})
     })
   })
 })

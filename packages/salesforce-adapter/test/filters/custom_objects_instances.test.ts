@@ -108,10 +108,6 @@ describe('Custom Object Instances filter', () => {
       attributes: {
         type: 'Test',
       },
-      CreatedDate: 'create_date',
-      CreatedById: 'abcdefg',
-      LastModifiedDate: 'modified_date',
-      LastModifiedById: 'abcdefg',
       Id: 'abcdefg',
       OtherAddress: {
         city: 'city',
@@ -416,13 +412,6 @@ describe('Custom Object Instances filter', () => {
           instances = await awu(elements).filter(
             async e => isInstanceElement(e) && await e.getType() === simpleObject
           ).toArray() as InstanceElement[]
-        })
-
-        it('should add audit annotations to data instances', () => {
-          expect(instances[0].annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual('create_date')
-          expect(instances[0].annotations[CORE_ANNOTATIONS.CREATED_BY]).toEqual('Name')
-          expect(instances[0].annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('modified_date')
-          expect(instances[0].annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual('Name')
         })
 
         it('should call query with the object fields', () => {

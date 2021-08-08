@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { isInstanceChange, isModificationChange, ModificationChange, InstanceElement, Element,
   ProgressReporter, ChangeError, Change, isInstanceElement } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
-import { collections, values } from '@salto-io/lowerdash'
-import { andQuery, buildNetsuiteQuery, convertToQueryParams, NetsuiteQuery } from '../query'
+import { collections } from '@salto-io/lowerdash'
+import { buildNetsuiteQuery, convertToQueryParams, NetsuiteQuery } from '../query'
 
 export type FetchByQueryReturnType = {
   failedToFetchAllAtOnce: boolean
@@ -34,35 +35,31 @@ export type QueryChangeValidator = (changes: ReadonlyArray<Change>, fetchByQuery
 
 const { awu } = collections.asynciterable
 
-const getMatchingServiceInstance = async (baseInstance: InstanceElement,
-  fetchByQuery: FetchByQueryFunc): Promise<InstanceElement | undefined> => {
-    console.log(`searching for matching object instance for base instance: ${baseInstance.elemID.name}`)
-  const config = {
-    fetchInclude: { types: [{ name: '.*' }] },
-    fetchExclude: { },
-    fetchTarget: { types: { [baseInstance.elemID.typeName]: [baseInstance.elemID.name] } },
-    skipList: [],
-  }
+const getMatchingServiceInstances = async (baseInstances: InstanceElement[],
+  fetchByQuery: FetchByQueryFunc): Promise<InstanceElement[]> => {
+  const instancesByType = _.groupBy(baseInstances, instance => instance.elemID.typeName)
+  const fetchTarget = { types:
+    Object.fromEntries(Object.entries(instancesByType)
+      .map(([type, instances]) => [type, instances.map(instance => instance.elemID.name)])) }
 
-  const fetchQuery = [
-    config.fetchTarget && buildNetsuiteQuery(convertToQueryParams(config.fetchTarget)),
-  ].filter(values.isDefined).reduce(andQuery)
+  const fetchQuery = fetchTarget && buildNetsuiteQuery(convertToQueryParams(fetchTarget))
+  if (fetchQuery === undefined) return []
 
   const { elements } = await fetchByQuery(fetchQuery, { reportProgress: () => null })
 
+  const baseInstancesInternalIds = baseInstances.map(instance => instance.annotations.internalId)
+
   return elements
     .filter(isInstanceElement)
-    .find(element => element.annotations.internalId === baseInstance.annotations.internalId)
+    .filter(element => baseInstancesInternalIds.includes(element.annotations.internalId))
 }
 
-const areInstancesEqual = (first: InstanceElement, second: InstanceElement): boolean => {
-  const detailedChanges = detailedCompare(first, second)
-  return detailedChanges.length === 0
-}
+const areInstancesEqual = (first: InstanceElement, second: InstanceElement): boolean =>
+  (detailedCompare(first, second).length === 0)
+
 
 const changeValidator: QueryChangeValidator = async (changes: ReadonlyArray<Change>,
   fetchByQuery?: FetchByQueryFunc) => {
-  console.log('@@@@@@@@@ called safe deploy change validator @@@@@@@@@')
   const errors: ChangeError[] = []
 
   if (fetchByQuery !== undefined) {
@@ -71,18 +68,20 @@ const changeValidator: QueryChangeValidator = async (changes: ReadonlyArray<Chan
       .filter(isInstanceChange)
       .toArray() as ModificationChange<InstanceElement>[]
 
-    console.log('found modification changes in instance: %s', modificationInstanceChanges.map(change => change.data.after.elemID.name))
+    const serviceInstances = await getMatchingServiceInstances(
+      modificationInstanceChanges.map(change => change.data.before),
+      fetchByQuery
+    )
 
-    await awu(modificationInstanceChanges).forEach(async change => {
-      const serviceInstance = await getMatchingServiceInstance(change.data.before, fetchByQuery)
-      console.log('found service instance: %s', serviceInstance?.elemID.name)
+    modificationInstanceChanges.forEach(change => {
+      const serviceInstance = serviceInstances.find(instance =>
+        change.data.before.annotations.internalId === instance.annotations.internalId)
 
       if (serviceInstance === undefined) {
         throw new Error(`Could not find the instance ${change.data.before.elemID.name} in the service`)
       }
 
       if (!areInstancesEqual(change.data.before, serviceInstance)) {
-        // console.log('$$$$$$$$$$ found that the before instance and service instance do not match! adding a warning $$$$$$$$$$')
         errors.push({
           elemID: change.data.after.elemID,
           severity: 'Warning',

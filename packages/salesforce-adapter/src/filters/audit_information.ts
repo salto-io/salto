@@ -1,0 +1,136 @@
+/*
+*                      Copyright 2021 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import { Element, Field, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { FileProperties } from 'jsforce-types'
+import { logger } from '@salto-io/logging'
+import _, { partial } from 'lodash'
+// import { collections } from '@salto-io/lowerdash'
+import { getAuditAnnotations, isInstanceOfCustomObject } from '../transformers/transformer'
+import { FilterCreator, FilterWith } from '../filter'
+import SalesforceClient from '../client/client'
+import { ensureSafeFilterFetch } from './utils'
+
+// const { awu } = collections.asynciterable
+
+type FilePropertiesMap = Record<string, FileProperties>
+type FieldFileNameParts = {fieldName: string; objectName: string}
+const log = logger(module)
+// const getIDsAndNamesOfUsersQuery = 'SELECT Id,Name FROM User'
+
+const getFieldNameParts = (fileProperties: FileProperties): FieldFileNameParts =>
+  ({ fieldName: fileProperties.fullName.split('.')[1],
+    objectName: fileProperties.fullName.split('.')[0] } as FieldFileNameParts)
+
+const getObjectFieldByFileProperties = (fileProperties: FileProperties,
+  object: ObjectType): Field =>
+  object.fields[getFieldNameParts(fileProperties).fieldName]
+
+const addAuditAnnotationsToField = (fileProperties: FileProperties, field: Field): void => {
+  Object.assign(field.annotations, getAuditAnnotations(fileProperties))
+}
+
+const addAuditAnnotationsToFields = (fileProperties: FilePropertiesMap,
+  object: ObjectType): void => {
+  Object.values(fileProperties)
+    .filter(fileProp => getObjectFieldByFileProperties(fileProp, object) !== undefined)
+    .forEach(fileProp => addAuditAnnotationsToField(fileProp,
+      getObjectFieldByFileProperties(fileProp, object)))
+}
+
+const getCustomObjectFileProperties = async (client: SalesforceClient):
+  Promise<FilePropertiesMap> => {
+  const { result, errors } = await client.listMetadataObjects({ type: 'CustomObject' })
+  if (errors && errors.length > 0) {
+    log.warn(`Encountered errors while listing file properties for CustomObjects: ${errors}`)
+  }
+  return _.keyBy(result, fileProp => fileProp.fullName)
+}
+
+const getCustomFieldFileProperties = async (client: SalesforceClient):
+  Promise<Record<string, FilePropertiesMap>> => {
+  const { result, errors } = await client.listMetadataObjects({ type: 'CustomField' })
+  if (errors && errors.length > 0) {
+    log.warn(`Encountered errors while listing file properties for CustomFields: ${errors}`)
+  }
+  return _(result).groupBy((fileProps:FileProperties) => getFieldNameParts(fileProps).objectName)
+    .mapValues((values: FileProperties[]) => _.keyBy(values,
+      (fileProps:FileProperties) => getFieldNameParts(fileProps).fieldName)).value()
+}
+
+
+const elementAuditInformationSupplier = (customTypeFilePropertiesMap: FilePropertiesMap,
+  customFieldsFilePropertiesMap: Record<string, FilePropertiesMap>,
+  element: Element): void => {
+  if (element.elemID.name in customTypeFilePropertiesMap) {
+    Object.assign(element.annotations,
+      getAuditAnnotations(customTypeFilePropertiesMap[element.elemID.name]))
+  }
+  if (element.elemID.name in customFieldsFilePropertiesMap && isObjectType(element)) {
+    addAuditAnnotationsToFields(customFieldsFilePropertiesMap[element.elemID.name], element)
+  }
+}
+
+// const getIDToNameMap = async (client: SalesforceClient,
+//   instances: InstanceElement[]): Promise<Record<string, string>> => {
+//   const instancesIDs = Array.from(new Set(
+//     instances.flatMap(instance => [instance.value.CreatedById, instance.value.LastModifiedById])
+//   ))
+//   const queries = conditionQueries(getIDsAndNamesOfUsersQuery,
+//     instancesIDs.map(id => ({ Id: `'${id}'` })))
+//   const records = await queryClient(client, queries)
+//   return Object.fromEntries(records.map(record => [record.Id, record.Name]))
+// }
+
+// const moveAuditFieldsToAnnotations = (instance: InstanceElement,
+//   IDToNameMap: Record<string, string>): void => {
+//   instance.annotations[CORE_ANNOTATIONS.CREATED_AT] = instance.value.CreatedDate
+//   instance.annotations[CORE_ANNOTATIONS.CREATED_BY] = IDToNameMap[instance.value.CreatedById]
+//   instance.annotations[CORE_ANNOTATIONS.CHANGED_AT] = instance.value.LastModifiedDate
+//   instance.annotations[CORE_ANNOTATIONS.CHANGED_BY] = IDToNameMap[
+//     instance.value.LastModifiedById]
+// }
+
+// const moveInstancesAuditFieldsToAnnotations = (instances: InstanceElement[],
+//   IDToNameMap: Record<string, string>): void => {
+//   instances.forEach(instance => moveAuditFieldsToAnnotations(instance, IDToNameMap))
+// }
+
+export const WARNING_MESSAGE = 'Encountered an error while trying to populate audit information in some of you salesforce configuration elements.'
+
+/**
+ * add audit information to object types, and data instance elements.
+ */
+const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
+  onFetch: ensureSafeFilterFetch({
+    warningMessage: WARNING_MESSAGE,
+    config,
+    filterName: 'auditInformation',
+    fetchFilterFunc: async (elements: Element[]) => {
+      const customTypeFilePropertiesMap = await getCustomObjectFileProperties(client)
+      const customFieldsFilePropertiesMap = await getCustomFieldFileProperties(client)
+      const supplyAuditAnnotations = partial(elementAuditInformationSupplier,
+        customTypeFilePropertiesMap, customFieldsFilePropertiesMap)
+      elements.forEach(supplyAuditAnnotations)
+      Promise.all(elements.filter(isInstanceOfCustomObject))
+      // const customObjectInstances = await awu(elements).filter(isInstanceOfCustomObject)
+      //   .toArray() as InstanceElement[]
+      // const IDToNameMap = await getIDToNameMap(client, customObjectInstances)
+      // moveInstancesAuditFieldsToAnnotations(customObjectInstances, IDToNameMap)
+    },
+  }),
+})
+
+export default filterCreator

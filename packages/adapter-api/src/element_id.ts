@@ -39,7 +39,7 @@ export const INSTANCE_ANNOTATIONS = {
   CHANGED_AT: CORE_ANNOTATIONS.CHANGED_AT,
 }
 
-const getContainerPrefix = (fullName: string): { prefix: string; innerName: string } | undefined => {
+const getContainerPrefix = (fullName: string): {prefix: string; innerName: string} | undefined => {
   const [prefix, innerName] = fullName.match(CONTAINER_PARTS_REGEX)?.slice(1) ?? []
   if (prefix !== undefined && innerName !== undefined) {
     return { prefix, innerName }
@@ -130,17 +130,17 @@ export class ElemID {
     if (this.adapter === ElemID.VARIABLES_NAMESPACE && this.idType !== 'var'
       && this.typeName !== ElemID.CONFIG_NAME) {
       throw new Error(`Cannot create ID ${this.getFullName()
-        } - type must be 'var', not '${this.idType}'`)
+      } - type must be 'var', not '${this.idType}'`)
     }
     if (this.idType === 'var') {
       if (this.adapter !== ElemID.VARIABLES_NAMESPACE) {
         throw new Error(`Cannot create ID for variable ${this.getFullName()
-          } -  it must be in the ${ElemID.VARIABLES_NAMESPACE
-          } namespace, not in ${this.adapter}`)
+        } -  it must be in the ${ElemID.VARIABLES_NAMESPACE
+        } namespace, not in ${this.adapter}`)
       }
       if (!_.isEmpty(this.nameParts)) {
         throw new Error(`Cannot create ID ${this.getFullName()
-          }.${this.nameParts.join(ElemID.NAMESPACE_SEPARATOR)} - object variables are not supported`)
+        }.${this.nameParts.join(ElemID.NAMESPACE_SEPARATOR)} - object variables are not supported`)
       }
     }
   }

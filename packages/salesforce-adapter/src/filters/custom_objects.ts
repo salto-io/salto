@@ -23,7 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import { findObjectType, transformValues, getParents, pathNaclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { SalesforceClient } from 'index'
-import { DescribeSObjectResult, Field as SObjField, FileProperties } from 'jsforce'
+import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
 import {
   API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
@@ -45,7 +45,6 @@ import {
   toMetadataInfo,
   isFieldOfCustomObject,
   createInstanceServiceIds,
-  getAuditAnnotations,
 } from '../transformers/transformer'
 import {
   id, addApiName, addMetadataType, addLabel, getNamespace, boolValue,
@@ -63,8 +62,6 @@ import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
 import { CustomObject } from '../client/types'
 import { WORKFLOW_FIELD_TO_TYPE, WORKFLOW_TYPE_TO_FIELD, WORKFLOW_DIR_NAME } from './workflow'
 
-type FilePropertiesMap = Record<string, FileProperties>
-type FieldFileNameParts = {fieldName: string; objectName: string}
 const log = logger(module)
 const { makeArray } = collections.array
 const { awu, groupByAsync, keyByAsync } = collections.asynciterable
@@ -500,43 +497,15 @@ const fetchSObjects = async (
   return _.groupBy(sobjectsDescriptions, e => e.name)
 }
 
-const getFieldNameParts = (fileProperties: FileProperties): FieldFileNameParts =>
-  ({ fieldName: fileProperties.fullName.split('.')[1],
-    objectName: fileProperties.fullName.split('.')[0] } as FieldFileNameParts)
-
-const getObjectFieldByFileProperties = (fileProperties: FileProperties,
-  object: ObjectType): Field =>
-  object.fields[getFieldNameParts(fileProperties).fieldName]
-
-const addAuditAnnotationsToField = (fileProperties: FileProperties, field: Field): void => {
-  Object.assign(field.annotations, getAuditAnnotations(fileProperties))
-}
-
-const addAuditAnnotationsToFields = (fileProperties: FilePropertiesMap,
-  object: ObjectType): void => {
-  Object.values(fileProperties)
-    .filter(fileProp => getObjectFieldByFileProperties(fileProp, object) !== undefined)
-    .forEach(fileProp => addAuditAnnotationsToField(fileProp,
-      getObjectFieldByFileProperties(fileProp, object)))
-}
-
 const createFromSObjectsAndInstances = async (
   sObjects: DescribeSObjectResult[],
   instances: Record<string, InstanceElement>,
   typesFromInstance: TypesFromInstance,
   systemFields: string[],
-  customObjectFilePropertiesMap: FilePropertiesMap,
-  customFieldsFilePropertiesMap: Record<string, FilePropertiesMap>
 ): Promise<Element[]> =>
   awu(sObjects).flatMap(async ({ name, label, custom, keyPrefix, fields }) => {
     const object = await createObjectType({ name, label, keyPrefix, fields, systemFields })
-    Object.assign(object.annotations,
-      getAuditAnnotations(customObjectFilePropertiesMap[object.elemID.name]))
-
     const instance = instances[name]
-    if (name in customFieldsFilePropertiesMap) {
-      addAuditAnnotationsToFields(customFieldsFilePropertiesMap[name], object)
-    }
     if (!instance) {
       return [object]
     }
@@ -655,26 +624,6 @@ const shouldIncludeFieldChange = (fieldsToSkip: ReadonlyArray<string>) => (
     )
   }
 )
-
-const getCustomObjectFileProperties = async (client: SalesforceClient):
-  Promise<FilePropertiesMap> => {
-  const { result, errors } = await client.listMetadataObjects({ type: 'CustomObject' })
-  if (errors && errors.length > 0) {
-    log.debug(`Encountered errors while listing file properties for CustomObjects: ${errors}`)
-  }
-  return _.keyBy(result, fileProp => fileProp.fullName)
-}
-
-const getCustomFieldFileProperties = async (client: SalesforceClient):
-  Promise<Record<string, FilePropertiesMap>> => {
-  const { result, errors } = await client.listMetadataObjects({ type: 'CustomField' })
-  if (errors && errors.length > 0) {
-    log.debug(`Encountered errors while listing file properties for CustomFields: ${errors}`)
-  }
-  return _(result).groupBy((fileProps:FileProperties) => getFieldNameParts(fileProps).objectName)
-    .mapValues((values: FileProperties[]) => _.keyBy(values,
-      (fileProps:FileProperties) => getFieldNameParts(fileProps).fieldName)).value()
-}
 
 const getNestedCustomObjectValues = async (
   fullName: string,
@@ -948,17 +897,13 @@ const filterCreator: FilterCreator = ({ client, config }) => {
           nestedMetadataTypes,
         }
       }
-      const customTypeFilePropertiesMap = await getCustomObjectFileProperties(client)
-      const customFieldsFilePropertiesMap = await getCustomFieldFileProperties(client)
 
       const typesFromInstance = await typesToMergeFromInstance()
       const newElements: Element[] = await createFromSObjectsAndInstances(
         _.flatten(Object.values(sObjects)),
         customObjectInstances,
         typesFromInstance,
-        config.systemFields ?? [],
-        customTypeFilePropertiesMap,
-        customFieldsFilePropertiesMap
+        config.systemFields ?? []
       )
 
       const objectTypeNames = new Set(Object.keys(sObjects))

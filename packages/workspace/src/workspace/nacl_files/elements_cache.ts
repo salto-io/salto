@@ -270,11 +270,23 @@ export const createMergeManager = async (flushables: Flushable[],
         ))
       } else {
         log.warn(`Invalid data detected in local cache ${namespace}. Rebuilding cache.`)
+        const src1Overrides = cacheUpdate.src1Overrides ?? {}
+        const src2Overrides = cacheUpdate.src2Overrides ?? {}
         src1ElementsToMerge = (src1 && recoveryOperation === REBUILD_ON_RECOVERY)
-          ? (awu(await src1.getAll()).concat(await getContainerTypeChanges(src1Changes.changes)))
+          ? (awu(await src1.getAll())
+            .map(elem => (elem.elemID.getFullName() in src1Overrides
+              ? src1Overrides[elem.elemID.getFullName()]
+              : elem))
+            .filter(values.isDefined)
+            .concat(await getContainerTypeChanges(src1Changes.changes)))
           : []
         src2ElementsToMerge = (src2 && recoveryOperation === REBUILD_ON_RECOVERY)
-          ? (awu(await src2.getAll()).concat(await getContainerTypeChanges(src2Changes.changes)))
+          ? (awu(await src2.getAll())
+            .map(elem => (elem.elemID.getFullName() in src2Overrides
+              ? src2Overrides[elem.elemID.getFullName()]
+              : elem))
+            .filter(values.isDefined)
+            .concat(await getContainerTypeChanges(src2Changes.changes)))
           : []
       }
       return { src1ElementsToMerge, src2ElementsToMerge, potentialDeletedIds }

@@ -49,19 +49,10 @@ const createChangeErrors = (pickListField: Field): ChangeError[] => {
  * Promoting picklist value-set to global is forbbiden
  */
 const changeValidator: ChangeValidator = async changes => {
-  
-  // validate that the changed picklist field has corresponding new global value set addition change
-  const valdiateCreatedGvsCreated = (change: Change): boolean => {
-    const ValueSetID = getChangeElement(change).annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] as ReferenceExpression
-    const gvsFound = changes.filter(c => c.action === 'add'
-    && getChangeElement(c).elemID.getFullName() === ValueSetID.elemID.getFullName()).length !== 0
-    return gvsFound
-  }
 
   return awu(changes)
     .filter(isModificationChange)
     .filter(isGlobalPicklistChange)
-    .filter(valdiateCreatedGvsCreated)
     .map(getChangeElement)
     .flatMap(field => createChangeErrors(field as Field))
     .toArray()

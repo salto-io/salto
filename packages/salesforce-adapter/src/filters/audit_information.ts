@@ -108,7 +108,7 @@ const moveInstancesAuditFieldsToAnnotations = (instances: InstanceElement[],
   instances.forEach(instance => moveAuditFieldsToAnnotations(instance, IDToNameMap))
 }
 
-export const WARNING_MESSAGE = 'Encountered an error while trying to populate audit information in some of you salesforce configuration elements.'
+export const WARNING_MESSAGE = 'Encountered an error while trying to populate audit information in some of you Salesforce configuration elements.'
 
 /**
  * add audit information to object types, and data instance elements.

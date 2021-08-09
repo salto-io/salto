@@ -40,7 +40,7 @@ export const isPicklistField = (changedElement: ChangeDataType): changedElement 
 export const isStandardValueSetPicklistField = (field: Field): boolean =>
   field.annotations[FIELD_ANNOTATIONS.VALUE_SET] instanceof ReferenceExpression
 
-const isGlobalValueSetPicklistField = (field: Field): boolean =>
+export const isGlobalValueSetPicklistField = (field: Field): boolean =>
   !_.isUndefined(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])
 
 /**

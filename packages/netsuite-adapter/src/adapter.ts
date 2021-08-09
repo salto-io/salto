@@ -166,12 +166,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
     filtersCreators)
   }
 
-  public fetchByQuery = async (fetchQuery: NetsuiteQuery, progressReporter: ProgressReporter):
-    Promise<FetchByQueryReturnType> => {
+  public fetchByQuery = async (fetchQuery: NetsuiteQuery, progressReporter: ProgressReporter,
+    useChangesDetection: boolean): Promise<FetchByQueryReturnType> => {
     const {
       changedObjectsQuery,
       serverTime,
-    } = await this.runSuiteAppOperations(fetchQuery, this.elementsSourceIndex)
+    } = await this.runSuiteAppOperations(fetchQuery, this.elementsSourceIndex, useChangesDetection)
     const updatedFetchQuery = changedObjectsQuery !== undefined
       ? andQuery(changedObjectsQuery, fetchQuery)
       : fetchQuery
@@ -268,7 +268,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const { failedToFetchAllAtOnce,
       failedFilePaths,
       failedTypeToInstances,
-      elements } = await this.fetchByQuery(fetchQuery, progressReporter)
+      elements } = await this.fetchByQuery(fetchQuery, progressReporter, this.useChangesDetection)
 
     const updatedConfig = getConfigFromConfigChanges(
       failedToFetchAllAtOnce, failedFilePaths, failedTypeToInstances, this.userConfig
@@ -282,7 +282,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   private async runSuiteAppOperations(
     fetchQuery: NetsuiteQuery,
-    elementsSourceIndex: LazyElementsSourceIndexes
+    elementsSourceIndex: LazyElementsSourceIndexes,
+    useChangesDetection: boolean
   ):
     Promise<{
       changedObjectsQuery?: NetsuiteQuery
@@ -300,7 +301,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       }
     }
 
-    if (!this.useChangesDetection) {
+    if (!useChangesDetection) {
       log.debug('Changes detection is disabled')
       return {
         serverTime: sysInfo.time,

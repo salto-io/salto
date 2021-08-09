@@ -37,6 +37,7 @@ export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = false
 export const DEFAULT_COMMAND_TIMEOUT_IN_MINUTES = 4
 export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 40
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
+export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_USE_CHANGES_DETECTION = true
 
 const clientConfigType = new ObjectType({
@@ -203,7 +204,8 @@ export const validateDeployParams = ({ deployReferencedElements, warnOnStaleWork
     && typeof deployReferencedElements !== 'boolean') {
     throw new Error(`Expected "deployReferencedElements" to be a boolean or to be undefined, but received:\n ${deployReferencedElements}`)
   }
-  if (typeof warnOnStaleWorkspaceData !== 'boolean') {
+  if (warnOnStaleWorkspaceData !== undefined
+    && typeof warnOnStaleWorkspaceData !== 'boolean') {
     throw new Error(`Expected "warnOnStaleWorkspaceData" to be a boolean or to be undefined, but received:\n ${warnOnStaleWorkspaceData}`)
   }
 }

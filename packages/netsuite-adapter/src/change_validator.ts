@@ -40,7 +40,6 @@ const changeValidators = [
   removeListItemValidator,
   fileValidator,
   subInstancesValidator,
-  safeDeployValidator,
 ]
 
 const nonSuiteAppValidators: ChangeValidator[] = [
@@ -51,12 +50,14 @@ const nonSuiteAppValidators: ChangeValidator[] = [
  * This method runs all change validators and then walks recursively on all references of the valid
  * changes to detect changes that depends on invalid ones and then generate errors for them as well
  */
-const getChangeValidator: (client: NetsuiteClient, fetchByQuery?: FetchByQueryFunc) =>
-  ChangeValidator = (client, fetchByQuery) =>
+const getChangeValidator: (client: NetsuiteClient, warnStaleData: boolean,
+  fetchByQuery?: FetchByQueryFunc) =>
+  ChangeValidator = (client, warnStaleData, fetchByQuery) =>
     async changes => {
-      const validators = client.isSuiteAppConfigured()
-        ? changeValidators
-        : [...changeValidators, ...nonSuiteAppValidators]
+      const validators = warnStaleData
+        ? [...changeValidators, safeDeployValidator]
+        : changeValidators
+      if (!client.isSuiteAppConfigured()) validators.push(...nonSuiteAppValidators)
 
       const changeErrors = _.flatten(await Promise.all(validators
         .map(validator => validator(changes, fetchByQuery))))

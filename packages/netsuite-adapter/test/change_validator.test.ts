@@ -28,7 +28,7 @@ describe('change validator', () => {
         getCredentials: () => ({ accountId: 'someId' }),
       } as unknown as SdfClient
       const client = new NetsuiteClient(sdfClient)
-      changeValidator = getChangeValidator(client)
+      changeValidator = getChangeValidator(client, false)
     })
 
     it('should have change error when removing an instance with file cabinet type', async () => {
@@ -49,12 +49,20 @@ describe('change validator', () => {
 
       const suiteAppClient = {} as SuiteAppClient
       const client = new NetsuiteClient(sdfClient, suiteAppClient)
-      changeValidator = getChangeValidator(client)
+      changeValidator = getChangeValidator(client, false)
     })
     it('should not have change error when removing an instance with file cabinet type', async () => {
       const instance = new InstanceElement('test', fileCabinetTypes.file)
       const changeErrors = await changeValidator([toChange({ before: instance })])
       expect(changeErrors).toHaveLength(0)
     })
+  })
+
+  describe('without warn stale data', () => {
+    // TODOH: implement
+  })
+  describe('with warn stale data', () => {
+    // TODOH: implement
+
   })
 })

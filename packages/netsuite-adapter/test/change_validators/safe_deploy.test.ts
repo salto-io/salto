@@ -82,8 +82,102 @@ describe('safe deploy change validator', () => {
     afterInstance.value.customvalues.customvalue[0].value = 'Value 1!@!'
   })
 
-  describe('When the instance has not changed in the service', () => {
-    it('should have no change warning', async () => {
+  describe('Modification changes', () => {
+    describe('When the instance has not changed in the service', () => {
+      it('should have no change warning', async () => {
+        const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+        Promise<FetchByQueryReturnType> => (Promise.resolve({
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: [],
+          failedTypeToInstances: {},
+          elements: [origInstance, origInstance1, origInstance2],
+        }))
+        const changeErrors = await safeDeployValidator(
+          [toChange({ before: origInstance, after: afterInstance })],
+          fetchByQuery
+        )
+        expect(changeErrors).toHaveLength(0)
+      })
+    })
+
+    describe('When the instance has changed in the service in the same field', () => {
+      it('should have warning', async () => {
+        const serviceInstance = origInstance.clone()
+        serviceInstance.value.customvalues.customvalue[0].value = 'Changed Value'
+
+        const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+          Promise<FetchByQueryReturnType> => (Promise.resolve({
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: [],
+          failedTypeToInstances: {},
+          elements: [serviceInstance, origInstance1, origInstance2],
+        }))
+        const changeErrors = await safeDeployValidator(
+          [toChange({ before: origInstance, after: afterInstance })],
+          fetchByQuery
+        )
+        expect(changeErrors).toHaveLength(1)
+      })
+    })
+
+    describe('When the instance has changed in the service in a different field', () => {
+      it('should have warning', async () => {
+        const serviceInstance = origInstance.clone()
+        serviceInstance.value.customvalues.customvalue[1].value = 'Changed Value'
+        const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+          Promise<FetchByQueryReturnType> => (Promise.resolve({
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: [],
+          failedTypeToInstances: {},
+          elements: [serviceInstance, origInstance1, origInstance2],
+        }))
+
+        const changeErrors = await safeDeployValidator(
+          [toChange({ before: origInstance, after: afterInstance })],
+          fetchByQuery
+        )
+        expect(changeErrors).toHaveLength(1)
+      })
+    })
+    describe('When cannot match instance in service', () => {
+      it('should have warning when instance was deleted in the servie', async () => {
+        const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+          Promise<FetchByQueryReturnType> => (Promise.resolve({
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: [],
+          failedTypeToInstances: {},
+          elements: [origInstance1, origInstance2],
+        }))
+
+        const changeErrors = await safeDeployValidator(
+          [toChange({ before: origInstance, after: afterInstance })],
+          fetchByQuery
+        )
+        expect(changeErrors).toHaveLength(1)
+      })
+    })
+  })
+
+  describe('Removal changes', () => {
+    it('should have warning when instance has changed in the service', async () => {
+      const serviceInstance = origInstance.clone()
+      serviceInstance.value.customvalues.customvalue[1].value = 'Changed Value'
+
+      const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+      Promise<FetchByQueryReturnType> => (Promise.resolve({
+        failedToFetchAllAtOnce: false,
+        failedFilePaths: [],
+        failedTypeToInstances: {},
+        elements: [serviceInstance, origInstance1, origInstance2],
+      }))
+      const changeErrors = await safeDeployValidator(
+        [toChange({ before: origInstance })],
+        fetchByQuery
+      )
+      expect(changeErrors).toHaveLength(1)
+    })
+
+    it('should not have warning when instance has not changed in the service', async () => {
       const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
       Promise<FetchByQueryReturnType> => (Promise.resolve({
         failedToFetchAllAtOnce: false,
@@ -92,82 +186,10 @@ describe('safe deploy change validator', () => {
         elements: [origInstance, origInstance1, origInstance2],
       }))
       const changeErrors = await safeDeployValidator(
-        [toChange({ before: origInstance, after: afterInstance })],
+        [toChange({ before: origInstance })],
         fetchByQuery
       )
       expect(changeErrors).toHaveLength(0)
-    })
-  })
-
-  describe('When the instance has changed in the service in the same field', () => {
-    it('should have warning', async () => {
-      const serviceInstance = origInstance.clone()
-      serviceInstance.value.customvalues.customvalue[0].value = 'Changed Value'
-
-      const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
-        Promise<FetchByQueryReturnType> => (Promise.resolve({
-        failedToFetchAllAtOnce: false,
-        failedFilePaths: [],
-        failedTypeToInstances: {},
-        elements: [serviceInstance, origInstance1, origInstance2],
-      }))
-      const changeErrors = await safeDeployValidator(
-        [toChange({ before: origInstance, after: afterInstance })],
-        fetchByQuery
-      )
-      expect(changeErrors).toHaveLength(1)
-    })
-  })
-
-  describe('When the instance has changed in the service in a different field', () => {
-    it('should have warning', async () => {
-      const serviceInstance = origInstance.clone()
-      serviceInstance.value.customvalues.customvalue[1].value = 'Changed Value'
-      const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
-        Promise<FetchByQueryReturnType> => (Promise.resolve({
-        failedToFetchAllAtOnce: false,
-        failedFilePaths: [],
-        failedTypeToInstances: {},
-        elements: [serviceInstance, origInstance1, origInstance2],
-      }))
-
-      const changeErrors = await safeDeployValidator(
-        [toChange({ before: origInstance, after: afterInstance })],
-        fetchByQuery
-      )
-      expect(changeErrors).toHaveLength(1)
-    })
-  })
-  describe('When cannot match instance in service', () => {
-    it('should throw Error when instance does not exist', async () => {
-      const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
-        Promise<FetchByQueryReturnType> => (Promise.resolve({
-        failedToFetchAllAtOnce: false,
-        failedFilePaths: [],
-        failedTypeToInstances: {},
-        elements: [origInstance1, origInstance2],
-      }))
-
-      await expect(safeDeployValidator(
-        [toChange({ before: origInstance, after: afterInstance })],
-        fetchByQuery
-      )).rejects.toThrow(new Error('Failed to find the instance instance in the service, or could not match it exactly'))
-    })
-    it('should throw Error when multiple matching instances exist', async () => {
-      const serviceInstance = origInstance.clone()
-      serviceInstance.value.customvalues.customvalue[1].value = 'Changed Value'
-      const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
-        Promise<FetchByQueryReturnType> => (Promise.resolve({
-        failedToFetchAllAtOnce: false,
-        failedFilePaths: [],
-        failedTypeToInstances: {},
-        elements: [serviceInstance, serviceInstance.clone(), origInstance1, origInstance2],
-      }))
-
-      await expect(safeDeployValidator(
-        [toChange({ before: origInstance, after: afterInstance })],
-        fetchByQuery
-      )).rejects.toThrow(new Error('Failed to find the instance instance in the service, or could not match it exactly'))
     })
   })
 })

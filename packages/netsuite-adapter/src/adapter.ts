@@ -30,7 +30,7 @@ import {
   customTypes, getMetadataTypes, fileCabinetTypes,
 } from './types'
 import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST,
-  INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS } from './constants'
+  INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS, WARN_STALE_DATA } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import parseSavedSearch from './filters/parse_saved_searchs'
 import convertLists from './filters/convert_lists'
@@ -52,7 +52,7 @@ import dataInstancesDiff from './filters/data_instances_diff'
 import dataInstancesIdentifiers from './filters/data_instances_identifiers'
 import addInternalId from './filters/add_internal_ids'
 import { Filter, FilterCreator } from './filter'
-import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_USE_CHANGES_DETECTION } from './config'
+import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
 import { createServerTimeElements, getLastServerTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
@@ -94,6 +94,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly typesToSkip: string[]
   private readonly filePathRegexSkipList: string[]
   private readonly deployReferencedElements?: boolean
+  private readonly warnStaleData?: boolean
   private readonly userConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
   private readonly fetchInclude?: QueryParams
@@ -156,6 +157,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.useChangesDetection = config[USE_CHANGES_DETECTION] ?? DEFAULT_USE_CHANGES_DETECTION
     this.deployReferencedElements = config[DEPLOY]?.[DEPLOY_REFERENCED_ELEMENTS]
      ?? config[DEPLOY_REFERENCED_ELEMENTS]
+    this.warnStaleData = config[DEPLOY]?.[WARN_STALE_DATA]
     this.elementsSourceIndex = createElementsSourceIndex(this.elementsSource)
     this.filtersRunner = filter.filtersRunner({
       client: this.client,
@@ -373,7 +375,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   public get deployModifiers(): DeployModifiers {
     return {
-      changeValidator: getChangeValidator(this.client, this.fetchByQuery),
+      changeValidator: getChangeValidator(this.client,
+        this.warnStaleData ?? DEFAULT_WARN_STALE_DATA,
+        this.fetchByQuery),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
     }
   }

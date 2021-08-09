@@ -26,7 +26,7 @@ const neighborContextFunc = (args: {
   contextValueMapper?: ContextValueMapperFunc
 }): ContextFunc => neighborContextGetter({
   ...args,
-  getLookUpName: async val => val,
+  getLookUpName: async ({ ref }) => ref?.elemID.name,
 })
 
 describe('Field references', () => {
@@ -79,6 +79,8 @@ describe('Field references', () => {
     elemID: new ElemID(ADAPTER_NAME, 'group'),
     fields: {
       id: { refType: BuiltinTypes.NUMBER },
+      basedOnRef: { refType: BuiltinTypes.STRING },
+      ref: { refType: BuiltinTypes.STRING },
     },
   })
   const someTypeWithValue = new ObjectType({
@@ -149,7 +151,7 @@ describe('Field references', () => {
     new InstanceElement('brand1', brandType, { id: 1001 }),
     new InstanceElement('brand2', brandType, { id: 1002 }),
     new InstanceElement('group3', groupType, { id: '2003' }),
-    new InstanceElement('group4', groupType, { id: '2004' }),
+    new InstanceElement('group4', groupType, { id: '2004', basedOnRef: '2003', ref: new ReferenceExpression(groupType.elemID) }),
     new InstanceElement('inst1', type1, {
       subjectAndValues: [
         {
@@ -181,7 +183,7 @@ describe('Field references', () => {
 
   describe('addReferences', () => {
     let elements: Element[]
-    const fieldNameToTypeMappingDefs: FieldReferenceDefinition<'none' | 'parentSubject' | 'parentValue'>[] = [
+    const fieldNameToTypeMappingDefs: FieldReferenceDefinition<'none' | 'parentSubject' | 'parentValue' | 'neighborRef'>[] = [
       {
         src: { field: 'api_client_id', parentTypes: ['api_access_profile'] },
         serializationStrategy: 'id',
@@ -217,6 +219,11 @@ describe('Field references', () => {
         serializationStrategy: 'id',
         target: { typeContext: 'parentValue' },
       },
+      {
+        src: { field: 'basedOnRef' },
+        serializationStrategy: 'id',
+        target: { typeContext: 'neighborRef' },
+      },
     ]
 
     beforeAll(async () => {
@@ -225,6 +232,7 @@ describe('Field references', () => {
         none: contextStrategyDefaultLookup.none,
         parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: val => val.replace('_id', '') }),
         parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: val => val.replace('_id', '') }),
+        neighborRef: neighborContextFunc({ contextFieldName: 'ref' }),
       })
     })
 
@@ -257,7 +265,13 @@ describe('Field references', () => {
       expect(inst.value.subjectAndValues[0].valueList[0].value).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.subjectAndValues[0].valueList[0].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand1')
     })
-
+    it('should resolve field values when context field is a reference', () => {
+      const inst = elements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'group4'
+      )[0] as InstanceElement
+      expect(inst.value.basedOnRef).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value.basedOnRef.elemID.getFullName()).toEqual('myAdapter.group.instance.group3')
+    })
     it('should not resolve fields in unexpected types even if field name matches', () => {
       const collections = elements.filter(
         e => isInstanceElement(e) && e.refType.elemID.name === 'api_collection'

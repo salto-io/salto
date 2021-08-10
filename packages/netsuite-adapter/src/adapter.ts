@@ -182,8 +182,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ? createServerTimeElements(serverTime)
       : []
 
-    const isPartial = this.fetchTarget !== undefined
-
     const dataElementsPromise = await getDataElements(this.client, fetchQuery,
       this.getElemIdFunc)
 

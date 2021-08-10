@@ -68,7 +68,7 @@ const changeValidator: QueryChangeValidator = async (changes: ReadonlyArray<Chan
     modificationOrRemovalInstanceChanges.forEach(change => {
       const matchingServiceInstance = serviceInstances[change.data.before.elemID.getFullName()]
 
-      if ((change.action === 'modify' && !isEqualElements(change.data.after, matchingServiceInstance)) // TODOH: readability?
+      if ((change.action === 'modify' && !isEqualElements(change.data.after, matchingServiceInstance))
        || (change.action === 'remove')) {
         if (!isEqualElements(change.data.before, matchingServiceInstance)) {
           errors.push({

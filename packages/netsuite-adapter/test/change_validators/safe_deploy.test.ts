@@ -139,6 +139,24 @@ describe('safe deploy change validator', () => {
         expect(changeErrors).toHaveLength(1)
       })
     })
+
+    describe('When the instance has changed in the service in the same way it changed in the workspace', () => {
+      it('should not have warning', async () => {
+        const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+          Promise<FetchByQueryReturnType> => (Promise.resolve({
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: [],
+          failedTypeToInstances: {},
+          elements: [afterInstance, origInstance1, origInstance2],
+        }))
+        const changeErrors = await safeDeployValidator(
+          [toChange({ before: origInstance, after: afterInstance })],
+          fetchByQuery
+        )
+        expect(changeErrors).toHaveLength(0)
+      })
+    })
+
     describe('When cannot match instance in service', () => {
       it('should have warning when instance was deleted in the servie', async () => {
         const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):

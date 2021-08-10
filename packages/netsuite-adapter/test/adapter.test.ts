@@ -51,8 +51,13 @@ jest.mock('../src/config', () => ({
 
 jest.mock('../src/change_validator')
 const getChangeValidatorMock = getChangeValidator as jest.Mock
-getChangeValidatorMock.mockImplementation((_client: NetsuiteClient, _warnStaleData: boolean,
-  _fetchByQuery?: FetchByQueryFunc) => (_changes: ReadonlyArray<Change>) => Promise.resolve([]))
+
+// eslint-disable-next-line no-empty-pattern
+getChangeValidatorMock.mockImplementation(({}: {
+  withSuiteApp: boolean
+  warnStaleData: boolean
+  fetchByQuery: FetchByQueryFunc
+}) => (_changes: ReadonlyArray<Change>) => Promise.resolve([]))
 
 jest.mock('../src/reference_dependencies')
 const getAllReferencedInstancesMock = referenceDependenciesModule
@@ -697,11 +702,11 @@ describe('Adapter', () => {
         // eslint-disable-next-line no-unused-expressions
         adapter.deployModifiers
 
-        expect(getChangeValidatorMock).toHaveBeenCalledWith(
-          expect.anything(),
-          false,
-          expect.anything()
-        )
+        expect(getChangeValidatorMock).toHaveBeenCalledWith({
+          withSuiteApp: expect.anything(),
+          warnStaleData: false,
+          fetchByQuery: expect.anything(),
+        })
       })
 
       it('should call getChangeValidator with warnStaleData=false if warnOnStaleWorkspaceData=false in config', async () => {
@@ -723,11 +728,11 @@ describe('Adapter', () => {
         // eslint-disable-next-line no-unused-expressions
         adapter.deployModifiers
 
-        expect(getChangeValidatorMock).toHaveBeenCalledWith(
-          expect.anything(),
-          false,
-          expect.anything()
-        )
+        expect(getChangeValidatorMock).toHaveBeenCalledWith({
+          withSuiteApp: expect.anything(),
+          warnStaleData: false,
+          fetchByQuery: expect.anything(),
+        })
       })
 
       it('should call getChangeValidator with warnStaleData=true if warnOnStaleWorkspaceData=true in config', async () => {
@@ -749,11 +754,11 @@ describe('Adapter', () => {
         // eslint-disable-next-line no-unused-expressions
         adapter.deployModifiers
 
-        expect(getChangeValidatorMock).toHaveBeenCalledWith(
-          expect.anything(),
-          true,
-          expect.anything()
-        )
+        expect(getChangeValidatorMock).toHaveBeenCalledWith({
+          withSuiteApp: expect.anything(),
+          warnStaleData: true,
+          fetchByQuery: expect.anything(),
+        })
       })
     })
   })

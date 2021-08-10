@@ -27,7 +27,6 @@ import immutableChangesValidator from './change_validators/immutable_changes'
 import subInstancesValidator from './change_validators/subinstances'
 import safeDeployValidator, { FetchByQueryFunc } from './change_validators/safe_deploy'
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
-import NetsuiteClient from './client/client'
 
 
 const changeValidators = [
@@ -50,14 +49,19 @@ const nonSuiteAppValidators: ChangeValidator[] = [
  * This method runs all change validators and then walks recursively on all references of the valid
  * changes to detect changes that depends on invalid ones and then generate errors for them as well
  */
-const getChangeValidator: (client: NetsuiteClient, warnStaleData: boolean,
-  fetchByQuery?: FetchByQueryFunc) =>
-  ChangeValidator = (client, warnStaleData, fetchByQuery) =>
+
+
+const getChangeValidator: ({ withSuiteApp, warnStaleData, fetchByQuery }
+  : {
+  withSuiteApp: boolean
+  warnStaleData: boolean
+  fetchByQuery?: FetchByQueryFunc
+  }) => ChangeValidator = ({ withSuiteApp, warnStaleData, fetchByQuery }) =>
     async changes => {
       const validators = warnStaleData
         ? [...changeValidators, safeDeployValidator]
-        : changeValidators
-      if (!client.isSuiteAppConfigured()) validators.push(...nonSuiteAppValidators)
+        : [...changeValidators]
+      if (!withSuiteApp) validators.push(...nonSuiteAppValidators)
 
       const changeErrors = _.flatten(await Promise.all(validators
         .map(validator => validator(changes, fetchByQuery))))

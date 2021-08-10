@@ -13,28 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeValidator, ElemID, InstanceElement, ObjectType, ProgressReporter, toChange } from '@salto-io/adapter-api'
+import { Change, ElemID, InstanceElement, ObjectType, ProgressReporter, toChange } from '@salto-io/adapter-api'
 import { fileCabinetTypes } from '../src/types'
 import getChangeValidator from '../src/change_validator'
-import NetsuiteClient from '../src/client/client'
-import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
-import SdfClient from '../src/client/sdf_client'
 import { FetchByQueryFunc, FetchByQueryReturnType } from '../src/change_validators/safe_deploy'
 import { NetsuiteQuery } from '../src/query'
 
 describe('change validator', () => {
   describe('SuiteApp', () => {
     describe('without SuiteApp', () => {
-      let changeValidator: ChangeValidator
-      beforeEach(() => {
-        const sdfClient = {
-          getCredentials: () => ({ accountId: 'someId' }),
-        } as unknown as SdfClient
-        const client = new NetsuiteClient(sdfClient)
-        changeValidator = getChangeValidator(client, false)
-      })
-
       it('should have change error when removing an instance with file cabinet type', async () => {
+        const changeValidator = getChangeValidator({ withSuiteApp: false, warnStaleData: false })
         const instance = new InstanceElement('test', fileCabinetTypes.file)
         const changeErrors = await changeValidator([toChange({ before: instance })])
         expect(changeErrors).toHaveLength(1)
@@ -44,17 +33,8 @@ describe('change validator', () => {
     })
 
     describe('with SuiteApp', () => {
-      let changeValidator: ChangeValidator
-      beforeEach(() => {
-        const sdfClient = {
-          getCredentials: () => ({ accountId: 'someId' }),
-        } as unknown as SdfClient
-
-        const suiteAppClient = {} as SuiteAppClient
-        const client = new NetsuiteClient(sdfClient, suiteAppClient)
-        changeValidator = getChangeValidator(client, false)
-      })
       it('should not have change error when removing an instance with file cabinet type', async () => {
+        const changeValidator = getChangeValidator({ withSuiteApp: true, warnStaleData: false })
         const instance = new InstanceElement('test', fileCabinetTypes.file)
         const changeErrors = await changeValidator([toChange({ before: instance })])
         expect(changeErrors).toHaveLength(0)
@@ -64,16 +44,8 @@ describe('change validator', () => {
 
   describe('warnOnStaleWorkspaceData', () => {
     let change: Change
-    let client: NetsuiteClient
     let fetchByQuery: FetchByQueryFunc
     beforeEach(() => {
-      const sdfClient = {
-        getCredentials: () => ({ accountId: 'someId' }),
-      } as unknown as SdfClient
-
-      const suiteAppClient = {} as SuiteAppClient
-      client = new NetsuiteClient(sdfClient, suiteAppClient)
-
       const origInstance = new InstanceElement('testInstance', new ObjectType({ elemID: new ElemID('testType') }), { livingIn: 'lalaland' })
       const serviceInstance = origInstance.clone()
       serviceInstance.value.livingIn = 'a movie'
@@ -90,11 +62,15 @@ describe('change validator', () => {
       }))
     })
     it('should not have change error when warnOnStaleWorkspaceData is false', async () => {
-      const changeErrors = await getChangeValidator(client, false, fetchByQuery)([change])
+      const changeErrors = await getChangeValidator({ withSuiteApp: false,
+        warnStaleData: false,
+        fetchByQuery })([change])
       expect(changeErrors).toHaveLength(0)
     })
     it('should have change error when warnOnStaleWorkspaceData is true', async () => {
-      const changeErrors = await getChangeValidator(client, true, fetchByQuery)([change])
+      const changeErrors = await getChangeValidator({ withSuiteApp: false,
+        warnStaleData: true,
+        fetchByQuery })([change])
       expect(changeErrors).toHaveLength(1)
     })
   })

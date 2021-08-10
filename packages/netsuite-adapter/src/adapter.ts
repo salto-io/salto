@@ -373,9 +373,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   public get deployModifiers(): DeployModifiers {
     return {
-      changeValidator: getChangeValidator(this.client,
-        this.warnStaleData ?? DEFAULT_WARN_STALE_DATA,
-        this.fetchByQuery),
+      changeValidator: getChangeValidator({
+        withSuiteApp: this.client.isSuiteAppConfigured(),
+        warnStaleData: this.warnStaleData ?? DEFAULT_WARN_STALE_DATA,
+        fetchByQuery: this.fetchByQuery,
+      }),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
     }
   }

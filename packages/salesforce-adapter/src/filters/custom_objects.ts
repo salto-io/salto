@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { collections, strings, multiIndex, promises } from '@salto-io/lowerdash'
+import { collections, strings, multiIndex, promises, values as valuesIsDefiend } from '@salto-io/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, TypeElement, isObjectType, isInstanceElement, ElemID,
   BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement, Values, ReadOnlyElementsSource,
@@ -36,7 +36,7 @@ import {
   DUPLICATE_RULE_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
   VALIDATION_RULES_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE,
   WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_FIELD, NAME_FIELDS,
-  COMPOUND_FIELD_TYPE_NAMES, INTERNAL_ID_ANNOTATION, INTERNAL_ID_FIELD,
+  COMPOUND_FIELD_TYPE_NAMES, INTERNAL_ID_ANNOTATION, INTERNAL_ID_FIELD, LIGHTNING_PAGE_TYPE,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
@@ -68,6 +68,8 @@ const { makeArray } = collections.array
 const { awu, groupByAsync, keyByAsync } = collections.asynciterable
 const { removeAsync } = promises.array
 const { mapValuesAsync, mapKeysAsync } = promises.object
+const { isDefined } = valuesIsDefiend
+
 
 export const INSTANCE_REQUIRED_FIELD = 'required'
 export const INSTANCE_TYPE_FIELD = 'type'
@@ -593,11 +595,22 @@ const fixDependentInstancesPathAndSetParent = async (
     return isObjectType(object) ? object : undefined
   }
 
+  const hasSobjectField = (instance: InstanceElement): boolean =>
+    isDefined(instance.value.sobjectType)
+
   await awu(elements)
     .filter(isInstanceElement)
-    .filter(hasCustomObjectParent)
     .forEach(async instance => {
-      const customObj = await getDependentCustomObj(instance)
+      let customObj
+      if (await hasCustomObjectParent(instance)) {
+        customObj = await getDependentCustomObj(instance)
+      } else if (instance.elemID.typeName === LIGHTNING_PAGE_TYPE && hasSobjectField(instance)) {
+        customObj = findObjectType(elements, new ElemID('salesforce', instance.value.sobjectType))
+        // eslint-disable-next-line no-console
+        console.log(instance)
+      } else {
+        return
+      }
       if (_.isUndefined(customObj)) {
         return
       }

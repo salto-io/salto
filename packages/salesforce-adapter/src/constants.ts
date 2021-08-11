@@ -321,6 +321,7 @@ export const SETTINGS_METADATA_TYPE = 'Settings'
 export const TERRITORY2_TYPE = 'Territory2'
 export const TERRITORY2_MODEL_TYPE = 'Territory2Model'
 export const TERRITORY2_RULE_TYPE = 'Territory2Rule'
+export const LIGHTNING_PAGE_TYPE = 'LightningPage'
 
 // Retrieve constants
 export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/

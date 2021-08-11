@@ -30,8 +30,9 @@ const isGlobalPicklistChange = async (change: Change): Promise<boolean> => {
   && !isGlobalValueSetPicklistField(before) && isGlobalValueSetPicklistField(after)
 }
 
-const createChangeErrors = (res: {pickListField: ChangeDataType, globalValueSetFound: boolean}): ChangeError[] => {
-  const {pickListField, globalValueSetFound} = res
+const createChangeErrors = (res: { pickListField: ChangeDataType; globalValueSetFound: boolean }):
+ ChangeError[] => {
+  const { pickListField, globalValueSetFound } = res
   const picklistErr = {
     elemID: pickListField.elemID,
     severity: 'Error' as SaltoErrorSeverity,
@@ -48,43 +49,41 @@ const createChangeErrors = (res: {pickListField: ChangeDataType, globalValueSetF
       detailedMessage: 'You cannot create a global value set as a result of a picklist promote. Please promote via the service.',
     }
     return [picklistErr, gvsErr]
-  } else {
-    return [picklistErr]
   }
+  return [picklistErr]
 }
 
 // validate that the changed picklist field has corresponding new global value set addition change
-const valdiateCreatedGvsCreated = (changes: readonly Change[]) => {
-  return (change: Change): boolean => {
+const valdiateCreatedGvsCreated = (changes: readonly Change[]) =>
+  (change: Change): boolean => {
     const referencedGvs = getChangeElement(change).annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
     if (referencedGvs instanceof ReferenceExpression) {
       const referencedValue = referencedGvs.value
       if (isInstanceOfType(GLOBAL_VALUE_SET)(referencedValue)) {
         return changes.filter(c => c.action === 'add'
-          && getChangeElement(c).elemID.getFullName() === referencedValue.elemID.getFullName()).length !== 0
+          && getChangeElement(c).elemID.getFullName()
+          === referencedValue.elemID.getFullName()).length !== 0
       }
     }
     return false
   }
-}
+
 
 /**
  * Promoting picklist value-set to global is forbbiden
  */
 const changeValidator: ChangeValidator = async changes => {
-
   const gvsCreatedResolver = valdiateCreatedGvsCreated(changes)
 
   return awu(changes)
     .filter(isModificationChange)
     .filter(isGlobalPicklistChange)
-    .map((change) => {
-      return { pickListField: getChangeElement(change), globalValueSetFound: gvsCreatedResolver(change) }
-    })
+    .map(change => (
+      { pickListField: getChangeElement(change), globalValueSetFound: gvsCreatedResolver(change) }
+    ))
     .flatMap(createChangeErrors)
     .toArray()
 }
-
 
 
 export default changeValidator

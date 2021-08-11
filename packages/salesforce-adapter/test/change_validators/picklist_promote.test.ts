@@ -27,58 +27,55 @@ import { GLOBAL_VALUE_SET } from '../../src/filters/global_value_sets'
 
 describe('picklist promote change validator', () => {
   describe('onUpdate', () => {
-
     const createGlobalValueSetInstanceElement = (): InstanceElement =>
       new InstanceElement('global_value_set_test', new ObjectType({
         elemID: new ElemID(constants.SALESFORCE, 'global_value_set'),
         annotationRefsOrTypes: {},
         annotations: { [constants.METADATA_TYPE]: GLOBAL_VALUE_SET },
       }))
-
+    const gvs: InstanceElement = createGlobalValueSetInstanceElement()
+    const createAfterField = (beforeField: Field): Field => {
+      const afterField = beforeField.clone()
+      afterField.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = new ReferenceExpression(new ElemID(''), gvs)
+      return afterField
+    }
     const pickListFieldName = 'pick__c'
     let obj: ObjectType
     let beforeField: Field
     let afterField: Field
-    let gvs: InstanceElement
     let pickListChange: Change
     let gvsChange: Change
+
     beforeEach(() => {
       obj = new ObjectType({
         elemID: new ElemID('salesforce', 'obj'),
       })
       beforeField = createField(obj, Types.primitiveDataTypes.Picklist, pickListFieldName)
       beforeField.name = pickListFieldName
-      gvs = createGlobalValueSetInstanceElement()
       afterField = createAfterField(beforeField)
       pickListChange = toChange({ before: beforeField, after: afterField })
-      gvsChange = toChange({after: gvs})
+      gvsChange = toChange({ after: gvs })
     })
 
-    const createAfterField = (beforeField: Field): Field => {
-      const afterField = beforeField.clone()
-      afterField.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = new ReferenceExpression(new ElemID(''), gvs)
-      return afterField
-    }
-    
     it('should have created 2 errors (for picklist & value-set)', async () => {
       const changeErrors = await picklistPromoteValidator([pickListChange, gvsChange])
       expect(changeErrors).toHaveLength(2)
-      const errorElemsNamesSet = new Set(changeErrors.map((changeErr) => changeErr.elemID.name))
+      const errorElemsNamesSet = new Set(changeErrors.map(changeErr => changeErr.elemID.name))
       expect(errorElemsNamesSet).toEqual(new Set(['pick__c', 'global_value_set_test']))
     })
 
     it('should have created just picklist error when value-set change doesn\'t exist', async () => {
       const changeErrors = await picklistPromoteValidator([pickListChange])
       expect(changeErrors).toHaveLength(1)
-      const errorElemsNamesSet = new Set(changeErrors.map((changeErr) => changeErr.elemID.name))
+      const errorElemsNamesSet = new Set(changeErrors.map(changeErr => changeErr.elemID.name))
       expect(new Set(['pick__c'])).toEqual(errorElemsNamesSet)
     })
 
     it('should have created just picklist error when extra change isn\'t reference', async () => {
-      afterField.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = "some string"
+      afterField.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = 'some string'
       const changeErrors = await picklistPromoteValidator([pickListChange, gvsChange])
       expect(changeErrors).toHaveLength(1)
-      const errorElemsNamesSet = new Set(changeErrors.map((changeErr) => changeErr.elemID.name))
+      const errorElemsNamesSet = new Set(changeErrors.map(changeErr => changeErr.elemID.name))
       expect(new Set(['pick__c'])).toEqual(errorElemsNamesSet)
     })
 
@@ -93,7 +90,7 @@ describe('picklist promote change validator', () => {
       const changeErrors = await picklistPromoteValidator([pickListChange, gvsChange])
       expect(changeErrors).toHaveLength(0)
     })
-    
+
     it('should not have errors for moving to a non-global value-set change', async () => {
       delete afterField.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
       const changeErrors = await picklistPromoteValidator([pickListChange])

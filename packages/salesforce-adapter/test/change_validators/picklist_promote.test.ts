@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 import {
-  Change,
-  ElemID, Field, InstanceElement, ObjectType, ReferenceExpression, toChange,
+  Change, ElemID, Field, InstanceElement, ObjectType, ReferenceExpression, toChange,
 } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
 import picklistPromoteValidator from '../../src/change_validators/picklist_promote'
@@ -30,7 +29,6 @@ describe('picklist promote change validator', () => {
     const createGlobalValueSetInstanceElement = (): InstanceElement =>
       new InstanceElement('global_value_set_test', new ObjectType({
         elemID: new ElemID(constants.SALESFORCE, 'global_value_set'),
-        annotationRefsOrTypes: {},
         annotations: { [constants.METADATA_TYPE]: GLOBAL_VALUE_SET },
       }))
     const gvs: InstanceElement = createGlobalValueSetInstanceElement()

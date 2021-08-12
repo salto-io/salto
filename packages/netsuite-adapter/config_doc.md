@@ -40,10 +40,11 @@ netsuite {
 | ----------------------------------------------------| ------------------------| -----------
 | [fetch.include](#fetch-include-configuration-options)                                  | Include everything                               | Specifies items to fetch. Items that do not match any of the include criteria will not be fetched
 | [fetch.exclude](#fetch-exclude-configuration-options)                                  | [] (Exclude nothing)                             | Specifies items to not fetch. Items that match any of the exclude criteria will not be fetched even if they also match some of the include criteria
-| deployReferencedElements                            | false                   | Deployment of a certain configuration element will include all elements referred by it
 | [client](#sdf-client-configuration-options)         | {} (no overrides)       | Configuration relating to the SDF client used to interact with netsuite
 | [suiteAppClient](#salto-suiteapp-client-configuration-options)             | {} (no overrides)       | Configuration relating to the Salto SuiteApp client used to interact with netsuite
 | [deploy](#salto-deploy-flags)                       | undefined. set all deploy's flags to their default value        | Configuration deploy optional flags
+| deploy.deployReferencedElements                            | false                   | Deployment of a certain configuration element will include all elements referred by it
+| deploy.warnOnStaleWorkspaceData                            | false                   | If assigned 'true' runs a validation upon deploy which warns the user if the changes override other changes made in the service since the last fetch
 | concurrencyLimit                                    | The higher value between `suiteAppConcurrencyLimit` and `sdfConcurrencyLimit`                    | Limits the max number of concurrent API calls (Both SDF calls and Salto SuiteApp calls). The number should not exceed the concurrency limit enforced by the upstream service.
 
 ### SDF Client configuration options

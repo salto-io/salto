@@ -28,7 +28,7 @@ const { awu } = collections.asynciterable
 type FilePropertiesMap = Record<string, FileProperties>
 type FieldFileNameParts = {fieldName: string; objectName: string}
 const log = logger(module)
-const GetIDsAndNamesOfUsersQuery = 'SELECT Id,Name FROM User'
+const GET_ID_AND_NAMES_OF_USERS_QUERY = 'SELECT Id,Name FROM User'
 
 const getFieldNameParts = (fileProperties: FileProperties): FieldFileNameParts =>
   ({ fieldName: fileProperties.fullName.split('.')[1],
@@ -88,7 +88,7 @@ const getIDToNameMap = async (client: SalesforceClient,
   const instancesIDs = Array.from(new Set(
     instances.flatMap(instance => [instance.value.CreatedById, instance.value.LastModifiedById])
   ))
-  const queries = conditionQueries(GetIDsAndNamesOfUsersQuery,
+  const queries = conditionQueries(GET_ID_AND_NAMES_OF_USERS_QUERY,
     instancesIDs.map(id => ({ Id: `'${id}'` })))
   const records = await queryClient(client, queries)
   return Object.fromEntries(records.map(record => [record.Id, record.Name]))

@@ -34,8 +34,10 @@ const getFieldNameParts = (fileProperties: FileProperties): FieldFileNameParts =
   ({ fieldName: fileProperties.fullName.split('.')[1],
     objectName: fileProperties.fullName.split('.')[0] } as FieldFileNameParts)
 
-const getObjectFieldByFileProperties = (fileProperties: FileProperties,
-  object: ObjectType): Field | undefined =>
+const getObjectFieldByFileProperties = (
+  fileProperties: FileProperties,
+  object: ObjectType
+): Field | undefined =>
   object.fields[getFieldNameParts(fileProperties).fieldName]
 
 const addAuditAnnotationsToField = (
@@ -48,8 +50,10 @@ const addAuditAnnotationsToField = (
   Object.assign(field.annotations, getAuditAnnotations(fileProperties))
 }
 
-const addAuditAnnotationsToFields = (fileProperties: FilePropertiesMap,
-  object: ObjectType): void => {
+const addAuditAnnotationsToFields = (
+  fileProperties: FilePropertiesMap,
+  object: ObjectType
+): void => {
   Object.values(fileProperties)
     .forEach(fileProp => addAuditAnnotationsToField(
       fileProp,
@@ -78,9 +82,11 @@ const getCustomFieldFileProperties = async (client: SalesforceClient):
 }
 
 
-const objectAuditInformationSupplier = (customTypeFilePropertiesMap: FilePropertiesMap,
+const objectAuditInformationSupplier = (
+  customTypeFilePropertiesMap: FilePropertiesMap,
   customFieldsFilePropertiesMap: Record<string, FilePropertiesMap>,
-  object: ObjectType): void => {
+  object: ObjectType
+): void => {
   if (object.elemID.name in customTypeFilePropertiesMap) {
     Object.assign(object.annotations,
       getAuditAnnotations(customTypeFilePropertiesMap[object.elemID.name]))
@@ -101,8 +107,10 @@ const getIDToNameMap = async (client: SalesforceClient,
   return Object.fromEntries(records.map(record => [record.Id, record.Name]))
 }
 
-const moveAuditFieldsToAnnotations = (instance: InstanceElement,
-  IDToNameMap: Record<string, string>): void => {
+const moveAuditFieldsToAnnotations = (
+  instance: InstanceElement,
+  IDToNameMap: Record<string, string>
+): void => {
   instance.annotations[CORE_ANNOTATIONS.CREATED_AT] = instance.value.CreatedDate
   instance.annotations[CORE_ANNOTATIONS.CREATED_BY] = IDToNameMap[instance.value.CreatedById]
   instance.annotations[CORE_ANNOTATIONS.CHANGED_AT] = instance.value.LastModifiedDate
@@ -110,8 +118,10 @@ const moveAuditFieldsToAnnotations = (instance: InstanceElement,
     instance.value.LastModifiedById]
 }
 
-const moveInstancesAuditFieldsToAnnotations = (instances: InstanceElement[],
-  IDToNameMap: Record<string, string>): void => {
+const moveInstancesAuditFieldsToAnnotations = (
+  instances: InstanceElement[],
+  IDToNameMap: Record<string, string>
+): void => {
   instances.forEach(instance => moveAuditFieldsToAnnotations(instance, IDToNameMap))
 }
 

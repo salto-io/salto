@@ -35,19 +35,26 @@ const getFieldNameParts = (fileProperties: FileProperties): FieldFileNameParts =
     objectName: fileProperties.fullName.split('.')[0] } as FieldFileNameParts)
 
 const getObjectFieldByFileProperties = (fileProperties: FileProperties,
-  object: ObjectType): Field =>
+  object: ObjectType): Field | undefined =>
   object.fields[getFieldNameParts(fileProperties).fieldName]
 
-const addAuditAnnotationsToField = (fileProperties: FileProperties, field: Field): void => {
+const addAuditAnnotationsToField = (
+  fileProperties: FileProperties,
+  field: Field | undefined
+): void => {
+  if (!field) {
+    return
+  }
   Object.assign(field.annotations, getAuditAnnotations(fileProperties))
 }
 
 const addAuditAnnotationsToFields = (fileProperties: FilePropertiesMap,
   object: ObjectType): void => {
   Object.values(fileProperties)
-    .filter(fileProp => getObjectFieldByFileProperties(fileProp, object) !== undefined)
-    .forEach(fileProp => addAuditAnnotationsToField(fileProp,
-      getObjectFieldByFileProperties(fileProp, object)))
+    .forEach(fileProp => addAuditAnnotationsToField(
+      fileProp,
+      getObjectFieldByFileProperties(fileProp, object)
+    ))
 }
 
 const getCustomObjectFileProperties = async (client: SalesforceClient):

@@ -903,7 +903,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         _.flatten(Object.values(sObjects)),
         customObjectInstances,
         typesFromInstance,
-        config.systemFields ?? []
+        config.systemFields ?? [],
       )
 
       const objectTypeNames = new Set(Object.keys(sObjects))

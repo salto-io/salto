@@ -21,9 +21,21 @@ import { NetsuiteQuery } from '../src/query'
 
 describe('change validator', () => {
   describe('SuiteApp', () => {
+    let fetchByQuery: FetchByQueryFunc
+    beforeEach(() => {
+      fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+      Promise<FetchByQueryReturnType> => (Promise.resolve({
+        failedToFetchAllAtOnce: false,
+        failedFilePaths: [],
+        failedTypeToInstances: {},
+        elements: [],
+      }))
+    })
     describe('without SuiteApp', () => {
       it('should have change error when removing an instance with file cabinet type', async () => {
-        const changeValidator = getChangeValidator({ withSuiteApp: false, warnStaleData: false })
+        const changeValidator = getChangeValidator(
+          { withSuiteApp: false, warnStaleData: false, fetchByQuery }
+        )
         const instance = new InstanceElement('test', fileCabinetTypes.file)
         const changeErrors = await changeValidator([toChange({ before: instance })])
         expect(changeErrors).toHaveLength(1)
@@ -34,7 +46,9 @@ describe('change validator', () => {
 
     describe('with SuiteApp', () => {
       it('should not have change error when removing an instance with file cabinet type', async () => {
-        const changeValidator = getChangeValidator({ withSuiteApp: true, warnStaleData: false })
+        const changeValidator = getChangeValidator(
+          { withSuiteApp: true, warnStaleData: false, fetchByQuery }
+        )
         const instance = new InstanceElement('test', fileCabinetTypes.file)
         const changeErrors = await changeValidator([toChange({ before: instance })])
         expect(changeErrors).toHaveLength(0)

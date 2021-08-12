@@ -15,9 +15,13 @@
 */
 import _ from 'lodash'
 import { isInstanceChange, InstanceElement, Element,
-  ProgressReporter, ChangeError, Change, isInstanceElement, isEqualElements, isRemovalOrModificationChange, getChangeElement } from '@salto-io/adapter-api'
+  ProgressReporter, ChangeError, Change, isInstanceElement, isEqualElements,
+  isRemovalOrModificationChange, getChangeElement, ModificationChange,
+  RemovalChange, isRemovalChange, isModificationChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { buildNetsuiteQuery, convertToQueryParams, NetsuiteQuery } from '../query'
+import { buildNetsuiteQuery, convertToQueryParams, NetsuiteQuery, NetsuiteQueryParameters } from '../query'
+import { isCustomType, isFileCabinetInstance } from '../types'
+import { PATH, SCRIPT_ID } from '../constants'
 
 export type FetchByQueryReturnType = {
   failedToFetchAllAtOnce: boolean
@@ -28,61 +32,118 @@ export type FetchByQueryReturnType = {
 
 export type FetchByQueryFunc = (
   fetchQuery: NetsuiteQuery,
-   progressReporter: ProgressReporter,
-   useChangesDetection: boolean)
-   => Promise<FetchByQueryReturnType>
+  progressReporter: ProgressReporter,
+  useChangesDetection: boolean
+) => Promise<FetchByQueryReturnType>
 
-export type QueryChangeValidator = (changes: ReadonlyArray<Change>, fetchByQuery?: FetchByQueryFunc)
+export type QueryChangeValidator = (
+  changes: ReadonlyArray<Change>, fetchByQuery: FetchByQueryFunc)
  => Promise<ReadonlyArray<ChangeError>>
 
 const { awu } = collections.asynciterable
 
-const getMatchingServiceInstances = async (baseInstances: InstanceElement[],
-  fetchByQuery: FetchByQueryFunc): Promise<Record<string, InstanceElement>> => {
-  const instancesByType = _.groupBy(baseInstances, instance => instance.elemID.typeName)
-  const fetchTarget = { types:
-    Object.fromEntries(Object.entries(instancesByType)
-      .map(([type, instances]) => [type, instances.map(instance => instance.elemID.name)])) }
+const getScriptIdsByType = (
+  instancesByType: Record<string, InstanceElement[]>
+): Record<string, string[]> => (
+  Object.fromEntries(Object.entries(instancesByType)
+    .map(([type, instances]) => [type, instances
+      .filter(instance => instance.value[SCRIPT_ID] !== undefined)
+      .map(instance => instance.value[SCRIPT_ID])]))
+)
+
+const getMatchingServiceInstances = async (
+  baseInstances: InstanceElement[],
+  fetchByQuery: FetchByQueryFunc
+): Promise<Record<string, InstanceElement>> => {
+  // TODO: we currently support only SDF types (i.e custom types and file cabinet),
+  // and not yet suiteapp types (SALTO-1531)
+
+  const filePaths = baseInstances
+    .filter(isFileCabinetInstance)
+    .filter(inst => inst.value[PATH] !== undefined)
+    .map(inst => inst.value[PATH])
+
+  const customInstances = baseInstances.filter(inst => isCustomType(inst.refType.elemID))
+  const instancesByType = _.groupBy(customInstances, instance => instance.elemID.typeName)
+  const fetchTarget: NetsuiteQueryParameters = {
+    types: getScriptIdsByType(instancesByType),
+    filePaths,
+  }
 
   const fetchQuery = fetchTarget && buildNetsuiteQuery(convertToQueryParams(fetchTarget))
-  if (fetchQuery === undefined) return {}
 
   const { elements } = await fetchByQuery(fetchQuery, { reportProgress: () => null }, false)
   return _.keyBy(elements.filter(isInstanceElement), element => element.elemID.getFullName())
 }
 
-const changeValidator: QueryChangeValidator = async (changes: ReadonlyArray<Change>,
-  fetchByQuery?: FetchByQueryFunc) => {
-  const errors: ChangeError[] = []
+const toChangeWarning = (change: Change<InstanceElement>): ChangeError => (
+  {
+    elemID: getChangeElement(change).elemID,
+    severity: 'Warning',
+    message: 'Continuing the deploy proccess will override changes made in the service to this element.',
+    detailedMessage: `The element ${getChangeElement(change).elemID.name}, which you are attempting to ${change.action === 'modify' ? 'modify' : 'remove'}, has recently changed in the service.`,
+  }
+)
 
-  if (fetchByQuery !== undefined) {
-    const modificationOrRemovalInstanceChanges = await awu(changes)
-      .filter(isRemovalOrModificationChange)
-      .filter(isInstanceChange)
-      .toArray()
 
-    const serviceInstances = await getMatchingServiceInstances(
-      modificationOrRemovalInstanceChanges.map(change => change.data.before),
-      fetchByQuery
+const hasChangedInService = (
+  beforeInstance: InstanceElement,
+  serviceInstance: InstanceElement
+): boolean => (
+  !isEqualElements(beforeInstance, serviceInstance)
+)
+
+const isChangeTheSameInService = (
+  change: ModificationChange<InstanceElement>,
+  serviceInstance: InstanceElement
+): boolean => (
+  isEqualElements(change.data.after, serviceInstance)
+)
+
+const isModificationOverridingChange = (
+  change: ModificationChange<InstanceElement> | RemovalChange<InstanceElement>,
+  matchingServiceInstance: InstanceElement,
+): boolean => (
+  isModificationChange(change)
+  && hasChangedInService(change.data.before, matchingServiceInstance)
+  && !isChangeTheSameInService(change, matchingServiceInstance)
+)
+
+const isRemovalOverridingChange = (
+  change: ModificationChange<InstanceElement> | RemovalChange<InstanceElement>,
+  matchingServiceInstance: InstanceElement,
+): boolean => (
+  isRemovalChange(change)
+  && hasChangedInService(change.data.before, matchingServiceInstance)
+)
+
+
+const changeValidator: QueryChangeValidator = async (
+  changes: ReadonlyArray<Change>,
+  fetchByQuery: FetchByQueryFunc
+) => {
+  const modificationOrRemovalInstanceChanges = await awu(changes)
+    .filter(isRemovalOrModificationChange)
+    .filter(isInstanceChange)
+    .toArray()
+
+  const serviceInstances = await getMatchingServiceInstances(
+    modificationOrRemovalInstanceChanges.map(change => change.data.before),
+    fetchByQuery
+  )
+
+  const isOverridingChange = (
+    change: ModificationChange<InstanceElement> | RemovalChange<InstanceElement>
+  ): boolean => {
+    const matchingServiceInstance = serviceInstances[change.data.before.elemID.getFullName()]
+    return (isModificationOverridingChange(change, matchingServiceInstance)
+    || isRemovalOverridingChange(change, matchingServiceInstance)
     )
-    modificationOrRemovalInstanceChanges.forEach(change => {
-      const matchingServiceInstance = serviceInstances[change.data.before.elemID.getFullName()]
-
-      if ((change.action === 'modify' && !isEqualElements(change.data.after, matchingServiceInstance))
-       || (change.action === 'remove')) {
-        if (!isEqualElements(change.data.before, matchingServiceInstance)) {
-          errors.push({
-            elemID: getChangeElement(change).elemID,
-            severity: 'Warning',
-            message: `The element ${getChangeElement(change).elemID.name}, which you are attempting to ${change.action === 'modify' ? 'modify' : 'remove'}, has recently changed in the service.`,
-            detailedMessage: 'Continuing the deploy proccess will override the changes made in the service to this element.',
-          })
-        }
-      }
-    })
   }
 
-  return errors
+  return modificationOrRemovalInstanceChanges
+    .filter(isOverridingChange)
+    .map(toChangeWarning)
 }
 
 export default changeValidator

@@ -61,7 +61,7 @@ import { createDateRange } from './changes_detector/date_formats'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import getChangeValidator from './change_validator'
-import { FetchByQueryReturnType } from './change_validators/safe_deploy'
+import { FetchByQueryFunc, FetchByQueryReturnType } from './change_validators/safe_deploy'
 import { getChangeGroupIdsFunc } from './group_changes'
 import { getDataElements } from './data_elements/data_elements'
 
@@ -168,8 +168,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
     filtersCreators)
   }
 
-  public fetchByQuery = async (fetchQuery: NetsuiteQuery, progressReporter: ProgressReporter,
-    useChangesDetection: boolean): Promise<FetchByQueryReturnType> => {
+  public fetchByQuery: FetchByQueryFunc = async (
+    fetchQuery: NetsuiteQuery,
+    progressReporter: ProgressReporter,
+    useChangesDetection: boolean
+  ): Promise<FetchByQueryReturnType> => {
     const {
       changedObjectsQuery,
       serverTime,

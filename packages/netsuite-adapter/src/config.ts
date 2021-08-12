@@ -198,8 +198,9 @@ const deployConfigType = createMatchingObjectType<DeployParams>({
   },
 })
 
-export const validateDeployParams = ({ deployReferencedElements, warnOnStaleWorkspaceData }:
-  Partial<DeployParams>): void => {
+export const validateDeployParams = (
+  { deployReferencedElements, warnOnStaleWorkspaceData }: Partial<DeployParams>
+): void => {
   if (deployReferencedElements !== undefined
     && typeof deployReferencedElements !== 'boolean') {
     throw new Error(`Expected "deployReferencedElements" to be a boolean or to be undefined, but received:\n ${deployReferencedElements}`)

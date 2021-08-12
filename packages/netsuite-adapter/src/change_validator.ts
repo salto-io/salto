@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ChangeValidator } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator } from '@salto-io/adapter-api'
 import accountSpecificValuesValidator from './change_validators/account_specific_values'
 import dataAccountSpecificValuesValidator from './change_validators/data_account_specific_values'
 import removeCustomTypesValidator from './change_validators/remove_custom_types'
@@ -29,7 +29,7 @@ import safeDeployValidator, { FetchByQueryFunc } from './change_validators/safe_
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
 
 
-const changeValidators = [
+const changeValidators: ChangeValidator[] = [
   accountSpecificValuesValidator,
   dataAccountSpecificValuesValidator,
   removeCustomTypesValidator,
@@ -55,16 +55,17 @@ const getChangeValidator: ({ withSuiteApp, warnStaleData, fetchByQuery }
   : {
   withSuiteApp: boolean
   warnStaleData: boolean
-  fetchByQuery?: FetchByQueryFunc
+  fetchByQuery: FetchByQueryFunc
   }) => ChangeValidator = ({ withSuiteApp, warnStaleData, fetchByQuery }) =>
     async changes => {
-      const validators = warnStaleData
-        ? [...changeValidators, safeDeployValidator]
-        : [...changeValidators]
-      if (!withSuiteApp) validators.push(...nonSuiteAppValidators)
+      const validators = withSuiteApp
+        ? [...changeValidators]
+        : [...changeValidators, ...nonSuiteAppValidators]
 
-      const changeErrors = _.flatten(await Promise.all(validators
-        .map(validator => validator(changes, fetchByQuery))))
+      const changeErrors: ChangeError[] = _.flatten(await Promise.all([
+        ...validators.map(validator => validator(changes)),
+        warnStaleData ? safeDeployValidator(changes, fetchByQuery) : [],
+      ]))
 
       const invalidElementIds = changeErrors.map(error => error.elemID.getFullName())
       return changeErrors.concat(await validateDependsOnInvalidElement(invalidElementIds, changes))

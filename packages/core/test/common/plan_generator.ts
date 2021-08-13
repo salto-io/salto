@@ -29,6 +29,7 @@ export type PlanGenerators = {
   planWithFieldIsListChanges: () => Promise<[Plan, ObjectType]>
   planWithSplitElem: (isAdd: boolean) => Promise<[Plan, ObjectType]>
   planWithDependencyCycle: (withValidator: boolean) => Promise<Plan>
+  planWithDependencyCycleWithinAGroup: (withValidator: boolean) => Promise<Plan>
 }
 
 export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerators => ({
@@ -161,7 +162,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     return [plan, saltoOffice]
   },
 
-  planWithDependencyCycle: async withValidator => {
+  planWithDependencyCycleWithinAGroup: async withValidator => {
     const afterElements = mock.getAllElements()
     const [,, saltoOffice] = afterElements
     const depChanger: DependencyChanger = async changes => {
@@ -169,6 +170,30 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
         .filter(([_id, change]) => {
           const elem = getChangeElement(change)
           return isField(elem) && elem.parent.elemID.isEqual(saltoOffice.elemID)
+        })
+        .map(([id]) => id)
+        .slice(0, 2)
+        .toArray()
+      return [
+        dependencyChange('add', officeFieldChangeIds[0], officeFieldChangeIds[1]),
+        dependencyChange('add', officeFieldChangeIds[1], officeFieldChangeIds[0]),
+      ]
+    }
+    return getPlan({
+      before: createElementSource([]),
+      after: createElementSource(afterElements),
+      dependencyChangers: [depChanger],
+      changeValidators: withValidator ? { salto: async () => [] } : {},
+    })
+  },
+  planWithDependencyCycle: async withValidator => {
+    const afterElements = mock.getAllElements()
+    const depChanger: DependencyChanger = async changes => {
+      const officeFieldChangeIds = wu(changes)
+        .filter(([_id, change]) => {
+          const elem = getChangeElement(change)
+          return elem.elemID.getFullName() === 'salto.office.field.name'
+            || elem.elemID.getFullName() === 'salto.employee.field.office'
         })
         .map(([id]) => id)
         .slice(0, 2)

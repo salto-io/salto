@@ -230,8 +230,8 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     return wu(this.get(from)).some(d => this.hasCycle(d, new Set<NodeId>(visited)))
   }
 
-  *evaluationOrderGroups(): IterableIterator<Iterable<NodeId>> {
-    const dependencies = this.clone()
+  *evaluationOrderGroups(destructive = false): IterableIterator<Iterable<NodeId>> {
+    const dependencies = destructive ? this : this.clone()
     let nextNodes: Iterable<NodeId> = dependencies.keys()
 
     while (true) {
@@ -251,6 +251,17 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
 
   evaluationOrder(): Iterable<NodeId> {
     return wu(this.evaluationOrderGroups()).flatten()
+  }
+
+  getCycles(): AbstractNodeMap {
+    const expensable = this.clone()
+    try {
+      wu(expensable.evaluationOrderGroups(true)).toArray()
+    } catch {
+      // The iteration will throw an error if cycles exists.
+      // We want to return them so we catch it.
+    }
+    return expensable
   }
 
   async walkAsyncDestructive(handler: AsyncNodeHandler): Promise<void> {

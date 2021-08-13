@@ -17,7 +17,7 @@ import wu from 'wu'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
-import { NodeId, DataNodeMap } from './nodemap'
+import { NodeId, DataNodeMap, CircularDependencyError } from './nodemap'
 
 const log = logger(module)
 
@@ -33,51 +33,81 @@ export const buildGroupedGraph = <T>(
 ): GroupedNodeMap<T> => log.time(() => {
     const mergeCandidates = new Map<string, NodeId>()
     const itemToGroupId = new Map<NodeId, NodeId>()
-
     const getOrCreateGroupNode = (
       graph: GroupedNodeMap<T>,
       key: string,
       newDeps: ReadonlySet<NodeId>,
-    ): NodeId => {
-      const mergeCandidate = mergeCandidates.get(key)
-      if (mergeCandidate !== undefined) {
-        const currentDeps = graph.get(mergeCandidate)
+      newRevDeps: ReadonlySet<NodeId>,
+    ): NodeId | undefined => {
+      const tryToAddToGroupID = (idToTry: NodeId): boolean => {
+        const currentDeps = graph.get(idToTry)
         const filteredNewDeps = wu(newDeps)
           .filter(dep => !currentDeps.has(dep))
           // Skip edges to mergeCandidate to avoid self reference cycle
-          .filter(dep => dep !== mergeCandidate)
+          .filter(dep => dep !== idToTry)
           .toArray()
-        if (filteredNewDeps.length === 0) {
-          // Merging will not add new edges and therefore cannot create a cycle
-          return mergeCandidate
-        }
+        const filteredNewRevDeps = wu(newRevDeps)
+          .filter(dep => !graph.get(dep).has(idToTry))
+          // Skip edges to mergeCandidate to avoid self reference cycle
+          .filter(dep => dep !== idToTry)
+          .toArray()
+
         const candidateDeps = new Set(wu.chain(currentDeps, filteredNewDeps))
-        if (!graph.doesCreateCycle(new Map([[mergeCandidate, candidateDeps]]), mergeCandidate)) {
+        const revCandidateDeps = filteredNewRevDeps.map(dep => [
+          dep,
+          new Set([...graph.get(dep), idToTry]),
+        ] as [NodeId, Set<NodeId>])
+        const graphChangeToTry = new Map([
+          [idToTry, candidateDeps],
+          ...revCandidateDeps,
+        ])
+        // Merging will not add new edges and therefore cannot create a cycle or
+        // an explicit check for cycles
+        if ((filteredNewDeps.length === 0 && filteredNewRevDeps.length === 0)
+          || !graph.doesCreateCycle(graphChangeToTry, idToTry)) {
           // Safe to add the new edges and merge to candidate node
-          filteredNewDeps.forEach(dep => graph.addEdge(mergeCandidate, dep))
-          return mergeCandidate
+          filteredNewDeps.forEach(dep => graph.addEdge(idToTry, dep))
+          filteredNewRevDeps.forEach(dep => graph.addEdge(dep, idToTry))
+          return true
         }
+
+        return false
       }
-      // Cannot merge to existing node, create a new one
+
+      const mergeCandidate = mergeCandidates.get(key)
+      if (mergeCandidate && tryToAddToGroupID(mergeCandidate)) {
+        return mergeCandidate
+      }
       const groupId = _.uniqueId(`${key}-`)
-      graph.addNode(groupId, newDeps, { groupKey: key, items: new Map() })
-      // mergeCandidates should point to the latest node of a given key
+      graph.addNode(groupId, [], { groupKey: key, items: new Map() })
       mergeCandidates.set(key, groupId)
-      return groupId
+      if (tryToAddToGroupID(groupId)) {
+        return groupId
+      }
+
+      return undefined
     }
 
-    return wu(source.evaluationOrder())
+    return wu(source.keys())
       .reduce((result, nodeId) => {
-        const deps = new Set(
+        const inDeps = new Set(
           wu(source.get(nodeId))
             .map(depId => itemToGroupId.get(depId))
             .filter(values.isDefined)
         )
+        const revDeps = new Set(
+          wu(source.getReverse(nodeId))
+            .map(depId => itemToGroupId.get(depId))
+            .filter(values.isDefined)
+        )
         const nodeGroupKey = groupKey(nodeId)
-        const groupId = getOrCreateGroupNode(result, nodeGroupKey, deps)
-        // Add item to the group node (the dependencies are handled by getOrCreateGroupNode)
-        result.getData(groupId).items.set(nodeId, source.getData(nodeId))
-        itemToGroupId.set(nodeId, groupId)
-        return result
+        const groupId = getOrCreateGroupNode(result, nodeGroupKey, inDeps, revDeps)
+        if (groupId !== undefined) {
+          // Add item to the group node (the dependencies are handled by getOrCreateGroupNode)
+          result.getData(groupId).items.set(nodeId, source.getData(nodeId))
+          itemToGroupId.set(nodeId, groupId)
+          return result
+        }
+        throw new CircularDependencyError(source.getCycles())
       }, new DataNodeMap<Group<T>>())
   }, 'build grouped graph for %o nodes', source.size)

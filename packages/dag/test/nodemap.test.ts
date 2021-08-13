@@ -456,6 +456,33 @@ describe('NodeMap', () => {
       })
     })
   })
+  describe('get cycles', () => {
+    describe('for a graph with no cycles', () => {
+      beforeEach(() => {
+        subject.addNode(1, [3])
+        subject.addNode(2, [3])
+        subject.addNode(3, [])
+      })
+      it('should return an empty map', () => {
+        expect(subject.getCycles().size).toEqual(0)
+      })
+    })
+
+    describe('for a graph with cycles', () => {
+      beforeEach(() => {
+        subject.addNode(1, [6])
+        subject.addNode(2, [3])
+        subject.addNode(3, [4])
+        subject.addNode(4, [2])
+        subject.addNode(5, [6])
+        subject.addNode(6, [])
+      })
+
+      it('should return the cycles', () => {
+        expect([...subject.getCycles().keys()]).toEqual([2, 3, 4])
+      })
+    })
+  })
 
   describe('evaluationOrder', () => {
     let res: NodeId[]

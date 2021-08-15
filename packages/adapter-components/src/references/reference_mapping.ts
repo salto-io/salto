@@ -15,8 +15,8 @@
 */
 import _ from 'lodash'
 import { Field, Value, Element } from '@salto-io/adapter-api'
+import { types } from '@salto-io/lowerdash'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { ReferenceContextStrategyName } from './context'
 
 export type ApiNameFunc = (elem: Element) => string
 type LookupFunc = (val: Value, context?: string) => string
@@ -24,6 +24,7 @@ type LookupFunc = (val: Value, context?: string) => string
 export type ReferenceSerializationStrategy = {
   serialize: GetLookupNameFunc
   lookup: LookupFunc
+  lookupIndexName?: string
 }
 
 type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name'
@@ -37,14 +38,15 @@ const ReferenceSerializationStrategyLookup: Record<
   id: {
     serialize: ({ ref }) => ref.value.value.id,
     lookup: val => val,
+    lookupIndexName: 'id',
   },
   name: {
     serialize: ({ ref }) => ref.value.value.name,
     lookup: val => val,
+    lookupIndexName: 'name',
   },
 }
 
-type PickOne<T, K extends keyof T> = Pick<T, K> & { [P in keyof Omit<T, K>]?: never };
 type MetadataTypeArgs<T extends string> = {
   type: string
   typeContext: T
@@ -53,12 +55,12 @@ type MetadataParentArgs<T extends string> = {
   parent?: string
   parentContext?: T
 }
-export type ReferenceTargetDefinition<
-  T extends string
-> = {
-  name?: string
-} & (PickOne<MetadataTypeArgs<T>, 'type'> | PickOne<MetadataTypeArgs<T>, 'typeContext'>)
-  & (PickOne<MetadataParentArgs<T>, 'parent'> | PickOne<MetadataParentArgs<T>, 'parentContext'>)
+
+export type ReferenceTargetDefinition<T extends string> = (
+  { name?: string }
+  & types.OneOf<MetadataTypeArgs<T>>
+  & types.OneOf<MetadataParentArgs<T>>
+)
 export type ExtendedReferenceTargetDefinition<
   T extends string
 > = ReferenceTargetDefinition<T> & { lookup: LookupFunc }
@@ -81,7 +83,7 @@ type SourceDef = {
  * 2. Resolving the resulting reference expression back returns the original value.
  */
 export type FieldReferenceDefinition<
-  T extends string = ReferenceContextStrategyName
+  T extends string | never
 > = {
   src: SourceDef
   serializationStrategy?: ReferenceSerializationStrategyName
@@ -90,7 +92,7 @@ export type FieldReferenceDefinition<
 }
 
 // We can extract the api name from the elem id as long as we don't support renaming
-const apiName: ApiNameFunc = elem => elem.elemID.name
+const elemLookupName: ApiNameFunc = elem => elem.elemID.name
 
 type FieldReferenceResolverDetails<T extends string> = {
   serializationStrategy: ReferenceSerializationStrategy
@@ -121,7 +123,7 @@ export class FieldReferenceResolver<T extends string> {
       field.name === this.src.field
       && (
         this.src.parentTypes === undefined
-        || this.src.parentTypes.includes(apiName(field.parent))
+        || this.src.parentTypes.includes(elemLookupName(field.parent))
       )
     )
   }

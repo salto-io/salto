@@ -13,6 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { neighborContextGetter, contextStrategyDefaultLookup, ContextFunc, ContextValueMapperFunc, ReferenceContextStrategyName } from './context'
+export { neighborContextGetter, ContextFunc, ContextValueMapperFunc } from './context'
 export { addReferences, replaceReferenceValues } from './field_references'
 export { FieldReferenceDefinition, ReferenceResolverFinder, ReferenceTargetDefinition, ExtendedReferenceTargetDefinition } from './reference_mapping'

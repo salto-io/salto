@@ -17,7 +17,7 @@ import { Element } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 
-const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition[] = [
+const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<never>[] = [
   {
     src: { field: 'product', parentTypes: ['plan', 'price'] },
     serializationStrategy: 'id',

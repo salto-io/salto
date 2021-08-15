@@ -92,7 +92,7 @@ const ReferenceSerializationStrategyLookup: Record<
 }
 
 export type ReferenceContextStrategyName = (
-  'none' | 'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup'
+  'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup'
   | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborPicklistObjectLookup'
   | 'neighborTypeLookup' | 'neighborActionTypeFlowLookup' | 'neighborActionTypeLookup' | 'parentObjectLookup'
   | 'parentInputObjectLookup' | 'parentOutputObjectLookup'

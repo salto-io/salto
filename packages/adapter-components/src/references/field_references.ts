@@ -22,44 +22,72 @@ import {
   ReferenceSerializationStrategy, ExtendedReferenceTargetDefinition, ReferenceResolverFinder,
   generateReferenceResolverFinder, FieldReferenceDefinition,
 } from './reference_mapping'
-import { ContextFunc, contextStrategyDefaultLookup } from './context'
+import { ContextFunc } from './context'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
 
+const doNothing: ContextFunc = async () => undefined
+
+const emptyContextStrategyLookup: Record<string, ContextFunc> = {}
+
 export const replaceReferenceValues = async <
   T extends string
 >(
   instance: InstanceElement,
   resolverFinder: ReferenceResolverFinder<T>,
-  elemLookupMaps: multiIndex.Index<[string, string], Element>[],
+  elemLookupMaps: Record<string, multiIndex.Index<[string, string], Element>>,
   fieldsWithResolvedReferences: Set<string>,
   elemByElemID: multiIndex.Index<[string], Element>,
-  contextStrategyLookup: Record<T, ContextFunc> = contextStrategyDefaultLookup,
+  contextStrategyLookup: Record<T, ContextFunc> = emptyContextStrategyLookup,
 ): Promise<Values> => {
-  const getRefElem = async (
-    val: string | number, target: ExtendedReferenceTargetDefinition<T>, field: Field, path?: ElemID
-  ): Promise<Element | undefined> => {
-    const findElem = (value: string, targetType?: string): Element | undefined => (
-      targetType !== undefined
-        // TODO make the field we're using to look up more explicit
-        ? elemLookupMaps.map(lookup => lookup.get(targetType, _.toString(value))).find(isDefined)
-        : undefined
-    )
+  const getRefElem = async ({ val, target, field, path, lookupIndexName }: {
+    val: string | number
+    field: Field
+    path?: ElemID
+    target: ExtendedReferenceTargetDefinition<T>
+    lookupIndexName?: string
+  }): Promise<Element | undefined> => {
+    const defaultIndex = Object.values(elemLookupMaps).length === 1
+      ? Object.values(elemLookupMaps)[0]
+      : undefined
+    const findElem = (
+      value: string | number,
+      targetType?: string,
+    ): Element | undefined => {
+      const lookup = lookupIndexName !== undefined ? elemLookupMaps[lookupIndexName] : defaultIndex
+      return (
+        targetType !== undefined && lookup !== undefined
+          ? lookup.get(targetType, _.toString(value))
+          : undefined
+      )
+    }
 
-    const parentContextFunc = contextStrategyLookup[target.parentContext ?? 'none' as T]
-    const typeContextFunc = contextStrategyLookup[target.typeContext ?? 'none' as T]
-    if (parentContextFunc === undefined || typeContextFunc === undefined) {
+    const isValidContextFunc = (funcName?: string): boolean => (
+      funcName === undefined || Object.keys(contextStrategyLookup).includes(funcName)
+    )
+    if (
+      (!isValidContextFunc(target.parentContext))
+      || (!isValidContextFunc(target.typeContext))
+    ) {
       return undefined
     }
+    const parentContextFunc = target.parentContext !== undefined
+      ? contextStrategyLookup[target.parentContext]
+      : doNothing
     const elemParent = target.parent ?? await parentContextFunc(
       { instance, elemByElemID, field, fieldPath: path }
     )
+
+    const typeContextFunc = target.typeContext !== undefined
+      ? contextStrategyLookup[target.typeContext]
+      : doNothing
     const elemType = target.type ?? await typeContextFunc({
       instance, elemByElemID, field, fieldPath: path,
     })
+
     return findElem(
       target.lookup(val, elemParent),
       elemType,
@@ -90,12 +118,13 @@ export const replaceReferenceValues = async <
       .filter(refResolver => refResolver.target !== undefined)
       .map(async refResolver => toValidatedReference(
         refResolver.serializationStrategy,
-        await getRefElem(
+        await getRefElem({
           val,
-          refResolver.target as ExtendedReferenceTargetDefinition<T>,
           field,
           path,
-        ),
+          target: refResolver.target as ExtendedReferenceTargetDefinition<T>,
+          lookupIndexName: refResolver.serializationStrategy.lookupIndexName,
+        }),
       ))
       .filter(isDefined)
       .peek()
@@ -138,13 +167,16 @@ export const addReferences = async <
   const resolverFinder = generateReferenceResolverFinder<T>(defs)
   const instances = elements.filter(isInstanceElement)
 
+  // copied from Salesforce - both should be handled similarly:
+  // TODO - when transformValues becomes async the first index can be to elemID and not the whole
+  // element and we can use the element source directly instead of creating the second index
   const indexer = multiIndex.buildMultiIndex<Element>().addIndex({
     name: 'elemByElemID',
     key: elem => [elem.elemID.getFullName()],
   })
 
   fieldsToGroupBy.forEach(fieldName => indexer.addIndex({
-    name: `${fieldName}Lookup`,
+    name: fieldName,
     filter: e => isInstanceElement(e) && e.value[fieldName] !== undefined,
     key: (inst: InstanceElement) => [inst.refType.elemID.name, _.toString(inst.value[fieldName])],
   }))
@@ -155,7 +187,7 @@ export const addReferences = async <
     instance.value = await replaceReferenceValues(
       instance,
       resolverFinder,
-      Object.values(fieldLookups),
+      fieldLookups as Record<string, multiIndex.Index<[string, string], Element>>,
       fieldsWithResolvedReferences,
       elemByElemID,
       contextStrategyLookup,

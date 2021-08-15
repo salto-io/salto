@@ -31,13 +31,6 @@ export type ContextFunc = ({ instance, elemByElemID, field, fieldPath }: {
 
 const noop = (val: string): string => val
 
-export type ReferenceContextStrategyName = 'none'
-export const contextStrategyDefaultLookup: Record<
-  string, ContextFunc
-> = {
-  none: async () => undefined,
-}
-
 /**
  * Use the value of a neighbor field as the context for finding the referenced element.
  *

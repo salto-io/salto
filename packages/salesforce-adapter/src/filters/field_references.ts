@@ -63,7 +63,6 @@ const neighborContextFunc = (args: {
 const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
 > = {
-  none: async () => undefined,
   instanceParent: async ({ instance, elemByElemID }) => {
     const parentRef = getParents(instance)[0]
     const parent = isReferenceExpression(parentRef)
@@ -119,7 +118,7 @@ export const addReferences = async (
       instance.value = await replaceReferenceValues(
         instance,
         resolverFinder,
-        [elemLookup],
+        { elemLookup },
         fieldsWithResolvedReferences,
         elemByElemID,
         contextStrategyLookup,

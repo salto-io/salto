@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement, ListType, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { addReferences } from '../../src/references/field_references'
 import { FieldReferenceDefinition } from '../../src/references/reference_mapping'
-import { ContextValueMapperFunc, ContextFunc, neighborContextGetter, contextStrategyDefaultLookup } from '../../src/references'
+import { ContextValueMapperFunc, ContextFunc, neighborContextGetter } from '../../src/references'
 
 const ADAPTER_NAME = 'myAdapter'
 
@@ -183,7 +183,7 @@ describe('Field references', () => {
 
   describe('addReferences', () => {
     let elements: Element[]
-    const fieldNameToTypeMappingDefs: FieldReferenceDefinition<'none' | 'parentSubject' | 'parentValue' | 'neighborRef'>[] = [
+    const fieldNameToTypeMappingDefs: FieldReferenceDefinition<'parentSubject' | 'parentValue' | 'neighborRef'>[] = [
       {
         src: { field: 'api_client_id', parentTypes: ['api_access_profile'] },
         serializationStrategy: 'id',
@@ -229,7 +229,6 @@ describe('Field references', () => {
     beforeAll(async () => {
       elements = generateElements()
       await addReferences(elements, fieldNameToTypeMappingDefs, undefined, {
-        none: contextStrategyDefaultLookup.none,
         parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: val => val.replace('_id', '') }),
         parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: val => val.replace('_id', '') }),
         neighborRef: neighborContextFunc({ contextFieldName: 'ref' }),

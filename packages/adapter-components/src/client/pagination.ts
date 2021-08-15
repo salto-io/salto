@@ -179,28 +179,39 @@ export const getWithPageOffsetAndLastPagination: ((firstPage: number) => GetAllI
 )
 
 /**
+ * Path checker for ensuring the next url's path is under the same endpoint as the one configured.
+ * Can be customized when the next url returned has different formatting, e.g. has a longer prefix
+ * (such as /api/v1/product vs /product).
+ * @return true if the configured endpoint can be used to get the next path, false otherwise.
+ */
+export type PathCheckerFunc = (endpointPath: string, nextPath: string) => boolean
+const defaultPathChecker: PathCheckerFunc = (endpointPath, nextPath) => (endpointPath === nextPath)
+
+/**
  * Make paginated requests using the specified paginationField, assuming the next page is specified
  * as either a full URL or just the path and query prameters.
  * Only supports next pages under the same endpoint (and uses the same host).
  */
-export const getWithCursorPagination: GetAllItemsFunc = async function *getWithCursor(args) {
-  const nextPageCursorPages: PaginationFunc = ({
-    responseData, getParams, currentParams,
-  }) => {
-    const { paginationField, url } = getParams
-    const nextPagePath = _.get(responseData, paginationField)
-    if (_.isString(nextPagePath)) {
-      const nextPage = new URL(nextPagePath, 'http://localhost')
-      if (nextPage.pathname !== url) {
-        log.error('unexpected next page received for endpoint %s params %o: %s', url, currentParams, nextPage.pathname)
-        throw new Error(`unexpected next page received for endpoint ${url}: ${nextPage.pathname}`)
+export const getWithCursorPagination: ((pathChecker?: PathCheckerFunc) => GetAllItemsFunc) = (
+  (pathChecker = defaultPathChecker) => async function *getWithCursor(args) {
+    const nextPageCursorPages: PaginationFunc = ({
+      responseData, getParams, currentParams,
+    }) => {
+      const { paginationField, url } = getParams
+      const nextPagePath = _.get(responseData, paginationField)
+      if (_.isString(nextPagePath)) {
+        const nextPage = new URL(nextPagePath, 'http://localhost')
+        if (!pathChecker(url, nextPage.pathname)) {
+          log.error('unexpected next page received for endpoint %s params %o: %s', url, currentParams, nextPage.pathname)
+          throw new Error(`unexpected next page received for endpoint ${url}: ${nextPage.pathname}`)
+        }
+        return [{ ...currentParams, ...Object.fromEntries(nextPage.searchParams.entries()) }]
       }
-      return [{ ...currentParams, ...Object.fromEntries(nextPage.searchParams.entries()) }]
+      return []
     }
-    return []
+    yield* traverseRequests(nextPageCursorPages)(args)
   }
-  yield* traverseRequests(nextPageCursorPages)(args)
-}
+)
 
 export const getWithOffsetAndLimit: GetAllItemsFunc = args => {
   // Hard coded "isLast" and "values" in order to fit the configuration scheme which only allows

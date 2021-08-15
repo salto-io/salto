@@ -594,7 +594,7 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = (await toArrayAsync(await getWithCursorPagination({
+      const result = (await toArrayAsync(await getWithCursorPagination()({
         client,
         pageSize: 123,
         getParams: {
@@ -614,7 +614,7 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = (await toArrayAsync(await getWithCursorPagination({
+      const result = (await toArrayAsync(await getWithCursorPagination()({
         client,
         pageSize: 123,
         getParams: {
@@ -646,7 +646,7 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = (await toArrayAsync(await getWithCursorPagination({
+      const result = (await toArrayAsync(await getWithCursorPagination()({
         client,
         pageSize: 123,
         getParams: {
@@ -675,7 +675,7 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = (await toArrayAsync(await getWithCursorPagination({
+      const result = (await toArrayAsync(await getWithCursorPagination()({
         client,
         pageSize: 123,
         getParams: {
@@ -702,7 +702,7 @@ describe('client_pagination', () => {
         status: 404,
         statusText: 'Not Found',
       }))
-      const result = (await toArrayAsync(await getWithCursorPagination({
+      const result = (await toArrayAsync(await getWithCursorPagination()({
         client,
         pageSize: 1,
         getParams: {
@@ -732,7 +732,7 @@ describe('client_pagination', () => {
         status: 404,
         statusText: 'Not Found',
       }))
-      await expect(toArrayAsync(await getWithCursorPagination({
+      await expect(toArrayAsync(await getWithCursorPagination()({
         client,
         pageSize: 1,
         getParams: {
@@ -743,6 +743,35 @@ describe('client_pagination', () => {
           },
         },
       }))).rejects.toThrow()
+    })
+
+    it('should check path based on path checker used by getWithCursorPagination', async () => {
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+        data: {
+          products: ['a', 'b'],
+          nextPage: '/ep_suffix?page=p1',
+        },
+        status: 200,
+        statusText: 'OK',
+      })).mockResolvedValueOnce(Promise.resolve({
+        data: {
+          products: ['c', 'd'],
+        },
+        status: 200,
+        statusText: 'OK',
+      }))
+      const result = (await toArrayAsync(await getWithCursorPagination((current, next) => `${current}_suffix` === next)({
+        client,
+        pageSize: 123,
+        getParams: {
+          url: '/ep',
+          paginationField: 'nextPage',
+        },
+      }))).flat()
+      expect(result).toEqual([{ products: ['a', 'b'], nextPage: '/ep_suffix?page=p1' }, { products: ['c', 'd'] }])
+      expect(client.getSinglePage).toHaveBeenCalledTimes(2)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: 'p1' } })
     })
   })
 

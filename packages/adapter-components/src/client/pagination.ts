@@ -178,8 +178,14 @@ export const getWithPageOffsetAndLastPagination: ((firstPage: number) => GetAllI
   }
 )
 
-export type PathCheckerFunc = (current: string, next: string) => boolean
-const defaultPathChecker: PathCheckerFunc = (current, next) => (current === next)
+/**
+ * Path checker for ensuring the next url's path is under the same endpoint as the one configured.
+ * Can be customized when the next url returned has different formatting, e.g. has a longer prefix
+ * (such as /api/v1/product vs /product).
+ * @return true if the configured endpoint can be used to get the next path, false otherwise.
+ */
+export type PathCheckerFunc = (endpointPath: string, nextPath: string) => boolean
+const defaultPathChecker: PathCheckerFunc = (endpointPath, nextPath) => (endpointPath === nextPath)
 
 /**
  * Make paginated requests using the specified paginationField, assuming the next page is specified

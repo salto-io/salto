@@ -166,7 +166,7 @@ describe('workflow filter', () => {
       subName: string,
       subDescription: string,
     ): void => {
-      const subElemId = new ElemID('salesforce', subTypeName, 'instance', ...subName)
+      const subElemId = new ElemID('salesforce', subTypeName, 'instance', subName)
       const [subInstance] = findElementsByID(fetchResult, subElemId) as Iterable<InstanceElement>
       expect(subInstance.value.description).toEqual(subDescription)
     }

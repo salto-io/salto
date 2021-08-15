@@ -13,10 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ObjectType, BuiltinTypes, FieldDefinition } from '@salto-io/adapter-api'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { AdapterApiConfig, createAdapterApiConfigType, UserFetchConfig, TypeConfig, TypeDefaultsConfig } from './shared'
-import { TransformationConfig, TransformationDefaultConfig, createTransformationConfigTypes } from './transformation'
-import { createRequestConfigs } from './request'
+import { TransformationConfig, TransformationDefaultConfig, createTransformationConfigTypes, validateTransoformationConfig } from './transformation'
+import { createRequestConfigs, validateRequestConfig } from './request'
+
+const { isDefined } = lowerDashValues
 
 type DuckTypeTransformationExtra = {
   // types that contain a single object with dynamic keys (map type)
@@ -57,6 +61,28 @@ export const createDucktypeAdapterApiConfigType = ({
     transformationTypes,
     additionalFields,
   })
+}
+
+export const validateApiDefinitionConfig = (
+  apiDefinitionConfigPath: string,
+  adapterApiConfig: AdapterDuckTypeApiConfig,
+): void => {
+  validateRequestConfig(
+    apiDefinitionConfigPath,
+    adapterApiConfig.typeDefaults.request,
+    _.pickBy(
+      _.mapValues(adapterApiConfig.types, typeDef => typeDef.request),
+      isDefined,
+    ),
+  )
+  validateTransoformationConfig(
+    apiDefinitionConfigPath,
+    adapterApiConfig.typeDefaults.transformation,
+    _.pickBy(
+      _.mapValues(adapterApiConfig.types, typeDef => typeDef.transformation),
+      isDefined,
+    ),
+  )
 }
 
 /**

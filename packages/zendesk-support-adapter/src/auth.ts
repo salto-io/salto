@@ -13,22 +13,34 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, BuiltinTypes } from '@salto-io/adapter-api'
+import { ElemID, BuiltinTypes } from '@salto-io/adapter-api'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import * as constants from './constants'
-
-export const usernamePasswordCredentialsType = new ObjectType({
-  elemID: new ElemID(constants.ZENDESK_SUPPORT),
-  fields: {
-    username: { refType: BuiltinTypes.STRING },
-    password: { refType: BuiltinTypes.STRING },
-    subdomain: { refType: BuiltinTypes.STRING },
-  },
-})
 
 export type UsernamePasswordCredentials = {
   username: string
   password: string
   subdomain: string
 }
+
+export const usernamePasswordCredentialsType = createMatchingObjectType<
+  UsernamePasswordCredentials
+>({
+  elemID: new ElemID(constants.ZENDESK_SUPPORT),
+  fields: {
+    username: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+    password: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+    subdomain: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+  },
+})
 
 export type Credentials = UsernamePasswordCredentials

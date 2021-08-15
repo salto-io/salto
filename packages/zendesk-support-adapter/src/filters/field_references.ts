@@ -28,6 +28,10 @@ const neighborContextFunc = (args: {
   getLookUpName: async ({ ref }) => ref.elemID.name,
 })
 
+/**
+ * For strings with an id-related suffix (_id or _ids), remove the suffix.
+ * e.g. `abc_id` => `abc`.
+ */
 const getValueLookupType = (val: string): string | undefined => {
   const valParts = val.split('_')
   const lastPart = valParts.pop()
@@ -61,33 +65,129 @@ export const contextStrategyLookup: Record<
 const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<
   ReferenceContextStrategyName
 >[] = [
-  { src: { field: 'brand_id' }, serializationStrategy: 'id', target: { type: 'brand' } },
-  { src: { field: 'brand_ids' }, serializationStrategy: 'id', target: { type: 'brand' } },
-  { src: { field: 'default_brand_id' }, serializationStrategy: 'id', target: { type: 'brand' } },
-  { src: { field: 'category_id' }, serializationStrategy: 'id', target: { type: 'trigger_category' } },
-  { src: { field: 'category_ids' }, serializationStrategy: 'id', target: { type: 'trigger_category' } },
-  { src: { field: 'group_restrictions' }, serializationStrategy: 'id', target: { type: 'group' } },
-  { src: { field: 'locale_id' }, serializationStrategy: 'id', target: { type: 'locale' } },
-  { src: { field: 'locale_ids' }, serializationStrategy: 'id', target: { type: 'locale' } },
-  { src: { field: 'macro_id' }, serializationStrategy: 'id', target: { type: 'macro' } },
-  { src: { field: 'macro_ids' }, serializationStrategy: 'id', target: { type: 'macro' } },
-  { src: { field: 'id', parentTypes: ['workspace__selected_macros'] }, serializationStrategy: 'id', target: { type: 'macro' } },
-  { src: { field: 'role_restrictions' }, serializationStrategy: 'id', target: { type: 'custom_role' } },
-  { src: { field: 'ticket_field_id' }, serializationStrategy: 'id', target: { type: 'ticket_field' } },
-  { src: { field: 'ticket_field_ids' }, serializationStrategy: 'id', target: { type: 'ticket_field' } },
-  { src: { field: 'ticket_form_id' }, serializationStrategy: 'id', target: { type: 'ticket_form' } },
-  { src: { field: 'ticket_form_ids' }, serializationStrategy: 'id', target: { type: 'ticket_form' } },
-  { src: { field: 'skill_based_filtered_views' }, serializationStrategy: 'id', target: { type: 'view' } },
+  {
+    src: { field: 'brand_id' },
+    serializationStrategy: 'id',
+    target: { type: 'brand' },
+  },
+  {
+    src: { field: 'brand_ids' },
+    serializationStrategy: 'id',
+    target: { type: 'brand' },
+  },
+  {
+    src: { field: 'default_brand_id' },
+    serializationStrategy: 'id',
+    target: { type: 'brand' },
+  },
+  {
+    src: { field: 'category_id' },
+    serializationStrategy: 'id',
+    target: { type: 'trigger_category' },
+  },
+  {
+    src: { field: 'category_ids' },
+    serializationStrategy: 'id',
+    target: { type: 'trigger_category' },
+  },
+  {
+    src: { field: 'group_restrictions' },
+    serializationStrategy: 'id',
+    target: { type: 'group' },
+  },
+  {
+    src: { field: 'locale_id' },
+    serializationStrategy: 'id',
+    target: { type: 'locale' },
+  },
+  {
+    src: { field: 'locale_ids' },
+    serializationStrategy: 'id',
+    target: { type: 'locale' },
+  },
+  {
+    src: { field: 'macro_id' },
+    serializationStrategy: 'id',
+    target: { type: 'macro' },
+  },
+  {
+    src: { field: 'macro_ids' },
+    serializationStrategy: 'id',
+    target: { type: 'macro' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['workspace__selected_macros'] },
+    serializationStrategy: 'id',
+    target: { type: 'macro' },
+  },
+  {
+    src: { field: 'role_restrictions' },
+    serializationStrategy: 'id',
+    target: { type: 'custom_role' },
+  },
+  {
+    src: { field: 'ticket_field_id' },
+    serializationStrategy: 'id',
+    target: { type: 'ticket_field' },
+  },
+  {
+    src: { field: 'ticket_field_ids' },
+    serializationStrategy: 'id',
+    target: { type: 'ticket_field' },
+  },
+  {
+    src: { field: 'ticket_form_id' },
+    serializationStrategy: 'id',
+    target: { type: 'ticket_form' },
+  },
+  {
+    src: { field: 'ticket_form_ids' },
+    serializationStrategy: 'id',
+    target: { type: 'ticket_form' },
+  },
+  {
+    src: { field: 'skill_based_filtered_views' },
+    serializationStrategy: 'id',
+    target: { type: 'view' },
+  },
 
-  { src: { field: 'id', parentTypes: ['view__restriction'] }, serializationStrategy: 'id', target: { typeContext: 'neighborType' } },
-  { src: { field: 'ids', parentTypes: ['view__restriction'] }, serializationStrategy: 'id', target: { typeContext: 'neighborType' } },
-  { src: { field: 'resource_id' }, serializationStrategy: 'id', target: { typeContext: 'neighborType' } },
+  {
+    src: { field: 'id', parentTypes: ['view__restriction'] },
+    serializationStrategy: 'id',
+    target: { typeContext: 'neighborType' },
+  },
+  {
+    src: { field: 'ids', parentTypes: ['view__restriction'] },
+    serializationStrategy: 'id',
+    target: { typeContext: 'neighborType' },
+  },
+  {
+    src: { field: 'resource_id' },
+    serializationStrategy: 'id',
+    target: { typeContext: 'neighborType' },
+  },
 
   // only one of these applies in a given instance
-  { src: { field: 'value' }, serializationStrategy: 'id', target: { typeContext: 'parentSubject' } },
-  { src: { field: 'value' }, serializationStrategy: 'id', target: { typeContext: 'parentTitle' } },
-  { src: { field: 'value' }, serializationStrategy: 'id', target: { typeContext: 'parentValue' } },
-  { src: { field: 'value' }, serializationStrategy: 'id', target: { typeContext: 'neighborField' } },
+  {
+    src: { field: 'value' },
+    serializationStrategy: 'id',
+    target: { typeContext: 'parentSubject' },
+  },
+  {
+    src: { field: 'value' },
+    serializationStrategy: 'id',
+    target: { typeContext: 'parentTitle' },
+  },
+  {
+    src: { field: 'value' },
+    serializationStrategy: 'id',
+    target: { typeContext: 'parentValue' },
+  },
+  {
+    src: { field: 'value' },
+    serializationStrategy: 'id',
+    target: { typeContext: 'neighborField' },
+  },
 ]
 
 /**
@@ -96,7 +196,12 @@ const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    await referenceUtils.addReferences<ReferenceContextStrategyName>(elements, fieldNameToTypeMappingDefs, ['id', 'name'], contextStrategyLookup)
+    await referenceUtils.addReferences<ReferenceContextStrategyName>(
+      elements,
+      fieldNameToTypeMappingDefs,
+      ['id', 'name'],
+      contextStrategyLookup,
+    )
   },
 })
 

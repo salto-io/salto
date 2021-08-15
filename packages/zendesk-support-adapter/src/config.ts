@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { ZENDESK_SUPPORT } from './constants'
 
@@ -501,7 +502,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   // not included yet: satisfaction_reason (returns 403), sunshine apis
 }
 
-export const configType = new ObjectType({
+export const configType = createMatchingObjectType<ZendeskConfig>({
   elemID: new ElemID(ZENDESK_SUPPORT),
   fields: {
     [CLIENT_CONFIG]: {
@@ -510,7 +511,7 @@ export const configType = new ObjectType({
     [FETCH_CONFIG]: {
       refType: createUserFetchConfigType(ZENDESK_SUPPORT),
       annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
+        _required: true,
         [CORE_ANNOTATIONS.DEFAULT]: {
           includeTypes: [
             ...Object.keys(_.pickBy(DEFAULT_TYPES, def => def.request !== undefined)),
@@ -521,6 +522,7 @@ export const configType = new ObjectType({
     [API_DEFINITIONS_CONFIG]: {
       refType: createDucktypeAdapterApiConfigType({ adapter: ZENDESK_SUPPORT }),
       annotations: {
+        _required: true,
         [CORE_ANNOTATIONS.DEFAULT]: {
           typeDefaults: {
             request: {

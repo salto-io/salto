@@ -23,12 +23,14 @@ import {
   configType, ZendeskConfig, CLIENT_CONFIG, FETCH_CONFIG, DEFAULT_TYPES, DEFAULT_ID_FIELDS,
   FIELDS_TO_OMIT,
   validateFetchConfig,
+  API_DEFINITIONS_CONFIG,
 } from './config'
 import ZendeskClient from './client/client'
 import { createConnection } from './client/connection'
 
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
+const { validateDuckTypeApiDefinitionConfig } = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
   username: config.value.username,
@@ -58,6 +60,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 
   validateClientConfig(CLIENT_CONFIG, adapterConfig.client)
   validateFetchConfig(FETCH_CONFIG, adapterConfig.fetch, apiDefinitions)
+  validateDuckTypeApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
 
   Object.keys(configValue)
     .filter(k => !Object.keys(adapterConfig).includes(k))

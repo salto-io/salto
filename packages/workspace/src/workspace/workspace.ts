@@ -143,7 +143,7 @@ export type Workspace = {
 
   addService: (service: string) => Promise<void>
   addEnvironment: (env: string) => Promise<void>
-  deleteEnvironment: (env: string) => Promise<void>
+  deleteEnvironment: (env: string, keepNacls?: boolean) => Promise<void>
   renameEnvironment: (envName: string, newEnvName: string, newSourceName? : string) => Promise<void>
   setCurrentEnv: (env: string, persist?: boolean) => Promise<void>
   updateServiceCredentials: (service: string, creds: Readonly<InstanceElement>) => Promise<void>
@@ -815,7 +815,7 @@ export const loadWorkspace = async (
       workspaceConfig.envs = [...workspaceConfig.envs, { name: env }]
       await config.setWorkspaceConfig(workspaceConfig)
     },
-    deleteEnvironment: async (env: string): Promise<void> => {
+    deleteEnvironment: async (env: string, keepNacls = false): Promise<void> => {
       if (!(workspaceConfig.envs.map(e => e.name).includes(env))) {
         throw new UnknownEnvError(env)
       }
@@ -828,12 +828,14 @@ export const loadWorkspace = async (
       // We assume here that all the credentials files sit under the credentials' env directory
       await credentials.delete(env)
 
-      const environmentSource = enviormentsSources.sources[env]
-      // ensure that the env is loaded
-      await environmentSource.naclFiles.load({})
-      if (environmentSource) {
-        await environmentSource.naclFiles.clear()
-        await environmentSource.state?.clear()
+      if (!keepNacls) {
+        const environmentSource = enviormentsSources.sources[env]
+        // ensure that the env is loaded
+        await environmentSource.naclFiles.load({})
+        if (environmentSource) {
+          await environmentSource.naclFiles.clear()
+          await environmentSource.state?.clear()
+        }
       }
       delete enviormentsSources.sources[env]
       naclFilesSource = multiEnvSource(

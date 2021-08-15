@@ -17,7 +17,7 @@ import { Element } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 
-const { contextStrategyDefaultLookup, neighborContextGetter } = referenceUtils
+const { neighborContextGetter } = referenceUtils
 
 const neighborContextFunc = (args: {
   contextFieldName: string
@@ -47,11 +47,10 @@ const getLowerCaseSingularLookupType = (val: string): string | undefined => {
   return lowercaseVal
 }
 
-export type ReferenceContextStrategyName = referenceUtils.ReferenceContextStrategyName | 'neighborField' | 'neighborType' | 'parentSubject' | 'parentTitle' | 'parentValue'
+export type ReferenceContextStrategyName = 'neighborField' | 'neighborType' | 'parentSubject' | 'parentTitle' | 'parentValue'
 export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
 > = {
-  none: contextStrategyDefaultLookup.none,
   neighborField: neighborContextFunc({ contextFieldName: 'field', contextValueMapper: getValueLookupType }),
   neighborType: neighborContextFunc({ contextFieldName: 'type', contextValueMapper: getLowerCaseSingularLookupType }),
   parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: getValueLookupType }),

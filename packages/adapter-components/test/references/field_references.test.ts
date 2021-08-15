@@ -69,6 +69,12 @@ describe('Field references', () => {
     },
   })
 
+  const productType = new ObjectType({
+    elemID: new ElemID(ADAPTER_NAME, 'product'),
+    fields: {
+      name: { refType: BuiltinTypes.STRING },
+    },
+  })
   const brandType = new ObjectType({
     elemID: new ElemID(ADAPTER_NAME, 'brand'),
     fields: {
@@ -119,6 +125,7 @@ describe('Field references', () => {
     fields: {
       nestedValues: { refType: new ListType(someTypeWithNestedListOfValuesAndValue) },
       subjectAndValues: { refType: new ListType(someTypeWithNestedValuesAndSubject) },
+      product: { refType: BuiltinTypes.STRING },
     },
   })
 
@@ -141,6 +148,7 @@ describe('Field references', () => {
     apiEndpointType,
     // eslint-disable-next-line camelcase
     new InstanceElement('ep1', apiEndpointType, { flow_id: 123 }),
+    productType,
     brandType,
     groupType,
     someTypeWithValue,
@@ -148,6 +156,7 @@ describe('Field references', () => {
     someTypeWithNestedValueList,
     someTypeWithNestedListOfValuesAndValue,
     type1,
+    new InstanceElement('productABC', productType, { name: 'ABC' }),
     new InstanceElement('brand1', brandType, { id: 1001 }),
     new InstanceElement('brand2', brandType, { id: 1002 }),
     new InstanceElement('group3', groupType, { id: '2003' }),
@@ -178,6 +187,7 @@ describe('Field references', () => {
           ],
         },
       ],
+      product: 'ABC',
     }),
   ])
 
@@ -224,15 +234,25 @@ describe('Field references', () => {
         serializationStrategy: 'id',
         target: { typeContext: 'neighborRef' },
       },
+      {
+        src: { field: 'product' },
+        serializationStrategy: 'name',
+        target: { type: 'product' },
+      },
     ]
 
     beforeAll(async () => {
       elements = generateElements()
-      await addReferences(elements, fieldNameToTypeMappingDefs, undefined, {
-        parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: val => val.replace('_id', '') }),
-        parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: val => val.replace('_id', '') }),
-        neighborRef: neighborContextFunc({ contextFieldName: 'ref' }),
-      })
+      await addReferences(
+        elements,
+        fieldNameToTypeMappingDefs,
+        ['id', 'name'],
+        {
+          parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: val => val.replace('_id', '') }),
+          parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: val => val.replace('_id', '') }),
+          neighborRef: neighborContextFunc({ contextFieldName: 'ref' }),
+        },
+      )
     })
 
     it('should resolve field values when referenced element exists', () => {
@@ -263,6 +283,8 @@ describe('Field references', () => {
       expect(inst.value.nestedValues[1].values[0].list[0].value.elemID.getFullName()).toEqual('myAdapter.group.instance.group3')
       expect(inst.value.subjectAndValues[0].valueList[0].value).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.subjectAndValues[0].valueList[0].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand1')
+      expect(inst.value.product).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value.product.elemID.getFullName()).toEqual('myAdapter.product.instance.productABC')
     })
     it('should resolve field values when context field is a reference', () => {
       const inst = elements.filter(

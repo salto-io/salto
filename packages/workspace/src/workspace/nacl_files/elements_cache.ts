@@ -252,6 +252,22 @@ export const createMergeManager = async (flushables: Flushable[],
         })
         return { changeIds, potentialDeletedIds }
       }
+
+      const getRecoveryElements = async (
+        src: ReadOnlyElementsSource,
+        srcOverrides: Record<string, Element>,
+        srcChanges: Change<Element>[]
+      ): Promise<AsyncIterable<Element>> => ((src && recoveryOperation === REBUILD_ON_RECOVERY)
+        ? (awu(await src.getAll())
+        // using the 'in' notation here since undefined for an existing key is different
+        // then an undefined key (overriding a key with undefined value)
+          .map(elem => (elem.elemID.getFullName() in srcOverrides
+            ? srcOverrides[elem.elemID.getFullName()]
+            : elem))
+          .filter(values.isDefined)
+          .concat(await getContainerTypeChanges(srcChanges)))
+        : awu([]))
+
       const potentialDeletedIds = new Set<string>()
       if (cacheValid) {
         const { changeIds: src1ChangeIDs,
@@ -272,22 +288,8 @@ export const createMergeManager = async (flushables: Flushable[],
         log.warn(`Invalid data detected in local cache ${namespace}. Rebuilding cache.`)
         const src1Overrides = cacheUpdate.src1Overrides ?? {}
         const src2Overrides = cacheUpdate.src2Overrides ?? {}
-        src1ElementsToMerge = (src1 && recoveryOperation === REBUILD_ON_RECOVERY)
-          ? (awu(await src1.getAll())
-            .map(elem => (elem.elemID.getFullName() in src1Overrides
-              ? src1Overrides[elem.elemID.getFullName()]
-              : elem))
-            .filter(values.isDefined)
-            .concat(await getContainerTypeChanges(src1Changes.changes)))
-          : []
-        src2ElementsToMerge = (src2 && recoveryOperation === REBUILD_ON_RECOVERY)
-          ? (awu(await src2.getAll())
-            .map(elem => (elem.elemID.getFullName() in src2Overrides
-              ? src2Overrides[elem.elemID.getFullName()]
-              : elem))
-            .filter(values.isDefined)
-            .concat(await getContainerTypeChanges(src2Changes.changes)))
-          : []
+        src1ElementsToMerge = await getRecoveryElements(src1, src1Overrides, src1Changes.changes)
+        src2ElementsToMerge = await getRecoveryElements(src2, src2Overrides, src2Changes.changes)
       }
       return { src1ElementsToMerge, src2ElementsToMerge, potentialDeletedIds }
     }

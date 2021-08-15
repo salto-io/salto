@@ -162,11 +162,11 @@ describe('workflow filter', () => {
     }
 
     const verifySubInstance = (
-      subFieldName: string,
-      subName: readonly string[],
+      subTypeName: string,
+      subName: string,
       subDescription: string,
     ): void => {
-      const subElemId = new ElemID('salesforce', subFieldName, 'instance', ...subName)
+      const subElemId = new ElemID('salesforce', subTypeName, 'instance', ...subName)
       const [subInstance] = findElementsByID(fetchResult, subElemId) as Iterable<InstanceElement>
       expect(subInstance.value.description).toEqual(subDescription)
     }
@@ -190,26 +190,26 @@ describe('workflow filter', () => {
     })
     describe('fetch workflow alerts', () => {
       it('should fetch workflow alerts', async () => {
-        verifySubInstance(WORKFLOW_ACTION_ALERT_METADATA_TYPE, [`${baseCustomObject}_TestWorkflowAlert@v`],
+        verifySubInstance(WORKFLOW_ACTION_ALERT_METADATA_TYPE, `${baseCustomObject}_TestWorkflowAlert@v`,
           'E2E Fetch WorkflowAlert')
       })
     })
     describe('fetch workflow field updates', () => {
       it('should fetch workflow field updates', async () => {
         verifySubInstance(WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
-          [`${baseCustomObject}_TestWorkflowFieldUpdate@v`],
+          `${baseCustomObject}_TestWorkflowFieldUpdate@v`,
           'E2E Fetch WorkflowFieldUpdate')
       })
     })
     describe('fetch workflow task', () => {
       it('should fetch workflow task', async () => {
-        verifySubInstance(WORKFLOW_TASK_METADATA_TYPE, [`${baseCustomObject}_TestWorkflowTask@v`],
+        verifySubInstance(WORKFLOW_TASK_METADATA_TYPE, `${baseCustomObject}_TestWorkflowTask@v`,
           'E2E Fetch WorkflowTask')
       })
     })
     describe('fetch workflow rule', () => {
       it('should fetch workflow rule', async () => {
-        verifySubInstance(WORKFLOW_RULE_METADATA_TYPE, [`${baseCustomObject}_TestWorkflowRule@v`],
+        verifySubInstance(WORKFLOW_RULE_METADATA_TYPE, `${baseCustomObject}_TestWorkflowRule@v`,
           'E2E Fetch WorkflowRule')
       })
     })

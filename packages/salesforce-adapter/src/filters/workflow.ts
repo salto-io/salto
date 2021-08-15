@@ -137,7 +137,7 @@ const createDummyWorkflowInstance = async (
       metadataType: 'Workflow',
       dirName: 'workflows',
       suffix: 'workflow',
-    },
+    } as MetadataTypeAnnotations,
   })
 
   return createInstanceElement(
@@ -151,14 +151,11 @@ const createWorkflowChange = async (
 ): Promise<Change<InstanceElement>> => {
   const parent = await createDummyWorkflowInstance(changes)
   const after = await createPartialWorkflowInstance(parent, changes, 'after')
-  // we assume the only possible changes are in nested instances and we omit the nested instance
-  // fields from the parent when we create the partial instance. so we can use the same parent as
-  // the after instance here
   const before = await createPartialWorkflowInstance(parent, changes, 'before')
   /*
-   * we won't be able to know if the change was add or modified
-   * it does not matter in this use case since changes
-   * will go to salesforce upsert or add API anyway.
+   * we cannot know if the workflow instance change is add or modify
+   * but it does not matter in this use case because changes
+   * will be deployed with the upsert API anyway
    */
   return { action: 'modify', data: { before, after } }
 }

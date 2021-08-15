@@ -158,7 +158,7 @@ describe('netsuite client', () => {
   const createProjectCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.CREATE_PROJECT })
   const saveTokenCommandMatcher = expect.objectContaining({
-    commandName: COMMANDS.SETUP_ACCOUNT,
+    commandName: COMMANDS.SAVE_TOKEN,
     arguments: expect.objectContaining({
       account: DUMMY_CREDENTIALS.accountId,
       tokenid: DUMMY_CREDENTIALS.tokenId,
@@ -211,7 +211,7 @@ describe('netsuite client', () => {
   describe('validateCredentials', () => {
     it('should fail when SETUP_ACCOUNT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.SETUP_ACCOUNT) {
+        if (context.commandName === COMMANDS.SAVE_TOKEN) {
           return Promise.resolve({ isSuccess: () => false })
         }
         return Promise.resolve({ isSuccess: () => true })
@@ -247,7 +247,7 @@ describe('netsuite client', () => {
 
     it('should fail when SETUP_ACCOUNT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.SETUP_ACCOUNT) {
+        if (context.commandName === COMMANDS.SAVE_TOKEN) {
           return Promise.resolve({ isSuccess: () => false })
         }
         return Promise.resolve({ isSuccess: () => true })
@@ -262,7 +262,7 @@ describe('netsuite client', () => {
     it('should retry to authenticate when SETUP_ACCOUNT has failed', async () => {
       let isFirstSetupTry = true
       mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.SETUP_ACCOUNT && isFirstSetupTry) {
+        if (context.commandName === COMMANDS.SAVE_TOKEN && isFirstSetupTry) {
           isFirstSetupTry = false
           return Promise.resolve({ isSuccess: () => false })
         }
@@ -808,7 +808,7 @@ describe('netsuite client', () => {
 
     it('should fail when SETUP_ACCOUNT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.SETUP_ACCOUNT) {
+        if (context.commandName === COMMANDS.SAVE_TOKEN) {
           return Promise.resolve({ isSuccess: () => false })
         }
         return Promise.resolve({ isSuccess: () => true })

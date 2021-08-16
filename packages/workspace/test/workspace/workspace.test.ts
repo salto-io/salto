@@ -2049,30 +2049,33 @@ describe('workspace', () => {
   describe('deleteEnvironment', () => {
     describe('should delete environment', () => {
       const envName = 'inactive'
+      let workspaceConf: WorkspaceConfigSource
+      let credSource: ConfigSource
+      let workspace: Workspace
+      let stateClear: jest.SpyInstance
+      let naclFiles: NaclFilesSource
+      beforeEach(async () => {
+        jest.clearAllMocks()
+        workspaceConf = mockWorkspaceConfigSource(undefined, true)
+        credSource = mockCredentialsSource()
+        const state = createState([])
+        stateClear = jest.spyOn(state, 'clear')
+        naclFiles = createMockNaclFileSource([])
+        workspace = await createWorkspace(
+          undefined,
+          undefined,
+          workspaceConf,
+          credSource,
+          undefined,
+          {
+            inactive: { naclFiles, state },
+            '': { naclFiles: createMockNaclFileSource([]) },
+            default: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
+          }
+        )
+      })
       describe('should delete nacl and state files if keepNacls is false', () => {
-        let workspaceConf: WorkspaceConfigSource
-        let credSource: ConfigSource
-        let workspace: Workspace
-        let stateClear: jest.SpyInstance
-        let naclFiles: NaclFilesSource
-        beforeAll(async () => {
-          workspaceConf = mockWorkspaceConfigSource(undefined, true)
-          credSource = mockCredentialsSource()
-          const state = createState([])
-          stateClear = jest.spyOn(state, 'clear')
-          naclFiles = createMockNaclFileSource([])
-          workspace = await createWorkspace(
-            undefined,
-            undefined,
-            workspaceConf,
-            credSource,
-            undefined,
-            {
-              inactive: { naclFiles, state },
-              '': { naclFiles: createMockNaclFileSource([]) },
-              default: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
-            }
-          )
+        beforeEach(async () => {
           await workspace.deleteEnvironment(envName)
         })
         it('should not be included in the workspace envs', async () => {
@@ -2093,29 +2096,7 @@ describe('workspace', () => {
         })
       })
       describe('should not delete nacl and state files if keepNacls is true', () => {
-        let workspaceConf: WorkspaceConfigSource
-        let credSource: ConfigSource
-        let workspace: Workspace
-        let stateClear: jest.SpyInstance
-        let naclFiles: NaclFilesSource
-        beforeAll(async () => {
-          workspaceConf = mockWorkspaceConfigSource(undefined, true)
-          credSource = mockCredentialsSource()
-          const state = createState([])
-          stateClear = jest.spyOn(state, 'clear')
-          naclFiles = createMockNaclFileSource([])
-          workspace = await createWorkspace(
-            undefined,
-            undefined,
-            workspaceConf,
-            credSource,
-            undefined,
-            {
-              inactive: { naclFiles, state },
-              '': { naclFiles: createMockNaclFileSource([]) },
-              default: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
-            }
-          )
+        beforeEach(async () => {
           await workspace.deleteEnvironment(envName, true)
         })
         it('should not be included in the workspace envs', async () => {
@@ -2129,7 +2110,7 @@ describe('workspace', () => {
           const envsNames = envs.map((e: {name: string}) => e.name)
           expect(envsNames.includes(envName)).toBeFalsy()
         })
-        it('should delete files', () => {
+        it('should not delete files', () => {
           expect(credSource.delete).toHaveBeenCalledTimes(1)
           expect(stateClear).toHaveBeenCalledTimes(0)
           expect(naclFiles.clear).toHaveBeenCalledTimes(0)

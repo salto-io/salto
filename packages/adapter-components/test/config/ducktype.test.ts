@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ObjectType, BuiltinTypes, MapType } from '@salto-io/adapter-api'
-import { createDucktypeAdapterApiConfigType, createUserFetchConfigType, validateDuckTypeFetchConfig } from '../../src/config'
+import { createDucktypeAdapterApiConfigType, createUserFetchConfigType, validateDuckTypeFetchConfig, validateDuckTypeApiDefinitionConfig } from '../../src/config'
 
 describe('config_ducktype', () => {
   describe('createAdapterApiConfigType', () => {
@@ -86,6 +86,61 @@ describe('config_ducktype', () => {
       const type = createUserFetchConfigType('myAdapter')
       expect(Object.keys(type.fields)).toHaveLength(1)
       expect(type.fields.includeTypes).toBeDefined()
+    })
+  })
+
+  describe('validateApiDefinitionConfig', () => {
+    it('should validate successfully when values are valid', () => {
+      expect(() => validateDuckTypeApiDefinitionConfig(
+        'PATH',
+        {
+          typeDefaults: {
+            transformation: {
+              idFields: ['a', 'b'],
+            },
+          },
+          types: {
+            abc: {
+              transformation: {
+                idFields: ['something', 'else'],
+              },
+            },
+            aaa: {
+              transformation: {
+                idFields: ['something'],
+              },
+            },
+          },
+        },
+      )).not.toThrow()
+    })
+    it('should throw when a type has an invalid definition', () => {
+      expect(() => validateDuckTypeApiDefinitionConfig(
+        'PATH',
+        {
+          typeDefaults: {
+            transformation: {
+              idFields: ['a', 'b'],
+            },
+          },
+          types: {
+            abc: {
+              transformation: {
+                idFields: ['something', 'else'],
+                fieldsToOmit: [
+                  { fieldName: 'field' },
+                  { fieldName: 'field' },
+                ],
+              },
+            },
+            bbb: {
+              transformation: {
+                idFields: ['something'],
+              },
+            },
+          },
+        },
+      )).toThrow(new Error('Duplicate fieldsToOmit params found in PATH for the following types: abc'))
     })
   })
 

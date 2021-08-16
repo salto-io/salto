@@ -36,6 +36,7 @@
         { "path": "../stripe-adapter" },
         { "path": "../workato-adapter" },
         { "path": "../workspace" },
+        { "path": "../zendesk-support-adapter" },
         { "path": "../zuora-billing-adapter" },
     ]
 }

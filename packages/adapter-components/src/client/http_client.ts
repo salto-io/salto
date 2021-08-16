@@ -117,7 +117,7 @@ export abstract class AdapterHTTPClient<
         status,
       }
     } catch (e) {
-      log.error(`failed to get ${url} ${queryParams}: ${e}, stack: ${e.stack}`)
+      log.warn(`failed to get ${url} ${queryParams}: ${e}, stack: ${e.stack}`)
       throw new Error(`Failed to get ${url} with error: ${e}`)
     }
   }

@@ -244,7 +244,7 @@ describe('Workflow and task references filter', () => {
       client,
       paginator: clientUtils.createPaginator({
         client,
-        paginationFunc: clientUtils.getWithCursorPagination,
+        paginationFunc: clientUtils.getWithCursorPagination(),
       }),
       config: {
         fetch: {

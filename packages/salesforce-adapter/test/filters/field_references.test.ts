@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, Value, CORE_ANNOTATIONS, isInstanceElement, Field, isObjectType, ListType, TypeElement } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { FilterWith } from '../../src/filter'
 import filterCreator, { addReferences } from '../../src/filters/field_references'
@@ -32,7 +32,7 @@ const customObjectType = new ObjectType({
   elemID: CUSTOM_OBJECT_TYPE_ID,
   fields: {
     [INSTANCE_FULL_NAME_FIELD]: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
     },
   },
   annotations: {
@@ -57,7 +57,7 @@ const generateObjectAndInstance = ({
   fieldValue?: Value
   parentType?: string
   contextFieldName?: string
-  contextFieldValue?: string
+  contextFieldValue?: string | ReferenceExpression
 }): Element[] => {
   const addFields = (obj: ObjectType): void => {
     const createField = (name: string, fieldType: TypeElement = BuiltinTypes.STRING): Field => (
@@ -209,7 +209,18 @@ describe('FieldReferences filter', () => {
       fieldName: CPQ_TESTED_OBJECT,
       fieldValue: 'Quote',
     }),
-    // fieldUpdate54.field should point to Account.name (instanceParent)
+    // name should point to ApexPage.instance.page1 (neighbor context)
+    ...generateObjectAndInstance({
+      type: 'AppMenuItem',
+      objType: 'AppMenuItem',
+      instanceName: 'appMenuItem',
+      fieldName: 'name',
+      fieldValue: 'page1',
+      contextFieldName: 'type',
+      contextFieldValue: 'ApexPage',
+    }),
+    // actionName should point to ApexClass.instance.class5 (neighbor context with reference)
+    new InstanceElement('apex', customObjectType, { [INSTANCE_FULL_NAME_FIELD]: 'apex' }), // fake instance so we have a reference
     ...generateObjectAndInstance({
       type: 'FlowActionCall',
       objType: 'FlowActionCall',
@@ -217,7 +228,7 @@ describe('FieldReferences filter', () => {
       fieldName: 'actionName',
       fieldValue: 'class5',
       contextFieldName: 'actionType',
-      contextFieldValue: 'apex',
+      contextFieldValue: new ReferenceExpression(customObjectType.elemID.createNestedID('instance', 'apex')),
     }),
     // layoutItem436.field will remain the same (Account.fffff doesn't exist)
     ...generateObjectAndInstance({
@@ -312,7 +323,15 @@ describe('FieldReferences filter', () => {
       expect(inst.value[CPQ_CONSTRAINT_FIELD]?.elemID.getFullName()).toEqual('salesforce.SBQQ__Quote__c.field.SBQQ__Account__c')
     })
 
-    it('should resolve field with neighbor context using flow action call mapping', async () => {
+    it('should resolve field with neighbor context using app menu item mapping when context is a string', async () => {
+      const inst = await awu(elements).find(
+        async e => isInstanceElement(e) && await metadataType(e) === 'AppMenuItem'
+      ) as InstanceElement
+      expect(inst.value.name).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value.name?.elemID.getFullName()).toEqual('salesforce.ApexPage.instance.page1')
+    })
+
+    it('should resolve field with neighbor context using flow action call mapping when context is a reference', async () => {
       const inst = await awu(elements).find(
         async e => isInstanceElement(e) && await metadataType(e) === 'FlowActionCall'
       ) as InstanceElement

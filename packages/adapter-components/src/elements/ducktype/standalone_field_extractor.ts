@@ -14,23 +14,21 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, ObjectType, Element } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
-import { config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { values as lowerdashValues, collections } from '@salto-io/lowerdash'
+import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, ObjectType, Element, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { WORKATO } from '../constants'
-import { FilterCreator } from '../filter'
-import { API_DEFINITIONS_CONFIG } from '../config'
+import { StandaloneFieldConfigType, TransformationConfig, TransformationDefaultConfig } from '../../config'
+import { generateType, toNestedTypeName } from './type_elements'
+import { toInstance } from './instance_elements'
 
 const log = logger(module)
-const { isDefined } = lowerdashValues
 const { awu } = collections.asynciterable
-const { generateType, toInstance, toNestedTypeName } = elementUtils.ducktype
+const { makeArray } = collections.array
+const { isDefined } = lowerdashValues
 
 const convertStringToObject = (
   inst: InstanceElement,
-  standaloneFields: configUtils.StandaloneFieldConfigType[],
+  standaloneFields: StandaloneFieldConfigType[],
 ): void => {
   const fieldsByPath = _.keyBy(standaloneFields, ({ fieldName }) => fieldName)
   inst.value = _.mapValues(inst.value, (fieldValue, fieldName) => {
@@ -57,6 +55,7 @@ const convertStringToObject = (
 }
 
 const addFieldTypeAndInstances = async ({
+  adapterName,
   typeName,
   fieldName,
   type,
@@ -64,12 +63,13 @@ const addFieldTypeAndInstances = async ({
   transformationConfigByType,
   transformationDefaultConfig,
 }: {
+  adapterName: string
   typeName: string
   fieldName: string
   type: ObjectType
   instances: InstanceElement[]
-  transformationConfigByType: Record<string, configUtils.TransformationConfig>
-  transformationDefaultConfig: configUtils.TransformationDefaultConfig
+  transformationConfigByType: Record<string, TransformationConfig>
+  transformationDefaultConfig: TransformationDefaultConfig
 }): Promise<Element[]> => {
   if (type.fields[fieldName] === undefined) {
     log.info('type %s field %s does not exist (maybe it is not populated by any of the instances), not extracting field', type.elemID.name, fieldName)
@@ -83,9 +83,9 @@ const addFieldTypeAndInstances = async ({
 
   const elements: Element[] = []
   const fieldType = generateType({
-    adapterName: WORKATO,
+    adapterName,
     name: toNestedTypeName(typeName, fieldName),
-    entries: instancesWithValues.map(inst => inst.value[fieldName]),
+    entries: instancesWithValues.flatMap(inst => inst.value[fieldName]),
     hasDynamicFields: false,
     isSubType: true,
     transformationConfigByType,
@@ -95,42 +95,57 @@ const addFieldTypeAndInstances = async ({
   elements.push(fieldType.type, ...fieldType.nestedTypes)
 
   await awu(instancesWithValues).forEach(async inst => {
-    const fieldInstance = await toInstance({
-      entry: inst.value[fieldName],
-      type: fieldType.type,
-      defaultName: 'unnamed',
-      parent: inst,
-      nestName: true,
-      transformationConfigByType,
-      transformationDefaultConfig,
-    })
-    if (fieldInstance === undefined) {
-      // cannot happen
-      log.error('unexpected empty nested field %s for instance %s', fieldName, inst.elemID.getFullName())
-      return
+    const fieldInstances = await awu(makeArray(inst.value[fieldName])).map(async val => {
+      const fieldInstance = await toInstance({
+        entry: val,
+        type: fieldType.type,
+        defaultName: 'unnamed',
+        parent: inst,
+        nestName: true,
+        transformationConfigByType,
+        transformationDefaultConfig,
+      })
+      if (fieldInstance === undefined) {
+        // cannot happen
+        log.error('unexpected empty nested field %s for instance %s', fieldName, inst.elemID.getFullName())
+        return undefined
+      }
+      return fieldInstance
+    }).filter(isDefined).toArray()
+    const refs = fieldInstances.map(refInst => new ReferenceExpression(refInst.elemID))
+    if (Array.isArray(inst.value[fieldName])) {
+      inst.value[fieldName] = refs
+    } else {
+      // eslint-disable-next-line prefer-destructuring
+      inst.value[fieldName] = refs[0]
     }
-    inst.value[fieldName] = new ReferenceExpression(fieldInstance.elemID)
-    elements.push(fieldInstance)
+    elements.push(...fieldInstances)
   })
   return elements
 }
 
-const extractFields = async ({
+/**
+ * Extract fields marked as standalone into their own instances, and convert the original
+ * value into a reference to the new instances.
+ *
+ * Note: modifies the elements array in-place.
+ */
+export const extractStandaloneFields = async ({
   elements,
   transformationConfigByType,
   transformationDefaultConfig,
+  adapterName,
 }: {
   elements: Element[]
-  transformationConfigByType: Record<string, configUtils.TransformationConfig>
-  transformationDefaultConfig: configUtils.TransformationDefaultConfig
-}): Promise<Element[]> => {
+  transformationConfigByType: Record<string, TransformationConfig>
+  transformationDefaultConfig: TransformationDefaultConfig
+  adapterName: string
+}): Promise<void> => {
   const allTypes = _.keyBy(elements.filter(isObjectType), e => e.elemID.name)
   const allInstancesbyType = _.groupBy(
     elements.filter(isInstanceElement),
     e => e.refType.elemID.getFullName()
   )
-
-  const newElements: Element[] = []
 
   const typesWithStandaloneFields = _.pickBy(
     _.mapValues(
@@ -138,13 +153,12 @@ const extractFields = async ({
       typeDef => typeDef.standaloneFields,
     ),
     standaloneFields => !_.isEmpty(standaloneFields),
-  ) as Record<string, configUtils.StandaloneFieldConfigType[]>
+  ) as Record<string, StandaloneFieldConfigType[]>
 
   await awu(Object.entries(typesWithStandaloneFields))
     .forEach(async ([typeName, standaloneFields]) => {
       const type = allTypes[typeName]
       if (type === undefined) {
-        log.error('could not find type %s', typeName)
         return
       }
       const instances = allInstancesbyType[type.elemID.getFullName()] ?? []
@@ -155,7 +169,8 @@ const extractFields = async ({
       // now extract the field data to its own type and instances, and replace the original
       // value with a reference to the newly-generate instance
       await awu(standaloneFields).forEach(async fieldDef => {
-        newElements.push(...await addFieldTypeAndInstances({
+        elements.push(...await addFieldTypeAndInstances({
+          adapterName,
           typeName,
           fieldName: fieldDef.fieldName,
           type,
@@ -165,29 +180,4 @@ const extractFields = async ({
         }))
       })
     })
-  return newElements
 }
-
-/**
- * Extract fields to their own types based on the configuration.
- * For each of these fields, extract the values into separate instances and convert the values
- * into reference expressions.
- */
-const filter: FilterCreator = ({ config }) => ({
-  onFetch: async elements => {
-    const transformationConfigByType = _.pickBy(
-      _.mapValues(config[API_DEFINITIONS_CONFIG].types, def => def.transformation),
-      isDefined,
-    )
-    const transformationDefaultConfig = config[API_DEFINITIONS_CONFIG].typeDefaults.transformation
-
-    const allNewElements = await extractFields({
-      elements,
-      transformationConfigByType,
-      transformationDefaultConfig,
-    })
-    elements.push(...allNewElements)
-  },
-})
-
-export default filter

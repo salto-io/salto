@@ -13,8 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { addDefaults } from '../../src/filters/utils'
 import { SALESFORCE, LABEL, API_NAME, CUSTOM_FIELD, INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, CUSTOM_OBJECT, CUSTOM_SETTINGS_TYPE } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
@@ -35,10 +34,10 @@ describe('addDefaults', () => {
   })
   describe('when called with custom object instance', () => {
     let instance: InstanceElement
-    beforeEach(() => {
+    beforeEach(async () => {
       const customObj = createCustomObjectType('test', {})
       instance = new InstanceElement('test', customObj)
-      addDefaults(instance)
+      await addDefaults(instance)
     })
     it('should not add api name', () => {
       expect(instance.value).not.toHaveProperty(INSTANCE_FULL_NAME_FIELD)
@@ -50,7 +49,7 @@ describe('addDefaults', () => {
       const obj = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'test'),
         fields: {
-          a: { refType: createRefToElmWithValue(Types.primitiveDataTypes.Text) },
+          a: { refType: Types.primitiveDataTypes.Text },
         },
         annotations: {
           [API_NAME]: 'test',
@@ -73,7 +72,7 @@ describe('addDefaults', () => {
         object = new ObjectType({
           elemID: new ElemID(SALESFORCE, 'test'),
           fields: {
-            a: { refType: createRefToElmWithValue(Types.primitiveDataTypes.Text) },
+            a: { refType: Types.primitiveDataTypes.Text },
           },
         })
 
@@ -161,7 +160,7 @@ describe('addDefaults', () => {
         object = new ObjectType({
           elemID: new ElemID(SALESFORCE, 'test'),
           fields: {
-            a: { refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail) },
+            a: { refType: Types.primitiveDataTypes.MasterDetail },
           },
         })
         await addDefaults(object)

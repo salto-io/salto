@@ -17,7 +17,6 @@ import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, BuiltinTypes, DeployResult, ReferenceExpression,
   isRemovalChange, getChangeElement, isInstanceElement, ChangeGroup, isModificationChange,
   isAdditionChange, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, Change } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { BulkLoadOperation, BulkOptions, Record as SfRecord, Batch } from 'jsforce'
 import { EventEmitter } from 'events'
 import { Types } from '../src/transformers/transformer'
@@ -39,7 +38,7 @@ describe('Custom Object Instances CRUD', () => {
     elemID: mockElemID,
     fields: {
       Id: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: false,
@@ -47,7 +46,7 @@ describe('Custom Object Instances CRUD', () => {
         },
       },
       SaltoName: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
@@ -55,7 +54,7 @@ describe('Custom Object Instances CRUD', () => {
         },
       },
       NumField: {
-        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+        refType: BuiltinTypes.NUMBER,
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
@@ -63,7 +62,7 @@ describe('Custom Object Instances CRUD', () => {
         },
       },
       NotCreatable: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: false,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
@@ -71,7 +70,7 @@ describe('Custom Object Instances CRUD', () => {
         },
       },
       AnotherField: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
@@ -79,7 +78,7 @@ describe('Custom Object Instances CRUD', () => {
         },
       },
       Address: {
-        refType: createRefToElmWithValue(Types.compoundDataTypes.Address),
+        refType: Types.compoundDataTypes.Address,
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
@@ -87,7 +86,7 @@ describe('Custom Object Instances CRUD', () => {
         },
       },
       FieldWithNoValue: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
@@ -95,7 +94,7 @@ describe('Custom Object Instances CRUD', () => {
         },
       },
       Name: {
-        refType: createRefToElmWithValue(Types.compoundDataTypes.Name),
+        refType: Types.compoundDataTypes.Name,
         annotations: {
           [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
           [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
@@ -262,7 +261,7 @@ describe('Custom Object Instances CRUD', () => {
       })
       const basicFields = {
         Id: {
-          refType: createRefToElmWithValue(idType),
+          refType: idType,
           label: 'id',
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -271,7 +270,7 @@ describe('Custom Object Instances CRUD', () => {
           },
         },
         Name: {
-          refType: createRefToElmWithValue(stringType),
+          refType: stringType,
           label: 'Name',
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -283,7 +282,7 @@ describe('Custom Object Instances CRUD', () => {
         // eslint-disable-next-line camelcase
         TestField__c: {
           label: 'TestField',
-          refType: createRefToElmWithValue(stringType),
+          refType: stringType,
           annotations: {
             [constants.LABEL]: 'TestField',
             [constants.API_NAME]: 'Type.TestField__c',

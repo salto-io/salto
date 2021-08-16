@@ -25,7 +25,7 @@ import { Token } from 'moo'
 import { Consumer, ParseContext, ConsumerReturnType } from '../types'
 import { createReferenceExpresion, unescapeTemplateMarker, addValuePromiseWatcher,
   registerRange, positionAtStart, positionAtEnd } from '../helpers'
-import { TOKEN_TYPES, LexerToken, TRUE } from '../lexer'
+import { TOKEN_TYPES, LexerToken, TRUE, FALSE } from '../lexer'
 import { missingComma, unknownFunction, unterminatedString, invalidStringTemplate, missingValue, invalidAttrKey, missingEqualMark, duplicatedAttribute, missingNewline, invalidStringChar } from '../errors'
 
 import { IllegalReference } from '../../types'
@@ -317,7 +317,12 @@ const consumeParams: Consumer<Value[]> = context => {
   }
 }
 
-const consumeFunctionOrReference: Consumer<Value> = context => {
+const consumeFunctionOrReferenceOrBoolean: Consumer<Value> = context => {
+  const nextValue = context.lexer.peek()?.value
+  if (nextValue !== undefined && [TRUE, FALSE].includes(nextValue)) {
+    return consumeBoolean(context)
+  }
+
   const firstToken = context.lexer.next()
   const start = positionAtStart(firstToken)
   if (context.lexer.peek()?.type === TOKEN_TYPES.LEFT_PAREN) {
@@ -432,11 +437,9 @@ export const consumeValue = (
     case TOKEN_TYPES.MULTILINE_START:
       return consumeMultilineString(context)
     case TOKEN_TYPES.WORD:
-      return consumeFunctionOrReference(context)
+      return consumeFunctionOrReferenceOrBoolean(context)
     case TOKEN_TYPES.NUMBER:
       return consumeNumber(context)
-    case TOKEN_TYPES.BOOLEAN:
-      return consumeBoolean(context)
     case valueSeperator:
       return consumeMissingValue(context)
     default:

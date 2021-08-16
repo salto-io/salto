@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ObjectType, Element, BuiltinTypes, ReferenceExpression, ElemIdGetter, ADAPTER, OBJECT_SERVICE_ID, toServiceIdsString, OBJECT_NAME, Values } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, Element, BuiltinTypes, ElemIdGetter, ADAPTER, OBJECT_SERVICE_ID, toServiceIdsString, OBJECT_NAME, Values, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { elements as elementsComponents } from '@salto-io/adapter-components'
 import _ from 'lodash'
@@ -21,7 +21,7 @@ import { naclCase, pathNaclCase, transformValues } from '@salto-io/adapter-utils
 import { collections } from '@salto-io/lowerdash'
 import { NETSUITE, RECORDS_PATH } from '../constants'
 import { NetsuiteQuery } from '../query'
-import { TYPE_TO_IDENTIFIER } from './types'
+import { getTypeIdentifier, TYPE_TO_IDENTIFIER } from './types'
 import NetsuiteClient from '../client/client'
 import { castFieldValue } from './custom_fields'
 import { addIdentifierToValues, addIdentifierToType } from './multi_fields_identifiers'
@@ -32,10 +32,7 @@ const log = logger(module)
 export type DataTypeConfig = Record<string, string[]>
 
 const setTypeSourceAnnotation = (type: ObjectType): void => {
-  type.annotationRefTypes.source = new ReferenceExpression(
-    BuiltinTypes.HIDDEN_STRING.elemID,
-    BuiltinTypes.HIDDEN_STRING
-  )
+  type.annotationRefTypes.source = createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING)
   type.annotations.source = 'soap'
 }
 
@@ -59,16 +56,14 @@ export const getDataTypes = async (
   })
 
   types
-    .filter(type => TYPE_TO_IDENTIFIER[type.elemID.name] !== undefined)
+    .filter(type => getTypeIdentifier(type) !== undefined)
     .forEach(type => {
-      const field = type.fields[TYPE_TO_IDENTIFIER[type.elemID.name]]
+      const identifierField = getTypeIdentifier(type)
+      const field = type.fields[identifierField]
       if (field !== undefined) {
-        field.refType = new ReferenceExpression(
-          BuiltinTypes.SERVICE_ID.elemID,
-          BuiltinTypes.SERVICE_ID
-        )
+        field.refType = createRefToElmWithValue(BuiltinTypes.SERVICE_ID)
       } else {
-        log.warn(`Identifier field ${TYPE_TO_IDENTIFIER[type.elemID.name]} does not exists on type ${type.elemID.getFullName()}`)
+        log.warn(`Identifier field ${identifierField} does not exists on type ${type.elemID.getFullName()}`)
       }
     })
   return types
@@ -92,44 +87,51 @@ const getType = (
   return typesMap[typeNames[0]]
 }
 
-const createInstance = async (
-  values: Values,
+const createInstances = async (
+  valuesList: Values[],
   typesMap: Record<string, ObjectType>,
   elemIdGetter?: ElemIdGetter,
-): Promise<InstanceElement> => {
-  const type = getType(values, typesMap)
-  const fixedValues = await transformValues({
-    values,
-    type,
-    strict: false,
-    transformFunc: async ({ value, field }) => castFieldValue(value, field),
-  }) ?? values
+): Promise<InstanceElement[]> => {
+  const fixedValuesList = await awu(valuesList).map(async values => {
+    const type = getType(values, typesMap)
+    return {
+      values: await transformValues({
+        values,
+        type,
+        strict: false,
+        transformFunc: async ({ value, field }) => castFieldValue(value, field),
+      }) ?? values,
+      type,
+    }
+  }).toArray()
 
-  addIdentifierToValues(fixedValues, type)
+  addIdentifierToValues(fixedValuesList)
 
-  const serviceIdFieldName = TYPE_TO_IDENTIFIER[type.elemID.name]
-  const identifierValue = fixedValues[serviceIdFieldName]
-  const defaultName = naclCase(identifierValue)
+  return fixedValuesList.map(({ values, type }) => {
+    const serviceIdFieldName = getTypeIdentifier(type)
+    const identifierValue = values[serviceIdFieldName]
+    const defaultName = naclCase(identifierValue)
 
-  const name = elemIdGetter !== undefined ? elemIdGetter(
-    NETSUITE,
-    {
-      [ADAPTER]: NETSUITE,
-      [serviceIdFieldName]: identifierValue,
-      [OBJECT_SERVICE_ID]: toServiceIdsString({
+    const name = elemIdGetter !== undefined ? elemIdGetter(
+      NETSUITE,
+      {
         [ADAPTER]: NETSUITE,
-        [OBJECT_NAME]: type.elemID.getFullName(),
-      }),
-    },
-    defaultName
-  ).name : defaultName
+        [serviceIdFieldName]: identifierValue,
+        [OBJECT_SERVICE_ID]: toServiceIdsString({
+          [ADAPTER]: NETSUITE,
+          [OBJECT_NAME]: type.elemID.getFullName(),
+        }),
+      },
+      defaultName
+    ).name : defaultName
 
-  return new InstanceElement(
-    name,
-    type,
-    fixedValues,
-    [NETSUITE, RECORDS_PATH, type.elemID.name, pathNaclCase(name)],
-  )
+    return new InstanceElement(
+      name,
+      type,
+      values,
+      [NETSUITE, RECORDS_PATH, type.elemID.name, pathNaclCase(name)],
+    )
+  })
 }
 
 export const getDataElements = async (
@@ -152,8 +154,11 @@ export const getDataElements = async (
     return types
   }
 
-  const instances = await Promise.all((await client.getAllRecords(availableTypesToFetch))
-    .map(record => createInstance(record, typesMap, elemIdGetter)))
+  const instances = await createInstances(
+    await client.getAllRecords(availableTypesToFetch),
+    typesMap,
+    elemIdGetter,
+  )
 
   return [
     ...types,
@@ -161,7 +166,7 @@ export const getDataElements = async (
       const type = await instance.getType()
       return query.isObjectMatch({
         type: type.elemID.name,
-        instanceId: instance.value[TYPE_TO_IDENTIFIER[type.elemID.name]],
+        instanceId: instance.value[getTypeIdentifier(type)],
       })
     }).toArray(),
   ]

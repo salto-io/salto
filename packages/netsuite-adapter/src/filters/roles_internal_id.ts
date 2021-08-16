@@ -62,16 +62,17 @@ const getRoleAdditionInstances = (changes: Change[]): InstanceElement[] =>
  */
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async elements => {
-    if (!client.isSuiteAppConfigured()
-    || !elements.some(isRoleInstance)) {
-      return
-    }
     role.fields.internalId = new Field(
       role,
       'internalId',
       BuiltinTypes.STRING,
       { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
     )
+
+    if (!client.isSuiteAppConfigured()
+    || !elements.some(isRoleInstance)) {
+      return
+    }
 
     const scriptIdToInternalId = await getRolesScriptIdsToInternalIds(client)
 

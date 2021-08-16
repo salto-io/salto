@@ -2,6 +2,15 @@
 
 Zuora Billing read-only adapter for salto.io
 
+Salto helps you keep track of the main configuration entities in the Zuora Billing module, including the product catalog and rate plans, workflows, custom and standard objects, as well as settings related to accounting and billing.
+
+We do this using the [Zuora REST API](https://www.zuora.com/developer/api-reference/).
+
+**Known limitations:**
+* Multi-entity tenants are not yet supported. Please reach out if you would like use Salto on a tenant with multiple entities.
+* Some parts of the configuration may not yet be accessible via API on your tenant. If you are unable to see something that you think should be available, we are happy to help understand what needs to be enabled (with help from the Zuora support team).
+* Zuora has many different feature combinations, and we have not yet covered all of them. If you see something missing and would like to make it available, contact us and we will do our best to support it.
+
 ## Connecting to your Zuora account
 Salto authenticates with Zuora using [OAuth v2.0](https://www.zuora.com/developer/api-reference/#section/Authentication/OAuth-v2.0). If you do not have one already, follow the steps to:
 - Create [an API user role and an API user](https://knowledgecenter.zuora.com/Billing/Tenant_Management/A_Administrator_Settings/Manage_Users/Create_an_API_User)

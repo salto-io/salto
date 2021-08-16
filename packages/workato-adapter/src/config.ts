@@ -15,7 +15,6 @@
 */
 import _ from 'lodash'
 import { ElemID, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { WORKATO, CROSS_SERVICE_SUPPORTED_APPS } from './constants'
 
@@ -137,17 +136,17 @@ export const configType = new ObjectType({
   elemID: new ElemID(WORKATO),
   fields: {
     [CLIENT_CONFIG]: {
-      refType: createRefToElmWithValue(createClientConfigType(WORKATO)),
+      refType: createClientConfigType(WORKATO),
     },
     [FETCH_CONFIG]: {
-      refType: createRefToElmWithValue(createUserFetchConfigType(
+      refType: createUserFetchConfigType(
         WORKATO,
         {
           serviceConnectionNames: {
-            refType: createRefToElmWithValue(new MapType(new ListType(BuiltinTypes.STRING))),
+            refType: new MapType(new ListType(BuiltinTypes.STRING)),
           },
         },
-      )),
+      ),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [CORE_ANNOTATIONS.DEFAULT]: {
@@ -158,7 +157,7 @@ export const configType = new ObjectType({
       },
     },
     [API_DEFINITIONS_CONFIG]: {
-      refType: createRefToElmWithValue(createDucktypeAdapterApiConfigType({ adapter: WORKATO })),
+      refType: createDucktypeAdapterApiConfigType({ adapter: WORKATO }),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: {
           typeDefaults: {

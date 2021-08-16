@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange, isAdditionChange, isRemovalChange, isModificationChange } from '@salto-io/adapter-api'
 import { merger, pathIndex, remoteMap } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
@@ -29,13 +28,13 @@ describe('restore', () => {
     elemID: new ElemID('salto', 'nested'),
     fields: {
       str: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       num: {
-        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+        refType: BuiltinTypes.NUMBER,
       },
       list: {
-        refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)),
+        refType: new ListType(BuiltinTypes.NUMBER),
       },
     },
   })
@@ -44,10 +43,10 @@ describe('restore', () => {
     elemID: new ElemID('salto', 'singlePathObj'),
     fields: {
       simple: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       nested: {
-        refType: createRefToElmWithValue(nestedType),
+        refType: nestedType,
       },
     },
     annotationRefsOrTypes: {
@@ -86,10 +85,10 @@ describe('restore', () => {
     elemID: new ElemID('salto', 'multiPathObj'),
     fields: {
       simple: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
       nested: {
-        refType: createRefToElmWithValue(nestedType),
+        refType: nestedType,
       },
     },
     path: ['salto', 'obj', 'multi', 'fields'],

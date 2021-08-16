@@ -50,8 +50,8 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
   }
 
   const updateInternalIdsIndex = async (element: InstanceElement): Promise<void> => {
-    const { internalId } = element.value
-    if (internalId === undefined) {
+    const { internalId, isSubInstance } = element.value
+    if (internalId === undefined || isSubInstance) {
       return
     }
 
@@ -78,7 +78,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     .filter(isInstanceElement)
     .forEach(async element => {
       await updateServiceIdIndex(element)
-      updateInternalIdsIndex(element)
+      await updateInternalIdsIndex(element)
       updateCustomFieldsIndex(element)
     })
   log.debug('finished creating elements source index')

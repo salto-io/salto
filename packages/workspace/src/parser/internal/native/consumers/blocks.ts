@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, Values, ReferenceMap, ReferenceExpression } from '@salto-io/adapter-api'
+import { ElemID, Values, ReferenceMap, TypeReference } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { TOKEN_TYPES } from '../lexer'
 import { ParseContext, ConsumerReturnType } from '../types'
@@ -60,13 +60,14 @@ export const recoverInvalidItemDefinition = (context: ParseContext): void => {
   // No need to consume if this is a CCURLY as it will be handled by the caller
 }
 
-export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID): ConsumerReturnType<{
+export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID,
+  isAnnotationBlock?: boolean): ConsumerReturnType<{
     attrs: Values
-    fields: Record<string, {refType: ReferenceExpression; annotations? : Values}>
+    fields: Record<string, {refType: TypeReference; annotations? : Values}>
     annotationRefTypes: ReferenceMap
   }> => {
   const attrs: Values = {}
-  const fields: Record<string, {refType: ReferenceExpression; annotations? : Values} > = {}
+  const fields: Record<string, {refType: TypeReference; annotations? : Values} > = {}
   let annotationRefTypes: ReferenceMap | undefined
   const attrIDPrefix = idPrefix.idType === 'type' ? idPrefix.createNestedID('attr') : idPrefix
   const fieldIDPrefix = idPrefix.idType === 'type' ? idPrefix.createNestedID('field') : idPrefix
@@ -80,6 +81,13 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID): Consu
       const attrID = attrIDPrefix.createNestedID(key)
       context.lexer.next() // Process the '=' token (which was checked in the if condition)
       const consumedValue = consumeValue(context, attrID)
+      if (isAnnotationBlock && !_.isEmpty(consumedValue.value)) {
+        context.errors.push(invalidAttrDefinitionInAnnotationBlock({
+          start: defTokens.range.start,
+          end: consumedValue.range.end,
+          filename: context.filename,
+        }))
+      }
       if (attrs[key] === undefined) {
         attrs[key] = consumedValue.value
       } else {
@@ -93,13 +101,7 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID): Consu
       registerRange(context, attrID, { start: defTokens.range.start, end: consumedValue.range.end })
     } else if (isAnnotationBlockDef(idPrefix, defTokens.value, context)) {
       const annoBlockID = idPrefix.createNestedID('annotation')
-      const consumedBlock = consumeBlockBody(context, annoBlockID)
-      if (!_.isEmpty(consumedBlock.value.attrs)) {
-        context.errors.push(invalidAttrDefinitionInAnnotationBlock({
-          ...consumedBlock.range,
-          filename: context.filename,
-        }))
-      }
+      const consumedBlock = consumeBlockBody(context, annoBlockID, true)
       if (annotationRefTypes === undefined) {
         annotationRefTypes = _.mapValues(consumedBlock.value.fields, fieldData => fieldData.refType)
       } else {
@@ -115,7 +117,7 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID): Consu
     } else if (isFieldBlock(defTokens.value, context)) {
       const [fieldType, fieldName] = defTokens.value
       const fieldID = fieldIDPrefix.createNestedID(fieldName)
-      const consumedBlock = consumeBlockBody(context, fieldID)
+      const consumedBlock = consumeBlockBody(context, fieldID, isAnnotationBlock)
       if (!_.isEmpty(consumedBlock.value.fields)) {
         context.errors.push(invalidNestedBlock({
           ...consumedBlock.range,

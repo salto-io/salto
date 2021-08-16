@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, Field, BuiltinTypes, ListType, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { AdditionDiff, ModificationDiff, RemovalDiff } from '@salto-io/dag/dist'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
@@ -25,8 +24,8 @@ describe('projections', () => {
   const nestedObj = new ObjectType({
     elemID: nestedElemID,
     fields: {
-      simple1: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      simple2: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      simple1: { refType: BuiltinTypes.STRING },
+      simple2: { refType: BuiltinTypes.STRING },
     },
   })
   const annotationsObject = {
@@ -76,15 +75,15 @@ describe('projections', () => {
     },
     fields: _.mapValues(annotationsObject, (type, name) => ({
       refType: name.includes('list')
-        ? createRefToElmWithValue(new ListType(type))
-        : createRefToElmWithValue(type),
+        ? new ListType(type)
+        : type,
     })),
   })
   const fieldParent = new ObjectType({
     elemID: new ElemID('salto', 'parent'),
     fields: {
       field: {
-        refType: createRefToElmWithValue(objectType),
+        refType: objectType,
         annotations: {
           simple1: 'FIELD_1',
           list1: ['FIELD_LIST_1'],
@@ -146,15 +145,15 @@ describe('projections', () => {
     },
     fields: _.mapValues(annotationsObject, (type, name) => ({
       refType: name.includes('list')
-        ? createRefToElmWithValue(new ListType(type))
-        : createRefToElmWithValue(type),
+        ? new ListType(type)
+        : type,
     })),
   })
   const partialFieldObject = new ObjectType({
     elemID: new ElemID('salto', 'parent'),
     fields: {
       field: {
-        refType: createRefToElmWithValue(objectType),
+        refType: objectType,
         annotations: {
           simple1: 'FIELD_1',
           list1: ['FIELD_LIST_1'],

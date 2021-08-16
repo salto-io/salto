@@ -14,17 +14,20 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Field, Value } from '@salto-io/adapter-api'
+import { Field, Value, Element } from '@salto-io/adapter-api'
+import { types } from '@salto-io/lowerdash'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 
+export type ApiNameFunc = (elem: Element) => string
 type LookupFunc = (val: Value, context?: string) => string
 
 export type ReferenceSerializationStrategy = {
   serialize: GetLookupNameFunc
   lookup: LookupFunc
+  lookupIndexName?: string
 }
 
-type ReferenceSerializationStrategyName = 'fullValue' | 'id'
+type ReferenceSerializationStrategyName = 'fullValue' | 'id' | 'name'
 const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
@@ -35,34 +38,41 @@ const ReferenceSerializationStrategyLookup: Record<
   id: {
     serialize: ({ ref }) => ref.value.value.id,
     lookup: val => val,
+    lookupIndexName: 'id',
+  },
+  name: {
+    serialize: ({ ref }) => ref.value.value.name,
+    lookup: val => val,
+    lookupIndexName: 'name',
   },
 }
 
-type ReferenceTargetDefinition = {
-  name?: string
+type MetadataTypeArgs<T extends string> = {
   type: string
-  parent?: string
+  typeContext: T
 }
-export type ExtendedReferenceTargetDefinition = ReferenceTargetDefinition & { lookup: LookupFunc }
+type MetadataParentArgs<T extends string> = {
+  parent?: string
+  parentContext?: T
+}
+
+export type ReferenceTargetDefinition<T extends string> = (
+  { name?: string }
+  & types.OneOf<MetadataTypeArgs<T>>
+  & types.OneOf<MetadataParentArgs<T>>
+)
+export type ExtendedReferenceTargetDefinition<
+  T extends string
+> = ReferenceTargetDefinition<T> & { lookup: LookupFunc }
 
 type SourceDef = {
   field: string | RegExp
-  parentTypes: string[]
+  parentTypes?: string[]
 }
 
 /**
  * A rule defining how to convert values to reference expressions (on fetch),
  * and reference expressions back to values (on deploy).
- */
-export type FieldReferenceDefinition = {
-  src: SourceDef
-  serializationStrategy?: ReferenceSerializationStrategyName
-  // If target is missing, the definition is used for resolving
-  target?: ReferenceTargetDefinition
-}
-
-/**
- * The rules for finding and resolving values into (and back from) reference expressions.
  * Overlaps between rules are allowed, and the first successful conversion wins.
  * Current order (defined by generateReferenceResolverFinder):
  *  1. Exact field names take precedence over regexp
@@ -72,20 +82,29 @@ export type FieldReferenceDefinition = {
  * 1. An element matching the rule is found.
  * 2. Resolving the resulting reference expression back returns the original value.
  */
-export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
-  {
-    src: { field: 'product', parentTypes: ['plan', 'price'] },
-    serializationStrategy: 'id',
-    target: { type: 'product' },
-  },
-]
+export type FieldReferenceDefinition<
+  T extends string | never
+> = {
+  src: SourceDef
+  serializationStrategy?: ReferenceSerializationStrategyName
+  // If target is missing, the definition is used for resolving
+  target?: ReferenceTargetDefinition<T>
+}
 
-export class FieldReferenceResolver {
+// We can extract the api name from the elem id as long as we don't support renaming
+const elemLookupName: ApiNameFunc = elem => elem.elemID.name
+
+type FieldReferenceResolverDetails<T extends string> = {
+  serializationStrategy: ReferenceSerializationStrategy
+  target?: ExtendedReferenceTargetDefinition<T>
+}
+
+export class FieldReferenceResolver<T extends string> {
   src: SourceDef
   serializationStrategy: ReferenceSerializationStrategy
-  target?: ExtendedReferenceTargetDefinition
+  target?: ExtendedReferenceTargetDefinition<T>
 
-  constructor(def: FieldReferenceDefinition) {
+  constructor(def: FieldReferenceDefinition<T>) {
     this.src = def.src
     this.serializationStrategy = ReferenceSerializationStrategyLookup[
       def.serializationStrategy ?? 'fullValue'
@@ -95,28 +114,33 @@ export class FieldReferenceResolver {
       : undefined
   }
 
-  static create(def: FieldReferenceDefinition): FieldReferenceResolver {
-    return new FieldReferenceResolver(def)
+  static create<S extends string>(def: FieldReferenceDefinition<S>): FieldReferenceResolver<S> {
+    return new FieldReferenceResolver<S>(def)
   }
 
   match(field: Field): boolean {
     return (
       field.name === this.src.field
-      && this.src.parentTypes.includes(field.parent.elemID.name)
+      && (
+        this.src.parentTypes === undefined
+        || this.src.parentTypes.includes(elemLookupName(field.parent))
+      )
     )
   }
 }
 
-export type ReferenceResolverFinder = (field: Field) => FieldReferenceResolver[]
+export type ReferenceResolverFinder<T extends string> = (
+  field: Field
+) => Promise<FieldReferenceResolverDetails<T>[]>
 
 /**
  * Generates a function that filters the relevant resolvers for a given field.
  */
-export const generateReferenceResolverFinder = (
-  defs = fieldNameToTypeMappingDefs,
-): ReferenceResolverFinder => {
+export const generateReferenceResolverFinder = <
+  T extends string
+>(defs: FieldReferenceDefinition<T>[]): ReferenceResolverFinder<T> => {
   const referenceDefinitions = defs.map(
-    def => FieldReferenceResolver.create(def)
+    def => FieldReferenceResolver.create<T>(def)
   )
 
   const matchersByFieldName = _(referenceDefinitions)
@@ -124,7 +148,7 @@ export const generateReferenceResolverFinder = (
     .groupBy(def => def.src.field)
     .value()
 
-  return (field => (
+  return (async field => (
     (matchersByFieldName[field.name] ?? []).filter(resolver => resolver.match(field))
   ))
 }

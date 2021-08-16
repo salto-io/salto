@@ -49,6 +49,7 @@ import rolesInternalId from './filters/roles_internal_id'
 import dataInstancesAttributes from './filters/data_instances_attributes'
 import dataInstancesNullFields from './filters/data_instances_null_fields'
 import dataInstancesDiff from './filters/data_instances_diff'
+import dataInstancesIdentifiers from './filters/data_instances_identifiers'
 import addInternalId from './filters/add_internal_ids'
 import { Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_USE_CHANGES_DETECTION } from './config'
@@ -61,7 +62,7 @@ import { createElementsSourceIndex } from './elements_source_index/elements_sour
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import getChangeValidator from './change_validator'
 import { getChangeGroupIdsFunc } from './group_changes'
-import { getDataTypes } from './data_elements/data_elements'
+import { getDataElements } from './data_elements/data_elements'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -107,6 +108,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     client,
     elementsSource,
     filtersCreators = [
+      dataInstancesIdentifiers,
       dataInstancesDiff,
       // addParentFolder must run before replaceInstanceReferencesFilter
       addParentFolder,
@@ -197,10 +199,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const isPartial = this.fetchTarget !== undefined
 
-    // TODO: Replace when data instances are ready
-    // const dataElementsPromise = await getDataElements(this.client, fetchQuery,
-    // this.getElemIdFunc)
-    const dataElementsPromise = await getDataTypes(this.client)
+    const dataElementsPromise = await getDataElements(this.client, fetchQuery,
+      this.getElemIdFunc)
 
     const getCustomObjectsResult = this.client.getCustomObjects(
       Object.keys(customTypes),

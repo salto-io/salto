@@ -16,7 +16,6 @@
 
 import { Workspace } from '@salto-io/workspace'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { EditorWorkspace } from '../src/workspace'
 import { PositionContext } from '../src/context'
 import { getServiceUrl } from '../src/service_url'
@@ -99,7 +98,7 @@ describe('getServiceUrl', () => {
       elemID,
       fields: {
         fieldName: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
       },
     })
@@ -134,7 +133,7 @@ describe('getServiceUrl', () => {
       elemID,
       fields: {
         fieldName: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         },
       },
     })

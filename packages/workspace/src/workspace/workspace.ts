@@ -25,11 +25,12 @@ import { ValidationError, validateElements, isUnresolvedRefError } from '../vali
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
-import { multiEnvSource, getSourceNameForFilename, MultiEnvSource, EnvsChanges } from './nacl_files/multi_env/multi_env_source'
+import { multiEnvSource, getSourceNameForFilename, MultiEnvSource, EnvsChanges, FromSource } from './nacl_files/multi_env/multi_env_source'
 import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
 import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
 import { ElementSelector } from './element_selector'
-import { Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError, DeleteCurrentEnvError } from './errors'
+import { Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError,
+  DeleteCurrentEnvError, InvalidEnvNameError } from './errors'
 import { EnvConfig } from './config/workspace_config_types'
 import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
@@ -43,12 +44,16 @@ const log = logger(module)
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
+const { partition } = promises.array
 
 export const ADAPTERS_CONFIGS_PATH = 'adapters'
 export const COMMON_ENV_PREFIX = ''
 const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
 const MULTI_ENV_SOURCE_PREFIX = 'multi_env_element_source'
 const STATE_SOURCE_PREFIX = 'state_element_source'
+
+export const isValidEnvName = (envName: string): boolean =>
+  /^[a-z0-9-_.!\s/]+$/i.test(envName)
 
 export type SourceFragment = {
   sourceRange: SourceRange
@@ -83,6 +88,11 @@ export type UnresolvedElemIDs = {
   missing: ElemID[]
 }
 
+export type UpdateNaclFilesResult = {
+  naclFilesChangesCount: number
+  stateOnlyChangesCount: number
+}
+
 export type Workspace = {
   uid: string
   name: string
@@ -111,7 +121,7 @@ export type Workspace = {
     changes: DetailedChange[],
     mode?: RoutingMode,
     stateOnly? : boolean
-  ) => Promise<number>
+  ) => Promise<UpdateNaclFilesResult>
   listNaclFiles: () => Promise<string[]>
   getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
@@ -123,7 +133,7 @@ export type Workspace = {
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementIdsBySelectors: (
     selectors: ElementSelector[],
-    commonOnly?: boolean,
+    from?: FromSource,
     compact?: boolean,
   ) => Promise<AsyncIterable<ElemID>>
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
@@ -133,7 +143,7 @@ export type Workspace = {
 
   addService: (service: string) => Promise<void>
   addEnvironment: (env: string) => Promise<void>
-  deleteEnvironment: (env: string) => Promise<void>
+  deleteEnvironment: (env: string, keepNacls?: boolean) => Promise<void>
   renameEnvironment: (envName: string, newEnvName: string, newSourceName? : string) => Promise<void>
   setCurrentEnv: (env: string, persist?: boolean) => Promise<void>
   updateServiceCredentials: (service: string, creds: Readonly<InstanceElement>) => Promise<void>
@@ -362,7 +372,6 @@ export const loadWorkspace = async (
         // hidden changes won't be empty)
         const isFirstInitFromNacls = _.isEmpty(partialStateChanges.changes)
           && (await stateToBuild.states[envName].merged.isEmpty())
-
         const initHiddenElementsChanges = isFirstInitFromNacls
           ? await awu(await state(envName).getAll())
             .filter(element => isHidden(element, state(envName)))
@@ -372,8 +381,25 @@ export const loadWorkspace = async (
         const stateRemovedElementChanges = (workspaceChanges[envName] ?? createEmptyChangeSet())
           .changes.filter(change => isRemovalChange(change)
             && getChangeElement(change).elemID.isTopLevel())
+        // To preserve the old ws functionality - hidden values should be added to the workspace
+        // cache only if their top level element is in the nacls, or they are marked as hidden
+        // (SAAS-2639)
+        const [stateChangesForExistingNaclElements, dropedStateOnlyChange] = await partition(
+          partialStateChanges.changes,
+          async change => {
+            const changeElement = getChangeElement(change)
+            const changeID = changeElement.elemID
+            return isRemovalChange(change)
+            || await source.get(changeID)
+            || isHidden(changeElement, state(envName))
+          }
+        )
+
+        log.debug('droped hidden changes due to missing nacl element for ids:',
+          dropedStateOnlyChange.map(getChangeElement).map(elem => elem.elemID.getFullName()))
+
         return {
-          changes: partialStateChanges.changes
+          changes: stateChangesForExistingNaclElements
             .concat(initHiddenElementsChanges)
             .concat(stateRemovedElementChanges),
           cacheValid,
@@ -500,7 +526,7 @@ export const loadWorkspace = async (
         state(),
         before
       )
-      return after !== undefined ? [toChange({ before, after })] : []
+      return [toChange({ before, after })]
     }).toArray()
   }
   const updateNaclFiles = async ({
@@ -513,11 +539,11 @@ export const loadWorkspace = async (
       mode?: RoutingMode
       validate?: boolean
       stateOnly?: boolean
-    }) : Promise<number> => {
+    }) : Promise<UpdateNaclFilesResult> => {
     const { visible: visibleChanges, hidden: hiddenChanges } = await handleHiddenChanges(
       changes,
       state(),
-      (await getLoadedNaclFilesSource()).getAll,
+      await getLoadedNaclFilesSource(),
     )
     const workspaceChanges = await ((await getLoadedNaclFilesSource())
       .updateNaclFiles(
@@ -538,8 +564,12 @@ export const loadWorkspace = async (
         postChangeHash,
       } },
       validate })
-    return (Object.values(workspaceChanges).map(changeSet => changeSet.changes)
-      .flat().length + stateOnlyChanges.length)
+    return {
+      naclFilesChangesCount: Object.values(workspaceChanges)
+        .map(changeSet => changeSet.changes)
+        .flat().length,
+      stateOnlyChangesCount: stateOnlyChanges.length,
+    }
   }
   const setNaclFiles = async (naclFiles: NaclFile[], validate = true): Promise<EnvsChanges> => {
     const elementChanges = await (await getLoadedNaclFilesSource()).setNaclFiles(...naclFiles)
@@ -687,9 +717,9 @@ export const loadWorkspace = async (
       (await getLoadedNaclFilesSource()).listNaclFiles()
     ),
     getElementIdsBySelectors: async (
-      selectors: ElementSelector[], commonOnly = false, compacted = false,
+      selectors: ElementSelector[], from, compacted = false,
     ) => (
-      (await getLoadedNaclFilesSource()).getElementIdsBySelectors(selectors, commonOnly, compacted)
+      (await getLoadedNaclFilesSource()).getElementIdsBySelectors(selectors, from, compacted)
     ),
     getElementReferencedFiles: async id => (
       (await getLoadedNaclFilesSource()).getElementReferencedFiles(id)
@@ -777,12 +807,15 @@ export const loadWorkspace = async (
       if (workspaceConfig.envs.map(e => e.name).includes(env)) {
         throw new EnvDuplicationError(env)
       }
+      if (!isValidEnvName(env)) {
+        throw new InvalidEnvNameError(env)
+      }
       // Need to make sure everything is loaded before we add the new env.
       await getWorkspaceState()
       workspaceConfig.envs = [...workspaceConfig.envs, { name: env }]
       await config.setWorkspaceConfig(workspaceConfig)
     },
-    deleteEnvironment: async (env: string): Promise<void> => {
+    deleteEnvironment: async (env: string, keepNacls = false): Promise<void> => {
       if (!(workspaceConfig.envs.map(e => e.name).includes(env))) {
         throw new UnknownEnvError(env)
       }
@@ -795,12 +828,14 @@ export const loadWorkspace = async (
       // We assume here that all the credentials files sit under the credentials' env directory
       await credentials.delete(env)
 
-      const environmentSource = enviormentsSources.sources[env]
-      // ensure that the env is loaded
-      await environmentSource.naclFiles.load({})
-      if (environmentSource) {
-        await environmentSource.naclFiles.clear()
-        await environmentSource.state?.clear()
+      if (!keepNacls) {
+        const environmentSource = enviormentsSources.sources[env]
+        // ensure that the env is loaded
+        await environmentSource.naclFiles.load({})
+        if (environmentSource) {
+          await environmentSource.naclFiles.clear()
+          await environmentSource.state?.clear()
+        }
       }
       delete enviormentsSources.sources[env]
       naclFilesSource = multiEnvSource(

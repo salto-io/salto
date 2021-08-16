@@ -21,7 +21,7 @@ import {
   getChangeElement,
   isServiceId,
 } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
@@ -31,7 +31,7 @@ import {
   API_NAME, FORMULA, LOOKUP_FILTER_FIELDS, CUSTOM_SETTINGS_TYPE,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, VALUE_SET_FIELDS,
   CUSTOM_VALUE, VALUE_SET_DEFINITION_FIELDS,
-  OBJECTS_PATH, INSTALLED_PACKAGES_PATH, TYPES_PATH, RECORDS_PATH, WORKFLOW_METADATA_TYPE,
+  OBJECTS_PATH, INSTALLED_PACKAGES_PATH, TYPES_PATH, RECORDS_PATH,
   ASSIGNMENT_RULES_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE, QUICK_ACTION_METADATA_TYPE,
   CUSTOM_TAB_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE,
   SHARING_RULES_TYPE,
@@ -46,7 +46,6 @@ import filterCreator, {
 import { FilterWith } from '../../src/filter'
 import { isCustom, Types, createInstanceElement, MetadataTypeAnnotations, metadataType } from '../../src/transformers/transformer'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../../src/metadata_deploy'
-import { WORKFLOW_DIR_NAME } from '../../src/filters/workflow'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 const { awu } = collections.asynciterable
@@ -66,30 +65,30 @@ describe('Custom Objects filter', () => {
       if (name === NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS) {
         const listViewFilterElemId = new ElemID(SALESFORCE, 'ListViewFilter')
         return {
-          [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          columns: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          [INSTANCE_FULL_NAME_FIELD]: { refType: BuiltinTypes.STRING },
+          columns: { refType: BuiltinTypes.STRING },
           filters: {
-            refType: createRefToElmWithValue(new ObjectType({
+            refType: new ObjectType({
               elemID: listViewFilterElemId,
               fields: {
-                field: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-                value: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+                field: { refType: BuiltinTypes.STRING },
+                value: { refType: BuiltinTypes.STRING },
               },
-            })),
+            }),
           },
         }
       }
       if (name === NESTED_INSTANCE_VALUE_NAME.FIELD_SETS) {
         return {
-          availableFields: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          displayedFields: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          availableFields: { refType: BuiltinTypes.STRING },
+          displayedFields: { refType: BuiltinTypes.STRING },
+          [INSTANCE_FULL_NAME_FIELD]: { refType: BuiltinTypes.STRING },
         }
       }
       if (name === NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS) {
         return {
-          fields: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          fields: { refType: BuiltinTypes.STRING },
+          [INSTANCE_FULL_NAME_FIELD]: { refType: BuiltinTypes.STRING },
         }
       }
       return {}
@@ -100,11 +99,11 @@ describe('Custom Objects filter', () => {
         .map(([annotationName, typeName]) => ([
           annotationName,
           {
-            refType: createRefToElmWithValue(new ObjectType({
+            refType: new ObjectType({
               elemID: new ElemID(SALESFORCE, typeName),
               fields: generateInnerMetadataTypeFields(annotationName),
               annotations: { metadataType: typeName } as MetadataTypeAnnotations,
-            })),
+            }),
           },
         ]))
     )
@@ -113,10 +112,10 @@ describe('Custom Objects filter', () => {
       elemID: CUSTOM_OBJECT_TYPE_ID,
       fields: {
         ...innerMetadataTypesFromInstance,
-        [INSTANCE_FULL_NAME_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        pluralLabel: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        enableFeeds: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-        [CUSTOM_SETTINGS_TYPE]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+        [INSTANCE_FULL_NAME_FIELD]: { refType: BuiltinTypes.STRING },
+        pluralLabel: { refType: BuiltinTypes.STRING },
+        enableFeeds: { refType: BuiltinTypes.BOOLEAN },
+        [CUSTOM_SETTINGS_TYPE]: { refType: BuiltinTypes.STRING },
       },
       annotations: {
         [METADATA_TYPE]: CUSTOM_OBJECT,
@@ -1369,29 +1368,6 @@ describe('Custom Objects filter', () => {
         path: [SALESFORCE, OBJECTS_PATH, 'Lead', 'BLA'],
       })
 
-      describe('Workflow', () => {
-        const workflowType = new ObjectType({
-          elemID: new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE),
-          annotations: { [METADATA_TYPE]: WORKFLOW_METADATA_TYPE },
-        })
-        const workflowInstance = new InstanceElement('Lead',
-          workflowType, { [INSTANCE_FULL_NAME_FIELD]: 'Lead' })
-
-        beforeEach(async () => {
-          await filter.onFetch([workflowInstance, workflowType, leadType])
-        })
-
-        it('should set workflow instance path correctly', async () => {
-          expect(workflowInstance.path)
-            .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', WORKFLOW_DIR_NAME, WORKFLOW_METADATA_TYPE])
-        })
-
-        it('should add PARENT annotation to workflow instance', async () => {
-          expect(workflowInstance.annotations[CORE_ANNOTATIONS.PARENT])
-            .toContainEqual(new ReferenceExpression(leadType.elemID))
-        })
-      })
-
       describe('AssignmentRules', () => {
         const assignmentRulesType = new ObjectType({
           elemID: new ElemID(SALESFORCE, ASSIGNMENT_RULES_METADATA_TYPE),
@@ -1570,7 +1546,7 @@ describe('Custom Objects filter', () => {
       })
 
       describe('in partial fetch', () => {
-        beforeEach(() => {
+        beforeEach(async () => {
           const elementsSource = buildElementsSourceFromElements([leadType])
           filter = filterCreator({
             client,
@@ -1580,7 +1556,7 @@ describe('Custom Objects filter', () => {
               elementsSource,
             },
           }) as typeof filter
-          filter.onFetch([sharingRulesType, sharingRulesInstance])
+          await filter.onFetch([sharingRulesType, sharingRulesInstance])
         })
         it('should set instance path', () => {
           expect(sharingRulesInstance.path).toEqual(
@@ -1606,15 +1582,15 @@ describe('Custom Objects filter', () => {
         elemID: new ElemID(SALESFORCE, 'Test'),
         fields: {
           MyField: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+            refType: Types.primitiveDataTypes.Text,
             annotations: { [API_NAME]: 'Test__c.MyField__c' },
           },
           Master: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.MasterDetail),
+            refType: Types.primitiveDataTypes.MasterDetail,
             annotations: { [API_NAME]: 'Test__c.Master__c' },
           },
           SysField: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.AutoNumber),
+            refType: Types.primitiveDataTypes.AutoNumber,
             annotations: { [API_NAME]: 'Test__c.SysField' },
           },
         },

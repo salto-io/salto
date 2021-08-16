@@ -15,7 +15,6 @@
 */
 import { ElemID, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { getSubtypes } from '../../src/elements/subtypes'
 
 describe('getSubtypes', () => {
@@ -25,22 +24,22 @@ describe('getSubtypes', () => {
     const typeC = new ObjectType({
       elemID: new ElemID('adapter', 'C'),
       fields: {
-        b: { refType: createRefToElmWithValue(typeB) },
-        a: { refType: createRefToElmWithValue(new MapType(typeA)) },
+        b: { refType: typeB },
+        a: { refType: new MapType(typeA) },
       },
     })
     const typeD = new ObjectType({
       elemID: new ElemID('adapter', 'D'),
       fields: {
-        c: { refType: createRefToElmWithValue(new ListType(typeC)) },
+        c: { refType: new ListType(typeC) },
       },
     })
     const typeE = new ObjectType({ elemID: new ElemID('adapter', 'E') })
     const typeF = new ObjectType({
       elemID: new ElemID('adapter', 'F'),
       fields: {
-        d: { refType: createRefToElmWithValue(typeD) },
-        e: { refType: createRefToElmWithValue(typeE) },
+        d: { refType: typeD },
+        e: { refType: typeE },
       },
     })
 

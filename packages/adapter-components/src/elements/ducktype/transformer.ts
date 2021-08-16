@@ -26,6 +26,7 @@ import { FindNestedFieldFunc } from '../field_finder'
 import { TypeDuckTypeDefaultsConfig, TypeDuckTypeConfig } from '../../config/ducktype'
 import { ComputeGetArgsFunc } from '../request_parameters'
 import { getElementsWithContext } from '../element_getter'
+import { extractStandaloneFields } from './standalone_field_extractor'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
@@ -121,7 +122,6 @@ export const getTypeAndInstances = async ({
       ).filter(isDefined).toArray()
     }
 
-    log.info(`storing full entry for ${type.elemID.name}`)
     return [await toInstance({
       entry,
       type,
@@ -129,9 +129,18 @@ export const getTypeAndInstances = async ({
       transformationDefaultConfig,
       defaultName: `unnamed_${index}`, // TODO improve
       hasDynamicFields,
-    })]
+    })].filter(isDefined)
   }).toArray()
-  return [type, ...nestedTypes, ...instances].filter(isDefined)
+
+  const elements = [type, ...nestedTypes, ...instances]
+
+  await extractStandaloneFields({
+    adapterName,
+    elements,
+    transformationConfigByType,
+    transformationDefaultConfig,
+  })
+  return elements
 }
 
 /**

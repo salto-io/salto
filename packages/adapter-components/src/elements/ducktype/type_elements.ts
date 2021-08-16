@@ -18,8 +18,8 @@ import {
   ObjectType, ElemID, BuiltinTypes, Values, MapType, PrimitiveType, ListType, isObjectType,
   FieldDefinition,
 } from '@salto-io/adapter-api'
-import { pathNaclCase, naclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
-import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault } from '../../config'
+import { pathNaclCase, naclCase } from '@salto-io/adapter-utils'
+import { DuckTypeTransformationConfig, DuckTypeTransformationDefaultConfig, getConfigWithDefault } from '../../config'
 import { TYPES_PATH, SUBTYPES_PATH } from '../constants'
 import { hideFields } from '../type_elements'
 
@@ -47,13 +47,15 @@ const generateNestedType = ({
   transformationConfigByType,
   transformationDefaultConfig,
   hasDynamicFields,
+  typeNameOverrideConfig,
 }: {
   adapterName: string
   typeName: string
   parentName: string
   entries: Values[]
-  transformationConfigByType: Record<string, TransformationConfig>
-  transformationDefaultConfig: TransformationDefaultConfig
+  transformationConfigByType: Record<string, DuckTypeTransformationConfig>
+  transformationDefaultConfig: DuckTypeTransformationDefaultConfig
+  typeNameOverrideConfig: Record<string, string>
   hasDynamicFields: boolean
 }): NestedTypeWithNestedTypes => {
   const validEntries = entries.filter(entry => entry !== undefined && entry !== null)
@@ -69,6 +71,7 @@ const generateNestedType = ({
         hasDynamicFields,
         transformationConfigByType,
         transformationDefaultConfig,
+        typeNameOverrideConfig,
       })
       return {
         type: new ListType(nestedType.type),
@@ -88,6 +91,7 @@ const generateNestedType = ({
         transformationConfigByType,
         transformationDefaultConfig,
         isSubType: true,
+        typeNameOverrideConfig,
       })
     }
 
@@ -119,6 +123,19 @@ const generateNestedType = ({
 }
 
 /**
+ * Helper utility for generating the types to rename based on the ducktype transformation config
+ */
+const generateTypeRenameConfig = (
+  transformationConfigByType: Record<string, DuckTypeTransformationConfig>
+): Record<string, string> => (
+  Object.fromEntries(
+    Object.entries(transformationConfigByType)
+      .map(([origTypeName, { sourceTypeName }]) => ([sourceTypeName, origTypeName]))
+      .filter(([sourceTypeName]) => sourceTypeName !== undefined)
+  )
+)
+
+/**
  * Generate a synthetic type based on the list of all entries found for this type:
  * The type's fields are a superset of the fields that are found in at least one entry.
  *
@@ -138,17 +155,23 @@ export const generateType = ({
   hasDynamicFields,
   transformationConfigByType,
   transformationDefaultConfig,
+  typeNameOverrideConfig,
   isSubType = false,
 }: {
   adapterName: string
   name: string
   entries: Values[]
   hasDynamicFields: boolean
-  transformationConfigByType: Record<string, TransformationConfig>
-  transformationDefaultConfig: TransformationDefaultConfig
+  transformationConfigByType: Record<string, DuckTypeTransformationConfig>
+  transformationDefaultConfig: DuckTypeTransformationDefaultConfig
+  typeNameOverrideConfig?: Record<string, string>
   isSubType?: boolean
 }): ObjectTypeWithNestedTypes => {
-  const naclName = naclCase(name)
+  const typeRenameConfig = typeNameOverrideConfig ?? generateTypeRenameConfig(
+    transformationConfigByType
+  )
+  const typeName = typeRenameConfig[name] ?? name
+  const naclName = naclCase(typeName)
   const path = [
     adapterName, TYPES_PATH,
     ...(isSubType
@@ -169,15 +192,16 @@ export const generateType = ({
   const fields: Record<string, FieldDefinition> = hasDynamicFields
     ? {
       value: {
-        refType: createRefToElmWithValue(new MapType(addNestedType(generateNestedType({
+        refType: new MapType(addNestedType(generateNestedType({
           adapterName,
           typeName: 'value',
-          parentName: name,
+          parentName: typeName,
           entries: entries.flatMap(Object.values).filter(entry => entry !== undefined),
           transformationConfigByType,
           transformationDefaultConfig,
           hasDynamicFields: false,
-        })))),
+          typeNameOverrideConfig: typeRenameConfig,
+        }))),
       },
     }
     : Object.fromEntries(
@@ -185,15 +209,16 @@ export const generateType = ({
         .map(fieldName => [
           fieldName,
           {
-            refType: createRefToElmWithValue(addNestedType(generateNestedType({
+            refType: addNestedType(generateNestedType({
               adapterName,
               typeName: fieldName,
-              parentName: name,
+              parentName: typeName,
               entries: entries.map(entry => entry[fieldName]).filter(entry => entry !== undefined),
               transformationConfigByType,
               transformationDefaultConfig,
               hasDynamicFields: false,
-            }))),
+              typeNameOverrideConfig: typeRenameConfig,
+            })),
           },
         ])
     )
@@ -205,7 +230,7 @@ export const generateType = ({
   )
 
   if (Array.isArray(fieldsToHide)) {
-    hideFields(fieldsToHide, fields, name)
+    hideFields(fieldsToHide, fields, typeName)
   }
 
   const type = new ObjectType({

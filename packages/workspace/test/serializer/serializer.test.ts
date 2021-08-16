@@ -20,8 +20,9 @@ import {
   VariableExpression, StaticFile, MapType, BuiltinTypes, isContainerType, isObjectType,
   Element,
   isReferenceExpression,
+  TypeReference,
 } from '@salto-io/adapter-api'
-import { createRefToElmWithValue, safeJsonStringify } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl } from '../utils'
 
@@ -38,7 +39,7 @@ import {
 import { DuplicateInstanceKeyError } from '../../src/merger/internal/instances'
 import { MultiplePrimitiveTypesError } from '../../src/merger/internal/primitives'
 import { DuplicateVariableNameError } from '../../src/merger/internal/variables'
-import { CircularReferenceValidationError, IllegalReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, InvalidStaticFileError } from '../../src/validator'
+import { CircularReferenceValidationError, IllegalReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, InvalidStaticFileError, InvalidTypeValidationError } from '../../src/validator'
 import { UnresolvedReferenceValidationError } from '../../src/errors'
 import { MissingStaticFile } from '../../src/workspace/static_files'
 
@@ -48,8 +49,8 @@ describe('State/cache serialization', () => {
     elemID: new ElemID('salesforce', 'string'),
     primitive: PrimitiveTypes.STRING,
     annotationRefsOrTypes: {
-      anno: createRefToElmWithValue(BuiltinTypes.STRING),
-      hiddenAnno: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
+      anno: BuiltinTypes.STRING,
+      hiddenAnno: BuiltinTypes.HIDDEN_STRING,
     },
     annotations: {
       anno: 'type annotation',
@@ -77,21 +78,21 @@ describe('State/cache serialization', () => {
     elemID: new ElemID('salesforce', 'test'),
     fields: {
       name: {
-        refType: createRefToElmWithValue(strType),
+        refType: strType,
         annotations: { label: 'Name' },
       },
       file: {
-        refType: createRefToElmWithValue(strType),
+        refType: strType,
         annotations: { label: 'File' },
       },
       num: {
-        refType: createRefToElmWithValue(numType),
+        refType: numType,
       },
       list: {
-        refType: createRefToElmWithValue(strListType),
+        refType: strListType,
       },
       map: {
-        refType: createRefToElmWithValue(strMapType),
+        refType: strMapType,
       },
     },
   })
@@ -214,19 +215,19 @@ describe('State/cache serialization', () => {
       // we need to make sure the types are empty as well... Not just the refs
       .map(e => {
         if (isInstanceElement(e)) {
-          e.refType = new ReferenceExpression(e.refType.elemID)
+          e.refType = new TypeReference(e.refType.elemID)
         }
         if (isContainerType(e)) {
-          e.refInnerType = new ReferenceExpression(e.refInnerType.elemID)
+          e.refInnerType = new TypeReference(e.refInnerType.elemID)
         }
         if (isObjectType(e)) {
           Object.values(e.fields).forEach(field => {
-            field.refType = new ReferenceExpression(field.refType.elemID)
+            field.refType = new TypeReference(field.refType.elemID)
           })
         }
         e.annotationRefTypes = _.mapValues(
           e.annotationRefTypes,
-          refType => new ReferenceExpression(refType.elemID)
+          refType => new TypeReference(refType.elemID)
         )
         return e
       })
@@ -347,7 +348,7 @@ describe('State/cache serialization', () => {
         elemID: new ElemID('salesforce', 'test'),
         fields: {
           lazyFile: {
-            refType: createRefToElmWithValue(strType),
+            refType: strType,
             annotations: { label: 'Lazy File' },
           },
         },
@@ -469,6 +470,9 @@ describe('State/cache serialization', () => {
         maxValue: 6,
         minValue: 4,
       }),
+      new InvalidTypeValidationError(
+        new ElemID('salto', 'InvalidTypeValidationError'),
+      ),
     ], err => err.elemID.getFullName())
 
     it('should serialize and deserialize correctly', async () => {

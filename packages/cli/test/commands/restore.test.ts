@@ -87,7 +87,10 @@ describe('restore command', () => {
     let workspace: Workspace
     beforeEach(async () => {
       workspace = mocks.mockWorkspace({})
-      jest.spyOn(workspace, 'updateNaclFiles').mockResolvedValue(2)
+      jest.spyOn(workspace, 'updateNaclFiles').mockResolvedValue({
+        naclFilesChangesCount: 2,
+        stateOnlyChangesCount: 0,
+      })
 
       result = await action({
         ...cliCommandArgs,
@@ -204,7 +207,7 @@ describe('restore command', () => {
       workspace.errors.mockResolvedValue(
         mocks.mockErrors([{ severity: 'Error', message: 'some error ' }])
       )
-      return 0
+      return { naclFilesChangesCount: 0, stateOnlyChangesCount: 0 }
     })
     const result = await action({
       ...cliCommandArgs,

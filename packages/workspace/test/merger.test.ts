@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import {
   ObjectType, ElemID, BuiltinTypes, InstanceElement, PrimitiveType,
   PrimitiveTypes, TypeElement, Variable,
@@ -34,11 +33,11 @@ describe('merger', () => {
     elemID: baseElemID,
     fields: {
       field1: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { label: 'base' },
       },
       field2: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { label: 'base' },
       },
     },
@@ -54,7 +53,7 @@ describe('merger', () => {
     elemID: new ElemID('salto', 'unrelated'),
     fields: {
       field1: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { label: 'base' },
       },
     },
@@ -64,7 +63,7 @@ describe('merger', () => {
     elemID: baseElemID,
     fields: {
       field1: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { label: 'update1' },
       },
     },
@@ -73,7 +72,7 @@ describe('merger', () => {
   const fieldTypeConflict = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field2: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+      field2: { refType: BuiltinTypes.NUMBER },
     },
   })
 
@@ -81,7 +80,7 @@ describe('merger', () => {
     elemID: baseElemID,
     fields: {
       field1: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { a: 'update' },
       },
     },
@@ -91,7 +90,7 @@ describe('merger', () => {
     elemID: baseElemID,
     fields: {
       field1: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { b: 'update' },
       },
     },
@@ -100,7 +99,7 @@ describe('merger', () => {
   const newField = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field3: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      field3: { refType: BuiltinTypes.STRING },
     },
   })
 
@@ -136,15 +135,15 @@ describe('merger', () => {
     elemID: baseElemID,
     fields: {
       field1: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { label: 'base', a: 'update', b: 'update' },
       },
       field2: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: { label: 'base' },
       },
       field3: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
     },
     annotations: {
@@ -271,14 +270,14 @@ describe('merger', () => {
       elemID: nestedElemID,
       fields: {
         field1: {
-          refType: createRefToElmWithValue(strType),
+          refType: strType,
           annotations: { _default: 'field1' },
         },
         field2: {
-          refType: createRefToElmWithValue(strType),
+          refType: strType,
         },
         base: {
-          refType: createRefToElmWithValue(base),
+          refType: base,
         },
       },
     })
@@ -411,7 +410,7 @@ describe('merger', () => {
       elemID: settingElemID,
       fields: {
         setting1: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
       },
     })
@@ -420,7 +419,7 @@ describe('merger', () => {
       elemID: settingElemID,
       fields: {
         setting2: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
       },
     })
@@ -429,10 +428,10 @@ describe('merger', () => {
       elemID: settingElemID,
       fields: {
         setting1: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
         setting2: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
         },
       },
     })

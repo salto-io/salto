@@ -29,10 +29,7 @@ import { collections, values } from '@salto-io/lowerdash'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
 import { buildGroupedGraphFromDiffGraph, getCustomGroupIds } from './group'
 import { filterInvalidChanges } from './filter'
-import {
-  addNodeDependencies, addFieldToObjectDependency, addTypeDependency, addAfterRemoveDependency,
-  addReferencesDependency,
-} from './dependency'
+import { addNodeDependencies, addFieldToObjectDependency, addTypeDependency, addAfterRemoveDependency, addReferencesDependency, addInstanceToFieldsDependency } from './dependency'
 import { PlanTransformer, changeId } from './common'
 
 const { awu, iterateTogether } = collections.asynciterable
@@ -340,6 +337,7 @@ export const defaultDependencyChangers = [
   addTypeDependency,
   addFieldToObjectDependency,
   addReferencesDependency,
+  addInstanceToFieldsDependency,
 ]
 
 const addModifyNodes = (

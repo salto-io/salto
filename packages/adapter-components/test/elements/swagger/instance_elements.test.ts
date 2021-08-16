@@ -16,7 +16,6 @@
 
 import { collections } from '@salto-io/lowerdash'
 import { ObjectType, ElemID, BuiltinTypes, ListType, MapType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { getAllInstances } from '../../../src/elements/swagger'
 import { returnFullEntry } from '../../../src/elements/field_finder'
 import { Paginator } from '../../../src/client'
@@ -35,27 +34,27 @@ describe('swagger_instance_elements', () => {
       const Owner = new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'Owner'),
         fields: {
-          name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          name: { refType: BuiltinTypes.STRING },
           additionalProperties: {
-            refType: createRefToElmWithValue(new MapType(BuiltinTypes.UNKNOWN)),
+            refType: new MapType(BuiltinTypes.UNKNOWN),
           },
         },
       })
       const Food = new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'Food'),
         fields: {
-          id: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          id: { refType: BuiltinTypes.STRING },
+          name: { refType: BuiltinTypes.STRING },
         },
       })
       const Pet = new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'Pet'),
         fields: {
-          id: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          owners: { refType: createRefToElmWithValue(new ListType(Owner)) },
-          primaryOwner: { refType: createRefToElmWithValue(Owner) },
-          additionalProperties: { refType: createRefToElmWithValue(new MapType(Food)) },
+          id: { refType: BuiltinTypes.STRING },
+          name: { refType: BuiltinTypes.STRING },
+          owners: { refType: new ListType(Owner) },
+          primaryOwner: { refType: Owner },
+          additionalProperties: { refType: new MapType(Food) },
         },
       })
 
@@ -597,7 +596,7 @@ describe('swagger_instance_elements', () => {
       const PetList = new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'PetList'),
         fields: {
-          items: { refType: createRefToElmWithValue(new ListType(objectTypes.Pet)) },
+          items: { refType: new ListType(objectTypes.Pet) },
         },
       })
 
@@ -634,6 +633,17 @@ describe('swagger_instance_elements', () => {
             food2: { id: 'f2' },
           },
         ]
+        yield [
+          {
+            id: '33',
+            name: 'def',
+            owners: [
+              { name: 'o3', bla: 'BLA', x: { nested: 'value' } },
+            ],
+            food1: { id: 'f1' },
+            food2: { id: 'f2' },
+          },
+        ]
       })
       const res = await getAllInstances({
         paginator: mockPaginator,
@@ -659,11 +669,12 @@ describe('swagger_instance_elements', () => {
           PetList,
         },
       })
-      expect(res).toHaveLength(3)
+      expect(res).toHaveLength(4)
       expect(res.map(e => e.elemID.getFullName())).toEqual([
         `${ADAPTER_NAME}.Pet.instance.dog`,
         `${ADAPTER_NAME}.Pet.instance.cat`,
         `${ADAPTER_NAME}.Pet.instance.mouse`,
+        `${ADAPTER_NAME}.Pet.instance.33@`, // digit-only ids should be escaped
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(1)
       expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet_list', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
@@ -698,9 +709,9 @@ describe('swagger_instance_elements', () => {
       const CustomObjectDefinition = new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'CustomObjectDefinition'),
         fields: {
-          name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          name: { refType: BuiltinTypes.STRING },
           additionalProperties: {
-            refType: createRefToElmWithValue(new MapType(BuiltinTypes.UNKNOWN)),
+            refType: new MapType(BuiltinTypes.UNKNOWN),
           },
         },
       })
@@ -708,14 +719,14 @@ describe('swagger_instance_elements', () => {
         elemID: new ElemID(ADAPTER_NAME, 'CustomObjectDefinitionMapping'),
         fields: {
           additionalProperties: {
-            refType: createRefToElmWithValue(new MapType(CustomObjectDefinition)),
+            refType: new MapType(CustomObjectDefinition),
           },
         },
       })
       const AllCustomObjects = new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'AllCustomObjects'),
         fields: {
-          definitions: { refType: createRefToElmWithValue(CustomObjectDefinitionMapping) },
+          definitions: { refType: CustomObjectDefinitionMapping },
         },
       })
       const objectTypes = {
@@ -891,12 +902,12 @@ describe('swagger_instance_elements', () => {
             OwnerNickNames: new ObjectType({
               elemID: new ElemID(ADAPTER_NAME, 'OwnerNickNames'),
               fields: { names: {
-                refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+                refType: new ListType(BuiltinTypes.STRING),
               } },
             }),
             OwnerInfo: new ObjectType({
               elemID: new ElemID(ADAPTER_NAME, 'OwnerInfo'),
-              fields: { numOfPets: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) } },
+              fields: { numOfPets: { refType: BuiltinTypes.NUMBER } },
             }),
           },
         })

@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ObjectType, BuiltinTypes, MapType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { createSwaggerAdapterApiConfigType, validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } from '../../src/config'
 
 describe('config_swagger', () => {
@@ -50,9 +49,9 @@ describe('config_swagger', () => {
     it('should include additional fields when added', async () => {
       const configType = createSwaggerAdapterApiConfigType({
         adapter: 'myAdapter',
-        additionalRequestFields: { a: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
+        additionalRequestFields: { a: { refType: BuiltinTypes.STRING } },
         additionalTransformationFields: { b: {
-          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          refType: BuiltinTypes.NUMBER,
         } },
       })
       expect(Object.keys(configType.fields)).toHaveLength(5)

@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, getChangeElement, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile, isFieldChange, isAdditionChange, isInstanceElement } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { Element, ObjectType, ListType, InstanceElement, isAdditionOrModificationChange, getChangeElement, Change, ChangeDataType, isListType, Field, isPrimitiveType, isObjectTypeChange, StaticFile, isFieldChange, isAdditionChange, isInstanceElement, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
@@ -108,7 +108,7 @@ const isInstanceOfCustomScript = async (element: Element): Promise<boolean> =>
     && await apiName(await element.getType()) === CPQ_CUSTOM_SCRIPT)
 
 const isCustomScriptType = async (objType: ObjectType): Promise<boolean> =>
-  isCustomObject(objType) && await apiName(objType) === CPQ_CUSTOM_SCRIPT
+  await isCustomObject(objType) && await apiName(objType) === CPQ_CUSTOM_SCRIPT
 
 const getCustomScriptObjectChange = async (
   changes: ReadonlyArray<Change<ChangeDataType>>

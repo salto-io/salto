@@ -21,8 +21,9 @@ import {
   Values, isElement, isListType, getRestriction, isVariable, Variable, isPrimitiveValue, ListType,
   isReferenceExpression, StaticFile, isContainerType, isMapType, ObjectType,
   InstanceAnnotationTypes, GLOBAL_ADAPTER, SaltoError, ReadOnlyElementsSource, BuiltinTypes,
+  isPlaceholderObjectType,
 } from '@salto-io/adapter-api'
-import { toObjectType, createRefToElmWithValue, elementAnnotationTypes } from '@salto-io/adapter-utils'
+import { toObjectType, elementAnnotationTypes } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
 import { IllegalReference } from './parser/parse'
@@ -104,6 +105,16 @@ export class InvalidValueValidationError extends ValidationError {
     this.value = value
     this.fieldName = fieldName
     this.expectedValue = expectedValue
+  }
+}
+
+export class InvalidTypeValidationError extends ValidationError {
+  constructor(readonly elemID: ElemID) {
+    super({
+      elemID,
+      error: `type ${elemID.typeName} of instance ${elemID.name} does not exist`,
+      severity: 'Warning',
+    })
   }
 }
 
@@ -567,25 +578,35 @@ const instanceAnnotationsType = new ObjectType({
   elemID: new ElemID(GLOBAL_ADAPTER, 'instanceAnnotations'), // dummy elemID, it's not really used
   fields: Object.fromEntries(
     Object.entries(InstanceAnnotationTypes)
-      .map(([name, type]) => [name, { refType: createRefToElmWithValue(type) }])
+      .map(([name, type]) => [name, { refType: type }])
   ),
 })
+const validateInstanceType = async (
+  elemID: ElemID,
+  type: ObjectType,
+): Promise<ValidationError[]> => {
+  if (isPlaceholderObjectType(type)) {
+    return [new InvalidTypeValidationError(elemID)]
+  }
+  return []
+}
 
 const validateInstanceElements = async (
   element: InstanceElement,
   elementsSource: ReadOnlyElementsSource
-): Promise<ValidationError[]> =>
-  [
+): Promise<ValidationError[]> => {
+  const type = await element.getType(elementsSource)
+  return [
     ...await validateValue(
       element.elemID,
       element.value,
-      await element.getType(elementsSource),
+      type,
       elementsSource
     ),
     ...await validateAnnotations(
       element.elemID,
       element.value,
-      await element.getType(elementsSource),
+      type,
       elementsSource,
     ),
     ...await validateValue(
@@ -594,7 +615,12 @@ const validateInstanceElements = async (
       instanceAnnotationsType,
       elementsSource,
     ),
+    ...await validateInstanceType(
+      element.elemID,
+      type,
+    ),
   ]
+}
 
 const validateVariableValue = (elemID: ElemID, value: Value): ValidationError[] => {
   if (isReferenceExpression(value)) {

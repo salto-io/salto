@@ -15,10 +15,10 @@
 */
 import open from 'open'
 import { ElemID, ObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { errors, UnresolvedElemIDs } from '@salto-io/workspace'
+import { errors, UnresolvedElemIDs, createElementSelector } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { CliExitCode } from '../../src/types'
-import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction, openAction } from '../../src/commands/element'
+import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction, openAction, listAction } from '../../src/commands/element'
 import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
 import Prompts from '../../src/prompts'
@@ -919,6 +919,105 @@ Moving the specified elements to common.
       })
       it('should return error exit code', () => {
         expect(result).toEqual(CliExitCode.AppError)
+      })
+    })
+  })
+
+  describe('list command', () => {
+    const moveToCommonName = 'list'
+
+    describe('when workspace throws an error on list', () => {
+      let result: CliExitCode
+      let output: mocks.MockCliOutput
+      beforeAll(async () => {
+        const cliArgs = mocks.mockCliArgs()
+        output = cliArgs.output
+        const workspace = mocks.mockWorkspace({})
+        workspace.listUnresolvedReferences.mockImplementation(mockedList)
+        workspace.getElementIdsBySelectors.mockResolvedValue(awu([new ElemID('salto', 'Account')]))
+        workspace.errors.mockRejectedValue(new Error('Oy Vey Zmir'))
+        result = await listAction({
+          ...mocks.mockCliCommandArgs(moveToCommonName, cliArgs),
+          input: {
+            elementSelector: ['salto.Account'],
+            mode: 'env',
+          },
+          workspace,
+        })
+      })
+
+      it('should return failure code', () => {
+        expect(result).toBe(CliExitCode.AppError)
+      })
+
+      it('should print failure to console', () => {
+        expect(output.stderr.content)
+          .toContain(Prompts.LIST_FAILED('Oy Vey Zmir'))
+      })
+    })
+
+    describe('with invalid element selectors', () => {
+      let result: CliExitCode
+      let workspace: mocks.MockWorkspace
+      let output: mocks.MockCliOutput
+      beforeAll(async () => {
+        const cliArgs = mocks.mockCliArgs()
+        output = cliArgs.output
+        workspace = mocks.mockWorkspace({})
+        result = await listAction({
+          ...mocks.mockCliCommandArgs(moveToCommonName, cliArgs),
+          input: {
+            elementSelector: ['a.b.c.d', 'e.f.g.h'],
+            mode: 'all',
+          },
+          workspace,
+        })
+      })
+
+      it('should return failure code', () => {
+        expect(result).toBe(CliExitCode.UserInputError)
+      })
+      it('should not call workspace getElementsBySelectors', () => {
+        expect(workspace.getElementIdsBySelectors).not.toHaveBeenCalled()
+      })
+
+      it('should print failed to console', () => {
+        expect(output.stderr.content).toContain('Failed')
+      })
+    })
+
+    describe('successful list cmd', () => {
+      let result: CliExitCode
+      let workspace: mocks.MockWorkspace
+      const stringSelector = 'salto.Account'
+      const elemID = new ElemID('salto', 'Account')
+      let output: mocks.MockCliOutput
+      const mode = 'env'
+      beforeAll(async () => {
+        const cliArgs = mocks.mockCliArgs()
+        output = cliArgs.output
+        workspace = mocks.mockWorkspace({})
+        workspace.getElementIdsBySelectors.mockResolvedValue(awu([elemID]))
+        result = await listAction({
+          ...mocks.mockCliCommandArgs(moveToCommonName, cliArgs),
+          input: {
+            elementSelector: [stringSelector],
+            mode,
+          },
+          workspace,
+        })
+      })
+
+      it('should return success code', () => {
+        expect(result).toBe(CliExitCode.Success)
+      })
+      it('should call workspace getElementIdsBySelectors', () => {
+        const elemSelector = createElementSelector(stringSelector)
+        expect(workspace.getElementIdsBySelectors).toHaveBeenCalledWith([elemSelector], mode, true)
+      })
+
+      it('should print to stdout', () => {
+        expect(output.stdout.content).toContain('The following configuration elements were found')
       })
     })
   })

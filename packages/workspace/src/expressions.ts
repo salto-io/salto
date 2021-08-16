@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, Element, Value, ReferenceExpression, TemplateExpression, isReferenceExpression, isVariableExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, isContainerType, isField, Field } from '@salto-io/adapter-api'
-import { resolvePath, TransformFunc, createRefToElmWithValue, transformValues } from '@salto-io/adapter-utils'
+import { ElemID, Element, Value, ReferenceExpression, TemplateExpression, isReferenceExpression, isVariableExpression, isElement, ReadOnlyElementsSource, isVariable, isInstanceElement, isObjectType, isContainerType, isField, Field, isTypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { resolvePath, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections, promises } from '@salto-io/lowerdash'
 
 const { mapValuesAsync } = promises.object
@@ -178,34 +178,30 @@ resolveTemplateExpression = async (
   }).toArray())
   .join('')
 
-const resolveElement = async (
-  elementToResolve: Element,
+const resolveElement = async <T extends Element>(
+  elementToResolve: T,
   elementsSource: ReadOnlyElementsSource,
   workingSetElements: Record<string, WorkingSetElement>,
   resolveRoot = false
-): Promise<Element> => {
+): Promise<T> => {
   const clonedRefs: Record<string, ReferenceExpression> = {}
-
   const referenceCloner: TransformFunc = ({ value }) => {
     if (isReferenceExpression(value)) {
       clonedRefs[value.elemID.getFullName()] = clonedRefs[value.elemID.getFullName()]
         || _.clone(value)
       return clonedRefs[value.elemID.getFullName()]
     }
-    if (value instanceof TemplateExpression) {
-      return resolveTemplateExpression(
-        value,
-        elementsSource,
-        workingSetElements,
-        undefined,
-        resolveRoot
-      )
-    }
-    return value
+    return resolveMaybeExpression(
+      value,
+      elementsSource,
+      workingSetElements,
+      undefined,
+      resolveRoot && !isTypeReference(value)
+    )
   }
 
   if (workingSetElements[elementToResolve.elemID.getFullName()]?.resolved) {
-    return workingSetElements[elementToResolve.elemID.getFullName()].element
+    return workingSetElements[elementToResolve.elemID.getFullName()].element as T
   }
   if (workingSetElements[elementToResolve.elemID.getFullName()] === undefined) {
     workingSetElements[elementToResolve.elemID.getFullName()] = {
@@ -301,7 +297,7 @@ const resolveElement = async (
     ref.value = resolvedRef.value
     ref.topLevelParent = resolvedRef.topLevelParent
   })
-  return element
+  return element as T
 }
 
 export const resolve = async (

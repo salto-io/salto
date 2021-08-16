@@ -13,8 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, CORE_ANNOTATIONS, toChange, InstanceElement, Change, getChangeElement, FieldDefinition, Values, ReferenceExpression } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { ObjectType, ElemID, CORE_ANNOTATIONS, toChange, InstanceElement, Change, getChangeElement, FieldDefinition, Values, TypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/profile_permissions'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -31,7 +30,7 @@ describe('Object Permissions filter', () => {
     parent: string,
     name: string,
     annotations: Values = {},
-    refType: ReferenceExpression = createRefToElmWithValue(Types.primitiveDataTypes.Text),
+    refType: TypeReference = createRefToElmWithValue(Types.primitiveDataTypes.Text),
   ): Record<string, FieldDefinition> => ({
     [name]: { refType, annotations: { [constants.API_NAME]: `${parent}.${name}`, ...annotations } },
   })

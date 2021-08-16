@@ -226,6 +226,17 @@ describe('env command group', () => {
       })
       expect(output.stdout.content.search('inactive')).toBeGreaterThan(0)
     })
+    it('should display the deleted environment even if called with keepNacls', async () => {
+      await deleteAction({
+        ...mocks.mockCliCommandArgs(commandName, cliArgs),
+        input: {
+          envName: 'inactive',
+          keepNacls: true,
+        },
+        workspace: mocks.mockWorkspace({}),
+      })
+      expect(output.stdout.content.search('inactive')).toBeGreaterThan(0)
+    })
   })
 
   describe('rename command', () => {

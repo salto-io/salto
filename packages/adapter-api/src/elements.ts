@@ -17,23 +17,31 @@
 
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
-
 import { ElemID, LIST_ID_PREFIX, MAP_ID_PREFIX } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
-import { Values, isEqualValues, Value, ReferenceExpression, isReferenceExpression } from './values'
+import { Values, isEqualValues, Value, TypeReference, isTypeReference } from './values'
 
 const { awu } = collections.asynciterable
 const { mapValuesAsync } = promises.object
+
+export const BuiltinTypesRefByFullName: Record<string, TypeReference> = {}
+
+export const createRefToElmWithValue = (element: TypeElement): TypeReference => (
+  // For BuiltinTypes we use a hardcoded list of refs with values to avoid duplicate instances
+  BuiltinTypesRefByFullName[element.elemID.getFullName()]
+    ?? new TypeReference(element.elemID, element)
+)
+
 // This is used to allow contructors Elements with Placeholder types
 // to receive TypeElement and save the appropriate Reference
-const getRefType = (typeOrRef: TypeOrRef): ReferenceExpression =>
-  (isReferenceExpression(typeOrRef)
+const getRefType = (typeOrRef: TypeOrRef): TypeReference =>
+  (isTypeReference(typeOrRef)
     ? typeOrRef
-    : new ReferenceExpression(typeOrRef.elemID, typeOrRef))
+    : new TypeReference(typeOrRef.elemID, typeOrRef))
 
 const getRefTypeValue = async (
-  refType: ReferenceExpression,
+  refType: TypeReference,
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<Value> =>
   (refType.getResolvedValue(elementsSource))
@@ -137,30 +145,9 @@ export enum PrimitiveTypes {
 export type ContainerType = ListType | MapType
 export type TypeElement = PrimitiveType | ObjectType | ContainerType
 export type TypeMap = Record<string, TypeElement>
-type TypeOrRef<T extends TypeElement = TypeElement> = T | ReferenceExpression
+type TypeOrRef<T extends TypeElement = TypeElement> = T | TypeReference
 export type TypeRefMap = Record<string, TypeOrRef>
-export type ReferenceMap = Record<string, ReferenceExpression>
-
-abstract class PlaceholderTypeElement extends Element {
-  constructor(
-    elemID: ElemID,
-    public refType: ReferenceExpression,
-    annotationRefsOrTypes?: TypeRefMap,
-    annotations?: Values,
-    path?: ReadonlyArray<string>,
-  ) {
-    super({ elemID, annotationRefsOrTypes, annotations, path })
-  }
-
-  async getType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
-    const type = await getRefTypeValue(this.refType, elementsSource)
-    // eslint-disable-next-line no-use-before-define
-    if (!isType(type)) {
-      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-TypeElement`)
-    }
-    return type
-  }
-}
+export type ReferenceMap = Record<string, TypeReference>
 
 export class ListType<T extends TypeElement = TypeElement> extends Element {
   // This unused value which is always undefined is only here to allow us to enforce
@@ -170,7 +157,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
   // the constructor and because we currently don't have one, we add an artificial one here
   protected _typeMarker?: T
 
-  public refInnerType: ReferenceExpression
+  public refInnerType: TypeReference
   public constructor(
     innerTypeOrRef: TypeOrRef<T>
   ) {
@@ -189,7 +176,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
 
   clone(): ListType {
     return new ListType(
-      new ReferenceExpression(this.refInnerType.elemID, this.refInnerType.value)
+      new TypeReference(this.refInnerType.elemID, this.refInnerType.type)
     )
   }
 
@@ -205,7 +192,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
   setRefInnerType(innerTypeOrRefInnerType: TypeOrRef): void {
     if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
       this.refInnerType = getRefType(innerTypeOrRefInnerType)
-      const innerType = this.refInnerType.value
+      const innerType = this.refInnerType.type
       // eslint-disable-next-line no-use-before-define
       if (innerType !== undefined && isType(innerType)) {
         this.annotations = innerType.annotations
@@ -228,7 +215,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
   // the constructor and because we currently don't have one, we add an artificial one here
   protected _typeMarker?: T
 
-  public refInnerType: ReferenceExpression
+  public refInnerType: TypeReference
   public constructor(
     innerTypeOrRef: TypeOrRef<T>
   ) {
@@ -247,7 +234,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
 
   clone(): MapType {
     return new MapType(
-      new ReferenceExpression(this.refInnerType.elemID, this.refInnerType.value)
+      new TypeReference(this.refInnerType.elemID, this.refInnerType.type)
     )
   }
 
@@ -263,7 +250,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
   setRefInnerType(innerTypeOrRefInnerType: TypeOrRef): void {
     if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
       this.refInnerType = getRefType(innerTypeOrRefInnerType)
-      const innerType = this.refInnerType.value
+      const innerType = this.refInnerType.type
       // eslint-disable-next-line no-use-before-define
       if (innerType !== undefined && isType(innerType)) {
         this.annotations = innerType.annotations
@@ -278,25 +265,35 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
 /**
  * Represents a field inside a type
  */
-export class Field extends PlaceholderTypeElement {
+export class Field extends Element {
+  public refType: TypeReference
   public constructor(
     public parent: ObjectType,
     public name: string,
     typeOrRefType: TypeOrRef,
     annotations: Values = {},
   ) {
-    super(
-      parent.elemID.createNestedID('field', name),
-      getRefType(typeOrRefType),
-      {},
-      annotations
-    )
+    super({
+      elemID: parent.elemID.createNestedID('field', name),
+      annotationRefsOrTypes: {},
+      annotations,
+    })
+    this.refType = getRefType(typeOrRefType)
   }
 
   isEqual(other: Field): boolean {
     return this.refType.elemID.isEqual(other.refType.elemID)
       && this.elemID.isEqual(other.elemID)
       && isEqualValues(this.annotations, other.annotations)
+  }
+
+  async getType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
+    const type = await getRefTypeValue(this.refType, elementsSource)
+    // eslint-disable-next-line no-use-before-define
+    if (!isType(type)) {
+      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-TypeElement`)
+    }
+    return type
   }
 
   /**
@@ -434,21 +431,25 @@ export class ObjectType extends Element {
   }
 }
 
-export class InstanceElement extends PlaceholderTypeElement {
+export class PlaceholderObjectType extends ObjectType {
+}
+
+export class InstanceElement extends Element {
+  public refType: TypeReference
   constructor(
     name: string,
-    typeOrRefType: ObjectType | ReferenceExpression,
+    typeOrRefType: ObjectType | TypeReference,
     public value: Values = {},
     path?: ReadonlyArray<string>,
     annotations?: Values,
   ) {
-    super(
-      typeOrRefType.elemID.createNestedID('instance', name),
-      getRefType(typeOrRefType),
-      undefined,
+    super({
+      elemID: typeOrRefType.elemID.createNestedID('instance', name),
+      annotationRefsOrTypes: undefined,
       annotations,
       path,
-    )
+    })
+    this.refType = getRefType(typeOrRefType)
   }
 
   async getType(elementsSource?: ReadOnlyElementsSource): Promise<ObjectType> {
@@ -505,6 +506,10 @@ export function isInstanceElement(element: any): element is InstanceElement {
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isObjectType(element: any): element is ObjectType {
   return element instanceof ObjectType
+}
+
+export function isPlaceholderObjectType(element: unknown): element is PlaceholderObjectType {
+  return element instanceof PlaceholderObjectType
 }
 
 export function isPrimitiveType(

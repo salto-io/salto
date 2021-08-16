@@ -13,14 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Field, Element, isInstanceElement, Value, Values, isReferenceExpression, isField, ReferenceExpression, InstanceElement, ElemID, getField, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { TransformFunc, transformValues, resolvePath, getParents } from '@salto-io/adapter-utils'
-import _ from 'lodash'
+import { Element, isInstanceElement, isReferenceExpression, isField, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { references as referenceUtils } from '@salto-io/adapter-components'
+import { getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { values as lowerDashValues, collections, multiIndex } from '@salto-io/lowerdash'
+import { collections, multiIndex } from '@salto-io/lowerdash'
 import { apiName, metadataType } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
-import { ReferenceSerializationStrategy, ExtendedReferenceTargetDefinition, ReferenceResolverFinder, generateReferenceResolverFinder, ReferenceContextStrategyName, FieldReferenceDefinition, getLookUpName } from '../transformers/reference_mapping'
+import { generateReferenceResolverFinder, ReferenceContextStrategyName, FieldReferenceDefinition, getLookUpName } from '../transformers/reference_mapping'
 import {
   WORKFLOW_ACTION_ALERT_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_FLOW_ACTION_METADATA_TYPE, WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE,
@@ -31,81 +31,10 @@ import { buildElementsSourceForFetch, extractFlatCustomObjectFields, hasApiName 
 
 const { awu } = collections.asynciterable
 const log = logger(module)
-const { isDefined } = lowerDashValues
 const { flatMapAsync } = collections.asynciterable
-type ContextValueMapperFunc = (val: string) => string | undefined
-type ContextFunc = ({ instance, elemByElemID, field, fieldPath }: {
-  instance: InstanceElement
-  elemByElemID: multiIndex.Index<[string], Element>
-  field: Field
-  fieldPath?: ElemID
-}) => Promise<string | undefined>
+const { neighborContextGetter, replaceReferenceValues } = referenceUtils
 
-const noop = (val: string): string => val
-
-/**
- * Use the value of a neighbor field as the context for finding the referenced element.
- *
- * @param contextFieldName    The name of the neighboring field (same level)
- * @param levelsUp            How many levels to go up in the instance's type definition before
- *                            looking for the neighbor.
- * @param contextValueMapper  An additional function to use to convert the value before the lookup
- */
-const neighborContextFunc = ({
-  contextFieldName,
-  levelsUp = 0,
-  contextValueMapper = noop,
-}: {
-  contextFieldName: string
-  levelsUp?: number
-  contextValueMapper?: ContextValueMapperFunc
-}): ContextFunc => (({ instance, elemByElemID, fieldPath }) => {
-  if (fieldPath === undefined || contextFieldName === undefined) {
-    return undefined
-  }
-
-  const resolveReference = async (
-    context: ReferenceExpression,
-    path?: ElemID
-  ): Promise<string | undefined> => {
-    const contextField = await getField(
-      await instance.getType(),
-      fieldPath.createTopLevelParentID().path
-    )
-    const refWithValue = new ReferenceExpression(
-      context.elemID,
-      context.value ?? elemByElemID.get(context.elemID.getFullName()),
-    )
-    return getLookUpName({ ref: refWithValue, field: contextField, path })
-  }
-
-  const getParent = (currentFieldPath: ElemID, numLevels = 0): ElemID => {
-    const getParentPath = (p: ElemID): ElemID => {
-      const isNum = (str: string | undefined): boolean => (
-        !_.isEmpty(str) && !Number.isNaN(_.toNumber(str))
-      )
-      let path = p
-      // ignore array indices
-      while (isNum(path.getFullNameParts().pop())) {
-        path = path.createParentID()
-      }
-      return path.createParentID()
-    }
-    if (numLevels <= 0) {
-      return getParentPath(currentFieldPath)
-    }
-    return getParent(getParentPath(currentFieldPath), numLevels - 1)
-  }
-
-  const contextPath = getParent(fieldPath, levelsUp).createNestedID(contextFieldName)
-  const context = resolvePath(instance, contextPath)
-  const contextStr = isReferenceExpression(context)
-    ? resolveReference(context, contextPath)
-    : context
-  return contextValueMapper ? contextValueMapper(contextStr) : contextStr
-})
-
-const workflowActionMapper: ContextValueMapperFunc = (val: string) => {
+const workflowActionMapper: referenceUtils.ContextValueMapperFunc = (val: string) => {
   const typeMapping: Record<string, string> = {
     Alert: WORKFLOW_ACTION_ALERT_METADATA_TYPE,
     FieldUpdate: WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
@@ -116,7 +45,7 @@ const workflowActionMapper: ContextValueMapperFunc = (val: string) => {
   return typeMapping[val]
 }
 
-const flowActionCallMapper: ContextValueMapperFunc = (val: string) => {
+const flowActionCallMapper: referenceUtils.ContextValueMapperFunc = (val: string) => {
   const typeMapping: Record<string, string> = {
     apex: 'ApexClass',
     emailAlert: WORKFLOW_ACTION_ALERT_METADATA_TYPE,
@@ -125,10 +54,15 @@ const flowActionCallMapper: ContextValueMapperFunc = (val: string) => {
   return typeMapping[val]
 }
 
-const ContextStrategyLookup: Record<
-  ReferenceContextStrategyName, ContextFunc
+const neighborContextFunc = (args: {
+  contextFieldName: string
+  levelsUp?: number
+  contextValueMapper?: referenceUtils.ContextValueMapperFunc
+}): referenceUtils.ContextFunc => neighborContextGetter({ ...args, getLookUpName })
+
+const contextStrategyLookup: Record<
+  ReferenceContextStrategyName, referenceUtils.ContextFunc
 > = {
-  none: async () => undefined,
   instanceParent: async ({ instance, elemByElemID }) => {
     const parentRef = getParents(instance)[0]
     const parent = isReferenceExpression(parentRef)
@@ -150,81 +84,6 @@ const ContextStrategyLookup: Record<
   neighborPicklistObjectLookup: neighborContextFunc({ contextFieldName: 'picklistObject' }),
 }
 
-const replaceReferenceValues = async (
-  instance: InstanceElement,
-  resolverFinder: ReferenceResolverFinder,
-  elemLookupMap: multiIndex.Index<[string, string], Element>,
-  fieldsWithResolvedReferences: Set<string>,
-  elemByElemID: multiIndex.Index<[string], Element>,
-): Promise<Values> => {
-  const getRefElem = async (
-    val: string, target: ExtendedReferenceTargetDefinition, field: Field, path?: ElemID
-  ): Promise<Element | undefined> => {
-    const findElem = (value: string, targetType?: string): Element | undefined => (
-      targetType !== undefined ? elemLookupMap.get(targetType, value) : undefined
-    )
-
-    const parentContextFunc = ContextStrategyLookup[target.parentContext ?? 'none']
-    const typeContextFunc = ContextStrategyLookup[target.typeContext ?? 'none']
-    if (parentContextFunc === undefined || typeContextFunc === undefined) {
-      return undefined
-    }
-    const elemParent = target.parent ?? await parentContextFunc(
-      { instance, elemByElemID, field, fieldPath: path }
-    )
-    const elemType = target.type ?? await typeContextFunc({
-      instance, elemByElemID, field, fieldPath: path,
-    })
-    return findElem(
-      target.lookup(val, elemParent),
-      elemType,
-    )
-  }
-
-  const replacePrimitive = async (val: string, field: Field, path?: ElemID): Promise<Value> => {
-    const toValidatedReference = async (
-      serializer: ReferenceSerializationStrategy,
-      elem: Element | undefined,
-    ): Promise<ReferenceExpression | undefined> => {
-      if (elem === undefined) {
-        return undefined
-      }
-      const res = (await serializer.serialize({
-        ref: new ReferenceExpression(elem.elemID, elem),
-        field,
-      }) === val) ? new ReferenceExpression(elem.elemID) : undefined
-      if (res !== undefined) {
-        fieldsWithResolvedReferences.add(field.elemID.getFullName())
-      }
-      return res
-    }
-
-    const reference = await awu(await resolverFinder(field))
-      .filter(refResolver => refResolver.target !== undefined)
-      .map(async refResolver => toValidatedReference(
-        refResolver.serializationStrategy,
-        await getRefElem(val, refResolver.target as ExtendedReferenceTargetDefinition, field, path),
-      ))
-      .filter(isDefined)
-      .peek()
-
-    return reference ?? val
-  }
-
-  const transformPrimitive: TransformFunc = ({ value, field, path }) => (
-    (!_.isUndefined(field) && _.isString(value)) ? replacePrimitive(value, field, path) : value
-  )
-
-  return await transformValues(
-    {
-      values: instance.value,
-      type: await instance.getType(),
-      transformFunc: transformPrimitive,
-      strict: false,
-      pathID: instance.elemID,
-    }
-  ) || instance.value
-}
 
 export const addReferences = async (
   elements: Element[],
@@ -256,13 +115,14 @@ export const addReferences = async (
   await awu(elements)
     .filter(isInstanceElement)
     .forEach(async instance => {
-      instance.value = await replaceReferenceValues(
+      instance.value = await replaceReferenceValues({
         instance,
         resolverFinder,
-        elemLookup,
+        elemLookupMaps: { elemLookup },
         fieldsWithResolvedReferences,
         elemByElemID,
-      )
+        contextStrategyLookup,
+      })
     })
   log.debug('added references in the following fields: %s', [...fieldsWithResolvedReferences])
 }

@@ -16,13 +16,13 @@
 import _ from 'lodash'
 import open from 'open'
 import { ElemID, isElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { Workspace, ElementSelector, createElementSelectors } from '@salto-io/workspace'
+import { Workspace, ElementSelector, createElementSelectors, FromSource } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
-import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed } from '../formatter'
+import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, formatListFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed } from '../formatter'
 import { isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
@@ -105,7 +105,7 @@ const moveElement = async (
 ): Promise<CliExitCode> => {
   try {
     const elemIds = await awu(
-      await workspace.getElementIdsBySelectors(elmSelectors, to === 'envs', true)
+      await workspace.getElementIdsBySelectors(elmSelectors, to === 'envs' ? 'common' : 'env', true)
     ).toArray()
 
     if (!await shouldMoveElements(to, elemIds, cliOutput, force)) {
@@ -284,7 +284,7 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
 
   try {
     const elemIds = await awu(
-      await workspace.getElementIdsBySelectors(validSelectors, false, true)
+      await workspace.getElementIdsBySelectors(validSelectors, 'env', true)
     ).toArray()
     if (!await shouldCloneElements(toEnvs, elemIds, output, force ?? false)) {
       return CliExitCode.Success
@@ -465,6 +465,82 @@ const elementOpenDef = createWorkspaceCommand({
   action: openAction,
 })
 
+type ElementListArgs = {
+  elementSelector: string[]
+  mode: FromSource
+} & EnvArg
+
+const listElements = async (
+  workspace: Workspace,
+  output: CliOutput,
+  mode: FromSource,
+  elmSelectors: ElementSelector[]
+): Promise<CliExitCode> => {
+  const elemIds = await awu(
+    await workspace.getElementIdsBySelectors(elmSelectors, mode, true)
+  ).toArray()
+
+  output.stdout.write(Prompts.LIST_MESSAGE(elemIds.map(id => id.getFullName())))
+  return CliExitCode.Success
+}
+
+export const listAction: WorkspaceCommandAction<ElementListArgs> = async ({
+  input,
+  output,
+  spinnerCreator,
+  workspace,
+}) => {
+  try {
+    const { elementSelector, mode } = input
+    const { validSelectors, invalidSelectors } = createElementSelectors(elementSelector)
+    if (!_.isEmpty(invalidSelectors)) {
+      errorOutputLine(formatInvalidFilters(invalidSelectors), output)
+      return CliExitCode.UserInputError
+    }
+
+    await validateAndSetEnv(workspace, input, output)
+
+    const validWorkspace = await isValidWorkspaceForCommand(
+      { workspace, cliOutput: output, spinnerCreator }
+    )
+    if (!validWorkspace) {
+      return CliExitCode.AppError
+    }
+    return await listElements(workspace, output, mode, validSelectors)
+  } catch (e) {
+    errorOutputLine(formatListFailed(e.message), output)
+    return CliExitCode.AppError
+  }
+}
+
+const listElementsDef = createWorkspaceCommand({
+  properties: {
+    name: 'list',
+    description: 'List elements by selector(s) definition',
+    positionalOptions: [
+      {
+        name: 'elementSelector',
+        description: 'Array of config element patterns',
+        type: 'stringsList',
+        required: true,
+      },
+    ],
+    keyedOptions: [
+      ENVIRONMENT_OPTION,
+      {
+        name: 'mode',
+        alias: 'm',
+        required: false,
+        description: 'Choose a list mode. Options - [all, common, env]',
+        type: 'string',
+        choices: ['all', 'common', 'env'],
+        default: 'all',
+      },
+    ],
+  },
+  action: listAction,
+})
+
 const elementGroupDef = createCommandGroupDef({
   properties: {
     name: 'element',
@@ -476,6 +552,7 @@ const elementGroupDef = createCommandGroupDef({
     cloneDef,
     listUnresolvedDef,
     elementOpenDef,
+    listElementsDef,
   ],
 })
 

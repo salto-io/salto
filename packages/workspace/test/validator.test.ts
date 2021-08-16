@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 /* eslint-disable camelcase */
-import { ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, PrimitiveType, PrimitiveTypes, MapType, ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, PrimitiveType, PrimitiveTypes, MapType, ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile, createRefToElmWithValue } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import {
   validateElements, InvalidValueValidationError, CircularReferenceValidationError,
@@ -34,14 +33,14 @@ describe('Elements validation', () => {
     elemID: baseElemID,
     fields: {
       str: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['str'] }),
         },
       },
-      num: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+      num: { refType: BuiltinTypes.NUMBER },
       bool: {
-        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        refType: BuiltinTypes.BOOLEAN,
         annotations: { _required: true },
       },
     },
@@ -59,7 +58,7 @@ describe('Elements validation', () => {
   const withSimpleTypeField = new ObjectType({
     elemID: withSimpleTypeElemID,
     fields: {
-      simple: { refType: createRefToElmWithValue(simpleType) },
+      simple: { refType: simpleType },
     },
   })
 
@@ -145,39 +144,39 @@ describe('Elements validation', () => {
     elemID: nestedElemID,
     fields: {
       nested: {
-        refType: createRefToElmWithValue(simpleType),
+        refType: simpleType,
         annotations: {
           annonum: 1,
           annoboolean: true,
         },
       },
-      flatstr: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      flatnum: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-      flatbool: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-      list: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
+      flatstr: { refType: BuiltinTypes.STRING },
+      flatnum: { refType: BuiltinTypes.NUMBER },
+      flatbool: { refType: BuiltinTypes.BOOLEAN },
+      list: { refType: new ListType(BuiltinTypes.STRING) },
       listOfList: {
-        refType: createRefToElmWithValue(new ListType(new ListType(BuiltinTypes.STRING))),
+        refType: new ListType(new ListType(BuiltinTypes.STRING)),
       },
       listOfListOfList: {
-        refType: createRefToElmWithValue(
+        refType:
           new ListType(new ListType(new ListType(BuiltinTypes.STRING)))
-        ),
+        ,
       },
-      listOfObject: { refType: createRefToElmWithValue(new ListType(simpleType)) },
-      map: { refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)) },
-      mapOfObject: { refType: createRefToElmWithValue(new MapType(simpleType)) },
+      listOfObject: { refType: new ListType(simpleType) },
+      map: { refType: new MapType(BuiltinTypes.STRING) },
+      mapOfObject: { refType: new MapType(simpleType) },
       mapOfMaps: {
-        refType: createRefToElmWithValue(new MapType(new MapType(BuiltinTypes.STRING))),
+        refType: new MapType(new MapType(BuiltinTypes.STRING)),
       },
       mapOfLists: {
-        refType: createRefToElmWithValue(new MapType(new ListType(BuiltinTypes.STRING))),
+        refType: new MapType(new ListType(BuiltinTypes.STRING)),
       },
       listOfMaps: {
-        refType: createRefToElmWithValue(new ListType(new MapType(BuiltinTypes.STRING))),
+        refType: new ListType(new MapType(BuiltinTypes.STRING)),
       },
-      reqStr: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      reqStr: { refType: BuiltinTypes.STRING },
       restrictStr: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             values: ['restriction1', 'restriction2'],
@@ -185,7 +184,7 @@ describe('Elements validation', () => {
         },
       },
       restrictNumber: {
-        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+        refType: BuiltinTypes.NUMBER,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             min: 0,
@@ -194,7 +193,7 @@ describe('Elements validation', () => {
         },
       },
       restrictStringRegex: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             regex: '^[a-z0-9]*$',
@@ -202,7 +201,7 @@ describe('Elements validation', () => {
         },
       },
       restrictStringLength: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             max_length: 5,
@@ -210,10 +209,10 @@ describe('Elements validation', () => {
         },
       },
       restrictedStringMaxLengthType: {
-        refType: createRefToElmWithValue(restrictedStringMaxLengthType),
+        refType: restrictedStringMaxLengthType,
       },
       restrictNumberRegex: {
-        refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+        refType: BuiltinTypes.NUMBER,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             regex: '^1[0-9]*$',
@@ -221,7 +220,7 @@ describe('Elements validation', () => {
         },
       },
       restrictedAnnotation: {
-        refType: createRefToElmWithValue(restrictedAnnotation),
+        refType: restrictedAnnotation,
         annotations: {
           temp: 'val1',
           range: 5,
@@ -232,7 +231,7 @@ describe('Elements validation', () => {
         },
       },
       reqNested: {
-        refType: createRefToElmWithValue(simpleType),
+        refType: simpleType,
       },
     },
     annotationRefsOrTypes: {
@@ -249,7 +248,7 @@ describe('Elements validation', () => {
   const noRestrictionsType = new ObjectType({
     elemID: noResElemID,
     fields: {
-      someVal: { refType: createRefToElmWithValue(emptyType) },
+      someVal: { refType: emptyType },
     },
   })
 
@@ -362,7 +361,7 @@ describe('Elements validation', () => {
         annotationRefsOrTypes: {
           notList: new ObjectType({
             elemID,
-            fields: { simple: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
+            fields: { simple: { refType: BuiltinTypes.STRING } },
           }),
         },
         annotations: {
@@ -407,7 +406,7 @@ describe('Elements validation', () => {
         annotationRefsOrTypes: {
           notList: new ObjectType({
             elemID,
-            fields: { simple: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
+            fields: { simple: { refType: BuiltinTypes.STRING } },
           }),
         },
         annotations: {
@@ -590,7 +589,7 @@ describe('Elements validation', () => {
         it('should succeed when all required fields exist with values', async () => {
           extType.fields.reqNested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
           extType.fields.reqStr.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
           extInst.value.reqStr = 'string'
           extInst.value.reqNested = {
             str: 'str',
@@ -610,7 +609,7 @@ describe('Elements validation', () => {
 
         it('should return error when required primitive field is missing', async () => {
           extType.fields.reqStr.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
           const errors = await validateElements(
             [extInst],
             createInMemoryElementSource([
@@ -629,7 +628,7 @@ describe('Elements validation', () => {
             ...extType.fields.reqNested.annotations,
             [CORE_ANNOTATIONS.REQUIRED]: true,
           }
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
           const errors = await validateElements(
             [extInst],
             createInMemoryElementSource([
@@ -737,7 +736,7 @@ describe('Elements validation', () => {
               values: ['val1', 'val2'],
             })
           extInst.value.restrictStr = 'wrongValue'
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
           expect(await validateElements(
             [extInst],
             createInMemoryElementSource([
@@ -750,7 +749,7 @@ describe('Elements validation', () => {
 
         it('should succeed when restriction values is not a list', async () => {
           extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION] = { values: 'str' }
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
           extInst.value.restrictStr = 'str'
           expect(await validateElements(
             [extInst],
@@ -764,7 +763,7 @@ describe('Elements validation', () => {
 
         it('should succeed when restriction values are not defined and enforce_values is undefined', async () => {
           extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION] = {}
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
           extInst.value.restrictStr = 'str'
           expect(await validateElements(
             [extInst],
@@ -778,7 +777,7 @@ describe('Elements validation', () => {
 
         it('should succeed when restriction values are not defined and _restriction is undefined', async () => {
           delete extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION]
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
           extInst.value.restrictStr = 'str'
           expect(await validateElements(
             [extInst],
@@ -858,7 +857,7 @@ describe('Elements validation', () => {
 
         it('should return an error when fields values do not match restriction values with explicit _restriction.enforce_value', async () => {
           getRestriction(extType.fields.restrictStr).enforce_value = true
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
           await testValuesAreNotListedButEnforced()
         })
 
@@ -1063,7 +1062,7 @@ describe('Elements validation', () => {
           extType.fields.list.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
             values: ['restriction'],
           })
-          extInst.refType = new ReferenceExpression(extType.elemID, extType)
+          extInst.refType = createRefToElmWithValue(extType)
 
           expect(await validateElements(
             [extInst],
@@ -1156,10 +1155,10 @@ describe('Elements validation', () => {
           },
           fields: {
             someFile: {
-              refType: createRefToElmWithValue(new PrimitiveType({
+              refType: new PrimitiveType({
                 elemID: new ElemID('salesforce', 'string'),
                 primitive: PrimitiveTypes.STRING,
-              })),
+              }),
             },
           },
         })
@@ -1186,10 +1185,10 @@ describe('Elements validation', () => {
           },
           fields: {
             someFile: {
-              refType: createRefToElmWithValue(new PrimitiveType({
+              refType: new PrimitiveType({
                 elemID: new ElemID('salesforce', 'string'),
                 primitive: PrimitiveTypes.STRING,
-              })),
+              }),
             },
           },
         })
@@ -1444,7 +1443,7 @@ describe('Elements validation', () => {
       it('should return error for list/object mismatch with empty array on required field', async () => {
         const nestedRequiredType = nestedType.clone()
         nestedRequiredType.fields.nested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-        extInst.refType = new ReferenceExpression(nestedRequiredType.elemID, nestedRequiredType)
+        extInst.refType = createRefToElmWithValue(nestedRequiredType)
         extInst.value = { nested: [] }
         const errors = await validateElements(
           [extInst],
@@ -1459,7 +1458,7 @@ describe('Elements validation', () => {
       it.skip('should return error for list/object mismatch with empty array on required field-object', async () => {
         const requiredType = nestedType.clone()
         requiredType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
-        extInst.refType = new ReferenceExpression(requiredType.elemID, requiredType)
+        extInst.refType = createRefToElmWithValue(requiredType)
         extInst.value = []
         const errors = await validateElements(
           [extInst],
@@ -1684,7 +1683,7 @@ describe('Elements validation', () => {
         const unknownObj = new ObjectType({
           elemID: new ElemID('salto', 'unknown'),
           fields: {
-            unknown: { refType: createRefToElmWithValue(BuiltinTypes.UNKNOWN) },
+            unknown: { refType: BuiltinTypes.UNKNOWN },
           },
         })
 
@@ -1939,7 +1938,7 @@ describe('Elements validation', () => {
         elemID: new ElemID('salto', 'test'),
         fields: {
           someField: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
           },
         },
       })
@@ -2029,6 +2028,21 @@ describe('Elements validation', () => {
         )
         expect(errors).toHaveLength(3)
       })
+    })
+
+    it('should throw an error when an instance type is not found', async () => {
+      const instance = new InstanceElement(
+        'name',
+        new ReferenceExpression(new ElemID('instance', 'notExists')),
+      )
+      const errors = await validateElements(
+        [instance],
+        createInMemoryElementSource([
+          instance,
+        ]),
+      )
+      expect(errors).toHaveLength(1)
+      expect(errors[0].message).toBe('Error validating "instance.notExists.instance.name": type notExists of instance name does not exist')
     })
   })
 

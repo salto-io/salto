@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, InstanceElement, DetailedChange, PrimitiveType, BuiltinTypes,
-  PrimitiveTypes, Field, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+  PrimitiveTypes, Field, INSTANCE_ANNOTATIONS, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '../src/compare'
 
 describe('detailedCompare', () => {
@@ -29,7 +29,7 @@ describe('detailedCompare', () => {
     })
     const before = new InstanceElement(
       'inst',
-      new ReferenceExpression(instType.elemID, instType),
+      instType,
       {
         before: 'Before',
         modify: 'Before',
@@ -42,7 +42,7 @@ describe('detailedCompare', () => {
     )
     const after = new InstanceElement(
       'inst',
-      new ReferenceExpression(instType.elemID, instType),
+      instType,
       {
         after: 'Before',
         modify: 'After',
@@ -162,14 +162,14 @@ describe('detailedCompare', () => {
       },
       fields: {
         before: {
-          refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             before: 'Before',
             modify: 'Before',
           },
         },
         modify: {
-          refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             before: 'Before',
             modify: 'Before',
@@ -189,14 +189,14 @@ describe('detailedCompare', () => {
       },
       fields: {
         after: {
-          refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             before: 'After',
             modify: 'After',
           },
         },
         modify: {
-          refType: new ReferenceExpression(BuiltinTypes.STRING.elemID, BuiltinTypes.STRING),
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
           annotations: {
             after: 'After',
             modify: 'After',
@@ -307,7 +307,7 @@ describe('applyDetailedChanges', () => {
     const instType = new ObjectType({ elemID: new ElemID('test', 'test') })
     inst = new InstanceElement(
       'test',
-      new ReferenceExpression(instType.elemID, instType),
+      instType,
       { val: 1, rem: 0, nested: { mod: 1 } },
     )
     const changes: DetailedChange[] = [

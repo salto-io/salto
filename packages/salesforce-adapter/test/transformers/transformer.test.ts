@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values, CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction, ListType, createRestriction, isServiceId } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values, CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction, ListType, createRestriction, isServiceId, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { Field as SalesforceField, FileProperties } from 'jsforce'
-import { restoreValues, resolveValues, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { restoreValues, resolveValues } from '@salto-io/adapter-utils'
 
 import {
   getSObjectFieldElement, Types, toCustomField, toCustomProperties, instancesToUpdateRecords,
@@ -654,11 +654,11 @@ describe('transformer', () => {
         elemID,
         fields: {
           [existingField]: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+            refType: Types.primitiveDataTypes.Text,
             annotations: { [API_NAME]: 'Test__c' },
           },
           [ignoredField]: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.Text),
+            refType: Types.primitiveDataTypes.Text,
             annotations: { [API_NAME]: 'Ignored__c' },
           },
         },
@@ -743,7 +743,7 @@ describe('transformer', () => {
         elemID,
         fields: {
           [fieldName]: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.Lookup),
+            refType: Types.primitiveDataTypes.Lookup,
             annotations,
           },
         },
@@ -802,7 +802,7 @@ describe('transformer', () => {
         elemID,
         fields: {
           [fieldName]: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
+            refType: Types.primitiveDataTypes.Picklist,
             annotations,
           },
         },
@@ -877,7 +877,7 @@ describe('transformer', () => {
         elemID,
         fields: {
           [fieldName]: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.Picklist),
+            refType: Types.primitiveDataTypes.Picklist,
             annotations,
           },
         },
@@ -920,7 +920,7 @@ describe('transformer', () => {
         elemID,
         fields: {
           [fieldName]: {
-            refType: createRefToElmWithValue(Types.primitiveDataTypes.Summary),
+            refType: Types.primitiveDataTypes.Summary,
             annotations,
           },
         },
@@ -996,63 +996,63 @@ describe('transformer', () => {
         elemID: mockElemID,
         fields: {
           Id: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: true,
               [FIELD_ANNOTATIONS.CREATABLE]: true,
             },
           },
           Name: {
-            refType: createRefToElmWithValue(Types.compoundDataTypes.Name),
+            refType: Types.compoundDataTypes.Name,
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: true,
               [FIELD_ANNOTATIONS.CREATABLE]: true,
             },
           },
           LocalAddress: {
-            refType: createRefToElmWithValue(Types.compoundDataTypes.Address),
+            refType: Types.compoundDataTypes.Address,
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: true,
               [FIELD_ANNOTATIONS.CREATABLE]: true,
             },
           },
           LocalLocation: {
-            refType: createRefToElmWithValue(Types.compoundDataTypes.Location),
+            refType: Types.compoundDataTypes.Location,
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: true,
               [FIELD_ANNOTATIONS.CREATABLE]: true,
             },
           },
           NotCreatableNotUpdateableCompound: {
-            refType: createRefToElmWithValue(Types.compoundDataTypes.Address),
+            refType: Types.compoundDataTypes.Address,
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: false,
               [FIELD_ANNOTATIONS.CREATABLE]: false,
             },
           },
           Creatable: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: true,
               [FIELD_ANNOTATIONS.CREATABLE]: true,
             },
           },
           NotCreatable: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: true,
               [FIELD_ANNOTATIONS.CREATABLE]: false,
             },
           },
           Updateable: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: true,
               [FIELD_ANNOTATIONS.CREATABLE]: true,
             },
           },
           NotUpdateable: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
             annotations: {
               [FIELD_ANNOTATIONS.UPDATEABLE]: false,
               [FIELD_ANNOTATIONS.CREATABLE]: true,
@@ -1367,7 +1367,7 @@ describe('transformer', () => {
       const fieldWithNestedReference = mockValueTypeField({
         fields: [referenceField],
         name: 'FieldWithNestedReference',
-        soapType: 'FieldWithNestedReferenceType',
+        soapType: 'FieldWithNestedTypeReference',
       })
       const elements = await createMetadataTypeElements({
         name: 'BaseType',
@@ -1562,7 +1562,7 @@ describe('transformer', () => {
       },
       fields: {
         field: {
-          refType: createRefToElmWithValue(element),
+          refType: element,
           annotations: {
             instanceRef,
             objectRef: elementRef,
@@ -1630,7 +1630,7 @@ describe('transformer', () => {
     const refObject = new ObjectType({
       elemID: new ElemID(SALESFORCE, 'Lead'),
       fields: { test: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [API_NAME]: 'Lead.Test__c',
         },
@@ -1647,7 +1647,7 @@ describe('transformer', () => {
       const mockEntitlementProcessType = new ObjectType({ elemID: new ElemID(SALESFORCE, 'EntitlementProcess'),
         fields: {
           businessHours: {
-            refType: createRefToElmWithValue(allMissingSubTypes[0]),
+            refType: allMissingSubTypes[0],
           },
         },
         annotations: {
@@ -1672,25 +1672,25 @@ describe('transformer', () => {
     describe('with fields in layout instance', () => {
       const mockLayoutItem = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'LayoutItem'),
-        fields: { field: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
+        fields: { field: { refType: BuiltinTypes.STRING } },
         annotations: { [METADATA_TYPE]: 'LayoutItem' },
       })
       const mockLayoutColumn = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'LayoutColumn'),
-        fields: { layoutItems: { refType: createRefToElmWithValue(new ListType(mockLayoutItem)) } },
+        fields: { layoutItems: { refType: new ListType(mockLayoutItem) } },
         annotations: { [METADATA_TYPE]: 'LayoutColumn' },
       })
       const mockLayoutSection = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'LayoutSection'),
         fields: {
-          layoutColumns: { refType: createRefToElmWithValue(new ListType(mockLayoutColumn)) },
+          layoutColumns: { refType: new ListType(mockLayoutColumn) },
         },
         annotations: { [METADATA_TYPE]: 'LayoutSection' },
       })
       const mockLayoutType = new ObjectType({
         elemID: LAYOUT_TYPE_ID,
         fields: {
-          layoutSections: { refType: createRefToElmWithValue(new ListType(mockLayoutSection)) },
+          layoutSections: { refType: new ListType(mockLayoutSection) },
         },
         annotations: { [METADATA_TYPE]: LAYOUT_TYPE_ID_METADATA_TYPE },
       })
@@ -1712,7 +1712,7 @@ describe('transformer', () => {
           SALESFORCE,
           WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
         ),
-        fields: { field: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
+        fields: { field: { refType: BuiltinTypes.STRING } },
         annotations: { [METADATA_TYPE]: WORKFLOW_FIELD_UPDATE_METADATA_TYPE },
       })
       const mockWorkflowFieldUpdateInstance = new InstanceElement(
@@ -1737,7 +1737,7 @@ describe('transformer', () => {
         {
           elemID: new ElemID(SALESFORCE, CPQ_PRODUCT_RULE),
           fields: {
-            [CPQ_LOOKUP_PRODUCT_FIELD]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+            [CPQ_LOOKUP_PRODUCT_FIELD]: { refType: BuiltinTypes.STRING },
           },
           annotations: {
             [METADATA_TYPE]: CUSTOM_OBJECT,
@@ -1769,14 +1769,14 @@ describe('transformer', () => {
       const workflowActionReference = new ObjectType({
         elemID: new ElemID(SALESFORCE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE),
         fields: {
-          name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          type: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          name: { refType: BuiltinTypes.STRING },
+          type: { refType: BuiltinTypes.STRING },
         },
         annotations: { [METADATA_TYPE]: WORKFLOW_ACTION_REFERENCE_METADATA_TYPE },
       })
       const workflowRule = new ObjectType({
         elemID: new ElemID(SALESFORCE, WORKFLOW_RULE_METADATA_TYPE),
-        fields: { actions: { refType: createRefToElmWithValue(workflowActionReference) } },
+        fields: { actions: { refType: workflowActionReference } },
         annotations: { [METADATA_TYPE]: WORKFLOW_RULE_METADATA_TYPE },
       })
       const mockWorkflowRuleInstance = new InstanceElement(
@@ -1810,7 +1810,7 @@ describe('transformer', () => {
     describe('when field is not specified', () => {
       const srcObject = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'test'),
-        fields: { test: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
+        fields: { test: { refType: BuiltinTypes.STRING } },
         annotations: { [METADATA_TYPE]: 'test' },
       })
       const srcInst = new InstanceElement('test', srcObject, {})
@@ -1825,7 +1825,7 @@ describe('transformer', () => {
     describe('with all other cases', () => {
       const srcObject = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'test'),
-        fields: { test: { refType: createRefToElmWithValue(BuiltinTypes.STRING) } },
+        fields: { test: { refType: BuiltinTypes.STRING } },
         annotations: { [METADATA_TYPE]: 'test' },
       })
       const srcInst = new InstanceElement('test', srcObject, {})
@@ -1915,16 +1915,16 @@ describe('transformer', () => {
           elemID: mockElemID,
           fields: {
             Id: {
-              refType: createRefToElmWithValue(BuiltinTypes.STRING),
+              refType: BuiltinTypes.STRING,
               annotations: {
                 [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
               },
             },
             Name: {
-              refType: createRefToElmWithValue(Types.compoundDataTypes.Name),
+              refType: Types.compoundDataTypes.Name,
             },
             LocalAddress: {
-              refType: createRefToElmWithValue(Types.compoundDataTypes.Address),
+              refType: Types.compoundDataTypes.Address,
               annotations: {
                 [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
                 [FIELD_ANNOTATIONS.UPDATEABLE]: true,
@@ -1956,11 +1956,11 @@ describe('transformer', () => {
       mockObjType = new ObjectType({
         elemID: new ElemID('test', 'obj'),
         fields: {
-          str: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          num: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-          bool: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-          obj: { refType: createRefToElmWithValue(new ObjectType({ elemID: new ElemID('test', 'nested') })) },
-          unknown: { refType: createRefToElmWithValue(BuiltinTypes.UNKNOWN) },
+          str: { refType: BuiltinTypes.STRING },
+          num: { refType: BuiltinTypes.NUMBER },
+          bool: { refType: BuiltinTypes.BOOLEAN },
+          obj: { refType: new ObjectType({ elemID: new ElemID('test', 'nested') }) },
+          unknown: { refType: BuiltinTypes.UNKNOWN },
         },
       })
     })

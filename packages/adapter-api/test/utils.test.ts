@@ -18,7 +18,6 @@ import { getDeepInnerType, getField, getFieldType } from '../src/utils'
 import { ObjectType, ListType, isElement, isField, isListType, isMapType, MapType, PrimitiveType, PrimitiveTypes, ReadOnlyElementsSource } from '../src/elements'
 import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
-import { ReferenceExpression } from '../src/values'
 
 const { awu } = collections.asynciterable
 
@@ -41,28 +40,28 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
     elemID: mockElemID,
     fields: {
       fieldTest: {
-        refType: new ReferenceExpression(BuiltinTypes.NUMBER.elemID, BuiltinTypes.NUMBER),
+        refType: BuiltinTypes.NUMBER,
       },
       listFieldTest: {
-        refType: new ReferenceExpression(listOfNum.elemID, listOfNum),
+        refType: listOfNum,
       },
       mapFieldTest: {
-        refType: new ReferenceExpression(mapOfNum.elemID, mapOfNum),
+        refType: mapOfNum,
       },
       listOfListFieldTest: {
-        refType: new ReferenceExpression(listOfListofNum.elemID, listOfListofNum),
+        refType: listOfListofNum,
       },
       mapOfMapFieldTest: {
-        refType: new ReferenceExpression(mapOfMapOfNum.elemID, mapOfMapOfNum),
+        refType: mapOfMapOfNum,
       },
       mapOfListFieldTest: {
-        refType: new ReferenceExpression(mapOfListOfNum.elemID, mapOfListOfNum),
+        refType: mapOfListOfNum,
       },
       listOfMapFieldTest: {
-        refType: new ReferenceExpression(listOfMapOfNum.elemID, listOfMapOfNum),
+        refType: listOfMapOfNum,
       },
       mapOfPrimitive: {
-        refType: new ReferenceExpression(mapOfPrimitiveNum.elemID, mapOfPrimitiveNum),
+        refType: mapOfPrimitiveNum,
       },
     },
     annotationRefsOrTypes: {},

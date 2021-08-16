@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Change, isEqualElements, toChange, ElemID, isContainerType, SaltoError, ReadOnlyElementsSource, getChangeElement, isAdditionOrModificationChange, isRemovalChange } from '@salto-io/adapter-api'
+import { Element, Change, isEqualElements, toChange, ElemID, isContainerType, SaltoError, ReadOnlyElementsSource, getChangeElement, isAdditionOrModificationChange, isRemovalChange, isAdditionChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import { ThenableIterable } from '@salto-io/lowerdash/src/collections/asynciterable'
@@ -28,6 +28,7 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 const MERGER_LOCK = 'MERGER_LOCK'
 const FLUSH_IN_PROGRESS = 'FLUSHING'
+export const MAX_LOG_ON_MERGE = 100
 export const REBUILD_ON_RECOVERY = 'rebuild'
 export const CLEAR_ON_RECOVERY = 'clearOnly'
 export const MERGE_MANAGER_SUFFIX = 'merge_manager'
@@ -325,17 +326,33 @@ export const createMergeManager = async (flushables: Flushable[],
     currentElements: ElementsSource
     currentErrors: RemoteMap<SaltoError[]>
   }): Promise<void> => {
+    log.debug('Applying merged changes to cache.')
+    const logChanges = (changes: Change<Element>[]): void => {
+      const numIdsToLog = Math.min(changes.length, MAX_LOG_ON_MERGE)
+      if (numIdsToLog > 0) {
+        log.debug(`Change type: ${changes[0].action}, on ${changes.length} elements. The first ${numIdsToLog} ids are: ${changes.splice(0, numIdsToLog)
+          .map(change => getChangeElement(change).elemID.getFullName()).join(', ')}`)
+      }
+    }
     if (!mergedChanges.cacheValid) {
+      log.debug('Clearing due to cache invalidation')
       await currentErrors.clear()
       await currentElements.clear()
     } else {
-      await currentElements.deleteAll(awu(mergedChanges.changes).filter(isRemovalChange)
-        .map(change => getChangeElement(change).elemID))
-      await currentErrors.deleteAll(awu(noErrorMergeIds))
+      const removalChanges = mergedChanges.changes.filter(isRemovalChange)
+      await currentElements.deleteAll(removalChanges.map(change => getChangeElement(change).elemID))
+      logChanges(removalChanges)
+      await currentErrors.deleteAll(noErrorMergeIds)
     }
-    await currentErrors.setAll(awu(mergeErrors))
-    await currentElements.setAll(awu(mergedChanges.changes).filter(isAdditionOrModificationChange)
+    await currentErrors.setAll(mergeErrors)
+    const additionOrModificationChanges = mergedChanges.changes
+      .filter(isAdditionOrModificationChange)
+    const [additionChanges, modificationChanges] = _.partition(additionOrModificationChanges,
+      isAdditionChange)
+    await currentElements.setAll(additionOrModificationChanges
       .map(change => getChangeElement(change)))
+    logChanges(additionChanges)
+    logChanges(modificationChanges)
   }
   const lock = new AsyncLock()
   const mergeManager = {
@@ -360,6 +377,7 @@ export const createMergeManager = async (flushables: Flushable[],
       }),
     mergeComponents: async (cacheUpdate: CacheChangeSetUpdate) => lock.acquire(MERGER_LOCK,
       async () => {
+        log.debug(`Merging components: ${cacheUpdate.src1Prefix}, ${cacheUpdate.src2Prefix}`)
         const changeResult = await updateCache(cacheUpdate)
         if (cacheUpdate.src1Changes?.postChangeHash) {
           await hashes.set(getSourceHashKey(cacheUpdate.src1Prefix),

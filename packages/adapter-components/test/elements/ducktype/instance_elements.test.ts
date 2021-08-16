@@ -15,7 +15,6 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, InstanceElement, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 // eslint-disable-next-line
 import { toInstance } from '../../../src/elements/ducktype'
 import { RECORDS_PATH } from '../../../src/elements/constants'
@@ -27,10 +26,10 @@ const type = new ObjectType({
   elemID: new ElemID(ADAPTER_NAME, 'bla'),
   // not exhaustive - only has the field ids that are needed for the tests
   fields: {
-    id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-    api_collection_id: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+    id: { refType: BuiltinTypes.NUMBER },
+    api_collection_id: { refType: BuiltinTypes.NUMBER },
     field_with_complex_type: {
-      refType: createRefToElmWithValue(BuiltinTypes.UNKNOWN),
+      refType: BuiltinTypes.UNKNOWN,
     }, // incorrect type
   },
 })
@@ -116,6 +115,28 @@ describe('ducktype_instance_elements', () => {
         entry,
       ))).toBeTruthy()
       expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', 'some_other_name_54775'])
+    })
+    it('should escape id part when it only contains digits', async () => {
+      const inst = await toInstance({
+        type,
+        transformationConfigByType: {
+          bla: {
+            idFields: ['id'],
+          },
+        },
+        transformationDefaultConfig: {
+          idFields: ['somethingElse'],
+        },
+        defaultName: 'abc',
+        entry,
+      })
+      expect(inst).toBeDefined()
+      expect(inst?.isEqual(new InstanceElement(
+        '54775@',
+        type,
+        entry,
+      ))).toBeTruthy()
+      expect(inst?.path).toEqual([ADAPTER_NAME, RECORDS_PATH, 'bla', '54775'])
     })
     it('should include parent name when nestName is true', async () => {
       const parent = new InstanceElement('abc', type, {})

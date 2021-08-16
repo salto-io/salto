@@ -216,13 +216,14 @@ const envRenameDef = createWorkspaceCommand({
 // Delete
 type EnvDeleteArgs = {
   envName: string
+  keepNacls?: boolean
 }
 
 export const deleteAction: WorkspaceCommandAction<EnvDeleteArgs> = async (
   { input, output, workspace },
 ): Promise<CliExitCode> => {
-  const { envName } = input
-  await workspace.deleteEnvironment(envName)
+  const { envName, keepNacls } = input
+  await workspace.deleteEnvironment(envName, keepNacls)
   outputLine(formatDeleteEnv(envName), output)
   return CliExitCode.Success
 }
@@ -231,6 +232,14 @@ const envDeleteDef = createWorkspaceCommand({
   properties: {
     name: 'delete',
     description: 'Delete a workspace environment',
+    keyedOptions: [
+      {
+        name: 'keepNacls',
+        alias: 'k',
+        description: 'Do not delete nacl and state files',
+        type: 'boolean',
+      },
+    ],
     positionalOptions: [
       {
         name: 'envName',

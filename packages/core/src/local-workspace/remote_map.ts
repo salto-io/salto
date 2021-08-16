@@ -22,7 +22,6 @@ import { remoteMap } from '@salto-io/workspace'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import type rocksdb from '@salto-io/rocksdb'
 import path from 'path'
-import fs from 'fs'
 
 
 const { asynciterable } = collections
@@ -57,6 +56,10 @@ const isDBLockErr = (error: Error): boolean => (
   error.message.includes('LOCK: Resource temporarily unavailable')
 )
 
+const isDBNotExistErr = (error: Error): boolean => (
+  error.message.includes('LOCK: No such file or directory')
+)
+
 class DBLockError extends Error {
   constructor() {
     super('Salto local database locked. Could another Salto process '
@@ -64,7 +67,7 @@ class DBLockError extends Error {
   }
 }
 
-const getTmpLocationForLoc = (location: string): string => path.join(location, TMP_DB_DIR)
+const getDBTmpDir = (location: string): string => path.join(location, TMP_DB_DIR)
 
 const readIteratorNext = (iterator: rocksdb
   .Iterator): Promise<remoteMap.RemoteMapEntry<string> | undefined> =>
@@ -192,14 +195,28 @@ const readonlyDBConnections: Record<string, Promise<rocksdb>> = {}
 const tmpDBConnections: Record<string, Record<string, Promise<rocksdb>>> = {}
 let currentConnectionsCount = 0
 
-const closeConnection = async (location: string, connection: Promise<rocksdb>,
-  deleteDB = false): Promise<void> => {
+const deleteLocation = async (location: string): Promise<void> => {
+  try {
+    await promisify(getRemoteDbImpl().destroy.bind(getRemoteDbImpl(), location))()
+  } catch (e) {
+    // If the DB does not exist, we don't want to throw error upon destory
+    if (!isDBNotExistErr(e)) {
+      throw e
+    }
+  }
+}
+
+const closeConnection = async (location: string, connection: Promise<rocksdb>): Promise<void> => {
   const dbConnection = await connection
   await promisify(dbConnection.close.bind(dbConnection))()
-  if (deleteDB === true) {
-    await promisify(getRemoteDbImpl().destroy.bind(getRemoteDbImpl(), location))()
-  }
   delete persistentDBConnections[location]
+}
+
+const deleteDB = async (location: string): Promise<void> => {
+  if (location in persistentDBConnections) {
+    await closeConnection(location, persistentDBConnections[location])
+  }
+  await deleteLocation(location)
 }
 
 const closeTmpConnection = async (
@@ -209,7 +226,7 @@ const closeTmpConnection = async (
 ): Promise<void> => {
   const dbConnection = await connection
   await promisify(dbConnection.close.bind(dbConnection))()
-  await promisify(getRemoteDbImpl().destroy.bind(getRemoteDbImpl(), tmpLocation))()
+  await deleteLocation(tmpLocation)
   delete (tmpDBConnections[location] ?? {})[tmpLocation]
 }
 
@@ -227,14 +244,11 @@ export const closeAllRemoteMaps = async (): Promise<void> => {
 export const cleanDatabases = async (): Promise<void> => {
   const persistentDBs = Object.entries(persistentDBConnections)
   await closeAllRemoteMaps()
-  await awu(persistentDBs).forEach(async ([loc, connection]) => {
-    const tmpDir = getTmpLocationForLoc(loc)
-    await awu(fs.readdirSync(tmpDir)).forEach(async tmpLoc => {
+  await awu(persistentDBs).forEach(async ([loc]) => {
+    const tmpDir = getDBTmpDir(loc)
+    await awu(await fileUtils.readDir(tmpDir)).forEach(async tmpLoc => {
       try {
-        await promisify(
-          getRemoteDbImpl().destroy.bind(getRemoteDbImpl(),
-            path.join(tmpDir, tmpLoc))
-        )()
+        await deleteLocation(path.join(tmpDir, tmpLoc))
       } catch (e) {
         if (isDBLockErr(e)) {
           throw new DBLockError()
@@ -243,7 +257,7 @@ export const cleanDatabases = async (): Promise<void> => {
       }
     })
     delete tmpDBConnections[loc]
-    await closeConnection(loc, connection, true)
+    await deleteDB(loc)
   })
 }
 
@@ -350,16 +364,16 @@ remoteMap.RemoteMapCreator => {
     remoteMap.CreateRemoteMapParams<T>
   ): Promise<remoteMap.RemoteMap<T, K> > => {
     const delKeys = new Set<string>()
-    const locationTmpDir = getTmpLocationForLoc(location)
+    const locationTmpDir = getDBTmpDir(location)
     if (!await fileUtils.exists(location)) {
       await fileUtils.mkdirp(location)
     }
     if (!await fileUtils.exists(locationTmpDir)) {
       await fileUtils.mkdirp(locationTmpDir)
     }
-    if (!/^[a-z0-9-_\s/]+$/i.test(namespace)) {
+    if (/^[:]+$/i.test(namespace)) {
       throw new Error(
-        `Invalid namespace: ${namespace}. Must include only alphanumeric characters or -`
+        `Invalid namespace: ${namespace}. Should not include the character ':'`
       )
     }
 
@@ -620,12 +634,12 @@ remoteMap.RemoteMapCreator => {
           [createTempIterator({ keys: true, values: true })]
         )), false)
         await clearImpl(tmpDB, tempKeyPrefix)
-        const readRes = await batchUpdate(
+        const deleteRes = await batchUpdate(
           awu(delKeys.keys()).map(async key => ({ key, value: key })),
           false,
           DELETE_OPERATION
         )
-        return writeRes || readRes
+        return writeRes || deleteRes
       },
       revert: async () => {
         locationCache.reset()

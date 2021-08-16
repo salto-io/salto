@@ -20,8 +20,7 @@ import {
   isListType, ListType, BuiltinTypes, StaticFile, isPrimitiveType,
   Element, isReferenceExpression, isPrimitiveValue, CORE_ANNOTATIONS, FieldMap, AdditionChange,
   RemovalChange, ModificationChange, isInstanceElement, isObjectType, MapType, isMapType,
-  ContainerType,
-  VariableExpression,
+  ContainerType, TypeReference, createRefToElmWithValue, VariableExpression,
 } from '@salto-io/adapter-api'
 import { AdditionDiff, RemovalDiff, ModificationDiff } from '@salto-io/dag'
 import { collections } from '@salto-io/lowerdash'
@@ -31,7 +30,7 @@ import {
   findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath, ResolveValuesFunc,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
-  transformElement, toObjectType, getParents, createRefToElmWithValue, resolveTypeShallow,
+  transformElement, toObjectType, getParents, resolveTypeShallow,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 import { mockFunction, MockFunction } from './common'
@@ -56,49 +55,49 @@ describe('Test utils.ts', () => {
       testAnno: 'TEST ANNO',
     },
     fields: {
-      ref: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      str: { refType: createRefToElmWithValue(BuiltinTypes.STRING), annotations: { testAnno: 'TEST FIELD ANNO' } },
-      file: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-      bool: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-      num: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-      numArray: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.NUMBER)) },
-      strArray: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
-      numMap: { refType: createRefToElmWithValue(new MapType(BuiltinTypes.NUMBER)) },
-      strMap: { refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)) },
+      ref: { refType: BuiltinTypes.STRING },
+      str: { refType: BuiltinTypes.STRING, annotations: { testAnno: 'TEST FIELD ANNO' } },
+      file: { refType: BuiltinTypes.STRING },
+      bool: { refType: BuiltinTypes.BOOLEAN },
+      num: { refType: BuiltinTypes.NUMBER },
+      numArray: { refType: new ListType(BuiltinTypes.NUMBER) },
+      strArray: { refType: new ListType(BuiltinTypes.STRING) },
+      numMap: { refType: new MapType(BuiltinTypes.NUMBER) },
+      strMap: { refType: new MapType(BuiltinTypes.STRING) },
       obj: {
-        refType: createRefToElmWithValue(new ListType(new ObjectType({
+        refType: new ListType(new ObjectType({
           elemID: mockElem,
           fields: {
-            field: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+            field: { refType: BuiltinTypes.STRING },
             otherField: {
-              refType: createRefToElmWithValue(BuiltinTypes.STRING),
+              refType: BuiltinTypes.STRING,
             },
-            value: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+            value: { refType: BuiltinTypes.STRING },
             mapOfStringList: {
-              refType: createRefToElmWithValue(new MapType(new ListType(BuiltinTypes.STRING))),
+              refType: new MapType(new ListType(BuiltinTypes.STRING)),
             },
             innerObj: {
-              refType: createRefToElmWithValue(new ObjectType({
+              refType: new ObjectType({
                 elemID: mockElem,
                 fields: {
-                  name: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+                  name: { refType: BuiltinTypes.STRING },
                   listOfNames: {
-                    refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)),
+                    refType: new ListType(BuiltinTypes.STRING),
                   },
                   magical: {
-                    refType: createRefToElmWithValue(new ObjectType({
+                    refType: new ObjectType({
                       elemID: mockElem,
                       fields: {
-                        deepNumber: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-                        deepName: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+                        deepNumber: { refType: BuiltinTypes.NUMBER },
+                        deepName: { refType: BuiltinTypes.STRING },
                       },
-                    })),
+                    }),
                   },
                 },
-              })),
+              }),
             },
           },
-        }))),
+        })),
       },
     },
     path: ['this', 'is', 'happening'],
@@ -214,16 +213,16 @@ describe('Test utils.ts', () => {
       expect(toObjectType(mapType, instance)).toEqual(new ObjectType({
         elemID: mapType.elemID,
         fields: {
-          aaa: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          bbb: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          aaa: { refType: BuiltinTypes.STRING },
+          bbb: { refType: BuiltinTypes.STRING },
         },
       }))
       mapType.annotations = { randomAnnotation: {} }
       expect(toObjectType(mapType, instance)).toEqual(new ObjectType({
         elemID: mapType.elemID,
         fields: {
-          aaa: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          bbb: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          aaa: { refType: BuiltinTypes.STRING },
+          bbb: { refType: BuiltinTypes.STRING },
         },
         annotations: mapType.annotations,
       }))
@@ -724,9 +723,9 @@ describe('Test utils.ts', () => {
       objType = new ObjectType({
         elemID: new ElemID('test', 'test'),
         fields: {
-          f1: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          f1: { refType: BuiltinTypes.STRING },
           f2: {
-            refType: createRefToElmWithValue(listType),
+            refType: listType,
             annotations: {
               a1: 'foo',
               [CORE_ANNOTATIONS.DEPENDS_ON]: [
@@ -735,7 +734,7 @@ describe('Test utils.ts', () => {
             },
           },
           f3: {
-            refType: createRefToElmWithValue(mapType),
+            refType: mapType,
             annotations: {
               a2: 'foo',
               [CORE_ANNOTATIONS.DEPENDS_ON]: [
@@ -744,7 +743,7 @@ describe('Test utils.ts', () => {
             },
           },
           f4: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
           },
         },
         annotationRefsOrTypes: { a2: BuiltinTypes.STRING },
@@ -831,7 +830,7 @@ describe('Test utils.ts', () => {
       })
       it('should not transform fields when runOnFields is not set', () => {
         expect(transformFunc).not.toHaveBeenCalledWith({
-          value: expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) }),
+          value: expect.objectContaining({ refType: BuiltinTypes.STRING }),
           field: undefined,
           path: objType.fields.f4.elemID,
         })
@@ -888,7 +887,7 @@ describe('Test utils.ts', () => {
         })
         expect(otherFunc).not.toHaveBeenCalledWith({
           value: { reference: new ReferenceExpression(primType.elemID) },
-          field: expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) }),
+          field: expect.objectContaining({ refType: BuiltinTypes.STRING }),
           path: objType.fields.f2.elemID.createNestedID(CORE_ANNOTATIONS.DEPENDS_ON, '0'),
         })
       })
@@ -942,11 +941,11 @@ describe('Test utils.ts', () => {
         name: objectName,
       },
       fields: {
-        refValue: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        arrayValues: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
-        mapValues: { refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)) },
-        fileValue: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        objValue: { refType: createRefToElmWithValue(new ObjectType({ elemID: new ElemID('salesforce', 'nested') })) },
+        refValue: { refType: BuiltinTypes.STRING },
+        arrayValues: { refType: new ListType(BuiltinTypes.STRING) },
+        mapValues: { refType: new MapType(BuiltinTypes.STRING) },
+        fileValue: { refType: BuiltinTypes.STRING },
+        objValue: { refType: new ObjectType({ elemID: new ElemID('salesforce', 'nested') }) },
       },
     })
     element.annotations.typeRef = new ReferenceExpression(
@@ -1019,7 +1018,7 @@ describe('Test utils.ts', () => {
       },
       fields: {
         field: {
-          refType: createRefToElmWithValue(element),
+          refType: element,
           annotations: {
             reg: regValue,
             refValue: valueRef,
@@ -1330,7 +1329,7 @@ describe('Test utils.ts', () => {
     })
 
     it('should set annotation type path', () => {
-      setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno',), createRefToElmWithValue(BuiltinTypes.NUMBER))
+      setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno',), BuiltinTypes.NUMBER)
       expect(clonedMockType.annotationRefTypes.testAnno.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
     })
 
@@ -1429,14 +1428,14 @@ describe('Test utils.ts', () => {
       elemID: otID,
       fields: {
         // eslint-disable-next-line camelcase
-        num_field: { refType: createRefToElmWithValue(primNum) },
+        num_field: { refType: primNum },
         // eslint-disable-next-line camelcase
-        str_field: { refType: createRefToElmWithValue(primStr) },
+        str_field: { refType: primStr },
       },
       annotationRefsOrTypes: {},
       annotations: {},
     })
-    const otRef = new ReferenceExpression(ot.elemID, ot)
+    const otRef = createRefToElmWithValue(ot)
     const instances = [
       new InstanceElement('1', otRef, {}),
       new InstanceElement('2', otRef, {}),
@@ -1546,8 +1545,8 @@ describe('Test utils.ts', () => {
     const annoType = new ObjectType({
       elemID: annoTypeID,
       fields: {
-        str: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        num: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+        str: { refType: BuiltinTypes.STRING },
+        num: { refType: BuiltinTypes.NUMBER },
       },
     })
     const objElemID = new ElemID('salto', 'obj')
@@ -1570,9 +1569,9 @@ describe('Test utils.ts', () => {
         },
       },
       fields: {
-        obj: { refType: createRefToElmWithValue(annoType), annotations: { label: 'LABEL' } },
-        list: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
-        map: { refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)) },
+        obj: { refType: annoType, annotations: { label: 'LABEL' } },
+        list: { refType: new ListType(BuiltinTypes.STRING) },
+        map: { refType: new MapType(BuiltinTypes.STRING) },
       },
     })
     const inst = new InstanceElement(
@@ -1768,8 +1767,8 @@ describe('Test utils.ts', () => {
     const base = new ObjectType({
       elemID: baseElemID,
       fields: {
-        field1: { refType: createRefToElmWithValue(BuiltinTypes.STRING), annotations: { label: 'base' } },
-        field2: { refType: createRefToElmWithValue(BuiltinTypes.STRING), annotations: { label: 'base' } },
+        field1: { refType: BuiltinTypes.STRING, annotations: { label: 'base' } },
+        field2: { refType: BuiltinTypes.STRING, annotations: { label: 'base' } },
       },
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: {
@@ -1788,12 +1787,12 @@ describe('Test utils.ts', () => {
     const nested = new ObjectType({
       elemID: nestedElemID,
       fields: {
-        field1: { refType: createRefToElmWithValue(strType), annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'field1' } },
-        field2: { refType: createRefToElmWithValue(strType) },
-        base: { refType: createRefToElmWithValue(base) },
+        field1: { refType: strType, annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'field1' } },
+        field2: { refType: strType },
+        base: { refType: base },
       },
     })
-    const nestedTypeRef = new ReferenceExpression(nested.elemID, nested)
+    const nestedTypeRef = createRefToElmWithValue(nested)
     const ins1 = new InstanceElement(
       'ins',
       nestedTypeRef,
@@ -1895,14 +1894,14 @@ describe('Test utils.ts', () => {
       const typeWithNestedDefaults = new ObjectType({
         elemID: typeWithNestedDefaultsElemID,
         fields: {
-          withDefault: { refType: createRefToElmWithValue(strType), annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'default val' } },
-          nestedTypeHasDefaults: { refType: createRefToElmWithValue(nested) },
+          withDefault: { refType: strType, annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'default val' } },
+          nestedTypeHasDefaults: { refType: nested },
         },
       })
 
       const instanceWithNoValues = new InstanceElement(
         'instance',
-        new ReferenceExpression(typeWithNestedDefaults.elemID, typeWithNestedDefaults),
+        typeWithNestedDefaults,
       )
 
       const elements = [instanceWithNoValues]
@@ -1921,7 +1920,7 @@ describe('Test utils.ts', () => {
         elemID: mockElemID,
         fields: {
           val1: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
             annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'test' },
           },
         },
@@ -1947,10 +1946,10 @@ describe('Test utils.ts', () => {
         elemID,
         fields: {
           field: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
           },
           anotherField: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
           },
         },
         annotations: {
@@ -2016,12 +2015,11 @@ describe('Test utils.ts', () => {
   describe('getParents', () => {
     let result: ReturnType<typeof getParents>
     const obj = new ObjectType({ elemID: new ElemID('test', 'test') })
-    const objRef = new ReferenceExpression(obj.elemID, obj)
     describe('for an element with parents', () => {
       beforeEach(() => {
         const inst = new InstanceElement(
           'test',
-          objRef,
+          obj,
           {},
           undefined,
           { [CORE_ANNOTATIONS.PARENT]: ['a', 'b'] },
@@ -2036,7 +2034,7 @@ describe('Test utils.ts', () => {
       beforeEach(() => {
         const inst = new InstanceElement(
           'test',
-          objRef,
+          obj,
           {},
         )
         result = getParents(inst)
@@ -2044,19 +2042,6 @@ describe('Test utils.ts', () => {
       it('should return an empty array', () => {
         expect(result).toEqual([])
       })
-    })
-  })
-
-  describe('createRefToElmWithValue', () => {
-    it('Should create a reference with elemID equal to the elements elemID and value equal to the element', () => {
-      const obj = new ObjectType({ elemID: new ElemID('a', 'elemID') })
-      const objRef = createRefToElmWithValue(obj)
-      expect(objRef.elemID).toEqual(obj.elemID)
-      expect(objRef.value).toEqual(obj)
-      const inst = new InstanceElement('ab', obj)
-      const instRef = createRefToElmWithValue(inst)
-      expect(instRef.elemID).toEqual(inst.elemID)
-      expect(instRef.value).toEqual(inst)
     })
   })
 
@@ -2081,20 +2066,20 @@ describe('Test utils.ts', () => {
     const objWithResolved = new ObjectType({
       elemID: new ElemID('ad', 'withResolved'),
       fields: {
-        a: { refType: createRefToElmWithValue(fieldType) },
+        a: { refType: fieldType },
       },
       annotationRefsOrTypes: {
-        annoA: createRefToElmWithValue(annoType),
+        annoA: annoType,
       },
     })
     const objWithResolvedWithAdditionalField = cloneAndAddField(objWithResolved)
     const objWithUnresolved = new ObjectType({
       elemID: new ElemID('ad', 'withResolved'),
       fields: {
-        a: { refType: new ReferenceExpression(fieldType.elemID) },
+        a: { refType: new TypeReference(fieldType.elemID) },
       },
       annotationRefsOrTypes: {
-        annoA: new ReferenceExpression(annoType.elemID),
+        annoA: new TypeReference(annoType.elemID),
       },
     })
     const instWithResolvedType = new InstanceElement(
@@ -2106,7 +2091,7 @@ describe('Test utils.ts', () => {
     )
     const instWithUnresolvedType = new InstanceElement(
       'resolved',
-      new ReferenceExpression(objWithResolved.elemID),
+      new TypeReference(objWithResolved.elemID),
       {
         a: 'does not matter',
       }
@@ -2126,7 +2111,7 @@ describe('Test utils.ts', () => {
 
     it('Should resolve ObjectType fields types according to elementsSource', async () => {
       const clonedObj = objWithUnresolved.clone()
-      expect(clonedObj.fields.a.refType.value).toBeUndefined()
+      expect(clonedObj.fields.a.refType.type).toBeUndefined()
       await resolveTypeShallow(clonedObj, elementsSource)
       expect(await clonedObj.fields.a.getType()).toEqual(fieldTypeWithAdditionalField)
       expect((await clonedObj.getAnnotationTypes()).annoA).toEqual(annoTypeWithAdditionalField)
@@ -2140,7 +2125,7 @@ describe('Test utils.ts', () => {
 
     it('Should resolve the type of the InstanceElement according to elementSource', async () => {
       const clonedInst = instWithUnresolvedType.clone()
-      expect(clonedInst.refType.value).toBeUndefined()
+      expect(clonedInst.refType.type).toBeUndefined()
       await resolveTypeShallow(clonedInst, elementsSource)
       expect(await clonedInst.getType()).toEqual(objWithResolvedWithAdditionalField)
     })

@@ -15,7 +15,6 @@
 */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { FieldDefinition, BuiltinTypes, ObjectType, ElemID } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { SUBTYPES_PATH, TYPES_PATH } from '../../src/elements/constants'
 import { filterTypes, hideFields } from '../../src/elements/type_elements'
 
@@ -28,14 +27,14 @@ describe('type_elements', () => {
       myCustomType = new ObjectType({
         elemID: new ElemID('adapter', 'myCustomType'),
         fields: {
-          str: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-          num: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+          str: { refType: BuiltinTypes.STRING },
+          num: { refType: BuiltinTypes.NUMBER },
         },
       })
       fields = {
-        str: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
-        num: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-        custom: { refType: createRefToElmWithValue(myCustomType) },
+        str: { refType: BuiltinTypes.STRING },
+        num: { refType: BuiltinTypes.NUMBER },
+        custom: { refType: myCustomType },
       }
     })
     it('should hide values for fields matching the specification', () => {
@@ -95,8 +94,8 @@ describe('type_elements', () => {
       const typeB = new ObjectType({ elemID: new ElemID('adapterName', 'B'), path: ['adapter', 'somePath'] })
       const typeC = new ObjectType({ elemID: new ElemID('adapterName', 'C'),
         fields: {
-          a: { refType: createRefToElmWithValue(typeA) },
-          b: { refType: createRefToElmWithValue(typeB) },
+          a: { refType: typeA },
+          b: { refType: typeB },
         } })
       const typeD = new ObjectType({ elemID: new ElemID('adapterName', 'D') })
       const filteredTypes = await filterTypes('adapterName', [typeA, typeC, typeD], ['C', 'E'])

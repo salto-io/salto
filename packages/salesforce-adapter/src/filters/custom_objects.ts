@@ -20,8 +20,9 @@ import {
   BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement, Values, ReadOnlyElementsSource,
   ReferenceExpression, ListType, Change, getChangeElement, isField, isObjectTypeChange,
   isAdditionOrRemovalChange, isFieldChange, isRemovalChange, isInstanceChange, toChange,
+  createRefToElmWithValue,
 } from '@salto-io/adapter-api'
-import { findObjectType, transformValues, getParents, pathNaclCase, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { findObjectType, transformValues, getParents, pathNaclCase } from '@salto-io/adapter-utils'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
@@ -31,7 +32,7 @@ import {
   VALUE_SETTINGS_FIELDS, API_NAME_SEPARATOR, FIELD_ANNOTATIONS, VALUE_SET_DEFINITION_FIELDS,
   VALUE_SET_FIELDS, DEFAULT_VALUE_FORMULA, FIELD_TYPE_NAMES, OBJECTS_PATH, INSTALLED_PACKAGES_PATH,
   FORMULA, LEAD_CONVERT_SETTINGS_METADATA_TYPE, ASSIGNMENT_RULES_METADATA_TYPE,
-  WORKFLOW_METADATA_TYPE, QUICK_ACTION_METADATA_TYPE, CUSTOM_TAB_METADATA_TYPE,
+  QUICK_ACTION_METADATA_TYPE, CUSTOM_TAB_METADATA_TYPE,
   DUPLICATE_RULE_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
   VALIDATION_RULES_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE,
   WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_FIELD, NAME_FIELDS,
@@ -542,10 +543,9 @@ const removeUnsupportedFields = (elements: Element[], unsupportedSystemFields: s
 }
 
 // Instances metadataTypes that should be under the customObject folder and have a PARENT reference
-const workflowDependentMetadataTypes = new Set([WORKFLOW_METADATA_TYPE,
-  ...Object.values(WORKFLOW_FIELD_TO_TYPE)])
+const workflowDependentMetadataTypes = new Set(Object.values(WORKFLOW_FIELD_TO_TYPE))
 const dependentMetadataTypes = new Set([CUSTOM_TAB_METADATA_TYPE, DUPLICATE_RULE_METADATA_TYPE,
-  QUICK_ACTION_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE,
+  QUICK_ACTION_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE,
   ASSIGNMENT_RULES_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
   ...workflowDependentMetadataTypes.values(),
 ])
@@ -665,21 +665,21 @@ const createCustomObjectInstance = (values: MetadataValues): InstanceElement => 
     } as MetadataTypeAnnotations,
     fields: {
       [DEPLOY_WRAPPER_INSTANCE_MARKER]: {
-        refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+        refType: BuiltinTypes.BOOLEAN,
         annotations: {
           [FIELD_ANNOTATIONS.LOCAL_ONLY]: true,
         },
       },
       fields: {
-        refType: createRefToElmWithValue(new ListType(customFieldType)),
+        refType: new ListType(customFieldType),
       },
       ..._.mapValues(
         NESTED_INSTANCE_VALUE_TO_TYPE_NAME,
         fieldType => ({
-          refType: createRefToElmWithValue(new ListType(new ObjectType({
+          refType: new ListType(new ObjectType({
             elemID: new ElemID(SALESFORCE, fieldType),
             annotations: { [METADATA_TYPE]: fieldType },
-          }))),
+          })),
         })
       ),
     },

@@ -16,7 +16,6 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, ListType, TypeElement, BuiltinTypes, MapType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { generateTypes, toPrimitiveType } from '../../../src/elements/swagger'
 import { RequestableTypeSwaggerConfig } from '../../../src/config'
 
@@ -74,7 +73,7 @@ describe('swagger_type_elements', () => {
         expect(petArray).toEqual(new ObjectType({
           elemID: new ElemID(ADAPTER_NAME, 'pet__findByStatus'),
           fields: {
-            items: { refType: createRefToElmWithValue(new ListType(pet)) },
+            items: { refType: new ListType(pet) },
           },
           path: [ADAPTER_NAME, 'Types', 'pet__findByStatus'],
         }))

@@ -245,7 +245,7 @@ describe('adapter', () => {
       })
     })
 
-    describe('endpoint overrides', () => {
+    describe('type overrides', () => {
       it('should fetch only the relevant types', async () => {
         const { elements } = await adapter.operations({
           credentials: new InstanceElement(

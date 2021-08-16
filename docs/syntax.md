@@ -287,6 +287,7 @@ Currently the following core annotations are supported:
 - [_created_at](#_created_at)
 - [_changed_by](#_changed_by)
 - [_changed_at](#_changed_at)
+- [_is_service_id](#_is_service_id)
 
 #### `_required`
 This annotation is used on field blocks to specify that an instance must contain a value for this field.
@@ -443,6 +444,25 @@ type salto.example {
 #### _service_url
 This is a hidden annotation (will not be seen in NaCl) that is used to store a URL for an element.
 Elements that have this annotation can support the "Go To Service" feature in Salto enabled editors.
+
+#### _is_service_id
+This boolean annotation is used to identify fields or types as ServiceId. a ServiceId is a value that denotes an ID in the service (used by adapters to distinguish ID fields from other fields). 
+
+Type: `boolean`
+Default: `false`
+Applicable to: Types, Fields
+Example:
+```HCL
+type serviceIdTypeExample {
+  _is_service_id = true
+}
+
+type salto.example {
+  string fieldWithServiceIdAnno {
+    _is_service_id = true
+  }
+}
+```
 
 
 #### _created_by

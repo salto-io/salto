@@ -14,11 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeElement, Element, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { ObjectType, ElemID, BuiltinTypes, PrimitiveType, PrimitiveTypes, isObjectType, InstanceElement, isInstanceElement, CORE_ANNOTATIONS, DetailedChange, getChangeElement, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockState } from '../common/state'
-import { mockFunction } from '../common/helpers'
 import { MergeResult } from '../../src/merger'
 import { mergeWithHidden, handleHiddenChanges } from '../../src/workspace/hidden_values'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
@@ -41,7 +39,7 @@ describe('mergeWithHidden', () => {
         elemID: new ElemID('test', 'type'),
         fields: {
           f1: {
-            refType: createRefToElmWithValue(fieldType),
+            refType: fieldType,
             annotations: { hiddenAnno: 'asd' },
           },
         },
@@ -66,7 +64,7 @@ describe('mergeWithHidden', () => {
       const workspaceType = new ObjectType({
         elemID: new ElemID('test', 'type'),
         fields: {
-          test: { refType: createRefToElmWithValue(workspaceFieldType) },
+          test: { refType: workspaceFieldType },
         },
       })
       const stateFieldType = getFieldType('text', PrimitiveTypes.STRING)
@@ -74,7 +72,7 @@ describe('mergeWithHidden', () => {
         ...workspaceType,
         fields: {
           test: {
-            refType: createRefToElmWithValue(stateFieldType),
+            refType: stateFieldType,
             annotations: { hiddenAnno: 'asd' },
           },
         },
@@ -135,7 +133,7 @@ describe('mergeWithHidden', () => {
         elemID: new ElemID('test', 'type'),
         fields: {
           field: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
           },
         },
       })
@@ -144,7 +142,7 @@ describe('mergeWithHidden', () => {
         elemID: new ElemID('test', 'type'),
         fields: {
           field: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
             annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' },
           },
         },
@@ -174,7 +172,7 @@ describe('handleHiddenChanges', () => {
       instanceType = new ObjectType({
         elemID: new ElemID('test', 'type'),
         fields: {
-          val: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          val: { refType: BuiltinTypes.STRING },
         },
       })
       instance = new InstanceElement(
@@ -200,7 +198,7 @@ describe('handleHiddenChanges', () => {
         result = await handleHiddenChanges(
           [change],
           mockState(),
-          mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+          createInMemoryElementSource(),
         )
         expect(result.visible).toHaveLength(1)
         expect(result.hidden).toHaveLength(1)
@@ -229,7 +227,7 @@ describe('handleHiddenChanges', () => {
         result = await handleHiddenChanges(
           [change],
           mockState([instanceType, instance]),
-          mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+          createInMemoryElementSource(),
         )
       })
       it('should not have a visible change', () => {
@@ -259,7 +257,7 @@ describe('handleHiddenChanges', () => {
         const res = (await handleHiddenChanges(
           [change],
           mockState([instanceType, instance]),
-          mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+          createInMemoryElementSource(),
         ))
         expect(res.visible).toHaveLength(1)
         expect(res.hidden).toHaveLength(1)
@@ -276,7 +274,7 @@ describe('handleHiddenChanges', () => {
         elemID: new ElemID('test', 'type'),
         fields: {
           field: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
             annotations: { [CORE_ANNOTATIONS.SERVICE_URL]: 'someUrl' },
           },
         },
@@ -289,7 +287,7 @@ describe('handleHiddenChanges', () => {
       result = await handleHiddenChanges(
         [change],
         mockState([object]),
-        mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+        createInMemoryElementSource(),
       )
     })
 
@@ -311,8 +309,8 @@ describe('handleHiddenChanges', () => {
         new ObjectType({
           elemID: new ElemID('test', 'type'),
           fields: {
-            val: { refType: createRefToElmWithValue(refTargetType) },
-            ref: { refType: createRefToElmWithValue(refTargetType) },
+            val: { refType: refTargetType },
+            ref: { refType: refTargetType },
           },
         }),
         { val: 'asd' },
@@ -334,7 +332,7 @@ describe('handleHiddenChanges', () => {
         result = await handleHiddenChanges(
           [change],
           mockState([instance]),
-          mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+          createInMemoryElementSource(),
         )
         expect(result.visible).toHaveLength(1)
         expect(result.hidden).toHaveLength(0)
@@ -360,7 +358,7 @@ describe('handleHiddenChanges', () => {
         result = await handleHiddenChanges(
           [change],
           mockState([instance]),
-          mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+          createInMemoryElementSource(),
         )
         expect(result.visible).toHaveLength(1)
         expect(result.hidden).toHaveLength(0)
@@ -391,7 +389,7 @@ describe('handleHiddenChanges', () => {
       const result = await handleHiddenChanges(
         [change],
         mockState([]),
-        mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+        createInMemoryElementSource(),
       )
       expect(result.visible.length).toBe(1)
       expect(result.hidden.length).toBe(0)
@@ -423,7 +421,7 @@ describe('handleHiddenChanges', () => {
       const result = await handleHiddenChanges(
         [change],
         mockState([stateInstance]),
-        mockFunction<() => Promise<AsyncIterable<Element>>>().mockResolvedValue(awu([])),
+        createInMemoryElementSource(),
       )
       expect(result.visible.length).toBe(1)
       expect(result.hidden.length).toBe(0)

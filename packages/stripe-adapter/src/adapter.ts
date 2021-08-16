@@ -59,7 +59,7 @@ export default class StripeAdapter implements AdapterOperations {
     this.client = client
     this.paginator = createPaginator({
       client: this.client,
-      paginationFunc: getWithCursorPagination,
+      paginationFunc: getWithCursorPagination(),
     })
     this.filtersRunner = filtersRunner(
       {

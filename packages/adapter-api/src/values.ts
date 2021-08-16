@@ -19,7 +19,7 @@ import { hash as hashUtils, types } from '@salto-io/lowerdash'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively elements.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
-import { Element, ReadOnlyElementsSource, ObjectType } from './elements'
+import { Element, ReadOnlyElementsSource, PlaceholderObjectType, TypeElement } from './elements'
 
 export type PrimitiveValue = string | boolean | number
 
@@ -122,7 +122,7 @@ export class ReferenceExpression {
     // Fallback to a placeholder Type. This resembles the behavior
     // before the RefType change.
     if (value === undefined) {
-      return new ObjectType({
+      return new PlaceholderObjectType({
         elemID: this.elemID,
       })
     }
@@ -146,6 +146,24 @@ export class VariableExpression extends ReferenceExpression {
   }
 }
 
+export class TypeReference extends ReferenceExpression {
+  constructor(
+    public readonly elemID: ElemID,
+    public readonly type?: TypeElement,
+  ) {
+    super(elemID, type)
+    if (!elemID.isTopLevel()) {
+      throw new Error(
+        `Invalid id for type reference: ${elemID.getFullName()}. Type reference must be top level.`
+      )
+    }
+  }
+
+  async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
+    return super.getResolvedValue(elementsSource)
+  }
+}
+
 // eslint-disable-next-line no-use-before-define
 export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> { }
 
@@ -159,6 +177,11 @@ export const isStaticFile = (value: any): value is StaticFile => (
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isReferenceExpression = (value: any): value is ReferenceExpression => (
   value instanceof ReferenceExpression
+)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isTypeReference = (value: any): value is TypeReference => (
+  value instanceof TypeReference
 )
 
 export type TemplatePart = string | Expression

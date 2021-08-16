@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   ElemID, ObjectType, BuiltinTypes, FieldDefinition, ListType, MapType,
 } from '@salto-io/adapter-api'
-import { createRefToElmWithValue, createMatchingObjectType } from '@salto-io/adapter-utils'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { RequestConfig, RequestDefaultConfig } from './request'
 import { TransformationConfig, TransformationDefaultConfig } from './transformation'
 
@@ -109,7 +109,7 @@ export const createUserFetchConfigType = (
   new ObjectType({
     elemID: new ElemID(adapter, 'userFetchConfig'),
     fields: {
-      includeTypes: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
+      includeTypes: { refType: new ListType(BuiltinTypes.STRING) },
       ...additionalFields,
     },
   })

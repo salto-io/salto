@@ -28,6 +28,7 @@ import fieldReferencesFilter from './filters/field_references'
 import objectDefsFilter from './filters/object_defs'
 import objectDefSplitFilter from './filters/object_def_split'
 import workflowAndTaskReferencesFilter from './filters/workflow_and_task_references'
+import unorderedListsFilter from './filters/unordered_lists'
 import changeValidator from './change_validator'
 import { ZUORA_BILLING, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX, CUSTOM_OBJECT_DEFINITION_TYPE } from './constants'
 import { generateBillingSettingsTypes } from './transformers/billing_settings'
@@ -41,6 +42,9 @@ const log = logger(module)
 export const DEFAULT_FILTERS = [
   // objectDefsFilter should run before everything else
   objectDefsFilter,
+
+  // unorderedLists should run before references are created
+  unorderedListsFilter,
 
   workflowAndTaskReferencesFilter,
 

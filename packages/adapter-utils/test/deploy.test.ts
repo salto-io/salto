@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement, DeployResult, getChangeElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, DeployResult, getChangeElement } from '@salto-io/adapter-api'
 import { deployInstance, ChangeOperations } from '../src/deploy'
 import { mockFunction, toChangeGroup, MockInterface } from './common'
 
@@ -21,7 +21,7 @@ describe('deployInstance', () => {
   const testType = new ObjectType({ elemID: new ElemID('test', 'type') })
   const testInst = new InstanceElement(
     'test',
-    new ReferenceExpression(testType.elemID, testType),
+    testType,
     { val: 'some value' }
   )
 

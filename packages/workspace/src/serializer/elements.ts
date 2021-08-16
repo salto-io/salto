@@ -21,9 +21,8 @@ import {
   ReferenceExpression, TemplateExpression, VariableExpression,
   isReferenceExpression, Variable, StaticFile, isStaticFile,
   isInstanceElement, isPrimitiveType,
-  FieldDefinition, isObjectType, Values, Value, TypeRefMap,
+  FieldDefinition, isObjectType, Values, Value, TypeRefMap, TypeReference, isTypeReference,
 } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { DuplicateAnnotationError, MergeError, isMergeError } from '../merger/internal/common'
 import { DuplicateInstanceKeyError } from '../merger/internal/instances'
 import { DuplicateAnnotationFieldDefinitionError, ConflictingFieldTypesError,
@@ -32,7 +31,7 @@ import { DuplicateVariableNameError } from '../merger/internal/variables'
 import { MultiplePrimitiveTypesError } from '../merger/internal/primitives'
 
 import { InvalidStaticFile } from '../workspace/static_files/common'
-import { ValidationError, InvalidValueValidationError, InvalidValueTypeValidationError, InvalidStaticFileError, CircularReferenceValidationError, IllegalReferenceValidationError, UnresolvedReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, InvalidValueMaxLengthValidationError, isValidationError } from '../validator'
+import { ValidationError, InvalidValueValidationError, InvalidValueTypeValidationError, InvalidStaticFileError, CircularReferenceValidationError, IllegalReferenceValidationError, UnresolvedReferenceValidationError, MissingRequiredFieldValidationError, RegexMismatchValidationError, InvalidValueRangeValidationError, InvalidValueMaxLengthValidationError, isValidationError, InvalidTypeValidationError } from '../validator'
 
 const { awu } = collections.asynciterable
 // There are two issues with naive json stringification:
@@ -64,6 +63,7 @@ const NameToType = {
   Field: Field,
   TemplateExpression: TemplateExpression,
   ReferenceExpression: ReferenceExpression,
+  TypeReference: TypeReference,
   VariableExpression: VariableExpression,
   StaticFile: StaticFile,
   DuplicateAnnotationError: DuplicateAnnotationError,
@@ -84,6 +84,7 @@ const NameToType = {
   RegexMismatchValidationError: RegexMismatchValidationError,
   InvalidValueRangeValidationError: InvalidValueRangeValidationError,
   InvalidValueMaxLengthValidationError: InvalidValueMaxLengthValidationError,
+  InvalidTypeValidationError: InvalidTypeValidationError,
 }
 const nameToTypeEntries = Object.entries(NameToType)
 const possibleTypes = Object.values(NameToType)
@@ -152,6 +153,15 @@ export const serialize = <T = Element>(
       ? new PrimitiveType({ elemID: v.elemID, primitive: v.primitive })
       : new ObjectType({ elemID: v.elemID })
   )
+  const referenceTypeReplacer = (e: TypeReference):
+  TypeReference & SerializedClass => {
+    if (referenceSerializerMode === 'keepRef') {
+      if (isType(e.type) && !isContainerType(e.type)) {
+        return saltoClassReplacer(new TypeReference(e.elemID, resolveCircles(e.type)))
+      }
+    }
+    return saltoClassReplacer(new TypeReference(e.elemID))
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const replacer = (v: any, k: any): any => {
@@ -161,6 +171,9 @@ export const serialize = <T = Element>(
       }
       if (isReferenceExpression(v)) {
         return referenceExpressionReplacer(v)
+      }
+      if (isTypeReference(v)) {
+        return referenceTypeReplacer(v)
       }
       if (isStaticFile(v)) {
         return staticFileReplacer(v)
@@ -198,12 +211,15 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
     return new ReferenceExpression(reviveElemID(elemID))
   }
 
-  const reviveRefType = (v: Value): ReferenceExpression => {
-    if (v.refType) {
-      return v.refType
+  const reviveRefTypeOfElement = (v: Value): TypeReference => {
+    if (v.refType !== undefined) {
+      return new TypeReference(reviveElemID(v.refType.elemID))
     }
-    return createRefToElmWithValue(v.type)
+    return v.type
   }
+
+  const reviveRefType = (v: Value): TypeReference =>
+    (new TypeReference(reviveElemID(v.elemID)))
 
   const reviveAnnotationRefTypes = (v: Value): TypeRefMap => {
     if (v.annotationRefTypes) {
@@ -212,17 +228,17 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
     return v.annotationTypes
   }
 
-  const reviveRefInnerType = (v: Value): ReferenceExpression => {
+  const reviveRefInnerType = (v: Value): TypeReference => {
     if (v.refInnerType) {
-      return new ReferenceExpression(v.refInnerType.elemID)
+      return new TypeReference(v.refInnerType.elemID)
     }
-    return createRefToElmWithValue(v.innerType)
+    return v.innerType
   }
 
   const revivers: ReviverMap = {
     InstanceElement: v => new InstanceElement(
       reviveElemID(v.elemID).name,
-      reviveRefType(v),
+      reviveRefTypeOfElement(v),
       v.value,
       undefined,
       v.annotations,
@@ -249,13 +265,14 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
     ListType: v => new ListType(reviveRefInnerType(v)),
     MapType: v => new MapType(reviveRefInnerType(v)),
     Field: v => ({
-      refType: reviveRefType(v),
+      refType: reviveRefTypeOfElement(v),
       annotations: v.annotations,
     }),
     TemplateExpression: v => (
       new TemplateExpression({ parts: v.parts })
     ),
     ReferenceExpression: reviveReferenceExpression,
+    TypeReference: reviveRefType,
     VariableExpression: v => (
       new VariableExpression(reviveElemID(v.elemID ?? v.elemId))
     ),
@@ -379,6 +396,11 @@ Promise<{ elements: T[]; staticFiles: Record<string, StaticFile> }> => {
         value: v.value,
         maxLength: v.maxLength,
       })
+    ),
+    InvalidTypeValidationError: v => (
+      new InvalidTypeValidationError(
+        reviveElemID(v.elemID),
+      )
     ),
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

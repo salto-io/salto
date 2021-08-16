@@ -63,7 +63,11 @@ describe('createElementsSourceIndex', () => {
         'name',
         type,
         { internalId: '4', [LAST_FETCH_TIME]: '2021-02-22T18:55:17.949Z' },
-        [],
+      ),
+      new InstanceElement(
+        'name2',
+        type,
+        { internalId: '5', [LAST_FETCH_TIME]: '2021-02-22T18:55:17.949Z', isSubInstance: true },
       ),
       type,
     ]).getAll)
@@ -73,7 +77,7 @@ describe('createElementsSourceIndex', () => {
 
     const elementsSourceIndex = createElementsSourceIndex(elementsSource)
     const index = (await elementsSourceIndex.getIndexes()).internalIdsIndex
-    expect(index['someType-4']).toEqual({ lastFetchTime: new Date('2021-02-22T18:55:17.949Z'), elemID: new ElemID(NETSUITE, 'someType', 'instance', 'name') })
+    expect(index).toEqual({ 'someType-4': { lastFetchTime: new Date('2021-02-22T18:55:17.949Z'), elemID: new ElemID(NETSUITE, 'someType', 'instance', 'name') } })
   })
 
   it('should create the right custom fields index', async () => {

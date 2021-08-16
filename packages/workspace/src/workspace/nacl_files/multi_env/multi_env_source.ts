@@ -83,13 +83,15 @@ type MultiEnvState = {
 
 export type EnvsChanges = Record<string, ChangeSet<Change>>
 
+export type FromSource = 'env' | 'common' | 'all'
+
 export type MultiEnvSource = Omit<NaclFilesSource<EnvsChanges>
   , 'getAll' | 'getElementsSource'> & {
   getAll: (env?: string) => Promise<AsyncIterable<Element>>
   promote: (ids: ElemID[]) => Promise<EnvsChanges>
   getElementIdsBySelectors: (
     selectors: ElementSelector[],
-    commonOnly?: boolean,
+    fromSoruce?: FromSource,
     compact?: boolean,
   ) => Promise<AsyncIterable<ElemID>>
   demote: (ids: ElemID[]) => Promise<EnvsChanges>
@@ -187,7 +189,7 @@ const buildMultiEnvSource = (
       getRemoteMapNamespace('multi_env_mergeManager'),
       persistent,
       mergedRecoveryMode)
-      mergeManager.init()
+      await mergeManager.init()
     }
     const current = {
       states,
@@ -316,12 +318,30 @@ const buildMultiEnvSource = (
     return buildRes.changes
   }
 
+  const getElementsSource = async (env?: string): Promise<ElementsSource> => (
+    (await getState()).states[env ?? primarySourceName].elements
+  )
+
+  const determineSource = async (fromSource: FromSource): Promise<ElementsSource> => {
+    switch (fromSource) {
+      case 'env': {
+        return primarySource()
+      }
+      case 'common': {
+        return commonSource()
+      }
+      default: {
+        return getElementsSource()
+      }
+    }
+  }
+
   const getElementIdsBySelectors = async (
     selectors: ElementSelector[],
-    commonOnly = false,
+    fromSource: FromSource = 'env',
     compact = false,
   ): Promise<AsyncIterable<ElemID>> => {
-    const relevantSource = commonOnly ? commonSource() : primarySource()
+    const relevantSource: ElementsSource = await determineSource(fromSource)
     return selectElementIdsByTraversal(
       selectors,
       relevantSource,
@@ -451,6 +471,7 @@ const buildMultiEnvSource = (
     getNaclFile,
     updateNaclFiles,
     flush,
+    getElementsSource,
     getElementIdsBySelectors,
     promote,
     demote,
@@ -479,9 +500,6 @@ const buildMultiEnvSource = (
     ),
     getAll: async (env?: string): Promise<AsyncIterable<Element>> =>
       (await getState()).states[env ?? primarySourceName].elements.getAll(),
-    getElementsSource: async (env?: string) => (
-      (await getState()).states[env ?? primarySourceName].elements
-    ),
     listNaclFiles: async (): Promise<string[]> => (
       awu(Object.entries(getActiveSources()))
         .flatMap(async ([prefix, source]) => (

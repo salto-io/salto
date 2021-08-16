@@ -19,8 +19,8 @@ import uuidv4 from 'uuid/v4'
 import { DetailedChange } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, remoteMap,
-  configSource as cs, staticFiles, dirStore, WorkspaceComponents,
-  COMMON_ENV_PREFIX } from '@salto-io/workspace'
+  configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors,
+  COMMON_ENV_PREFIX, isValidEnvName } from '@salto-io/workspace'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome, CONFIG_DIR_NAME, getConfigDir } from '../app_config'
 import { localState } from './state'
@@ -243,6 +243,9 @@ Promise<Workspace> => {
   }
   if (await exists(localStorage)) {
     throw new NotAnEmptyWorkspaceError([localStorage])
+  }
+  if (!isValidEnvName(envName)) {
+    throw new errors.InvalidEnvNameError(envName)
   }
 
   const workspaceConfig = await workspaceConfigSource(baseDir, localStorage)

@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { IDENTIFIER_FIELD, TYPE_TO_ID_FIELD_PATHS } from './multi_fields_identifiers'
 
 export const ITEM_TYPE_ID = '-10'
 export const TRANSACTION_TYPE_ID = '-30'
@@ -223,6 +223,16 @@ export const ITEM_TYPE_TO_SEARCH_STRING: Record<string, string> = {
   DownloadItem: '_downloadItem',
 }
 
+// This is used for constructing a unique identifier for data types
+// field using multiple other fields
+export const TYPE_TO_ID_FIELD_PATHS: Record<string, string[][]> = {
+  AccountingPeriod: [['periodName'], ['fiscalCalendar', 'name']],
+  Nexus: [['country'], ['state', 'name']],
+  Account: [['acctName'], ['acctNumber']],
+}
+
+export const IDENTIFIER_FIELD = 'identifier'
+
 export const TYPE_TO_IDENTIFIER: Record<string, string> = {
   Subsidiary: 'name',
   Department: 'name',
@@ -238,5 +248,11 @@ export const TYPE_TO_IDENTIFIER: Record<string, string> = {
   ...Object.fromEntries(Object.keys(ITEM_TYPE_TO_SEARCH_STRING).map(type => [type, 'itemId'])),
   ...Object.fromEntries(Object.keys(TYPE_TO_ID_FIELD_PATHS).map(type => [type, IDENTIFIER_FIELD])),
 }
+
+export const getTypeIdentifier = (type: ObjectType): string => (
+  type.fields[IDENTIFIER_FIELD] !== undefined
+    ? IDENTIFIER_FIELD
+    : TYPE_TO_IDENTIFIER[type.elemID.name]
+)
 
 export const SUPPORTED_TYPES = Object.keys(TYPES_TO_INTERNAL_ID)

@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { ElemID, PrimitiveTypes, ObjectType, PrimitiveType, BuiltinTypes,
   ListType, MapType, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -40,27 +39,27 @@ const mockType = new ObjectType({
     testAnno: 'TEST ANNO',
   },
   fields: {
-    bool: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-    num: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-    strArray: { refType: createRefToElmWithValue(new ListType(BuiltinTypes.STRING)) },
-    strMap: { refType: createRefToElmWithValue(new MapType(BuiltinTypes.STRING)),
+    bool: { refType: BuiltinTypes.BOOLEAN },
+    num: { refType: BuiltinTypes.NUMBER },
+    strArray: { refType: new ListType(BuiltinTypes.STRING) },
+    strMap: { refType: new MapType(BuiltinTypes.STRING),
       annotations: {
         _required: true,
       } },
     obj: {
-      refType: createRefToElmWithValue(new ListType(new ObjectType({
+      refType: new ListType(new ObjectType({
         elemID: mockElem,
         fields: {
-          field: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          field: { refType: BuiltinTypes.STRING },
           otherField: {
-            refType: createRefToElmWithValue(BuiltinTypes.STRING),
+            refType: BuiltinTypes.STRING,
           },
-          value: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+          value: { refType: BuiltinTypes.STRING },
           mapOfStringList: {
-            refType: createRefToElmWithValue(new MapType(new ListType(BuiltinTypes.STRING))),
+            refType: new MapType(new ListType(BuiltinTypes.STRING)),
           },
         },
-      }))),
+      })),
     },
   },
   path: ['this', 'is', 'happening'],

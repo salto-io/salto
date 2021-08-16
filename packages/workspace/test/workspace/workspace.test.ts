@@ -19,9 +19,9 @@ import {
   Element, ObjectType, ElemID, Field, DetailedChange, BuiltinTypes, InstanceElement, ListType,
   Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
   isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType,
-  ReferenceExpression, Value,
+  Value, TypeReference, INSTANCE_ANNOTATIONS, ReferenceExpression, createRefToElmWithValue,
 } from '@salto-io/adapter-api'
-import { findElement, applyDetailedChanges, createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { findElement, applyDetailedChanges } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
 import { METADATA_TYPE, INTERNAL_ID_ANNOTATION } from '@salto-io/salesforce-adapter/dist/src/constants'
 import { collections } from '@salto-io/lowerdash'
@@ -34,9 +34,9 @@ import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
-  COMMON_ENV_PREFIX, UnresolvedElemIDs } from '../../src/workspace/workspace'
+  COMMON_ENV_PREFIX, UnresolvedElemIDs, UpdateNaclFilesResult, isValidEnvName } from '../../src/workspace/workspace'
 import { DeleteCurrentEnvError,
-  UnknownEnvError, EnvDuplicationError, ServiceDuplicationError } from '../../src/workspace/errors'
+  UnknownEnvError, EnvDuplicationError, ServiceDuplicationError, InvalidEnvNameError } from '../../src/workspace/errors'
 import { StaticFilesSource } from '../../src/workspace/static_files'
 import * as dump from '../../src/parser/dump'
 import { mockDirStore } from '../common/nacl_file_store'
@@ -285,7 +285,7 @@ describe('workspace', () => {
 
   describe('getSearchableNames', () => {
     let workspace: Workspace
-    const TOTAL_NUM_ELEMENETS = 57
+    const TOTAL_NUM_ELEMENETS = 61
 
     it('should return names of top level elements and fields', async () => {
       workspace = await createWorkspace()
@@ -298,7 +298,7 @@ describe('workspace', () => {
       const accountIntSett = await workspace.getValue(new ElemID('salesforce', 'AccountIntelligenceSettings')) as ObjectType
       const searchableNames = await workspace.getSearchableNames()
       expect(searchableNames.includes(accountIntSett.elemID.getFullName())).toBeTruthy()
-      const numResults = await workspace.updateNaclFiles([{
+      const updateNaclFileResults = await workspace.updateNaclFiles([{
         id: accountIntSett.elemID,
         action: 'remove',
         data: { before: accountIntSett },
@@ -306,7 +306,10 @@ describe('workspace', () => {
       const numOfFields = Object.values(accountIntSett.fields).length
       const searchableNamesAfter = await workspace.getSearchableNames()
       // One change in workspace, one in state.
-      expect(numResults).toEqual(2)
+      expect(updateNaclFileResults).toEqual({
+        naclFilesChangesCount: 1,
+        stateOnlyChangesCount: 1,
+      })
       expect(searchableNamesAfter.length).toEqual(TOTAL_NUM_ELEMENETS - (numOfFields + 1))
       expect(searchableNamesAfter.includes(accountIntSett.elemID.getFullName())).toBeFalsy()
       Object.values(accountIntSett.fields).forEach(field => {
@@ -319,14 +322,17 @@ describe('workspace', () => {
       const newElemID = new ElemID('salesforce', 'new')
       const newObject = new ObjectType({
         elemID: newElemID,
-        fields: { aaa: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) } },
+        fields: { aaa: { refType: BuiltinTypes.NUMBER } },
       })
-      const numResults = await workspace.updateNaclFiles([{
+      const updateNaclFilesREsult = await workspace.updateNaclFiles([{
         id: newElemID,
         action: 'add',
         data: { after: newObject },
       }])
-      expect(numResults).toEqual(1)
+      expect(updateNaclFilesREsult).toEqual({
+        naclFilesChangesCount: 1,
+        stateOnlyChangesCount: 0,
+      })
       const searchableNamesAfter = await workspace.getSearchableNames()
       expect(searchableNamesAfter.length).toEqual(TOTAL_NUM_ELEMENETS + 2)
     })
@@ -354,7 +360,7 @@ describe('workspace', () => {
                 elemID: new ElemID('salto', 'obj'),
                 fields: {
                   field: {
-                    refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+                    refType: BuiltinTypes.NUMBER,
                   },
                 },
               }),
@@ -443,7 +449,7 @@ describe('workspace', () => {
             annotations: {
               [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
             },
-            refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+            refType: BuiltinTypes.NUMBER,
           },
         },
       })
@@ -607,9 +613,9 @@ describe('workspace', () => {
       elemID: salesforceLeadElemID,
       fields: {
         // eslint-disable-next-line camelcase
-        new_base: { refType: createRefToElmWithValue(salesforceText) },
+        new_base: { refType: salesforceText },
         // eslint-disable-next-line camelcase
-        ext_field: { refType: createRefToElmWithValue(salesforceText), annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'foo' } },
+        ext_field: { refType: salesforceText, annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'foo' } },
       },
     })
     const multiLocElemID = new ElemID('multi', 'loc')
@@ -647,7 +653,7 @@ describe('workspace', () => {
 
     it('should return the correct changes', async () => {
       const primaryEnvChanges = changes.default.changes
-      expect(primaryEnvChanges).toHaveLength(25)
+      expect(primaryEnvChanges).toHaveLength(27)
       expect((primaryEnvChanges.find(c => c.action === 'add') as AdditionChange<Element>).data.after)
         .toEqual(newAddedObject)
       const multiLocChange = primaryEnvChanges
@@ -668,7 +674,7 @@ describe('workspace', () => {
       const afterObj = new ObjectType({
         elemID: new ElemID('salesforce', 'lead'),
         fields: {
-          new_base: { refType: new ReferenceExpression(salesforceText.elemID) },
+          new_base: { refType: new TypeReference(salesforceText.elemID) },
         },
       })
       beforeEach(async () => {
@@ -806,7 +812,7 @@ describe('workspace', () => {
 
     const objFieldWithHiddenAnnotationType = new ObjectType({
       elemID: new ElemID('salesforce', 'SomeObj'),
-      fields: { aaa: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) } },
+      fields: { aaa: { refType: BuiltinTypes.NUMBER } },
       annotations: {
         hiddenStrAnno: 'some value',
       },
@@ -955,12 +961,46 @@ describe('workspace', () => {
       elemID: ElemID.fromFullName('salesforce.ObjWithFieldTypeWithHidden'),
       fields: {
         fieldWithHidden: {
-          refType: new ReferenceExpression(ElemID.fromFullName('salesforce.FieldTypeWithHidden')),
+          refType: new TypeReference(ElemID.fromFullName('salesforce.FieldTypeWithHidden')),
           annotations: {
             visible: 'YOU SEE ME',
             hiddenValAnno: 'YOU DO NOT SEE ME',
           },
         },
+        fieldWithChangingHidden: {
+          refType: new TypeReference(new ElemID('salesforce', 'FieldTypeWithChangingHidden')),
+          annotations: {
+            hiddenSwitchType: 'asd',
+            visibleSwitchType: 'asd',
+            visibleChangeType: 'asd',
+            hiddenChangeType: 'asd',
+            visibleChangeAndSwitchType: 'asd',
+          },
+        },
+      },
+      annotationRefsOrTypes: {
+        hiddenSwitchType: BuiltinTypes.STRING,
+        visibleSwitchType: BuiltinTypes.HIDDEN_STRING,
+        visibleChangeType: new TypeReference(new ElemID('salesforce', 'VisibleToHiddenType')),
+        hiddenChangeType: new TypeReference(new ElemID('salesforce', 'HiddenToVisibleType')),
+        visibleChangeAndSwitchType: BuiltinTypes.HIDDEN_STRING,
+      },
+      annotations: {
+        hiddenSwitchType: 'asd',
+        visibleSwitchType: 'asd',
+        visibleChangeType: 'asd',
+        hiddenChangeType: 'asd',
+        visibleChangeAndSwitchType: 'asd',
+      },
+    })
+
+    const nonHiddenObjWithOnlyHiddeNotInNacl = new ObjectType({
+      elemID: ElemID.fromFullName('salesforce.nonHiddenObjWithOnlyHiddeNotInNacl'),
+      annotationRefsOrTypes: {
+        hidden: BuiltinTypes.HIDDEN_STRING,
+      },
+      annotations: {
+        hidden: 'hidden',
       },
     })
 
@@ -1064,7 +1104,6 @@ describe('workspace', () => {
         id: new ElemID('salesforce', 'lead', 'attr', 'bobo'),
         action: 'add',
         data: { after: 'baba' },
-
       },
       {
         path: ['other', 'boo'],
@@ -1299,6 +1338,65 @@ describe('workspace', () => {
           before: objWithFieldTypeWithHidden.fields.fieldWithHidden,
         },
       },
+      { // Change visible annotation type to hidden type for field annotation
+        id: new ElemID('salesforce', 'FieldTypeWithChangingHidden', 'annotation', 'visibleSwitchType'),
+        action: 'modify',
+        data: {
+          before: createRefToElmWithValue(BuiltinTypes.STRING),
+          after: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
+        },
+      },
+      { // Change hidden annotation type to visible type for field annotation
+        id: new ElemID('salesforce', 'FieldTypeWithChangingHidden', 'annotation', 'hiddenSwitchType'),
+        action: 'modify',
+        data: {
+          before: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
+          after: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+      },
+      { // Switch hidden annotation type to visible type for type annotation
+        id: objWithFieldTypeWithHidden.elemID.createNestedID('annotation', 'visibleSwitchType'),
+        action: 'modify',
+        data: {
+          before: createRefToElmWithValue(BuiltinTypes.STRING),
+          after: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
+        },
+      },
+      { // Switch hidden annotation type to visible type for type annotation
+        id: objWithFieldTypeWithHidden.elemID.createNestedID('annotation', 'hiddenSwitchType'),
+        action: 'modify',
+        data: {
+          before: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
+          after: createRefToElmWithValue(BuiltinTypes.STRING),
+        },
+      },
+      { // Switch visible annotation type to hidden when the same type changes to hidden as well
+        id: objWithFieldTypeWithHidden.elemID.createNestedID('annotation', 'visibleChangeAndSwitchType'),
+        action: 'modify',
+        data: {
+          before: new TypeReference(new ElemID('salesforce', 'VisibleToHiddenType')),
+          after: createRefToElmWithValue(BuiltinTypes.HIDDEN_STRING),
+        },
+      },
+      { // Change type with annotation value from visible to hidden
+        id: new ElemID('salesforce', 'VisibleToHiddenType', 'attr', CORE_ANNOTATIONS.HIDDEN_VALUE),
+        action: 'add',
+        data: { after: true },
+      },
+      { // Change type with annotation value from hidden to visible
+        id: new ElemID('salesforce', 'HiddenToVisibleType', 'attr', CORE_ANNOTATIONS.HIDDEN_VALUE),
+        action: 'remove',
+        data: { before: true },
+      },
+      {
+        id: nonHiddenObjWithOnlyHiddeNotInNacl.elemID.createNestedID('attr', 'hidden'),
+        action: 'modify',
+        path: ['should', 'not', 'matter'],
+        data: {
+          before: 'hidden',
+          after: 'changed',
+        },
+      },
     ]
 
     let clonedChanges: DetailedChange[]
@@ -1321,8 +1419,7 @@ describe('workspace', () => {
     let elemMap: Record<string, Element>
     let elemMapWithHidden: Record<string, Element>
     let workspace: Workspace
-    let numResults: number
-    const numExpectedChanges = 35
+    let updateNaclFileResults: UpdateNaclFilesResult
     const dirStore = mockDirStore()
 
     beforeAll(async () => {
@@ -1359,12 +1456,13 @@ describe('workspace', () => {
         queueSobjectHiddenSubType,
         queueHiddenInstanceToRemove,
         objWithFieldTypeWithHidden,
+        nonHiddenObjWithOnlyHiddeNotInNacl,
       ])
 
       workspace = await createWorkspace(dirStore, state)
 
       clonedChanges = _.cloneDeep(changes)
-      numResults = await workspace.updateNaclFiles(clonedChanges)
+      updateNaclFileResults = await workspace.updateNaclFiles(clonedChanges)
       elemMap = await getElemMap(await workspace.elements(false))
       elemMapWithHidden = await getElemMap(await workspace.elements())
       lead = elemMap['salesforce.lead'] as ObjectType
@@ -1396,7 +1494,10 @@ describe('workspace', () => {
       // This is just meant to test that calculating number of changes works,
       // and could possibly change. If you get a failure here and the number
       // of changes you get seems ok, you can just change numExpectedChanges
-      expect(numResults).toEqual(numExpectedChanges)
+      expect(updateNaclFileResults).toEqual({
+        naclFilesChangesCount: 23,
+        stateOnlyChangesCount: 20,
+      })
     })
     it('should not cause parse errors', async () => {
       expect((await workspace.errors()).parse).toHaveLength(0)
@@ -1615,12 +1716,15 @@ describe('workspace', () => {
         data: { before: 'foo', after: 'blabla' },
       }
 
-      const numResultsInChange = await workspace.updateNaclFiles([change1, change2])
+      const updateNaclFilesResult = await workspace.updateNaclFiles([change1, change2])
       lead = findElement(
         await awu(await (await workspace.elements()).getAll()).toArray(),
         new ElemID('salesforce', 'lead')
       ) as ObjectType
-      expect(numResultsInChange).toEqual(2)
+      expect(updateNaclFilesResult).toEqual({
+        naclFilesChangesCount: 2,
+        stateOnlyChangesCount: 0,
+      })
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('blabla')
     })
 
@@ -1639,6 +1743,39 @@ describe('workspace', () => {
       const elem = await workspace.getValue(objWithFieldTypeWithHidden.elemID) as ObjectType
       expect(elem).toBeDefined()
       expect(elem.fields.fieldWithHidden).toBeUndefined()
+    })
+
+    it('should hide annotation values when they switch type to hidden', () => {
+      const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
+      expect(obj).toBeDefined()
+      expect(obj.annotations).not.toHaveProperty('visibleSwitchType')
+      expect(obj.fields.fieldWithChangingHidden.annotations).not.toHaveProperty('visibleSwitchType')
+    })
+    it('should add annotation values when they switch type to visible', () => {
+      const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
+      expect(obj).toBeDefined()
+      expect(obj.annotations).toHaveProperty('hiddenSwitchType')
+      expect(obj.fields.fieldWithChangingHidden.annotations).toHaveProperty('hiddenSwitchType')
+    })
+    it('should hide annotation values when their type changes to hidden', () => {
+      const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
+      expect(obj).toBeDefined()
+      expect(obj.annotations).not.toHaveProperty('visibleChangeType')
+      expect(obj.fields.fieldWithChangingHidden.annotations).not.toHaveProperty('visibleChangeType')
+    })
+    it('should add annotation values when their type changes to visible', () => {
+      const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
+      expect(obj).toBeDefined()
+      expect(obj.annotations).toHaveProperty('hiddenChangeType')
+      expect(obj.fields.fieldWithChangingHidden.annotations).toHaveProperty('hiddenChangeType')
+    })
+    it('should hide annotation values when they switch type to hidden and the source type changes', () => {
+      const obj = elemMap[objWithFieldTypeWithHidden.elemID.getFullName()] as ObjectType
+      expect(obj).toBeDefined()
+      expect(obj.annotations).not.toHaveProperty('visibleChangeAndSwitchType')
+    })
+    it('should not modify elements which are not hidden and are not in the nacls', () => {
+      expect(elemMap[nonHiddenObjWithOnlyHiddeNotInNacl.elemID.getFullName()]).not.toBeDefined()
     })
 
     describe('on secondary envs', () => {
@@ -1697,7 +1834,10 @@ describe('workspace', () => {
         expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
           .list()).toArray())
           .not.toContainEqual(change.id)
-        expect(await wsWithMultipleEnvs.updateNaclFiles([change], 'override')).toEqual(2)
+        expect(await wsWithMultipleEnvs.updateNaclFiles([change], 'override')).toEqual({
+          naclFilesChangesCount: 2,
+          stateOnlyChangesCount: 0,
+        })
         expect(await awu(await (await wsWithMultipleEnvs.elements(true, secondarySourceName))
           .list()).toArray())
           .toContainEqual(change.id)
@@ -1896,21 +2036,26 @@ describe('workspace', () => {
       const envsNames = envs.map((e: {name: string}) => e.name)
       expect(envsNames.includes('new')).toBeTruthy()
     })
-    it('should throw envDuplicationError', async () => {
+    it('should throw EnvDuplicationError', async () => {
       await expect(workspace.addEnvironment('new')).rejects.toEqual(new EnvDuplicationError('new'))
+    })
+    it('should throw InvalidEnvNameError', async () => {
+      const invalidEnvName = 'invalid:env'
+      await expect(workspace.addEnvironment(invalidEnvName))
+        .rejects.toEqual(new InvalidEnvNameError(invalidEnvName))
     })
   })
 
   describe('deleteEnvironment', () => {
     describe('should delete environment', () => {
+      const envName = 'inactive'
       let workspaceConf: WorkspaceConfigSource
       let credSource: ConfigSource
       let workspace: Workspace
       let stateClear: jest.SpyInstance
       let naclFiles: NaclFilesSource
-      const envName = 'inactive'
-
-      beforeAll(async () => {
+      beforeEach(async () => {
+        jest.clearAllMocks()
         workspaceConf = mockWorkspaceConfigSource(undefined, true)
         credSource = mockCredentialsSource()
         const state = createState([])
@@ -1928,26 +2073,48 @@ describe('workspace', () => {
             default: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
           }
         )
-        await workspace.deleteEnvironment(envName)
       })
-
-      it('should not be included in the workspace envs', async () => {
-        expect(workspace.envs().includes(envName)).toBeFalsy()
+      describe('should delete nacl and state files if keepNacls is false', () => {
+        beforeEach(async () => {
+          await workspace.deleteEnvironment(envName)
+        })
+        it('should not be included in the workspace envs', async () => {
+          expect(workspace.envs().includes(envName)).toBeFalsy()
+        })
+        it('should persist', () => {
+          expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
+          const envs = (
+            workspaceConf.setWorkspaceConfig as jest.Mock
+          ).mock.calls[0][0].envs as EnvConfig[]
+          const envsNames = envs.map((e: {name: string}) => e.name)
+          expect(envsNames.includes(envName)).toBeFalsy()
+        })
+        it('should delete files', () => {
+          expect(credSource.delete).toHaveBeenCalledTimes(1)
+          expect(stateClear).toHaveBeenCalledTimes(1)
+          expect(naclFiles.clear).toHaveBeenCalledTimes(1)
+        })
       })
-
-      it('should persist', () => {
-        expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
-        const envs = (
-          workspaceConf.setWorkspaceConfig as jest.Mock
-        ).mock.calls[0][0].envs as EnvConfig[]
-        const envsNames = envs.map((e: {name: string}) => e.name)
-        expect(envsNames.includes(envName)).toBeFalsy()
-      })
-
-      it('should delete files', () => {
-        expect(credSource.delete).toHaveBeenCalledTimes(1)
-        expect(stateClear).toHaveBeenCalledTimes(1)
-        expect(naclFiles.clear).toHaveBeenCalledTimes(1)
+      describe('should not delete nacl and state files if keepNacls is true', () => {
+        beforeEach(async () => {
+          await workspace.deleteEnvironment(envName, true)
+        })
+        it('should not be included in the workspace envs', async () => {
+          expect(workspace.envs().includes(envName)).toBeFalsy()
+        })
+        it('should persist', () => {
+          expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
+          const envs = (
+            workspaceConf.setWorkspaceConfig as jest.Mock
+          ).mock.calls[0][0].envs as EnvConfig[]
+          const envsNames = envs.map((e: {name: string}) => e.name)
+          expect(envsNames.includes(envName)).toBeFalsy()
+        })
+        it('should not delete files', () => {
+          expect(credSource.delete).toHaveBeenCalledTimes(1)
+          expect(stateClear).toHaveBeenCalledTimes(0)
+          expect(naclFiles.clear).toHaveBeenCalledTimes(0)
+        })
       })
     })
 
@@ -2566,7 +2733,7 @@ describe('workspace', () => {
     ] as DetailedChange[]
 
     let validationErrs: ReadonlyArray<ValidationError>
-    let resultNumber: number
+    let resultNumber: UpdateNaclFilesResult
     beforeAll(async () => {
       workspace = await createWorkspace(naclFileStore)
       // Verify that the two errors we are starting with (that should be deleted in the update
@@ -2578,7 +2745,7 @@ describe('workspace', () => {
     })
 
     it('returns correct number of actual changes', () => {
-      expect(resultNumber).toEqual(changes.length)
+      expect(resultNumber.naclFilesChangesCount).toEqual(changes.length)
     })
 
     it('create validation errors in the updated elements', () => {
@@ -2777,41 +2944,191 @@ describe('non persistent workspace', () => {
 
 describe('stateOnly update', () => {
   let ws: Workspace
-  let resElement: Element
+
+  const objectWithHiddenToAdd = new ObjectType({
+    elemID: ElemID.fromFullName('salto.withhiddenToAdd'),
+    annotationRefsOrTypes: {
+      hidden: BuiltinTypes.HIDDEN_STRING,
+      visible: BuiltinTypes.STRING,
+    },
+    annotations: {
+      hidden: 'hidden',
+      visible: 'visible',
+    },
+  })
+  const hiddenInstToAdd = new InstanceElement('hiddenToAdd', objectWithHiddenToAdd, {
+    key: 'value',
+  }, [], {
+    [INSTANCE_ANNOTATIONS.HIDDEN]: true,
+  })
+
+  const objectWithHiddenToModify = new ObjectType({
+    elemID: ElemID.fromFullName('salto.withhiddenToModify'),
+    annotationRefsOrTypes: {
+      hidden: BuiltinTypes.HIDDEN_STRING,
+      visible: BuiltinTypes.STRING,
+    },
+    annotations: {
+      hidden: 'hidden',
+      visible: 'visible',
+    },
+  })
+
+  const hiddenInstToModify = new InstanceElement('hiddenToModify', objectWithHiddenToModify, {
+    key: 'value',
+  }, [], {
+    [INSTANCE_ANNOTATIONS.HIDDEN]: true,
+  })
+
+  const objectWithHiddenToRemove = new ObjectType({
+    elemID: ElemID.fromFullName('salto.withhiddenToRemove'),
+    annotationRefsOrTypes: {
+      hidden: BuiltinTypes.HIDDEN_STRING,
+      visible: BuiltinTypes.STRING,
+    },
+    annotations: {
+      hidden: 'hidden',
+      visible: 'visible',
+    },
+  })
+
+  const hiddenInstToRemove = new InstanceElement('hiddenToRemove', objectWithHiddenToRemove, {
+    key: 'value',
+  }, [], {
+    [INSTANCE_ANNOTATIONS.HIDDEN]: true,
+  })
+
   beforeAll(async () => {
-    const objectWithHidden = new ObjectType({
-      elemID: ElemID.fromFullName('salto.withhidden'),
-      annotationRefsOrTypes: {
-        hidden: BuiltinTypes.HIDDEN_STRING,
-        visible: BuiltinTypes.STRING,
-      },
-      annotations: {
-        hidden: 'hidden',
-        visible: 'visible',
-      },
+    const state = mockState([
+      objectWithHiddenToModify,
+      objectWithHiddenToRemove,
+      hiddenInstToModify,
+      hiddenInstToRemove,
+    ].map(e => e.clone()))
+    const dirStore = mockDirStore([], false, {
+      'salto/objwithhidden.nacl': `
+        type salto.withhiddenToModify {
+          annotations {
+            hidden_string hidden {
+            }
+            string visible {
+            }
+          }
+          visible = "visible"
+        }
+        type salto.withhiddenToRemove {
+          annotations {
+            hidden_string hidden {
+            }
+            string visible {
+            }
+          }
+          visible = "visible"
+        }
+      `,
     })
-    const state = mockState([objectWithHidden])
-    ws = await createWorkspace(undefined, state)
+    ws = await createWorkspace(dirStore, state)
     const changes: DetailedChange[] = [
       {
         action: 'add',
         data: {
-          after: objectWithHidden,
+          after: objectWithHiddenToAdd,
         },
-        id: objectWithHidden.elemID,
+        id: objectWithHiddenToAdd.elemID,
         path: ['salto', 'objwithhidden.nacl'],
+      },
+      {
+        action: 'add',
+        data: {
+          after: hiddenInstToAdd,
+        },
+        id: hiddenInstToAdd.elemID,
+        path: ['salto', 'inst.nacl'],
+      },
+      {
+        action: 'modify',
+        data: {
+          before: 'hidden',
+          after: 'changed',
+        },
+        id: objectWithHiddenToModify.elemID.createNestedID('attr', 'hidden'),
+      },
+      {
+        action: 'modify',
+        data: {
+          before: 'visible',
+          after: 'changed',
+        },
+        id: objectWithHiddenToModify.elemID.createNestedID('attr', 'visible'),
+      },
+      {
+        action: 'modify',
+        data: {
+          before: 'value',
+          after: 'changed',
+        },
+        id: hiddenInstToModify.elemID.createNestedID('key'),
+      },
+      {
+        action: 'remove',
+        data: {
+          before: 'hidden',
+        },
+        id: objectWithHiddenToRemove.elemID.createNestedID('attr', 'hidden'),
+      },
+      {
+        action: 'remove',
+        data: {
+          before: 'visible',
+        },
+        id: objectWithHiddenToRemove.elemID.createNestedID('attr', 'visible'),
+      },
+      {
+        action: 'remove',
+        data: {
+          before: 'value',
+        },
+        id: hiddenInstToRemove.elemID.createNestedID('key'),
       },
     ]
     await ws.updateNaclFiles(changes, 'default', true)
-    resElement = await ws.getValue(objectWithHidden.elemID)
-    expect(resElement).toBeDefined()
-  })
-  it('should update the hidden changes in the workspace cache', () => {
-    expect(resElement.annotations.hidden).toBeDefined()
   })
 
-  it('should not apply the workspace changes', () => {
-    expect(resElement.annotations.visible).not.toBeDefined()
+  it('should update add changes for state only elements in the workspace cache', async () => {
+    const resElement = await ws.getValue(hiddenInstToAdd.elemID)
+    expect(resElement).toBeDefined()
+  })
+
+  it('should not apply add chabges to the workspace for non hidden elements', async () => {
+    const resElement = await ws.getValue(objectWithHiddenToAdd.elemID)
+    expect(resElement).not.toBeDefined()
+  })
+
+  it('should update only the hidden parts modifications of elements that have a visible part in the workspace cache', async () => {
+    const resElement = await ws.getValue(objectWithHiddenToModify.elemID)
+    expect(resElement).toBeDefined()
+    expect(resElement.annotations.hidden).toEqual('changed')
+    expect(resElement.annotations.visible).not.toEqual('changed')
+  })
+
+
+  it('should update hidden elements modifications in the workspace cache', async () => {
+    const resElement = await ws.getValue(hiddenInstToModify.elemID)
+    expect(resElement).toBeDefined()
+    expect(resElement.value.key).toEqual('changed')
+  })
+
+  it('should update remove changes for hidden types in the ws cache', async () => {
+    const resElement = await ws.getValue(hiddenInstToRemove.elemID)
+    expect(resElement).toBeDefined()
+    expect(resElement.value.key).not.toBeDefined()
+  })
+
+  it('should update remove changes only for for hidden parts of elements with a visible part in the ws cache', async () => {
+    const resElement = await ws.getValue(objectWithHiddenToRemove.elemID)
+    expect(resElement).toBeDefined()
+    expect(resElement.annotations.hidden).not.toBeDefined()
+    expect(resElement.annotations.visible).toBeDefined()
   })
 })
 describe('listUnresolvedReferences', () => {
@@ -2822,17 +3139,17 @@ describe('listUnresolvedReferences', () => {
     const type1 = new ObjectType({
       elemID: new ElemID('salesforce', 'someType'),
       fields: {
-        f1: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-        f2: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
-        f3: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+        f1: { refType: BuiltinTypes.NUMBER },
+        f2: { refType: BuiltinTypes.NUMBER },
+        f3: { refType: BuiltinTypes.NUMBER },
       },
     })
     const type2 = new ObjectType({
       elemID: new ElemID('salesforce', 'anotherType'),
-      annotations: { _parent: new ReferenceExpression(type1.elemID) },
+      annotations: { _parent: new TypeReference(type1.elemID) },
       fields: {
         f1: { refType: type1 },
-        f2: { refType: createRefToElmWithValue(BuiltinTypes.NUMBER) },
+        f2: { refType: BuiltinTypes.NUMBER },
         f3: { refType: type1 },
       },
     })
@@ -2854,7 +3171,7 @@ describe('listUnresolvedReferences', () => {
           f2: 'bbb',
           f3: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'inst1', 'f1')),
         },
-        f3: new ReferenceExpression(new ElemID('salesforce', 'someType', 'instance', 'inst1')),
+        f3: new TypeReference(new ElemID('salesforce', 'someType', 'instance', 'inst1')),
       },
     )
     return [type1, type2, inst1, inst2]
@@ -3012,7 +3329,7 @@ describe('listUnresolvedReferences', () => {
       const defaultElements = createEnvElements().slice(3) as InstanceElement[]
       defaultElements[0].value = {
         ...(defaultElements[0] as InstanceElement).value,
-        f3: new ReferenceExpression(new ElemID('salesforce', 'unresolved')),
+        f3: new TypeReference(new ElemID('salesforce', 'unresolved')),
       }
       const otherElements = createEnvElements().slice(1)
       workspace = await createWorkspace(
@@ -3048,5 +3365,19 @@ describe('listUnresolvedReferences', () => {
         new ElemID('salesforce', 'unresolved'),
       ])
     })
+  })
+})
+describe('isValidEnvName', () => {
+  it('should be valid env names', () => {
+    expect(isValidEnvName('Production')).toEqual(true)
+    expect(isValidEnvName('legit env name')).toEqual(true)
+    expect(isValidEnvName('My Amazing production!!')).toEqual(true)
+    expect(isValidEnvName('Prod 22.02.2022')).toEqual(true)
+    expect(isValidEnvName('Salto_2-UAT')).toEqual(true)
+  })
+  it('should not be valid env name', () => {
+    expect(isValidEnvName('why?')).toEqual(false)
+    expect(isValidEnvName('no:pe')).toEqual(false)
+    expect(isValidEnvName('100%')).toEqual(false)
   })
 })

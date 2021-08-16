@@ -20,7 +20,7 @@ import deployDef from './deploy'
 import initDef from './init'
 import restoreDef from './restore'
 import elementGroupDef from './element'
-import cleanDef from './clean'
+import workspaceGroupDef from './workspace'
 
 // The order of the builders determines order of appearance in help text
 export default [
@@ -31,5 +31,5 @@ export default [
   deployDef,
   restoreDef,
   elementGroupDef,
-  cleanDef,
+  workspaceGroupDef,
 ]

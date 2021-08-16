@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterWith } from '../../src/filter'
 import { IS_ATTRIBUTE, METADATA_TYPE, SALESFORCE, XML_ATTRIBUTE_PREFIX, INSTANCE_FULL_NAME_FIELD, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE } from '../../src/constants'
@@ -31,19 +30,19 @@ describe('XML Attributes Filter', () => {
     elemID: new ElemID(SALESFORCE, 'someType'),
     fields: {
       [isAttributeTrue]: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [IS_ATTRIBUTE]: true,
         },
       },
       [isAttributeFalse]: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
         annotations: {
           [IS_ATTRIBUTE]: false,
         },
       },
       [noIsAttribute]: {
-        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        refType: BuiltinTypes.STRING,
       },
     },
     annotations: {

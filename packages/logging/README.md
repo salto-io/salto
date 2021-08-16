@@ -220,26 +220,26 @@ import { logger } from '@salto/logging'
 
 const log = logger('my.module')
 
-export const f = () => log.info('hello')
+export const hello = () => log.info('hello')
 ```
 
 myModule.test.ts:
 
 ```typescript
 import { logger } from '@salto/logging'
-import { f } from './myModule'
+import { hello } from './myModule'
 
 describe('log calls', () => {
-  let log: jest.SpyInstance
+  let spyLogger: jest.SpyInstance
 
   beforeEach(() => {
-    const logger = logger('my.module') // same namespace
-    log = jest.spyOn(logger, 'log')
-    f()
+    const testLogger = logger('my.module') // same namespace
+    spyLogger = jest.spyOn(testLogger, 'info')
+    hello()
   })
 
   it('calls logger correctly', () => {
-    expect(log).toHaveBeenCalledWith('info', 'hello')
+    expect(spyLogger).toHaveBeenCalledWith('hello')
   })
 })
 ```

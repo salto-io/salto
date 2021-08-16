@@ -20,7 +20,7 @@ import {
 import { getParents } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { TYPE_TO_ID_FIELD_PATHS } from '../data_elements/multi_fields_identifiers'
+import { TYPE_TO_ID_FIELD_PATHS } from '../data_elements/types'
 import { isDataObjectType, isFileCabinetType } from '../types'
 
 const { awu } = collections.asynciterable

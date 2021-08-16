@@ -13,8 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, InstanceElement, toChange, Change } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { ObjectType, ElemID, BuiltinTypes, InstanceElement, toChange, Change, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/territory'
 import mockClient from '../client'
@@ -40,9 +39,9 @@ describe('territory filter', () => {
         {
           fields: {
             customFields: {
-              refType: createRefToElmWithValue(new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') })),
+              refType: new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') }),
             },
-            description: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+            description: { refType: BuiltinTypes.STRING },
           },
         }
       )
@@ -90,9 +89,9 @@ describe('territory filter', () => {
         {
           fields: {
             customFields: {
-              refType: createRefToElmWithValue(new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') })),
+              refType: new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') }),
             },
-            description: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+            description: { refType: BuiltinTypes.STRING },
           },
           annotations: {
             suffix: 'territory2',
@@ -116,7 +115,7 @@ describe('territory filter', () => {
         {
           fields: {
             description: {
-              refType: createRefToElmWithValue(BuiltinTypes.STRING),
+              refType: BuiltinTypes.STRING,
             },
           },
           annotations: {
@@ -137,10 +136,10 @@ describe('territory filter', () => {
         {
           fields: {
             customFields: {
-              refType: createRefToElmWithValue(new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') })),
+              refType: new ObjectType({ elemID: new ElemID(SALESFORCE, 'FieldValue') }),
             },
             description: {
-              refType: createRefToElmWithValue(BuiltinTypes.STRING),
+              refType: BuiltinTypes.STRING,
             },
           },
         }

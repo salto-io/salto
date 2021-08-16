@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement, isObjectType, BuiltinTypes, toChange, Change, getChangeElement, isInstanceChange } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { metadataType, apiName, MetadataTypeAnnotations } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
@@ -47,10 +46,10 @@ describe('Topics for objects filter', () => {
   const mockTopic = new ObjectType({
     elemID: mockTopicElemID,
     fields: {
-      [ENABLE_TOPICS]: { refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN) },
-      [ENTITY_API_NAME]: { refType: createRefToElmWithValue(BuiltinTypes.STRING) },
+      [ENABLE_TOPICS]: { refType: BuiltinTypes.BOOLEAN },
+      [ENTITY_API_NAME]: { refType: BuiltinTypes.STRING },
       [constants.INSTANCE_FULL_NAME_FIELD]: {
-        refType: createRefToElmWithValue(BuiltinTypes.SERVICE_ID),
+        refType: BuiltinTypes.SERVICE_ID,
       },
     },
     annotationRefsOrTypes: {},

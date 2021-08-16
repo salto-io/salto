@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, BuiltinTypes, MapType, ListType, TypeElement, isEqualElements, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ElemID, Field } from '@salto-io/adapter-api'
+import { ObjectType, BuiltinTypes, createRefToElmWithValue, MapType, ListType, TypeElement, isEqualElements, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ElemID, Field } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { getConfigWithDefault } from '../../../config/shared'
 import { TypeSwaggerConfig, AdditionalTypeConfig, TypeSwaggerDefaultConfig } from '../../../config/swagger'
 import { FieldTypeOverrideType, FieldToHideType, TransformationConfig } from '../../../config/transformation'

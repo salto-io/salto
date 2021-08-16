@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, getChangeElement, PrimitiveType, PrimitiveTypes, Element, DependencyChanger, dependencyChange, ListType, isField } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
+import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, getChangeElement, PrimitiveType, PrimitiveTypes, Element, DependencyChanger, dependencyChange, ListType, isField, createRefToElmWithValue } from '@salto-io/adapter-api'
 import * as mock from './elements'
 import { getPlan, Plan } from '../../src/core/plan'
 import { createElementSource } from './helpers'

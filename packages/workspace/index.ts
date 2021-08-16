@@ -15,7 +15,7 @@
 */
 import * as errors from './src/errors'
 import * as nacl from './src/workspace/nacl_files'
-import { Workspace, SourceFragment, StateRecency, loadWorkspace,
+import { Workspace, SourceFragment, StateRecency, loadWorkspace, isValidEnvName,
   EnvironmentsSources, initWorkspace, WorkspaceComponents, UnresolvedElemIDs,
   COMMON_ENV_PREFIX } from './src/workspace/workspace'
 import * as hiddenValues from './src/workspace/hidden_values'
@@ -37,6 +37,7 @@ import * as validator from './src/validator'
 import * as elementSource from './src/workspace/elements_source'
 import * as remoteMap from './src/workspace/remote_map'
 import { RemoteElementSource } from './src/workspace/elements_source'
+import { FromSource } from './src/workspace/nacl_files/multi_env/multi_env_source'
 
 export {
   errors,
@@ -76,4 +77,6 @@ export {
   ElementIDToValue,
   RemoteElementSource,
   UnresolvedElemIDs,
+  isValidEnvName,
+  FromSource,
 }

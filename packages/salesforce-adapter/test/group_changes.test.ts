@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, BuiltinTypes, CORE_ANNOTATIONS, Change } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { SALESFORCE, CUSTOM_OBJECT, API_NAME, METADATA_TYPE, LABEL, OBJECTS_PATH } from '../src/constants'
 import { getChangeGroupIds } from '../src/group_changes'
 import { createInstanceElement } from '../src/transformers/transformer'
@@ -31,7 +30,7 @@ describe('Group changes function', () => {
       },
       fields: {
         Name: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: false,
             [LABEL]: 'description label',
@@ -39,7 +38,7 @@ describe('Group changes function', () => {
           },
         },
         TestField: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [LABEL]: 'Test field',
             [API_NAME]: 'TestField',
@@ -59,7 +58,7 @@ describe('Group changes function', () => {
       },
       fields: {
         Name: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [CORE_ANNOTATIONS.REQUIRED]: false,
             [LABEL]: 'description label',
@@ -67,7 +66,7 @@ describe('Group changes function', () => {
           },
         },
         TestField: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          refType: BuiltinTypes.STRING,
           annotations: {
             [LABEL]: 'Test field',
             [API_NAME]: 'TestField',

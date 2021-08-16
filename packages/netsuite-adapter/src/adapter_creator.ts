@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType, AdapterInstallResult, AdapterOperationsContext, AdapterOperations } from '@salto-io/adapter-api'
-import { createRefToElmWithValue } from '@salto-io/adapter-utils'
 import { collections, regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -52,25 +51,25 @@ export const defaultCredentialsType = new ObjectType({
   elemID: configID,
   fields: {
     accountId: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: { message: 'Account ID' },
     },
     tokenId: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: { message: 'SDF Token ID' },
     },
     tokenSecret: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: { message: 'SDF Token Secret' },
     },
     suiteAppTokenId: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         message: 'Salto SuiteApp Token ID (empty if Salto SuiteApp is not installed)',
       },
     },
     suiteAppTokenSecret: {
-      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      refType: BuiltinTypes.STRING,
       annotations: {
         message: 'Salto SuiteApp Token Secret (empty if Salto SuiteApp is not installed)',
       },

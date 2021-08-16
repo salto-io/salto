@@ -76,7 +76,7 @@ const getCustomFieldFileProperties = async (client: SalesforceClient):
   if (errors && errors.length > 0) {
     log.warn(`Encountered errors while listing file properties for CustomFields: ${errors}`)
   }
-  return _(result).groupBy((fileProps:FileProperties) => getFieldNameParts(fileProps).objectName)
+  return _(result).groupBy((fileProps: FileProperties) => getFieldNameParts(fileProps).objectName)
     .mapValues((values: FileProperties[]) => _.keyBy(values,
       (fileProps:FileProperties) => getFieldNameParts(fileProps).fieldName)).value()
 }

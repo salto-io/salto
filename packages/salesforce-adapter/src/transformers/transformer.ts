@@ -34,7 +34,7 @@ import {
   VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES,
   COMPOUND_FIELDS_SOAP_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
   XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_SETTINGS_TYPE,
-  LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME, INTERNAL_ID_ANNOTATION, KEY_PREFIX,
+  LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME, INTERNAL_ID_ANNOTATION, KEY_PREFIX, SALESFORCE_DATE_PLACEHOLDER,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
@@ -1380,14 +1380,18 @@ export const createInstanceElement = (
   ) as MetadataInstanceElement
 }
 
-export const getAuditAnnotations = (fileProperties: FileProperties): Record<string, string> => (
-  {
+export const getAuditAnnotations = (fileProperties: FileProperties): Record<string, string> => {
+  const annotations = {
     [CORE_ANNOTATIONS.CREATED_BY]: fileProperties?.createdByName,
     [CORE_ANNOTATIONS.CREATED_AT]: fileProperties?.createdDate,
-    [CORE_ANNOTATIONS.CHANGED_BY]: fileProperties?.lastModifiedByName,
     [CORE_ANNOTATIONS.CHANGED_AT]: fileProperties?.lastModifiedDate,
   }
-)
+  if (fileProperties?.lastModifiedDate === SALESFORCE_DATE_PLACEHOLDER) {
+    Object.assign(annotations,
+      { [CORE_ANNOTATIONS.CHANGED_BY]: fileProperties?.lastModifiedByName })
+  }
+  return annotations
+}
 
 const createIdField = (parent: ObjectType): void => {
   parent.fields[INTERNAL_ID_FIELD] = new Field(

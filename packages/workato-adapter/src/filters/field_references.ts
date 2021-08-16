@@ -19,7 +19,7 @@ import { FilterCreator } from '../filter'
 
 const { toNestedTypeName } = elementUtils.ducktype
 
-const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition[] = [
+const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<never>[] = [
   {
     src: { field: 'api_client_id', parentTypes: ['api_access_profile'] },
     serializationStrategy: 'id',
@@ -63,7 +63,7 @@ const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition[] = [
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    await referenceUtils.addReferences(elements, fieldNameToTypeMappingDefs)
+    await referenceUtils.addReferences({ elements, defs: fieldNameToTypeMappingDefs })
   },
 })
 

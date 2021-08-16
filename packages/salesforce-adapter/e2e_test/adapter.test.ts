@@ -218,7 +218,15 @@ describe('Salesforce adapter E2E with real account', () => {
             InstanceElement
           expect(innerMetadataInstance).toBeDefined()
           Object.entries(expectedValues)
-            .forEach(([key, val]) => expect(innerMetadataInstance.value[key]).toEqual(val))
+            .forEach(([key, val]) => {
+              if (isReferenceExpression(val)) {
+                expect(val.elemID.getFullName()).toEqual(
+                  innerMetadataInstance.value[key].elemID?.getFullName()
+                )
+              } else {
+                expect(innerMetadataInstance.value[key]).toEqual(val)
+              }
+            })
         }
 
         it('should fetch validation rules', async () => {

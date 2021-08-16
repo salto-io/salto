@@ -13,5 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { addReferences } from './field_references'
-export { FieldReferenceDefinition } from './reference_mapping'
+export { neighborContextGetter, ContextFunc, ContextValueMapperFunc } from './context'
+export { addReferences, replaceReferenceValues } from './field_references'
+export { FieldReferenceDefinition, ReferenceResolverFinder, ReferenceTargetDefinition, ExtendedReferenceTargetDefinition } from './reference_mapping'

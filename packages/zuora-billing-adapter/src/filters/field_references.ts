@@ -18,7 +18,7 @@ import { references as referenceUtils } from '@salto-io/adapter-components'
 import { WORKFLOW_TYPE, TASK_TYPE, SETTINGS_TYPE_PREFIX } from '../constants'
 import { FilterCreator } from '../filter'
 
-const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition[] = [
+const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<never>[] = [
   {
     src: { field: 'source_workflow_id', parentTypes: ['Linkage'] },
     serializationStrategy: 'id',
@@ -52,7 +52,11 @@ const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition[] = [
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    await referenceUtils.addReferences(elements, fieldNameToTypeMappingDefs, ['id', 'name'])
+    await referenceUtils.addReferences({
+      elements,
+      defs: fieldNameToTypeMappingDefs,
+      fieldsToGroupBy: ['id', 'name'],
+    })
   },
 })
 

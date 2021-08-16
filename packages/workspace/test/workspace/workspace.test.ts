@@ -2048,14 +2048,14 @@ describe('workspace', () => {
 
   describe('deleteEnvironment', () => {
     describe('should delete environment', () => {
+      const envName = 'inactive'
       let workspaceConf: WorkspaceConfigSource
       let credSource: ConfigSource
       let workspace: Workspace
       let stateClear: jest.SpyInstance
       let naclFiles: NaclFilesSource
-      const envName = 'inactive'
-
-      beforeAll(async () => {
+      beforeEach(async () => {
+        jest.clearAllMocks()
         workspaceConf = mockWorkspaceConfigSource(undefined, true)
         credSource = mockCredentialsSource()
         const state = createState([])
@@ -2073,26 +2073,48 @@ describe('workspace', () => {
             default: { naclFiles: createMockNaclFileSource([]), state: createState([]) },
           }
         )
-        await workspace.deleteEnvironment(envName)
       })
-
-      it('should not be included in the workspace envs', async () => {
-        expect(workspace.envs().includes(envName)).toBeFalsy()
+      describe('should delete nacl and state files if keepNacls is false', () => {
+        beforeEach(async () => {
+          await workspace.deleteEnvironment(envName)
+        })
+        it('should not be included in the workspace envs', async () => {
+          expect(workspace.envs().includes(envName)).toBeFalsy()
+        })
+        it('should persist', () => {
+          expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
+          const envs = (
+            workspaceConf.setWorkspaceConfig as jest.Mock
+          ).mock.calls[0][0].envs as EnvConfig[]
+          const envsNames = envs.map((e: {name: string}) => e.name)
+          expect(envsNames.includes(envName)).toBeFalsy()
+        })
+        it('should delete files', () => {
+          expect(credSource.delete).toHaveBeenCalledTimes(1)
+          expect(stateClear).toHaveBeenCalledTimes(1)
+          expect(naclFiles.clear).toHaveBeenCalledTimes(1)
+        })
       })
-
-      it('should persist', () => {
-        expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
-        const envs = (
-          workspaceConf.setWorkspaceConfig as jest.Mock
-        ).mock.calls[0][0].envs as EnvConfig[]
-        const envsNames = envs.map((e: {name: string}) => e.name)
-        expect(envsNames.includes(envName)).toBeFalsy()
-      })
-
-      it('should delete files', () => {
-        expect(credSource.delete).toHaveBeenCalledTimes(1)
-        expect(stateClear).toHaveBeenCalledTimes(1)
-        expect(naclFiles.clear).toHaveBeenCalledTimes(1)
+      describe('should not delete nacl and state files if keepNacls is true', () => {
+        beforeEach(async () => {
+          await workspace.deleteEnvironment(envName, true)
+        })
+        it('should not be included in the workspace envs', async () => {
+          expect(workspace.envs().includes(envName)).toBeFalsy()
+        })
+        it('should persist', () => {
+          expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
+          const envs = (
+            workspaceConf.setWorkspaceConfig as jest.Mock
+          ).mock.calls[0][0].envs as EnvConfig[]
+          const envsNames = envs.map((e: {name: string}) => e.name)
+          expect(envsNames.includes(envName)).toBeFalsy()
+        })
+        it('should not delete files', () => {
+          expect(credSource.delete).toHaveBeenCalledTimes(1)
+          expect(stateClear).toHaveBeenCalledTimes(0)
+          expect(naclFiles.clear).toHaveBeenCalledTimes(0)
+        })
       })
     })
 

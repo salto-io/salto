@@ -93,6 +93,13 @@ export type UpdateNaclFilesResult = {
   stateOnlyChangesCount: number
 }
 
+// common source has no state
+export type EnvironmentSource = { naclFiles: NaclFilesSource; state?: State }
+export type EnvironmentsSources = {
+  commonSourceName: string
+  sources: Record<string, EnvironmentSource>
+}
+
 export type Workspace = {
   uid: string
   name: string
@@ -142,7 +149,8 @@ export type Workspace = {
   clear: (args: ClearFlags) => Promise<void>
 
   addService: (service: string) => Promise<void>
-  addEnvironment: (env: string) => Promise<void>
+  addEnvironment: (env: string, rmcToSource: (rmc: RemoteMapCreator) => Promise<EnvironmentSource>)
+    => Promise<void>
   deleteEnvironment: (env: string, keepNacls?: boolean) => Promise<void>
   renameEnvironment: (envName: string, newEnvName: string, newSourceName? : string) => Promise<void>
   setCurrentEnv: (env: string, persist?: boolean) => Promise<void>
@@ -158,13 +166,6 @@ export type Workspace = {
   getSearchableNames(): Promise<string[]>
   getSearchableNamesOfEnv(env?: string): Promise<string[]>
   listUnresolvedReferences(completeFromEnv?: string): Promise<UnresolvedElemIDs>
-}
-
-// common source has no state
-export type EnvironmentSource = { naclFiles: NaclFilesSource; state?: State }
-export type EnvironmentsSources = {
-  commonSourceName: string
-  sources: Record<string, EnvironmentSource>
 }
 
 type SingleState = {
@@ -803,7 +804,10 @@ export const loadWorkspace = async (
       async (service: string, newConfig: Readonly<InstanceElement>): Promise<void> => {
         await config.setAdapter(service, newConfig)
       },
-    addEnvironment: async (env: string): Promise<void> => {
+    addEnvironment: async (
+      env: string,
+      rmcToSource: (rmc: RemoteMapCreator) => Promise<EnvironmentSource>
+    ): Promise<void> => {
       if (workspaceConfig.envs.map(e => e.name).includes(env)) {
         throw new EnvDuplicationError(env)
       }
@@ -814,6 +818,16 @@ export const loadWorkspace = async (
       await getWorkspaceState()
       workspaceConfig.envs = [...workspaceConfig.envs, { name: env }]
       await config.setWorkspaceConfig(workspaceConfig)
+      enviormentsSources.sources[env] = await rmcToSource(remoteMapCreator)
+      naclFilesSource = multiEnvSource(
+        _.mapValues(enviormentsSources.sources, e => e.naclFiles),
+        currentEnv(),
+        enviormentsSources.commonSourceName,
+        remoteMapCreator,
+        persistent,
+        mergedRecoveryMode
+      )
+      workspaceState = undefined
     },
     deleteEnvironment: async (env: string, keepNacls = false): Promise<void> => {
       if (!(workspaceConfig.envs.map(e => e.name).includes(env))) {
@@ -902,7 +916,6 @@ export const loadWorkspace = async (
         persistent,
         mergedRecoveryMode
       )
-      workspaceState = undefined
     },
 
     getStateRecency: async (serviceName: string): Promise<StateRecency> => {

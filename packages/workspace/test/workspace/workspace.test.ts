@@ -35,8 +35,8 @@ import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
   COMMON_ENV_PREFIX, UnresolvedElemIDs, UpdateNaclFilesResult, isValidEnvName } from '../../src/workspace/workspace'
-import { DeleteCurrentEnvError,
-  UnknownEnvError, EnvDuplicationError, ServiceDuplicationError, InvalidEnvNameError } from '../../src/workspace/errors'
+import { DeleteCurrentEnvError, UnknownEnvError, EnvDuplicationError,
+  ServiceDuplicationError, InvalidEnvNameError } from '../../src/workspace/errors'
 import { StaticFilesSource } from '../../src/workspace/static_files'
 import * as dump from '../../src/parser/dump'
 import { mockDirStore } from '../common/nacl_file_store'
@@ -2017,31 +2017,51 @@ describe('workspace', () => {
   describe('addEnvironment', () => {
     let workspaceConf: WorkspaceConfigSource
     let workspace: Workspace
+    const mockRmcToSource = async (_rmc: RemoteMapCreator): Promise<EnvironmentSource> =>
+      ({} as unknown as EnvironmentSource)
+    const envName = 'new'
 
     beforeEach(async () => {
       workspaceConf = mockWorkspaceConfigSource()
-      workspace = await createWorkspace(undefined, undefined, workspaceConf)
-      await workspace.addEnvironment('new')
+      workspace = await createWorkspace(mockDirStore([], true), undefined, workspaceConf)
+      const state = createState([])
+      await workspace.addEnvironment(
+        envName,
+        async (rmc: RemoteMapCreator): Promise<EnvironmentSource> => ({
+          naclFiles: await naclFilesSource(
+            envName,
+            mockDirStore([], false, { 'common.nacl': 'type salesforce.hearing { }' }),
+            mockStaticFilesSource(),
+            rmc,
+            false
+          ),
+          state,
+        })
+      )
     })
 
     it('should change workspace state', async () => {
-      expect(workspace.envs().includes('new')).toBeTruthy()
+      expect(workspace.envs().includes(envName)).toBeTruthy()
     })
-
     it('should persist', () => {
       expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
       const envs = (
         workspaceConf.setWorkspaceConfig as jest.Mock
       ).mock.calls[0][0].envs as EnvConfig[]
       const envsNames = envs.map((e: {name: string}) => e.name)
-      expect(envsNames.includes('new')).toBeTruthy()
+      expect(envsNames.includes(envName)).toBeTruthy()
+    })
+    it('should include elements of the new source', async () => {
+      expect(await awu(await (await workspace.elements(false, envName)).getAll()).toArray())
+        .toEqual([new ObjectType({ elemID: new ElemID('salesforce', 'hearing') })])
     })
     it('should throw EnvDuplicationError', async () => {
-      await expect(workspace.addEnvironment('new')).rejects.toEqual(new EnvDuplicationError('new'))
+      await expect(workspace.addEnvironment(envName, mockRmcToSource))
+        .rejects.toEqual(new EnvDuplicationError(envName))
     })
     it('should throw InvalidEnvNameError', async () => {
       const invalidEnvName = 'invalid:env'
-      await expect(workspace.addEnvironment(invalidEnvName))
+      await expect(workspace.addEnvironment(invalidEnvName, mockRmcToSource))
         .rejects.toEqual(new InvalidEnvNameError(invalidEnvName))
     })
   })

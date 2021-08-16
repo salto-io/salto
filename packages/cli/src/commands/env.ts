@@ -15,8 +15,8 @@
 */
 import _ from 'lodash'
 import { EOL } from 'os'
-import { diff } from '@salto-io/core'
-import { Workspace, createElementSelectors } from '@salto-io/workspace'
+import { diff, localWorkspaceConfigSource, createEnvironmentSource } from '@salto-io/core'
+import { Workspace, createElementSelectors, remoteMap as rm, EnvironmentSource } from '@salto-io/workspace'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode } from '../types'
 import {
@@ -331,8 +331,17 @@ export const createAction: WorkspaceCommandAction<EnvCreateArgs> = async ({
   const { force, yesAll, envName } = input
   // Note - CLI always loads the workspace from '.'
   await maybeIsolateExistingEnv(output, workspace, force, yesAll)
-
-  await workspace.addEnvironment(envName)
+  const workspaceConfig = await localWorkspaceConfigSource('.', undefined)
+  const rmcToEnvSource = async (remoteMapCreator: rm.RemoteMapCreator):
+  Promise<EnvironmentSource> =>
+    createEnvironmentSource({
+      env: envName,
+      baseDir: '.',
+      localStorage: workspaceConfig.localStorage,
+      remoteMapCreator,
+      persistent: true,
+    })
+  await workspace.addEnvironment(envName, rmcToEnvSource)
   await setEnvironment(envName, output, workspace)
   outputLine(formatCreateEnv(envName), output)
   return CliExitCode.Success

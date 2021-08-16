@@ -18,6 +18,11 @@ import * as mocks from '../mocks'
 import { createAction, setAction, currentAction, listAction, deleteAction, renameAction } from '../../src/commands/env'
 import { CliExitCode } from '../../src/types'
 
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual<{}>('@salto-io/core'),
+  localWorkspaceConfigSource: jest.fn().mockResolvedValue({ localStorage: '.' }),
+}))
+
 describe('env command group', () => {
   let cliArgs: mocks.MockCliArgs
   let output: mocks.MockCliOutput

@@ -70,7 +70,7 @@ const getMatchingServiceInstances = async (
     filePaths,
   }
 
-  const fetchQuery = fetchTarget && buildNetsuiteQuery(convertToQueryParams(fetchTarget))
+  const fetchQuery = buildNetsuiteQuery(convertToQueryParams(fetchTarget))
 
   const { elements } = await fetchByQuery(fetchQuery, { reportProgress: () => null }, false)
   return _.keyBy(elements.filter(isInstanceElement), element => element.elemID.getFullName())

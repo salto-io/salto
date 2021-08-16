@@ -91,7 +91,7 @@ describe('safe deploy change validator', () => {
             failedToFetchAllAtOnce: false,
             failedFilePaths: [],
             failedTypeToInstances: {},
-            elements: [origInstance, origInstance1, origInstance2],
+            elements: [origInstance.clone(), origInstance1, origInstance2],
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance, after: afterInstance })],
@@ -111,7 +111,7 @@ describe('safe deploy change validator', () => {
             failedToFetchAllAtOnce: false,
             failedFilePaths: [],
             failedTypeToInstances: {},
-            elements: [serviceInstance, origInstance1, origInstance2],
+            elements: [serviceInstance.clone(), origInstance1, origInstance2],
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance, after: afterInstance })],
@@ -130,7 +130,7 @@ describe('safe deploy change validator', () => {
             failedToFetchAllAtOnce: false,
             failedFilePaths: [],
             failedTypeToInstances: {},
-            elements: [serviceInstance, origInstance1, origInstance2],
+            elements: [serviceInstance.clone(), origInstance1, origInstance2],
           }))
 
           const changeErrors = await safeDeployValidator(
@@ -148,7 +148,7 @@ describe('safe deploy change validator', () => {
             failedToFetchAllAtOnce: false,
             failedFilePaths: [],
             failedTypeToInstances: {},
-            elements: [afterInstance, origInstance1, origInstance2],
+            elements: [afterInstance.clone(), origInstance1, origInstance2],
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance, after: afterInstance })],
@@ -187,7 +187,7 @@ describe('safe deploy change validator', () => {
           failedToFetchAllAtOnce: false,
           failedFilePaths: [],
           failedTypeToInstances: {},
-          elements: [serviceInstance, origInstance1, origInstance2],
+          elements: [serviceInstance.clone(), origInstance1, origInstance2],
         }))
         const changeErrors = await safeDeployValidator(
           [toChange({ before: origInstance })],
@@ -202,10 +202,58 @@ describe('safe deploy change validator', () => {
           failedToFetchAllAtOnce: false,
           failedFilePaths: [],
           failedTypeToInstances: {},
-          elements: [origInstance, origInstance1, origInstance2],
+          elements: [origInstance.clone(), origInstance1, origInstance2],
         }))
         const changeErrors = await safeDeployValidator(
           [toChange({ before: origInstance })],
+          fetchByQuery
+        )
+        expect(changeErrors).toHaveLength(0)
+      })
+    })
+    describe('Addition Changes', () => {
+      it('should not have warning when instance was added in the service but values are the same', async () => {
+        const newInstance = origInstance.clone()
+        const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+        Promise<FetchByQueryReturnType> => (Promise.resolve({
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: [],
+          failedTypeToInstances: {},
+          elements: [newInstance.clone()],
+        }))
+        const changeErrors = await safeDeployValidator(
+          [toChange({ after: newInstance })],
+          fetchByQuery
+        )
+        expect(changeErrors).toHaveLength(0)
+      })
+      it('should have warning when instance was added in the service with modified value', async () => {
+        const newInstance = origInstance.clone()
+        const newInstanceModified = afterInstance.clone()
+        const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+        Promise<FetchByQueryReturnType> => (Promise.resolve({
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: [],
+          failedTypeToInstances: {},
+          elements: [newInstanceModified],
+        }))
+        const changeErrors = await safeDeployValidator(
+          [toChange({ after: newInstance })],
+          fetchByQuery
+        )
+        expect(changeErrors).toHaveLength(1)
+      })
+      it('should not have warning when instance has not been added in the service', async () => {
+        const newInstance = origInstance.clone()
+        const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+        Promise<FetchByQueryReturnType> => (Promise.resolve({
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: [],
+          failedTypeToInstances: {},
+          elements: [],
+        }))
+        const changeErrors = await safeDeployValidator(
+          [toChange({ after: newInstance })],
           fetchByQuery
         )
         expect(changeErrors).toHaveLength(0)
@@ -345,6 +393,54 @@ describe('safe deploy change validator', () => {
           expect(changeErrors).toHaveLength(0)
         })
       })
+      describe('Addition Changes', () => {
+        it('should not have warning when instance was added in the service but values are the same', async () => {
+          const newInstance = origInstance.clone()
+          const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+          Promise<FetchByQueryReturnType> => (Promise.resolve({
+            failedToFetchAllAtOnce: false,
+            failedFilePaths: [],
+            failedTypeToInstances: {},
+            elements: [newInstance.clone()],
+          }))
+          const changeErrors = await safeDeployValidator(
+            [toChange({ after: newInstance })],
+            fetchByQuery
+          )
+          expect(changeErrors).toHaveLength(0)
+        })
+        it('should have warning when instance was added in the service with modified value', async () => {
+          const newInstance = origInstance.clone()
+          const newInstanceModified = afterInstance.clone()
+          const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+          Promise<FetchByQueryReturnType> => (Promise.resolve({
+            failedToFetchAllAtOnce: false,
+            failedFilePaths: [],
+            failedTypeToInstances: {},
+            elements: [newInstanceModified],
+          }))
+          const changeErrors = await safeDeployValidator(
+            [toChange({ after: newInstance })],
+            fetchByQuery
+          )
+          expect(changeErrors).toHaveLength(1)
+        })
+        it('should not have warning when instance has not been added in the service', async () => {
+          const newInstance = origInstance.clone()
+          const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+          Promise<FetchByQueryReturnType> => (Promise.resolve({
+            failedToFetchAllAtOnce: false,
+            failedFilePaths: [],
+            failedTypeToInstances: {},
+            elements: [],
+          }))
+          const changeErrors = await safeDeployValidator(
+            [toChange({ after: newInstance })],
+            fetchByQuery
+          )
+          expect(changeErrors).toHaveLength(0)
+        })
+      })
     })
 
 
@@ -356,8 +452,10 @@ describe('safe deploy change validator', () => {
       beforeEach(() => {
         origInstance = new InstanceElement('folderInstance', fileCabinetTypes[FOLDER], {
           [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder',
+          description: 'a',
         })
         afterInstance = origInstance.clone()
+        afterInstance.value.description = 'b'
         origInstance1 = new InstanceElement('folderInstance1', fileCabinetTypes[FOLDER], {
           [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder',
         })
@@ -469,6 +567,54 @@ describe('safe deploy change validator', () => {
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: origInstance })],
+            fetchByQuery
+          )
+          expect(changeErrors).toHaveLength(0)
+        })
+      })
+      describe('Addition Changes', () => {
+        it('should not have warning when instance was added in the service but values are the same', async () => {
+          const newInstance = origInstance.clone()
+          const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+          Promise<FetchByQueryReturnType> => (Promise.resolve({
+            failedToFetchAllAtOnce: false,
+            failedFilePaths: [],
+            failedTypeToInstances: {},
+            elements: [newInstance.clone()],
+          }))
+          const changeErrors = await safeDeployValidator(
+            [toChange({ after: newInstance })],
+            fetchByQuery
+          )
+          expect(changeErrors).toHaveLength(0)
+        })
+        it('should have warning when instance was added in the service with modified value', async () => {
+          const newInstance = origInstance.clone()
+          const newInstanceModified = afterInstance.clone()
+          const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+          Promise<FetchByQueryReturnType> => (Promise.resolve({
+            failedToFetchAllAtOnce: false,
+            failedFilePaths: [],
+            failedTypeToInstances: {},
+            elements: [newInstanceModified],
+          }))
+          const changeErrors = await safeDeployValidator(
+            [toChange({ after: newInstance })],
+            fetchByQuery
+          )
+          expect(changeErrors).toHaveLength(1)
+        })
+        it('should not have warning when instance has not been added in the service', async () => {
+          const newInstance = origInstance.clone()
+          const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+          Promise<FetchByQueryReturnType> => (Promise.resolve({
+            failedToFetchAllAtOnce: false,
+            failedFilePaths: [],
+            failedTypeToInstances: {},
+            elements: [],
+          }))
+          const changeErrors = await safeDeployValidator(
+            [toChange({ after: newInstance })],
             fetchByQuery
           )
           expect(changeErrors).toHaveLength(0)

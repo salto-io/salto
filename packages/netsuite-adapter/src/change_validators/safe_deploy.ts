@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import { isInstanceChange, InstanceElement, Element,
   ProgressReporter, ChangeError, Change, isInstanceElement, isEqualElements,
-  isRemovalOrModificationChange, getChangeElement, ModificationChange,
-  RemovalChange, isRemovalChange, isModificationChange } from '@salto-io/adapter-api'
+  getChangeElement, ModificationChange,
+  isRemovalChange, isModificationChange, isAdditionChange, AdditionChange, RemovalChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { buildNetsuiteQuery, convertToQueryParams, NetsuiteQuery, NetsuiteQueryParameters } from '../query'
 import { isCustomType, isFileCabinetInstance } from '../types'
@@ -81,40 +81,48 @@ const toChangeWarning = (change: Change<InstanceElement>): ChangeError => (
     elemID: getChangeElement(change).elemID,
     severity: 'Warning',
     message: 'Continuing the deploy proccess will override changes made in the service to this element.',
-    detailedMessage: `The element ${getChangeElement(change).elemID.name}, which you are attempting to ${change.action === 'modify' ? 'modify' : 'remove'}, has recently changed in the service.`,
+    detailedMessage: `The element ${getChangeElement(change).elemID.name}, which you are attempting to ${change.action}, has recently changed in the service.`,
   }
 )
 
-
 const hasChangedInService = (
-  beforeInstance: InstanceElement,
+  change: RemovalChange<InstanceElement> | ModificationChange<InstanceElement>,
   serviceInstance: InstanceElement
 ): boolean => (
-  !isEqualElements(beforeInstance, serviceInstance)
+  !isEqualElements(change.data.before, serviceInstance)
 )
 
 const isChangeTheSameInService = (
-  change: ModificationChange<InstanceElement>,
+  change: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>,
   serviceInstance: InstanceElement
 ): boolean => (
   isEqualElements(change.data.after, serviceInstance)
 )
 
 const isModificationOverridingChange = (
-  change: ModificationChange<InstanceElement> | RemovalChange<InstanceElement>,
+  change: Change<InstanceElement>,
   matchingServiceInstance: InstanceElement,
 ): boolean => (
   isModificationChange(change)
-  && hasChangedInService(change.data.before, matchingServiceInstance)
+  && hasChangedInService(change, matchingServiceInstance)
   && !isChangeTheSameInService(change, matchingServiceInstance)
 )
 
 const isRemovalOverridingChange = (
-  change: ModificationChange<InstanceElement> | RemovalChange<InstanceElement>,
+  change: Change<InstanceElement>,
   matchingServiceInstance: InstanceElement,
 ): boolean => (
   isRemovalChange(change)
-  && hasChangedInService(change.data.before, matchingServiceInstance)
+  && hasChangedInService(change, matchingServiceInstance)
+)
+
+const isAdditionOverridingChange = (
+  change: Change<InstanceElement>,
+  matchingServiceInstance: InstanceElement,
+): boolean => (
+  isAdditionChange(change)
+  && matchingServiceInstance !== undefined
+  && !isChangeTheSameInService(change, matchingServiceInstance)
 )
 
 
@@ -122,26 +130,26 @@ const changeValidator: QueryChangeValidator = async (
   changes: ReadonlyArray<Change>,
   fetchByQuery: FetchByQueryFunc
 ) => {
-  const modificationOrRemovalInstanceChanges = await awu(changes)
-    .filter(isRemovalOrModificationChange)
+  const instanceChanges = await awu(changes)
     .filter(isInstanceChange)
     .toArray()
 
   const serviceInstances = await getMatchingServiceInstances(
-    modificationOrRemovalInstanceChanges.map(change => change.data.before),
+    instanceChanges.map(getChangeElement),
     fetchByQuery
   )
 
   const isOverridingChange = (
-    change: ModificationChange<InstanceElement> | RemovalChange<InstanceElement>
+    change: Change<InstanceElement>
   ): boolean => {
-    const matchingServiceInstance = serviceInstances[change.data.before.elemID.getFullName()]
+    const matchingServiceInstance = serviceInstances[getChangeElement(change).elemID.getFullName()]
     return (isModificationOverridingChange(change, matchingServiceInstance)
     || isRemovalOverridingChange(change, matchingServiceInstance)
+    || isAdditionOverridingChange(change, matchingServiceInstance)
     )
   }
 
-  return modificationOrRemovalInstanceChanges
+  return instanceChanges
     .filter(isOverridingChange)
     .map(toChangeWarning)
 }

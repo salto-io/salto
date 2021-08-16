@@ -106,12 +106,11 @@ const getNamespace = (obj: FileProperties): string => (
 
 const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
   filePropertiesMap: Record<string, FileProperties>, metadataType: ObjectType): InstanceElement => {
-  if (filePropertiesMap[metadata.fullName]?.id) {
-    Object.assign(metadata, { [INTERNAL_ID_FIELD]: filePropertiesMap[metadata.fullName]?.id })
-  }
-  return createInstanceElement(metadata, metadataType,
-    filePropertiesMap[metadata.fullName]?.namespacePrefix,
-    getAuditAnnotations(filePropertiesMap[metadata.fullName]))
+  const newMetadata = filePropertiesMap[metadata.fullName]?.id
+    ? { ...metadata, [INTERNAL_ID_FIELD]: filePropertiesMap[metadata.fullName]?.id } : metadata
+  return createInstanceElement(newMetadata, metadataType,
+    filePropertiesMap[newMetadata.fullName]?.namespacePrefix,
+    getAuditAnnotations(filePropertiesMap[newMetadata.fullName]))
 }
 
 export const fetchMetadataInstances = async ({

@@ -23,9 +23,11 @@ import { Filter, FilterResult } from '../../src/filter'
 import auditInformation, { WARNING_MESSAGE } from '../../src/filters/audit_information'
 import { defaultFilterContext, MockInterface } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import { CUSTOM_FIELD, CUSTOM_OBJECT } from '../../src/constants'
+import { API_NAME, CUSTOM_FIELD, CUSTOM_OBJECT } from '../../src/constants'
 import * as transformer from '../../src/transformers/transformer'
 
+
+jest.setTimeout(111111111)
 describe('audit information test', () => {
   let filter: Filter
   let client: SalesforceClient
@@ -72,7 +74,7 @@ describe('audit information test', () => {
     filter = auditInformation({ client, config: defaultFilterContext })
     customObject = new ObjectType({
       elemID: new ElemID('salesforce', 'Custom__c'),
-      annotations: { metadataType: 'CustomObject' },
+      annotations: { metadataType: 'CustomObject', [API_NAME]: 'test' },
       fields: {
         StringField__c: { refType: new ReferenceExpression(primNum.elemID, primNum) },
       },

@@ -77,7 +77,7 @@ describe('transformer', () => {
     )
     it('get annotations with up to date change time will return full annotations', () => {
       expect(getAuditAnnotations(newChangeDateFileProperties)[CORE_ANNOTATIONS.CHANGED_BY])
-        .toEqual('date that is new')
+        .toEqual('changed_name')
     })
     it('file properties with old change will return no user name in changedBy', () => {
       expect(getAuditAnnotations(oldChangeDateFileProperties)[CORE_ANNOTATIONS.CHANGED_BY])

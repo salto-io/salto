@@ -66,7 +66,7 @@ export type SdfClientOpts = {
 
 export const COMMANDS = {
   CREATE_PROJECT: 'project:create',
-  SETUP_ACCOUNT: 'account:ci',
+  SAVE_TOKEN: 'account:savetoken',
   MANAGE_AUTH: 'account:manageauth',
   IMPORT_OBJECTS: 'object:import',
   LIST_OBJECTS: 'object:list',
@@ -281,13 +281,12 @@ export default class SdfClient {
       account: this.credentials.accountId,
       tokenid: this.credentials.tokenId,
       tokensecret: this.credentials.tokenSecret,
-      savetoken: true,
     }
     await this.withAuthIdsLock(async () => {
       log.debug(`Setting up account using authId: ${authId}`)
       try {
         await this.executeProjectAction(
-          COMMANDS.SETUP_ACCOUNT,
+          COMMANDS.SAVE_TOKEN,
           setupCommandArguments,
           projectCommandActionExecutor
         )
@@ -295,7 +294,7 @@ export default class SdfClient {
         log.warn(`Failed to setup account using authId: ${authId}`, e)
         log.debug(`Retrying to setup account using authId: ${authId}`)
         await this.executeProjectAction(
-          COMMANDS.SETUP_ACCOUNT,
+          COMMANDS.SAVE_TOKEN,
           setupCommandArguments,
           projectCommandActionExecutor
         )

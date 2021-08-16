@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values, CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction, ListType, createRestriction, isServiceId } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { Field as SalesforceField } from 'jsforce'
+import { Field as SalesforceField, FileProperties } from 'jsforce'
 import { restoreValues, resolveValues, createRefToElmWithValue } from '@salto-io/adapter-utils'
 
 import {
@@ -24,6 +24,7 @@ import {
   getValueTypeFieldElement, createMetadataTypeElements, MetadataObjectType,
   METADATA_TYPES_TO_RENAME, instancesToDeleteRecords, instancesToCreateRecords,
   isMetadataObjectType, isMetadataInstanceElement, toDeployableInstance, transformPrimitive,
+  getAuditAnnotations,
 } from '../../src/transformers/transformer'
 import { getLookUpName } from '../../src/transformers/reference_mapping'
 import {
@@ -34,6 +35,7 @@ import {
   WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, INTERNAL_ID_FIELD,
   WORKFLOW_ACTION_ALERT_METADATA_TYPE, LAYOUT_TYPE_ID_METADATA_TYPE, CPQ_PRODUCT_RULE,
   CPQ_LOOKUP_PRODUCT_FIELD, INTERNAL_ID_ANNOTATION, BUSINESS_HOURS_METADATA_TYPE,
+  SALESFORCE_DATE_PLACEHOLDER,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject, CustomPicklistValue,
   SalesforceRecord } from '../../src/client/types'
@@ -52,6 +54,37 @@ const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
 describe('transformer', () => {
+  describe('getAuditAnnotations', () => {
+    const createFileProperties = (changes: Record<string, string>): FileProperties => {
+      const fileProps = { createdByName: 'created_name',
+        createdDate: 'created_date',
+        lastModifiedDate: 'changed_time',
+        lastModifiedByName: 'changed_name',
+        type: 'type',
+        createdById: 'create_id',
+        fileName: 'fileName',
+        fullName: 'fullname',
+        id: 'id',
+        lastModifiedById: 'lastModifiedById' }
+      Object.assign(fileProps, changes)
+      return fileProps
+    }
+    const newChangeDateFileProperties = createFileProperties(
+      { lastModifiedDate: 'date that is new' }
+    )
+    const oldChangeDateFileProperties = createFileProperties(
+      { lastModifiedDate: SALESFORCE_DATE_PLACEHOLDER }
+    )
+    it('get annotations with up to date change time will return full annotations', () => {
+      expect(getAuditAnnotations(newChangeDateFileProperties)[CORE_ANNOTATIONS.CHANGED_BY])
+        .toEqual('date that is new')
+    })
+    it('file properties with old change will return no user name in changedBy', () => {
+      expect(getAuditAnnotations(oldChangeDateFileProperties)[CORE_ANNOTATIONS.CHANGED_BY])
+        .not
+        .toBeDefined()
+    })
+  })
   describe('getValueTypeFieldElement', () => {
     const dummyElem = new ObjectType({ elemID: new ElemID('adapter', 'dummy') })
     const salesforceEnumField = mockValueTypeField({

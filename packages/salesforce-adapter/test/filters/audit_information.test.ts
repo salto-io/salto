@@ -96,7 +96,7 @@ describe('audit information test', () => {
         Name: 'created_name',
       },
       {
-        Id: 'modifier_id',
+        Id: 'changed_id',
         Name: 'changed_name',
       },
     ]

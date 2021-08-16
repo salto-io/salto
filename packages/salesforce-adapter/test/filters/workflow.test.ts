@@ -16,14 +16,10 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
-  ElemID, InstanceElement, ObjectType, Element, ReferenceExpression, isInstanceElement, Change,
+  ElemID, InstanceElement, ObjectType, Element, isInstanceElement, Change,
   getChangeElement, ModificationChange, isModificationChange, Value, isListType, ListType,
   createRefToElmWithValue,
 } from '@salto-io/adapter-api'
-import {
-  findElement,
-} from '@salto-io/adapter-utils'
-
 import { FilterWith } from '../../src/filter'
 import filterCreator, {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD,
@@ -39,8 +35,6 @@ import { isInstanceOfTypeChange } from '../../src/filters/utils'
 import { defaultFilterContext } from '../utils'
 
 const { awu, groupByAsync } = collections.asynciterable
-
-const { makeArray } = collections.array
 
 describe('Workflow filter', () => {
   const { client } = mockClient()
@@ -110,7 +104,7 @@ describe('Workflow filter', () => {
       })
 
       it('should split workflow instance', () => {
-        expect(elements).toHaveLength(14)
+        expect(elements).toHaveLength(13)
       })
 
       describe('inner instances', () => {
@@ -146,23 +140,6 @@ describe('Workflow filter', () => {
           await verifyFullNames(innerInstances.WorkflowFieldUpdate, 'Account.MyWorkflowFieldUpdate')
           await verifyFullNames(innerInstances.WorkflowTask, 'Account.MyWorkflowTask')
           await verifyFullNames(innerInstances.WorkflowRule, 'Account.MyWorkflowRule')
-        })
-      })
-
-      it('should have reference from workflow instance', () => {
-        Object.keys(WORKFLOW_FIELD_TO_TYPE).forEach(field => {
-          makeArray(workflowWithInnerTypes.value[field]).forEach(val => {
-            expect(val).toBeInstanceOf(ReferenceExpression)
-          })
-        })
-      })
-
-      it('should have list reference from workflow instance', () => {
-        expect(workflowWithInnerTypes.value[WORKFLOW_ALERTS_FIELD]).toHaveLength(2)
-        makeArray(workflowWithInnerTypes.value[WORKFLOW_ALERTS_FIELD]).forEach(val => {
-          expect(val).toBeInstanceOf(ReferenceExpression)
-          const { elemID } = val as ReferenceExpression
-          expect((findElement(elements, elemID) as InstanceElement).value.description).toBe('description')
         })
       })
     })
@@ -202,15 +179,7 @@ describe('Workflow filter', () => {
           { fullName: 'Account.MyRule', description: 'my inst' },
           WORKFLOW_RULES_FIELD,
         )
-        const workflow = createInstanceElement(
-          {
-            fullName: 'Account',
-            [WORKFLOW_RULES_FIELD]: [await apiName(innerInstance)],
-          },
-          mockTypes.Workflow,
-        )
         changes = [
-          { action: 'add', data: { after: workflow } },
           { action: 'add', data: { after: innerInstance } },
         ]
         // Re-create the filter because it is stateful
@@ -226,13 +195,9 @@ describe('Workflow filter', () => {
         it('should create only one workflow change', () => {
           expect(changes).toHaveLength(1)
           const workflowChange = changes[0]
-          expect(workflowChange.action).toEqual('add')
+          expect(workflowChange.action).toEqual('modify')
         })
-        it('should use the original type from the workflow', async () => {
-          const workflowChange = changes[0]
-          const workflowInChange = getChangeElement(workflowChange) as InstanceElement
-          expect(await workflowInChange.getType()).toBe(mockTypes.Workflow)
-        })
+
         it('should replace the field values with the inner instances with relative fullName', () => {
           const workflowChange = changes[0]
           const workflowInChange = getChangeElement(workflowChange) as InstanceElement
@@ -248,15 +213,15 @@ describe('Workflow filter', () => {
           await testFilter.onDeploy(changes)
         })
         it('should return the original changes', () => {
-          expect(changes).toHaveLength(2)
+          expect(changes).toHaveLength(1)
           const workflowChange = changes.find(isInstanceOfTypeChange(WORKFLOW_METADATA_TYPE))
           expect(workflowChange).toBeDefined()
           workflowAfter = getChangeElement(workflowChange as Change<InstanceElement>)
         })
         it('should restore the workflow field value to the original value', async () => {
-          expect(workflowAfter.value[WORKFLOW_RULES_FIELD]).toEqual([
+          expect(workflowAfter.value[INSTANCE_FULL_NAME_FIELD]).toEqual(
             await apiName(innerInstance),
-          ])
+          )
         })
       })
     })

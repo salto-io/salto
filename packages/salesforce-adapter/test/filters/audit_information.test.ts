@@ -27,7 +27,6 @@ import { API_NAME, CUSTOM_FIELD, CUSTOM_OBJECT } from '../../src/constants'
 import * as transformer from '../../src/transformers/transformer'
 
 
-jest.setTimeout(111111111)
 describe('audit information test', () => {
   let filter: Filter
   let client: SalesforceClient
@@ -36,13 +35,13 @@ describe('audit information test', () => {
   const objectProperties = { fullName: 'Custom__c',
     createdByName: 'created_name',
     createdDate: 'created_date',
-    lastModifiedByName: 'modified_name',
-    lastModifiedDate: 'modified_date' }
+    lastModifiedByName: 'changed_name',
+    lastModifiedDate: 'changed_date' }
   const fieldProperties = { fullName: 'Custom__c.StringField__c',
     createdByName: 'created_name_field',
     createdDate: 'created_date_field',
-    lastModifiedByName: 'modified_name_field',
-    lastModifiedDate: 'modified_date_field' }
+    lastModifiedByName: 'changed_name_field',
+    lastModifiedDate: 'changed_date_field' }
   const primID = new ElemID('test', 'prim')
   const primNum = new PrimitiveType({
     elemID: primID,

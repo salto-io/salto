@@ -33,16 +33,28 @@ const doNothing: ContextFunc = async () => undefined
 
 const emptyContextStrategyLookup: Record<string, ContextFunc> = {}
 
+type ValueIsEqualFunc = (lhs?: string | number, rhs?: string | number) => boolean
+const defaultIsEqualFunc: ValueIsEqualFunc = (lhs, rhs) => lhs === rhs
+
 export const replaceReferenceValues = async <
   T extends string
->(
-  instance: InstanceElement,
-  resolverFinder: ReferenceResolverFinder<T>,
-  elemLookupMaps: Record<string, multiIndex.Index<[string, string], Element>>,
-  fieldsWithResolvedReferences: Set<string>,
-  elemByElemID: multiIndex.Index<[string], Element>,
-  contextStrategyLookup: Record<T, ContextFunc> = emptyContextStrategyLookup,
-): Promise<Values> => {
+>({
+  instance,
+  resolverFinder,
+  elemLookupMaps,
+  fieldsWithResolvedReferences,
+  elemByElemID,
+  contextStrategyLookup = emptyContextStrategyLookup,
+  isEqualValue = defaultIsEqualFunc,
+}: {
+  instance: InstanceElement
+  resolverFinder: ReferenceResolverFinder<T>
+  elemLookupMaps: Record<string, multiIndex.Index<[string, string], Element>>
+  fieldsWithResolvedReferences: Set<string>
+  elemByElemID: multiIndex.Index<[string], Element>
+  contextStrategyLookup?: Record<T, ContextFunc>
+  isEqualValue?: ValueIsEqualFunc
+}): Promise<Values> => {
   const getRefElem = async ({ val, target, field, path, lookupIndexName }: {
     val: string | number
     field: Field
@@ -104,10 +116,13 @@ export const replaceReferenceValues = async <
       if (elem === undefined) {
         return undefined
       }
-      const res = (_.toString(await serializer.serialize({
-        ref: new ReferenceExpression(elem.elemID, elem),
-        field,
-      })) === _.toString(val)) ? new ReferenceExpression(elem.elemID, elem) : undefined
+      const res = (
+        isEqualValue(
+          await serializer.serialize({ ref: new ReferenceExpression(elem.elemID, elem), field }),
+          val,
+        ) ? new ReferenceExpression(elem.elemID, elem)
+          : undefined
+      )
       if (res !== undefined) {
         fieldsWithResolvedReferences.add(field.elemID.getFullName())
       }
@@ -158,12 +173,19 @@ export const replaceReferenceValues = async <
  */
 export const addReferences = async <
   T extends string
->(
-  elements: Element[],
-  defs: FieldReferenceDefinition<T>[],
-  fieldsToGroupBy: string[] = ['id'],
-  contextStrategyLookup?: Record<T, ContextFunc>,
-): Promise<void> => {
+>({
+  elements,
+  defs,
+  fieldsToGroupBy = ['id'],
+  contextStrategyLookup,
+  isEqualValue,
+}: {
+  elements: Element[]
+  defs: FieldReferenceDefinition<T>[]
+  fieldsToGroupBy?: string[]
+  contextStrategyLookup?: Record<T, ContextFunc>
+  isEqualValue?: ValueIsEqualFunc
+}): Promise<void> => {
   const resolverFinder = generateReferenceResolverFinder<T>(defs)
   const instances = elements.filter(isInstanceElement)
 
@@ -178,20 +200,21 @@ export const addReferences = async <
   fieldsToGroupBy.forEach(fieldName => indexer.addIndex({
     name: fieldName,
     filter: e => isInstanceElement(e) && e.value[fieldName] !== undefined,
-    key: (inst: InstanceElement) => [inst.refType.elemID.name, _.toString(inst.value[fieldName])],
+    key: (inst: InstanceElement) => [inst.refType.elemID.name, inst.value[fieldName]],
   }))
   const { elemByElemID, ...fieldLookups } = await indexer.process(awu(elements))
 
   const fieldsWithResolvedReferences = new Set<string>()
   await awu(instances).forEach(async instance => {
-    instance.value = await replaceReferenceValues(
+    instance.value = await replaceReferenceValues({
       instance,
       resolverFinder,
-      fieldLookups as Record<string, multiIndex.Index<[string, string], Element>>,
+      elemLookupMaps: fieldLookups as Record<string, multiIndex.Index<[string, string], Element>>,
       fieldsWithResolvedReferences,
       elemByElemID,
       contextStrategyLookup,
-    )
+      isEqualValue,
+    })
   })
   log.debug('added references in the following fields: %s', [...fieldsWithResolvedReferences])
 }

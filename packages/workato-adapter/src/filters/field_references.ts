@@ -63,7 +63,7 @@ const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<never>
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    await referenceUtils.addReferences(elements, fieldNameToTypeMappingDefs)
+    await referenceUtils.addReferences({ elements, defs: fieldNameToTypeMappingDefs })
   },
 })
 

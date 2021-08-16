@@ -115,14 +115,14 @@ export const addReferences = async (
   await awu(elements)
     .filter(isInstanceElement)
     .forEach(async instance => {
-      instance.value = await replaceReferenceValues(
+      instance.value = await replaceReferenceValues({
         instance,
         resolverFinder,
-        { elemLookup },
+        elemLookupMaps: { elemLookup },
         fieldsWithResolvedReferences,
         elemByElemID,
         contextStrategyLookup,
-      )
+      })
     })
   log.debug('added references in the following fields: %s', [...fieldsWithResolvedReferences])
 }

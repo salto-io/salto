@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement, ListType, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { addReferences } from '../../src/references/field_references'
 import { FieldReferenceDefinition } from '../../src/references/reference_mapping'
@@ -243,16 +244,16 @@ describe('Field references', () => {
 
     beforeAll(async () => {
       elements = generateElements()
-      await addReferences(
+      await addReferences({
         elements,
-        fieldNameToTypeMappingDefs,
-        ['id', 'name'],
-        {
+        defs: fieldNameToTypeMappingDefs,
+        fieldsToGroupBy: ['id', 'name'],
+        contextStrategyLookup: {
           parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: val => val.replace('_id', '') }),
           parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: val => val.replace('_id', '') }),
           neighborRef: neighborContextFunc({ contextFieldName: 'ref' }),
         },
-      )
+      })
     })
 
     it('should resolve field values when referenced element exists', () => {
@@ -281,8 +282,6 @@ describe('Field references', () => {
       expect(inst.value.nestedValues[0].values[1].list[1].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand2')
       expect(inst.value.nestedValues[1].values[0].list[0].value).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.nestedValues[1].values[0].list[0].value.elemID.getFullName()).toEqual('myAdapter.group.instance.group3')
-      expect(inst.value.subjectAndValues[0].valueList[0].value).toBeInstanceOf(ReferenceExpression)
-      expect(inst.value.subjectAndValues[0].valueList[0].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand1')
       expect(inst.value.product).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.product.elemID.getFullName()).toEqual('myAdapter.product.instance.productABC')
     })
@@ -301,6 +300,15 @@ describe('Field references', () => {
       expect(collections[1].value.api_client_id).not.toBeInstanceOf(ReferenceExpression)
       expect(collections[1].value.api_client_id).toEqual(123)
     })
+    it('should not resolve fields if values are not identical, even if the only difference is string vs number', () => {
+      const inst = elements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'inst1'
+      )[0] as InstanceElement
+      expect(
+        inst.value.subjectAndValues[0].valueList[0].value
+      ).not.toBeInstanceOf(ReferenceExpression)
+      expect(inst.value.subjectAndValues[0].valueList[0].value).toEqual('1001')
+    })
 
     it('should not resolve if referenced element does not exist', () => {
       const folders = elements.filter(
@@ -309,6 +317,26 @@ describe('Field references', () => {
       expect(folders).toHaveLength(2)
       expect(folders[0].value.parent_id).not.toBeInstanceOf(ReferenceExpression)
       expect(folders[0].value.parent_id).toEqual('invalid')
+    })
+    it('should resolve fields if isEqualValue() returns true for values', async () => {
+      const clonedElements = generateElements()
+      await addReferences({
+        elements: clonedElements,
+        defs: fieldNameToTypeMappingDefs,
+        fieldsToGroupBy: ['id', 'name'],
+        contextStrategyLookup: {
+          parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: val => val.replace('_id', '') }),
+          parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: val => val.replace('_id', '') }),
+          neighborRef: neighborContextFunc({ contextFieldName: 'ref' }),
+        },
+        isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
+      })
+
+      const inst = clonedElements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'inst1'
+      )[0] as InstanceElement
+      expect(inst.value.subjectAndValues[0].valueList[0].value).toBeInstanceOf(ReferenceExpression)
+      expect(inst.value.subjectAndValues[0].valueList[0].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand1')
     })
   })
 })

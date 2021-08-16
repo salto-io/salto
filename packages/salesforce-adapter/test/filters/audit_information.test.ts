@@ -42,6 +42,12 @@ describe('audit information test', () => {
     createdDate: 'created_date_field',
     lastModifiedByName: 'changed_name_field',
     lastModifiedDate: 'changed_date_field' }
+  const nonExistentFieldProperties = { fullName: 'Custom__c.noSuchField',
+    createdByName: 'test',
+    createdDate: 'test',
+    lastModifiedByName: 'test',
+    lastModifiedDate: 'test' }
+  // In order to test a field that was described in the server and not found in our elements.
   const primID = new ElemID('test', 'prim')
   const primNum = new PrimitiveType({
     elemID: primID,
@@ -55,8 +61,14 @@ describe('audit information test', () => {
     expect(object.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual(properties.lastModifiedByName)
     expect(object.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual(properties.lastModifiedDate)
   }
-  const mockQueryAll: jest.Mock = jest.fn()
-  SalesforceClient.prototype.queryAll = mockQueryAll
+  const objectWithoutInformation = new ObjectType({
+    elemID: new ElemID('salesforce', 'otherName'),
+    annotations: { metadataType: 'CustomObject', [API_NAME]: 'otherName' },
+    fields: {
+      StringField__c: { refType: new ReferenceExpression(primNum.elemID, primNum) },
+    },
+  })
+  // In order to test an object without audit information in server.
 
   beforeEach(() => {
     ({ connection, client } = mockClient())
@@ -66,7 +78,7 @@ describe('audit information test', () => {
           return [objectProperties]
         }
         if (type === CUSTOM_FIELD) {
-          return [fieldProperties]
+          return [fieldProperties, nonExistentFieldProperties]
         }
         return []
       })
@@ -84,7 +96,7 @@ describe('audit information test', () => {
   })
 
   it('should add audit annotations to custom object', async () => {
-    await filter.onFetch?.([customObject])
+    await filter.onFetch?.([customObject, objectWithoutInformation])
     checkElementAnnotations(customObject, objectProperties)
     checkElementAnnotations(customObject.fields.StringField__c, fieldProperties)
   })

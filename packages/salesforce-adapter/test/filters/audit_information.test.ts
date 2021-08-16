@@ -97,7 +97,7 @@ describe('audit information test', () => {
       },
       {
         Id: 'modifier_id',
-        Name: 'modified_name',
+        Name: 'changed_name',
       },
     ]
     jest.spyOn(utils, 'queryClient').mockResolvedValue(TestCustomRecords)
@@ -105,8 +105,8 @@ describe('audit information test', () => {
     const testInst = new InstanceElement('Custom__c', new ReferenceExpression(testType.elemID, testType),
       { CreatedDate: 'created_date',
         CreatedById: 'creator_id',
-        LastModifiedDate: 'modified_date',
-        LastModifiedById: 'modifier_id' })
+        LastModifiedDate: 'changed_date',
+        LastModifiedById: 'changed_id' })
     await filter.onFetch?.([testInst])
     checkElementAnnotations(testInst, objectProperties)
   })

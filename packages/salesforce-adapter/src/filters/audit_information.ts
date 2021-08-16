@@ -18,6 +18,7 @@ import { FileProperties } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
+import { CUSTOM_FIELD, CUSTOM_OBJECT } from '../constants'
 import { getAuditAnnotations, isCustomObject, isInstanceOfCustomObject } from '../transformers/transformer'
 import { FilterCreator, FilterWith } from '../filter'
 import SalesforceClient from '../client/client'
@@ -63,7 +64,7 @@ const addAuditAnnotationsToFields = (
 
 const getCustomObjectFileProperties = async (client: SalesforceClient):
   Promise<FilePropertiesMap> => {
-  const { result, errors } = await client.listMetadataObjects({ type: 'CustomObject' })
+  const { result, errors } = await client.listMetadataObjects({ type: CUSTOM_OBJECT })
   if (errors && errors.length > 0) {
     log.warn(`Encountered errors while listing file properties for CustomObjects: ${errors}`)
   }
@@ -72,7 +73,7 @@ const getCustomObjectFileProperties = async (client: SalesforceClient):
 
 const getCustomFieldFileProperties = async (client: SalesforceClient):
   Promise<Record<string, FilePropertiesMap>> => {
-  const { result, errors } = await client.listMetadataObjects({ type: 'CustomField' })
+  const { result, errors } = await client.listMetadataObjects({ type: CUSTOM_FIELD })
   if (errors && errors.length > 0) {
     log.warn(`Encountered errors while listing file properties for CustomFields: ${errors}`)
   }
@@ -124,7 +125,7 @@ const moveInstancesAuditFieldsToAnnotations = (
   instances.forEach(instance => moveAuditFieldsToAnnotations(instance, IDToNameMap))
 }
 
-export const WARNING_MESSAGE = 'Encountered an error while trying to populate audit information in some of you Salesforce configuration elements.'
+export const WARNING_MESSAGE = 'Encountered an error while trying to populate audit information in some of the Salesforce configuration elements.'
 
 /**
  * add audit information to object types, and data instance elements.

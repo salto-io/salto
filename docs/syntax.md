@@ -283,6 +283,10 @@ Currently the following core annotations are supported:
 - [_parent](#_parent)
 - [_generated_dependencies / _depends_on](#_generated_dependencies-_depends_on)
 - [_service_url](#_service_url)
+- [_created_by](#_created_by)
+- [_created_at](#_created_at)
+- [_changed_by](#_changed_by)
+- [_changed_at](#_changed_at)
 
 #### `_required`
 This annotation is used on field blocks to specify that an instance must contain a value for this field.
@@ -442,19 +446,18 @@ Elements that have this annotation can support the "Go To Service" feature in Sa
 
 
 #### _created_by
-This is a hidden annotation (will not be seen in NaCl) that is used to store a name of the user who created this element.
-
+This is a hidden string annotation (will not be seen in NaCl) that is used to store a name of the user who created this element.
 
 #### _created_at
-This is a hidden annotation (will not be seen in NaCl) that is used to store the time the element was made.
-
+This is a hidden string annotation (will not be seen in NaCl) that is used to store the time the element was created.
+The time format is ISO-8601
 
 #### _changed_by
-This is a hidden annotation (will not be seen in NaCl) that is used to store a name of the user who last changed this element.
-
+This is a hidden string annotation (will not be seen in NaCl) that is used to store a name of the user who last changed this element.
 
 #### _changed_at
-This is a hidden annotation (will not be seen in NaCl) that is used to store the last time this element was changed.
+This is a hidden string annotation (will not be seen in NaCl) that is used to store the last time this element was changed.
+The time format is ISO-8601
 
 
 #### Adapter-specific annotations example

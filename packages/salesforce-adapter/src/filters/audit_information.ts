@@ -13,12 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, Element, Field, InstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { FileProperties } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
-import _, { partial } from 'lodash'
+import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { getAuditAnnotations, isInstanceOfCustomObject } from '../transformers/transformer'
+import { getAuditAnnotations, isCustomObject, isInstanceOfCustomObject } from '../transformers/transformer'
 import { FilterCreator, FilterWith } from '../filter'
 import SalesforceClient from '../client/client'
 import { conditionQueries, ensureSafeFilterFetch, queryClient } from './utils'
@@ -81,7 +81,6 @@ const getCustomFieldFileProperties = async (client: SalesforceClient):
       (fileProps:FileProperties) => getFieldNameParts(fileProps).fieldName)).value()
 }
 
-
 const objectAuditInformationSupplier = (
   customTypeFilePropertiesMap: FilePropertiesMap,
   customFieldsFilePropertiesMap: Record<string, FilePropertiesMap>,
@@ -138,10 +137,12 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
     fetchFilterFunc: async (elements: Element[]) => {
       const customTypeFilePropertiesMap = await getCustomObjectFileProperties(client)
       const customFieldsFilePropertiesMap = await getCustomFieldFileProperties(client)
-      const supplyAuditAnnotations = partial(objectAuditInformationSupplier,
-        customTypeFilePropertiesMap, customFieldsFilePropertiesMap)
-      elements.filter(isObjectType)
-        .forEach(supplyAuditAnnotations)
+      const customObjects = await awu(elements)
+        .filter(isCustomObject)
+        .toArray() as ObjectType[]
+      customObjects.forEach(object => objectAuditInformationSupplier(customTypeFilePropertiesMap,
+        customFieldsFilePropertiesMap,
+        object))
       const customObjectInstances = await awu(elements).filter(isInstanceOfCustomObject)
         .toArray() as InstanceElement[]
       const IDToNameMap = await getIDToNameMap(client, customObjectInstances)

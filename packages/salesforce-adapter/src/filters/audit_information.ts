@@ -23,6 +23,7 @@ import { getAuditAnnotations, isCustomObject, isInstanceOfCustomObject } from '.
 import { FilterCreator, FilterWith } from '../filter'
 import SalesforceClient from '../client/client'
 import { conditionQueries, ensureSafeFilterFetch, queryClient } from './utils'
+import { AwuIterable } from '@salto-io/lowerdash/src/collections/asynciterable'
 
 const { awu } = collections.asynciterable
 
@@ -138,12 +139,11 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
     fetchFilterFunc: async (elements: Element[]) => {
       const customTypeFilePropertiesMap = await getCustomObjectFileProperties(client)
       const customFieldsFilePropertiesMap = await getCustomFieldFileProperties(client)
-      const customObjects = await awu(elements)
-        .filter(isCustomObject)
-        .toArray() as ObjectType[]
-      customObjects.forEach(object => objectAuditInformationSupplier(customTypeFilePropertiesMap,
-        customFieldsFilePropertiesMap,
-        object))
+      await (awu(elements)
+        .filter(isCustomObject) as AwuIterable<ObjectType>)
+        .forEach(object => objectAuditInformationSupplier(customTypeFilePropertiesMap,
+          customFieldsFilePropertiesMap,
+          object))
       const customObjectInstances = await awu(elements).filter(isInstanceOfCustomObject)
         .toArray() as InstanceElement[]
       const IDToNameMap = await getIDToNameMap(client, customObjectInstances)

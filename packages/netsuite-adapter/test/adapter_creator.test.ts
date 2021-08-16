@@ -33,6 +33,7 @@ import {
   EXCLUDE,
   DEPLOY,
   DEPLOY_REFERENCED_ELEMENTS,
+  WARN_STALE_DATA,
 } from '../src/constants'
 import { mockGetElemIdFunc } from './utils'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
@@ -381,24 +382,46 @@ describe('NetsuiteAdapter creator', () => {
       ).toThrow()
     })
 
-    it('should throw an error when deploy section is invalid', () => {
-      const invalidConfig = new InstanceElement(
-        ElemID.CONFIG_NAME,
-        adapter.configType as ObjectType,
-        {
-          [DEPLOY]: {
-            [DEPLOY_REFERENCED_ELEMENTS]: 'should be a boolean',
-          },
-        }
-      )
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: invalidConfig,
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-      ).toThrow()
+    describe('deploy params', () => {
+      it('should throw an error when deployReferencedElements is invalid', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
+          adapter.configType as ObjectType,
+          {
+            [DEPLOY]: {
+              [DEPLOY_REFERENCED_ELEMENTS]: 'should be a boolean',
+            },
+          }
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
+
+      it('should throw an error when warnOnStaleWorkspaceData is invalid', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
+          adapter.configType as ObjectType,
+          {
+            [DEPLOY]: {
+              [WARN_STALE_DATA]: 'should be a boolean',
+            },
+          }
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
     })
   })
 

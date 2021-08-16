@@ -13,28 +13,79 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, toChange } from '@salto-io/adapter-api'
+import { Change, ElemID, InstanceElement, ObjectType, ProgressReporter, toChange } from '@salto-io/adapter-api'
 import { fileCabinetTypes } from '../src/types'
 import getChangeValidator from '../src/change_validator'
+import { FetchByQueryFunc, FetchByQueryReturnType } from '../src/change_validators/safe_deploy'
+import { NetsuiteQuery } from '../src/query'
 
 describe('change validator', () => {
-  describe('without SuiteApp', () => {
-    const changeValidator = getChangeValidator(false)
-    it('should have change error when removing an instance with file cabinet type', async () => {
-      const instance = new InstanceElement('test', fileCabinetTypes.file)
-      const changeErrors = await changeValidator([toChange({ before: instance })])
-      expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0].severity).toEqual('Error')
-      expect(changeErrors[0].elemID).toEqual(instance.elemID)
+  describe('SuiteApp', () => {
+    let fetchByQuery: FetchByQueryFunc
+    beforeEach(() => {
+      fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+      Promise<FetchByQueryReturnType> => (Promise.resolve({
+        failedToFetchAllAtOnce: false,
+        failedFilePaths: [],
+        failedTypeToInstances: {},
+        elements: [],
+      }))
+    })
+    describe('without SuiteApp', () => {
+      it('should have change error when removing an instance with file cabinet type', async () => {
+        const changeValidator = getChangeValidator(
+          { withSuiteApp: false, warnStaleData: false, fetchByQuery }
+        )
+        const instance = new InstanceElement('test', fileCabinetTypes.file)
+        const changeErrors = await changeValidator([toChange({ before: instance })])
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toEqual(instance.elemID)
+      })
+    })
+
+    describe('with SuiteApp', () => {
+      it('should not have change error when removing an instance with file cabinet type', async () => {
+        const changeValidator = getChangeValidator(
+          { withSuiteApp: true, warnStaleData: false, fetchByQuery }
+        )
+        const instance = new InstanceElement('test', fileCabinetTypes.file)
+        const changeErrors = await changeValidator([toChange({ before: instance })])
+        expect(changeErrors).toHaveLength(0)
+      })
     })
   })
 
-  describe('with SuiteApp', () => {
-    const changeValidator = getChangeValidator(true)
-    it('should not have change error when removing an instance with file cabinet type', async () => {
-      const instance = new InstanceElement('test', fileCabinetTypes.file)
-      const changeErrors = await changeValidator([toChange({ before: instance })])
+  describe('warnOnStaleWorkspaceData', () => {
+    let change: Change
+    let fetchByQuery: FetchByQueryFunc
+    beforeEach(() => {
+      const origInstance = new InstanceElement('testInstance', new ObjectType({ elemID: new ElemID('testType') }), { livingIn: 'lalaland' })
+      const serviceInstance = origInstance.clone()
+      serviceInstance.value.livingIn = 'a movie'
+      const modifiedInstance = origInstance.clone()
+      modifiedInstance.value.livingIn = 'a garden'
+      change = toChange({ before: origInstance, after: modifiedInstance })
+
+      fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
+      Promise<FetchByQueryReturnType> => (Promise.resolve({
+        failedToFetchAllAtOnce: false,
+        failedFilePaths: [],
+        failedTypeToInstances: {},
+        elements: [serviceInstance],
+      }))
+    })
+    it('should not have change error when warnOnStaleWorkspaceData is false', async () => {
+      const changeErrors = await getChangeValidator({ withSuiteApp: false,
+        warnStaleData: false,
+        fetchByQuery })([change])
       expect(changeErrors).toHaveLength(0)
+    })
+    it('should have change error when warnOnStaleWorkspaceData is true', async () => {
+      const changeErrors = await getChangeValidator({ withSuiteApp: false,
+        warnStaleData: true,
+        fetchByQuery })([change])
+      expect(changeErrors).toHaveLength(1)
     })
   })
 })

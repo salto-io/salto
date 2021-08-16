@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator } from '@salto-io/adapter-api'
-import { createChangeValidator } from '@salto-io/adapter-utils'
+import _ from 'lodash'
+import { ChangeError, ChangeValidator } from '@salto-io/adapter-api'
 import accountSpecificValuesValidator from './change_validators/account_specific_values'
 import dataAccountSpecificValuesValidator from './change_validators/data_account_specific_values'
 import removeCustomTypesValidator from './change_validators/remove_custom_types'
@@ -25,6 +25,7 @@ import saveSearchMoveEnvironment from './change_validators/saved_search_move_env
 import fileValidator from './change_validators/file_changes'
 import immutableChangesValidator from './change_validators/immutable_changes'
 import subInstancesValidator from './change_validators/subinstances'
+import safeDeployValidator, { FetchByQueryFunc } from './change_validators/safe_deploy'
 import { validateDependsOnInvalidElement } from './change_validators/dependencies'
 
 
@@ -48,14 +49,26 @@ const nonSuiteAppValidators: ChangeValidator[] = [
  * This method runs all change validators and then walks recursively on all references of the valid
  * changes to detect changes that depends on invalid ones and then generate errors for them as well
  */
-const getChangeValidator: (withSuiteApp: boolean) => ChangeValidator = withSuiteApp =>
-  async changes => {
-    const validators = withSuiteApp
-      ? changeValidators
-      : [...changeValidators, ...nonSuiteAppValidators]
-    const changeErrors = await createChangeValidator(validators)(changes)
-    const invalidElementIds = changeErrors.map(error => error.elemID.getFullName())
-    return changeErrors.concat(await validateDependsOnInvalidElement(invalidElementIds, changes))
-  }
+
+
+const getChangeValidator: ({ withSuiteApp, warnStaleData, fetchByQuery }
+  : {
+  withSuiteApp: boolean
+  warnStaleData: boolean
+  fetchByQuery: FetchByQueryFunc
+  }) => ChangeValidator = ({ withSuiteApp, warnStaleData, fetchByQuery }) =>
+    async changes => {
+      const validators = withSuiteApp
+        ? [...changeValidators]
+        : [...changeValidators, ...nonSuiteAppValidators]
+
+      const changeErrors: ChangeError[] = _.flatten(await Promise.all([
+        ...validators.map(validator => validator(changes)),
+        warnStaleData ? safeDeployValidator(changes, fetchByQuery) : [],
+      ]))
+
+      const invalidElementIds = changeErrors.map(error => error.elemID.getFullName())
+      return changeErrors.concat(await validateDependsOnInvalidElement(invalidElementIds, changes))
+    }
 
 export default getChangeValidator

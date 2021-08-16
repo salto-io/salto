@@ -164,7 +164,6 @@ describe('netsuite client', () => {
       tokenid: DUMMY_CREDENTIALS.tokenId,
       tokensecret: DUMMY_CREDENTIALS.tokenSecret,
       authid: expect.anything(),
-      savetoken: true,
     }),
   })
 

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { Element } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
@@ -196,12 +197,14 @@ const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    await referenceUtils.addReferences<ReferenceContextStrategyName>(
+    await referenceUtils.addReferences<ReferenceContextStrategyName>({
       elements,
-      fieldNameToTypeMappingDefs,
-      ['id', 'name'],
+      defs: fieldNameToTypeMappingDefs,
+      fieldsToGroupBy: ['id', 'name'],
       contextStrategyLookup,
-    )
+      // since ids and references to ids vary inconsistently between string/number, allow both
+      isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
+    })
   },
 })
 

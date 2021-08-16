@@ -676,6 +676,35 @@ describe('Elements validation', () => {
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('reqNested', '1', 'bool'))
         })
 
+        it('should return error when element inside a map is missing a required field', async () => {
+          extType.fields.reqNested.refType = createRefToElmWithValue(
+            new MapType(await extType.fields.reqNested.getType())
+          )
+          extInst.refType = createRefToElmWithValue(extType)
+          extInst.value.reqNested = {
+            a: {
+              str: 'str',
+              num: 1,
+              bool: true,
+            },
+            b: {
+              str: 'str',
+            },
+          }
+
+          const errors = await validateElements(
+            [extInst],
+            createInMemoryElementSource([
+              extInst, extType, ...await getFieldsAndAnnoTypes(extType),
+            ])
+          )
+          expect(errors).toHaveLength(1)
+          expect(errors[0].message).toMatch(
+            `Field ${simpleType.fields.bool.name} is required but has no value`
+          )
+          expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('reqNested', 'b', 'bool'))
+        })
+
         it('should not return validation errors when the value is a legal reference', async () => {
           const refInst = new InstanceElement(
             'instWithRef',

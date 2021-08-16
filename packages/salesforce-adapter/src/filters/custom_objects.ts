@@ -598,19 +598,21 @@ const fixDependentInstancesPathAndSetParent = async (
   const hasSobjectField = (instance: InstanceElement): boolean =>
     isDefined(instance.value.sobjectType)
 
+  const getCustomObjectParent = async (
+    instance: InstanceElement
+  ): Promise<ObjectType | undefined> => {
+    if (await hasCustomObjectParent(instance)) {
+      return getDependentCustomObj(instance)
+    } if (instance.elemID.typeName === LIGHTNING_PAGE_TYPE && hasSobjectField(instance)) {
+      return findObjectType(elements, new ElemID('salesforce', instance.value.sobjectType))
+    }
+    return undefined
+  }
+
   await awu(elements)
     .filter(isInstanceElement)
     .forEach(async instance => {
-      let customObj
-      if (await hasCustomObjectParent(instance)) {
-        customObj = await getDependentCustomObj(instance)
-      } else if (instance.elemID.typeName === LIGHTNING_PAGE_TYPE && hasSobjectField(instance)) {
-        customObj = findObjectType(elements, new ElemID('salesforce', instance.value.sobjectType))
-        // eslint-disable-next-line no-console
-        console.log(instance)
-      } else {
-        return
-      }
+      const customObj = await getCustomObjectParent(instance)
       if (_.isUndefined(customObj)) {
         return
       }

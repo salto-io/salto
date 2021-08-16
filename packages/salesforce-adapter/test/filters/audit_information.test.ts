@@ -73,7 +73,7 @@ describe('audit information test', () => {
     filter = auditInformation({ client, config: defaultFilterContext })
     customObject = new ObjectType({
       elemID: new ElemID('salesforce', 'Custom__c'),
-      annotations: { metadataType: 'CustomObject', [API_NAME]: 'test' },
+      annotations: { metadataType: 'CustomObject', [API_NAME]: 'Custom__c' },
       fields: {
         StringField__c: { refType: new ReferenceExpression(primNum.elemID, primNum) },
       },

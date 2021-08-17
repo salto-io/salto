@@ -46,7 +46,7 @@ const getMapKeyErrors = async (
             elemID: path,
             severity: 'Error',
             message: `Unpexpected structure in profile ${after.value.fullName} field ${fieldName}: Nested value '${mapDef.key}' not found`,
-            detailedMessage: `Profile ${after.value.fullName} field ${fieldName}: Nested value '${mapDef.key}' not found`,
+            detailedMessage: `Nested value '${mapDef.key}' not found in field '${fieldName}'`,
           })
           return undefined
         }

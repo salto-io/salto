@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { collections, strings, multiIndex, promises, values as valuesIsDefiend } from '@salto-io/lowerdash'
+import { collections, strings, multiIndex, promises, values as lowerdashValues } from '@salto-io/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, TypeElement, isObjectType, isInstanceElement, ElemID,
   BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement, Values, ReadOnlyElementsSource,
@@ -37,6 +37,7 @@ import {
   VALIDATION_RULES_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE,
   WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_FIELD, NAME_FIELDS,
   COMPOUND_FIELD_TYPE_NAMES, INTERNAL_ID_ANNOTATION, INTERNAL_ID_FIELD, LIGHTNING_PAGE_TYPE,
+  FLEXI_PAGE_TYPE,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
@@ -68,7 +69,7 @@ const { makeArray } = collections.array
 const { awu, groupByAsync, keyByAsync } = collections.asynciterable
 const { removeAsync } = promises.array
 const { mapValuesAsync, mapKeysAsync } = promises.object
-const { isDefined } = valuesIsDefiend
+const { isDefined } = lowerdashValues
 
 
 export const INSTANCE_REQUIRED_FIELD = 'required'
@@ -549,11 +550,15 @@ const workflowDependentMetadataTypes = new Set(Object.values(WORKFLOW_FIELD_TO_T
 const dependentMetadataTypes = new Set([CUSTOM_TAB_METADATA_TYPE, DUPLICATE_RULE_METADATA_TYPE,
   QUICK_ACTION_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE,
   ASSIGNMENT_RULES_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
+  LIGHTNING_PAGE_TYPE, FLEXI_PAGE_TYPE,
   ...workflowDependentMetadataTypes.values(),
 ])
 
 const hasCustomObjectParent = async (instance: InstanceElement): Promise<boolean> =>
   dependentMetadataTypes.has(await metadataType(instance))
+
+const shouldAddElemName = async (instance: InstanceElement): Promise<boolean> =>
+  (await apiNameParts(instance)).length > 1 || await metadataType(instance) === FLEXI_PAGE_TYPE
 
 const fixDependentInstancesPathAndSetParent = async (
   elements: Element[],
@@ -573,7 +578,7 @@ const fixDependentInstancesPathAndSetParent = async (
             )
           )]
         : [pathNaclCase(instance.elemID.typeName)]),
-      ...((await apiNameParts(instance)).length > 1
+      ...(await shouldAddElemName(instance)
         ? [pathNaclCase(instance.elemID.name)] : []),
     ]
   }
@@ -585,34 +590,38 @@ const fixDependentInstancesPathAndSetParent = async (
     map: obj => obj.elemID,
   })
 
+  const hasSobjectField = (instance: InstanceElement): boolean =>
+    isDefined(instance.value.sobjectType)
+
+  const getDependentobjectID = async (
+    instance: InstanceElement
+  ): Promise<ElemID | undefined> => {
+    switch (await metadataType(instance)) {
+      case LEAD_CONVERT_SETTINGS_METADATA_TYPE:
+        return apiNameToCustomObject.get('Lead')
+      case FLEXI_PAGE_TYPE || LIGHTNING_PAGE_TYPE:
+        if (hasSobjectField(instance)) {
+          return apiNameToCustomObject.get(instance.value.sobjectType)
+        }
+        return undefined
+      default:
+        return apiNameToCustomObject.get(await parentApiName(instance))
+    }
+  }
+
   const getDependentCustomObj = async (
     instance: InstanceElement
   ): Promise<ObjectType | undefined> => {
-    const objectID = await metadataType(instance) === LEAD_CONVERT_SETTINGS_METADATA_TYPE
-      ? apiNameToCustomObject.get('Lead')
-      : apiNameToCustomObject.get(await parentApiName(instance))
+    const objectID = await getDependentobjectID(instance)
     const object = objectID !== undefined ? await referenceElements.get(objectID) : undefined
     return isObjectType(object) ? object : undefined
   }
 
-  const hasSobjectField = (instance: InstanceElement): boolean =>
-    isDefined(instance.value.sobjectType)
-
-  const getCustomObjectParent = async (
-    instance: InstanceElement
-  ): Promise<ObjectType | undefined> => {
-    if (await hasCustomObjectParent(instance)) {
-      return getDependentCustomObj(instance)
-    } if (instance.elemID.typeName === LIGHTNING_PAGE_TYPE && hasSobjectField(instance)) {
-      return findObjectType(elements, new ElemID('salesforce', instance.value.sobjectType))
-    }
-    return undefined
-  }
-
   await awu(elements)
     .filter(isInstanceElement)
+    .filter(hasCustomObjectParent)
     .forEach(async instance => {
-      const customObj = await getCustomObjectParent(instance)
+      const customObj = await getDependentCustomObj(instance)
       if (_.isUndefined(customObj)) {
         return
       }

@@ -1440,7 +1440,7 @@ describe('Elements validation', () => {
 
       it('should return error on inconsistent object map values', async () => {
         extInst.value.mapOfObject.invalid1 = 'aaa'
-        extInst.value.mapOfObject.invalid2 = { str: 2 }
+        extInst.value.mapOfObject.invalid2 = { str: 2, bool: true }
         const errors = await validateElements(
           [extInst],
           createInMemoryElementSource([
@@ -1449,11 +1449,23 @@ describe('Elements validation', () => {
             ...await getFieldsAndAnnoTypes(nestedType),
           ])
         )
-        expect(errors).toHaveLength(2)
-        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('mapOfObject', 'invalid1'))
-        expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('mapOfObject', 'invalid2', 'str'))
-        expect(errors[0].message).toMatch(new RegExp('Invalid value type for salto.simple$'))
-        expect(errors[1].message).toMatch(new RegExp('Invalid value type for string$'))
+        expect(errors).toHaveLength(4)
+        expect(errors).toContainEqual(expect.objectContaining({
+          elemID: extInst.elemID.createNestedID('mapOfObject', 'invalid1'),
+          error: 'Invalid value type for salto.simple',
+        }))
+        expect(errors).toContainEqual(expect.objectContaining({
+          elemID: extInst.elemID.createNestedID('mapOfObject', 'invalid1', 'bool'),
+          error: 'Field bool is required but has no value',
+        }))
+        expect(errors).toContainEqual(expect.objectContaining({
+          elemID: extInst.elemID.createNestedID('mapOfObject', 'invalid2', 'str'),
+          error: 'Invalid value type for string',
+        }))
+        expect(errors).toContainEqual(expect.objectContaining({
+          elemID: extInst.elemID.createNestedID('mapOfObject', 'invalid2', 'str'),
+          error: 'Value is not valid for field str expected one of: "str"',
+        }))
       })
 
       it('should not return error for list/object mismatch with empty array', async () => {

@@ -127,6 +127,44 @@ describe('profile map keys change validator', () => {
     expect(changeErrors[3].detailedMessage).toEqual('Profile Admin field layoutAssignments: Incorrect map key Account_Account_Layout@bs, should be new_account_layout_name@s')
   })
 
+  it('should have error on invalid nacl structure', async () => {
+    const afterProfileObj = generateProfileType(true)
+    const afterProfileInstance = new InstanceElement(
+      'Admin',
+      afterProfileObj,
+      {
+        [INSTANCE_FULL_NAME_FIELD]: 'Admin',
+        applicationVisibilities: {
+          app1: { application: 'app1', default: true, visible: false },
+          app2: { application: 'app2', default: true, visible: false },
+        },
+        fieldPermissions: {
+          Account: {
+            AccountNumber: {
+              field: 'Account.AccountNumber',
+              editable: true,
+              readable: true,
+            },
+            Contact: {
+              // invalid
+              HasOptedOutOfEmail: {
+                field: 'Contact.HasOptedOutOfEmail',
+                editable: true,
+                readable: true,
+              },
+            },
+          },
+        },
+      },
+    )
+
+    const changeErrors = await runChangeValidator(profileInstance, afterProfileInstance)
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].elemID).toEqual(afterProfileInstance.elemID.createNestedID('fieldPermissions', 'Account', 'Contact'))
+    expect(changeErrors[0].detailedMessage).toEqual('Profile Admin field fieldPermissions: Nested value \'field\' not found')
+  })
+
   it('should not validate map keys on delete', async () => {
     breakInstanceMaps(profileInstance)
 

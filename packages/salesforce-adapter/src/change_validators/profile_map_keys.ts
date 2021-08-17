@@ -41,6 +41,16 @@ const getMapKeyErrors = async (
     const mapDef = PROFILE_MAP_FIELD_DEF[fieldName]
     const findInvalidPaths: TransformFunc = async ({ value, path, field }) => {
       if (isObjectType(await field?.getType()) && path !== undefined) {
+        if (value[mapDef.key] === undefined) {
+          errors.push({
+            elemID: path,
+            severity: 'Error',
+            message: `Nested value '${mapDef.key}' not found in field '${fieldName}`,
+            detailedMessage: `Profile ${after.value.fullName} field ${fieldName}: Nested value '${mapDef.key}' not found`,
+          })
+          return undefined
+        }
+
         // we reached the map's inner value
         const expectedPath = defaultMapper(value[mapDef.key]).slice(0, mapDef.nested ? 2 : 1)
         const pathParts = path.getFullNameParts().filter(part => !isNum(part))

@@ -8,8 +8,8 @@ netsuite {
         { name = ".*" },
       ]
       fileCabinet = [
-        '^/SuiteScripts/.*',
-        '^/Templates/.*',
+        "^/SuiteScripts/.*",
+        "^/Templates/.*",
       ]
     }
     exclude = {
@@ -47,6 +47,19 @@ netsuite {
 | deploy.warnOnStaleWorkspaceData                            | false                   | If assigned 'true' runs a validation upon deploy which warns the user if the changes override other changes made in the service since the last fetch
 | concurrencyLimit                                    | The higher value between `suiteAppConcurrencyLimit` and `sdfConcurrencyLimit`                    | Limits the max number of concurrent API calls (Both SDF calls and Salto SuiteApp calls). The number should not exceed the concurrency limit enforced by the upstream service.
 
+### Fetch include configuration options
+
+| Name                           | Default when undefined  | Description
+| -------------------------------| ------------------------| -----------
+| types                          | fetch all types         | Specify which types to include on fetch
+| fileCabinet                    | fetch all files         | Specify which Files to include on fetch
+
+### Fetch exclude configuration options
+| Name                           | Default when undefined  | Description
+| -------------------------------| ------------------------| -----------
+| types                          | non types are excluded  | Specify which types to exclude on fetch
+| fileCabinet                    | non files are excluded  | Specify which Files to include on fetch
+
 ### SDF Client configuration options
 
 | Name                           | Default when undefined  | Description
@@ -69,3 +82,8 @@ netsuite {
 | -------------------------------| ------------------------| -----------
 | types                          | {}                      | A map of a type name to a list of regexes of script ids. Any object whose script id matches any of the regexes of its type will be skipped
 | filePaths                      | []                      | A list of regexes of file paths. Any file whose path matches any of the regexes will be skipped
+
+### Salto deploy flags
+| Name                           | Default when undefined  | Description
+| -------------------------------| ------------------------| -----------
+| deployReferencedElements       | false                   | A flag for deploying referenced elements or not

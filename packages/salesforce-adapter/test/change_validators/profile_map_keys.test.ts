@@ -162,7 +162,7 @@ describe('profile map keys change validator', () => {
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].elemID).toEqual(afterProfileInstance.elemID.createNestedID('fieldPermissions', 'Account', 'Contact'))
-    expect(changeErrors[0].detailedMessage).toEqual('Nested value \'field\' not found in field \'fieldPermissions\'')
+    expect(changeErrors[0].detailedMessage).toEqual('Profile Admin field fieldPermissions: Nested value \'field\' not found')
   })
 
   it('should not validate map keys on delete', async () => {

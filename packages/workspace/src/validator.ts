@@ -69,13 +69,14 @@ const validateAnnotations = async (
   elementsSource: ReadOnlyElementsSource
 ):
 Promise<ValidationError[]> => {
-  if (isObjectType(type) && !isReferenceExpression(value)) {
-    return awu(Object.keys(type.fields)).flatMap(
+  if ((isObjectType(type) || isMapType(type)) && !isReferenceExpression(value)) {
+    const objType = toObjectType(type, value)
+    return awu(Object.keys(objType.fields)).flatMap(
       // eslint-disable-next-line no-use-before-define
       async k => validateFieldAnnotations(
         elemID.createNestedID(k),
         value[k],
-        type.fields[k],
+        objType.fields[k],
         elementsSource,
       )
     ).toArray()

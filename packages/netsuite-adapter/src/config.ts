@@ -25,7 +25,7 @@ import {
   SDF_CONCURRENCY_LIMIT, DEPLOY_REFERENCED_ELEMENTS, FETCH_TYPE_TIMEOUT_IN_MINUTES,
   CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
   SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
-  CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, DEPLOY, DATASET, WORKBOOK,
+  CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, DEPLOY, DATASET, WORKBOOK, WARN_STALE_DATA,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams } from './query'
 
@@ -37,6 +37,7 @@ export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = false
 export const DEFAULT_COMMAND_TIMEOUT_IN_MINUTES = 4
 export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 40
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
+export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_USE_CHANGES_DETECTION = true
 
 const clientConfigType = new ObjectType({
@@ -185,15 +186,30 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
 })
 
 export type DeployParams = {
+  [WARN_STALE_DATA]?: boolean
   [DEPLOY_REFERENCED_ELEMENTS]?: boolean
 }
 
 const deployConfigType = createMatchingObjectType<DeployParams>({
   elemID: new ElemID(NETSUITE, 'deployConfig'),
   fields: {
+    [WARN_STALE_DATA]: { refType: BuiltinTypes.BOOLEAN },
     [DEPLOY_REFERENCED_ELEMENTS]: { refType: BuiltinTypes.BOOLEAN },
   },
 })
+
+export const validateDeployParams = (
+  { deployReferencedElements, warnOnStaleWorkspaceData }: Partial<DeployParams>
+): void => {
+  if (deployReferencedElements !== undefined
+    && typeof deployReferencedElements !== 'boolean') {
+    throw new Error(`Expected "deployReferencedElements" to be a boolean or to be undefined, but received:\n ${deployReferencedElements}`)
+  }
+  if (warnOnStaleWorkspaceData !== undefined
+    && typeof warnOnStaleWorkspaceData !== 'boolean') {
+    throw new Error(`Expected "warnOnStaleWorkspaceData" to be a boolean or to be undefined, but received:\n ${warnOnStaleWorkspaceData}`)
+  }
+}
 
 const configID = new ElemID(NETSUITE)
 export const configType = new ObjectType({
@@ -474,14 +490,6 @@ const updateConfigFormat = (
   return {
     didUpdateFetchFormat: updateConfigFetchFormat(configToUpdate),
     didUpdateDeployFormat: updateConfigDeployFormat(configToUpdate),
-  }
-}
-
-export const validateDeployParams = ({ deployReferencedElements }:
-  Partial<DeployParams>): void => {
-  if (deployReferencedElements !== undefined
-    && typeof deployReferencedElements !== 'boolean') {
-    throw new Error(`Expected "deployReferencedElements" to be boolean or to be undefined, but received:\n ${deployReferencedElements}`)
   }
 }
 

@@ -14,10 +14,8 @@
 * limitations under the License.
 */
 
-import {
-  ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult, getChangeElement, FetchOptions,
-  ObjectType,
-} from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult,
+  getChangeElement, FetchOptions, ObjectType, Change } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import createClient from './client/sdf_client'
@@ -27,12 +25,7 @@ import {
   ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, TYPES_TO_SKIP,
   FETCH_ALL_TYPES_AT_ONCE, DEPLOY_REFERENCED_ELEMENTS,
   FETCH_TYPE_TIMEOUT_IN_MINUTES, INTEGRATION, CLIENT_CONFIG, FETCH_TARGET, NETSUITE,
-  USE_CHANGES_DETECTION,
-  FETCH,
-  EXCLUDE,
-  INCLUDE,
-  SKIP_LIST,
-  DEPLOY,
+  USE_CHANGES_DETECTION, FETCH, EXCLUDE, INCLUDE, SKIP_LIST, DEPLOY, WARN_STALE_DATA,
 } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import SdfClient, { convertToCustomTypeInfo } from '../src/client/sdf_client'
@@ -48,11 +41,24 @@ import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
 import * as suiteAppFileCabinet from '../src/suiteapp_file_cabinet'
 import { SDF_CHANGE_GROUP_ID } from '../src/group_changes'
 import { SuiteAppFileCabinetOperations } from '../src/suiteapp_file_cabinet'
+import getChangeValidator from '../src/change_validator'
+import { FetchByQueryFunc } from '../src/change_validators/safe_deploy'
 
 jest.mock('../src/config', () => ({
   ...jest.requireActual<{}>('../src/config'),
   getConfigFromConfigChanges: jest.fn(),
 }))
+
+jest.mock('../src/change_validator')
+const getChangeValidatorMock = getChangeValidator as jest.Mock
+
+// eslint-disable-next-line no-empty-pattern
+getChangeValidatorMock.mockImplementation(({}: {
+  withSuiteApp: boolean
+  warnStaleData: boolean
+  fetchByQuery: FetchByQueryFunc
+}) => (_changes: ReadonlyArray<Change>) => Promise.resolve([]))
+
 jest.mock('../src/reference_dependencies')
 const getAllReferencedInstancesMock = referenceDependenciesModule
   .getAllReferencedInstances as jest.Mock
@@ -642,37 +648,118 @@ describe('Adapter', () => {
       })
     })
 
-    it('should call getAllReferencedInstances when deployReferencedElements is set to true', async () => {
-      const configWithDeployReferencedElements = {
-        [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
-        [FETCH_ALL_TYPES_AT_ONCE]: true,
-        [DEPLOY]: {
-          [DEPLOY_REFERENCED_ELEMENTS]: true,
-        },
-      }
-      const netsuiteAdapterWithDeployReferencedElements = new NetsuiteAdapter({
-        client: new NetsuiteClient(client),
-        elementsSource: buildElementsSourceFromElements([]),
-        filtersCreators: [firstDummyFilter, secondDummyFilter],
-        config: configWithDeployReferencedElements,
-        getElemIdFunc: mockGetElemIdFunc,
+    describe('deployReferencedElements', () => {
+      it('should call getAllReferencedInstances when deployReferencedElements is set to true', async () => {
+        const configWithDeployReferencedElements = {
+          [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
+          [FETCH_ALL_TYPES_AT_ONCE]: true,
+          [DEPLOY]: {
+            [DEPLOY_REFERENCED_ELEMENTS]: true,
+          },
+        }
+        const netsuiteAdapterWithDeployReferencedElements = new NetsuiteAdapter({
+          client: new NetsuiteClient(client),
+          elementsSource: buildElementsSourceFromElements([]),
+          filtersCreators: [firstDummyFilter, secondDummyFilter],
+          config: configWithDeployReferencedElements,
+          getElemIdFunc: mockGetElemIdFunc,
+        })
+
+        await netsuiteAdapterWithDeployReferencedElements.deploy({
+          changeGroup: {
+            groupID: SDF_CHANGE_GROUP_ID,
+            changes: [{ action: 'add', data: { after: instance } }],
+          },
+        })
+
+        expect(getAllReferencedInstancesMock).toHaveBeenCalledTimes(1)
+        expect(getRequiredReferencedInstancesMock).not.toHaveBeenCalled()
       })
 
-      await netsuiteAdapterWithDeployReferencedElements.deploy({
-        changeGroup: {
-          groupID: SDF_CHANGE_GROUP_ID,
-          changes: [{ action: 'add', data: { after: instance } }],
-        },
+      it('should call getRequiredReferencedInstances when deployReferencedElements is set to false', async () => {
+        await adapterAdd(instance)
+        expect(getRequiredReferencedInstancesMock).toHaveBeenCalledTimes(1)
+        expect(getAllReferencedInstancesMock).not.toHaveBeenCalled()
       })
-
-      expect(getAllReferencedInstancesMock).toHaveBeenCalledTimes(1)
-      expect(getRequiredReferencedInstancesMock).not.toHaveBeenCalled()
     })
 
-    it('should call getRequiredReferencedInstances when deployReferencedElements is set to false', async () => {
-      await adapterAdd(instance)
-      expect(getRequiredReferencedInstancesMock).toHaveBeenCalledTimes(1)
-      expect(getAllReferencedInstancesMock).not.toHaveBeenCalled()
+    describe('warnOnStaleWorkspaceData', () => {
+      it('should call getChangeValidator with warnStaleData=false if warnOnStaleWorkspaceData is undefined in config', async () => {
+        const configWithoutWarnStaleData = {
+          [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
+          [FETCH_ALL_TYPES_AT_ONCE]: true,
+          [DEPLOY]: {
+          },
+        }
+        const adapter = new NetsuiteAdapter({
+          client: new NetsuiteClient(client),
+          elementsSource: buildElementsSourceFromElements([]),
+          filtersCreators: [firstDummyFilter, secondDummyFilter],
+          config: configWithoutWarnStaleData,
+          getElemIdFunc: mockGetElemIdFunc,
+        })
+
+        // eslint-disable-next-line no-unused-expressions
+        adapter.deployModifiers
+
+        expect(getChangeValidatorMock).toHaveBeenCalledWith({
+          withSuiteApp: expect.anything(),
+          warnStaleData: false,
+          fetchByQuery: expect.anything(),
+        })
+      })
+
+      it('should call getChangeValidator with warnStaleData=false if warnOnStaleWorkspaceData=false in config', async () => {
+        const configWithoutWarnStaleData = {
+          [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
+          [FETCH_ALL_TYPES_AT_ONCE]: true,
+          [DEPLOY]: {
+            [WARN_STALE_DATA]: false,
+          },
+        }
+        const adapter = new NetsuiteAdapter({
+          client: new NetsuiteClient(client),
+          elementsSource: buildElementsSourceFromElements([]),
+          filtersCreators: [firstDummyFilter, secondDummyFilter],
+          config: configWithoutWarnStaleData,
+          getElemIdFunc: mockGetElemIdFunc,
+        })
+
+        // eslint-disable-next-line no-unused-expressions
+        adapter.deployModifiers
+
+        expect(getChangeValidatorMock).toHaveBeenCalledWith({
+          withSuiteApp: expect.anything(),
+          warnStaleData: false,
+          fetchByQuery: expect.anything(),
+        })
+      })
+
+      it('should call getChangeValidator with warnStaleData=true if warnOnStaleWorkspaceData=true in config', async () => {
+        const configWithoutWarnStaleData = {
+          [TYPES_TO_SKIP]: [SAVED_SEARCH, TRANSACTION_FORM],
+          [FETCH_ALL_TYPES_AT_ONCE]: true,
+          [DEPLOY]: {
+            [WARN_STALE_DATA]: true,
+          },
+        }
+        const adapter = new NetsuiteAdapter({
+          client: new NetsuiteClient(client),
+          elementsSource: buildElementsSourceFromElements([]),
+          filtersCreators: [firstDummyFilter, secondDummyFilter],
+          config: configWithoutWarnStaleData,
+          getElemIdFunc: mockGetElemIdFunc,
+        })
+
+        // eslint-disable-next-line no-unused-expressions
+        adapter.deployModifiers
+
+        expect(getChangeValidatorMock).toHaveBeenCalledWith({
+          withSuiteApp: expect.anything(),
+          warnStaleData: true,
+          fetchByQuery: expect.anything(),
+        })
+      })
     })
   })
 

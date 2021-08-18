@@ -441,6 +441,9 @@ describe('test operations on remote db', () => {
       (a.elemID.getFullName() < b.elemID.getFullName() ? -1 : 1))
       .map(elemToFieldNameMapping))
   })
+  it('should throw exception if the namespace is invalid', async () => {
+    await expect(createMap('inval:d')).rejects.toThrow()
+  })
 })
 
 describe('non persistent mode', () => {

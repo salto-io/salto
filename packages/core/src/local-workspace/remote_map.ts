@@ -371,7 +371,7 @@ remoteMap.RemoteMapCreator => {
     if (!await fileUtils.exists(locationTmpDir)) {
       await fileUtils.mkdirp(locationTmpDir)
     }
-    if (/^[:]+$/i.test(namespace)) {
+    if (/:/i.test(namespace)) {
       throw new Error(
         `Invalid namespace: ${namespace}. Should not include the character ':'`
       )

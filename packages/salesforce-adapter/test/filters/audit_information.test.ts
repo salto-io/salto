@@ -18,7 +18,7 @@ import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, PrimitiveType, Primitive
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FileProperties } from 'jsforce-types'
-import { mockFileProperties, mockQueryResult } from 'test/connection'
+import { mockFileProperties, mockQueryResult } from '../connection'
 import mockClient from '../client'
 import Connection from '../../src/client/jsforce'
 import SalesforceClient from '../../src/client/client'

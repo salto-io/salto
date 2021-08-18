@@ -57,7 +57,8 @@ describe('transformer', () => {
   describe('getAuditAnnotations', () => {
     const newChangeDateFileProperties = mockFileProperties({ lastModifiedDate: 'date that is new',
       type: 'test',
-      fullName: 'test' })
+      fullName: 'test',
+      lastModifiedByName: 'changed_name' })
     const oldChangeDateFileProperties = mockFileProperties(
       { lastModifiedDate: SALESFORCE_DATE_PLACEHOLDER,
         type: 'test',

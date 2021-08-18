@@ -149,8 +149,10 @@ export type Workspace = {
   clear: (args: ClearFlags) => Promise<void>
 
   addService: (service: string) => Promise<void>
-  addEnvironment: (env: string, rmcToSource: (rmc: RemoteMapCreator) => Promise<EnvironmentSource>)
-    => Promise<void>
+  addEnvironment: (
+    env: string,
+    environmentSourceCreator: (rmc: RemoteMapCreator) => Promise<EnvironmentSource>
+  ) => Promise<void>
   deleteEnvironment: (env: string, keepNacls?: boolean) => Promise<void>
   renameEnvironment: (envName: string, newEnvName: string, newSourceName? : string) => Promise<void>
   setCurrentEnv: (env: string, persist?: boolean) => Promise<void>
@@ -806,7 +808,7 @@ export const loadWorkspace = async (
       },
     addEnvironment: async (
       env: string,
-      rmcToSource: (rmc: RemoteMapCreator) => Promise<EnvironmentSource>
+      environmentSourceCreator: (rmc: RemoteMapCreator) => Promise<EnvironmentSource>
     ): Promise<void> => {
       if (workspaceConfig.envs.map(e => e.name).includes(env)) {
         throw new EnvDuplicationError(env)
@@ -818,7 +820,7 @@ export const loadWorkspace = async (
       await getWorkspaceState()
       workspaceConfig.envs = [...workspaceConfig.envs, { name: env }]
       await config.setWorkspaceConfig(workspaceConfig)
-      enviormentsSources.sources[env] = await rmcToSource(remoteMapCreator)
+      enviormentsSources.sources[env] = await environmentSourceCreator(remoteMapCreator)
       naclFilesSource = multiEnvSource(
         _.mapValues(enviormentsSources.sources, e => e.naclFiles),
         currentEnv(),

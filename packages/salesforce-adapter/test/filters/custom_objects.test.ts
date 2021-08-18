@@ -30,10 +30,11 @@ import {
   CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, LABEL, NAMESPACE_SEPARATOR,
   API_NAME, FORMULA, LOOKUP_FILTER_FIELDS, CUSTOM_SETTINGS_TYPE,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, VALUE_SET_FIELDS,
-  CUSTOM_VALUE, VALUE_SET_DEFINITION_FIELDS,
+  CUSTOM_VALUE, VALUE_SET_DEFINITION_FIELDS, LIGHTNING_PAGE_TYPE,
   OBJECTS_PATH, INSTALLED_PACKAGES_PATH, TYPES_PATH, RECORDS_PATH,
   ASSIGNMENT_RULES_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE, QUICK_ACTION_METADATA_TYPE,
   CUSTOM_TAB_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
+  FLEXI_PAGE_TYPE,
 } from '../../src/constants'
 import mockAdapter from '../adapter'
 import { findElements, createValueSetEntry, defaultFilterContext } from '../utils'
@@ -1446,6 +1447,29 @@ describe('Custom Objects filter', () => {
           it('should add PARENT annotation to quickAction instance', async () => {
             expect(quickActionInstance.annotations[CORE_ANNOTATIONS.PARENT])
               .toContainEqual(new ReferenceExpression(leadType.elemID))
+          })
+        })
+
+        describe('LightningPage', () => {
+          const recordPageType = new ObjectType({
+            elemID: new ElemID(SALESFORCE, LIGHTNING_PAGE_TYPE),
+            annotations: { [METADATA_TYPE]: FLEXI_PAGE_TYPE },
+          })
+          const recordPageInstance = new InstanceElement('LightningPageTest',
+            recordPageType,
+            { [INSTANCE_FULL_NAME_FIELD]: LIGHTNING_PAGE_TYPE,
+              sobjectType: 'Lead' })
+          beforeEach(async () => {
+            await filter.onFetch([leadType, recordPageType, recordPageInstance])
+          })
+          it('should add PARENT annotation to Lightning page instance with sobjectType', async () => {
+            expect(recordPageInstance.annotations[CORE_ANNOTATIONS.PARENT])
+              .toContainEqual(new ReferenceExpression(leadType.elemID))
+          })
+
+          it('should change the path of Lightning page instance with sobjectType', async () => {
+            expect(recordPageInstance.path)
+              .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', LIGHTNING_PAGE_TYPE, 'LightningPageTest'])
           })
         })
 

@@ -116,7 +116,6 @@ describe('audit information test', () => {
       totalSize: 2,
     })
     connection.query.mockResolvedValue(TestCustomRecords)
-    // jest.spyOn(utils, 'queryClient').mockResolvedValue(TestCustomRecords)
     const testType = new ObjectType({ elemID: new ElemID('', 'test'),
       annotations: { [METADATA_TYPE]: CUSTOM_OBJECT, [API_NAME]: 'otherName' } })
     const testInst = new InstanceElement(

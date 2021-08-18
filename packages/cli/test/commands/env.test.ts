@@ -13,29 +13,47 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { locateWorkspaceRoot, loadLocalWorkspace } from '@salto-io/core'
 import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { createAction, setAction, currentAction, listAction, deleteAction, renameAction } from '../../src/commands/env'
 import { CliExitCode } from '../../src/types'
+
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual<{}>('@salto-io/core'),
+  localWorkspaceConfigSource: jest.fn().mockResolvedValue({ localStorage: '.' }),
+  loadLocalWorkspace: jest.fn(),
+  locateWorkspaceRoot: jest.fn(),
+}))
+
+const mockLocateWorkspaceRoot = (
+  locateWorkspaceRoot as jest.MockedFunction<typeof locateWorkspaceRoot>
+)
+const mockLoadLocalWorkspace = (
+  loadLocalWorkspace as jest.MockedFunction<typeof loadLocalWorkspace>
+)
 
 describe('env command group', () => {
   let cliArgs: mocks.MockCliArgs
   let output: mocks.MockCliOutput
 
   beforeEach(async () => {
+    jest.clearAllMocks()
     cliArgs = mocks.mockCliArgs()
     output = cliArgs.output
+    mockLocateWorkspaceRoot.mockResolvedValue('.')
   })
 
   describe('create command', () => {
     const commandName = 'create'
     it('should create a new environment', async () => {
+      mockLoadLocalWorkspace.mockResolvedValue(mocks.mockWorkspace({}))
       await createAction({
         ...mocks.mockCliCommandArgs(commandName, cliArgs),
         input: {
           envName: 'new-env',
         },
-        workspace: mocks.mockWorkspace({}),
+        workspacePath: '.',
       })
       expect(output.stdout.content.search('new-env')).toBeGreaterThan(0)
     })
@@ -44,13 +62,10 @@ describe('env command group', () => {
       let workspace: mocks.MockWorkspace
       beforeEach(() => {
         workspace = mocks.mockWorkspace({ envs: ['me1'] })
+        mockLoadLocalWorkspace.mockResolvedValue(workspace)
         jest.spyOn(callbacks, 'cliApproveIsolateBeforeMultiEnv').mockImplementation(
           () => Promise.resolve(false)
         )
-      })
-
-      afterEach(() => {
-        jest.clearAllMocks()
       })
 
       it('should prompt on 2nd environment creation, and do nothing if false', async () => {
@@ -59,7 +74,7 @@ describe('env command group', () => {
           input: {
             envName: 'me2',
           },
-          workspace,
+          workspacePath: '.',
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalledTimes(1)
@@ -77,7 +92,7 @@ describe('env command group', () => {
           input: {
             envName: 'me2',
           },
-          workspace,
+          workspacePath: '.',
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).toHaveBeenCalledTimes(1)
@@ -93,7 +108,7 @@ describe('env command group', () => {
             force: true,
             yesAll: false,
           },
-          workspace,
+          workspacePath: '.',
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
@@ -107,7 +122,7 @@ describe('env command group', () => {
             envName: 'me2',
             yesAll: true,
           },
-          workspace,
+          workspacePath: '.',
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
@@ -121,7 +136,7 @@ describe('env command group', () => {
             force: true,
             yesAll: true,
           },
-          workspace,
+          workspacePath: '.',
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
@@ -136,7 +151,7 @@ describe('env command group', () => {
           input: {
             envName: 'me2',
           },
-          workspace,
+          workspacePath: '.',
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
@@ -151,7 +166,7 @@ describe('env command group', () => {
           input: {
             envName: 'me2',
           },
-          workspace,
+          workspacePath: '.',
         })
         expect(output.stdout.content.search('me2')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
@@ -159,18 +174,19 @@ describe('env command group', () => {
       })
 
       it('should not prompt on 3rd environment creation', async () => {
-        workspace = mocks.mockWorkspace({ envs: ['me1', 'me2'] })
+        const newWorkspace = mocks.mockWorkspace({ envs: ['me1', 'me2'] })
+        mockLoadLocalWorkspace.mockResolvedValue(newWorkspace)
 
         await createAction({
           ...mocks.mockCliCommandArgs(commandName, cliArgs),
           input: {
             envName: 'me3',
           },
-          workspace,
+          workspacePath: '.',
         })
         expect(output.stdout.content.search('me3')).toBeGreaterThan(0)
         expect(callbacks.cliApproveIsolateBeforeMultiEnv).not.toHaveBeenCalled()
-        expect(workspace.demoteAll).not.toHaveBeenCalled()
+        expect(newWorkspace.demoteAll).not.toHaveBeenCalled()
       })
     })
   })

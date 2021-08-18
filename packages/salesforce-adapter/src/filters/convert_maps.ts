@@ -16,9 +16,9 @@
 
 import _ from 'lodash'
 import {
-  Element, ObjectType, isContainerType, MapType, ListType, InstanceElement,
+  Element, ObjectType, isContainerType, MapType, ListType, InstanceElement, CORE_ANNOTATIONS,
   Values, isAdditionOrModificationChange, isInstanceChange, getChangeElement, Change, isMapType,
-  isListType, isInstanceElement, createRefToElmWithValue,
+  isListType, isInstanceElement, createRefToElmWithValue, getDeepInnerType, isObjectType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { naclCase, applyFunctionToChangeData } from '@salto-io/adapter-utils'
@@ -200,6 +200,17 @@ const updateFieldTypes = async (
       f.refType = createRefToElmWithValue(new MapType(new MapType(innerType)))
     } else {
       f.refType = createRefToElmWithValue(new MapType(innerType))
+    }
+
+    // make the key field required
+    const deepInnerType = await getDeepInnerType(innerType)
+    if (isObjectType(deepInnerType)) {
+      const keyFieldType = deepInnerType.fields[mapDef.key]
+      if (!keyFieldType) {
+        log.error('could not find key field %s for field %s', f.elemID.getFullName())
+        return
+      }
+      keyFieldType.annotations[CORE_ANNOTATIONS.REQUIRED] = true
     }
   })
 }

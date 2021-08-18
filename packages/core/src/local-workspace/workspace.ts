@@ -20,7 +20,7 @@ import { DetailedChange } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, remoteMap,
   configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors,
-  COMMON_ENV_PREFIX, isValidEnvName } from '@salto-io/workspace'
+  COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource } from '@salto-io/workspace'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome, CONFIG_DIR_NAME, getConfigDir } from '../app_config'
 import { localState } from './state'
@@ -118,6 +118,30 @@ const getLocalEnvName = (env: string): string => (env === COMMON_ENV_PREFIX
   ? env
   : path.join(ENVS_PREFIX, env))
 
+export const createEnvironmentSource = async ({
+  env, baseDir, localStorage, remoteMapCreator, persistent,
+}: {
+  env: string
+  baseDir: string
+  localStorage: string
+  remoteMapCreator: remoteMap.RemoteMapCreator
+  persistent: boolean
+}): Promise<EnvironmentSource> => ({
+  naclFiles: await loadNaclFileSource(
+    baseDir,
+    path.resolve(localStorage, CACHE_DIR_NAME),
+    getLocalEnvName(env),
+    persistent,
+    remoteMapCreator,
+  ),
+  state: localState(
+    path.join(getConfigDir(baseDir), STATES_DIR_NAME, env),
+    env,
+    remoteMapCreator,
+    persistent
+  ),
+})
+
 export const loadLocalElementsSources = async (
   baseDir: string,
   localStorage: string,
@@ -130,21 +154,9 @@ export const loadLocalElementsSources = async (
     ..._.fromPairs(await Promise.all(envs.map(async env =>
       [
         env,
-        {
-          naclFiles: await loadNaclFileSource(
-            baseDir,
-            path.resolve(localStorage, CACHE_DIR_NAME),
-            getLocalEnvName(env),
-            persistent,
-            remoteMapCreator,
-          ),
-          state: localState(
-            path.join(getConfigDir(baseDir), STATES_DIR_NAME, env),
-            env,
-            remoteMapCreator,
-            persistent
-          ),
-        },
+        await createEnvironmentSource({
+          env, baseDir, localStorage, remoteMapCreator, persistent,
+        }),
       ]))),
     [COMMON_ENV_PREFIX]: {
       naclFiles: await loadNaclFileSource(

@@ -208,4 +208,18 @@ describe('restore', () => {
       })
     })
   })
+
+  describe('with remove changes for elements with multiple path hints', () => {
+    let changes: DetailedChange[]
+    beforeAll(async () => {
+      changes = await createRestoreChanges(
+        createElementSource([multiPathObjMerged]),
+        createElementSource([]),
+        index
+      )
+    })
+    it('should return only on change (avoid spliting by path hint)', () => {
+      expect(changes).toHaveLength(1)
+    })
+  })
 })

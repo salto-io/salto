@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, DetailedChange } from '@salto-io/adapter-api'
+import { ElemID, DetailedChange, isRemovalChange } from '@salto-io/adapter-api'
 import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { pathIndex, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
@@ -27,7 +27,7 @@ const splitChangeByPath = async (
   index: pathIndex.PathIndex
 ): Promise<DetailedChange[]> => {
   const changeHints = await pathIndex.getFromPathIndex(change.id, index)
-  if (_.isEmpty(changeHints)) {
+  if (_.isEmpty(changeHints) || isRemovalChange(change)) {
     return [change]
   }
   return Promise.all(changeHints.map(async hint => {

@@ -595,24 +595,24 @@ const fixDependentInstancesPathAndSetParent = async (
 
   const getDependentobjectID = async (
     instance: InstanceElement
-  ): Promise<ElemID | undefined> => {
+  ): Promise<string> => {
     switch (await metadataType(instance)) {
       case LEAD_CONVERT_SETTINGS_METADATA_TYPE:
-        return apiNameToCustomObject.get('Lead')
-      case FLEXI_PAGE_TYPE || LIGHTNING_PAGE_TYPE:
+        return 'Lead'
+      case FLEXI_PAGE_TYPE:
         if (hasSobjectField(instance)) {
-          return apiNameToCustomObject.get(instance.value.sobjectType)
+          return instance.value.sobjectType
         }
-        return undefined
+        return ''
       default:
-        return apiNameToCustomObject.get(await parentApiName(instance))
+        return parentApiName(instance)
     }
   }
 
   const getDependentCustomObj = async (
     instance: InstanceElement
   ): Promise<ObjectType | undefined> => {
-    const objectID = await getDependentobjectID(instance)
+    const objectID = apiNameToCustomObject.get(await getDependentobjectID(instance))
     const object = objectID !== undefined ? await referenceElements.get(objectID) : undefined
     return isObjectType(object) ? object : undefined
   }

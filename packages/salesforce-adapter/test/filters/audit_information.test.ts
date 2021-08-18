@@ -23,9 +23,8 @@ import { Filter, FilterResult } from '../../src/filter'
 import auditInformation, { WARNING_MESSAGE } from '../../src/filters/audit_information'
 import { defaultFilterContext, MockInterface } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import { API_NAME, CUSTOM_FIELD, CUSTOM_OBJECT } from '../../src/constants'
+import { API_NAME, CUSTOM_FIELD, CUSTOM_OBJECT, METADATA_TYPE } from '../../src/constants'
 import * as transformer from '../../src/transformers/transformer'
-
 
 describe('audit information test', () => {
   let filter: Filter
@@ -63,7 +62,7 @@ describe('audit information test', () => {
   }
   const objectWithoutInformation = new ObjectType({
     elemID: new ElemID('salesforce', 'otherName'),
-    annotations: { metadataType: 'CustomObject', [API_NAME]: 'otherName' },
+    annotations: { metadataType: CUSTOM_OBJECT, [API_NAME]: 'otherName' },
     fields: {
       StringField__c: { refType: new ReferenceExpression(primNum.elemID, primNum) },
     },
@@ -85,23 +84,18 @@ describe('audit information test', () => {
     filter = auditInformation({ client, config: defaultFilterContext })
     customObject = new ObjectType({
       elemID: new ElemID('salesforce', 'Custom__c'),
-      annotations: { metadataType: 'CustomObject', [API_NAME]: 'Custom__c' },
+      annotations: { metadataType: CUSTOM_OBJECT, [API_NAME]: 'Custom__c' },
       fields: {
         StringField__c: { refType: new ReferenceExpression(primNum.elemID, primNum) },
       },
     })
   })
-  afterEach(() => {
-    jest.resetAllMocks()
-  })
-
   it('should add audit annotations to custom object', async () => {
     await filter.onFetch?.([customObject, objectWithoutInformation])
     checkElementAnnotations(customObject, objectProperties)
     checkElementAnnotations(customObject.fields.StringField__c, fieldProperties)
   })
   it('should add annotations to to custom object instances', async () => {
-    jest.spyOn(transformer, 'isInstanceOfCustomObject').mockResolvedValue(true)
     const TestCustomRecords = [
       {
         Id: 'creator_id',
@@ -113,12 +107,16 @@ describe('audit information test', () => {
       },
     ]
     jest.spyOn(utils, 'queryClient').mockResolvedValue(TestCustomRecords)
-    const testType = new ObjectType({ elemID: new ElemID('', 'test') })
-    const testInst = new InstanceElement('Custom__c', new ReferenceExpression(testType.elemID, testType),
+    const testType = new ObjectType({ elemID: new ElemID('', 'test'),
+      annotations: { [METADATA_TYPE]: CUSTOM_OBJECT, [API_NAME]: 'otherName' } })
+    const testInst = new InstanceElement(
+      'Custom__c',
+      new ReferenceExpression(testType.elemID, testType),
       { CreatedDate: 'created_date',
         CreatedById: 'creator_id',
         LastModifiedDate: 'changed_date',
-        LastModifiedById: 'changed_id' })
+        LastModifiedById: 'changed_id' }
+    )
     await filter.onFetch?.([testInst])
     checkElementAnnotations(testInst, objectProperties)
   })

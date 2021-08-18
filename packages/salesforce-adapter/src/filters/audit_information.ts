@@ -18,7 +18,6 @@ import { FileProperties } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { AwuIterable } from '@salto-io/lowerdash/src/collections/asynciterable'
 import { CUSTOM_FIELD, CUSTOM_OBJECT } from '../constants'
 import { apiName, getAuditAnnotations, isCustomObject, isInstanceOfCustomObject } from '../transformers/transformer'
 import { FilterCreator, FilterWith } from '../filter'
@@ -26,6 +25,7 @@ import SalesforceClient from '../client/client'
 import { conditionQueries, ensureSafeFilterFetch, queryClient } from './utils'
 
 const { awu } = collections.asynciterable
+type AwuIterable<T> = collections.asynciterable.AwuIterable<T>
 
 type FilePropertiesMap = Record<string, FileProperties>
 type FieldFileNameParts = {fieldName: string; objectName: string}
@@ -88,12 +88,13 @@ const objectAuditInformationSupplier = async (
   customFieldsFilePropertiesMap: Record<string, FilePropertiesMap>,
   object: ObjectType
 ): Promise<void> => {
-  if (await apiName(object) in customTypeFilePropertiesMap) {
+  const objectApiName = await apiName(object)
+  if (objectApiName in customTypeFilePropertiesMap) {
     Object.assign(object.annotations,
-      getAuditAnnotations(customTypeFilePropertiesMap[object.elemID.name]))
+      getAuditAnnotations(customTypeFilePropertiesMap[objectApiName]))
   }
-  if (object.elemID.name in customFieldsFilePropertiesMap) {
-    addAuditAnnotationsToFields(customFieldsFilePropertiesMap[object.elemID.name], object)
+  if (objectApiName in customFieldsFilePropertiesMap) {
+    addAuditAnnotationsToFields(customFieldsFilePropertiesMap[objectApiName], object)
   }
 }
 

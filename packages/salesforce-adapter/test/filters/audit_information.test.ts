@@ -24,7 +24,6 @@ import auditInformation, { WARNING_MESSAGE } from '../../src/filters/audit_infor
 import { defaultFilterContext, MockInterface } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { API_NAME, CUSTOM_FIELD, CUSTOM_OBJECT, METADATA_TYPE } from '../../src/constants'
-import * as transformer from '../../src/transformers/transformer'
 
 describe('audit information test', () => {
   let filter: Filter
@@ -121,7 +120,7 @@ describe('audit information test', () => {
     checkElementAnnotations(testInst, objectProperties)
   })
   it('should return a warning', async () => {
-    jest.spyOn(transformer, 'isInstanceOfCustomObject').mockImplementation(() => {
+    connection.metadata.list.mockImplementation(() => {
       throw new Error()
     })
     const res = await filter.onFetch?.([customObject]) as FilterResult

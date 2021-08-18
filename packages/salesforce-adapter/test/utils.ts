@@ -194,6 +194,13 @@ export const generateProfileType = (useMaps = false, preDeploy = false): ObjectT
     ? ProfileFieldLevelSecurity
     : new ListType(ProfileFieldLevelSecurity)
 
+  if (useMaps || preDeploy) {
+    // mark key fields as _required=true
+    ProfileApplicationVisibility.fields.application.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+    ProfileLayoutAssignment.fields.layout.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+    ProfileFieldLevelSecurity.fields.field.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+  }
+
   return new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, constants.PROFILE_METADATA_TYPE),
     fields: {

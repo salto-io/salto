@@ -92,6 +92,12 @@ describe('ProfileMaps filter', () => {
         expect(isMapType(fieldType)).toBeTruthy()
         expect(isListType((fieldType as MapType).getInnerType())).toBeFalsy()
       })
+      it('should mark the fields that are used for keys as _required=true', async () => {
+        expect(profileObj).toEqual(generateProfileType(true))
+        const fieldType = await profileObj.fields.applicationVisibilities.getType()
+        expect(isMapType(fieldType)).toBeTruthy()
+        expect(isListType((fieldType as MapType).getInnerType())).toBeFalsy()
+      })
       it('should convert instance values to maps', () => {
         expect((instances[0] as InstanceElement).value).toEqual({
           applicationVisibilities: {

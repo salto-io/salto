@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values, CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction, ListType, createRestriction, isServiceId, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { Field as SalesforceField, FileProperties } from 'jsforce'
+import { Field as SalesforceField } from 'jsforce'
 import { restoreValues, resolveValues } from '@salto-io/adapter-utils'
 
 import {
@@ -42,7 +42,7 @@ import { CustomField, FilterItem, CustomObject, CustomPicklistValue,
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import mockClient from '../client'
-import { createValueSetEntry, MockInterface } from '../utils'
+import { createFileProperties, createValueSetEntry, MockInterface } from '../utils'
 import { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import { mockValueTypeField, mockDescribeValueResult } from '../connection'
 import { allMissingSubTypes } from '../../src/transformers/salesforce_types'
@@ -55,20 +55,6 @@ const { makeArray } = collections.array
 
 describe('transformer', () => {
   describe('getAuditAnnotations', () => {
-    const createFileProperties = (changes: Record<string, string>): FileProperties => {
-      const fileProps = { createdByName: 'created_name',
-        createdDate: 'created_date',
-        lastModifiedDate: 'changed_time',
-        lastModifiedByName: 'changed_name',
-        type: 'type',
-        createdById: 'create_id',
-        fileName: 'fileName',
-        fullName: 'fullname',
-        id: 'id',
-        lastModifiedById: 'lastModifiedById' }
-      Object.assign(fileProps, changes)
-      return fileProps
-    }
     const newChangeDateFileProperties = createFileProperties(
       { lastModifiedDate: 'date that is new' }
     )

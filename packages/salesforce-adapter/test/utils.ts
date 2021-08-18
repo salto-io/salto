@@ -22,6 +22,7 @@ import {
   findElements as findElementsByID, buildElementsSourceFromElements,
 } from '@salto-io/adapter-utils'
 import JSZip from 'jszip'
+import { FileProperties } from 'jsforce-types'
 import * as constants from '../src/constants'
 import {
   annotationsFileName, customFieldsFileName, standardFieldsFileName,
@@ -30,6 +31,21 @@ import { getNamespaceFromString } from '../src/filters/utils'
 import { FilterContext } from '../src/filter'
 import { allSystemFields } from '../src/adapter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
+
+export const createFileProperties = (changes: Record<string, string>): FileProperties => {
+  const fileProps = { createdByName: 'created_name',
+    createdDate: 'created_date',
+    lastModifiedDate: 'changed_time',
+    lastModifiedByName: 'changed_name',
+    type: 'type',
+    createdById: 'create_id',
+    fileName: 'fileName',
+    fullName: 'fullname',
+    id: 'id',
+    lastModifiedById: 'lastModifiedById' }
+  Object.assign(fileProps, changes)
+  return fileProps
+}
 
 export const findElements = (
   elements: ReadonlyArray<Element>,

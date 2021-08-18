@@ -15,13 +15,16 @@
 */
 
 import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, PrimitiveType, PrimitiveTypes, ReferenceExpression, InstanceElement } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import _ from 'lodash'
+import { FileProperties } from 'jsforce-types'
 import mockClient from '../client'
 import Connection from '../../src/client/jsforce'
 import SalesforceClient from '../../src/client/client'
 import * as utils from '../../src/filters/utils'
 import { Filter, FilterResult } from '../../src/filter'
 import auditInformation, { WARNING_MESSAGE } from '../../src/filters/audit_information'
-import { defaultFilterContext, MockInterface } from '../utils'
+import { createFileProperties, defaultFilterContext, MockInterface } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { API_NAME, CUSTOM_FIELD, CUSTOM_OBJECT, METADATA_TYPE } from '../../src/constants'
 
@@ -30,21 +33,21 @@ describe('audit information test', () => {
   let client: SalesforceClient
   let connection: MockInterface<Connection>
   let customObject: ObjectType
-  const objectProperties = { fullName: 'Custom__c',
+  const objectProperties = createFileProperties({ fullName: 'Custom__c',
     createdByName: 'created_name',
     createdDate: 'created_date',
     lastModifiedByName: 'changed_name',
-    lastModifiedDate: 'changed_date' }
-  const fieldProperties = { fullName: 'Custom__c.StringField__c',
+    lastModifiedDate: 'changed_date' })
+  const fieldProperties = createFileProperties({ fullName: 'Custom__c.StringField__c',
     createdByName: 'created_name_field',
     createdDate: 'created_date_field',
     lastModifiedByName: 'changed_name_field',
-    lastModifiedDate: 'changed_date_field' }
-  const nonExistentFieldProperties = { fullName: 'Custom__c.noSuchField',
+    lastModifiedDate: 'changed_date_field' })
+  const nonExistentFieldProperties = createFileProperties({ fullName: 'Custom__c.noSuchField',
     createdByName: 'test',
     createdDate: 'test',
     lastModifiedByName: 'test',
-    lastModifiedDate: 'test' }
+    lastModifiedDate: 'test' })
   // In order to test a field that was described in the server and not found in our elements.
   const primID = new ElemID('test', 'prim')
   const primNum = new PrimitiveType({
@@ -53,7 +56,7 @@ describe('audit information test', () => {
     annotationRefsOrTypes: {},
     annotations: {},
   })
-  const checkElementAnnotations = (object: Element, properties: Record<string, string>): void => {
+  const checkElementAnnotations = (object: Element, properties: FileProperties): void => {
     expect(object.annotations[CORE_ANNOTATIONS.CREATED_BY]).toEqual(properties.createdByName)
     expect(object.annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual(properties.createdDate)
     expect(object.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual(properties.lastModifiedByName)
@@ -70,12 +73,13 @@ describe('audit information test', () => {
 
   beforeEach(() => {
     ({ connection, client } = mockClient())
-    connection.metadata.list = jest.fn()
-      .mockImplementation(async ([{ type }]) => {
-        if (type === CUSTOM_OBJECT) {
+    connection.metadata.list
+      .mockImplementation(async inQuery => {
+        const query = collections.array.makeArray(inQuery)[0]
+        if (_.isEqual(query, { type: CUSTOM_OBJECT })) {
           return [objectProperties]
         }
-        if (type === CUSTOM_FIELD) {
+        if (_.isEqual(query, { type: CUSTOM_FIELD })) {
           return [fieldProperties, nonExistentFieldProperties]
         }
         return []
@@ -141,7 +145,10 @@ describe('audit information test', () => {
         },
       })
       await filter.onFetch?.([customObject])
-      checkElementAnnotations(customObject, {})
+      expect(customObject.annotations[CORE_ANNOTATIONS.CREATED_BY]).not.toBeDefined()
+      expect(customObject.annotations[CORE_ANNOTATIONS.CREATED_AT]).not.toBeDefined()
+      expect(customObject.annotations[CORE_ANNOTATIONS.CHANGED_BY]).not.toBeDefined()
+      expect(customObject.annotations[CORE_ANNOTATIONS.CHANGED_AT]).not.toBeDefined()
     })
   })
 })

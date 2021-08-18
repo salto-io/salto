@@ -3381,3 +3381,30 @@ describe('isValidEnvName', () => {
     expect(isValidEnvName('100%')).toEqual(false)
   })
 })
+
+describe('update nacl files with invalid state cache', () => {
+  let workspace: Workspace
+  beforeAll(async () => {
+    const dirStore = mockDirStore()
+    const changes: DetailedChange[] = [
+      {
+        action: 'remove',
+        id: ElemID.fromFullName('salesforce.ObjWithFieldTypeWithHidden'),
+        data: {
+          before: new ObjectType({
+            elemID: ElemID.fromFullName('salesforce.ObjWithFieldTypeWithHidden'),
+          }),
+        },
+      },
+    ]
+    workspace = await createWorkspace(dirStore)
+    const state = workspace.state()
+    await state.setHash('XXX')
+    await workspace.updateNaclFiles(changes)
+  })
+
+  it('should not have the hidden parts of the removed element', async () => {
+    expect(await workspace.getValue(ElemID.fromFullName('salesforce.ObjWithFieldTypeWithHidden')))
+      .not.toBeDefined()
+  })
+})

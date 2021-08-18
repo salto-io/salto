@@ -42,9 +42,9 @@ import { CustomField, FilterItem, CustomObject, CustomPicklistValue,
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import mockClient from '../client'
-import { createFileProperties, createValueSetEntry, MockInterface } from '../utils'
+import { createValueSetEntry, MockInterface } from '../utils'
 import { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
-import { mockValueTypeField, mockDescribeValueResult } from '../connection'
+import { mockValueTypeField, mockDescribeValueResult, mockFileProperties } from '../connection'
 import { allMissingSubTypes } from '../../src/transformers/salesforce_types'
 import { convertRawMissingFields } from '../../src/transformers/missing_fields'
 
@@ -55,11 +55,13 @@ const { makeArray } = collections.array
 
 describe('transformer', () => {
   describe('getAuditAnnotations', () => {
-    const newChangeDateFileProperties = createFileProperties(
-      { lastModifiedDate: 'date that is new' }
-    )
-    const oldChangeDateFileProperties = createFileProperties(
-      { lastModifiedDate: SALESFORCE_DATE_PLACEHOLDER }
+    const newChangeDateFileProperties = mockFileProperties({ lastModifiedDate: 'date that is new',
+      type: 'test',
+      fullName: 'test' })
+    const oldChangeDateFileProperties = mockFileProperties(
+      { lastModifiedDate: SALESFORCE_DATE_PLACEHOLDER,
+        type: 'test',
+        fullName: 'test' }
     )
     it('get annotations with up to date change time will return full annotations', () => {
       expect(getAuditAnnotations(newChangeDateFileProperties)[CORE_ANNOTATIONS.CHANGED_BY])

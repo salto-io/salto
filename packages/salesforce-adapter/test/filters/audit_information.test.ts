@@ -18,13 +18,14 @@ import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, PrimitiveType, Primitive
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FileProperties } from 'jsforce-types'
+import { mockFileProperties, mockQueryResult } from 'test/connection'
 import mockClient from '../client'
 import Connection from '../../src/client/jsforce'
 import SalesforceClient from '../../src/client/client'
 import * as utils from '../../src/filters/utils'
 import { Filter, FilterResult } from '../../src/filter'
 import auditInformation, { WARNING_MESSAGE } from '../../src/filters/audit_information'
-import { createFileProperties, defaultFilterContext, MockInterface } from '../utils'
+import { defaultFilterContext, MockInterface } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { API_NAME, CUSTOM_FIELD, CUSTOM_OBJECT, METADATA_TYPE } from '../../src/constants'
 
@@ -33,17 +34,20 @@ describe('audit information test', () => {
   let client: SalesforceClient
   let connection: MockInterface<Connection>
   let customObject: ObjectType
-  const objectProperties = createFileProperties({ fullName: 'Custom__c',
+  const objectProperties = mockFileProperties({ fullName: 'Custom__c',
+    type: 'test',
     createdByName: 'created_name',
     createdDate: 'created_date',
     lastModifiedByName: 'changed_name',
     lastModifiedDate: 'changed_date' })
-  const fieldProperties = createFileProperties({ fullName: 'Custom__c.StringField__c',
+  const fieldProperties = mockFileProperties({ fullName: 'Custom__c.StringField__c',
+    type: 'test',
     createdByName: 'created_name_field',
     createdDate: 'created_date_field',
     lastModifiedByName: 'changed_name_field',
     lastModifiedDate: 'changed_date_field' })
-  const nonExistentFieldProperties = createFileProperties({ fullName: 'Custom__c.noSuchField',
+  const nonExistentFieldProperties = mockFileProperties({ fullName: 'Custom__c.noSuchField',
+    type: 'test',
     createdByName: 'test',
     createdDate: 'test',
     lastModifiedByName: 'test',
@@ -99,17 +103,21 @@ describe('audit information test', () => {
     checkElementAnnotations(customObject.fields.StringField__c, fieldProperties)
   })
   it('should add annotations to to custom object instances', async () => {
-    const TestCustomRecords = [
-      {
-        Id: 'creator_id',
-        Name: 'created_name',
-      },
-      {
-        Id: 'changed_id',
-        Name: 'changed_name',
-      },
-    ]
-    jest.spyOn(utils, 'queryClient').mockResolvedValue(TestCustomRecords)
+    const TestCustomRecords = mockQueryResult({
+      records: [
+        {
+          Id: 'creator_id',
+          Name: 'created_name',
+        },
+        {
+          Id: 'changed_id',
+          Name: 'changed_name',
+        },
+      ],
+      totalSize: 2,
+    })
+    connection.query.mockResolvedValue(TestCustomRecords)
+    // jest.spyOn(utils, 'queryClient').mockResolvedValue(TestCustomRecords)
     const testType = new ObjectType({ elemID: new ElemID('', 'test'),
       annotations: { [METADATA_TYPE]: CUSTOM_OBJECT, [API_NAME]: 'otherName' } })
     const testInst = new InstanceElement(

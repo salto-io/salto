@@ -15,9 +15,9 @@
 */
 import _ from 'lodash'
 import { EOL } from 'os'
-import { diff } from '@salto-io/core'
-import { Workspace, createElementSelectors } from '@salto-io/workspace'
-import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
+import { diff, localWorkspaceConfigSource, createEnvironmentSource, loadLocalWorkspace } from '@salto-io/core'
+import { Workspace, createElementSelectors, remoteMap as rm, EnvironmentSource } from '@salto-io/workspace'
+import { CommandDefAction, createCommandGroupDef, createPublicCommandDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode } from '../types'
 import {
   formatEnvListItem, formatCurrentEnv, formatCreateEnv, formatSetEnv, formatDeleteEnv,
@@ -28,6 +28,8 @@ import Prompts from '../prompts'
 import { cliApproveIsolateBeforeMultiEnv } from '../callbacks'
 import { outputLine, errorOutputLine } from '../outputer'
 import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './common/services'
+import { ConfigOverrideArg, CONFIG_OVERRIDE_OPTION, getConfigOverrideChanges } from './common/config_override'
+import { getWorkspaceTelemetryTags } from '../workspace/workspace'
 
 const setEnvironment = async (
   envName: string,
@@ -323,26 +325,47 @@ type EnvCreateArgs = {
   yesAll?: boolean
 }
 
-export const createAction: WorkspaceCommandAction<EnvCreateArgs> = async ({
-  input,
-  output,
-  workspace,
-}): Promise<CliExitCode> => {
-  const { force, yesAll, envName } = input
-  // Note - CLI always loads the workspace from '.'
-  await maybeIsolateExistingEnv(output, workspace, force, yesAll)
+export const createAction: CommandDefAction<EnvCreateArgs & ConfigOverrideArg> = async (args):
+Promise<CliExitCode> => {
+  // Note: Some of the code here is copied from createWorkspaceCommand.
+  // We do it since we need the workspace config in order to create the environment source
+  const { force, yesAll, envName } = args.input
+  const configOverrides = getConfigOverrideChanges(args.input)
+  const workspace = await loadLocalWorkspace(args.workspacePath, configOverrides)
+  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+  args.cliTelemetry.start(workspaceTags)
 
-  await workspace.addEnvironment(envName)
-  await setEnvironment(envName, output, workspace)
-  outputLine(formatCreateEnv(envName), output)
-  return CliExitCode.Success
+  try {
+    await maybeIsolateExistingEnv(args.output, workspace, force, yesAll)
+    const workspaceConfig = await localWorkspaceConfigSource(
+      args.workspacePath, undefined, configOverrides
+    )
+    const rmcToEnvSource = async (remoteMapCreator: rm.RemoteMapCreator):
+    Promise<EnvironmentSource> =>
+      createEnvironmentSource({
+        env: envName,
+        baseDir: args.workspacePath,
+        localStorage: workspaceConfig.localStorage,
+        remoteMapCreator,
+        persistent: true,
+      })
+    await workspace.addEnvironment(envName, rmcToEnvSource)
+    await setEnvironment(envName, args.output, workspace)
+    outputLine(formatCreateEnv(envName), args.output)
+    args.cliTelemetry.success(workspaceTags)
+    return CliExitCode.Success
+  } catch (e) {
+    args.cliTelemetry.failure(workspaceTags)
+    return CliExitCode.AppError
+  }
 }
 
-const envCreateDef = createWorkspaceCommand({
+const envCreateDef = createPublicCommandDef({
   properties: {
     name: 'create',
     description: 'Create a new environment in the workspace',
     keyedOptions: [
+      CONFIG_OVERRIDE_OPTION,
       {
         name: 'force',
         alias: 'f',

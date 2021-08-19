@@ -46,6 +46,8 @@ import { createInMemoryElementSource, ElementsSource } from '../../src/workspace
 import { InMemoryRemoteMap, RemoteMapCreator, RemoteMap, CreateRemoteMapParams } from '../../src/workspace/remote_map'
 import { Path } from '../../src/workspace/path_index'
 import { mockState } from '../common/state'
+import * as multiEnvSrcLib from '../../src/workspace/nacl_files/multi_env/multi_env_source'
+
 
 const { awu } = collections.asynciterable
 
@@ -3426,5 +3428,64 @@ describe('update nacl files with invalid state cache', () => {
   it('should not have the hidden parts of the removed element', async () => {
     expect(await workspace.getValue(ElemID.fromFullName('salesforce.ObjWithFieldTypeWithHidden')))
       .not.toBeDefined()
+  })
+})
+
+describe('nacl sources reuse', () => {
+  let mockMuiltiEnv: jest.SpyInstance
+  let elementSources: Record<string, EnvironmentSource>
+  let ws: Workspace
+
+  beforeAll(() => {
+    mockMuiltiEnv = jest.spyOn(multiEnvSrcLib, 'multiEnvSource')
+  })
+  beforeEach(async () => {
+    mockMuiltiEnv.mockClear()
+    elementSources = {
+      '': {
+        naclFiles: createMockNaclFileSource([]),
+      },
+      default: {
+        naclFiles: createMockNaclFileSource([]),
+        state: createState([], true),
+      },
+      inactive: {
+        naclFiles: createMockNaclFileSource([]),
+        state: createState([], true),
+      },
+    }
+    ws = await createWorkspace(undefined, undefined, mockWorkspaceConfigSource(undefined, true),
+      undefined, undefined, elementSources)
+  })
+  afterAll(() => {
+    mockMuiltiEnv.mockReset()
+  })
+
+  const createMultiEnvSrcEnvInvocationCount = (
+    mockFunc: jest.SpyInstance
+  ): Record<string, number> => (
+    mockFunc.mock.calls.reduce((acc, args) => {
+      const envName = args[1]
+      acc[envName] = (acc[envName] ?? 0) + 1
+      return acc
+    }, {})
+  )
+
+  it('should create only one copy of each env on initiation', async () => {
+    await ws.flush()
+    const invocations = createMultiEnvSrcEnvInvocationCount(mockMuiltiEnv)
+    expect(invocations).toEqual({
+      default: 1,
+      inactive: 1,
+    })
+  })
+
+  it('should not create a new copy of a secondary env when invoking a command directly on the secondary env', async () => {
+    await ws.elements(true, 'inactive')
+    const invocations = createMultiEnvSrcEnvInvocationCount(mockMuiltiEnv)
+    expect(invocations).toEqual({
+      default: 1,
+      inactive: 1,
+    })
   })
 })

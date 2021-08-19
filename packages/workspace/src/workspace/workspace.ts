@@ -223,15 +223,21 @@ export const loadWorkspace = async (
   const state = (envName?: string): State => (
     enviormentsSources.sources[envName ?? currentEnv()].state as State
   )
-  const createNaclFilesSource = (envName?: string): MultiEnvSource => multiEnvSource(
-    _.mapValues(enviormentsSources.sources, e => e.naclFiles),
-    envName ?? currentEnv(),
-    enviormentsSources.commonSourceName,
-    remoteMapCreator,
-    persistent,
-    mergedRecoveryMode
-  )
-  let naclFilesSource = createNaclFilesSource()
+  const naclFileSources: Record<string, MultiEnvSource> = {}
+
+  const getOrCreateNaclFilesSource = (envName: string = currentEnv()): MultiEnvSource => {
+    naclFileSources[envName] = naclFileSources[envName] ?? multiEnvSource(
+      _.mapValues(enviormentsSources.sources, e => e.naclFiles),
+      envName,
+      enviormentsSources.commonSourceName,
+      remoteMapCreator,
+      persistent,
+      mergedRecoveryMode
+    )
+    return naclFileSources[envName]
+  }
+
+  let naclFilesSource = getOrCreateNaclFilesSource()
   let workspaceState: Promise<WorkspaceState> | undefined
   const buildWorkspaceState = async ({
     workspaceChanges = {},
@@ -245,7 +251,7 @@ export const loadWorkspace = async (
     const initState = async (): Promise<WorkspaceState> => {
       const states: Record<string, SingleState> = Object.fromEntries(await awu(envs())
         .map(async envName => {
-          const envSrc = createNaclFilesSource(envName)
+          const envSrc = getOrCreateNaclFilesSource(envName)
           return [envName, {
             merged: new RemoteElementSource(
               await remoteMapCreator<Element>({
@@ -310,7 +316,7 @@ export const loadWorkspace = async (
       ? await workspaceState
       : await initState()
     const updateWorkspace = async (envName: string): Promise<void> => {
-      const source = createNaclFilesSource(envName)
+      const source = getOrCreateNaclFilesSource(envName)
       const getElementsDependents = async (
         elemIDs: ElemID[],
         addedIDs: Set<string>

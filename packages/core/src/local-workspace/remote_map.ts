@@ -239,6 +239,9 @@ export const closeAllRemoteMaps = async (): Promise<void> => {
       await closeTmpConnection(loc, tmpLoc, connection)
     })
   })
+  await awu(Object.entries(readonlyDBConnections)).forEach(async ([loc, connection]) => {
+    await closeConnection(loc, connection)
+  })
 }
 
 export const cleanDatabases = async (): Promise<void> => {
@@ -268,9 +271,13 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
   }
   const tmpConnections = tmpDBConnections[location]
   if (tmpConnections) {
-    await awu(Object.entries(tmpConnections)).forEach(([tmpLoc, tmpCon]) => (
-      closeTmpConnection(location, tmpLoc, tmpCon)
-    ))
+    await awu(Object.entries(tmpConnections)).forEach(async ([tmpLoc, tmpCon]) => {
+      await closeTmpConnection(location, tmpLoc, tmpCon)
+    })
+  }
+  const readOnlyConnection = readonlyDBConnections[location]
+  if (readOnlyConnection) {
+    await closeConnection(location, readOnlyConnection)
   }
 }
 
@@ -554,6 +561,11 @@ remoteMap.RemoteMapCreator => {
       }
       if (tmpDB.status === 'open') {
         await closeTmpConnection(location, tmpLocation, Promise.resolve(tmpDB))
+        currentConnectionsCount -= 1
+      }
+      const readOnlyDB = await readonlyDBConnections[location]
+      if (readOnlyDB.status === 'open') {
+        await closeConnection(location, Promise.resolve(readOnlyDB))
         currentConnectionsCount -= 1
       }
     }

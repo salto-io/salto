@@ -25,7 +25,7 @@ import {
 import { getParents, buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import { chunks, collections } from '@salto-io/lowerdash'
-import { SalesforceClient } from 'index'
+import SalesforceClient from '../client/client'
 import { OptionalFeatures } from '../types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,

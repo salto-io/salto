@@ -564,7 +564,7 @@ remoteMap.RemoteMapCreator => {
         currentConnectionsCount -= 1
       }
       const readOnlyDB = await readonlyDBConnections[location]
-      if (readOnlyDB.status === 'open') {
+      if (readOnlyDB?.status === 'open') {
         await closeConnection(location, Promise.resolve(readOnlyDB))
         currentConnectionsCount -= 1
       }

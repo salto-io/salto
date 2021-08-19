@@ -127,7 +127,7 @@ export type FieldReferenceDefinition = {
  */
 export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
-    src: { field: 'field', parentTypes: [WORKFLOW_FIELD_UPDATE_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE, 'WorkflowEmailRecipient', 'QuickActionLayoutItem'] },
+    src: { field: 'field', parentTypes: [WORKFLOW_FIELD_UPDATE_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE, 'WorkflowEmailRecipient', 'QuickActionLayoutItem', 'FieldSetItem'] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },

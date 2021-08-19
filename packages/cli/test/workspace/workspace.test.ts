@@ -155,8 +155,8 @@ describe('workspace', () => {
   })
 
   describe('applyChangesToWorkspace', () => {
-    const approveChangesCallback = jest.fn().mockResolvedValue(true)
     const changes = dummyChanges.map(change => ({ change, serviceChange: change }))
+    const approveChangesCallback = jest.fn().mockResolvedValue(changes)
     beforeEach(() => {
       approveChangesCallback.mockClear()
     })

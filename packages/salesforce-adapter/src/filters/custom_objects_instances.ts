@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections, values, promises, chunks } from '@salto-io/lowerdash'
+import { collections, values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, ObjectType, Element, Field } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
@@ -27,15 +27,14 @@ import {
 } from '../constants'
 import { FilterCreator, FilterResult } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
-import { getNamespace, isMasterDetailField, isLookupField } from './utils'
+import { getNamespace, isMasterDetailField, isLookupField, conditionQueries, queryClient } from './utils'
 import { ConfigChangeSuggestion } from '../types'
 import { DataManagement } from '../fetch_profile/data_management'
 
 const { mapValuesAsync, pickAsync } = promises.object
 const { isDefined } = values
 const { makeArray } = collections.array
-const { weightedChunks } = chunks
-const { toArrayAsync, keyByAsync, awu } = collections.asynciterable
+const { keyByAsync, awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -68,38 +67,6 @@ const getQueryableFields = (object: ObjectType): Field[] => (
     .filter(field => field.annotations[FIELD_ANNOTATIONS.QUERYABLE] !== false)
 )
 
-const getWhereConditions = (
-  conditionSets: Record<string, string>[],
-  maxLen: number
-): string[] => {
-  const keys = _.uniq(conditionSets.flatMap(Object.keys))
-  const constConditionPartLen = (
-    _.sumBy(keys, key => `${key} IN ()`.length)
-    + (' AND '.length * (keys.length - 1))
-  )
-
-  const conditionChunks = weightedChunks(
-    conditionSets,
-    maxLen - constConditionPartLen,
-    // Note - this calculates the condition length as if all values are added to the query.
-    // the actual query might end up being shorter if some of the values are not unique.
-    // this can be optimized in the future if needed
-    condition => _.sumBy(Object.values(condition), val => `${val},`.length),
-  )
-  const r = conditionChunks.map(conditionChunk => {
-    const conditionsByKey = _.groupBy(
-      conditionChunk.flatMap(Object.entries),
-      ([keyName]) => keyName
-    )
-    return Object.entries(conditionsByKey)
-      .map(([keyName, conditionValues]) => (
-        `${keyName} IN (${_.uniq(conditionValues.map(val => val[1])).join(',')})`
-      ))
-      .join(' AND ')
-  })
-  return r
-}
-
 const getFieldNamesForQuery = async (field: Field): Promise<string[]> => (
   await isNameField(field)
     ? Object.keys((await field.getType() as ObjectType).fields)
@@ -127,9 +94,7 @@ export const buildSelectQueries = async (
   if (conditionSets === undefined || conditionSets.length === 0) {
     return [selectStr]
   }
-  const selectWhereStr = `${selectStr} WHERE `
-  const whereConditions = getWhereConditions(conditionSets, maxQueryLen - selectWhereStr.length)
-  return whereConditions.map(whereCondition => `${selectWhereStr}${whereCondition}`)
+  return conditionQueries(selectStr, conditionSets, maxQueryLen)
 }
 
 const buildQueryStrings = async (
@@ -152,10 +117,7 @@ const getRecords = async (
     return {}
   }
   const queries = await buildQueryStrings(typeName, queryableFields, ids)
-  const recordsIterables = await Promise.all(queries.map(async query => client.queryAll(query)))
-  const records = (await Promise.all(
-    recordsIterables.map(async recordsIterable => (await toArrayAsync(recordsIterable)).flat())
-  )).flat()
+  const records = await queryClient(client, queries)
   log.debug(`Fetched ${records.length} records of type ${typeName}`)
   return _.keyBy(
     records,

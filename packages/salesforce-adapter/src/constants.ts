@@ -31,6 +31,7 @@ export const CUSTOM_OBJECT_ID_FIELD = 'Id'
 export const INTERNAL_ID_FIELD = 'internalId'
 export const XML_ATTRIBUTE_PREFIX = 'attr_'
 export const DEFAULT_NAMESPACE = 'standard'
+export const SALESFORCE_DATE_PLACEHOLDER = '1970-01-01T00:00:00.000Z'
 
 export enum FIELD_TYPE_NAMES {
   AUTONUMBER = 'AutoNumber',

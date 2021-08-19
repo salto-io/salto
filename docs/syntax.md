@@ -284,6 +284,10 @@ Currently the following core annotations are supported:
 - [_generated_dependencies / _depends_on](#_generated_dependencies-_depends_on)
 - [_service_url](#_service_url)
 - [_is_service_id](#_is_service_id)
+- [_created_by](#_created_by)
+- [_created_at](#_created_at)
+- [_changed_by](#_changed_by)
+- [_changed_at](#_changed_at)
 
 #### `_required`
 This annotation is used on field blocks to specify that an instance must contain a value for this field.
@@ -460,6 +464,87 @@ type salto.example {
 }
 ```
 
+
+#### _created_by
+This is a hidden string annotation (will not be seen in NaCl) that is used to store a name of the user who created this element.\
+
+Type: `string`
+Default: `false`
+Applicable to: Types, Instances, Fields
+
+Example:
+```HCL
+type salto.example {
+  number field1 {
+  }
+  _created_by = "type creator name"
+  number exampleField {
+    value = 5
+    _created_by = "field creator name"
+  }
+}
+```
+#### _created_at
+This is a hidden string annotation (will not be seen in NaCl) that is used to store the time the element was created.
+The time format is ISO-8601
+
+Type: `string`
+Default: `false`
+Applicable to: Types, Instances, Fields
+
+Example:
+```HCL
+type salto.example {
+  number field1 {
+  }
+  _created_at = "2021-04-01T00:00:00.000Z"
+  number exampleField {
+    value = 5
+    _created_at = "2021-04-01T00:00:00.000Z"
+  }
+}
+```
+
+#### _changed_by
+This is a hidden string annotation (will not be seen in NaCl) that is used to store a name of the user who last changed this element.
+
+Type: `string`
+Default: `false`
+Applicable to: Types, Instances, Fields
+
+Example:
+```HCL
+type salto.example {
+  number field1 {
+  }
+  _changed_by = "type creator name"
+  number exampleField {
+    value = 5
+    _changed_by = "field creator name"
+  }
+}
+```
+
+#### _changed_at
+This is a hidden string annotation (will not be seen in NaCl) that is used to store the last time this element was changed.
+The time format is ISO-8601
+
+Type: `string`
+Default: `false`
+Applicable to: Types, Instances, Fields
+
+Example:
+```HCL
+type salto.example {
+  number field1 {
+  }
+  _changed_at = "2021-05-01T00:00:00.000Z"
+  number exampleField {
+    value = 5
+    _changed_at = "2021-05-02T00:00:00.000Z"
+  }
+}
+```
 
 #### Adapter-specific annotations example
 Below we will use examples from the Salesforce adapter.

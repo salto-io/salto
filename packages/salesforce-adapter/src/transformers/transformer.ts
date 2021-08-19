@@ -15,7 +15,7 @@
 */
 /* eslint-disable camelcase */
 import _ from 'lodash'
-import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField } from 'jsforce'
+import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField, FileProperties } from 'jsforce'
 import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, isContainerType, TypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
 import { TransformFunc, transformElement, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
@@ -35,6 +35,7 @@ import {
   COMPOUND_FIELDS_SOAP_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
   XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_SETTINGS_TYPE,
   LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME, INTERNAL_ID_ANNOTATION, KEY_PREFIX,
+  SALESFORCE_DATE_PLACEHOLDER,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
@@ -1378,6 +1379,19 @@ export const createInstanceElement = (
       type.isSettings ? SETTINGS_PATH : typeName, pathNaclCase(name)],
     annotations,
   ) as MetadataInstanceElement
+}
+
+export const getAuditAnnotations = (fileProperties: FileProperties): Record<string, string> => {
+  const annotations = {
+    [CORE_ANNOTATIONS.CREATED_BY]: fileProperties?.createdByName,
+    [CORE_ANNOTATIONS.CREATED_AT]: fileProperties?.createdDate,
+    [CORE_ANNOTATIONS.CHANGED_AT]: fileProperties?.lastModifiedDate,
+  }
+  if (fileProperties?.lastModifiedDate !== SALESFORCE_DATE_PLACEHOLDER) {
+    Object.assign(annotations,
+      { [CORE_ANNOTATIONS.CHANGED_BY]: fileProperties?.lastModifiedByName })
+  }
+  return annotations
 }
 
 const createIdField = (parent: ObjectType): void => {

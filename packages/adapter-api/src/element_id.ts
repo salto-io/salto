@@ -33,6 +33,10 @@ export const INSTANCE_ANNOTATIONS = {
   GENERATED_DEPENDENCIES: CORE_ANNOTATIONS.GENERATED_DEPENDENCIES,
   HIDDEN: CORE_ANNOTATIONS.HIDDEN,
   SERVICE_URL: CORE_ANNOTATIONS.SERVICE_URL,
+  CREATED_BY: CORE_ANNOTATIONS.CREATED_BY,
+  CREATED_AT: CORE_ANNOTATIONS.CREATED_AT,
+  CHANGED_BY: CORE_ANNOTATIONS.CHANGED_BY,
+  CHANGED_AT: CORE_ANNOTATIONS.CHANGED_AT,
 }
 
 const getContainerPrefix = (fullName: string): {prefix: string; innerName: string} | undefined => {
@@ -124,7 +128,7 @@ export class ElemID {
 
   private validateVariable(): void {
     if (this.adapter === ElemID.VARIABLES_NAMESPACE && this.idType !== 'var'
-        && this.typeName !== ElemID.CONFIG_NAME) {
+      && this.typeName !== ElemID.CONFIG_NAME) {
       throw new Error(`Cannot create ID ${this.getFullName()
       } - type must be 'var', not '${this.idType}'`)
     }
@@ -188,8 +192,8 @@ export class ElemID {
 
   isTopLevel(): boolean {
     return ElemID.TOP_LEVEL_ID_TYPES.includes(this.idType)
-    || (ElemID.TOP_LEVEL_ID_TYPES_WITH_NAME.includes(this.idType)
-    && this.nameParts.length === 1)
+      || (ElemID.TOP_LEVEL_ID_TYPES_WITH_NAME.includes(this.idType)
+        && this.nameParts.length === 1)
   }
 
   isEqual(other: ElemID): boolean {
@@ -254,7 +258,7 @@ export class ElemID {
     return { parent: new ElemID(this.adapter, this.typeName), path: this.nameParts }
   }
 
-  createBaseID(): {parent: ElemID; path: ReadonlyArray<string>} {
+  createBaseID(): { parent: ElemID; path: ReadonlyArray<string> } {
     const { parent, path } = this.createTopLevelParentID()
     if (this.idType === 'field') {
       const [fieldName, ...fieldPath] = this.nameParts

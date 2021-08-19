@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { FileProperties, MetadataObject } from 'jsforce-types'
+import { FileProperties, MetadataInfo, MetadataObject } from 'jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -23,7 +23,7 @@ import { FetchElements, ConfigChangeSuggestion } from './types'
 import { METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
-import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements } from './transformers/transformer'
+import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuditAnnotations } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 import { MetadataQuery } from './fetch_profile/metadata_query'
 
@@ -104,6 +104,15 @@ const getNamespace = (obj: FileProperties): string => (
   obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
 )
 
+const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
+  filePropertiesMap: Record<string, FileProperties>, metadataType: ObjectType): InstanceElement => {
+  const newMetadata = filePropertiesMap[metadata.fullName]?.id
+    ? { ...metadata, [INTERNAL_ID_FIELD]: filePropertiesMap[metadata.fullName]?.id } : metadata
+  return createInstanceElement(newMetadata, metadataType,
+    filePropertiesMap[newMetadata.fullName]?.namespacePrefix,
+    getAuditAnnotations(filePropertiesMap[newMetadata.fullName]))
+}
+
 export const fetchMetadataInstances = async ({
   client, metadataType, fileProps, metadataQuery,
 }: {
@@ -133,27 +142,13 @@ export const fetchMetadataInstances = async ({
     ).map(({ name }) => name)
   )
 
-  const fullNameToNamespaceAndId = Object.fromEntries(
-    fileProps
-      .map(props => [getFullName(props), {
-        namespace: props.namespacePrefix,
-        id: props.id,
-      }])
-  )
-
+  const filePropertiesMap = _.keyBy(fileProps, getFullName)
+  const elements = metadataInfos
+    .filter(m => !_.isEmpty(m))
+    .filter(m => m.fullName !== undefined)
+    .map(m => getInstanceFromMetadataInformation(m, filePropertiesMap, metadataType))
   return {
-    elements: metadataInfos
-      .filter(m => !_.isEmpty(m))
-      .filter(m => m.fullName !== undefined)
-      .map(m => (fullNameToNamespaceAndId[m.fullName]?.id
-        ? { ...m, [INTERNAL_ID_FIELD]: fullNameToNamespaceAndId[m.fullName]?.id }
-        : m
-      ))
-      .map(m => createInstanceElement(
-        m,
-        metadataType,
-        fullNameToNamespaceAndId[m.fullName]?.namespace,
-      )),
+    elements,
     configChanges: makeArray(errors)
       .map(e => createSkippedListConfigChange(metadataTypeName, e)),
   }
@@ -268,7 +263,8 @@ export const retrieveMetadataInstances = async ({
       typesWithContent,
     )
     return allValues.map(({ file, values }) => (
-      createInstanceElement(values, typesByName[file.type], file.namespacePrefix)
+      createInstanceElement(values, typesByName[file.type], file.namespacePrefix,
+        getAuditAnnotations(file))
     ))
   }
 

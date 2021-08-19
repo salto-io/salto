@@ -24,6 +24,7 @@ import {
   getValueTypeFieldElement, createMetadataTypeElements, MetadataObjectType,
   METADATA_TYPES_TO_RENAME, instancesToDeleteRecords, instancesToCreateRecords,
   isMetadataObjectType, isMetadataInstanceElement, toDeployableInstance, transformPrimitive,
+  getAuditAnnotations,
 } from '../../src/transformers/transformer'
 import { getLookUpName } from '../../src/transformers/reference_mapping'
 import {
@@ -34,6 +35,7 @@ import {
   WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, INTERNAL_ID_FIELD,
   WORKFLOW_ACTION_ALERT_METADATA_TYPE, LAYOUT_TYPE_ID_METADATA_TYPE, CPQ_PRODUCT_RULE,
   CPQ_LOOKUP_PRODUCT_FIELD, INTERNAL_ID_ANNOTATION, BUSINESS_HOURS_METADATA_TYPE,
+  SALESFORCE_DATE_PLACEHOLDER,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject, CustomPicklistValue,
   SalesforceRecord } from '../../src/client/types'
@@ -42,7 +44,7 @@ import Connection from '../../src/client/jsforce'
 import mockClient from '../client'
 import { createValueSetEntry, MockInterface } from '../utils'
 import { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
-import { mockValueTypeField, mockDescribeValueResult } from '../connection'
+import { mockValueTypeField, mockDescribeValueResult, mockFileProperties } from '../connection'
 import { allMissingSubTypes } from '../../src/transformers/salesforce_types'
 import { convertRawMissingFields } from '../../src/transformers/missing_fields'
 
@@ -52,6 +54,26 @@ const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
 describe('transformer', () => {
+  describe('getAuditAnnotations', () => {
+    const newChangeDateFileProperties = mockFileProperties({ lastModifiedDate: 'date that is new',
+      type: 'test',
+      fullName: 'test',
+      lastModifiedByName: 'changed_name' })
+    const oldChangeDateFileProperties = mockFileProperties(
+      { lastModifiedDate: SALESFORCE_DATE_PLACEHOLDER,
+        type: 'test',
+        fullName: 'test' }
+    )
+    it('get annotations with up to date change time will return full annotations', () => {
+      expect(getAuditAnnotations(newChangeDateFileProperties)[CORE_ANNOTATIONS.CHANGED_BY])
+        .toEqual('changed_name')
+    })
+    it('file properties with old change will return no user name in changedBy', () => {
+      expect(getAuditAnnotations(oldChangeDateFileProperties)[CORE_ANNOTATIONS.CHANGED_BY])
+        .not
+        .toBeDefined()
+    })
+  })
   describe('getValueTypeFieldElement', () => {
     const dummyElem = new ObjectType({ elemID: new ElemID('adapter', 'dummy') })
     const salesforceEnumField = mockValueTypeField({

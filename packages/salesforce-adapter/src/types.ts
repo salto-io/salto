@@ -61,6 +61,7 @@ export type OptionalFeatures = {
   elementsUrls?: boolean
   profilePaths?: boolean
   addMissingIds?: boolean
+  auditInformation?: boolean
 }
 
 type ObjectIdSettings = {
@@ -395,6 +396,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     elementsUrls: { refType: BuiltinTypes.BOOLEAN },
     profilePaths: { refType: BuiltinTypes.BOOLEAN },
     addMissingIds: { refType: BuiltinTypes.BOOLEAN },
+    auditInformation: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 

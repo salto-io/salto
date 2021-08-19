@@ -143,9 +143,10 @@ salesforce {
 | Name                                                        | Default when undefined                           | Description
 | ------------------------------------------------------------| -------------------------------------------------| -----------
 | extraDependencies                                           | true                                             | Find additional dependencies between configuration elements by using the salesforce tooling API
-| elementsUrls                                                 | true                                             | Populate URLs for your salesforce configuration elements and enable quick navigation from Salto to the corresponding salesforce screen
+| elementsUrls                                                | true                                             | Populate URLs for your salesforce configuration elements and enable quick navigation from Salto to the corresponding salesforce screen
 | addMissingIds                                               | true                                             | Populate Salesforce internal ids for a few types that require special handling
 | profilePaths                                                | true                                             | Update file names for profiles whose API name is different from their display name
+| auditInformation                                            | true                                             | Populate Salesforce audit information about who and when last changed Salesforce configuration elements.
 ### Data management configuration options
 
 | Name                                                        | Default when undefined                           | Description

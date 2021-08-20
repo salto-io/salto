@@ -166,7 +166,7 @@ export const mapReadOnlyElementsSource = (
     const origValue = await source.get(id)
     return origValue !== undefined ? func(origValue) : undefined
   },
-  getAll: () => awu(await source.getAll())
+  getAll: () => awu(source.getAll())
     .map(async element => func(element))
     .filter(values.isDefined),
   has: id => source.has(id),

@@ -37,7 +37,8 @@ import { serialize, deserializeSingleElement, deserializeMergeErrors } from '../
 import { MissingStaticFile } from '../../static_files'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
+const { awu, depromisifyIterable } = collections.asynciterable
+type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 const { series } = promises.array
 const { resolveValues, mapValuesAsync } = promises.object
 const { concatObjects } = objects
@@ -599,7 +600,8 @@ const buildMultiEnvSource = (
     sync,
     isEmpty,
     list: (): AsyncIterable<ElemID> =>
-      awu((async () => (await getState()).states[primarySourceName].elements.list())()),
+      awu(depromisifyIterable((async () => (await getState()).states[primarySourceName]
+        .elements.list())())),
     isEmpty,
     get: async (id: ElemID): Promise<Element | Value> => (
       (await getState()).states[primarySourceName].elements.get(id)
@@ -620,7 +622,7 @@ const buildMultiEnvSource = (
       (await getState()).states[primarySourceName].elements.setAll(elements)
     ),
     getAll: async (env: string): AsyncIterable<Element> =>
-      (await getState()).states[env].elements.getAll(),
+      (getState()).states[env].elements.getAll(),
     listNaclFiles: async (env: string): Promise<string[]> => (
       awu(Object.entries(getActiveSources(env)))
         .flatMap(async ([prefix, source]) => (

@@ -17,7 +17,7 @@ import { Change, ChangeError, Field, getAllChangeElements, isModificationChange,
   getChangeElement, isFieldChange, ModificationChange, ElemID, isReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { apiName, isCustom } from '../transformers/transformer'
-import { isPicklistField, isGlobalValueSetPicklistField } from '../filters/value_set'
+import { isPicklistField, hasValueSetNameAnnotation } from '../filters/value_set'
 import { VALUE_SET_FIELDS } from '../constants'
 import { isInstanceOfType } from '../filters/utils'
 import { GLOBAL_VALUE_SET } from '../filters/global_value_sets'
@@ -27,7 +27,7 @@ const { awu } = collections.asynciterable
 const isGlobalPicklistChange = async (change: Change): Promise<boolean> => {
   const [before, after] = getAllChangeElements(change)
   return isPicklistField(before) && isPicklistField(after) && isCustom(await apiName(before))
-  && !isGlobalValueSetPicklistField(before) && isGlobalValueSetPicklistField(after)
+  && !hasValueSetNameAnnotation(before) && hasValueSetNameAnnotation(after)
 }
 
 const createChangeErrors = ({ pickListField, gvsElemID }:

@@ -46,7 +46,7 @@ export interface WorkatoAdapterParams {
 }
 
 export default class WorkatoAdapter implements AdapterOperations {
-  private filtersRunner: Required<Filter>
+  private createFiltersRunner: () => Required<Filter>
   private client: WorkatoClient
   private paginator: clientUtils.Paginator
   private userConfig: WorkatoConfig
@@ -58,14 +58,15 @@ export default class WorkatoAdapter implements AdapterOperations {
   }: WorkatoAdapterParams) {
     this.userConfig = config
     this.client = client
-    this.paginator = createPaginator({
+    const paginator = createPaginator({
       client: this.client,
       paginationFunc: paginate,
     })
-    this.filtersRunner = filtersRunner(
+    this.paginator = paginator
+    this.createFiltersRunner = () => filtersRunner(
       {
-        client: this.client,
-        paginator: this.paginator,
+        client,
+        paginator,
         config: {
           fetch: config.fetch,
           apiDefinitions: config.apiDefinitions,
@@ -101,14 +102,14 @@ export default class WorkatoAdapter implements AdapterOperations {
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    await this.filtersRunner.onFetch(elements)
+    await this.createFiltersRunner().onFetch(elements)
     return { elements }
   }
 
   @logDuration('updating cross-service references')
   async postFetch(args: PostFetchOptions): Promise<void> {
     args.progressReporter.reportProgress({ message: 'Adding references to other services post-fetch' })
-    await this.filtersRunner.onPostFetch(args)
+    await this.createFiltersRunner().onPostFetch(args)
   }
 
   /**

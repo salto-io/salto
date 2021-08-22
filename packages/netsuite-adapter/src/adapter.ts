@@ -102,7 +102,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly skipList?: NetsuiteQueryParameters // old version
   private readonly useChangesDetection: boolean
-  private filtersRunner: Required<Filter>
+  private createFiltersRunner: () => Required<Filter>
   private elementsSourceIndex: LazyElementsSourceIndexes
 
 
@@ -159,13 +159,15 @@ export default class NetsuiteAdapter implements AdapterOperations {
      ?? config[DEPLOY_REFERENCED_ELEMENTS]
     this.warnStaleData = config[DEPLOY]?.[WARN_STALE_DATA]
     this.elementsSourceIndex = createElementsSourceIndex(this.elementsSource)
-    this.filtersRunner = filter.filtersRunner({
-      client: this.client,
-      elementsSourceIndex: this.elementsSourceIndex,
-      elementsSource: this.elementsSource,
-      isPartial: this.fetchTarget !== undefined,
-    },
-    filtersCreators)
+    this.createFiltersRunner = () => filter.filtersRunner(
+      {
+        client: this.client,
+        elementsSourceIndex: this.elementsSourceIndex,
+        elementsSource: this.elementsSource,
+        isPartial: this.fetchTarget !== undefined,
+      },
+      filtersCreators,
+    )
   }
 
   public fetchByQuery: FetchByQueryFunc = async (
@@ -237,7 +239,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ...serverTimeElements,
     ]
 
-    await this.filtersRunner.onFetch(elements)
+    await this.createFiltersRunner().onFetch(elements)
 
     return {
       failedToFetchAllAtOnce,
@@ -335,7 +337,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
         data: _.mapValues(change.data, (element: Element) => element.clone()),
       })) as Change[]
 
-    await this.filtersRunner.preDeploy(changesToDeploy)
+    const filtersRunner = this.createFiltersRunner()
+    await filtersRunner.preDeploy(changesToDeploy)
 
     const deployResult = await this.client.deploy(
       changesToDeploy,
@@ -354,7 +357,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         data: _.mapValues(change.data, (element: Element) => element.clone()),
       } as Change))
 
-    await this.filtersRunner.onDeploy(appliedChanges, deployResult)
+    await filtersRunner.onDeploy(appliedChanges, deployResult)
 
     return {
       errors: deployResult.errors,

@@ -19,7 +19,7 @@ import _ from 'lodash'
 import { SAVED_SEARCH } from '../constants'
 import { FilterCreator } from '../filter'
 import { savedsearch, savedsearchInnerTypes, savedSearchDependenciesElemID } from '../saved_search_parsing/parsed_saved_search'
-import { savedsearch as oldSavedSearch } from '../types/custom_types/savedsearch'
+import { savedsearch as oldSavedSearch } from '../autogen/types/custom_types/savedsearch'
 import { parseDefinition } from '../saved_search_parsing/saved_search_parser'
 
 

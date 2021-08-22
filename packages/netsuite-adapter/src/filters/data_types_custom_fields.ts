@@ -24,7 +24,7 @@ import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 import { isDataObjectType } from '../types'
 import { SCRIPT_ID } from '../constants'
 // eslint-disable-next-line camelcase
-import { generic_customfield_fieldtypeValue } from '../types/enums'
+import { generic_customfield_fieldtypeValue } from '../autogen/types/enums'
 
 const log = logger(module)
 

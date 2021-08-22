@@ -17,7 +17,7 @@
 import { BuiltinTypes, Field, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { SOAP_FIELDS_TYPES } from '../client/suiteapp_client/soap_client/types'
-import { othercustomfield } from '../types/custom_types/othercustomfield'
+import { othercustomfield } from '../autogen/types/custom_types/othercustomfield'
 import { INTERNAL_ID_TO_TYPES } from './types'
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?([+-]\d{2}:\d{2})?$/

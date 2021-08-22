@@ -21,7 +21,7 @@ import { createSuiteAppFileCabinetOperations, isChangeDeployable } from '../src/
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../src/client/suiteapp_client/errors'
 import { fileCabinetTypes } from '../src/types'
 import { FILE } from '../src/constants'
-import { customtransactiontype } from '../src/types/custom_types/customtransactiontype'
+import { customtransactiontype } from '../src/autogen/types/custom_types/customtransactiontype'
 import { file, folder } from '../src/types/file_cabinet_types'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from '../src/client/suiteapp_client/types'
 

@@ -16,7 +16,7 @@
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/savedsearch'
-import { savedsearch } from '../../src/types/custom_types/savedsearch'
+import { savedsearch } from '../../src/autogen/types/custom_types/savedsearch'
 
 
 describe('setSavedSearchUrls', () => {

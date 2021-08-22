@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
-import { sublist } from '../../src/types/custom_types/sublist'
+import { sublist } from '../../src/autogen/types/custom_types/sublist'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/sublist'
 

@@ -21,9 +21,9 @@ import { FilterWith } from '../filter'
 import {
   CUSTOM_RECORD_TYPE, ENTRY_FORM, TRANSACTION_FORM, PERMITTED_ROLE, RECORD_TYPE,
 } from '../constants'
-import { customrecordtype_permissions_permission } from '../types/custom_types/customrecordtype'
-import { entryForm } from '../types/custom_types/entryForm'
-import { transactionForm } from '../types/custom_types/transactionForm'
+import { customrecordtype_permissions_permission } from '../autogen/types/custom_types/customrecordtype'
+import { entryForm } from '../autogen/types/custom_types/entryForm'
+import { transactionForm } from '../autogen/types/custom_types/transactionForm'
 
 const { awu } = collections.asynciterable
 type InconsistentFieldMapping = {

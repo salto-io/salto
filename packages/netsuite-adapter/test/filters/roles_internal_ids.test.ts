@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
-import { role } from '../../src/types/custom_types/role'
+import { role } from '../../src/autogen/types/custom_types/role'
 import filterCreator from '../../src/filters/roles_internal_id'
 import NetsuiteClient from '../../src/client/client'
 import { FilterOpts } from '../../src/filter'

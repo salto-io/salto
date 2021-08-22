@@ -20,8 +20,9 @@ import { isInstanceChange, InstanceElement, Element,
   isRemovalChange, isModificationChange, isAdditionChange, AdditionChange, RemovalChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { buildNetsuiteQuery, convertToQueryParams, NetsuiteQuery, NetsuiteQueryParameters } from '../query'
-import { isCustomType, isFileCabinetInstance } from '../types'
+import { isFileCabinetInstance } from '../types'
 import { PATH, SCRIPT_ID } from '../constants'
+import { getTypeIdentifier } from '../data_elements/types'
 
 export type FetchByQueryReturnType = {
   failedToFetchAllAtOnce: boolean
@@ -42,36 +43,37 @@ export type QueryChangeValidator = (
 
 const { awu } = collections.asynciterable
 
-const getScriptIdsByType = (
+const getIdentifingValue = async (instance: InstanceElement): Promise<string> => (
+  instance.value[SCRIPT_ID] ?? instance.value[getTypeIdentifier(await instance.getType())]
+)
+const getIdentifingValuesByType = async (
   instancesByType: Record<string, InstanceElement[]>
-): Record<string, string[]> => (
-  Object.fromEntries(Object.entries(instancesByType)
-    .map(([type, instances]) => [type, instances
-      .filter(instance => instance.value[SCRIPT_ID] !== undefined)
-      .map(instance => instance.value[SCRIPT_ID])]))
+): Promise<Record<string, string[]>> => (
+  Object.fromEntries(await awu(Object.entries(instancesByType))
+    .map(async ([type, instances]) => [
+      type,
+      await awu(instances).map(inst => getIdentifingValue(inst)).toArray(),
+    ])
+    .toArray())
 )
 
 const getMatchingServiceInstances = async (
   baseInstances: InstanceElement[],
   fetchByQuery: FetchByQueryFunc
 ): Promise<Record<string, InstanceElement>> => {
-  // TODO: we currently support only SDF types (i.e custom types and file cabinet),
-  // and not yet suiteapp types (SALTO-1531)
-
   const filePaths = baseInstances
     .filter(isFileCabinetInstance)
     .filter(inst => inst.value[PATH] !== undefined)
     .map(inst => inst.value[PATH])
 
-  const customInstances = baseInstances.filter(inst => isCustomType(inst.refType.elemID))
-  const instancesByType = _.groupBy(customInstances, instance => instance.elemID.typeName)
+  const nonFileCabinetInstances = baseInstances.filter(inst => !isFileCabinetInstance(inst))
+  const instancesByType = _.groupBy(nonFileCabinetInstances, instance => instance.elemID.typeName)
   const fetchTarget: NetsuiteQueryParameters = {
-    types: getScriptIdsByType(instancesByType),
+    types: await getIdentifingValuesByType(instancesByType),
     filePaths,
   }
 
   const fetchQuery = buildNetsuiteQuery(convertToQueryParams(fetchTarget))
-
   const { elements } = await fetchByQuery(fetchQuery, { reportProgress: () => null }, false)
   return _.keyBy(elements.filter(isInstanceElement), element => element.elemID.getFullName())
 }

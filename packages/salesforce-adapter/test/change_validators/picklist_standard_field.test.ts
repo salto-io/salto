@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import {
-  ChangeError, ElemID, Field, ObjectType, ReferenceExpression, toChange,
+  ChangeError, ElemID, Field, InstanceElement, ObjectType, ReferenceExpression, toChange,
 } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
 import picklistStandardFieldValidator from '../../src/change_validators/picklist_standard_field'
+import { STANDARD_VALUE_SET } from '../../src/filters/standard_value_sets'
 import { SALESFORCE, VALUE_SET_FIELDS } from '../../src/constants'
 import { createField } from '../utils'
 
@@ -37,6 +38,14 @@ describe('picklist standard field change validator', () => {
       afterField.annotations.modifyMe = 'modified'
       return afterField
     }
+
+    const createValueSetInstance = (metadataTypeVal: string): InstanceElement => (
+      new InstanceElement('standard_value_set_test123',
+        new ObjectType({
+          elemID: new ElemID(SALESFORCE, 'standard_value_set'),
+          annotations: { metadataType: metadataTypeVal },
+        }))
+    )
 
     const runChangeValidatorOnUpdate = (before: Field, after: Field):
       Promise<ReadonlyArray<ChangeError>> =>
@@ -76,8 +85,10 @@ describe('picklist standard field change validator', () => {
 
     it('should have error for StandardValueSet picklist that points to non-standard value-set', async () => {
       const beforeField = createField(obj, Types.primitiveDataTypes.Picklist, 'Standard')
-      const dummyElemID = new ElemID(SALESFORCE, 'notStandatd')
-      beforeField.annotations[valueSetNameField] = new ReferenceExpression(dummyElemID)
+      const dummyElemID = new ElemID(SALESFORCE, 'something')
+      const notStandardValueSetInstanceElement = createValueSetInstance('notStandardVS')
+      beforeField.annotations[valueSetNameField] = new ReferenceExpression(dummyElemID,
+        notStandardValueSetInstanceElement)
       const afterField = createAfterField(beforeField)
       const changeErrors = await runChangeValidatorOnUpdate(beforeField, afterField)
       expect(changeErrors).toHaveLength(1)
@@ -85,8 +96,10 @@ describe('picklist standard field change validator', () => {
 
     it('should have no error for StandardValueSet picklist standard field', async () => {
       const beforeField = createField(obj, Types.primitiveDataTypes.Picklist, 'Standard')
-      const dummyElemID = new ElemID(SALESFORCE, 'StandardValueSet')
-      beforeField.annotations[valueSetNameField] = new ReferenceExpression(dummyElemID)
+      const dummyElemID = new ElemID(SALESFORCE, 'something')
+      const standardValueSetInstanceElement = createValueSetInstance(STANDARD_VALUE_SET)
+      beforeField.annotations[valueSetNameField] = new ReferenceExpression(dummyElemID,
+        standardValueSetInstanceElement)
       const afterField = createAfterField(beforeField)
       const changeErrors = await runChangeValidatorOnUpdate(beforeField, afterField)
       expect(changeErrors).toHaveLength(0)

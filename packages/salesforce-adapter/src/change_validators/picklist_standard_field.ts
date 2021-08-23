@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ChangeDataType, ChangeError, Field, getChangeElement, isModificationChange, ChangeValidator 
+  ChangeDataType, ChangeError, Field, getChangeElement, isModificationChange, ChangeValidator,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { apiName, isCustom } from '../transformers/transformer'
@@ -25,9 +25,11 @@ import { VALUE_SET_FIELDS } from '../constants'
 
 const { awu } = collections.asynciterable
 
-const isStandardValueSet = async (plField: Field): Promise<boolean> =>
-  isValueSetReference(plField)
-  && await (isInstanceOfType(STANDARD_VALUE_SET)(plField.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME].value))
+const isStandardValueSet = async (plField: Field): Promise<boolean> => {
+  const standardVSchecker = isInstanceOfType(STANDARD_VALUE_SET)
+  return isValueSetReference(plField)
+  && standardVSchecker(plField.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME].value)
+}
 
 const shouldCreateChangeError = async (changeElement: ChangeDataType): Promise<boolean> =>
   isPicklistField(changeElement) && !isCustom(await apiName(changeElement))

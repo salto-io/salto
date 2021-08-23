@@ -202,7 +202,7 @@ export const toCustomizationInfo = async (
 ): Promise<CustomizationInfo> => {
   const transformPrimitive: TransformFunc = async ({ value, field }) => {
     const fieldType = await field?.getType()
-    if (!isPrimitiveType(fieldType)) {
+    if (!isPrimitiveType(fieldType) || (!isPrimitiveValue(value) && !Buffer.isBuffer(value))) {
       return value
     }
     if (fieldType.primitive === PrimitiveTypes.BOOLEAN) {

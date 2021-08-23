@@ -13,12 +13,5 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeGroup, getChangeElement, toChange, ChangeParams, ChangeDataType } from '@salto-io/adapter-api'
-
-export const toChangeGroup = (...params: ChangeParams<ChangeDataType>[]): ChangeGroup => {
-  const changes = params.map(toChange)
-  return {
-    groupID: getChangeElement(changes[0]).elemID.getFullName(),
-    changes,
-  }
-}
+export * from './mock'
+export * from './promise'

@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { mockFunction } from '@salto-io/test-utils'
 import { collections } from '../../src'
-import { mockFunction } from '../multi_index.test'
 
 const { asynciterable } = collections
 const {

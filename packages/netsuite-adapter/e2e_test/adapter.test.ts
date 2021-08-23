@@ -21,6 +21,7 @@ import {
   ChangeId, ChangeGroupId, ElemID, ObjectType, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { findElement, naclCase } from '@salto-io/adapter-utils'
+import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import each from 'jest-each'
 import NetsuiteAdapter from '../src/adapter'
@@ -35,7 +36,6 @@ import {
 } from '../src/constants'
 import { mockDefaultValues } from './mock_elements'
 import { Credentials } from '../src/client/credentials'
-import { MockInterface } from '../test/utils'
 
 const { makeArray } = collections.array
 

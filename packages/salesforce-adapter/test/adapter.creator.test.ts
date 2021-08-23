@@ -15,12 +15,12 @@
 */
 import { InstanceElement, ElemID, ObjectType, OAuthMethod, FetchOptions, ProgressReporter } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { adapter, getConfigChange } from '../src/adapter_creator'
 import SalesforceClient, { validateCredentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 import { usernamePasswordCredentialsType, UsernamePasswordCredentials, oauthRequestParameters, OauthAccessTokenCredentials, accessTokenCredentialsType, METADATA_TYPES_SKIPPED_LIST } from '../src/types'
 import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
-import { MockFunction, MockInterface } from './utils'
 
 jest.mock('../src/client/client')
 jest.mock('../src/adapter')
@@ -594,7 +594,7 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('return update from fetch', async () => {
-      const mockReportProgress: MockFunction<ProgressReporter['reportProgress']> = jest.fn()
+      const mockReportProgress = mockFunction<ProgressReporter['reportProgress']>()
       const mockFetchOpts: MockInterface<FetchOptions> = {
         progressReporter: { reportProgress: mockReportProgress },
       }

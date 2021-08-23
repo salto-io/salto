@@ -18,6 +18,7 @@ import { ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeFiel
 import { collections } from '@salto-io/lowerdash'
 import { Field as SalesforceField } from 'jsforce'
 import { restoreValues, resolveValues } from '@salto-io/adapter-utils'
+import { MockInterface } from '@salto-io/test-utils'
 
 import {
   getSObjectFieldElement, Types, toCustomField, toCustomProperties, instancesToUpdateRecords,
@@ -42,7 +43,7 @@ import { CustomField, FilterItem, CustomObject, CustomPicklistValue,
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import mockClient from '../client'
-import { createValueSetEntry, MockInterface } from '../utils'
+import { createValueSetEntry } from '../utils'
 import { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import { mockValueTypeField, mockDescribeValueResult, mockFileProperties } from '../connection'
 import { allMissingSubTypes } from '../../src/transformers/salesforce_types'

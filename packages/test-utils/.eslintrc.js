@@ -1,5 +1,5 @@
 /*
-*                      Copyright 2021 Salto Labs Ltd.
+*                      Copyright 2020 Salto Labs Ltd.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -13,12 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeGroup, getChangeElement, toChange, ChangeParams, ChangeDataType } from '@salto-io/adapter-api'
+const path = require('path')
+const deepMerge = require('../../build_utils/deep_merge')
 
-export const toChangeGroup = (...params: ChangeParams<ChangeDataType>[]): ChangeGroup => {
-  const changes = params.map(toChange)
-  return {
-    groupID: getChangeElement(changes[0]).elemID.getFullName(),
-    changes,
-  }
-}
+module.exports = deepMerge(
+  require('../../eslintrc.js'),
+  {
+    parserOptions: {
+      tsconfigRootDir: __dirname,
+      project: path.resolve(__dirname, './tsconfig.json'),
+    },
+  },
+)
+

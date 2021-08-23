@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, BuiltinTypes, DeployResult, ReferenceExpression,
   isRemovalChange, getChangeElement, isInstanceElement, ChangeGroup, isModificationChange,
   isAdditionChange, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, Change } from '@salto-io/adapter-api'
+import { MockInterface } from '@salto-io/test-utils'
 import { BulkLoadOperation, BulkOptions, Record as SfRecord, Batch } from 'jsforce'
 import { EventEmitter } from 'events'
 import { Types } from '../src/transformers/transformer'
@@ -24,7 +25,6 @@ import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
-import { MockInterface } from './utils'
 
 describe('Custom Object Instances CRUD', () => {
   let adapter: SalesforceAdapter

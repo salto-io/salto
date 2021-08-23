@@ -16,6 +16,7 @@
 
 import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, PrimitiveType, PrimitiveTypes, ReferenceExpression, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { FileProperties } from 'jsforce-types'
 import { mockFileProperties, mockQueryResult } from '../connection'
@@ -24,7 +25,7 @@ import Connection from '../../src/client/jsforce'
 import SalesforceClient from '../../src/client/client'
 import { Filter, FilterResult } from '../../src/filter'
 import auditInformation, { WARNING_MESSAGE } from '../../src/filters/audit_information'
-import { defaultFilterContext, MockInterface } from '../utils'
+import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { API_NAME, CUSTOM_FIELD, CUSTOM_OBJECT, METADATA_TYPE } from '../../src/constants'
 

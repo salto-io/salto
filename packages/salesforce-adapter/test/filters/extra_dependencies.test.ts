@@ -15,11 +15,12 @@
 */
 import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { MockInterface } from '@salto-io/test-utils'
 import { FilterResult, FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator, { WARNING_MESSAGE } from '../../src/filters/extra_dependencies'
 import mockClient from '../client'
-import { createMetadataTypeElement, defaultFilterContext, MockInterface } from '../utils'
+import { createMetadataTypeElement, defaultFilterContext } from '../utils'
 import {
   SALESFORCE, API_NAME, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD,
   CUSTOM_FIELD, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION, CUSTOM_OBJECT,

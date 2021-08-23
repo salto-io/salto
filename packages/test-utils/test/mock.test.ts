@@ -13,15 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export type MockFunction<T extends (...args: never[]) => unknown> =
-  jest.Mock<ReturnType<T>, Parameters<T>>
+import { mockFunction } from '../src'
 
-export type MockInterface<T extends {}> = {
-  [k in keyof T]: T[k] extends (...args: never[]) => unknown
-    ? MockFunction<T[k]>
-    : MockInterface<T[k]>
-}
-
-export const mockFunction = <T extends (...args: never[]) => unknown>(): MockFunction<T> => (
-  jest.fn()
-)
+describe('mockFunction', () => {
+  it('should create a jest mock function with proper type', () => {
+    const func = mockFunction<(arg: number) => string>()
+    // Note the mock implementation should enforce types here
+    func.mockImplementation(num => num.toString())
+    expect(jest.isMockFunction(func)).toBeTruthy()
+  })
+})

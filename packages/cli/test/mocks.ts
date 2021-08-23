@@ -40,22 +40,6 @@ const { InMemoryRemoteMap } = remoteMap
 const { createInMemoryElementSource } = elementSource
 const { awu } = collections.asynciterable
 
-export type MockFunction<T extends (...args: never[]) => unknown> =
-  jest.Mock<ReturnType<T>, Parameters<T>>
-
-export type SpiedFunction<T extends (...args: never[]) => unknown> =
-  jest.SpyInstance<ReturnType<T>, Parameters<T>>
-
-export type MockInterface<T extends {}> = {
-  [k in keyof T]: T[k] extends (...args: never[]) => unknown
-    ? MockFunction<T[k]>
-    : MockInterface<T[k]>
-}
-
-export const mockFunction = <T extends (...args: never[]) => unknown>(): MockFunction<T> => (
-  jest.fn()
-)
-
 export interface MockWriteStreamOpts { isTTY?: boolean; hasColors?: boolean }
 
 export class MockWriteStream {

@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
+import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { getWithCursorPagination, getWithPageOffsetPagination, getWithPageOffsetAndLastPagination, getWithOffsetAndLimit, HTTPClientInterface, createPaginator, GetAllItemsFunc, ResponseValue } from '../../src/client'
-import { MockInterface, mockFunction } from '../common'
 
 const { toArrayAsync } = collections.asynciterable
 

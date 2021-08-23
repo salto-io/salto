@@ -15,13 +15,13 @@
 */
 
 import { ChangeValidator, ChangeError, ObjectType, ElemID, Change, toChange } from '@salto-io/adapter-api'
+import { mockFunction } from '@salto-io/test-utils'
 import { createChangeValidator } from '../src/change_validator'
-import { mockFunction, MockFunction } from './common'
 
 describe('change_validator', () => {
   const testElem = new ObjectType({ elemID: new ElemID('test', 'type') })
 
-  let mockValidators: MockFunction<ChangeValidator>[]
+  let mockValidators: jest.MockedFunction<ChangeValidator>[]
   let changes: ReadonlyArray<Change>
   let errors: ChangeError[]
   let result: ReadonlyArray<ChangeError>

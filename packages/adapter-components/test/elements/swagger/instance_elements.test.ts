@@ -16,11 +16,11 @@
 
 import { collections } from '@salto-io/lowerdash'
 import { ObjectType, ElemID, BuiltinTypes, ListType, MapType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { mockFunction } from '@salto-io/test-utils'
 import { getAllInstances } from '../../../src/elements/swagger'
 import { returnFullEntry } from '../../../src/elements/field_finder'
 import { Paginator } from '../../../src/client'
 import { simpleGetArgs } from '../../../src/elements/request_parameters'
-import { mockFunction } from '../../common'
 
 const { toAsyncIterable } = collections.asynciterable
 

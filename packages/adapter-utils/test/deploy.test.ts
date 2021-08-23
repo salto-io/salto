@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement, DeployResult, getChangeElement } from '@salto-io/adapter-api'
+import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { deployInstance, ChangeOperations } from '../src/deploy'
-import { mockFunction, toChangeGroup, MockInterface } from './common'
+import { toChangeGroup } from './common'
 
 describe('deployInstance', () => {
   const testType = new ObjectType({ elemID: new ElemID('test', 'type') })

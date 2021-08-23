@@ -39,6 +39,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@salto-io/test-utils": "0.3.0",
     "@types/jest": "^26.0.20",
     "@types/lodash": "^4.14.168",
     "@types/moxios": "^0.4.10",

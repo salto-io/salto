@@ -24,6 +24,7 @@ import { findElement, naclCase } from '@salto-io/adapter-utils'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
+import { mockFunction, MockInterface } from '@salto-io/test-utils'
 
 import { testHelpers } from '../index'
 import * as constants from '../src/constants'
@@ -47,8 +48,6 @@ import realAdapter from './adapter'
 import {
   findElements, findStandardFieldsObject, findAnnotationsObject, findCustomFieldsObject,
   findFullCustomObject,
-  MockInterface,
-  MockFunction,
 } from '../test/utils'
 import SalesforceClient, { API_VERSION } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
@@ -110,7 +109,7 @@ describe('Salesforce adapter E2E with real account', () => {
   ].join(constants.API_NAME_SEPARATOR)
 
   beforeAll(async () => {
-    const mockReportProgress: MockFunction<ProgressReporter['reportProgress']> = jest.fn()
+    const mockReportProgress = mockFunction<ProgressReporter['reportProgress']>()
     const mockFetchOpts: MockInterface<FetchOptions> = {
       progressReporter: { reportProgress: mockReportProgress },
     }

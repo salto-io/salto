@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import { toChange, Change, FetchOptions } from '@salto-io/adapter-api'
+import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import SalesforceAdapter from '../../src/adapter'
 import { FilterWith, FilterCreator } from '../../src/filter'
 import mockAdapter from '../adapter'
-import { mockFunction, MockInterface, MockFunction } from '../utils'
 import { mockDeployResult, mockDeployMessage } from '../connection'
 import { apiName, createInstanceElement, metadataType } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
@@ -26,7 +26,7 @@ describe('SalesforceAdapter filters', () => {
   describe('when filter methods are implemented', () => {
     let adapter: SalesforceAdapter
     let filter: MockInterface<FilterWith<'onFetch' | 'onDeploy' | 'preDeploy' | 'onPostFetch'>>
-    let filterCreator: MockFunction<FilterCreator>
+    let filterCreator: jest.MockedFunction<FilterCreator>
     let connection: ReturnType<typeof mockAdapter>['connection']
     const mockFetchOpts: MockInterface<FetchOptions> = {
       progressReporter: { reportProgress: jest.fn() },

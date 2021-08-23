@@ -13,12 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { mockFunction } from '@salto-io/test-utils'
 import { buildMultiIndex, keyByAsync, Index } from '../src/multi_index'
 import { toAsyncIterable } from '../src/collections/asynciterable'
-
-export const mockFunction = <T extends (...args: never[]) => unknown>(): jest.MockedFunction<T> => (
-  jest.fn() as unknown as jest.MockedFunction<T>
-)
 
 describe('multi index', () => {
   let items: AsyncIterable<number>

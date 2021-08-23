@@ -16,10 +16,11 @@
 import _ from 'lodash'
 import { Value } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { IdentityInfo, DeployMessage } from 'jsforce'
 import { MetadataObject, DescribeMetadataResult, ValueTypeField, DescribeValueTypeResult, FileProperties, RetrieveResult, RetrieveResultLocator, DeployResultLocator, DeployResult, QueryResult } from 'jsforce-types'
 import Connection, { Metadata, Soap, Bulk, Tooling, RunTestsResult, RunTestFailure } from '../src/client/jsforce'
-import { createEncodedZipContent, MockInterface, mockFunction, ZipFile } from './utils'
+import { createEncodedZipContent, ZipFile } from './utils'
 
 export const MOCK_INSTANCE_URL = 'https://url.com/'
 

@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import Bottleneck from 'bottleneck'
+import { Resolvable, makeResolvablePromise } from '@salto-io/test-utils'
 import { createRateLimitersFromConfig, throttle, BottleneckBuckets } from '../../src/client'
-import { Resolvable, makeResolvablePromise } from '../common'
 
 type MyRateLimitConfig = {
   total: number

@@ -80,6 +80,3 @@ export const expectToContainAllItems = async <T>(
   const arr = await awu(itr).toArray()
   await awu(items).forEach(item => expect(arr).toContainEqual(item))
 }
-
-export const mockFunction = <T extends (...args: never[]) => unknown>():
-jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()

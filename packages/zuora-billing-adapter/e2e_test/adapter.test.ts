@@ -15,10 +15,10 @@
 */
 import { isObjectType, FetchOptions } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
+import { MockInterface } from '@salto-io/test-utils'
 import { OAuthClientCredentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
 import ZuoraAdapter from '../src/adapter'
-import { MockInterface } from '../test/utils'
 
 describe('Zuora adapter E2E with real swagger and mock replies', () => {
   let adapter: ZuoraAdapter

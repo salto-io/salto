@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
+import { mockFunction } from '@salto-io/test-utils'
 import * as api from '../src/api'
 import * as plan from '../src/core/plan/plan'
 import * as fetch from '../src/core/fetch'
@@ -25,7 +26,7 @@ import adapterCreators from '../src/core/adapters/creators'
 
 import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
-import { mockFunction, MockFunction, createElementSource } from './common/helpers'
+import { createElementSource } from './common/helpers'
 import { mockConfigType, mockEmptyConfigType, mockWorkspace, mockConfigInstance } from './common/workspace'
 
 const { awu } = collections.asynciterable
@@ -101,7 +102,7 @@ describe('api.ts', () => {
   })
 
   describe('fetch', () => {
-    const mockFetchChanges = fetch.fetchChanges as MockFunction<typeof fetch.fetchChanges>
+    const mockFetchChanges = fetch.fetchChanges as jest.MockedFunction<typeof fetch.fetchChanges>
     const objType = new ObjectType({ elemID: new ElemID(mockService, 'dummy') })
 
     const fetchedElements = [

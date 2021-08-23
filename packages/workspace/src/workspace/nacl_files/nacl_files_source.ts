@@ -49,6 +49,7 @@ export type RoutingMode = 'isolated' | 'default' | 'align' | 'override'
 
 export const FILE_EXTENSION = '.nacl'
 export const HASH_KEY = 'hash'
+const PUT_INTERVAL = 100
 
 const PARSE_CONCURRENCY = 100
 const DUMP_CONCURRENCY = 100
@@ -153,16 +154,24 @@ const getElementReferenced = async (element: Element): Promise<Set<string>> => {
 export const toParsedNaclFile = async (
   naclFile: NaclFile,
   parseResult: ParseResult
-): Promise<ParsedNaclFile> => ({
-  filename: naclFile.filename,
-  elements: () => awu(parseResult.elements).toArray(),
-  data: {
-    errors: () => Promise.resolve(parseResult.errors),
-    referenced: () => awu(parseResult.elements).flatMap(getElementReferenced).toArray(),
-  },
-  buffer: naclFile.buffer,
-  sourceMap: () => Promise.resolve(parseResult.sourceMap),
-})
+): Promise<ParsedNaclFile> => {
+  let referenced: string[]
+  return {
+    filename: naclFile.filename,
+    elements: () => awu(parseResult.elements).toArray(),
+    data: {
+      errors: () => Promise.resolve(parseResult.errors),
+      referenced: async () => {
+        if (referenced === undefined) {
+          referenced = await awu(parseResult.elements).flatMap(getElementReferenced).toArray()
+        }
+        return referenced
+      },
+    },
+    buffer: naclFile.buffer,
+    sourceMap: () => Promise.resolve(parseResult.sourceMap),
+  }
+}
 
 const parseNaclFile = async (
   naclFile: NaclFile, functions: Functions
@@ -354,7 +363,7 @@ const buildNaclFilesState = async ({
 
   const handleAdditionsOrModifications = async (naclFiles:
     AwuIterable<ParsedNaclFile>): Promise<void> => {
-    const toAdd: Record<string, ParsedNaclFile> = {}
+    let toAdd: Record<string, ParsedNaclFile> = {}
     await naclFiles.forEach(async naclFile => {
       const parsedFile = (await getNaclFile(naclFile))
       updateIndexOfFile(
@@ -366,7 +375,7 @@ const buildNaclFilesState = async ({
       )
 
       const currentNaclFileElements = (await naclFile.elements()) ?? []
-      const oldNaclFileElements = await (await getNaclFile(naclFile))?.elements() ?? []
+      const oldNaclFileElements = await parsedFile?.elements() ?? []
       updateIndexOfFile(
         elementsIndexAdditions,
         elementsIndexDeletions,
@@ -385,7 +394,11 @@ const buildNaclFilesState = async ({
       // This is temp and should be removed when we change the init flow
       // This happens now cause we get here with ParsedNaclFiles that originate from the cache
       if (values.isDefined(naclFile.buffer)) {
-        await currentState.parsedNaclFiles.put(naclFile.filename, naclFile)
+        toAdd[naclFile.filename] = naclFile
+        if (Object.keys(toAdd).length % PUT_INTERVAL === 0) {
+          await currentState.parsedNaclFiles.putAll(toAdd)
+          toAdd = {}
+        }
       }
     })
     await currentState.parsedNaclFiles.putAll(toAdd)
@@ -626,12 +639,18 @@ const buildNaclFilesSource = (
     fileData: string,
   ): Promise<ParsedNaclFile> => {
     const elements = [change.data.after]
+    let referenced: string[]
     return {
       filename,
       elements: () => Promise.resolve(elements),
       data: {
         errors: () => Promise.resolve([]),
-        referenced: () => awu(elements).flatMap(getElementReferenced).toArray(),
+        referenced: async () => {
+          if (referenced === undefined) {
+            referenced = await awu(elements).flatMap(getElementReferenced).toArray()
+          }
+          return referenced
+        },
       },
       buffer: fileData,
     }

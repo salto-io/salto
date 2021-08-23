@@ -80,6 +80,8 @@ const deserializeAndFlatten = async (elementsJSON: string): Promise<Element[]> =
   await deserialize(elementsJSON)
 ) as Element[]).map(flattenElementStr)
 
+type ContentsAndHash = { contents: [string, string][]; hash: string }
+
 export const localState = (
   filePrefix: string,
   envName: string,
@@ -87,6 +89,7 @@ export const localState = (
   persistent = true
 ): state.State => {
   let dirty = false
+  let contentsAndHash: ContentsAndHash | undefined
   let pathToClean = ''
   let currentFilePrefix = filePrefix
 
@@ -163,6 +166,11 @@ export const localState = (
     return quickAccessStateData
   }
 
+  const setDirty = (): void => {
+    dirty = true
+    contentsAndHash = undefined
+  }
+
   const inMemState = state.buildInMemState(loadStateData)
 
   const createStateTextPerService = async (): Promise<Record<string, string>> => {
@@ -179,39 +187,49 @@ export const localState = (
       [serviceElements || '[]', safeJsonStringify({ [service]: serviceToDates[service] } || {}),
         serviceToPathIndex[service] || '[]', version].join(EOL))
   }
-  const getFilePathToContent = async (): Promise<[string, string][]> => {
-    const stateTextPerService = await createStateTextPerService()
-    return awu(Object.keys(stateTextPerService))
-      .map(async service => [
-        `${currentFilePrefix}.${service}${ZIPPED_STATE_EXTENSION}`,
-        await generateZipString(stateTextPerService[service]),
-      ] as [string, string]).toArray()
+  const getContentAndHash = async (): Promise<ContentsAndHash> => {
+    if (contentsAndHash === undefined) {
+      const stateTextPerService = await createStateTextPerService()
+      const contents = await awu(Object.keys(stateTextPerService))
+        .map(async service => [
+          `${currentFilePrefix}.${service}${ZIPPED_STATE_EXTENSION}`,
+          await generateZipString(stateTextPerService[service]),
+        ] as [string, string]).toArray()
+      contentsAndHash = {
+        contents,
+        hash: getHashFromContent(contents.map(e => e[1])),
+      }
+    }
+    return contentsAndHash
   }
-  const calculateHashImpl = async (): Promise<void> =>
-    inMemState.setHash(getHashFromContent((await getFilePathToContent()).map(e => e[1])))
+
+  const calculateHashImpl = async (): Promise<void> => {
+    const contentHash = contentsAndHash?.hash ?? (await getContentAndHash()).hash
+    await inMemState.setHash(contentHash)
+  }
 
   return {
     ...inMemState,
     set: async (element: Element): Promise<void> => {
       await inMemState.set(element)
-      dirty = true
+      setDirty()
     },
     remove: async (id: ElemID): Promise<void> => {
       await inMemState.remove(id)
-      dirty = true
+      setDirty()
     },
     override: async (element: AsyncIterable<Element>, services?: string[]): Promise<void> => {
       await inMemState.override(element, services)
-      dirty = true
+      setDirty()
     },
     overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {
       await inMemState.overridePathIndex(unmergedElements)
-      dirty = true
+      setDirty()
     },
     updatePathIndex: async (unmergedElements: Element[], servicesToMaintain: string[]):
      Promise<void> => {
       await inMemState.updatePathIndex(unmergedElements, servicesToMaintain)
-      dirty = true
+      setDirty()
     },
     rename: async (newPrefix: string): Promise<void> => {
       const stateFiles = await findStateFiles(currentFilePrefix)
@@ -222,20 +240,22 @@ export const localState = (
       })
 
       currentFilePrefix = newPrefix
+      setDirty()
     },
     flush: async (): Promise<void> => {
       if (!dirty && pathToClean === '') {
         return
       }
       await mkdirp(path.dirname(currentFilePrefix))
-      const filePathToContent = await getFilePathToContent()
-      await awu(filePathToContent).forEach(f => replaceContents(...f))
       if (pathToClean !== '') {
         await rm(pathToClean)
       }
+      const filePathToContent = (await getContentAndHash()).contents
+      await awu(filePathToContent).forEach(f => replaceContents(...f))
       await inMemState.setVersion(version)
       await calculateHashImpl()
       await inMemState.flush()
+      dirty = false
       log.debug('finish flushing state')
     },
     getHash: async (): Promise<string | undefined> => inMemState.getHash(),
@@ -244,6 +264,7 @@ export const localState = (
       const stateFiles = await findStateFiles(currentFilePrefix)
       await inMemState.clear()
       await Promise.all(stateFiles.map(filename => rm(filename)))
+      setDirty()
     },
   }
 }

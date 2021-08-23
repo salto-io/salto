@@ -43,7 +43,7 @@ export type QueryChangeValidator = (
 
 const { awu } = collections.asynciterable
 
-const getIdentifingValue = async (instance: InstanceElement): Promise<string> => (
+const getIdentifyingValue = async (instance: InstanceElement): Promise<string> => (
   instance.value[SCRIPT_ID] ?? instance.value[getTypeIdentifier(await instance.getType())]
 )
 const getIdentifingValuesByType = async (
@@ -52,7 +52,7 @@ const getIdentifingValuesByType = async (
   Object.fromEntries(await awu(Object.entries(instancesByType))
     .map(async ([type, instances]) => [
       type,
-      await awu(instances).map(inst => getIdentifingValue(inst)).toArray(),
+      await awu(instances).map(inst => getIdentifyingValue(inst)).toArray(),
     ])
     .toArray())
 )

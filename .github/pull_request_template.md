@@ -10,4 +10,4 @@ _Replace me with a short sentence that describes the effect of this change on Sa
 
 ---
 _User Notifications_: 
-_Replace me with a short sentence that describes the changes in the PR that the user should be notified about (changes to elements in existing workspaces, migrations, etc...)_
+_Replace me with a short sentence that describes changes that will appear in NaCls and are not caused by user actions (e.g. a new annotation, field values that are converted to references, etc). Hidden changes should not be listed._

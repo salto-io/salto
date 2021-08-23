@@ -255,6 +255,7 @@ export const localState = (
       await inMemState.setVersion(version)
       await calculateHashImpl()
       await inMemState.flush()
+      dirty = false
       log.debug('finish flushing state')
     },
     getHash: async (): Promise<string | undefined> => inMemState.getHash(),

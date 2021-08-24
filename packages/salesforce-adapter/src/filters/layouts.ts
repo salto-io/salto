@@ -13,17 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, InstanceElement, ObjectType, ElemID, isInstanceElement,
+  Element, InstanceElement, ObjectType, ElemID, isObjectType,
 } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { multiIndex, collections } from '@salto-io/lowerdash'
+import { FileProperties } from 'jsforce-types'
 import { apiName, isCustomObject } from '../transformers/transformer'
-import { FilterCreator } from '../filter'
-import { addObjectParentReference, isInstanceOfType, buildElementsSourceForFetch } from './utils'
-import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
+import { FilterContext, FilterCreator, FilterResult } from '../filter'
+import { addObjectParentReference, buildElementsSourceForFetch } from './utils'
+import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE, NAMESPACE_SEPARATOR, FULLNAME_SEPERATOR } from '../constants'
 import { getObjectDirectoryPath } from './custom_objects'
+import { FetchElements } from '../types'
+import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
+import SalesforceClient from '../client/client'
 
 const { awu } = collections.asynciterable
 
@@ -55,24 +60,70 @@ const fixLayoutPath = async (
   ]
 }
 
+const transformPrefixedLayoutFileProp = (fileProp: FileProperties): FileProperties => {
+  const prefix = fileProp.namespacePrefix?.concat(NAMESPACE_SEPARATOR)
+  const fullNameParts = fileProp.fullName.split(FULLNAME_SEPERATOR)
+  const transformedFullName = [
+    fullNameParts[0],
+    FULLNAME_SEPERATOR,
+    prefix,
+    fullNameParts[1],
+  ].join('')
+
+  return { ...fileProp, fullName: transformedFullName }
+}
+
+const createLayoutMetadataInstances = async (
+  config: FilterContext,
+  client: SalesforceClient,
+  elements: Element[]
+): Promise<FetchElements<InstanceElement[]>> => {
+  const type = elements
+    .filter(isObjectType)
+    .find(elem => elem.elemID.typeName === LAYOUT_TYPE_ID_METADATA_TYPE)
+  const { elements: fileProps, configChanges } = await listMetadataObjects(
+    client, LAYOUT_TYPE_ID_METADATA_TYPE, [],
+  )
+  if (type !== undefined) {
+    const [filePropsToTransform, regularFileProps] = _.partition(fileProps, fileProp => fileProp.fullName.startsWith('SBQQ')) // TODOH: more prefixes?
+    const correctedFileProps = [
+      ...regularFileProps,
+      ...filePropsToTransform.map(transformPrefixedLayoutFileProp),
+    ]
+
+    const instances = await fetchMetadataInstances({
+      client,
+      fileProps: correctedFileProps,
+      metadataType: type,
+      metadataQuery: config.fetchProfile.metadataQuery,
+    })
+    return {
+      elements: instances.elements,
+      configChanges: [...instances.configChanges, ...configChanges],
+    }
+  }
+  return {
+    elements: [],
+    configChanges: [],
+  }
+}
+
 /**
-* Declare the layout filter, this filter adds reference from the sobject to it's layouts.
-* Fixes references in layout items.
+* Declare the layout filter, this filter fetches the Layouts metadata type,
+* adds reference from the sobject to it's layouts, and fixes references in layout items.
 */
-const filterCreator: FilterCreator = ({ config }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   /**
-   * Upon fetch, shorten layout ID and add reference to layout sobjects.
+   * Upon fetch, get Layout instances, shorten layouts' ID and add reference to layout sobjects.
    * Fixes references in layout items.
    *
    * @param elements the already fetched elements
    */
-  onFetch: async (elements: Element[]): Promise<void> => {
-    const layouts = await awu(elements)
-      .filter(isInstanceElement)
-      .filter(isInstanceOfType(LAYOUT_TYPE_ID_METADATA_TYPE))
-      .toArray()
+  onFetch: async (elements: Element[]): Promise<FilterResult> => {
+    const { elements: layouts,
+      configChanges } = await createLayoutMetadataInstances(config, client, elements)
     if (layouts.length === 0) {
-      return
+      return {}
     }
 
     // const layouts = [...findInstances(elements, LAYOUT_TYPE_ID)]
@@ -108,6 +159,10 @@ const filterCreator: FilterCreator = ({ config }) => ({
       addObjectParentReference(layout, layoutObj)
       await fixLayoutPath(layout, layoutObj, layoutName)
     })
+
+    return {
+      configSuggestions: configChanges,
+    }
   },
 })
 

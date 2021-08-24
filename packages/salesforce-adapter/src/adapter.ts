@@ -239,7 +239,10 @@ export default class SalesforceAdapter implements AdapterOperations {
   private fetchProfile: FetchProfile
 
   public constructor({
-    metadataTypesOfInstancesFetchedInFilters = [CUSTOM_FEED_FILTER_METADATA_TYPE],
+    metadataTypesOfInstancesFetchedInFilters = [
+      CUSTOM_FEED_FILTER_METADATA_TYPE,
+      constants.LAYOUT_TYPE_ID_METADATA_TYPE,
+    ],
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = metadataToRetrieveAndDeploy,
     nestedMetadataTypes = {

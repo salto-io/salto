@@ -97,6 +97,7 @@ const createLayoutMetadataInstances = async (
       metadataType: type,
       metadataQuery: config.fetchProfile.metadataQuery,
     })
+    // TODOH: why don't the instances include regularFileProps?
     return {
       elements: instances.elements,
       configChanges: [...instances.configChanges, ...configChanges],
@@ -119,7 +120,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
    *
    * @param elements the already fetched elements
    */
-  onFetch: async (elements: Element[]): Promise<FilterResult> => {
+  onFetch: async (elements: Element[]): Promise<FilterResult> => { // TODOH: predeploy & ondeploy?
     const { elements: layouts,
       configChanges } = await createLayoutMetadataInstances(config, client, elements)
     if (layouts.length === 0) {
@@ -158,6 +159,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
       addObjectParentReference(layout, layoutObj)
       await fixLayoutPath(layout, layoutObj, layoutName)
+      elements.push(layout)
     })
 
     return {

@@ -83,22 +83,46 @@ describe('data_types_custom_fields', () => {
       .toBe(new ListType(BuiltinTypes.UNKNOWN).elemID.getFullName())
   })
 
-  it('should use element index if partial', async () => {
-    instance.value.fieldtype = 'INTEGER'
-    filterOpts = {
-      client: {} as NetsuiteClient,
-      elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({
-          serviceIdsIndex: {},
-          internalIdsIndex: {},
-          customFieldsIndex: { Customer: [instance] },
-        }),
-      },
-      elementsSource: buildElementsSourceFromElements([]),
-      isPartial: true,
-    }
-    await filterCreator(filterOpts).onFetch?.([type, Account])
-    expect((await type.fields.custom_someid.getType()).elemID.getFullName())
-      .toBe(BuiltinTypes.NUMBER.elemID.getFullName())
+  describe('partial fetch', () => {
+    it('should use element index if field instance was not fetched', async () => {
+      instance.value.fieldtype = 'INTEGER'
+      filterOpts = {
+        client: {} as NetsuiteClient,
+        elementsSourceIndex: {
+          getIndexes: () => Promise.resolve({
+            serviceIdsIndex: {},
+            internalIdsIndex: {},
+            customFieldsIndex: { Customer: [instance] },
+          }),
+        },
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: true,
+      }
+      await filterCreator(filterOpts).onFetch?.([type, Account])
+      expect((await type.fields.custom_someid.getType()).elemID.getFullName())
+        .toBe(BuiltinTypes.NUMBER.elemID.getFullName())
+    })
+
+    it('should not use element index if field instance was fetched', async () => {
+      instance.value.fieldtype = 'INTEGER'
+
+      const fetchedInstance = instance.clone()
+      fetchedInstance.value.appliestocustomer = false
+
+      filterOpts = {
+        client: {} as NetsuiteClient,
+        elementsSourceIndex: {
+          getIndexes: () => Promise.resolve({
+            serviceIdsIndex: {},
+            internalIdsIndex: {},
+            customFieldsIndex: { Customer: [instance] },
+          }),
+        },
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: true,
+      }
+      await filterCreator(filterOpts).onFetch?.([type, fetchedInstance, Account])
+      expect(type.fields.custom_someid).toBeUndefined()
+    })
   })
 })

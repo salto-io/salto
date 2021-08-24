@@ -124,10 +124,16 @@ const filterCreator: FilterCreator = ({ isPartial, elementsSourceIndex }) => ({
     const nameToType = _.keyBy(dataTypes, e => e.elemID.name)
 
     if (isPartial) {
+      const fetchedIds = new Set(elements
+        .filter(isInstanceElement)
+        .map(instance => instance.elemID.getFullName()))
+
       Object.entries((await elementsSourceIndex.getIndexes()).customFieldsIndex)
         .filter(([type]) => type in nameToType)
         .forEach(([type, fields]) => {
-          fields.forEach(field => addFieldToType(nameToType[type], field, nameToType))
+          fields
+            .filter(field => !fetchedIds.has(field.elemID.getFullName()))
+            .forEach(field => addFieldToType(nameToType[type], field, nameToType))
         })
     }
 

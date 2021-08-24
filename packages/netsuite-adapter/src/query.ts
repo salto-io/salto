@@ -17,7 +17,7 @@
 import { regex, strings } from '@salto-io/lowerdash'
 import { INCLUDE, EXCLUDE } from './constants'
 import { customTypes } from './types'
-import { SUPPORTED_TYPES } from './data_elements/types'
+import { SUPPORTED_TYPES, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 
 export interface ObjectID {
   type: string
@@ -110,8 +110,17 @@ export const validateFetchParameters = ({ types, fileCabinet }:
 export const buildNetsuiteQuery = (
   { types = [], fileCabinet = [] }: Partial<QueryParams>
 ): NetsuiteQuery => {
+  // This is to support the adapter configuration before the migration of
+  // the SuiteApp type names from PascalCase to camelCase
+  const fixedTypes = types.map(type => ({
+    ...type,
+    name: strings.lowerCaseFirstLetter(type.name) in TYPES_TO_INTERNAL_ID
+      ? strings.lowerCaseFirstLetter(type.name)
+      : type.name,
+  }))
+
   const matchingTypes = (typeName: string): FetchTypeQueryParams[] =>
-    types.filter(type => checkTypeNameRegMatch(type, typeName))
+    fixedTypes.filter(type => checkTypeNameRegMatch(type, typeName))
   const matchingTypesRegexes = (typeName: string): string[] =>
     matchingTypes(typeName)
       .flatMap(type => type.ids ?? ['.*'])

@@ -47,29 +47,33 @@ const TRANSLATE_KEY = 'translate'
 
 const getTranslateFieldName = (key: string): string => `${key}Translate`
 
+const addTranslateFields = (): void => {
+  const types = _.keyBy(getMetadataTypes(), type => type.elemID.name)
+
+  FIELDS_TO_CONVERT.forEach(elemID => {
+    const type = types[elemID.typeName]
+
+    if (!isObjectType(type)) {
+      log.warn(`received non object type from ${elemID.getFullName()}`)
+      return
+    }
+    const path = getPath(type, elemID)
+    const field = path && _.get(type, path)
+    if (!isField(field)) {
+      log.warn(`Got a value that is not a field ${field} for elem ID ${elemID.getFullName()}`)
+      return
+    }
+    field.parent.fields[getTranslateFieldName(field.name)] = new Field(
+      type,
+      getTranslateFieldName(field.name),
+      BuiltinTypes.BOOLEAN
+    )
+  })
+}
+
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   onFetch: async elements => {
-    const types = _.keyBy(getMetadataTypes(), type => type.elemID.name)
-
-    FIELDS_TO_CONVERT.forEach(elemID => {
-      const type = types[elemID.typeName]
-
-      if (!isObjectType(type)) {
-        log.warn(`received non object type from ${elemID.getFullName()}`)
-        return
-      }
-      const path = getPath(type, elemID)
-      const field = path && _.get(type, path)
-      if (!isField(field)) {
-        log.warn(`Got a value that is not a field ${field} for elem ID ${elemID.getFullName()}`)
-        return
-      }
-      field.parent.fields[getTranslateFieldName(field.name)] = new Field(
-        type,
-        getTranslateFieldName(field.name),
-        BuiltinTypes.BOOLEAN
-      )
-    })
+    addTranslateFields()
 
     await awu(elements)
       .filter(isInstanceElement)
@@ -112,8 +116,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
                 if (!_.isPlainObject(value)) {
                   return value
                 }
-                _(value)
-                  .entries()
+                Object.entries(value)
                   .filter(([key]) => getTranslateFieldName(key) in value)
                   .forEach(([key, val]) => {
                     value[key] = {

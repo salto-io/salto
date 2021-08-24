@@ -132,6 +132,10 @@ const filterCreator: FilterCreator = ({ isPartial, elementsSourceIndex }) => ({
         .filter(([type]) => type in nameToType)
         .forEach(([type, fields]) => {
           fields
+            // We don't want to use fields from the elementSource that
+            // were fetched from the service in the current fetch so we filter them out.
+            // Fields that are fetched in the current fetch are added to
+            // the type later in this function
             .filter(field => !fetchedIds.has(field.elemID.getFullName()))
             .forEach(field => addFieldToType(nameToType[type], field, nameToType))
         })

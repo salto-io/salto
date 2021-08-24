@@ -20,7 +20,7 @@ import { IDENTIFIER_FIELD } from '../../src/data_elements/types'
 
 describe('data_instances_identifiers', () => {
   it('should remove identifier field', async () => {
-    const accountType = new ObjectType({ elemID: new ElemID(NETSUITE, 'Account'), annotations: { source: 'soap' } })
+    const accountType = new ObjectType({ elemID: new ElemID(NETSUITE, 'account'), annotations: { source: 'soap' } })
     const accountInstance = new InstanceElement('instance', accountType, { [IDENTIFIER_FIELD]: 'someValue' })
     await filterCreator().preDeploy?.([
       toChange({ after: accountInstance }),

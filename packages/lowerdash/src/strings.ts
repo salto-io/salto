@@ -28,6 +28,10 @@ export const insecureRandomString = (
 export const capitalizeFirstLetter = (str: string): string =>
   str.charAt(0).toUpperCase() + str.slice(1)
 
+export const lowerCaseFirstLetter = (str: string): string =>
+  str.charAt(0).toLowerCase() + str.slice(1)
+
+
 /**
  * Find all matches to the specified regular expression.
  * This is a partial replacement for String.prototype.matchAll which

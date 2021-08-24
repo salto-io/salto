@@ -103,7 +103,7 @@ describe('customization type change validator', () => {
 
   it('should have change error if identifier field has been modified', async () => {
     const accountingPeriodType = new ObjectType({
-      elemID: new ElemID(NETSUITE, 'AccountingPeriod'),
+      elemID: new ElemID(NETSUITE, 'accountingPeriod'),
       fields: {
         identifier: { refType: BuiltinTypes.SERVICE_ID },
       },
@@ -122,7 +122,7 @@ describe('customization type change validator', () => {
 
   it('should have change error if fields used for identifier fields have been modified', async () => {
     const accountingPeriodType = new ObjectType({
-      elemID: new ElemID(NETSUITE, 'AccountingPeriod'),
+      elemID: new ElemID(NETSUITE, 'accountingPeriod'),
       annotations: { source: 'soap' },
     })
     const before = new InstanceElement('instance', accountingPeriodType, { fiscalCalendar: { name: 'a' } })

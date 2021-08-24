@@ -24,7 +24,7 @@
     </sequence>
   </complexType>
 
-  <complexType name="testedType">
+  <complexType name="TestedType">
     <complexContent>
       <extension base="extendedType">
         <sequence>

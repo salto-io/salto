@@ -21,16 +21,16 @@ describe('replaceRecordRef', () => {
   let recordRefType: ObjectType
   let typeWithRecordRef: ObjectType
   let elements: TypeElement[]
-  const departmentType = new ObjectType({ elemID: new ElemID(NETSUITE, 'Department') })
-  const subsidiaryType = new ObjectType({ elemID: new ElemID(NETSUITE, 'Subsidiary') })
+  const departmentType = new ObjectType({ elemID: new ElemID(NETSUITE, 'department') })
+  const subsidiaryType = new ObjectType({ elemID: new ElemID(NETSUITE, 'subsidiary') })
 
   beforeEach(() => {
-    recordRefType = new ObjectType({ elemID: new ElemID(NETSUITE, 'RecordRef') })
+    recordRefType = new ObjectType({ elemID: new ElemID(NETSUITE, 'recordRef') })
     typeWithRecordRef = new ObjectType({ elemID: new ElemID(NETSUITE, 'typeWithRecordRef'),
       fields: {
         department: { refType: recordRefType },
         parent: { refType: recordRefType },
-        subsidiaryList: { refType: new ObjectType({ elemID: new ElemID(NETSUITE, 'RecordRefList') }) },
+        subsidiaryList: { refType: new ObjectType({ elemID: new ElemID(NETSUITE, 'recordRefList') }) },
         recordRef: { refType: recordRefType },
       } })
     elements = [typeWithRecordRef, recordRefType, departmentType, subsidiaryType]
@@ -44,12 +44,12 @@ describe('replaceRecordRef', () => {
 
   it('should replace all record refs references', async () => {
     await filterCreator().onFetch(elements)
-    expect((await typeWithRecordRef.fields.department.getType()).elemID.name).toBe('Department')
+    expect((await typeWithRecordRef.fields.department.getType()).elemID.name).toBe('department')
     expect(
       (await (await typeWithRecordRef.fields.subsidiaryList.getType() as ContainerType)
         .getInnerType()).elemID.name
-    ).toBe('Subsidiary')
+    ).toBe('subsidiary')
     expect((await typeWithRecordRef.fields.parent.getType()).elemID.name).toBe('typeWithRecordRef')
-    expect((await typeWithRecordRef.fields.recordRef.getType()).elemID.name).toBe('RecordRef')
+    expect((await typeWithRecordRef.fields.recordRef.getType()).elemID.name).toBe('recordRef')
   })
 })

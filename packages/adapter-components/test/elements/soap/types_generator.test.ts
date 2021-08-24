@@ -25,7 +25,7 @@ describe('extractTypes', () => {
   let testedType: ObjectType
   let types: ObjectType[]
   beforeEach(async () => {
-    types = await extractTypes('adapterName', WSDL_PATH)
+    types = await extractTypes('adapterName', WSDL_PATH, { camelCase: true })
     testedType = types.find(type => type.elemID.name === TESTED_TYPE) as ObjectType
   })
   it('should return the expected type', () => {
@@ -75,13 +75,13 @@ describe('extractTypes', () => {
 
   it('should work when a wsdl object is passed', async () => {
     const { wsdl } = (await soap.createClientAsync(WSDL_PATH)) as unknown as { wsdl: soap.WSDL }
-    types = await extractTypes('adapterName', wsdl)
+    types = await extractTypes('adapterName', wsdl, { camelCase: true })
     testedType = types.find(type => type.elemID.name === TESTED_TYPE) as ObjectType
     expect(testedType).toBeDefined()
   })
 
   it('should return duplicate types', async () => {
-    const typesWithDups = await extractTypes('adapterName', INVALID_WSDL_PATH)
+    const typesWithDups = await extractTypes('adapterName', INVALID_WSDL_PATH, { camelCase: true })
     expect(typesWithDups.filter(type => type.elemID.name === 'testedType')).toHaveLength(2)
   })
 })

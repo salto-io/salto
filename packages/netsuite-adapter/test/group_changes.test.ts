@@ -127,7 +127,7 @@ describe('Group Changes with Salto suiteApp', () => {
   )
 
   const subsidiaryType = new ObjectType({
-    elemID: new ElemID(NETSUITE, 'Subsidiary'),
+    elemID: new ElemID(NETSUITE, 'subsidiary'),
     annotations: { source: 'soap' },
   })
 

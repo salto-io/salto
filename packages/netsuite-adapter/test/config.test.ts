@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { NetsuiteQueryParameters } from '../src/query'
-import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, UPDATE_FETCH_CONFIG_FORMAT, UPDATE_DEPLOY_CONFIG, combineQueryParams, fetchDefault } from '../src/config'
+import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, UPDATE_FETCH_CONFIG_FORMAT, UPDATE_DEPLOY_CONFIG, combineQueryParams, fetchDefault, UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT } from '../src/config'
 import {
   FETCH_ALL_TYPES_AT_ONCE,
   SDF_CONCURRENCY_LIMIT,
@@ -266,5 +266,30 @@ describe('config', () => {
           },
         }
       ))).toBe(true)
+  })
+
+  it('should convert PascalCase typeNames to camelCase', () => {
+    const conf = {
+      [FETCH]: {
+        [EXCLUDE]: {
+          types: [{
+            name: 'Subsidiary',
+          }],
+          fileCabinet: [],
+        },
+      },
+    }
+    const configChange = getConfigFromConfigChanges(false, [], {}, conf)
+    expect(configChange?.config?.value).toEqual({
+      [FETCH]: {
+        [EXCLUDE]: {
+          types: [{
+            name: 'subsidiary',
+          }],
+          fileCabinet: [],
+        },
+      },
+    })
+    expect(configChange?.message).toBe(UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT)
   })
 })

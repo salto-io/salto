@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import { elements as elementsComponents } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { naclCase, pathNaclCase, transformValues } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, strings } from '@salto-io/lowerdash'
 import { NETSUITE, RECORDS_PATH } from '../constants'
 import { NetsuiteQuery } from '../query'
 import { getTypeIdentifier, TYPE_TO_IDENTIFIER } from './types'
@@ -48,7 +48,7 @@ export const getDataTypes = async (
     log.warn('Failed to get WSDL, skipping data elements')
     return []
   }
-  const types = await elementsComponents.soap.extractTypes(NETSUITE, wsdl)
+  const types = await elementsComponents.soap.extractTypes(NETSUITE, wsdl, { camelCase: true })
 
   types.forEach(type => {
     setTypeSourceAnnotation(type)
@@ -80,11 +80,11 @@ const getType = (
       return valueStr.includes(':') ? valueStr.split(':')[1] : valueStr
     })
 
-  if (typeNames.length !== 1 || !(typeNames[0] in typesMap)) {
+  if (typeNames.length !== 1 || !(strings.lowerCaseFirstLetter(typeNames[0]) in typesMap)) {
     log.warn(`Got invalid instance from SOAP request: ${JSON.stringify(values, undefined, 2)}`)
     throw new Error('Got invalid instance from SOAP request')
   }
-  return typesMap[typeNames[0]]
+  return typesMap[strings.lowerCaseFirstLetter(typeNames[0])]
 }
 
 const createInstances = async (

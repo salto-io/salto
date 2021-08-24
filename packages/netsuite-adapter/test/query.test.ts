@@ -23,8 +23,8 @@ describe('NetsuiteQuery', () => {
         types: [
           { name: 'addressForm', ids: ['aaa.*', 'bbb.*'] },
           { name: 'advancedpdftemplate', ids: ['ccc.*', 'ddd.*'] },
-          { name: 'Account', ids: ['.*'] },
-          { name: 'Account', ids: ['.*'] },
+          { name: 'account', ids: ['.*'] },
+          { name: 'account', ids: ['.*'] },
         ],
         fileCabinet: ['eee.*', 'fff.*'],
       })
@@ -81,7 +81,7 @@ describe('NetsuiteQuery', () => {
       })
       describe('areAllObjectsMatch', () => {
         it('when there is .* should return true', () => {
-          expect(query.areAllObjectsMatch('Account')).toBeTruthy()
+          expect(query.areAllObjectsMatch('account')).toBeTruthy()
           expect(query.areAllObjectsMatch('addressForm')).toBeFalsy()
         })
       })
@@ -103,6 +103,18 @@ describe('NetsuiteQuery', () => {
           expect(queryOldFormat.isFileMatch('ffffqqqq')).toBeTruthy()
         })
       })
+    })
+
+    // For the migration between the PascalCase and the camelCase in the SuiteApp type names
+    it('Support PascalCase SuiteApp names', () => {
+      const query = buildNetsuiteQuery({
+        types: [
+          { name: 'Subsidiary' },
+        ],
+        fileCabinet: [],
+      })
+      expect(query.isTypeMatch('subsidiary')).toBeTruthy()
+      expect(query.isObjectMatch({ type: 'subsidiary', instanceId: 'aaa' })).toBeTruthy()
     })
   })
 
@@ -241,7 +253,7 @@ describe('NetsuiteQuery', () => {
       types: [
         { name: 'addressForm', ids: ['aaa.*'] },
         { name: 'advancedpdftemplate', ids: ['.*'] },
-        { name: 'Account', ids: ['.*'] },
+        { name: 'account', ids: ['.*'] },
       ],
       fileCabinet: ['bbb.*'],
     })
@@ -249,7 +261,7 @@ describe('NetsuiteQuery', () => {
       types: [
         { name: 'addressForm', ids: ['.*ccc'] },
         { name: 'bankstatementparserplugin', ids: ['.*'] },
-        { name: 'Account', ids: ['.*'] },
+        { name: 'account', ids: ['.*'] },
       ],
       fileCabinet: ['.*ddd'],
     })
@@ -262,7 +274,7 @@ describe('NetsuiteQuery', () => {
     })
 
     it('should match all objects if both queries match all objects', () => {
-      expect(bothQuery.areAllObjectsMatch('Account')).toBeTruthy()
+      expect(bothQuery.areAllObjectsMatch('account')).toBeTruthy()
       expect(bothQuery.areAllObjectsMatch('bankstatementparserplugin')).toBeFalsy()
     })
 
@@ -298,7 +310,7 @@ describe('NetsuiteQuery', () => {
     })
 
     it('should match all objects if did not match any object before', () => {
-      expect(inverseQuery.areAllObjectsMatch('Account')).toBeTruthy()
+      expect(inverseQuery.areAllObjectsMatch('account')).toBeTruthy()
       expect(inverseQuery.areAllObjectsMatch('addressForm')).toBeFalsy()
     })
 

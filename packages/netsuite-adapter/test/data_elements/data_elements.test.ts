@@ -71,13 +71,13 @@ describe('data_elements', () => {
   describe('getDataTypes', () => {
     it('should return all the types', async () => {
       const typeA = new ObjectType({ elemID: new ElemID(NETSUITE, 'A') })
-      const typeB = new ObjectType({ elemID: new ElemID(NETSUITE, 'Subsidiary'), fields: { A: { refType: typeA }, name: { refType: BuiltinTypes.STRING } } })
-      const typeC = new ObjectType({ elemID: new ElemID(NETSUITE, 'AccountingPeriod') })
+      const typeB = new ObjectType({ elemID: new ElemID(NETSUITE, 'subsidiary'), fields: { A: { refType: typeA }, name: { refType: BuiltinTypes.STRING } } })
+      const typeC = new ObjectType({ elemID: new ElemID(NETSUITE, 'accountingPeriod') })
 
       extractTypesMock.mockResolvedValue([typeA, typeB, typeC])
 
       const types = await getDataTypes(client)
-      expect(types?.map(t => t.elemID.name)).toEqual(['A', 'Subsidiary', 'AccountingPeriod'])
+      expect(types?.map(t => t.elemID.name)).toEqual(['A', 'subsidiary', 'accountingPeriod'])
     })
 
     it('should do nothing if SuiteApp is not configured', async () => {
@@ -91,8 +91,8 @@ describe('data_elements', () => {
     })
 
     it('should add identifer field if necessary', async () => {
-      const subsidiary = new ObjectType({ elemID: new ElemID(NETSUITE, 'Subsidiary') })
-      const accountingPeriod = new ObjectType({ elemID: new ElemID(NETSUITE, 'AccountingPeriod') })
+      const subsidiary = new ObjectType({ elemID: new ElemID(NETSUITE, 'subsidiary') })
+      const accountingPeriod = new ObjectType({ elemID: new ElemID(NETSUITE, 'accountingPeriod') })
 
       extractTypesMock.mockResolvedValue([subsidiary, accountingPeriod])
       await getDataTypes(client)
@@ -103,7 +103,7 @@ describe('data_elements', () => {
 
   describe('getDataElements', () => {
     const subsidiaryType = new ObjectType({
-      elemID: new ElemID(NETSUITE, 'Subsidiary'),
+      elemID: new ElemID(NETSUITE, 'subsidiary'),
       fields: {
         booleanField: { refType: BuiltinTypes.BOOLEAN },
         numberField: { refType: BuiltinTypes.NUMBER },
@@ -116,21 +116,21 @@ describe('data_elements', () => {
 
     it('should return the instances of the types', async () => {
       getAllRecordsMock.mockImplementation(async types => {
-        if (types[0] === 'Subsidiary') {
+        if (types[0] === 'subsidiary') {
           return [{ name: 'name', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }]
         }
         return []
       })
 
       const elements = await getDataElements(client, query)
-      expect(elements[0].elemID.getFullNameParts()).toEqual([NETSUITE, 'Subsidiary'])
-      expect(elements[1].elemID.getFullNameParts()).toEqual([NETSUITE, 'Subsidiary', 'instance', 'name'])
+      expect(elements[0].elemID.getFullNameParts()).toEqual([NETSUITE, 'subsidiary'])
+      expect(elements[1].elemID.getFullNameParts()).toEqual([NETSUITE, 'subsidiary', 'instance', 'name'])
       expect((elements[1] as InstanceElement).value).toEqual({ name: 'name', attributes: { 'xsi:type': 'listAcct:Subsidiary' } })
     })
 
     it('should add identifier if type has more than one identifier fields', async () => {
       const accountingPeriodType = new ObjectType({
-        elemID: new ElemID(NETSUITE, 'AccountingPeriod'),
+        elemID: new ElemID(NETSUITE, 'accountingPeriod'),
         fields: {
           booleanField: { refType: BuiltinTypes.BOOLEAN },
           numberField: { refType: BuiltinTypes.NUMBER },
@@ -139,7 +139,7 @@ describe('data_elements', () => {
       extractTypesMock.mockResolvedValue([accountingPeriodType])
 
       getAllRecordsMock.mockImplementation(async types => {
-        if (types[0] === 'AccountingPeriod') {
+        if (types[0] === 'accountingPeriod') {
           return [{
             periodName: 'name',
             attributes: { 'xsi:type': 'listAcct:AccountingPeriod' },
@@ -157,7 +157,7 @@ describe('data_elements', () => {
 
     it('should add identifier if type has a parent', async () => {
       const type = new ObjectType({
-        elemID: new ElemID(NETSUITE, 'Subsidiary'),
+        elemID: new ElemID(NETSUITE, 'subsidiary'),
         fields: {
           name: { refType: BuiltinTypes.STRING },
         },
@@ -167,7 +167,7 @@ describe('data_elements', () => {
       extractTypesMock.mockResolvedValue([type])
 
       getAllRecordsMock.mockImplementation(async types => {
-        if (types[0] === 'Subsidiary') {
+        if (types[0] === 'subsidiary') {
           return [{
             name: 'child',
             attributes: { 'xsi:type': 'listAcct:Subsidiary', internalId: '2' },
@@ -200,14 +200,14 @@ describe('data_elements', () => {
 
     it('should return only requested instances', async () => {
       getAllRecordsMock.mockImplementation(async types => {
-        if (types[0] === 'Subsidiary') {
+        if (types[0] === 'subsidiary') {
           return [{ name: 'name1', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }, { name: 'name2', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }]
         }
         return []
       })
 
       const netsuiteQuery = {
-        isTypeMatch: (typeName: string) => typeName === 'Subsidiary',
+        isTypeMatch: (typeName: string) => typeName === 'subsidiary',
         isObjectMatch: ({ instanceId }: { instanceId: string }) => instanceId === 'name1',
       } as unknown as NetsuiteQuery
 
@@ -215,15 +215,15 @@ describe('data_elements', () => {
         client,
         netsuiteQuery,
       )
-      expect(elements[0].elemID.getFullNameParts()).toEqual([NETSUITE, 'Subsidiary'])
-      expect(elements[1].elemID.getFullNameParts()).toEqual([NETSUITE, 'Subsidiary', 'instance', 'name1'])
+      expect(elements[0].elemID.getFullNameParts()).toEqual([NETSUITE, 'subsidiary'])
+      expect(elements[1].elemID.getFullNameParts()).toEqual([NETSUITE, 'subsidiary', 'instance', 'name1'])
       expect(elements).toHaveLength(2)
-      expect(getAllRecordsMock).not.toHaveBeenCalledWith('Account')
+      expect(getAllRecordsMock).not.toHaveBeenCalledWith('account')
     })
 
     it('should return only types when no instances match', async () => {
       getAllRecordsMock.mockImplementation(async types => {
-        if (types[0] === 'Subsidiary') {
+        if (types[0] === 'subsidiary') {
           return [{ name: 'name1', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }, { name: 'name2', attributes: { 'xsi:type': 'listAcct:Subsidiary' } }]
         }
         return []
@@ -238,7 +238,7 @@ describe('data_elements', () => {
         client,
         netsuiteQuery,
       )
-      expect(elements[0].elemID.getFullNameParts()).toEqual([NETSUITE, 'Subsidiary'])
+      expect(elements[0].elemID.getFullNameParts()).toEqual([NETSUITE, 'subsidiary'])
       expect(elements).toHaveLength(1)
     })
 
@@ -260,7 +260,7 @@ describe('data_elements', () => {
 
     it('should convert date to string', async () => {
       getAllRecordsMock.mockImplementation(async types => {
-        if (types[0] === 'Subsidiary') {
+        if (types[0] === 'subsidiary') {
           return [{ name: 'name', date: new Date(2020, 1, 1), attributes: { 'xsi:type': 'listAcct:Subsidiary' } }]
         }
         return []
@@ -271,7 +271,7 @@ describe('data_elements', () => {
 
     it('should convert booleans', async () => {
       getAllRecordsMock.mockImplementation(async types => {
-        if (types[0] === 'Subsidiary') {
+        if (types[0] === 'subsidiary') {
           return [
             { name: 'name1', booleanField: 'true', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
             { name: 'name2', booleanField: 'false', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
@@ -286,7 +286,7 @@ describe('data_elements', () => {
 
     it('should convert numbers', async () => {
       getAllRecordsMock.mockImplementation(async types => {
-        if (types[0] === 'Subsidiary') {
+        if (types[0] === 'subsidiary') {
           return [
             { name: 'name', numberField: '1234', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
           ]
@@ -306,17 +306,17 @@ describe('data_elements', () => {
             name: 'name',
             [OBJECT_SERVICE_ID]: toServiceIdsString({
               [ADAPTER]: NETSUITE,
-              [OBJECT_NAME]: 'netsuite.Subsidiary',
+              [OBJECT_NAME]: 'netsuite.subsidiary',
             }),
           })) {
-          return new ElemID(NETSUITE, 'Subsidiary', 'instance', 'customName')
+          return new ElemID(NETSUITE, 'subsidiary', 'instance', 'customName')
         }
 
-        return new ElemID(NETSUITE, 'Subsidiary', 'instance', name)
+        return new ElemID(NETSUITE, 'subsidiary', 'instance', name)
       }
 
       getAllRecordsMock.mockImplementation(async types => {
-        if (types[0] === 'Subsidiary') {
+        if (types[0] === 'subsidiary') {
           return [
             { name: 'name', numberField: '1234', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
             { name: 'name2', numberField: '1234', attributes: { 'xsi:type': 'listAcct:Subsidiary' } },
@@ -325,8 +325,8 @@ describe('data_elements', () => {
         return []
       })
       const elements = await getDataElements(client, query, elemIDGetter)
-      expect(elements[1].elemID).toEqual(new ElemID(NETSUITE, 'Subsidiary', 'instance', 'customName'))
-      expect(elements[2].elemID).toEqual(new ElemID(NETSUITE, 'Subsidiary', 'instance', 'name2'))
+      expect(elements[1].elemID).toEqual(new ElemID(NETSUITE, 'subsidiary', 'instance', 'customName'))
+      expect(elements[2].elemID).toEqual(new ElemID(NETSUITE, 'subsidiary', 'instance', 'name2'))
     })
   })
 
@@ -338,7 +338,7 @@ describe('data_elements', () => {
 
     it('Should identify othercustomfield instance', () => {
       const instance = new InstanceElement('name', othercustomfield, { rectype: '-112' })
-      expect(getFieldInstanceTypes(instance)).toEqual(['Account'])
+      expect(getFieldInstanceTypes(instance)).toEqual(['account'])
     })
   })
 })

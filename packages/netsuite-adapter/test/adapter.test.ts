@@ -88,8 +88,8 @@ describe('Adapter', () => {
     [FETCH]: {
       [EXCLUDE]: {
         types: [
-          { name: 'Account', ids: ['aaa'] },
-          { name: 'Subsidiary', ids: ['.*'] },
+          { name: 'account', ids: ['aaa'] },
+          { name: 'subsidiary', ids: ['.*'] },
           { name: SAVED_SEARCH },
           { name: TRANSACTION_FORM },
         ],
@@ -178,8 +178,8 @@ describe('Adapter', () => {
       expect(_.pull(Object.keys(customTypes), ...typesToSkip).every(customObjectsQuery.isTypeMatch))
         .toBeTruthy()
       expect(typesToSkip.every(customObjectsQuery.isTypeMatch)).toBeFalsy()
-      expect(customObjectsQuery.isTypeMatch('Subsidiary')).toBeFalsy()
-      expect(customObjectsQuery.isTypeMatch('Account')).toBeTruthy()
+      expect(customObjectsQuery.isTypeMatch('subsidiary')).toBeFalsy()
+      expect(customObjectsQuery.isTypeMatch('account')).toBeTruthy()
 
 
       const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
@@ -328,8 +328,8 @@ describe('Adapter', () => {
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('typeToSkip')).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch('skipThisType')).toBeFalsy()
-        expect(customObjectsQuery.isTypeMatch('Subsidiary')).toBeFalsy()
-        expect(customObjectsQuery.isTypeMatch('Account')).toBeTruthy()
+        expect(customObjectsQuery.isTypeMatch('subsidiary')).toBeFalsy()
+        expect(customObjectsQuery.isTypeMatch('account')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch(SAVED_SEARCH)).toBeFalsy()
         const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
         expect(fileCabinetQuery.isFileMatch('any/kind/of/path')).toBeTruthy()

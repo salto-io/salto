@@ -62,7 +62,7 @@ describe('NetsuiteClient', () => {
 
   describe('deploy', () => {
     const type = new ObjectType({
-      elemID: new ElemID(NETSUITE, 'Subsidiary'),
+      elemID: new ElemID(NETSUITE, 'subsidiary'),
     })
     const instance1 = new InstanceElement(
       'instance1',

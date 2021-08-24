@@ -20,7 +20,7 @@ import { role } from '../../src/autogen/types/custom_types/role'
 
 describe('data_instances_internal_id', () => {
   const recordRefType = new ObjectType({
-    elemID: new ElemID(NETSUITE, 'RecordRef'),
+    elemID: new ElemID(NETSUITE, 'recordRef'),
     fields: {
       internalId: {
         refType: BuiltinTypes.STRING,
@@ -53,7 +53,7 @@ describe('data_instances_internal_id', () => {
 
     it('should extract list items with internal id', async () => {
       const SubsidiaryType = new ObjectType({
-        elemID: new ElemID(NETSUITE, 'Subsidiary'),
+        elemID: new ElemID(NETSUITE, 'subsidiary'),
         fields: {
           internalId: {
             refType: BuiltinTypes.STRING,
@@ -71,7 +71,7 @@ describe('data_instances_internal_id', () => {
 
       await filterCreator().onFetch(elements)
       expect(elements[1].elemID.name).toBe('type_someList_1')
-      expect(elements[1].elemID.typeName).toBe('Subsidiary')
+      expect(elements[1].elemID.typeName).toBe('subsidiary')
       expect(elements[1].value.isSubInstance).toBeTruthy()
       expect((instance.value.someList[0] as ReferenceExpression).elemID.getFullName())
         .toBe(elements[1].elemID.getFullName())
@@ -90,7 +90,7 @@ describe('data_instances_internal_id', () => {
       await filterCreator().onFetch(elements)
       expect(elements.length).toBe(3)
       expect(elements[2].elemID.name).toBe('type_someValue_1')
-      expect(elements[2].elemID.typeName).toBe('RecordRef')
+      expect(elements[2].elemID.typeName).toBe('recordRef')
       expect((elements[2] as InstanceElement).value.isSubInstance).toBeTruthy()
       expect((instance.value.someValue as ReferenceExpression).elemID.getFullName())
         .toBe(elements[2].elemID.getFullName())

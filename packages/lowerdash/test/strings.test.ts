@@ -88,6 +88,13 @@ describe('strings', () => {
     })
   })
 
+  it('lowerCaseFirstLetter', () => {
+    expect(strings.lowerCaseFirstLetter('Abcdef')).toEqual('abcdef')
+    expect(strings.lowerCaseFirstLetter('abcDef')).toEqual('abcDef')
+    expect(strings.lowerCaseFirstLetter('ABcDef')).toEqual('aBcDef')
+    expect(strings.lowerCaseFirstLetter('Abc def')).toEqual('abc def')
+  })
+
   describe('matchAll', () => {
     it('should find all matches for a global regular expression', () => {
       const unnamed = [...strings.matchAll('abcdacdbcd', /[ab](cd)/g)]

@@ -44,6 +44,9 @@ const getTypeAliases = (schema: SchemaElement): Record<string, string> =>
     .fromPairs()
     .value()
 
+type ExtractOptions = {
+  camelCase?: boolean
+}
 
 /**
  * Converts WSDL to object types.
@@ -61,6 +64,7 @@ const getTypeAliases = (schema: SchemaElement): Record<string, string> =>
 export const extractTypes = async (
   adapterName: string,
   wsdl: string | soap.WSDL,
+  { camelCase = false }: ExtractOptions,
 ): Promise<ObjectType[]> => {
   log.debug('Generating SOAP types')
 
@@ -69,7 +73,7 @@ export const extractTypes = async (
     : (await soap.createClientAsync(wsdl)) as unknown as { wsdl: soap.WSDL }
   const schemas = Object.values(wsdlObj.definitions.schemas)
   const unresolvedTypes = schemas
-    .map((schema: SchemaElement) => convertComplexTypes(adapterName, schema))
+    .map((schema: SchemaElement) => convertComplexTypes(adapterName, schema, camelCase))
     .flat()
 
   const typeAliases = _.assign({}, ...schemas.map(getTypeAliases))

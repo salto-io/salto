@@ -15,6 +15,7 @@
 */
 import { logger } from '@salto-io/logging'
 import { loadLocalWorkspace } from '@salto-io/core'
+import { mockFunction } from '@salto-io/test-utils'
 import * as mocks from './mocks'
 import { createPublicCommandDef, CommandDefAction, WorkspaceCommandAction, createWorkspaceCommand, CommandDef } from '../src/command_builder'
 import { SpinnerCreator, CliExitCode, CliError } from '../src/types'
@@ -39,7 +40,7 @@ describe('Command builder', () => {
         stringsList: string[]
       }
 
-      const action = mocks.mockFunction<CommandDefAction<DummyCommandArgs>>()
+      const action = mockFunction<CommandDefAction<DummyCommandArgs>>()
         .mockImplementation(async ({
           input: { bool, string, choices, stringsList },
         }): Promise<CliExitCode> => {
@@ -192,7 +193,7 @@ describe('Command builder', () => {
     let dummyAction: jest.MockedFunction<WorkspaceCommandAction<{}>>
     let command: CommandDef<unknown>
     beforeEach(() => {
-      dummyAction = mocks.mockFunction<typeof dummyAction>().mockResolvedValue(CliExitCode.Success)
+      dummyAction = mockFunction<typeof dummyAction>().mockResolvedValue(CliExitCode.Success)
       command = createWorkspaceCommand({
         properties: {
           name: 'dummy',

@@ -626,7 +626,7 @@ Moving the specified elements to common.
     describe('success - all unresolved references are found in complete-from', () => {
       let result: CliExitCode
       let workspace: mocks.MockWorkspace
-      let userBooleanInput: mocks.SpiedFunction<typeof callbacks['getUserBooleanInput']>
+      let userBooleanInput: jest.SpiedFunction<typeof callbacks['getUserBooleanInput']>
       let output: mocks.MockCliOutput
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()

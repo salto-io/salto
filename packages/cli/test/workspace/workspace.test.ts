@@ -15,10 +15,10 @@
 */
 import _ from 'lodash'
 import { Workspace, state } from '@salto-io/workspace'
+import { mockFunction } from '@salto-io/test-utils'
 import { EventEmitter } from 'pietile-eventemitter'
 import { validateWorkspace, updateWorkspace, MAX_DETAIL_CHANGES_TO_LOG, updateStateOnly, applyChangesToWorkspace } from '../../src/workspace/workspace'
-import { MockWriteStream, dummyChanges, detailedChange, mockErrors,
-  mockFunction, getMockTelemetry } from '../mocks'
+import { MockWriteStream, dummyChanges, detailedChange, mockErrors, getMockTelemetry } from '../mocks'
 import { getCliTelemetry } from '../../src/telemetry'
 
 import { version } from '../../src/generated/version.json'

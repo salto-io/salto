@@ -15,9 +15,10 @@
 */
 import _ from 'lodash'
 import { Workspace, parser } from '@salto-io/workspace'
+import { mockFunction } from '@salto-io/test-utils'
 import { EditorWorkspace } from '../src/workspace'
 import { getDiagnostics } from '../src/diagnostics'
-import { mockWorkspace, mockErrors, mockFunction } from './workspace'
+import { mockWorkspace, mockErrors } from './workspace'
 
 describe('diagnostics', () => {
   let baseWs: Workspace

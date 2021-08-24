@@ -29,6 +29,7 @@ import {
 import { Workspace, errors as wsErrors, state as wsState, parser, remoteMap, elementSource, pathIndex } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import realCli from '../src/cli'
 import commandDefinitions from '../src/commands/index'
 import { CommandOrGroupDef, CommandArgs } from '../src/command_builder'

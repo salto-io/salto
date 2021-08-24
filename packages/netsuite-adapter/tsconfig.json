@@ -21,5 +21,6 @@
     { "path": "../file" },
     { "path": "../logging" },
     { "path": "../lowerdash" },
+    { "path": "../test-utils" },
   ]
 }

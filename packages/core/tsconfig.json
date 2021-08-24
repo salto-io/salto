@@ -34,6 +34,7 @@
         { "path": "../netsuite-adapter" },
         { "path": "../salesforce-adapter" },
         { "path": "../stripe-adapter" },
+        { "path": "../test-utils" },
         { "path": "../workato-adapter" },
         { "path": "../workspace" },
         { "path": "../zendesk-support-adapter" },

@@ -51,6 +51,7 @@ import dataInstancesNullFields from './filters/data_instances_null_fields'
 import dataInstancesDiff from './filters/data_instances_diff'
 import dataInstancesIdentifiers from './filters/data_instances_identifiers'
 import addInternalId from './filters/add_internal_ids'
+import translationConverter from './filters/translation_converter'
 import { Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
@@ -132,6 +133,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       dataInstancesReferences,
       dataInstancesInternalId,
       addInternalId,
+      translationConverter,
     ],
     typesToSkip = [
       INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard

@@ -511,7 +511,7 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['Subsidiary'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
     })
 
     it('Should work for item type', async () => {
@@ -550,7 +550,7 @@ describe('soap_client', () => {
 
     it('Should throw an error if got invalid search results', async () => {
       searchAsyncMock.mockResolvedValue([{}])
-      await expect(client.getAllRecords(['Subsidiary'])).rejects.toThrow()
+      await expect(client.getAllRecords(['subsidiary'])).rejects.toThrow()
     })
 
     it('Should call all search pages', async () => {
@@ -573,7 +573,7 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['Subsidiary'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
     })
 
     it('Should throw an error if got invalid searchMoreWithId results', async () => {
@@ -588,7 +588,7 @@ describe('soap_client', () => {
       }])
 
       searchMoreWithIdAsyncMock.mockResolvedValue([{}])
-      await expect(client.getAllRecords(['Subsidiary'])).rejects.toThrow()
+      await expect(client.getAllRecords(['subsidiary'])).rejects.toThrow()
     })
 
     it('Should use getAll if search not supported', async () => {
@@ -601,7 +601,7 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['Subsidiary'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
     })
 
     it('Should throw an error if got invalid getAll results', async () => {
@@ -609,19 +609,19 @@ describe('soap_client', () => {
       delete (wsdl as any).definitions.schemas.someNamespace.complexTypes.SubsidiarySearch
 
       getAllAsyncMock.mockResolvedValue([{}])
-      await expect(client.getAllRecords(['Subsidiary'])).rejects.toThrow()
+      await expect(client.getAllRecords(['subsidiary'])).rejects.toThrow()
     })
   })
 
   describe('updateInstances', () => {
     const subType = new ObjectType({ elemID: new ElemID(NETSUITE, 'SubType') })
     const subsidiaryType = new ObjectType({
-      elemID: new ElemID(NETSUITE, 'Subsidiary'),
+      elemID: new ElemID(NETSUITE, 'subsidiary'),
       fields: {
         obj: { refType: subType },
         objList: { refType: new ListType(subType) },
         ref: {
-          refType: new ObjectType({ elemID: new ElemID(NETSUITE, 'Subsidiary') }),
+          refType: new ObjectType({ elemID: new ElemID(NETSUITE, 'subsidiary') }),
           annotations: { isReference: true },
         },
       },
@@ -709,12 +709,12 @@ describe('soap_client', () => {
   describe('addInstances', () => {
     const subType = new ObjectType({ elemID: new ElemID(NETSUITE, 'SubType') })
     const subsidiaryType = new ObjectType({
-      elemID: new ElemID(NETSUITE, 'Subsidiary'),
+      elemID: new ElemID(NETSUITE, 'subsidiary'),
       fields: {
         obj: { refType: subType },
         objList: { refType: new ListType(subType) },
         ref: {
-          refType: new ObjectType({ elemID: new ElemID(NETSUITE, 'Subsidiary') }),
+          refType: new ObjectType({ elemID: new ElemID(NETSUITE, 'subsidiary') }),
           annotations: { isReference: true },
         },
       },
@@ -802,12 +802,12 @@ describe('soap_client', () => {
   describe('deleteInstances', () => {
     const subType = new ObjectType({ elemID: new ElemID(NETSUITE, 'SubType') })
     const subsidiaryType = new ObjectType({
-      elemID: new ElemID(NETSUITE, 'Subsidiary'),
+      elemID: new ElemID(NETSUITE, 'subsidiary'),
       fields: {
         obj: { refType: subType },
         objList: { refType: new ListType(subType) },
         ref: {
-          refType: new ObjectType({ elemID: new ElemID(NETSUITE, 'Subsidiary') }),
+          refType: new ObjectType({ elemID: new ElemID(NETSUITE, 'subsidiary') }),
           annotations: { isReference: true },
         },
       },

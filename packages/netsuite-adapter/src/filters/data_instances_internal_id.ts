@@ -38,11 +38,11 @@ const getSubInstanceName = (path: ElemID, internalId: string): string => {
 const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
   onFetch: async elements => {
     const newInstancesMap: Record<string, InstanceElement> = {}
-    const recordRefType = elements.filter(isObjectType).find(e => e.elemID.name === 'RecordRef')
+    const recordRefType = elements.filter(isObjectType).find(e => e.elemID.name === 'recordRef')
 
     const transformIds: TransformFunc = async ({ value, field, path }) => {
       const fieldType = await field?.getType()
-      if (fieldType?.elemID.name === 'RecordRef') {
+      if (fieldType?.elemID.name === 'recordRef') {
         value.id = ACCOUNT_SPECIFIC_VALUE
       }
 
@@ -118,7 +118,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
                   ? await element.getType()
                   : await field?.getType()
 
-                if (fieldType?.elemID.name === 'RecordRef') {
+                if (fieldType?.elemID.name === 'recordRef') {
                   if (value.id !== '[ACCOUNT_SPECIFIC_VALUE]') {
                     value.internalId = value.id
                   }

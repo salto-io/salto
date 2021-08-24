@@ -13,24 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
-import { adapter } from '../src/adapter_creator'
-import { Credentials } from '../src/auth'
-import { JiraConfig } from '../src/config'
+export type MockInterface<T extends {}> = {
+  [k in keyof T]: T[k] extends (...args: never[]) => unknown
+    ? jest.MockedFunction<T[k]>
+    : MockInterface<T[k]>
+}
 
-
-export const createCredentialsInstance = (credentials: Credentials): InstanceElement => (
-  new InstanceElement(
-    ElemID.CONFIG_NAME,
-    adapter.authenticationMethods.basic.credentialsType,
-    credentials,
-  )
-)
-
-export const createConfigInstance = (config: JiraConfig): InstanceElement => (
-  new InstanceElement(
-    ElemID.CONFIG_NAME,
-    adapter.configType as ObjectType,
-    config,
-  )
+export const mockFunction = <T extends (...args: never[]) => unknown>(): jest.MockedFunction<T> => (
+  jest.fn() as unknown as jest.MockedFunction<T>
 )

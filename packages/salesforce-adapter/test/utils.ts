@@ -141,19 +141,6 @@ export const findFullCustomObject = (elements: Element[], name: string): ObjectT
   })
 }
 
-export type MockFunction<T extends (...args: never[]) => unknown> =
-  jest.Mock<ReturnType<T>, Parameters<T>>
-
-export type MockInterface<T extends {}> = {
-  [k in keyof T]: T[k] extends (...args: never[]) => unknown
-    ? MockFunction<T[k]>
-    : MockInterface<T[k]>
-}
-
-export const mockFunction = <T extends (...args: never[]) => unknown>(): MockFunction<T> => (
-  jest.fn()
-)
-
 export const generateProfileType = (useMaps = false, preDeploy = false): ObjectType => {
   const ProfileApplicationVisibility = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'ProfileApplicationVisibility'),

@@ -16,5 +16,6 @@
       { "path": "../logging" },
       { "path": "../adapter-api" },
       { "path": "../adapter-utils" },
+      { "path": "../test-utils" },
   ]
 }

@@ -29,6 +29,7 @@ import {
 import { Workspace, errors as wsErrors, state as wsState, parser, remoteMap, elementSource, pathIndex } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import realCli from '../src/cli'
 import commandDefinitions from '../src/commands/index'
 import { CommandOrGroupDef, CommandArgs } from '../src/command_builder'
@@ -39,22 +40,6 @@ import { version as currentVersion } from '../src/generated/version.json'
 const { InMemoryRemoteMap } = remoteMap
 const { createInMemoryElementSource } = elementSource
 const { awu } = collections.asynciterable
-
-export type MockFunction<T extends (...args: never[]) => unknown> =
-  jest.Mock<ReturnType<T>, Parameters<T>>
-
-export type SpiedFunction<T extends (...args: never[]) => unknown> =
-  jest.SpyInstance<ReturnType<T>, Parameters<T>>
-
-export type MockInterface<T extends {}> = {
-  [k in keyof T]: T[k] extends (...args: never[]) => unknown
-    ? MockFunction<T[k]>
-    : MockInterface<T[k]>
-}
-
-export const mockFunction = <T extends (...args: never[]) => unknown>(): MockFunction<T> => (
-  jest.fn()
-)
 
 export interface MockWriteStreamOpts { isTTY?: boolean; hasColors?: boolean }
 

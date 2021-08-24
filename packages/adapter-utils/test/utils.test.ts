@@ -24,6 +24,7 @@ import {
 } from '@salto-io/adapter-api'
 import { AdditionDiff, RemovalDiff, ModificationDiff } from '@salto-io/dag'
 import { collections } from '@salto-io/lowerdash'
+import { mockFunction } from '@salto-io/test-utils'
 import {
   transformValues, resolvePath, TransformFunc, restoreValues, resolveValues, resolveChangeElement,
   findElement, findElements, findObjectType, GetLookupNameFunc, safeJsonStringify,
@@ -33,7 +34,6 @@ import {
   transformElement, toObjectType, getParents, resolveTypeShallow,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
-import { mockFunction, MockFunction } from './common'
 
 const { awu } = collections.asynciterable
 
@@ -261,7 +261,7 @@ describe('Test utils.ts', () => {
     })
 
     describe('with empty transform func', () => {
-      let transformFunc: jest.Mock
+      let transformFunc: jest.MockedFunction<TransformFunc>
 
       beforeEach(() => {
         transformFunc = mockFunction<TransformFunc>().mockImplementation(({ value }) => value)
@@ -363,8 +363,8 @@ describe('Test utils.ts', () => {
               expect(calls).toHaveLength(1)
               expect(calls[0].value).toEqual(value)
               expect(calls[0].path).toBeUndefined()
-              expect(await calls[0].field.getType()).toEqual(BuiltinTypes.NUMBER)
-              expect(calls[0].field.parent.elemID).toEqual(mockType.fields.numMap.refType.elemID)
+              expect(await calls[0].field?.getType()).toEqual(BuiltinTypes.NUMBER)
+              expect(calls[0].field?.parent.elemID).toEqual(mockType.fields.numMap.refType.elemID)
             }
           )
         })
@@ -412,8 +412,8 @@ describe('Test utils.ts', () => {
               )
               expect(calls).toHaveLength(1)
               expect(calls[0].path).toBeUndefined()
-              expect(calls[0].field.getType()).toEqual(field.getType())
-              expect(calls[0].field.parent.elemID).toEqual(field.parent.elemID)
+              expect(calls[0].field?.getType()).toEqual(field.getType())
+              expect(calls[0].field?.parent.elemID).toEqual(field.parent.elemID)
             }
           )
         })
@@ -522,8 +522,8 @@ describe('Test utils.ts', () => {
               )
               expect(calls).toHaveLength(1)
               expect(calls[0].path).toBeUndefined()
-              expect(calls[0].field.getType()).toEqual(field.getType())
-              expect(calls[0].field.parent.elemID).toEqual(field.parent.elemID)
+              expect(calls[0].field?.getType()).toEqual(field.getType())
+              expect(calls[0].field?.parent.elemID).toEqual(field.parent.elemID)
             }
           )
         })
@@ -710,7 +710,7 @@ describe('Test utils.ts', () => {
     let mapType: MapType
     let objType: ObjectType
     let inst: InstanceElement
-    let transformFunc: MockFunction<TransformFunc>
+    let transformFunc: jest.MockedFunction<TransformFunc>
     beforeEach(() => {
       primType = new PrimitiveType({
         elemID: new ElemID('test', 'prim'),

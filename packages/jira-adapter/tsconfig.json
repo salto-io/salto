@@ -20,5 +20,6 @@
         { "path": "../adapter-utils" },
         { "path": "../logging" },
         { "path": "../lowerdash" },
+        { "path": "../test-utils" },
     ]
 }

@@ -38,6 +38,7 @@
     "lodash": "^4.17.21"
   },
   "devDependencies": {
+    "@salto-io/test-utils": "0.3.0",
     "@types/jest": "^26.0.20",
     "@types/lodash": "^4.14.168",
     "@types/mime-types": "^2.1.0",

@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { MockInterface } from '@salto-io/test-utils'
 import Connection from '../src/client/jsforce'
 import SalesforceClient from '../src/client/client'
 import { mockJsforce } from './connection'
-import { MockInterface } from './utils'
 import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
 
 const mockClient = (): { connection: MockInterface<Connection>; client: SalesforceClient } => {

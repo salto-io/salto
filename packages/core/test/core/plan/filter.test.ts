@@ -15,10 +15,11 @@
 */
 import { getChangeElement, ChangeValidator, ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, ChangeDataType, Change, createRefToElmWithValue } from '@salto-io/adapter-api'
 import wu, { WuIterable } from 'wu'
+import { mockFunction } from '@salto-io/test-utils'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem } from '../../common/plan'
 import { getPlan } from '../../../src/core/plan'
-import { mockFunction, createElementSource } from '../../common/helpers'
+import { createElementSource } from '../../common/helpers'
 
 
 describe('filterInvalidChanges', () => {

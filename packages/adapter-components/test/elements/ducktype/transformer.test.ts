@@ -14,15 +14,14 @@
 * limitations under the License.
 */
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { mockFunction } from '@salto-io/test-utils'
 import { getTypeAndInstances, getAllElements } from '../../../src/elements/ducktype'
 import * as typeElements from '../../../src/elements/ducktype/type_elements'
 import * as instanceElements from '../../../src/elements/ducktype/instance_elements'
 import * as transformer from '../../../src/elements/ducktype/transformer'
 import { Paginator } from '../../../src/client'
 import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/config'
-import { mockFunction } from '../../common'
 import { simpleGetArgs, returnFullEntry } from '../../../src/elements'
 import { findDataField } from '../../../src/elements/field_finder'
 

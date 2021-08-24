@@ -15,16 +15,10 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { getMinSinceIdPagination } from '../../src/client/pagination'
-import { MockFunction, mockFunction } from '../utils'
 
 const { toArrayAsync } = collections.asynciterable
-
-type MockInterface<T extends {}> = {
-  [k in keyof T]: T[k] extends (...args: never[]) => unknown
-    ? MockFunction<T[k]>
-    : MockInterface<T[k]>
-}
 
 describe('client_pagination', () => {
   describe('getMinSinceIdPagination', () => {

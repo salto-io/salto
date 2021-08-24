@@ -1,8 +1,8 @@
 {
-  "name": "@salto-io/jira-adapter",
+  "name": "@salto-io/test-utils",
   "version": "0.3.0",
   "license": "Apache-2.0",
-  "description": "Salto JIRA adapter",
+  "description": "Test utilities for jest",
   "repository": {
     "type": "git",
     "url": "https://github.com/salto-io/salto"
@@ -15,13 +15,13 @@
     "src",
     "index.ts"
   ],
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/src",
+  "types": "dist/src/index.d.ts",
   "scripts": {
+    "clean-ts": "../../build_utils/clean-old-ts.sh",
     "build": "yarn concurrently \"yarn lint\" \"yarn build-ts\"",
     "test": "jest",
     "clean": "rm -rf ./dist .eslintcache",
-    "clean-ts": "../../build_utils/clean-old-ts.sh",
     "clean-ts-test": "yarn clean-ts && yarn test",
     "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
     "build-ts": "tsc -b && yarn clean-ts",
@@ -30,21 +30,15 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.3.0",
-    "@salto-io/adapter-components": "0.3.0",
-    "@salto-io/adapter-utils": "0.3.0",
-    "@salto-io/logging": "0.3.0",
-    "@salto-io/lowerdash": "0.3.0",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/test-utils": "0.3.0",
     "@types/jest": "^26.0.20",
     "@types/lodash": "^4.14.168",
+    "@types/node": "^12.7.1",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
-    "axios": "^0.21.1",
-    "axios-mock-adapter": "^1.19.0",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
     "eslint-plugin-header": "^3.0.0",
@@ -54,6 +48,7 @@
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.7.0",
     "jest": "^26.6.3",
+    "jest-circus": "^26.6.3",
     "jest-junit": "^12.0.0",
     "tsc-watch": "^2.2.1",
     "typescript": "3.9.3"

@@ -13,24 +13,25 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
-import { adapter } from '../src/adapter_creator'
-import { Credentials } from '../src/auth'
-import { JiraConfig } from '../src/config'
+const deepMerge = require('../../build_utils/deep_merge')
 
-
-export const createCredentialsInstance = (credentials: Credentials): InstanceElement => (
-  new InstanceElement(
-    ElemID.CONFIG_NAME,
-    adapter.authenticationMethods.basic.credentialsType,
-    credentials,
-  )
+module.exports = deepMerge(
+  require('../../jest.base.config.js'),
+  {
+    name: 'test-utils',
+    displayName: 'test-utils',
+    rootDir: `${__dirname}`,
+    collectCoverageFrom: [
+      '!<rootDir>/dist/index.js',
+    ],
+    coverageThreshold: {
+      global: {
+        branches: 99,
+        functions: 100,
+        lines: 100,
+        statements: 100,
+      },
+    },
+  }
 )
 
-export const createConfigInstance = (config: JiraConfig): InstanceElement => (
-  new InstanceElement(
-    ElemID.CONFIG_NAME,
-    adapter.configType as ObjectType,
-    config,
-  )
-)

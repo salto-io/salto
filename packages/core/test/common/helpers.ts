@@ -16,13 +16,6 @@
 import { Element } from '@salto-io/adapter-api'
 import { elementSource } from '@salto-io/workspace'
 
-export type MockFunction<T extends (...args: never[]) => unknown> =
-  jest.Mock<ReturnType<T>, Parameters<T>>
-
-export const mockFunction = <T extends (...args: never[]) => unknown>(): MockFunction<T> => (
-  jest.fn()
-)
-
 export const createElementSource = (
   elements: readonly Element[]
 ): elementSource.RemoteElementSource => (

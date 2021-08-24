@@ -16,10 +16,11 @@
 import { AdapterOperations, ObjectType, ElemID, ProgressReporter, FetchResult, InstanceElement } from '@salto-io/adapter-api'
 import { elements } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { mockFunction } from '@salto-io/test-utils'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import { DEFAULT_INCLUDE_ENDPOINTS, DEFAULT_API_DEFINITIONS } from '../src/config'
 import { JIRA } from '../src/constants'
-import { createCredentialsInstance, createConfigInstance, mockFunction } from './utils'
+import { createCredentialsInstance, createConfigInstance } from './utils'
 
 const { generateTypes, getAllInstances } = elements.swagger
 

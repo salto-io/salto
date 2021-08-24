@@ -15,9 +15,10 @@
 */
 import _ from 'lodash'
 import { InstanceElement, getChangeElement, isInstanceElement, ChangeGroupIdFunction } from '@salto-io/adapter-api'
+import { mockFunction } from '@salto-io/test-utils'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem, getChange } from '../../common/plan'
-import { mockFunction, createElementSource } from '../../common/helpers'
+import { createElementSource } from '../../common/helpers'
 import { getPlan, Plan, PlanItem } from '../../../src/core/plan'
 import { planGenerators } from '../../common/plan_generator'
 

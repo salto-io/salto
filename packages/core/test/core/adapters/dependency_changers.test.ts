@@ -15,8 +15,8 @@
 */
 import { ObjectType, ElemID, DependencyChanger, dependencyChange,
   DependencyChange, ChangeEntry, AdapterOperations, toChange } from '@salto-io/adapter-api'
+import { mockFunction } from '@salto-io/test-utils'
 import { getAdapterDependencyChangers } from '../../../src/core/adapters'
-import { mockFunction } from '../../common/helpers'
 
 describe('getAdapterDependencyChangers', () => {
   const mockAdapter = (dependencyChanger?: DependencyChanger): AdapterOperations => ({

@@ -76,6 +76,10 @@
 			"name": "salesforce-adapter",
 			"path": "packages/salesforce-adapter"
 		},
+                {
+                        "name": "test-utils",
+                        "path": "packages/test-utils"
+                },
 		{
 			"name": "vscode",
 			"path": "packages/vscode"

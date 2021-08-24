@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { MockInterface } from '@salto-io/test-utils'
 import Connection from '../src/client/jsforce'
 import SalesforceClient from '../src/client/client'
 import SalesforceAdapter, { SalesforceAdapterParams } from '../src/adapter'
 import createClient from './client'
-import { MockInterface } from './utils'
 
 export type Mocks = {
   connection: MockInterface<Connection>

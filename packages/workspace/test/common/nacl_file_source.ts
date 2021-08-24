@@ -17,6 +17,7 @@ import { ElemID, Element, Change, isObjectType, isStaticFile } from '@salto-io/a
 import _ from 'lodash'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { mockFunction } from '@salto-io/test-utils'
 import { NaclFilesSource, ChangeSet } from '../../src/workspace/nacl_files'
 import { Errors } from '../../src/workspace/errors'
 import { SourceRange } from '../../src/parser/internal/types'
@@ -24,7 +25,6 @@ import { createInMemoryElementSource } from '../../src/workspace/elements_source
 import { createAddChange } from '../../src/workspace/nacl_files/multi_env/projections'
 import { mockStaticFilesSource } from '../utils'
 import { SourceMap } from '../../src/parser'
-import { mockFunction } from './helpers'
 
 const { awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>

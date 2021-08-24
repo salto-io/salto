@@ -24,12 +24,13 @@ import {
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { elementSource } from '@salto-io/workspace'
+import { mockFunction } from '@salto-io/test-utils'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents, getAdaptersFirstFetchPartial,
 } from '../../src/core/fetch'
 import { getPlan, Plan } from '../../src/core/plan'
-import { mockFunction, createElementSource } from '../common/helpers'
+import { createElementSource } from '../common/helpers'
 
 const { createInMemoryElementSource } = elementSource
 const { awu } = collections.asynciterable

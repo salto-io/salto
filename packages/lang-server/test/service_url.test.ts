@@ -16,10 +16,11 @@
 
 import { Workspace } from '@salto-io/workspace'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { mockFunction } from '@salto-io/test-utils'
 import { EditorWorkspace } from '../src/workspace'
 import { PositionContext } from '../src/context'
 import { getServiceUrl } from '../src/service_url'
-import { mockFunction, mockWorkspace } from './workspace'
+import { mockWorkspace } from './workspace'
 
 describe('getServiceUrl', () => {
   let ctx: PositionContext

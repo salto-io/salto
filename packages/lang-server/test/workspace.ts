@@ -20,6 +20,7 @@ import { Workspace, parser, errors as wsErrors, state, nacl, staticFiles, dirSto
   loadWorkspace, EnvironmentsSources, remoteMap, elementSource, pathIndex } from '@salto-io/workspace'
 import { ElemID, SaltoError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { mockFunction } from '@salto-io/test-utils'
 
 const { toAsyncIterable } = collections.asynciterable
 const { createInMemoryElementSource } = elementSource
@@ -52,9 +53,6 @@ export const mockErrors = (
   validation: errors.map(err => ({ elemID: new ElemID('test'), error: '', ...err })),
   strings: () => errors.map(err => err.message),
 })
-
-export const mockFunction = <T extends (...args: never[]) => unknown>():
-jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()
 
 const mockDirStore = <T extends dirStore.ContentType>(files: Record<string, T> = {}):
 dirStore.SyncDirectoryStore<T> => {

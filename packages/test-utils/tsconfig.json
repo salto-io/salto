@@ -9,8 +9,5 @@
         "src/**/*",
         "test/**/*",
         "index.ts"
-    ],
-    "references": [
-        { "path": "../test-utils" },
-    ],
+    ]
 }

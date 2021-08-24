@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { strings } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { Element as WsdlElement } from 'soap/lib/wsdl/elements'
 
@@ -28,19 +29,22 @@ export const searchInElement = (element: WsdlElement, types: string[]): WsdlElem
 export const convertToNamespaceName = (
   name: string,
   aliasToNamespace: Record<string, string>,
+  camelCase: boolean,
   targetNamespace?: string,
 ): string => {
   const splittedName = name.split(':')
   const [namespaceAlias, realName] = splittedName.length === 2
     ? splittedName
     : [undefined, splittedName[0]]
+
+  const casedRealName = camelCase ? strings.lowerCaseFirstLetter(realName) : realName
   if (namespaceAlias !== undefined) {
-    return `${aliasToNamespace[namespaceAlias]}|${realName}`
+    return `${aliasToNamespace[namespaceAlias]}|${casedRealName}`
   }
 
   if (targetNamespace !== undefined) {
-    return `${targetNamespace}|${realName}`
+    return `${targetNamespace}|${casedRealName}`
   }
 
-  return realName
+  return casedRealName
 }

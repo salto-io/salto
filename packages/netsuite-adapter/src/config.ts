@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections, strings, values } from '@salto-io/lowerdash'
 import {
   InstanceElement, ElemID, Value, ObjectType, ListType, BuiltinTypes, CORE_ANNOTATIONS,
   createRestriction, MapType,
@@ -28,6 +28,7 @@ import {
   CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, DEPLOY, DATASET, WORKBOOK, WARN_STALE_DATA,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams } from './query'
+import { TYPES_TO_INTERNAL_ID } from './data_elements/types'
 
 const { makeArray } = collections.array
 
@@ -161,17 +162,17 @@ export const fetchDefault: FetchParams = {
       // Has a definition field which is a long XML and it contains 'translationScriptId'
       // value that changes every fetch
       { name: DATASET },
-      { name: 'Customer' },
-      { name: 'AccountingPeriod' },
-      { name: 'Employee' },
-      { name: 'Job' },
-      { name: 'ManufacturingCostTemplate' },
-      { name: 'Partner' },
-      { name: 'Solution' },
+      { name: 'customer' },
+      { name: 'accountingPeriod' },
+      { name: 'employee' },
+      { name: 'job' },
+      { name: 'manufacturingCostTemplate' },
+      { name: 'partner' },
+      { name: 'solution' },
 
       // the two below require special features enabled in the account. O.W fetch will fail
-      { name: 'GiftCertificateItem' },
-      { name: 'DownloadItem' },
+      { name: 'giftCertificateItem' },
+      { name: 'downloadItem' },
     ],
     fileCabinet: [],
   },
@@ -285,6 +286,8 @@ export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from Ne
 export const UPDATE_FETCH_CONFIG_FORMAT = 'The configuration options "typeToSkip", "filePathRegexSkipList" and "skipList" are deprecated.'
   + ' To skip items in fetch, please use the "fetch.exclude" option.'
   + ' The following configuration will update the deprecated fields to "fetch.exclude" field.'
+
+export const UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT = 'Some type names have been changed. The following changes will update the type names in the adapter configuration.'
 
 export const UPDATE_DEPLOY_CONFIG = 'All deploy\'s configuration flags are under "deploy" configuration.'
 + ' you may leave "deploy" section as undefined to set all deploy\'s configuration flags to their default value.'
@@ -465,6 +468,23 @@ const updateConfigFetchFormat = (
   return true
 }
 
+const updateSuiteAppTypes = (
+  configToUpdate: InstanceElement,
+): boolean => {
+  let didUpdate = false
+  // eslint-disable-next-line no-unused-expressions
+  configToUpdate.value?.[FETCH]?.[EXCLUDE]?.types?.forEach((excludeItem: FetchTypeQueryParams) => {
+    if (excludeItem.name !== undefined) {
+      const fixedName = strings.lowerCaseFirstLetter(excludeItem.name)
+      if (excludeItem.name !== fixedName && fixedName in TYPES_TO_INTERNAL_ID) {
+        excludeItem.name = fixedName
+        didUpdate = true
+      }
+    }
+  })
+  return didUpdate
+}
+
 const updateConfigDeployFormat = (
   configToUpdate: InstanceElement,
 ): boolean => {
@@ -485,11 +505,16 @@ const updateConfigDeployFormat = (
 
 const updateConfigFormat = (
   configToUpdate: InstanceElement,
-): { didUpdateFetchFormat: boolean; didUpdateDeployFormat: boolean } => {
+): {
+  didUpdateFetchFormat: boolean
+  didUpdateDeployFormat: boolean
+  didUpdateSuiteAppTypesFormat: boolean
+} => {
   updateConfigSkipListFormat(configToUpdate)
   return {
     didUpdateFetchFormat: updateConfigFetchFormat(configToUpdate),
     didUpdateDeployFormat: updateConfigDeployFormat(configToUpdate),
+    didUpdateSuiteAppTypesFormat: updateSuiteAppTypes(configToUpdate),
   }
 }
 
@@ -505,7 +530,11 @@ export const getConfigFromConfigChanges = (
     _.pickBy(_.cloneDeep(currentConfig), values.isDefined),
   )
 
-  const { didUpdateFetchFormat, didUpdateDeployFormat } = updateConfigFormat(conf)
+  const {
+    didUpdateFetchFormat,
+    didUpdateDeployFormat,
+    didUpdateSuiteAppTypesFormat,
+  } = updateConfigFormat(conf)
   const didUpdateFromFailures = updateConfigFromFailures(
     failedToFetchAllAtOnce,
     failedFilePaths,
@@ -518,6 +547,9 @@ export const getConfigFromConfigChanges = (
       : undefined,
     didUpdateFetchFormat
       ? UPDATE_FETCH_CONFIG_FORMAT
+      : undefined,
+    !didUpdateFetchFormat && didUpdateSuiteAppTypesFormat
+      ? UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT
       : undefined,
     didUpdateDeployFormat
       ? UPDATE_DEPLOY_CONFIG

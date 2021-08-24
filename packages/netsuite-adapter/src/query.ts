@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { regex } from '@salto-io/lowerdash'
+import { regex, strings } from '@salto-io/lowerdash'
 import { INCLUDE, EXCLUDE } from './constants'
 import { customTypes } from './types'
 import { SUPPORTED_TYPES } from './data_elements/types'
@@ -96,7 +96,11 @@ export const validateFetchParameters = ({ types, fileCabinet }:
   const invalidTypes = receivedTypes
     .filter(recivedTypeName =>
       !existingTypes
-        .some(existTypeName => checkTypeNameRegMatch({ name: recivedTypeName }, existTypeName)))
+        .some(existTypeName => checkTypeNameRegMatch({ name: recivedTypeName }, existTypeName)
+          // This is to support the adapter configuration before the migration of
+          // the SuiteApp type names from PascalCase to camelCase
+          || checkTypeNameRegMatch({ name: recivedTypeName },
+            strings.capitalizeFirstLetter(existTypeName))))
 
   if (invalidTypes.length !== 0) {
     throw new Error(`${errMessagePrefix} The following types or regular expressions do not match any supported type:\n${invalidTypes}.`)

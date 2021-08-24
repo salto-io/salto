@@ -20,7 +20,7 @@ import path from 'path'
 import * as soap from 'soap'
 import _ from 'lodash'
 import { InstanceElement, isListType, isObjectType, ObjectType } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { collections, strings } from '@salto-io/lowerdash'
 import uuidv4 from 'uuid/v4'
 import { SuiteAppCredentials, toUrlAccountId } from '../../credentials'
 import { CONSUMER_KEY, CONSUMER_SECRET } from '../constants'
@@ -290,7 +290,7 @@ export default class SoapClient {
   }
 
   private static getSearchType(type: string): string {
-    return `${type}Search`
+    return `${strings.capitalizeFirstLetter(type)}Search`
   }
 
   public async getAllRecords(types: string[]): Promise<Record<string, unknown>[]> {
@@ -467,7 +467,7 @@ export default class SoapClient {
     const body = {
       record: {
         attributes: {
-          recordType: type[0].toLowerCase() + type.slice(1),
+          recordType: type,
         },
       },
     }
@@ -553,7 +553,8 @@ export default class SoapClient {
   private async getTypeNamespace(type: string): Promise<string | undefined> {
     const wsdl = await this.getNetsuiteWsdl()
     return Object.entries(wsdl.definitions.schemas).find(
-      ([_namespace, schema]) => schema.complexTypes[type] !== undefined
+      ([_namespace, schema]) =>
+        schema.complexTypes[strings.capitalizeFirstLetter(type)] !== undefined
     )?.[0]
   }
 

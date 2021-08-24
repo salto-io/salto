@@ -16,7 +16,7 @@
 import { ElemID, ObjectType, Values } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { values } from '@salto-io/lowerdash'
+import { strings, values } from '@salto-io/lowerdash'
 import { ComplexTypeElement, ExtensionElement, SchemaElement, Element, ElementElement, ComplexContentElement } from 'soap/lib/wsdl/elements'
 import { convertToNamespaceName, searchInElement } from './utils'
 
@@ -46,6 +46,7 @@ export type UnresolvedType = {
 const convertComplexContent = (
   element: ComplexContentElement,
   typeName: string,
+  camelCase: boolean,
   namespace?: string
 ): FieldType | undefined => {
   const extension = element.children.find(child => child instanceof ExtensionElement)
@@ -55,17 +56,18 @@ const convertComplexContent = (
   }
   return {
     resolveType: 'extension',
-    type: convertToNamespaceName(extension.$base, element.schemaXmlns ?? {}, namespace),
+    type: convertToNamespaceName(extension.$base, element.schemaXmlns ?? {}, camelCase, namespace),
   }
 }
 
 const convertField = (
   element: Element,
   typeName: string,
+  camelCase: boolean,
   namespace?: string,
 ): FieldType | undefined => {
   if (element instanceof ComplexContentElement) {
-    return convertComplexContent(element, typeName, namespace)
+    return convertComplexContent(element, typeName, camelCase, namespace)
   }
 
   const isAttribute = element.name === 'attribute'
@@ -86,6 +88,7 @@ const convertField = (
   const fieldTypeName = convertToNamespaceName(
     elementWithProperties.$type,
     element.schemaXmlns ?? {},
+    camelCase,
     namespace
   )
   const isList = elementWithProperties.$maxOccurs !== undefined && elementWithProperties.$maxOccurs !== '1'
@@ -103,6 +106,7 @@ const convertField = (
 const convertComplexType = (
   adapterName: string,
   type: ComplexTypeElement,
+  camelCase: boolean,
   namespace?: string,
 ): UnresolvedType | undefined => {
   const typeName = type.$name
@@ -110,9 +114,12 @@ const convertComplexType = (
     return undefined
   }
 
-  const objectType = new ObjectType({ elemID: new ElemID(adapterName, naclCase(typeName)) })
+  const objectTypeName = camelCase
+    ? strings.lowerCaseFirstLetter(naclCase(typeName))
+    : naclCase(typeName)
+  const objectType = new ObjectType({ elemID: new ElemID(adapterName, objectTypeName) })
   const fields = searchInElement(type, ['element', 'attribute', 'complexContent'])
-    .map(element => convertField(element, typeName, namespace))
+    .map(element => convertField(element, typeName, camelCase, namespace))
     .filter(values.isDefined)
 
   return {
@@ -124,10 +131,11 @@ const convertComplexType = (
 
 export const convertComplexTypes = (
   adapterName: string,
-  schema: SchemaElement
+  schema: SchemaElement,
+  camelCase = false,
 ): UnresolvedType[] => {
   const namespace = schema.$targetNamespace
   return Object.values(schema.complexTypes)
-    .map(type => convertComplexType(adapterName, type, namespace))
+    .map(type => convertComplexType(adapterName, type, camelCase, namespace))
     .filter(values.isDefined)
 }

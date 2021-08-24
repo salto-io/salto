@@ -182,7 +182,7 @@ describe('Netsuite adapter E2E with real account', () => {
     )
 
     const subsidiaryAddressType = new ObjectType({
-      elemID: new ElemID(NETSUITE, 'Address'),
+      elemID: new ElemID(NETSUITE, 'address'),
       fields: {
         country: { refType: BuiltinTypes.STRING },
         addressee: { refType: BuiltinTypes.STRING },
@@ -193,7 +193,7 @@ describe('Netsuite adapter E2E with real account', () => {
     })
 
     const subsidiaryType = new ObjectType({
-      elemID: new ElemID(NETSUITE, 'Subsidiary'),
+      elemID: new ElemID(NETSUITE, 'subsidiary'),
       fields: {
         internalId: {
           refType: BuiltinTypes.STRING,

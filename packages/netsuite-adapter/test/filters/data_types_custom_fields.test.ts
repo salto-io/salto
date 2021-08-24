@@ -26,7 +26,7 @@ describe('data_types_custom_fields', () => {
   let type: ObjectType
   let instance: InstanceElement
 
-  const Account = new ObjectType({ elemID: new ElemID(NETSUITE, 'Account'), annotations: { source: 'soap' } })
+  const Account = new ObjectType({ elemID: new ElemID(NETSUITE, 'account'), annotations: { source: 'soap' } })
 
   beforeEach(() => {
     type = new ObjectType({ elemID: new ElemID(NETSUITE, 'Customer'), fields: {}, annotations: { source: 'soap' } })

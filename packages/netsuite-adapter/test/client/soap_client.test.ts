@@ -524,7 +524,7 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['InventoryItem'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+      await expect(client.getAllRecords(['inventoryItem'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
       expect(searchAsyncMock).toHaveBeenCalledWith({
         searchRecord: {
           attributes: {

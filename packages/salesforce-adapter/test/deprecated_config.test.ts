@@ -148,7 +148,6 @@ describe('deprecated config', () => {
       configWithOldOptions.metadataTypesSkippedList = ['a', 'b']
 
       const expectedConfig = _.cloneDeep(currentConfig)
-      // eslint-disable-next-line no-unused-expressions
       expectedConfig.fetch?.metadata?.exclude?.push(...[{ metadataType: 'a' }, { metadataType: 'b' }])
 
       const config = updateDeprecatedConfiguration(new InstanceElement(
@@ -165,7 +164,6 @@ describe('deprecated config', () => {
       configWithOldOptions.instancesRegexSkippedList = ['a', 'a.b', 'a.b.c', PACKAGES_INSTANCES_REGEX]
 
       const expectedConfig = _.cloneDeep(currentConfig)
-      // eslint-disable-next-line no-unused-expressions
       expectedConfig.fetch?.metadata?.exclude?.push(...[
         { name: '.*a.*' },
         { metadataType: '.*a', name: 'b.*' },

@@ -472,7 +472,6 @@ const updateSuiteAppTypes = (
   configToUpdate: InstanceElement,
 ): boolean => {
   let didUpdate = false
-  // eslint-disable-next-line no-unused-expressions
   configToUpdate.value?.[FETCH]?.[EXCLUDE]?.types?.forEach((excludeItem: FetchTypeQueryParams) => {
     if (excludeItem.name !== undefined) {
       const fixedName = strings.lowerCaseFirstLetter(excludeItem.name)

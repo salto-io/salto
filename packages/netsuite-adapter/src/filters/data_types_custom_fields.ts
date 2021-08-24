@@ -124,10 +124,20 @@ const filterCreator: FilterCreator = ({ isPartial, elementsSourceIndex }) => ({
     const nameToType = _.keyBy(dataTypes, e => e.elemID.name)
 
     if (isPartial) {
+      const fetchedIds = new Set(elements
+        .filter(isInstanceElement)
+        .map(instance => instance.elemID.getFullName()))
+
       Object.entries((await elementsSourceIndex.getIndexes()).customFieldsIndex)
         .filter(([type]) => type in nameToType)
         .forEach(([type, fields]) => {
-          fields.forEach(field => addFieldToType(nameToType[type], field, nameToType))
+          fields
+            // We don't want to use fields from the elementSource that
+            // were fetched from the service in the current fetch so we filter them out.
+            // Fields that are fetched in the current fetch are added to
+            // the type later in this function
+            .filter(field => !fetchedIds.has(field.elemID.getFullName()))
+            .forEach(field => addFieldToType(nameToType[type], field, nameToType))
         })
     }
 

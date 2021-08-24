@@ -228,9 +228,9 @@ describe('PlanItem', () => {
       expect(getChangeElement(modified as Change).annotations.str).toEqual('modified!')
     })
     it('should filter out changes where before and after were set as undefined', () => {
-      const droped = wu(modifiedPlanItem.changes())
+      const dropped = wu(modifiedPlanItem.changes())
         .find(change => getChangeElement(change).elemID.getFullName() === 'salto.filter')
-      expect(droped).not.toBeDefined()
+      expect(dropped).not.toBeDefined()
     })
     it('should keep changes that were not modified by the callback', () => {
       const kept = wu(modifiedPlanItem.changes())

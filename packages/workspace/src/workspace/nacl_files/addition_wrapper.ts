@@ -14,11 +14,14 @@
 * limitations under the License.
 */
 import { AdditionDiff } from '@salto-io/dag'
+import { logger } from '@salto-io/logging'
 import {
   Element, ElemID, ObjectType, InstanceElement, Value,
   isObjectType, isInstanceElement, PrimitiveType, isField, FieldDefinition, Field,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
+
+const log = logger(module)
 
 export type DetailedAddition = AdditionDiff<Value> & {
   id: ElemID
@@ -54,12 +57,17 @@ const createObjectTypeFromNestedAdditions = (
     switch (nestedValue.id.idType) {
       case 'field': {
         const fieldName = nestedValue.id.createTopLevelParentID().path[0]
+        const field = commonObjectType.fields[fieldName]
+        if (field === undefined) {
+          log.error('field %s was not found in common object type %s', fieldName, commonObjectType.elemID.getFullName())
+          throw new Error(`field ${fieldName} was not found in common object type ${commonObjectType.elemID.getFullName()}`)
+        }
         return { ...prev,
           fields: {
             ...prev.fields,
             ...addToField(
               nestedValue,
-              commonObjectType.fields[fieldName],
+              field,
               prev.fields[fieldName],
             ),
           } }

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, BuiltinTypes } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { mockTypes } from '../mock_elements'
@@ -22,7 +23,30 @@ import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import { getObjectDirectoryPath } from '../../src/filters/custom_objects'
+import SalesforceClient from '../../src/client/client'
 
+const createMocksForClient = (client: SalesforceClient): void => {
+  client.listMetadataObjects = jest.fn()
+    .mockImplementation(async () => ({ result: [
+      {
+        namespacePrefix: 'SBQQ',
+        fullName: 'SBQQ__Obj-Obj lala Layout',
+      },
+      {
+        fullName: 'Obj2-Obj2 lala Layout',
+      },
+    ] }))
+
+  client.readMetadata = jest.fn()
+    .mockImplementation(async (
+      _type: string,
+      name: string | string[],
+    ) => {
+      if (_.isArray(name)) {
+        return { result: name.filter(n => n === 'SBQQ__Obj-Obj lala Layout').map(n => ({ fullName: n })) }
+      } return name === 'SBQQ__Obj-Obj lala Layout' ? [] : { fullName: name }
+    })
+}
 describe('Test layout filter', () => {
   describe('Test layout fetch', () => {
     const fetch = async (apiName: string, opts = { fixedName: true }): Promise<void> => {
@@ -82,6 +106,9 @@ describe('Test layout filter', () => {
       ]
 
       const { client } = mockClient()
+
+      createMocksForClient(client)
+
       const filter = makeFilter({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
       await filter.onFetch(elements)
 
@@ -102,6 +129,9 @@ describe('Test layout filter', () => {
     })
     it('should not transform instance name if it is already fixed', async () => {
       await fetch('Test', { fixedName: true })
+    })
+    it('should fetch SBQQ-prefixed layout instances', async () => {
+      await fetch('SBQQ__Obj-Obj lala Layout')
     })
   })
 })

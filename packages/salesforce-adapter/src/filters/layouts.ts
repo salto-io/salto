@@ -24,7 +24,7 @@ import { FileProperties } from 'jsforce-types'
 import { apiName, isCustomObject } from '../transformers/transformer'
 import { FilterContext, FilterCreator, FilterResult } from '../filter'
 import { addObjectParentReference, buildElementsSourceForFetch } from './utils'
-import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE, NAMESPACE_SEPARATOR, FULLNAME_SEPERATOR } from '../constants'
+import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE, FULLNAME_SEPERATOR, CPQ_PREFIX, NAMESPACE_SEPARATOR } from '../constants'
 import { getObjectDirectoryPath } from './custom_objects'
 import { FetchElements } from '../types'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
@@ -61,15 +61,14 @@ const fixLayoutPath = async (
 }
 
 const transformPrefixedLayoutFileProp = (fileProp: FileProperties): FileProperties => {
-  const prefix = fileProp.namespacePrefix?.concat(NAMESPACE_SEPARATOR)
   const fullNameParts = fileProp.fullName.split(FULLNAME_SEPERATOR)
   const transformedFullName = [
     fullNameParts[0],
     FULLNAME_SEPERATOR,
-    prefix,
-    fullNameParts[1],
+    fileProp.namespacePrefix,
+    NAMESPACE_SEPARATOR,
+    ...fullNameParts.slice(1),
   ].join('')
-
   return { ...fileProp, fullName: transformedFullName }
 }
 
@@ -84,28 +83,28 @@ const createLayoutMetadataInstances = async (
   const { elements: fileProps, configChanges } = await listMetadataObjects(
     client, LAYOUT_TYPE_ID_METADATA_TYPE, [],
   )
-  if (type !== undefined) {
-    const [filePropsToTransform, regularFileProps] = _.partition(fileProps, fileProp => fileProp.fullName.startsWith('SBQQ')) // TODOH: more prefixes?
-    const correctedFileProps = [
-      ...regularFileProps,
-      ...filePropsToTransform.map(transformPrefixedLayoutFileProp),
-    ]
 
-    const instances = await fetchMetadataInstances({
-      client,
-      fileProps: correctedFileProps,
-      metadataType: type,
-      metadataQuery: config.fetchProfile.metadataQuery,
-    })
-    // TODOH: why don't the instances include regularFileProps?
-    return {
-      elements: instances.elements,
-      configChanges: [...instances.configChanges, ...configChanges],
-    }
-  }
+  if (type === undefined) return { configChanges: [], elements: [] }
+  const [filePropsToTransform,
+    regularFileProps] = _.partition(fileProps,
+    fileProp => fileProp.fullName.startsWith(CPQ_PREFIX)
+    && fileProp.namespacePrefix === CPQ_PREFIX)
+
+  const correctedFileProps = [
+    ...regularFileProps,
+    ...filePropsToTransform.map(transformPrefixedLayoutFileProp),
+  ]
+
+  const instances = await fetchMetadataInstances({
+    client,
+    fileProps: correctedFileProps,
+    metadataType: type,
+    metadataQuery: config.fetchProfile.metadataQuery,
+  })
+
   return {
-    elements: [],
-    configChanges: [],
+    elements: instances.elements,
+    configChanges: [...instances.configChanges, ...configChanges],
   }
 }
 
@@ -120,7 +119,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
    *
    * @param elements the already fetched elements
    */
-  onFetch: async (elements: Element[]): Promise<FilterResult> => { // TODOH: predeploy & ondeploy?
+  onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const { elements: layouts,
       configChanges } = await createLayoutMetadataInstances(config, client, elements)
     if (layouts.length === 0) {

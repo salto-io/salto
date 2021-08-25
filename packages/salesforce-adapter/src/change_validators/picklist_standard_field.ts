@@ -25,15 +25,15 @@ import { VALUE_SET_FIELDS } from '../constants'
 
 const { awu } = collections.asynciterable
 
-const isStandardValueSet = async (plField: Field): Promise<boolean> => {
+const isStandardValueSet = async (picklistField: Field): Promise<boolean> => {
   const standardVSchecker = isInstanceOfType(STANDARD_VALUE_SET)
-  return isValueSetReference(plField)
-  && standardVSchecker(plField.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME].value)
+  return isValueSetReference(picklistField)
+    && standardVSchecker(picklistField.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME].value)
 }
 
 const shouldCreateChangeError = async (changeElement: ChangeDataType): Promise<boolean> =>
   isPicklistField(changeElement) && !isCustom(await apiName(changeElement))
-  && !(await isStandardValueSet(changeElement))
+    && !(await isStandardValueSet(changeElement))
 
 const createChangeError = (field: Field): ChangeError =>
   ({

@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
-  Field, getChangeElement, isField, isModificationChange, ChangeDataType, ReferenceExpression,
-  InstanceElement, isInstanceChange, ModificationChange, isFieldChange,
+  Field, getChangeElement, isField, isModificationChange, ChangeDataType,
+  InstanceElement, isInstanceChange, ModificationChange, isFieldChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
 
 import { FilterWith } from '../filter'
@@ -38,7 +38,7 @@ export const isPicklistField = (changedElement: ChangeDataType): changedElement 
     ]).includes(changedElement.refType.elemID.getFullName())
 
 export const isValueSetReference = (field: Field): boolean =>
-  field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] instanceof ReferenceExpression
+  isReferenceExpression(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])
 
 export const hasValueSetNameAnnotation = (field: Field): boolean =>
   !_.isUndefined(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])

@@ -352,7 +352,7 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     })
   )),
   {
-    src: { field: 'field', parentTypes: ['FlowRecordFilter', 'FlowInputFieldAssignment'] },
+    src: { field: 'field', parentTypes: ['FlowRecordFilter', 'FlowInputFieldAssignment', 'FlowOutputFieldAssignment'] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'parentObjectLookup', type: CUSTOM_FIELD },
   },

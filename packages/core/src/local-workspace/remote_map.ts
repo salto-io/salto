@@ -13,16 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { promisify } from 'util'
 import AsyncLock from 'async-lock'
 import LRU from 'lru-cache'
 import uuidv4 from 'uuid/v4'
+import uniq from 'lodash/uniq'
 import * as fileUtils from '@salto-io/file'
 import { remoteMap } from '@salto-io/workspace'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import type rocksdb from '@salto-io/rocksdb'
-import path from 'path'
-
 
 const { asynciterable } = collections
 const { awu } = asynciterable
@@ -40,6 +40,7 @@ type CreateIteratorOpts = remoteMap.IterationOpts & {
   keys: boolean
   values: boolean
 }
+type ConnectionPool = Record<string, Promise<rocksdb>>
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let rocksdbImpl: any
@@ -190,10 +191,13 @@ AsyncIterable<remoteMap.RemoteMapEntry<string>[]> {
 }
 
 const MAX_CONNECTIONS = 1000
-const persistentDBConnections: Record<string, Promise<rocksdb>> = {}
-const readonlyDBConnections: Record<string, Promise<rocksdb>> = {}
-const tmpDBConnections: Record<string, Record<string, Promise<rocksdb>>> = {}
+const persistentDBConnections: ConnectionPool = {}
+const readonlyDBConnections: ConnectionPool = {}
+const tmpDBConnections: Record<string, ConnectionPool> = {}
+const dangalingReadonlyConnections: Record<string, Promise<rocksdb>[]> = {}
 let currentConnectionsCount = 0
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+const locationCaches = new LRU<string, LRU<string, any>>({ max: 10 })
 
 const deleteLocation = async (location: string): Promise<void> => {
   try {
@@ -206,17 +210,19 @@ const deleteLocation = async (location: string): Promise<void> => {
   }
 }
 
-const closeConnection = async (location: string, connection: Promise<rocksdb>): Promise<void> => {
+const closeDangalingConnection = async (connection: Promise<rocksdb>): Promise<void> => {
   const dbConnection = await connection
-  await promisify(dbConnection.close.bind(dbConnection))()
-  delete persistentDBConnections[location]
+  if (dbConnection.status === 'open') {
+    await promisify(dbConnection.close.bind(dbConnection))()
+    currentConnectionsCount -= 1
+  }
 }
 
-const deleteDB = async (location: string): Promise<void> => {
-  if (location in persistentDBConnections) {
-    await closeConnection(location, persistentDBConnections[location])
-  }
-  await deleteLocation(location)
+const closeConnection = async (
+  location: string, connection: Promise<rocksdb>, connPool: ConnectionPool
+): Promise<void> => {
+  await closeDangalingConnection(connection)
+  delete connPool[location]
 }
 
 const closeTmpConnection = async (
@@ -224,23 +230,44 @@ const closeTmpConnection = async (
   tmpLocation: string,
   connection: Promise<rocksdb>
 ): Promise<void> => {
-  const dbConnection = await connection
-  await promisify(dbConnection.close.bind(dbConnection))()
+  await closeDangalingConnection(connection)
   await deleteLocation(tmpLocation)
   delete (tmpDBConnections[location] ?? {})[tmpLocation]
 }
 
-export const closeAllRemoteMaps = async (): Promise<void> => {
-  await awu(Object.entries(persistentDBConnections)).forEach(async ([loc, connection]) => {
-    await closeConnection(loc, connection)
-  })
-  await awu(Object.entries(tmpDBConnections)).forEach(async ([loc, tmpConnections]) => {
-    await awu(Object.entries(tmpConnections)).forEach(async ([tmpLoc, connection]) => {
-      await closeTmpConnection(loc, tmpLoc, connection)
+export const closeRemoteMapsOfLocation = async (location: string): Promise<void> => {
+  const persistentConnection = persistentDBConnections[location]
+  if (persistentConnection) {
+    await closeConnection(location, persistentConnection, persistentDBConnections)
+  }
+  const tmpConnections = tmpDBConnections[location]
+  if (tmpConnections) {
+    await awu(Object.entries(tmpConnections)).forEach(async ([tmpLoc, tmpCon]) => {
+      await closeTmpConnection(location, tmpLoc, tmpCon)
     })
-  })
-  await awu(Object.entries(readonlyDBConnections)).forEach(async ([loc, connection]) => {
-    await closeConnection(loc, connection)
+    delete tmpDBConnections[location]
+  }
+  const readOnlyConnection = readonlyDBConnections[location]
+  if (readOnlyConnection) {
+    await closeConnection(location, readOnlyConnection, readonlyDBConnections)
+  }
+  const dangalingConnections = dangalingReadonlyConnections[location]
+  if (dangalingConnections) {
+    await awu(dangalingConnections).forEach(async conn => {
+      await closeDangalingConnection(conn)
+    })
+    delete dangalingReadonlyConnections[location]
+  }
+  locationCaches.del(location)
+}
+
+export const closeAllRemoteMaps = async (): Promise<void> => {
+  const allLocations = uniq([
+    ...Object.keys(persistentDBConnections),
+    ...Object.keys(readonlyDBConnections),
+  ])
+  await awu(allLocations).forEach(async loc => {
+    await closeRemoteMapsOfLocation(loc)
   })
 }
 
@@ -260,25 +287,8 @@ export const cleanDatabases = async (): Promise<void> => {
       }
     })
     delete tmpDBConnections[loc]
-    await deleteDB(loc)
+    await deleteLocation(loc)
   })
-}
-
-export const closeRemoteMapsOfLocation = async (location: string): Promise<void> => {
-  const connection = persistentDBConnections[location]
-  if (connection) {
-    await closeConnection(location, connection)
-  }
-  const tmpConnections = tmpDBConnections[location]
-  if (tmpConnections) {
-    await awu(Object.entries(tmpConnections)).forEach(async ([tmpLoc, tmpCon]) => {
-      await closeTmpConnection(location, tmpLoc, tmpCon)
-    })
-  }
-  const readOnlyConnection = readonlyDBConnections[location]
-  if (readOnlyConnection) {
-    await closeConnection(location, readOnlyConnection)
-  }
 }
 
 export const replicateDB = async (
@@ -338,9 +348,6 @@ rocksdb.Iterator =>
     ...(opts.after !== undefined ? { gt: opts.after } : { gte: prefix }),
     ...(opts.first !== undefined ? { limit: opts.first } : {}),
   })
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-const locationCaches = new LRU<string, LRU<string, any>>({ max: 10 })
 
 export const createRemoteMapCreator = (location: string,
   persistentDefaultValue = false,
@@ -554,21 +561,6 @@ remoteMap.RemoteMapCreator => {
         })
       }
     })
-    const closeImpl = async (): Promise<void> => {
-      if (persistentDB.status === 'open') {
-        await closeConnection(location, Promise.resolve(persistentDB))
-        currentConnectionsCount -= 1
-      }
-      if (tmpDB.status === 'open') {
-        await closeTmpConnection(location, tmpLocation, Promise.resolve(tmpDB))
-        currentConnectionsCount -= 1
-      }
-      const readOnlyDB = await readonlyDBConnections[location]
-      if (readOnlyDB?.status === 'open') {
-        await closeConnection(location, Promise.resolve(readOnlyDB))
-        currentConnectionsCount -= 1
-      }
-    }
     const createDBConnections = async (): Promise<void> => {
       tmpDBConnections[location] = tmpDBConnections[location] ?? {}
       if (tmpDB === undefined) {
@@ -666,7 +658,6 @@ remoteMap.RemoteMapCreator => {
       delete: async (key: string) => {
         delKeys.add(key)
       },
-      close: closeImpl,
       has: async (key: string): Promise<boolean> => {
         if (locationCache.has(keyToTempDBKey(key))) {
           return true
@@ -712,13 +703,11 @@ remoteMap.ReadOnlyRemoteMapCreator => {
         await createDBIfNotExist(location)
         return getOpenDBConnection(location, true)
       })()
-      db = await connectionPromise
-    }
-    const closeImpl = async (): Promise<void> => {
-      if (db.status === 'open') {
-        await promisify(db.close.bind(db))()
-        currentConnectionsCount -= 1
+      if (dangalingReadonlyConnections[location] === undefined) {
+        dangalingReadonlyConnections[location] = []
       }
+      dangalingReadonlyConnections[location].push(connectionPromise)
+      db = await connectionPromise
     }
     const keysImpl = (iterationOpts?: remoteMap.IterationOpts): AsyncIterable<K> => {
       const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
@@ -823,7 +812,6 @@ remoteMap.ReadOnlyRemoteMapCreator => {
       revert: async () => { notImplemented('revert') },
       clear: async () => { notImplemented('clear') },
       delete: async (_key: string) => { notImplemented('delete') },
-      close: closeImpl,
       has: async (key: string): Promise<boolean> => new Promise(resolve => {
         db.get(keyToDBKey(key), async (error, value) => {
           resolve(!error && value !== undefined)

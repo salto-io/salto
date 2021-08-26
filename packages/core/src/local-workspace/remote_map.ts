@@ -265,6 +265,8 @@ export const closeAllRemoteMaps = async (): Promise<void> => {
   const allLocations = uniq([
     ...Object.keys(persistentDBConnections),
     ...Object.keys(readonlyDBConnections),
+    ...Object.keys(tmpDBConnections),
+    ...Object.keys(dangalingReadonlyConnections),
   ])
   await awu(allLocations).forEach(async loc => {
     await closeRemoteMapsOfLocation(loc)

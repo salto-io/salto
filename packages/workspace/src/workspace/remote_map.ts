@@ -78,7 +78,6 @@ export type RemoteMap<T, K extends string = string> = {
   flush: () => Promise<boolean>
   revert: () => Promise<void>
   clear(): Promise<void>
-  close(): Promise<void>
   isEmpty(): Promise<boolean>
 }
 

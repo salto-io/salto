@@ -90,6 +90,12 @@ describe('Test layout filter', () => {
           } },
         [constants.RECORDS_PATH, 'Layout', instName]
       )
+      console.log('testLayout: %o', testLayout)
+
+      // const testLayoutFileProps = {
+      //   fullName: instName,
+
+      // }
 
       const webLinkObj = createMetadataTypeElement('WebLink', { path: [constants.SALESFORCE] })
 
@@ -131,7 +137,7 @@ describe('Test layout filter', () => {
       await fetch('Test', { fixedName: true })
     })
     it('should fetch SBQQ-prefixed layout instances', async () => {
-      await fetch('SBQQ__Obj-Obj lala Layout')
+      await fetch('SBQQ__Obj-Obj lala Layout') // TODOH: add namespace??
     })
   })
 })

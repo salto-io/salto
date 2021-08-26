@@ -115,6 +115,11 @@ describe('remote map', () => {
         await inMemRemoteMap.revert()
       })
     })
+    describe('close', () => {
+      it('should do nothing', async () => {
+        await inMemRemoteMap.close()
+      })
+    })
   })
 })
 

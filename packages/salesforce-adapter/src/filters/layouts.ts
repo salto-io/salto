@@ -87,8 +87,7 @@ const createLayoutMetadataInstances = async (
   if (type === undefined) return { configChanges: [], elements: [] }
   const [filePropsToTransform,
     regularFileProps] = _.partition(fileProps,
-    fileProp => fileProp.fullName.startsWith(CPQ_PREFIX)
-    && fileProp.namespacePrefix === CPQ_PREFIX)
+    fileProp => fileProp.namespacePrefix === CPQ_PREFIX)
 
   const correctedFileProps = [
     ...regularFileProps,
@@ -125,7 +124,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     if (layouts.length === 0) {
       return {}
     }
-
+    
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const apiNameToCustomObject = await multiIndex.keyByAsync({
       iter: await referenceElements.getAll(),

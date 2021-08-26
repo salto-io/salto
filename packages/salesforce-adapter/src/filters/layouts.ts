@@ -135,7 +135,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     //     log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
     //     return
     //   }
-    
+
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const apiNameToCustomObject = await multiIndex.keyByAsync({
       iter: await referenceElements.getAll(),

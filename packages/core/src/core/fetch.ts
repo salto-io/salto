@@ -20,11 +20,12 @@ import {
   Element, ElemID, AdapterOperations, Values, ServiceIds, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
-  ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId, CORE_ANNOTATIONS,
-  AdapterOperationsContext,
+  isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
+  isReferenceExpression, isElement, isField, isContainerType, TypeReference,
+  CORE_ANNOTATIONS, AdapterOperationsContext,
 } from '@salto-io/adapter-api'
 import {
-  applyInstancesDefaults, resolvePath, flattenElementStr,
+  applyInstancesDefaults, resolvePath, flattenElementStr, TransformFunc, transformElement,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger, elementSource, Workspace, pathIndex } from '@salto-io/workspace'
@@ -350,6 +351,24 @@ const runPostFetch = async ({
   )
 }
 
+const cloneRefTypeWithId = (refType: TypeReference, accountName: string): TypeReference => {
+  const newRef = refType.clone(refType.elemID
+    .createAdapterReplacedId(accountName))
+  let refTypeInnerType = newRef.value
+  while (isContainerType(refTypeInnerType) && isContainerType(refTypeInnerType.getInnerType())) {
+    refTypeInnerType = refTypeInnerType.getInnerType()
+  }
+  if (isContainerType(refTypeInnerType)) {
+    refTypeInnerType.refInnerType = refTypeInnerType.refInnerType.clone(
+      refTypeInnerType.refInnerType.elemID.createAdapterReplacedId(accountName)
+    )
+  } else {
+    newRef.value = refTypeInnerType.clone(undefined, refTypeInnerType
+      .elemID.createAdapterReplacedId(accountName))
+  }
+  return newRef
+}
+
 const fetchAndProcessMergeErrors = async (
   adapters: Record<string, AdapterOperations>,
   stateElements: elementSource.ElementsSource,
@@ -366,17 +385,62 @@ const fetchAndProcessMergeErrors = async (
   try {
     const progressReporters = _.mapValues(
       adapters,
-      (_adapter, adapterName) => createAdapterProgressReporter(adapterName, 'fetch', progressEmitter)
+      (_adapter, accountName) => createAdapterProgressReporter(accountName, 'fetch', progressEmitter)
     )
     const fetchResults = await Promise.all(
       Object.entries(adapters)
-        .map(async ([adapterName, adapter]) => {
+        .map(async ([accountName, adapter]) => {
           const fetchResult = await adapter.fetch({
-            progressReporter: progressReporters[adapterName],
+            progressReporter: progressReporters[accountName],
           })
+          const { updatedConfig, errors } = fetchResult
+          if (fetchResult.elements.length > 0 && accountName !== fetchResult.elements[0]
+            .elemID.adapter) {
+            const transformElemID: TransformFunc = async ({ value }) => {
+              if (isReferenceExpression(value)) {
+                return value.clone(value.elemID.createAdapterReplacedId(accountName))
+              }
+              if (isElement(value) && value.elemID.adapter !== accountName) {
+                const transformed = value.clone(undefined, value.elemID
+                  .createAdapterReplacedId(accountName))
+                if (isField(transformed)) {
+                  transformed.refType = cloneRefTypeWithId(transformed.refType, accountName)
+                }
+                return transformed
+              }
+              return value
+            }
+            fetchResult.elements = await awu(fetchResult.elements).map(async element => {
+              const newElement = await transformElement({
+                element,
+                transformFunc: transformElemID,
+                strict: false,
+                runOnFields: true,
+                newElemID: element.elemID.createAdapterReplacedId(accountName),
+              })
+              if (newElement.path) {
+                newElement.path = [accountName, ...newElement.path.slice(1)]
+              }
+              if (isInstanceElement(newElement)) {
+                const { refType } = newElement
+                newElement.refType = cloneRefTypeWithId(refType, accountName)
+              }
+              return newElement
+            }).toArray()
+            if (updatedConfig) {
+              updatedConfig.config = updatedConfig.config.clone(undefined,
+                updatedConfig.config.elemID.createAdapterReplacedId(accountName))
+            }
+            if (errors) {
+              errors.forEach(error => {
+                if (isSaltoElementError(error)) {
+                  error.elemID = error.elemID.createAdapterReplacedId(accountName)
+                }
+              })
+            }
+          }
           // We need to flatten the elements string to avoid a memory leak. See docs
           // of the flattenElementStr method for more details.
-          const { updatedConfig, errors } = fetchResult
           return {
             elements: fetchResult.elements.map(flattenElementStr),
             errors: errors ?? [],
@@ -387,7 +451,7 @@ const fetchAndProcessMergeErrors = async (
               }
               : undefined,
             isPartial: fetchResult.isPartial ?? false,
-            adapterName,
+            accountName,
           }
         })
     )
@@ -401,7 +465,7 @@ const fetchAndProcessMergeErrors = async (
     const partiallyFetchedAdapters = new Set(
       fetchResults
         .filter(result => result.isPartial)
-        .map(result => result.adapterName)
+        .map(result => result.accountName)
     )
 
     log.debug(`fetched ${serviceElements.length} elements from adapters`)
@@ -426,7 +490,6 @@ const fetchAndProcessMergeErrors = async (
         log.error(`failed to run postFetch: ${e}, stack: ${e.stack}`)
       }
     }
-
     const { errors: mergeErrors, merged: elements } = await mergeElements(awu(serviceElements))
     const mergeErrorsArr = await awu(mergeErrors.values()).flat().toArray()
     const processErrorsResult = await processMergeErrors(
@@ -849,6 +912,7 @@ export const createElemIdGetter = async (
 export const getFetchAdapterAndServicesSetup = async (
   workspace: Workspace,
   fetchServices: string[],
+  accountToServiceNameMap: Record<string, string>,
   ignoreStateElemIdMapping?: boolean
 ): Promise<{
   adaptersCreatorConfigs: Record<string, AdapterOperationsContext>
@@ -859,6 +923,7 @@ export const getFetchAdapterAndServicesSetup = async (
     await workspace.servicesCredentials(fetchServices),
     workspace.serviceConfig.bind(workspace),
     await workspace.elements(),
+    accountToServiceNameMap,
     ignoreStateElemIdMapping ? undefined : await createElemIdGetter(
       await (await workspace.elements()).getAll(),
       workspace.state()

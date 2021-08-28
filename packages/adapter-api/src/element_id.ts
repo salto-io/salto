@@ -228,6 +228,15 @@ export class ElemID {
     return new ElemID(this.adapter, this.typeName, this.idType, ...this.nameParts, ...nameParts)
   }
 
+  createAdapterReplacedId(adapter: string): ElemID {
+    if (!this.adapter) {
+      // if adapter is empty, that means the elemID doesn't really have an adapter, and thus it
+      // shouldn't be replaced.
+      return this
+    }
+    return new ElemID(adapter, this.typeName, this.idType, ...this.nameParts)
+  }
+
   createParentID(): ElemID {
     const newNameParts = this.nameParts.slice(0, -1)
     if (!_.isEmpty(newNameParts)) {

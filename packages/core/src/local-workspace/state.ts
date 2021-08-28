@@ -26,9 +26,6 @@ import origGlob from 'glob'
 import semver from 'semver'
 import { promisify } from 'util'
 
-import { adapterCreators } from '../core/adapters'
-
-
 import { version } from '../generated/version.json'
 
 const { awu } = collections.asynciterable
@@ -43,9 +40,8 @@ const log = logger(module)
 export const STATE_EXTENSION = '.jsonl'
 export const ZIPPED_STATE_EXTENSION = '.jsonl.zip'
 
-const supportedAdapters = Object.keys(adapterCreators)
 const filePathGlob = (currentFilePrefix: string): string => (
-  `${currentFilePrefix}.@(${supportedAdapters.join('|')})${ZIPPED_STATE_EXTENSION}`
+  `${currentFilePrefix}.*${ZIPPED_STATE_EXTENSION}`
 )
 const findStateFiles = async (currentFilePrefix: string): Promise<string[]> => {
   const stateFiles = await glob(filePathGlob(currentFilePrefix))

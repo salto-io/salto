@@ -85,8 +85,13 @@ const mockWorkspaceConfigSource = (conf?: Values,
   secondaryEnv?: boolean): WorkspaceConfigSource => ({
   getWorkspaceConfig: jest.fn().mockImplementation(() => ({
     envs: [
-      { name: 'default', services },
-      ...(secondaryEnv ? [{ name: 'inactive', services: [...services, 'hubspot'] }] : []),
+      { name: 'default',
+        accounts: services,
+        accountToServiceName: Object.fromEntries(services.map(service => [service, service])) },
+      ...(secondaryEnv ? [{ name: 'inactive',
+        accounts: [...services, 'hubspot'],
+        accountToServiceName: { hubspot: 'hubspot',
+          ...Object.fromEntries(services.map(service => [service, service])) } }] : []),
     ],
     uid: '',
     name: 'test',
@@ -2047,7 +2052,7 @@ describe('workspace', () => {
         () => Promise.resolve(new InMemoryRemoteMap()),
       )
       expect((workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0]).toEqual(
-        { name: 'ws-name', uid: 'uid', envs: [{ name: 'default' }], currentEnv: 'default' }
+        { name: 'ws-name', uid: 'uid', envs: [{ name: 'default', accountToServiceName: {} }], currentEnv: 'default' }
       )
       expect(workspace.name).toEqual('ws-name')
     })
@@ -2784,8 +2789,8 @@ describe('workspace', () => {
         {
           getWorkspaceConfig: jest.fn().mockImplementation(() => ({
             envs: [
-              { name: 'default', services: ['test'] },
-              { name: 'full', services: ['test'] },
+              { name: 'default', accounts: ['test'], accountToServiceName: { test: 'test' } },
+              { name: 'full', accounts: ['test'], accountToServiceName: { test: 'test' } },
             ],
             uid: '',
             name: 'test',

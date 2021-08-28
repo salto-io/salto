@@ -129,9 +129,10 @@ export abstract class Element {
   /**
    * Return an independent copy of this instance. Needs to be implemented
    * by each subclass as this is structure dependent.
+   * Optional argument: ElemID - to create a clone with a different element id.
    * @return {Type} the cloned instance
    */
-  abstract clone(annotations?: Values): Element
+  abstract clone(annotations?: Values, elemID?: ElemID): Element
 }
 export type ElementMap = Record<string, Element>
 
@@ -177,9 +178,9 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
       && this.refInnerType.elemID.isEqual(other.refInnerType.elemID) && isListType(other)
   }
 
-  clone(): ListType {
+  clone(_annotations?: Values, elemID?: ElemID): ListType {
     return new ListType(
-      new TypeReference(this.refInnerType.elemID, this.refInnerType.type)
+      new TypeReference(elemID ?? this.refInnerType.elemID, this.refInnerType.type)
     )
   }
 
@@ -235,9 +236,9 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
       && this.refInnerType.elemID.isEqual(other.refInnerType.elemID) && isMapType(other)
   }
 
-  clone(): MapType {
+  clone(_annotations?: Values, elemID?: ElemID): MapType {
     return new MapType(
-      new TypeReference(this.refInnerType.elemID, this.refInnerType.type)
+      new TypeReference(elemID ?? this.refInnerType.elemID, this.refInnerType.type)
     )
   }
 
@@ -275,9 +276,10 @@ export class Field extends Element {
     public name: string,
     typeOrRefType: TypeOrRef,
     annotations: Values = {},
+    elemID?: ElemID,
   ) {
     super({
-      elemID: parent.elemID.createNestedID('field', name),
+      elemID: elemID ?? parent.elemID.createNestedID('field', name),
       annotationRefsOrTypes: {},
       annotations,
     })
@@ -304,12 +306,13 @@ export class Field extends Element {
    * Note that the cloned field still has the same element ID so it cannot be used in a different
    * object
    */
-  clone(annotations?: Values): Field {
+  clone(annotations?: Values, elemID?: ElemID): Field {
     return new Field(
       this.parent,
       this.name,
       this.refType,
       annotations === undefined ? _.cloneDeep(this.annotations) : annotations,
+      elemID,
     )
   }
 }
@@ -346,9 +349,9 @@ export class PrimitiveType<Primitive extends PrimitiveTypes = PrimitiveTypes> ex
    * Return an independent copy of this instance.
    * @return {PrimitiveType} the cloned instance
    */
-  clone(additionalAnnotations: Values = {}): PrimitiveType {
+  clone(additionalAnnotations: Values = {}, elemID?: ElemID): PrimitiveType {
     const res: PrimitiveType = new PrimitiveType({
-      elemID: this.elemID,
+      elemID: elemID ?? this.elemID,
       primitive: this.primitive,
       annotationRefsOrTypes: this.annotationRefTypes,
       annotations: this.cloneAnnotations(),
@@ -414,13 +417,13 @@ export class ObjectType extends Element {
    * Return an independent copy of this instance.
    * @return {ObjectType} the cloned instance
    */
-  clone(additionalAnnotations: Values = {}): ObjectType {
+  clone(additionalAnnotations: Values = {}, elemID?: ElemID): ObjectType {
     const clonedAnnotations = this.cloneAnnotations()
     const clonedFields = this.cloneFields()
     const { isSettings } = this
 
     const res: ObjectType = new ObjectType({
-      elemID: this.elemID,
+      elemID: elemID ?? this.elemID,
       fields: clonedFields,
       annotationRefsOrTypes: this.annotationRefTypes,
       annotations: clonedAnnotations,
@@ -445,9 +448,10 @@ export class InstanceElement extends Element {
     public value: Values = {},
     path?: ReadonlyArray<string>,
     annotations?: Values,
+    elemID?: ElemID,
   ) {
     super({
-      elemID: typeOrRefType.elemID.createNestedID('instance', name),
+      elemID: elemID ?? typeOrRefType.elemID.createNestedID('instance', name),
       annotationRefsOrTypes: undefined,
       annotations,
       path,
@@ -480,9 +484,9 @@ export class InstanceElement extends Element {
    * Return an independent copy of this instance.
    * @return {InstanceElement} the cloned instance
    */
-  clone(): InstanceElement {
+  clone(_annotations?: Values, elemID?: ElemID): InstanceElement {
     return new InstanceElement(this.elemID.name, this.refType, _.cloneDeep(this.value), this.path,
-      _.cloneDeep(this.annotations))
+      _.cloneDeep(this.annotations), elemID)
   }
 }
 
@@ -497,8 +501,8 @@ export class Variable extends Element {
     return super.isEqual(other) && isEqualValues(this.value, other.value)
   }
 
-  clone(): Variable {
-    return new Variable(this.elemID, _.cloneDeep(this.value), this.path)
+  clone(elemID?: ElemID): Variable {
+    return new Variable(elemID ?? this.elemID, _.cloneDeep(this.value), this.path)
   }
 }
 

@@ -393,6 +393,7 @@ export const mockWorkspace = ({
     getStateRecency: mockFunction<Workspace['getStateRecency']>().mockImplementation(
       async serviceName => ({ serviceName, status: 'Nonexistent', date: undefined })
     ),
+    getServiceFromAccountName: mockFunction<Workspace['getServiceFromAccountName']>(),
     promote: mockFunction<Workspace['promote']>(),
     demote: mockFunction<Workspace['demote']>(),
     demoteAll: mockFunction<Workspace['demoteAll']>(),

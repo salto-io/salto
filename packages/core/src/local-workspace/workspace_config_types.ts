@@ -15,7 +15,7 @@
 */
 
 import { WorkspaceConfig } from '@salto-io/workspace'
-import { InstanceElement, ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType, MapType } from '@salto-io/adapter-api'
 
 export type WorkspaceMetadataConfig = Pick<
   WorkspaceConfig, 'uid' | 'name' | 'staleStateThresholdMinutes'
@@ -43,7 +43,8 @@ const envConfigType = new ObjectType({
   elemID: envConfigElemID,
   fields: {
     name: { refType: BuiltinTypes.STRING, annotations: requireAnno },
-    services: { refType: new ListType(BuiltinTypes.STRING) },
+    accounts: { refType: new ListType(BuiltinTypes.STRING) },
+    accountNameToServiceType: { refType: new MapType(BuiltinTypes.STRING) },
   },
 })
 

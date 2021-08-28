@@ -28,3 +28,8 @@ export type SaltoError = {
 export type SaltoElementError = SaltoError & {
     elemID: ElemID
 }
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isSaltoElementError(error: SaltoError): error is SaltoElementError {
+  return 'elemID' in error
+}

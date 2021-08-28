@@ -148,7 +148,8 @@ describe('adapters.ts', () => {
         [serviceName],
         { [sfConfig.elemID.adapter]: sfConfig },
         async () => undefined,
-        buildElementsSourceFromElements([])
+        buildElementsSourceFromElements([]),
+        { [serviceName]: serviceName }
       )
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
@@ -169,6 +170,7 @@ describe('adapters.ts', () => {
         { [sfConfig.elemID.adapter]: sfConfig },
         async name => (name === sfConfig.elemID.adapter ? sfConfig : undefined),
         buildElementsSourceFromElements([]),
+        { [serviceName]: serviceName },
       )
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
@@ -190,6 +192,7 @@ describe('adapters.ts', () => {
           new ObjectType({ elemID: new ElemID(serviceName, 'type1') }),
           new ObjectType({ elemID: new ElemID('dummy', 'type2') }),
         ]),
+        { [serviceName]: serviceName },
       )
       const elementsSource = result[serviceName]?.elementsSource
       expect(elementsSource).toBeDefined()

@@ -81,9 +81,10 @@ const getLoginInputFlow = async (
   authMethods: AdapterAuthentication,
   output: CliOutput,
   authType: AdapterAuthMethod,
+  account: string,
 ): Promise<void> => {
   const newConfig = await getConfigFromInput(authType, authMethods, output, getCredentialsFromUser)
-  await updateCredentials(workspace, newConfig)
+  await updateCredentials(workspace, newConfig, account)
   output.stdout.write(EOL)
   outputLine(formatLoginUpdated, output)
 }
@@ -92,6 +93,7 @@ const getLoginInputFlow = async (
 type ServiceAddArgs = {
     login: boolean
     serviceName: string
+    account?: string
 } & AuthTypeArgs & EnvArg
 
 export const addAction: WorkspaceCommandAction<ServiceAddArgs> = async ({
@@ -99,7 +101,8 @@ export const addAction: WorkspaceCommandAction<ServiceAddArgs> = async ({
   output,
   workspace,
 }): Promise<CliExitCode> => {
-  const { login, serviceName, authType } = input
+  const { login, serviceName, authType, account } = input
+  const accountID = account ?? serviceName
   await validateAndSetEnv(workspace, input, output)
 
   const supportedServiceAdapters = getSupportedServiceAdapterNames()
@@ -108,8 +111,8 @@ export const addAction: WorkspaceCommandAction<ServiceAddArgs> = async ({
     return CliExitCode.UserInputError
   }
 
-  if (workspace.services().includes(serviceName)) {
-    errorOutputLine(formatServiceAlreadyAdded(serviceName), output)
+  if (workspace.services().includes(accountID)) {
+    errorOutputLine(formatServiceAlreadyAdded(accountID), output)
     return CliExitCode.UserInputError
   }
 
@@ -117,14 +120,14 @@ export const addAction: WorkspaceCommandAction<ServiceAddArgs> = async ({
   if (login) {
     const adapterCredentialsTypes = getAdaptersCredentialsTypes([serviceName])[serviceName]
     try {
-      await getLoginInputFlow(workspace, adapterCredentialsTypes, output, authType)
+      await getLoginInputFlow(workspace, adapterCredentialsTypes, output, authType, accountID)
     } catch (e) {
       errorOutputLine(formatAddServiceFailed(serviceName, e.message), output)
       return CliExitCode.AppError
     }
   }
 
-  await addAdapter(workspace, serviceName)
+  await addAdapter(workspace, serviceName, accountID)
   await workspace.flush()
   outputLine(formatServiceAdded(serviceName), output)
   return CliExitCode.Success
@@ -142,6 +145,12 @@ const serviceAddDef = createWorkspaceCommand({
         alias: 'n',
         type: 'boolean',
         description: 'Do not login to service when adding it. Example usage: \'service add <service-name> --no-login\'.',
+        required: false,
+      },
+      {
+        name: 'account',
+        type: 'string',
+        description: 'Account name for the service, in case two accounts are configured under the same environment.',
         required: false,
       },
       AUTH_TYPE_OPTION,
@@ -184,6 +193,7 @@ const serviceListDef = createWorkspaceCommand({
 // Login
 type ServiceLoginArgs = {
     serviceName: string
+    account?: string
 } & AuthTypeArgs & EnvArg
 
 export const loginAction: WorkspaceCommandAction<ServiceLoginArgs> = async ({
@@ -191,22 +201,23 @@ export const loginAction: WorkspaceCommandAction<ServiceLoginArgs> = async ({
   output,
   workspace,
 }): Promise<CliExitCode> => {
-  const { serviceName, authType } = input
+  const { serviceName, authType, account } = input
   await validateAndSetEnv(workspace, input, output)
-
+  const accountID = account ?? serviceName
   if (!workspace.services().includes(serviceName)) {
     errorOutputLine(formatServiceNotConfigured(serviceName), output)
     return CliExitCode.AppError
   }
   const serviceLoginStatus = (await getLoginStatuses(
     workspace,
-    [serviceName]
-  ))[serviceName] as LoginStatus
+    [accountID],
+  ))[accountID] as LoginStatus
   if (serviceLoginStatus.isLoggedIn) {
     outputLine(formatLoginOverride, output)
   }
   try {
-    await getLoginInputFlow(workspace, serviceLoginStatus.configTypeOptions, output, authType)
+    await getLoginInputFlow(workspace, serviceLoginStatus.configTypeOptions,
+      output, authType, accountID)
   } catch (e) {
     errorOutputLine(formatLoginToServiceFailed(serviceName, e.message), output)
     return CliExitCode.AppError

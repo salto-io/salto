@@ -45,13 +45,14 @@ export const getAdaptersCredentialsTypes = (
 
 export const initAdapters = (
   config: Record<string, AdapterOperationsContext>,
+  accountIDToServiceNameMap: Record<string, string> = {},
 ): Record<string, AdapterOperations> =>
   _.mapValues(
     config, (context, adapter) => {
       if (!context.credentials) {
         throw new Error(`${adapter} is not logged in.\n\nPlease login and try again.`)
       }
-      const creator = adapterCreators[adapter]
+      const creator = adapterCreators[accountIDToServiceNameMap[adapter] ?? adapter]
       if (!creator) {
         throw new Error(`${adapter} adapter is not registered.`)
       }
@@ -130,19 +131,22 @@ export type AdapterConfigGetter = (
 ) => Promise<InstanceElement | undefined>
 
 export const getAdaptersCreatorConfigs = async (
-  adapters: ReadonlyArray<string>,
+  accounts: ReadonlyArray<string>,
   credentials: Readonly<Record<string, InstanceElement>>,
   getConfig: AdapterConfigGetter,
   elementsSource: ReadOnlyElementsSource,
+  accountIDToServiceName: Record<string, string>,
   elemIdGetter?: ElemIdGetter,
 ): Promise<Record<string, AdapterOperationsContext>> => (
-  Object.fromEntries(await Promise.all(adapters.map(
-    async adapter => [
-      adapter,
+  Object.fromEntries(await Promise.all(accounts.map(
+    async account => [
+      account,
       {
-        credentials: credentials[adapter],
-        config: await getConfig(adapter, await getMergedDefaultAdapterConfig(adapter)),
-        elementsSource: filterElementsSourceAdapter(elementsSource, adapter),
+        credentials: credentials[account],
+        config: await getConfig(account, await getMergedDefaultAdapterConfig(
+          accountIDToServiceName[account]
+        )),
+        elementsSource: filterElementsSourceAdapter(elementsSource, account),
         getElemIdFunc: elemIdGetter,
       },
     ]
@@ -154,6 +158,7 @@ export const getAdapters = async (
   credentials: Readonly<Record<string, InstanceElement>>,
   getConfig: AdapterConfigGetter,
   workspaceElementsSource: ReadOnlyElementsSource,
+  accountIDToServiceName: Record<string, string>,
   elemIdGetter?: ElemIdGetter,
 ): Promise<Record<string, AdapterOperations>> =>
   initAdapters(await getAdaptersCreatorConfigs(
@@ -161,5 +166,6 @@ export const getAdapters = async (
     credentials,
     getConfig,
     workspaceElementsSource,
+    accountIDToServiceName,
     elemIdGetter
-  ))
+  ), accountIDToServiceName)

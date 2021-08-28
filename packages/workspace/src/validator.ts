@@ -528,12 +528,15 @@ const validateFieldValue = async (
       )
     ) ?? []
   }
-  return awu(mapAsArrayWithIds(value, elemID)).flatMap(async item => validateValue(
-    item.nestedID,
-    item.value,
-    isListType(fieldType) ? await fieldType.getInnerType(elementsSource) : fieldType,
-    elementsSource
-  )).toArray()
+  return awu(mapAsArrayWithIds(value, elemID)).flatMap(async item => {
+    const arrays = await validateValue(
+      item.nestedID,
+      item.value,
+      isListType(fieldType) ? await fieldType.getInnerType(elementsSource) : fieldType,
+      elementsSource
+    )
+    return arrays
+  }).toArray()
 }
 
 const validateField = async (

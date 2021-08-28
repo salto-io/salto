@@ -23,7 +23,6 @@ module.exports = {
     filename: 'bundle.js',
     path: path.resolve(__dirname, 'dist'),
   },
-  context: path.resolve(__dirname),
   module: {
     rules: [
       {
@@ -46,7 +45,7 @@ module.exports = {
     ],
   },
   node: {
-    __dirname: false,
+    __dirname: true,
     __filename: true,
   },
   stats: {

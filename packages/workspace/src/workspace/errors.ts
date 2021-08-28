@@ -66,6 +66,12 @@ export class ServiceDuplicationError extends Error {
   }
 }
 
+export class UnknownAccountError extends Error {
+  constructor(account: string) {
+    super(`${account} is not defined as an account in this workspace`)
+  }
+}
+
 export class UnknownEnvError extends Error {
   constructor(envName: string) {
     super(`Unknown environment ${envName}`)

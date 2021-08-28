@@ -91,9 +91,10 @@ export class ReferenceExpression {
    * For example, if the instance is a VariableExpression,
    * create a VariableExpression, not a ReferenceExpression.
    */
-  public createWithValue(resValue: Value, resTopLevelParent?: Element): ReferenceExpression {
+  public createWithValue(resValue: Value, resTopLevelParent?: Element,
+    elemID?: ElemID): ReferenceExpression {
     const ExpressionCtor = this.constructor as typeof ReferenceExpression
-    return new ExpressionCtor(this.elemID, resValue, resTopLevelParent)
+    return new ExpressionCtor(elemID ?? this.elemID, resValue, resTopLevelParent)
   }
 
   get traversalParts(): string[] {
@@ -128,6 +129,10 @@ export class ReferenceExpression {
     }
     return value
   }
+
+  public clone(elemID?: ElemID): ReferenceExpression {
+    return this.createWithValue(this.resValue, this.topLevelParent, elemID)
+  }
 }
 
 export class VariableExpression extends ReferenceExpression {
@@ -144,6 +149,12 @@ export class VariableExpression extends ReferenceExpression {
       } is a ${elemID.idType}`)
     }
   }
+
+  public createWithValue(resValue: Value, resTopLevelParent?: Element,
+    elemID?: ElemID): VariableExpression {
+    const ExpressionCtor = this.constructor as typeof VariableExpression
+    return new ExpressionCtor(elemID ?? this.elemID, resValue, resTopLevelParent)
+  }
 }
 
 export class TypeReference extends ReferenceExpression {
@@ -157,6 +168,12 @@ export class TypeReference extends ReferenceExpression {
         `Invalid id for type reference: ${elemID.getFullName()}. Type reference must be top level.`
       )
     }
+  }
+
+  public createWithValue(resValue: Value, _resTopLevelParent?: Element,
+    elemID?: ElemID): TypeReference {
+    const ExpressionCtor = this.constructor as typeof TypeReference
+    return new ExpressionCtor(elemID ?? this.elemID, resValue)
   }
 
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {

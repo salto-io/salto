@@ -29,10 +29,8 @@ import { multiEnvSource, getSourceNameForFilename, MultiEnvSource, EnvsChanges, 
 import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
 import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
 import { ElementSelector } from './element_selector'
-import {
-  Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError,
-  DeleteCurrentEnvError, InvalidEnvNameError, MAX_ENV_NAME_LEN,
-} from './errors'
+import { Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError,
+  DeleteCurrentEnvError, InvalidEnvNameError, MAX_ENV_NAME_LEN, UnknownAccountError } from './errors'
 import { EnvConfig } from './config/workspace_config_types'
 import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
@@ -167,7 +165,6 @@ export type Workspace = {
   flush: () => Promise<void>
   clone: () => Promise<Workspace>
   clear: (args: ClearFlags) => Promise<void>
-
   addService: (service: string) => Promise<void>
   addEnvironment: (
     env: string,
@@ -181,6 +178,7 @@ export type Workspace = {
     service: string,
     newConfig: Readonly<InstanceElement> | Readonly<InstanceElement>[]
   ) => Promise<void>
+  getServiceFromAccountName: (account: string) => string
   getStateRecency(services: string): Promise<StateRecency>
   promote(
     idsToMove: ElemID[],
@@ -258,7 +256,7 @@ export const loadWorkspace = async (
     const envConf = env
       ? makeArray(workspaceConfig.envs).find(e => e.name === env)
       : currentEnvConf()
-    return makeArray(envConf?.services)
+    return makeArray(envConf?.accounts)
   }
   const state = (envName?: string): State => (
     environmentsSources.sources[envName ?? currentEnv()].state as State
@@ -820,7 +818,7 @@ export const loadWorkspace = async (
 
   const pickServices = (names?: ReadonlyArray<string>): ReadonlyArray<string> =>
     (_.isUndefined(names) ? services() : services().filter(s => names.includes(s)))
-  const credsPath = (service: string): string => path.join(currentEnv(), service)
+  const credsPath = (account: string): string => path.join(currentEnv(), account)
 
   const copyTo = async (ids: ElemID[], targetEnvs: string[]): Promise<void> => {
     const workspaceChanges = await (await getLoadedNaclFilesSource())
@@ -993,21 +991,30 @@ export const loadWorkspace = async (
       workspaceState = undefined
       await getWorkspaceState()
     },
-    addService: async (service: string): Promise<void> => {
-      const currentServices = services() || []
-      if (currentServices.includes(service)) {
-        throw new ServiceDuplicationError(service)
+    addService: async (service: string, account?: string): Promise<void> => {
+      const accountID = account ?? service
+      const currentAccounts = services() || []
+      if (currentAccounts.includes(accountID)) {
+        throw new ServiceDuplicationError(accountID)
       }
-      currentEnvConf().services = [...currentServices, service]
+      currentEnvConf().accounts = [...currentAccounts, accountID]
+      currentEnvConf().accountToServiceName[accountID] = service
       await config.setWorkspaceConfig(workspaceConfig)
     },
     updateServiceCredentials:
-      async (service: string, servicesCredentials: Readonly<InstanceElement>): Promise<void> =>
-        credentials.set(credsPath(service), servicesCredentials),
+      async (account: string, servicesCredentials: Readonly<InstanceElement>): Promise<void> =>
+        credentials.set(credsPath(account), servicesCredentials),
     updateServiceConfig:
       async (service, newConfig) => {
         await adaptersConfig.setAdapter(service, newConfig)
       },
+    getServiceFromAccountName: (account: string): string => {
+      const serviceName = currentEnvConf().accountToServiceName[account]
+      if (!serviceName) {
+        throw new UnknownAccountError(serviceName)
+      }
+      return serviceName
+    },
     addEnvironment: async (
       env: string,
       environmentSourceCreator: (rmc: RemoteMapCreator) => Promise<EnvironmentSource>
@@ -1020,7 +1027,7 @@ export const loadWorkspace = async (
       }
       // Need to make sure everything is loaded before we add the new env.
       await getWorkspaceState()
-      workspaceConfig.envs = [...workspaceConfig.envs, { name: env }]
+      workspaceConfig.envs = [...workspaceConfig.envs, { name: env, accountToServiceName: {} }]
       await config.setWorkspaceConfig(workspaceConfig)
       environmentsSources.sources[env] = await environmentSourceCreator(remoteMapCreator)
       naclFilesSource = multiEnvSource(
@@ -1221,7 +1228,7 @@ export const initWorkspace = async (
   await config.setWorkspaceConfig({
     uid,
     name,
-    envs: [{ name: defaultEnvName }],
+    envs: [{ name: defaultEnvName, accountToServiceName: {} }],
     currentEnv: defaultEnvName,
   })
   return loadWorkspace(config, adaptersConfig, credentials, envs, remoteMapCreator)

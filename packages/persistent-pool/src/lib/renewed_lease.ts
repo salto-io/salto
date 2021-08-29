@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { types } from '@salto-io/lowerdash'
-import { Pool, LeaseUpdateOpts, Lease, InstanceId } from '../types'
+import { Pool, LeaseUpdateOpts, Lease, InstanceId, InstanceNotLeasedError } from '../types'
 
 const poolFuncs: (keyof Pool)[] = ['lease', 'return']
 const isPool = (
@@ -57,8 +57,16 @@ export default class RenewedLease<T> extends types.Bean<RenewedLeaseOpts<T>>
 
   private async renew(): Promise<void> {
     const pool = await this.pool()
-    await pool.updateTimeout(this.lease.id, this.timeout)
-    this.timeoutId = this.renewTimeout()
+    try {
+      await pool.updateTimeout(this.lease.id, this.timeout)
+      this.timeoutId = this.renewTimeout()
+    } catch (e) {
+      if (!(e instanceof InstanceNotLeasedError)) {
+        throw e
+      }
+      // eslint-disable-next-line no-console
+      console.log(e)
+    }
   }
 
   async return(opts?: LeaseUpdateOpts): Promise<void> {

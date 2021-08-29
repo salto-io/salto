@@ -18,7 +18,6 @@ import { logger } from '@salto-io/logging'
 import {
   SourceRange as InternalSourceRange,
 } from './internal/types'
-import { parseBufferAndFixErrors } from './internal/nearly/parse'
 import {
   Functions,
 } from './functions'
@@ -26,7 +25,7 @@ import PeekableLexer from './internal/native/lexer'
 import { parseBuffer } from './internal/native/parse'
 import { ParseResult } from './types'
 
-export { parseElemID } from './internal/nearly/converter/elements'
+export { parseElemID } from './internal/native/helpers'
 export { IllegalReference } from './internal/types'
 
 
@@ -50,9 +49,7 @@ export const parse = async (
   functions: Functions = {},
 ): Promise<Required<ParseResult>> => {
   const srcString = naclFile.toString()
-  return process.env.SALTO_USE_LEGACY_PARSER
-    ? parseBufferAndFixErrors(srcString, filename, functions)
-    : parseBuffer(srcString, filename, functions)
+  return parseBuffer(srcString, filename, functions)
 }
 
 export type Token = {

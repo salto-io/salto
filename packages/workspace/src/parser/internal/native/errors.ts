@@ -191,3 +191,11 @@ export const invalidStringChar = (stringRange: SourceRange, errMsg: string): Par
     }
   return createError(range, 'Invalid string character')
 }
+
+export const invalidElemIDType = (
+  range: SourceRange,
+): ParseError => createError(
+  range,
+  'Invalid element ID type',
+  'Invalid element ID type - element id should look like {adapter}.{type} (only one dot)',
+)

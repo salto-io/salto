@@ -15,10 +15,13 @@
 */
 import { ReferenceExpression, ElemID, Value, ListType, PrimitiveTypes, MapType, VariableExpression, TypeReference } from '@salto-io/adapter-api'
 import isPromise from 'is-promise'
-import { LexerToken } from './lexer'
+import { LexerToken, WILDCARD } from './lexer'
 import { SourcePos, IllegalReference, SourceRange } from '../types'
 import { ParseContext } from './types'
 import { Keywords } from '../../language'
+import { invalidElemIDType } from './errors'
+
+export const INVALID_ELEM_ID = new ElemID(WILDCARD)
 
 export const positionAtStart = (token: LexerToken): SourcePos => ({
   col: token.col,
@@ -34,10 +37,15 @@ export const positionAtEnd = (token: LexerToken): SourcePos => ({
     : token.col + token.text.length,
 })
 
-export const parseElemID = (fullname: string): ElemID => {
-  const separatorIdx = fullname.indexOf(Keywords.NAMESPACE_SEPARATOR)
-  const adapter = (separatorIdx >= 0) ? fullname.slice(0, separatorIdx) : ''
-  const name = fullname.slice(separatorIdx + Keywords.NAMESPACE_SEPARATOR.length)
+export const parseElemID = (context: ParseContext, fullname: string, range: SourceRange):
+ElemID => {
+  const parts = fullname.split(Keywords.NAMESPACE_SEPARATOR)
+  if (parts.length > 2) {
+    context.errors.push(invalidElemIDType(range))
+    return INVALID_ELEM_ID
+  }
+  const adapter = parts.length > 1 ? parts[0] : ''
+  const name = parts.length > 1 ? parts[1] : parts[0]
   return new ElemID(adapter, name)
 }
 
@@ -84,7 +92,8 @@ export const replaceValuePromises = async (context: ParseContext): Promise<void>
 
 export const createFieldRefType = (
   context: ParseContext,
-  blockType: string
+  blockType: string,
+  range: SourceRange,
 ): TypeReference => {
   if (blockType.startsWith(Keywords.LIST_PREFIX)
         && blockType.endsWith(Keywords.GENERICS_SUFFIX)) {
@@ -93,7 +102,8 @@ export const createFieldRefType = (
       blockType.substring(
         Keywords.LIST_PREFIX.length,
         blockType.length - Keywords.GENERICS_SUFFIX.length
-      )
+      ),
+      range,
     ))
     const listRefType = new TypeReference(listType.elemID)
     context.listTypes[listType.elemID.getFullName()] = listType
@@ -105,13 +115,14 @@ export const createFieldRefType = (
       blockType.substring(
         Keywords.MAP_PREFIX.length,
         blockType.length - Keywords.GENERICS_SUFFIX.length
-      )
+      ),
+      range,
     ))
     const mapRefType = new TypeReference(mapType.elemID)
     context.mapTypes[mapType.elemID.getFullName()] = mapType
     return mapRefType
   }
-  return new TypeReference(parseElemID(blockType))
+  return new TypeReference(parseElemID(context, blockType, range))
 }
 
 export const primitiveType = (typeName: string): PrimitiveTypes | undefined => {

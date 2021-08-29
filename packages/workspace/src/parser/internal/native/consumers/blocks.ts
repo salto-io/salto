@@ -132,7 +132,9 @@ export const consumeBlockBody = (context: ParseContext, idPrefix: ElemID,
       }
       if (!Object.prototype.hasOwnProperty.call(fields, fieldName)) {
         fields[fieldName] = {
-          refType: createFieldRefType(context, fieldType),
+          refType: createFieldRefType(
+            context, fieldType, { ...defTokens.range, filename: context.filename }
+          ),
           annotations: consumedBlock.value.attrs,
         }
         registerRange(context, fieldID, {

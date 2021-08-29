@@ -18,7 +18,7 @@ import {
   isObjectType, InstanceElement, BuiltinTypes, isListType, isVariable,
   isType, isPrimitiveType, ListType, ReferenceExpression, VariableExpression,
 } from '@salto-io/adapter-api'
-import each from 'jest-each'
+
 // import each from 'jest-each'
 import { collections } from '@salto-io/lowerdash'
 import { registerTestFunction } from '../utils'
@@ -31,13 +31,8 @@ const { awu } = collections.asynciterable
 const funcName = 'funcush'
 
 let functions: Functions
-each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
+describe('Salto parser', () => {
   beforeAll(() => {
-    if (useLegacyParser) {
-      process.env.SALTO_USE_LEGACY_PARSER = '1'
-    } else {
-      delete process.env.SALTO_USE_LEGACY_PARSER
-    }
     functions = registerTestFunction(funcName)
   })
   describe('primitive, model and extensions', () => {
@@ -702,10 +697,7 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
       `
       const result = await parse(Buffer.from(body), 'none', functions)
       expect(result.errors).not.toHaveLength(0)
-      const expectedErrMsg = useLegacyParser
-        ? 'expected keyword is. found string'
-        : 'invalid type definition'
-      expect(result.errors[0].summary).toEqual(expectedErrMsg)
+      expect(result.errors[0].summary).toEqual('invalid type definition')
     })
 
     it('fails on invalid syntax', async () => {
@@ -716,10 +708,7 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
       `
       const result = await parse(Buffer.from(body), 'none', functions)
       expect(result.errors).not.toHaveLength(0)
-      const expectedErrMsg = useLegacyParser
-        ? 'Unexpected token: :'
-        : 'Invalid block item'
-      expect(result.errors[0].summary).toEqual(expectedErrMsg)
+      expect(result.errors[0].summary).toEqual('Invalid block item')
     })
 
     it('fails on missing list open in object', async () => {
@@ -736,10 +725,7 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
       `
       const result = await parse(Buffer.from(body), 'none', functions)
       expect(result.errors).not.toHaveLength(0)
-      const expectedErrMsg = useLegacyParser
-        ? 'Unexpected token: {'
-        : 'Invalid block item'
-      expect(result.errors[0].summary).toEqual(expectedErrMsg)
+      expect(result.errors[0].summary).toEqual('Invalid block item')
     })
 
     it('fails on missing list open in object item', async () => {
@@ -753,10 +739,7 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
       `
       const result = await parse(Buffer.from(body), 'none', functions)
       expect(result.errors).not.toHaveLength(0)
-      const expectedErrMsg = useLegacyParser
-        ? 'Unexpected token: ]'
-        : 'Invalid attribute definition'
-      expect(result.errors[0].summary).toEqual(expectedErrMsg)
+      expect(result.errors[0].summary).toEqual('Invalid attribute definition')
     })
 
     it('fails on invalid object item with unexpected eof', async () => {
@@ -766,10 +749,7 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
           {`
       const result = await parse(Buffer.from(body), 'none', functions)
       expect(result.errors).not.toHaveLength(0)
-      const expectedErrMsg = useLegacyParser
-        ? 'Unexpected end of file'
-        : 'Invalid attribute key'
-      expect(result.errors[0].summary).toEqual(expectedErrMsg)
+      expect(result.errors[0].summary).toEqual('Invalid attribute key')
     })
   })
 
@@ -779,15 +759,48 @@ each([true, false]).describe('Salto parser', (useLegacyParser: boolean) => {
     expect(result.errors).not.toHaveLength(0)
   })
 
-  if (!useLegacyParser) {
-    it('should parse instance name that starts with boolean', async () => {
-      const body = `
-    salesforce.someType false_string {}
-    `
-      const result = await parse(Buffer.from(body), 'none', functions)
-      expect(result.errors).toHaveLength(0)
-    })
+  it('should parse instance name that starts with boolean', async () => {
+    const body = `
+  salesforce.someType false_string {}
+  `
+    const result = await parse(Buffer.from(body), 'none', functions)
+    expect(result.errors).toHaveLength(0)
+  })
+
+  it('should create parse error if id type of instance element is invalid', async () => {
+    const body = `
+  salesforce.someType.a false_string {}
+  `
+    const result = await parse(Buffer.from(body), 'none', functions)
+    expect(result.errors).toHaveLength(1)
+    expect(result.errors[0].summary).toEqual('Invalid element ID type')
+    expect(result.elements).toHaveLength(0)
+  })
+
+  it('should create parse error if id of object type is invalid', async () => {
+    const body = `
+  type salesforce.someType.a {}
+  `
+    const result = await parse(Buffer.from(body), 'none', functions)
+    expect(result.errors).toHaveLength(1)
+    expect(result.errors[0].summary).toEqual('Invalid element ID type')
+    expect(result.elements).toHaveLength(0)
+  })
+
+  it('should recover from invalid id type error', async () => {
+    const body = `
+  type salesforce.someType.a {
+    salesforce.otherType.b bField {}
   }
+  type salesforce.anotherType { }
+  `
+    const result = await parse(Buffer.from(body), 'none', functions)
+    expect(result.errors).toHaveLength(2)
+    expect(result.errors[0].summary).toEqual('Invalid element ID type')
+    expect(result.elements).toHaveLength(1)
+    expect((result.elements as InstanceElement[])[0].elemID)
+      .toEqual(new ElemID('salesforce', 'anotherType'))
+  })
 
   describe('tokenizeContent', () => {
     it('seperate and token each part of a line correctly', () => {

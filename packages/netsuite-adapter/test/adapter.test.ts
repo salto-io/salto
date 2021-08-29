@@ -529,7 +529,7 @@ describe('Adapter', () => {
         const expectedResolvedInstance = instance.clone()
         expectedResolvedInstance.value.description = 'description value'
         expect(client.deploy)
-          .toHaveBeenCalledWith([await toCustomizationInfo(expectedResolvedInstance)])
+          .toHaveBeenCalledWith([await toCustomizationInfo(expectedResolvedInstance)], undefined)
         expect(post.isEqual(instance)).toBe(true)
       })
 
@@ -538,7 +538,10 @@ describe('Adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
-        expect(client.deploy).toHaveBeenCalledWith([await toCustomizationInfo(fileInstance)])
+        expect(client.deploy).toHaveBeenCalledWith(
+          [await toCustomizationInfo(fileInstance)],
+          undefined,
+        )
         expect(post.isEqual(fileInstance)).toBe(true)
       })
 
@@ -547,7 +550,10 @@ describe('Adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
-        expect(client.deploy).toHaveBeenCalledWith([await toCustomizationInfo(folderInstance)])
+        expect(client.deploy).toHaveBeenCalledWith(
+          [await toCustomizationInfo(folderInstance)],
+          undefined,
+        )
         expect(post.isEqual(folderInstance)).toBe(true)
       })
 
@@ -563,7 +569,7 @@ describe('Adapter', () => {
         })
         expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
           [await toCustomizationInfo(folderInstance), await toCustomizationInfo(fileInstance)]
-        ))
+        ), undefined)
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(2)
       })
@@ -582,7 +588,7 @@ describe('Adapter', () => {
         })
         expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
           [await toCustomizationInfo(folderInstance), await toCustomizationInfo(fileInstance)]
-        ))
+        ), undefined)
         expect(result.errors).toHaveLength(1)
         expect(result.errors).toEqual([clientError])
         expect(result.appliedChanges).toHaveLength(0)
@@ -608,7 +614,10 @@ describe('Adapter', () => {
         const expectedResolvedInstance = instance.clone()
         expectedResolvedInstance.value.description = 'description value'
         expect(client.deploy)
-          .toHaveBeenCalledWith([await toCustomizationInfo(expectedResolvedInstance)])
+          .toHaveBeenCalledWith(
+            [await toCustomizationInfo(expectedResolvedInstance)],
+            undefined,
+          )
         expect(post).toEqual(instance)
       })
 
@@ -617,7 +626,10 @@ describe('Adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
-        expect(client.deploy).toHaveBeenCalledWith([await toCustomizationInfo(fileInstance)])
+        expect(client.deploy).toHaveBeenCalledWith(
+          [await toCustomizationInfo(fileInstance)],
+          undefined,
+        )
         expect(post).toEqual(fileInstance)
       })
 
@@ -626,7 +638,10 @@ describe('Adapter', () => {
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
-        expect(client.deploy).toHaveBeenCalledWith([await toCustomizationInfo(folderInstance)])
+        expect(client.deploy).toHaveBeenCalledWith(
+          [await toCustomizationInfo(folderInstance)],
+          undefined,
+        )
         expect(post).toEqual(folderInstance)
       })
 
@@ -644,7 +659,7 @@ describe('Adapter', () => {
         const expectedResolvedAfter = after.clone()
         expectedResolvedAfter.value.description = 'edited description value'
         expect(client.deploy)
-          .toHaveBeenCalledWith([await toCustomizationInfo(expectedResolvedAfter)])
+          .toHaveBeenCalledWith([await toCustomizationInfo(expectedResolvedAfter)], undefined)
         expect(post).toEqual(after)
       })
     })

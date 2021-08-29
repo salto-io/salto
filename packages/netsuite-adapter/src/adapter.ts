@@ -30,7 +30,7 @@ import {
   customTypes, getMetadataTypes, fileCabinetTypes,
 } from './types'
 import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST,
-  INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS, WARN_STALE_DATA } from './constants'
+  INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS, WARN_STALE_DATA, APPLICATION_ID } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import parseSavedSearch from './filters/parse_saved_searchs'
 import convertLists from './filters/convert_lists'
@@ -219,7 +219,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
           BuiltinTypes.STRING,
           { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
         )
-      })
+      });
+
+    [...Object.values(customTypes), ...Object.values(fileCabinetTypes)].forEach(type => {
+      type.fields[APPLICATION_ID] = new Field(type, APPLICATION_ID, BuiltinTypes.STRING)
+    })
 
     const customizationInfos = [...customObjects, ...fileCabinetContent]
     const instances = await awu(customizationInfos).map(customizationInfo => {

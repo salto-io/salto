@@ -26,6 +26,7 @@ import {
   CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
   SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
   CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, DEPLOY, DATASET, WORKBOOK, WARN_STALE_DATA,
+  INSTALLED_SUITEAPPS,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams } from './query'
 import { TYPES_TO_INTERNAL_ID } from './data_elements/types'
@@ -79,6 +80,10 @@ const clientConfigType = new ObjectType({
           max: 50,
         }),
       },
+    },
+
+    [INSTALLED_SUITEAPPS]: {
+      refType: new ListType(BuiltinTypes.STRING),
     },
   },
 })
@@ -260,6 +265,7 @@ export type SdfClientConfig = {
   [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]?: number
   [FETCH_TYPE_TIMEOUT_IN_MINUTES]?: number
   [SDF_CONCURRENCY_LIMIT]?: number
+  [INSTALLED_SUITEAPPS]?: string[]
 }
 
 export type SuiteAppClientConfig = {

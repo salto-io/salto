@@ -126,7 +126,7 @@ describe('RenewedLease', () => {
     })
     it('when renew throws unknown error should stop silently', () => {
       jest.clearAllMocks()
-      const instanceNotLeasedError = new InstanceNotLeasedError({ id: '1', typeName: '1', clientId: '1' })
+      const instanceNotLeasedError = new Error()
       pool.updateTimeout.mockRejectedValueOnce(instanceNotLeasedError)
       expect(setTimeout).not.toHaveBeenCalled()
     })

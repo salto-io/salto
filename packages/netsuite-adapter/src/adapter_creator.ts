@@ -33,6 +33,7 @@ import {
   EXCLUDE,
   DEPLOY,
   DEPLOY_REFERENCED_ELEMENTS,
+  INSTALLED_SUITEAPPS,
 } from './constants'
 import { validateFetchParameters, convertToQueryParams } from './query'
 import { Credentials, toCredentialsAccountId } from './client/credentials'
@@ -79,6 +80,11 @@ export const defaultCredentialsType = new ObjectType({
   annotations: {},
 })
 
+const validateInstalledSuiteApps = (installedSuiteApps: unknown): void => {
+  if (!Array.isArray(installedSuiteApps) || installedSuiteApps.some(suiteApp => typeof suiteApp !== 'string')) {
+    throw Error(`received an invalid ${INSTALLED_SUITEAPPS} value: ${installedSuiteApps}`)
+  }
+}
 
 const getFilePathRegexSkipList = (config: Readonly<InstanceElement> |
   undefined): string[] | undefined => config?.value?.[FILE_PATHS_REGEX_SKIP_LIST]
@@ -125,6 +131,10 @@ const validateConfig = (config: Readonly<InstanceElement> | undefined):
 
   if (deployParams !== undefined) {
     validateDeployParams(deployParams)
+  }
+
+  if (clientConfig?.[INSTALLED_SUITEAPPS] !== undefined) {
+    validateInstalledSuiteApps(clientConfig[INSTALLED_SUITEAPPS])
   }
 }
 

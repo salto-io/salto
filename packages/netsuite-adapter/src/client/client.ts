@@ -16,7 +16,7 @@
 
 import { AccountId, Change, getChangeElement, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { decorators, collections, values, objects } from '@salto-io/lowerdash'
+import { decorators, collections, values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
 import { WSDL } from 'soap'
 import _ from 'lodash'
@@ -114,31 +114,22 @@ export default class NetsuiteClient {
     changes: ReadonlyArray<Change<InstanceElement>>,
     deployReferencedElements: boolean
   ): Promise<DeployResult> {
-    return objects.concatObjects(await Promise.all(
-      _(changes)
-        .groupBy(change => getChangeElement(change).value[APPLICATION_ID])
-        .entries()
-        .map(async ([suiteAppId, changesGroup]) => {
-          const changedInstances = changesGroup.map(getChangeElement)
+    const changedInstances = changes.map(getChangeElement)
+    const customizationInfos = await awu(await NetsuiteClient.getAllRequiredReferencedInstances(
+      changedInstances,
+      deployReferencedElements
+    )).map(instance => resolveValues(instance, getLookUpName))
+      .map(instance => toCustomizationInfo(instance))
+      .toArray()
 
-          const customizationInfos = await awu(
-            await NetsuiteClient.getAllRequiredReferencedInstances(
-              changedInstances,
-              deployReferencedElements
-            )
-          ).map(instance => resolveValues(instance, getLookUpName))
-            .map(instance => toCustomizationInfo(instance))
-            .toArray()
-          try {
-            // groupBy converts undefined to 'undefined' (as string)
-            await this.sdfClient.deploy(customizationInfos, suiteAppId === 'undefined' ? undefined : suiteAppId)
-            return { errors: [], appliedChanges: changesGroup }
-          } catch (e) {
-            return { errors: [e], appliedChanges: [] }
-          }
-        })
-        .value()
-    ))
+    const suiteAppId = getChangeElement(changes[0]).value[APPLICATION_ID]
+
+    try {
+      await this.sdfClient.deploy(customizationInfos, suiteAppId)
+      return { errors: [], appliedChanges: changes }
+    } catch (e) {
+      return { errors: [e], appliedChanges: [] }
+    }
   }
 
   @NetsuiteClient.logDecorator
@@ -146,7 +137,7 @@ export default class NetsuiteClient {
     Promise<DeployResult> {
     const instancesChanges = changes.filter(isInstanceChange)
 
-    if (SDF_CHANGE_GROUP_ID === groupID) {
+    if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
       return this.sdfDeploy(instancesChanges, deployReferencedElements)
     }
 

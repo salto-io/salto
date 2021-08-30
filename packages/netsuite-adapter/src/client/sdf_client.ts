@@ -256,6 +256,9 @@ export default class SdfClient {
     })
     SdfClient.verifySuccessfulAction(actionResult, COMMANDS.CREATE_PROJECT)
     if (suiteAppId !== undefined) {
+      // When creating a SuiteApp project, the folder name will always be the suiteAppId
+      // (regardless the what we pass in the projectname) so we want to
+      // rename it to projectPath.
       await rename(osPath.join(baseExecutionPath, suiteAppId), projectPath)
     }
   }
@@ -357,6 +360,22 @@ export default class SdfClient {
     ])
   }
 
+  private static async transformCustomObject(
+    scriptId: string, objectFileNames: string[], objectsDirPath: string
+  ): Promise<CustomTypeInfo> {
+    const [[additionalFilename], [contentFilename]] = _.partition(objectFileNames,
+      filename => filename.includes(ADDITIONAL_FILE_PATTERN))
+    const xmlContent = readFile(osPath.resolve(objectsDirPath, contentFilename))
+    if (_.isUndefined(additionalFilename)) {
+      return convertToCustomTypeInfo((await xmlContent).toString(), scriptId)
+    }
+    const additionalFileContent = readFile(
+      osPath.resolve(objectsDirPath, additionalFilename)
+    )
+    return convertToTemplateCustomTypeInfo((await xmlContent).toString(), scriptId,
+      additionalFilename.split(FILE_SEPARATOR)[2], await additionalFileContent)
+  }
+
   @SdfClient.logDecorator
   async getCustomObjects(typeNames: string[], query: NetsuiteQuery):
     Promise<GetCustomObjectsResult> {
@@ -382,25 +401,9 @@ export default class SdfClient {
             filename => filename.split(FILE_SEPARATOR)[0]
           )
 
-          const transformCustomObject = async (
-            scriptId: string, objectFileNames: string[]
-          ): Promise<CustomTypeInfo> => {
-            const [[additionalFilename], [contentFilename]] = _.partition(objectFileNames,
-              filename => filename.includes(ADDITIONAL_FILE_PATTERN))
-            const xmlContent = readFile(osPath.resolve(objectsDirPath, contentFilename))
-            if (_.isUndefined(additionalFilename)) {
-              return convertToCustomTypeInfo((await xmlContent).toString(), scriptId)
-            }
-            const additionalFileContent = readFile(
-              osPath.resolve(objectsDirPath, additionalFilename)
-            )
-            return convertToTemplateCustomTypeInfo((await xmlContent).toString(), scriptId,
-              additionalFilename.split(FILE_SEPARATOR)[2], await additionalFileContent)
-          }
-
           const elements = await withLimitedConcurrency(
             Object.entries(scriptIdToFiles).map(([scriptId, objectFileNames]) =>
-              () => transformCustomObject(scriptId, objectFileNames)),
+              () => SdfClient.transformCustomObject(scriptId, objectFileNames, objectsDirPath)),
             READ_CONCURRENCY
           )
 
@@ -478,7 +481,7 @@ export default class SdfClient {
           executor, type, failedInstancesIds.join(' '), suiteAppId
         )
         log.debug('Retried to fetch %d failed instances with suiteApp: %s of chunk %d/%d of type: %s.',
-          suiteAppId, failedInstancesIds.length, index, total, type)
+          failedInstancesIds.length, suiteAppId, index, total, type)
         return failedTypeToInstancesAfterRetry
       }
 

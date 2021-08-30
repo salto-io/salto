@@ -26,8 +26,6 @@ import { values as lowerdashValues, collections } from '@salto-io/lowerdash'
 import {
   SCRIPT_ID,
   PATH,
-  CAPTURE,
-  scriptIdReferenceRegex,
 } from '../constants'
 import { serviceId } from '../transformer'
 import { FilterCreator, FilterWith } from '../filter'
@@ -35,8 +33,19 @@ import { isCustomType, typesElementSourceWrapper } from '../types'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 
 const { awu } = collections.asynciterable
+
+const CAPTURED_SERVICE_ID = 'serviceId'
+const CAPTURED_TYPE = 'type'
+// e.g. '[scriptid=customworkflow1]' & '[scriptid=customworkflow1.workflowstate17.workflowaction33]'
+//  & '[type=customsegment, scriptid=cseg1]'
+const scriptIdReferenceRegex = new RegExp(`^\\[(type=(?<${CAPTURED_TYPE}>[a-z_]+), )?${SCRIPT_ID}=(?<${CAPTURED_SERVICE_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)]$`)
 // e.g. '[/Templates/filename.html]' & '[/SuiteScripts/script.js]'
-const pathReferenceRegex = new RegExp(`^\\[(?<${CAPTURE}>\\/.+)]$`)
+const pathReferenceRegex = new RegExp(`^\\[(?<${CAPTURED_SERVICE_ID}>\\/.+)]$`)
+
+type ServiceIdInfo = {
+  [CAPTURED_SERVICE_ID]: string
+  [CAPTURED_TYPE]?: string
+}
 
 /**
  * This method tries to capture the serviceId from Netsuite references format. For example:
@@ -44,9 +53,21 @@ const pathReferenceRegex = new RegExp(`^\\[(?<${CAPTURE}>\\/.+)]$`)
  * '[/SuiteScripts/script.js]' => '/SuiteScripts/script.js'
  * 'Some string' => undefined
  */
-const captureServiceId = (value: string): string | undefined =>
-  value.match(pathReferenceRegex)?.groups?.[CAPTURE]
-    ?? value.match(scriptIdReferenceRegex)?.groups?.[CAPTURE]
+const captureServiceIdInfo = (value: string): ServiceIdInfo | undefined => {
+  const pathRefMatches = value.match(pathReferenceRegex)?.groups
+  if (pathRefMatches !== undefined) {
+    return { [CAPTURED_SERVICE_ID]: pathRefMatches[CAPTURED_SERVICE_ID] }
+  }
+
+  const scriptIdRefMatches = value.match(scriptIdReferenceRegex)?.groups
+  if (scriptIdRefMatches !== undefined) {
+    return {
+      [CAPTURED_SERVICE_ID]: scriptIdRefMatches[CAPTURED_SERVICE_ID],
+      [CAPTURED_TYPE]: scriptIdRefMatches[CAPTURED_TYPE],
+    }
+  }
+  return undefined
+}
 
 const customTypeServiceIdsToElemIds = async (
   instance: InstanceElement,
@@ -110,14 +131,15 @@ const replaceReferenceValues = async (
     if (!_.isString(value)) {
       return value
     }
-    const capturedServiceId = captureServiceId(value)
-    if (_.isUndefined(capturedServiceId)) {
+    const serviceIdInfo = captureServiceIdInfo(value)
+    if (_.isUndefined(serviceIdInfo)) {
       return value
     }
-    const elemID = fetchedElementsServiceIdToElemID[capturedServiceId]
-      ?? elementsSourceServiceIdToElemID[capturedServiceId]
+    const elemID = fetchedElementsServiceIdToElemID[serviceIdInfo[CAPTURED_SERVICE_ID]]
+      ?? elementsSourceServiceIdToElemID[serviceIdInfo[CAPTURED_SERVICE_ID]]
 
-    if (_.isUndefined(elemID)) {
+    const type = serviceIdInfo[CAPTURED_TYPE]
+    if (_.isUndefined(elemID) || (type && type !== elemID.typeName)) {
       return value
     }
 

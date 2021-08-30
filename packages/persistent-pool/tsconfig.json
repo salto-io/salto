@@ -24,6 +24,7 @@
     "index.ts", "../lowerdash/test/retry/wait_for.test.ts"
   ],
   "references": [
+    { "path": "../logging" },
     { "path": "../lowerdash" },
   ]
 }

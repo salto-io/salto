@@ -14,7 +14,10 @@
 * limitations under the License.
 */
 import { types } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { Pool, LeaseUpdateOpts, Lease, InstanceId, InstanceNotLeasedError } from '../types'
+
+const log = logger(module)
 
 const poolFuncs: (keyof Pool)[] = ['lease', 'return']
 const isPool = (
@@ -64,8 +67,7 @@ export default class RenewedLease<T> extends types.Bean<RenewedLeaseOpts<T>>
       if (!(e instanceof InstanceNotLeasedError)) {
         throw e
       }
-      // eslint-disable-next-line no-console
-      console.log(e)
+      log.warn('lease returned by unknown entity, stops renew interval')
     }
   }
 

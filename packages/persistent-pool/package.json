@@ -27,6 +27,7 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
+    "@salto-io/logging": "0.3.0",
     "@salto-io/lowerdash": "0.3.0",
     "aws-sdk": "^2.863.0",
     "uuid": "^3.3.3"

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { RenewedLease, Pool, Lease, LeaseUpdateOpts } from '../../src/index'
+import { RenewedLease, Pool, Lease, LeaseUpdateOpts, InstanceNotLeasedError } from '../../src/index'
 import { MockObj, createMockPool } from '../mock_repo'
 
 jest.useFakeTimers()
@@ -117,6 +117,18 @@ describe('RenewedLease', () => {
           })
         })
       })
+    })
+    it('when renew throws InstanceNotLeasedError should stop silently', () => {
+      jest.clearAllMocks()
+      const instanceNotLeasedError = new InstanceNotLeasedError({ id: '1', typeName: '1', clientId: '1' })
+      pool.updateTimeout.mockRejectedValueOnce(instanceNotLeasedError)
+      expect(setTimeout).not.toHaveBeenCalled()
+    })
+    it('when renew throws unknown error should stop silently', () => {
+      jest.clearAllMocks()
+      const instanceNotLeasedError = new Error()
+      pool.updateTimeout.mockRejectedValueOnce(instanceNotLeasedError)
+      expect(setTimeout).not.toHaveBeenCalled()
     })
   })
 

@@ -14,7 +14,10 @@
 * limitations under the License.
 */
 import { types } from '@salto-io/lowerdash'
-import { Pool, LeaseUpdateOpts, Lease, InstanceId } from '../types'
+import { logger } from '@salto-io/logging'
+import { Pool, LeaseUpdateOpts, Lease, InstanceId, InstanceNotLeasedError } from '../types'
+
+const log = logger(module)
 
 const poolFuncs: (keyof Pool)[] = ['lease', 'return']
 const isPool = (
@@ -57,8 +60,15 @@ export default class RenewedLease<T> extends types.Bean<RenewedLeaseOpts<T>>
 
   private async renew(): Promise<void> {
     const pool = await this.pool()
-    await pool.updateTimeout(this.lease.id, this.timeout)
-    this.timeoutId = this.renewTimeout()
+    try {
+      await pool.updateTimeout(this.lease.id, this.timeout)
+      this.timeoutId = this.renewTimeout()
+    } catch (e) {
+      if (!(e instanceof InstanceNotLeasedError)) {
+        throw e
+      }
+      log.warn('lease returned by unknown entity, stops renew interval')
+    }
   }
 
   async return(opts?: LeaseUpdateOpts): Promise<void> {

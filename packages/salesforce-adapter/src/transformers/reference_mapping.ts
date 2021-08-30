@@ -132,6 +132,10 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
   {
+    src: { field: 'flowName', parentTypes: ['FlowSubflow'] },
+    target: { type: 'Flow' },
+  },
+  {
     src: { field: 'letterhead', parentTypes: ['EmailTemplate'] },
     target: { type: 'Letterhead' },
   },
@@ -348,7 +352,7 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     })
   )),
   {
-    src: { field: 'field', parentTypes: ['FlowRecordFilter', 'FlowInputFieldAssignment'] },
+    src: { field: 'field', parentTypes: ['FlowRecordFilter', 'FlowInputFieldAssignment', 'FlowOutputFieldAssignment'] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'parentObjectLookup', type: CUSTOM_FIELD },
   },

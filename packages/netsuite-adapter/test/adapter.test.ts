@@ -700,7 +700,7 @@ describe('Adapter', () => {
           getElemIdFunc: mockGetElemIdFunc,
         })
 
-        // eslint-disable-next-line no-unused-expressions
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         adapter.deployModifiers
 
         expect(getChangeValidatorMock).toHaveBeenCalledWith({
@@ -726,7 +726,7 @@ describe('Adapter', () => {
           getElemIdFunc: mockGetElemIdFunc,
         })
 
-        // eslint-disable-next-line no-unused-expressions
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         adapter.deployModifiers
 
         expect(getChangeValidatorMock).toHaveBeenCalledWith({
@@ -752,7 +752,7 @@ describe('Adapter', () => {
           getElemIdFunc: mockGetElemIdFunc,
         })
 
-        // eslint-disable-next-line no-unused-expressions
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         adapter.deployModifiers
 
         expect(getChangeValidatorMock).toHaveBeenCalledWith({

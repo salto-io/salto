@@ -13,43 +13,40 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
-import { InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, BuiltinTypes } from '@salto-io/adapter-api'
+import { InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, BuiltinTypes, isInstanceElement, ObjectType, ElemID } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { mockTypes } from '../mock_elements'
 import { createCustomObjectType, createMetadataTypeElement, defaultFilterContext } from '../utils'
 import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import { getObjectDirectoryPath } from '../../src/filters/custom_objects'
-import SalesforceClient from '../../src/client/client'
 
-const createMocksForClient = (client: SalesforceClient): void => {
-  client.listMetadataObjects = jest.fn()
-    .mockImplementation(async () => ({ result: [
-      {
-        namespacePrefix: 'SBQQ',
-        fullName: 'SBQQ__Obj-Obj lala Layout',
-      },
-      {
-        fullName: 'Obj2-Obj2 lala Layout',
-      },
-    ] }))
-
-  client.readMetadata = jest.fn()
-    .mockImplementation(async (
-      _type: string,
-      name: string | string[],
-    ) => {
-      if (_.isArray(name)) {
-        return { result: name.filter(n => n === 'SBQQ__Obj-Obj lala Layout').map(n => ({ fullName: n })) }
-      } return name === 'SBQQ__Obj-Obj lala Layout' ? [] : { fullName: name }
-    })
-}
 describe('Test layout filter', () => {
   describe('Test layout fetch', () => {
-    const fetch = async (apiName: string, opts = { fixedName: true }): Promise<void> => {
+    const testApiNames = {
+      regualr: 'Test',
+      custom: 'Test__c',
+      SBQQ_prefixBeforeFix: 'SBQQ__Obj-Obj lala Layout',
+      SBQQ_prefixAfterFix: 'SBQQ__Obj-SBQQ__Obj lala Layout'
+    }
+
+    const fetch = async (apiName: string,
+    // opts: {
+    //   fixedName?: boolean
+    //   namespace: string | undefined
+    // } = { fixedName: true,
+    //   namespace: undefined }
+    ): Promise<void> => {
+      const layoutObject = new ObjectType({
+        elemID: new ElemID(constants.SALESFORCE, constants.LAYOUT_TYPE_ID_METADATA_TYPE),
+        annotations: { suffix: 'layout', dirName: 'layouts', metadataType: 'Layout' },
+        path: ['salesforce', 'Types', 'Layout'],
+      })
+
+      const shortName = 'Test Layout'
+
+
       const testSObj = createCustomObjectType(
         apiName,
         {
@@ -68,34 +65,7 @@ describe('Test layout filter', () => {
       const testSobjPath = [...await getObjectDirectoryPath(testSObj), pathNaclCase(apiName)]
       testSObj.path = testSobjPath
 
-      const shortName = 'Test Layout'
-      const fullName = `${apiName}-${shortName}`
-      const instName = naclCase(opts.fixedName ? shortName : fullName)
-      const testLayout = new InstanceElement(
-        instName,
-        mockTypes.Layout,
-        { [constants.INSTANCE_FULL_NAME_FIELD]: fullName,
-          layoutSections: {
-            layoutColumns: {
-              layoutItems: [{
-                field: 'foo',
-              }, {
-                field: 'bar',
-              }, {
-                customLink: 'link',
-              }, {
-                field: 'moo',
-              }],
-            },
-          } },
-        [constants.RECORDS_PATH, 'Layout', instName]
-      )
-      console.log('testLayout: %o', testLayout)
-
-      // const testLayoutFileProps = {
-      //   fullName: instName,
-
-      // }
+      // const instName = naclCase(opts.fixedName ? shortName : fullName)
 
       const webLinkObj = createMetadataTypeElement('WebLink', { path: [constants.SALESFORCE] })
 
@@ -108,36 +78,123 @@ describe('Test layout filter', () => {
       )
 
       const elements = [
-        testSObj, testLayout, webLinkObj, webLinkInst,
+        testSObj,
+        webLinkObj, webLinkInst, layoutObject,
       ]
 
       const { client } = mockClient()
 
-      createMocksForClient(client)
+      const createMocksForClient = (): void => {
+        client.listMetadataObjects = jest.fn()
+          .mockImplementation(async () => ({
+            result: [
+              {
+                createdById: 'aaaaaaaaa',
+                createdByName: 'aaaaaaaaa',
+                createdDate: '2020-08-25T11:39:01.000Z',
+                fileName: 'layouts/SBQQ__Obj-Obj lala Layout.layout',
+                fullName: 'SBQQ__Obj-Obj lala Layout',
+                id: 'aaaaaaaaa',
+                lastModifiedById: 'aaaaaaaaa',
+                lastModifiedByName: 'aaaaaaaaa',
+                lastModifiedDate: '2020-08-25T11:40:45.000Z',
+                manageableState: 'installed',
+                namespacePrefix: 'SBQQ',
+                type: 'Layout',
+              },
+              {
+                createdById: 'aaaaaaaaa',
+                createdByName: 'aaaaaaaaa',
+                createdDate: '2020-08-25T11:39:01.000Z',
+                fileName: 'layouts/Test.layout',
+                fullName: 'Test',
+                id: 'aaaaaaaaa',
+                lastModifiedById: 'aaaaaaaaa',
+                lastModifiedByName: 'aaaaaaaaa',
+                lastModifiedDate: '2020-08-25T11:40:45.000Z',
+                manageableState: 'installed',
+                type: 'Layout',
+              },
+              {
+                createdById: 'aaaaaaaaa',
+                createdByName: 'aaaaaaaaa',
+                createdDate: '2020-08-25T11:39:01.000Z',
+                fileName: 'layouts/Test__c.layout',
+                fullName: 'Test__c',
+                id: 'aaaaaaaaa',
+                lastModifiedById: 'aaaaaaaaa',
+                lastModifiedByName: 'aaaaaaaaa',
+                lastModifiedDate: '2020-08-25T11:40:45.000Z',
+                manageableState: 'installed',
+                type: 'Layout',
+              },
+            ],
+          }))
+
+        client.readMetadata = jest.fn()
+          .mockImplementation(async (_typeName: string, names: string[]) => ({
+            result: names.map(name => {
+              const fullName = `${apiName}-${shortName}`
+              // const instName = naclCase(opts.fixedName ? shortName : fullName)
+              const testLayoutFileProps = {
+                [constants.INSTANCE_FULL_NAME_FIELD]: fullName,
+                layoutSections: {
+                  layoutColumns: {
+                    layoutItems: [{
+                      field: 'foo',
+                    }, {
+                      field: 'bar',
+                    }, {
+                      customLink: 'link',
+                    }, {
+                      field: 'moo',
+                    }],
+                  },
+                },
+              }
+
+              if (name === testApiNames.SBQQ_prefixBeforeFix) {
+                return {}
+              } if (name === testApiNames.SBQQ_prefixAfterFix) {
+                return { ...testLayoutFileProps, fullName: testApiNames.SBQQ_prefixAfterFix }
+              } return testLayoutFileProps
+            }),
+          })
+        )
+      }
+
+      createMocksForClient()
 
       const filter = makeFilter({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
       await filter.onFetch(elements)
+      const instance = elements
+        .filter(isInstanceElement)
+        .find(inst => inst.elemID.typeName === constants.LAYOUT_TYPE_ID_METADATA_TYPE)
 
-      const instance = elements[1] as InstanceElement
-      expect(instance.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', naclCase(shortName)))
-      expect(instance.path).toEqual([...testSobjPath.slice(0, -1), 'Layout', pathNaclCase(instance.elemID.name)])
+      expect(instance).toBeDefined()
+      expect(instance?.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', naclCase(shortName)))
+      expect(instance?.path).toEqual([...testSobjPath.slice(0, -1), 'Layout', pathNaclCase(instance?.elemID.name)])
 
-      expect(instance.annotations[CORE_ANNOTATIONS.PARENT]).toContainEqual(
+      expect(instance?.annotations[CORE_ANNOTATIONS.PARENT]).toContainEqual(
         new ReferenceExpression(testSObj.elemID)
       )
     }
 
     it('should add relation between layout to related sobject', async () => {
-      await fetch('Test')
+      await fetch(testApiNames.regualr)
     })
     it('should add relation between layout to related custom sobject', async () => {
-      await fetch('Test__c')
+      await fetch(testApiNames.custom)
     })
     it('should not transform instance name if it is already fixed', async () => {
-      await fetch('Test', { fixedName: true })
+      await fetch(testApiNames.regualr,
+      // { fixedName: true, namespace: undefined }
+      )
     })
-    it('should fetch SBQQ-prefixed layout instances', async () => {
-      await fetch('SBQQ__Obj-Obj lala Layout') // TODOH: add namespace??
+    it('should fetch layout instances with namespace SBQQ', async () => {
+      await fetch(testApiNames.SBQQ_prefixBeforeFix,
+      // { fixedName: false, namespace: 'SBQQ'}
+      )
     })
   })
 })

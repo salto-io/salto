@@ -24,7 +24,7 @@ import { FileProperties } from 'jsforce-types'
 import { apiName, isCustomObject } from '../transformers/transformer'
 import { FilterContext, FilterCreator, FilterResult } from '../filter'
 import { addObjectParentReference, buildElementsSourceForFetch } from './utils'
-import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE, FULLNAME_SEPERATOR, CPQ_PREFIX, NAMESPACE_SEPARATOR } from '../constants'
+import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE, FULLNAME_SEPERATOR, SBQQ_PREFIX, NAMESPACE_SEPARATOR } from '../constants'
 import { getObjectDirectoryPath } from './custom_objects'
 import { FetchElements } from '../types'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
@@ -87,13 +87,12 @@ const createLayoutMetadataInstances = async (
   if (type === undefined) return { configChanges: [], elements: [] }
   const [filePropsToTransform,
     regularFileProps] = _.partition(fileProps,
-    fileProp => fileProp.namespacePrefix === CPQ_PREFIX)
+    fileProp => fileProp.namespacePrefix === SBQQ_PREFIX)
 
   const correctedFileProps = [
     ...regularFileProps,
     ...filePropsToTransform.map(transformPrefixedLayoutFileProp),
   ]
-
   const instances = await fetchMetadataInstances({
     client,
     fileProps: correctedFileProps,

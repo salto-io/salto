@@ -29,7 +29,6 @@ import { TOKEN_TYPES, LexerToken, TRUE, FALSE } from '../lexer'
 import { missingComma, unknownFunction, unterminatedString, invalidStringTemplate, missingValue, invalidAttrKey, missingEqualMark, duplicatedAttribute, missingNewline, invalidStringChar } from '../errors'
 
 import { IllegalReference } from '../../types'
-import lexer from '../../nearly/lexer'
 
 export const MISSING_VALUE = '****dynamic****'
 
@@ -398,7 +397,7 @@ const consumeObject = (context: ParseContext, idPrefix?: ElemID): ConsumerReturn
       const nonNewlineToken = context.lexer.peek(false) as LexerToken
       if (!nonNewlineToken) {
         // If we don't have another token we will use next to trigger the EOF logic
-        lexer.next()
+        context.lexer.next()
       }
       context.errors.push(missingNewline({
         start: positionAtStart(nonNewlineToken),

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { parse, SourceRange, parseElemID, tokenizeContent, Token } from './parse'
+export { parse, SourceRange, parseTopLevelID, tokenizeContent, Token } from './parse'
 export { ParseResult, ParseError } from './types'
 export { dumpElements, dumpElemID, dumpValues } from './dump'
 export { SourceMap } from './source_map'

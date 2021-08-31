@@ -24,7 +24,7 @@ import { collections } from '@salto-io/lowerdash'
 import { ContextReference } from '../context'
 
 const { awu } = collections.asynciterable
-const { dumpElemID, parseElemID } = parser
+const { dumpElemID } = parser
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
 interface InsertText {
@@ -331,7 +331,7 @@ export const isSuggestions = (): Suggestions => ['is']
 export const instanceSuggestions = async (
   params: SuggestionsParams
 ): Promise<Suggestions> => {
-  const elemID = parseElemID(params.tokens[0])
+  const elemID = ElemID.fromFullName(params.tokens[0])
   return getAllInstances(
     await params.elements.list(),
     elemID

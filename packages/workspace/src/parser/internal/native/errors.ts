@@ -191,3 +191,12 @@ export const invalidStringChar = (stringRange: SourceRange, errMsg: string): Par
     }
   return createError(range, 'Invalid string character')
 }
+
+export const invalidElemIDType = (
+  typeName: string,
+  range: SourceRange,
+): ParseError => createError(
+  range,
+  'Invalid type name',
+  `"${typeName}" is invalid. Valid type names format is {adapter}.{type}`,
+)

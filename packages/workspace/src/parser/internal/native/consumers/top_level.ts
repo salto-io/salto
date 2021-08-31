@@ -13,27 +13,34 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, PrimitiveType, PrimitiveTypes, ObjectType, ElemID, InstanceElement, Variable, INSTANCE_ANNOTATIONS, TypeReference } from '@salto-io/adapter-api'
+import { Element, PrimitiveType, PrimitiveTypes, ObjectType, ElemID, InstanceElement, Variable,
+  INSTANCE_ANNOTATIONS, TypeReference } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { Keywords } from '../../../language'
 import { ParseContext, ConsumerReturnType } from '../types'
-import { parseElemID } from '../../nearly/converter/elements'
-import { invalidPrimitiveTypeDef, unknownPrimitiveTypeError, invalidFieldsInPrimitiveType, invalidBlocksInInstance, invalidVarDefinition, missingLabelsError, missingBlockOpen, ambigiousBlock } from '../errors'
-import { primitiveType, registerRange, positionAtStart, positionAtEnd } from '../helpers'
+import { SourceRange } from '../../types'
+import { invalidPrimitiveTypeDef, unknownPrimitiveTypeError, invalidFieldsInPrimitiveType,
+  invalidBlocksInInstance, invalidVarDefinition, missingLabelsError, missingBlockOpen,
+  ambigiousBlock } from '../errors'
+import { primitiveType, registerRange, positionAtStart, positionAtEnd,
+  parseTopLevelID, INVALID_ELEM_ID } from '../helpers'
 import { consumeBlockBody, recoverInvalidItemDefinition, isAttrDef } from './blocks'
 import { TOKEN_TYPES } from '../lexer'
 import { consumeWords, consumeValue } from './values'
 
 const INSTANCE_ANNOTATIONS_ATTRS: string[] = Object.values(INSTANCE_ANNOTATIONS)
 
+const getElementIfValid = <T extends Element>(element: T, typeID?: ElemID): T | undefined =>
+  ((typeID ?? element.elemID).isEqual(INVALID_ELEM_ID) ? undefined : element)
+
 const consumePrimitive = (
   context: ParseContext,
   labels: ConsumerReturnType<string[]>
-): ConsumerReturnType<PrimitiveType> => {
+): ConsumerReturnType<PrimitiveType | undefined> => {
   // Note - this method is called *only* if labels has 4 tokens (the first of which
   // is 'type' which we can ignore
   const [typeName, kw, baseType] = labels.value.slice(1)
-  const elemID = parseElemID(typeName)
+  const elemID = parseTopLevelID(context, typeName, { ...labels.range, filename: context.filename })
 
   // We create an error if some other token is used instead of the 'is' keyword.
   // We don't need to recover. We'll just pretend the wrong word is 'is' (hihi)
@@ -69,12 +76,12 @@ const consumePrimitive = (
     }))
   }
   return {
-    value: new PrimitiveType({
+    value: getElementIfValid(new PrimitiveType({
       elemID,
       primitive,
       annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
       annotations: consumedBlock.value.attrs,
-    }),
+    })),
     range: consumedBlock.range,
   }
 }
@@ -82,18 +89,19 @@ const consumePrimitive = (
 const consumeObjectType = (
   context: ParseContext,
   typeName: string,
+  range: SourceRange,
   isSettings: boolean
-): ConsumerReturnType<ObjectType> => {
-  const elemID = parseElemID(typeName)
+): ConsumerReturnType<ObjectType | undefined> => {
+  const elemID = parseTopLevelID(context, typeName, range)
   const consumedBlock = consumeBlockBody(context, elemID)
   return {
-    value: new ObjectType({
+    value: getElementIfValid(new ObjectType({
       elemID,
       fields: consumedBlock.value.fields,
       annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
       annotations: consumedBlock.value.attrs,
       isSettings,
-    }),
+    })),
     range: consumedBlock.range,
   }
 }
@@ -101,9 +109,10 @@ const consumeObjectType = (
 const consumeInstanceElement = (
   context: ParseContext,
   instanceType: string,
+  range: SourceRange,
   instanceName: string = ElemID.CONFIG_NAME
-): ConsumerReturnType<InstanceElement> => {
-  let typeID = parseElemID(instanceType)
+): ConsumerReturnType<InstanceElement | undefined> => {
+  let typeID = parseTopLevelID(context, instanceType, range)
   if (_.isEmpty(typeID.adapter) && typeID.name.length > 0) {
     // In this case if there is just a single name we have to assume it is actually the adapter
     typeID = new ElemID(typeID.name)
@@ -134,7 +143,7 @@ const consumeInstanceElement = (
   instance.annotations = annotations
   instance.value = attrs
   return {
-    value: instance,
+    value: getElementIfValid(instance, typeID),
     range: consumedBlockBody.range,
   }
 }
@@ -224,15 +233,24 @@ export const consumeElement = (context: ParseContext): ConsumerReturnType<Elemen
   if (isPrimitiveTypeDef(elementType, elementLabels)) {
     consumedElement = consumePrimitive(context, consumedLabels)
   } else if (isObjectTypeDef(elementType, elementLabels, isSettings)) {
-    consumedElement = consumeObjectType(context, elementLabels[0], isSettings)
+    consumedElement = consumeObjectType(
+      context, elementLabels[0],
+      { ...consumedLabels.range, filename: context.filename },
+      isSettings,
+    )
   } else if (isInstanceTypeDef(elementType, elementLabels)) {
-    consumedElement = consumeInstanceElement(context, elementType, elementLabels[0])
+    consumedElement = consumeInstanceElement(
+      context,
+      elementType,
+      { ...consumedLabels.range, filename: context.filename },
+      elementLabels[0]
+    )
   } else {
     // If we don't know which type of block is defined here, we need to ignore
     // the block. So we consume it in order to continue on the next block. If
     // this is not a block (we expect it to be a block since we only support blocks
     // as top level element), the consumeBlockBody method will generate the proper errors
-    const blockToIgnore = consumeBlockBody(context, new ElemID('ignore'))
+    const blockToIgnore = consumeBlockBody(context, INVALID_ELEM_ID)
     const range = {
       start: consumedLabels.range.start,
       end: blockToIgnore.range.end,

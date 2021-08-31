@@ -773,7 +773,7 @@ describe('Salto parser', () => {
   `
     const result = await parse(Buffer.from(body), 'none', functions)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0].summary).toEqual('Invalid element ID type')
+    expect(result.errors[0].summary).toEqual('Invalid type name')
     expect(result.elements).toHaveLength(0)
   })
 
@@ -783,7 +783,7 @@ describe('Salto parser', () => {
   `
     const result = await parse(Buffer.from(body), 'none', functions)
     expect(result.errors).toHaveLength(1)
-    expect(result.errors[0].summary).toEqual('Invalid element ID type')
+    expect(result.errors[0].summary).toEqual('Invalid type name')
     expect(result.elements).toHaveLength(0)
   })
 
@@ -796,7 +796,7 @@ describe('Salto parser', () => {
   `
     const result = await parse(Buffer.from(body), 'none', functions)
     expect(result.errors).toHaveLength(2)
-    expect(result.errors[0].summary).toEqual('Invalid element ID type')
+    expect(result.errors[0].summary).toEqual('Invalid type name')
     expect(result.elements).toHaveLength(1)
     expect((result.elements as InstanceElement[])[0].elemID)
       .toEqual(new ElemID('salesforce', 'anotherType'))

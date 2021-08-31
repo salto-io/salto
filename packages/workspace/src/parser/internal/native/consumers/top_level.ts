@@ -23,12 +23,15 @@ import { invalidPrimitiveTypeDef, unknownPrimitiveTypeError, invalidFieldsInPrim
   invalidBlocksInInstance, invalidVarDefinition, missingLabelsError, missingBlockOpen,
   ambigiousBlock } from '../errors'
 import { primitiveType, registerRange, positionAtStart, positionAtEnd,
-  parseElemID, INVALID_ELEM_ID } from '../helpers'
+  parseTopLevelID, INVALID_ELEM_ID } from '../helpers'
 import { consumeBlockBody, recoverInvalidItemDefinition, isAttrDef } from './blocks'
-import { TOKEN_TYPES, WILDCARD } from '../lexer'
+import { TOKEN_TYPES } from '../lexer'
 import { consumeWords, consumeValue } from './values'
 
 const INSTANCE_ANNOTATIONS_ATTRS: string[] = Object.values(INSTANCE_ANNOTATIONS)
+
+const getElementIfValid = <T extends Element>(element: T, typeID?: ElemID): T | undefined =>
+  ((typeID ?? element.elemID).isEqual(INVALID_ELEM_ID) ? undefined : element)
 
 const consumePrimitive = (
   context: ParseContext,
@@ -37,8 +40,7 @@ const consumePrimitive = (
   // Note - this method is called *only* if labels has 4 tokens (the first of which
   // is 'type' which we can ignore
   const [typeName, kw, baseType] = labels.value.slice(1)
-  const elemID = parseElemID(context, typeName, { ...labels.range, filename: context.filename })
-  const invalidType = elemID.isEqual(INVALID_ELEM_ID)
+  const elemID = parseTopLevelID(context, typeName, { ...labels.range, filename: context.filename })
 
   // We create an error if some other token is used instead of the 'is' keyword.
   // We don't need to recover. We'll just pretend the wrong word is 'is' (hihi)
@@ -74,12 +76,12 @@ const consumePrimitive = (
     }))
   }
   return {
-    value: invalidType ? undefined : new PrimitiveType({
+    value: getElementIfValid(new PrimitiveType({
       elemID,
       primitive,
       annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
       annotations: consumedBlock.value.attrs,
-    }),
+    })),
     range: consumedBlock.range,
   }
 }
@@ -90,17 +92,16 @@ const consumeObjectType = (
   range: SourceRange,
   isSettings: boolean
 ): ConsumerReturnType<ObjectType | undefined> => {
-  const elemID = parseElemID(context, typeName, range)
-  const invalidType = elemID.isEqual(INVALID_ELEM_ID)
+  const elemID = parseTopLevelID(context, typeName, range)
   const consumedBlock = consumeBlockBody(context, elemID)
   return {
-    value: invalidType ? undefined : new ObjectType({
+    value: getElementIfValid(new ObjectType({
       elemID,
       fields: consumedBlock.value.fields,
       annotationRefsOrTypes: consumedBlock.value.annotationRefTypes,
       annotations: consumedBlock.value.attrs,
       isSettings,
-    }),
+    })),
     range: consumedBlock.range,
   }
 }
@@ -111,8 +112,7 @@ const consumeInstanceElement = (
   range: SourceRange,
   instanceName: string = ElemID.CONFIG_NAME
 ): ConsumerReturnType<InstanceElement | undefined> => {
-  let typeID = parseElemID(context, instanceType, range)
-  const invalidType = typeID.isEqual(INVALID_ELEM_ID)
+  let typeID = parseTopLevelID(context, instanceType, range)
   if (_.isEmpty(typeID.adapter) && typeID.name.length > 0) {
     // In this case if there is just a single name we have to assume it is actually the adapter
     typeID = new ElemID(typeID.name)
@@ -143,7 +143,7 @@ const consumeInstanceElement = (
   instance.annotations = annotations
   instance.value = attrs
   return {
-    value: invalidType ? undefined : instance,
+    value: getElementIfValid(instance, typeID),
     range: consumedBlockBody.range,
   }
 }
@@ -250,7 +250,7 @@ export const consumeElement = (context: ParseContext): ConsumerReturnType<Elemen
     // the block. So we consume it in order to continue on the next block. If
     // this is not a block (we expect it to be a block since we only support blocks
     // as top level element), the consumeBlockBody method will generate the proper errors
-    const blockToIgnore = consumeBlockBody(context, new ElemID(WILDCARD))
+    const blockToIgnore = consumeBlockBody(context, INVALID_ELEM_ID)
     const range = {
       start: consumedLabels.range.start,
       end: blockToIgnore.range.end,

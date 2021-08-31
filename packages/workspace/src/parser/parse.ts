@@ -25,7 +25,7 @@ import PeekableLexer from './internal/native/lexer'
 import { parseBuffer } from './internal/native/parse'
 import { ParseResult } from './types'
 
-export { parseElemID } from './internal/native/helpers'
+export { parseTopLevelID } from './internal/native/helpers'
 export { IllegalReference } from './internal/types'
 
 

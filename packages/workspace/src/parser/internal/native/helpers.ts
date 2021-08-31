@@ -37,11 +37,11 @@ export const positionAtEnd = (token: LexerToken): SourcePos => ({
     : token.col + token.text.length,
 })
 
-export const parseElemID = (context: ParseContext, fullname: string, range: SourceRange):
+export const parseTopLevelID = (context: ParseContext, fullname: string, range: SourceRange):
 ElemID => {
   const parts = fullname.split(Keywords.NAMESPACE_SEPARATOR)
   if (parts.length > 2) {
-    context.errors.push(invalidElemIDType(range))
+    context.errors.push(invalidElemIDType(fullname, range))
     return INVALID_ELEM_ID
   }
   const adapter = parts.length > 1 ? parts[0] : ''
@@ -122,7 +122,7 @@ export const createFieldRefType = (
     context.mapTypes[mapType.elemID.getFullName()] = mapType
     return mapRefType
   }
-  return new TypeReference(parseElemID(context, blockType, range))
+  return new TypeReference(parseTopLevelID(context, blockType, range))
 }
 
 export const primitiveType = (typeName: string): PrimitiveTypes | undefined => {

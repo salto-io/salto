@@ -64,7 +64,7 @@ import valueToStaticFileFilter from './filters/value_to_static_file'
 import convertMapsFilter from './filters/convert_maps'
 import elementsUrlFilter from './filters/elements_url'
 import territoryFilter from './filters/territory'
-import { FetchElements, SalesforceConfig } from './types'
+import { CustomObjectsDeployRetryOptions, FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { FilterCreator, Filter, FilterResult } from './filter'
 import { addDefaults } from './filters/utils'
@@ -230,6 +230,7 @@ export const allSystemFields = [
 
 export default class SalesforceAdapter implements AdapterOperations {
   private maxItemsInRetrieveRequest: number
+  private customObjectsDeployOptions: CustomObjectsDeployRetryOptions
   private metadataToRetrieve: string[]
   private metadataTypesOfInstancesFetchedInFilters: string[]
   private nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>
@@ -294,6 +295,8 @@ export default class SalesforceAdapter implements AdapterOperations {
     config,
   }: SalesforceAdapterParams) {
     this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
+    this.customObjectsDeployOptions = config.customObjectsDeployRetryOptions
+    ?? constants.DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRTY_OPTIONS
     this.metadataToRetrieve = metadataToRetrieve
     this.userConfig = config
     this.metadataTypesOfInstancesFetchedInFilters = metadataTypesOfInstancesFetchedInFilters
@@ -379,7 +382,8 @@ export default class SalesforceAdapter implements AdapterOperations {
 
     const result = await isCustomObjectInstanceChanges(resolvedChanges)
       ? await deployCustomObjectInstancesGroup(
-        resolvedChanges as Change<InstanceElement>[], this.client, this.fetchProfile.dataManagement,
+        resolvedChanges as Change<InstanceElement>[], this.client,
+        this.customObjectsDeployOptions, this.fetchProfile.dataManagement,
       )
       : await deployMetadata(resolvedChanges, this.client,
         this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate)

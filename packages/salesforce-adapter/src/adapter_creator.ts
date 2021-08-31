@@ -23,7 +23,8 @@ import SalesforceAdapter from './adapter'
 import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
   isAccessTokenConfig, SalesforceConfig, accessTokenCredentialsType,
   UsernamePasswordCredentials, Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG,
-  SalesforceClientConfig, RetryStrategyName, FETCH_CONFIG, MAX_ITEMS_IN_RETRIEVE_REQUEST, USE_OLD_PROFILES } from './types'
+  SalesforceClientConfig, RetryStrategyName, FETCH_CONFIG, MAX_ITEMS_IN_RETRIEVE_REQUEST,
+  USE_OLD_PROFILES, CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS } from './types'
 import { validateFetchParameters } from './fetch_profile/fetch_profile'
 import { ConfigValidationError } from './config_validation'
 import { updateDeprecatedConfiguration } from './deprecated_config'
@@ -76,6 +77,7 @@ SalesforceConfig => {
     maxItemsInRetrieveRequest: config?.value?.[MAX_ITEMS_IN_RETRIEVE_REQUEST],
     useOldProfiles: config?.value?.[USE_OLD_PROFILES],
     client: config?.value?.[CLIENT_CONFIG],
+    customObjectsDeployRetryOptions: config?.value?.[CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS],
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))

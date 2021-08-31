@@ -452,7 +452,27 @@ describe('NetsuiteAdapter creator', () => {
           adapter.configType as ObjectType,
           {
             [CLIENT_CONFIG]: {
-              [INSTALLED_SUITEAPPS]: ['a', 2],
+              [INSTALLED_SUITEAPPS]: ['a.b.c', 2],
+            },
+          }
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
+
+      it('should throw an error when installedSuiteApps has an item that is not a valid id', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
+          adapter.configType as ObjectType,
+          {
+            [CLIENT_CONFIG]: {
+              [INSTALLED_SUITEAPPS]: ['a', 'a.b.c'],
             },
           }
         )
@@ -472,7 +492,7 @@ describe('NetsuiteAdapter creator', () => {
           adapter.configType as ObjectType,
           {
             [CLIENT_CONFIG]: {
-              [INSTALLED_SUITEAPPS]: ['a', 'b'],
+              [INSTALLED_SUITEAPPS]: ['a.b.c', 'b.c.d'],
             },
           }
         )

@@ -46,6 +46,8 @@ const log = logger(module)
 const { makeArray } = collections.array
 
 const configID = new ElemID(NETSUITE)
+// Taken from https://github.com/salto-io/netsuite-suitecloud-sdk/blob/e009e0eefcd918635353d093be6a6c2222d223b8/packages/node-cli/src/validation/InteractiveAnswersValidator.js#L27
+const SUITEAPP_ID_FORMAT_REGEX = /^[a-z0-9]+(\.[a-z0-9]+){2}$/
 
 // The SuiteApp fields are commented out until we will be ready to expose them to the user
 export const defaultCredentialsType = new ObjectType({
@@ -81,8 +83,14 @@ export const defaultCredentialsType = new ObjectType({
 })
 
 const validateInstalledSuiteApps = (installedSuiteApps: unknown): void => {
-  if (!Array.isArray(installedSuiteApps) || installedSuiteApps.some(suiteApp => typeof suiteApp !== 'string')) {
+  if (!Array.isArray(installedSuiteApps)
+    || installedSuiteApps.some(suiteApp => typeof suiteApp !== 'string')) {
     throw Error(`received an invalid ${INSTALLED_SUITEAPPS} value: ${installedSuiteApps}`)
+  }
+
+  const invalidValues = installedSuiteApps.filter(id => !SUITEAPP_ID_FORMAT_REGEX.test(id))
+  if (invalidValues.length !== 0) {
+    throw Error(`${INSTALLED_SUITEAPPS} values should contain only lowercase characters or numbers and exactly two dots (such as com.saltoio.salto). The following values are invalid: ${invalidValues.join(', ')}`)
   }
 }
 

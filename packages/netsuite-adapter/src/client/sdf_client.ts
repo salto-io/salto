@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections, decorators, promises, values } from '@salto-io/lowerdash'
+import { collections, decorators, objects, promises, values } from '@salto-io/lowerdash'
 import { Values, AccountId } from '@salto-io/adapter-api'
-import { mkdirp, readDir, readFile, writeFile, rm } from '@salto-io/file'
+import { mkdirp, readDir, readFile, writeFile, rm, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import {
   CommandsMetadataService, CommandActionExecutor, CLIConfigurationService, NodeConsoleLogger,
@@ -31,6 +31,7 @@ import uuidv4 from 'uuid/v4'
 import AsyncLock from 'async-lock'
 import wu from 'wu'
 import {
+  APPLICATION_ID,
   FILE_CABINET_PATH_SEPARATOR,
 } from '../constants'
 import {
@@ -156,6 +157,7 @@ type Project = {
   projectPath: string
   executor: CommandActionExecutor
   authId: string
+  type: 'AccountCustomization' | 'SuiteApp'
 }
 
 type ObjectsChunk = {
@@ -174,6 +176,7 @@ export default class SdfClient {
   private readonly globalLimiter: Bottleneck
   private readonly setupAccountLock: AsyncLock
   private readonly baseCommandExecutor: CommandActionExecutor
+  private readonly installedSuiteApps: string[]
 
   constructor({
     credentials,
@@ -192,6 +195,7 @@ export default class SdfClient {
     const commandTimeoutInMinutes = config?.fetchTypeTimeoutInMinutes
       ?? DEFAULT_COMMAND_TIMEOUT_IN_MINUTES
     SdkProperties.setCommandTimeout(commandTimeoutInMinutes * MINUTE_IN_MILLISECONDS)
+    this.installedSuiteApps = config?.installedSuiteApps ?? []
   }
 
   @SdfClient.logDecorator
@@ -228,17 +232,35 @@ export default class SdfClient {
     }
   )
 
-  private async createProject(projectName: string): Promise<void> {
+  private async createProject(projectName: string, suiteAppId: string | undefined): Promise<void> {
+    const projectPath = osPath.join(baseExecutionPath, projectName)
+    const args: Record<string, unknown> = {
+      projectname: projectName,
+    }
+    if (suiteAppId !== undefined) {
+      args.type = 'SUITEAPP'
+      const splitIndex = suiteAppId.lastIndexOf('.')
+      args.publisherid = suiteAppId.slice(0, splitIndex)
+      args.projectid = suiteAppId.slice(splitIndex + 1)
+      args.projectversion = '1.0.0'
+      args.overwrite = true
+      args.parentdirectory = osPath.join(baseExecutionPath, suiteAppId)
+    } else {
+      args.type = 'ACCOUNTCUSTOMIZATION'
+      args.parentdirectory = projectPath
+    }
     const actionResult = await this.baseCommandExecutor.executeAction({
       commandName: COMMANDS.CREATE_PROJECT,
       runInInteractiveMode: false,
-      arguments: {
-        projectname: projectName,
-        type: 'ACCOUNTCUSTOMIZATION',
-        parentdirectory: osPath.join(baseExecutionPath, projectName),
-      },
+      arguments: args,
     })
     SdfClient.verifySuccessfulAction(actionResult, COMMANDS.CREATE_PROJECT)
+    if (suiteAppId !== undefined) {
+      // When creating a SuiteApp project, the folder name will always be the suiteAppId
+      // (regardless the what we pass in the projectname) so we want to
+      // rename it to projectPath.
+      await rename(osPath.join(baseExecutionPath, suiteAppId), projectPath)
+    }
   }
 
   private static verifySuccessfulAction(actionResult: ActionResult, commandName: string):
@@ -302,15 +324,15 @@ export default class SdfClient {
     })
   }
 
-  private async initProject(): Promise<Project> {
+  private async initProject(suiteAppId?: string): Promise<Project> {
     const authId = uuidv4()
     const projectName = `TempSdfProject-${authId}`
-    await this.createProject(projectName)
+    await this.createProject(projectName, suiteAppId)
     const projectPath = SdfClient.getProjectPath(projectName)
     const executor = SdfClient
       .initCommandActionExecutor(projectPath)
     await this.setupAccount(executor, authId)
-    return { projectName, projectPath, executor, authId }
+    return { projectName, projectPath, executor, authId, type: suiteAppId !== undefined ? 'SuiteApp' : 'AccountCustomization' }
   }
 
   private static async deleteProject(projectName: string): Promise<void> {
@@ -338,6 +360,22 @@ export default class SdfClient {
     ])
   }
 
+  private static async transformCustomObject(
+    scriptId: string, objectFileNames: string[], objectsDirPath: string
+  ): Promise<CustomTypeInfo> {
+    const [[additionalFilename], [contentFilename]] = _.partition(objectFileNames,
+      filename => filename.includes(ADDITIONAL_FILE_PATTERN))
+    const xmlContent = readFile(osPath.resolve(objectsDirPath, contentFilename))
+    if (_.isUndefined(additionalFilename)) {
+      return convertToCustomTypeInfo((await xmlContent).toString(), scriptId)
+    }
+    const additionalFileContent = readFile(
+      osPath.resolve(objectsDirPath, additionalFilename)
+    )
+    return convertToTemplateCustomTypeInfo((await xmlContent).toString(), scriptId,
+      additionalFilename.split(FILE_SEPARATOR)[2], await additionalFileContent)
+  }
+
   @SdfClient.logDecorator
   async getCustomObjects(typeNames: string[], query: NetsuiteQuery):
     Promise<GetCustomObjectsResult> {
@@ -345,50 +383,66 @@ export default class SdfClient {
       return { elements: [], failedToFetchAllAtOnce: false, failedTypeToInstances: {} }
     }
 
-    const { executor, projectName, authId } = await this.initProject()
-    const { failedToFetchAllAtOnce, failedTypeToInstances } = await this.importObjects(
-      executor, typeNames, query
-    )
-    const objectsDirPath = SdfClient.getObjectsDirPath(projectName)
-    const filenames = await readDir(objectsDirPath)
-    const scriptIdToFiles = _.groupBy(filenames, filename => filename.split(FILE_SEPARATOR)[0])
+    log.debug(`Running getCustomObjects with the following suiteApps ids: ${this.installedSuiteApps.join(', ')}`)
+    const importResult = await Promise.all(
+      [undefined, ...this.installedSuiteApps]
+        .map(async suiteAppId => {
+          const { executor, projectName, authId } = await this.initProject()
+          const { failedTypeToInstances, failedToFetchAllAtOnce } = await this.importObjects(
+            executor,
+            typeNames,
+            query,
+            suiteAppId,
+          )
+          const objectsDirPath = SdfClient.getObjectsDirPath(projectName)
+          const filenames = await readDir(objectsDirPath)
+          const scriptIdToFiles = _.groupBy(
+            filenames,
+            filename => filename.split(FILE_SEPARATOR)[0]
+          )
 
-    const transformCustomObject = async (
-      scriptId: string, objectFileNames: string[]
-    ): Promise<CustomTypeInfo> => {
-      const [[additionalFilename], [contentFilename]] = _.partition(objectFileNames,
-        filename => filename.includes(ADDITIONAL_FILE_PATTERN))
-      const xmlContent = readFile(osPath.resolve(objectsDirPath, contentFilename))
-      if (_.isUndefined(additionalFilename)) {
-        return convertToCustomTypeInfo((await xmlContent).toString(), scriptId)
-      }
-      const additionalFileContent = readFile(osPath.resolve(objectsDirPath, additionalFilename))
-      return convertToTemplateCustomTypeInfo((await xmlContent).toString(), scriptId,
-        additionalFilename.split(FILE_SEPARATOR)[2], await additionalFileContent)
-    }
+          const elements = await withLimitedConcurrency(
+            Object.entries(scriptIdToFiles).map(([scriptId, objectFileNames]) =>
+              () => SdfClient.transformCustomObject(scriptId, objectFileNames, objectsDirPath)),
+            READ_CONCURRENCY
+          )
 
-    const elements = await withLimitedConcurrency(
-      Object.entries(scriptIdToFiles).map(([scriptId, objectFileNames]) =>
-        () => transformCustomObject(scriptId, objectFileNames)),
-      READ_CONCURRENCY
+          if (suiteAppId !== undefined) {
+            elements.forEach(e => { e.values[APPLICATION_ID] = suiteAppId })
+          }
+          await this.projectCleanup(projectName, authId)
+
+          return { elements, failedToFetchAllAtOnce, failedTypeToInstances }
+        })
     )
-    await this.projectCleanup(projectName, authId)
+
+    const failedTypeToInstances = objects.concatObjects(
+      importResult.map(res => res.failedTypeToInstances)
+    )
+
+    const elements = importResult.flatMap(res => res.elements)
+    const failedToFetchAllAtOnce = importResult.some(res => res.failedToFetchAllAtOnce)
+
     return { elements, failedToFetchAllAtOnce, failedTypeToInstances }
   }
 
   private async importObjects(
     executor: CommandActionExecutor,
     typeNames: string[],
-    query: NetsuiteQuery
-  ): Promise<{ failedToFetchAllAtOnce: boolean; failedTypeToInstances: NetsuiteQueryParameters['types'] }> {
+    query: NetsuiteQuery,
+    suiteAppId: string | undefined,
+  ): Promise<{
+    failedToFetchAllAtOnce: boolean
+    failedTypeToInstances: NetsuiteQueryParameters['types']
+  }> {
     const importAllAtOnce = async (): Promise<NetsuiteQueryParameters['types'] | undefined> => {
-      log.debug('Fetching all custom objects at once')
+      log.debug(`Fetching all custom objects at once with suiteApp: ${suiteAppId}`)
       try {
         // When fetchAllAtOnce we use the below heuristic in order to define a proper timeout,
         // instead of adding another configuration value
-        return await this.runImportObjectsCommand(executor, ALL, ALL)
+        return await this.runImportObjectsCommand(executor, ALL, ALL, suiteAppId)
       } catch (e) {
-        log.warn('Attempt to fetch all custom objects has failed')
+        log.warn(`Attempt to fetch all custom objects has failed with suiteApp: ${suiteAppId}`)
         log.warn(e)
         return undefined
       }
@@ -400,14 +454,20 @@ export default class SdfClient {
         return { failedToFetchAllAtOnce: false, failedTypeToInstances }
       }
     }
-    const failedTypeToInstances = await this.importObjectsInChunks(executor, typeNames, query)
+    const failedTypeToInstances = await this.importObjectsInChunks(
+      executor,
+      typeNames,
+      query,
+      suiteAppId,
+    )
     return { failedToFetchAllAtOnce: this.fetchAllTypesAtOnce, failedTypeToInstances }
   }
 
   private async importObjectsInChunks(
     executor: CommandActionExecutor,
     typeNames: string[],
-    query: NetsuiteQuery
+    query: NetsuiteQuery,
+    suiteAppId: string | undefined,
   ): Promise<NetsuiteQueryParameters['types']> {
     const importObjectsChunk = async (
       { type, ids, index, total }: ObjectsChunk, retry = true
@@ -415,29 +475,29 @@ export default class SdfClient {
       const retryFetchFailedInstances = async (
         failedInstancesIds: string[]
       ): Promise<NetsuiteQueryParameters['types']> => {
-        log.debug('Retrying to fetch failed instances of chunk %d/%d of type %s: %o',
-          index, total, type, failedInstancesIds)
+        log.debug('Retrying to fetch failed instances with suiteApp: %s of chunk %d/%d of type %s: %o',
+          suiteAppId, index, total, type, failedInstancesIds)
         const failedTypeToInstancesAfterRetry = await this.runImportObjectsCommand(
-          executor, type, failedInstancesIds.join(' ')
+          executor, type, failedInstancesIds.join(' '), suiteAppId
         )
-        log.debug('Retried to fetch %d failed instances of chunk %d/%d of type: %s.',
-          failedInstancesIds.length, index, total, type)
+        log.debug('Retried to fetch %d failed instances with suiteApp: %s of chunk %d/%d of type: %s.',
+          failedInstancesIds.length, suiteAppId, index, total, type)
         return failedTypeToInstancesAfterRetry
       }
 
       try {
-        log.debug('Starting to fetch chunk %d/%d with %d objects of type: %s', index, total, ids.length, type)
+        log.debug('Starting to fetch chunk %d/%d with %d objects of type: %s with SuiteApp %s', index, total, ids.length, type, suiteAppId)
         let failedTypeToInstances = await this.runImportObjectsCommand(
-          executor, type, ids.join(' ')
+          executor, type, ids.join(' '), suiteAppId
         )
         if (failedTypeToInstances[type]?.length > 0) {
           failedTypeToInstances = await retryFetchFailedInstances(failedTypeToInstances[type])
         }
-        log.debug('Fetched chunk %d/%d with %d objects of type: %s. failedTypeToInstances: %o',
-          index, total, ids.length, type, failedTypeToInstances)
+        log.debug('Fetched chunk %d/%d with %d objects of type: %s with suiteApp: %s. failedTypeToInstances: %o',
+          index, total, ids.length, type, suiteAppId, failedTypeToInstances)
         return failedTypeToInstances
       } catch (e) {
-        log.warn('Failed to fetch chunk %d/%d with %d objects of type: %s', index, total, ids.length, type)
+        log.warn('Failed to fetch chunk %d/%d with %d objects of type: %s with suiteApp: %s', index, total, ids.length, type, suiteAppId)
         log.warn(e)
         if (!retry) {
           throw e
@@ -458,7 +518,8 @@ export default class SdfClient {
 
     const instancesIds = (await this.listInstances(
       executor,
-      typeNames.filter(query.isTypeMatch)
+      typeNames.filter(query.isTypeMatch),
+      suiteAppId,
     )).filter(query.isObjectMatch)
 
     const instancesIdsByType = _.groupBy(instancesIds, id => id.type)
@@ -489,6 +550,7 @@ export default class SdfClient {
     executor: CommandActionExecutor,
     type: string,
     scriptIds: string,
+    suiteAppId: string | undefined,
   ): Promise<NetsuiteQueryParameters['types']> {
     const actionResult = await this.executeProjectAction(
       COMMANDS.IMPORT_OBJECTS,
@@ -498,6 +560,7 @@ export default class SdfClient {
         scriptid: scriptIds,
         maxItemsInImportObjectsRequest: this.maxItemsInImportObjectsRequest,
         excludefiles: true,
+        appid: suiteAppId,
       },
       executor,
     )
@@ -525,11 +588,13 @@ export default class SdfClient {
   async listInstances(
     executor: CommandActionExecutor,
     types: string[],
+    suiteAppId: string | undefined
   ): Promise<ObjectID[]> {
     const results = await this.executeProjectAction(
       COMMANDS.LIST_OBJECTS,
       {
         type: types.join(' '),
+        appid: suiteAppId,
       },
       executor,
     )
@@ -663,8 +728,8 @@ export default class SdfClient {
   }
 
   @SdfClient.logDecorator
-  async deploy(customizationInfos: CustomizationInfo[]): Promise<void> {
-    const project = await this.initProject()
+  async deploy(customizationInfos: CustomizationInfo[], suiteAppId?: string): Promise<void> {
+    const project = await this.initProject(suiteAppId)
     const objectsDirPath = SdfClient.getObjectsDirPath(project.projectName)
     const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
     await Promise.all(customizationInfos.map(async customizationInfo => {
@@ -692,12 +757,14 @@ export default class SdfClient {
     await writeFile(manifestPath, fixedManifestContent)
   }
 
-  private async runDeployCommands({ executor, projectPath }: Project): Promise<void> {
+  private async runDeployCommands({ executor, projectPath, type }: Project): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
     await SdfClient.cleanInvalidDependencies(projectPath)
     await this.executeProjectAction(
       COMMANDS.DEPLOY_PROJECT,
-      { accountspecificvalues: 'WARNING' },
+      // SuiteApp project type can't contain account specific values
+      // and thus the flag is not supported
+      type === 'AccountCustomization' ? { accountspecificvalues: 'WARNING' } : {},
       executor
     )
   }

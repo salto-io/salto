@@ -55,6 +55,7 @@ netsuite {
 | fetchTypeTimeoutInMinutes      | 4                       | The max number of minutes a single SDF command can run
 | maxItemsInImportObjectsRequest | 40                      | Limits the max number of requested items a single import-objects request
 | sdfConcurrencyLimit            | 4                       | Limits the max number of concurrent SDF API calls. The number should not exceed the concurrency limit enforced by the upstream service.
+| installedSuiteApps             | []                      | The SuiteApps ids to deploy and fetch elements from
 
 ### Salto SuiteApp client configuration options
 

@@ -47,6 +47,7 @@ export const PATH = 'path'
 export const PERMITTED_ROLE = 'permittedrole'
 export const RECORD_TYPE = 'recordType'
 export const LAST_FETCH_TIME = '_lastfetchtime'
+export const APPLICATION_ID = 'application_id'
 
 // Field Annotations
 export const IS_ATTRIBUTE = 'isAttribute'
@@ -79,5 +80,6 @@ export const FETCH = 'fetch'
 export const INCLUDE = 'include'
 export const EXCLUDE = 'exclude'
 export const DEPLOY = 'deploy'
+export const INSTALLED_SUITEAPPS = 'installedSuiteApps'
 
 export const ACCOUNT_SPECIFIC_VALUE = '[ACCOUNT_SPECIFIC_VALUE]'

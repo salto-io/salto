@@ -20,6 +20,7 @@ import {
 import { getParents } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { APPLICATION_ID } from '../constants'
 import { TYPE_TO_ID_FIELD_PATHS } from '../data_elements/types'
 import { isDataObjectType, isFileCabinetType } from '../types'
 
@@ -63,6 +64,12 @@ const changeValidator: ChangeValidator = async changes => (
         )) {
         modifiedImmutableFields.push(
           after.elemID.createNestedID(CORE_ANNOTATIONS.PARENT).getFullName()
+        )
+      }
+
+      if (before.value[APPLICATION_ID] !== after.value[APPLICATION_ID]) {
+        modifiedImmutableFields.push(
+          after.elemID.createNestedID(APPLICATION_ID).getFullName()
         )
       }
       return modifiedImmutableFields.map(modifiedField => ({

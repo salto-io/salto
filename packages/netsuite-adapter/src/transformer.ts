@@ -16,7 +16,8 @@
 import {
   ElemID, Field, InstanceElement, isPrimitiveType, ObjectType, PrimitiveType,
   PrimitiveTypes, Values, isObjectType, isPrimitiveValue, StaticFile, ElemIdGetter,
-  ADAPTER, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds, isInstanceElement,
+  ADAPTER, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues, GetLookupNameFunc, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -25,6 +26,7 @@ import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
   SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
   LAST_FETCH_TIME,
+  APPLICATION_ID,
 } from './constants'
 import { fieldTypes } from './types/field_types'
 import { customTypes, fileCabinetTypes, isCustomType, isFileCabinetType } from './types'
@@ -249,7 +251,8 @@ export const toCustomizationInfo = async (
     return { typeName, values, path } as FolderCustomizationInfo
   }
 
-  delete instance.value[LAST_FETCH_TIME]
+  delete values[LAST_FETCH_TIME]
+  delete values[APPLICATION_ID]
 
   const scriptId = instance.value[SCRIPT_ID]
   // Template Custom Type

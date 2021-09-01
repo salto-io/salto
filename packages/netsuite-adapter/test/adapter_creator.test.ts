@@ -34,6 +34,7 @@ import {
   DEPLOY,
   DEPLOY_REFERENCED_ELEMENTS,
   WARN_STALE_DATA,
+  INSTALLED_SUITEAPPS,
 } from '../src/constants'
 import { mockGetElemIdFunc } from './utils'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
@@ -421,6 +422,88 @@ describe('NetsuiteAdapter creator', () => {
             elementsSource: buildElementsSourceFromElements([]),
           })
         ).toThrow()
+      })
+    })
+
+    describe('installedSuiteApps', () => {
+      it('should throw an error when installedSuiteApps is not a list', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
+          adapter.configType as ObjectType,
+          {
+            [CLIENT_CONFIG]: {
+              [INSTALLED_SUITEAPPS]: 2,
+            },
+          }
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
+
+      it('should throw an error when installedSuiteApps has an item that is not a string', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
+          adapter.configType as ObjectType,
+          {
+            [CLIENT_CONFIG]: {
+              [INSTALLED_SUITEAPPS]: ['a.b.c', 2],
+            },
+          }
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
+
+      it('should throw an error when installedSuiteApps has an item that is not a valid id', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
+          adapter.configType as ObjectType,
+          {
+            [CLIENT_CONFIG]: {
+              [INSTALLED_SUITEAPPS]: ['a', 'a.b.c'],
+            },
+          }
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
+
+      it('should not throw an error when installedSuiteApps is valid', () => {
+        const validConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
+          adapter.configType as ObjectType,
+          {
+            [CLIENT_CONFIG]: {
+              [INSTALLED_SUITEAPPS]: ['a.b.c', 'b.c.d'],
+            },
+          }
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: validConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).not.toThrow()
       })
     })
   })

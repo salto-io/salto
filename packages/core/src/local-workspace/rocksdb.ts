@@ -16,6 +16,7 @@
 import rimraf from 'rimraf'
 import fsExtra from 'fs-extra'
 import path from 'path'
+import { getSaltoHome } from '../app_config'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const requireOrExtract = (externalsLocation: string): any => {
@@ -44,4 +45,4 @@ const requireOrExtract = (externalsLocation: string): any => {
   return undefined
 }
 
-export default requireOrExtract(path.join(__dirname, '.externals'))
+export default requireOrExtract(path.join(getSaltoHome(), '.externals'))

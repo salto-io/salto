@@ -165,9 +165,9 @@ const toFetchChanges = (
   return async (serviceChange: DetailedChange) => {
     const pendingChange = getMatchingChange(serviceChange.id, pendingChanges)
     const change = getMatchingChange(serviceChange.id, workspaceToServiceChanges)
-    const audit = change ? getAuditInformationFromElement(
+    const audit = change === undefined ? {} : getAuditInformationFromElement(
       await mergedServiceElements.get(change?.id.createBaseID().parent)
-    ) : {}
+    )
     if (change !== undefined && !change.id.isEqual(serviceChange.id)) {
       // temporary log - should be replaced by SALTO-1364
       log.warn('service %s change for id %s was replaced by containing %s change for id %s',

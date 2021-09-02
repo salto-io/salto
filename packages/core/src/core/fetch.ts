@@ -50,13 +50,23 @@ export type FetchChange = {
   audit?: AuditInformation
 }
 
+const getAuditInformationFromElement = (element: Element | undefined): AuditInformation => {
+  if (!element) {
+    return {}
+  }
+  return _.pickBy({ changedAt: element.annotations?.[CORE_ANNOTATIONS.CHANGED_AT],
+    changedBy: element.annotations?.[CORE_ANNOTATIONS.CHANGED_BY],
+    createdAt: element.annotations?.[CORE_ANNOTATIONS.CREATED_AT],
+    createdBy: element.annotations?.[CORE_ANNOTATIONS.CREATED_BY] }, isDefined)
+}
+
 export const toAddFetchChange = (elem: Element): FetchChange => {
   const change: DetailedChange = {
     id: elem.elemID,
     action: 'add',
     data: { after: elem },
   }
-  return { change, serviceChange: change }
+  return { change, serviceChange: change, audit: getAuditInformationFromElement(elem) }
 }
 
 
@@ -136,16 +146,6 @@ export const toChangesWithPath = (
     // Replace merged element with original elements that have a path hint
     return originalElements.map(elem => _.merge({}, change, { change: { data: { after: elem } } }))
   })
-
-const getAuditInformationFromElement = (element: Element): AuditInformation => {
-  if (!element || !element.annotations) {
-    return {}
-  }
-  return _.pickBy({ changedAt: element.annotations?.[CORE_ANNOTATIONS.CHANGED_AT],
-    changedBy: element.annotations?.[CORE_ANNOTATIONS.CHANGED_BY],
-    createdAt: element.annotations?.[CORE_ANNOTATIONS.CREATED_AT],
-    createdBy: element.annotations?.[CORE_ANNOTATIONS.CREATED_BY] }, isDefined)
-}
 
 type FetchChangeConvertor = (change: DetailedChange) => Promise<FetchChange[]>
 const toFetchChanges = (

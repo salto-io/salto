@@ -13,12 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import {
   toChange, FetchResult, InstanceElement, ReferenceExpression, isReferenceExpression,
   isInstanceElement, DeployResult, Values, isStaticFile, StaticFile, FetchOptions, Change,
-  ChangeId, ChangeGroupId, ElemID, ObjectType, BuiltinTypes,
+  ChangeId, ChangeGroupId, ElemID, ObjectType, BuiltinTypes, ChangeError,
 } from '@salto-io/adapter-api'
 import { findElement, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
@@ -32,28 +32,29 @@ import {
   CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD, FETCH_ALL_TYPES_AT_ONCE,
   FILE, FILE_CABINET_PATH_SEPARATOR, FOLDER, NETSUITE, PATH, ROLE, SCRIPT_ID,
   SKIP_LIST,
-  TRANSACTION_COLUMN_CUSTOM_FIELD, WORKFLOW,
+  TRANSACTION_COLUMN_CUSTOM_FIELD, WARN_STALE_DATA, WORKFLOW,
 } from '../src/constants'
 import { mockDefaultValues } from './mock_elements'
 import { Credentials } from '../src/client/credentials'
 
 const { makeArray } = collections.array
+const { awu } = collections.asynciterable
 
 const createInstanceElement = (type: string, valuesOverride: Values): InstanceElement => {
   const isFileCabinetType = Object.keys(fileCabinetTypes).includes(type)
 
-  const values = {
+  const instValues = {
     ...mockDefaultValues[type],
     ...valuesOverride,
   }
 
-  const instanceName = naclCase(values[isFileCabinetType ? PATH : SCRIPT_ID]
+  const instanceName = naclCase(instValues[isFileCabinetType ? PATH : SCRIPT_ID]
     .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
 
   return new InstanceElement(
     instanceName,
     isFileCabinetType ? fileCabinetTypes[type] : customTypes[type],
-    values
+    instValues
   )
 }
 
@@ -325,6 +326,101 @@ describe('Netsuite adapter E2E with real account', () => {
       it('should deploy new records that depend on existing ones', async () => {
         expect(deployResult.errors).toHaveLength(0)
         expect(deployResult.appliedChanges).toHaveLength(changes.length)
+      })
+    })
+
+    describe('safe deploy change validator', () => {
+      describe('with warnOnStaleWorkspaceData=true flag', () => {
+        let beforeInstance: InstanceElement
+        let afterInstance: InstanceElement
+        let serviceInstance: InstanceElement
+        beforeAll(async () => {
+          const adapterAttr = realAdapter(
+            { credentials: credentialsLease.value, withSuiteApp },
+            { deploy: { [WARN_STALE_DATA]: true } },
+          )
+          adapter = adapterAttr.adapter
+          beforeInstance = entityCustomFieldToCreate
+          afterInstance = beforeInstance.clone()
+          serviceInstance = beforeInstance.clone()
+
+          beforeInstance.value.label = 'before label'
+          afterInstance.value.label = 'after label'
+          serviceInstance.value.label = 'service label'
+
+          const additionChanges = [toChange({ after: serviceInstance })]
+          const additionResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes: additionChanges } })
+          // check that that test setup is successfull
+          expect(additionResult.errors.length).toBe(0)
+          expect(additionResult.appliedChanges.length).toBe(1)
+        })
+
+        it('should have warning when attempting to deploy', async () => {
+          const modificationChanges = [toChange({ before: beforeInstance, after: afterInstance })]
+          const changeErrors: ReadonlyArray<ChangeError> = await awu([
+            adapter.deployModifiers?.changeValidator,
+          ])
+            .filter(values.isDefined)
+            .flatMap(validator => validator(modificationChanges))
+            .toArray()
+
+          expect(changeErrors.length).toBe(1)
+          const changeError = changeErrors.find(e => e.message === 'Continuing the deploy proccess will override changes made in the service to this element.')
+          expect(changeError).toBeDefined()
+        })
+
+        afterAll(async () => {
+          const removalChange = [toChange({ before: serviceInstance })]
+          const additionResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes: removalChange } })
+          // check that that test cleanup is successfull
+          expect(additionResult.errors.length).toBe(0)
+          expect(additionResult.appliedChanges.length).toBe(1)
+        })
+      })
+
+      describe('with warnOnStaleWorkspaceData=false flag', () => {
+        let beforeInstance: InstanceElement
+        let afterInstance: InstanceElement
+        let serviceInstance: InstanceElement
+        beforeAll(async () => {
+          const adapterAttr = realAdapter(
+            { credentials: credentialsLease.value, withSuiteApp },
+            { deploy: { warnOnStaleWorkspaceData: false } },
+          )
+          adapter = adapterAttr.adapter
+          beforeInstance = entityCustomFieldToCreate
+          afterInstance = beforeInstance.clone()
+          serviceInstance = beforeInstance.clone()
+
+          beforeInstance.value.label = 'before label'
+          afterInstance.value.label = 'after label'
+          serviceInstance.value.label = 'service label'
+
+          const additionChanges = [toChange({ after: serviceInstance })]
+          const additionResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes: additionChanges } })
+          // check that that test setup is successfull
+          expect(additionResult.errors.length).toBe(0)
+          expect(additionResult.appliedChanges.length).toBe(1)
+        })
+
+        it('should have not warning when attempting to deploy', async () => {
+          const modificationChanges = [toChange({ before: beforeInstance, after: afterInstance })]
+          const changeErrors: ReadonlyArray<ChangeError> = await awu([
+            adapter.deployModifiers?.changeValidator,
+          ])
+            .filter(values.isDefined)
+            .flatMap(validator => validator(modificationChanges))
+            .toArray()
+          expect(changeErrors.length).toBe(0)
+        })
+
+        afterAll(async () => {
+          const removalChange = [toChange({ before: serviceInstance })]
+          const additionResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes: removalChange } })
+          // check that that test cleanup is successfull
+          expect(additionResult.errors.length).toBe(0)
+          expect(additionResult.appliedChanges.length).toBe(1)
+        })
       })
     })
 

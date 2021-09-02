@@ -54,12 +54,16 @@ const createObjectTypeFromNestedAdditions = (
     switch (nestedValue.id.idType) {
       case 'field': {
         const fieldName = nestedValue.id.createTopLevelParentID().path[0]
+        const field = commonObjectType.fields[fieldName]
+        if (field === undefined) {
+          throw new Error(`field ${fieldName} was not found in common object type ${commonObjectType.elemID.getFullName()}`)
+        }
         return { ...prev,
           fields: {
             ...prev.fields,
             ...addToField(
               nestedValue,
-              commonObjectType.fields[fieldName],
+              field,
               prev.fields[fieldName],
             ),
           } }

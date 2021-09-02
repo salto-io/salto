@@ -28,7 +28,7 @@ import {
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger, elementSource } from '@salto-io/workspace'
-import { collections, promises, types } from '@salto-io/lowerdash'
+import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 import { AdapterEvents, createAdapterProgressReporter } from './adapters/progress'
@@ -37,6 +37,7 @@ import { IDFilter } from './plan/plan'
 const { awu, groupByAsync } = collections.asynciterable
 const { mergeElements } = merger
 const log = logger(module)
+const { isDefined } = values
 
 export type FetchChange = {
   // The actual change to apply to the workspace
@@ -140,10 +141,10 @@ const getAuditInformationFromElement = (element: Element): AuditInformation => {
   if (!element || !element.annotations) {
     return {}
   }
-  return { changedBy: element.annotations?.[CORE_ANNOTATIONS.CHANGED_BY],
-    changedAt: element.annotations?.[CORE_ANNOTATIONS.CHANGED_AT],
-    createdBy: element.annotations?.[CORE_ANNOTATIONS.CREATED_BY],
-    createdAt: element.annotations?.[CORE_ANNOTATIONS.CREATED_AT] }
+  return _.pickBy({ changedAt: element.annotations?.[CORE_ANNOTATIONS.CHANGED_AT],
+    changedBy: element.annotations?.[CORE_ANNOTATIONS.CHANGED_BY],
+    createdAt: element.annotations?.[CORE_ANNOTATIONS.CREATED_AT],
+    createdBy: element.annotations?.[CORE_ANNOTATIONS.CREATED_BY] }, isDefined)
 }
 
 type FetchChangeConvertor = (change: DetailedChange) => Promise<FetchChange[]>

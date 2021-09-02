@@ -447,12 +447,14 @@ describe('fetch', () => {
       beforeEach(async () => {
         // the (changed) service instance
         const hiddenInstanceFromService = hiddenInstance.clone()
+        const typeWithFieldAndAnnotations = typeWithField.clone()
+        typeWithFieldAndAnnotations.annotations = { [CORE_ANNOTATIONS.CHANGED_AT]: 'test' }
         hiddenInstanceFromService.value.hidden = hiddenChangedVal
         hiddenInstanceFromService.value.hiddenValue = hiddenValueChangedVal
         hiddenInstanceFromService.value.notHidden = 'notHiddenChanged'
 
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
-          Promise.resolve({ elements: [typeWithFieldChange, hiddenInstanceFromService] })
+          Promise.resolve({ elements: [typeWithFieldAndAnnotations, hiddenInstanceFromService] })
         )
 
         const result = await fetchChanges(
@@ -469,8 +471,11 @@ describe('fetch', () => {
         changes.forEach(c => expect(c.pendingChange).toBeUndefined())
       })
 
-      it('shouldn not remove hidden values from changes', () => {
-        // changes.forEach(c => expect(isModificationChange(c.change)).toEqual(true))
+      it('should return the change with audit information', () => {
+        expect(changes.some(c => c.audit?.changedAt === 'test')).toBeTruthy()
+      })
+
+      it('shouldn\'t not remove hidden values from changes', () => {
         expect(changes.some(c => (getChangeElement(c.change)) === hiddenChangedVal))
           .toBeTruthy()
         expect(changes.some(c => (getChangeElement(c.change)) === hiddenValueChangedVal))

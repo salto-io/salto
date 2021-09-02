@@ -355,7 +355,7 @@ describe('Netsuite adapter E2E with real account', () => {
           expect(additionResult.appliedChanges.length).toBe(1)
         })
 
-        it('should have warning when attempting to deploy', async () => {
+        it('should have warning when applying change validator', async () => {
           const modificationChanges = [toChange({ before: beforeInstance, after: afterInstance })]
           const changeErrors: ReadonlyArray<ChangeError> = await awu([
             adapter.deployModifiers?.changeValidator,
@@ -403,7 +403,7 @@ describe('Netsuite adapter E2E with real account', () => {
           expect(additionResult.appliedChanges.length).toBe(1)
         })
 
-        it('should have not warning when attempting to deploy', async () => {
+        it('should have no warning when applying change validator', async () => {
           const modificationChanges = [toChange({ before: beforeInstance, after: afterInstance })]
           const changeErrors: ReadonlyArray<ChangeError> = await awu([
             adapter.deployModifiers?.changeValidator,

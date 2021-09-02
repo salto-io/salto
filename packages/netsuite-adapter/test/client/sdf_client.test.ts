@@ -14,12 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { readFile, readDir, writeFile, mkdirp, rm } from '@salto-io/file'
+import { readFile, readDir, writeFile, mkdirp, rm, rename } from '@salto-io/file'
 import osPath from 'path'
 import { buildNetsuiteQuery, notQuery } from '../../src/query'
 import mockClient, { DUMMY_CREDENTIALS } from './sdf_client'
 import {
-  FILE_CABINET_PATH_SEPARATOR,
+  APPLICATION_ID,
+  FILE_CABINET_PATH_SEPARATOR, INSTALLED_SUITEAPPS,
 } from '../../src/constants'
 import SdfClient, {
   ATTRIBUTES_FILE_SUFFIX,
@@ -118,12 +119,14 @@ jest.mock('@salto-io/file', () => ({
     return `<addressForm filename="${filePath.split('/').pop()}">`
   }),
   writeFile: jest.fn(),
+  rename: jest.fn(),
   mkdirp: jest.fn(),
   rm: jest.fn(),
 }))
 const readFileMock = readFile as unknown as jest.Mock
 const readDirMock = readDir as jest.Mock
 const writeFileMock = writeFile as jest.Mock
+const renameMock = rename as unknown as jest.Mock
 const mkdirpMock = mkdirp as jest.Mock
 const rmMock = rm as jest.Mock
 
@@ -558,6 +561,89 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
+    })
+
+    it('should pass fetch configured suite apps', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        if (context.commandName === COMMANDS.LIST_OBJECTS) {
+          if (context.appid === undefined) {
+            return Promise.resolve({
+              isSuccess: () => true,
+              data: [{ type: 'addressForm', scriptId: 'a' }],
+            })
+          }
+
+          if (context.appid === 'a.b.c') {
+            return Promise.resolve({
+              isSuccess: () => true,
+              data: [{ type: 'addressForm', scriptId: 'b' }],
+            })
+          }
+        }
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+
+      const {
+        elements: customizationInfos,
+        failedToFetchAllAtOnce,
+        failedTypeToInstances,
+      } = await mockClient({ [INSTALLED_SUITEAPPS]: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQuery)
+      expect(failedToFetchAllAtOnce).toBe(false)
+      expect(failedTypeToInstances).toEqual({})
+      expect(readDirMock).toHaveBeenCalledTimes(2)
+      expect(readFileMock).toHaveBeenCalledTimes(6)
+      expect(rmMock).toHaveBeenCalledTimes(2)
+      expect(customizationInfos).toEqual([{
+        typeName: 'addressForm',
+        scriptId: 'a',
+        values: {
+          '@_filename': 'a.xml',
+        },
+        fileContent: MOCK_TEMPLATE_CONTENT,
+        fileExtension: 'html',
+      },
+      {
+        typeName: 'addressForm',
+        scriptId: 'b',
+        values: {
+          '@_filename': 'b.xml',
+        },
+      },
+      {
+        typeName: 'addressForm',
+        scriptId: 'a',
+        values: {
+          '@_filename': 'a.xml',
+          [APPLICATION_ID]: 'a.b.c',
+        },
+        fileContent: MOCK_TEMPLATE_CONTENT,
+        fileExtension: 'html',
+      },
+      {
+        typeName: 'addressForm',
+        scriptId: 'b',
+        values: {
+          '@_filename': 'b.xml',
+          [APPLICATION_ID]: 'a.b.c',
+        },
+      }])
+
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, saveTokenCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, saveTokenCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(6, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(8, deleteAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(9, importObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(10, deleteAuthIdCommandMatcher)
     })
 
     it('should succeed and return failedTypeToInstances that failed also after retry', async () => {
@@ -1083,6 +1169,29 @@ describe('netsuite client', () => {
           scriptId,
         } as CustomTypeInfo
         await client.deploy([customTypeInfo])
+        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
+          '<typeName><key>val</key></typeName>')
+        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
+      })
+
+      it('should succeed for CustomTypeInfo With SuiteAppId', async () => {
+        mockExecuteAction.mockClear()
+        mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
+        const scriptId = 'filename'
+        const customTypeInfo = {
+          typeName: 'typeName',
+          values: {
+            key: 'val',
+          },
+          scriptId,
+        } as CustomTypeInfo
+        await client.deploy([customTypeInfo], 'a.b.c')
+        expect(renameMock).toHaveBeenCalled()
         expect(writeFileMock).toHaveBeenCalledTimes(2)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>')

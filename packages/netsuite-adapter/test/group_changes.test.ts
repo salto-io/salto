@@ -16,11 +16,17 @@
 import { ChangeGroupId, ChangeId, ElemID, InstanceElement, ObjectType, toChange, Change, StaticFile, ReferenceExpression } from '@salto-io/adapter-api'
 import { getChangeGroupIdsFunc, SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../src/group_changes'
 import { customTypes, fileCabinetTypes } from '../src/types'
-import { ENTITY_CUSTOM_FIELD, FILE, NETSUITE } from '../src/constants'
+import { APPLICATION_ID, ENTITY_CUSTOM_FIELD, FILE, NETSUITE } from '../src/constants'
 
 describe('Group Changes without Salto suiteApp', () => {
   const customFieldInstance = new InstanceElement('elementName',
     customTypes[ENTITY_CUSTOM_FIELD])
+
+  const customFieldFromSuiteAppInstance = new InstanceElement(
+    'elementNameFromSuiteApp',
+    customTypes[ENTITY_CUSTOM_FIELD],
+    { [APPLICATION_ID]: 'a.b.c' },
+  )
 
   const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE])
 
@@ -32,6 +38,10 @@ describe('Group Changes without Salto suiteApp', () => {
     changeGroupIds = await getChangeGroupIdsFunc(false)(new Map<string, Change>([
       [fileInstance.elemID.getFullName(), toChange({ after: fileInstance })],
       [customFieldInstance.elemID.getFullName(), toChange({ after: customFieldInstance })],
+      [
+        customFieldFromSuiteAppInstance.elemID.getFullName(),
+        toChange({ after: customFieldFromSuiteAppInstance }),
+      ],
       [nonSdfInstance.elemID.getFullName(), toChange({ after: nonSdfInstance })],
       [dummyType.elemID.getFullName(), toChange({ after: dummyType })],
     ]))
@@ -40,6 +50,11 @@ describe('Group Changes without Salto suiteApp', () => {
   it('should set correct group id for custom types instances', () => {
     expect(changeGroupIds.get(customFieldInstance.elemID.getFullName()))
       .toEqual(SDF_CHANGE_GROUP_ID)
+  })
+
+  it('should set correct group id for custom types instances from suiteapps', () => {
+    expect(changeGroupIds.get(customFieldFromSuiteAppInstance.elemID.getFullName()))
+      .toEqual(`${SDF_CHANGE_GROUP_ID} - a.b.c`)
   })
 
   it('should set correct group id for file cabinet types instances', () => {
@@ -58,6 +73,11 @@ describe('Group Changes without Salto suiteApp', () => {
 describe('Group Changes with Salto suiteApp', () => {
   const customFieldInstance = new InstanceElement('elementName',
     customTypes[ENTITY_CUSTOM_FIELD])
+  const customFieldFromSuiteAppInstance = new InstanceElement(
+    'elementNameFromSuiteApp',
+    customTypes[ENTITY_CUSTOM_FIELD],
+    { [APPLICATION_ID]: 'a.b.c' },
+  )
   const dummyType = new ObjectType({ elemID: new ElemID(NETSUITE, 'dummytype') })
   const nonSdfInstance = new InstanceElement('nonSdfInstance', dummyType)
 
@@ -166,6 +186,10 @@ describe('Group Changes with Salto suiteApp', () => {
   beforeAll(async () => {
     changeGroupIds = await getChangeGroupIdsFunc(true)(new Map<string, Change>([
       [customFieldInstance.elemID.getFullName(), toChange({ after: customFieldInstance })],
+      [
+        customFieldFromSuiteAppInstance.elemID.getFullName(),
+        toChange({ after: customFieldFromSuiteAppInstance }),
+      ],
       [nonSdfInstance.elemID.getFullName(), toChange({ after: nonSdfInstance })],
       [dummyType.elemID.getFullName(), toChange({ after: dummyType })],
       [suiteAppFileInstance1.elemID.getFullName(), toChange({ after: suiteAppFileInstance1 })],
@@ -195,6 +219,11 @@ describe('Group Changes with Salto suiteApp', () => {
   it('should set correct group id for custom types instances', () => {
     expect(changeGroupIds.get(customFieldInstance.elemID.getFullName()))
       .toEqual(SDF_CHANGE_GROUP_ID)
+  })
+
+  it('should set correct group id for custom types instances from suiteapps', () => {
+    expect(changeGroupIds.get(customFieldFromSuiteAppInstance.elemID.getFullName()))
+      .toEqual(`${SDF_CHANGE_GROUP_ID} - a.b.c`)
   })
 
   it('should set correct group id for new suiteApp file instances', () => {

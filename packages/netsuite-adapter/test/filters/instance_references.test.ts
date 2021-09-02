@@ -20,13 +20,14 @@ import {
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/instance_references'
 import { customTypes, fileCabinetTypes } from '../../src/types'
-import { FILE, PATH, SCRIPT_ID, WORKFLOW } from '../../src/constants'
+import { CUSTOM_SEGMENT, FILE, PATH, SCRIPT_ID, WORKFLOW } from '../../src/constants'
 import NetsuiteClient from '../../src/client/client'
 
 
 describe('instance_references filter', () => {
   describe('replace values', () => {
     let fileInstance: InstanceElement
+    let customSegmentInstance: InstanceElement
     let instanceInElementsSource: InstanceElement
     let workflowInstance: InstanceElement
     let instanceWithRefs: InstanceElement
@@ -45,6 +46,10 @@ describe('instance_references filter', () => {
 
       fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
         [PATH]: '/Templates/file.name',
+      })
+
+      customSegmentInstance = new InstanceElement('customSegmentInstance', customTypes[CUSTOM_SEGMENT], {
+        [SCRIPT_ID]: 'cseg_1',
       })
 
       instanceInElementsSource = new InstanceElement('instanceInElementsSource', fileCabinetTypes[FILE], {
@@ -86,6 +91,9 @@ describe('instance_references filter', () => {
           refToNonExistingScriptId: '[scriptid=non_existing_script_id]',
           refToNonExistingPath: '[/Templates/non.existing]',
           refToInstanceInElementSourcePath: '[/Templates/instanceInElementsSource]',
+          refToCustomSegment: '[type=customsegment, scriptid=cseg_1]',
+          refToNonExistingTypedScriptId: '[type=customsegment, scriptid=non_existing_script_id]',
+          refToScriptIdOfAnotherType: '[type=transactionbodycustomfield, scriptid=cseg_1]',
         },
         undefined,
         {
@@ -189,7 +197,20 @@ describe('instance_references filter', () => {
         .toEqual(new ReferenceExpression(workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', 'workflowactions', '0', 'setfieldvalueaction', '0', SCRIPT_ID)))
     })
 
-    it('should not replace scriptid references for unresolved ref', async () => {
+    it('should replace type and scriptid references', async () => {
+      await filterCreator({
+        client: {} as NetsuiteClient,
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }).onFetch?.([customSegmentInstance, fileInstance, workflowInstance, instanceWithRefs])
+
+
+      expect(instanceWithRefs.value.refToCustomSegment)
+        .toEqual(new ReferenceExpression(customSegmentInstance.elemID.createNestedID(SCRIPT_ID)))
+    })
+
+    it('should not replace scriptid references for non existing scriptid', async () => {
       await filterCreator({
         client: {} as NetsuiteClient,
         elementsSourceIndex,
@@ -200,6 +221,32 @@ describe('instance_references filter', () => {
 
       expect(instanceWithRefs.value.refToNonExistingScriptId)
         .toEqual('[scriptid=non_existing_script_id]')
+    })
+
+    it('should not replace type and scriptid references for non existing scriptid', async () => {
+      await filterCreator({
+        client: {} as NetsuiteClient,
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
+
+
+      expect(instanceWithRefs.value.refToNonExistingTypedScriptId)
+        .toEqual('[type=customsegment, scriptid=non_existing_script_id]')
+    })
+
+    it('should not replace type and scriptid references when scriptid is of another type', async () => {
+      await filterCreator({
+        client: {} as NetsuiteClient,
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }).onFetch?.([fileInstance, workflowInstance, instanceWithRefs])
+
+
+      expect(instanceWithRefs.value.refToScriptIdOfAnotherType)
+        .toEqual('[type=transactionbodycustomfield, scriptid=cseg_1]')
     })
 
     it('should not replace path references for unresolved ref', async () => {

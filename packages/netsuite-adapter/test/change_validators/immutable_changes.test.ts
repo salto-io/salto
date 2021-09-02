@@ -17,6 +17,7 @@ import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, Re
 import immutableChangesValidator from '../../src/change_validators/immutable_changes'
 import { customTypes, fileCabinetTypes } from '../../src/types'
 import { ENTITY_CUSTOM_FIELD, FILE, NETSUITE, PATH, SCRIPT_ID } from '../../src/constants'
+import { addressForm } from '../../src/autogen/types/custom_types/addressForm'
 
 
 describe('customization type change validator', () => {
@@ -127,6 +128,18 @@ describe('customization type change validator', () => {
     })
     const before = new InstanceElement('instance', accountingPeriodType, { fiscalCalendar: { name: 'a' } })
     const after = new InstanceElement('instance', accountingPeriodType, { fiscalCalendar: { name: 'b' } })
+
+    const changeErrors = await immutableChangesValidator(
+      [toChange({ before, after })]
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].elemID).toEqual(after.elemID)
+  })
+
+  it('should have change error if application_id was modified', async () => {
+    const before = new InstanceElement('instance', addressForm, { application_id: 'a' })
+    const after = new InstanceElement('instance', addressForm, { application_id: 'b' })
 
     const changeErrors = await immutableChangesValidator(
       [toChange({ before, after })]

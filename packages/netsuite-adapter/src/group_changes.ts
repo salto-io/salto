@@ -26,6 +26,7 @@ import { transformValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import * as suiteAppFileCabinet from './suiteapp_file_cabinet'
 import { customTypes, fileCabinetTypes, isDataObjectType, isFileCabinetInstance } from './types'
+import { APPLICATION_ID } from './constants'
 
 const { awu } = collections.asynciterable
 
@@ -43,6 +44,14 @@ export const SUITEAPP_FILE_CABINET_GROUPS = [
   SUITEAPP_DELETING_FILES_GROUP_ID,
 ]
 
+const getSdfWithSuiteAppGroupName = (change: Change): string => {
+  const element = getChangeElement(change)
+  if (!isInstanceElement(element) || element.value[APPLICATION_ID] === undefined) {
+    return SDF_CHANGE_GROUP_ID
+  }
+  return `${SDF_CHANGE_GROUP_ID} - ${element.value[APPLICATION_ID]}`
+}
+
 const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes => {
   const isSdfChange = (change: Change): boolean => {
     const changeElement = getChangeElement(change)
@@ -53,7 +62,7 @@ const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes =>
   return new Map(
     wu(changes.entries())
       .filter(([_id, change]) => isSdfChange(change))
-      .map(([id]) => [id, SDF_CHANGE_GROUP_ID])
+      .map(([id, change]) => [id, getSdfWithSuiteAppGroupName(change)])
   )
 }
 
@@ -162,9 +171,16 @@ const getChangeGroupIdsWithSuiteApp: ChangeGroupIdFunction = async changes => {
       const group = (await awu(conditionsToGroups).find(
         ({ condition }) => condition(change)
       ))?.group
+
       return group !== undefined ? { change, id, group } : undefined
     })
     .filter(values.isDefined)
+    .map(change => ({
+      ...change,
+      group: change.group === SDF_CHANGE_GROUP_ID
+        ? getSdfWithSuiteAppGroupName(change.change)
+        : change.group,
+    }))
     .toArray()
 
   const groupToChanges = _.groupBy(changesWithGroups, ({ group }) => group)

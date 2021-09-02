@@ -31,6 +31,7 @@ import { getAllReferencedInstances, getRequiredReferencedInstances } from '../re
 import { getLookUpName, toCustomizationInfo } from '../transformer'
 import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_FILES_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../group_changes'
 import { DeployResult } from '../types'
+import { APPLICATION_ID } from '../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -121,8 +122,10 @@ export default class NetsuiteClient {
       .map(instance => toCustomizationInfo(instance))
       .toArray()
 
+    const suiteAppId = getChangeElement(changes[0]).value[APPLICATION_ID]
+
     try {
-      await this.sdfClient.deploy(customizationInfos)
+      await this.sdfClient.deploy(customizationInfos, suiteAppId)
       return { errors: [], appliedChanges: changes }
     } catch (e) {
       return { errors: [e], appliedChanges: [] }
@@ -134,7 +137,7 @@ export default class NetsuiteClient {
     Promise<DeployResult> {
     const instancesChanges = changes.filter(isInstanceChange)
 
-    if (SDF_CHANGE_GROUP_ID === groupID) {
+    if (groupID.startsWith(SDF_CHANGE_GROUP_ID)) {
       return this.sdfDeploy(instancesChanges, deployReferencedElements)
     }
 

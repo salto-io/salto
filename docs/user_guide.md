@@ -327,7 +327,7 @@ Update the workspace configuration elements from the upstream services
 * `--state-only, --st` : Update just the state file and not the NaCLs [boolean] [default: false]
 * `--services, -s` :     Specific services to perform this action for (default=all) [array]
 * `--env, -e` :          The name of the environment to use
-* `--mode, -m <mode>` :  Choose a fetch mode. Options - [default, align, override, isolated]
+* `--mode, -m <mode>` :  Choose a fetch mode. Options - [default, align]
 
 ### **salto deploy**
 
@@ -357,7 +357,7 @@ Update the workspace configuration elements from the state file
 * `--list-planned-changes, -l` : Print a summary of the expected changes [boolean] [default: false]
 * `--services, -s` :             Specific services to perform this action for (default=all) [array]
 * `--env, -e` :                  The name of the environment to use [string]
-* `--mode, -m <mode>` :          Choose a restore mode. Options - [default, align, override, isolated]
+* `--mode, -m <mode>` :          Choose a restore mode. Options - [default, align]
 
 ### **salto service \<command>**
 

@@ -475,7 +475,7 @@ describe('fetch', () => {
         expect(changes.some(c => c.audit?.changedAt === 'test')).toBeTruthy()
       })
 
-      it('shouldn\'t not remove hidden values from changes', () => {
+      it('should not remove hidden values from changes', () => {
         expect(changes.some(c => (getChangeElement(c.change)) === hiddenChangedVal))
           .toBeTruthy()
         expect(changes.some(c => (getChangeElement(c.change)) === hiddenValueChangedVal))

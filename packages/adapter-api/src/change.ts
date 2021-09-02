@@ -99,11 +99,6 @@ export type AuditInformation = {
   createdAt?: string
  }
 
-export type AuditDetailedChange =
-DetailedChange & {
-    audit?: AuditInformation
-}
-
 export type ChangeParams<T> = { before?: T; after?: T }
 
 type ChangeParamType<T> = T extends ChangeParams<infer U> ? U : never

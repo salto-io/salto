@@ -137,7 +137,7 @@ export const toChangesWithPath = (
   })
 
 const getAuditInformationFromElement = (element: Element): AuditInformation => {
-  if (!element.annotations) {
+  if (!element || !element.annotations) {
     return {}
   }
   return { changedBy: element.annotations?.[CORE_ANNOTATIONS.CHANGED_BY],

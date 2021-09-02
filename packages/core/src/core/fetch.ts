@@ -20,7 +20,8 @@ import {
   Element, ElemID, AdapterOperations, Values, ServiceIds, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
-  ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
+  ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId, AuditInformation,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
@@ -44,6 +45,8 @@ export type FetchChange = {
   serviceChange: DetailedChange
   // The change between the working copy and the state
   pendingChange?: DetailedChange
+  // The change audit information from the service.
+  audit?: AuditInformation
 }
 
 export const toAddFetchChange = (elem: Element): FetchChange => {
@@ -133,10 +136,21 @@ export const toChangesWithPath = (
     return originalElements.map(elem => _.merge({}, change, { change: { data: { after: elem } } }))
   })
 
-type FetchChangeConvertor = (change: DetailedChange) => FetchChange[]
+const getAuditInformationFromElement = (element: Element): AuditInformation => {
+  if (!element.annotations) {
+    return {}
+  }
+  return { changedBy: element.annotations?.[CORE_ANNOTATIONS.CHANGED_BY],
+    changedAt: element.annotations?.[CORE_ANNOTATIONS.CHANGED_AT],
+    createdBy: element.annotations?.[CORE_ANNOTATIONS.CREATED_BY],
+    createdAt: element.annotations?.[CORE_ANNOTATIONS.CREATED_AT] }
+}
+
+type FetchChangeConvertor = (change: DetailedChange) => Promise<FetchChange[]>
 const toFetchChanges = (
   pendingChanges: Record<string, DetailedChange>,
-  workspaceToServiceChanges: Record<string, DetailedChange>
+  workspaceToServiceChanges: Record<string, DetailedChange>,
+  mergedServiceElements: elementSource.ElementsSource,
 ): FetchChangeConvertor => {
   const getMatchingChange = (
     id: ElemID,
@@ -147,9 +161,12 @@ const toFetchChanges = (
       : from[id.getFullName()] || getMatchingChange(id.createParentID(), from)
   )
 
-  return serviceChange => {
+  return async (serviceChange: DetailedChange) => {
     const pendingChange = getMatchingChange(serviceChange.id, pendingChanges)
     const change = getMatchingChange(serviceChange.id, workspaceToServiceChanges)
+    const audit = change ? getAuditInformationFromElement(
+      await mergedServiceElements.get(change?.id.createBaseID().parent)
+    ) : {}
     if (change !== undefined && !change.id.isEqual(serviceChange.id)) {
       // temporary log - should be replaced by SALTO-1364
       log.warn('service %s change for id %s was replaced by containing %s change for id %s',
@@ -158,7 +175,7 @@ const toFetchChanges = (
     }
     return change === undefined
       ? []
-      : [{ change, pendingChange, serviceChange }]
+      : [{ change, pendingChange, serviceChange, audit }]
   }
 }
 
@@ -448,7 +465,7 @@ const calcFetchChanges = async (
   )
 
   return awu(serviceChanges)
-    .flatMap(toFetchChanges(pendingChanges, workspaceToServiceChanges))
+    .flatMap(toFetchChanges(pendingChanges, workspaceToServiceChanges, mergedServiceElements))
     .flatMap(toChangesWithPath(
       async name => serviceElementsMap[name.getFullName()] ?? []
     )).toArray()

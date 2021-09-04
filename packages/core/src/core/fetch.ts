@@ -20,14 +20,15 @@ import {
   Element, ElemID, AdapterOperations, Values, ServiceIds, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
-  ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
+  ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId, AuditInformation,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger, elementSource } from '@salto-io/workspace'
-import { collections, promises, types } from '@salto-io/lowerdash'
+import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 import { AdapterEvents, createAdapterProgressReporter } from './adapters/progress'
@@ -36,6 +37,7 @@ import { IDFilter } from './plan/plan'
 const { awu, groupByAsync } = collections.asynciterable
 const { mergeElements } = merger
 const log = logger(module)
+const { isDefined } = values
 
 export type FetchChange = {
   // The actual change to apply to the workspace
@@ -44,6 +46,18 @@ export type FetchChange = {
   serviceChange: DetailedChange
   // The change between the working copy and the state
   pendingChange?: DetailedChange
+  // The change audit information from the service.
+  audit?: AuditInformation
+}
+
+const getAuditInformationFromElement = (element: Element | undefined): AuditInformation => {
+  if (!element) {
+    return {}
+  }
+  return _.pickBy({ changedAt: element.annotations?.[CORE_ANNOTATIONS.CHANGED_AT],
+    changedBy: element.annotations?.[CORE_ANNOTATIONS.CHANGED_BY],
+    createdAt: element.annotations?.[CORE_ANNOTATIONS.CREATED_AT],
+    createdBy: element.annotations?.[CORE_ANNOTATIONS.CREATED_BY] }, isDefined)
 }
 
 export const toAddFetchChange = (elem: Element): FetchChange => {
@@ -52,7 +66,7 @@ export const toAddFetchChange = (elem: Element): FetchChange => {
     action: 'add',
     data: { after: elem },
   }
-  return { change, serviceChange: change }
+  return { change, serviceChange: change, audit: getAuditInformationFromElement(elem) }
 }
 
 
@@ -133,10 +147,11 @@ export const toChangesWithPath = (
     return originalElements.map(elem => _.merge({}, change, { change: { data: { after: elem } } }))
   })
 
-type FetchChangeConvertor = (change: DetailedChange) => FetchChange[]
+type FetchChangeConvertor = (change: DetailedChange) => Promise<FetchChange[]>
 const toFetchChanges = (
   pendingChanges: Record<string, DetailedChange>,
-  workspaceToServiceChanges: Record<string, DetailedChange>
+  workspaceToServiceChanges: Record<string, DetailedChange>,
+  mergedServiceElements: elementSource.ElementsSource,
 ): FetchChangeConvertor => {
   const getMatchingChange = (
     id: ElemID,
@@ -147,9 +162,12 @@ const toFetchChanges = (
       : from[id.getFullName()] || getMatchingChange(id.createParentID(), from)
   )
 
-  return serviceChange => {
+  return async (serviceChange: DetailedChange) => {
     const pendingChange = getMatchingChange(serviceChange.id, pendingChanges)
     const change = getMatchingChange(serviceChange.id, workspaceToServiceChanges)
+    const audit = change === undefined ? {} : getAuditInformationFromElement(
+      await mergedServiceElements.get(change?.id.createBaseID().parent)
+    )
     if (change !== undefined && !change.id.isEqual(serviceChange.id)) {
       // temporary log - should be replaced by SALTO-1364
       log.warn('service %s change for id %s was replaced by containing %s change for id %s',
@@ -158,7 +176,7 @@ const toFetchChanges = (
     }
     return change === undefined
       ? []
-      : [{ change, pendingChange, serviceChange }]
+      : [{ change, pendingChange, serviceChange, audit }]
   }
 }
 
@@ -448,7 +466,7 @@ const calcFetchChanges = async (
   )
 
   return awu(serviceChanges)
-    .flatMap(toFetchChanges(pendingChanges, workspaceToServiceChanges))
+    .flatMap(toFetchChanges(pendingChanges, workspaceToServiceChanges, mergedServiceElements))
     .flatMap(toChangesWithPath(
       async name => serviceElementsMap[name.getFullName()] ?? []
     )).toArray()

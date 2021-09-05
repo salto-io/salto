@@ -62,7 +62,7 @@ export interface ZuoraAdapterParams {
 }
 
 export default class ZuoraAdapter implements AdapterOperations {
-  private filtersRunner: Required<Filter>
+  private createFiltersRunner: () => Required<Filter>
   private client: ZuoraClient
   private paginator: clientUtils.Paginator
   private userConfig: ZuoraConfig
@@ -74,17 +74,13 @@ export default class ZuoraAdapter implements AdapterOperations {
   }: ZuoraAdapterParams) {
     this.userConfig = config
     this.client = client
-    this.paginator = createPaginator({
+    const paginator = createPaginator({
       client: this.client,
       paginationFunc: paginate,
     })
-    this.filtersRunner = filtersRunner(
-      {
-        client: this.client,
-        paginator: this.paginator,
-        config,
-      },
-      filterCreators,
+    this.paginator = paginator
+    this.createFiltersRunner = () => (
+      filtersRunner({ client, paginator, config }, filterCreators)
     )
   }
 
@@ -219,7 +215,7 @@ export default class ZuoraAdapter implements AdapterOperations {
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
 
-    await this.filtersRunner.onFetch(elements)
+    await this.createFiltersRunner().onFetch(elements)
     return { elements }
   }
 

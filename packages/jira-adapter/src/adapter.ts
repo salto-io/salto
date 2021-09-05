@@ -39,7 +39,7 @@ export interface JiraAdapterParams {
 }
 
 export default class JiraAdapter implements AdapterOperations {
-  private filtersRunner: Required<Filter>
+  private createFiltersRunner: () => Required<Filter>
   private client: JiraClient
   private userConfig: JiraConfig
   private paginator: clientUtils.Paginator
@@ -51,16 +51,12 @@ export default class JiraAdapter implements AdapterOperations {
   }: JiraAdapterParams) {
     this.userConfig = config
     this.client = client
-    this.paginator = createPaginator(
+    const paginator = createPaginator(
       { paginationFunc: pageByOffsetWithoutScopes, client: this.client }
     )
-    this.filtersRunner = filtersRunner(
-      {
-        client: this.client,
-        paginator: this.paginator,
-        config,
-      },
-      filterCreators
+    this.paginator = paginator
+    this.createFiltersRunner = () => (
+      filtersRunner({ client, paginator, config }, filterCreators)
     )
   }
 
@@ -116,7 +112,7 @@ export default class JiraAdapter implements AdapterOperations {
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    await this.filtersRunner.onFetch(elements)
+    await this.createFiltersRunner().onFetch(elements)
     return { elements }
   }
 

@@ -15,8 +15,9 @@
 */
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeElement, Values, Change, toChange, ChangeGroup, isAdditionOrModificationChange, isServiceId } from '@salto-io/adapter-api'
-import { MetadataInfo, SaveResult, Package } from 'jsforce'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeElement, Values, Change, toChange, ChangeGroup, isAdditionOrModificationChange, isServiceId, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+import { MockInterface, stepManager } from '@salto-io/test-utils'
+import { Package, DeployResultLocator, DeployResult as JSForceDeployResult } from 'jsforce'
 import JSZip from 'jszip'
 import xmlParser from 'fast-xml-parser'
 import SalesforceAdapter from '../src/adapter'
@@ -25,25 +26,20 @@ import { Types, createInstanceElement, apiName, metadataType } from '../src/tran
 import Connection from '../src/client/jsforce'
 import { CustomObject } from '../src/client/types'
 import mockAdapter from './adapter'
-import { createValueSetEntry } from './utils'
+import { createValueSetEntry, createCustomObjectType } from './utils'
 import { createElement, removeElement } from '../e2e_test/utils'
-import { mockTypes, mockDefaultValues } from './mock_elements'
-import { mockDeployResult, mockRunTestFailure } from './connection'
+import { mockTypes, mockDefaultValues, createMetadataObjectType } from './mock_elements'
+import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete } from './connection'
 
 const { makeArray } = collections.array
 
 describe('SalesforceAdapter CRUD', () => {
-  let connection: Connection
+  let connection: MockInterface<Connection>
   let adapter: SalesforceAdapter
 
   const stringType = Types.primitiveDataTypes.Text
   const mockElemID = new ElemID(constants.SALESFORCE, 'Test')
   const instanceName = 'Instance'
-
-  let mockUpsert: jest.Mock
-  let mockDelete: jest.Mock
-  let mockUpdate: jest.Mock
-  let mockDeploy: jest.Mock
 
   type DeployedPackage = {
     manifest?: Package
@@ -51,7 +47,9 @@ describe('SalesforceAdapter CRUD', () => {
     getData: (fileName: string) => Promise<Values>
   }
 
-  const getDeployedPackage = async (zipData: Buffer): Promise<DeployedPackage> => {
+  const getDeployedPackage = async (
+    zipData: Buffer | string | NodeJS.ReadableStream
+  ): Promise<DeployedPackage> => {
     const zip = await JSZip.loadAsync(zipData)
     const files = {
       manifest: zip.files['unpackaged/package.xml'],
@@ -89,20 +87,17 @@ describe('SalesforceAdapter CRUD', () => {
       },
     }))
 
-    const saveResultMock = (_type: string, objects: MetadataInfo | MetadataInfo[]):
-      Promise<SaveResult[]> => Promise.resolve([
-      { fullName: (makeArray(objects)[0] || {}).fullName, success: true },
-    ])
+    connection.metadata.upsert.mockImplementation(async (_type, objects) => (
+      makeArray(objects).map(({ fullName }) => ({ fullName, created: true, success: true }))
+    ))
+    connection.metadata.delete.mockImplementation(async (_type, fullNames) => (
+      makeArray(fullNames).map(fullName => ({ fullName, success: true }))
+    ))
+    connection.metadata.update.mockImplementation(async (_type, objects) => (
+      makeArray(objects).map(({ fullName }) => ({ fullName, success: true }))
+    ))
 
-    mockUpsert = jest.fn().mockImplementation(saveResultMock)
-    connection.metadata.upsert = mockUpsert
-    mockDelete = jest.fn().mockImplementation(saveResultMock)
-    connection.metadata.delete = mockDelete
-    mockUpdate = jest.fn().mockImplementation(saveResultMock)
-    connection.metadata.update = mockUpdate
-
-    mockDeploy = jest.fn().mockReturnValue(mockDeployResult({}))
-    connection.metadata.deploy = mockDeploy
+    connection.metadata.deploy.mockReturnValue(mockDeployResult({}))
   })
 
   describe('Add operation', () => {
@@ -129,7 +124,7 @@ describe('SalesforceAdapter CRUD', () => {
         let result: InstanceElement
 
         beforeEach(async () => {
-          mockDeploy.mockReturnValueOnce(mockDeployResult({
+          connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
             success: true,
             componentSuccess: [{ fullName: instanceName, componentType: 'Flow' }],
           }))
@@ -144,8 +139,8 @@ describe('SalesforceAdapter CRUD', () => {
           expect(result.value.token).toBe('instanceTest')
           expect(result.value.Token).toBeUndefined()
 
-          expect(mockDeploy).toHaveBeenCalledTimes(1)
-          const { manifest } = await getDeployedPackage(mockDeploy.mock.calls[0][0])
+          expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+          const { manifest } = await getDeployedPackage(connection.metadata.deploy.mock.calls[0][0])
           expect(manifest).toBeDefined()
           expect(manifest?.types).toEqual({ name: 'Flow', members: instanceName })
         })
@@ -157,7 +152,7 @@ describe('SalesforceAdapter CRUD', () => {
         beforeEach(async () => {
           const newInst = createInstanceElement(mockDefaultValues.Profile, mockTypes.Profile)
 
-          mockDeploy.mockReturnValueOnce(mockDeployResult({
+          connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
             success: false,
             componentFailure: [{
               fullName: await apiName(newInst),
@@ -183,7 +178,7 @@ describe('SalesforceAdapter CRUD', () => {
       describe('when performing validation deploy with checkOnly', () => {
         let result: DeployResult
         beforeEach(async () => {
-          mockDeploy.mockReturnValueOnce(mockDeployResult({
+          connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
             success: true,
             componentSuccess: [{ fullName: instanceName, componentType: 'Flow' }],
             checkOnly: true,
@@ -224,7 +219,7 @@ describe('SalesforceAdapter CRUD', () => {
       let result: ObjectType
 
       beforeEach(async () => {
-        mockDeploy.mockReturnValue(mockDeployResult({
+        connection.metadata.deploy.mockReturnValue(mockDeployResult({
           success: true,
           componentSuccess: [{ fullName: 'Test__c', componentType: constants.CUSTOM_OBJECT }],
         }))
@@ -260,8 +255,10 @@ describe('SalesforceAdapter CRUD', () => {
         ).toBe('Test__c.description__c')
         expect(result.fields.description.annotations[constants.LABEL]).toEqual('description')
 
-        expect(mockDeploy).toHaveBeenCalledTimes(1)
-        const deployedPackage = await getDeployedPackage(mockDeploy.mock.calls[0][0])
+        expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+        const deployedPackage = await getDeployedPackage(
+          connection.metadata.deploy.mock.calls[0][0]
+        )
         expect(deployedPackage.manifest?.types).toContainEqual(
           { name: constants.CUSTOM_OBJECT, members: 'Test__c' }
         )
@@ -436,7 +433,7 @@ describe('SalesforceAdapter CRUD', () => {
       })
 
       beforeEach(async () => {
-        mockDeploy.mockReturnValue(mockDeployResult({
+        connection.metadata.deploy.mockReturnValue(mockDeployResult({
           success: true,
           componentSuccess: [{ fullName: 'Test__c', componentType: constants.CUSTOM_OBJECT }],
         }))
@@ -444,8 +441,10 @@ describe('SalesforceAdapter CRUD', () => {
       })
 
       it('should create the element correctly', async () => {
-        expect(mockDeploy).toHaveBeenCalledTimes(1)
-        const deployedPackage = await getDeployedPackage(mockDeploy.mock.calls[0][0])
+        expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+        const deployedPackage = await getDeployedPackage(
+          connection.metadata.deploy.mock.calls[0][0]
+        )
         expect(deployedPackage.manifest?.types).toContainEqual(
           { name: constants.CUSTOM_OBJECT, members: 'Test__c' }
         )
@@ -591,7 +590,7 @@ describe('SalesforceAdapter CRUD', () => {
       describe('with rollback on error', () => {
         let result: DeployResult
         beforeEach(async () => {
-          mockDeploy.mockReturnValue(mockDeployResult({
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
             ...deployResultParams,
             rollbackOnError: true,
           }))
@@ -608,7 +607,7 @@ describe('SalesforceAdapter CRUD', () => {
       describe('without rollback on error', () => {
         let result: DeployResult
         beforeEach(async () => {
-          mockDeploy.mockReturnValue(mockDeployResult({
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
             ...deployResultParams,
             rollbackOnError: false,
           }))
@@ -652,14 +651,16 @@ describe('SalesforceAdapter CRUD', () => {
 
       describe('when the remove is successful', () => {
         beforeEach(async () => {
-          mockDeploy.mockReturnValue(mockDeployResult(
+          connection.metadata.deploy.mockReturnValue(mockDeployResult(
             { componentSuccess: [{ componentType: 'Flow', fullName: instanceName }] }
           ))
           result = await removeElement(adapter, element)
         })
         it('should call the connection methods correctly', async () => {
-          expect(mockDeploy).toHaveBeenCalledTimes(1)
-          const { deleteManifest } = await getDeployedPackage(mockDeploy.mock.calls[0][0])
+          expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+          const { deleteManifest } = await getDeployedPackage(
+            connection.metadata.deploy.mock.calls[0][0]
+          )
           expect(deleteManifest).toBeDefined()
           expect(deleteManifest?.types).toEqual({ name: 'Flow', members: instanceName })
         })
@@ -681,13 +682,13 @@ describe('SalesforceAdapter CRUD', () => {
           expect(result.appliedChanges).toHaveLength(0)
         })
         it('should not make the API call since it is empty', () => {
-          expect(mockDeploy).not.toHaveBeenCalled()
+          expect(connection.metadata.deploy).not.toHaveBeenCalled()
         })
       })
 
       describe('when the instance does not exist but the request succeeds', () => {
         beforeEach(async () => {
-          mockDeploy.mockReturnValue(mockDeployResult(
+          connection.metadata.deploy.mockReturnValue(mockDeployResult(
             {
               // When calling with ignoreWarnings = true we get these warnings in the
               // componentSuccess list
@@ -711,7 +712,7 @@ describe('SalesforceAdapter CRUD', () => {
       })
       describe('when the instance does not exist and the request fails', () => {
         beforeEach(async () => {
-          mockDeploy.mockReturnValue(mockDeployResult(
+          connection.metadata.deploy.mockReturnValue(mockDeployResult(
             {
               success: false,
               componentFailure: [{
@@ -750,8 +751,10 @@ describe('SalesforceAdapter CRUD', () => {
       })
 
       it('should call the connection methods correctly', async () => {
-        expect(mockDeploy).toHaveBeenCalledTimes(1)
-        const { deleteManifest } = await getDeployedPackage(mockDeploy.mock.calls[0][0])
+        expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+        const { deleteManifest } = await getDeployedPackage(
+          connection.metadata.deploy.mock.calls[0][0]
+        )
         expect(deleteManifest?.types).toEqual(
           { name: constants.CUSTOM_OBJECT, members: 'Test__c' }
         )
@@ -781,7 +784,7 @@ describe('SalesforceAdapter CRUD', () => {
 
       describe('when the request succeeds', () => {
         beforeEach(async () => {
-          mockDeploy.mockReturnValueOnce(mockDeployResult({
+          connection.metadata.deploy.mockReturnValueOnce(mockDeployResult({
             success: true,
             componentSuccess: [{
               fullName: mockDefaultValues.Profile.fullName,
@@ -802,8 +805,8 @@ describe('SalesforceAdapter CRUD', () => {
         })
 
         it('should call the connection methods correctly', async () => {
-          expect(mockDeploy).toHaveBeenCalledTimes(1)
-          const { manifest } = await getDeployedPackage(mockDeploy.mock.calls[0][0])
+          expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+          const { manifest } = await getDeployedPackage(connection.metadata.deploy.mock.calls[0][0])
           expect(manifest?.types).toEqual({
             name: constants.PROFILE_METADATA_TYPE,
             members: mockDefaultValues.Profile.fullName,
@@ -832,7 +835,7 @@ describe('SalesforceAdapter CRUD', () => {
         })
 
         it('should not call the connection', () => {
-          expect(mockDeploy).not.toHaveBeenCalled()
+          expect(connection.metadata.deploy).not.toHaveBeenCalled()
         })
       })
 
@@ -866,8 +869,10 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           it('should delete on remove metadata objects with field names', async () => {
-            expect(mockDeploy).toHaveBeenCalledTimes(1)
-            const { deleteManifest } = await getDeployedPackage(mockDeploy.mock.calls[0][0])
+            expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+            const { deleteManifest } = await getDeployedPackage(
+              connection.metadata.deploy.mock.calls[0][0]
+            )
             expect(deleteManifest).toBeDefined()
             expect(deleteManifest?.types).toEqual(
               { name: 'AssignmentRule', members: `${instanceName}.Val2` }
@@ -933,8 +938,10 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           it('should call delete on remove metadata objects with object names', async () => {
-            expect(mockDeploy).toHaveBeenCalledTimes(1)
-            const { deleteManifest } = await getDeployedPackage(mockDeploy.mock.calls[0][0])
+            expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+            const { deleteManifest } = await getDeployedPackage(
+              connection.metadata.deploy.mock.calls[0][0]
+            )
             expect(deleteManifest).toBeDefined()
             expect(deleteManifest?.types).toEqual({ name: 'CustomLabel', members: 'Val2' })
           })
@@ -971,7 +978,7 @@ describe('SalesforceAdapter CRUD', () => {
         })
 
         it('should not call the connection', () => {
-          expect(mockDeploy).not.toHaveBeenCalled()
+          expect(connection.metadata.deploy).not.toHaveBeenCalled()
         })
       })
 
@@ -1019,7 +1026,7 @@ describe('SalesforceAdapter CRUD', () => {
         let changes: Change[]
 
         beforeEach(async () => {
-          mockDeploy.mockReturnValue(mockDeployResult({
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
             success: true,
             componentSuccess: [{ fullName: 'Test__c', componentType: constants.CUSTOM_OBJECT }],
           }))
@@ -1042,8 +1049,10 @@ describe('SalesforceAdapter CRUD', () => {
         })
 
         it('should call the connection methods correctly', async () => {
-          expect(mockDeploy).toHaveBeenCalledTimes(1)
-          const deployedPackage = await getDeployedPackage(mockDeploy.mock.calls[0][0])
+          expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+          const deployedPackage = await getDeployedPackage(
+            connection.metadata.deploy.mock.calls[0][0]
+          )
           expect(deployedPackage.manifest?.types).toContainEqual(
             { name: constants.CUSTOM_OBJECT, members: 'Test__c' }
           )
@@ -1122,7 +1131,7 @@ describe('SalesforceAdapter CRUD', () => {
         let changes: Change[]
 
         beforeEach(async () => {
-          mockDeploy.mockReturnValue(mockDeployResult({
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
             success: true,
             componentSuccess: [
               { fullName: 'Test__c.Address__c', componentType: constants.CUSTOM_FIELD },
@@ -1157,8 +1166,8 @@ describe('SalesforceAdapter CRUD', () => {
         describe('deploy request', () => {
           let deployedPackage: DeployedPackage
           beforeAll(async () => {
-            expect(mockDeploy).toHaveBeenCalledTimes(1)
-            deployedPackage = await getDeployedPackage(mockDeploy.mock.calls[0][0])
+            expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+            deployedPackage = await getDeployedPackage(connection.metadata.deploy.mock.calls[0][0])
           })
           describe('package manifest', () => {
             it('should contain the new and modified fields', async () => {
@@ -1240,7 +1249,7 @@ describe('SalesforceAdapter CRUD', () => {
         })
 
         beforeEach(async () => {
-          mockDeploy.mockReturnValue(mockDeployResult({
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
             success: true,
             componentSuccess: [{ fullName: 'Test__c', componentType: constants.CUSTOM_OBJECT }],
           }))
@@ -1264,8 +1273,10 @@ describe('SalesforceAdapter CRUD', () => {
         })
 
         it('should deploy changes to the object and fields', async () => {
-          expect(mockDeploy).toHaveBeenCalledTimes(1)
-          const deployedPackage = await getDeployedPackage(mockDeploy.mock.calls[0][0])
+          expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
+          const deployedPackage = await getDeployedPackage(
+            connection.metadata.deploy.mock.calls[0][0]
+          )
           expect(deployedPackage.manifest?.types).toEqual(
             { name: constants.CUSTOM_OBJECT, members: 'Test__c' }
           )
@@ -1304,7 +1315,7 @@ describe('SalesforceAdapter CRUD', () => {
           expect(result.appliedChanges).toHaveLength(0)
         })
         it('should not call the API', () => {
-          expect(mockDeploy).not.toHaveBeenCalled()
+          expect(connection.metadata.deploy).not.toHaveBeenCalled()
         })
       })
     })
@@ -1328,7 +1339,7 @@ describe('SalesforceAdapter CRUD', () => {
         },
       })
       beforeEach(async () => {
-        mockDeploy.mockReturnValue(mockDeployResult({
+        connection.metadata.deploy.mockReturnValue(mockDeployResult({
           success: false,
           componentFailure: [
             {
@@ -1362,6 +1373,78 @@ describe('SalesforceAdapter CRUD', () => {
       it('should return an error', () => {
         expect(result.errors).toHaveLength(1)
         expect(result.errors[0].message).toContain('some error')
+      })
+    })
+
+    describe('when deploying two groups concurrently', () => {
+      let resultValidationRule: DeployResult
+      let resultProfile: DeployResult
+      beforeEach(async () => {
+        const steps = stepManager(['firstDeploy', 'secondDeploy'])
+
+        connection.metadata.deploy
+          .mockReturnValueOnce({
+            complete: async () => {
+              steps.resolveStep('firstDeploy')
+              await steps.waitStep('secondDeploy')
+              return mockDeployResultComplete({
+                componentSuccess: [{ fullName: 'Test__c.Valid', componentType: 'ValidationRule' }],
+              })
+            },
+          } as unknown as DeployResultLocator<JSForceDeployResult>)
+          .mockReturnValueOnce({
+            complete: async () => {
+              steps.resolveStep('secondDeploy')
+              return mockDeployResultComplete({
+                componentSuccess: [{ fullName: 'TestAddProfileInstance__c', componentType: 'Profile' }],
+              })
+            },
+          } as unknown as DeployResultLocator<JSForceDeployResult>)
+
+        // Testing a validation rule specifically because it goes through a filter
+        // that has stateful preDeploy/onDeploy (preDeploy stores context that onDeploy uses)
+        const testObject = createCustomObjectType('Test__c', {})
+        const testValidationRule = createInstanceElement(
+          {
+            fullName: 'Test__c.Valid',
+            active: true,
+            errorConditionFormula: 'One__c > 10',
+            errorDisplayField: 'One__c',
+            errorMessage: 'one is not bigger than 10',
+          },
+          createMetadataObjectType({ annotations: { metadataType: 'ValidationRule' } }),
+          undefined,
+          {
+            [INSTANCE_ANNOTATIONS.PARENT]: [
+              new ReferenceExpression(testObject.elemID, testObject),
+            ],
+          }
+        )
+        const testProfile = createInstanceElement(
+          mockDefaultValues.Profile,
+          mockTypes.Profile,
+        )
+        const validationRulePromise = adapter.deploy({
+          changeGroup: {
+            groupID: testValidationRule.elemID.getFullName(),
+            changes: [toChange({ after: testValidationRule })],
+          },
+        })
+        await steps.waitStep('firstDeploy')
+        const profilePromise = adapter.deploy({
+          changeGroup: {
+            groupID: testProfile.elemID.getFullName(),
+            changes: [toChange({ after: testProfile })],
+          },
+        })
+
+        resultValidationRule = await validationRulePromise
+        resultProfile = await profilePromise
+      })
+
+      it('should return applied changes for both groups', () => {
+        expect(resultValidationRule.appliedChanges).toHaveLength(1)
+        expect(resultProfile.appliedChanges).toHaveLength(1)
       })
     })
   })

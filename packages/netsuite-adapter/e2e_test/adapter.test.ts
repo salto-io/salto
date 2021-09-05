@@ -330,23 +330,26 @@ describe('Netsuite adapter E2E with real account', () => {
     })
 
     describe('safe deploy change validator', () => {
+      let beforeInstance: InstanceElement
+      let afterInstance: InstanceElement
+      let serviceInstance: InstanceElement
+      beforeAll(() => {
+        beforeInstance = entityCustomFieldToCreate.clone()
+        afterInstance = beforeInstance.clone()
+        serviceInstance = beforeInstance.clone()
+
+        beforeInstance.value.label = 'before label'
+        afterInstance.value.label = 'after label'
+        serviceInstance.value.label = `service label - ${randomString}`
+      })
+
       describe('with warnOnStaleWorkspaceData=true flag', () => {
-        let beforeInstance: InstanceElement
-        let afterInstance: InstanceElement
-        let serviceInstance: InstanceElement
         beforeAll(async () => {
           const adapterAttr = realAdapter(
             { credentials: credentialsLease.value, withSuiteApp },
             { deploy: { [WARN_STALE_DATA]: true } },
           )
           adapter = adapterAttr.adapter
-          beforeInstance = entityCustomFieldToCreate.clone()
-          afterInstance = beforeInstance.clone()
-          serviceInstance = beforeInstance.clone()
-
-          beforeInstance.value.label = 'before label'
-          afterInstance.value.label = 'after label'
-          serviceInstance.value.label = `service label - ${randomString}`
 
           const additionChanges = [toChange({ after: serviceInstance })]
           const additionResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes: additionChanges } })
@@ -371,22 +374,12 @@ describe('Netsuite adapter E2E with real account', () => {
       })
 
       describe('with warnOnStaleWorkspaceData=false flag', () => {
-        let beforeInstance: InstanceElement
-        let afterInstance: InstanceElement
-        let serviceInstance: InstanceElement
         beforeAll(async () => {
           const adapterAttr = realAdapter(
             { credentials: credentialsLease.value, withSuiteApp },
             { deploy: { [WARN_STALE_DATA]: false } },
           )
           adapter = adapterAttr.adapter
-          beforeInstance = entityCustomFieldToCreate.clone()
-          afterInstance = beforeInstance.clone()
-          serviceInstance = beforeInstance.clone()
-
-          beforeInstance.value.label = 'before label'
-          afterInstance.value.label = 'after label'
-          serviceInstance.value.label = `service label - ${randomString}`
 
           const additionChanges = [toChange({ after: serviceInstance })]
           const additionResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes: additionChanges } })

@@ -234,25 +234,23 @@ export const updateWorkspace = async ({
   mode = 'default',
 }: UpdateWorkspaceParams): Promise<{ success: boolean; numberOfAppliedChanges: number }> => {
   let numberOfAppliedChanges = 0
-  if (changes.length > 0) {
-    await logWorkspaceUpdates(workspace, changes)
-    const updateNaclFilesResult = await workspace.updateNaclFiles(
-      changes.map(c => c.change),
-      mode,
-    )
-    numberOfAppliedChanges = updateNaclFilesResult.naclFilesChangesCount
-      + updateNaclFilesResult.stateOnlyChangesCount
-    const { status, errors } = await validateWorkspace(workspace)
-    const formattedErrors = await formatWorkspaceErrors(workspace, errors)
-    await printWorkspaceErrors(status, formattedErrors, output)
-    if (status === 'Error') {
-      log.warn(formattedErrors)
-      const shouldAbort = force || await shouldAbortWorkspaceInCaseOfValidationError(errors.length)
-      if (!shouldAbort) {
-        await workspace.flush()
-      }
-      return { success: false, numberOfAppliedChanges: 0 }
+  await logWorkspaceUpdates(workspace, changes)
+  const updateNaclFilesResult = await workspace.updateNaclFiles(
+    changes.map(c => c.change),
+    mode,
+  )
+  numberOfAppliedChanges = updateNaclFilesResult.naclFilesChangesCount
+    + updateNaclFilesResult.stateOnlyChangesCount
+  const { status, errors } = await validateWorkspace(workspace)
+  const formattedErrors = await formatWorkspaceErrors(workspace, errors)
+  await printWorkspaceErrors(status, formattedErrors, output)
+  if (status === 'Error') {
+    log.warn(formattedErrors)
+    const shouldAbort = force || await shouldAbortWorkspaceInCaseOfValidationError(errors.length)
+    if (!shouldAbort) {
+      await workspace.flush()
     }
+    return { success: false, numberOfAppliedChanges: 0 }
   }
   await workspace.flush()
   log.debug('finished updating workspace')

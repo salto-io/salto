@@ -189,7 +189,7 @@ describe('fetch command', () => {
           })
         })
         it('should not update workspace', () => {
-          expect(workspace.updateNaclFiles).not.toHaveBeenCalled()
+          expect(workspace.updateNaclFiles).toHaveBeenCalledWith([], 'default')
           expect(telemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
           expect(telemetry.getEventsMap()[eventsNames.changes][0].value).toEqual(0)
         })

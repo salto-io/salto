@@ -206,6 +206,7 @@ describe('fetch command', () => {
             {
               changes: [],
               configChanges: plan,
+              updatedConfigs: { [newConfig.elemID.adapter]: [newConfig] },
               mergeErrors: [],
               success: true,
             }
@@ -231,7 +232,7 @@ describe('fetch command', () => {
           mockShouldUpdateConfig.mockResolvedValueOnce(Promise.resolve(true))
           result = await fetchCommand(fetchArgs)
           expect(result).toBe(CliExitCode.Success)
-          expect(fetchArgs.workspace.updateServiceConfig).toHaveBeenCalledWith('salesforce', newConfig)
+          expect(fetchArgs.workspace.updateServiceConfig).toHaveBeenCalledWith('salesforce', [newConfig])
         })
 
         it('should not write config when abort was requested', async () => {
@@ -557,6 +558,7 @@ describe('fetch command', () => {
                 },
               },
             ],
+            updatedConfigs: {},
             success: true,
           }
         )

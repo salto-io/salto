@@ -622,19 +622,19 @@ describe('SalesforceAdapter creator', () => {
       const configFromFetch = config.clone()
       const updatedConfig = getConfigChange(
         {
-          config,
+          config: [config],
           message: `Salto failed to fetch some items from salesforce.
 
 In order to complete the fetch operation, Salto needs to stop managing these items by applying the following configuration change:`,
         },
         {
-          config: configFromFetch,
+          config: [configFromFetch],
           message: 'The configuration options "metadataTypesSkippedList", "instancesRegexSkippedList" and "dataManagement" are deprecated. The following changes will update the deprecated options to the "fetch" configuration option.',
         },
       )
 
       it('return fetch configuration', () => {
-        expect(updatedConfig?.config).toBe(config)
+        expect(updatedConfig?.config[0]).toBe(config)
       })
       it('return combined message', () => {
         expect(updatedConfig?.message).toBe(`The configuration options "metadataTypesSkippedList", "instancesRegexSkippedList" and "dataManagement" are deprecated. The following changes will update the deprecated options to the "fetch" configuration option.
@@ -646,7 +646,7 @@ In order to complete the fetch operation, Salto needs to stop managing these ite
 
     describe('only configWithoutDeprecated is defined', () => {
       const configChange = {
-        config,
+        config: [config],
         message: 'The configuration options "metadataTypesSkippedList", "instancesRegexSkippedList" and "dataManagement" are deprecated. The following changes will update the deprecated options to the "fetch" configuration option.',
       }
       const updatedConfig = getConfigChange(
@@ -660,7 +660,7 @@ In order to complete the fetch operation, Salto needs to stop managing these ite
 
     describe('only fetchConfiguration is defined', () => {
       const configChange = {
-        config,
+        config: [config],
         message: `Salto failed to fetch some items from salesforce.
 
 In order to complete the fetch operation, Salto needs to stop managing these items by applying the following configuration change:`,

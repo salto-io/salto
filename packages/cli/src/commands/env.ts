@@ -337,9 +337,7 @@ Promise<CliExitCode> => {
 
   try {
     await maybeIsolateExistingEnv(args.output, workspace, force, yesAll)
-    const workspaceConfig = await localWorkspaceConfigSource(
-      args.workspacePath, undefined, configOverrides
-    )
+    const workspaceConfig = await localWorkspaceConfigSource(args.workspacePath)
     const rmcToEnvSource = async (remoteMapCreator: rm.RemoteMapCreator):
     Promise<EnvironmentSource> =>
       createEnvironmentSource({

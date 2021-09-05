@@ -13,9 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { WorkspaceConfig } from './config/workspace_config_types'
+import { InstanceElement } from '@salto-io/adapter-api'
 
-export type WorkspaceConfigSource = {
-  getWorkspaceConfig(): Promise<WorkspaceConfig>
-  setWorkspaceConfig(config: WorkspaceConfig): Promise<void>
+export type AdaptersConfigSource = {
+  getAdapter(adapter: string, defaultValue?: InstanceElement): Promise<InstanceElement | undefined>
+  setAdapter(
+    adapter: string,
+    config: Readonly<InstanceElement> | Readonly<InstanceElement>[]
+  ): Promise<void>
 }

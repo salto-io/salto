@@ -88,7 +88,7 @@ export const createRetrieveConfigChange = (result: RetrieveResult): ConfigChange
     ))
 
 export type ConfigChange = {
-  config: InstanceElement
+  config: InstanceElement[]
   message: string
 }
 
@@ -134,7 +134,7 @@ export const getConfigFromConfigChanges = (
   }, isDefined) as DataManagementConfig | undefined
 
   return {
-    config: new InstanceElement(
+    config: [new InstanceElement(
       ElemID.CONFIG_NAME,
       configType,
       _.pickBy({
@@ -156,7 +156,7 @@ export const getConfigFromConfigChanges = (
         useOldProfiles: currentConfig.useOldProfiles,
         client: currentConfig.client,
       }, isDefined)
-    ),
+    )],
     message: getConfigChangeMessage(configChanges),
   }
 }

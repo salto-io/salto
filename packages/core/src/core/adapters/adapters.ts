@@ -64,6 +64,18 @@ export const getDefaultAdapterConfig = async (
   return configType ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType) : undefined
 }
 
+export const getInitialAdapterConfig = async (
+  adapterName: string
+): Promise<InstanceElement[] | undefined> => {
+  const { getInitialConfig } = adapterCreators[adapterName]
+  if (getInitialConfig !== undefined) {
+    return getInitialConfig()
+  }
+
+  const defaultConf = await getDefaultAdapterConfig(adapterName)
+  return defaultConf && [defaultConf]
+}
+
 const filterElementsSourceAdapter = (
   elementsSource: ReadOnlyElementsSource,
   adapter: string

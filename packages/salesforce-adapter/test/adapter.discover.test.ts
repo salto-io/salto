@@ -949,7 +949,7 @@ public class MyClass${index} {
       it('should return correct config when orig config has values', async () => {
         mockFailures(connection)
         result = await adapter.fetch(mockFetchOpts)
-        config = result?.updatedConfig?.config as InstanceElement
+        config = result?.updatedConfig?.config[0] as InstanceElement
         expect(config).toBeDefined()
         expect(config.value).toEqual(
           {
@@ -978,7 +978,7 @@ public class MyClass${index} {
         mockFailures(connectionMock)
 
         result = await adapterMock.fetch(mockFetchOpts)
-        config = result?.updatedConfig?.config as InstanceElement
+        config = result?.updatedConfig?.config[0] as InstanceElement
         expect(config.value).toEqual(
           {
             fetch: {

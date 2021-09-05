@@ -13,25 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DetailedChange, ElemID, Value, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { configSource, ConfigSource } from '../../src/workspace/config_source'
 import { mockDirStore } from '../common/nacl_file_store'
 
 describe('configSource', () => {
   let source: ConfigSource
-  const createConfigOverride = (name: string, path: string[], value: Value): DetailedChange => ({
-    id: new ElemID(name, ElemID.CONFIG_NAME, 'instance', ElemID.CONFIG_NAME, ...path),
-    action: 'add',
-    data: { after: value },
-  })
   let dirStore: DirectoryStore<string>
   beforeEach(() => {
-    const overrides: DetailedChange[] = [
-      createConfigOverride('valid', ['val'], 2),
-      createConfigOverride('valid', ['new'], { a: true }),
-      createConfigOverride('default', ['new'], 'new'),
-    ]
     dirStore = mockDirStore(
       undefined,
       undefined,
@@ -52,7 +42,7 @@ describe('configSource', () => {
         'error.nacl': 'asd',
       },
     )
-    source = configSource(dirStore, overrides)
+    source = configSource(dirStore)
   })
   describe('get', () => {
     describe('with valid config', () => {
@@ -66,12 +56,6 @@ describe('configSource', () => {
       it('should have instance values when they are not overridden', () => {
         expect(inst?.value).toMatchObject({
           other: 3,
-        })
-      })
-      it('should apply config overrides', () => {
-        expect(inst?.value).toMatchObject({
-          val: 2,
-          new: { a: true },
         })
       })
     })
@@ -121,44 +105,6 @@ describe('configSource', () => {
     })
   })
   describe('set', () => {
-    it('update to an overridden field should throw an exception', async () => {
-      const updatedConfig = new InstanceElement(
-        ElemID.CONFIG_NAME,
-        new ObjectType({ elemID: new ElemID('valid', ElemID.CONFIG_NAME) }),
-        {
-          val: 3,
-          other: 3,
-          new: {
-            a: true,
-          },
-        }
-      )
-      await expect(source.set('valid', updatedConfig)).rejects.toThrow()
-    })
-
-    it('should not change the value of an override field', async () => {
-      const updatedConfig = new InstanceElement(
-        ElemID.CONFIG_NAME,
-        new ObjectType({ elemID: new ElemID('valid', ElemID.CONFIG_NAME) }),
-        {
-          val: 2,
-          other: 4,
-          new: {
-            a: true,
-          },
-        }
-      )
-      await source.set('valid', updatedConfig)
-      expect(dirStore.set).toHaveBeenCalledWith({
-        filename: expect.any(String),
-        buffer: `valid {
-  val = 1
-  other = 4
-}
-`,
-      })
-    })
-
     it('should set first configuration in repo without changes', async () => {
       await source.set('newAdapter', new InstanceElement(
         'newAdapter',

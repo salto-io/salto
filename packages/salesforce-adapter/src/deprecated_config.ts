@@ -18,7 +18,6 @@ import { InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { ConfigChange } from './config_change'
 import { ConfigValidationError, validateRegularExpressions } from './config_validation'
 import { validateDataManagementConfig } from './fetch_profile/data_management'
 import { DataManagementConfig, DATA_CONFIGURATION, DATA_MANAGEMENT, DeprecatedFetchParameters, DeprecatedMetadataParams, FetchParameters, FETCH_CONFIG, INSTANCES_REGEX_SKIPPED_LIST, INSTANCE_SUFFIXES, MetadataParams, METADATA_CONFIG, METADATA_TYPES_SKIPPED_LIST } from './types'
@@ -158,7 +157,10 @@ const convertDeprecatedFetchParameters = (
 }
 
 export const updateDeprecatedConfiguration = (configuration: Readonly<InstanceElement> | undefined):
-ConfigChange | undefined => {
+{
+  config: [InstanceElement]
+  message: string
+} | undefined => {
   if (configuration === undefined
     || DEPRECATED_FIELDS.every(field => configuration.value[field] === undefined)) {
     return undefined
@@ -174,5 +176,5 @@ ConfigChange | undefined => {
       updatedConf.value
     ),
   }
-  return { config: updatedConf, message: DEPRECATED_OPTIONS_MESSAGE }
+  return { config: [updatedConf], message: DEPRECATED_OPTIONS_MESSAGE }
 }

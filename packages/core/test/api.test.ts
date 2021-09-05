@@ -117,6 +117,7 @@ describe('api.ts', () => {
         changes: [],
         errors: [],
         configChanges: mockPlan.createPlan([[]]),
+        updatedConfigs: {},
         unmergedElements: fetchedElements,
         elements: fetchedElements,
         mergeErrors: [],

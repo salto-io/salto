@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import path from 'path'
-import { Values, InstanceElement, ObjectType, ElemID } from '@salto-io/adapter-api'
+import { Values } from '@salto-io/adapter-api'
 import { dirStore } from '@salto-io/workspace'
 import { getSaltoHome } from '../../../src/app_config'
 import {
@@ -26,7 +26,6 @@ import { NoEnvsConfig, NoWorkspaceConfig } from '../../../src/local-workspace/er
 
 jest.mock('../../../src/local-workspace/dir_store')
 describe('workspace local config', () => {
-  const SALESFORCE = 'adapters/salesforce'
   const mockDirStoreInstance = (obj: Values): dirStore.DirectoryStore<string> => ({
     get: jest.fn().mockImplementation(
       (name: string) => {
@@ -46,6 +45,7 @@ describe('workspace local config', () => {
     getFiles: jest.fn(),
     clone: jest.fn(),
   } as unknown as dirStore.DirectoryStore<string>)
+
   const repoDirStore = mockDirStoreInstance({
     [`${WORKSPACE_CONFIG_NAME}.nacl`]: `
     workspace {
@@ -64,26 +64,6 @@ describe('workspace local config', () => {
       },
     ]
   }`,
-    [`${SALESFORCE}.nacl`]: `salesforce {
-    metadataTypesSkippedList = [
-        "Report",
-        "ReportType",
-        "ReportFolder",
-        "Dashboard",
-        "DashboardFolder",
-        "EmailTemplate",
-    ]
-    instancesRegexSkippedList = [
-        "^ConnectedApp.CPQIntegrationUserApp$",
-    ]
-    maxItemsInRetrieveRequest = 2500
-    client = {
-      maxConcurrentApiRequests = {
-        retrieve = 3
-      }
-    }
-  }
-  `,
   })
   const prefDirStore = mockDirStoreInstance({
     [`${USER_CONFIG_NAME}.nacl`]: `
@@ -98,7 +78,8 @@ describe('workspace local config', () => {
     const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
     mockCreateDirStore.mockImplementation(params =>
       (params.baseDir.startsWith(getSaltoHome()) ? prefDirStore : repoDirStore))
-    configSource = await workspaceConfigSource('bla')
+
+    configSource = await workspaceConfigSource('bla', undefined)
   })
 
 
@@ -121,22 +102,7 @@ describe('workspace local config', () => {
     expect((repoDirStore.set as jest.Mock).mock.calls[1][0].filename).toEqual(`${WORKSPACE_CONFIG_NAME}.nacl`)
     expect((prefDirStore.set as jest.Mock).mock.calls[0][0].filename).toEqual(`${USER_CONFIG_NAME}.nacl`)
   })
-  it('should look for adapter in repo', async () => {
-    (repoDirStore.get as jest.Mock).mockClear()
-    await configSource.getAdapter('salesforce')
-    expect((repoDirStore.get as jest.Mock).mock.calls).toHaveLength(1)
-    expect((prefDirStore.get as jest.Mock).mock.calls).toHaveLength(0)
-  })
-  it('should set adapter in repo', async () => {
-    await configSource.setAdapter('salesforce', new InstanceElement(
-      'adapter/salesforce',
-      new ObjectType({
-        elemID: new ElemID('salesforce'),
-      })
-    ))
-    expect((repoDirStore.set as jest.Mock).mock.calls).toHaveLength(1)
-    expect((prefDirStore.set as jest.Mock).mock.calls).toHaveLength(0)
-  })
+
   describe('edge cases', () => {
     const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
     beforeEach(async () => {

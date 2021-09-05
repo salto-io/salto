@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { Workspace, WorkspaceComponents } from '@salto-io/workspace'
 import { cleanDatabases } from '../local-workspace/remote_map'
-import { getDefaultAdapterConfig } from './adapters'
+import { getInitialAdapterConfig } from './adapters'
 
 const { awu } = collections.asynciterable
 
@@ -31,7 +31,7 @@ export const cleanWorkspace = async (
   await workspace.clear(_.omit(cleanArgs, 'serviceConfig'))
   if (cleanArgs.serviceConfig === true) {
     await awu(workspace.services()).forEach(async service => {
-      const defaultConfig = await getDefaultAdapterConfig(service)
+      const defaultConfig = await getInitialAdapterConfig(service)
       if (defaultConfig === undefined) {
         // some services, like hubspot, don't have configs to restore
         log.info('Cannot restore config for service %s', service)

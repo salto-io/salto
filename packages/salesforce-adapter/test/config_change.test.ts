@@ -16,7 +16,7 @@
 import { InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { ConfigChangeSuggestion, SalesforceConfig } from '../src/types'
-import { getConfigFromConfigChanges, getConfigChangeMessage } from '../src/config_change'
+import { getConfigFromConfigChanges, getConfigChangeMessage, ConfigChange } from '../src/config_change'
 
 describe('Config Changes', () => {
   const includedObjectName = '.*Object.*'
@@ -77,7 +77,7 @@ describe('Config Changes', () => {
 
   describe('getConfigFromConfigChanges - dataManagement suggestions', () => {
     describe('when suggestion is about an object that appears in includeObjects', () => {
-      let newConfig: { config: InstanceElement; message: string } | undefined
+      let newConfig: ConfigChange | undefined
       beforeAll(() => {
         const suggestToRemoveObject = {
           type: 'dataObjectsExclude',
@@ -91,18 +91,18 @@ describe('Config Changes', () => {
 
       it('should create an instance with values same as original config besides excludeObjects', () => {
         expect(newConfig).toBeDefined()
-        expect(newConfig?.config?.value.fetch.metadata)
+        expect(newConfig?.config?.[0].value.fetch.metadata)
           .toEqual(currentConfig.fetch?.metadata)
 
         const currentConfigClone = _.cloneDeep(currentConfig)
         delete currentConfigClone.fetch?.data?.excludeObjects
 
-        expect(newConfig?.config?.value.fetch.data)
+        expect(newConfig?.config?.[0].value.fetch.data)
           .toMatchObject(currentConfigClone.fetch?.data ?? {})
       })
 
       it('should add the object name to excludeObjects', () => {
-        expect(newConfig?.config?.value.fetch.data.excludeObjects)
+        expect(newConfig?.config?.[0].value.fetch.data.excludeObjects)
           .toContain(includedObjectName)
       })
 
@@ -118,7 +118,7 @@ In order to complete the fetch operation, Salto needs to stop managing these ite
     })
 
     describe('when suggestion is about an object that appears in allowReferenceTo', () => {
-      let newConfig: InstanceElement | undefined
+      let newConfig: InstanceElement[] | undefined
       beforeAll(() => {
         const suggestToRemoveObject = {
           type: 'dataObjectsExclude',
@@ -129,17 +129,17 @@ In order to complete the fetch operation, Salto needs to stop managing these ite
 
       it('should create an instance with values same as original config besides excludeObjects and allowReferenceTo', () => {
         expect(newConfig).toBeDefined()
-        expect(newConfig?.value.fetch.metadata)
+        expect(newConfig?.[0].value.fetch.metadata)
           .toEqual(currentConfig.fetch?.metadata)
-        expect(newConfig?.value.fetch.data.saltoIDSettings)
+        expect(newConfig?.[0].value.fetch.data.saltoIDSettings)
           .toMatchObject(currentConfig.fetch?.data?.saltoIDSettings ?? {})
-        expect(newConfig?.value.fetch.data.includeObjects)
+        expect(newConfig?.[0].value.fetch.data.includeObjects)
           .toEqual(currentConfig.fetch?.data?.includeObjects)
       })
 
       it('should add the object name to excludeObjects and remove it from allowReferenceTo', () => {
-        expect(newConfig?.value.fetch.data.excludeObjects).toContain(refToObjectName)
-        expect(newConfig?.value.fetch.data.allowReferenceTo).not.toContain(refToObjectName)
+        expect(newConfig?.[0].value.fetch.data.excludeObjects).toContain(refToObjectName)
+        expect(newConfig?.[0].value.fetch.data.allowReferenceTo).not.toContain(refToObjectName)
       })
 
       it('should not change the currentConfig', () => {

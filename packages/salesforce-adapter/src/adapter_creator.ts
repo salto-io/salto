@@ -28,9 +28,9 @@ import { configType, usernamePasswordCredentialsType, oauthRequestParameters,
 import { validateFetchParameters } from './fetch_profile/fetch_profile'
 import { ConfigValidationError } from './config_validation'
 import { updateDeprecatedConfiguration } from './deprecated_config'
-import { ConfigChange } from './config_change'
 import changeValidator from './change_validator'
 import { getChangeGroupIds } from './group_changes'
+import { ConfigChange } from './config_change'
 
 const log = logger(module)
 
@@ -120,7 +120,7 @@ In Addition, ${configFromFetch.message}`,
 export const adapter: Adapter = {
   operations: context => {
     const updatedConfig = context.config && updateDeprecatedConfiguration(context.config)
-    const config = adapterConfigFromConfig(updatedConfig?.config ?? context.config)
+    const config = adapterConfigFromConfig(updatedConfig?.config[0] ?? context.config)
     const credentials = credentialsFromConfig(context.credentials)
     const salesforceAdapter = new SalesforceAdapter({
       client: new SalesforceClient({ credentials, config: config[CLIENT_CONFIG] }),
@@ -132,7 +132,10 @@ export const adapter: Adapter = {
     return {
       fetch: async opts => {
         const fetchResults = await salesforceAdapter.fetch(opts)
-        fetchResults.updatedConfig = getConfigChange(fetchResults.updatedConfig, updatedConfig)
+        fetchResults.updatedConfig = getConfigChange(
+          fetchResults.updatedConfig,
+          updatedConfig,
+        )
         return fetchResults
       },
 

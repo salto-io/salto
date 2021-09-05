@@ -13,14 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, AdapterAuthentication, ObjectType } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, AdapterAuthentication, ObjectType, Adapter } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { adapter } from '@salto-io/salesforce-adapter'
+import _ from 'lodash'
 import {
   initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs,
   getDefaultAdapterConfig,
+  getInitialAdapterConfig,
 } from '../../../src/core/adapters'
 
 jest.mock('@salto-io/workspace', () => ({
@@ -62,6 +64,25 @@ describe('adapters.ts', () => {
   describe('getDefaultAdapterConfig', () => {
     it('should call createDefaultInstanceFromType', async () => {
       await getDefaultAdapterConfig('salesforce')
+      expect(utils.createDefaultInstanceFromType).toHaveBeenCalled()
+    })
+  })
+
+  describe('getInitialAdapterConfig', () => {
+    let realAdapter: Adapter
+    beforeEach(() => {
+      realAdapter = _.clone(adapter)
+    })
+    afterEach(() => {
+      _.assign(adapter, realAdapter)
+    })
+    it('should use getInitialConfig when defined', async () => {
+      adapter.getInitialConfig = jest.fn()
+      await getInitialAdapterConfig('salesforce')
+      expect(adapter.getInitialConfig).toHaveBeenCalled()
+    })
+    it('should call createDefaultInstanceFromType when getInitialConfig is undefined', async () => {
+      await getInitialAdapterConfig('salesforce')
       expect(utils.createDefaultInstanceFromType).toHaveBeenCalled()
     })
   })

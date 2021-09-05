@@ -319,7 +319,7 @@ describe('fetch', () => {
 
       beforeEach(() => {
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
-          { elements: [], updatedConfig: { config: configInstance, message: 'test' } }
+          { elements: [], updatedConfig: { config: [configInstance], message: 'test' } }
         )
       })
       it('should return config change plan when there is no current config', async () => {

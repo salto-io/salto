@@ -95,7 +95,7 @@ describe('deprecated config', () => {
         configType,
         configWithOldOptions
       ))
-      expect(config?.config.value).toEqual(updatedConfig)
+      expect(config?.config[0].value).toEqual(updatedConfig)
       expect(config?.message).toBe(DEPRECATED_OPTIONS_MESSAGE)
     })
 
@@ -139,7 +139,7 @@ describe('deprecated config', () => {
       ))
       // _.isEqual is used instead of '.toEqual' because '.toEqual'
       // will return true of objects like {a: undefined} and {}
-      expect(_.isEqual(config?.config.value, updatedConfig)).toBeTruthy()
+      expect(_.isEqual(config?.config[0].value, updatedConfig)).toBeTruthy()
       expect(config?.message).toBe(DEPRECATED_OPTIONS_MESSAGE)
     })
 
@@ -155,7 +155,7 @@ describe('deprecated config', () => {
         configType,
         configWithOldOptions
       ))
-      expect(config?.config.value).toEqual(expectedConfig)
+      expect(config?.config[0].value).toEqual(expectedConfig)
       expect(config?.message).toBe(DEPRECATED_OPTIONS_MESSAGE)
     })
 
@@ -182,7 +182,7 @@ describe('deprecated config', () => {
         configType,
         configWithOldOptions
       ))
-      expect(config?.config.value).toEqual(expectedConfig)
+      expect(config?.config[0].value).toEqual(expectedConfig)
       expect(config?.message).toBe(DEPRECATED_OPTIONS_MESSAGE)
     })
   })

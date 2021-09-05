@@ -20,7 +20,7 @@ import { mockWorkspace } from '../common/workspace'
 
 jest.mock('../../src/core/adapters', () => ({
   ...jest.requireActual<{}>('../../src/core/adapters'),
-  getDefaultAdapterConfig: jest.fn(service => ({ service, aaa: 'aaa' })),
+  getInitialAdapterConfig: jest.fn(service => ({ service, aaa: 'aaa' })),
 }))
 
 describe('clean', () => {
@@ -50,8 +50,8 @@ describe('clean', () => {
       staticResources: false,
       credentials: true,
     })
-    expect(adapters.getDefaultAdapterConfig).toHaveBeenCalledWith('salesforce')
-    expect(adapters.getDefaultAdapterConfig).toHaveBeenCalledWith('netsuite')
+    expect(adapters.getInitialAdapterConfig).toHaveBeenCalledWith('salesforce')
+    expect(adapters.getInitialAdapterConfig).toHaveBeenCalledWith('netsuite')
     expect(workspace.updateServiceConfig).toHaveBeenCalledWith('salesforce', { service: 'salesforce', aaa: 'aaa' })
     expect(workspace.updateServiceConfig).toHaveBeenCalledWith('netsuite', { service: 'netsuite', aaa: 'aaa' })
     expect(workspace.flush).toHaveBeenCalled()
@@ -73,13 +73,13 @@ describe('clean', () => {
       staticResources: true,
       credentials: false,
     })
-    expect(adapters.getDefaultAdapterConfig).not.toHaveBeenCalled()
+    expect(adapters.getInitialAdapterConfig).not.toHaveBeenCalled()
     expect(workspace.updateServiceConfig).not.toHaveBeenCalled()
     expect(workspace.flush).toHaveBeenCalled()
   })
 
-  it('should finish even if some serviec configs cannot be restored', async () => {
-    jest.spyOn(adapters, 'getDefaultAdapterConfig')
+  it('should finish even if some service configs cannot be restored', async () => {
+    jest.spyOn(adapters, 'getInitialAdapterConfig')
       .mockImplementationOnce(async () => undefined)
       .mockImplementationOnce(async () => undefined)
     await cleanWorkspace(workspace, {
@@ -90,8 +90,8 @@ describe('clean', () => {
       credentials: true,
       serviceConfig: true,
     })
-    expect(adapters.getDefaultAdapterConfig).toHaveBeenCalledWith('salesforce')
-    expect(adapters.getDefaultAdapterConfig).toHaveBeenCalledWith('netsuite')
+    expect(adapters.getInitialAdapterConfig).toHaveBeenCalledWith('salesforce')
+    expect(adapters.getInitialAdapterConfig).toHaveBeenCalledWith('netsuite')
     expect(workspace.updateServiceConfig).not.toHaveBeenCalled()
     expect(workspace.flush).toHaveBeenCalled()
   })

@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
-  Field, getChangeElement, isField, isModificationChange, ChangeDataType, ReferenceExpression,
-  InstanceElement, isInstanceChange, ModificationChange, isFieldChange,
+  Field, getChangeElement, isField, isModificationChange, ChangeDataType,
+  InstanceElement, isInstanceChange, ModificationChange, isFieldChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
 
 import { FilterWith } from '../filter'
@@ -37,10 +37,10 @@ export const isPicklistField = (changedElement: ChangeDataType): changedElement 
       Types.primitiveDataTypes.MultiselectPicklist.elemID.getFullName(),
     ]).includes(changedElement.refType.elemID.getFullName())
 
-export const isStandardValueSetPicklistField = (field: Field): boolean =>
-  field.annotations[FIELD_ANNOTATIONS.VALUE_SET] instanceof ReferenceExpression
+export const isValueSetReference = (field: Field): boolean =>
+  isReferenceExpression(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])
 
-export const isGlobalValueSetPicklistField = (field: Field): boolean =>
+export const hasValueSetNameAnnotation = (field: Field): boolean =>
   !_.isUndefined(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])
 
 /**
@@ -98,8 +98,7 @@ const filterCreator = (): FilterWith<'onDeploy'> => ({
         const field = getChangeElement(change)
         return (
           isRestrictedPicklistField(field)
-          && !isGlobalValueSetPicklistField(field)
-          && !isStandardValueSetPicklistField(field)
+          && !isValueSetReference(field)
         )
       })
       .forEach(change => {

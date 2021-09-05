@@ -340,7 +340,7 @@ describe('Netsuite adapter E2E with real account', () => {
             { deploy: { [WARN_STALE_DATA]: true } },
           )
           adapter = adapterAttr.adapter
-          beforeInstance = entityCustomFieldToCreate
+          beforeInstance = entityCustomFieldToCreate.clone()
           afterInstance = beforeInstance.clone()
           serviceInstance = beforeInstance.clone()
 
@@ -388,7 +388,7 @@ describe('Netsuite adapter E2E with real account', () => {
             { deploy: { warnOnStaleWorkspaceData: false } },
           )
           adapter = adapterAttr.adapter
-          beforeInstance = entityCustomFieldToCreate
+          beforeInstance = entityCustomFieldToCreate.clone()
           afterInstance = beforeInstance.clone()
           serviceInstance = beforeInstance.clone()
 

@@ -346,7 +346,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
           beforeInstance.value.label = 'before label'
           afterInstance.value.label = 'after label'
-          serviceInstance.value.label = 'service label'
+          serviceInstance.value.label = `service label - ${randomString}`
 
           const additionChanges = [toChange({ after: serviceInstance })]
           const additionResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes: additionChanges } })
@@ -394,7 +394,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
           beforeInstance.value.label = 'before label'
           afterInstance.value.label = 'after label'
-          serviceInstance.value.label = 'service label'
+          serviceInstance.value.label = `service label - ${randomString}`
 
           const additionChanges = [toChange({ after: serviceInstance })]
           const additionResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes: additionChanges } })

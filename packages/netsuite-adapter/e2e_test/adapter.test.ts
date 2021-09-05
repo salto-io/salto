@@ -368,14 +368,6 @@ describe('Netsuite adapter E2E with real account', () => {
           const changeError = changeErrors.find(e => e.message === 'Continuing the deploy proccess will override changes made in the service to this element.')
           expect(changeError).toBeDefined()
         })
-
-        afterAll(async () => {
-          const removalChange = [toChange({ before: serviceInstance })]
-          const additionResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes: removalChange } })
-          // check that that test cleanup is successfull
-          expect(additionResult.errors.length).toBe(0)
-          expect(additionResult.appliedChanges.length).toBe(1)
-        })
       })
 
       describe('with warnOnStaleWorkspaceData=false flag', () => {
@@ -385,7 +377,7 @@ describe('Netsuite adapter E2E with real account', () => {
         beforeAll(async () => {
           const adapterAttr = realAdapter(
             { credentials: credentialsLease.value, withSuiteApp },
-            { deploy: { warnOnStaleWorkspaceData: false } },
+            { deploy: { [WARN_STALE_DATA]: false } },
           )
           adapter = adapterAttr.adapter
           beforeInstance = entityCustomFieldToCreate.clone()
@@ -412,14 +404,6 @@ describe('Netsuite adapter E2E with real account', () => {
             .flatMap(validator => validator(modificationChanges))
             .toArray()
           expect(changeErrors.length).toBe(0)
-        })
-
-        afterAll(async () => {
-          const removalChange = [toChange({ before: serviceInstance })]
-          const additionResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes: removalChange } })
-          // check that that test cleanup is successfull
-          expect(additionResult.errors.length).toBe(0)
-          expect(additionResult.appliedChanges.length).toBe(1)
         })
       })
     })

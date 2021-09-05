@@ -332,15 +332,12 @@ describe('Netsuite adapter E2E with real account', () => {
     describe('safe deploy change validator', () => {
       let beforeInstance: InstanceElement
       let afterInstance: InstanceElement
-      let serviceInstance: InstanceElement
       beforeAll(() => {
         beforeInstance = entityCustomFieldToCreate.clone()
         afterInstance = beforeInstance.clone()
-        serviceInstance = beforeInstance.clone()
 
         beforeInstance.value.label = 'before label'
         afterInstance.value.label = 'after label'
-        serviceInstance.value.label = `service label - ${randomString}`
       })
 
       describe('with warnOnStaleWorkspaceData=true flag', () => {
@@ -350,12 +347,6 @@ describe('Netsuite adapter E2E with real account', () => {
             { deploy: { [WARN_STALE_DATA]: true } },
           )
           adapter = adapterAttr.adapter
-
-          const additionChanges = [toChange({ after: serviceInstance })]
-          const additionResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes: additionChanges } })
-          // check that that test setup is successfull
-          expect(additionResult.errors.length).toBe(0)
-          expect(additionResult.appliedChanges.length).toBe(1)
         })
 
         it('should have warning when applying change validator', async () => {
@@ -380,12 +371,6 @@ describe('Netsuite adapter E2E with real account', () => {
             { deploy: { [WARN_STALE_DATA]: false } },
           )
           adapter = adapterAttr.adapter
-
-          const additionChanges = [toChange({ after: serviceInstance })]
-          const additionResult = await adapter.deploy({ changeGroup: { groupID: 'SDF', changes: additionChanges } })
-          // check that that test setup is successfull
-          expect(additionResult.errors.length).toBe(0)
-          expect(additionResult.appliedChanges.length).toBe(1)
         })
 
         it('should have no warning when applying change validator', async () => {

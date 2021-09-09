@@ -670,7 +670,8 @@ export const loadWorkspace = async (
     if (includeHidden) {
       return elements(env)
     }
-    return ((await getLoadedNaclFilesSource())).getElementsSource(env)
+    await getWorkspaceState()
+    return (naclFileSources[env ?? currentEnv()]).getElementsSource()
   }
   const pickServices = (names?: ReadonlyArray<string>): ReadonlyArray<string> =>
     (_.isUndefined(names) ? services() : services().filter(s => names.includes(s)))

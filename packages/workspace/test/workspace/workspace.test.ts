@@ -270,6 +270,53 @@ describe('workspace', () => {
         expect(inactiveEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).not.toBeDefined()
         expect(inactiveEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).toBeDefined()
       })
+
+      it('should show elements that were added to the nacl file in the current'
+        + ' load on the sec env', async () => {
+        const primaryEnvElemID = new ElemID('salesforce', 'primaryObj')
+        const secondaryEnvElemID = new ElemID('salesforce', 'secondaryObj')
+        const primaryEnvObj = new ObjectType({ elemID: primaryEnvElemID })
+        const secondaryEnvObj = new ObjectType({ elemID: secondaryEnvElemID })
+        const newWorkspace = await createWorkspace(
+          undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined, {
+            '': {
+              naclFiles: createMockNaclFileSource([]),
+            },
+            default: {
+              naclFiles: await naclFilesSource(
+                'default',
+                mockDirStore([], false, {
+                  'prim.nacl': await dump.dumpElements([primaryEnvObj]),
+                }),
+                mockStaticFilesSource(),
+                persistentMockCreateRemoteMap(),
+                true
+              ),
+              state: createState([]),
+            },
+            inactive: {
+              naclFiles: await naclFilesSource(
+                'inactive',
+                mockDirStore([], false, {
+                  'prim.nacl': await dump.dumpElements([secondaryEnvObj]),
+                }),
+                mockStaticFilesSource(),
+                persistentMockCreateRemoteMap(),
+                true
+              ),
+              state: createState([]),
+            },
+          },
+        )
+        const currentEnvElements = await awu(await (await newWorkspace.elements()).getAll())
+          .toArray()
+        expect(currentEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).toBeDefined()
+        expect(currentEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).not.toBeDefined()
+        const inactiveEnvElements = await awu(await (await newWorkspace.elements(false, 'inactive'))
+          .getAll()).toArray()
+        expect(inactiveEnvElements.find(e => e.elemID.isEqual(primaryEnvElemID))).not.toBeDefined()
+        expect(inactiveEnvElements.find(e => e.elemID.isEqual(secondaryEnvElemID))).toBeDefined()
+      })
     })
   })
 

@@ -49,7 +49,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/e2e-credentials-store": "0.3.0",
+    "@salto-io/e2e-credentials-store": "0.3.1",
     "@salto-io/test-utils": "0.3.1",
     "@types/jest": "^26.0.20",
     "@types/jszip": "^3.1.6",

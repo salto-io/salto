@@ -54,7 +54,7 @@
     "xml-js": "^1.6.11"
   },
   "devDependencies": {
-    "@salto-io/e2e-credentials-store": "0.3.0",
+    "@salto-io/e2e-credentials-store": "0.3.1",
     "@salto-io/test-utils": "0.3.1",
     "@types/async-lock": "^1.1.2",
     "@types/he": "^1.1.1",

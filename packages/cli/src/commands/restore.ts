@@ -211,8 +211,9 @@ const restoreDef = createWorkspaceCommand({
         name: 'mode',
         alias: 'm',
         required: false,
-        description: 'Choose a restore mode. Options - [default, align, override, isolated]',
+        description: 'Choose a restore mode. Options - [default, align]',
         type: 'string',
+        // 'override' and 'isolated' are undocumented
         choices: ['default', 'align', 'override', 'isolated'],
         default: 'default',
       },

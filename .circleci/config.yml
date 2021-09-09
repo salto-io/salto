@@ -356,7 +356,7 @@ workflows:
       - package_cli:
           requires:
             - build
-            # - unit_test
+            - unit_test
             # - e2e_test
 
       - package_vscode_extension:

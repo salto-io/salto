@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Stream } from 'stream'
 import {
   MetadataObject, DescribeValueTypeResult, MetadataInfo, SaveResult, UpsertResult,
   ListMetadataQuery, FileProperties, DescribeSObjectResult, BulkOptions, BulkLoadOperation,
@@ -43,7 +42,7 @@ export interface Metadata {
   retrieve(request: RetrieveRequest,
     callback?: Callback<RetrieveResult>): RetrieveResultLocator<RetrieveResult>
   deploy(
-    zipInput: Stream | Buffer | string, options: DeployOptions
+    zipInput: Buffer | string | NodeJS.ReadableStream, options: DeployOptions
   ): DeployResultLocator<DeployResult>
 }
 

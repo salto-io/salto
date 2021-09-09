@@ -18,13 +18,22 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { apiName, isCustom } from '../transformers/transformer'
-import { isPicklistField, isStandardValueSetPicklistField } from '../filters/value_set'
+import { isPicklistField, isValueSetReference } from '../filters/value_set'
+import { STANDARD_VALUE_SET } from '../filters/standard_value_sets'
+import { isInstanceOfType } from '../filters/utils'
+import { VALUE_SET_FIELDS } from '../constants'
 
 const { awu } = collections.asynciterable
 
+const isStandardValueSet = async (picklistField: Field): Promise<boolean> => {
+  const standardVSchecker = isInstanceOfType(STANDARD_VALUE_SET)
+  return isValueSetReference(picklistField)
+    && standardVSchecker(picklistField.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME].value)
+}
+
 const shouldCreateChangeError = async (changeElement: ChangeDataType): Promise<boolean> =>
   isPicklistField(changeElement) && !isCustom(await apiName(changeElement))
-  && !isStandardValueSetPicklistField(changeElement)
+    && !(await isStandardValueSet(changeElement))
 
 const createChangeError = (field: Field): ChangeError =>
   ({

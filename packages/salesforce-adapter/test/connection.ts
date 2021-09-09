@@ -162,7 +162,7 @@ type GetDeployResultParams = {
   ignoreWarnings?: boolean
   checkOnly?: boolean
 }
-export const mockDeployResult = ({
+export const mockDeployResultComplete = ({
   success = true,
   componentSuccess = [],
   componentFailure = [],
@@ -170,31 +170,35 @@ export const mockDeployResult = ({
   ignoreWarnings = true,
   rollbackOnError = true,
   checkOnly = false,
-}: GetDeployResultParams): DeployResultLocator<DeployResult> => ({
-  complete: jest.fn().mockResolvedValue({
-    id: _.uniqueId(),
-    checkOnly,
-    completedDate: '2020-05-01T14:31:36.000Z',
-    createdDate: '2020-05-01T14:21:36.000Z',
-    done: true,
-    details: [{
-      componentFailures: componentFailure.map(mockDeployMessage),
-      componentSuccesses: componentSuccess.map(mockDeployMessage),
-      runTestResult: mockRunTestResult(runTestResult),
-    }],
-    ignoreWarnings,
-    lastModifiedDate: '2020-05-01T14:31:36.000Z',
-    numberComponentErrors: componentFailure.length,
-    numberComponentsDeployed: componentSuccess.length,
-    numberComponentsTotal: componentFailure.length + componentSuccess.length,
-    numberTestErrors: 0,
-    numberTestsCompleted: 0,
-    numberTestsTotal: 0,
-    rollbackOnError,
-    startDate: '2020-05-01T14:21:36.000Z',
-    status: success ? 'Succeeded' : 'Failed',
-    success,
-  } as DeployResult),
+}: GetDeployResultParams): DeployResult => ({
+  id: _.uniqueId(),
+  checkOnly,
+  completedDate: '2020-05-01T14:31:36.000Z',
+  createdDate: '2020-05-01T14:21:36.000Z',
+  done: true,
+  details: [{
+    componentFailures: componentFailure.map(mockDeployMessage),
+    componentSuccesses: componentSuccess.map(mockDeployMessage),
+    runTestResult: mockRunTestResult(runTestResult),
+  }],
+  ignoreWarnings,
+  lastModifiedDate: '2020-05-01T14:31:36.000Z',
+  numberComponentErrors: componentFailure.length,
+  numberComponentsDeployed: componentSuccess.length,
+  numberComponentsTotal: componentFailure.length + componentSuccess.length,
+  numberTestErrors: 0,
+  numberTestsCompleted: 0,
+  numberTestsTotal: 0,
+  rollbackOnError,
+  startDate: '2020-05-01T14:21:36.000Z',
+  status: success ? 'Succeeded' : 'Failed',
+  success,
+})
+
+export const mockDeployResult = (
+  params: GetDeployResultParams
+): DeployResultLocator<DeployResult> => ({
+  complete: jest.fn().mockResolvedValue(mockDeployResultComplete(params)),
 }) as unknown as DeployResultLocator<DeployResult>
 
 export const mockQueryResult = (

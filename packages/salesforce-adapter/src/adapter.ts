@@ -233,7 +233,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private metadataToRetrieve: string[]
   private metadataTypesOfInstancesFetchedInFilters: string[]
   private nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>
-  private filtersRunner: Required<Filter>
+  private createFiltersRunner: () => Required<Filter>
   private client: SalesforceClient
   private userConfig: SalesforceConfig
   private fetchProfile: FetchProfile
@@ -300,19 +300,22 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
 
-    this.fetchProfile = buildFetchProfile(config.fetch ?? {})
-    this.filtersRunner = filter.filtersRunner({
-      client: this.client,
-      config: {
-        unsupportedSystemFields,
-        systemFields,
-        useOldProfiles: config.useOldProfiles ?? useOldProfiles,
-        fetchProfile: this.fetchProfile,
-        elementsSource,
+    const fetchProfile = buildFetchProfile(config.fetch ?? {})
+    this.fetchProfile = fetchProfile
+    this.createFiltersRunner = () => filter.filtersRunner(
+      {
+        client,
+        config: {
+          unsupportedSystemFields,
+          systemFields,
+          useOldProfiles: config.useOldProfiles ?? useOldProfiles,
+          fetchProfile,
+          elementsSource,
+        },
       },
-    },
-    filterCreators,
-    concatObjects)
+      filterCreators,
+      concatObjects,
+    )
     if (getElemIdFunc) {
       Types.setElemIdGetter(getElemIdFunc)
     }
@@ -352,7 +355,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     ]
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     const onFetchFilterResult = (
-      await this.filtersRunner.onFetch(elements)
+      await this.createFiltersRunner().onFetch(elements)
     ) as FilterResult
     const configChangeSuggestions = [
       ...metadataInstancesConfigInstances, ...(onFetchFilterResult.configSuggestions ?? []),
@@ -375,7 +378,8 @@ export default class SalesforceAdapter implements AdapterOperations {
       .toArray()
 
     await awu(resolvedChanges).filter(isAdditionChange).map(getChangeElement).forEach(addDefaults)
-    await this.filtersRunner.preDeploy(resolvedChanges)
+    const filtersRunner = this.createFiltersRunner()
+    await filtersRunner.preDeploy(resolvedChanges)
 
     const result = await isCustomObjectInstanceChanges(resolvedChanges)
       ? await deployCustomObjectInstancesGroup(
@@ -385,7 +389,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate)
     // onDeploy can change the change list in place, so we need to give it a list it can modify
     const appliedChangesBeforeRestore = [...result.appliedChanges]
-    await this.filtersRunner.onDeploy(appliedChangesBeforeRestore)
+    await filtersRunner.onDeploy(appliedChangesBeforeRestore)
 
     const sourceElements = _.keyBy(
       changeGroup.changes.map(getChangeElement),

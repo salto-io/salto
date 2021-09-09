@@ -50,8 +50,7 @@ export type FetchChange = {
   audit: AuditInformation
 }
 
-export const getAuditInformationFromElement = (element: Element | undefined):
-  AuditInformation => {
+const getAuditInformationFromElement = (element: Element | undefined): AuditInformation => {
   if (!element) {
     return {}
   }

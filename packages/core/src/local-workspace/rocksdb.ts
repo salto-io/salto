@@ -16,6 +16,7 @@
 import rimraf from 'rimraf'
 import fsExtra from 'fs-extra'
 import path from 'path'
+import { getSaltoHome } from '../app_config'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const requireOrExtract = (externalsLocation: string): any => {
@@ -28,7 +29,7 @@ const requireOrExtract = (externalsLocation: string): any => {
       const extractedModuleLocation = path.join(externalsLocation, 'rocksdb')
       rimraf.sync(externalsLocation)
       // eslint-disable-next-line no-undef, camelcase
-      fsExtra.copySync(path.dirname(__non_webpack_require__.resolve('rocksdb')), extractedModuleLocation,
+      fsExtra.copySync(path.dirname(__non_webpack_require__.resolve('@salto-io/rocksdb')), extractedModuleLocation,
         { dereference: true })
       // eslint-disable-next-line no-undef
       const result = __non_webpack_require__(extractedModuleLocation)
@@ -44,4 +45,4 @@ const requireOrExtract = (externalsLocation: string): any => {
   return undefined
 }
 
-export default requireOrExtract(path.join(__dirname, '.externals'))
+export default requireOrExtract(path.join(getSaltoHome(), '.externals'))

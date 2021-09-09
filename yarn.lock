@@ -1630,10 +1630,10 @@
     node-watch "0.7.1"
     xml2js "0.4.23"
 
-"@salto-io/rocksdb@4.1.0-salto-5":
-  version "4.1.0-salto-5"
-  resolved "https://registry.yarnpkg.com/@salto-io/rocksdb/-/rocksdb-4.1.0-salto-5.tgz#35d1585a032376d0ae91f4a041801eb3217e6346"
-  integrity sha512-HsiqbwLtPKgXcRjaX7kZoVcCNMZlWW6PAi/WnuPOHYrGVvSSJBQbcgjgMwMY40/VkhYQW/6eNhEwNXqMEuW33Q==
+"@salto-io/rocksdb@4.1.0-salto-13":
+  version "4.1.0-salto-13"
+  resolved "https://registry.yarnpkg.com/@salto-io/rocksdb/-/rocksdb-4.1.0-salto-13.tgz#e9f7e0e889957dfaeeb64645423f0ec9c2f1c320"
+  integrity sha512-VXdsT3FbGyNzJmjEEhK6/UcPEgLoifbl0rwMfp9/GDtFKWBODblM+WyzPOkoAJ8nzKxTSa91r9+B6P7Xf/AvrQ==
   dependencies:
     abstract-leveldown "~6.1.1"
     napi-macros "~2.0.0"

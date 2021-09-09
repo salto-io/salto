@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { FetchChange } from '@salto-io/core'
 import { Workspace, state } from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
 import { EventEmitter } from 'pietile-eventemitter'
@@ -104,7 +105,7 @@ describe('workspace', () => {
       const result = await updateWorkspace({
         workspace: mockWs,
         output: cliOutput,
-        changes: dummyChanges.map(change => ({ change, serviceChange: change })),
+        changes: dummyChanges.map(change => ({ change, serviceChanges: [change] })),
       })
       expect(result).toBeTruthy()
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, 'default')
@@ -117,7 +118,7 @@ describe('workspace', () => {
       const result = await updateWorkspace({
         workspace: mockWs,
         output: cliOutput,
-        changes: changes.map(change => ({ change, serviceChange: change })),
+        changes: changes.map(change => ({ change, serviceChanges: [change] })),
       })
       expect(result).toBeTruthy()
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(changes, 'default')
@@ -131,7 +132,7 @@ describe('workspace', () => {
       const result = await updateWorkspace({
         workspace: mockWs,
         output: cliOutput,
-        changes: dummyChanges.map(change => ({ change, serviceChange: change })),
+        changes: dummyChanges.map(change => ({ change, serviceChanges: [change] })),
       })
       expect(result.success).toBe(false)
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, 'default')
@@ -155,10 +156,14 @@ describe('workspace', () => {
   })
 
   describe('applyChangesToWorkspace', () => {
-    const changes = dummyChanges.map(change => ({ change, serviceChange: change }))
-    const approveChangesCallback = jest.fn().mockResolvedValue(changes)
+    type ApproveChangesCB = Parameters<typeof applyChangesToWorkspace>[0]['approveChangesCallback']
+
+    let changes: FetchChange[]
+    let approveChangesCallback: jest.MockedFunction<ApproveChangesCB>
+
     beforeEach(() => {
-      approveChangesCallback.mockClear()
+      changes = dummyChanges.map(change => ({ change, serviceChanges: [change] }))
+      approveChangesCallback = mockFunction<ApproveChangesCB>().mockResolvedValue(changes)
     })
     it('should apply changes and return true', async () => {
       const res = await applyChangesToWorkspace({

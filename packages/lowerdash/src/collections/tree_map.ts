@@ -33,7 +33,6 @@ export class TreeMap<T> implements Map<string, T[]> {
     data: TreeMapEntry<S>,
     path: string[],
     createIfMissing = false,
-    returnPartial = false
   ): TreeMapEntry<S> | undefined => {
     if (_.isEmpty(path)) {
       return data
@@ -43,9 +42,9 @@ export class TreeMap<T> implements Map<string, T[]> {
       data.children[key] = { children: {}, value: [] }
     }
     if (Object.prototype.hasOwnProperty.call(data.children, key)) {
-      return TreeMap.getFromPath(data.children[key], restOfPath, createIfMissing, returnPartial)
+      return TreeMap.getFromPath(data.children[key], restOfPath, createIfMissing)
     }
-    return returnPartial ? data : undefined
+    return undefined
   }
 
   protected static mergeEntries = <S>(src: TreeMapEntry<S>, target: TreeMapEntry<S>): void => {
@@ -164,6 +163,15 @@ export class TreeMap<T> implements Map<string, T[]> {
     callbackfn: (value: T[], key: string, map: Map<string, T[]>) => void,
   ): void {
     this.iterEntry(this.data).forEach(([key, value]) => callbackfn(value, key, this))
+  }
+
+  valuesWithPrefix(prefix: string): IterableIterator<T[]> {
+    const path = prefix.split(this.separator)
+    const prefixSubtree = TreeMap.getFromPath(this.data, path)
+    if (prefixSubtree === undefined) {
+      return wu([])
+    }
+    return this.iterEntry(prefixSubtree, path).map(([_key, values]) => values)
   }
 }
 

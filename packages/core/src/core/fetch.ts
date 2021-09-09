@@ -48,9 +48,9 @@ export type FetchChange = {
   // The actual change to apply to the workspace
   change: DetailedChange
   // The change that happened in the service
-  serviceChange: DetailedChange
+  serviceChanges: DetailedChange[]
   // The change between the working copy and the state
-  pendingChange?: DetailedChange
+  pendingChanges?: DetailedChange[]
   // Metadata information about the change.
   metadata?: FetchChangeMetadata
 }
@@ -74,7 +74,7 @@ export const toAddFetchChange = (elem: Element): FetchChange => {
     action: 'add',
     data: { after: elem },
   }
-  return { change, serviceChange: change, metadata: getFetchChangeMetadata(elem) }
+  return { change, serviceChanges: [change], metadata: getFetchChangeMetadata(elem) }
 }
 
 
@@ -101,7 +101,7 @@ export type MergeErrorWithElements = {
 export const getDetailedChanges = async (
   before: ReadOnlyElementsSource,
   after: ReadOnlyElementsSource,
-  topLevelFilters: IDFilter[] = []
+  topLevelFilters: IDFilter[]
 ): Promise<Iterable<DetailedChange>> =>
   wu((await getPlan({
     before,
@@ -111,6 +111,23 @@ export const getDetailedChanges = async (
   })).itemsByEvalOrder())
     .map(item => item.detailedChanges())
     .flatten()
+
+type WorkspaceDetailedChangeDirection = 'service' | 'pending'
+type WorkspaceDetailedChange = {
+  change: DetailedChange
+  direction: WorkspaceDetailedChangeDirection
+}
+const getDetailedChangeTree = async (
+  before: ReadOnlyElementsSource,
+  after: ReadOnlyElementsSource,
+  topLevelFilters: IDFilter[],
+  direction: WorkspaceDetailedChangeDirection,
+): Promise<collections.treeMap.TreeMap<WorkspaceDetailedChange>> => (
+  new collections.treeMap.TreeMap(
+    wu(await getDetailedChanges(before, after, topLevelFilters))
+      .map(change => [change.id.getFullName(), [{ change, direction }]])
+  )
+)
 
 const getChangeMap = async (
   before: ReadOnlyElementsSource,
@@ -155,37 +172,53 @@ export const toChangesWithPath = (
     return originalElements.map(elem => _.merge({}, change, { change: { data: { after: elem } } }))
   })
 
-type FetchChangeConvertor = (change: DetailedChange) => Promise<FetchChange[]>
 const toFetchChanges = (
-  pendingChanges: Record<string, DetailedChange>,
+  serviceAndPendingChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>,
   workspaceToServiceChanges: Record<string, DetailedChange>,
-  mergedServiceElements: elementSource.ElementsSource,
-): FetchChangeConvertor => {
-  const getMatchingChange = (
-    id: ElemID,
-    from: Record<string, DetailedChange>,
-  ): DetailedChange | undefined => (
-    id.isConfig()
-      ? undefined
-      : from[id.getFullName()] || getMatchingChange(id.createParentID(), from)
-  )
+): Iterable<FetchChange> => {
+  const handledChangeIDs = new Set<string>()
+  return wu(serviceAndPendingChanges.keys())
+    .map((id): FetchChange | undefined => {
+      if (handledChangeIDs.has(id)) {
+        // If we get here it means this change was a "relatedChange" in a previous iteration
+        // which means we already handled this change and we should not handle it again
+        return undefined
+      }
 
-  return async (serviceChange: DetailedChange) => {
-    const pendingChange = getMatchingChange(serviceChange.id, pendingChanges)
-    const change = getMatchingChange(serviceChange.id, workspaceToServiceChanges)
-    const metadata = change === undefined ? {} : getFetchChangeMetadata(
-      await mergedServiceElements.get(change?.id.createBaseID().parent)
-    )
-    if (change !== undefined && !change.id.isEqual(serviceChange.id)) {
-      // temporary log - should be replaced by SALTO-1364
-      log.warn('service %s change for id %s was replaced by containing %s change for id %s',
-        serviceChange.action, serviceChange.id.getFullName(),
-        change.action, change.id.getFullName())
-    }
-    return change === undefined
-      ? []
-      : [{ change, pendingChange, serviceChange, metadata }]
-  }
+      // Find all changes that relate to the current ID and mark them as handled
+      const relatedChanges = [...serviceAndPendingChanges.valuesWithPrefix(id)].flat()
+      relatedChanges.forEach(change => handledChangeIDs.add(change.change.id.getFullName()))
+
+      const wsChange = workspaceToServiceChanges[id]
+      if (wsChange === undefined) {
+        // If we get here it means there is a difference between the service and the state
+        // but there is no difference between the service and the workspace. this can happen
+        // when the nacl files are updated externally (from git usually) with the change that
+        // happened in the service. so the nacl is already aligned with the service and we don't
+        // have to do anything here
+        log.debug('service change on %s already updated in workspace', id)
+        return undefined
+      }
+
+      const [serviceChanges, pendingChanges] = _.partition(
+        relatedChanges,
+        change => change.direction === 'service'
+      ).map(changeList => changeList.map(change => change.change))
+
+      if (serviceChanges.length === 0) {
+        // If nothing changed in the service, we don't want to do anything
+        return undefined
+      }
+
+      if (pendingChanges.length > 0) {
+        log.debug(
+          'Found conflict on %s between %d service changes and $d pending changes',
+          id, serviceChanges.length, pendingChanges.length,
+        )
+      }
+      return { change: wsChange, serviceChanges, pendingChanges }
+    })
+    .filter(values.isDefined)
 }
 
 export type FetchChangesResult = {
@@ -430,7 +463,7 @@ const calcFetchChanges = async (
   partiallyFetchedAdapters: Set<string>,
   allFetchedAdapters: Set<string>
 ): Promise<Iterable<FetchChange>> => {
-  const paritalFetchFilter: IDFilter = id => (
+  const partialFetchFilter: IDFilter = id => (
     !partiallyFetchedAdapters.has(id.adapter)
     || mergedServiceElements.has(id)
   )
@@ -450,34 +483,53 @@ const calcFetchChanges = async (
     list: () => mergedServiceElements.list(),
   }
 
-  const serviceChanges = [...await log.time(() =>
-    getDetailedChanges(
+  const serviceChanges = await log.time(
+    () => getDetailedChangeTree(
       stateElements,
       partialFetchElementSource,
-      [serviceFetchFilter, paritalFetchFilter]
+      [serviceFetchFilter, partialFetchFilter],
+      'service',
     ),
-  'finished to calculate service-state changes')]
-  const pendingChanges = await log.time(() => getChangeMap(
-    stateElements,
-    workspaceElements,
-    [serviceFetchFilter, paritalFetchFilter]
-  ), 'finished to calculate pending changes')
+    'calculate service-state changes',
+  )
+  const pendingChanges = await log.time(
+    () => getDetailedChangeTree(
+      stateElements,
+      workspaceElements,
+      [serviceFetchFilter, partialFetchFilter],
+      'pending',
+    ),
+    'calculate pending changes',
+  )
+  const workspaceToServiceChanges = await log.time(
+    () => getChangeMap(
+      workspaceElements,
+      partialFetchElementSource,
+      [serviceFetchFilter, partialFetchFilter]
+    ),
+    'calculate service-workspace changes',
+  )
 
-  const workspaceToServiceChanges = await log.time(() => getChangeMap(
-    workspaceElements,
-    partialFetchElementSource,
-    [serviceFetchFilter, paritalFetchFilter]
-  ), 'finished to calculate service-workspace changes')
+  // Merge pending changes and service changes into one tree so we can find conflicts between them
+  serviceChanges.merge(pendingChanges)
+  const fetchChanges = toFetchChanges(serviceChanges, workspaceToServiceChanges)
+
   const serviceElementsMap = _.groupBy(
     serviceElements,
     e => e.elemID.getFullName()
   )
 
-  return awu(serviceChanges)
-    .flatMap(toFetchChanges(pendingChanges, workspaceToServiceChanges, mergedServiceElements))
+  return awu(fetchChanges)
     .flatMap(toChangesWithPath(
       async name => serviceElementsMap[name.getFullName()] ?? []
-    )).toArray()
+    ))
+    .map(async change => ({
+      ...change,
+      metadata: getFetchChangeMetadata(
+        await mergedServiceElements.get(change.change.id.createBaseID().parent)
+      ),
+    }))
+    .toArray()
 }
 
 export const fetchChanges = async (

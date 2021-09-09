@@ -230,4 +230,33 @@ describe('tree map', () => {
     const newSourceMap = new TreeMap()
     expect(newSourceMap).toBeInstanceOf(TreeMap)
   })
+
+  describe('valuesWithPrefix', () => {
+    let tree: TreeMap<string>
+    beforeEach(() => {
+      tree = new TreeMap(baseEntries, separator)
+    })
+    describe('when iterating a prefix that exists', () => {
+      let iteratedValues: string[][]
+      beforeEach(() => {
+        iteratedValues = [...tree.valuesWithPrefix('salesforce|test')]
+      })
+      it('should iterate all values with the given prefix', () => {
+        expect(iteratedValues).toEqual(
+          baseEntries
+            .filter(([key]) => key.startsWith('salesforce|test'))
+            .map(([_key, value]) => value)
+        )
+      })
+    })
+    describe('when iterating a prefix that does not exist', () => {
+      let iteratedValues: string[][]
+      beforeEach(() => {
+        iteratedValues = [...tree.valuesWithPrefix('salesforce|test|no|such|prefix')]
+      })
+      it('should return an empty iterator', () => {
+        expect(iteratedValues).toHaveLength(0)
+      })
+    })
+  })
 })

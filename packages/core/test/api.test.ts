@@ -438,7 +438,7 @@ describe('api.ts', () => {
       })
       const changes = await api.restore(ws)
       expect(changes).toHaveLength(1)
-      expect(_.keys(changes[0])).toEqual(['change', 'serviceChange'])
+      expect(_.keys(changes[0])).toEqual(['change', 'serviceChanges'])
     })
   })
 

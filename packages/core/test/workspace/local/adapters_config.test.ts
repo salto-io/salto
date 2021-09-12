@@ -55,14 +55,14 @@ describe('adapters local config', () => {
 
   const loadMock = jest.fn()
   const getMock = jest.fn()
-  const setNaclFilesMock = jest.fn()
+  const removeNaclFilesMock = jest.fn()
   const updateNaclFilesMock = jest.fn()
   const flushMock = jest.fn()
   const getElementNaclFilesMock = jest.fn();
   (nacl.naclFilesSource as jest.Mock).mockResolvedValue({
     load: loadMock,
     get: getMock,
-    setNaclFiles: setNaclFilesMock,
+    removeNaclFiles: removeNaclFilesMock,
     updateNaclFiles: updateNaclFilesMock,
     flush: flushMock,
     getElementNaclFiles: getElementNaclFilesMock,
@@ -152,7 +152,7 @@ describe('adapters local config', () => {
         elemID: new ElemID('salesforce'),
       })
     ))
-    expect(setNaclFilesMock).toHaveBeenCalledWith(expect.objectContaining({ filename: 'salesforce.nacl' }))
+    expect(updateNaclFilesMock).toHaveBeenCalledWith([expect.objectContaining({ path: ['salesforce'] })])
     expect(flushMock).toHaveBeenCalled()
   })
 
@@ -165,7 +165,7 @@ describe('adapters local config', () => {
       {},
       ['dir', 'file']
     ))
-    expect(setNaclFilesMock).toHaveBeenCalledWith(expect.objectContaining({ filename: 'dir/file.nacl' }))
+    expect(updateNaclFilesMock).toHaveBeenCalledWith([expect.objectContaining({ path: ['dir', 'file'] })])
     expect(flushMock).toHaveBeenCalled()
   })
 
@@ -190,11 +190,11 @@ describe('adapters local config', () => {
       expect(flushMock).toHaveBeenCalled()
     })
 
-    it('should not call updateNaclFiles when there is no configuration', async () => {
+    it('should call updateNaclFiles only once when there is no configuration', async () => {
       const conf = await configSource.getAdapter(SALESFORCE) as InstanceElement
       getMock.mockResolvedValue(undefined)
       await configSource.setAdapter(SALESFORCE, conf)
-      expect(updateNaclFilesMock).not.toHaveBeenCalled()
+      expect(updateNaclFilesMock).toHaveBeenCalledTimes(1)
       expect(flushMock).toHaveBeenCalled()
     })
   })

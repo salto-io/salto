@@ -17,7 +17,7 @@
 import _ from 'lodash'
 import path from 'path'
 import { workspaceConfigSource as wcs,
-  nacl, staticFiles, parser, merger, adaptersConfigSource as acs, remoteMap } from '@salto-io/workspace'
+  nacl, staticFiles, merger, adaptersConfigSource as acs, remoteMap } from '@salto-io/workspace'
 import { DetailedChange, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { applyDetailedChanges, detailedCompare } from '@salto-io/adapter-utils'
@@ -83,22 +83,19 @@ export const adaptersConfigSource = async (
 
   const setUnsafe = async (configs: Readonly<InstanceElement> | Readonly<InstanceElement>[]):
   Promise<void> => {
-    const currentPaths = await naclSource.getElementNaclFiles(
-      collections.array.makeArray(configs)[0].elemID
+    const configsArr = collections.array.makeArray(configs)
+    await Promise.all(_(configsArr)
+      .map(conf => conf.elemID)
+      .uniqBy(id => id.getFullName())
+      .map(async id => naclSource.removeNaclFiles(...await naclSource.getElementNaclFiles(id)))
+      .value())
+    // If flush is not called here the removal seems to be ignore
+    await naclSource.flush()
+    await naclSource.updateNaclFiles(
+      configsArr.map(conf => ({
+        id: conf.elemID, action: 'add', data: { after: conf }, path: conf.path ?? [conf.elemID.adapter],
+      }))
     )
-    const pathToInstances = _.groupBy(collections.array.makeArray(configs), conf => (conf.path !== undefined ? `${conf.path.join('/')}.nacl` : `${conf.elemID.adapter}.nacl`))
-    await Promise.all(Object.entries(pathToInstances)
-      .map(async ([confPath, confs]) => {
-        await naclSource.setNaclFiles({
-          filename: confPath,
-          buffer: await parser.dumpElements(confs),
-        })
-      }))
-    await Promise.all(currentPaths
-      .filter(confPath => !Object.keys(pathToInstances).includes(confPath))
-      .map(async confPath => {
-        await naclSource.setNaclFiles({ filename: confPath, buffer: '' })
-      }))
     await naclSource.flush()
   }
 

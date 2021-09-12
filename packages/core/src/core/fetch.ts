@@ -112,20 +112,20 @@ export const getDetailedChanges = async (
     .map(item => item.detailedChanges())
     .flatten()
 
-type WorkspaceDetailedChangeDirection = 'service' | 'pending'
+type WorkspaceDetailedChangeOrigin = 'service' | 'workspace'
 type WorkspaceDetailedChange = {
   change: DetailedChange
-  direction: WorkspaceDetailedChangeDirection
+  origin: WorkspaceDetailedChangeOrigin
 }
 const getDetailedChangeTree = async (
   before: ReadOnlyElementsSource,
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[],
-  direction: WorkspaceDetailedChangeDirection,
+  origin: WorkspaceDetailedChangeOrigin,
 ): Promise<collections.treeMap.TreeMap<WorkspaceDetailedChange>> => (
   new collections.treeMap.TreeMap(
     wu(await getDetailedChanges(before, after, topLevelFilters))
-      .map(change => [change.id.getFullName(), [{ change, direction }]])
+      .map(change => [change.id.getFullName(), [{ change, origin }]])
   )
 )
 
@@ -172,6 +172,15 @@ export const toChangesWithPath = (
     return originalElements.map(elem => _.merge({}, change, { change: { data: { after: elem } } }))
   })
 
+const addFetchChangeMetadata = (
+  updatedElementSource: ReadOnlyElementsSource
+): ChangeTransformFunction => async change => ([{
+  ...change,
+  metadata: getFetchChangeMetadata(
+    await updatedElementSource.get(change.change.id.createBaseID().parent)
+  ),
+}])
+
 const toFetchChanges = (
   serviceAndPendingChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>,
   workspaceToServiceChanges: Record<string, DetailedChange>,
@@ -202,7 +211,7 @@ const toFetchChanges = (
 
       const [serviceChanges, pendingChanges] = _.partition(
         relatedChanges,
-        change => change.direction === 'service'
+        change => change.origin === 'service'
       ).map(changeList => changeList.map(change => change.change))
 
       if (serviceChanges.length === 0) {
@@ -212,7 +221,7 @@ const toFetchChanges = (
 
       if (pendingChanges.length > 0) {
         log.debug(
-          'Found conflict on %s between %d service changes and $d pending changes',
+          'Found conflict on %s between %d service changes and %d pending changes',
           id, serviceChanges.length, pendingChanges.length,
         )
       }
@@ -497,7 +506,7 @@ const calcFetchChanges = async (
       stateElements,
       workspaceElements,
       [serviceFetchFilter, partialFetchFilter],
-      'pending',
+      'workspace',
     ),
     'calculate pending changes',
   )
@@ -520,15 +529,8 @@ const calcFetchChanges = async (
   )
 
   return awu(fetchChanges)
-    .flatMap(toChangesWithPath(
-      async name => serviceElementsMap[name.getFullName()] ?? []
-    ))
-    .map(async change => ({
-      ...change,
-      metadata: getFetchChangeMetadata(
-        await mergedServiceElements.get(change.change.id.createBaseID().parent)
-      ),
-    }))
+    .flatMap(toChangesWithPath(async name => serviceElementsMap[name.getFullName()] ?? []))
+    .flatMap(addFetchChangeMetadata(partialFetchElementSource))
     .toArray()
 }
 

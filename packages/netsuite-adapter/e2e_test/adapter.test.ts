@@ -330,58 +330,116 @@ describe('Netsuite adapter E2E with real account', () => {
     })
 
     describe('safe deploy change validator', () => {
-      let beforeInstance: InstanceElement
-      let afterInstance: InstanceElement
-      beforeAll(() => {
-        beforeInstance = entityCustomFieldToCreate.clone()
-        afterInstance = beforeInstance.clone()
+      describe('on custom type instances', () => {
+        let beforeInstance: InstanceElement
+        let afterInstance: InstanceElement
+        beforeAll(() => {
+          beforeInstance = entityCustomFieldToCreate.clone()
+          afterInstance = beforeInstance.clone()
 
-        beforeInstance.value.label = 'before label'
-        afterInstance.value.label = 'after label'
+          beforeInstance.value.label = 'before label'
+          afterInstance.value.label = 'after label'
+        })
+
+        describe('with warnOnStaleWorkspaceData=true flag', () => {
+          beforeAll(async () => {
+            const adapterAttr = realAdapter(
+              { credentials: credentialsLease.value, withSuiteApp },
+              { deploy: { [WARN_STALE_DATA]: true } },
+            )
+            adapter = adapterAttr.adapter
+          })
+
+          it('should have warning when applying change validator', async () => {
+            const modificationChanges = [toChange({ before: beforeInstance, after: afterInstance })]
+            const changeErrors: ReadonlyArray<ChangeError> = await awu([
+              adapter.deployModifiers?.changeValidator,
+            ])
+              .filter(values.isDefined)
+              .flatMap(validator => validator(modificationChanges))
+              .toArray()
+
+            expect(changeErrors.length).toBe(1)
+            const changeError = changeErrors.find(e => e.message === 'Continuing the deploy proccess will override changes made in the service to this element.')
+            expect(changeError).toBeDefined()
+          })
+        })
+
+        describe('with warnOnStaleWorkspaceData=false flag', () => {
+          beforeAll(async () => {
+            const adapterAttr = realAdapter(
+              { credentials: credentialsLease.value, withSuiteApp },
+              { deploy: { [WARN_STALE_DATA]: false } },
+            )
+            adapter = adapterAttr.adapter
+          })
+
+          it('should have no warning when applying change validator', async () => {
+            const modificationChanges = [toChange({ before: beforeInstance, after: afterInstance })]
+            const changeErrors: ReadonlyArray<ChangeError> = await awu([
+              adapter.deployModifiers?.changeValidator,
+            ])
+              .filter(values.isDefined)
+              .flatMap(validator => validator(modificationChanges))
+              .toArray()
+            expect(changeErrors.length).toBe(0)
+          })
+        })
       })
+      describe('on static resources', () => {
+        let beforeInstance: InstanceElement
+        let afterInstance: InstanceElement
+        beforeAll(() => {
+          beforeInstance = fileToCreate.clone()
+          afterInstance = beforeInstance.clone()
 
-      describe('with warnOnStaleWorkspaceData=true flag', () => {
-        beforeAll(async () => {
-          const adapterAttr = realAdapter(
-            { credentials: credentialsLease.value, withSuiteApp },
-            { deploy: { [WARN_STALE_DATA]: true } },
-          )
-          adapter = adapterAttr.adapter
+          beforeInstance.value.content = 'before content'
+          afterInstance.value.content = 'after content'
         })
 
-        it('should have warning when applying change validator', async () => {
-          const modificationChanges = [toChange({ before: beforeInstance, after: afterInstance })]
-          const changeErrors: ReadonlyArray<ChangeError> = await awu([
-            adapter.deployModifiers?.changeValidator,
-          ])
-            .filter(values.isDefined)
-            .flatMap(validator => validator(modificationChanges))
-            .toArray()
+        describe('with warnOnStaleWorkspaceData=true flag', () => {
+          beforeAll(async () => {
+            const adapterAttr = realAdapter(
+              { credentials: credentialsLease.value, withSuiteApp },
+              { deploy: { [WARN_STALE_DATA]: true } },
+            )
+            adapter = adapterAttr.adapter
+          })
 
-          expect(changeErrors.length).toBe(1)
-          const changeError = changeErrors.find(e => e.message === 'Continuing the deploy proccess will override changes made in the service to this element.')
-          expect(changeError).toBeDefined()
+          it('should have warning when applying change validator', async () => {
+            const modificationChanges = [toChange({ before: beforeInstance, after: afterInstance })]
+            const changeErrors: ReadonlyArray<ChangeError> = await awu([
+              adapter.deployModifiers?.changeValidator,
+            ])
+              .filter(values.isDefined)
+              .flatMap(validator => validator(modificationChanges))
+              .toArray()
+
+            expect(changeErrors.length).toBe(1)
+            const changeError = changeErrors.find(e => e.message === 'Continuing the deploy proccess will override changes made in the service to this element.')
+            expect(changeError).toBeDefined()
+          })
         })
-      })
 
-      describe('with warnOnStaleWorkspaceData=false flag', () => {
-        beforeAll(async () => {
-          const adapterAttr = realAdapter(
-            { credentials: credentialsLease.value, withSuiteApp },
-            { deploy: { [WARN_STALE_DATA]: false } },
-          )
-          adapter = adapterAttr.adapter
-        })
+        describe('with warnOnStaleWorkspaceData=false flag', () => {
+          beforeAll(async () => {
+            const adapterAttr = realAdapter(
+              { credentials: credentialsLease.value, withSuiteApp },
+              { deploy: { [WARN_STALE_DATA]: false } },
+            )
+            adapter = adapterAttr.adapter
+          })
 
-        it('should have no warning when applying change validator', async () => {
-          const modificationChanges = [toChange({ before: beforeInstance, after: afterInstance })]
-          const changeErrors: ReadonlyArray<ChangeError> = await awu([
-            adapter.deployModifiers?.changeValidator,
-          ])
-            .filter(values.isDefined)
-            .flatMap(validator => validator(modificationChanges))
-            .toArray()
-          expect(changeErrors.length).toBe(0)
+          it('should have no warning when applying change validator', async () => {
+            const modificationChanges = [toChange({ before: beforeInstance, after: afterInstance })]
+            const changeErrors: ReadonlyArray<ChangeError> = await awu([
+              adapter.deployModifiers?.changeValidator,
+            ])
+              .filter(values.isDefined)
+              .flatMap(validator => validator(modificationChanges))
+              .toArray()
+            expect(changeErrors.length).toBe(0)
+          })
         })
       })
     })

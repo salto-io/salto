@@ -16,7 +16,7 @@
 import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeElement, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult, isAdapterSuccessInstallResult,
-  AdapterSuccessInstallResult, AdapterAuthentication, SaltoError,
+  AdapterSuccessInstallResult, AdapterAuthentication, SaltoError, DetailedChange, AuditInformation,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -38,6 +38,7 @@ import {
   getDetailedChanges,
   MergeErrorWithElements,
   toChangesWithPath,
+  getAuditInformationFromElement,
 } from './core/fetch'
 import { defaultDependencyChangers } from './core/plan/plan'
 import { createRestoreChanges } from './core/restore'
@@ -51,6 +52,9 @@ const log = logger(module)
 
 const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adapter =>
   adapterCreators[loginConfig.elemID.adapter]
+
+const getAuditInformationForDetailedChange = (change: DetailedChange): AuditInformation =>
+  getAuditInformationFromElement(getChangeElement(change))
 
 export const verifyCredentials = async (
   loginConfig: Readonly<InstanceElement>
@@ -154,7 +158,9 @@ export const deploy = async (
     await workspace.elements(),
     changedElements,
     [id => changedElements.has(id)]
-  )).map(change => ({ change, serviceChange: change }))
+  )).map(change => ({ change,
+    serviceChange: change,
+    audit: getAuditInformationForDetailedChange(change) }))
     .flatMap(toChangesWithPath(
       async name => collections.array.makeArray(await changedElements.get(name))
     )).toArray()
@@ -257,7 +263,9 @@ export const restore = async (
     elementSelectors,
     fetchServices
   )
-  return changes.map(change => ({ change, serviceChange: change }))
+  return changes.map(change => ({ change,
+    serviceChange: change,
+    audit: getAuditInformationForDetailedChange(change) }))
 }
 
 export const diff = async (
@@ -284,7 +292,9 @@ export const diff = async (
     [shouldElementBeIncluded(diffServices)]
   )
 
-  return diffChanges.map(change => ({ change, serviceChange: change }))
+  return diffChanges.map(change => ({ change,
+    serviceChange: change,
+    audit: getAuditInformationForDetailedChange(change) }))
 }
 
 class AdapterInstallError extends Error {

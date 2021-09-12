@@ -47,10 +47,10 @@ export type FetchChange = {
   // The change between the working copy and the state
   pendingChange?: DetailedChange
   // The change audit information from the service.
-  audit?: AuditInformation
+  audit: AuditInformation
 }
 
-const getAuditInformationFromElement = (element: Element | undefined): AuditInformation => {
+export const getAuditInformationFromElement = (element: Element | undefined): AuditInformation => {
   if (!element) {
     return {}
   }
@@ -144,7 +144,9 @@ export const toChangesWithPath = (
       return [change]
     }
     // Replace merged element with original elements that have a path hint
-    return originalElements.map(elem => _.merge({}, change, { change: { data: { after: elem } } }))
+    return originalElements.map(elem =>
+      _.merge({}, change, { change: { data: { after: elem } } },
+        { audit: getAuditInformationFromElement(elem) }))
   })
 
 type FetchChangeConvertor = (change: DetailedChange) => Promise<FetchChange[]>

@@ -243,7 +243,7 @@ describe('fetch command', () => {
       })
       describe('with upstream changes', () => {
         const changes = mocks.dummyChanges.map(
-          (change: DetailedChange): FetchChange => ({ change, serviceChange: change })
+          (change: DetailedChange): FetchChange => ({ change, serviceChange: change, audit: {} })
         )
         const mockFetchWithChanges = jest.fn().mockResolvedValue(
           {

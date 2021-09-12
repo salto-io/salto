@@ -314,7 +314,7 @@ describe('formatter', () => {
   describe('formatFetchChangeForApproval', () => {
     const change = detailedChange('modify', ['object', 'field', 'value'], 'old', 'new')
     describe('without conflict', () => {
-      const changeWithoutConflict = { change, serviceChange: change }
+      const changeWithoutConflict = { change, serviceChange: change, audit: {} }
       let output: string
       beforeAll(async () => {
         output = await formatFetchChangeForApproval(changeWithoutConflict, 0, 3)
@@ -330,6 +330,7 @@ describe('formatter', () => {
       const fetchChange: FetchChange = {
         change: detailedChange('modify', ['object', 'field', 'value'], 'local', 'new'),
         serviceChange: change,
+        audit: {},
         pendingChange: detailedChange('modify', ['object', 'field', 'value'], 'old', 'local'),
       }
       let output: string

@@ -201,7 +201,8 @@ export const loadLocalWorkspace = async (
     baseDir,
     workspaceConfig.localStorage,
     remoteMapCreator,
-    configOverrides
+    persistent,
+    configOverrides,
   )
   const envs = (await workspaceConfig.getWorkspaceConfig()).envs.map(e => e.name)
   const credentials = credentialsSource(workspaceConfig.localStorage)
@@ -271,7 +272,7 @@ Promise<Workspace> => {
 
   const workspaceConfig = await workspaceConfigSource(baseDir, localStorage)
   const remoteMapCreator = createRemoteMapCreator(path.join(localStorage, CACHE_DIR_NAME))
-  const adaptersConfig = await adaptersConfigSource(baseDir, localStorage, remoteMapCreator)
+  const adaptersConfig = await adaptersConfigSource(baseDir, localStorage, remoteMapCreator, true)
   const credentials = credentialsSource(localStorage)
   const elemSources = await loadLocalElementsSources(
     path.resolve(baseDir),

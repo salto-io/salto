@@ -132,7 +132,7 @@ describe('adapters local config', () => {
         data: { after: 2 },
       },
     ]
-    configSource = await adaptersConfigSource('bla', 'somePath', undefined as unknown as remoteMap.RemoteMapCreator, configOverrides)
+    configSource = await adaptersConfigSource('bla', 'somePath', undefined as unknown as remoteMap.RemoteMapCreator, true, configOverrides)
   })
 
 

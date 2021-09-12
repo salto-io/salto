@@ -33,7 +33,8 @@ export type WorkspaceConfigSource = wcs.WorkspaceConfigSource & {
 const createNaclSource = async (
   baseDir: string,
   localStorage: string,
-  remoteMapCreator: remoteMap.RemoteMapCreator
+  remoteMapCreator: remoteMap.RemoteMapCreator,
+  persistent: boolean,
 )
   : Promise<nacl.NaclFilesSource> => {
   const naclFilesStore = localDirectoryStore({
@@ -58,7 +59,7 @@ const createNaclSource = async (
     naclFilesStore,
     staticFileSource,
     remoteMapCreator,
-    true,
+    persistent,
   )
   await source.load({})
   return source
@@ -68,6 +69,7 @@ export const adaptersConfigSource = async (
   baseDir: string,
   localStorage: string,
   remoteMapCreator: remoteMap.RemoteMapCreator,
+  persistent: boolean,
   configOverrides: DetailedChange[] = [],
 ): Promise<acs.AdaptersConfigSource> => {
   const configOverridesById = _.groupBy(configOverrides, change => change.id.adapter)
@@ -77,7 +79,7 @@ export const adaptersConfigSource = async (
     applyDetailedChanges(conf, overridesForInstance)
   }
 
-  const naclSource = await createNaclSource(baseDir, localStorage, remoteMapCreator)
+  const naclSource = await createNaclSource(baseDir, localStorage, remoteMapCreator, persistent)
 
   const setUnsafe = async (configs: Readonly<InstanceElement> | Readonly<InstanceElement>[]):
   Promise<void> => {

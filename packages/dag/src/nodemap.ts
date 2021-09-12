@@ -352,7 +352,7 @@ export class DataNodeMap<T> extends AbstractNodeMap {
       const reason = this.has(id) ? 'Node has no data' : 'Node does not exist'
       throw new Error(`Cannot get data of "${id}": ${reason}`)
     }
-    return this.nodeData.get(id) as T
+    return result as T
   }
 
   setData(id: NodeId, data: T): void {

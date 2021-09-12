@@ -318,6 +318,7 @@ const createDBIfNotExist = async (loc: string): Promise<void> => {
   } catch (e) {
     if (newDb.status === 'new') {
       await withCreatorLock(async () => {
+        log.info('DB does not exist. Creating on %s', loc)
         await promisify(newDb.open.bind(newDb))()
         await promisify(newDb.close.bind(newDb))()
       })

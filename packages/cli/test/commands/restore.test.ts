@@ -51,7 +51,7 @@ describe('restore command', () => {
     mockRestore = restore as typeof mockRestore
     mockRestore.mockReset()
     mockRestore.mockResolvedValue(
-      mocks.dummyChanges.map(change => ({ change, serviceChange: change, audit: {} }))
+      mocks.dummyChanges.map(change => ({ change, serviceChange: change }))
     )
   })
 

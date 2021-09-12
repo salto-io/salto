@@ -618,7 +618,7 @@ export const deploy = async (
 
   return {
     success: true,
-    changes: dummyChanges.map(c => ({ change: c, serviceChange: c, audit: {} })),
+    changes: dummyChanges.map(c => ({ change: c, serviceChange: c })),
     errors: [],
   }
 }

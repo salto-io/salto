@@ -42,7 +42,7 @@ describe('callbacks', () => {
   })
 
   describe('getApprovedChanges', () => {
-    const fetchChanges = dummyChanges.map(c => ({ change: c, serviceChange: c, audit: {} }))
+    const fetchChanges = dummyChanges.map(c => ({ change: c, serviceChange: c }))
     it('should return all non conflict changes', async () => {
       const approved = await getApprovedChanges(fetchChanges)
       expect(approved).toHaveLength(fetchChanges.length)

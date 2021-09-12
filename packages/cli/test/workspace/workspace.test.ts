@@ -104,7 +104,7 @@ describe('workspace', () => {
       const result = await updateWorkspace({
         workspace: mockWs,
         output: cliOutput,
-        changes: dummyChanges.map(change => ({ change, serviceChange: change })),
+        changes: dummyChanges.map(change => ({ change, serviceChange: change, audit: {} })),
       })
       expect(result).toBeTruthy()
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, 'default')
@@ -117,7 +117,7 @@ describe('workspace', () => {
       const result = await updateWorkspace({
         workspace: mockWs,
         output: cliOutput,
-        changes: changes.map(change => ({ change, serviceChange: change })),
+        changes: changes.map(change => ({ change, serviceChange: change, audit: {} })),
       })
       expect(result).toBeTruthy()
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(changes, 'default')
@@ -131,7 +131,7 @@ describe('workspace', () => {
       const result = await updateWorkspace({
         workspace: mockWs,
         output: cliOutput,
-        changes: dummyChanges.map(change => ({ change, serviceChange: change })),
+        changes: dummyChanges.map(change => ({ change, serviceChange: change, audit: {} })),
       })
       expect(result.success).toBe(false)
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, 'default')
@@ -155,7 +155,7 @@ describe('workspace', () => {
   })
 
   describe('applyChangesToWorkspace', () => {
-    const changes = dummyChanges.map(change => ({ change, serviceChange: change }))
+    const changes = dummyChanges.map(change => ({ change, serviceChange: change, audit: {} }))
     const approveChangesCallback = jest.fn().mockResolvedValue(changes)
     beforeEach(() => {
       approveChangesCallback.mockClear()

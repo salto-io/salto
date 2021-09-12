@@ -602,7 +602,7 @@ export const fetchChanges = async (
   const configs = await awu(configsMerge.merged.values()).toArray()
 
   await awu(await configsMerge.errors.entries()).forEach(error => {
-    log.warn(`Got merge errors for config element ${error.key}: ${error.value.map(err => err.message).join(', ')}`)
+    throw new Error(`Got merge errors for config element ${error.key}: ${error.value.map(err => err.message).join(', ')}`)
   })
 
   const updatedConfigNames = new Set(configs.map(c => c.elemID.getFullName()))

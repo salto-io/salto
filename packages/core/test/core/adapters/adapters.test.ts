@@ -15,13 +15,12 @@
 */
 import { InstanceElement, ElemID, AdapterAuthentication, ObjectType, Adapter } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { adapter } from '@salto-io/salesforce-adapter'
 import _ from 'lodash'
 import {
   initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs,
-  getDefaultAdapterConfig,
   getInitialAdapterConfig,
 } from '../../../src/core/adapters'
 
@@ -61,13 +60,6 @@ describe('adapters.ts', () => {
     })
   })
 
-  describe('getDefaultAdapterConfig', () => {
-    it('should call createDefaultInstanceFromType', async () => {
-      await getDefaultAdapterConfig('salesforce')
-      expect(utils.createDefaultInstanceFromType).toHaveBeenCalled()
-    })
-  })
-
   describe('getInitialAdapterConfig', () => {
     let realAdapter: Adapter
     beforeEach(() => {
@@ -76,14 +68,14 @@ describe('adapters.ts', () => {
     afterEach(() => {
       _.assign(adapter, realAdapter)
     })
+    it('should call createDefaultInstanceFromType when getInitialConfig is undefined', async () => {
+      await getInitialAdapterConfig('salesforce')
+      expect(utils.createDefaultInstanceFromType).toHaveBeenCalled()
+    })
     it('should use getInitialConfig when defined', async () => {
       adapter.getInitialConfig = jest.fn()
       await getInitialAdapterConfig('salesforce')
       expect(adapter.getInitialConfig).toHaveBeenCalled()
-    })
-    it('should call createDefaultInstanceFromType when getInitialConfig is undefined', async () => {
-      await getInitialAdapterConfig('salesforce')
-      expect(utils.createDefaultInstanceFromType).toHaveBeenCalled()
     })
   })
 
@@ -100,7 +92,10 @@ describe('adapters.ts', () => {
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
           credentials: sfConfig,
-          config: await getDefaultAdapterConfig(serviceName),
+          config: await createDefaultInstanceFromType(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType
+          ),
           getElemIdFunc: undefined,
         })
       )

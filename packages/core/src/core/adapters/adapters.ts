@@ -20,7 +20,11 @@ import {
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { merger } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import adapterCreators from './creators'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -57,7 +61,7 @@ export const initAdapters = (
     }
   )
 
-export const getDefaultAdapterConfig = async (
+const getDefaultAdapterConfig = async (
   adapterName: string
 ): Promise<InstanceElement | undefined> => {
   const { configType } = adapterCreators[adapterName]
@@ -120,15 +124,28 @@ export const getAdaptersCreatorConfigs = async (
   elemIdGetter?: ElemIdGetter,
 ): Promise<Record<string, AdapterOperationsContext>> => (
   Object.fromEntries(await Promise.all(adapters.map(
-    async adapter => [
-      adapter,
-      {
-        credentials: credentials[adapter],
-        config: await getConfig(adapter, await getDefaultAdapterConfig(adapter)),
-        elementsSource: filterElementsSourceAdapter(elementsSource, adapter),
-        getElemIdFunc: elemIdGetter,
-      },
-    ]
+    async adapter => {
+      const defaultConfig = await getInitialAdapterConfig(adapter)
+      const mergeRes = defaultConfig && await merger.mergeElements(awu(defaultConfig))
+      const mergedConfig = mergeRes
+        && (await awu(mergeRes.merged.values()).toArray())[0] as InstanceElement
+
+      if (mergeRes !== undefined) {
+        await awu(await mergeRes.errors.entries()).forEach(error => {
+          throw new Error(`Default adapter configuration has merge errors: ${error.key}: ${error.value.map(err => err.message).join(', ')}`)
+        })
+      }
+
+      return [
+        adapter,
+        {
+          credentials: credentials[adapter],
+          config: await getConfig(adapter, mergedConfig),
+          elementsSource: filterElementsSourceAdapter(elementsSource, adapter),
+          getElemIdFunc: elemIdGetter,
+        },
+      ]
+    }
   )))
 )
 

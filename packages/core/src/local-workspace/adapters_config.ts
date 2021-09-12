@@ -44,8 +44,7 @@ const createNaclSource = async (
   })
 
   const naclStaticFilesStore = localDirectoryStore({
-    baseDir,
-    name: 'salto.config',
+    baseDir: path.join(baseDir, 'salto.config', 'adapters'),
     nameSuffix: 'static-resources',
   })
 
@@ -55,7 +54,7 @@ const createNaclSource = async (
   )
 
   const source = await nacl.naclFilesSource(
-    'config',
+    'salto.config/adapters',
     naclFilesStore,
     staticFileSource,
     remoteMapCreator,

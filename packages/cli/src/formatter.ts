@@ -444,6 +444,8 @@ export const formatFetchFinish = (): string => [
 export const formatStepStart = (text: string, indentLevel?: number): string => indent(`${chalk.yellow('>>>')} ${text}`, indentLevel ?? 1)
 export const formatStepCompleted = (text: string, indentLevel?: number): string => indent(`${chalk.green('vvv')} ${text}`, indentLevel ?? 1)
 export const formatStepFailed = (text: string, indentLevel?: number): string => indent(`${error('xxx')} ${text}`, indentLevel ?? 1)
+export const formatShowWarning = (text: string, indentLevel?: number): string => indent(`${chalk.red('!!!')} ${text}`, indentLevel ?? 1)
+export const formatListRecord = (text: string, indentLevel?: number): string => indent(`○ ${text}`, indentLevel ?? 2)
 
 export const formatMergeErrors = (mergeErrors: FetchResult['mergeErrors']): string =>
   `${Prompts.FETCH_MERGE_ERRORS}\n${mergeErrors.map(

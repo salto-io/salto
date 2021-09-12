@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange, UnresolvedReference } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { expressions } from '@salto-io/workspace'
 import { changeValidator as unresolvedReferencesValidator } from '../../../../src/core/plan/change_validators/unresolved_references'
 
 describe('unresolved_references', () => {
@@ -23,7 +24,10 @@ describe('unresolved_references', () => {
       'instance',
       new ObjectType({ elemID: new ElemID('adapter', 'type') }),
       {
-        value: new ReferenceExpression(unresolvedElemId, new UnresolvedReference(unresolvedElemId)),
+        value: new ReferenceExpression(
+          unresolvedElemId,
+          new expressions.UnresolvedReference(unresolvedElemId)
+        ),
       }
     )
     const errors = await unresolvedReferencesValidator([toChange({ after: instance })])
@@ -39,7 +43,10 @@ describe('unresolved_references', () => {
       {},
       [],
       {
-        value: new ReferenceExpression(unresolvedElemId, new UnresolvedReference(unresolvedElemId)),
+        value: new ReferenceExpression(
+          unresolvedElemId,
+          new expressions.UnresolvedReference(unresolvedElemId)
+        ),
       },
     )
     const errors = await unresolvedReferencesValidator([toChange({ after: instance })])
@@ -52,7 +59,10 @@ describe('unresolved_references', () => {
     const type = new ObjectType({
       elemID: new ElemID('adapter', 'type'),
       annotations: {
-        value: new ReferenceExpression(unresolvedElemId, new UnresolvedReference(unresolvedElemId)),
+        value: new ReferenceExpression(
+          unresolvedElemId,
+          new expressions.UnresolvedReference(unresolvedElemId)
+        ),
       },
     })
 
@@ -71,7 +81,7 @@ describe('unresolved_references', () => {
           annotations: {
             value: new ReferenceExpression(
               unresolvedElemId,
-              new UnresolvedReference(unresolvedElemId)
+              new expressions.UnresolvedReference(unresolvedElemId)
             ),
           },
         },

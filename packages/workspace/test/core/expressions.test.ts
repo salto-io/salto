@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes, UnresolvedReference, TypeReference } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, InstanceElement, Element, ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable, isVariableExpression, isReferenceExpression, StaticFile, PrimitiveType, PrimitiveTypes, TypeReference } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { TestFuncImpl, getFieldsAndAnnoTypes } from '../utils'
-import { resolve, CircularReference } from '../../src/expressions'
+import { resolve, CircularReference, UnresolvedReference } from '../../src/expressions'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 
 const { awu } = collections.asynciterable

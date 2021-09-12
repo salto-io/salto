@@ -41,7 +41,7 @@ export const STATE_EXTENSION = '.jsonl'
 export const ZIPPED_STATE_EXTENSION = '.jsonl.zip'
 
 const filePathGlob = (currentFilePrefix: string): string => (
-  `${currentFilePrefix}.*${ZIPPED_STATE_EXTENSION}`
+  `${currentFilePrefix}.*(!(.))${ZIPPED_STATE_EXTENSION}`
 )
 const findStateFiles = async (currentFilePrefix: string): Promise<string[]> => {
   const stateFiles = await glob(filePathGlob(currentFilePrefix))

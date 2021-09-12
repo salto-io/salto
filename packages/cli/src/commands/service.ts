@@ -17,6 +17,7 @@ import { AdapterAuthMethod, AdapterAuthentication, InstanceElement, ObjectType, 
 import { EOL } from 'os'
 import { addAdapter, getLoginStatuses, LoginStatus, updateCredentials, getAdaptersCredentialsTypes, installAdapter, getSupportedServiceAdapterNames } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
+import { isNaclCase } from '@salto-io/adapter-utils'
 import { getCredentialsFromUser } from '../callbacks'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { createCommandGroupDef, WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
@@ -102,6 +103,10 @@ export const addAction: WorkspaceCommandAction<ServiceAddArgs> = async ({
   workspace,
 }): Promise<CliExitCode> => {
   const { login, serviceName, authType, account } = input
+  if (account && !isNaclCase(account)) {
+    errorOutputLine(`Invalid account name: ${account}`, output)
+    return CliExitCode.UserInputError
+  }
   const accountID = account ?? serviceName
   await validateAndSetEnv(workspace, input, output)
 
@@ -150,7 +155,7 @@ const serviceAddDef = createWorkspaceCommand({
       {
         name: 'account',
         type: 'string',
-        description: 'Account name for the service, in case two accounts are configured under the same environment.',
+        description: 'Account name for the service, in case multiple accounts are configured under the same environment.',
         required: false,
       },
       AUTH_TYPE_OPTION,

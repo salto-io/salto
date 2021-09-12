@@ -19,7 +19,7 @@ import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, Detail
   Value, toChange, isRemovalChange, getChangeElement,
   ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { applyDetailedChanges, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
+import { applyDetailedChanges, resolvePath, safeJsonStringify, isNaclCase, resolvePath } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
@@ -29,8 +29,9 @@ import { multiEnvSource, getSourceNameForFilename, MultiEnvSource, EnvsChanges, 
 import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
 import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
 import { ElementSelector } from './element_selector'
-import { Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError,
-  DeleteCurrentEnvError, InvalidEnvNameError, MAX_ENV_NAME_LEN, UnknownAccountError } from './errors'
+import { Errors, AccountDuplicationError, EnvDuplicationError, UnknownEnvError,
+  DeleteCurrentEnvError, InvalidEnvNameError, MAX_ENV_NAME_LEN, UnknownAccountError,
+  InvalidAccountNameError } from './errors'
 import { EnvConfig } from './config/workspace_config_types'
 import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
@@ -120,6 +121,7 @@ export type Workspace = {
   state: (envName?: string) => State
   envs: () => ReadonlyArray<string>
   currentEnv: () => string
+  accounts: (env?: string) => string[]
   services: (env?: string) => string[]
   servicesCredentials: (names?: ReadonlyArray<string>) =>
     Promise<Readonly<Record<string, InstanceElement>>>
@@ -165,7 +167,9 @@ export type Workspace = {
   flush: () => Promise<void>
   clone: () => Promise<Workspace>
   clear: (args: ClearFlags) => Promise<void>
-  addService: (service: string) => Promise<void>
+  addAccount: (service: string, account?: string) => Promise<void>
+  // addService is deprecated, kept for backwards compatibility. use addAccount.
+  addService: (service: string, account?: string) => Promise<void>
   addEnvironment: (
     env: string,
     environmentSourceCreator: (rmc: RemoteMapCreator) => Promise<EnvironmentSource>
@@ -252,7 +256,7 @@ export const loadWorkspace = async (
     makeArray(workspaceConfig.envs).find(e => e.name === currentEnv()) as EnvConfig
   const currentEnvsConf = (): EnvConfig[] =>
     workspaceConfig.envs
-  const services = (env?: string): string[] => {
+  const accounts = (env?: string): string[] => {
     const envConf = env
       ? makeArray(workspaceConfig.envs).find(e => e.name === env)
       : currentEnvConf()
@@ -817,7 +821,7 @@ export const loadWorkspace = async (
   )
 
   const pickServices = (names?: ReadonlyArray<string>): ReadonlyArray<string> =>
-    (_.isUndefined(names) ? services() : services().filter(s => names.includes(s)))
+    (_.isUndefined(names) ? accounts() : accounts().filter(s => names.includes(s)))
   const credsPath = (account: string): string => path.join(currentEnv(), account)
 
   const copyTo = async (ids: ElemID[], targetEnvs: string[]): Promise<void> => {
@@ -826,6 +830,19 @@ export const loadWorkspace = async (
     workspaceState = buildWorkspaceState({ workspaceChanges })
   }
 
+  const addAccount = async (service: string, account?: string): Promise<void> => {
+    if (account && !isNaclCase(account)) {
+      throw new InvalidAccountNameError(account)
+    }
+    const accountID = account ?? service
+    const currentAccounts = accounts() || []
+    if (currentAccounts.includes(accountID)) {
+      throw new AccountDuplicationError(accountID)
+    }
+    currentEnvConf().accounts = [...currentAccounts, accountID]
+    currentEnvConf().accountToServiceName[accountID] = service
+    await config.setWorkspaceConfig(workspaceConfig)
+  }
   return {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -833,7 +850,8 @@ export const loadWorkspace = async (
     state,
     envs,
     currentEnv,
-    services,
+    accounts,
+    services: accounts,
     errors,
     hasErrors: async (env?: string) => (await errors(env)).hasErrors(),
     servicesCredentials: async (names?: ReadonlyArray<string>) => _.fromPairs(await Promise.all(
@@ -991,16 +1009,8 @@ export const loadWorkspace = async (
       workspaceState = undefined
       await getWorkspaceState()
     },
-    addService: async (service: string, account?: string): Promise<void> => {
-      const accountID = account ?? service
-      const currentAccounts = services() || []
-      if (currentAccounts.includes(accountID)) {
-        throw new ServiceDuplicationError(accountID)
-      }
-      currentEnvConf().accounts = [...currentAccounts, accountID]
-      currentEnvConf().accountToServiceName[accountID] = service
-      await config.setWorkspaceConfig(workspaceConfig)
-    },
+    addAccount,
+    addService: addAccount,
     updateServiceCredentials:
       async (account: string, servicesCredentials: Readonly<InstanceElement>): Promise<void> =>
         credentials.set(credsPath(account), servicesCredentials),

@@ -74,6 +74,8 @@ const suffixFromList = (specialCharsMappingList: string[]): string => {
   return `${NACL_ESCAPING_SUFFIX_SEPARATOR}${specialCharsMappingList.join('')}`
 }
 
+export const isNaclCase = (name: string): boolean => /[a-zA-Z0-9]/g.test(name)
+
 export const naclCase = (name?: string): string => {
   // replace all special chars with _
   // then add a special chars mapping after the separator for uniqueness

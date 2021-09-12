@@ -39,10 +39,8 @@ import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
   COMMON_ENV_PREFIX, UnresolvedElemIDs, UpdateNaclFilesResult, isValidEnvName } from '../../src/workspace/workspace'
-import {
-  DeleteCurrentEnvError, UnknownEnvError, EnvDuplicationError,
-  ServiceDuplicationError, InvalidEnvNameError, Errors, MAX_ENV_NAME_LEN,
-} from '../../src/workspace/errors'
+import { DeleteCurrentEnvError, UnknownEnvError, EnvDuplicationError,
+  AccountDuplicationError, InvalidEnvNameError, Errors, MAX_ENV_NAME_LEN } from '../../src/workspace/errors'
 import { StaticFilesSource } from '../../src/workspace/static_files'
 import * as dump from '../../src/parser/dump'
 import { mockDirStore } from '../common/nacl_file_store'
@@ -2547,7 +2545,7 @@ describe('workspace', () => {
     })
 
     it('should throw service duplication error', async () => {
-      await expect(workspace.addService('new')).rejects.toThrow(ServiceDuplicationError)
+      await expect(workspace.addService('new')).rejects.toThrow(AccountDuplicationError)
     })
 
     it('should persist', () => {

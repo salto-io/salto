@@ -20,7 +20,7 @@ import {
   Element, ElemID, AdapterOperations, Values, ServiceIds, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
-  ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId, AuditInformation,
+  ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId, ChangeAuthorInformation,
   CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import {
@@ -39,6 +39,8 @@ const { mergeElements } = merger
 const log = logger(module)
 const { isDefined } = values
 
+type FetchChangeMetadata = ChangeAuthorInformation
+
 export type FetchChange = {
   // The actual change to apply to the workspace
   change: DetailedChange
@@ -46,19 +48,22 @@ export type FetchChange = {
   serviceChange: DetailedChange
   // The change between the working copy and the state
   pendingChange?: DetailedChange
-  // The change audit information from the service.
-  audit?: AuditInformation
+  // Metadata information about the change.
+  metadata?: FetchChangeMetadata
 }
 
-const getAuditInformationFromElement = (element: Element | undefined): AuditInformation => {
+const getLastModifierInformationFromElement = (
+  element: Element | undefined
+): ChangeAuthorInformation => {
   if (!element) {
     return {}
   }
   return _.pickBy({ changedAt: element.annotations?.[CORE_ANNOTATIONS.CHANGED_AT],
-    changedBy: element.annotations?.[CORE_ANNOTATIONS.CHANGED_BY],
-    createdAt: element.annotations?.[CORE_ANNOTATIONS.CREATED_AT],
-    createdBy: element.annotations?.[CORE_ANNOTATIONS.CREATED_BY] }, isDefined)
+    changedBy: element.annotations?.[CORE_ANNOTATIONS.CHANGED_BY] }, isDefined)
 }
+
+const getFetchChangeMetadata = (changedElement: Element): FetchChangeMetadata =>
+  getLastModifierInformationFromElement(changedElement)
 
 export const toAddFetchChange = (elem: Element): FetchChange => {
   const change: DetailedChange = {
@@ -66,7 +71,7 @@ export const toAddFetchChange = (elem: Element): FetchChange => {
     action: 'add',
     data: { after: elem },
   }
-  return { change, serviceChange: change, audit: getAuditInformationFromElement(elem) }
+  return { change, serviceChange: change, metadata: getFetchChangeMetadata(elem) }
 }
 
 
@@ -165,7 +170,7 @@ const toFetchChanges = (
   return async (serviceChange: DetailedChange) => {
     const pendingChange = getMatchingChange(serviceChange.id, pendingChanges)
     const change = getMatchingChange(serviceChange.id, workspaceToServiceChanges)
-    const audit = change === undefined ? {} : getAuditInformationFromElement(
+    const metadata = change === undefined ? {} : getFetchChangeMetadata(
       await mergedServiceElements.get(change?.id.createBaseID().parent)
     )
     if (change !== undefined && !change.id.isEqual(serviceChange.id)) {
@@ -176,7 +181,7 @@ const toFetchChanges = (
     }
     return change === undefined
       ? []
-      : [{ change, pendingChange, serviceChange, audit }]
+      : [{ change, pendingChange, serviceChange, metadata }]
   }
 }
 

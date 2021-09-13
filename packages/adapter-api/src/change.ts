@@ -92,11 +92,9 @@ export type DetailedChange<T = ChangeDataType | Values | Value> =
     path?: ReadonlyArray<string>
   }
 
-export type AuditInformation = {
+export type ChangeAuthorInformation = {
   changedBy?: string
   changedAt?: string
-  createdBy?: string
-  createdAt?: string
  }
 
 export type ChangeParams<T> = { before?: T; after?: T }

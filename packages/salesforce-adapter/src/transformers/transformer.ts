@@ -1381,7 +1381,7 @@ export const createInstanceElement = (
   ) as MetadataInstanceElement
 }
 
-export const getAuditAnnotations = (fileProperties: FileProperties): Record<string, string> => {
+export const getAuthorAnnotations = (fileProperties: FileProperties): Record<string, string> => {
   const annotations = {
     [CORE_ANNOTATIONS.CREATED_BY]: fileProperties?.createdByName,
     [CORE_ANNOTATIONS.CREATED_AT]: fileProperties?.createdDate,

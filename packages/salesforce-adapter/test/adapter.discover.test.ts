@@ -336,7 +336,7 @@ describe('SalesforceAdapter fetch', () => {
         expect(flow.value.bla.bla3).toBe(true)
       })
 
-      it('should add audit annotations to metadata instance', async () => {
+      it('should add author annotations to metadata instance', async () => {
         mockFlowType()
         const { elements: result } = await adapter.fetch(mockFetchOpts)
         const flow = findElements(result, 'Flow', 'FlowInstance').pop() as InstanceElement

@@ -25,7 +25,7 @@ import {
   getValueTypeFieldElement, createMetadataTypeElements, MetadataObjectType,
   METADATA_TYPES_TO_RENAME, instancesToDeleteRecords, instancesToCreateRecords,
   isMetadataObjectType, isMetadataInstanceElement, toDeployableInstance, transformPrimitive,
-  getAuditAnnotations,
+  getAuthorAnnotations,
 } from '../../src/transformers/transformer'
 import { getLookUpName } from '../../src/transformers/reference_mapping'
 import {
@@ -66,11 +66,11 @@ describe('transformer', () => {
         fullName: 'test' }
     )
     it('get annotations with up to date change time will return full annotations', () => {
-      expect(getAuditAnnotations(newChangeDateFileProperties)[CORE_ANNOTATIONS.CHANGED_BY])
+      expect(getAuthorAnnotations(newChangeDateFileProperties)[CORE_ANNOTATIONS.CHANGED_BY])
         .toEqual('changed_name')
     })
     it('file properties with old change will return no user name in changedBy', () => {
-      expect(getAuditAnnotations(oldChangeDateFileProperties)[CORE_ANNOTATIONS.CHANGED_BY])
+      expect(getAuthorAnnotations(oldChangeDateFileProperties)[CORE_ANNOTATIONS.CHANGED_BY])
         .not
         .toBeDefined()
     })

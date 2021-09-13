@@ -42,7 +42,7 @@ type ChangeAuthorInformation = {
   changedBy?: string
   changedAt?: string
  }
-type FetchChangeMetadata = ChangeAuthorInformation
+export type FetchChangeMetadata = ChangeAuthorInformation
 
 export type FetchChange = {
   // The actual change to apply to the workspace

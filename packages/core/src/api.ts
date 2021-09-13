@@ -26,7 +26,7 @@ import { Workspace, ElementSelector, elementSource } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
-  adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterChangeValidators,
+  adapterCreators, getAdaptersCredentialsTypes, getAdapters,
   getAdapterDependencyChangers, getDefaultAdapterConfig, initAdapters, getAdaptersCreatorConfigs,
 } from './core/adapters'
 import { getPlan, Plan, PlanItem } from './core/plan'
@@ -43,6 +43,7 @@ import { defaultDependencyChangers } from './core/plan/plan'
 import { createRestoreChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
 import { createDiffChanges } from './core/diff'
+import getChangeValidators from './core/plan/change_validators'
 
 export { cleanWorkspace } from './core/clean'
 
@@ -92,7 +93,7 @@ export const preview = async (
   return getPlan({
     before: stateElements,
     after: await workspace.elements(),
-    changeValidators: getAdapterChangeValidators(adapters),
+    changeValidators: getChangeValidators(adapters),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
     topLevelFilters: [shouldElementBeIncluded(services)],

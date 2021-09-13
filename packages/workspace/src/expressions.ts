@@ -20,11 +20,6 @@ import { collections, promises } from '@salto-io/lowerdash'
 
 const { mapValuesAsync } = promises.object
 
-export class UnresolvedReference {
-  constructor(public target: ElemID) {
-  }
-}
-
 type WorkingSetElement = {
   element: Element
   resolved?: boolean
@@ -38,6 +33,11 @@ type Resolver<T> = (
   visited?: Set<string>,
   resolveRoot?: boolean
 ) => Promise<Value>
+
+export class UnresolvedReference {
+  constructor(public target: ElemID) {
+  }
+}
 
 export class CircularReference {
   constructor(public ref: string) {}

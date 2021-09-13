@@ -25,7 +25,7 @@ import {
 } from '@salto-io/adapter-api'
 import { toObjectType, elementAnnotationTypes } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
-import { resolve, CircularReference, UnresolvedReference } from './expressions'
+import { UnresolvedReference, resolve, CircularReference } from './expressions'
 import { IllegalReference } from './parser/parse'
 
 const { awu } = collections.asynciterable

@@ -33,8 +33,8 @@ describe('getChangeValidators', () => {
         deployModifiers: {
           changeValidator: adapterChangeValidator,
         },
-        fetch: jest.fn(),
-        deploy: jest.fn(),
+        fetch: mockFunction<AdapterOperations['fetch']>(),
+        deploy: mockFunction<AdapterOperations['deploy']>(),
       },
     } as Record<string, AdapterOperations>)
 
@@ -46,7 +46,7 @@ describe('getChangeValidators', () => {
     })
     const changes = [toChange({ after: type })]
     const errors = await changesValidators.adapter(changes)
-    expect(errors.length).toBe(2)
+    expect(errors).toHaveLength(2)
     expect(errors[0].message).toBe('Element has unresolved references')
     expect(adapterChangeValidator).toHaveBeenCalledWith(changes)
     expect(errors[1].message).toBe('message')

@@ -169,23 +169,23 @@ export type ClientRetryConfig = Partial<{
   retryStrategy: RetryStrategy
 }>
 
-export type SalesforceClientConfig = Partial<{
-  polling: ClientPollingConfig
-  deploy: ClientDeployConfig
-  maxConcurrentApiRequests: ClientRateLimitConfig
-  retry: ClientRetryConfig
-}>
-
-export type CustomObjectsDeployRetryOptions = {
+export type CustomObjectsDeployRetryConfig = {
   maxRetries: number
   delayMillis: number
   retryableFailures: string[]
 }
 
+export type SalesforceClientConfig = Partial<{
+  polling: ClientPollingConfig
+  deploy: ClientDeployConfig
+  maxConcurrentApiRequests: ClientRateLimitConfig
+  retry: ClientRetryConfig
+  dataRetry: CustomObjectsDeployRetryConfig
+}>
+
 export type SalesforceConfig = {
   [FETCH_CONFIG]?: FetchParameters
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
-  [CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS]?: CustomObjectsDeployRetryOptions
   [USE_OLD_PROFILES]?: boolean
   [CLIENT_CONFIG]?: SalesforceClientConfig
 }

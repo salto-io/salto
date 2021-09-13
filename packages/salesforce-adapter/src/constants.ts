@@ -293,8 +293,8 @@ export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRTY_OPTIONS = {
   maxRetries: 3,
   delayMillis: 1000,
   retryableFailures: [
-    'FIELD_CUSTOM_VALIDATION_EXCEPTION:You must specify either field or tested variable.',
-    'UNABLE_TO_LOCK_ROW:unable to obtain exclusive access to this record.',
+    'FIELD_CUSTOM_VALIDATION_EXCEPTION',
+    'UNABLE_TO_LOCK_ROW',
   ],
 }
 

@@ -34,7 +34,6 @@ import { getIdFields, buildSelectQueries, transformRecordToValues } from './filt
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
 import { buildDataManagement, DataManagement } from './fetch_profile/data_management'
-import { CustomObjectsDeployRetryOptions } from './types'
 
 const { toArrayAsync, flatMapAsync, toAsyncIterable } = collections.asynciterable
 const { partition } = promises.array
@@ -179,49 +178,56 @@ export type CrudFn = (fnArgs: CrudFnArgs) => Promise<InstanceAndResult[]>
 
 const sleep = (delayMillis: number): Promise<void> => new Promise(r => setTimeout(r, delayMillis))
 
-export const retryFlow = async (
-  crudFn: CrudFn,
-  crudFnArgs: CrudFnArgs,
-  retryOptions: CustomObjectsDeployRetryOptions,
-  successInstancesSoFar: InstanceElement[] = [],
-  failureInstancesSoFar: string[] = [],
-): Promise<ActionResult> => {
-  const { typeName, instances, client } = crudFnArgs
-  const { maxRetries, delayMillis, retryableFailures } = retryOptions
-  const isRetryableErr = (instAndRes: InstanceAndResult): boolean =>
+const isRetryableErr = (retryableFailures: string[]) =>
+  (instAndRes: InstanceAndResult): boolean =>
     _.every(instAndRes.result.errors, salesforceErr =>
       _.some(retryableFailures, retryableFailure =>
         salesforceErr.includes(retryableFailure)))
 
-  log.debug(`in custom object deploy retry-flow. retries left: ${maxRetries}, #instances to deploy: ${instances.length}
-  retryableFailures: ${retryableFailures}`)
+export const retryFlow = async (
+  crudFn: CrudFn,
+  crudFnArgs: CrudFnArgs,
+  retriesLeft: number,
+): Promise<ActionResult> => {
+  const { typeName, instances, client } = crudFnArgs
+  const { delayMillis, retryableFailures } = client.dataRetry
+
+  let successes: InstanceElement[] = []
+  let errMsgs: string[] = []
+
+  log.debug(`in custom object deploy retry-flow. retries left: ${retriesLeft},
+                  retryableFailures are: ${retryableFailures}`)
 
   const instanceResults = await crudFn({ typeName, instances, client })
 
   const [succeeded, failed] = _.partition(instanceResults, instanceResult =>
     instanceResult.result.success)
-  const [recoverable, notRecoverable] = _.partition(failed, isRetryableErr)
+  const [recoverable, notRecoverable] = _.partition(failed, isRetryableErr(retryableFailures))
 
-  const updatedSuccessInstances = successInstancesSoFar.concat(succeeded.map(instAndRes =>
-    instAndRes.instance))
-  const updatedFailureErrors = failureInstancesSoFar.concat(getAndLogErrors(notRecoverable))
+  successes = successes.concat(succeeded.map(instAndRes => instAndRes.instance))
+  errMsgs = errMsgs.concat(getAndLogErrors(notRecoverable))
 
-  if (maxRetries > 0) {
-    if (recoverable.length > 0) {
-      const remainingInstances = recoverable.map(instAndRes => instAndRes.instance)
-      await sleep(delayMillis)
-      await retryFlow(
-        crudFn,
-        { ...crudFnArgs, instances: remainingInstances },
-        { ...retryOptions, maxRetries: maxRetries - 1 },
-        updatedSuccessInstances,
-        updatedFailureErrors
-      )
+  if (_.isEmpty(recoverable)) {
+    return { successInstances: successes, errorMessages: errMsgs }
+  }
+  if (retriesLeft === 0) {
+    return {
+      successInstances: successes,
+      errorMessages: errMsgs.concat(getAndLogErrors(recoverable)),
     }
   }
-  const allFailureErrors = failureInstancesSoFar.concat(updatedFailureErrors)
-    .concat(getAndLogErrors(recoverable))
-  return { successInstances: updatedSuccessInstances, errorMessages: allFailureErrors }
+
+  await sleep(delayMillis)
+
+  const { successInstances, errorMessages } = await retryFlow(
+    crudFn,
+    { ...crudFnArgs, instances: recoverable.map(instAndRes => instAndRes.instance) },
+    retriesLeft - 1
+  )
+  return {
+    successInstances: successes.concat(successInstances),
+    errorMessages: errMsgs.concat(errorMessages),
+  }
 }
 
 const insertInstances: CrudFn = async (
@@ -287,8 +293,7 @@ const cloneWithoutNulls = (val: Values): Values =>
 const deployAddInstances = async (
   instances: InstanceElement[],
   idFields: Field[],
-  client: SalesforceClient,
-  retryOptions: CustomObjectsDeployRetryOptions
+  client: SalesforceClient
 ): Promise<DeployResult> => {
   const type = await instances[0].getType()
   const typeName = await apiName(type)
@@ -321,7 +326,7 @@ const deployAddInstances = async (
   } = await retryFlow(
     insertInstances,
     { typeName, instances: newInstances, client },
-    retryOptions
+    client.dataRetry.maxRetries
   )
   existingInstances.forEach(instance => {
     instance.value[
@@ -334,7 +339,7 @@ const deployAddInstances = async (
   } = await retryFlow(
     updateInstances,
     { typeName: await apiName(type), instances: existingInstances, client },
-    retryOptions
+    client.dataRetry.maxRetries
   )
   const allSuccessInstances = [...successInsertInstances, ...successUpdateInstances]
   return {
@@ -345,13 +350,12 @@ const deployAddInstances = async (
 
 const deployRemoveInstances = async (
   instances: InstanceElement[],
-  client: SalesforceClient,
-  retryOptions: CustomObjectsDeployRetryOptions
+  client: SalesforceClient
 ): Promise<DeployResult> => {
   const { successInstances, errorMessages } = await retryFlow(
     deleteInstances,
     { typeName: await apiName(await instances[0].getType()), instances, client },
-    retryOptions
+    client.dataRetry.maxRetries
   )
   return {
     appliedChanges: successInstances.map(instance => ({ action: 'remove', data: { before: instance } })),
@@ -362,7 +366,6 @@ const deployRemoveInstances = async (
 const deployModifyChanges = async (
   changes: Readonly<ModificationChange<InstanceElement>[]>,
   client: SalesforceClient,
-  retryOptions: CustomObjectsDeployRetryOptions
 ): Promise<DeployResult> => {
   const changesData = changes
     .map(change => change.data)
@@ -375,7 +378,7 @@ const deployModifyChanges = async (
   const { successInstances, errorMessages } = await retryFlow(
     updateInstances,
     { typeName: instancesType, instances: afters, client },
-    retryOptions
+    client.dataRetry.maxRetries
   )
   const successData = validData
     .filter(changeData =>
@@ -410,7 +413,6 @@ const isModificationChangeList = <T>(
 export const deployCustomObjectInstancesGroup = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
-  retryOptions: CustomObjectsDeployRetryOptions,
   dataManagement?: DataManagement,
 ): Promise<DeployResult> => {
   try {
@@ -432,13 +434,13 @@ export const deployCustomObjectInstancesGroup = async (
       if (invalidFields !== undefined && invalidFields.length > 0) {
         throw new Error(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidFields}`)
       }
-      return await deployAddInstances(instances, idFields, client, retryOptions)
+      return await deployAddInstances(instances, idFields, client)
     }
     if (changes.every(isRemovalChange)) {
-      return await deployRemoveInstances(instances, client, retryOptions)
+      return await deployRemoveInstances(instances, client)
     }
     if (isModificationChangeList(changes)) {
-      return await deployModifyChanges(changes, client, retryOptions)
+      return await deployModifyChanges(changes, client)
     }
     throw new Error('Custom Object Instances change group must have one action')
   } catch (error) {

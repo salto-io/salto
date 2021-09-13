@@ -26,7 +26,7 @@ describe('Custom Object Deploy', () => {
     const inst1 = new InstanceElement('inst1', new ObjectType({ elemID: new ElemID('', 'test') }))
     const inst2 = new InstanceElement('inst2', new ObjectType({ elemID: new ElemID('', 'test') }))
     const instanceElements = [inst1, inst2]
-    const retryArgs = { maxRetries: 3, delayMillis: 1000, retryableFailures: ['err1', 'err2'] }
+    const retries = 3
     const clientBulkOpSpy = jest.spyOn(client, 'bulkLoadOperation')
     const clientOp: CrudFn = async ({ typeName, instances, client: sfClient }) => {
       const results = await sfClient.bulkLoadOperation(
@@ -55,7 +55,7 @@ describe('Custom Object Deploy', () => {
           },
         ]
       )
-      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retryArgs)
+      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
       expect(res).toEqual({ successInstances: [inst1, inst2], errorMessages: [] })
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(1)
     })
@@ -74,7 +74,7 @@ describe('Custom Object Deploy', () => {
           },
         ]
       )
-      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retryArgs)
+      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
       expect(res).toEqual({ successInstances: [inst1], errorMessages: ['inst2:\n    \terr555'] })
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(1)
     })
@@ -93,12 +93,12 @@ describe('Custom Object Deploy', () => {
           },
         ]
       )
-      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retryArgs)
+      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
       expect(res).toEqual({ successInstances: [inst1], errorMessages: ['inst2:\n    \terr1\n\tbla bla bla'] })
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(1)
     })
 
-    it('should retry on recoverable error(s)', async () => {
+    it('should retry on recoverable error(s), fail on unrecoverable', async () => {
       clientBulkOpSpy.mockImplementation(
         async (_1: string,
           _2: BulkLoadOperation,
@@ -124,7 +124,68 @@ describe('Custom Object Deploy', () => {
         }
 
       )
-      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retryArgs)
+      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
+      expect(res).toEqual({ successInstances: [inst1], errorMessages: ['inst2:\n    \terr1 bla bla bla'] })
+      expect(clientBulkOpSpy).toHaveBeenCalledTimes(4)
+    })
+
+    it('should retry on recoverable error(s), succeed second time', async () => {
+      clientBulkOpSpy.mockImplementation(
+        async (_1: string,
+          _2: BulkLoadOperation,
+          records: SalesforceRecord[]) => {
+          if (records.length > 1) {
+            return [
+              {
+                id: '1',
+                success: true,
+              },
+              {
+                id: '2',
+                success: false,
+                errors: ['err1'],
+              },
+            ]
+          }
+          return [{
+            id: '2',
+            success: true,
+          }]
+        }
+
+      )
+      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
+      expect(res).toEqual({ successInstances: [inst1, inst2], errorMessages: [] })
+      expect(clientBulkOpSpy).toHaveBeenCalledTimes(2)
+    })
+
+    it('should retry1 on recoverable error(s), failed because of max-retries', async () => {
+      clientBulkOpSpy.mockImplementation(
+        async (_1: string,
+          _2: BulkLoadOperation,
+          records: SalesforceRecord[]) => {
+          if (records.length > 1) {
+            return [
+              {
+                id: '1',
+                success: true,
+              },
+              {
+                id: '2',
+                success: false,
+                errors: ['err1'],
+              },
+            ]
+          }
+          return [{
+            id: '2',
+            success: false,
+            errors: ['err1'],
+          }]
+        }
+
+      )
+      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
       expect(res).toEqual({ successInstances: [inst1], errorMessages: ['inst2:\n    \terr1'] })
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(4)
     })

@@ -29,12 +29,11 @@ import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountId, Value } from '@salto-io/adapter-api'
-import { CUSTOM_OBJECT_ID_FIELD, DEFAULT_MAX_CONCURRENT_API_REQUESTS } from '../constants'
+import { CUSTOM_OBJECT_ID_FIELD, DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRTY_OPTIONS, DEFAULT_MAX_CONCURRENT_API_REQUESTS } from '../constants'
 import { CompleteSaveResult, SfError, SalesforceRecord } from './types'
-import {
-  UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials,
+import { UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials,
   SalesforceClientConfig, ClientRateLimitConfig, ClientRetryConfig, ClientPollingConfig,
-} from '../types'
+  CustomObjectsDeployRetryConfig } from '../types'
 import Connection from './jsforce'
 
 const { makeArray } = collections.array
@@ -314,6 +313,7 @@ export default class SalesforceClient {
   private readonly credentials: Credentials
   private readonly config?: SalesforceClientConfig
   readonly rateLimiters: Record<RateLimitBucketName, Bottleneck>
+  readonly dataRetry: CustomObjectsDeployRetryConfig
   readonly clientName: string
 
   constructor(
@@ -329,6 +329,7 @@ export default class SalesforceClient {
     this.rateLimiters = createRateLimitersFromConfig(
       _.defaults({}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS)
     )
+    this.dataRetry = config?.dataRetry ?? DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRTY_OPTIONS
     this.clientName = 'SFDC'
   }
 

@@ -52,7 +52,7 @@ export type FetchChange = {
   metadata?: FetchChangeMetadata
 }
 
-const getLastModifierInformationFromElement = (
+const getAuthorInformationFromElement = (
   element: Element | undefined
 ): ChangeAuthorInformation => {
   if (!element) {
@@ -63,7 +63,7 @@ const getLastModifierInformationFromElement = (
 }
 
 const getFetchChangeMetadata = (changedElement: Element): FetchChangeMetadata =>
-  getLastModifierInformationFromElement(changedElement)
+  getAuthorInformationFromElement(changedElement)
 
 export const toAddFetchChange = (elem: Element): FetchChange => {
   const change: DetailedChange = {

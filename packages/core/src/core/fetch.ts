@@ -65,7 +65,7 @@ const getAuthorInformationFromElement = (
     changedBy: element.annotations?.[CORE_ANNOTATIONS.CHANGED_BY] }, isDefined)
 }
 
-const getFetchChangeMetadata = (changedElement: Element): FetchChangeMetadata =>
+const getFetchChangeMetadata = (changedElement: Element | undefined): FetchChangeMetadata =>
   getAuthorInformationFromElement(changedElement)
 
 export const toAddFetchChange = (elem: Element): FetchChange => {

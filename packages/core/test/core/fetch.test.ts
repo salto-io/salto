@@ -471,8 +471,8 @@ describe('fetch', () => {
         changes.forEach(c => expect(c.pendingChange).toBeUndefined())
       })
 
-      it('should return the change with audit information', () => {
-        expect(changes.some(c => c.audit?.changedAt === 'test')).toBeTruthy()
+      it('should return the change with metadata', () => {
+        expect(changes.some(c => c.metadata?.changedAt === 'test')).toBeTruthy()
       })
 
       it('should not remove hidden values from changes', () => {

@@ -39,7 +39,6 @@ import { RemoteElementSource, ElementsSource, mapReadOnlyElementsSource } from '
 import { createMergeManager, ElementMergeManager, ChangeSet, createEmptyChangeSet, MergedRecoveryMode } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
-import { MissingStaticFile } from './static_files'
 
 const log = logger(module)
 
@@ -264,7 +263,7 @@ export const loadWorkspace = async (
                   async staticFile => await envSrc.getStaticFile(
                     staticFile.filepath,
                     staticFile.encoding,
-                  ) ?? new MissingStaticFile(staticFile.filepath)
+                  ) ?? staticFile
                 ),
                 persistent,
               })

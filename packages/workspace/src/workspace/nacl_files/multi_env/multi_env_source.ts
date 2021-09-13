@@ -34,6 +34,7 @@ import { createMergeManager, ElementMergeManager, ChangeSet, MergedRecoveryMode,
 import { Errors } from '../../errors'
 import { RemoteElementSource, ElementsSource } from '../../elements_source'
 import { serialize, deserializeSingleElement, deserializeMergeErrors } from '../../../serializer/elements'
+import { MissingStaticFile } from '../../static_files'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -132,7 +133,7 @@ const buildMultiEnvSource = (
   const getStaticFile = async (
     filePath: string,
     encoding: BufferEncoding,
-  ): Promise<StaticFile | undefined> => {
+  ): Promise<StaticFile> => {
     const sourcesFiles = (await Promise.all(Object.values(getActiveSources())
       .map(src => src.getStaticFile(filePath, encoding))))
       .filter(values.isDefined)
@@ -140,7 +141,7 @@ const buildMultiEnvSource = (
       && !_.every(sourcesFiles, sf => sf.hash === sourcesFiles[0].hash)) {
       log.warn(`Found different hashes for static file ${filePath}`)
     }
-    return sourcesFiles[0]
+    return sourcesFiles[0] ?? new MissingStaticFile(filePath)
   }
 
   const buildStateForSingleEnv = async (

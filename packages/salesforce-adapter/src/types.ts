@@ -170,8 +170,8 @@ export type ClientRetryConfig = Partial<{
 }>
 
 export type CustomObjectsDeployRetryConfig = {
-  maxRetries: number
-  delayMillis: number
+  maxAttempts: number
+  retryDelay: number
   retryableFailures: string[]
 }
 

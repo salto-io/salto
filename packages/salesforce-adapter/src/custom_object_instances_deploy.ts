@@ -190,13 +190,10 @@ export const retryFlow = async (
   retriesLeft: number,
 ): Promise<ActionResult> => {
   const { typeName, instances, client } = crudFnArgs
-  const { delayMillis, retryableFailures } = client.dataRetry
+  const { retryDelay, retryableFailures } = client.dataRetry
 
   let successes: InstanceElement[] = []
   let errMsgs: string[] = []
-
-  log.debug(`in custom object deploy retry-flow. retries left: ${retriesLeft},
-                  retryableFailures are: ${retryableFailures}`)
 
   const instanceResults = await crudFn({ typeName, instances, client })
 
@@ -217,7 +214,10 @@ export const retryFlow = async (
     }
   }
 
-  await sleep(delayMillis)
+  await sleep(retryDelay)
+
+  log.debug(`in custom object deploy retry-flow. retries left: ${retriesLeft},
+                  remaining retryable failures are: ${recoverable}`)
 
   const { successInstances, errorMessages } = await retryFlow(
     crudFn,
@@ -326,7 +326,7 @@ const deployAddInstances = async (
   } = await retryFlow(
     insertInstances,
     { typeName, instances: newInstances, client },
-    client.dataRetry.maxRetries
+    client.dataRetry.maxAttempts
   )
   existingInstances.forEach(instance => {
     instance.value[
@@ -339,7 +339,7 @@ const deployAddInstances = async (
   } = await retryFlow(
     updateInstances,
     { typeName: await apiName(type), instances: existingInstances, client },
-    client.dataRetry.maxRetries
+    client.dataRetry.maxAttempts
   )
   const allSuccessInstances = [...successInsertInstances, ...successUpdateInstances]
   return {
@@ -355,7 +355,7 @@ const deployRemoveInstances = async (
   const { successInstances, errorMessages } = await retryFlow(
     deleteInstances,
     { typeName: await apiName(await instances[0].getType()), instances, client },
-    client.dataRetry.maxRetries
+    client.dataRetry.maxAttempts
   )
   return {
     appliedChanges: successInstances.map(instance => ({ action: 'remove', data: { before: instance } })),
@@ -378,7 +378,7 @@ const deployModifyChanges = async (
   const { successInstances, errorMessages } = await retryFlow(
     updateInstances,
     { typeName: instancesType, instances: afters, client },
-    client.dataRetry.maxRetries
+    client.dataRetry.maxAttempts
   )
   const successData = validData
     .filter(changeData =>

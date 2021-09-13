@@ -178,7 +178,7 @@ salesforce {
 | [deploy](#client-deploy-options)                              | `{}` (no overrides)      | Deploy options
 | [retry](#retry-configuration-options)                         | `{}` (no overrides)      | Configuration for retrying on errors
 | [maxConcurrentApiRequests](#rate-limit-configuration-options) | `{}` (no overrides)      | Limits on the number of concurrent requests of different types
-| [dataRetry](#client-data-retry-options) | `{}` (no overrides)      | Configuration for retrying on specific errors regarding data objects (for CPQ)
+| [dataRetry](#client-data-retry-options) | `{}` (no overrides)      | Configuration for retrying on specific errors regarding data objects (for custom object instances)
 
 #### Client polling options
 
@@ -223,7 +223,7 @@ For more details see the DeployOptions section in the [salesforce documentation 
 
 | Name                                                        | Default when undefined                           | Description
 | ------------------------------------------------------------| -------------------------------------------------| -----------
-| maxRetries                                                    | `3`                                              | Max retries to fetch data instances
-| delayMillis                                                        | `1000`                                | Time (in millis) between each retry
+| maxAttempts                                                    | `3`                                              | Max attempts to deploy data instances
+| retryDelay                                                        | `1000`                                | Delay (in millis) between each retry
 | retryableFailures                                                        | `FIELD_CUSTOM_VALIDATION_EXCEPTION, UNABLE_TO_LOCK_ROW`                                | Error messages for which to retry
 | 

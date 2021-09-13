@@ -20,8 +20,7 @@ import {
   Element, ElemID, AdapterOperations, Values, ServiceIds, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
-  ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId, ChangeAuthorInformation,
-  CORE_ANNOTATIONS,
+  ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
@@ -39,6 +38,10 @@ const { mergeElements } = merger
 const log = logger(module)
 const { isDefined } = values
 
+type ChangeAuthorInformation = {
+  changedBy?: string
+  changedAt?: string
+ }
 type FetchChangeMetadata = ChangeAuthorInformation
 
 export type FetchChange = {

@@ -92,11 +92,6 @@ export type DetailedChange<T = ChangeDataType | Values | Value> =
     path?: ReadonlyArray<string>
   }
 
-export type ChangeAuthorInformation = {
-  changedBy?: string
-  changedAt?: string
- }
-
 export type ChangeParams<T> = { before?: T; after?: T }
 
 type ChangeParamType<T> = T extends ChangeParams<infer U> ? U : never

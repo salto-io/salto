@@ -23,7 +23,7 @@ import { FetchElements, ConfigChangeSuggestion } from './types'
 import { METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
-import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuditAnnotations } from './transformers/transformer'
+import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuthorAnnotations } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 import { MetadataQuery } from './fetch_profile/metadata_query'
 
@@ -110,7 +110,7 @@ const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
     ? { ...metadata, [INTERNAL_ID_FIELD]: filePropertiesMap[metadata.fullName]?.id } : metadata
   return createInstanceElement(newMetadata, metadataType,
     filePropertiesMap[newMetadata.fullName]?.namespacePrefix,
-    getAuditAnnotations(filePropertiesMap[newMetadata.fullName]))
+    getAuthorAnnotations(filePropertiesMap[newMetadata.fullName]))
 }
 
 export const fetchMetadataInstances = async ({
@@ -264,7 +264,7 @@ export const retrieveMetadataInstances = async ({
     )
     return allValues.map(({ file, values }) => (
       createInstanceElement(values, typesByName[file.type], file.namespacePrefix,
-        getAuditAnnotations(file))
+        getAuthorAnnotations(file))
     ))
   }
 

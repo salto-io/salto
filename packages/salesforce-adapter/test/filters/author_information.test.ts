@@ -24,12 +24,12 @@ import mockClient from '../client'
 import Connection from '../../src/client/jsforce'
 import SalesforceClient from '../../src/client/client'
 import { Filter, FilterResult } from '../../src/filter'
-import auditInformation, { WARNING_MESSAGE } from '../../src/filters/audit_information'
+import authorInformation, { WARNING_MESSAGE } from '../../src/filters/author_information'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { API_NAME, CUSTOM_FIELD, CUSTOM_OBJECT, METADATA_TYPE } from '../../src/constants'
 
-describe('audit information test', () => {
+describe('author information test', () => {
   let filter: Filter
   let client: SalesforceClient
   let connection: MockInterface<Connection>
@@ -73,7 +73,7 @@ describe('audit information test', () => {
       StringField__c: { refType: new ReferenceExpression(primNum.elemID, primNum) },
     },
   })
-  // In order to test an object without audit information in server.
+  // In order to test an object without author information in server.
 
   beforeEach(() => {
     ({ connection, client } = mockClient())
@@ -88,7 +88,7 @@ describe('audit information test', () => {
         }
         return []
       })
-    filter = auditInformation({ client, config: defaultFilterContext })
+    filter = authorInformation({ client, config: defaultFilterContext })
     customObject = new ObjectType({
       elemID: new ElemID('salesforce', 'Custom__c'),
       annotations: { metadataType: CUSTOM_OBJECT, [API_NAME]: 'Custom__c' },
@@ -97,7 +97,7 @@ describe('audit information test', () => {
       },
     })
   })
-  it('should add audit annotations to custom object', async () => {
+  it('should add author annotations to custom object', async () => {
     await filter.onFetch?.([customObject, objectWithoutInformation])
     checkElementAnnotations(customObject, objectProperties)
     checkElementAnnotations(customObject.fields.StringField__c, fieldProperties)
@@ -144,11 +144,11 @@ describe('audit information test', () => {
   })
   describe('when feature is disabled', () => {
     it('should not add any annotations', async () => {
-      filter = auditInformation({
+      filter = authorInformation({
         client,
         config: {
           ...defaultFilterContext,
-          fetchProfile: buildFetchProfile({ optionalFeatures: { auditInformation: false } }),
+          fetchProfile: buildFetchProfile({ optionalFeatures: { authorInformation: false } }),
         },
       })
       await filter.onFetch?.([customObject])

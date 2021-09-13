@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { CUSTOM_FIELD, CUSTOM_OBJECT } from '../constants'
-import { apiName, getAuditAnnotations, isCustomObject, isInstanceOfCustomObject } from '../transformers/transformer'
+import { apiName, getAuthorAnnotations, isCustomObject, isInstanceOfCustomObject } from '../transformers/transformer'
 import { FilterCreator, FilterWith } from '../filter'
 import SalesforceClient from '../client/client'
 import { conditionQueries, ensureSafeFilterFetch, queryClient } from './utils'
@@ -42,22 +42,22 @@ const getObjectFieldByFileProperties = (
 ): Field | undefined =>
   object.fields[getFieldNameParts(fileProperties).fieldName]
 
-const addAuditAnnotationsToField = (
+const addAuthorAnnotationsToField = (
   fileProperties: FileProperties,
   field: Field | undefined
 ): void => {
   if (!field) {
     return
   }
-  Object.assign(field.annotations, getAuditAnnotations(fileProperties))
+  Object.assign(field.annotations, getAuthorAnnotations(fileProperties))
 }
 
-const addAuditAnnotationsToFields = (
+const addAuthorAnnotationsToFields = (
   fileProperties: FilePropertiesMap,
   object: ObjectType
 ): void => {
   Object.values(fileProperties)
-    .forEach(fileProp => addAuditAnnotationsToField(
+    .forEach(fileProp => addAuthorAnnotationsToField(
       fileProp,
       getObjectFieldByFileProperties(fileProp, object)
     ))
@@ -83,7 +83,7 @@ const getCustomFieldFileProperties = async (client: SalesforceClient):
       (fileProps:FileProperties) => getFieldNameParts(fileProps).fieldName)).value()
 }
 
-const objectAuditInformationSupplier = async (
+const objectAuthorInformationSupplier = async (
   customTypeFilePropertiesMap: FilePropertiesMap,
   customFieldsFilePropertiesMap: Record<string, FilePropertiesMap>,
   object: ObjectType
@@ -91,10 +91,10 @@ const objectAuditInformationSupplier = async (
   const objectApiName = await apiName(object)
   if (objectApiName in customTypeFilePropertiesMap) {
     Object.assign(object.annotations,
-      getAuditAnnotations(customTypeFilePropertiesMap[objectApiName]))
+      getAuthorAnnotations(customTypeFilePropertiesMap[objectApiName]))
   }
   if (objectApiName in customFieldsFilePropertiesMap) {
-    addAuditAnnotationsToFields(customFieldsFilePropertiesMap[objectApiName], object)
+    addAuthorAnnotationsToFields(customFieldsFilePropertiesMap[objectApiName], object)
   }
 }
 
@@ -109,7 +109,7 @@ const getIDToNameMap = async (client: SalesforceClient,
   return Object.fromEntries(records.map(record => [record.Id, record.Name]))
 }
 
-const moveAuditFieldsToAnnotations = (
+const moveAuthorFieldsToAnnotations = (
   instance: InstanceElement,
   IDToNameMap: Record<string, string>
 ): void => {
@@ -120,37 +120,37 @@ const moveAuditFieldsToAnnotations = (
     instance.value.LastModifiedById]
 }
 
-const moveInstancesAuditFieldsToAnnotations = (
+const moveInstancesAuthorFieldsToAnnotations = (
   instances: InstanceElement[],
   IDToNameMap: Record<string, string>
 ): void => {
-  instances.forEach(instance => moveAuditFieldsToAnnotations(instance, IDToNameMap))
+  instances.forEach(instance => moveAuthorFieldsToAnnotations(instance, IDToNameMap))
 }
 
-export const WARNING_MESSAGE = 'Encountered an error while trying to populate audit information in some of the Salesforce configuration elements.'
+export const WARNING_MESSAGE = 'Encountered an error while trying to populate author information in some of the Salesforce configuration elements.'
 
 /**
- * add audit information to object types, and data instance elements.
+ * add author information to object types, and data instance elements.
  */
 const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,
-    filterName: 'auditInformation',
+    filterName: 'authorInformation',
     fetchFilterFunc: async (elements: Element[]) => {
       const customTypeFilePropertiesMap = await getCustomObjectFileProperties(client)
       const customFieldsFilePropertiesMap = await getCustomFieldFileProperties(client)
       await (awu(elements)
         .filter(isCustomObject) as AwuIterable<ObjectType>)
         .forEach(async object => {
-          await objectAuditInformationSupplier(customTypeFilePropertiesMap,
+          await objectAuthorInformationSupplier(customTypeFilePropertiesMap,
             customFieldsFilePropertiesMap,
             object)
         })
       const customObjectInstances = await awu(elements).filter(isInstanceOfCustomObject)
         .toArray() as InstanceElement[]
       const IDToNameMap = await getIDToNameMap(client, customObjectInstances)
-      moveInstancesAuditFieldsToAnnotations(customObjectInstances, IDToNameMap)
+      moveInstancesAuthorFieldsToAnnotations(customObjectInstances, IDToNameMap)
     },
   }),
 })

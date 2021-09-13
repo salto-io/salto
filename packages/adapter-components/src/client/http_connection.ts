@@ -65,7 +65,7 @@ export type ConnectionCreator<TCredentials> = (
 export const createRetryOptions = (retryOptions: Required<ClientRetryConfig>): RetryOptions => ({
   retries: retryOptions.maxAttempts,
   retryDelay: (retryCount, err) => {
-    log.error('Failed to run client call to %s for reason: %s (%s). Retrying in %ds (attempt %d).',
+    log.warn('Failed to run client call to %s for reason: %s (%s). Retrying in %ds (attempt %d).',
       err.config.url,
       err.code,
       err.message,

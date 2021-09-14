@@ -138,7 +138,13 @@ describe('Netsuite adapter E2E with real account', () => {
       FILE,
       {
         description: randomString,
-        ...(withSuiteApp ? { [PATH]: '/Images/InnerFolder/e2eTest.js' } : {}),
+        ...(withSuiteApp
+          ? { [PATH]: '/Images/InnerFolder/e2eTest.js',
+            content: new StaticFile({
+              filepath: 'somePath',
+              content: Buffer.from('aaa'),
+            }) }
+          : {}),
       }
     )
 
@@ -393,8 +399,8 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeInstance = fileToCreate.clone()
           afterInstance = beforeInstance.clone()
 
-          beforeInstance.value.content = 'before content'
-          afterInstance.value.content = 'after content'
+          beforeInstance.value.content = Buffer.from('before content')
+          afterInstance.value.content = Buffer.from('after content')
         })
 
         describe('with warnOnStaleWorkspaceData=true flag', () => {

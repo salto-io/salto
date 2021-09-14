@@ -33,7 +33,7 @@ type InitArgs = {
 export const action: CommandDefAction<InitArgs> = async (
   { input: { workspaceName, envName }, cliTelemetry, output, workspacePath },
 ): Promise<CliExitCode> => {
-  log.debug('running env init command on \'%s\'', workspaceName)
+  log.debug('running workspace init command on \'%s\'', workspaceName)
   cliTelemetry.start()
   try {
     const baseDir = path.resolve(workspacePath)
@@ -52,6 +52,7 @@ export const action: CommandDefAction<InitArgs> = async (
     outputLine(Prompts.initCompleted(), output)
   } catch (e) {
     errorOutputLine(Prompts.initFailed(e.message), output)
+    log.error('workspace init failed with error %s %s', e, e.stack)
     cliTelemetry.failure()
     cliTelemetry.stacktrace(e)
     return CliExitCode.AppError

@@ -35,7 +35,6 @@ const addToField = (
   commonField: Field,
   currentField?: FieldDefinition
 ): Record<string, FieldDefinition> => {
-  if (isField(nestedValue.value)) return { [nestedValue.value.name]: nestedValue.value }
   const { name } = commonField
   const { path } = nestedValue.id.createTopLevelParentID()
   const annotations = { ...currentField?.annotations }
@@ -53,6 +52,16 @@ const createObjectTypeFromNestedAdditions = (
   new ObjectType(nestedValues.reduce((prev, nestedValue) => {
     switch (nestedValue.id.idType) {
       case 'field': {
+        const { value } = nestedValue
+        if (isField(value)) {
+          return {
+            ...prev,
+            fields: {
+              ...prev.fields,
+              [value.name]: value,
+            },
+          }
+        }
         const fieldName = nestedValue.id.createTopLevelParentID().path[0]
         const field = commonObjectType.fields[fieldName]
         if (field === undefined) {

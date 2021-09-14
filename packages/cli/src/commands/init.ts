@@ -52,6 +52,7 @@ export const action: CommandDefAction<InitArgs> = async (
     outputLine(Prompts.initCompleted(), output)
   } catch (e) {
     errorOutputLine(Prompts.initFailed(e.message), output)
+    log.error('%s %s', e, e.stack)
     cliTelemetry.failure()
     cliTelemetry.stacktrace(e)
     return CliExitCode.AppError

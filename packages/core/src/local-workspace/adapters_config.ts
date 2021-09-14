@@ -82,6 +82,10 @@ export const adaptersConfigSource = async (
 
   const setUnsafe = async (configs: Readonly<InstanceElement> | Readonly<InstanceElement>[]):
   Promise<void> => {
+    // This functions first remove the existing configuration and then add the new configuration
+    // instead of creating a "modify" change to the configuration so the config element will
+    // be splitted exactly like the new configuration and not like the old one
+
     const configsArr = collections.array.makeArray(configs)
     await Promise.all(_(configsArr)
       .map(conf => conf.elemID)

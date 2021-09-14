@@ -395,11 +395,13 @@ export const formatFetchChangeForApproval = async (
   idx: number,
   totalChanges: number
 ): Promise<string> => {
-  const formattedChange = await formatDetailedChanges([[change.serviceChange]], true)
-  const formattedConflict = change.pendingChange === undefined ? [] : [
-    header(Prompts.FETCH_CONFLICTING_CHANGE),
-    body(await formatDetailedChanges([[change.pendingChange]], true)),
-  ]
+  const formattedChange = await formatDetailedChanges([change.serviceChanges], true)
+  const formattedConflict = change.pendingChanges === undefined || _.isEmpty(change.pendingChanges)
+    ? []
+    : [
+      header(Prompts.FETCH_CONFLICTING_CHANGE),
+      body(await formatDetailedChanges([change.pendingChanges], true)),
+    ]
   return [
     header(Prompts.FETCH_CHANGE_HEADER(idx + 1, totalChanges)),
     body(formattedChange),

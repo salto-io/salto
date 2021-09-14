@@ -155,7 +155,7 @@ export const deploy = async (
     await workspace.elements(),
     changedElements,
     [id => changedElements.has(id)]
-  )).map(change => ({ change, serviceChange: change }))
+  )).map(change => ({ change, serviceChanges: [change] }))
     .flatMap(toChangesWithPath(
       async name => collections.array.makeArray(await changedElements.get(name))
     )).toArray()
@@ -242,7 +242,7 @@ export const fetch: FetchFunc = async (
   }
 }
 
-export type LocalChange = Omit<FetchChange, 'pendingChange'>
+export type LocalChange = Omit<FetchChange, 'pendingChanges'>
 
 export const restore = async (
   workspace: Workspace,
@@ -258,7 +258,7 @@ export const restore = async (
     elementSelectors,
     fetchServices
   )
-  return changes.map(change => ({ change, serviceChange: change }))
+  return changes.map(change => ({ change, serviceChanges: [change] }))
 }
 
 export const diff = async (
@@ -285,7 +285,7 @@ export const diff = async (
     [shouldElementBeIncluded(diffServices)]
   )
 
-  return diffChanges.map(change => ({ change, serviceChange: change }))
+  return diffChanges.map(change => ({ change, serviceChanges: [change] }))
 }
 
 class AdapterInstallError extends Error {

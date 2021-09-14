@@ -55,7 +55,7 @@ const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
 describe('transformer', () => {
-  describe('getAuditAnnotations', () => {
+  describe('getAuthorAnnotations', () => {
     const newChangeDateFileProperties = mockFileProperties({ lastModifiedDate: 'date that is new',
       type: 'test',
       fullName: 'test',

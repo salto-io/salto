@@ -54,6 +54,7 @@ describe('fetch', () => {
   })
   const typeWithFieldChange = typeWithField.clone()
   typeWithFieldChange.fields.test.annotations.annotation = 'changed'
+  typeWithFieldChange.fields.test.annotations.newAnnotation = 'new'
   const typeWithFieldConflict = typeWithField.clone()
   typeWithFieldConflict.fields.test.annotations.annotation = 'conflict'
   const newTypeID = new ElemID('dummy', 'new')
@@ -237,7 +238,7 @@ describe('fetch', () => {
         expect(resultChanges.length).toBe(1)
 
         const workspaceChange = resultChanges[0].change
-        const { serviceChange } = resultChanges[0]
+        const [serviceChange] = resultChanges[0].serviceChanges
 
         expect(workspaceChange.action).toBe('modify')
         expect(serviceChange.action).toBe('modify')
@@ -468,7 +469,7 @@ describe('fetch', () => {
 
       it('should return the change with no conflict', () => {
         expect(changes).toHaveLength(4)
-        changes.forEach(c => expect(c.pendingChange).toBeUndefined())
+        changes.forEach(c => expect(c.pendingChanges).toHaveLength(0))
       })
 
       it('should return the change with metadata', () => {
@@ -652,16 +653,16 @@ describe('fetch', () => {
           )
           changes = [...result.changes]
         })
-        it('should return the change with the conflict', () => {
-          expect(changes).toHaveLength(1)
-          expect(changes[0].pendingChange).toBeDefined()
+        it('should return the change with the conflict along with normal changes', () => {
+          expect(changes).toHaveLength(2)
+          const [conflictChange, normalChange] = changes
+          expect(conflictChange.pendingChanges?.length).toBeGreaterThan(0)
+          expect(normalChange.pendingChanges).toHaveLength(0)
         })
       })
       describe('when the changed element is removed in the working copy', () => {
         beforeEach(async () => {
-          mockAdapters.dummy.fetch.mockResolvedValueOnce(
-            Promise.resolve({ elements: [typeWithFieldChange] })
-          )
+          mockAdapters.dummy.fetch.mockResolvedValueOnce({ elements: [typeWithFieldChange] })
           const result = await fetchChanges(
             mockAdapters,
             createElementSource([]),
@@ -678,19 +679,56 @@ describe('fetch', () => {
           beforeEach(() => {
             [change] = changes
           })
-          it('should contain the service change', () => {
-            expect(change.serviceChange.action).toEqual('modify')
+          it('should contain the service changes', () => {
+            expect(change.serviceChanges).toHaveLength(2)
+            expect(change.serviceChanges[0].action).toEqual('modify')
           })
           it('should contain the local change', () => {
-            expect(change.pendingChange).toBeDefined()
-            if (change.pendingChange) { // If only here to help typescript compiler
-              expect(change.pendingChange.action).toEqual('remove')
-            }
+            expect(change.pendingChanges).toHaveLength(1)
+            expect(change.pendingChanges?.[0].action).toEqual('remove')
           })
           it('should have the change that syncs the working copy to the service', () => {
             expect(change.change.action).toEqual('add')
           })
         })
+      })
+    })
+
+    describe('when the changed element is removed from the service', () => {
+      beforeEach(async () => {
+        mockAdapters.dummy.fetch.mockResolvedValueOnce({ elements: [] })
+        const result = await fetchChanges(
+          mockAdapters,
+          createElementSource([typeWithFieldChange]),
+          createElementSource([typeWithField]),
+          [],
+        )
+        changes = [...result.changes]
+      })
+      it('should return a single change with a conflict', () => {
+        expect(changes).toHaveLength(1)
+        const [change] = changes
+        expect(change.serviceChanges).toHaveLength(1)
+        expect(change.pendingChanges).toHaveLength(2)
+      })
+      it('should have the change that syncs the working copy to the service', () => {
+        expect(changes[0].change.action).toEqual('remove')
+      })
+    })
+
+    describe('when there is only a pending change and no service change', () => {
+      beforeEach(async () => {
+        mockAdapters.dummy.fetch.mockResolvedValueOnce({ elements: [typeWithField] })
+        const result = await fetchChanges(
+          mockAdapters,
+          createElementSource([typeWithFieldChange]),
+          createElementSource([typeWithField]),
+          [],
+        )
+        changes = [...result.changes]
+      })
+      it('should not return any change', () => {
+        expect(changes).toHaveLength(0)
       })
     })
 
@@ -865,7 +903,7 @@ describe('fetch', () => {
 
       it('should return the changes with no conflict', () => {
         expect(changes).toHaveLength(2)
-        changes.forEach(c => expect(c.pendingChange).toBeUndefined())
+        changes.forEach(c => expect(c.pendingChanges).toBeUndefined())
       })
 
       it('changes should be equal to the service elements', () => {

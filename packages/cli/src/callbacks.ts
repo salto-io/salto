@@ -116,7 +116,7 @@ export const getApprovedChanges = async (
   const shouldApproveAll = (answers: inquirer.Answers): boolean => (
     _.values(answers).some(answer => answer === 'all')
   )
-  const isConflict = (change: FetchChange): boolean => change.pendingChange !== undefined
+  const isConflict = (change: FetchChange): boolean => !_.isEmpty(change.pendingChanges)
   const shouldAskForApproval = (change: FetchChange): boolean => isConflict(change)
 
   const [askForApproval, autoApproved] = _.partition(changes, shouldAskForApproval)

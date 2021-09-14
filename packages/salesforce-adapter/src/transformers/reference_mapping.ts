@@ -382,6 +382,20 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { parentContext: 'neighborCPQRuleLookup', type: CUSTOM_FIELD },
   },
   {
+    src: { field: 'errorDisplayField', parentTypes: ['ValidationRule'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'picklist', parentTypes: ['RecordTypePicklistValue'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'page', parentTypes: ['WebLink'] },
+    target: { type: 'ApexPage' },
+  },
+  {
     src: { field: CPQ_LOOKUP_PRODUCT_FIELD, parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE] },
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'neighborCPQLookup', type: CUSTOM_FIELD },

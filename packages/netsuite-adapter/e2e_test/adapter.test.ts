@@ -399,8 +399,8 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeInstance = fileToCreate.clone()
           afterInstance = beforeInstance.clone()
 
-          beforeInstance.value.content = Buffer.from('before content')
-          afterInstance.value.content = Buffer.from('after content')
+          beforeInstance.value.content.content = Buffer.from('before content')
+          afterInstance.value.content.content = Buffer.from('after content')
         })
 
         describe('with warnOnStaleWorkspaceData=true flag', () => {

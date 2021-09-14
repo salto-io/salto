@@ -51,6 +51,12 @@ const createObjectTypeFromNestedAdditions = (
   path?: string[]
 ): ObjectType =>
   new ObjectType(nestedValues.reduce((prev, nestedValue) => {
+    // eslint-disable-next-line no-console
+    console.log(nestedValues.map(x => x.id.getFullName()))
+    // eslint-disable-next-line no-console
+    console.log(Object.keys(commonObjectType.elemID.getFullName()))
+    // eslint-disable-next-line no-console
+    console.log(Object.keys(commonObjectType.fields))
     switch (nestedValue.id.idType) {
       case 'field': {
         const fieldName = nestedValue.id.createTopLevelParentID().path[0]

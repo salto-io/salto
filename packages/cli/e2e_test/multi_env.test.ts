@@ -13,6 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+/* eslint-disable no-console */
+
 import { SalesforceClient, testHelpers as salesforceTestHelpers, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
 import path from 'path'
 import { Plan } from '@salto-io/core'
@@ -602,11 +604,12 @@ describe('multi env tests', () => {
       let env1DeployPlan: Plan | undefined
       let env2DeployPlan: Plan | undefined
       beforeAll(async () => {
-        await rm(commonNaclFileName())
-        await rm(env1NaclFileName())
-        await rm(env2NaclFileName())
-        await rm(env2ObjFilePath())
-        await rm(env2InstFilePath())
+        console.log('START')
+        console.log(await rm(commonNaclFileName()))
+        console.log(await rm(env1NaclFileName()))
+        console.log(await rm(env2NaclFileName()))
+        console.log(await rm(env2ObjFilePath()))
+        console.log(await rm(env2InstFilePath()))
         await runSetEnv(baseDir, ENV1_NAME)
         env1DeployPlan = await runPreviewGetPlan(baseDir)
         await runSetEnv(baseDir, ENV2_NAME)

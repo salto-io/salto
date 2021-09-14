@@ -154,9 +154,10 @@ export const runCreateEnv = async (
 }
 
 export const runSetEnv = async (workspacePath: string, envName: string): Promise<void> => {
-  await runCommand({
+  // eslint-disable-next-line no-console
+  console.log(await runCommand({
     workspacePath, args: ['env', 'set', envName],
-  })
+  }))
 }
 
 export const runDeleteEnv = async (workspacePath: string, envName: string): Promise<void> => {

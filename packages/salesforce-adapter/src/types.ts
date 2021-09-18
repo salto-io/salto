@@ -238,6 +238,10 @@ export const oauthRequestParameters = new ObjectType({
       refType: BuiltinTypes.STRING,
       annotations: { message: 'Consumer key for a connected app, whose redirect URI is http://localhost:port' },
     },
+    consumerSecret: {
+      refType: BuiltinTypes.STRING,
+      annotations: { message: 'Consumer secret for a connected app, whose redirect URI is http://localhost:port' },
+    },
     port: {
       refType: BuiltinTypes.NUMBER,
       annotations: { message: 'Port provided in the redirect URI' },
@@ -268,19 +272,28 @@ export class UsernamePasswordCredentials {
 }
 
 export class OauthAccessTokenCredentials {
-  constructor({ instanceUrl, accessToken, isSandbox }: {
+  constructor({ instanceUrl, accessToken, refreshToken, isSandbox, clientId, clientSecret }: {
     instanceUrl: string
     accessToken: string
+    refreshToken: string
+    clientId: string
+    clientSecret: string
     isSandbox: boolean
   }) {
     this.instanceUrl = instanceUrl
     this.accessToken = accessToken
+    this.refreshToken = refreshToken
     this.isSandbox = isSandbox
+    this.clientId = clientId
+    this.clientSecret = clientSecret
   }
 
   instanceUrl: string
   accessToken: string
+  refreshToken: string
   isSandbox: boolean
+  clientId: string
+  clientSecret: string
 }
 
 export type Credentials = UsernamePasswordCredentials | OauthAccessTokenCredentials

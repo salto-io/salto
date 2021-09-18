@@ -50,7 +50,7 @@ const getOauthConfig = async (
   const oauthParameters = oauthMethod.createOAuthRequest(newConfig)
   const credentials = oauthMethod.createFromOauthResponse(newConfig.value,
     await processOauthCredentials(newConfig.value.port,
-      oauthParameters.accessTokenField, oauthParameters.url, output))
+      oauthParameters.oauthRequiredFields, oauthParameters.url, output))
   return new InstanceElement(ElemID.CONFIG_NAME, oauthMethod.credentialsType, credentials)
 }
 

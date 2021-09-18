@@ -37,9 +37,12 @@ const log = logger(module)
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
   if (isAccessTokenConfig(config)) {
     return new OauthAccessTokenCredentials({
+      refreshToken: config.value.refreshToken,
       instanceUrl: config.value.instanceUrl,
       accessToken: config.value.accessToken,
       isSandbox: config.value.isSandbox,
+      clientId: config.value.clientId,
+      clientSecret: config.value.clientSecret,
     })
   }
   return new UsernamePasswordCredentials({
@@ -84,14 +87,15 @@ SalesforceConfig => {
   return adapterConfig
 }
 
-const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => {
-  const endpoint = userInput.value.isSandbox ? 'test' : 'login'
-  const url = `https://${endpoint}.salesforce.com/services/oauth2/authorize?response_type=token&client_id=${userInput.value.consumerKey}&redirect_uri=http://localhost:${userInput.value.port}`
-  return {
-    url,
-    accessTokenField: 'access_token',
-  }
+export const createUrlFromUserInput = (value: Values): string => {
+  const endpoint = value.isSandbox ? 'test' : 'login'
+  return `https://${endpoint}.salesforce.com/services/oauth2/authorize?response_type=token&client_id=${value.consumerKey}&scope=refresh_token%20full&redirect_uri=http://localhost:${value.port}`
 }
+
+const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => ({
+  url: createUrlFromUserInput(userInput.value),
+  oauthRequiredFields: ['refresh_token', 'instance_url', 'access_token'],
+})
 
 export const getConfigChange = (
   configFromFetch?: ConfigChange,
@@ -149,8 +153,11 @@ export const adapter: Adapter = {
       oauthRequestParameters,
       createFromOauthResponse: (oldConfig: Values, response: OauthAccessTokenResponse) => ({
         isSandbox: oldConfig.isSandbox,
-        accessToken: response.accessToken,
-        instanceUrl: response.instanceUrl,
+        clientId: oldConfig.consumerKey,
+        clientSecret: oldConfig.consumerSecret,
+        accessToken: response.fields.accessToken,
+        instanceUrl: response.fields.instanceUrl,
+        refreshToken: response.fields.refreshToken,
       }),
     },
   },

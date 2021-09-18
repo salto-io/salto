@@ -76,8 +76,11 @@ export const getSalesforceCredsInstance = (creds: UsernamePasswordCredentials): 
 export const getSalesforceOAuthCreds = (creds: OauthAccessTokenCredentials): InstanceElement => {
   const configValues = {
     accessToken: creds.accessToken,
+    refreshToken: creds.refreshToken,
     instanceUrl: creds.instanceUrl,
     isSandbox: creds.isSandbox,
+    clientId: creds.clientId,
+    clientSecret: creds.clientSecret,
     authType: 'oauth',
   }
 

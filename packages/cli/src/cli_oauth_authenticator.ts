@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import open from 'open'
 import http from 'http'
 import express, { Request, Response } from 'express'
@@ -21,7 +22,7 @@ import { CliOutput } from './types'
 import { outputLine } from './outputer'
 import { formatGoToBrowser } from './formatter'
 
-export const createServer = (port: number, accessTokenField: string,
+export const createServer = (port: number, requiredOauthFields: string[],
   resolve: (value: OauthAccessTokenResponse | PromiseLike<OauthAccessTokenResponse>) => void,
   reject: (reason?: Error) => void): http.Server => {
   let server: http.Server
@@ -31,11 +32,11 @@ export const createServer = (port: number, accessTokenField: string,
   })
   app.get('/extract', (req: Request, res: Response) => {
     res.send(`<script>window.location.replace("http://localhost:${port}/done")</script>`)
-    const accessToken = req.query[accessTokenField]
-    if (typeof req.query.instance_url === 'string' && typeof accessToken === 'string') {
+    if (_.every(requiredOauthFields, field => typeof req.query[field] === 'string')) {
+      const fields = Object.fromEntries(requiredOauthFields.map(field => [_.camelCase(field),
+        req.query[field] as string]))
       resolve({
-        instanceUrl: req.query.instance_url,
-        accessToken,
+        fields,
       })
     } else {
       reject(new Error('Unexpected oauth response structure'))
@@ -51,17 +52,17 @@ export const createServer = (port: number, accessTokenField: string,
   return server
 }
 
-const createLocalOauthServer = async (port: number, accessTokenField: string):
+const createLocalOauthServer = async (port: number, requiredOauthFields: string[]):
   Promise<OauthAccessTokenResponse> => new Promise<OauthAccessTokenResponse>((resolve,
-    reject) => createServer(port, accessTokenField, resolve, reject))
+    reject) => createServer(port, requiredOauthFields, resolve, reject))
 
 export const processOauthCredentials = async (
   port: number,
-  accessTokenField: string,
+  requiredOauthFields: string[],
   url: string,
   output: CliOutput,
 ): Promise<OauthAccessTokenResponse> => {
-  const accessTokenPromise = createLocalOauthServer(port, accessTokenField)
+  const accessTokenPromise = createLocalOauthServer(port, requiredOauthFields)
   outputLine(formatGoToBrowser(url), output)
   await open(url)
   return accessTokenPromise

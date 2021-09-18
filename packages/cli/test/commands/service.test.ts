@@ -27,8 +27,10 @@ import { CliExitCode } from '../../src/types'
 
 jest.mock('../../src/cli_oauth_authenticator', () => ({
   processOauthCredentials: jest.fn().mockResolvedValue({
-    instanceUrl: 'someInstanceUrl',
-    accessToken: 'accessToken',
+    fields: {
+      instanceUrl: 'someInstanceUrl',
+      accessToken: 'accessToken',
+    },
   }),
 }))
 jest.mock('@salto-io/core', () => ({
@@ -42,7 +44,8 @@ jest.mock('@salto-io/core', () => ({
       newAdapter: mocks.mockCredentialsType('newAdapter'),
       hubspot: mocks.mockCredentialsType('hubspot'),
       '': mocks.mockCredentialsType(''),
-      oauthAdapter: mocks.mockOauthCredentialsType('oauthAdapter', { url: '', accessTokenField: '' }),
+      oauthAdapter: mocks.mockOauthCredentialsType('oauthAdapter', { url: '',
+        oauthRequiredFields: [''] }),
     }
   }),
   addAdapter: jest.fn().mockImplementation((
@@ -69,7 +72,8 @@ jest.mock('@salto-io/core', () => ({
       } else if (serviceName === 'oauthAdapter') {
         loginStatuses[serviceName] = {
           isLoggedIn: true,
-          configTypeOptions: mocks.mockOauthCredentialsType(serviceName, { url: '', accessTokenField: '' }),
+          configTypeOptions: mocks.mockOauthCredentialsType(serviceName, { url: '',
+            oauthRequiredFields: [''] }),
         }
       } else {
         loginStatuses[serviceName] = {

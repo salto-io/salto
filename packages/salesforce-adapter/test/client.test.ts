@@ -446,6 +446,9 @@ describe('salesforce client', () => {
       isSandbox: false,
       instanceUrl: 'testInstanceUrl',
       accessToken: 'testAccessToken',
+      refreshToken: 'testRefreshToken',
+      clientSecret: 'secret',
+      clientId: 'clientId',
     })
     it('should return empty orgId for oauth credentials', async () => {
       const { orgId, remainingDailyRequests } = await getConnectionDetails(oauthCredentials,

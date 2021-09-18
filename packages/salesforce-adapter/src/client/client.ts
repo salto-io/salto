@@ -147,15 +147,24 @@ export const createRequestModuleFunction = (retryOptions: RequestRetryOptions) =
 const oauthConnection = (
   instanceUrl: string,
   accessToken: string,
+  refreshToken: string,
   retryOptions: RequestRetryOptions,
-): Connection => (
+  clientId: string,
+  clientSecret: string,
+  isSandbox: boolean,
+): Connection =>
   new RealConnection({
+    oauth2: {
+      clientId,
+      clientSecret,
+      loginUrl: isSandbox ? 'https://test.salesforce.com' : 'https://login.salesforce.com/',
+    },
     version: API_VERSION,
     instanceUrl,
     accessToken,
+    refreshToken,
     requestModule: createRequestModuleFunction(retryOptions),
   })
-)
 
 const realConnection = (
   isSandbox: boolean,
@@ -244,7 +253,8 @@ const createConnectionFromCredentials = (
   options: RequestRetryOptions,
 ): Connection => {
   if (creds instanceof OauthAccessTokenCredentials) {
-    return oauthConnection(creds.instanceUrl, creds.accessToken, options)
+    return oauthConnection(creds.instanceUrl, creds.accessToken, creds.refreshToken, options,
+      creds.clientId, creds.clientSecret, creds.isSandbox)
   }
   return realConnection(creds.isSandbox, options)
 }

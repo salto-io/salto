@@ -35,6 +35,11 @@ const mockClient = (): { connection: MockInterface<Connection>; client: Salesfor
         read: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
         list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
       },
+      dataRetry: {
+        maxAttempts: 3,
+        retryDelay: 1000,
+        retryableFailures: ['err1', 'err2'],
+      },
     },
   })
 

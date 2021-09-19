@@ -23,6 +23,7 @@ import { SALESFORCE } from './constants'
 
 export const CLIENT_CONFIG = 'client'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
+export const CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS = 'customObjectsDeployRetryOptions'
 export const USE_OLD_PROFILES = 'useOldProfiles'
 export const FETCH_CONFIG = 'fetch'
 export const METADATA_CONFIG = 'metadata'
@@ -168,11 +169,18 @@ export type ClientRetryConfig = Partial<{
   retryStrategy: RetryStrategy
 }>
 
+export type CustomObjectsDeployRetryConfig = {
+  maxAttempts: number
+  retryDelay: number
+  retryableFailures: string[]
+}
+
 export type SalesforceClientConfig = Partial<{
   polling: ClientPollingConfig
   deploy: ClientDeployConfig
   maxConcurrentApiRequests: ClientRateLimitConfig
   retry: ClientRetryConfig
+  dataRetry: CustomObjectsDeployRetryConfig
 }>
 
 export type SalesforceConfig = {

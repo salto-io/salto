@@ -289,6 +289,14 @@ export const DEFAULT_MAX_CONCURRENT_API_REQUESTS = {
 export const DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST = 2500
 export const DEFAULT_USE_OLD_PROFILES = false
 export const MAX_QUERY_LENGTH = 2000
+export const DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRTY_OPTIONS = {
+  maxAttempts: 3,
+  retryDelay: 1000,
+  retryableFailures: [
+    'FIELD_CUSTOM_VALIDATION_EXCEPTION',
+    'UNABLE_TO_LOCK_ROW',
+  ],
+}
 
 // Metadata types
 export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'

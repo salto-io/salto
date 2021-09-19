@@ -383,7 +383,9 @@ export default class SalesforceAdapter implements AdapterOperations {
 
     const result = await isCustomObjectInstanceChanges(resolvedChanges)
       ? await deployCustomObjectInstancesGroup(
-        resolvedChanges as Change<InstanceElement>[], this.client, this.fetchProfile.dataManagement,
+        resolvedChanges as Change<InstanceElement>[],
+        this.client,
+        this.fetchProfile.dataManagement
       )
       : await deployMetadata(resolvedChanges, this.client,
         this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate)

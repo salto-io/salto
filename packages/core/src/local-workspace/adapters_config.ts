@@ -157,5 +157,6 @@ export const adaptersConfigSource = async (
       }
       await naclSource.flush()
     },
+    source: naclSource,
   }
 }

@@ -420,17 +420,8 @@ export const loadWorkspace = async (
 
       const workspaceChangedElements = Object.fromEntries(
         await awu(workspaceChanges[envName]?.changes ?? [])
-          .map(async change => {
-            const workspaceElement = getChangeElement(change)
-            const hiddenOnlyElement = isRemovalChange(change)
-              ? undefined
-              : await getElementHiddenParts(
-                await state(envName).get(workspaceElement.elemID) ?? workspaceElement,
-                state(envName),
-                workspaceElement
-              )
-            return [workspaceElement.elemID.getFullName(), hiddenOnlyElement]
-          })
+          .filter(isRemovalChange)
+          .map(async change => [getChangeElement(change).elemID.getFullName(), undefined])
           .toArray()
       )
       const changeResult = await stateToBuild.mergeManager.mergeComponents({

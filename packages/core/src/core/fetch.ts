@@ -394,7 +394,7 @@ const fetchAndProcessMergeErrors = async (
     const fetchErrors = fetchResults.flatMap(res => res.errors)
     const updatedConfig = fetchResults
       .map(res => res.updatedConfig)
-      .filter(c => !_.isUndefined(c)) as UpdatedConfig[]
+      .filter(values.isDefined) as UpdatedConfig[]
 
     const partiallyFetchedAdapters = new Set(
       fetchResults
@@ -599,12 +599,13 @@ export const fetchChanges = async (
   }
 
   const configsMerge = await mergeElements(awu(updatedConfig.flatMap(c => c.config)))
+
+  const [error] = await awu(await configsMerge.errors.entries()).toArray()
+  if (error !== undefined) {
+    throw new Error(`Received configuration merge error: ${error.key}: ${error.value.map(err => err.message).join(', ')}`)
+  }
+
   const configs = await awu(configsMerge.merged.values()).toArray()
-
-  await awu(await configsMerge.errors.entries()).forEach(error => {
-    throw new Error(`Got merge errors for config element ${error.key}: ${error.value.map(err => err.message).join(', ')}`)
-  })
-
   const updatedConfigNames = new Set(configs.map(c => c.elemID.getFullName()))
   const configChanges = await getPlan({
     before: elementSource.createInMemoryElementSource(

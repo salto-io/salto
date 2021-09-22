@@ -21,5 +21,5 @@ export type AdaptersConfigSource = {
     adapter: string,
     config: Readonly<InstanceElement> | Readonly<InstanceElement>[]
   ): Promise<void>
-  getNaclPaths(adapter: string): Promise<string[]>
+  getElementNaclFiles(adapter: string): Promise<string[]>
 }

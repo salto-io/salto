@@ -228,7 +228,7 @@ Promise<Workspace> => {
   const mockAdaptersConf = {
     getAdapter: jest.fn(),
     setAdapter: jest.fn(),
-    getNaclPaths: jest.fn(),
+    getElementNaclFiles: jest.fn(),
   }
   const mockCredentialsSource = {
     get: jest.fn(),

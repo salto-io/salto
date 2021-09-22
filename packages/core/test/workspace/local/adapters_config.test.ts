@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ObjectType, ElemID, DetailedChange } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, ElemID, DetailedChange, getChangeElement } from '@salto-io/adapter-api'
+import { MockInterface } from '@salto-io/test-utils'
 import { adaptersConfigSource as acs, nacl, remoteMap } from '@salto-io/workspace'
-import { mockFunction } from '@salto-io/test-utils'
 import { adaptersConfigSource } from '../../../src/local-workspace/adapters_config'
+import { createMockNaclFileSource } from '../../common/nacl_file_source'
 
 jest.mock('@salto-io/workspace', () => {
   const actual = jest.requireActual('@salto-io/workspace')
@@ -36,27 +37,13 @@ jest.mock('../../../src/local-workspace/dir_store')
 describe('adapters local config', () => {
   const SALESFORCE = 'adapters/salesforce'
 
-  const loadMock = mockFunction<nacl.NaclFilesSource['load']>()
-  const getMock = mockFunction<nacl.NaclFilesSource['get']>()
-  const removeNaclFilesMock = mockFunction<nacl.NaclFilesSource['removeNaclFiles']>()
-  const updateNaclFilesMock = mockFunction<nacl.NaclFilesSource['updateNaclFiles']>()
-  const flushMock = mockFunction<nacl.NaclFilesSource['flush']>()
-  const getElementNaclFilesMock = mockFunction<nacl.NaclFilesSource['getElementNaclFiles']>()
-  const getErrorsMock = mockFunction<nacl.NaclFilesSource['getErrors']>();
-  (nacl.naclFilesSource as jest.Mock).mockResolvedValue({
-    load: loadMock,
-    get: getMock,
-    removeNaclFiles: removeNaclFilesMock,
-    updateNaclFiles: updateNaclFilesMock,
-    flush: flushMock,
-    getElementNaclFiles: getElementNaclFilesMock,
-    getErrors: getErrorsMock,
-  })
-
+  let mockNaclFilesSource: MockInterface<nacl.NaclFilesSource>
   let configSource: acs.AdaptersConfigSource
   beforeEach(async () => {
-    jest.clearAllMocks()
-    getMock.mockResolvedValue(new InstanceElement(
+    mockNaclFilesSource = createMockNaclFileSource();
+    (nacl.naclFilesSource as jest.Mock).mockResolvedValue(mockNaclFilesSource)
+
+    mockNaclFilesSource.get.mockResolvedValue(new InstanceElement(
       ElemID.CONFIG_NAME,
       new ObjectType({ elemID: new ElemID(SALESFORCE, ElemID.CONFIG_NAME) }),
       {
@@ -79,8 +66,8 @@ describe('adapters local config', () => {
         },
       }
     ))
-    getElementNaclFilesMock.mockResolvedValue([])
-    getErrorsMock.mockResolvedValue({
+    mockNaclFilesSource.getElementNaclFiles.mockResolvedValue([])
+    mockNaclFilesSource.getErrors.mockResolvedValue({
       hasErrors: () => false,
       all: () => [],
       strings: () => [],
@@ -102,45 +89,58 @@ describe('adapters local config', () => {
 
   it('should look for adapter in nacl files source', async () => {
     await configSource.getAdapter('salesforce')
-    expect(getMock).toHaveBeenCalled()
+    expect(mockNaclFilesSource.get).toHaveBeenCalled()
   })
 
   it('should return undefined when there is not configuration', async () => {
-    getMock.mockResolvedValue(undefined)
+    mockNaclFilesSource.get.mockResolvedValue(undefined)
     expect(await configSource.getAdapter('salesforce')).toBeUndefined()
   })
   it('should set adapter in nacl files source with the default path', async () => {
     await configSource.setAdapter('salesforce', new InstanceElement(
-      'adapter/salesforce',
+      ElemID.CONFIG_NAME,
       new ObjectType({
-        elemID: new ElemID('salesforce'),
+        elemID: new ElemID('salesforce', ElemID.CONFIG_NAME),
       })
     ))
-    expect(updateNaclFilesMock).toHaveBeenCalledWith([expect.objectContaining({ path: ['salesforce'] })])
-    expect(flushMock).toHaveBeenCalled()
+    expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalledWith([expect.objectContaining({ path: ['salesforce'] })])
+    expect(mockNaclFilesSource.flush).toHaveBeenCalled()
   })
 
   it('should set adapter in nacl files source with the config path', async () => {
     await configSource.setAdapter('salesforce', new InstanceElement(
-      'adapter/salesforce',
+      ElemID.CONFIG_NAME,
       new ObjectType({
-        elemID: new ElemID('salesforce'),
+        elemID: new ElemID('salesforce', ElemID.CONFIG_NAME),
       }),
       {},
       ['dir', 'file']
     ))
-    expect(updateNaclFilesMock).toHaveBeenCalledWith([expect.objectContaining({ path: ['dir', 'file'] })])
-    expect(flushMock).toHaveBeenCalled()
+    expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalledWith([expect.objectContaining({ path: ['dir', 'file'] })])
+    expect(mockNaclFilesSource.flush).toHaveBeenCalled()
   })
 
-  it('getNaclPaths should return the configuration files', async () => {
-    getElementNaclFilesMock.mockResolvedValue(['a/b', 'c'])
-    const paths = await configSource.getNaclPaths('salesforce')
+  it('should remove undefined values when setting the configuration', async () => {
+    await configSource.setAdapter('salesforce', new InstanceElement(
+      ElemID.CONFIG_NAME,
+      new ObjectType({
+        elemID: new ElemID('salesforce', ElemID.CONFIG_NAME),
+      }),
+      { value: { inner1: undefined, inner2: 2 } }
+    ))
+    const receivedChange = mockNaclFilesSource.updateNaclFiles.mock.calls[1][0][0]
+    expect(getChangeElement(receivedChange).value).toEqual({ value: { inner2: 2 } })
+    expect(mockNaclFilesSource.flush).toHaveBeenCalled()
+  })
+
+  it('getElementNaclFiles should return the configuration files', async () => {
+    mockNaclFilesSource.getElementNaclFiles.mockResolvedValue(['a/b', 'c'])
+    const paths = await configSource.getElementNaclFiles('salesforce')
     expect(paths).toEqual(['salto.config/adapters/a/b', 'salto.config/adapters/c'])
   })
 
   it('should throw an error when there were errors loading the configuration', async () => {
-    getErrorsMock.mockResolvedValue({
+    mockNaclFilesSource.getErrors.mockResolvedValue({
       hasErrors: () => true,
       strings: () => ['someError'],
       all: () => [],
@@ -160,24 +160,24 @@ describe('adapters local config', () => {
       const conf = await configSource.getAdapter(SALESFORCE) as InstanceElement
       conf.value.overridden = 3
       await expect(configSource.setAdapter(SALESFORCE, conf)).rejects.toThrow()
-      expect(updateNaclFilesMock).not.toHaveBeenCalled()
-      expect(flushMock).not.toHaveBeenCalled()
+      expect(mockNaclFilesSource.updateNaclFiles).not.toHaveBeenCalled()
+      expect(mockNaclFilesSource.flush).not.toHaveBeenCalled()
     })
 
     it('update a none overridden field should not throw an exception', async () => {
       const conf = await configSource.getAdapter(SALESFORCE) as InstanceElement
       conf.value.other = 3
       await configSource.setAdapter(SALESFORCE, conf)
-      expect(updateNaclFilesMock).toHaveBeenCalled()
-      expect(flushMock).toHaveBeenCalled()
+      expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalled()
+      expect(mockNaclFilesSource.flush).toHaveBeenCalled()
     })
 
     it('should call updateNaclFiles twice when there is no configuration', async () => {
       const conf = await configSource.getAdapter(SALESFORCE) as InstanceElement
-      getMock.mockResolvedValue(undefined)
+      mockNaclFilesSource.get.mockResolvedValue(undefined)
       await configSource.setAdapter(SALESFORCE, conf)
-      expect(updateNaclFilesMock).toHaveBeenCalledTimes(2)
-      expect(flushMock).toHaveBeenCalled()
+      expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalledTimes(2)
+      expect(mockNaclFilesSource.flush).toHaveBeenCalled()
     })
   })
 })

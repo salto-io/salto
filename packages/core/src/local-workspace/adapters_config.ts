@@ -20,12 +20,22 @@ import { workspaceConfigSource as wcs,
   nacl, staticFiles, merger, adaptersConfigSource as acs, remoteMap } from '@salto-io/workspace'
 import { DetailedChange, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { applyDetailedChanges, detailedCompare } from '@salto-io/adapter-utils'
+import { applyDetailedChanges, detailedCompare, transformValues } from '@salto-io/adapter-utils'
 import { localDirectoryStore } from './dir_store'
 import { buildLocalStaticFilesCache } from './static_files_cache'
 
 export type WorkspaceConfigSource = wcs.WorkspaceConfigSource & {
   localStorage: string
+}
+
+const removeUndefined = async (instance: InstanceElement): Promise<InstanceElement> => {
+  instance.value = await transformValues({
+    values: instance.value,
+    type: await instance.getType(),
+    strict: false,
+    transformFunc: ({ value }) => value,
+  }) ?? instance.value
+  return instance
 }
 
 const createNaclSource = async (
@@ -82,8 +92,8 @@ export const adaptersConfigSource = async (
 
   const naclSource = await createNaclSource(baseDir, localStorage, remoteMapCreator, persistent)
 
-  const setUnsafe = async (
-    configs: Readonly<InstanceElement> | Readonly<InstanceElement>[],
+  const overwriteNacl = async (
+    configs: InstanceElement | InstanceElement[],
   ):
   Promise<void> => {
     // This functions first remove the existing configuration and then add the new configuration
@@ -98,12 +108,13 @@ export const adaptersConfigSource = async (
       })))
     // If flush is not called here the removal seems to be ignored
     await naclSource.flush()
+
+    const configsToUpdate = await Promise.all(configsArr.map(conf => removeUndefined(conf.clone())))
     await naclSource.updateNaclFiles(
-      configsArr.map(conf => ({
+      configsToUpdate.map(conf => ({
         id: conf.elemID, action: 'add', data: { after: conf }, path: conf.path ?? [conf.elemID.adapter],
       }))
     )
-    await naclSource.flush()
   }
 
   const getConfigWithoutOverrides = (adapter: string): Promise<InstanceElement | undefined> => naclSource.get(new ElemID(adapter, ElemID.CONFIG_NAME, 'instance'))
@@ -133,23 +144,23 @@ export const adaptersConfigSource = async (
     },
 
     setAdapter: async (adapter, configs) => {
+      const configsToUpdate = collections.array.makeArray(configs).map(e => e.clone())
       const currConfWithoutOverrides = await getConfigWithoutOverrides(adapter)
       // Could happen at the initialization of a service.
       if (currConfWithoutOverrides === undefined) {
-        await setUnsafe(configs)
+        await overwriteNacl(configsToUpdate)
+        await naclSource.flush()
         return
       }
       const currConf = currConfWithoutOverrides.clone()
       applyConfigOverrides(currConf)
 
-      const mergedConfig = await merger.mergeSingleElement(
-        collections.array.makeArray(configs).map(e => e.clone())
-      )
+      const mergedConfig = await merger.mergeSingleElement(configsToUpdate)
       const configChanges = await detailedCompare(currConf, mergedConfig)
 
       validateConfigChanges(configChanges)
 
-      await setUnsafe(configs)
+      await overwriteNacl(configsToUpdate)
       const overridesForInstance = configOverridesById[adapter]
       if (overridesForInstance !== undefined) {
         // configs includes the configuration overrides which we wouldn't want
@@ -159,7 +170,7 @@ export const adaptersConfigSource = async (
       }
       await naclSource.flush()
     },
-    getNaclPaths: async adapter => (await naclSource.getElementNaclFiles(
+    getElementNaclFiles: async adapter => (await naclSource.getElementNaclFiles(
       new ElemID(adapter, ElemID.CONFIG_NAME, 'instance', ElemID.CONFIG_NAME)
     )).map(filePath => path.join('salto.config', 'adapters', filePath)),
   }

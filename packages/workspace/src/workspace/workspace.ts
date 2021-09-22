@@ -694,7 +694,7 @@ export const loadWorkspace = async (
       pickServices(names).map(async service => [service, await credentials.get(credsPath(service))])
     )),
     serviceConfig: (name, defaultValue) => adaptersConfig.getAdapter(name, defaultValue),
-    serviceConfigPaths: adaptersConfig.getNaclPaths,
+    serviceConfigPaths: adaptersConfig.getElementNaclFiles,
     isEmpty: async (naclFilesOnly = false): Promise<boolean> => {
       const isNaclFilesSourceEmpty = !naclFilesSource
         || await (await getLoadedNaclFilesSource()).isEmpty()

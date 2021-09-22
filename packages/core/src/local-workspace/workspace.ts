@@ -37,7 +37,6 @@ export const STATES_DIR_NAME = 'states'
 export const CREDENTIALS_CONFIG_PATH = 'credentials'
 export const CACHE_DIR_NAME = 'cache'
 export const STATIC_RESOURCES_FOLDER = 'static-resources'
-const PERSISTENT_MODE = true
 
 export class NotAnEmptyWorkspaceError extends Error {
   constructor(exsitingPathes: string[]) {
@@ -273,11 +272,13 @@ Promise<Workspace> => {
 
   const workspaceConfig = await workspaceConfigSource(baseDir, localStorage)
   const remoteMapCreator = createRemoteMapCreator(path.join(localStorage, CACHE_DIR_NAME))
+  const persistentMode = true
+
   const adaptersConfig = await adaptersConfigSource(
     baseDir,
     localStorage,
     remoteMapCreator,
-    PERSISTENT_MODE
+    persistentMode
   )
   const credentials = credentialsSource(localStorage)
   const elemSources = await loadLocalElementsSources(
@@ -285,7 +286,7 @@ Promise<Workspace> => {
     localStorage,
     [envName],
     remoteMapCreator,
-    PERSISTENT_MODE
+    persistentMode
   )
 
   return initWorkspace(

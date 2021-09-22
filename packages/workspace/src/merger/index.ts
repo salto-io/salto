@@ -101,17 +101,14 @@ export const mergeElements = async (
 export const mergeSingleElement = async <T extends Element>(elementParts: T[]): Promise<T> => {
   const mergeRes = await mergeElements(awu(elementParts))
 
-  if (mergeRes !== undefined) {
-    const [error] = await awu(await mergeRes.errors.entries()).toArray()
-    if (error !== undefined) {
-      throw new Error(`Received merge errors: ${error.key}: ${error.value.map(err => err.message).join(', ')}`)
-    }
+  const [error] = await awu(await mergeRes.errors.entries()).toArray()
+  if (error !== undefined) {
+    throw new Error(`Received merge errors: ${error.key}: ${error.value.map(err => err.message).join(', ')}`)
   }
 
-  const mergedElements = mergeRes
-        && (await awu(mergeRes.merged.values()).toArray())
+  const mergedElements = await awu(mergeRes.merged.values()).toArray()
 
-  if (mergedElements !== undefined && mergedElements.length !== 1) {
+  if (mergedElements.length !== 1) {
     throw new Error(`Received invalid number of merged elements when expected one: ${mergedElements.map(e => e.elemID.getFullName()).join(', ')}`)
   }
 

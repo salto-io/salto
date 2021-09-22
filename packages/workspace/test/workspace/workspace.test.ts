@@ -86,7 +86,7 @@ const mockWorkspaceConfigSource = (conf?: Values,
 const mockAdaptersConfigSource = (): AdaptersConfigSource => ({
   getAdapter: jest.fn(),
   setAdapter: jest.fn(),
-  getNaclPaths: jest.fn(),
+  getElementNaclFiles: jest.fn(),
 })
 
 const mockCredentialsSource = (): ConfigSource => ({

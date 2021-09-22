@@ -14,9 +14,14 @@
 * limitations under the License.
 */
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
+import { client as clientUtils } from '@salto-io/adapter-components'
+import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { adapter } from '../src/adapter_creator'
 import { Credentials } from '../src/auth'
-import { JiraConfig } from '../src/config'
+import { JiraConfig, configType } from '../src/config'
+import JiraClient from '../src/client/client'
+import { pageByOffsetWithoutScopes } from '../src/client/pagination'
 
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement => (
@@ -34,3 +39,39 @@ export const createConfigInstance = (config: JiraConfig): InstanceElement => (
     config,
   )
 )
+
+const mockConnection = (): MockInterface<clientUtils.APIConnection> => ({
+  get: mockFunction<clientUtils.APIConnection['get']>().mockResolvedValue({ status: 200, data: '' }),
+  post: mockFunction<clientUtils.APIConnection['post']>().mockResolvedValue({ status: 200, data: '' }),
+})
+
+type ClientWithMockConnection = {
+  client: JiraClient
+  paginator: clientUtils.Paginator
+  connection: MockInterface<clientUtils.APIConnection>
+}
+export const mockClient = (): ClientWithMockConnection => {
+  const connection = mockConnection()
+  const client = new JiraClient({
+    credentials: {
+      baseUrl: 'https://ori-salto-test.atlassian.net/',
+      user: 'test',
+      token: 'test',
+    },
+    connection: {
+      login: async () => ({
+        accountId: 'test',
+        ...connection,
+      }),
+    },
+  })
+  const paginator = clientUtils.createPaginator(
+    { paginationFunc: pageByOffsetWithoutScopes, client }
+  )
+  return { client, paginator, connection }
+}
+
+export const getDefaultAdapterConfig = async (): Promise<JiraConfig> => {
+  const defaultConfigInstance = await createDefaultInstanceFromType('jira', configType)
+  return defaultConfigInstance.value as JiraConfig
+}

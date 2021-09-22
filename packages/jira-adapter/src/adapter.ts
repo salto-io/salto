@@ -22,6 +22,7 @@ import JiraClient from './client/client'
 import changeValidator from './change_validator'
 import { JiraConfig, getApiDefinitions } from './config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
+import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import { JIRA } from './constants'
 import { pageByOffsetWithoutScopes } from './client/pagination'
 
@@ -30,6 +31,7 @@ const { createPaginator } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
+  referenceBySelfLinkFilter,
 ]
 
 export interface JiraAdapterParams {

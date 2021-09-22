@@ -138,8 +138,8 @@ type KeyByAsyncParams<
 export const keyByAsync = async <
   Key extends KeyType,
   InputType,
-  FilteredType extends InputType,
-  ResultType
+  FilteredType extends InputType = InputType,
+  ResultType = InputType
 >(
   { iter, key, map, filter }: KeyByAsyncParams<Key, InputType, FilteredType, ResultType>
 ): Promise<Index<Key, ResultType>> => {

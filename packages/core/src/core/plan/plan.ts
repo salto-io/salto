@@ -210,12 +210,9 @@ const addDifferentElements = (
     const beforeFields = (isObjectType(beforeElement)) ? beforeElement.fields : {}
     const afterFields = (isObjectType(afterElement)) ? afterElement.fields : {}
     const allFieldNames = [...Object.keys(beforeFields), ...Object.keys(afterFields)]
-    allFieldNames.forEach(
-      fieldName => addNodeIfDifferent(
-        beforeFields[fieldName],
-        afterFields[fieldName]
-      )
-    )
+    await Promise.all(allFieldNames.map(
+      fieldName => addNodeIfDifferent(beforeFields[fieldName], afterFields[fieldName])
+    ))
   }
   const isSpecialId = (id: string): boolean => (BuiltinTypesByFullName[id] !== undefined
     || elementSource.shouldResolveAsContainerType(id))

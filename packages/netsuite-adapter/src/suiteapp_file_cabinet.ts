@@ -268,7 +268,7 @@ Promise<FileResult[]> => {
     ] = _.partition(filesCustomizations, file => file.values.link === undefined)
 
     const fileChunks = chunks.weightedChunks(
-      filesCustomizationWithoutContent.filter(file => file.values.link === undefined),
+      filesCustomizationWithoutContent,
       FILES_CHUNK_SIZE,
       file => file.size
     )

@@ -13,17 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Values, InstanceElement, ObjectType, ElemID, DetailedChange } from '@salto-io/adapter-api'
-import { adaptersConfigSource as acs, dirStore, nacl, remoteMap } from '@salto-io/workspace'
-import { getSaltoHome } from '../../../src/app_config'
-import * as mockDirStore from '../../../src/local-workspace/dir_store'
-import { WORKSPACE_CONFIG_NAME, ENVS_CONFIG_NAME, USER_CONFIG_NAME } from '../../../src/local-workspace/workspace_config_types'
+import { InstanceElement, ObjectType, ElemID, DetailedChange } from '@salto-io/adapter-api'
+import { adaptersConfigSource as acs, nacl, remoteMap } from '@salto-io/workspace'
+import { mockFunction } from '@salto-io/test-utils'
 import { adaptersConfigSource } from '../../../src/local-workspace/adapters_config'
 
 jest.mock('@salto-io/workspace', () => {
   const actual = jest.requireActual('@salto-io/workspace')
   return {
     ...actual,
+    staticFiles: {
+      ...actual.staticFiles,
+      buildStaticFilesSource: jest.fn(),
+    },
     nacl: {
       ...actual.nacl,
       naclFilesSource: jest.fn(),
@@ -33,32 +35,14 @@ jest.mock('@salto-io/workspace', () => {
 jest.mock('../../../src/local-workspace/dir_store')
 describe('adapters local config', () => {
   const SALESFORCE = 'adapters/salesforce'
-  const mockDirStoreInstance = (obj: Values): dirStore.DirectoryStore<string> => ({
-    get: jest.fn().mockImplementation(
-      (name: string) => {
-        if (!Object.keys(obj).includes(name)) return undefined
-        return ({
-          buffer: obj[Object.keys(obj).filter(key => name.startsWith(key))[0]],
-          filename: '',
-        })
-      }
-    ),
-    set: jest.fn(),
-    flush: jest.fn(),
-    list: jest.fn(),
-    delete: jest.fn(),
-    renameFile: jest.fn(),
-    mtimestamp: jest.fn(),
-    getFiles: jest.fn(),
-    clone: jest.fn(),
-  } as unknown as dirStore.DirectoryStore<string>)
 
-  const loadMock = jest.fn()
-  const getMock = jest.fn()
-  const removeNaclFilesMock = jest.fn()
-  const updateNaclFilesMock = jest.fn()
-  const flushMock = jest.fn()
-  const getElementNaclFilesMock = jest.fn();
+  const loadMock = mockFunction<nacl.NaclFilesSource['load']>()
+  const getMock = mockFunction<nacl.NaclFilesSource['get']>()
+  const removeNaclFilesMock = mockFunction<nacl.NaclFilesSource['removeNaclFiles']>()
+  const updateNaclFilesMock = mockFunction<nacl.NaclFilesSource['updateNaclFiles']>()
+  const flushMock = mockFunction<nacl.NaclFilesSource['flush']>()
+  const getElementNaclFilesMock = mockFunction<nacl.NaclFilesSource['getElementNaclFiles']>()
+  const getErrorsMock = mockFunction<nacl.NaclFilesSource['getErrors']>();
   (nacl.naclFilesSource as jest.Mock).mockResolvedValue({
     load: loadMock,
     get: getMock,
@@ -66,38 +50,12 @@ describe('adapters local config', () => {
     updateNaclFiles: updateNaclFilesMock,
     flush: flushMock,
     getElementNaclFiles: getElementNaclFilesMock,
-  } as unknown as nacl.NaclFilesSource)
+    getErrors: getErrorsMock,
+  })
 
-  const repoDirStore = mockDirStoreInstance({
-    [`${WORKSPACE_CONFIG_NAME}.nacl`]: `
-    workspace {
-    uid = "98bb902f-a144-42da-9672-f36e312e8e09"
-    name = "test"
-  }
-  `,
-    [`${ENVS_CONFIG_NAME}.nacl`]: `
-  envs {
-    envs = [
-      {
-        name = "default"
-      },
-      {
-        name = "env2"
-      },
-    ]
-  }`,
-  })
-  const prefDirStore = mockDirStoreInstance({
-    [`${USER_CONFIG_NAME}.nacl`]: `
-  workspaceUser {
-    currentEnv = "default"
-  }
-  `,
-  })
   let configSource: acs.AdaptersConfigSource
   beforeEach(async () => {
     jest.clearAllMocks()
-    const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
     getMock.mockResolvedValue(new InstanceElement(
       ElemID.CONFIG_NAME,
       new ObjectType({ elemID: new ElemID(SALESFORCE, ElemID.CONFIG_NAME) }),
@@ -122,8 +80,14 @@ describe('adapters local config', () => {
       }
     ))
     getElementNaclFilesMock.mockResolvedValue([])
-    mockCreateDirStore.mockImplementation(params =>
-      (params.baseDir.startsWith(getSaltoHome()) ? prefDirStore : repoDirStore))
+    getErrorsMock.mockResolvedValue({
+      hasErrors: () => false,
+      all: () => [],
+      strings: () => [],
+      parse: [],
+      merge: [],
+      validation: [],
+    })
 
     const configOverrides: DetailedChange[] = [
       {
@@ -142,7 +106,7 @@ describe('adapters local config', () => {
   })
 
   it('should return undefined when there is not configuration', async () => {
-    getMock.mockReturnValue(undefined)
+    getMock.mockResolvedValue(undefined)
     expect(await configSource.getAdapter('salesforce')).toBeUndefined()
   })
   it('should set adapter in nacl files source with the default path', async () => {
@@ -169,6 +133,24 @@ describe('adapters local config', () => {
     expect(flushMock).toHaveBeenCalled()
   })
 
+  it('getNaclPaths should return the configuration files', async () => {
+    getElementNaclFilesMock.mockResolvedValue(['a/b', 'c'])
+    const paths = await configSource.getNaclPaths('salesforce')
+    expect(paths).toEqual(['salto.config/adapters/a/b', 'salto.config/adapters/c'])
+  })
+
+  it('should throw an error when there were errors loading the configuration', async () => {
+    getErrorsMock.mockResolvedValue({
+      hasErrors: () => true,
+      strings: () => ['someError'],
+      all: () => [],
+      parse: [],
+      merge: [],
+      validation: [],
+    })
+    await expect(adaptersConfigSource('bla', 'somePath', undefined as unknown as remoteMap.RemoteMapCreator, true, [])).rejects.toThrow()
+  })
+
   describe('configOverrides', () => {
     it('should apply config overrides', async () => {
       expect((await configSource.getAdapter(SALESFORCE))?.value.overridden).toBe(2)
@@ -190,11 +172,11 @@ describe('adapters local config', () => {
       expect(flushMock).toHaveBeenCalled()
     })
 
-    it('should call updateNaclFiles only once when there is no configuration', async () => {
+    it('should call updateNaclFiles twice when there is no configuration', async () => {
       const conf = await configSource.getAdapter(SALESFORCE) as InstanceElement
       getMock.mockResolvedValue(undefined)
       await configSource.setAdapter(SALESFORCE, conf)
-      expect(updateNaclFilesMock).toHaveBeenCalledTimes(1)
+      expect(updateNaclFilesMock).toHaveBeenCalledTimes(2)
       expect(flushMock).toHaveBeenCalled()
     })
   })

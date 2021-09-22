@@ -120,7 +120,7 @@ In Addition, ${configFromFetch.message}`,
 export const adapter: Adapter = {
   operations: context => {
     const updatedConfig = context.config && updateDeprecatedConfiguration(context.config)
-    const config = adapterConfigFromConfig(updatedConfig?.config[0] ?? context.config)
+    const config = adapterConfigFromConfig(updatedConfig?.config ?? context.config)
     const credentials = credentialsFromConfig(context.credentials)
     const salesforceAdapter = new SalesforceAdapter({
       client: new SalesforceClient({ credentials, config: config[CLIENT_CONFIG] }),
@@ -134,7 +134,10 @@ export const adapter: Adapter = {
         const fetchResults = await salesforceAdapter.fetch(opts)
         fetchResults.updatedConfig = getConfigChange(
           fetchResults.updatedConfig,
-          updatedConfig,
+          updatedConfig && {
+            config: [updatedConfig.config],
+            message: updatedConfig.message,
+          },
         )
         return fetchResults
       },

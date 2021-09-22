@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { InstanceElement } from '@salto-io/adapter-api'
-import { NaclFilesSource } from './nacl_files'
 
 export type AdaptersConfigSource = {
   getAdapter(adapter: string, defaultValue?: InstanceElement): Promise<InstanceElement | undefined>
@@ -22,5 +21,5 @@ export type AdaptersConfigSource = {
     adapter: string,
     config: Readonly<InstanceElement> | Readonly<InstanceElement>[]
   ): Promise<void>
-  readonly source: NaclFilesSource
+  getNaclPaths(adapter: string): Promise<string[]>
 }

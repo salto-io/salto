@@ -24,8 +24,6 @@ import { applyDetailedChanges, detailedCompare } from '@salto-io/adapter-utils'
 import { localDirectoryStore } from './dir_store'
 import { buildLocalStaticFilesCache } from './static_files_cache'
 
-const { awu } = collections.asynciterable
-
 export type WorkspaceConfigSource = wcs.WorkspaceConfigSource & {
   localStorage: string
 }
@@ -61,6 +59,10 @@ const createNaclSource = async (
     persistent,
   )
   await source.load({})
+  const errors = await source.getErrors()
+  if (errors.hasErrors()) {
+    throw new Error(`failed to load config file: ${errors.strings()}`)
+  }
   return source
 }
 
@@ -80,19 +82,21 @@ export const adaptersConfigSource = async (
 
   const naclSource = await createNaclSource(baseDir, localStorage, remoteMapCreator, persistent)
 
-  const setUnsafe = async (configs: Readonly<InstanceElement> | Readonly<InstanceElement>[]):
+  const setUnsafe = async (
+    configs: Readonly<InstanceElement> | Readonly<InstanceElement>[],
+  ):
   Promise<void> => {
     // This functions first remove the existing configuration and then add the new configuration
     // instead of creating a "modify" change to the configuration so the config element will
     // be splitted exactly like the new configuration and not like the old one
 
     const configsArr = collections.array.makeArray(configs)
-    await Promise.all(_(configsArr)
-      .map(conf => conf.elemID)
-      .uniqBy(id => id.getFullName())
-      .map(async id => naclSource.removeNaclFiles(...await naclSource.getElementNaclFiles(id)))
-      .value())
-    // If flush is not called here the removal seems to be ignore
+
+    await naclSource.updateNaclFiles(_.uniqBy(configsArr, conf => conf.elemID.getFullName())
+      .map(conf => ({
+        id: conf.elemID, action: 'remove', data: { before: conf },
+      })))
+    // If flush is not called here the removal seems to be ignored
     await naclSource.flush()
     await naclSource.updateNaclFiles(
       configsArr.map(conf => ({
@@ -138,25 +142,25 @@ export const adaptersConfigSource = async (
       const currConf = currConfWithoutOverrides.clone()
       applyConfigOverrides(currConf)
 
-      const [mergeConfig] = await awu(
-        await (
-          await merger.mergeElements(awu(collections.array.makeArray(configs)).map(e => e.clone()))
-        ).merged.values()
-      ).toArray() as [InstanceElement]
-
-      const configChanges = await detailedCompare(currConf, mergeConfig)
+      const mergedConfig = await merger.mergeSingleElement(
+        collections.array.makeArray(configs).map(e => e.clone())
+      )
+      const configChanges = await detailedCompare(currConf, mergedConfig)
 
       validateConfigChanges(configChanges)
 
       await setUnsafe(configs)
       const overridesForInstance = configOverridesById[adapter]
       if (overridesForInstance !== undefined) {
+        // configs includes the configuration overrides which we wouldn't want
+        // to save so here we remove the configuration overrides from the NaCl
         const reversedOverrides = await detailedCompare(currConf, currConfWithoutOverrides)
         await naclSource.updateNaclFiles(reversedOverrides)
-        await applyDetailedChanges(mergeConfig, reversedOverrides)
       }
       await naclSource.flush()
     },
-    source: naclSource,
+    getNaclPaths: async adapter => (await naclSource.getElementNaclFiles(
+      new ElemID(adapter, ElemID.CONFIG_NAME, 'instance', ElemID.CONFIG_NAME)
+    )).map(filePath => path.join('salto.config', 'adapters', filePath)),
   }
 }

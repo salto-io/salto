@@ -206,7 +206,7 @@ describe('fetch command', () => {
             {
               changes: [],
               configChanges: plan,
-              updatedConfigs: { [newConfig.elemID.adapter]: [newConfig] },
+              updatedConfig: { [newConfig.elemID.adapter]: [newConfig] },
               mergeErrors: [],
               success: true,
             }
@@ -558,7 +558,7 @@ describe('fetch command', () => {
                 },
               },
             ],
-            updatedConfigs: {},
+            updatedConfig: {},
             success: true,
           }
         )

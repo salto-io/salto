@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
   Value, isElement, isInstanceElement, toChange, isRemovalChange, getChangeElement,
-  ReadOnlyElementsSource, isAdditionOrModificationChange, ElemID } from '@salto-io/adapter-api'
+  ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { applyDetailedChanges, resolvePath, setPath } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
@@ -694,7 +694,7 @@ export const loadWorkspace = async (
       pickServices(names).map(async service => [service, await credentials.get(credsPath(service))])
     )),
     serviceConfig: (name, defaultValue) => adaptersConfig.getAdapter(name, defaultValue),
-    serviceConfigPaths: name => adaptersConfig.source.getElementNaclFiles(new ElemID(name, ElemID.CONFIG_NAME, 'instance', ElemID.CONFIG_NAME)),
+    serviceConfigPaths: adaptersConfig.getNaclPaths,
     isEmpty: async (naclFilesOnly = false): Promise<boolean> => {
       const isNaclFilesSourceEmpty = !naclFilesSource
         || await (await getLoadedNaclFilesSource()).isEmpty()

@@ -158,7 +158,7 @@ const convertDeprecatedFetchParameters = (
 
 export const updateDeprecatedConfiguration = (configuration: Readonly<InstanceElement> | undefined):
 {
-  config: [InstanceElement]
+  config: InstanceElement
   message: string
 } | undefined => {
   if (configuration === undefined
@@ -176,5 +176,5 @@ export const updateDeprecatedConfiguration = (configuration: Readonly<InstanceEl
       updatedConf.value
     ),
   }
-  return { config: [updatedConf], message: DEPRECATED_OPTIONS_MESSAGE }
+  return { config: updatedConf, message: DEPRECATED_OPTIONS_MESSAGE }
 }

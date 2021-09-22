@@ -240,7 +240,7 @@ export type FetchChangesResult = {
   unmergedElements: Element[]
   mergeErrors: MergeErrorWithElements[]
   configChanges: Plan
-  updatedConfigs: Record<string, InstanceElement[]>
+  updatedConfig: Record<string, InstanceElement[]>
   adapterNameToConfigMessage: Record<string, string>
 }
 
@@ -358,7 +358,7 @@ const fetchAndProcessMergeErrors = async (
     serviceElements: Element[]
     errors: SaltoError[]
     processErrorsResult: ProcessMergeErrorsResult
-    updatedConfigs: UpdatedConfig[]
+    updatedConfig: UpdatedConfig[]
     partiallyFetchedAdapters: Set<string>
   }> => {
   try {
@@ -392,7 +392,7 @@ const fetchAndProcessMergeErrors = async (
 
     const serviceElements = _.flatten(fetchResults.map(res => res.elements))
     const fetchErrors = fetchResults.flatMap(res => res.errors)
-    const updatedConfigs = fetchResults
+    const updatedConfig = fetchResults
       .map(res => res.updatedConfig)
       .filter(c => !_.isUndefined(c)) as UpdatedConfig[]
 
@@ -447,7 +447,7 @@ const fetchAndProcessMergeErrors = async (
       serviceElements: validServiceElements,
       errors: fetchErrors,
       processErrorsResult,
-      updatedConfigs,
+      updatedConfig,
       partiallyFetchedAdapters,
     }
   } catch (error) {
@@ -554,7 +554,7 @@ export const fetchChanges = async (
     progressEmitter.emit('changesWillBeFetched', getChangesEmitter, adapterNames)
   }
   const {
-    serviceElements, errors, processErrorsResult, updatedConfigs, partiallyFetchedAdapters,
+    serviceElements, errors, processErrorsResult, updatedConfig, partiallyFetchedAdapters,
   } = await fetchAndProcessMergeErrors(
     adapters,
     stateElements,
@@ -598,7 +598,7 @@ export const fetchChanges = async (
     calculateDiffEmitter.emit('completed')
   }
 
-  const configsMerge = await mergeElements(awu(updatedConfigs.flatMap(c => c.config)))
+  const configsMerge = await mergeElements(awu(updatedConfig.flatMap(c => c.config)))
   const configs = await awu(configsMerge.merged.values()).toArray()
 
   await awu(await configsMerge.errors.entries()).forEach(error => {
@@ -612,8 +612,9 @@ export const fetchChanges = async (
     ),
     after: elementSource.createInMemoryElementSource(configs),
   })
-  const adapterNameToConfigMessage = _
-    .fromPairs(updatedConfigs.map(c => [c.config[0].elemID.adapter, c.message]))
+
+  const adapterNameToConfig = _.keyBy(updatedConfig, config => config.config[0].elemID.adapter)
+  const adapterNameToConfigMessage = _.mapValues(adapterNameToConfig, config => config.message)
 
   const elements = partiallyFetchedAdapters.size !== 0
     ? _(await awu(await stateElements.getAll()).toArray())
@@ -629,9 +630,7 @@ export const fetchChanges = async (
     unmergedElements: serviceElements,
     mergeErrors: processErrorsResult.errorsWithDroppedElements,
     configChanges,
-    updatedConfigs: Object.fromEntries(
-      updatedConfigs.map(config => [config.config[0].elemID.adapter, config.config])
-    ),
+    updatedConfig: _.mapValues(adapterNameToConfig, config => config.config),
     adapterNameToConfigMessage,
   }
 }

@@ -89,6 +89,10 @@ describe('Config Changes', () => {
         )
       })
 
+      it('should create one config instance', () => {
+        expect(newConfig?.config).toHaveLength(1)
+      })
+
       it('should create an instance with values same as original config besides excludeObjects', () => {
         expect(newConfig).toBeDefined()
         expect(newConfig?.config?.[0].value.fetch.metadata)

@@ -21,7 +21,7 @@ import { adapter } from '@salto-io/salesforce-adapter'
 import _ from 'lodash'
 import {
   initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs,
-  getInitialAdapterConfig,
+  getDefaultAdapterConfig,
 } from '../../../src/core/adapters'
 
 jest.mock('@salto-io/workspace', () => ({
@@ -60,7 +60,7 @@ describe('adapters.ts', () => {
     })
   })
 
-  describe('getInitialAdapterConfig', () => {
+  describe('getDefaultAdapterConfig', () => {
     let realAdapter: Adapter
     beforeEach(() => {
       realAdapter = _.clone(adapter)
@@ -68,14 +68,14 @@ describe('adapters.ts', () => {
     afterEach(() => {
       _.assign(adapter, realAdapter)
     })
-    it('should call createDefaultInstanceFromType when getInitialConfig is undefined', async () => {
-      await getInitialAdapterConfig('salesforce')
+    it('should call createDefaultInstanceFromType when getDefaultConfig is undefined', async () => {
+      await getDefaultAdapterConfig('salesforce')
       expect(utils.createDefaultInstanceFromType).toHaveBeenCalled()
     })
-    it('should use getInitialConfig when defined', async () => {
-      adapter.getInitialConfig = jest.fn()
-      await getInitialAdapterConfig('salesforce')
-      expect(adapter.getInitialConfig).toHaveBeenCalled()
+    it('should use getDefaultConfig when defined', async () => {
+      adapter.getDefaultConfig = jest.fn()
+      await getDefaultAdapterConfig('salesforce')
+      expect(adapter.getDefaultConfig).toHaveBeenCalled()
     })
   })
 

@@ -21,10 +21,7 @@ import {
 import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger } from '@salto-io/workspace'
-import { collections } from '@salto-io/lowerdash'
 import adapterCreators from './creators'
-
-const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -61,23 +58,30 @@ export const initAdapters = (
     }
   )
 
-const getDefaultAdapterConfig = async (
+const getAdapterConfigFromType = async (
   adapterName: string
 ): Promise<InstanceElement | undefined> => {
   const { configType } = adapterCreators[adapterName]
   return configType ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType) : undefined
 }
 
-export const getInitialAdapterConfig = async (
+export const getDefaultAdapterConfig = async (
   adapterName: string
 ): Promise<InstanceElement[] | undefined> => {
-  const { getInitialConfig } = adapterCreators[adapterName]
-  if (getInitialConfig !== undefined) {
-    return getInitialConfig()
+  const { getDefaultConfig } = adapterCreators[adapterName]
+  if (getDefaultConfig !== undefined) {
+    return getDefaultConfig()
   }
 
-  const defaultConf = await getDefaultAdapterConfig(adapterName)
+  const defaultConf = await getAdapterConfigFromType(adapterName)
   return defaultConf && [defaultConf]
+}
+
+const getMergedDefaultAdapterConfig = async (
+  adapter: string
+): Promise<InstanceElement | undefined> => {
+  const defaultConfig = await getDefaultAdapterConfig(adapter)
+  return defaultConfig && merger.mergeSingleElement(defaultConfig)
 }
 
 const filterElementsSourceAdapter = (
@@ -124,28 +128,15 @@ export const getAdaptersCreatorConfigs = async (
   elemIdGetter?: ElemIdGetter,
 ): Promise<Record<string, AdapterOperationsContext>> => (
   Object.fromEntries(await Promise.all(adapters.map(
-    async adapter => {
-      const defaultConfig = await getInitialAdapterConfig(adapter)
-      const mergeRes = defaultConfig && await merger.mergeElements(awu(defaultConfig))
-      const mergedConfig = mergeRes
-        && (await awu(mergeRes.merged.values()).toArray())[0] as InstanceElement
-
-      if (mergeRes !== undefined) {
-        await awu(await mergeRes.errors.entries()).forEach(error => {
-          throw new Error(`Default adapter configuration has merge errors: ${error.key}: ${error.value.map(err => err.message).join(', ')}`)
-        })
-      }
-
-      return [
-        adapter,
-        {
-          credentials: credentials[adapter],
-          config: await getConfig(adapter, mergedConfig),
-          elementsSource: filterElementsSourceAdapter(elementsSource, adapter),
-          getElemIdFunc: elemIdGetter,
-        },
-      ]
-    }
+    async adapter => [
+      adapter,
+      {
+        credentials: credentials[adapter],
+        config: await getConfig(adapter, await getMergedDefaultAdapterConfig(adapter)),
+        elementsSource: filterElementsSourceAdapter(elementsSource, adapter),
+        getElemIdFunc: elemIdGetter,
+      },
+    ]
   )))
 )
 

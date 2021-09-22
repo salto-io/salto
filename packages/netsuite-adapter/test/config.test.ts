@@ -164,6 +164,7 @@ describe('config', () => {
       [DEPLOY_REFERENCED_ELEMENTS]: true,
     }
     const configChange = getConfigFromConfigChanges(false, [], {}, config)
+    expect(configChange?.config).toHaveLength(1)
     expect(configChange?.config[0]
       .isEqual(new InstanceElement(
         ElemID.CONFIG_NAME,

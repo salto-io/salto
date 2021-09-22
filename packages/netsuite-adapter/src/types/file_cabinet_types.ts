@@ -40,6 +40,11 @@ export const file = new ObjectType({
       annotations: {
       },
     },
+    link: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+      },
+    },
     availablewithoutlogin: {
       refType: BuiltinTypes.BOOLEAN,
       annotations: {

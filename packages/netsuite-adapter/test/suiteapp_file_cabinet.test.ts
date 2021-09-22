@@ -48,6 +48,20 @@ describe('suiteapp_file_cabinet', () => {
     isonline: 'T',
     name: 'file2',
     description: 'desc2',
+  },
+  {
+    addtimestamptourl: 'T',
+    bundleable: 'T',
+    filesize: '20',
+    folder: '4',
+    hideinbundle: 'T',
+    id: '6',
+    isinactive: 'T',
+    isonline: 'T',
+    name: 'file6',
+    description: 'desc3',
+    islink: 'T',
+    url: 'someUrl',
   }]
 
   const foldersQueryResponse = [{
@@ -137,6 +151,20 @@ describe('suiteapp_file_cabinet', () => {
         internalId: '2',
       },
     },
+    {
+      path: ['folder5', 'folder4', 'file6'],
+      typeName: 'file',
+      values: {
+        availablewithoutlogin: 'T',
+        isinactive: 'T',
+        bundleable: 'T',
+        description: 'desc3',
+        generateurltimestamp: 'T',
+        hideinbundle: 'T',
+        internalId: '6',
+        link: 'someUrl',
+      },
+    },
   ]
 
   const filesContent: Record<string, Buffer> = {
@@ -216,10 +244,10 @@ describe('suiteapp_file_cabinet', () => {
           filesize: (10 * 1024 * 1024).toString(),
           folder: '4',
           hideinbundle: 'T',
-          id: '6',
+          id: '7',
           isinactive: 'F',
           isonline: 'T',
-          name: 'file6',
+          name: 'file7',
         },
       ]
 
@@ -239,9 +267,9 @@ describe('suiteapp_file_cabinet', () => {
       const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
         .importFileCabinet(query)
       expect(elements).toEqual([
-        ...expectedResults,
+        ...expectedResults.filter(res => !('link' in res.values)),
         {
-          path: ['folder5', 'folder4', 'file6'],
+          path: ['folder5', 'folder4', 'file7'],
           typeName: 'file',
           fileContent: Buffer.from('someContent'),
           values: {
@@ -251,11 +279,12 @@ describe('suiteapp_file_cabinet', () => {
             description: '',
             generateurltimestamp: 'T',
             hideinbundle: 'T',
-            internalId: '6',
+            internalId: '7',
           },
         },
+        ...expectedResults.filter(res => 'link' in res.values),
       ])
-      expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledWith(6)
+      expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledWith(7)
       expect(mockSuiteAppClient.readLargeFile).toHaveBeenCalledTimes(1)
     })
 
@@ -298,7 +327,12 @@ describe('suiteapp_file_cabinet', () => {
       mockQuery.isFileMatch.mockImplementation(path => path !== '/folder5/folder4' && path !== '/folder5/folder3/file1')
       const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
         .importFileCabinet(query)
-      expect(elements).toEqual([expectedResults[0], expectedResults[2], expectedResults[4]])
+      expect(elements).toEqual([
+        expectedResults[0],
+        expectedResults[2],
+        expectedResults[4],
+        expectedResults[5],
+      ])
     })
 
     it('should not run queries of no files are matched', async () => {

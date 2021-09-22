@@ -79,6 +79,8 @@ const FILES_SCHEMA = {
       hideinbundle: { type: 'string', enum: ['T', 'F'] },
       description: { type: 'string' },
       folder: { type: 'string' },
+      islink: { type: 'string', enum: ['T', 'F'] },
+      url: { type: 'string' },
     },
     required: [
       'name',
@@ -103,6 +105,8 @@ type FileResult = {
   addtimestamptourl: 'T' | 'F'
   hideinbundle: 'T' | 'F'
   description?: string
+  islink: 'T' | 'F'
+  url: string
   folder: string
 }
 
@@ -191,7 +195,7 @@ SuiteAppFileCabinetOperations => {
   const queryFiles = async ():
 Promise<FileResult[]> => {
     if (queryFoldersResults === undefined) {
-      const filesResults = await suiteAppClient.runSuiteQL(`SELECT name, id, filesize, bundleable, isinactive, isonline, addtimestamptourl, hideinbundle, description, folder 
+      const filesResults = await suiteAppClient.runSuiteQL(`SELECT name, id, filesize, bundleable, isinactive, isonline, addtimestamptourl, hideinbundle, description, folder, islink, url 
     FROM file ORDER BY id ASC`)
 
       if (filesResults === undefined) {
@@ -241,7 +245,7 @@ Promise<FileResult[]> => {
       },
     })).filter(folder => query.isFileMatch(`/${folder.path.join('/')}`))
 
-    const filesCustomizationInfoWithoutContent = filesResults.map(file => ({
+    const filesCustomizations = filesResults.map(file => ({
       path: [...getFullPath(idToFolder[file.folder], idToFolder), file.name],
       typeName: 'file',
       values: {
@@ -252,13 +256,19 @@ Promise<FileResult[]> => {
         generateurltimestamp: file.addtimestamptourl,
         hideinbundle: file.hideinbundle,
         internalId: file.id,
+        ...file.islink === 'T' ? { link: file.url } : {},
       },
       id: file.id,
       size: parseInt(file.filesize, 10),
     })).filter(file => query.isFileMatch(`/${file.path.join('/')}`))
 
+    const [
+      filesCustomizationWithoutContent,
+      filesCustomizationsLinks,
+    ] = _.partition(filesCustomizations, file => file.values.link === undefined)
+
     const fileChunks = chunks.weightedChunks(
-      filesCustomizationInfoWithoutContent,
+      filesCustomizationWithoutContent.filter(file => file.values.link === undefined),
       FILES_CHUNK_SIZE,
       file => file.size
     )
@@ -292,7 +302,7 @@ Promise<FileResult[]> => {
     )).flat()
 
     const failedPaths: string[][] = []
-    const filesCustomizationInfo = filesCustomizationInfoWithoutContent.map((file, index) => {
+    const filesCustomizationWithContent = filesCustomizationWithoutContent.map((file, index) => {
       if (!(filesContent[index] instanceof Buffer)) {
         log.warn(`Failed reading file /${file.path.join('/')} with id ${file.id}`)
         // SuiteBundles directory might contain hundreds of locked files so
@@ -311,7 +321,15 @@ Promise<FileResult[]> => {
     }).filter(values.isDefined)
 
     return {
-      elements: [...foldersCustomizationInfo, ...filesCustomizationInfo].filter(file => query.isFileMatch(`/${file.path.join('/')}`)),
+      elements: [
+        ...foldersCustomizationInfo,
+        ...filesCustomizationWithContent,
+        ...filesCustomizationsLinks.map(file => ({
+          path: file.path,
+          typeName: 'file',
+          values: file.values,
+        })),
+      ].filter(file => query.isFileMatch(`/${file.path.join('/')}`)),
       failedPaths: failedPaths.map(fileCabinetPath => `/${fileCabinetPath.join('/')}`),
     }
   }
@@ -349,8 +367,10 @@ Promise<FileResult[]> => {
         isInactive: instance.value.isinactive ?? false,
         isOnline: instance.value.availablewithoutlogin ?? false,
         hideInBundle: instance.value.hideinbundle ?? false,
-        content: getContent(instance.value.content),
         description: instance.value.description ?? '',
+        ...instance.value.link === undefined
+          ? { content: getContent(instance.value.content) }
+          : { url: instance.value.link },
       }
       : {
         type: 'folder',

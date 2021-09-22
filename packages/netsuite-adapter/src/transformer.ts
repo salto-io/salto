@@ -106,7 +106,7 @@ export const createInstanceElement = async (customizationInfo: CustomizationInfo
   if (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)) {
     valuesWithTransformedAttrs[PATH] = FILE_CABINET_PATH_SEPARATOR
       + customizationInfo.path.join(FILE_CABINET_PATH_SEPARATOR)
-    if (isFileCustomizationInfo(customizationInfo)) {
+    if (isFileCustomizationInfo(customizationInfo) && customizationInfo.fileContent !== undefined) {
       valuesWithTransformedAttrs[(fileContentField as Field).name] = new StaticFile({
         filepath: `${NETSUITE}/${FILE_CABINET_PATH}/${customizationInfo.path.map(removeDotPrefix).join('/')}`,
         content: customizationInfo.fileContent,
@@ -116,7 +116,8 @@ export const createInstanceElement = async (customizationInfo: CustomizationInfo
 
   const instanceName = getInstanceName(valuesWithTransformedAttrs)
   const instanceFileName = pathNaclCase(instanceName)
-  if (fileContentField && isTemplateCustomTypeInfo(customizationInfo)) {
+  if (fileContentField && isTemplateCustomTypeInfo(customizationInfo)
+    && customizationInfo.fileContent !== undefined) {
     valuesWithTransformedAttrs[fileContentField.name] = new StaticFile({
       filepath: `${NETSUITE}/${type.elemID.name}/${instanceFileName}.${customizationInfo.fileExtension}`,
       content: customizationInfo.fileContent,

@@ -191,9 +191,12 @@ export type FileDetails = {
   isInactive: boolean
   isOnline: boolean
   hideInBundle: boolean
-  content: Buffer
   description: string
-}
+} & ({
+  content: Buffer
+} | {
+  url: string
+})
 
 export type FolderDetails = {
   type: 'folder'

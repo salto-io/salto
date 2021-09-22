@@ -113,7 +113,6 @@ export default class SoapClient {
       },
       'q1:name': path.basename(file.path),
       'q1:attachFrom': '_computer',
-      'q1:content': file.content.toString('base64'),
       'q1:folder': {
         attributes: {
           internalId: file.folder.toString(),
@@ -124,6 +123,9 @@ export default class SoapClient {
       'q1:isInactive': file.isInactive,
       'q1:isOnline': file.isOnline,
       'q1:hideInBundle': file.hideInBundle,
+      ...'content' in file
+        ? { 'q1:content': file.content.toString('base64') }
+        : { 'q1:url': file.url },
     }
   }
 

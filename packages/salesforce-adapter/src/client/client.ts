@@ -528,12 +528,21 @@ export default class SalesforceClient {
       !_.isUndefined(results.nextRecordsUrl)
 
     let results = await this.query(queryString, useToolingApi)
+    if (results.records === undefined) {
+      log.warn('could not find records in queryAll response for query(\'%s\', %s), response: %o', queryString, useToolingApi, results)
+      return
+    }
     yield results.records as SalesforceRecord[]
 
     let hasMore = hadMore(results)
     while (hasMore) {
+      const nextRecordsUrl = results.nextRecordsUrl as string
       // eslint-disable-next-line no-await-in-loop
-      results = await this.queryMore(results.nextRecordsUrl as string, useToolingApi)
+      results = await this.queryMore(nextRecordsUrl, useToolingApi)
+      if (results.records === undefined) {
+        log.warn('could not find records in queryAll response for queryMore(\'%s\', %s), response: %o', queryString, useToolingApi, results)
+        break
+      }
       yield results.records as SalesforceRecord[]
       hasMore = hadMore(results)
     }

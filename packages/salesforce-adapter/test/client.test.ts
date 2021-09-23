@@ -368,6 +368,62 @@ describe('salesforce client', () => {
         expect(dodoScope.isDone()).toBeTruthy()
       })
     })
+    describe('when result records are undefined / missing in the first query', () => {
+      beforeEach(async () => {
+        dodoScope = nock(`http://dodo22/services/data/v${API_VERSION}/query`)
+          .persist()
+          .get(/.*queryString/)
+          .times(1)
+          .reply(200, {
+            totalSize: 2,
+            done: false,
+            nextRecordsUrl: 'next',
+          })
+
+        resultsIterable = await client.queryAll('queryString')
+      })
+
+      it('should stop the iteration without failing', async () => {
+        const counter = await asyncCounter(resultsIterable)
+        expect(counter).toEqual(0)
+      })
+
+      afterAll(() => {
+        expect(dodoScope.isDone()).toBeTruthy()
+      })
+    })
+    describe('when result records are undefined in the second query', () => {
+      beforeEach(async () => {
+        dodoScope = nock(`http://dodo22/services/data/v${API_VERSION}/query`)
+          .persist()
+          .get(/.*queryString/)
+          .times(1)
+          .reply(200, {
+            totalSize: 2,
+            done: false,
+            nextRecordsUrl: 'next',
+            records: [{ val: 1 }, { val: 2 }],
+          })
+          .get(/.*/)
+          .times(1)
+          .reply(200, {
+            totalSize: 1,
+            done: true,
+            records: undefined,
+          })
+
+        resultsIterable = await client.queryAll('queryString')
+      })
+
+      it('should stop the iteration without failing, with a partial result', async () => {
+        const counter = await asyncCounter(resultsIterable)
+        expect(counter).toEqual(2)
+      })
+
+      afterAll(() => {
+        expect(dodoScope.isDone()).toBeTruthy()
+      })
+    })
   })
   describe('bulkLoadOperation', () => {
     let dodoScope: nock.Scope

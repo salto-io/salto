@@ -21,6 +21,10 @@ import JiraClient from '../../src/client/client'
 import { pageByOffsetWithoutScopes } from '../../src/client/pagination'
 
 const { toArrayAsync } = collections.asynciterable
+const { makeArray } = collections.array
+
+const extractPageEntries: clientUtils.PageEntriesExtractor = page =>
+  makeArray(page) as clientUtils.ResponseValue[]
 
 describe('pageByOffsetWithoutScopes', () => {
   let client: JiraClient
@@ -46,7 +50,7 @@ describe('pageByOffsetWithoutScopes', () => {
       )
       responses = await toArrayAsync(
         pageByOffsetWithoutScopes(
-          { client, getParams: { url: 'http://myjira.net/thing' }, pageSize: 1 }
+          { client, getParams: { url: 'http://myjira.net/thing' }, pageSize: 1, extractPageEntries }
         )
       )
     })
@@ -74,6 +78,7 @@ describe('pageByOffsetWithoutScopes', () => {
           client,
           getParams: { url: 'http://myjira.net/thing/1', paginationField: 'startAt' },
           pageSize: 1,
+          extractPageEntries,
         })
       )
     })
@@ -90,6 +95,7 @@ describe('pageByOffsetWithoutScopes', () => {
         client,
         getParams: { url: 'http://myjira.net/thing/1', paginationField: 'startAt' },
         pageSize: 1,
+        extractPageEntries,
       })
     })
     it('should throw the error', async () => {

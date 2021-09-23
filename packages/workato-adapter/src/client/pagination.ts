@@ -54,15 +54,11 @@ export const getMinSinceIdPagination: clientUtils.GetAllItemsFunc = async functi
   yield* traverseRequests(nextPage)(args)
 }
 
-export const paginate: clientUtils.GetAllItemsFunc = async function *paginate({
-  client,
-  pageSize,
-  getParams,
-}) {
-  if (getParams?.paginationField === 'since_id') {
+export const paginate: clientUtils.GetAllItemsFunc = async function *paginate(args) {
+  if (args.getParams?.paginationField === 'since_id') {
     // special handling for endpoints that use descending ids, like the recipes endpoint
-    yield* getMinSinceIdPagination({ client, pageSize, getParams })
+    yield* getMinSinceIdPagination(args)
   } else {
-    yield* getWithPageOffsetPagination(1)({ client, pageSize, getParams })
+    yield* getWithPageOffsetPagination(1)(args)
   }
 }

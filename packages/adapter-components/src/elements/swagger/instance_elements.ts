@@ -23,7 +23,7 @@ import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ADDITIONAL_PROPERTIES_FIELD, ARRAY_ITEMS_FIELD } from './type_elements/swagger_parser'
 import { InstanceCreationParams, toBasicInstance } from '../instance_elements'
-import { UnauthorizedError, Paginator } from '../../client'
+import { UnauthorizedError, Paginator, PageEntriesExtractor, ResponseValue } from '../../client'
 import {
   UserFetchConfig, TypeSwaggerDefaultConfig, TransformationConfig, TransformationDefaultConfig,
   AdapterSwaggerApiConfig, TypeSwaggerConfig, getConfigWithDefault, RecurseIntoCondition,
@@ -316,14 +316,17 @@ const getEntriesForType = async (
   const getEntries = async (): Promise<Values[]> => {
     const args = computeGetArgs(requestWithDefaults, contextElements, requestContext)
 
-    const results = (await Promise.all(
-      args.map(async getArgs => ((await toArrayAsync(await paginator(getArgs))).flat()))
-    )).flatMap(makeArray)
+    const extractPageEntries: PageEntriesExtractor = page => (
+      nestedFieldDetails !== undefined
+        ? makeArray(page[nestedFieldDetails.field.name]) as ResponseValue[]
+        : makeArray(page) as ResponseValue[]
+    )
+
+    const results = (await Promise.all(args.map(
+      async getArgs => ((await toArrayAsync(await paginator(getArgs, extractPageEntries))).flat())
+    ))).flatMap(makeArray)
 
     const entries = (results
-      .flatMap(result => (nestedFieldDetails !== undefined
-        ? makeArray(result[nestedFieldDetails.field.name])
-        : makeArray(result)))
       .flatMap(result => (extractValues && _.isPlainObject(result)
         ? Object.values(result as object)
         : makeArray(result))))

@@ -18,7 +18,7 @@ import { Element, Values } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
-import { Paginator } from '../../client'
+import { Paginator, ResponseValue } from '../../client'
 import { generateType } from './type_elements'
 import { toInstance } from './instance_elements'
 import { TypeConfig, getConfigWithDefault } from '../../config'
@@ -82,7 +82,9 @@ export const getTypeAndInstances = async ({
   const getEntries = async (): Promise<Values[]> => {
     const getArgs = computeGetArgs(requestWithDefaults, contextElements)
     return (await Promise.all(
-      getArgs.map(async args => (await toArrayAsync(await paginator(args))).flat())
+      getArgs.map(async args => (await toArrayAsync(
+        await paginator(args, page => makeArray(page) as ResponseValue[])
+      )).flat())
     )).flat()
   }
 

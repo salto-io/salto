@@ -101,6 +101,13 @@ export const mergeElements = async (
 export const mergeSingleElement = async <T extends Element>(elementParts: T[]): Promise<T> => {
   const mergeRes = await mergeElements(awu(elementParts))
 
+  const errorMessages = await awu(await mergeRes.errors.entries())
+    .flatMap(err => err.value)
+    .map(err => err.message)
+    .toArray()
+  if (errorMessages.length !== 0) {
+    throw new Error(`Received merge errors: ${errorMessages.join(', ')}`)
+  }
   const [error] = await awu(await mergeRes.errors.entries()).toArray()
   if (error !== undefined) {
     throw new Error(`Received merge errors: ${error.key}: ${error.value.map(err => err.message).join(', ')}`)

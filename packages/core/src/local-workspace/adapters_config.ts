@@ -20,7 +20,7 @@ import { workspaceConfigSource as wcs,
   nacl, staticFiles, merger, adaptersConfigSource as acs, remoteMap } from '@salto-io/workspace'
 import { DetailedChange, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { applyDetailedChanges, detailedCompare, transformValues } from '@salto-io/adapter-utils'
+import { applyDetailedChanges, detailedCompare, transformElement } from '@salto-io/adapter-utils'
 import { localDirectoryStore } from './dir_store'
 import { buildLocalStaticFilesCache } from './static_files_cache'
 
@@ -28,15 +28,13 @@ export type WorkspaceConfigSource = wcs.WorkspaceConfigSource & {
   localStorage: string
 }
 
-const removeUndefined = async (instance: InstanceElement): Promise<InstanceElement> => {
-  instance.value = await transformValues({
-    values: instance.value,
-    type: await instance.getType(),
+const removeUndefined = async (instance: InstanceElement): Promise<InstanceElement> =>
+  transformElement({
+    element: instance,
     strict: false,
     transformFunc: ({ value }) => value,
-  }) ?? instance.value
-  return instance
-}
+  })
+
 
 const createNaclSource = async (
   baseDir: string,
@@ -94,11 +92,10 @@ export const adaptersConfigSource = async (
 
   const overwriteNacl = async (
     configs: InstanceElement | InstanceElement[],
-  ):
-  Promise<void> => {
-    // This functions first remove the existing configuration and then add the new configuration
-    // instead of creating a "modify" change to the configuration so the config element will
-    // be splitted exactly like the new configuration and not like the old one
+  ): Promise<void> => {
+    // This function first removes the existing configuration and then adds the new configuration
+    // instead of creating a "modify" change so the config element will be split exactly like the
+    // new configuration and not like the old one
 
     const configsArr = collections.array.makeArray(configs)
 
@@ -109,7 +106,7 @@ export const adaptersConfigSource = async (
     // If flush is not called here the removal seems to be ignored
     await naclSource.flush()
 
-    const configsToUpdate = await Promise.all(configsArr.map(conf => removeUndefined(conf.clone())))
+    const configsToUpdate = await Promise.all(configsArr.map(removeUndefined))
     await naclSource.updateNaclFiles(
       configsToUpdate.map(conf => ({
         id: conf.elemID, action: 'add', data: { after: conf }, path: conf.path ?? [conf.elemID.adapter],

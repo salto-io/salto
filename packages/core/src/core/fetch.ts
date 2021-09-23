@@ -600,9 +600,12 @@ export const fetchChanges = async (
 
   const configsMerge = await mergeElements(awu(updatedConfig.flatMap(c => c.config)))
 
-  const [error] = await awu(await configsMerge.errors.entries()).toArray()
-  if (error !== undefined) {
-    throw new Error(`Received configuration merge error: ${error.key}: ${error.value.map(err => err.message).join(', ')}`)
+  const errorMessages = await awu(await configsMerge.errors.entries())
+    .flatMap(err => err.value)
+    .map(err => err.message)
+    .toArray()
+  if (errorMessages.length !== 0) {
+    throw new Error(`Received configuration merge errors: ${errorMessages.join(', ')}`)
   }
 
   const configs = await awu(configsMerge.merged.values()).toArray()

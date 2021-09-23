@@ -15,17 +15,18 @@
 */
 import _ from 'lodash'
 import nock from 'nock'
-import { RetrieveResult } from 'jsforce-types'
+import { RetrieveResult, FileProperties, Metadata } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { MockInterface } from '@salto-io/test-utils'
 import SalesforceClient, { ApiLimitsTooLowError,
   getConnectionDetails, validateCredentials, API_VERSION } from '../src/client/client'
 import mockClient from './client'
 import { UsernamePasswordCredentials, OauthAccessTokenCredentials } from '../src/types'
 import Connection from '../src/client/jsforce'
 import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
-import { mockRetrieveResult, mockRetrieveLocator } from './connection'
+import { mockRetrieveResult, mockRetrieveLocator, mockFileProperties } from './connection'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
@@ -255,6 +256,47 @@ describe('salesforce client', () => {
       const { result } = await client.readMetadata('Layout', ['aaa', 'bbb'])
       expect(result).toHaveLength(1)
       expect(dodoScope.isDone()).toBeTruthy()
+    })
+  })
+
+  describe('with jsforce accessing .result on null error', () => {
+    let testClient: SalesforceClient
+    let testConnection: MockInterface<Connection>
+    let failingImplementation: Metadata['list']
+    beforeEach(() => {
+      const mockClientAndConnection = mockClient()
+      testConnection = mockClientAndConnection.connection
+      testClient = mockClientAndConnection.client
+      failingImplementation = async () => (
+        // Intentionally access .result on null
+        (null as unknown as { result: FileProperties[] }).result
+      )
+    })
+    describe('when the error is recoverable', () => {
+      let result: ReturnType<typeof testClient.listMetadataObjects>
+      let expectedProperties: FileProperties
+      beforeEach(() => {
+        expectedProperties = mockFileProperties({ type: 'CustomObject', fullName: 'A__c' })
+        testConnection.metadata.list
+          .mockImplementationOnce(failingImplementation)
+          .mockImplementationOnce(failingImplementation)
+          .mockResolvedValueOnce([expectedProperties])
+
+        result = testClient.listMetadataObjects({ type: 'CustomObject' })
+      })
+      it('should resolve with the value of the successful attempt', async () => {
+        await expect(result).resolves.toMatchObject({ result: [expectedProperties] })
+      })
+    })
+    describe('when the error persists', () => {
+      let result: ReturnType<typeof testClient.listMetadataObjects>
+      beforeEach(() => {
+        testConnection.metadata.list.mockImplementation(failingImplementation)
+        result = testClient.listMetadataObjects({ type: 'CustomObject' })
+      })
+      it('should fail with the error', async () => {
+        await expect(result).rejects.toThrow()
+      })
     })
   })
 

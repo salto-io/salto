@@ -19,6 +19,10 @@ import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { getMinSinceIdPagination } from '../../src/client/pagination'
 
 const { toArrayAsync } = collections.asynciterable
+const { makeArray } = collections.array
+
+const extractPageEntries: clientUtils.PageEntriesExtractor = page =>
+  makeArray(page) as clientUtils.ResponseValue[]
 
 describe('client_pagination', () => {
   describe('getMinSinceIdPagination', () => {
@@ -45,6 +49,7 @@ describe('client_pagination', () => {
         getParams: {
           url: '/ep',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
@@ -69,6 +74,7 @@ describe('client_pagination', () => {
             arg2: 'val2',
           },
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
@@ -118,6 +124,7 @@ describe('client_pagination', () => {
             parentId: (entry => entry.id as string),
           },
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([
         { a: 'a1', id: 123 },
@@ -145,6 +152,7 @@ describe('client_pagination', () => {
           url: '/ep',
           paginationField: 'page',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([])
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
@@ -194,6 +202,7 @@ describe('client_pagination', () => {
           url: '/ep',
           paginationField: 'since_id',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a1', id: 150 }, { a: 'a2', b: 'b2', id: 140 }, { a: 'a3', id: 130 }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(4)
@@ -231,6 +240,7 @@ describe('client_pagination', () => {
             arg1: 'val1',
           },
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a1', id: 150 }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(2)
@@ -282,6 +292,7 @@ describe('client_pagination', () => {
           url: '/ep',
           paginationField: 'since_id',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a1', id: 150 }, { a: 'a2', b: 'b2', id: 140 }, { a: 'a3', id: 140 }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(3)
@@ -319,6 +330,7 @@ describe('client_pagination', () => {
           url: '/ep',
           paginationField: 'since_id',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a1', id: 150 }, { a: 'a2', b: 'b2', id: '140' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(2)

@@ -94,7 +94,7 @@ describe('ducktype_transformer', () => {
         'something.myType.instance.bla',
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(1)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(mockPaginator).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
       expect(typeElements.generateType).toHaveBeenCalledTimes(1)
       expect(typeElements.generateType).toHaveBeenCalledWith({
         adapterName: 'something',
@@ -163,7 +163,7 @@ describe('ducktype_transformer', () => {
         'something.myType.instance.bla',
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(1)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(mockPaginator).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
       expect(typeElements.generateType).toHaveBeenCalledTimes(1)
       expect(typeElements.generateType).toHaveBeenCalledWith({
         adapterName: 'something',
@@ -246,7 +246,7 @@ describe('ducktype_transformer', () => {
         'something.myType__some_nested.instance.bla',
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(1)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(mockPaginator).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
       expect(typeElements.generateType).toHaveBeenCalledTimes(1)
       expect(typeElements.generateType).toHaveBeenCalledWith({
         adapterName: 'something',

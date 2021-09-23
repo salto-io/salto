@@ -31,10 +31,12 @@ export type ClientGetWithPaginationParams = ClientGetParams & {
   paginationField?: string
 }
 
+export type PageEntriesExtractor = (page: ResponseValue) => ResponseValue[]
 export type GetAllItemsFunc = (args: {
   client: HTTPClientInterface
   pageSize: number
   getParams: ClientGetWithPaginationParams
+  extractPageEntries: PageEntriesExtractor
 }) => AsyncIterable<ResponseValue[]>
 
 
@@ -77,11 +79,12 @@ const computeRecursiveArgs = (
 )
 
 export const traverseRequests: (
-  paginationFunc: PaginationFunc
-) => GetAllItemsFunc = paginationFunc => async function *getWithOffset({
+  paginationFunc: PaginationFunc,
+) => GetAllItemsFunc = paginationFunc => async function *getPages({
   client,
   pageSize,
   getParams,
+  extractPageEntries,
 }) {
   const { url, paginationField, queryParams, recursiveQueryParams } = getParams
   const requestQueryArgs: Record<string, string>[] = [{}]
@@ -108,15 +111,19 @@ export const traverseRequests: (
       break
     }
 
-    const page: ResponseValue[] = (
+    const page = (
       (!Array.isArray(response.data) && Array.isArray(response.data.items))
         ? response.data.items
         : makeArray(response.data)
-    )
+    ).flatMap(extractPageEntries)
+
+    if (page.length === 0) {
+      // eslint-disable-next-line no-continue
+      continue
+    }
 
     yield page
     numResults += page.length
-
     if (paginationField !== undefined) {
       requestQueryArgs.unshift(...paginationFunc({
         responseData: response.data,
@@ -126,7 +133,6 @@ export const traverseRequests: (
         currentParams: additionalArgs,
       }))
     }
-
     if (recursiveQueryParams !== undefined && Object.keys(recursiveQueryParams).length > 0) {
       requestQueryArgs.unshift(...computeRecursiveArgs(page, recursiveQueryParams))
     }
@@ -250,7 +256,10 @@ export const getWithOffsetAndLimit: GetAllItemsFunc = args => {
   return traverseRequests(getNextPage)(args)
 }
 
-export type Paginator = (params: ClientGetWithPaginationParams) => AsyncIterable<ResponseValue[]>
+export type Paginator = (
+  params: ClientGetWithPaginationParams,
+  extractPageEntries: PageEntriesExtractor,
+) => AsyncIterable<ResponseValue[]>
 
 /**
  * Wrap a pagination function for use by the adapter
@@ -259,5 +268,7 @@ export const createPaginator = ({ paginationFunc, client }: {
   paginationFunc: GetAllItemsFunc
   client: HTTPClientInterface
 }): Paginator => (
-  params => paginationFunc({ client, pageSize: client.getPageSize(), getParams: params })
+  (params, extractPageEntries) => paginationFunc(
+    { client, pageSize: client.getPageSize(), getParams: params, extractPageEntries },
+  )
 )

@@ -15,9 +15,12 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
-import { getWithCursorPagination, getWithPageOffsetPagination, getWithPageOffsetAndLastPagination, getWithOffsetAndLimit, HTTPClientInterface, createPaginator, GetAllItemsFunc, ResponseValue } from '../../src/client'
+import { getWithCursorPagination, getWithPageOffsetPagination, getWithPageOffsetAndLastPagination, getWithOffsetAndLimit, HTTPClientInterface, createPaginator, GetAllItemsFunc, ResponseValue, PageEntriesExtractor } from '../../src/client'
 
 const { toArrayAsync } = collections.asynciterable
+const { makeArray } = collections.array
+
+const extractPageEntries: PageEntriesExtractor = page => makeArray(page) as ResponseValue[]
 
 describe('client_pagination', () => {
   describe('getWithPageOffsetPagination', () => {
@@ -44,6 +47,7 @@ describe('client_pagination', () => {
         getParams: {
           url: '/ep',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
@@ -68,6 +72,7 @@ describe('client_pagination', () => {
             arg2: 'val2',
           },
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
@@ -117,6 +122,7 @@ describe('client_pagination', () => {
             parentId: (entry => entry.id as string),
           },
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([
         { a: 'a1', id: 123 },
@@ -146,6 +152,7 @@ describe('client_pagination', () => {
           url: '/ep',
           paginationField: 'page',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
@@ -194,6 +201,7 @@ describe('client_pagination', () => {
           url: '/ep',
           paginationField: 'page',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a1' }, { a: 'a2', b: 'b2' }, { a: 'a3' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(4)
@@ -245,6 +253,7 @@ describe('client_pagination', () => {
           url: '/ep',
           paginationField: 'page.pageNum',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a1' }, { a: 'a2', b: 'b2' }, { a: 'a3' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(4)
@@ -278,6 +287,7 @@ describe('client_pagination', () => {
             arg1: 'val1',
           },
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a1' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(2)
@@ -310,6 +320,7 @@ describe('client_pagination', () => {
         getParams: {
           url: '/ep',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
@@ -334,6 +345,7 @@ describe('client_pagination', () => {
             arg2: 'val2',
           },
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
@@ -383,6 +395,7 @@ describe('client_pagination', () => {
             parentId: (entry => entry.id as string),
           },
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([
         { a: 'a1', id: 123 },
@@ -413,6 +426,7 @@ describe('client_pagination', () => {
           url: '/ep',
           paginationField: 'page',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
@@ -433,6 +447,7 @@ describe('client_pagination', () => {
           url: '/ep',
           paginationField: 'page',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
@@ -482,6 +497,7 @@ describe('client_pagination', () => {
           url: '/ep',
           paginationField: 'page',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a1' }, { a: 'a2', b: 'b2' }, { a: 'a3' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(4)
@@ -534,6 +550,7 @@ describe('client_pagination', () => {
           url: '/ep',
           paginationField: 'page.pageNum',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a1' }, { a: 'a2', b: 'b2' }, { a: 'a3' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(4)
@@ -568,6 +585,7 @@ describe('client_pagination', () => {
             arg1: 'val1',
           },
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a1' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(2)
@@ -600,6 +618,7 @@ describe('client_pagination', () => {
         getParams: {
           url: '/ep',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ products: ['a', 'b'] }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
@@ -625,6 +644,7 @@ describe('client_pagination', () => {
             arg2: 'val2',
           },
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
@@ -653,6 +673,7 @@ describe('client_pagination', () => {
           url: '/ep',
           paginationField: 'nextPage',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ products: ['a', 'b'], nextPage: '/ep?page=p1' }, { products: ['c', 'd'] }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(2)
@@ -682,6 +703,7 @@ describe('client_pagination', () => {
           url: '/ep',
           paginationField: 'nextPage.url',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ products: ['a', 'b'], nextPage: { url: '/ep?page=p1' } }, { products: ['c', 'd'] }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(2)
@@ -712,6 +734,7 @@ describe('client_pagination', () => {
             arg1: 'val1',
           },
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ products: ['a', 'b'], nextPage: '/ep?page=p1' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(2)
@@ -742,6 +765,7 @@ describe('client_pagination', () => {
             arg1: 'val1',
           },
         },
+        extractPageEntries,
       }))).rejects.toThrow()
     })
 
@@ -767,6 +791,7 @@ describe('client_pagination', () => {
           url: '/ep',
           paginationField: 'nextPage',
         },
+        extractPageEntries,
       }))).flat()
       expect(result).toEqual([{ products: ['a', 'b'], nextPage: '/ep_suffix?page=p1' }, { products: ['c', 'd'] }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(2)
@@ -788,7 +813,7 @@ describe('client_pagination', () => {
       beforeEach(async () => {
         client.getSinglePage.mockResolvedValue({ status: 200, statusText: 'OK', data: { page: 1 } })
         results = await toArrayAsync(
-          getWithOffsetAndLimit({ client, pageSize: 2, getParams: { url: '/ep' } })
+          getWithOffsetAndLimit({ client, pageSize: 2, getParams: { url: '/ep' }, extractPageEntries })
         )
       })
       it('should query a single page', () => {
@@ -813,7 +838,7 @@ describe('client_pagination', () => {
         let results: ResponseValue[][]
         beforeEach(async () => {
           results = await toArrayAsync(getWithOffsetAndLimit(
-            { client, pageSize: 2, getParams: { url: '/ep', paginationField: 'startAt' } }
+            { client, pageSize: 2, getParams: { url: '/ep', paginationField: 'startAt' }, extractPageEntries }
           ))
         })
         it('should query until isLast is true', () => {
@@ -825,7 +850,7 @@ describe('client_pagination', () => {
       describe('when response is not a valid page', () => {
         let resultIter: AsyncIterable<ResponseValue[]>
         beforeEach(async () => {
-          resultIter = getWithOffsetAndLimit({ client, pageSize: 2, getParams: { url: '/ep', paginationField: 'wrong' } })
+          resultIter = getWithOffsetAndLimit({ client, pageSize: 2, getParams: { url: '/ep', paginationField: 'wrong' }, extractPageEntries })
         })
         it('should throw error', async () => {
           await expect(toArrayAsync(resultIter)).rejects.toThrow()
@@ -850,7 +875,7 @@ describe('client_pagination', () => {
         let results: ResponseValue[][]
         beforeEach(async () => {
           results = await toArrayAsync(getWithOffsetAndLimit(
-            { client, pageSize: 2, getParams: { url: '/ep', paginationField: 'pagination.startAt' } }
+            { client, pageSize: 2, getParams: { url: '/ep', paginationField: 'pagination.startAt' }, extractPageEntries }
           ))
         })
         it('should query until isLast is true', () => {
@@ -872,12 +897,13 @@ describe('client_pagination', () => {
       const paginationFunc: GetAllItemsFunc = mockFunction<GetAllItemsFunc>()
       const paginator = createPaginator({ client, paginationFunc })
       const params = { url: 'url', queryParams: { a: 'b' }, paginationField: 'abc' }
-      paginator(params)
+      paginator(params, extractPageEntries)
       expect(paginationFunc).toHaveBeenCalledTimes(1)
       expect(paginationFunc).toHaveBeenLastCalledWith({
         client,
         pageSize: 3,
         getParams: params,
+        extractPageEntries,
       })
     })
   })

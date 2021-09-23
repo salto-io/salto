@@ -67,7 +67,7 @@ describe('swagger_instance_elements', () => {
 
     beforeEach(() => {
       mockPaginator = mockFunction<Paginator>().mockImplementation(
-        async function *getAll(getParams) {
+        async function *getAll(getParams, extractPageEntries) {
           if (getParams.url === '/pet') {
             yield [
               {
@@ -89,7 +89,7 @@ describe('swagger_instance_elements', () => {
                 food1: { id: 'f1' },
                 food2: { id: 'f2' },
               },
-            ]
+            ].flatMap(extractPageEntries)
             yield [
               {
                 id: 'mouse',
@@ -100,12 +100,12 @@ describe('swagger_instance_elements', () => {
                 food1: { id: 'f1' },
                 food2: { id: 'f2' },
               },
-            ]
+            ].flatMap(extractPageEntries)
           }
           if (getParams.url === '/owner') {
             yield [
               { name: 'owner2' },
-            ]
+            ].flatMap(extractPageEntries)
           }
         }
       )
@@ -159,8 +159,8 @@ describe('swagger_instance_elements', () => {
         `${ADAPTER_NAME}.Pet.instance.mouse`,
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(2)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined })
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
 
       const ownerInst = res.find(e => e.elemID.name === 'owner2')
       expect(ownerInst?.isEqual(new InstanceElement(
@@ -244,8 +244,8 @@ describe('swagger_instance_elements', () => {
         `${ADAPTER_NAME}.Pet.instance.mouse`,
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(2)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: 'abc' })
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: 'abc' })
+      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: 'abc' }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: 'abc' }, expect.anything())
     })
 
     it('should extract standalone fields', async () => {
@@ -302,8 +302,8 @@ describe('swagger_instance_elements', () => {
         `${ADAPTER_NAME}.Owner.instance.mouse__o3`,
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(2)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined })
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
 
       const primaryOInst = res.find(e => e.elemID.name === 'dog__primary') as InstanceElement
       const dogO1Inst = res.find(e => e.elemID.name === 'dog__o1') as InstanceElement
@@ -461,8 +461,8 @@ describe('swagger_instance_elements', () => {
         `${ADAPTER_NAME}.Pet.instance.mouse`,
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(2)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined })
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
 
       const petInst = res.find(e => e.elemID.name === 'dog') as InstanceElement
       expect(petInst).toBeInstanceOf(InstanceElement)
@@ -542,8 +542,8 @@ describe('swagger_instance_elements', () => {
         `${ADAPTER_NAME}.Owner.instance.o3`,
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(2)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined })
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
 
       const dogO1Inst = res.find(e => e.elemID.name === 'o1') as InstanceElement
       expect(dogO1Inst).toBeInstanceOf(InstanceElement)
@@ -600,7 +600,9 @@ describe('swagger_instance_elements', () => {
         },
       })
 
-      mockPaginator = mockFunction<Paginator>().mockImplementationOnce(async function *get() {
+      mockPaginator = mockFunction<Paginator>().mockImplementationOnce(async function *get(
+        _args, extractPageEntries,
+      ) {
         yield [
           {
             id: 'dog',
@@ -621,7 +623,7 @@ describe('swagger_instance_elements', () => {
             food1: { id: 'f1' },
             food2: { id: 'f2' },
           },
-        ]
+        ].flatMap(extractPageEntries)
         yield [
           {
             id: 'mouse',
@@ -632,7 +634,7 @@ describe('swagger_instance_elements', () => {
             food1: { id: 'f1' },
             food2: { id: 'f2' },
           },
-        ]
+        ].flatMap(extractPageEntries)
         yield [
           {
             id: '33',
@@ -643,7 +645,7 @@ describe('swagger_instance_elements', () => {
             food1: { id: 'f1' },
             food2: { id: 'f2' },
           },
-        ]
+        ].flatMap(extractPageEntries)
       })
       const res = await getAllInstances({
         paginator: mockPaginator,
@@ -677,7 +679,7 @@ describe('swagger_instance_elements', () => {
         `${ADAPTER_NAME}.Pet.instance.33@`, // digit-only ids should be escaped
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(1)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet_list', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet_list', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
 
       const petInst = res.find(e => e.elemID.name === 'dog')
       expect(petInst?.isEqual(new InstanceElement(
@@ -735,7 +737,9 @@ describe('swagger_instance_elements', () => {
         AllCustomObjects,
       }
 
-      mockPaginator = mockFunction<Paginator>().mockImplementationOnce(async function *get() {
+      mockPaginator = mockFunction<Paginator>().mockImplementationOnce(async function *get(
+        _args, extractPageEntries,
+      ) {
         yield [
           {
             definitions: {
@@ -756,7 +760,7 @@ describe('swagger_instance_elements', () => {
               },
             },
           },
-        ]
+        ].flatMap(extractPageEntries)
       })
       const res = await getAllInstances({
         paginator: mockPaginator,
@@ -789,7 +793,7 @@ describe('swagger_instance_elements', () => {
         `${ADAPTER_NAME}.CustomObjectDefinition.instance.Food`,
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(1)
-      expect(mockPaginator).toHaveBeenCalledWith({ url: '/custom_objects', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined })
+      expect(mockPaginator).toHaveBeenCalledWith({ url: '/custom_objects', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
 
       const petInst = res.find(e => e.elemID.name === 'Pet') as InstanceElement
       expect(petInst).toBeInstanceOf(InstanceElement)
@@ -913,17 +917,17 @@ describe('swagger_instance_elements', () => {
         })
       })
       it('should get inner types recursively for instances that match the condition', () => {
-        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner' }))
-        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/fish/owner' }))
-        expect(mockPaginator).not.toHaveBeenCalledWith(expect.objectContaining({ url: expect.stringContaining('/pet/cat/') }))
+        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner' }), expect.anything())
+        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/fish/owner' }), expect.anything())
+        expect(mockPaginator).not.toHaveBeenCalledWith(expect.objectContaining({ url: expect.stringContaining('/pet/cat/') }), expect.anything())
       })
       it('should get inner types for instances based on context from previous requests', () => {
-        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner/o1/nicknames' }))
-        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner/o2/nicknames' }))
-        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner/o1/info' }))
-        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner/o2/info' }))
-        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/fish/owner/o1/info' }))
-        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/fish/owner/o2/info' }))
+        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner/o1/nicknames' }), expect.anything())
+        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner/o2/nicknames' }), expect.anything())
+        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner/o1/info' }), expect.anything())
+        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/dog/owner/o2/info' }), expect.anything())
+        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/fish/owner/o1/info' }), expect.anything())
+        expect(mockPaginator).toHaveBeenCalledWith(expect.objectContaining({ url: '/pet/fish/owner/o2/info' }), expect.anything())
 
         expect(mockPaginator).not.toHaveBeenCalledWith(
           expect.objectContaining({ url: expect.stringMatching(/\/pet\/fish\/owner\/.*\/nicknames/) })

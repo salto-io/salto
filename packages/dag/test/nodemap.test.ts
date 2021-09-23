@@ -463,8 +463,8 @@ describe('NodeMap', () => {
         subject.addNode(2, [3])
         subject.addNode(3, [])
       })
-      it('should return an empty map', () => {
-        expect(subject.getCycles().size).toEqual(0)
+      it('should return undefined', () => {
+        expect(subject.getCycle()).not.toBeDefined()
       })
     })
 
@@ -479,7 +479,7 @@ describe('NodeMap', () => {
       })
 
       it('should return the cycles', () => {
-        expect([...subject.getCycles().keys()]).toEqual([2, 3, 4])
+        expect(subject.getCycle()).toEqual([[2, 3], [3, 4], [4, 2]])
       })
     })
   })

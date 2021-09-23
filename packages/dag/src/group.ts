@@ -17,7 +17,7 @@ import wu from 'wu'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
-import { NodeId, DataNodeMap, CircularDependencyError } from './nodemap'
+import { NodeId, DataNodeMap, Edge, CircularDependencyError } from './nodemap'
 
 const log = logger(module)
 
@@ -28,86 +28,156 @@ export interface Group<T> {
 
 export type GroupedNodeMap<T> = DataNodeMap<Group<T>>
 
-export const buildGroupedGraph = <T>(
-  source: DataNodeMap<T>, groupKey: (id: NodeId) => string
-): GroupedNodeMap<T> => log.time(() => {
-    const mergeCandidates = new Map<string, NodeId>()
-    const itemToGroupId = new Map<NodeId, NodeId>()
-    const getOrCreateGroupNode = (
-      graph: GroupedNodeMap<T>,
-      key: string,
-      newDeps: ReadonlySet<NodeId>,
-      newRevDeps: ReadonlySet<NodeId>,
-    ): NodeId | undefined => {
-      const tryToAddToGroupID = (idToTry: NodeId): boolean => {
-        const currentDeps = graph.get(idToTry)
-        const filteredNewDeps = wu(newDeps)
-          .filter(dep => !currentDeps.has(dep))
-          // Skip edges to mergeCandidate to avoid self reference cycle
-          .filter(dep => dep !== idToTry)
-          .toArray()
-        const filteredNewRevDeps = wu(newRevDeps)
-          .filter(dep => !graph.get(dep).has(idToTry))
-          // Skip edges to mergeCandidate to avoid self reference cycle
-          .filter(dep => dep !== idToTry)
-          .toArray()
+type Cycle = Edge[]
 
-        const candidateDeps = new Set(wu.chain(currentDeps, filteredNewDeps))
-        const revCandidateDeps = filteredNewRevDeps.map(dep => [
-          dep,
-          new Set([...graph.get(dep), idToTry]),
-        ] as [NodeId, Set<NodeId>])
-        const graphChangeToTry = new Map([
-          [idToTry, candidateDeps],
-          ...revCandidateDeps,
-        ])
-        // Merging will not add new edges and therefore cannot create a cycle or
-        // an explicit check for cycles
-        if ((filteredNewDeps.length === 0 && filteredNewRevDeps.length === 0)
-          || !graph.doesCreateCycle(graphChangeToTry, idToTry)) {
-          // Safe to add the new edges and merge to candidate node
-          filteredNewDeps.forEach(dep => graph.addEdge(idToTry, dep))
-          filteredNewRevDeps.forEach(dep => graph.addEdge(dep, idToTry))
-          return true
-        }
+export type GroupKeyFunc = (id: NodeId) => string
 
-        return false
-      }
+type COMPONENT_VALIDITY_STATUS = 'valid' | 'invalid' | 'in_progress'
 
-      const mergeCandidate = mergeCandidates.get(key)
-      if (mergeCandidate && tryToAddToGroupID(mergeCandidate)) {
-        return mergeCandidate
-      }
-      const groupId = _.uniqueId(`${key}-`)
-      graph.addNode(groupId, [], { groupKey: key, items: new Map() })
-      mergeCandidates.set(key, groupId)
-      if (tryToAddToGroupID(groupId)) {
-        return groupId
-      }
+const colorComponentsValidity = <T>(
+  source: DataNodeMap<T>,
+  id: NodeId,
+  srcGroupNodes: Set<NodeId>,
+  srcNodesWithToRef: Set<NodeId>,
+  visited: Map<NodeId, COMPONENT_VALIDITY_STATUS>
+): boolean => {
+  if (visited.has(id)) {
+    return visited.get(id) !== 'invalid'
+  }
+  visited.set(id, 'in_progress')
+  const hasInvalidChildren = wu(source.get(id).values())
+    .filter(childId => srcGroupNodes.has(childId))
+    .some(childId => !colorComponentsValidity(
+      source,
+      childId,
+      srcGroupNodes,
+      srcNodesWithToRef,
+      visited
+    ))
+  const isValid = !hasInvalidChildren && !srcNodesWithToRef.has(id)
+  visited.set(id, isValid ? 'valid' : 'invalid')
+  return isValid
+}
 
-      return undefined
+const getComponent = <T>(
+  source: DataNodeMap<T>,
+  srcGroupNodes: Set<NodeId>,
+  id: NodeId,
+  visited: Set<NodeId> = new Set()
+): Set<NodeId> => {
+  if (visited.has(id)) {
+    return new Set()
+  }
+  visited.add(id)
+  const children = new Set(
+    wu(source.get(id).values())
+      .filter(childId => srcGroupNodes.has(childId))
+      .map(childId => getComponent(source, srcGroupNodes, childId, visited))
+      .flatten(true)
+  )
+  return children.add(id)
+}
+
+const getComponentToSplit = <T>(
+  source: DataNodeMap<T>,
+  currentGroupNodes: Set<NodeId>,
+  srcNodesWithBackRef: Set<NodeId>,
+  srcNodesWithToRef: Set<NodeId>,
+): Set<NodeId> | undefined => {
+  const colorMap = new Map<NodeId, COMPONENT_VALIDITY_STATUS>()
+  return wu(srcNodesWithBackRef.keys()).map(root => {
+    const isValid = colorComponentsValidity(
+      source,
+      root,
+      currentGroupNodes,
+      srcNodesWithToRef,
+      colorMap
+    )
+    if (isValid) {
+      const component = getComponent(source, currentGroupNodes, root)
+      return component.size < currentGroupNodes.size ? component : undefined
     }
+    return undefined
+  })
+    .find(values.isDefined)
+}
 
-    return wu(source.keys())
-      .reduce((result, nodeId) => {
-        const inDeps = new Set(
-          wu(source.get(nodeId))
-            .map(depId => itemToGroupId.get(depId))
-            .filter(values.isDefined)
-        )
-        const revDeps = new Set(
-          wu(source.getReverse(nodeId))
-            .map(depId => itemToGroupId.get(depId))
-            .filter(values.isDefined)
-        )
-        const nodeGroupKey = groupKey(nodeId)
-        const groupId = getOrCreateGroupNode(result, nodeGroupKey, inDeps, revDeps)
-        if (groupId !== undefined) {
-          // Add item to the group node (the dependencies are handled by getOrCreateGroupNode)
-          result.getData(groupId).items.set(nodeId, source.getData(nodeId))
-          itemToGroupId.set(nodeId, groupId)
-          return result
-        }
-        throw new CircularDependencyError(source.getCycles())
-      }, new DataNodeMap<Group<T>>())
+const modifyGroupKeyToRemoveCycle = <T>(
+  groupGraph: GroupedNodeMap<T>,
+  groupKey: GroupKeyFunc,
+  source: DataNodeMap<T>,
+  knownCycle: Cycle
+): GroupKeyFunc => {
+  // eslint-disable-next-line no-plusplus
+  const modifiedFunc = knownCycle.map((inEdge, index) => {
+    const outEdge = knownCycle[(index + 1) % knownCycle.length]
+    const [prevGroup, currentGroup, nextGroup] = [...inEdge, outEdge[1]]
+    const currentGroupSrcIds = wu(groupGraph.getData(currentGroup).items.keys()).toArray()
+    const srcNodesWithBackRef = new Set(currentGroupSrcIds.filter(
+      id => wu(source.getReverse(id).values())
+        .find(srcId => groupKey(srcId) === prevGroup)
+    ))
+    const srcNodesWithToRef = new Set(currentGroupSrcIds.filter(
+      id => wu(source.get(id).values())
+        .find(destId => groupKey(destId) === nextGroup)
+    ))
+    const componentToSplit = getComponentToSplit(
+      source,
+      new Set(currentGroupSrcIds),
+      srcNodesWithBackRef,
+      srcNodesWithToRef,
+    )
+    if (componentToSplit !== undefined) {
+      const newGroupId = _.uniqueId(`${currentGroup}-`)
+      return (id: NodeId) => (componentToSplit.has(id) ? newGroupId : groupKey(id))
+    }
+    return undefined
+  }).find(values.isDefined)
+
+  if (values.isDefined(modifiedFunc)) {
+    return modifiedFunc
+  }
+  const origCycle = source.filterNodes(id => !knownCycle.flatMap(e => e).includes(groupKey(id)))
+  throw new CircularDependencyError(origCycle)
+}
+
+const buildPossiblyCyclicGroupGraph = <T>(
+  source: DataNodeMap<T>,
+  groupKey: GroupKeyFunc,
+  originGroupKey: GroupKeyFunc
+): GroupedNodeMap<T> => {
+  const itemToGroupId = new Map<NodeId, NodeId>()
+  const graph = wu(source.keys())
+    .reduce((acc, nodeId) => {
+      const groupId = groupKey(nodeId)
+      if (!acc.has(groupId)) {
+        acc.addNode(groupId, [], {
+          groupKey: originGroupKey(nodeId), items: new Map(),
+        })
+      }
+      acc.getData(groupId).items.set(nodeId, source.getData(nodeId))
+      itemToGroupId.set(nodeId, groupId)
+      return acc
+    }, new DataNodeMap<Group<T>>())
+  source.edges()
+    .filter(([from, to]) => itemToGroupId.get(from) !== itemToGroupId.get(to))
+    .forEach(([from, to]) => {
+      graph.addEdge(itemToGroupId.get(from) ?? from, itemToGroupId.get(to) ?? to)
+    })
+  return graph
+}
+
+export const buildGroupedGraph = <T>(
+  source: DataNodeMap<T>,
+  groupKey: GroupKeyFunc,
+  originGroupKey: GroupKeyFunc = groupKey
+): GroupedNodeMap<T> => log.time(() => {
+  // Build group graph
+    const groupGraph = buildPossiblyCyclicGroupGraph(source, groupKey, originGroupKey)
+    const possibleCycle = groupGraph.getCycle()
+    if (possibleCycle === undefined) {
+      return groupGraph
+    }
+    const updatedGroupKey = modifyGroupKeyToRemoveCycle(groupGraph, groupKey, source, possibleCycle)
+    return buildGroupedGraph(source, updatedGroupKey, originGroupKey)
   }, 'build grouped graph for %o nodes', source.size)

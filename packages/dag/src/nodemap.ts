@@ -14,12 +14,13 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 
 const { difference } = collections.set
+type DFS_STATUS = 'in_progress' | 'done'
 
 export type NodeId = collections.set.SetId
-
+export type Edge = [NodeId, NodeId]
 export class CircularDependencyError extends Error {
   public readonly causingNodeIds: NodeId[]
 
@@ -181,6 +182,11 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     )
   }
 
+  filterNodes(func: (node: NodeId) => boolean): this {
+    const nodesToDrop = new Set(wu(this.keys()).filter(func))
+    return this.cloneWithout(nodesToDrop)
+  }
+
   // used after walking the graph had finished - any undeleted nodes represent a cycle
   ensureEmpty(): void {
     if (this.size !== 0) {
@@ -210,11 +216,11 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     this.reverseNeighbors.clear()
   }
 
-  edges(): [NodeId, NodeId][] {
+  edges(): Edge[] {
     return [...this.edgesIter()]
   }
 
-  edgesIter(): IterableIterator<[NodeId, NodeId]> {
+  edgesIter(): IterableIterator<Edge> {
     return wu(this)
       .map(([node, dependencies]) => wu(dependencies).map(dependency => [node, dependency]))
       .flatten(true)
@@ -253,15 +259,28 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     return wu(this.evaluationOrderGroups()).flatten()
   }
 
-  getCycles(): AbstractNodeMap {
-    const expensable = this.clone()
-    try {
-      wu(expensable.evaluationOrderGroups(true)).toArray()
-    } catch {
-      // The iteration will throw an error if cycles exists.
-      // We want to return them so we catch it.
+  getCycle(): Edge[] | undefined {
+    const getCycleFrom = (
+      id: NodeId,
+      nodeColors: Map<NodeId, DFS_STATUS>,
+      path: Edge[] = []
+    ): Edge[] | undefined => {
+      if (nodeColors.has(id)) {
+        return nodeColors.get(id) === 'in_progress' ? path : undefined
+      }
+      nodeColors.set(id, 'in_progress')
+      const children = this.get(id).keys()
+      const cycle = wu(children).map(child => (
+        getCycleFrom(child, nodeColors, [...path, [id, child]])
+      )).find(values.isDefined)
+      nodeColors.set(id, 'done')
+      return cycle
     }
-    return expensable
+    const nodeColors = new Map()
+
+    return wu(this.keys())
+      .map(root => getCycleFrom(root, nodeColors))
+      .find(values.isDefined)
   }
 
   async walkAsyncDestructive(handler: AsyncNodeHandler): Promise<void> {

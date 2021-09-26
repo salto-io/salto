@@ -308,6 +308,7 @@ export const validateCredentials = async (
 }
 
 export default class SalesforceClient {
+  private readonly retryOptions: RequestRetryOptions
   private readonly conn: Connection
   private isLoggedIn = false
   private readonly credentials: Credentials
@@ -321,9 +322,10 @@ export default class SalesforceClient {
   ) {
     this.credentials = credentials
     this.config = config
+    this.retryOptions = createRetryOptions(_.defaults({}, config?.retry, DEFAULT_RETRY_OPTS))
     this.conn = connection ?? createConnectionFromCredentials(
       credentials,
-      createRetryOptions(_.defaults({}, config?.retry, DEFAULT_RETRY_OPTS)),
+      this.retryOptions,
     )
     setPollIntervalForConnection(this.conn, _.defaults({}, config?.polling, DEFAULT_POLLING_CONFIG))
     this.rateLimiters = createRateLimitersFromConfig(
@@ -340,13 +342,31 @@ export default class SalesforceClient {
     }
   }
 
+  private retryOnNullResponse<T>(request: () => Promise<T>): Promise<T> {
+    const requestWithRetry = async (attempts: number): Promise<T> => {
+      try {
+        return await request()
+      } catch (e) {
+        // This is attempting to work around a specific issue where the Salesforce API sometimes
+        // returns a null response for no apparent reason, causing jsforce to crash.
+        // We hope retrying will help...
+        if (attempts > 1 && e.message === 'Cannot read property \'result\' of null') {
+          log.warn('Encountered null result from salesforce, will retry %d more times', attempts - 1)
+          return requestWithRetry(attempts - 1)
+        }
+        throw e
+      }
+    }
+    return requestWithRetry(this.retryOptions.maxAttempts ?? DEFAULT_RETRY_OPTS.maxAttempts)
+  }
+
   /**
    * Extract metadata object names
    */
   @logDecorator()
   @requiresLogin()
   public async listMetadataTypes(): Promise<MetadataObject[]> {
-    const describeResult = this.conn.metadata.describe()
+    const describeResult = this.retryOnNullResponse(() => this.conn.metadata.describe())
     return flatValues((await describeResult).metadataObjects)
   }
 
@@ -358,7 +378,9 @@ export default class SalesforceClient {
   @requiresLogin()
   public async describeMetadataType(type: string): Promise<DescribeValueTypeResult> {
     const fullName = `{${METADATA_NAMESPACE}}${type}`
-    const describeResult = await this.conn.metadata.describeValueType(fullName)
+    const describeResult = await this.retryOnNullResponse(
+      () => this.conn.metadata.describeValueType(fullName)
+    )
     return flatValues(describeResult)
   }
 
@@ -372,7 +394,7 @@ export default class SalesforceClient {
     return sendChunked({
       operationInfo: 'listMetadataObjects',
       input: listMetadataQuery,
-      sendChunk: chunk => this.conn.metadata.list(chunk),
+      sendChunk: chunk => this.retryOnNullResponse(() => this.conn.metadata.list(chunk)),
       chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
       isUnhandledError,
     })
@@ -402,7 +424,7 @@ export default class SalesforceClient {
     return sendChunked({
       operationInfo: `readMetadata (${type})`,
       input: name,
-      sendChunk: chunk => this.conn.metadata.read(type, chunk),
+      sendChunk: chunk => this.retryOnNullResponse(() => this.conn.metadata.read(type, chunk)),
       chunkSize: MAX_ITEMS_IN_READ_METADATA_REQUEST,
       isSuppressedError: error => (
         (this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid')
@@ -447,7 +469,7 @@ export default class SalesforceClient {
     const result = await sendChunked({
       operationInfo: `upsert (${type})`,
       input: metadata,
-      sendChunk: chunk => this.conn.metadata.upsert(type, chunk),
+      sendChunk: chunk => this.retryOnNullResponse(() => this.conn.metadata.upsert(type, chunk)),
     })
     log.debug('upsert %o of type %s [result=%o]', makeArray(metadata).map(f => f.fullName),
       type, result.result)
@@ -467,7 +489,7 @@ export default class SalesforceClient {
     const result = await sendChunked({
       operationInfo: `delete (${type})`,
       input: fullNames,
-      sendChunk: chunk => this.conn.metadata.delete(type, chunk),
+      sendChunk: chunk => this.retryOnNullResponse(() => this.conn.metadata.delete(type, chunk)),
     })
     log.debug('deleted %o of type %s [result=%o]', fullNames, type, result.result)
     return result.result
@@ -477,7 +499,9 @@ export default class SalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
-    return flatValues(await this.conn.metadata.retrieve(retrieveRequest).complete())
+    return flatValues(
+      await this.retryOnNullResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete())
+    )
   }
 
   /**

@@ -24,9 +24,8 @@ import { JiraConfig, getApiDefinitions } from './config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import { JIRA } from './constants'
-import { pageByOffsetWithoutScopes } from './client/pagination'
 
-const { generateTypes, getAllInstances } = elementUtils.swagger
+const { generateTypes, getAllInstances, extractPageEntriesByNestedField } = elementUtils.swagger
 const { createPaginator } = clientUtils
 const log = logger(module)
 
@@ -39,6 +38,22 @@ export interface JiraAdapterParams {
   client: JiraClient
   config: JiraConfig
 }
+
+const removeScopedObjects = <T extends unknown>(response: T): T => {
+  if (Array.isArray(response)) {
+    return response
+      .filter(item => !(_.isPlainObject(item) && Object.keys(item).includes('scope')))
+      .map(removeScopedObjects) as T
+  }
+  if (_.isObject(response)) {
+    return _.mapValues(response, removeScopedObjects) as T
+  }
+  return response
+}
+
+export const extractPageEntries = (fieldName?: string): clientUtils.PageEntriesExtractor => (
+  entries => removeScopedObjects(extractPageEntriesByNestedField(fieldName)(entries))
+)
 
 export default class JiraAdapter implements AdapterOperations {
   private createFiltersRunner: () => Required<Filter>
@@ -53,9 +68,10 @@ export default class JiraAdapter implements AdapterOperations {
   }: JiraAdapterParams) {
     this.userConfig = config
     this.client = client
-    const paginator = createPaginator(
-      { paginationFunc: pageByOffsetWithoutScopes, client: this.client }
-    )
+    const paginator = createPaginator({
+      client: this.client,
+      paginationFuncCreator: clientUtils.getWithOffsetAndLimit,
+    })
     this.paginator = paginator
     this.createFiltersRunner = () => (
       filtersRunner({ client, paginator, config }, filterCreators)
@@ -96,6 +112,7 @@ export default class JiraAdapter implements AdapterOperations {
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: updatedApiDefinitionsConfig,
       fetchConfig: this.userConfig.fetch,
+      pageEntriesExtractor: extractPageEntries,
     })
   }
 

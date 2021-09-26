@@ -36,9 +36,7 @@ export type GetAllItemsFunc = (args: {
   client: HTTPClientInterface
   pageSize: number
   getParams: ClientGetWithPaginationParams
-  extractPageEntries: PageEntriesExtractor
 }) => AsyncIterable<ResponseValue[]>
-
 
 export type PaginationFunc = ({
   responseData,
@@ -53,6 +51,12 @@ export type PaginationFunc = ({
   getParams: types.PickyRequired<ClientGetWithPaginationParams, 'paginationField'>
   currentParams: Record<string, string>
 }) => Record<string, string>[]
+
+export type PaginationFuncCreator<T = {}> = (args: {
+  client: HTTPClientInterface
+  pageSize: number
+  getParams: ClientGetWithPaginationParams
+} & T) => PaginationFunc
 
 /**
  * Helper function for generating individual recursive queries based on past responses.
@@ -80,11 +84,11 @@ const computeRecursiveArgs = (
 
 export const traverseRequests: (
   paginationFunc: PaginationFunc,
-) => GetAllItemsFunc = paginationFunc => async function *getPages({
+  extractPageEntries: PageEntriesExtractor,
+) => GetAllItemsFunc = (paginationFunc, extractPageEntries) => async function *getPages({
   client,
   pageSize,
   getParams,
-  extractPageEntries,
 }) {
   const { url, paginationField, queryParams, recursiveQueryParams } = getParams
   const requestQueryArgs: Record<string, string>[] = [{}]
@@ -146,19 +150,19 @@ export const traverseRequests: (
  * next page is prev+1 and first page is as specified.
  * Also supports recursive queries (see example under computeRecursiveArgs).
  */
-export const getWithPageOffsetPagination: ((firstPage: number) => GetAllItemsFunc) = (
-  firstPage => async function *getWithOffset(args) {
+export const getWithPageOffsetPagination: ((firstPage: number) => PaginationFunc) = (
+  firstPage => {
     const nextPageFullPages: PaginationFunc = ({ page, getParams, currentParams, pageSize }) => {
       const { paginationField } = getParams
       if (page.length >= pageSize) {
         return [{
           ...currentParams,
-          [paginationField]: (currentParams[paginationField] ?? firstPage) + 1,
+          [paginationField]: (Number(currentParams[paginationField] ?? firstPage) + 1).toString(),
         }]
       }
       return []
     }
-    yield* traverseRequests(nextPageFullPages)(args)
+    return nextPageFullPages
   }
 )
 
@@ -167,20 +171,20 @@ export const getWithPageOffsetPagination: ((firstPage: number) => GetAllItemsFun
  * next page is prev+1 and first page is as specified.
  * Also supports recursive queries (see example under computeRecursiveArgs).
  */
-export const getWithPageOffsetAndLastPagination: ((firstPage: number) => GetAllItemsFunc) = (
-  firstPage => async function *getWithOffset(args) {
+export const getWithPageOffsetAndLastPagination: ((firstPage: number) => PaginationFunc) = (
+  firstPage => {
     const nextPageFullPages: PaginationFunc = ({ responseData, getParams, currentParams }) => {
       const { paginationField } = getParams
       // hard-coding the "last" flag for now - if we see more variants we can move it to config
       if (_.get(responseData, 'last') === false) {
         return [{
           ...currentParams,
-          [paginationField]: (currentParams[paginationField] ?? firstPage) + 1,
+          [paginationField]: (Number(currentParams[paginationField] ?? firstPage) + 1).toString(),
         }]
       }
       return []
     }
-    yield* traverseRequests(nextPageFullPages)(args)
+    return nextPageFullPages
   }
 )
 
@@ -198,8 +202,8 @@ const defaultPathChecker: PathCheckerFunc = (endpointPath, nextPath) => (endpoin
  * as either a full URL or just the path and query prameters.
  * Only supports next pages under the same endpoint (and uses the same host).
  */
-export const getWithCursorPagination: ((pathChecker?: PathCheckerFunc) => GetAllItemsFunc) = (
-  (pathChecker = defaultPathChecker) => async function *getWithCursor(args) {
+export const getWithCursorPagination: ((pathChecker?: PathCheckerFunc) => PaginationFunc) = (
+  (pathChecker = defaultPathChecker) => {
     const nextPageCursorPages: PaginationFunc = ({
       responseData, getParams, currentParams,
     }) => {
@@ -215,11 +219,11 @@ export const getWithCursorPagination: ((pathChecker?: PathCheckerFunc) => GetAll
       }
       return []
     }
-    yield* traverseRequests(nextPageCursorPages)(args)
+    return nextPageCursorPages
   }
 )
 
-export const getWithOffsetAndLimit: GetAllItemsFunc = args => {
+export const getWithOffsetAndLimit = (): PaginationFunc => {
   // Hard coded "isLast" and "values" in order to fit the configuration scheme which only allows
   // "paginationField" to be configured
   type PageResponse = {
@@ -242,7 +246,8 @@ export const getWithOffsetAndLimit: GetAllItemsFunc = args => {
   ) => {
     const { paginationField } = getParams
     if (!isPageResponse(responseData, paginationField)) {
-      throw new Error(`Response from ${getParams.url} expected page with pagination field ${paginationField}, got ${responseData}`)
+      log.error('Response from %s expected page with pagination field %s, got %s', getParams.url, paginationField, safeJsonStringify(responseData))
+      throw new Error(`Response from ${getParams.url} expected page with pagination field ${paginationField}`)
     }
     if (responseData.isLast) {
       return []
@@ -253,7 +258,7 @@ export const getWithOffsetAndLimit: GetAllItemsFunc = args => {
     return [nextPage]
   }
 
-  return traverseRequests(getNextPage)(args)
+  return getNextPage
 }
 
 export type Paginator = (
@@ -264,11 +269,12 @@ export type Paginator = (
 /**
  * Wrap a pagination function for use by the adapter
  */
-export const createPaginator = ({ paginationFunc, client }: {
-  paginationFunc: GetAllItemsFunc
+export const createPaginator = ({ paginationFuncCreator, client }: {
+  paginationFuncCreator: PaginationFuncCreator
   client: HTTPClientInterface
 }): Paginator => (
-  (params, extractPageEntries) => paginationFunc(
-    { client, pageSize: client.getPageSize(), getParams: params, extractPageEntries },
-  )
+  (getParams, extractPageEntries) => traverseRequests(
+    paginationFuncCreator({ client, pageSize: client.getPageSize(), getParams }),
+    extractPageEntries,
+  )({ client, pageSize: client.getPageSize(), getParams })
 )

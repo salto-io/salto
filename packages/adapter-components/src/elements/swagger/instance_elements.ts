@@ -249,14 +249,23 @@ type GetEntriesParams = {
   requestContext?: Record<string, unknown>
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
+  pageEntriesExtractor: (fieldName?: string) => PageEntriesExtractor
 }
+
+export const extractPageEntriesByNestedField = (fieldName?: string): PageEntriesExtractor => (
+  page => (
+    fieldName !== undefined
+      ? makeArray(_.get(page, fieldName)) as ResponseValue[]
+      : makeArray(page) as ResponseValue[]
+  )
+)
 
 const getEntriesForType = async (
   params: GetEntriesParams
 ): Promise<{ entries: Values[]; objType: ObjectType }> => {
   const {
     typeName, paginator, typesConfig, typeDefaultConfig, objectTypes, contextElements,
-    requestContext, nestedFieldFinder, computeGetArgs,
+    requestContext, nestedFieldFinder, computeGetArgs, pageEntriesExtractor,
   } = params
   const type = await normalizeType(objectTypes[typeName])
   const typeConfig = typesConfig[typeName]
@@ -316,14 +325,11 @@ const getEntriesForType = async (
   const getEntries = async (): Promise<Values[]> => {
     const args = computeGetArgs(requestWithDefaults, contextElements, requestContext)
 
-    const extractPageEntries: PageEntriesExtractor = page => (
-      nestedFieldDetails !== undefined
-        ? makeArray(page[nestedFieldDetails.field.name]) as ResponseValue[]
-        : makeArray(page) as ResponseValue[]
-    )
-
     const results = (await Promise.all(args.map(
-      async getArgs => ((await toArrayAsync(await paginator(getArgs, extractPageEntries))).flat())
+      async getArgs => ((await toArrayAsync(await paginator(
+        getArgs,
+        pageEntriesExtractor(nestedFieldDetails?.field.name),
+      ))).flat())
     ))).flatMap(makeArray)
 
     const entries = (results
@@ -412,6 +418,7 @@ export const getAllInstances = async ({
   objectTypes,
   nestedFieldFinder = findDataField,
   computeGetArgs = defaultComputeGetArgs,
+  pageEntriesExtractor = extractPageEntriesByNestedField,
 }: {
   paginator: Paginator
   apiConfig: Pick<AdapterSwaggerApiConfig, 'types' | 'typeDefaults'>
@@ -419,6 +426,7 @@ export const getAllInstances = async ({
   objectTypes: Record<string, ObjectType>
   nestedFieldFinder?: FindNestedFieldFunc
   computeGetArgs?: ComputeGetArgsFunc
+  pageEntriesExtractor?: (fieldName?: string) => PageEntriesExtractor
 }): Promise<InstanceElement[]> => {
   const { types, typeDefaults } = apiConfig
 
@@ -429,6 +437,7 @@ export const getAllInstances = async ({
     typeDefaultConfig: typeDefaults,
     nestedFieldFinder,
     computeGetArgs,
+    pageEntriesExtractor,
   }
 
   return getElementsWithContext({

@@ -21,7 +21,6 @@ import { adapter } from '../src/adapter_creator'
 import { Credentials } from '../src/auth'
 import { JiraConfig, configType } from '../src/config'
 import JiraClient from '../src/client/client'
-import { pageByOffsetWithoutScopes } from '../src/client/pagination'
 
 
 export const createCredentialsInstance = (credentials: Credentials): InstanceElement => (
@@ -66,7 +65,7 @@ export const mockClient = (): ClientWithMockConnection => {
     },
   })
   const paginator = clientUtils.createPaginator(
-    { paginationFunc: pageByOffsetWithoutScopes, client }
+    { paginationFuncCreator: clientUtils.getWithOffsetAndLimit, client }
   )
   return { client, paginator, connection }
 }

@@ -533,6 +533,29 @@ describe('fetch', () => {
       })
     })
 
+    describe('when the adapter returns elements that includes type and its instances', () => {
+      const inst = new InstanceElement('inst', newTypeBase)
+      beforeEach(async () => {
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          Promise.resolve({ elements: [newTypeBase, inst, typeWithHiddenField] })
+        )
+        const result = await fetchChanges(
+          mockAdapters,
+          createElementSource([typeWithHiddenField]),
+          createElementSource([]),
+          [],
+        )
+        changes = [...result.changes]
+      })
+      it('should return changes for both elements', () => {
+        expect(changes).toHaveLength(2)
+      })
+      it('should return correct changes', () => {
+        expect(changes[0].change).toMatchObject({ action: 'add', id: newTypeBase.elemID })
+        expect(changes[1].change).toMatchObject({ action: 'add', id: inst.elemID })
+      })
+    })
+
     describe('when the adapter returns elements that should be split', () => {
       beforeEach(async () => {
         mockAdapters.dummy.fetch.mockResolvedValueOnce(

@@ -194,10 +194,6 @@ const toFetchChanges = (
         return undefined
       }
 
-      // Find all changes that relate to the current ID and mark them as handled
-      const relatedChanges = [...serviceAndPendingChanges.valuesWithPrefix(id)].flat()
-      relatedChanges.forEach(change => handledChangeIDs.add(change.change.id.getFullName()))
-
       const wsChange = workspaceToServiceChanges[id]
       if (wsChange === undefined) {
         // If we get here it means there is a difference between the service and the state
@@ -208,6 +204,13 @@ const toFetchChanges = (
         log.debug('service change on %s already updated in workspace', id)
         return undefined
       }
+
+      // Find all changes that relate to the current ID and mark them as handled
+      const relatedChanges = [...serviceAndPendingChanges.valuesWithPrefix(id)]
+        .flat()
+        .filter(change =>
+          wsChange.id.isEqual(change.change.id) || wsChange.id.isParentOf(change.change.id))
+      relatedChanges.forEach(change => handledChangeIDs.add(change.change.id.getFullName()))
 
       const [serviceChanges, pendingChanges] = _.partition(
         relatedChanges,

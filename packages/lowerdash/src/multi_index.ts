@@ -29,7 +29,7 @@ export type Index<Key extends KeyType, T> = {
 type IndexFunction<
   InputType = unknown,
   FilteredType extends InputType = InputType,
-  ResultType = InputType,
+  ResultType = FilteredType,
   Key extends KeyType = KeyType,
   IndexName extends string = string,
 > = {
@@ -44,7 +44,7 @@ type MultiIndexBuilder<InputType, Result extends object = {}> = {
     IndexName extends string,
     Key extends KeyType,
     FilteredType extends InputType = InputType,
-    ResultType = InputType
+    ResultType = FilteredType
   >(
     f: IndexFunction<InputType, FilteredType, ResultType, Key, IndexName>
   ) => MultiIndexBuilder<InputType, Result & { [name in IndexName]: Index<Key, ResultType> }>
@@ -139,7 +139,7 @@ export const keyByAsync = async <
   Key extends KeyType,
   InputType,
   FilteredType extends InputType = InputType,
-  ResultType = InputType
+  ResultType = FilteredType
 >(
   { iter, key, map, filter }: KeyByAsyncParams<Key, InputType, FilteredType, ResultType>
 ): Promise<Index<Key, ResultType>> => {

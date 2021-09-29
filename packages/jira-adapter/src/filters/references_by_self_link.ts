@@ -51,7 +51,11 @@ function getSelfLink(obj: unknown): string | undefined {
   if (_.isString(obj.self)) {
     return obj.self
   }
-  return getSelfLink(obj[ADDITIONAL_PROPERTIES_FIELD])
+  const additionalProperties = obj[ADDITIONAL_PROPERTIES_FIELD]
+  if (isPlainObject(additionalProperties) && _.isString(additionalProperties.self)) {
+    return additionalProperties.self
+  }
+  return undefined
 }
 
 
@@ -64,7 +68,8 @@ const isInstanceElementWithSelfLink = (elem: Element): elem is InstanceElementWi
   isInstanceElement(elem) && hasSelfLink(elem.value)
 )
 
-const getRelativeSelfLink = (fullLink: string): string => {
+const getRelativeSelfLink = (obj: ObjectWithSelfLink): string => {
+  const fullLink = getSelfLink(obj)
   const selfLink = new URL(fullLink)
   // We take only the part of the link after the api version
   // we expect the pathname to be in the form of "/<rest or agile>/api/<version number>/..."
@@ -76,11 +81,11 @@ const transformSelfLinkToReference = (
 ): TransformFunc => ({ value, path }) => {
   if (path && path.isTopLevel()) {
     // Skip the top level value as we should not replace the instance content
-    // we a reference to itself
+    // with a reference to itself
     return value
   }
   if (hasSelfLink(value)) {
-    const target = elementsBySelfLink.get(getRelativeSelfLink(getSelfLink(value)))
+    const target = elementsBySelfLink.get(getRelativeSelfLink(value))
     if (target !== undefined) {
       return new ReferenceExpression(target.elemID, target)
     }
@@ -94,11 +99,14 @@ const transformSelfLinkToReference = (
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
+    const instances = elements.filter(isInstanceElement)
+
     const elementsBySelfLink = await multiIndex.keyByAsync({
-      iter: awu(elements).filter(isInstanceElementWithSelfLink),
-      key: inst => [getRelativeSelfLink(getSelfLink(inst.value))],
+      iter: awu(instances),
+      filter: isInstanceElementWithSelfLink,
+      key: inst => [getRelativeSelfLink(inst.value)],
     })
-    await awu(elements).filter(isInstanceElement).forEach(async inst => {
+    await awu(instances).forEach(async inst => {
       inst.value = await transformValues({
         values: inst.value,
         type: await inst.getType(),

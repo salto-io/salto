@@ -1012,5 +1012,19 @@ describe('multi env source', () => {
         staticFile.filepath, staticFile.encoding
       )).toEqual(staticFile)
     })
+    it('should return missingStaticFile if the file is not present in any of the sources', async () => {
+      commonSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
+      envSrcStaticFileSource.getStaticFile = jest.fn().mockResolvedValueOnce(new MissingStaticFile(''))
+      const src = multiEnvSource(
+        sources,
+        activePrefix,
+        commonPrefix,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+        false
+      )
+      expect(await src.getStaticFile(
+        staticFile.filepath, staticFile.encoding
+      )).toEqual(new MissingStaticFile(staticFile.filepath))
+    })
   })
 })

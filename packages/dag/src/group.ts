@@ -34,34 +34,48 @@ export type GroupKeyFunc = (id: NodeId) => string
 
 type COMPONENT_VALIDITY_STATUS = 'valid' | 'invalid' | 'in_progress'
 
-const colorComponentsValidity = <T>(
-  source: DataNodeMap<T>,
-  id: NodeId,
-  srcGroupNodes: Set<NodeId>,
-  srcNodesWithToRef: Set<NodeId>,
+// This method will color the validity of the nodes in the group
+// a node is said to be a valid part of a detacheable subgroup if
+// it's connected component does not contain nodes that have edges
+// to the next group in the cycle. We identify a node validity by
+// performing a DFS from that node and updatinng a "visited" map
+// with the validity status. If A node is valid if *all* of its children
+// are valid. So if we encounter an invalid node, we mark this node as invalid.
+// If we encounter a node which is 'in progress' this means that we found
+// a cycle whithin the group, which is ok, and we can ignore this node in the
+// calculation until the DFS will return to it.
+const colorComponentsValidity = <T>({ source, id, srcGroupNodes,
+  srcNodesWithToRef, visited }: {
+  source: DataNodeMap<T>
+  id: NodeId
+  srcGroupNodes: Set<NodeId>
+  srcNodesWithToRef: Set<NodeId>
   visited: Map<NodeId, COMPONENT_VALIDITY_STATUS>
-): boolean => {
+}): boolean => {
   if (visited.has(id)) {
     return visited.get(id) !== 'invalid'
   }
   visited.set(id, 'in_progress')
-  const hasInvalidChildren = wu(source.get(id).values())
-    .filter(childId => srcGroupNodes.has(childId))
-    .some(childId => !colorComponentsValidity(
-      source,
-      childId,
-      srcGroupNodes,
-      srcNodesWithToRef,
-      visited
-    ))
-  const isValid = !hasInvalidChildren && !srcNodesWithToRef.has(id)
+  const isValid = !srcNodesWithToRef.has(id)
+    // the code below checks if the node has invalid children -
+    // This is not in  a seperate more readable variable
+    // in order to avoid calculation if this node in itsef is invalid
+    && !wu(source.get(id).values())
+      .filter(childId => srcGroupNodes.has(childId))
+      .some(childId => !colorComponentsValidity({
+        source,
+        id: childId,
+        srcGroupNodes,
+        srcNodesWithToRef,
+        visited,
+      }))
   visited.set(id, isValid ? 'valid' : 'invalid')
   return isValid
 }
 
 const getComponent = <T>(
   source: DataNodeMap<T>,
-  srcGroupNodes: Set<NodeId>,
+  currentGroupNodes: Set<NodeId>,
   id: NodeId,
   visited: Set<NodeId> = new Set()
 ): Set<NodeId> => {
@@ -71,8 +85,8 @@ const getComponent = <T>(
   visited.add(id)
   const children = new Set(
     wu(source.get(id).values())
-      .filter(childId => srcGroupNodes.has(childId))
-      .map(childId => getComponent(source, srcGroupNodes, childId, visited))
+      .filter(childId => currentGroupNodes.has(childId))
+      .map(childId => getComponent(source, currentGroupNodes, childId, visited))
       .flatten(true)
   )
   return children.add(id)
@@ -84,18 +98,25 @@ const getComponentToSplit = <T>(
   srcNodesWithBackRef: Set<NodeId>,
   srcNodesWithToRef: Set<NodeId>,
 ): Set<NodeId> | undefined => {
-  const colorMap = new Map<NodeId, COMPONENT_VALIDITY_STATUS>()
+  const visited = new Map<NodeId, COMPONENT_VALIDITY_STATUS>()
   return wu(srcNodesWithBackRef.keys()).map(root => {
-    const isValid = colorComponentsValidity(
+    const isValid = colorComponentsValidity({
       source,
-      root,
-      currentGroupNodes,
+      id: root,
+      srcGroupNodes: currentGroupNodes,
       srcNodesWithToRef,
-      colorMap
-    )
+      visited,
+    })
     if (isValid) {
       const component = getComponent(source, currentGroupNodes, root)
-      return component.size < currentGroupNodes.size ? component : undefined
+      // We need to make sure that the component is not the entire group in order
+      // to make sure that the algorithm converge. (As long as the number of total groups
+      // increases every iteration, we know the number of iteration is bounded by the number
+      // of nodes since this is the maximal possible number of groups. Without this check, the
+      // total number of group can remain the same after an iteration.)
+      return component.size > 0 && component.size < currentGroupNodes.size
+        ? component
+        : undefined
     }
     return undefined
   })
@@ -108,24 +129,23 @@ const modifyGroupKeyToRemoveCycle = <T>(
   source: DataNodeMap<T>,
   knownCycle: Cycle
 ): GroupKeyFunc => {
-  // eslint-disable-next-line no-plusplus
   const modifiedFunc = knownCycle.map((inEdge, index) => {
     const outEdge = knownCycle[(index + 1) % knownCycle.length]
     const [prevGroup, currentGroup, nextGroup] = [...inEdge, outEdge[1]]
     const currentGroupSrcIds = wu(groupGraph.getData(currentGroup).items.keys()).toArray()
-    const srcNodesWithBackRef = new Set(currentGroupSrcIds.filter(
+    const sourceNodesWithBackRef = new Set(currentGroupSrcIds.filter(
       id => wu(source.getReverse(id).values())
         .find(srcId => groupKey(srcId) === prevGroup)
     ))
-    const srcNodesWithToRef = new Set(currentGroupSrcIds.filter(
+    const sourceNodesWithToRef = new Set(currentGroupSrcIds.filter(
       id => wu(source.get(id).values())
         .find(destId => groupKey(destId) === nextGroup)
     ))
     const componentToSplit = getComponentToSplit(
       source,
       new Set(currentGroupSrcIds),
-      srcNodesWithBackRef,
-      srcNodesWithToRef,
+      sourceNodesWithBackRef,
+      sourceNodesWithToRef,
     )
     if (componentToSplit !== undefined) {
       const newGroupId = _.uniqueId(`${currentGroup}-`)
@@ -137,7 +157,10 @@ const modifyGroupKeyToRemoveCycle = <T>(
   if (values.isDefined(modifiedFunc)) {
     return modifiedFunc
   }
-  const origCycle = source.filterNodes(id => !knownCycle.flatMap(e => e).includes(groupKey(id)))
+  // We create a graph that contains only the nodes and edges from this cycle
+  // in order to creat an error with the original cycle in the source graph
+  // (since using the group names would mean nothing to the user)
+  const origCycle = source.filterNodes(id => knownCycle.flatMap(e => e).includes(groupKey(id)))
   throw new CircularDependencyError(origCycle)
 }
 
@@ -162,6 +185,7 @@ const buildPossiblyCyclicGroupGraph = <T>(
   source.edges()
     .filter(([from, to]) => itemToGroupId.get(from) !== itemToGroupId.get(to))
     .forEach(([from, to]) => {
+      // The ?? are linter bakshish. We know the keys are there.
       graph.addEdge(itemToGroupId.get(from) ?? from, itemToGroupId.get(to) ?? to)
     })
   return graph
@@ -170,14 +194,14 @@ const buildPossiblyCyclicGroupGraph = <T>(
 export const buildGroupedGraph = <T>(
   source: DataNodeMap<T>,
   groupKey: GroupKeyFunc,
-  originGroupKey: GroupKeyFunc = groupKey
+  origGroupKey: GroupKeyFunc = groupKey
 ): GroupedNodeMap<T> => log.time(() => {
   // Build group graph
-    const groupGraph = buildPossiblyCyclicGroupGraph(source, groupKey, originGroupKey)
+    const groupGraph = buildPossiblyCyclicGroupGraph(source, groupKey, origGroupKey)
     const possibleCycle = groupGraph.getCycle()
     if (possibleCycle === undefined) {
       return groupGraph
     }
     const updatedGroupKey = modifyGroupKeyToRemoveCycle(groupGraph, groupKey, source, possibleCycle)
-    return buildGroupedGraph(source, updatedGroupKey, originGroupKey)
+    return buildGroupedGraph(source, updatedGroupKey, origGroupKey)
   }, 'build grouped graph for %o nodes', source.size)

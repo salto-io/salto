@@ -183,7 +183,7 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
   }
 
   filterNodes(func: (node: NodeId) => boolean): this {
-    const nodesToDrop = new Set(wu(this.keys()).filter(func))
+    const nodesToDrop = new Set(wu(this.keys()).filter(node => !func(node)))
     return this.cloneWithout(nodesToDrop)
   }
 

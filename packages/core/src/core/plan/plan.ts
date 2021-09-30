@@ -170,6 +170,9 @@ const addDifferentElements = (
     afterElem?: ChangeDataType
   ): DiffNode<ChangeDataType> => {
     if (beforeElem !== undefined && afterElem !== undefined) {
+      if (!beforeElem.elemID.isEqual(afterElem.elemID)) {
+        throw new Error('Can not compare elements with different Elem Ids')
+      }
       return {
         originalId: beforeElem.elemID.getFullName(),
         action: 'modify',

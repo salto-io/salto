@@ -21,6 +21,7 @@ import {
   ObjectType, CORE_ANNOTATIONS, SaltoError, Values, ListType, DetailedChange,
   AdapterAuthentication, OAuthRequestParameters, OauthAccessTokenResponse,
   createRefToElmWithValue,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import {
   Plan, PlanItem, EVENT_TYPES, DeployResult,
@@ -621,4 +622,30 @@ export const deploy = async (
     changes: dummyChanges.map(c => ({ change: c, serviceChanges: [c] })),
     errors: [],
   }
+}
+
+export const staticFileChange = (action: 'add' | 'modify' | 'remove'): DetailedChange => {
+  const id = new ElemID('salesforce')
+  const path = ['salesforce', 'Records', 'advancedpdftemplate', 'custtmpl_103_t2257860_156']
+  const beforeFile = new StaticFile({
+    filepath: 'salesforce/advancedpdftemplate/custtmpl_103_t2257860_156.xml',
+    encoding: 'binary',
+    hash: '5fa14331d637ce9b056be8abe433d43d',
+  })
+  const afterFile = new StaticFile({
+    filepath: 'salesforce/advancedpdftemplate/custtmpl_103_t2257860_156.xml',
+    encoding: 'binary',
+    hash: '81511e24c8023d819040a196fbaf8ee7',
+  })
+
+  if (action === 'add') {
+    const data = { after: afterFile }
+    return { id, action, data, path }
+  }
+  if (action === 'modify') {
+    const data = { before: beforeFile, after: afterFile }
+    return { id, action, data, path }
+  }
+  const data = { before: beforeFile }
+  return { id, action, data, path }
 }

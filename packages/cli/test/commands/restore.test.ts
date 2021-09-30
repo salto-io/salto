@@ -17,7 +17,6 @@ import { restore } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { CliExitCode } from '../../src/types'
 import { action } from '../../src/commands/restore'
-
 import * as mocks from '../mocks'
 import { buildEventName } from '../../src/telemetry'
 
@@ -254,6 +253,73 @@ describe('restore command', () => {
         },
         workspace: mocks.mockWorkspace({}),
       })
+      expect(result).toBe(CliExitCode.Success)
+    })
+  })
+  describe('restoring modified static files', () => {
+    it('should not print about addition changes of static files', async () => {
+      const workspace = mocks.mockWorkspace({})
+      mockRestore.mockResolvedValueOnce([
+        { change: mocks.staticFileChange('add'), serviceChanges: [mocks.staticFileChange('add')] }])
+
+      const result = await action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+          mode: 'default',
+          services,
+        },
+        workspace,
+      })
+
+      expect(output.stdout.content).not.toContain('Static resources are not supported')
+      expect(result).toBe(CliExitCode.Success)
+    })
+
+    it('should warn of unrestoring modified static files', async () => {
+      const workspace = mocks.mockWorkspace({})
+      mockRestore.mockResolvedValueOnce([
+        { change: mocks.staticFileChange('modify'), serviceChanges: [mocks.staticFileChange('modify')] }])
+
+      const result = await action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+          mode: 'default',
+          services,
+        },
+        workspace,
+      })
+
+      expect(output.stdout.content).toContain('salesforce/advancedpdftemplate/custtmpl_103_t2257860_156.xml')
+      expect(result).toBe(CliExitCode.Success)
+    })
+
+    it('should warn of unrestoring removed static files', async () => {
+      const workspace = mocks.mockWorkspace({})
+      mockRestore.mockResolvedValueOnce([
+        { change: mocks.staticFileChange('remove'), serviceChanges: [mocks.staticFileChange('remove')] }])
+
+      const result = await action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+          mode: 'default',
+          services,
+        },
+        workspace,
+      })
+
+      expect(output.stdout.content).toContain('salesforce/advancedpdftemplate/custtmpl_103_t2257860_156.xml')
       expect(result).toBe(CliExitCode.Success)
     })
   })

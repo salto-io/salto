@@ -18,12 +18,12 @@ import {
   InstanceElement, Values, ObjectType, isObjectType, ReferenceExpression, isReferenceExpression,
   isListType, isMapType,
 } from '@salto-io/adapter-api'
-import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
+import { transformElement, TransformFunc, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { ADDITIONAL_PROPERTIES_FIELD, ARRAY_ITEMS_FIELD } from './type_elements/swagger_parser'
 import { InstanceCreationParams, toBasicInstance } from '../instance_elements'
-import { UnauthorizedError, Paginator, PageEntriesExtractor, ResponseValue } from '../../client'
+import { UnauthorizedError, Paginator, PageEntriesExtractor } from '../../client'
 import {
   UserFetchConfig, TypeSwaggerDefaultConfig, TransformationConfig, TransformationDefaultConfig,
   AdapterSwaggerApiConfig, TypeSwaggerConfig, getConfigWithDefault, RecurseIntoCondition,
@@ -35,7 +35,7 @@ import { getElementsWithContext } from '../element_getter'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
-const { isDefined } = lowerdashValues
+const { isDefined, isPlainRecord } = lowerdashValues
 const log = logger(module)
 
 class InvalidTypeConfig extends Error {}
@@ -253,11 +253,16 @@ type GetEntriesParams = {
 }
 
 export const extractPageEntriesByNestedField = (fieldName?: string): PageEntriesExtractor => (
-  page => (
-    fieldName !== undefined
-      ? makeArray(_.get(page, fieldName)) as ResponseValue[]
-      : makeArray(page) as ResponseValue[]
-  )
+  page => {
+    const allEntries = (fieldName !== undefined
+      ? makeArray(_.get(page, fieldName))
+      : makeArray(page))
+    const [validEntries, invalidEntries] = _.partition(allEntries, isPlainRecord)
+    if (invalidEntries.length > 0) {
+      log.error('omitted %d invalid entries: %s', invalidEntries.length, safeJsonStringify(invalidEntries))
+    }
+    return validEntries
+  }
 )
 
 const getEntriesForType = async (

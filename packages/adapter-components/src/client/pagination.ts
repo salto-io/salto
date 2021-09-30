@@ -246,8 +246,7 @@ export const getWithOffsetAndLimit = (): PaginationFunc => {
   ) => {
     const { paginationField } = getParams
     if (!isPageResponse(responseData, paginationField)) {
-      log.error('Response from %s expected page with pagination field %s, got %s', getParams.url, paginationField, safeJsonStringify(responseData))
-      throw new Error(`Response from ${getParams.url} expected page with pagination field ${paginationField}`)
+      throw new Error(`Response from ${getParams.url} expected page with pagination field ${paginationField}, got ${safeJsonStringify(responseData)}`)
     }
     if (responseData.isLast) {
       return []

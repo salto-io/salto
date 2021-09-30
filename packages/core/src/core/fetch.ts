@@ -21,17 +21,19 @@ import {
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
   ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId, CORE_ANNOTATIONS,
+  AdapterOperationsContext,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { merger, elementSource } from '@salto-io/workspace'
+import { merger, elementSource, Workspace, pathIndex } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 import { AdapterEvents, createAdapterProgressReporter } from './adapters/progress'
 import { IDFilter } from './plan/plan'
+import { getAdaptersCreatorConfigs } from './adapters'
 
 const { awu, groupByAsync } = collections.asynciterable
 const { mergeElements } = merger
@@ -358,7 +360,7 @@ const fetchAndProcessMergeErrors = async (
     serviceElements: Element[]
     errors: SaltoError[]
     processErrorsResult: ProcessMergeErrorsResult
-    updatedConfig: UpdatedConfig[]
+    updatedConfigs: UpdatedConfig[]
     partiallyFetchedAdapters: Set<string>
   }> => {
   try {
@@ -392,7 +394,7 @@ const fetchAndProcessMergeErrors = async (
 
     const serviceElements = _.flatten(fetchResults.map(res => res.elements))
     const fetchErrors = fetchResults.flatMap(res => res.errors)
-    const updatedConfig = fetchResults
+    const updatedConfigs = fetchResults
       .map(res => res.updatedConfig)
       .filter(values.isDefined) as UpdatedConfig[]
 
@@ -447,7 +449,7 @@ const fetchAndProcessMergeErrors = async (
       serviceElements: validServiceElements,
       errors: fetchErrors,
       processErrorsResult,
-      updatedConfig,
+      updatedConfigs,
       partiallyFetchedAdapters,
     }
   } catch (error) {
@@ -529,7 +531,6 @@ const calcFetchChanges = async (
   // Merge pending changes and service changes into one tree so we can find conflicts between them
   serviceChanges.merge(pendingChanges)
   const fetchChanges = toFetchChanges(serviceChanges, workspaceToServiceChanges)
-
   const serviceElementsMap = _.groupBy(
     serviceElements,
     e => e.elemID.getFullName()
@@ -541,35 +542,25 @@ const calcFetchChanges = async (
     .toArray()
 }
 
-export const fetchChanges = async (
-  adapters: Record<string, AdapterOperations>,
-  workspaceElements: elementSource.ElementsSource,
-  stateElements: elementSource.ElementsSource,
-  currentConfigs: InstanceElement[],
+type CreateFetchChangesParams = {
+  adapterNames: string[]
+  workspaceElements: elementSource.ElementsSource
+  stateElements: elementSource.ElementsSource
+  unmergedElements: Element[]
+  processErrorsResult: ProcessMergeErrorsResult
+  currentConfigs: InstanceElement[]
+  getChangesEmitter: StepEmitter
+  partiallyFetchedAdapters?: Set<string>
+  updatedConfigs?: UpdatedConfig[]
+  errors?: SaltoError[]
   progressEmitter?: EventEmitter<FetchProgressEvents>
+}
+const createFetchChanges = async ({
+  adapterNames, workspaceElements, stateElements, unmergedElements,
+  processErrorsResult, currentConfigs, getChangesEmitter, partiallyFetchedAdapters = new Set(),
+  updatedConfigs = [], errors = [], progressEmitter,
+}: CreateFetchChangesParams
 ): Promise<FetchChangesResult> => {
-  const adapterNames = _.keys(adapters)
-  const getChangesEmitter = new StepEmitter()
-  if (progressEmitter) {
-    progressEmitter.emit('changesWillBeFetched', getChangesEmitter, adapterNames)
-  }
-  const {
-    serviceElements, errors, processErrorsResult, updatedConfig, partiallyFetchedAdapters,
-  } = await fetchAndProcessMergeErrors(
-    adapters,
-    stateElements,
-    getChangesEmitter,
-    progressEmitter
-  )
-
-  const adaptersFirstFetchPartial = await getAdaptersFirstFetchPartial(
-    stateElements,
-    partiallyFetchedAdapters
-  )
-  adaptersFirstFetchPartial.forEach(
-    adapter => log.warn('Received partial results from %s before full fetch', adapter)
-  )
-
   const calculateDiffEmitter = new StepEmitter()
   if (progressEmitter) {
     getChangesEmitter.emit('completed')
@@ -580,9 +571,9 @@ export const fetchChanges = async (
     .filter(e => !e.isConfig())
     .isEmpty()
   const changes = isFirstFetch
-    ? serviceElements.map(toAddFetchChange)
+    ? unmergedElements.map(toAddFetchChange)
     : await calcFetchChanges(
-      serviceElements,
+      unmergedElements,
       elementSource.createInMemoryElementSource(processErrorsResult.keptElements),
       // When we init a new env, state will be empty. We fallback to the workspace
       // elements since they should be considered a part of the env and the diff
@@ -592,13 +583,12 @@ export const fetchChanges = async (
       partiallyFetchedAdapters,
       new Set(adapterNames)
     )
-
   log.debug('finished to calculate fetch changes')
   if (progressEmitter) {
     calculateDiffEmitter.emit('completed')
   }
 
-  const configsMerge = await mergeElements(awu(updatedConfig.flatMap(c => c.config)))
+  const configsMerge = await mergeElements(awu(updatedConfigs.flatMap(c => c.config)))
 
   const errorMessages = await awu(await configsMerge.errors.entries())
     .flatMap(err => err.value)
@@ -617,7 +607,7 @@ export const fetchChanges = async (
     after: elementSource.createInMemoryElementSource(configs),
   })
 
-  const adapterNameToConfig = _.keyBy(updatedConfig, config => config.config[0].elemID.adapter)
+  const adapterNameToConfig = _.keyBy(updatedConfigs, config => config.config[0].elemID.adapter)
   const adapterNameToConfigMessage = _.mapValues(adapterNameToConfig, config => config.message)
 
   const elements = partiallyFetchedAdapters.size !== 0
@@ -631,12 +621,121 @@ export const fetchChanges = async (
     changes,
     elements,
     errors,
-    unmergedElements: serviceElements,
+    unmergedElements,
     mergeErrors: processErrorsResult.errorsWithDroppedElements,
     configChanges,
     updatedConfig: _.mapValues(adapterNameToConfig, config => config.config),
     adapterNameToConfigMessage,
   }
+}
+export const fetchChanges = async (
+  adapters: Record<string, AdapterOperations>,
+  workspaceElements: elementSource.ElementsSource,
+  stateElements: elementSource.ElementsSource,
+  currentConfigs: InstanceElement[],
+  progressEmitter?: EventEmitter<FetchProgressEvents>
+): Promise<FetchChangesResult> => {
+  const adapterNames = _.keys(adapters)
+  const getChangesEmitter = new StepEmitter()
+  if (progressEmitter) {
+    progressEmitter.emit('changesWillBeFetched', getChangesEmitter, adapterNames)
+  }
+  const {
+    serviceElements, errors, processErrorsResult, updatedConfigs, partiallyFetchedAdapters,
+  } = await fetchAndProcessMergeErrors(
+    adapters,
+    stateElements,
+    getChangesEmitter,
+    progressEmitter
+  )
+
+  const adaptersFirstFetchPartial = await getAdaptersFirstFetchPartial(
+    stateElements,
+    partiallyFetchedAdapters
+  )
+  adaptersFirstFetchPartial.forEach(
+    adapter => log.warn('Received partial results from %s before full fetch', adapter)
+  )
+
+  return createFetchChanges({
+    unmergedElements: serviceElements,
+    adapterNames: Object.keys(adapters),
+    workspaceElements,
+    stateElements,
+    currentConfigs,
+    getChangesEmitter,
+    progressEmitter,
+    processErrorsResult,
+    errors,
+    updatedConfigs,
+    partiallyFetchedAdapters,
+  })
+}
+
+export const fetchChangesFromWorkspace = async (
+  otherWorkspace: Workspace,
+  fetchServices: string[],
+  workspaceElements: elementSource.ElementsSource,
+  stateElements: elementSource.ElementsSource,
+  currentConfigs: InstanceElement[],
+  progressEmitter?: EventEmitter<FetchProgressEvents>,
+  env?: string
+): Promise<FetchChangesResult> => {
+  const getDifferentConfigs = async (): Promise<InstanceElement[]> => (
+    awu(currentConfigs).filter(async config => {
+      const otherConfig = await otherWorkspace.serviceConfig(config.elemID.adapter)
+      return !otherConfig || !otherConfig.isEqual(config)
+    }).toArray()
+  )
+
+  if (env && !otherWorkspace.envs().includes(env)) {
+    throw new Error('Source env does not exist in the source workspace.')
+  }
+
+  const otherServices = otherWorkspace.services(env)
+  const missingServices = fetchServices.filter(service => !otherServices.includes(service))
+
+  if (missingServices.length > 0) {
+    throw new Error(`Source env does not contain the following services: ${missingServices.join(',')}`)
+  }
+
+  if (await otherWorkspace.hasErrors(env)) {
+    throw new Error('Can not fetch from a workspace with errors.')
+  }
+
+  const differentConfig = await getDifferentConfigs()
+  if (!_.isEmpty(differentConfig)) {
+    throw new Error(`Can not fetch from a workspace. Found different configs for ${
+      differentConfig.map(config => config.elemID.adapter).join(', ')
+    }`)
+  }
+
+  const adapterNames = currentConfigs.map(config => config.elemID.adapter)
+  const getChangesEmitter = new StepEmitter()
+  if (progressEmitter) {
+    progressEmitter.emit('changesWillBeFetched', getChangesEmitter, adapterNames)
+  }
+
+  const fullElements = await awu(
+    await (await otherWorkspace.elements(true, env)).getAll()
+  ).toArray()
+  const otherPathIndex = await otherWorkspace.state(env).getPathIndex()
+  const unmergedElements = await awu(fullElements).map(
+    elem => pathIndex.splitElementByPath(elem, otherPathIndex)
+  ).flat().toArray()
+
+  return createFetchChanges({
+    adapterNames,
+    currentConfigs,
+    getChangesEmitter,
+    processErrorsResult: {
+      keptElements: fullElements,
+      errorsWithDroppedElements: [],
+    },
+    stateElements,
+    workspaceElements,
+    unmergedElements,
+  })
 }
 
 const id = (elemID: ElemID): string => elemID.getFullName()
@@ -732,4 +831,29 @@ export const createElemIdGetter = async (
 
   return (adapterName: string, serviceIds: ServiceIds, name: string): ElemID =>
     serviceIdToStateElemId[toServiceIdsString(serviceIds)] || new ElemID(adapterName, name)
+}
+
+export const getFetchAdapterAndServicesSetup = async (
+  workspace: Workspace,
+  fetchServices: string[],
+  ignoreStateElemIdMapping?: boolean
+): Promise<{
+  adaptersCreatorConfigs: Record<string, AdapterOperationsContext>
+  currentConfigs: InstanceElement[]
+}> => {
+  const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
+    fetchServices,
+    await workspace.servicesCredentials(fetchServices),
+    workspace.serviceConfig.bind(workspace),
+    await workspace.elements(),
+    ignoreStateElemIdMapping ? undefined : await createElemIdGetter(
+      await (await workspace.elements()).getAll(),
+      workspace.state()
+    )
+  )
+  const currentConfigs = Object.values(adaptersCreatorConfigs)
+    .map(creatorConfig => creatorConfig.config)
+    .filter(config => !_.isUndefined(config)) as InstanceElement[]
+
+  return { adaptersCreatorConfigs, currentConfigs }
 }

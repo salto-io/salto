@@ -370,8 +370,8 @@ export const loadWorkspace = async (
         const cachedHash = await stateToBuild.mergeManager.getHash(STATE_SOURCE_PREFIX + envName)
         const stateHash = await state(envName).getHash()
         const cacheValid = initBuild
-          ? cachedHash === stateHash && partialStateChanges.cacheValid
-          : true
+          ? true
+          : cachedHash === stateHash && partialStateChanges.cacheValid
         if (!cacheValid) {
           log.warn('Local state cache did not match local file system state. Resetting cache.')
           log.debug(`Cached hash: ${cachedHash}, stateHash: ${stateHash}.`)
@@ -406,7 +406,6 @@ export const loadWorkspace = async (
 
         log.debug('droped hidden changes due to missing nacl element for ids:',
           dropedStateOnlyChange.map(getChangeElement).map(elem => elem.elemID.getFullName()))
-
         return {
           changes: stateChangesForExistingNaclElements
             .concat(initHiddenElementsChanges)

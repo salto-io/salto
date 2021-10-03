@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { collections, values as lowerfashValues, types } from '@salto-io/lowerdash'
+import { collections, values as lowerfashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ResponseValue } from './http_connection'
 import { ClientGetParams, HTTPClientInterface } from './http_client'
@@ -48,9 +48,13 @@ export type PaginationFunc = ({
   responseData: unknown
   page: ResponseValue[]
   pageSize: number
-  getParams: types.PickyRequired<ClientGetWithPaginationParams, 'paginationField'>
+  getParams: ClientGetWithPaginationParams
   currentParams: Record<string, string>
-}) => Record<string, string>[]
+}) => {
+  nextPages: Record<string, string>[]
+  // modified page entries, if further manipulation is needed beyond the data in the page arg
+  pageEntries?: ResponseValue[]
+}
 
 export type PaginationFuncCreator<T = {}> = (args: {
   client: HTTPClientInterface
@@ -126,17 +130,17 @@ export const traverseRequests: (
       continue
     }
 
-    yield page
-    numResults += page.length
-    if (paginationField !== undefined) {
-      requestQueryArgs.unshift(...paginationFunc({
-        responseData: response.data,
-        page,
-        getParams: { ...getParams, paginationField },
-        pageSize,
-        currentParams: additionalArgs,
-      }))
-    }
+    const { nextPages, pageEntries } = paginationFunc({
+      responseData: response.data,
+      page,
+      getParams: { ...getParams, paginationField },
+      pageSize,
+      currentParams: additionalArgs,
+    })
+    requestQueryArgs.unshift(...nextPages)
+    yield pageEntries ?? page
+    numResults += (pageEntries ?? page).length
+
     if (recursiveQueryParams !== undefined && Object.keys(recursiveQueryParams).length > 0) {
       requestQueryArgs.unshift(...computeRecursiveArgs(page, recursiveQueryParams))
     }
@@ -154,13 +158,15 @@ export const getWithPageOffsetPagination: ((firstPage: number) => PaginationFunc
   firstPage => {
     const nextPageFullPages: PaginationFunc = ({ page, getParams, currentParams, pageSize }) => {
       const { paginationField } = getParams
-      if (page.length >= pageSize) {
-        return [{
+      if (paginationField === undefined || page.length < pageSize) {
+        return { nextPages: [] }
+      }
+      return {
+        nextPages: [{
           ...currentParams,
           [paginationField]: (Number(currentParams[paginationField] ?? firstPage) + 1).toString(),
-        }]
+        }],
       }
-      return []
     }
     return nextPageFullPages
   }
@@ -176,13 +182,15 @@ export const getWithPageOffsetAndLastPagination: ((firstPage: number) => Paginat
     const nextPageFullPages: PaginationFunc = ({ responseData, getParams, currentParams }) => {
       const { paginationField } = getParams
       // hard-coding the "last" flag for now - if we see more variants we can move it to config
-      if (_.get(responseData, 'last') === false) {
-        return [{
+      if (paginationField === undefined || _.get(responseData, 'last') !== false) {
+        return { nextPages: [] }
+      }
+      return {
+        nextPages: [{
           ...currentParams,
           [paginationField]: (Number(currentParams[paginationField] ?? firstPage) + 1).toString(),
-        }]
+        }],
       }
-      return []
     }
     return nextPageFullPages
   }
@@ -208,16 +216,23 @@ export const getWithCursorPagination: ((pathChecker?: PathCheckerFunc) => Pagina
       responseData, getParams, currentParams,
     }) => {
       const { paginationField, url } = getParams
-      const nextPagePath = _.get(responseData, paginationField)
-      if (_.isString(nextPagePath)) {
-        const nextPage = new URL(nextPagePath, 'http://localhost')
-        if (!pathChecker(url, nextPage.pathname)) {
-          log.error('unexpected next page received for endpoint %s params %o: %s', url, currentParams, nextPage.pathname)
-          throw new Error(`unexpected next page received for endpoint ${url}: ${nextPage.pathname}`)
+      if (paginationField !== undefined) {
+        const nextPagePath = _.get(responseData, paginationField)
+        if (_.isString(nextPagePath)) {
+          const nextPage = new URL(nextPagePath, 'http://localhost')
+          if (!pathChecker(url, nextPage.pathname)) {
+            log.error('unexpected next page received for endpoint %s params %o: %s', url, currentParams, nextPage.pathname)
+            throw new Error(`unexpected next page received for endpoint ${url}: ${nextPage.pathname}`)
+          }
+          return {
+            nextPages: [{
+              ...currentParams,
+              ...Object.fromEntries(nextPage.searchParams.entries()),
+            }],
+          }
         }
-        return [{ ...currentParams, ...Object.fromEntries(nextPage.searchParams.entries()) }]
       }
-      return []
+      return { nextPages: [] }
     }
     return nextPageCursorPages
   }
@@ -245,16 +260,19 @@ export const getWithOffsetAndLimit = (): PaginationFunc => {
     { responseData, getParams, currentParams }
   ) => {
     const { paginationField } = getParams
+    if (paginationField === undefined) {
+      return { nextPages: [] }
+    }
     if (!isPageResponse(responseData, paginationField)) {
       throw new Error(`Response from ${getParams.url} expected page with pagination field ${paginationField}, got ${safeJsonStringify(responseData)}`)
     }
     if (responseData.isLast) {
-      return []
+      return { nextPages: [] }
     }
     const currentPageStart = _.get(responseData, paginationField) as number
     const nextPageStart = currentPageStart + responseData.values.length
     const nextPage = { ...currentParams, [paginationField]: nextPageStart.toString() }
-    return [nextPage]
+    return { nextPages: [nextPage] }
   }
 
   return getNextPage

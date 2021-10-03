@@ -25,7 +25,7 @@ import { FilterCreator, Filter, filtersRunner } from './filter'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import { JIRA } from './constants'
 
-const { generateTypes, getAllInstances, extractPageEntriesByNestedField } = elementUtils.swagger
+const { generateTypes, getAllInstances } = elementUtils.swagger
 const { createPaginator } = clientUtils
 const log = logger(module)
 
@@ -38,22 +38,6 @@ export interface JiraAdapterParams {
   client: JiraClient
   config: JiraConfig
 }
-
-const removeScopedObjects = <T extends unknown>(response: T): T => {
-  if (Array.isArray(response)) {
-    return response
-      .filter(item => !(_.isPlainObject(item) && Object.keys(item).includes('scope')))
-      .map(removeScopedObjects) as T
-  }
-  if (_.isObject(response)) {
-    return _.mapValues(response, removeScopedObjects) as T
-  }
-  return response
-}
-
-export const extractPageEntries = (fieldName?: string): clientUtils.PageEntriesExtractor => (
-  entries => removeScopedObjects(extractPageEntriesByNestedField(fieldName)(entries))
-)
 
 export default class JiraAdapter implements AdapterOperations {
   private createFiltersRunner: () => Required<Filter>
@@ -112,7 +96,6 @@ export default class JiraAdapter implements AdapterOperations {
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: updatedApiDefinitionsConfig,
       fetchConfig: this.userConfig.fetch,
-      pageEntriesExtractor: extractPageEntries,
     })
   }
 

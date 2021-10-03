@@ -249,7 +249,6 @@ type GetEntriesParams = {
   requestContext?: Record<string, unknown>
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
-  pageEntriesExtractor: (fieldName?: string) => PageEntriesExtractor
 }
 
 export const extractPageEntriesByNestedField = (fieldName?: string): PageEntriesExtractor => (
@@ -270,7 +269,7 @@ const getEntriesForType = async (
 ): Promise<{ entries: Values[]; objType: ObjectType }> => {
   const {
     typeName, paginator, typesConfig, typeDefaultConfig, objectTypes, contextElements,
-    requestContext, nestedFieldFinder, computeGetArgs, pageEntriesExtractor,
+    requestContext, nestedFieldFinder, computeGetArgs,
   } = params
   const type = await normalizeType(objectTypes[typeName])
   const typeConfig = typesConfig[typeName]
@@ -333,7 +332,7 @@ const getEntriesForType = async (
     const results = (await Promise.all(args.map(
       async getArgs => ((await toArrayAsync(await paginator(
         getArgs,
-        pageEntriesExtractor(nestedFieldDetails?.field.name),
+        extractPageEntriesByNestedField(nestedFieldDetails?.field.name),
       ))).flat())
     ))).flatMap(makeArray)
 
@@ -423,7 +422,6 @@ export const getAllInstances = async ({
   objectTypes,
   nestedFieldFinder = findDataField,
   computeGetArgs = defaultComputeGetArgs,
-  pageEntriesExtractor = extractPageEntriesByNestedField,
 }: {
   paginator: Paginator
   apiConfig: Pick<AdapterSwaggerApiConfig, 'types' | 'typeDefaults'>
@@ -431,7 +429,6 @@ export const getAllInstances = async ({
   objectTypes: Record<string, ObjectType>
   nestedFieldFinder?: FindNestedFieldFunc
   computeGetArgs?: ComputeGetArgsFunc
-  pageEntriesExtractor?: (fieldName?: string) => PageEntriesExtractor
 }): Promise<InstanceElement[]> => {
   const { types, typeDefaults } = apiConfig
 
@@ -442,7 +439,6 @@ export const getAllInstances = async ({
     typeDefaultConfig: typeDefaults,
     nestedFieldFinder,
     computeGetArgs,
-    pageEntriesExtractor,
   }
 
   return getElementsWithContext({

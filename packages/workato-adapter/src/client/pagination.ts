@@ -31,23 +31,25 @@ export const getMinSinceIdPagination: clientUtils.PaginationFuncCreator = () => 
   const nextPage: clientUtils.PaginationFunc = ({ page, getParams, currentParams }) => {
     const { paginationField } = getParams
     if (paginationField === undefined || page.length === 0) {
-      return []
+      return { nextPages: [] }
     }
     const pageIds = page.map(item => item.id)
     if (!pageIds.every(_.isNumber)) {
       log.error('Not all ids are numbers (%s) - aborting pagination', pageIds)
-      return []
+      return { nextPages: [] }
     }
     const minValueInPage = Math.min(...pageIds.filter(_.isNumber))
     if (minValueInPage >= overallMin) {
       log.error('Received higher min page size than seen previously (%d >= %d) - aborting pagination', minValueInPage, overallMin)
-      return []
+      return { nextPages: [] }
     }
     overallMin = minValueInPage
-    return [{
-      ...currentParams,
-      [paginationField]: String(minValueInPage),
-    }]
+    return {
+      nextPages: [{
+        ...currentParams,
+        [paginationField]: String(minValueInPage),
+      }],
+    }
   }
   return nextPage
 }

@@ -35,7 +35,7 @@ describe('client_pagination', () => {
       paginationFunc.mockReset()
     })
 
-    it('should query a single page if paginationField is not specified', async () => {
+    it('should query the pagination function even if paginationField is not specified', async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
@@ -43,6 +43,7 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
+      paginationFunc.mockReturnValueOnce({ nextPages: [] })
       const result = (await toArrayAsync(await traverseRequests(
         paginationFunc,
         extractPageEntries,
@@ -54,9 +55,9 @@ describe('client_pagination', () => {
         },
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
+      expect(paginationFunc).toHaveBeenCalledTimes(1)
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
-      expect(paginationFunc).not.toHaveBeenCalled()
     })
 
     it('should use query args', async () => {
@@ -67,6 +68,7 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
+      paginationFunc.mockReturnValueOnce({ nextPages: [] })
       const result = (await toArrayAsync(await traverseRequests(
         paginationFunc,
         extractPageEntries,
@@ -83,8 +85,10 @@ describe('client_pagination', () => {
       }))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1', arg2: 'val2' } })
-      expect(paginationFunc).not.toHaveBeenCalled()
+      const getParams = { url: '/ep', queryParams: { arg1: 'val1', arg2: 'val2' } }
+      expect(client.getSinglePage).toHaveBeenCalledWith(getParams)
+      expect(paginationFunc).toHaveBeenCalledTimes(1)
+      expect(paginationFunc).toHaveBeenCalledWith({ currentParams: {}, getParams, page: [{ a: 'a' }], pageSize: 123, responseData: { a: 'a' } })
     })
 
     it('should use recursive query args', async () => {
@@ -121,6 +125,8 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
+      paginationFunc.mockReturnValueOnce({ nextPages: [] }).mockReturnValueOnce({ nextPages: [] })
+        .mockReturnValueOnce({ nextPages: [] })
       const result = (await toArrayAsync(await traverseRequests(
         paginationFunc,
         extractPageEntries,
@@ -145,7 +151,7 @@ describe('client_pagination', () => {
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 123 } })
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 456 } })
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { parentId: 789 } })
-      expect(paginationFunc).not.toHaveBeenCalled()
+      expect(paginationFunc).toHaveBeenCalledTimes(3)
     })
 
     it('should stop querying if pagination function returns empty', async () => {
@@ -156,7 +162,7 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      paginationFunc.mockReturnValueOnce([])
+      paginationFunc.mockReturnValueOnce({ nextPages: [] })
       const result = (await toArrayAsync(await traverseRequests(
         paginationFunc,
         extractPageEntries,
@@ -212,7 +218,7 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      paginationFunc.mockReturnValueOnce([{ page: '2' }]).mockReturnValueOnce([{ page: '3' }]).mockReturnValueOnce([{ page: '4' }])
+      paginationFunc.mockReturnValueOnce({ nextPages: [{ page: '2' }] }).mockReturnValueOnce({ nextPages: [{ page: '3' }] }).mockReturnValueOnce({ nextPages: [{ page: '4' }] })
       const params = {
         pageSize: 1,
         getParams: {
@@ -254,6 +260,47 @@ describe('client_pagination', () => {
       })
     })
 
+    it('should use page entries from paginator result if provided', async () => {
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+        data: {
+          items: [{ a: 'a1' }],
+        },
+        status: 200,
+        statusText: 'OK',
+      })).mockResolvedValueOnce(Promise.resolve({
+        data: {
+          items: [],
+        },
+        status: 200,
+        statusText: 'OK',
+      }))
+      paginationFunc.mockReturnValueOnce({ nextPages: [{ page: '2' }], pageEntries: [{ something: 'a' }] })
+      const params = {
+        pageSize: 1,
+        getParams: {
+          url: '/ep',
+          paginationField: 'page',
+        },
+      }
+      const result = (await toArrayAsync(await traverseRequests(
+        paginationFunc,
+        extractPageEntries,
+      )({
+        client,
+        ...params,
+      }))).flat()
+      expect(result).toEqual([{ something: 'a' }])
+      expect(client.getSinglePage).toHaveBeenCalledTimes(2)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2' } })
+      expect(paginationFunc).toHaveBeenCalledTimes(1)
+      expect(paginationFunc).toHaveBeenCalledWith({
+        ...params,
+        currentParams: {},
+        responseData: { items: [{ a: 'a1' }] },
+        page: [{ a: 'a1' }],
+      })
+    })
     it('should fail gracefully on HTTP errors', async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
@@ -268,26 +315,28 @@ describe('client_pagination', () => {
         status: 404,
         statusText: 'Not Found',
       }))
-      paginationFunc.mockReturnValueOnce([{ page: '2' }])
+      paginationFunc.mockReturnValueOnce({ nextPages: [{ page: '2' }] })
+      const getParams = {
+        url: '/ep',
+        paginationField: 'page',
+        queryParams: {
+          arg1: 'val1',
+        },
+      }
       const result = (await toArrayAsync(await traverseRequests(
         paginationFunc,
         extractPageEntries,
       )({
         client,
         pageSize: 1,
-        getParams: {
-          url: '/ep',
-          paginationField: 'page',
-          queryParams: {
-            arg1: 'val1',
-          },
-        },
+        getParams,
       }))).flat()
       expect(result).toEqual([{ a: 'a1' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(2)
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2', arg1: 'val1' } })
       expect(paginationFunc).toHaveBeenCalledTimes(1)
+      expect(paginationFunc).toHaveBeenCalledWith({ currentParams: {}, getParams, page: [{ a: 'a1' }], pageSize: 1, responseData: { items: [{ a: 'a1' }] } })
     })
   })
 
@@ -312,7 +361,7 @@ describe('client_pagination', () => {
         page: [{
           a: 'a1',
         }],
-      })).toEqual([])
+      })).toEqual({ nextPages: [] })
       expect(paginate({
         ...args,
         currentParams: { page: '3' },
@@ -321,7 +370,7 @@ describe('client_pagination', () => {
           page: 3,
         },
         page: [],
-      })).toEqual([])
+      })).toEqual({ nextPages: [] })
     })
 
 
@@ -345,7 +394,7 @@ describe('client_pagination', () => {
         page: [{
           a: 'a1',
         }],
-      })).toEqual([{ page: '2' }])
+      })).toEqual({ nextPages: [{ page: '2' }] })
       expect(paginate({
         ...args,
         currentParams: { page: '2' },
@@ -360,7 +409,7 @@ describe('client_pagination', () => {
           a: 'a2',
           b: 'b2',
         }],
-      })).toEqual([{ page: '3' }])
+      })).toEqual({ nextPages: [{ page: '3' }] })
       expect(paginate({
         ...args,
         currentParams: { page: '3' },
@@ -369,7 +418,7 @@ describe('client_pagination', () => {
           page: 3,
         },
         page: [],
-      })).toEqual([])
+      })).toEqual({ nextPages: [] })
     })
 
     it('should query multiple pages correctly when paginationField is nested', async () => {
@@ -392,7 +441,7 @@ describe('client_pagination', () => {
         page: [{
           a: 'a1',
         }],
-      })).toEqual([{ 'page.pageNum': '2' }])
+      })).toEqual({ nextPages: [{ 'page.pageNum': '2' }] })
       expect(paginate({
         ...args,
         currentParams: { 'page.pageNum': '2' },
@@ -407,7 +456,7 @@ describe('client_pagination', () => {
           a: 'a2',
           b: 'b2',
         }],
-      })).toEqual([{ 'page.pageNum': '3' }])
+      })).toEqual({ nextPages: [{ 'page.pageNum': '3' }] })
       expect(paginate({
         ...args,
         currentParams: { 'page.pageNum': '3' },
@@ -416,7 +465,7 @@ describe('client_pagination', () => {
           page: 3,
         },
         page: [],
-      })).toEqual([])
+      })).toEqual({ nextPages: [] })
     })
   })
 
@@ -440,7 +489,7 @@ describe('client_pagination', () => {
         page: [{
           a: 'a',
         }],
-      })).toEqual([])
+      })).toEqual({ nextPages: [] })
     })
     it('should query a single page if data does not have a \'last\' field', async () => {
       const paginate = getWithPageOffsetAndLastPagination(0)
@@ -460,7 +509,7 @@ describe('client_pagination', () => {
         page: [{
           a: 'a',
         }],
-      })).toEqual([])
+      })).toEqual({ nextPages: [] })
     })
 
     it('should query next page if response has last=false', async () => {
@@ -484,7 +533,7 @@ describe('client_pagination', () => {
         page: [{
           a: 'a1',
         }],
-      })).toEqual([{ page: '1' }])
+      })).toEqual({ nextPages: [{ page: '1' }] })
       expect(paginate({
         ...args,
         currentParams: { page: '1' },
@@ -497,7 +546,7 @@ describe('client_pagination', () => {
         page: [{
           a: 'a1',
         }],
-      })).toEqual([{ page: '2' }])
+      })).toEqual({ nextPages: [{ page: '2' }] })
     })
 
     it('should query multiple pages correctly when paginationField is nested', async () => {
@@ -521,7 +570,7 @@ describe('client_pagination', () => {
         page: [{
           a: 'a1',
         }],
-      })).toEqual([{ 'page.pageNum': '1' }])
+      })).toEqual({ nextPages: [{ 'page.pageNum': '1' }] })
       expect(paginate({
         ...args,
         currentParams: { 'page.pageNum': '1' },
@@ -534,7 +583,7 @@ describe('client_pagination', () => {
         page: [{
           a: 'a1',
         }],
-      })).toEqual([{ 'page.pageNum': '2' }])
+      })).toEqual({ nextPages: [{ 'page.pageNum': '2' }] })
     })
   })
 
@@ -565,7 +614,7 @@ describe('client_pagination', () => {
           nextPage: '/ep?page=p1',
         },
         page: [{ p: 'a' }, { p: 'b' }],
-      })).toEqual([{ page: 'p1' }])
+      })).toEqual({ nextPages: [{ page: 'p1' }] })
     })
     it('should not query next page if paginationField is not found in response', async () => {
       const paginate = getWithCursorPagination()
@@ -583,7 +632,7 @@ describe('client_pagination', () => {
           products: [{ p: 'c' }, { p: 'd' }],
         },
         page: [{ p: 'c' }, { p: 'd' }],
-      })).toEqual([])
+      })).toEqual({ nextPages: [] })
     })
     it('should query multiple pages correctly when paginationField is nested', async () => {
       const paginate = getWithCursorPagination()
@@ -602,7 +651,7 @@ describe('client_pagination', () => {
           nextPage: { url: '/ep?page=p1' },
         },
         page: [{ p: 'a' }, { p: 'b' }],
-      })).toEqual([{ page: 'p1' }])
+      })).toEqual({ nextPages: [{ page: 'p1' }] })
     })
 
     it('should throw on wrong url', async () => {
@@ -642,7 +691,7 @@ describe('client_pagination', () => {
           nextPage: '/ep_suffix?page=p1',
         },
         page: [{ p: 'a' }, { p: 'b' }],
-      })).toEqual([{ page: 'p1' }])
+      })).toEqual({ nextPages: [{ page: 'p1' }] })
     })
   })
 
@@ -660,14 +709,14 @@ describe('client_pagination', () => {
             currentParams: {},
             responseData: { isLast: false, startAt: 0, values: [1, 2] },
             page: [{ isLast: false, startAt: 0, values: [1, 2] }],
-          })).toEqual([{ startAt: '2' }])
+          })).toEqual({ nextPages: [{ startAt: '2' }] })
           expect(paginate({
             pageSize: 2,
             getParams: { url: '/ep', paginationField: 'startAt' },
             currentParams: { startAt: '2' },
             responseData: { isLast: false, startAt: 2, values: [3] },
             page: [{ isLast: false, startAt: 2, values: [3] }],
-          })).toEqual([{ startAt: '3' }])
+          })).toEqual({ nextPages: [{ startAt: '3' }] })
         })
         it('should stop querying when isLast is true', () => {
           expect(paginate({
@@ -676,7 +725,7 @@ describe('client_pagination', () => {
             currentParams: { startAt: '3' },
             responseData: { isLast: true, startAt: 3, values: [4, 5] },
             page: [{ isLast: true, startAt: 3, values: [4, 5] }],
-          })).toEqual([])
+          })).toEqual({ nextPages: [] })
         })
       })
       describe('when response is not a valid page', () => {
@@ -701,7 +750,7 @@ describe('client_pagination', () => {
             currentParams: {},
             responseData: { isLast: false, pagination: { startAt: 0 }, values: [1, 2] },
             page: [{ isLast: false, pagination: { startAt: 0 }, values: [1, 2] }],
-          })).toEqual([{ 'pagination.startAt': '2' }])
+          })).toEqual({ nextPages: [{ 'pagination.startAt': '2' }] })
         })
       })
     })

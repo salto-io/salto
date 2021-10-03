@@ -15,22 +15,20 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
-import JiraClient from '../src/client/client'
-import { extractPageEntries } from '../src/adapter'
+import JiraClient from '../../src/client/client'
+import { pageByOffsetWithoutScopes } from '../../src/client/pagination'
 
 const { toArrayAsync } = collections.asynciterable
-const { createPaginator, getWithOffsetAndLimit } = clientUtils
+const { extractPageEntriesByNestedField } = elementUtils.swagger
 
 describe('pageByOffset', () => {
   let client: JiraClient
   let mockAxios: MockAdapter
-  let paginator: clientUtils.Paginator
   beforeEach(() => {
     mockAxios = new MockAdapter(axios)
     client = new JiraClient({ credentials: { baseUrl: 'http://myjira.net', user: 'me', token: 'tok' } })
-    paginator = createPaginator({ client, paginationFuncCreator: getWithOffsetAndLimit })
   })
   afterEach(() => {
     mockAxios.restore()
@@ -48,7 +46,10 @@ describe('pageByOffset', () => {
         ],
       )
       const args = { url: 'http://myjira.net/thing' }
-      responses = await toArrayAsync(await paginator(args, extractPageEntries()))
+      responses = await toArrayAsync(await clientUtils.traverseRequests(
+        pageByOffsetWithoutScopes({ client, pageSize: 1, getParams: args }),
+        extractPageEntriesByNestedField(),
+      )({ client, pageSize: 1, getParams: args }))
     })
     it('should omit the scoped entities from the response', () => {
       expect(responses).toHaveLength(1)
@@ -70,7 +71,10 @@ describe('pageByOffset', () => {
     beforeEach(async () => {
       mockAxios.onGet().reply(404)
       const args = { url: 'http://myjira.net/thing/1', paginationField: 'startAt' }
-      responses = await toArrayAsync(await paginator(args, extractPageEntries()))
+      responses = await toArrayAsync(await clientUtils.traverseRequests(
+        pageByOffsetWithoutScopes({ client, pageSize: 1, getParams: args }),
+        extractPageEntriesByNestedField(),
+      )({ client, pageSize: 1, getParams: args }))
     })
     it('should return an empty result', () => {
       expect(responses).toHaveLength(0)
@@ -83,7 +87,10 @@ describe('pageByOffset', () => {
       mockAxios.onGet().reply(400)
 
       const args = { url: 'http://myjira.net/thing/1', paginationField: 'startAt' }
-      responseIter = paginator(args, extractPageEntries())
+      responseIter = clientUtils.traverseRequests(
+        pageByOffsetWithoutScopes({ client, pageSize: 1, getParams: args }),
+        extractPageEntriesByNestedField(),
+      )({ client, pageSize: 1, getParams: args })
     })
     it('should throw the error', async () => {
       await expect(toArrayAsync(responseIter)).rejects.toThrow()

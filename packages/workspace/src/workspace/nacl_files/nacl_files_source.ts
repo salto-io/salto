@@ -49,7 +49,6 @@ export type RoutingMode = 'isolated' | 'default' | 'align' | 'override'
 
 export const FILE_EXTENSION = '.nacl'
 export const HASH_KEY = 'hash'
-const PUT_INTERVAL = 100
 
 const PARSE_CONCURRENCY = 100
 const DUMP_CONCURRENCY = 100
@@ -363,7 +362,7 @@ const buildNaclFilesState = async ({
 
   const handleAdditionsOrModifications = async (naclFiles:
     AwuIterable<ParsedNaclFile>): Promise<void> => {
-    let toAdd: Record<string, ParsedNaclFile> = {}
+    const toAdd: Record<string, ParsedNaclFile> = {}
     await naclFiles.forEach(async naclFile => {
       const parsedFile = (await getNaclFile(naclFile))
       updateIndexOfFile(
@@ -394,11 +393,7 @@ const buildNaclFilesState = async ({
       // This is temp and should be removed when we change the init flow
       // This happens now cause we get here with ParsedNaclFiles that originate from the cache
       if (values.isDefined(naclFile.buffer)) {
-        toAdd[naclFile.filename] = naclFile
-        if (Object.keys(toAdd).length % PUT_INTERVAL === 0) {
-          await currentState.parsedNaclFiles.putAll(toAdd)
-          toAdd = {}
-        }
+        await currentState.parsedNaclFiles.put(naclFile.filename, naclFile)
       }
     })
     await currentState.parsedNaclFiles.putAll(toAdd)

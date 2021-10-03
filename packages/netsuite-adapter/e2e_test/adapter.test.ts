@@ -32,7 +32,8 @@ import {
   CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD, FETCH_ALL_TYPES_AT_ONCE,
   FILE, FILE_CABINET_PATH_SEPARATOR, FOLDER, NETSUITE, PATH, ROLE, SCRIPT_ID,
   SKIP_LIST,
-  TRANSACTION_COLUMN_CUSTOM_FIELD, WARN_STALE_DATA, WORKFLOW,
+  TRANSACTION_COLUMN_CUSTOM_FIELD,
+  WARN_STALE_DATA, WORKFLOW,
 } from '../src/constants'
 import { mockDefaultValues } from './mock_elements'
 import { Credentials } from '../src/client/credentials'
@@ -143,7 +144,8 @@ describe('Netsuite adapter E2E with real account', () => {
             content: new StaticFile({
               filepath: 'somePath',
               content: Buffer.from('aaa'),
-            }) }
+            }),
+          }
           : {}),
       }
     )
@@ -399,8 +401,8 @@ describe('Netsuite adapter E2E with real account', () => {
           beforeInstance = fileToCreate.clone()
           afterInstance = beforeInstance.clone()
 
-          beforeInstance.value.content.content = Buffer.from('before content')
-          afterInstance.value.content.content = Buffer.from('after content')
+          beforeInstance.value.content = 'before content'
+          afterInstance.value.content = 'after content'
         })
 
         describe('with warnOnStaleWorkspaceData=true flag', () => {
@@ -547,7 +549,7 @@ describe('Netsuite adapter E2E with real account', () => {
         const contentStaticFile = content as StaticFile
         expect(contentStaticFile.content).toBeDefined()
         expect((contentStaticFile.content as Buffer).toString())
-          .toEqual(fileToCreate.value.content)
+          .toEqual(withSuiteApp ? fileToCreate.value.content.content : fileToCreate.value.content)
       })
 
       it('should fetch the modified folder', async () => {

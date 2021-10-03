@@ -16,11 +16,11 @@
 import { isString } from 'util'
 import { collections } from '@salto-io/lowerdash'
 import wu from 'wu'
-import { buildAcyclicGroupedGraph, GroupedNodeMap, Group, GroupKeyFunc } from '../src/group'
+import { buildAcyclicGroupedGraph, Group, GroupKeyFunc, GroupDAG } from '../src/group'
 import { DataNodeMap, Edge, NodeId } from '../src/nodemap'
 
 describe('buildGroupGraph', () => {
-  let subject: GroupedNodeMap<string>
+  let subject: GroupDAG<string>
   const origin = new DataNodeMap<string>()
   const groupKey = (name: collections.set.SetId): string => (isString(name) ? name.split('_')[0] : '')
 
@@ -86,7 +86,7 @@ describe('buildGroupGraph', () => {
     }
 
     const verifyGroupGraphOrder = <T>(
-      graph: GroupedNodeMap<T>,
+      graph: GroupDAG<T>,
       edges: Edge[],
       maxSize: number
     ): void => {

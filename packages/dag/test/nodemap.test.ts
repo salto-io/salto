@@ -16,8 +16,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import {
-  NodeId, CircularDependencyError, WalkError, NodeSkippedError,
-  AbstractNodeMap, DataNodeMap,
+  NodeId, CircularDependencyError, WalkError, NodeSkippedError, DataNodeMap, DAG,
 } from '../src/nodemap'
 
 class MaxCounter {
@@ -41,7 +40,7 @@ class MaxCounter {
 }
 
 describe('NodeMap', () => {
-  class MyNodeMap extends AbstractNodeMap {
+  class MyNodeMap extends DAG<string> {
     addNode(id: NodeId, dependsOn: Iterable<NodeId> = []): void {
       super.addNodeBase(id, dependsOn)
     }
@@ -1110,6 +1109,29 @@ describe('DataNodeMap', () => {
         expect([...result.get(1)]).toEqual([])
         expect([...result.get(4)]).toEqual([5])
       })
+    })
+  })
+  describe('get component', () => {
+    beforeEach(() => {
+      subject = new DataNodeMap<object>()
+      subject.addNode(1, [2, 3], n1d)
+      subject.addNode(2, [2, 3, 4], n2d)
+      subject.addNode(3, [1], n3d)
+      subject.addNode(4, [5, 2], n4d)
+      subject.addNode(5, [], n5d)
+    })
+    it('should return the connected components of a node', () => {
+      expect([...subject.getComponent({ root: 3 }).keys()].sort()).toEqual([1, 2, 3, 4, 5])
+    })
+
+    it('should return the connected components of a node in reverse order', () => {
+      expect([...subject.getComponent({ root: 3, reverse: true }).keys()].sort())
+        .toEqual([1, 2, 3, 4])
+    })
+
+    it('should filter out nodes that are filtered by the filter func', () => {
+      expect([...subject.getComponent({ root: 3, filterFunc: id => id !== 4 }).keys()].sort())
+        .toEqual([1, 2, 3])
     })
   })
 })

@@ -236,6 +236,134 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     return wu(this.get(from)).some(d => this.hasCycle(d, new Set<NodeId>(visited)))
   }
 
+  getCycle(): Edge[] | undefined {
+    const getCycleFrom = (
+      id: NodeId,
+      nodeColors: Map<NodeId, DFS_STATUS>,
+      path: Edge[] = []
+    ): Edge[] | undefined => {
+      if (nodeColors.has(id)) {
+        return nodeColors.get(id) === 'in_progress' ? path : undefined
+      }
+      nodeColors.set(id, 'in_progress')
+      const children = this.get(id).keys()
+      const cycle = wu(children).map(child => (
+        getCycleFrom(child, nodeColors, [...path, [id, child]])
+      )).find(values.isDefined)
+      nodeColors.set(id, 'done')
+      return cycle
+    }
+    const nodeColors = new Map()
+
+    return wu(this.keys())
+      .map(root => getCycleFrom(root, nodeColors))
+      .find(values.isDefined)
+  }
+
+  clear(): void {
+    super.clear()
+    this.reverseNeighbors.clear()
+  }
+}
+
+// This class adds storage of node data to NodeMap
+export class DataNodeMap<T> extends AbstractNodeMap {
+  protected readonly nodeData: Map<NodeId, T>
+
+  constructor(
+    entries?: Iterable<[NodeId, Set<NodeId>]>,
+    nodeData?: Map<NodeId, T>,
+  ) {
+    super(entries)
+    this.nodeData = nodeData || new Map<NodeId, T>()
+  }
+
+  addNode(id: NodeId, dependsOn: Iterable<NodeId>, data: T): void {
+    super.addNodeBase(id, dependsOn)
+    this.nodeData.set(id, data)
+  }
+
+  deleteNode(id: NodeId): Set<NodeId> {
+    this.nodeData.delete(id)
+    return super.deleteNode(id)
+  }
+
+  getComponent({ root, filterFunc, reverse }:{
+    root: NodeId
+    filterFunc?: (id: NodeId) => boolean
+    reverse?: boolean
+  }): Set<NodeId> {
+    const getComponentImpl = (
+      id: NodeId,
+      visited: Set<NodeId>,
+      filter: (id: NodeId) => boolean = () => true
+    ): Set<NodeId> => {
+      if (visited.has(id)) {
+        return new Set()
+      }
+      visited.add(id)
+      const directChildren = reverse ? this.getReverse(id) : this.get(id)
+      const children = new Set(
+        wu(directChildren.values())
+          .filter(filter)
+          .map(childId => getComponentImpl(childId, visited, filter))
+          .flatten(true)
+      )
+      return children.add(id)
+    }
+
+    return getComponentImpl(root, new Set(), filterFunc)
+  }
+
+  cloneWithout(ids: Set<NodeId>): this {
+    return new (this.constructor as new (
+      entries: Iterable<[NodeId, Set<NodeId>]>,
+      nodeData: Map<NodeId, T>,
+    ) => this)(
+      this.entriesWithout(ids),
+      new Map<NodeId, T>(wu(this.nodeData).filter(([k]) => !ids.has(k))),
+    )
+  }
+
+  getData(id: NodeId): T {
+    const result = this.nodeData.get(id)
+    if (result === undefined) {
+      const reason = this.has(id) ? 'Node has no data' : 'Node does not exist'
+      throw new Error(`Cannot get data of "${id}": ${reason}`)
+    }
+    return result as T
+  }
+
+  setData(id: NodeId, data: T): void {
+    this.nodeData.set(id, data)
+  }
+
+  clear(): void {
+    super.clear()
+    this.nodeData.clear()
+  }
+
+  setDataFrom(source: DataNodeMap<T>): this {
+    wu(source.nodeData).forEach(([id, data]) => this.setData(id, data))
+    return this
+  }
+
+  clone(): this {
+    return super.clone().setDataFrom(this)
+  }
+}
+
+export class DAG<T> extends DataNodeMap<T> {
+  hasCycle(from: NodeId, visited: Set<NodeId> = new Set<NodeId>()): boolean {
+    if (visited.has(from)) {
+      return true
+    }
+
+    visited.add(from)
+
+    return wu(this.get(from)).some(d => this.hasCycle(d, new Set<NodeId>(visited)))
+  }
+
   *evaluationOrderGroups(destructive = false): IterableIterator<Iterable<NodeId>> {
     const dependencies = destructive ? this : this.clone()
     let nextNodes: Iterable<NodeId> = dependencies.keys()
@@ -336,97 +464,5 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     const createsCycle = this.hasCycle(findCycleFrom)
     setMany(origEdges)
     return createsCycle
-  }
-
-  clear(): void {
-    super.clear()
-    this.reverseNeighbors.clear()
-  }
-}
-
-// This class adds storage of node data to NodeMap
-export class DataNodeMap<T> extends AbstractNodeMap {
-  protected readonly nodeData: Map<NodeId, T>
-
-  constructor(
-    entries?: Iterable<[NodeId, Set<NodeId>]>,
-    nodeData?: Map<NodeId, T>,
-  ) {
-    super(entries)
-    this.nodeData = nodeData || new Map<NodeId, T>()
-  }
-
-  addNode(id: NodeId, dependsOn: Iterable<NodeId>, data: T): void {
-    super.addNodeBase(id, dependsOn)
-    this.nodeData.set(id, data)
-  }
-
-  deleteNode(id: NodeId): Set<NodeId> {
-    this.nodeData.delete(id)
-    return super.deleteNode(id)
-  }
-
-  getComponent({ root, filterFunc, reverse }:{
-    root: NodeId
-    filterFunc?: (id: NodeId) => boolean
-    reverse?: boolean
-  }): Set<NodeId> {
-    const getComponentImpl = (
-      id: NodeId,
-      visited: Set<NodeId>,
-      filter: (id: NodeId) => boolean = () => true
-    ): Set<NodeId> => {
-      if (visited.has(id)) {
-        return new Set()
-      }
-      visited.add(id)
-      const directChildren = reverse ? this.getReverse(id) : this.get(id)
-      const children = new Set(
-        wu(directChildren.values())
-          .filter(filter)
-          .map(childId => getComponentImpl(childId, visited, filter))
-          .flatten(true)
-      )
-      return children.add(id)
-    }
-
-    return getComponentImpl(root, new Set(), filterFunc)
-  }
-
-  cloneWithout(ids: Set<NodeId>): this {
-    return new (this.constructor as new (
-      entries: Iterable<[NodeId, Set<NodeId>]>,
-      nodeData: Map<NodeId, T>,
-    ) => this)(
-      this.entriesWithout(ids),
-      new Map<NodeId, T>(wu(this.nodeData).filter(([k]) => !ids.has(k))),
-    )
-  }
-
-  getData(id: NodeId): T {
-    const result = this.nodeData.get(id)
-    if (result === undefined) {
-      const reason = this.has(id) ? 'Node has no data' : 'Node does not exist'
-      throw new Error(`Cannot get data of "${id}": ${reason}`)
-    }
-    return result as T
-  }
-
-  setData(id: NodeId, data: T): void {
-    this.nodeData.set(id, data)
-  }
-
-  clear(): void {
-    super.clear()
-    this.nodeData.clear()
-  }
-
-  private setDataFrom(source: this): this {
-    wu(source.nodeData).forEach(([id, data]) => this.setData(id, data))
-    return this
-  }
-
-  clone(): this {
-    return super.clone().setDataFrom(this)
   }
 }

@@ -17,7 +17,7 @@ import wu from 'wu'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
-import { NodeId, DataNodeMap, Edge, CircularDependencyError } from './nodemap'
+import { NodeId, DataNodeMap, Edge, CircularDependencyError, DAG } from './nodemap'
 
 const log = logger(module)
 
@@ -27,6 +27,7 @@ export interface Group<T> {
 }
 
 export type GroupedNodeMap<T> = DataNodeMap<Group<T>>
+export type GroupDAG<T> = DAG<Group<T>>
 
 type Cycle = Edge[]
 
@@ -169,8 +170,8 @@ const buildPossiblyCyclicGroupGraph = <T>(
   source.edges()
     .filter(([from, to]) => itemToGroupId.get(from) !== itemToGroupId.get(to))
     .forEach(([from, to]) => {
-      // The ?? are linter bakshish. We know the keys are there.
-      graph.addEdge(itemToGroupId.get(from) ?? from, itemToGroupId.get(to) ?? to)
+      // The casting is linter bakshish. We know the keys are there.
+      graph.addEdge(itemToGroupId.get(from) as NodeId, itemToGroupId.get(to) as NodeId)
     })
   return graph
 }
@@ -179,12 +180,13 @@ const buildAcyclicGroupedGraphImpl = <T>(
   source: DataNodeMap<T>,
   groupKey: GroupKeyFunc,
   origGroupKey: GroupKeyFunc
-): GroupedNodeMap<T> => {
+): GroupDAG<T> => {
   // Build group graph
   const groupGraph = buildPossiblyCyclicGroupGraph(source, groupKey, origGroupKey)
   const possibleCycle = groupGraph.getCycle()
   if (possibleCycle === undefined) {
-    return groupGraph
+    return new DAG(wu(groupGraph).map(([k, v]) => [k, new Set<NodeId>(v)]))
+      .setDataFrom(groupGraph) as GroupDAG<T>
   }
   const updatedGroupKey = modifyGroupKeyToRemoveCycle(
     groupGraph,
@@ -198,4 +200,4 @@ const buildAcyclicGroupedGraphImpl = <T>(
 export const buildAcyclicGroupedGraph = <T>(
   source: DataNodeMap<T>,
   groupKey: GroupKeyFunc,
-): GroupedNodeMap<T> => log.time(() => buildAcyclicGroupedGraphImpl(source, groupKey, groupKey), 'build grouped graph for %o nodes', source.size)
+): GroupDAG<T> => log.time(() => buildAcyclicGroupedGraphImpl(source, groupKey, groupKey), 'build grouped graph for %o nodes', source.size)

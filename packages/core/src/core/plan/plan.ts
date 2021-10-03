@@ -22,7 +22,7 @@ import {
   Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
   isModificationChange, isRemovalChange,
 } from '@salto-io/adapter-api'
-import { DataNodeMap, GroupedNodeMap, DiffNode, DiffGraph, Group } from '@salto-io/dag'
+import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { expressions, elementSource } from '@salto-io/workspace'
 import { collections, values } from '@salto-io/lowerdash'
@@ -317,14 +317,14 @@ const resolveNodeElements = (
   return graph
 }
 
-export type Plan = GroupedNodeMap<Change> & {
+export type Plan = GroupDAG<Change> & {
   itemsByEvalOrder: () => Iterable<PlanItem>
   getItem: (id: PlanItemId) => PlanItem
   changeErrors: ReadonlyArray<ChangeError>
 }
 
 const addPlanFunctions = (
-  groupGraph: GroupedNodeMap<Change>, changeErrors: ReadonlyArray<ChangeError>
+  groupGraph: GroupDAG<Change>, changeErrors: ReadonlyArray<ChangeError>
 ): Plan => Object.assign(groupGraph,
   {
     itemsByEvalOrder(): Iterable<PlanItem> {
@@ -357,11 +357,11 @@ export const defaultDependencyChangers = [
 ]
 
 const removeRedundantFieldChanges = (
-  graph: GroupedNodeMap<Change<ChangeDataType>>
-): GroupedNodeMap<Change<ChangeDataType>> => (
+  graph: GroupDAG<Change<ChangeDataType>>
+): GroupDAG<Change<ChangeDataType>> => (
   // If we add / remove an object type, we can omit all the field add / remove
   // changes from the same group since they are included in the parent change
-  new DataNodeMap<Group<Change<ChangeDataType>>>(
+  new DAG<Group<Change<ChangeDataType>>>(
     graph.entries(),
     new Map(wu(graph.keys()).map(key => {
       const group = graph.getData(key)

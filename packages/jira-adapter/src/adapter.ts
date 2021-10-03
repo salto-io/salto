@@ -24,9 +24,10 @@ import { JiraConfig, getApiDefinitions } from './config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
 import { JIRA } from './constants'
+import { removeScopedObjects } from './client/pagination'
 
 const { generateTypes, getAllInstances } = elementUtils.swagger
-const { createPaginator } = clientUtils
+const { createPaginator, getWithOffsetAndLimit } = clientUtils
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
@@ -54,7 +55,8 @@ export default class JiraAdapter implements AdapterOperations {
     this.client = client
     const paginator = createPaginator({
       client: this.client,
-      paginationFuncCreator: clientUtils.getWithOffsetAndLimit,
+      paginationFuncCreator: getWithOffsetAndLimit,
+      customEntryExtractor: removeScopedObjects,
     })
     this.paginator = paginator
     this.createFiltersRunner = () => (

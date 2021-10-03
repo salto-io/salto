@@ -50,11 +50,7 @@ export type PaginationFunc = ({
   pageSize: number
   getParams: ClientGetWithPaginationParams
   currentParams: Record<string, string>
-}) => {
-  nextPages: Record<string, string>[]
-  // modified page entries, if further manipulation is needed beyond the data in the page arg
-  pageEntries?: ResponseValue[]
-}
+}) => Record<string, string>[]
 
 export type PaginationFuncCreator<T = {}> = (args: {
   client: HTTPClientInterface
@@ -89,7 +85,10 @@ const computeRecursiveArgs = (
 export const traverseRequests: (
   paginationFunc: PaginationFunc,
   extractPageEntries: PageEntriesExtractor,
-) => GetAllItemsFunc = (paginationFunc, extractPageEntries) => async function *getPages({
+  customEntryExtractor?: PageEntriesExtractor,
+) => GetAllItemsFunc = (
+  paginationFunc, extractPageEntries, customEntryExtractor,
+) => async function *getPages({
   client,
   pageSize,
   getParams,
@@ -119,27 +118,27 @@ export const traverseRequests: (
       break
     }
 
-    const page = (
+    const entries = (
       (!Array.isArray(response.data) && Array.isArray(response.data.items))
         ? response.data.items
         : makeArray(response.data)
     ).flatMap(extractPageEntries)
+    const page = customEntryExtractor ? entries.flatMap(customEntryExtractor) : entries
 
     if (page.length === 0) {
       // eslint-disable-next-line no-continue
       continue
     }
+    yield page
+    numResults += page.length
 
-    const { nextPages, pageEntries } = paginationFunc({
+    requestQueryArgs.unshift(...paginationFunc({
       responseData: response.data,
       page,
       getParams: { ...getParams, paginationField },
       pageSize,
       currentParams: additionalArgs,
-    })
-    requestQueryArgs.unshift(...nextPages)
-    yield pageEntries ?? page
-    numResults += (pageEntries ?? page).length
+    }))
 
     if (recursiveQueryParams !== undefined && Object.keys(recursiveQueryParams).length > 0) {
       requestQueryArgs.unshift(...computeRecursiveArgs(page, recursiveQueryParams))
@@ -154,47 +153,39 @@ export const traverseRequests: (
  * next page is prev+1 and first page is as specified.
  * Also supports recursive queries (see example under computeRecursiveArgs).
  */
-export const getWithPageOffsetPagination: ((firstPage: number) => PaginationFunc) = (
-  firstPage => {
-    const nextPageFullPages: PaginationFunc = ({ page, getParams, currentParams, pageSize }) => {
-      const { paginationField } = getParams
-      if (paginationField === undefined || page.length < pageSize) {
-        return { nextPages: [] }
-      }
-      return {
-        nextPages: [{
-          ...currentParams,
-          [paginationField]: (Number(currentParams[paginationField] ?? firstPage) + 1).toString(),
-        }],
-      }
+export const getWithPageOffsetPagination = (firstPage: number): PaginationFunc => {
+  const nextPageFullPages: PaginationFunc = ({ page, getParams, currentParams, pageSize }) => {
+    const { paginationField } = getParams
+    if (paginationField === undefined || page.length < pageSize) {
+      return []
     }
-    return nextPageFullPages
+    return [{
+      ...currentParams,
+      [paginationField]: (Number(currentParams[paginationField] ?? firstPage) + 1).toString(),
+    }]
   }
-)
+  return nextPageFullPages
+}
 
 /**
  * Make paginated requests using the specified pagination field, assuming the
  * next page is prev+1 and first page is as specified.
  * Also supports recursive queries (see example under computeRecursiveArgs).
  */
-export const getWithPageOffsetAndLastPagination: ((firstPage: number) => PaginationFunc) = (
-  firstPage => {
-    const nextPageFullPages: PaginationFunc = ({ responseData, getParams, currentParams }) => {
-      const { paginationField } = getParams
-      // hard-coding the "last" flag for now - if we see more variants we can move it to config
-      if (paginationField === undefined || _.get(responseData, 'last') !== false) {
-        return { nextPages: [] }
-      }
-      return {
-        nextPages: [{
-          ...currentParams,
-          [paginationField]: (Number(currentParams[paginationField] ?? firstPage) + 1).toString(),
-        }],
-      }
+export const getWithPageOffsetAndLastPagination = (firstPage: number): PaginationFunc => {
+  const nextPageFullPages: PaginationFunc = ({ responseData, getParams, currentParams }) => {
+    const { paginationField } = getParams
+    // hard-coding the "last" flag for now - if we see more variants we can move it to config
+    if (paginationField === undefined || _.get(responseData, 'last') !== false) {
+      return []
     }
-    return nextPageFullPages
+    return [{
+      ...currentParams,
+      [paginationField]: (Number(currentParams[paginationField] ?? firstPage) + 1).toString(),
+    }]
   }
-)
+  return nextPageFullPages
+}
 
 /**
  * Path checker for ensuring the next url's path is under the same endpoint as the one configured.
@@ -210,33 +201,29 @@ const defaultPathChecker: PathCheckerFunc = (endpointPath, nextPath) => (endpoin
  * as either a full URL or just the path and query prameters.
  * Only supports next pages under the same endpoint (and uses the same host).
  */
-export const getWithCursorPagination: ((pathChecker?: PathCheckerFunc) => PaginationFunc) = (
-  (pathChecker = defaultPathChecker) => {
-    const nextPageCursorPages: PaginationFunc = ({
-      responseData, getParams, currentParams,
-    }) => {
-      const { paginationField, url } = getParams
-      if (paginationField !== undefined) {
-        const nextPagePath = _.get(responseData, paginationField)
-        if (_.isString(nextPagePath)) {
-          const nextPage = new URL(nextPagePath, 'http://localhost')
-          if (!pathChecker(url, nextPage.pathname)) {
-            log.error('unexpected next page received for endpoint %s params %o: %s', url, currentParams, nextPage.pathname)
-            throw new Error(`unexpected next page received for endpoint ${url}: ${nextPage.pathname}`)
-          }
-          return {
-            nextPages: [{
-              ...currentParams,
-              ...Object.fromEntries(nextPage.searchParams.entries()),
-            }],
-          }
+export const getWithCursorPagination = (pathChecker = defaultPathChecker): PaginationFunc => {
+  const nextPageCursorPages: PaginationFunc = ({
+    responseData, getParams, currentParams,
+  }) => {
+    const { paginationField, url } = getParams
+    if (paginationField !== undefined) {
+      const nextPagePath = _.get(responseData, paginationField)
+      if (_.isString(nextPagePath)) {
+        const nextPage = new URL(nextPagePath, 'http://localhost')
+        if (!pathChecker(url, nextPage.pathname)) {
+          log.error('unexpected next page received for endpoint %s params %o: %s', url, currentParams, nextPage.pathname)
+          throw new Error(`unexpected next page received for endpoint ${url}: ${nextPage.pathname}`)
         }
+        return [{
+          ...currentParams,
+          ...Object.fromEntries(nextPage.searchParams.entries()),
+        }]
       }
-      return { nextPages: [] }
     }
-    return nextPageCursorPages
+    return []
   }
-)
+  return nextPageCursorPages
+}
 
 export const getWithOffsetAndLimit = (): PaginationFunc => {
   // Hard coded "isLast" and "values" in order to fit the configuration scheme which only allows
@@ -261,18 +248,18 @@ export const getWithOffsetAndLimit = (): PaginationFunc => {
   ) => {
     const { paginationField } = getParams
     if (paginationField === undefined) {
-      return { nextPages: [] }
+      return []
     }
     if (!isPageResponse(responseData, paginationField)) {
       throw new Error(`Response from ${getParams.url} expected page with pagination field ${paginationField}, got ${safeJsonStringify(responseData)}`)
     }
     if (responseData.isLast) {
-      return { nextPages: [] }
+      return []
     }
     const currentPageStart = _.get(responseData, paginationField) as number
     const nextPageStart = currentPageStart + responseData.values.length
     const nextPage = { ...currentParams, [paginationField]: nextPageStart.toString() }
-    return { nextPages: [nextPage] }
+    return [nextPage]
   }
 
   return getNextPage
@@ -286,12 +273,14 @@ export type Paginator = (
 /**
  * Wrap a pagination function for use by the adapter
  */
-export const createPaginator = ({ paginationFuncCreator, client }: {
+export const createPaginator = ({ paginationFuncCreator, customEntryExtractor, client }: {
   paginationFuncCreator: PaginationFuncCreator
+  customEntryExtractor?: PageEntriesExtractor
   client: HTTPClientInterface
 }): Paginator => (
   (getParams, extractPageEntries) => traverseRequests(
     paginationFuncCreator({ client, pageSize: client.getPageSize(), getParams }),
     extractPageEntries,
+    customEntryExtractor,
   )({ client, pageSize: client.getPageSize(), getParams })
 )

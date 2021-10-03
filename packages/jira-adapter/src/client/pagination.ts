@@ -14,29 +14,27 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 
-const { getWithOffsetAndLimit } = clientUtils
+const { makeArray } = collections.array
 
-const removeScopedObjects = <T extends unknown>(response: T): T => {
+const removeScopedObjectsImpl = <T extends clientUtils.ResponseValue>(
+  response: T | T[],
+): T | T[] => {
   if (Array.isArray(response)) {
     return response
       .filter(item => !(_.isPlainObject(item) && Object.keys(item).includes('scope')))
-      .map(removeScopedObjects) as T
+      .flatMap(removeScopedObjectsImpl) as T[]
   }
   if (_.isObject(response)) {
-    return _.mapValues(response, removeScopedObjects) as T
+    return _.mapValues(response, removeScopedObjectsImpl) as T
   }
   return response
 }
 
-export const pageByOffsetWithoutScopes: clientUtils.PaginationFuncCreator = () => {
-  const paginate = getWithOffsetAndLimit()
-  return args => {
-    const res = paginate(args)
-    return {
-      ...res,
-      pageEntries: removeScopedObjects(res.pageEntries ?? args.page),
-    }
-  }
-}
+export const removeScopedObjects: clientUtils.PageEntriesExtractor = (
+  entry: clientUtils.ResponseValue,
+): clientUtils.ResponseValue[] => (
+  makeArray(removeScopedObjectsImpl([entry]))
+)

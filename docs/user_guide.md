@@ -386,8 +386,8 @@ Manage the workspace environments
 Manage the workspace configuration elements
 
 **Commands:**
-* `move-to-common <elementSelector...>` :  Move configuration elements to the common configuration
-* `move-to-envs <elementSelector...>` :    Move configuration elements to the env-specific configuration
+* `move-to-common <elementSelector...>` :  Move env-specific configuration elements to the common configuration
+* `move-to-envs <elementSelector...>` :    Move common configuration elements to env-specific configurations
 * `clone <elementSelector...>` :           Clone elements from one env-specific configuration to others
 * `list-unresolved` :                      Lists unresolved references to configuration elements
 

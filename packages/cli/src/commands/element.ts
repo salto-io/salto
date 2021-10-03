@@ -159,7 +159,7 @@ export const moveToCommonAction: WorkspaceCommandAction<ElementMoveToCommonArgs>
 const moveToCommonDef = createWorkspaceCommand({
   properties: {
     name: 'move-to-common',
-    description: 'Move configuration elements to the common configuration',
+    description: 'Move env-specific configuration elements to the common configuration',
     positionalOptions: [
       {
         name: 'elementSelector',
@@ -213,7 +213,7 @@ export const moveToEnvsAction: WorkspaceCommandAction<ElementMoveToEnvsArgs> = a
 const moveToEnvsDef = createWorkspaceCommand({
   properties: {
     name: 'move-to-envs',
-    description: 'Move configuration elements to the env-specific configuration',
+    description: 'Move common configuration elements to env-specific configurations',
     positionalOptions: [
       {
         name: 'elementSelector',

@@ -19,10 +19,10 @@ import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapte
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { state as wsState, serialization, pathIndex, remoteMap } from '@salto-io/workspace'
 import { hash, collections } from '@salto-io/lowerdash'
-import { localState, ZIPPED_STATE_EXTENSION } from '../../../src/local-workspace/state'
+import { promisify } from 'util'
+import { localState, filePathGlob, ZIPPED_STATE_EXTENSION } from '../../../src/local-workspace/state'
 import { getAllElements } from '../../common/elements'
 import { version } from '../../../src/generated/version.json'
-
 
 const { awu } = collections.asynciterable
 const { serialize } = serialization
@@ -33,10 +33,12 @@ jest.mock('glob', () => (query: string, f: (_err: Error | null, files: string[])
     f(null, [])
   } else if (query.includes('@(.jsonl')) {
     f(null, [`${query.substring(0, query.indexOf('@'))}.jsonl.zip`])
+  } else if (query.includes('*(.jsonl')) {
+    f(null, [`${query.substring(0, query.indexOf('*'))}.jsonl.zip`])
   } else if (query.includes('multiple_files')) {
     f(null, ['multiple_files.salesforce.jsonl.zip', 'multiple_files.netsuite.jsonl.zip'])
   } else {
-    f(null, [`${query.substring(0, query.indexOf('@'))}jsonl.zip`])
+    f(null, [`${query.substring(0, query.indexOf('*'))}jsonl.zip`])
   }
 })
 jest.mock('@salto-io/file', () => ({
@@ -398,6 +400,27 @@ describe('local state', () => {
             ].join(EOL))),
           ]
         )))
+    })
+  })
+
+  describe('glob test', () => {
+    const glob = promisify(jest.requireActual('glob'))
+    const globString = filePathGlob('/tmp/env1')
+    it('should catch all the strings it is supposed to', async () => {
+      const goodFiles = [`env1.someadapter${ZIPPED_STATE_EXTENSION}`,
+        `env1.anotheradapter${ZIPPED_STATE_EXTENSION}`]
+      const results = await glob(globString, { cache: {
+        '/tmp': goodFiles,
+      } })
+      expect(results.sort()).toEqual(goodFiles.map(file => `/tmp/${file}`).sort())
+    })
+    it('shouldnt catch strings it is not supposed to', async () => {
+      const badFiles = [`env1${ZIPPED_STATE_EXTENSION}`,
+        `env1.one.two${ZIPPED_STATE_EXTENSION}`]
+      const results = await glob(globString, { cache: {
+        '/tmp': badFiles,
+      } })
+      expect(results).toEqual([])
     })
   })
 })

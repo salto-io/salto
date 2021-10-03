@@ -91,10 +91,9 @@ export class ReferenceExpression {
    * For example, if the instance is a VariableExpression,
    * create a VariableExpression, not a ReferenceExpression.
    */
-  public createWithValue(resValue: Value, resTopLevelParent?: Element,
-    elemID?: ElemID): ReferenceExpression {
+  public createWithValue(resValue: Value, resTopLevelParent?: Element): ReferenceExpression {
     const ExpressionCtor = this.constructor as typeof ReferenceExpression
-    return new ExpressionCtor(elemID ?? this.elemID, resValue, resTopLevelParent)
+    return new ExpressionCtor(this.elemID, resValue, resTopLevelParent)
   }
 
   get traversalParts(): string[] {
@@ -130,9 +129,9 @@ export class ReferenceExpression {
     return value
   }
 
-  public clone(elemID?: ElemID): ReferenceExpression {
+  public clone(): ReferenceExpression {
     // clone doesn't copy resolved value, just reference
-    return this.createWithValue(undefined, this.topLevelParent, elemID)
+    return this.createWithValue(undefined, this.topLevelParent)
   }
 }
 
@@ -151,10 +150,9 @@ export class VariableExpression extends ReferenceExpression {
     }
   }
 
-  public createWithValue(resValue: Value, resTopLevelParent?: Element,
-    elemID?: ElemID): VariableExpression {
+  public createWithValue(resValue: Value, resTopLevelParent?: Element): VariableExpression {
     const ExpressionCtor = this.constructor as typeof VariableExpression
-    return new ExpressionCtor(elemID ?? this.elemID, resValue, resTopLevelParent)
+    return new ExpressionCtor(this.elemID, resValue, resTopLevelParent)
   }
 }
 
@@ -171,15 +169,14 @@ export class TypeReference extends ReferenceExpression {
     }
   }
 
-  public createWithValue(resValue: Value, _resTopLevelParent?: Element,
-    elemID?: ElemID): TypeReference {
+  public createWithValue(resValue: Value, _resTopLevelParent?: Element): TypeReference {
     const ExpressionCtor = this.constructor as typeof TypeReference
-    return new ExpressionCtor(elemID ?? this.elemID, resValue)
+    return new ExpressionCtor(this.elemID, resValue)
   }
 
-  public clone(elemID?: ElemID): ReferenceExpression {
+  public clone(): ReferenceExpression {
     // For TypeReference we need to copy the value, because it shouldn't work unresolved
-    return this.createWithValue(this.type, this.topLevelParent, elemID)
+    return this.createWithValue(this.type, this.topLevelParent)
   }
 
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {

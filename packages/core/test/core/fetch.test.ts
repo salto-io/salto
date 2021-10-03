@@ -1024,13 +1024,44 @@ describe('fetch', () => {
       })
     })
 
-    describe('multiple adapters', () => {
+    describe('multiple adapters, some of same service type', () => {
+      const dummy2PrimStr = new PrimitiveType({
+        elemID: new ElemID('dummy2', 'prim'),
+        primitive: PrimitiveTypes.STRING,
+        annotationRefsOrTypes: {},
+        annotations: {},
+      })
+      const dummy3PrimStr = new PrimitiveType({
+        elemID: new ElemID('dummy3', 'prim'),
+        primitive: PrimitiveTypes.STRING,
+        annotationRefsOrTypes: {},
+        annotations: {},
+      })
       const dummy1 = new ObjectType({ elemID: new ElemID('dummy1', 'type') })
       const dummy2 = new ObjectType({ elemID: new ElemID('dummy2', 'type') })
-      const dummy3 = new ObjectType({ elemID: new ElemID('dummy3', 'type') })
+      const dummy3 = new ObjectType({ elemID: new ElemID('dummy2', 'type') })
+      const expectedDummy3ObjectAterRename = new ObjectType({ elemID: new ElemID('dummy3', 'type') })
+
       const dummy1Type1 = new ObjectType({ elemID: new ElemID('dummy1', 'd1t1'), fields: {} })
       const dummy2Type1 = new ObjectType({ elemID: new ElemID('dummy2', 'd2t1'), fields: {} })
-      const dummy3Type1 = new ObjectType({ elemID: new ElemID('dummy3', 'd3t1'), fields: {} })
+      const dummy3Type1 = new ObjectType({ elemID: new ElemID('dummy2', 'd3t1'), fields: {} })
+      const expectedDummy3Type1AfterRename = new ObjectType({ elemID: new ElemID('dummy3', 'd3t1'), fields: {} })
+      dummy3Type1.fields.listListStr = new Field(dummy3Type1, 'listListStr',
+        new ListType(new ListType(dummy2PrimStr)))
+      dummy3Type1.fields.listStr = new Field(dummy3Type1, 'listStr', new ListType(dummy2PrimStr))
+      expectedDummy3Type1AfterRename.fields.listStr = new Field(expectedDummy3Type1AfterRename,
+        'listStr', new ListType(dummy3PrimStr))
+      expectedDummy3Type1AfterRename.fields.listListStr = new Field(expectedDummy3Type1AfterRename,
+        'listListStr', new ListType(new ListType(dummy3PrimStr)))
+      const listlistStrFieldInnerValue = expectedDummy3Type1AfterRename.fields.listListStr
+        .refType.value.refInnerType.resValue.refInnerType.resValue
+      const listStrFieldInnerValue = expectedDummy3Type1AfterRename.fields.listStr.refType.value
+        .refInnerType.resValue
+      _.set(listStrFieldInnerValue, 'elemID', listStrFieldInnerValue.elemID
+        .createAdapterReplacedID('dummy2'))
+      _.set(listlistStrFieldInnerValue, 'elemID', listlistStrFieldInnerValue.elemID
+        .createAdapterReplacedID('dummy2'))
+
       const adapters = {
         dummy1: {
           fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy1Type1], isPartial: true }),
@@ -1061,18 +1092,18 @@ describe('fetch', () => {
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
           currentAdapterElements: expect.arrayContaining([dummy2Type1]),
           elementsByAdapter: {
-            dummy1: expect.arrayContaining([dummy1, dummy1Type1]),
+            dummy1: expect.arrayContaining([dummy1Type1, dummy1]),
             dummy2: expect.arrayContaining([dummy2Type1]),
-            dummy3: expect.arrayContaining([dummy3Type1]),
+            dummy3: expect.arrayContaining([expectedDummy3Type1AfterRename]),
           },
           progressReporter: expect.anything(),
         })
         expect(adapters.dummy3.postFetch).toHaveBeenCalledWith({
-          currentAdapterElements: expect.arrayContaining([dummy3Type1]),
+          currentAdapterElements: expect.arrayContaining([expectedDummy3Type1AfterRename]),
           elementsByAdapter: {
             dummy1: expect.arrayContaining([dummy1Type1, dummy1]),
             dummy2: expect.arrayContaining([dummy2Type1]),
-            dummy3: expect.arrayContaining([dummy3Type1]),
+            dummy3: expect.arrayContaining([expectedDummy3Type1AfterRename]),
           },
           progressReporter: expect.anything(),
         })
@@ -1081,7 +1112,7 @@ describe('fetch', () => {
         await fetchChanges(
           _.pick(adapters, ['dummy1', 'dummy2']),
           createElementSource([]),
-          createElementSource([dummy1, dummy2, dummy3]),
+          createElementSource([dummy1, dummy2, expectedDummy3ObjectAterRename]),
           [],
         )
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
@@ -1091,7 +1122,7 @@ describe('fetch', () => {
             dummy1: expect.arrayContaining([dummy1Type1, dummy1]),
             dummy2: expect.arrayContaining([dummy2Type1]),
             // dummy3 was not fetched so it includes only elements from the workspace
-            dummy3: expect.arrayContaining([dummy3]),
+            dummy3: expect.arrayContaining([expectedDummy3ObjectAterRename]),
           },
           progressReporter: expect.anything(),
         })
@@ -1102,7 +1133,7 @@ describe('fetch', () => {
         await expect(fetchChanges(
           _.pick(adapters, ['dummy1', 'dummy2']),
           createElementSource([]),
-          createElementSource([dummy1, dummy2, dummy3]),
+          createElementSource([dummy1, dummy2, expectedDummy3ObjectAterRename]),
           [],
         )).resolves.not.toThrow()
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
@@ -1112,7 +1143,7 @@ describe('fetch', () => {
             dummy1: expect.arrayContaining([dummy1Type1, dummy1]),
             dummy2: expect.arrayContaining([dummy2Type1]),
             // dummy3 was not fetched so it includes only elements from the workspace
-            dummy3: expect.arrayContaining([dummy3]),
+            dummy3: expect.arrayContaining([expectedDummy3ObjectAterRename]),
           },
           progressReporter: expect.anything(),
         })

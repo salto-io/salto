@@ -232,7 +232,7 @@ export class ElemID {
   // function is not generic, but aimed at a specific need - to create a copy of an elemID
   // with a modified adapter. This is used when an account has a different name than the
   // service it represents. Created for the multiple accounts per service features (SALTO-1264).
-  createAdapterReplacedId(adapter: string): ElemID {
+  createAdapterReplacedID(adapter: string): ElemID {
     if (!this.adapter) {
       // if adapter is empty, that means the elemID doesn't really have an adapter, and thus it
       // shouldn't be replaced.

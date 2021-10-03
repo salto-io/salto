@@ -19,7 +19,7 @@ import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, Detail
   Value, toChange, isRemovalChange, getChangeElement,
   ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { applyDetailedChanges, resolvePath, safeJsonStringify, isNaclCase, resolvePath } from '@salto-io/adapter-utils'
+import { applyDetailedChanges, naclCase, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
@@ -831,7 +831,7 @@ export const loadWorkspace = async (
   }
 
   const addAccount = async (service: string, account?: string): Promise<void> => {
-    if (account && !isNaclCase(account)) {
+    if (account && !(naclCase(account) === account)) {
       throw new InvalidAccountNameError(account)
     }
     const accountID = account ?? service

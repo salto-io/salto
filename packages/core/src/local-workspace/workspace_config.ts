@@ -46,6 +46,12 @@ export const getLocalStorage = async (workspaceName: string, uid: string): Promi
   return computedLocalStorage
 }
 
+type OldOrNewEnvConfig = {
+  services?: string[]
+  accounts: string[]
+  accountToServiceName: Record<string, string>
+}
+
 export const workspaceConfigSource = async (
   baseDir: string, localStorage?: string
 ): Promise<WorkspaceConfigSource> => {
@@ -67,7 +73,20 @@ export const workspaceConfigSource = async (
   return {
     localStorage: computedLocalStorage,
     getWorkspaceConfig: async (): Promise<WorkspaceConfig> => {
-      const envs = (await repoCs.get(ENVS_CONFIG_NAME))?.value as EnvsConfig
+      const envs = (await repoCs.get(ENVS_CONFIG_NAME))?.value
+      // Fix env in case configuration doesn't is deprecated, before multiple accounts refactor
+      if (envs) {
+        envs.envs.forEach((env: OldOrNewEnvConfig) => {
+          if (!env.accounts && env.services) {
+            env.accounts = env.services
+          }
+          delete env.services
+          if (!env.accountToServiceName) {
+            env.accountToServiceName = Object.fromEntries(env.accounts.map(account => [account,
+              account]))
+          }
+        })
+      }
       const userData = (await localCs.get(USER_CONFIG_NAME))?.value as UserDataConfig
       const workspaceMetadata = (
         await repoCs.get(WORKSPACE_CONFIG_NAME)
@@ -79,7 +98,7 @@ export const workspaceConfigSource = async (
         throw new NoEnvsConfig()
       }
       return {
-        ...envs,
+        ...(envs as EnvsConfig),
         ...userData,
         ...workspaceMetadata,
       }

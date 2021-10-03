@@ -217,8 +217,8 @@ Promise<Workspace> => {
   const mockConfSource = {
     getWorkspaceConfig: jest.fn().mockImplementation(() => ({
       envs: [
-        { name: 'default', services: [] },
-        { name: 'inactive', services: [] },
+        { name: 'default', accounts: [], accountToServiceName: {} },
+        { name: 'inactive', accounts: [], accountToServiceName: {} },
       ],
       uid: '',
       name: 'test',

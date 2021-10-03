@@ -62,7 +62,7 @@ export class InvalidEnvNameError extends Error {
 
 export class InvalidAccountNameError extends Error {
   constructor(accountName: string) {
-    super(`${accountName} is an invalid account name.\nAccount names should include only alphanumeric characters.`)
+    super(`${accountName} is an invalid account name.\nAccount names should include only alphanumeric characters or '_'`)
   }
 }
 

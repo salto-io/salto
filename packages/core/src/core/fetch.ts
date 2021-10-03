@@ -22,13 +22,13 @@ import {
   ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
   ContainerType, isContainerType, isField, isReferenceExpression, TypeReference, isElement,
-  CORE_ANNOTATIONS, AdapterOperationsContext,
+  isMapType, MapType, isListType, ListType, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults, resolvePath, flattenElementStr, transformElement, TransformFunc,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { merger, elementSource, Workspace, pathIndex } from '@salto-io/workspace'
+import { merger, elementSource, expressions, Workspace, pathIndex } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
@@ -351,75 +351,68 @@ const runPostFetch = async ({
   )
 }
 
-const recursivelyCloneContainerType = (type: ContainerType,
-  accountName: string): TypeReference => {
+const recursivelyUpdateContainerType = (type: ContainerType, accountName: string): void => {
   const innerType = type.refInnerType
-  if (isContainerType(innerType.value)) {
-    const newRefInnerType = recursivelyCloneContainerType(innerType.value, accountName)
-    const newType = type.createWithInnerType(newRefInnerType)
-    return new TypeReference(newType.elemID, newType)
+  if (isContainerType(innerType.type)) {
+    recursivelyUpdateContainerType(innerType.type, accountName)
+    _.set(innerType, 'elemID', innerType.type.elemID)
+  } else {
+    _.set(innerType, 'elemID', innerType.elemID.createAdapterReplacedID(accountName))
   }
-  const newInnerTypeRef = innerType.type?.clone(undefined, innerType.type.elemID
-    .createAdapterReplacedId(accountName))
-  const newInnerType = newInnerTypeRef ? new TypeReference(newInnerTypeRef.elemID, newInnerTypeRef)
-    : innerType.clone(innerType.elemID.createAdapterReplacedId(accountName)) as TypeReference
-  const newType = type.createWithInnerType(newInnerType.createWithValue(newInnerType
-    .type?.clone(undefined, newInnerType.type?.elemID.createAdapterReplacedId(accountName)),
-  undefined, newInnerType.elemID.createAdapterReplacedId(accountName)))
-  return new TypeReference(newType.elemID, newType)
+  if (isMapType(type)) {
+    _.set(type, 'elemID', MapType.createElemID(innerType))
+  } else if (isListType(type)) {
+    _.set(type, 'elemID', ListType.createElemID(innerType))
+  }
 }
 
-const cloneRefTypeWithId = (refType: TypeReference, accountName: string): TypeReference => {
-  const newRef = refType.clone(refType.elemID
-    .createAdapterReplacedId(accountName))
-  newRef.value = newRef.value.clone(undefined, newRef.value.elemID
-    .createAdapterReplacedId(accountName))
-  if (isContainerType(newRef.value)) {
-    return recursivelyCloneContainerType(newRef.value, accountName)
+const updateRefTypeWithId = (refType: TypeReference, accountName: string): void => {
+  _.set(refType.value, 'elemID', refType.value.elemID.createAdapterReplacedID(accountName))
+  if (isContainerType(refType.value)) {
+    recursivelyUpdateContainerType(refType.value, accountName)
   }
-  return newRef
+  _.set(refType, 'elemID', refType.value.elemID)
 }
 
-const transformElemIDAdapter = (adapterName: string): TransformFunc => async (
+const transformElemIDAdapter = (accountName: string): TransformFunc => async (
   { value }
 ) => {
   if (isReferenceExpression(value)) {
-    return value.clone(value.elemID.createAdapterReplacedId(adapterName))
+    _.set(value, 'elemID', value.elemID.createAdapterReplacedID(accountName))
   }
-  if (isElement(value) && value.elemID.adapter !== adapterName) {
-    const transformed = value.clone(undefined, value.elemID
-      .createAdapterReplacedId(adapterName))
-    transformed.annotationRefTypes = _.mapValues(transformed.annotationRefTypes,
-      annotation => cloneRefTypeWithId(annotation, adapterName))
-    if (isField(transformed)) {
-      transformed.refType = cloneRefTypeWithId(transformed.refType, adapterName)
+  if (isElement(value) && value.elemID.adapter !== accountName) {
+    _.set(value, 'elemID', value.elemID.createAdapterReplacedID(accountName))
+    Object.values(value.annotationRefTypes).forEach(
+      annotation => updateRefTypeWithId(annotation, accountName)
+    )
+    if (isField(value)) {
+      updateRefTypeWithId(value.refType, accountName)
     }
-    return transformed
   }
   return value
 }
 
-const cloneElementsWithAlternativeAdapter = async (elements: Element[],
-  newAdapter: string): Promise<Element[]> =>
-  awu(elements).map(async element => {
-    const newElement = await transformElement({
+const updateElementsWithAlternativeAdapter = async (elements: Element[],
+  newAdapter: string, oldAdapter: string): Promise<void> =>
+  awu(elements).forEach(async element => {
+    if (element.path && (element.path[0] === oldAdapter)) {
+      element.path = [newAdapter, ...element.path.slice(1)]
+    }
+    await transformElement({
       element,
       transformFunc: transformElemIDAdapter(newAdapter),
       strict: false,
       runOnFields: true,
-      newElemID: element.elemID.createAdapterReplacedId(newAdapter),
     })
-    if (newElement.path) {
-      newElement.path = [newAdapter, ...newElement.path.slice(1)]
+    _.set(element, 'elemID', element.elemID.createAdapterReplacedID(newAdapter))
+    if (isInstanceElement(element)) {
+      const { refType } = element
+      updateRefTypeWithId(refType, newAdapter)
     }
-    if (isInstanceElement(newElement)) {
-      const { refType } = newElement
-      newElement.refType = cloneRefTypeWithId(refType, newAdapter)
-    }
-    newElement.annotationRefTypes = _.mapValues(newElement.annotationRefTypes,
-      annotation => cloneRefTypeWithId(annotation, newAdapter))
-    return newElement
-  }).toArray()
+    Object.values(element.annotationRefTypes).forEach(annotation => updateRefTypeWithId(
+      annotation, newAdapter
+    ))
+  })
 
 const fetchAndProcessMergeErrors = async (
   adapters: Record<string, AdapterOperations>,
@@ -448,16 +441,21 @@ const fetchAndProcessMergeErrors = async (
           const { updatedConfig, errors } = fetchResult
           if (fetchResult.elements.length > 0 && accountName !== fetchResult.elements[0]
             .elemID.adapter) {
-            fetchResult.elements = await cloneElementsWithAlternativeAdapter(fetchResult.elements,
-              accountName)
+            // Resolve is used for an efficient deep clone
+            fetchResult.elements = await expressions.resolve(fetchResult.elements,
+              elementSource.createInMemoryElementSource(), true)
+            await updateElementsWithAlternativeAdapter(fetchResult.elements,
+              accountName, fetchResult.elements[0].elemID.adapter)
             if (updatedConfig) {
-              updatedConfig.config = updatedConfig.config.clone(undefined,
-                updatedConfig.config.elemID.createAdapterReplacedId(accountName))
+              updatedConfig.config = (await expressions.resolve([updatedConfig.config],
+                elementSource.createInMemoryElementSource(), true))[0] as InstanceElement
+              _.set(updatedConfig.config, 'elemID', updatedConfig.config.elemID
+                .createAdapterReplacedID(accountName))
             }
             if (errors) {
               errors.forEach(error => {
                 if (isSaltoElementError(error)) {
-                  error.elemID = error.elemID.createAdapterReplacedId(accountName)
+                  error.elemID = error.elemID.createAdapterReplacedID(accountName)
                 }
               })
             }

@@ -44,7 +44,7 @@ const envConfigType = new ObjectType({
   fields: {
     name: { refType: BuiltinTypes.STRING, annotations: requireAnno },
     accounts: { refType: new ListType(BuiltinTypes.STRING) },
-    accountNameToServiceType: { refType: new MapType(BuiltinTypes.STRING) },
+    accountToServiceName: { refType: new MapType(BuiltinTypes.STRING) },
   },
 })
 

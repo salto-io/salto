@@ -285,7 +285,6 @@ export const transformElement = async <T extends Element>(
     elementsSource,
     runOnFields,
     allowEmpty,
-    newElemID,
   }: {
     element: T
     transformFunc: TransformFunc
@@ -293,10 +292,9 @@ export const transformElement = async <T extends Element>(
     elementsSource?: ReadOnlyElementsSource
     runOnFields?: boolean
     allowEmpty?: boolean
-    newElemID?: ElemID
   }
 ): Promise<T> => {
-  const relevantID = newElemID ?? element.elemID
+  const relevantID = element.elemID
   let newElement: Element
   const transformedAnnotations = await transformElementAnnotations({
     element,
@@ -322,7 +320,6 @@ export const transformElement = async <T extends Element>(
       transformedValues,
       element.path,
       transformedAnnotations,
-      newElemID,
     )
     return newElement as T
   }
@@ -369,7 +366,6 @@ export const transformElement = async <T extends Element>(
       element.name,
       await element.getType(elementsSource),
       transformedAnnotations,
-      newElemID,
     )
 
     return newElement as T
@@ -396,7 +392,6 @@ export const transformElement = async <T extends Element>(
         elementsSource,
         runOnFields,
         allowEmpty,
-        newElemID,
       })
     )
     return newElement as T
@@ -411,7 +406,6 @@ export const transformElement = async <T extends Element>(
         elementsSource,
         runOnFields,
         allowEmpty,
-        newElemID,
       })
     )
     return newElement as T
@@ -639,7 +633,6 @@ export const flattenElementStr = (element: Element): Element => {
     flatStr(field.name),
     field.refType,
     flatValues(field.annotations),
-    field.elemID,
   )
 
   const flattenObjectType = (obj: ObjectType): ObjectType => new ObjectType({
@@ -665,7 +658,6 @@ export const flattenElementStr = (element: Element): Element => {
     flatValues(inst.value),
     inst.path?.map(flatStr),
     flatValues(inst.annotations),
-    inst.elemID,
   )
 
   if (isField(element)) return flattenField(element)

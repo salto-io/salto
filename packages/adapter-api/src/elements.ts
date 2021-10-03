@@ -132,7 +132,7 @@ export abstract class Element {
    * Optional argument: ElemID - to create a clone with a different element id.
    * @return {Type} the cloned instance
    */
-  abstract clone(annotations?: Values, elemID?: ElemID): Element
+  abstract clone(annotations?: Values): Element
 }
 export type ElementMap = Record<string, Element>
 
@@ -162,14 +162,19 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
   protected _typeMarker?: T
 
   public refInnerType: TypeReference
+
   public constructor(
     innerTypeOrRef: TypeOrRef<T>
   ) {
     super({
-      elemID: new ElemID('', `${LIST_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`),
+      elemID: ListType.createElemID(innerTypeOrRef),
     })
     this.refInnerType = getRefType(innerTypeOrRef)
     this.setRefInnerType(innerTypeOrRef)
+  }
+
+  static createElemID(innerTypeOrRef: TypeOrRef): ElemID {
+    return new ElemID('', `${LIST_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`)
   }
 
   isEqual(other: ListType): boolean {
@@ -178,10 +183,9 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
       && this.refInnerType.elemID.isEqual(other.refInnerType.elemID) && isListType(other)
   }
 
-  // When cloning a collection, a replacement element id needs to represent the inner type.
-  clone(_annotations?: Values, refInnerElemID?: ElemID): ListType {
+  clone(_annotations?: Values): ListType {
     return new ListType(
-      new TypeReference(refInnerElemID ?? this.refInnerType.elemID, this.refInnerType.type)
+      new TypeReference(this.refInnerType.elemID, this.refInnerType.type)
     )
   }
 
@@ -232,10 +236,14 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
     innerTypeOrRef: TypeOrRef<T>
   ) {
     super({
-      elemID: new ElemID('', `${MAP_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`),
+      elemID: MapType.createElemID(innerTypeOrRef),
     })
     this.refInnerType = getRefType(innerTypeOrRef)
     this.setRefInnerType(innerTypeOrRef)
+  }
+
+  static createElemID(innerTypeOrRef: TypeOrRef): ElemID {
+    return new ElemID('', `${MAP_ID_PREFIX}<${innerTypeOrRef.elemID.getFullName()}>`)
   }
 
   isEqual(other: MapType): boolean {
@@ -244,9 +252,9 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
       && this.refInnerType.elemID.isEqual(other.refInnerType.elemID) && isMapType(other)
   }
 
-  clone(_annotations?: Values, elemID?: ElemID): MapType {
+  clone(_annotations?: Values): MapType {
     return new MapType(
-      new TypeReference(elemID ?? this.refInnerType.elemID, this.refInnerType.type)
+      new TypeReference(this.refInnerType.elemID, this.refInnerType.type)
     )
   }
 
@@ -291,10 +299,9 @@ export class Field extends Element {
     public name: string,
     typeOrRefType: TypeOrRef,
     annotations: Values = {},
-    elemID?: ElemID,
   ) {
     super({
-      elemID: elemID ?? parent.elemID.createNestedID('field', name),
+      elemID: parent.elemID.createNestedID('field', name),
       annotationRefsOrTypes: {},
       annotations,
     })
@@ -321,13 +328,12 @@ export class Field extends Element {
    * Note that the cloned field still has the same element ID so it cannot be used in a different
    * object
    */
-  clone(annotations?: Values, elemID?: ElemID): Field {
+  clone(annotations?: Values): Field {
     return new Field(
       this.parent,
       this.name,
       this.refType,
       annotations === undefined ? _.cloneDeep(this.annotations) : annotations,
-      elemID,
     )
   }
 }
@@ -364,9 +370,9 @@ export class PrimitiveType<Primitive extends PrimitiveTypes = PrimitiveTypes> ex
    * Return an independent copy of this instance.
    * @return {PrimitiveType} the cloned instance
    */
-  clone(additionalAnnotations: Values = {}, elemID?: ElemID): PrimitiveType {
+  clone(additionalAnnotations: Values = {}): PrimitiveType {
     const res: PrimitiveType = new PrimitiveType({
-      elemID: elemID ?? this.elemID,
+      elemID: this.elemID,
       primitive: this.primitive,
       annotationRefsOrTypes: this.annotationRefTypes,
       annotations: this.cloneAnnotations(),
@@ -432,13 +438,13 @@ export class ObjectType extends Element {
    * Return an independent copy of this instance.
    * @return {ObjectType} the cloned instance
    */
-  clone(additionalAnnotations: Values = {}, elemID?: ElemID): ObjectType {
+  clone(additionalAnnotations: Values = {}): ObjectType {
     const clonedAnnotations = this.cloneAnnotations()
     const clonedFields = this.cloneFields()
     const { isSettings } = this
 
     const res: ObjectType = new ObjectType({
-      elemID: elemID ?? this.elemID,
+      elemID: this.elemID,
       fields: clonedFields,
       annotationRefsOrTypes: this.annotationRefTypes,
       annotations: clonedAnnotations,
@@ -463,10 +469,9 @@ export class InstanceElement extends Element {
     public value: Values = {},
     path?: ReadonlyArray<string>,
     annotations?: Values,
-    elemID?: ElemID,
   ) {
     super({
-      elemID: elemID ?? typeOrRefType.elemID.createNestedID('instance', name),
+      elemID: typeOrRefType.elemID.createNestedID('instance', name),
       annotationRefsOrTypes: undefined,
       annotations,
       path,
@@ -499,9 +504,9 @@ export class InstanceElement extends Element {
    * Return an independent copy of this instance.
    * @return {InstanceElement} the cloned instance
    */
-  clone(_annotations?: Values, elemID?: ElemID): InstanceElement {
+  clone(_annotations?: Values): InstanceElement {
     return new InstanceElement(this.elemID.name, this.refType, _.cloneDeep(this.value), this.path,
-      _.cloneDeep(this.annotations), elemID)
+      _.cloneDeep(this.annotations))
   }
 }
 
@@ -516,8 +521,8 @@ export class Variable extends Element {
     return super.isEqual(other) && isEqualValues(this.value, other.value)
   }
 
-  clone(elemID?: ElemID): Variable {
-    return new Variable(elemID ?? this.elemID, _.cloneDeep(this.value), this.path)
+  clone(): Variable {
+    return new Variable(this.elemID, _.cloneDeep(this.value), this.path)
   }
 }
 

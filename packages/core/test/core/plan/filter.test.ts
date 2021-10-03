@@ -20,6 +20,7 @@ import * as mock from '../../common/elements'
 import { getFirstPlanItem } from '../../common/plan'
 import { getPlan } from '../../../src/core/plan'
 import { createElementSource } from '../../common/helpers'
+import { isDependencyError } from '../../../src/core/plan/filter'
 
 
 describe('filterInvalidChanges', () => {
@@ -82,7 +83,8 @@ describe('filterInvalidChanges', () => {
       after: createElementSource([...allElements, newInvalidObj, newInvalidInst]),
       changeValidators: { salto: mockChangeValidator },
     })
-    expect(planResult.changeErrors).toHaveLength(3)
+    expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(3)
+    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(4)
     expect(planResult.changeErrors.some(v => v.elemID.isEqual(newInvalidObj.elemID)))
       .toBeTruthy()
     expect(planResult.changeErrors.some(v => v.elemID.isEqual(newInvalidObj.fields.invalid.elemID)))
@@ -107,7 +109,8 @@ describe('filterInvalidChanges', () => {
       after: createElementSource([...allElements, newValidObj]),
       changeValidators: { salto: mockChangeValidator },
     })
-    expect(planResult.changeErrors).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(0)
     expect(planResult.changeErrors[0].elemID.isEqual(newValidObj.fields.invalid.elemID))
       .toBeTruthy()
     expect(planResult.changeErrors[0].severity === 'Error').toBeTruthy()
@@ -129,7 +132,8 @@ describe('filterInvalidChanges', () => {
       after: createElementSource(afterElements),
       changeValidators: { salto: mockChangeValidator },
     })
-    expect(planResult.changeErrors).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(0)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
     expect(planResult.changeErrors[0].elemID.isEqual(saltoOffice.fields.invalid.elemID))
       .toBeTruthy()
@@ -146,7 +150,8 @@ describe('filterInvalidChanges', () => {
       after: createElementSource(afterElements),
       changeValidators: { salto: mockChangeValidator },
     })
-    expect(planResult.changeErrors).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(0)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
     expect(planResult.changeErrors[0].elemID.isEqual(saltoOffice.fields.invalid.elemID))
       .toBeTruthy()
@@ -173,7 +178,8 @@ describe('filterInvalidChanges', () => {
       after: createElementSource([...allElements, afterInvalidObj]),
       changeValidators: { salto: mockChangeValidator },
     })
-    expect(planResult.changeErrors).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(0)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
     expect(planResult.changeErrors[0].elemID.isEqual(afterInvalidObj.elemID)).toBeTruthy()
     expect(planResult.size).toBe(1)
@@ -194,7 +200,8 @@ describe('filterInvalidChanges', () => {
       after: createElementSource(allElements),
       changeValidators: { salto: mockChangeValidator },
     })
-    expect(planResult.changeErrors).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(0)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
     expect(planResult.changeErrors[0].elemID.isEqual(saltoOffice.fields.invalid.elemID))
       .toBeTruthy()
@@ -220,7 +227,8 @@ describe('filterInvalidChanges', () => {
       after: createElementSource(afterElements),
       changeValidators: { salto: mockChangeValidator },
     })
-    expect(planResult.changeErrors).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(0)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
     expect(planResult.changeErrors[0].elemID.isEqual(afterSaltoOffice.fields.invalid.elemID))
       .toBeTruthy()
@@ -249,7 +257,8 @@ describe('filterInvalidChanges', () => {
       after: createElementSource(afterElements),
       changeValidators: { salto: mockMapValueChangeValidator },
     })
-    expect(planResult.changeErrors).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(0)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
     expect(planResult.changeErrors[0].elemID.isEqual(seatsId))
       .toBeTruthy()
@@ -279,7 +288,8 @@ describe('filterInvalidChanges', () => {
       after: createElementSource(allElements),
       changeValidators: { salto: mockChangeValidator },
     })
-    expect(planResult.changeErrors).toHaveLength(3)
+    expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(3)
+    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(3)
     expect(planResult.changeErrors.some(v => v.elemID.isEqual(beforeInvalidObj.elemID)))
       .toBeTruthy()
     expect(planResult.changeErrors.some(v => v.elemID.isEqual(beforeInvalidField.elemID)))

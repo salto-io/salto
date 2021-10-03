@@ -366,6 +366,33 @@ export class DataNodeMap<T> extends AbstractNodeMap {
     return super.deleteNode(id)
   }
 
+  getComponent({ root, filterFunc, reverse }:{
+    root: NodeId
+    filterFunc?: (id: NodeId) => boolean
+    reverse?: boolean
+  }): Set<NodeId> {
+    const getComponentImpl = (
+      id: NodeId,
+      visited: Set<NodeId>,
+      filter: (id: NodeId) => boolean = () => true
+    ): Set<NodeId> => {
+      if (visited.has(id)) {
+        return new Set()
+      }
+      visited.add(id)
+      const directChildren = reverse ? this.getReverse(id) : this.get(id)
+      const children = new Set(
+        wu(directChildren.values())
+          .filter(filter)
+          .map(childId => getComponentImpl(childId, visited, filter))
+          .flatten(true)
+      )
+      return children.add(id)
+    }
+
+    return getComponentImpl(root, new Set(), filterFunc)
+  }
+
   cloneWithout(ids: Set<NodeId>): this {
     return new (this.constructor as new (
       entries: Iterable<[NodeId, Set<NodeId>]>,

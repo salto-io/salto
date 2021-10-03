@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
-import { DataNodeMap, GroupedNodeMap, NodeId, buildGroupedGraph } from '@salto-io/dag'
+import { DataNodeMap, GroupedNodeMap, NodeId, buildAcyclicGroupedGraph } from '@salto-io/dag'
 import { Change, getChangeElement, isField, ChangeGroupId, ChangeId, ChangeGroupIdFunction } from '@salto-io/adapter-api'
 
 const { awu } = collections.asynciterable
@@ -58,5 +58,5 @@ export const buildGroupedGraphFromDiffGraph = (
     return groupElement.elemID.getFullName()
   }
 
-  return buildGroupedGraph(diffGraph, groupKey)
+  return buildAcyclicGroupedGraph(diffGraph, groupKey)
 }

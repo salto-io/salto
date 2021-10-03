@@ -60,9 +60,9 @@ const colorComponentsValidity = <T>({ source, id, srcGroupNodes,
     // the code below checks if the node has invalid children -
     // This is not in  a seperate more readable variable
     // in order to avoid calculation if this node in itsef is invalid
-    && !wu(source.get(id).values())
+    && wu(source.get(id).values())
       .filter(childId => srcGroupNodes.has(childId))
-      .some(childId => !colorComponentsValidity({
+      .every(childId => colorComponentsValidity({
         source,
         id: childId,
         srcGroupNodes,
@@ -71,25 +71,6 @@ const colorComponentsValidity = <T>({ source, id, srcGroupNodes,
       }))
   visited.set(id, isValid ? 'valid' : 'invalid')
   return isValid
-}
-
-const getComponent = <T>(
-  source: DataNodeMap<T>,
-  currentGroupNodes: Set<NodeId>,
-  id: NodeId,
-  visited: Set<NodeId> = new Set()
-): Set<NodeId> => {
-  if (visited.has(id)) {
-    return new Set()
-  }
-  visited.add(id)
-  const children = new Set(
-    wu(source.get(id).values())
-      .filter(childId => currentGroupNodes.has(childId))
-      .map(childId => getComponent(source, currentGroupNodes, childId, visited))
-      .flatten(true)
-  )
-  return children.add(id)
 }
 
 const getComponentToSplit = <T>(
@@ -108,7 +89,10 @@ const getComponentToSplit = <T>(
       visited,
     })
     if (isValid) {
-      const component = getComponent(source, currentGroupNodes, root)
+      const component = source.getComponent({
+        root,
+        filterFunc: id => currentGroupNodes.has(id),
+      })
       // We need to make sure that the component is not the entire group in order
       // to make sure that the algorithm converge. (As long as the number of total groups
       // increases every iteration, we know the number of iteration is bounded by the number
@@ -191,17 +175,27 @@ const buildPossiblyCyclicGroupGraph = <T>(
   return graph
 }
 
-export const buildGroupedGraph = <T>(
+const buildAcyclicGroupedGraphImpl = <T>(
   source: DataNodeMap<T>,
   groupKey: GroupKeyFunc,
-  origGroupKey: GroupKeyFunc = groupKey
-): GroupedNodeMap<T> => log.time(() => {
+  origGroupKey: GroupKeyFunc
+): GroupedNodeMap<T> => {
   // Build group graph
-    const groupGraph = buildPossiblyCyclicGroupGraph(source, groupKey, origGroupKey)
-    const possibleCycle = groupGraph.getCycle()
-    if (possibleCycle === undefined) {
-      return groupGraph
-    }
-    const updatedGroupKey = modifyGroupKeyToRemoveCycle(groupGraph, groupKey, source, possibleCycle)
-    return buildGroupedGraph(source, updatedGroupKey, origGroupKey)
-  }, 'build grouped graph for %o nodes', source.size)
+  const groupGraph = buildPossiblyCyclicGroupGraph(source, groupKey, origGroupKey)
+  const possibleCycle = groupGraph.getCycle()
+  if (possibleCycle === undefined) {
+    return groupGraph
+  }
+  const updatedGroupKey = modifyGroupKeyToRemoveCycle(
+    groupGraph,
+    groupKey,
+    source,
+    possibleCycle
+  )
+  return buildAcyclicGroupedGraphImpl(source, updatedGroupKey, origGroupKey)
+}
+
+export const buildAcyclicGroupedGraph = <T>(
+  source: DataNodeMap<T>,
+  groupKey: GroupKeyFunc,
+): GroupedNodeMap<T> => log.time(() => buildAcyclicGroupedGraphImpl(source, groupKey, groupKey), 'build grouped graph for %o nodes', source.size)

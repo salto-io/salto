@@ -186,13 +186,14 @@ export type FetchFunc = (
   ignoreStateElemIdMapping?: boolean,
 ) => Promise<FetchResult>
 
-export type FetchFromWorkspaceFunc = (
+export type FetchFromWorkspaceFuncParams = {
   workspace: Workspace,
   otherWorkspace: Workspace,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
   services?: string[],
   env?: string
-) => Promise<FetchResult>
+}
+export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Promise<FetchResult>
 
 const updateStateWithFetchResults = async (
   workspace: Workspace,
@@ -256,14 +257,14 @@ export const fetch: FetchFunc = async (
   }
 }
 
-export const fetchFromWorkspace: FetchFromWorkspaceFunc = async (
+export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   workspace,
   otherWorkspace,
-  progressEmitter?,
-  services?,
-  env?,
-) => {
-  log.debug('fetch starting..')
+  progressEmitter,
+  services,
+  env,
+}: FetchFromWorkspaceFuncParams) => {
+  log.debug('fetch starting from workspace..')
   const fetchServices = services ?? workspace.services()
     .filter(service => otherWorkspace.services(env).includes(service))
 
@@ -285,7 +286,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async (
     env
   )
 
-  log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
+  log.debug(`${elements.length} elements were fetched from a remote workspace [mergedErrors=${mergeErrors.length}]`)
   await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchServices)
   return {
     changes,

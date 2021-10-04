@@ -241,9 +241,9 @@ export type FetchChangesResult = {
   errors: SaltoError[]
   unmergedElements: Element[]
   mergeErrors: MergeErrorWithElements[]
-  configChanges: Plan
   updatedConfig: Record<string, InstanceElement[]>
-  adapterNameToConfigMessage: Record<string, string>
+  configChanges?: Plan
+  adapterNameToConfigMessage?: Record<string, string>
 }
 
 type ProcessMergeErrorsResult = {
@@ -527,10 +527,9 @@ const calcFetchChanges = async (
     ),
     'calculate service-workspace changes',
   )
-
   // Merge pending changes and service changes into one tree so we can find conflicts between them
   serviceChanges.merge(pendingChanges)
-  const fetchChanges = toFetchChanges(serviceChanges, workspaceToServiceChanges)
+  const fetchChanges = [...toFetchChanges(serviceChanges, workspaceToServiceChanges)]
   const serviceElementsMap = _.groupBy(
     serviceElements,
     e => e.elemID.getFullName()
@@ -672,6 +671,17 @@ export const fetchChanges = async (
   })
 }
 
+const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult => ({
+  changes: [],
+  elements: [],
+  mergeErrors: [],
+  unmergedElements: [],
+  updatedConfig: {},
+  errors: [{
+    message: errMsg,
+    severity: 'Error'
+  }]
+})
 export const fetchChangesFromWorkspace = async (
   otherWorkspace: Workspace,
   fetchServices: string[],
@@ -689,23 +699,25 @@ export const fetchChangesFromWorkspace = async (
   )
 
   if (env && !otherWorkspace.envs().includes(env)) {
-    throw new Error('Source env does not exist in the source workspace.')
+    return createEmptyFetchChangeDueToError(`${env} env does not exist in the source workspace.`)
   }
 
   const otherServices = otherWorkspace.services(env)
   const missingServices = fetchServices.filter(service => !otherServices.includes(service))
 
   if (missingServices.length > 0) {
-    throw new Error(`Source env does not contain the following services: ${missingServices.join(',')}`)
+    return createEmptyFetchChangeDueToError(
+      `Source env does not contain the following services: ${missingServices.join(',')}`
+    )
   }
 
   if (await otherWorkspace.hasErrors(env)) {
-    throw new Error('Can not fetch from a workspace with errors.')
+    return createEmptyFetchChangeDueToError('Can not fetch from a workspace with errors.')
   }
 
   const differentConfig = await getDifferentConfigs()
   if (!_.isEmpty(differentConfig)) {
-    throw new Error(`Can not fetch from a workspace. Found different configs for ${
+    return createEmptyFetchChangeDueToError(`Can not fetch from a workspace. Found different configs for ${
       differentConfig.map(config => config.elemID.adapter).join(', ')
     }`)
   }
@@ -718,12 +730,14 @@ export const fetchChangesFromWorkspace = async (
 
   const fullElements = await awu(
     await (await otherWorkspace.elements(true, env)).getAll()
-  ).toArray()
+  )
+  .filter(elem => fetchServices.includes(elem.elemID.adapter))
+  .toArray()
+
   const otherPathIndex = await otherWorkspace.state(env).getPathIndex()
   const unmergedElements = await awu(fullElements).map(
     elem => pathIndex.splitElementByPath(elem, otherPathIndex)
   ).flat().toArray()
-
   return createFetchChanges({
     adapterNames,
     currentConfigs,

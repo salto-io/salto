@@ -55,6 +55,7 @@ const DUMP_CONCURRENCY = 100
 // TODO: this should moved into cache implemenation
 const CACHE_READ_CONCURRENCY = 100
 const UPDATE_INDEX_CONCURRENCY = 100
+const PUT_CONCURRENCY = 100
 
 export type NaclFile = {
   buffer: string
@@ -365,7 +366,7 @@ const buildNaclFilesState = async ({
 
   const handleAdditionsOrModifications = async (naclFiles:
     AwuIterable<ParsedNaclFile>): Promise<void> => {
-    const toAdd: Record<string, ParsedNaclFile> = {}
+    let toAdd: Record<string, ParsedNaclFile> = {}
     await naclFiles.forEach(async naclFile => {
       const parsedFile = (await getNaclFile(naclFile))
       updateIndexOfFile(
@@ -396,7 +397,11 @@ const buildNaclFilesState = async ({
       // This is temp and should be removed when we change the init flow
       // This happens now cause we get here with ParsedNaclFiles that originate from the cache
       if (values.isDefined(naclFile.buffer)) {
-        await currentState.parsedNaclFiles.put(naclFile.filename, naclFile)
+        toAdd[naclFile.filename] = naclFile
+        if (Object.keys(toAdd).length % PUT_CONCURRENCY === 0) {
+          await currentState.parsedNaclFiles.putAll(toAdd)
+          toAdd = {}
+        }
       }
     })
     await currentState.parsedNaclFiles.putAll(toAdd)

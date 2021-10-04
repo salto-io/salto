@@ -45,48 +45,48 @@ type COMPONENT_VALIDITY_STATUS = 'valid' | 'invalid' | 'in_progress'
 // If we encounter a node which is 'in progress' this means that we found
 // a cycle whithin the group, which is ok, and we can ignore this node in the
 // calculation until the DFS will return to it.
-const colorComponentsValidity = <T>({ source, id, srcGroupNodes,
-  srcNodesWithToRef, visited }: {
+const isValidRootForComponent = <T>({ source, id, possibleNodes,
+  nodesToAvoid, visited }: {
   source: DataNodeMap<T>
   id: NodeId
-  srcGroupNodes: Set<NodeId>
-  srcNodesWithToRef: Set<NodeId>
+  possibleNodes: Set<NodeId>
+  nodesToAvoid: Set<NodeId>
   visited: Map<NodeId, COMPONENT_VALIDITY_STATUS>
 }): boolean => {
   if (visited.has(id)) {
     return visited.get(id) !== 'invalid'
   }
   visited.set(id, 'in_progress')
-  const isValid = !srcNodesWithToRef.has(id)
+  const isValid = !nodesToAvoid.has(id)
     // the code below checks if the node has invalid children -
     // This is not in  a seperate more readable variable
     // in order to avoid calculation if this node in itsef is invalid
     && wu(source.get(id).values())
-      .filter(childId => srcGroupNodes.has(childId))
-      .every(childId => colorComponentsValidity({
+      .filter(childId => possibleNodes.has(childId))
+      .every(childId => isValidRootForComponent({
         source,
         id: childId,
-        srcGroupNodes,
-        srcNodesWithToRef,
+        possibleNodes,
+        nodesToAvoid,
         visited,
       }))
   visited.set(id, isValid ? 'valid' : 'invalid')
   return isValid
 }
 
-const getComponentToSplit = <T>(
+const getComponentToSplitFromGroupToRemoveCycle = <T>(
   source: DataNodeMap<T>,
   currentGroupNodes: Set<NodeId>,
-  srcNodesWithBackRef: Set<NodeId>,
-  srcNodesWithToRef: Set<NodeId>,
+  possibleStartNodes: Set<NodeId>,
+  nodesToAvoid: Set<NodeId>,
 ): Set<NodeId> | undefined => {
   const visited = new Map<NodeId, COMPONENT_VALIDITY_STATUS>()
-  return wu(srcNodesWithBackRef.keys()).map(root => {
-    const isValid = colorComponentsValidity({
+  return wu(possibleStartNodes.keys()).map(root => {
+    const isValid = isValidRootForComponent({
       source,
       id: root,
-      srcGroupNodes: currentGroupNodes,
-      srcNodesWithToRef,
+      possibleNodes: currentGroupNodes,
+      nodesToAvoid,
       visited,
     })
     if (isValid) {
@@ -126,7 +126,7 @@ const modifyGroupKeyToRemoveCycle = <T>(
       id => wu(source.get(id).values())
         .find(destId => groupKey(destId) === nextGroup)
     ))
-    const componentToSplit = getComponentToSplit(
+    const componentToSplit = getComponentToSplitFromGroupToRemoveCycle(
       source,
       new Set(currentGroupSrcIds),
       sourceNodesWithBackRef,

@@ -108,7 +108,7 @@ type NaclFilesState = {
 const getRemoteMapNamespace = (namespace: string, name: string): string =>
   `naclFileSource-${name}-${namespace}`
 
-const getElementReferenced = async (element: Element): Promise<Set<string>> => {
+export const getElementReferenced = async (element: Element): Promise<Set<string>> => {
   const referenced = new Set<string>()
   const transformFunc = ({ value, field, path }: TransformFuncArgs): Value => {
     if (field && path && !isIndexPathPart(path.name)) {

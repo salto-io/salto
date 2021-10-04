@@ -26,6 +26,7 @@ import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../../util
 import * as parser from '../../../src/parser'
 import { InMemoryRemoteMap, RemoteMapCreator, RemoteMap, CreateRemoteMapParams } from '../../../src/workspace/remote_map'
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
+import * as naclFileSourceModule from '../../../src/workspace/nacl_files/nacl_files_source'
 
 const { awu } = collections.asynciterable
 
@@ -419,6 +420,20 @@ describe('Nacl Files Source', () => {
     it('should return undefined if state is undefined and file does not exist', async () => {
       (mockDirStore.get as jest.Mock).mockResolvedValue(undefined)
       expect(await naclSource.getParsedNaclFile(mockFileData.filename)).toEqual(undefined)
+    })
+
+    it('should cache referenced result on parsedNaclFile', async () => {
+      (mockDirStore.get as jest.Mock).mockResolvedValue(mockFileData)
+      const elements = [new ObjectType({ elemID: new ElemID('dummy', 'elem') })]
+      mockParse.mockResolvedValueOnce({ elements, errors: [], filename: mockFileData.filename })
+      const mockGetElementReferenced = jest.spyOn(naclFileSourceModule, 'getElementReferenced')
+      const parsed = await naclSource.getParsedNaclFile(mockFileData.filename)
+      expect(parsed).toBeDefined()
+      await parsed?.data.referenced()
+      expect(mockGetElementReferenced).toHaveBeenCalled()
+      mockGetElementReferenced.mockClear()
+      await parsed?.data.referenced()
+      expect(mockGetElementReferenced).not.toHaveBeenCalled()
     })
   })
 

@@ -108,7 +108,7 @@ type NaclFilesState = {
 const getRemoteMapNamespace = (namespace: string, name: string): string =>
   `naclFileSource-${name}-${namespace}`
 
-const getElementReferenced = async (element: Element): Promise<Set<string>> => {
+export const getElementReferenced = async (element: Element): Promise<Set<string>> => {
   const referenced = new Set<string>()
   const transformFunc = ({ value, field, path }: TransformFuncArgs): Value => {
     if (field && path && !isIndexPathPart(path.name)) {
@@ -153,16 +153,27 @@ const getElementReferenced = async (element: Element): Promise<Set<string>> => {
 export const toParsedNaclFile = async (
   naclFile: NaclFile,
   parseResult: ParseResult
-): Promise<ParsedNaclFile> => ({
-  filename: naclFile.filename,
-  elements: () => awu(parseResult.elements).toArray(),
-  data: {
-    errors: () => Promise.resolve(parseResult.errors),
-    referenced: () => awu(parseResult.elements).flatMap(getElementReferenced).toArray(),
-  },
-  buffer: naclFile.buffer,
-  sourceMap: () => Promise.resolve(parseResult.sourceMap),
-})
+): Promise<ParsedNaclFile> => {
+  let referenced: string[]
+  return {
+    filename: naclFile.filename,
+    elements: () => awu(parseResult.elements).toArray(),
+    data: {
+      errors: () => Promise.resolve(parseResult.errors),
+      referenced: async () => {
+        if (referenced === undefined) {
+          referenced = await awu(parseResult.elements)
+            .flatMap(getElementReferenced)
+            .uniquify(s => s)
+            .toArray()
+        }
+        return referenced
+      },
+    },
+    buffer: naclFile.buffer,
+    sourceMap: () => Promise.resolve(parseResult.sourceMap),
+  }
+}
 
 const parseNaclFile = async (
   naclFile: NaclFile, functions: Functions
@@ -366,7 +377,7 @@ const buildNaclFilesState = async ({
       )
 
       const currentNaclFileElements = (await naclFile.elements()) ?? []
-      const oldNaclFileElements = await (await getNaclFile(naclFile))?.elements() ?? []
+      const oldNaclFileElements = await parsedFile?.elements() ?? []
       updateIndexOfFile(
         elementsIndexAdditions,
         elementsIndexDeletions,
@@ -626,12 +637,21 @@ const buildNaclFilesSource = (
     fileData: string,
   ): Promise<ParsedNaclFile> => {
     const elements = [change.data.after]
+    let referenced: string[]
     return {
       filename,
       elements: () => Promise.resolve(elements),
       data: {
         errors: () => Promise.resolve([]),
-        referenced: () => awu(elements).flatMap(getElementReferenced).toArray(),
+        referenced: async () => {
+          if (referenced === undefined) {
+            referenced = await awu(elements)
+              .flatMap(getElementReferenced)
+              .uniquify(s => s)
+              .toArray()
+          }
+          return referenced
+        },
       },
       buffer: fileData,
     }

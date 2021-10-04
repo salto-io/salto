@@ -39,6 +39,7 @@ const SERVICES = [mockService, emptyMockService]
 jest.mock('../src/core/fetch', () => ({
   ...jest.requireActual<{}>('../src/core/fetch'),
   fetchChanges: jest.fn(),
+  fetchChangesFromWorkspace: jest.fn(),
 }))
 jest.mock('../src/core/restore', () => ({
   createRestoreChanges: jest.fn().mockResolvedValue([{
@@ -462,6 +463,83 @@ describe('api.ts', () => {
       expect(changes).toHaveLength(1)
       expect(ws.elements).toHaveBeenCalledWith(false, 'active')
       expect(ws.elements).toHaveBeenCalledWith(false, 'other')
+    })
+  })
+
+  describe('fetch from workspace', () => {
+    const mockFetchChangesFromWorkspace = fetch.fetchChangesFromWorkspace as jest.MockedFunction<
+      typeof fetch.fetchChangesFromWorkspace
+    >
+    const objType = new ObjectType({ elemID: new ElemID(mockService, 'dummy') })
+
+    const fetchedElements = [
+      objType,
+      new InstanceElement('instance_1', objType, {}),
+      new InstanceElement('instance_2', objType, {}),
+      new InstanceElement('instance_3_hidden', typeWithHiddenField, { hidden: 'Hidden', regField: 'regValue' }),
+    ]
+
+    beforeAll(() => {
+      mockFetchChangesFromWorkspace.mockResolvedValue({
+        changes: [],
+        errors: [],
+        configChanges: mockPlan.createPlan([[]]),
+        unmergedElements: fetchedElements,
+        elements: fetchedElements,
+        mergeErrors: [],
+        adapterNameToConfigMessage: {},
+      })
+    })
+
+    describe('Full fetch', () => {
+      let ws: workspace.Workspace
+      let ows: workspace.Workspace
+
+      beforeAll(async () => {
+        const workspaceElements = [new InstanceElement('workspace_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
+        const stateElements = [new InstanceElement('state_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
+        ws = mockWorkspace({ elements: workspaceElements, stateElements })
+        ows = mockWorkspace({})
+        mockFetchChangesFromWorkspace.mockClear()
+        await api.fetchFromWorkspace({otherWorkspace: ws, workspace : ows, services: SERVICES})
+      })
+
+      it('should call fetch changes from workspace', () => {
+        expect(mockFetchChangesFromWorkspace).toHaveBeenCalled()
+      })
+    })
+
+    describe('Fetch one service out of two.', () => {
+      let ws: workspace.Workspace
+      let ows: workspace.Workspace
+      beforeAll(async () => {
+        ws = mockWorkspace({})
+        ows = mockWorkspace({})
+        mockFetchChangesFromWorkspace.mockClear()
+        await api.fetchFromWorkspace({otherWorkspace: ws, workspace : ows, services: [mockService]})
+      })
+
+      it('should call fetch changes with first service only', () => {
+        expect(mockFetchChangesFromWorkspace).toHaveBeenCalled()
+      })
+    })
+
+    describe('default services', () => {
+      let ws: workspace.Workspace
+      let ows: workspace.Workspace
+
+
+      beforeAll(async () => {
+        ws = mockWorkspace({services: ['salto', 'salesforce']})
+        ows = mockWorkspace({services: ['salto', 'netsuite']})
+        mockFetchChangesFromWorkspace.mockClear()
+        await api.fetchFromWorkspace({otherWorkspace: ws, workspace : ows})
+      })
+
+      it('should use services that are in both workspace as default', () => {
+        const servicesUsed = mockFetchChangesFromWorkspace.mock.calls[0][1]
+        expect(servicesUsed).toEqual(['salto'])
+      })
     })
   })
 })

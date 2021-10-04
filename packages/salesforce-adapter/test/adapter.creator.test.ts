@@ -38,15 +38,19 @@ describe('SalesforceAdapter creator', () => {
       authType: 'basic',
     }
   )
+  const oauthConfigObj = {
+    refreshToken: 'refreshToken',
+    accessToken: 'accessToken',
+    clientId: 'id',
+    clientSecret: 'secret',
+    instanceUrl: 'instance_url',
+    isSandbox: false,
+    authType: 'oauth',
+  }
   const oauthCredentials = new InstanceElement(
     ElemID.CONFIG_NAME,
     accessTokenCredentialsType,
-    {
-      accessToken: 'accessToken',
-      instanceUrl: 'instanceUrl',
-      isSandbox: false,
-      authType: 'oauth',
-    }
+    oauthConfigObj,
   )
   const config = new InstanceElement(
     ElemID.CONFIG_NAME,
@@ -94,9 +98,12 @@ describe('SalesforceAdapter creator', () => {
 
     it('should call validateCredentials with the correct credentials', () => {
       expect(validateCredentials).toHaveBeenCalledWith(new OauthAccessTokenCredentials({
-        accessToken: 'accessToken',
-        instanceUrl: 'instanceUrl',
-        isSandbox: false,
+        refreshToken: oauthConfigObj.refreshToken,
+        accessToken: oauthConfigObj.accessToken,
+        instanceUrl: oauthConfigObj.instanceUrl,
+        isSandbox: oauthConfigObj.isSandbox,
+        clientSecret: oauthConfigObj.clientSecret,
+        clientId: oauthConfigObj.clientId,
       }))
     })
   })
@@ -114,16 +121,24 @@ describe('SalesforceAdapter creator', () => {
     })
     it('creates the right object from the response', () => {
       const creds = (adapter.authenticationMethods.oauth as OAuthMethod).createFromOauthResponse(
-        { isSandbox: false },
         {
-          accessToken: 'testAccessToken',
-          instanceUrl: 'testInstanceUrl',
-        }
+          isSandbox: false,
+          consumerKey: oauthConfigObj.clientId,
+          consumerSecret: oauthConfigObj.clientSecret,
+        },
+        { fields: {
+          refreshToken: oauthConfigObj.refreshToken,
+          accessToken: oauthConfigObj.accessToken,
+          instanceUrl: oauthConfigObj.instanceUrl,
+        } },
       )
       expect(creds).toEqual({
         isSandbox: false,
-        accessToken: 'testAccessToken',
-        instanceUrl: 'testInstanceUrl',
+        accessToken: oauthConfigObj.accessToken,
+        instanceUrl: oauthConfigObj.instanceUrl,
+        clientSecret: oauthConfigObj.clientSecret,
+        clientId: oauthConfigObj.clientId,
+        refreshToken: oauthConfigObj.refreshToken,
       })
     })
   })

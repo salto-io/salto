@@ -143,18 +143,29 @@ export const createRequestModuleFunction = (retryOptions: RequestRetryOptions) =
       return callback(err, response, body)
     })
 
-const oauthConnection = (
-  instanceUrl: string,
-  accessToken: string,
-  retryOptions: RequestRetryOptions,
-): Connection => (
+type OauthConnectionParams = {
+  instanceUrl: string
+  accessToken: string
+  refreshToken: string
+  retryOptions: RequestRetryOptions
+  clientId: string
+  clientSecret: string
+  isSandbox: boolean
+}
+
+const oauthConnection = (params: OauthConnectionParams): Connection =>
   new RealConnection({
+    oauth2: {
+      clientId: params.clientId,
+      clientSecret: params.clientSecret,
+      loginUrl: params.isSandbox ? 'https://test.salesforce.com' : 'https://login.salesforce.com',
+    },
     version: API_VERSION,
-    instanceUrl,
-    accessToken,
-    requestModule: createRequestModuleFunction(retryOptions),
+    instanceUrl: params.instanceUrl,
+    accessToken: params.accessToken,
+    refreshToken: params.refreshToken,
+    requestModule: createRequestModuleFunction(params.retryOptions),
   })
-)
 
 const realConnection = (
   isSandbox: boolean,
@@ -243,7 +254,15 @@ const createConnectionFromCredentials = (
   options: RequestRetryOptions,
 ): Connection => {
   if (creds instanceof OauthAccessTokenCredentials) {
-    return oauthConnection(creds.instanceUrl, creds.accessToken, options)
+    return oauthConnection({
+      instanceUrl: creds.instanceUrl,
+      accessToken: creds.accessToken,
+      refreshToken: creds.refreshToken,
+      retryOptions: options,
+      clientId: creds.clientId,
+      clientSecret: creds.clientSecret,
+      isSandbox: creds.isSandbox,
+    })
   }
   return realConnection(creds.isSandbox, options)
 }

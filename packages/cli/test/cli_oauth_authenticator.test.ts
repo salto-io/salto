@@ -26,7 +26,7 @@ describe('When using the cli oauth authenticates', () => {
   let returnPromise: Promise<OauthAccessTokenResponse>
   beforeEach(async () => {
     mockWriteStream = new MockWriteStream()
-    returnPromise = cliOauthAuthenticator.processOauthCredentials(8080, 'access_token_field', 'testUrl', {
+    returnPromise = cliOauthAuthenticator.processOauthCredentials(8080, ['access_token_field', 'instance_url'], 'testUrl', {
       stdout: mockWriteStream,
       stderr: new MockWriteStream(),
     })
@@ -53,8 +53,8 @@ describe('When using the cli oauth authenticates', () => {
       expect(response.text).toContain('Done configuring Salto')
     })
     const retVal = await returnPromise
-    expect(retVal.accessToken).toEqual('accessTokenThing2')
-    expect(retVal.instanceUrl).toEqual('testInstanceUrl2')
+    expect(retVal.fields.accessTokenField).toEqual('accessTokenThing2')
+    expect(retVal.fields.instanceUrl).toEqual('testInstanceUrl2')
   })
 })
 
@@ -62,7 +62,7 @@ describe('when oauth output is badly shapen', () => {
   let returnPromise: Promise<OauthAccessTokenResponse>
   beforeEach(async () => {
     mockWriteStream = new MockWriteStream()
-    returnPromise = cliOauthAuthenticator.processOauthCredentials(8081, 'testAccessTokenField', 'testUrl',
+    returnPromise = cliOauthAuthenticator.processOauthCredentials(8081, ['testAccessTokenField'], 'testUrl',
       {
         stdout: mockWriteStream,
         stderr: new MockWriteStream(),

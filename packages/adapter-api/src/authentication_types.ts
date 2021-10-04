@@ -18,7 +18,7 @@ import { Values } from './values'
 
 export type OAuthRequestParameters = {
   url: string
-  accessTokenField: string
+  oauthRequiredFields: string[]
 }
 
 export type AuthMethod = {
@@ -26,8 +26,7 @@ export type AuthMethod = {
 }
 
 export type OauthAccessTokenResponse = {
-  instanceUrl: string
-  accessToken: string
+  fields: Record<string, string>
 }
 
 export type OAuthMethod = AuthMethod & {

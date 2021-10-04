@@ -141,11 +141,7 @@ describe('Netsuite adapter E2E with real account', () => {
         description: randomString,
         ...(withSuiteApp
           ? { [PATH]: '/Images/InnerFolder/e2eTest.js',
-            content: new StaticFile({
-              filepath: 'somePath',
-              content: Buffer.from('aaa'),
-            }),
-          }
+            content: 'aaa' }
           : {}),
       }
     )
@@ -549,7 +545,7 @@ describe('Netsuite adapter E2E with real account', () => {
         const contentStaticFile = content as StaticFile
         expect(contentStaticFile.content).toBeDefined()
         expect((contentStaticFile.content as Buffer).toString())
-          .toEqual(withSuiteApp ? fileToCreate.value.content.content : fileToCreate.value.content)
+          .toEqual(fileToCreate.value.content)
       })
 
       it('should fetch the modified folder', async () => {

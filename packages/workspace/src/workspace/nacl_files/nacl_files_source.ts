@@ -162,7 +162,10 @@ export const toParsedNaclFile = async (
       errors: () => Promise.resolve(parseResult.errors),
       referenced: async () => {
         if (referenced === undefined) {
-          referenced = await awu(parseResult.elements).flatMap(getElementReferenced).toArray()
+          referenced = await awu(parseResult.elements)
+            .flatMap(getElementReferenced)
+            .uniquify(s => s)
+            .toArray()
         }
         return referenced
       },
@@ -642,7 +645,10 @@ const buildNaclFilesSource = (
         errors: () => Promise.resolve([]),
         referenced: async () => {
           if (referenced === undefined) {
-            referenced = await awu(elements).flatMap(getElementReferenced).toArray()
+            referenced = await awu(elements)
+              .flatMap(getElementReferenced)
+              .uniquify(s => s)
+              .toArray()
           }
           return referenced
         },

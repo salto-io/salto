@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { EOL } from 'os'
 import _ from 'lodash'
 import wu from 'wu'
 import { getChangeElement, isInstanceElement, AdapterOperationName, Progress } from '@salto-io/adapter-api'
@@ -71,7 +72,7 @@ const createFetchFromWorkspaceCommand = (
   } catch (err) {
     throw new Error(`Failed to load source workspace: ${err.message ?? err}`)
   }
-  return await fetchFromWorkspaceFunc({workspace, otherWorkspace, progressEmitter, services, env})
+  return fetchFromWorkspaceFunc({ workspace, otherWorkspace, progressEmitter, services, env })
 }
 
 export const fetchCommand = async (
@@ -249,6 +250,11 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   workspace,
 }): Promise<CliExitCode> => {
   const { force, stateOnly, services, mode, regenerateSaltoIds, fromWorkspace, fromEnv } = input
+  if (fromEnv !== undefined && fromWorkspace === undefined) {
+    errorOutputLine('The fromEnv argument can only be used when a fromWorkspace argument is provided', output)
+    outputLine(EOL, output)
+    return CliExitCode.UserInputError
+  }
   const { shouldCalcTotalSize } = config
   await validateAndSetEnv(workspace, input, output)
   const activeServices = getAndValidateActiveServices(workspace, services)

@@ -82,7 +82,7 @@ describe('adapter', () => {
           'workato.api_collection',
           'workato.api_collection.instance.test1',
           'workato.api_endpoint',
-          'workato.api_endpoint.instance.ep321',
+          'workato.api_endpoint.instance.ep321__somedomainname_test1_v10_user__id_@uddbdd_00123_00125',
           'workato.connection',
           'workato.connection.instance.HTTP_connection_1@s',
           'workato.connection.instance.My_Gmail_connection@s',

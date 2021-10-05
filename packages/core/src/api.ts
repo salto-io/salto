@@ -187,10 +187,10 @@ export type FetchFunc = (
 ) => Promise<FetchResult>
 
 export type FetchFromWorkspaceFuncParams = {
-  workspace: Workspace,
-  otherWorkspace: Workspace,
-  progressEmitter?: EventEmitter<FetchProgressEvents>,
-  services?: string[],
+  workspace: Workspace
+  otherWorkspace: Workspace
+  progressEmitter?: EventEmitter<FetchProgressEvents>
+  services?: string[]
   env?: string
 }
 export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Promise<FetchResult>

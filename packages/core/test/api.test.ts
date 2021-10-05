@@ -501,7 +501,7 @@ describe('api.ts', () => {
         ws = mockWorkspace({ elements: workspaceElements, stateElements })
         ows = mockWorkspace({})
         mockFetchChangesFromWorkspace.mockClear()
-        await api.fetchFromWorkspace({otherWorkspace: ws, workspace : ows, services: SERVICES})
+        await api.fetchFromWorkspace({ otherWorkspace: ws, workspace: ows, services: SERVICES })
       })
 
       it('should call fetch changes from workspace', () => {
@@ -516,7 +516,11 @@ describe('api.ts', () => {
         ws = mockWorkspace({})
         ows = mockWorkspace({})
         mockFetchChangesFromWorkspace.mockClear()
-        await api.fetchFromWorkspace({otherWorkspace: ws, workspace : ows, services: [mockService]})
+        await api.fetchFromWorkspace({
+          otherWorkspace: ws,
+          workspace: ows,
+          services: [mockService],
+        })
       })
 
       it('should call fetch changes with first service only', () => {
@@ -530,10 +534,10 @@ describe('api.ts', () => {
 
 
       beforeAll(async () => {
-        ws = mockWorkspace({services: ['salto', 'salesforce']})
-        ows = mockWorkspace({services: ['salto', 'netsuite']})
+        ws = mockWorkspace({ services: ['salto', 'salesforce'] })
+        ows = mockWorkspace({ services: ['salto', 'netsuite'] })
         mockFetchChangesFromWorkspace.mockClear()
-        await api.fetchFromWorkspace({otherWorkspace: ws, workspace : ows})
+        await api.fetchFromWorkspace({ otherWorkspace: ws, workspace: ows })
       })
 
       it('should use services that are in both workspace as default', () => {

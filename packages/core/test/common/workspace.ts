@@ -66,14 +66,14 @@ export const mockWorkspace = ({
   stateElements = undefined,
   services = SERVICES,
   errors = [],
-  serviceConfigs = {}
+  serviceConfigs = {},
 }: {
   elements?: Element[]
   name?: string
   index?: workspace.remoteMap.RemoteMapEntry<workspace.pathIndex.Path[]>[]
   stateElements?: Element[]
-  services?: string[],
-  errors?: SaltoError[],
+  services?: string[]
+  errors?: SaltoError[]
   serviceConfigs?: Record<string, InstanceElement>
 }): workspace.Workspace => {
   const state = mockState(SERVICES, stateElements || elements, index)

@@ -679,8 +679,8 @@ const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult =>
   updatedConfig: {},
   errors: [{
     message: errMsg,
-    severity: 'Error'
-  }]
+    severity: 'Error',
+  }],
 })
 export const fetchChangesFromWorkspace = async (
   otherWorkspace: Workspace,
@@ -731,8 +731,8 @@ export const fetchChangesFromWorkspace = async (
   const fullElements = await awu(
     await (await otherWorkspace.elements(true, env)).getAll()
   )
-  .filter(elem => fetchServices.includes(elem.elemID.adapter))
-  .toArray()
+    .filter(elem => fetchServices.includes(elem.elemID.adapter))
+    .toArray()
 
   const otherPathIndex = await otherWorkspace.state(env).getPathIndex()
   const unmergedElements = await awu(fullElements).map(

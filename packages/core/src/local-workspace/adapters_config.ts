@@ -20,7 +20,7 @@ import { workspaceConfigSource as wcs,
   nacl, staticFiles, merger, adaptersConfigSource as acs, remoteMap } from '@salto-io/workspace'
 import { DetailedChange, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { applyDetailedChanges, detailedCompare, transformElement } from '@salto-io/adapter-utils'
+import { applyDetailedChanges, detailedCompare, transformValues } from '@salto-io/adapter-utils'
 import { localDirectoryStore } from './dir_store'
 import { buildLocalStaticFilesCache } from './static_files_cache'
 
@@ -28,12 +28,17 @@ export type WorkspaceConfigSource = wcs.WorkspaceConfigSource & {
   localStorage: string
 }
 
-const removeUndefined = async (instance: InstanceElement): Promise<InstanceElement> =>
-  transformElement({
-    element: instance,
+const removeUndefined = async (instance: InstanceElement): Promise<InstanceElement> => {
+  const transformedElement = instance.clone()
+  transformedElement.value = await transformValues({
+    values: instance.value,
+    type: await instance.getType(),
     strict: false,
+    allowEmpty: true,
     transformFunc: ({ value }) => value,
-  })
+  }) ?? {}
+  return transformedElement
+}
 
 
 const createNaclSource = async (

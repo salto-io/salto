@@ -126,10 +126,10 @@ describe('adapters local config', () => {
       new ObjectType({
         elemID: new ElemID('salesforce', ElemID.CONFIG_NAME),
       }),
-      { value: { inner1: undefined, inner2: 2 } }
+      { value: { inner1: undefined, inner2: 2, inner3: [] } }
     ))
     const receivedChange = mockNaclFilesSource.updateNaclFiles.mock.calls[1][0][0]
-    expect(getChangeElement(receivedChange).value).toEqual({ value: { inner2: 2 } })
+    expect(getChangeElement(receivedChange).value).toEqual({ value: { inner2: 2, inner3: [] } })
     expect(mockNaclFilesSource.flush).toHaveBeenCalled()
   })
 

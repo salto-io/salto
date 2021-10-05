@@ -28,6 +28,9 @@ export {
   WorkspaceConfigSource as LocalWorkspaceConfigSource,
 } from './src/local-workspace/workspace_config'
 export {
+  adaptersConfigSource as localAdaptersConfigSource,
+} from './src/local-workspace/adapters_config'
+export {
   SALTO_HOME_VAR,
   AppConfig,
   configFromDisk,

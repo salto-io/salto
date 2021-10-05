@@ -156,7 +156,7 @@ export const fetchCommand = async (
           planItem,
         )
         if (shouldWriteToConfig) {
-          await workspace.updateServiceConfig(adapterName, newConfig)
+          await workspace.updateServiceConfig(adapterName, fetchResult.updatedConfig[adapterName])
         }
         return !shouldWriteToConfig
       })

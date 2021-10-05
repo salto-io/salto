@@ -17,24 +17,23 @@ import _ from 'lodash'
 import path from 'path'
 import { workspaceConfigSource as wcs,
   WorkspaceConfig, configSource } from '@salto-io/workspace'
-import { DetailedChange } from '@salto-io/adapter-api'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome, CONFIG_DIR_NAME } from '../app_config'
 import { WORKSPACE_CONFIG_NAME, ENVS_CONFIG_NAME, EnvsConfig,
   USER_CONFIG_NAME, UserDataConfig, WorkspaceMetadataConfig, envsConfigInstance,
-  userDataConfigInstance, workspaceMetadataConfigInstance, ADAPTERS_CONFIG_NAME } from './workspace_config_types'
+  userDataConfigInstance, workspaceMetadataConfigInstance } from './workspace_config_types'
 import { NoWorkspaceConfig, NoEnvsConfig } from './errors'
+
 
 export type WorkspaceConfigSource = wcs.WorkspaceConfigSource & {
   localStorage: string
 }
 
 export const workspaceConfigSource = async (
-  baseDir: string, localStorage?: string, configOverrides?: DetailedChange[]
+  baseDir: string, localStorage?: string
 ): Promise<WorkspaceConfigSource> => {
   const repoCs = configSource.configSource(
     localDirectoryStore({ baseDir, name: CONFIG_DIR_NAME, encoding: 'utf8' }),
-    configOverrides,
   )
   const workspaceConf = (await repoCs.get(WORKSPACE_CONFIG_NAME))?.value
 
@@ -46,8 +45,8 @@ export const workspaceConfigSource = async (
   || path.join(getSaltoHome(), `${workspaceConf?.name}-${workspaceConf?.uid}`)
   const localCs = configSource.configSource(
     localDirectoryStore({ baseDir: computedLocalStorage, name: '', encoding: 'utf8' }),
-    configOverrides,
   )
+
   return {
     localStorage: computedLocalStorage,
     getWorkspaceConfig: async (): Promise<WorkspaceConfig> => {
@@ -80,11 +79,5 @@ export const workspaceConfigSource = async (
       await repoCs.set(WORKSPACE_CONFIG_NAME, workspaceMetadata)
       await localCs.set(USER_CONFIG_NAME, userData)
     },
-    getAdapter: (adapter, defaultValue) => (
-      repoCs.get(path.join(ADAPTERS_CONFIG_NAME, adapter), defaultValue)
-    ),
-    setAdapter: (adapter, config) => (
-      repoCs.set(path.join(ADAPTERS_CONFIG_NAME, adapter), config)
-    ),
   }
 }

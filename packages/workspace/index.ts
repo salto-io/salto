@@ -21,6 +21,7 @@ import { Workspace, SourceFragment, StateRecency, loadWorkspace, isValidEnvName,
 import * as hiddenValues from './src/workspace/hidden_values'
 import * as configSource from './src/workspace/config_source'
 import * as workspaceConfigSource from './src/workspace/workspace_config_source'
+import * as adaptersConfigSource from './src/workspace/adapters_config_source'
 import { WorkspaceConfig, EnvConfig } from './src/workspace/config/workspace_config_types'
 import * as state from './src/workspace/state'
 import * as dirStore from './src/workspace/dir_store'
@@ -67,6 +68,7 @@ export {
   COMMON_ENV_PREFIX,
   state,
   workspaceConfigSource,
+  adaptersConfigSource,
   WorkspaceComponents,
   validator,
   createElementSelector,

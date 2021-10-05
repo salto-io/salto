@@ -461,7 +461,7 @@ describe('Netsuite adapter E2E with real account', () => {
 
       it('should fetch account successfully', async () => {
         expect(fetchResult.elements.length).toBeGreaterThan(getMetadataTypes().length)
-        validateConfigSuggestions(fetchResult.updatedConfig?.config)
+        validateConfigSuggestions(fetchResult.updatedConfig?.config[0])
       })
 
       it('should fetch the created entityCustomField and its special chars', async () => {

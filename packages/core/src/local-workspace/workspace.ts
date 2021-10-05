@@ -27,6 +27,7 @@ import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'
 import { createRemoteMapCreator } from './remote_map'
+import { adaptersConfigSource } from './adapters_config'
 
 const { configSource } = cs
 const { FILE_EXTENSION, naclFilesSource, ENVS_PREFIX } = nacl
@@ -193,11 +194,19 @@ export const loadLocalWorkspace = async (
   if (_.isUndefined(baseDir)) {
     throw new NotAWorkspaceError()
   }
-  const workspaceConfig = await workspaceConfigSource(baseDir, undefined, configOverrides)
-  const envs = (await workspaceConfig.getWorkspaceConfig()).envs.map(e => e.name)
-  const credentials = credentialsSource(workspaceConfig.localStorage)
+  const workspaceConfig = await workspaceConfigSource(baseDir, undefined)
   const cacheDirName = path.join(workspaceConfig.localStorage, CACHE_DIR_NAME)
   const remoteMapCreator = createRemoteMapCreator(cacheDirName)
+  const adaptersConfig = await adaptersConfigSource(
+    baseDir,
+    workspaceConfig.localStorage,
+    remoteMapCreator,
+    persistent,
+    configOverrides,
+  )
+  const envs = (await workspaceConfig.getWorkspaceConfig()).envs.map(e => e.name)
+  const credentials = credentialsSource(workspaceConfig.localStorage)
+
   const elemSources = await loadLocalElementsSources(
     baseDir,
     workspaceConfig.localStorage,
@@ -207,6 +216,7 @@ export const loadLocalWorkspace = async (
   )
   const ws = await loadWorkspace(
     workspaceConfig,
+    adaptersConfig,
     credentials,
     elemSources,
     remoteMapCreator,
@@ -261,14 +271,22 @@ Promise<Workspace> => {
   }
 
   const workspaceConfig = await workspaceConfigSource(baseDir, localStorage)
-  const credentials = credentialsSource(localStorage)
   const remoteMapCreator = createRemoteMapCreator(path.join(localStorage, CACHE_DIR_NAME))
+  const persistentMode = true
+
+  const adaptersConfig = await adaptersConfigSource(
+    baseDir,
+    localStorage,
+    remoteMapCreator,
+    persistentMode
+  )
+  const credentials = credentialsSource(localStorage)
   const elemSources = await loadLocalElementsSources(
     path.resolve(baseDir),
     localStorage,
     [envName],
     remoteMapCreator,
-    true
+    persistentMode
   )
 
   return initWorkspace(
@@ -276,6 +294,7 @@ Promise<Workspace> => {
     uid,
     envName,
     workspaceConfig,
+    adaptersConfig,
     credentials,
     elemSources,
     remoteMapCreator

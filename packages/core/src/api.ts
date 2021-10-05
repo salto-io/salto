@@ -26,8 +26,8 @@ import { Workspace, ElementSelector, elementSource } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
-  adapterCreators, getAdaptersCredentialsTypes, getAdapters,
-  getAdapterDependencyChangers, getDefaultAdapterConfig, initAdapters, getAdaptersCreatorConfigs,
+  adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterDependencyChangers,
+  initAdapters, getAdaptersCreatorConfigs, getDefaultAdapterConfig,
 } from './core/adapters'
 import { getPlan, Plan, PlanItem } from './core/plan'
 import {
@@ -175,6 +175,7 @@ export type FetchResult = {
   fetchErrors: SaltoError[]
   success: boolean
   configChanges?: Plan
+  updatedConfig : Record<string, InstanceElement[]>
   adapterNameToConfigMessage?: Record<string, string>
 }
 export type FetchFunc = (
@@ -216,7 +217,7 @@ export const fetch: FetchFunc = async (
     progressEmitter.emit('adaptersDidInitialize')
   }
   const {
-    changes, elements, mergeErrors, errors,
+    changes, elements, mergeErrors, errors, updatedConfig,
     configChanges, adapterNameToConfigMessage, unmergedElements,
   } = await fetchChanges(
     adapters,
@@ -238,6 +239,7 @@ export const fetch: FetchFunc = async (
     mergeErrors,
     success: true,
     configChanges,
+    updatedConfig,
     adapterNameToConfigMessage,
   }
 }

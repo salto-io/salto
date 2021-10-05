@@ -240,6 +240,7 @@ export type FetchChangesResult = {
   unmergedElements: Element[]
   mergeErrors: MergeErrorWithElements[]
   configChanges: Plan
+  updatedConfig: Record<string, InstanceElement[]>
   adapterNameToConfigMessage: Record<string, string>
 }
 
@@ -288,7 +289,7 @@ const processMergeErrors = async (
 }, 'process merge errors for %o errors', errors.length)
 
 type UpdatedConfig = {
-  config: InstanceElement
+  config: InstanceElement[]
   message: string
 }
 
@@ -357,7 +358,7 @@ const fetchAndProcessMergeErrors = async (
     serviceElements: Element[]
     errors: SaltoError[]
     processErrorsResult: ProcessMergeErrorsResult
-    updatedConfigs: UpdatedConfig[]
+    updatedConfig: UpdatedConfig[]
     partiallyFetchedAdapters: Set<string>
   }> => {
   try {
@@ -378,7 +379,10 @@ const fetchAndProcessMergeErrors = async (
             elements: fetchResult.elements.map(flattenElementStr),
             errors: errors ?? [],
             updatedConfig: updatedConfig
-              ? { config: flattenElementStr(updatedConfig.config), message: updatedConfig.message }
+              ? {
+                config: updatedConfig.config.map(flattenElementStr),
+                message: updatedConfig.message,
+              }
               : undefined,
             isPartial: fetchResult.isPartial ?? false,
             adapterName,
@@ -388,9 +392,9 @@ const fetchAndProcessMergeErrors = async (
 
     const serviceElements = _.flatten(fetchResults.map(res => res.elements))
     const fetchErrors = fetchResults.flatMap(res => res.errors)
-    const updatedConfigs = fetchResults
+    const updatedConfig = fetchResults
       .map(res => res.updatedConfig)
-      .filter(c => !_.isUndefined(c)) as UpdatedConfig[]
+      .filter(values.isDefined) as UpdatedConfig[]
 
     const partiallyFetchedAdapters = new Set(
       fetchResults
@@ -443,7 +447,7 @@ const fetchAndProcessMergeErrors = async (
       serviceElements: validServiceElements,
       errors: fetchErrors,
       processErrorsResult,
-      updatedConfigs,
+      updatedConfig,
       partiallyFetchedAdapters,
     }
   } catch (error) {
@@ -550,7 +554,7 @@ export const fetchChanges = async (
     progressEmitter.emit('changesWillBeFetched', getChangesEmitter, adapterNames)
   }
   const {
-    serviceElements, errors, processErrorsResult, updatedConfigs, partiallyFetchedAdapters,
+    serviceElements, errors, processErrorsResult, updatedConfig, partiallyFetchedAdapters,
   } = await fetchAndProcessMergeErrors(
     adapters,
     stateElements,
@@ -593,7 +597,18 @@ export const fetchChanges = async (
   if (progressEmitter) {
     calculateDiffEmitter.emit('completed')
   }
-  const configs = updatedConfigs.map(c => c.config)
+
+  const configsMerge = await mergeElements(awu(updatedConfig.flatMap(c => c.config)))
+
+  const errorMessages = await awu(await configsMerge.errors.entries())
+    .flatMap(err => err.value)
+    .map(err => err.message)
+    .toArray()
+  if (errorMessages.length !== 0) {
+    throw new Error(`Received configuration merge errors: ${errorMessages.join(', ')}`)
+  }
+
+  const configs = await awu(configsMerge.merged.values()).toArray()
   const updatedConfigNames = new Set(configs.map(c => c.elemID.getFullName()))
   const configChanges = await getPlan({
     before: elementSource.createInMemoryElementSource(
@@ -601,8 +616,9 @@ export const fetchChanges = async (
     ),
     after: elementSource.createInMemoryElementSource(configs),
   })
-  const adapterNameToConfigMessage = _
-    .fromPairs(updatedConfigs.map(c => [c.config.elemID.adapter, c.message]))
+
+  const adapterNameToConfig = _.keyBy(updatedConfig, config => config.config[0].elemID.adapter)
+  const adapterNameToConfigMessage = _.mapValues(adapterNameToConfig, config => config.message)
 
   const elements = partiallyFetchedAdapters.size !== 0
     ? _(await awu(await stateElements.getAll()).toArray())
@@ -618,6 +634,7 @@ export const fetchChanges = async (
     unmergedElements: serviceElements,
     mergeErrors: processErrorsResult.errorsWithDroppedElements,
     configChanges,
+    updatedConfig: _.mapValues(adapterNameToConfig, config => config.config),
     adapterNameToConfigMessage,
   }
 }

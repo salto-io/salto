@@ -224,8 +224,11 @@ Promise<Workspace> => {
       currentEnv: 'default',
     })),
     setWorkspaceConfig: jest.fn(),
+  }
+  const mockAdaptersConf = {
     getAdapter: jest.fn(),
     setAdapter: jest.fn(),
+    getElementNaclFiles: jest.fn(),
   }
   const mockCredentialsSource = {
     get: jest.fn(),
@@ -233,7 +236,13 @@ Promise<Workspace> => {
     delete: jest.fn(),
     rename: jest.fn(),
   }
-  return loadWorkspace(mockConfSource, mockCredentialsSource, elementsSources, mockCreateRemoteMap)
+  return loadWorkspace(
+    mockConfSource,
+    mockAdaptersConf,
+    mockCredentialsSource,
+    elementsSources,
+    mockCreateRemoteMap,
+  )
 }
 
 export const mockWorkspace = async (naclFiles: string[] = [], staticFileNames: string[] = []):

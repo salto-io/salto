@@ -31,7 +31,7 @@ export interface ElementsSource {
   flush(): Promise<void>
   clear(): Promise<void>
   rename(name: string): Promise<void>
-  set(element: Element): Promise<void>
+  set(element: Readonly<Element>): Promise<void>
   setAll(elements: ThenableIterable<Element>): Promise<void>
   delete(id: ElemID): Promise<void>
   deleteAll(ids: ThenableIterable<ElemID>): Promise<void>

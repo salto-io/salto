@@ -107,7 +107,10 @@ const dumpAnnotationTypesBlock = (annotationRefTypes: ReferenceMap): DumpedHclBl
       .map(([key, ref]) => dumpAnnotationTypeBlock(key, ref)),
   }])
 
-const dumpElementBlock = async (elem: Element, functions: Functions): Promise<DumpedHclBlock> => {
+const dumpElementBlock = async (
+  elem: Readonly<Element>,
+  functions: Functions
+): Promise<DumpedHclBlock> => {
   if (isField(elem)) {
     return dumpFieldBlock(elem, functions)
   }
@@ -160,7 +163,7 @@ const wrapBlocks = (blocks: DumpedHclBlock[]): DumpedHclBlock => ({
 })
 
 export const dumpElements = async (
-  elements: Element[], functions: Functions = {}, indentationLevel = 0
+  elements: Readonly<Element>[], functions: Functions = {}, indentationLevel = 0
 ): Promise<string> =>
   hclDump(
     wrapBlocks(await awu(elements).map(e => dumpElementBlock(e, functions)).toArray()),

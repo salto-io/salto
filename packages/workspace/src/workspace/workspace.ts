@@ -39,6 +39,7 @@ import { RemoteElementSource, ElementsSource, mapReadOnlyElementsSource } from '
 import { createMergeManager, ElementMergeManager, ChangeSet, createEmptyChangeSet, MergedRecoveryMode } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
+import { AdaptersConfigSource } from './adapters_config_source'
 
 const log = logger(module)
 
@@ -113,7 +114,7 @@ export type Workspace = {
     Promise<Readonly<Record<string, InstanceElement>>>
   serviceConfig: (name: string, defaultValue?: InstanceElement) =>
     Promise<InstanceElement | undefined>
-
+  serviceConfigPaths: (name: string) => Promise<string[]>
   isEmpty(naclFilesOnly?: boolean): Promise<boolean>
   hasElementsInServices(serviceNames: string[]): Promise<boolean>
   hasElementsInEnv(envName: string): Promise<boolean>
@@ -157,8 +158,10 @@ export type Workspace = {
   renameEnvironment: (envName: string, newEnvName: string, newSourceName? : string) => Promise<void>
   setCurrentEnv: (env: string, persist?: boolean) => Promise<void>
   updateServiceCredentials: (service: string, creds: Readonly<InstanceElement>) => Promise<void>
-  updateServiceConfig: (service: string, newConfig: Readonly<InstanceElement>) => Promise<void>
-
+  updateServiceConfig: (
+    service: string,
+    newConfig: Readonly<InstanceElement> | Readonly<InstanceElement>[]
+  ) => Promise<void>
   getStateRecency(services: string): Promise<StateRecency>
   promote(ids: ElemID[]): Promise<void>
   demote(ids: ElemID[]): Promise<void>
@@ -197,6 +200,7 @@ const compact = (sortedIds: ElemID[]): ElemID[] => {
 
 export const loadWorkspace = async (
   config: WorkspaceConfigSource,
+  adaptersConfig: AdaptersConfigSource,
   credentials: ConfigSource,
   enviormentsSources: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
@@ -689,7 +693,8 @@ export const loadWorkspace = async (
     servicesCredentials: async (names?: ReadonlyArray<string>) => _.fromPairs(await Promise.all(
       pickServices(names).map(async service => [service, await credentials.get(credsPath(service))])
     )),
-    serviceConfig: (name, defaultValue) => config.getAdapter(name, defaultValue),
+    serviceConfig: (name, defaultValue) => adaptersConfig.getAdapter(name, defaultValue),
+    serviceConfigPaths: adaptersConfig.getElementNaclFiles,
     isEmpty: async (naclFilesOnly = false): Promise<boolean> => {
       const isNaclFilesSourceEmpty = !naclFilesSource
         || await (await getLoadedNaclFilesSource()).isEmpty()
@@ -779,7 +784,7 @@ export const loadWorkspace = async (
       const sources = _.mapValues(enviormentsSources.sources, source =>
         ({ naclFiles: source.naclFiles.clone(), state: source.state }))
       const envSources = { commonSourceName: enviormentsSources.commonSourceName, sources }
-      return loadWorkspace(config, credentials, envSources, remoteMapCreator)
+      return loadWorkspace(config, adaptersConfig, credentials, envSources, remoteMapCreator)
     },
     clear: async (args: ClearFlags) => {
       const currentWSState = await getWorkspaceState()
@@ -811,8 +816,8 @@ export const loadWorkspace = async (
       async (service: string, servicesCredentials: Readonly<InstanceElement>): Promise<void> =>
         credentials.set(credsPath(service), servicesCredentials),
     updateServiceConfig:
-      async (service: string, newConfig: Readonly<InstanceElement>): Promise<void> => {
-        await config.setAdapter(service, newConfig)
+      async (service, newConfig) => {
+        await adaptersConfig.setAdapter(service, newConfig)
       },
     addEnvironment: async (
       env: string,
@@ -1032,6 +1037,7 @@ export const initWorkspace = async (
   uid: string,
   defaultEnvName: string,
   config: WorkspaceConfigSource,
+  adaptersConfig: AdaptersConfigSource,
   credentials: ConfigSource,
   envs: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
@@ -1043,5 +1049,5 @@ export const initWorkspace = async (
     envs: [{ name: defaultEnvName }],
     currentEnv: defaultEnvName,
   })
-  return loadWorkspace(config, credentials, envs, remoteMapCreator)
+  return loadWorkspace(config, adaptersConfig, credentials, envs, remoteMapCreator)
 }

@@ -18,7 +18,7 @@ import { Value } from '@salto-io/adapter-api'
 import * as ws from '@salto-io/workspace'
 import * as file from '@salto-io/file'
 import { EnvironmentsSources } from '@salto-io/workspace'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import {
   initLocalWorkspace, ExistingWorkspaceError, NotAnEmptyWorkspaceError, NotAWorkspaceError,
   loadLocalWorkspace, CREDENTIALS_CONFIG_PATH,
@@ -81,10 +81,10 @@ describe('local workspace', () => {
     if (params.baseDir.startsWith(getSaltoHome())) {
       return localDirStore
     }
-    return params.name.includes(ENVS_PREFIX) ? envDirStore : repoDirStore
+    return params.name?.includes(ENVS_PREFIX) ? envDirStore : repoDirStore
   })
   const toWorkspaceRelative = (params: {baseDir: string; name: string}): string => {
-    const dir = path.join(params.baseDir, params.name)
+    const dir = path.join(...[params.baseDir, params.name].filter(values.isDefined))
     return (dir.startsWith(getSaltoHome())
       ? path.relative(getSaltoHome(), dir)
       : `${path.basename(path.dirname(dir))}${path.sep}${path.basename(dir)}`)
@@ -146,7 +146,7 @@ describe('local workspace', () => {
       await initLocalWorkspace('.', wsName, envName)
       expect(mockInit.mock.calls[0][0]).toBe(wsName)
       expect(mockInit.mock.calls[0][2]).toBe(envName)
-      const envSources: ws.EnvironmentsSources = mockInit.mock.calls[0][5]
+      const envSources: ws.EnvironmentsSources = mockInit.mock.calls[0][6]
       expect(Object.keys(envSources.sources)).toHaveLength(2)
       expect(envSources.commonSourceName).toBe(COMMON_ENV_PREFIX)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])
@@ -194,9 +194,9 @@ describe('local workspace', () => {
       await loadLocalWorkspace('.')
 
       expect(mockLoad).toHaveBeenCalledTimes(1)
-      const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][2]
+      const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][3]
       expect(Object.keys(envSources.sources)).toHaveLength(3)
-      expect(mockCreateDirStore).toHaveBeenCalledTimes(9)
+      expect(mockCreateDirStore).toHaveBeenCalledTimes(11)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])
         .map(params => toWorkspaceRelative(params))
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'env2'))
@@ -243,6 +243,7 @@ describe('local workspace', () => {
       const mockLoad = ws.loadWorkspace as jest.Mock
       mockLoad.mockImplementation(async (
         _config,
+        _adaptersConfig,
         _credentials,
         elemSource: EnvironmentsSources
       ) => {

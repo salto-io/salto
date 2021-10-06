@@ -3247,7 +3247,7 @@ describe('listUnresolvedReferences', () => {
     })
     const inst1 = new InstanceElement(
       'inst1',
-      type1,
+      new TypeReference(type1.elemID),
       {
         f1: 'aaa',
         f2: new ReferenceExpression(new ElemID('salesforce', 'someType', 'field', 'f3')),
@@ -3256,7 +3256,7 @@ describe('listUnresolvedReferences', () => {
     )
     const inst2 = new InstanceElement(
       'inst2',
-      type2,
+      new TypeReference(type2.elemID),
       {
         f1: {
           f1: 'aaa',
@@ -3419,9 +3419,9 @@ describe('listUnresolvedReferences', () => {
   describe('workspace with unresolved references that do not exist in other env', () => {
     beforeAll(async () => {
       jest.resetAllMocks()
-      const defaultElements = createEnvElements().slice(3) as InstanceElement[]
-      defaultElements[0].value = {
-        ...(defaultElements[0] as InstanceElement).value,
+      const defaultElements = createEnvElements() as InstanceElement[]
+      defaultElements[3].value = {
+        ...(defaultElements[3] as InstanceElement).value,
         f3: new TypeReference(new ElemID('salesforce', 'unresolved')),
       }
       const otherElements = createEnvElements().slice(1)
@@ -3452,15 +3452,57 @@ describe('listUnresolvedReferences', () => {
     })
 
     it('should resolve some of the references', () => {
-      expect(res.found).toEqual([
-        new ElemID('salesforce', 'someType', 'instance', 'inst1', 'f1'),
-      ])
+      expect(res.found).toHaveLength(0)
       expect(res.missing).toEqual([
         new ElemID('salesforce', 'unresolved'),
       ])
     })
   })
+
+  describe('workspace with unresolved value reference which lead to not exist unresolved reference in another env', () => {
+    beforeAll(async () => {
+      jest.resetAllMocks()
+      const defaultElements = createEnvElements().slice(3) as InstanceElement[]
+      const otherElements = createEnvElements().slice(1)
+      workspace = await createWorkspace(
+        undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: await naclFilesSource(
+              COMMON_ENV_PREFIX,
+              mockDirStore(),
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true
+            ),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource(defaultElements),
+            state: createState(defaultElements),
+          },
+          inactive: {
+            naclFiles: createMockNaclFileSource(otherElements),
+            state: createState(otherElements),
+          },
+        }
+      )
+      res = await workspace.listUnresolvedReferences('inactive')
+    })
+
+    it('should return the instance of the unresolved reference, although the reference is a value', () => {
+      expect(res.found).toEqual([
+        new ElemID('salesforce', 'someType', 'instance', 'inst1'),
+      ])
+    })
+    it('should mark the missing unresolved reference in the redirected env', () => {
+      expect(res.missing).toEqual([
+        new ElemID('salesforce', 'someType', 'field', 'f3'),
+      ])
+    })
+  })
 })
+
 describe('isValidEnvName', () => {
   it('should be valid env names', () => {
     expect(isValidEnvName('Production')).toEqual(true)

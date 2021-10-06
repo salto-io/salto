@@ -16,10 +16,10 @@
 import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
-  Value, isElement, isInstanceElement, toChange, isRemovalChange, getChangeElement,
+  Value, toChange, isRemovalChange, getChangeElement,
   ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { applyDetailedChanges, resolvePath, setPath } from '@salto-io/adapter-utils'
+import { applyDetailedChanges, resolvePath } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
@@ -958,7 +958,7 @@ export const loadWorkspace = async (
     listUnresolvedReferences: async (completeFromEnv?: string): Promise<UnresolvedElemIDs> => {
       const getUnresolvedElemIDsFromErrors = async (): Promise<ElemID[]> => {
         const workspaceErrors = (await errors()).validation.filter(isUnresolvedRefError)
-          .map(e => e.target)
+          .map(e => e.target.createBaseID().parent)
         return _.uniqBy(workspaceErrors, elemID => elemID.getFullName())
       }
       const getUnresolvedElemIDs = async (
@@ -987,21 +987,10 @@ export const loadWorkspace = async (
           if (!rootElem) {
             return undefined
           }
-          const val = resolvePath(rootElem, id)
-          if (isElement(val)) {
-            return val
-          }
-          if (isInstanceElement(rootElem) && !id.isTopLevel()) {
-            const newInstance = new InstanceElement(
-              rootElem.elemID.name,
-              rootElem.refType,
-              {},
-              rootElem.path,
-            )
-            setPath(newInstance, id, val)
-            return newInstance
-          }
-          return undefined
+          // Using the createBaseID method in getUnresolvedElemIDsFromErrors function let us know
+          // the returned unresolved element is in fact a type, an instance or a field,
+          // so it's unnecessary to verify is the resolved path is an element
+          return resolvePath(rootElem, id)
         }
         const completionRes = Object.fromEntries(
           await awu(ids).map(async id => ([

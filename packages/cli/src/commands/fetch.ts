@@ -20,7 +20,7 @@ import { getChangeElement, isInstanceElement, AdapterOperationName, Progress } f
 import { fetch as apiFetch, FetchFunc, FetchChange, FetchProgressEvents, StepEmitter,
   PlanItem, FetchFromWorkspaceFunc, loadLocalWorkspace, fetchFromWorkspace } from '@salto-io/core'
 import { Workspace, nacl, StateRecency } from '@salto-io/workspace'
-import { promises } from '@salto-io/lowerdash'
+import { promises, values } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import { progressOutputer, outputLine, errorOutputLine } from '../outputer'
@@ -64,7 +64,7 @@ export type FetchCommandArgs = {
 const createFetchFromWorkspaceCommand = (
   fetchFromWorkspaceFunc: FetchFromWorkspaceFunc,
   otherWorkspacePath: string,
-  env? : string
+  env : string
 ): FetchFunc => async (workspace, progressEmitter, services) => {
   let otherWorkspace: Workspace
   try {
@@ -250,8 +250,11 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   workspace,
 }): Promise<CliExitCode> => {
   const { force, stateOnly, services, mode, regenerateSaltoIds, fromWorkspace, fromEnv } = input
-  if (fromEnv !== undefined && fromWorkspace === undefined) {
-    errorOutputLine('The fromEnv argument can only be used when a fromWorkspace argument is provided', output)
+  if (
+    [fromEnv, fromWorkspace].some(values.isDefined) 
+    && ![fromEnv, fromWorkspace].every(values.isDefined)
+  ) { 
+    errorOutputLine('The fromEnv and fromWorkspace arguments must both be provided.', output)
     outputLine(EOL, output)
     return CliExitCode.UserInputError
   }
@@ -290,7 +293,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
     force,
     cliTelemetry,
     output,
-    fetch: fromWorkspace ? createFetchFromWorkspaceCommand(
+    fetch: fromWorkspace && fromEnv ? createFetchFromWorkspaceCommand(
       fetchFromWorkspace,
       fromWorkspace,
       fromEnv

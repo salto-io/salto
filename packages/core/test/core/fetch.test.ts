@@ -1135,7 +1135,6 @@ describe('fetch from workspace', () => {
         createInMemoryElementSource([]),
         createInMemoryElementSource([]),
         [],
-        undefined,
         'nonexisiting'
       )
       expect([...fetchRes.changes]).toHaveLength(0)
@@ -1156,7 +1155,8 @@ describe('fetch from workspace', () => {
         ['salto', 'salesforce'],
         createInMemoryElementSource([]),
         createInMemoryElementSource([]),
-        []
+        [],
+        'default'
       )
       expect([...fetchRes.changes]).toHaveLength(0)
       expect(fetchRes.elements).toHaveLength(0)
@@ -1177,7 +1177,8 @@ describe('fetch from workspace', () => {
         ['salto'],
         createInMemoryElementSource([]),
         createInMemoryElementSource([]),
-        []
+        [],
+        'default'
       )
       expect([...fetchRes.changes]).toHaveLength(0)
       expect(fetchRes.elements).toHaveLength(0)
@@ -1219,7 +1220,8 @@ describe('fetch from workspace', () => {
         ['salto'],
         createInMemoryElementSource([]),
         createInMemoryElementSource([]),
-        currentServiceConfigs
+        currentServiceConfigs,
+        'default'
       )
 
       expect([...fetchRes.changes]).toHaveLength(0)
@@ -1321,7 +1323,8 @@ describe('fetch from workspace', () => {
         ['salto'],
         createInMemoryElementSource([existingElement]),
         createInMemoryElementSource([existingElement]),
-        configs
+        configs,
+        'default'
       )
     })
 

@@ -225,9 +225,9 @@ export const loadWorkspace = async (
     workspaceConfig.envs
   const services = (env?: string): string[] => {
     const envConf = env
-      ? makeArray(workspaceConfig.envs).find(e => e.name === currentEnv()) as EnvConfig
+      ? makeArray(workspaceConfig.envs).find(e => e.name === env)
       : currentEnvConf()
-    return envConf ? makeArray(envConf.services) : []
+    return makeArray(envConf?.services)
   }
   const state = (envName?: string): State => (
     enviormentsSources.sources[envName ?? currentEnv()].state as State
@@ -650,15 +650,16 @@ export const loadWorkspace = async (
     return { ...error, sourceFragments: [] }
   }
 
-  const errors = async (env: string = currentEnv()): Promise<Errors> => {
+  const errors = async (env?: string): Promise<Errors> => {
+    const envToUse = env ?? currentEnv()
     const currentState = await getWorkspaceState()
     const loadNaclFileSource = getOrCreateNaclFilesSource(env)
     // It is important to make sure these are obtain using Promise.all in order to allow
     // the SaaS UI to debouce the DB accesses.
     const [errorsFromSource, validationErrors, mergeErrors] = await Promise.all([
       loadNaclFileSource.getErrors(),
-      awu(currentState.states[env].validationErrors.values()).flat().toArray(),
-      awu(currentState.states[env].errors.values()).flat().toArray(),
+      awu(currentState.states[envToUse].validationErrors.values()).flat().toArray(),
+      awu(currentState.states[envToUse].errors.values()).flat().toArray(),
     ])
     _(validationErrors)
       .groupBy(error => error.constructor.name)

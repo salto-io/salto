@@ -529,7 +529,7 @@ const calcFetchChanges = async (
   )
   // Merge pending changes and service changes into one tree so we can find conflicts between them
   serviceChanges.merge(pendingChanges)
-  const fetchChanges = [...toFetchChanges(serviceChanges, workspaceToServiceChanges)]
+  const fetchChanges = toFetchChanges(serviceChanges, workspaceToServiceChanges)
   const serviceElementsMap = _.groupBy(
     serviceElements,
     e => e.elemID.getFullName()
@@ -688,8 +688,8 @@ export const fetchChangesFromWorkspace = async (
   workspaceElements: elementSource.ElementsSource,
   stateElements: elementSource.ElementsSource,
   currentConfigs: InstanceElement[],
+  env: string,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
-  env?: string
 ): Promise<FetchChangesResult> => {
   const getDifferentConfigs = async (): Promise<InstanceElement[]> => (
     awu(currentConfigs).filter(async config => {
@@ -711,10 +711,6 @@ export const fetchChangesFromWorkspace = async (
     )
   }
 
-  if (await otherWorkspace.hasErrors(env)) {
-    return createEmptyFetchChangeDueToError('Can not fetch from a workspace with errors.')
-  }
-
   const differentConfig = await getDifferentConfigs()
   if (!_.isEmpty(differentConfig)) {
     return createEmptyFetchChangeDueToError(`Can not fetch from a workspace. Found different configs for ${
@@ -722,10 +718,13 @@ export const fetchChangesFromWorkspace = async (
     }`)
   }
 
-  const adapterNames = currentConfigs.map(config => config.elemID.adapter)
+  if (await otherWorkspace.hasErrors(env)) {
+    return createEmptyFetchChangeDueToError('Can not fetch from a workspace with errors.')
+  }
+
   const getChangesEmitter = new StepEmitter()
   if (progressEmitter) {
-    progressEmitter.emit('changesWillBeFetched', getChangesEmitter, adapterNames)
+    progressEmitter.emit('changesWillBeFetched', getChangesEmitter, fetchServices)
   }
 
   const fullElements = await awu(
@@ -739,7 +738,7 @@ export const fetchChangesFromWorkspace = async (
     elem => pathIndex.splitElementByPath(elem, otherPathIndex)
   ).flat().toArray()
   return createFetchChanges({
-    adapterNames,
+    adapterNames: fetchServices,
     currentConfigs,
     getChangesEmitter,
     processErrorsResult: {

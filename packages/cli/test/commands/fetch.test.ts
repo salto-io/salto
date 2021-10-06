@@ -908,5 +908,22 @@ describe('fetch command', () => {
       })
       expect(retValue).toEqual(CliExitCode.UserInputError)
     })
+
+    it('should return user input error if the from fromWorkspace argument is provided without the from fromEnv argument', async () => {
+      const workspace = mocks.mockWorkspace({ uid: 'target' })
+      const retValue = await action({
+        ...cliCommandArgs,
+        input: {
+          force: true,
+          mode: 'default',
+          services,
+          stateOnly: false,
+          regenerateSaltoIds: false,
+          fromWorkspace: 'path/to/nowhere',
+        },
+        workspace,
+      })
+      expect(retValue).toEqual(CliExitCode.UserInputError)
+    })
   })
 })

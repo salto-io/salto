@@ -191,7 +191,7 @@ export type FetchFromWorkspaceFuncParams = {
   otherWorkspace: Workspace
   progressEmitter?: EventEmitter<FetchProgressEvents>
   services?: string[]
-  env?: string
+  env: string
 }
 export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Promise<FetchResult>
 
@@ -266,7 +266,6 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
 }: FetchFromWorkspaceFuncParams) => {
   log.debug('fetch starting from workspace..')
   const fetchServices = services ?? workspace.services()
-    .filter(service => otherWorkspace.services(env).includes(service))
 
   const { currentConfigs } = await getFetchAdapterAndServicesSetup(
     workspace,
@@ -282,8 +281,8 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     await workspace.elements(),
     workspace.state(),
     currentConfigs,
+    env,
     progressEmitter,
-    env
   )
 
   log.debug(`${elements.length} elements were fetched from a remote workspace [mergedErrors=${mergeErrors.length}]`)

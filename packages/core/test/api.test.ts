@@ -501,7 +501,12 @@ describe('api.ts', () => {
         ws = mockWorkspace({ elements: workspaceElements, stateElements })
         ows = mockWorkspace({})
         mockFetchChangesFromWorkspace.mockClear()
-        await api.fetchFromWorkspace({ otherWorkspace: ws, workspace: ows, services: SERVICES })
+        await api.fetchFromWorkspace({
+          otherWorkspace: ws,
+          workspace: ows,
+          services: SERVICES,
+          env: 'default',
+        })
       })
 
       it('should call fetch changes from workspace', () => {
@@ -520,6 +525,7 @@ describe('api.ts', () => {
           otherWorkspace: ws,
           workspace: ows,
           services: [mockService],
+          env: 'default',
         })
       })
 
@@ -537,12 +543,16 @@ describe('api.ts', () => {
         ws = mockWorkspace({ services: ['salto', 'salesforce'] })
         ows = mockWorkspace({ services: ['salto', 'netsuite'] })
         mockFetchChangesFromWorkspace.mockClear()
-        await api.fetchFromWorkspace({ otherWorkspace: ws, workspace: ows })
+        await api.fetchFromWorkspace({
+          otherWorkspace: ws,
+          workspace: ows,
+          env: 'default',
+        })
       })
 
-      it('should use services that are in both workspace as default', () => {
+      it('should use services that are in the current workspace as defaults', () => {
         const servicesUsed = mockFetchChangesFromWorkspace.mock.calls[0][1]
-        expect(servicesUsed).toEqual(['salto'])
+        expect(servicesUsed).toEqual(['salto', 'netsuite'])
       })
     })
   })

@@ -227,18 +227,15 @@ export const splitElementByPath = async (
   element: Element,
   index: PathIndex
 ): Promise<Element[]> => {
-  const setPath = (origElement: Element, path: Path): Element => {
-    const clonedElement = origElement.clone()
-    clonedElement.path = path
-    return clonedElement
+  const pathHints = await getFromPathIndex(element.elemID, index)
+  if (pathHints.length <= 1) {
+    const clonedElement = element.clone()
+    const [pathToSet] = pathHints
+    clonedElement.path = pathToSet
+    return [clonedElement]
   }
 
-  const changeHints = await getFromPathIndex(element.elemID, index)
-  if (changeHints.length <= 1) {
-    return [setPath(element, changeHints[0])]
-  }
-
-  return (await Promise.all(changeHints.map(async hint => {
+  return (await Promise.all(pathHints.map(async hint => {
     const filterByPathHint = async (id: ElemID): Promise<boolean> => {
       const idHints = await getFromPathIndex(id, index)
       return idHints.some(idHint => _.isEqual(idHint, hint))
@@ -249,6 +246,10 @@ export const splitElementByPath = async (
       filterByPathHint
     )
 
-    return filteredElement ? setPath(filteredElement, hint) : undefined
+    if (filteredElement) {
+      filteredElement.path = hint
+      return filteredElement
+    }
+    return undefined
   }))).filter(values.isDefined)
 }

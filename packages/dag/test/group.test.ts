@@ -266,6 +266,25 @@ describe('buildGroupGraph', () => {
         verifyGroupGraphOrder(groupGraph, edges, 3)
       })
 
+      it('should split a cycle when one of the groups contain a cycle which is not a splitable component', () => {
+        const groups = {
+          group1: ['n1', 'n2', 'n3'],
+          group2: ['n4', 'n5'],
+        }
+
+        const edges: Edge[] = [
+          ['n1', 'n2'],
+          ['n2', 'n1'],
+          ['n1', 'n3'],
+          ['n3', 'n4'],
+          ['n5', 'n1'],
+        ]
+
+        const [srcGraph, groupKeyFunc] = buildSrcGraphAndGroupKeyFunc(groups, edges)
+        const groupGraph = buildAcyclicGroupedGraph(srcGraph, groupKeyFunc)
+        verifyGroupGraphOrder(groupGraph, edges, 3)
+      })
+
       it('should handle complex scenarios', () => {
         const groups = {
           group1: ['n1', 'n2', 'n3', 'n4'],

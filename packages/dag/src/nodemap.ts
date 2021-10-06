@@ -288,8 +288,8 @@ export class DataNodeMap<T> extends AbstractNodeMap {
     return super.deleteNode(id)
   }
 
-  getComponent({ root, filterFunc, reverse }:{
-    root: NodeId
+  getComponent({ roots, filterFunc, reverse }:{
+    roots: NodeId[]
     filterFunc?: (id: NodeId) => boolean
     reverse?: boolean
   }): Set<NodeId> {
@@ -311,8 +311,9 @@ export class DataNodeMap<T> extends AbstractNodeMap {
       )
       return children.add(id)
     }
+    const visited = new Set<NodeId>()
 
-    return getComponentImpl(root, new Set(), filterFunc)
+    return new Set(roots.flatMap(root => [...getComponentImpl(root, visited, filterFunc).values()]))
   }
 
   cloneWithout(ids: Set<NodeId>): this {
@@ -354,16 +355,6 @@ export class DataNodeMap<T> extends AbstractNodeMap {
 }
 
 export class DAG<T> extends DataNodeMap<T> {
-  hasCycle(from: NodeId, visited: Set<NodeId> = new Set<NodeId>()): boolean {
-    if (visited.has(from)) {
-      return true
-    }
-
-    visited.add(from)
-
-    return wu(this.get(from)).some(d => this.hasCycle(d, new Set<NodeId>(visited)))
-  }
-
   *evaluationOrderGroups(destructive = false): IterableIterator<Iterable<NodeId>> {
     const dependencies = destructive ? this : this.clone()
     let nextNodes: Iterable<NodeId> = dependencies.keys()
@@ -385,30 +376,6 @@ export class DAG<T> extends DataNodeMap<T> {
 
   evaluationOrder(): Iterable<NodeId> {
     return wu(this.evaluationOrderGroups()).flatten()
-  }
-
-  getCycle(): Edge[] | undefined {
-    const getCycleFrom = (
-      id: NodeId,
-      nodeColors: Map<NodeId, DFS_STATUS>,
-      path: Edge[] = []
-    ): Edge[] | undefined => {
-      if (nodeColors.has(id)) {
-        return nodeColors.get(id) === 'in_progress' ? path : undefined
-      }
-      nodeColors.set(id, 'in_progress')
-      const children = this.get(id).keys()
-      const cycle = wu(children).map(child => (
-        getCycleFrom(child, nodeColors, [...path, [id, child]])
-      )).find(values.isDefined)
-      nodeColors.set(id, 'done')
-      return cycle
-    }
-    const nodeColors = new Map()
-
-    return wu(this.keys())
-      .map(root => getCycleFrom(root, nodeColors))
-      .find(values.isDefined)
   }
 
   async walkAsyncDestructive(handler: AsyncNodeHandler): Promise<void> {

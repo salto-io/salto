@@ -33,79 +33,24 @@ type Cycle = Edge[]
 
 export type GroupKeyFunc = (id: NodeId) => string
 
-type COMPONENT_VALIDITY_STATUS = 'valid' | 'invalid' | 'in_progress'
-
-// This method will color the validity of the nodes in the group
-// a node is said to be a valid part of a detacheable subgroup if
-// it's connected component does not contain nodes that have edges
-// to the next group in the cycle. We identify a node validity by
-// performing a DFS from that node and updatinng a "visited" map
-// with the validity status. If A node is valid if *all* of its children
-// are valid. So if we encounter an invalid node, we mark this node as invalid.
-// If we encounter a node which is 'in progress' this means that we found
-// a cycle whithin the group, which is ok, and we can ignore this node in the
-// calculation until the DFS will return to it.
-const isValidRootForComponent = <T>({ source, id, possibleNodes,
-  nodesToAvoid, visited }: {
-  source: DataNodeMap<T>
-  id: NodeId
-  possibleNodes: Set<NodeId>
-  nodesToAvoid: Set<NodeId>
-  visited: Map<NodeId, COMPONENT_VALIDITY_STATUS>
-}): boolean => {
-  if (visited.has(id)) {
-    return visited.get(id) !== 'invalid'
-  }
-  visited.set(id, 'in_progress')
-  const isValid = !nodesToAvoid.has(id)
-    // the code below checks if the node has invalid children -
-    // This is not in  a seperate more readable variable
-    // in order to avoid calculation if this node in itsef is invalid
-    && wu(source.get(id).values())
-      .filter(childId => possibleNodes.has(childId))
-      .every(childId => isValidRootForComponent({
-        source,
-        id: childId,
-        possibleNodes,
-        nodesToAvoid,
-        visited,
-      }))
-  visited.set(id, isValid ? 'valid' : 'invalid')
-  return isValid
-}
-
 const getComponentToSplitFromGroupToRemoveCycle = <T>(
   source: DataNodeMap<T>,
   currentGroupNodes: Set<NodeId>,
   possibleStartNodes: Set<NodeId>,
   nodesToAvoid: Set<NodeId>,
 ): Set<NodeId> | undefined => {
-  const visited = new Map<NodeId, COMPONENT_VALIDITY_STATUS>()
-  return wu(possibleStartNodes.keys()).map(root => {
-    const isValid = isValidRootForComponent({
-      source,
-      id: root,
-      possibleNodes: currentGroupNodes,
-      nodesToAvoid,
-      visited,
-    })
-    if (isValid) {
-      const component = source.getComponent({
-        root,
-        filterFunc: id => currentGroupNodes.has(id),
-      })
-      // We need to make sure that the component is not the entire group in order
-      // to make sure that the algorithm converge. (As long as the number of total groups
-      // increases every iteration, we know the number of iteration is bounded by the number
-      // of nodes since this is the maximal possible number of groups. Without this check, the
-      // total number of group can remain the same after an iteration.)
-      return component.size > 0 && component.size < currentGroupNodes.size
-        ? component
-        : undefined
-    }
-    return undefined
+  const componentToAvoid = source.getComponent({
+    roots: [...nodesToAvoid.keys()],
+    filterFunc: id => currentGroupNodes.has(id),
+    reverse: true,
   })
-    .find(values.isDefined)
+  return wu(possibleStartNodes.keys())
+    .filter(possibleStartId => !componentToAvoid.has(possibleStartId))
+    .map(validStartId => source.getComponent({
+      roots: [validStartId],
+      filterFunc: id => currentGroupNodes.has(id),
+    }))
+    .find(component => component.size > 0 && component.size < currentGroupNodes.size)
 }
 
 const modifyGroupKeyToRemoveCycle = <T>(

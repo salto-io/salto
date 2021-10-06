@@ -28,7 +28,7 @@ describe('Test layout filter', () => {
       regualr: 'Test',
       custom: 'Test__c',
       SBQQ_prefixBeforeFix: 'SBQQ__Obj-Obj lala Layout',
-      SBQQ_prefixAfterFix: 'SBQQ__Obj-SBQQ__Obj lala Layout'
+      SBQQ_prefixAfterFix: 'SBQQ__Obj-SBQQ__Obj lala Layout',
     }
 
     const fetch = async (apiName: string,
@@ -159,8 +159,7 @@ describe('Test layout filter', () => {
                 return { ...testLayoutFileProps, fullName: testApiNames.SBQQ_prefixAfterFix }
               } return testLayoutFileProps
             }),
-          })
-        )
+          }))
       }
 
       createMocksForClient()
@@ -187,14 +186,12 @@ describe('Test layout filter', () => {
       await fetch(testApiNames.custom)
     })
     it('should not transform instance name if it is already fixed', async () => {
-      await fetch(testApiNames.regualr,
+      await fetch(testApiNames.regualr)
       // { fixedName: true, namespace: undefined }
-      )
     })
     it('should fetch layout instances with namespace SBQQ', async () => {
-      await fetch(testApiNames.SBQQ_prefixBeforeFix,
+      await fetch(testApiNames.SBQQ_prefixBeforeFix)
       // { fixedName: false, namespace: 'SBQQ'}
-      )
     })
   })
 })

@@ -140,7 +140,7 @@ export const filterInvalidChanges = async (
     })
 
     const dependenciesMap = Object.fromEntries(wu(nodeIdsToOmit)
-      .map(id => [id, diffGraph.getComponent({ root: id, reverse: true })]))
+      .map(id => [id, diffGraph.getComponent({ roots: [id], reverse: true })]))
 
 
     const dependentsToOmit = Object.values(dependenciesMap)

@@ -13,7 +13,7 @@ This document describes the following topics:
 
 ## NaCl block types
 
-In the NaCl language there are several types of blocks. A block is has one or more labels, followed by a scope that is marked with `{}`.
+In the NaCl language there are several types of blocks. A block has one or more labels, followed by a scope that is marked with `{}`.
 The general block syntax is:
 ```HCL
 <label1> <label2> {

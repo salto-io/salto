@@ -58,7 +58,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     this.client = client
     this.paginator = createPaginator({
       client: this.client,
-      paginationFunc: paginate,
+      paginationFuncCreator: paginate,
     })
     this.filtersRunner = filtersRunner(
       {

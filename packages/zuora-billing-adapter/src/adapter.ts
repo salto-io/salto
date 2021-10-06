@@ -76,7 +76,7 @@ export default class ZuoraAdapter implements AdapterOperations {
     this.client = client
     const paginator = createPaginator({
       client: this.client,
-      paginationFunc: paginate,
+      paginationFuncCreator: paginate,
     })
     this.paginator = paginator
     this.createFiltersRunner = () => (

@@ -43,14 +43,17 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = (await toArrayAsync(await getMinSinceIdPagination({
+      const args = {
         client,
         pageSize: 123,
         getParams: {
           url: '/ep',
         },
+      }
+      const result = (await toArrayAsync(await clientUtils.traverseRequests(
+        getMinSinceIdPagination(args),
         extractPageEntries,
-      }))).flat()
+      )(args))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
@@ -64,7 +67,7 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = (await toArrayAsync(await getMinSinceIdPagination({
+      const args = {
         client,
         pageSize: 123,
         getParams: {
@@ -74,8 +77,11 @@ describe('client_pagination', () => {
             arg2: 'val2',
           },
         },
+      }
+      const result = (await toArrayAsync(await clientUtils.traverseRequests(
+        getMinSinceIdPagination(args),
         extractPageEntries,
-      }))).flat()
+      )(args))).flat()
       expect(result).toEqual([{ a: 'a' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1', arg2: 'val2' } })
@@ -115,17 +121,21 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = (await toArrayAsync(await getMinSinceIdPagination({
+
+      const args = {
         client,
         pageSize: 5,
         getParams: {
           url: '/ep',
           recursiveQueryParams: {
-            parentId: (entry => entry.id as string),
+            parentId: (entry: clientUtils.ResponseValue) => entry.id as string,
           },
         },
+      }
+      const result = (await toArrayAsync(await clientUtils.traverseRequests(
+        getMinSinceIdPagination(args),
         extractPageEntries,
-      }))).flat()
+      )(args))).flat()
       expect(result).toEqual([
         { a: 'a1', id: 123 },
         { a: 'a2', id: 456 },
@@ -145,15 +155,18 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = (await toArrayAsync(getMinSinceIdPagination({
+      const args = {
         client,
         pageSize: 123,
         getParams: {
           url: '/ep',
           paginationField: 'page',
         },
+      }
+      const result = (await toArrayAsync(await clientUtils.traverseRequests(
+        getMinSinceIdPagination(args),
         extractPageEntries,
-      }))).flat()
+      )(args))).flat()
       expect(result).toEqual([])
       expect(client.getSinglePage).toHaveBeenCalledTimes(1)
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
@@ -195,15 +208,18 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = (await toArrayAsync(await getMinSinceIdPagination({
+      const args = {
         client,
         pageSize: 1,
         getParams: {
           url: '/ep',
           paginationField: 'since_id',
         },
+      }
+      const result = (await toArrayAsync(await clientUtils.traverseRequests(
+        getMinSinceIdPagination(args),
         extractPageEntries,
-      }))).flat()
+      )(args))).flat()
       expect(result).toEqual([{ a: 'a1', id: 150 }, { a: 'a2', b: 'b2', id: 140 }, { a: 'a3', id: 130 }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(4)
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
@@ -230,7 +246,7 @@ describe('client_pagination', () => {
         status: 404,
         statusText: 'Not Found',
       }))
-      const result = (await toArrayAsync(await getMinSinceIdPagination({
+      const args = {
         client,
         pageSize: 1,
         getParams: {
@@ -240,8 +256,11 @@ describe('client_pagination', () => {
             arg1: 'val1',
           },
         },
+      }
+      const result = (await toArrayAsync(await clientUtils.traverseRequests(
+        getMinSinceIdPagination(args),
         extractPageEntries,
-      }))).flat()
+      )(args))).flat()
       expect(result).toEqual([{ a: 'a1', id: 150 }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(2)
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
@@ -285,15 +304,18 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = (await toArrayAsync(await getMinSinceIdPagination({
+      const args = {
         client,
         pageSize: 1,
         getParams: {
           url: '/ep',
           paginationField: 'since_id',
         },
+      }
+      const result = (await toArrayAsync(await clientUtils.traverseRequests(
+        getMinSinceIdPagination(args),
         extractPageEntries,
-      }))).flat()
+      )(args))).flat()
       expect(result).toEqual([{ a: 'a1', id: 150 }, { a: 'a2', b: 'b2', id: 140 }, { a: 'a3', id: 140 }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(3)
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
@@ -323,15 +345,18 @@ describe('client_pagination', () => {
         status: 200,
         statusText: 'OK',
       }))
-      const result = (await toArrayAsync(await getMinSinceIdPagination({
+      const args = {
         client,
         pageSize: 1,
         getParams: {
           url: '/ep',
           paginationField: 'since_id',
         },
+      }
+      const result = (await toArrayAsync(await clientUtils.traverseRequests(
+        getMinSinceIdPagination(args),
         extractPageEntries,
-      }))).flat()
+      )(args))).flat()
       expect(result).toEqual([{ a: 'a1', id: 150 }, { a: 'a2', b: 'b2', id: '140' }])
       expect(client.getSinglePage).toHaveBeenCalledTimes(2)
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })

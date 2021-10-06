@@ -18,3 +18,4 @@ import _ from 'lodash'
 export const isDefined = <T>(val: T | undefined | void): val is T => val !== undefined
 
 export const isPlainObject = (val: unknown): val is object => _.isPlainObject(val)
+export const isPlainRecord = (val: unknown): val is Record<string, unknown> => _.isPlainObject(val)

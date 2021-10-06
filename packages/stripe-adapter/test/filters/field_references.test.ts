@@ -33,7 +33,7 @@ describe('Field references filter', () => {
       client,
       paginator: clientUtils.createPaginator({
         client,
-        paginationFunc: clientUtils.getWithCursorPagination(),
+        paginationFuncCreator: () => clientUtils.getWithCursorPagination(),
       }),
       config: {
         [FETCH_CONFIG]: {

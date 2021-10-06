@@ -14,9 +14,12 @@
 * limitations under the License.
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 import { createConnection } from './connection'
 import { JIRA } from '../constants'
 import { Credentials } from '../auth'
+
+const log = logger(module)
 
 const {
   DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
@@ -47,5 +50,25 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
         retry: DEFAULT_RETRY_OPTS,
       }
     )
+  }
+
+  public async getSinglePage(
+    args: clientUtils.ClientGetParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    try {
+      return await super.getSinglePage(args)
+    } catch (e) {
+      // The http_client code catches the original error and transforms it such that it removes
+      // the parsed information (like the status code), so we have to parse the string here in order
+      // to realize what type of error was thrown
+      if (e.message.endsWith('Request failed with status code 404')) {
+        log.warn('Suppressing 404 error %o', e)
+        return {
+          data: [],
+          status: 404,
+        }
+      }
+      throw e
+    }
   }
 }

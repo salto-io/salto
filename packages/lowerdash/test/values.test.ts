@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isDefined, isPlainObject } from '../src/values'
+import { isDefined, isPlainObject, isPlainRecord } from '../src/values'
 
 describe('isDefined', () => {
   describe('with undefined value', () => {
@@ -54,5 +54,19 @@ describe('isPlainObject', () => {
   it('should return false for array', () => {
     expect(isPlainObject([])).toBeFalsy()
     expect(isPlainObject([{ a: 'a', b: ['c', 'd'] }])).toBeFalsy()
+  })
+})
+
+describe('isRecord', () => {
+  it('should return false for undefined', () => {
+    expect(isPlainRecord(undefined)).toBeFalsy()
+  })
+  it('should return true for object', () => {
+    expect(isPlainRecord({})).toBeTruthy()
+    expect(isPlainRecord({ a: 'a', b: ['c', 'd'] })).toBeTruthy()
+  })
+  it('should return false for array', () => {
+    expect(isPlainRecord([])).toBeFalsy()
+    expect(isPlainRecord([{ a: 'a', b: ['c', 'd'] }])).toBeFalsy()
   })
 })

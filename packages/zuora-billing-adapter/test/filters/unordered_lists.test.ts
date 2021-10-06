@@ -18,6 +18,7 @@ import {
 } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import ZuoraClient from '../../src/client/client'
+import { paginate } from '../../src/client/pagination'
 import { ZUORA_BILLING, SETTINGS_TYPE_PREFIX } from '../../src/constants'
 import filterCreator from '../../src/filters/unordered_lists'
 
@@ -59,7 +60,7 @@ describe('Unordered lists filter', () => {
       client,
       paginator: clientUtils.createPaginator({
         client,
-        paginationFunc: clientUtils.getWithCursorPagination(),
+        paginationFuncCreator: paginate,
       }),
       config: {
         fetch: {

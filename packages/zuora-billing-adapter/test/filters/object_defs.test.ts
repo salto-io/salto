@@ -20,6 +20,7 @@ import {
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { DetailedDependency } from '@salto-io/adapter-utils'
 import ZuoraClient from '../../src/client/client'
+import { paginate } from '../../src/client/pagination'
 import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, STANDARD_OBJECT_DEFINITION_TYPE } from '../../src/constants'
 import filterCreator from '../../src/filters/object_defs'
 
@@ -305,7 +306,7 @@ describe('Object defs filter', () => {
       client,
       paginator: clientUtils.createPaginator({
         client,
-        paginationFunc: clientUtils.getWithCursorPagination(),
+        paginationFuncCreator: paginate,
       }),
       config: {
         fetch: {

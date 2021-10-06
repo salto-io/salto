@@ -34,7 +34,7 @@ describe('References by id filter', () => {
       client,
       paginator: clientUtils.createPaginator({
         client,
-        paginationFunc: paginate,
+        paginationFuncCreator: paginate,
       }),
       config: {
         fetch: {

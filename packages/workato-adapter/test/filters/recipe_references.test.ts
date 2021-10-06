@@ -46,7 +46,7 @@ describe('Recipe references filter', () => {
       client,
       paginator: clientUtils.createPaginator({
         client,
-        paginationFunc: paginate,
+        paginationFuncCreator: paginate,
       }),
       config: {
         fetch: {
@@ -822,7 +822,7 @@ describe('Recipe references filter', () => {
         client,
         paginator: clientUtils.createPaginator({
           client,
-          paginationFunc: paginate,
+          paginationFuncCreator: paginate,
         }),
         config: {
           fetch: {
@@ -1098,7 +1098,7 @@ describe('Recipe references filter', () => {
         client,
         paginator: clientUtils.createPaginator({
           client,
-          paginationFunc: paginate,
+          paginationFuncCreator: paginate,
         }),
         config: {
           fetch: {
@@ -1135,7 +1135,7 @@ describe('Recipe references filter', () => {
         client,
         paginator: clientUtils.createPaginator({
           client,
-          paginationFunc: paginate,
+          paginationFuncCreator: paginate,
         }),
         config: {
           fetch: {
@@ -1201,7 +1201,7 @@ describe('Recipe references filter', () => {
         client,
         paginator: clientUtils.createPaginator({
           client,
-          paginationFunc: paginate,
+          paginationFuncCreator: paginate,
         }),
         config: {
           fetch: {

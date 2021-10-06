@@ -90,7 +90,7 @@ export const mergeElements = async (
   log.debug(`merged ${elementsCounter} elements to ${mergedCounter} elements [errors=${
     errorsCounter}]`)
   if (errorsCounter > 0) {
-    log.debug(`All merge errors:\n${(await awu(errors.values())
+    log.warn(`All merge errors:\n${(await awu(errors.values())
       .flatMap(elemErrs => elemErrs.map(e => e.message)).toArray())
       .join('\n')}`)
   }

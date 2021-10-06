@@ -374,18 +374,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       errors: deployResult.errors,
       appliedChanges,
     }
-    // const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
-    // const customizationInfosToDeploy = await awu(
-    //   await this.getAllRequiredReferencedInstances(changedInstances)
-    // ).map(async instance => resolveValues(instance, getLookUpName))
-    //   .map(toCustomizationInfo)
-    //   .toArray()
-    // try {
-    //   await this.client.deploy(customizationInfosToDeploy, this.deployReferencedElements)
-    // } catch (e) {
-    //   return { errors: [e], appliedChanges: [] }
-    // }
-    // return { errors: [], appliedChanges: changeGroup.changes }
   }
 
   public get deployModifiers(): DeployModifiers {

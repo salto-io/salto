@@ -140,6 +140,7 @@ export const createRequestModuleFunction = (retryOptions: RequestRetryOptions) =
       if (attempts && attempts > 1) {
         log.warn('sfdc client retry attempts: %o', attempts)
       }
+      // Temp code to check to have more details to fix https://salto-io.atlassian.net/browse/SALTO-1600
       // response can be undefined when there was an error
       if (response !== undefined && !response.request.path.startsWith('/services/Soap')) {
         log.debug('Received headers: %o from request to path: %s', response.headers, response.request.path)
@@ -372,24 +373,23 @@ export default class SalesforceClient {
         if (typeof res === 'string') {
           log.warn('Received string when expected object, attempting the json parse the received string')
 
-          return JSON.parse(res)
+          try {
+            return JSON.parse(res)
+          } catch (e) {
+            log.warn('Received string that is not json parsable when expect object. Retries left %d', attempts - 1)
+            if (attempts > 1) {
+              return requestWithRetry(attempts - 1)
+            }
+          }
         }
         return res
       } catch (e) {
         // This is attempting to work around a specific issue where the Salesforce API sometimes
         // returns a null response for no apparent reason, causing jsforce to crash.
         // We hope retrying will help...
-        if (e.message === 'Cannot read property \'result\' of null') {
+        if (attempts > 1 && e.message === 'Cannot read property \'result\' of null') {
           log.warn('Encountered null result from salesforce, will retry %d more times', attempts - 1)
-          if (attempts > 1) {
-            return requestWithRetry(attempts - 1)
-          }
-        }
-        if (e.name === 'SyntaxError') {
-          log.warn('Received string that is not json parsable when expect object, will retry %d more times', attempts - 1)
-          if (attempts > 1) {
-            return requestWithRetry(attempts - 1)
-          }
+          return requestWithRetry(attempts - 1)
         }
         throw e
       }

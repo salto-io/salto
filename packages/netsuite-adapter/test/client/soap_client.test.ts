@@ -69,6 +69,28 @@ describe('soap_client', () => {
       fn => fn(),
     )
   })
+
+
+  describe('retries', () => {
+    it('when succeeds within the permitted retries should return the results', async () => {
+      getAsyncMock.mockRejectedValueOnce(new Error())
+      getAsyncMock.mockResolvedValueOnce([{
+        readResponse: {
+          record: {
+            content: 'ZGVtbw==',
+          },
+          status: { attributes: { isSuccess: 'true' } },
+        },
+      }])
+      expect(await client.readFile(1)).toEqual(Buffer.from('demo'))
+      expect(getAsyncMock).toHaveBeenCalledTimes(2)
+    })
+
+    it('when still failing after the permitted retries should throw', async () => {
+      getAsyncMock.mockRejectedValue(new Error())
+      await expect(client.readFile(1)).rejects.toThrow()
+    })
+  })
   it('client should be cached', async () => {
     getAsyncMock.mockResolvedValue([{
       readResponse: {

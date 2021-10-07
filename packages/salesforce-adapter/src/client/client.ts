@@ -140,6 +140,11 @@ export const createRequestModuleFunction = (retryOptions: RequestRetryOptions) =
       if (attempts && attempts > 1) {
         log.warn('sfdc client retry attempts: %o', attempts)
       }
+      // Temp code to check to have more details to fix https://salto-io.atlassian.net/browse/SALTO-1600
+      // response can be undefined when there was an error
+      if (response !== undefined && !response.request.path.startsWith('/services/Soap')) {
+        log.debug('Received headers: %o from request to path: %s', response.headers, response.request.path)
+      }
       return callback(err, response, body)
     })
 
@@ -361,10 +366,11 @@ export default class SalesforceClient {
     }
   }
 
-  private retryOnNullResponse<T>(request: () => Promise<T>): Promise<T> {
+  private retryOnBadResponse<T extends object>(request: () => Promise<T>): Promise<T> {
     const requestWithRetry = async (attempts: number): Promise<T> => {
+      let res: T
       try {
-        return await request()
+        res = await request()
       } catch (e) {
         // This is attempting to work around a specific issue where the Salesforce API sometimes
         // returns a null response for no apparent reason, causing jsforce to crash.
@@ -375,6 +381,22 @@ export default class SalesforceClient {
         }
         throw e
       }
+
+      if (typeof res === 'string') {
+        log.warn('Received string when expected object, attempting the json parse the received string')
+
+        try {
+          return JSON.parse(res)
+        } catch (e) {
+          log.warn('Received string that is not json parsable when expected object. Retries left %d', attempts - 1)
+          if (attempts > 1) {
+            return requestWithRetry(attempts - 1)
+          }
+          throw e
+        }
+      }
+
+      return res
     }
     return requestWithRetry(this.retryOptions.maxAttempts ?? DEFAULT_RETRY_OPTS.maxAttempts)
   }
@@ -385,7 +407,7 @@ export default class SalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async listMetadataTypes(): Promise<MetadataObject[]> {
-    const describeResult = this.retryOnNullResponse(() => this.conn.metadata.describe())
+    const describeResult = this.retryOnBadResponse(() => this.conn.metadata.describe())
     return flatValues((await describeResult).metadataObjects)
   }
 
@@ -397,7 +419,7 @@ export default class SalesforceClient {
   @requiresLogin()
   public async describeMetadataType(type: string): Promise<DescribeValueTypeResult> {
     const fullName = `{${METADATA_NAMESPACE}}${type}`
-    const describeResult = await this.retryOnNullResponse(
+    const describeResult = await this.retryOnBadResponse(
       () => this.conn.metadata.describeValueType(fullName)
     )
     return flatValues(describeResult)
@@ -413,7 +435,7 @@ export default class SalesforceClient {
     return sendChunked({
       operationInfo: 'listMetadataObjects',
       input: listMetadataQuery,
-      sendChunk: chunk => this.retryOnNullResponse(() => this.conn.metadata.list(chunk)),
+      sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.list(chunk)),
       chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
       isUnhandledError,
     })
@@ -443,7 +465,7 @@ export default class SalesforceClient {
     return sendChunked({
       operationInfo: `readMetadata (${type})`,
       input: name,
-      sendChunk: chunk => this.retryOnNullResponse(() => this.conn.metadata.read(type, chunk)),
+      sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.read(type, chunk)),
       chunkSize: MAX_ITEMS_IN_READ_METADATA_REQUEST,
       isSuppressedError: error => (
         (this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid')
@@ -459,7 +481,7 @@ export default class SalesforceClient {
   @logDecorator()
   @requiresLogin()
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
-    return flatValues((await this.conn.describeGlobal()).sobjects)
+    return flatValues((await this.retryOnBadResponse(() => this.conn.describeGlobal())).sobjects)
   }
 
   @logDecorator()
@@ -469,7 +491,7 @@ export default class SalesforceClient {
     return (await sendChunked({
       operationInfo: 'describeSObjects',
       input: objectNames,
-      sendChunk: chunk => this.conn.soap.describeSObjects(chunk),
+      sendChunk: chunk => this.retryOnBadResponse(() => this.conn.soap.describeSObjects(chunk)),
       chunkSize: MAX_ITEMS_IN_DESCRIBE_REQUEST,
     })).result
   }
@@ -488,7 +510,7 @@ export default class SalesforceClient {
     const result = await sendChunked({
       operationInfo: `upsert (${type})`,
       input: metadata,
-      sendChunk: chunk => this.retryOnNullResponse(() => this.conn.metadata.upsert(type, chunk)),
+      sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.upsert(type, chunk)),
     })
     log.debug('upsert %o of type %s [result=%o]', makeArray(metadata).map(f => f.fullName),
       type, result.result)
@@ -508,7 +530,7 @@ export default class SalesforceClient {
     const result = await sendChunked({
       operationInfo: `delete (${type})`,
       input: fullNames,
-      sendChunk: chunk => this.retryOnNullResponse(() => this.conn.metadata.delete(type, chunk)),
+      sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.delete(type, chunk)),
     })
     log.debug('deleted %o of type %s [result=%o]', fullNames, type, result.result)
     return result.result
@@ -519,7 +541,7 @@ export default class SalesforceClient {
   @requiresLogin()
   public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
     return flatValues(
-      await this.retryOnNullResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete())
+      await this.retryOnBadResponse(() => this.conn.metadata.retrieve(retrieveRequest).complete())
     )
   }
 
@@ -547,7 +569,7 @@ export default class SalesforceClient {
   @requiresLogin()
   private query<T>(queryString: string, useToolingApi: boolean): Promise<QueryResult<T>> {
     const conn = useToolingApi ? this.conn.tooling : this.conn
-    return conn.query(queryString)
+    return this.retryOnBadResponse(() => conn.query(queryString))
   }
 
   @throttle<ClientRateLimitConfig>('query')
@@ -555,7 +577,7 @@ export default class SalesforceClient {
   @requiresLogin()
   private queryMore<T>(queryString: string, useToolingApi: boolean): Promise<QueryResult<T>> {
     const conn = useToolingApi ? this.conn.tooling : this.conn
-    return conn.queryMore(queryString)
+    return this.retryOnBadResponse(() => conn.queryMore(queryString))
   }
 
   /**

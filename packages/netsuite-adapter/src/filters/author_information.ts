@@ -38,7 +38,7 @@ const fetchSystemNotes = async (client: NetsuiteClient): Promise<Record<string, 
   if (systemNotes) {
     return systemNotes
   }
-  log.warn('system note query failed')
+  log.warn('System note query failed')
   return []
 }
 

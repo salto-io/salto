@@ -55,7 +55,7 @@ describe('netsuite author information', () => {
       { scriptid: '3', internalid: '3' },
     ])
     runSuiteQLMock.mockResolvedValueOnce([
-      { scriptid: '1', id: '2' },
+      { scriptid: '1', id: '1' },
     ])
     accountInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
     accountInstance.value.internalId = '1'
@@ -90,10 +90,6 @@ describe('netsuite author information', () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 1 name').toBeTruthy()
     expect(customTypeInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 2 name').toBeTruthy()
-  })
-
-  it('should skip if option is false', async () => {
-    await filterCreator(filterOpts).onFetch?.(elements)
   })
 
   it('elements will stay the same if there is no author information', async () => {

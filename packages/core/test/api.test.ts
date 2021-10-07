@@ -487,6 +487,7 @@ describe('api.ts', () => {
         unmergedElements: fetchedElements,
         elements: fetchedElements,
         mergeErrors: [],
+        updatedConfig: {},
         adapterNameToConfigMessage: {},
       })
     })

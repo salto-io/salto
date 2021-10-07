@@ -251,9 +251,9 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
 }): Promise<CliExitCode> => {
   const { force, stateOnly, services, mode, regenerateSaltoIds, fromWorkspace, fromEnv } = input
   if (
-    [fromEnv, fromWorkspace].some(values.isDefined) 
+    [fromEnv, fromWorkspace].some(values.isDefined)
     && ![fromEnv, fromWorkspace].every(values.isDefined)
-  ) { 
+  ) {
     errorOutputLine('The fromEnv and fromWorkspace arguments must both be provided.', output)
     outputLine(EOL, output)
     return CliExitCode.UserInputError

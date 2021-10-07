@@ -368,21 +368,9 @@ export default class SalesforceClient {
 
   private retryOnBadResponse<T extends object>(request: () => Promise<T>): Promise<T> {
     const requestWithRetry = async (attempts: number): Promise<T> => {
+      let res: T
       try {
-        const res = await request()
-        if (typeof res === 'string') {
-          log.warn('Received string when expected object, attempting the json parse the received string')
-
-          try {
-            return JSON.parse(res)
-          } catch (e) {
-            log.warn('Received string that is not json parsable when expect object. Retries left %d', attempts - 1)
-            if (attempts > 1) {
-              return requestWithRetry(attempts - 1)
-            }
-          }
-        }
-        return res
+        res = await request()
       } catch (e) {
         // This is attempting to work around a specific issue where the Salesforce API sometimes
         // returns a null response for no apparent reason, causing jsforce to crash.
@@ -393,6 +381,22 @@ export default class SalesforceClient {
         }
         throw e
       }
+
+      if (typeof res === 'string') {
+        log.warn('Received string when expected object, attempting the json parse the received string')
+
+        try {
+          return JSON.parse(res)
+        } catch (e) {
+          log.warn('Received string that is not json parsable when expected object. Retries left %d', attempts - 1)
+          if (attempts > 1) {
+            return requestWithRetry(attempts - 1)
+          }
+          throw e
+        }
+      }
+
+      return res
     }
     return requestWithRetry(this.retryOptions.maxAttempts ?? DEFAULT_RETRY_OPTS.maxAttempts)
   }

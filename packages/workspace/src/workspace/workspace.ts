@@ -422,17 +422,18 @@ export const loadWorkspace = async (
         }
       }
 
+      const hiddenChanges = _.groupBy(
+        stateOnlyChanges[envName]?.changes ?? [],
+        c => getChangeElement(c).elemID.getFullName(),
+      )
       const workspaceChangedElements = Object.fromEntries(
         await awu(workspaceChanges[envName]?.changes ?? [])
           .map(async change => {
             const workspaceElement = getChangeElement(change)
+            const hiddenChange = hiddenChanges[workspaceElement.elemID.getFullName()]
             const hiddenOnlyElement = isRemovalChange(change)
               ? undefined
-              : await getElementHiddenParts(
-                await state(envName).get(workspaceElement.elemID) ?? workspaceElement,
-                state(envName),
-                workspaceElement
-              )
+              : hiddenChange?.[0]
             return [workspaceElement.elemID.getFullName(), hiddenOnlyElement]
           })
           .toArray()

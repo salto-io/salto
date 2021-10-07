@@ -131,13 +131,31 @@ export const filterInvalidChanges = async (
       }
       return change
     }
+
+    const nodeIdToElemId = (nodeId: NodeId): ElemID => (
+      getChangeElement(diffGraph.getData(nodeId)).elemID
+    )
+
+    const createDependencyErr = (causeID: ElemID, droppedID: ElemID): DependencyError => {
+      const message = `Dropped changes to ${
+        droppedID.getFullName()
+      } due to an error in ${droppedID.getFullName()}`
+      return {
+        causeID,
+        elemID: droppedID,
+        message,
+        detailedMessage: message,
+        severity: 'Error' as SaltoErrorSeverity,
+      }
+    }
+
     const validDiffGraph = new DataNodeMap<DiffNode<ChangeDataType>>()
 
     const nodeIdsToOmit = wu(diffGraph.keys()).filter(nodeId => {
       const change = diffGraph.getData(nodeId)
       const changeElem = getChangeElement(change)
       return nodeElemIdsToOmit.has(changeElem.elemID.getFullName())
-    })
+    }).toArray()
 
     const dependenciesMap = Object.fromEntries(wu(nodeIdsToOmit)
       .map(id => [id, diffGraph.getComponent({ roots: [id], reverse: true })]))
@@ -148,28 +166,16 @@ export const filterInvalidChanges = async (
 
     const dependencyErrors = Object.entries(dependenciesMap)
       .map(([causeNodeId, nodeIds]) => [
-        getChangeElement(diffGraph.getData(causeNodeId)).elemID,
-        wu(nodeIds.keys()).map(
-          nodeId => getChangeElement(diffGraph.getData(nodeId)).elemID
-        ).toArray(),
+        nodeIdToElemId(causeNodeId),
+        wu(nodeIds.keys()).map(nodeIdToElemId).toArray(),
       ] as [ElemID, ElemID[]])
       .map(([causeID, elemIds]) => [
         causeID,
         elemIds.filter(elemId => !elemId.isEqual(causeID)),
       ] as [ElemID, ElemID[]]).flatMap(
-        ([causeID, elemIDs]) => elemIDs.map(elemID => {
-          const message = `Dropped changes to ${
-            elemID.getFullName()
-          } due to an error in ${elemID.getFullName()}`
-          return {
-            causeID,
-            elemID,
-            message,
-            detailedMessage: message,
-            severity: 'Error' as SaltoErrorSeverity,
-          }
-        })
+        ([causeID, elemIDs]) => elemIDs.map(elemID => createDependencyErr(causeID, elemID))
       )
+
     const allNodeIdsToOmit = new Set([...nodeIdsToOmit, ...dependentsToOmit])
     const nodesToInclude = new Set(wu(diffGraph.keys()).filter(
       id => !allNodeIdsToOmit.has(id)
@@ -177,7 +183,7 @@ export const filterInvalidChanges = async (
 
     log.warn(
       'removing the following changes from plan: %o',
-      wu(allNodeIdsToOmit.keys()).map(nodeId => diffGraph.getData(nodeId)).toArray()
+      wu(allNodeIdsToOmit.keys()).map(nodeId => diffGraph.getData(nodeId).originalId).toArray()
     )
 
     wu(nodesToInclude.keys()).forEach(nodeId => {

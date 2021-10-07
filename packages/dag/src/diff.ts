@@ -13,11 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import wu from 'wu'
-import { collections } from '@salto-io/lowerdash'
 import { NodeId, DataNodeMap } from './nodemap'
-
-const { iterable } = collections
 
 export type DiffNodeId = string
 
@@ -52,27 +48,3 @@ export type DiffNode<T> = AdditionDiffNode<T> | RemovalDiffNode<T> | Modificatio
 export type DiffGraph<T> = DataNodeMap<DiffNode<T>>
 
 export type DiffGraphTransformer<T> = (graph: DiffGraph<T>) => Promise<DiffGraph<T>>
-
-const getDiffNodeData = <T>(diff: DiffNode<T>): T => (
-  diff.action === 'remove' ? diff.data.before : diff.data.after
-)
-
-type NodeEqualityFunc<T> = (node1: T, node2: T) => boolean
-export const removeEqualNodes = <T>(equals: NodeEqualityFunc<T>): DiffGraphTransformer<T> => (
-  async graph => {
-    const differentNodes = (ids: ReadonlyArray<NodeId>): boolean => {
-      if (ids.length !== 2) {
-        return true
-      }
-      const [node1, node2] = ids.map(id => getDiffNodeData(graph.getData(id)))
-      return !equals(node1, node2)
-    }
-
-    const outputGraph = new DataNodeMap<DiffNode<T>>()
-    wu(iterable.groupBy(graph.keys(), id => graph.getData(id).originalId).values())
-      .filter(differentNodes)
-      .flatten()
-      .forEach(id => { outputGraph.addNode(id, [], graph.getData(id)) })
-    return outputGraph
-  }
-)

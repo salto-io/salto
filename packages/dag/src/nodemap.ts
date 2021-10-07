@@ -268,7 +268,7 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
 
 // This class adds storage of node data to NodeMap
 export class DataNodeMap<T> extends AbstractNodeMap {
-  protected readonly nodeData: Map<NodeId, T>
+  readonly nodeData: Map<NodeId, T>
 
   constructor(
     entries?: Iterable<[NodeId, Set<NodeId>]>,

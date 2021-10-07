@@ -33,7 +33,7 @@ type Cycle = Edge[]
 
 export type GroupKeyFunc = (id: NodeId) => string
 
-const getComponentToSplitFromGroupToRemoveCycle = <T>(
+const getComponentWithoutNodestoAvoid = <T>(
   source: DataNodeMap<T>,
   currentGroupNodes: Set<NodeId>,
   possibleStartNodes: Set<NodeId>,
@@ -44,13 +44,11 @@ const getComponentToSplitFromGroupToRemoveCycle = <T>(
     filterFunc: id => currentGroupNodes.has(id),
     reverse: true,
   })
-  return wu(possibleStartNodes.keys())
-    .filter(possibleStartId => !componentToAvoid.has(possibleStartId))
-    .map(validStartId => source.getComponent({
-      roots: [validStartId],
-      filterFunc: id => currentGroupNodes.has(id),
-    }))
-    .find(component => component.size > 0 && component.size < currentGroupNodes.size)
+
+  const validStartNode = wu(possibleStartNodes).find(id => !componentToAvoid.has(id))
+  return validStartNode !== undefined
+    ? source.getComponent({ roots: [validStartNode], filterFunc: id => currentGroupNodes.has(id) })
+    : undefined
 }
 
 const modifyGroupKeyToRemoveCycle = <T>(
@@ -59,38 +57,54 @@ const modifyGroupKeyToRemoveCycle = <T>(
   source: DataNodeMap<T>,
   knownCycle: Cycle
 ): GroupKeyFunc => {
-  const modifiedFunc = knownCycle.map((inEdge, index) => {
-    const outEdge = knownCycle[(index + 1) % knownCycle.length]
+  // This function will attempt to return a new group that if created, will
+  // will split the cycle between inEdge and outEdge. The new group can be
+  // created if there is a node in the group which is a target of `inEdge`
+  // and its connected component does not contain nodes that are a part of
+  // outEdge
+  const getNewGroupToCreateToRemoveEdgeFromCycle = (
+    inEdge: Edge,
+    outEdge: Edge
+  ): { nodesID: Set<NodeId>; newGroupId: string }| undefined => {
     const [prevGroup, currentGroup, nextGroup] = [...inEdge, outEdge[1]]
     const currentGroupSrcIds = wu(groupGraph.getData(currentGroup).items.keys()).toArray()
     const sourceNodesWithBackRef = new Set(currentGroupSrcIds.filter(
       id => wu(source.getReverse(id).values())
-        .find(srcId => groupKey(srcId) === prevGroup)
+        .some(srcId => groupKey(srcId) === prevGroup)
     ))
-    const sourceNodesWithToRef = new Set(currentGroupSrcIds.filter(
+    const sourceNodesWithForwardRef = new Set(currentGroupSrcIds.filter(
       id => wu(source.get(id).values())
-        .find(destId => groupKey(destId) === nextGroup)
+        .some(destId => groupKey(destId) === nextGroup)
     ))
-    const componentToSplit = getComponentToSplitFromGroupToRemoveCycle(
+    const componentToSplit = getComponentWithoutNodestoAvoid(
       source,
       new Set(currentGroupSrcIds),
       sourceNodesWithBackRef,
-      sourceNodesWithToRef,
+      sourceNodesWithForwardRef,
     )
     if (componentToSplit !== undefined) {
       const newGroupId = _.uniqueId(`${currentGroup}-`)
-      return (id: NodeId) => (componentToSplit.has(id) ? newGroupId : groupKey(id))
+      return { newGroupId, nodesID: componentToSplit }
     }
     return undefined
+  }
+
+  const newGroup = knownCycle.map((inEdge, index) => {
+    const outEdge = knownCycle[(index + 1) % knownCycle.length]
+    return getNewGroupToCreateToRemoveEdgeFromCycle(inEdge, outEdge)
   }).find(values.isDefined)
 
-  if (values.isDefined(modifiedFunc)) {
-    return modifiedFunc
+  if (values.isDefined(newGroup)) {
+    return (id: NodeId) => (newGroup.nodesID.has(id)
+      ? newGroup.newGroupId
+      : groupKey(id))
   }
+
   // We create a graph that contains only the nodes and edges from this cycle
   // in order to creat an error with the original cycle in the source graph
   // (since using the group names would mean nothing to the user)
-  const origCycle = source.filterNodes(id => knownCycle.flatMap(e => e).includes(groupKey(id)))
+  const knowCycleNodes = new Set(knownCycle.flat())
+  const origCycle = source.filterNodes(id => knowCycleNodes.has(groupKey(id)))
   throw new CircularDependencyError(origCycle)
 }
 
@@ -130,8 +144,7 @@ const buildAcyclicGroupedGraphImpl = <T>(
   const groupGraph = buildPossiblyCyclicGroupGraph(source, groupKey, origGroupKey)
   const possibleCycle = groupGraph.getCycle()
   if (possibleCycle === undefined) {
-    return new DAG(wu(groupGraph).map(([k, v]) => [k, new Set<NodeId>(v)]))
-      .setDataFrom(groupGraph) as GroupDAG<T>
+    return new DAG(groupGraph.entries(), groupGraph.nodeData)
   }
   const updatedGroupKey = modifyGroupKeyToRemoveCycle(
     groupGraph,
@@ -145,4 +158,8 @@ const buildAcyclicGroupedGraphImpl = <T>(
 export const buildAcyclicGroupedGraph = <T>(
   source: DataNodeMap<T>,
   groupKey: GroupKeyFunc,
-): GroupDAG<T> => log.time(() => buildAcyclicGroupedGraphImpl(source, groupKey, groupKey), 'build grouped graph for %o nodes', source.size)
+): GroupDAG<T> => log.time(
+    () => buildAcyclicGroupedGraphImpl(source, groupKey, groupKey),
+    'build grouped graph for %o nodes',
+    source.size
+  )

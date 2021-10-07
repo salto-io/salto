@@ -31,6 +31,7 @@ describe('getPlan', () => {
     planWithNewType,
     planWithSplitElem,
     planWithDependencyCycle,
+    planWithDependencyCycleWithinAGroup,
   } = planGenerators(allElements)
 
   it('should create empty plan', async () => {
@@ -134,6 +135,18 @@ describe('getPlan', () => {
     await expect(planWithDependencyCycle(false)).rejects.toThrow()
     // With change validators
     await expect(planWithDependencyCycle(true)).rejects.toThrow()
+  })
+
+  it('should ignore cycles within a group', async () => {
+    const plan = await planWithDependencyCycleWithinAGroup(false)
+    const planItems = [...plan.itemsByEvalOrder()]
+    expect(planItems).toHaveLength(4)
+  })
+
+  it('should ignore cycles within a group with change validators', async () => {
+    const plan = await planWithDependencyCycleWithinAGroup(true)
+    const planItems = [...plan.itemsByEvalOrder()]
+    expect(planItems).toHaveLength(4)
   })
 
   describe('with custom group key function', () => {

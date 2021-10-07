@@ -299,18 +299,17 @@ const resolveNodeElements = (
 
   wu(graph.keys()).forEach(id => {
     const change = graph.getData(id)
-    const resolvedChange = _.clone(change)
-    if (isAdditionChange(resolvedChange)) {
-      resolvedChange.data.after = resolvedAfter[resolvedChange.data.after.elemID.getFullName()]
+    if (isAdditionChange(change)) {
+      change.data.after = resolvedAfter[change.data.after.elemID.getFullName()]
     }
-    if (isModificationChange(resolvedChange)) {
-      resolvedChange.data.after = resolvedAfter[resolvedChange.data.after.elemID.getFullName()]
-      resolvedChange.data.before = resolvedBefore[resolvedChange.data.before.elemID.getFullName()]
+    if (isModificationChange(change)) {
+      change.data.after = resolvedAfter[change.data.after.elemID.getFullName()]
+      change.data.before = resolvedBefore[change.data.before.elemID.getFullName()]
     }
-    if (isRemovalChange(resolvedChange)) {
-      resolvedChange.data.before = resolvedBefore[resolvedChange.data.before.elemID.getFullName()]
+    if (isRemovalChange(change)) {
+      change.data.before = resolvedBefore[change.data.before.elemID.getFullName()]
     }
-    graph.setData(id, resolvedChange)
+    graph.setData(id, change)
   })
 
 

@@ -22,12 +22,11 @@ import NetsuiteClient from '../client/client'
 import { FilterCreator, FilterWith } from '../filter'
 
 const log = logger(module)
+export const EMPLOYEE_NAME_QUERY = 'SELECT id, entityid FROM employee'
+export const SYSTEM_NOTE_QUERY = 'SELECT recordid, recordtypeid, name FROM systemnote GROUP BY recordid, recordtypeid, name'
 
 const fetchEmployeeNames = async (client: NetsuiteClient): Promise<Record<string, string>> => {
-  const employees = await client.runSuiteQL(`
-      SELECT id, entityid
-      FROM employee 
-    `)
+  const employees = await client.runSuiteQL(EMPLOYEE_NAME_QUERY)
   if (employees) {
     return Object.fromEntries(employees.map(entry => [entry.id, entry.entityid]))
   }
@@ -35,11 +34,7 @@ const fetchEmployeeNames = async (client: NetsuiteClient): Promise<Record<string
 }
 
 const fetchSystemNotes = async (client: NetsuiteClient): Promise<Record<string, unknown>[]> => {
-  const systemNotes = await client.runSuiteQL(`
-      SELECT recordid, recordtypeid, name
-      FROM systemnote
-      GROUP BY recordid, recordtypeid, name
-    `)
+  const systemNotes = await client.runSuiteQL(SYSTEM_NOTE_QUERY)
   if (systemNotes) {
     return systemNotes
   }
@@ -47,25 +42,23 @@ const fetchSystemNotes = async (client: NetsuiteClient): Promise<Record<string, 
   return []
 }
 
+
 const fetchRecordIdsForRecordType = async (
   recordType: string,
   client: NetsuiteClient
-): Promise<Record<string, string>[]> => {
-  const recordTypeIds = await client.runSuiteQL(`
-  SELECT scriptid, internalid
-  FROM ${recordType}`)
-  if (recordTypeIds) {
-    return Object.fromEntries(recordTypeIds.map(entry => [entry.scriptid, entry.internalid]))
+): Promise<Record<string, string>> => {
+  const fetchRecordType = async (idParamName: string): Promise<Record<string, string>> => {
+    const recordTypeIds = await client.runSuiteQL(`SELECT scriptid, ${idParamName} FROM ${recordType}`)
+    if (recordTypeIds) {
+      return Object.fromEntries(recordTypeIds.map(entry => [entry.scriptid, entry[idParamName]]))
+    }
+    return {}
   }
-
-  const recordTypeIds2 = await client.runSuiteQL(`
-  SELECT scriptid, id
-  FROM ${recordType}`)
-  if (recordTypeIds2) {
-    return Object.fromEntries(recordTypeIds2.map(entry => [entry.scriptid, entry.id]))
+  const internalIdQueryResults = await fetchRecordType('internalid')
+  if (!_.isEmpty(internalIdQueryResults)) {
+    return internalIdQueryResults
   }
-  log.warn(`${recordType} query failed`)
-  return []
+  return fetchRecordType('id')
 }
 
 const createRecordIdsMap = async (
@@ -92,7 +85,10 @@ const getElementRecordId = (
 }
 
 const getElementsRecordTypeIdSet = (elements: Element[]): string[] =>
-  _.uniq(elements.filter(isInstanceElement).map(elem => elem.elemID.typeName))
+  _.uniq(elements
+    .filter(isInstanceElement)
+    .filter(elem => _.isUndefined(elem.value.internalId))
+    .map(elem => elem.elemID.typeName))
 
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
@@ -104,10 +100,11 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
     const getElementLastModifier = (
       element: InstanceElement,
     ): string | undefined => {
+      const elementRecordId = getElementRecordId(element, recordIdMap)
       const matchingNotes = systemNotes
-        .filter(note => note.recordid === getElementRecordId(element, recordIdMap))
+        .filter(note => note.recordid === elementRecordId)
         .filter(note => TYPES_TO_INTERNAL_ID[element.elemID.typeName] === note.recordtypeid)
-      if (matchingNotes.length > 0) {
+      if (!_.isEmpty(matchingNotes)) {
         return employeeNames[_.toString(matchingNotes[0].name)]
       }
       return undefined

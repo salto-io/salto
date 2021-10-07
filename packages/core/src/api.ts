@@ -250,6 +250,7 @@ export const fetch: FetchFunc = async (
   } = await fetchChanges(
     adapters,
     await workspace.elements(),
+    accountToServiceNameMap,
     workspace.state(),
     currentConfigs,
     progressEmitter,

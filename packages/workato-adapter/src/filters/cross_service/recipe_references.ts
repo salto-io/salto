@@ -106,17 +106,18 @@ const filterRelevantRecipeCodes = (
 const addReferencesForConnectionRecipes = async (
   relevantRecipeCodes: InstanceElement[],
   appName: string,
-  serviceName: string,
+  accountName: string,
   serviceElements: ReadonlyArray<Readonly<Element>>,
+  accountToServiceTypeMapping: Record<string, string>,
 ): Promise<void> => {
-  if (serviceName === SALESFORCE) {
+  if (accountToServiceTypeMapping[accountName] === SALESFORCE) {
     const index = indexSalesforceByMetadataTypeAndApiName(serviceElements)
     await awu(relevantRecipeCodes).forEach(
       inst => addSalesforceRecipeReferences(inst, index, appName)
     )
     return
   }
-  if (serviceName === NETSUITE) {
+  if (accountToServiceTypeMapping[accountName] === NETSUITE) {
     const index = indexNetsuiteByTypeAndScriptId(serviceElements)
     await awu(relevantRecipeCodes).forEach(
       inst => addNetsuiteRecipeReferences(inst, index, appName)
@@ -138,6 +139,7 @@ const filter: FilterCreator = ({ config }) => ({
   onPostFetch: async ({
     currentAdapterElements,
     elementsByAdapter,
+    accountToServiceNameMap,
   }: PostFetchOptions): Promise<void> => {
     const { serviceConnectionNames } = config[FETCH_CONFIG]
     if (serviceConnectionNames === undefined || _.isEmpty(serviceConnectionNames)) {
@@ -163,7 +165,7 @@ const filter: FilterCreator = ({ config }) => ({
     )
 
     await awu(Object.entries(serviceConnectionDetails))
-      .forEach(async ([serviceName, connections]) => {
+      .forEach(async ([accountName, connections]) => {
         await awu(Object.values(connections)).forEach(async ({ id, applicationName }) => {
           const relevantRecipeCodes = filterRelevantRecipeCodes(
             id,
@@ -173,8 +175,9 @@ const filter: FilterCreator = ({ config }) => ({
           await addReferencesForConnectionRecipes(
             relevantRecipeCodes,
             applicationName,
-            serviceName,
-            elementsByAdapter[serviceName] ?? [],
+            accountName,
+            elementsByAdapter[accountName] ?? [],
+            accountToServiceNameMap,
           )
         })
       })

@@ -61,8 +61,25 @@ describe('fetch', () => {
   const typeWithFieldConflict = typeWithField.clone()
   typeWithFieldConflict.fields.test.annotations.annotation = 'conflict'
   const newTypeID = new ElemID('dummy', 'new')
+  const newTypeDifferentAdapterID = new ElemID('dummyServiceName', 'new')
+  const typeWithFieldChangeDifferentId = typeWithFieldChange.clone()
+  _.set(typeWithFieldChangeDifferentId, 'elemID', newTypeDifferentAdapterID.adapter)
+  const typeWithFieldDifferentID = new ObjectType({
+    elemID: new ElemID(newTypeDifferentAdapterID.adapter, typeWithField.elemID.typeName),
+    fields: {
+      test: {
+        refType: BuiltinTypes.STRING,
+        annotations: { annotation: 'value' },
+      },
+    },
+  })
   const newTypeBase = new ObjectType({
     elemID: newTypeID,
+    fields: { base: { refType: BuiltinTypes.STRING } },
+    path: ['path', 'base'],
+  })
+  const newTypeBaseDifferentAdapterID = new ObjectType({
+    elemID: newTypeDifferentAdapterID,
     fields: { base: { refType: BuiltinTypes.STRING } },
     path: ['path', 'base'],
   })
@@ -88,6 +105,13 @@ describe('fetch', () => {
     },
     path: ['records', 'hidden'],
   })
+  const typeWithHiddenFieldAlternativeId = typeWithHiddenField.clone()
+  _.set(typeWithHiddenFieldAlternativeId, 'elemID', anotherTypeID
+    .createAdapterReplacedID(newTypeDifferentAdapterID.adapter))
+  // parent isn't changed
+  Object.values(typeWithHiddenFieldAlternativeId.fields).forEach(field => {
+    field.parent = expect.anything()
+  })
 
   const hiddenInstance = new InstanceElement('instance_elem_id_name', typeWithHiddenField, {
     reg: 'reg',
@@ -95,6 +119,15 @@ describe('fetch', () => {
     hidden: 'Hidden',
     hiddenValue: 'hidden val',
   })
+
+  const hiddenInstanceAlternateId = new InstanceElement('instance_elem_id_name',
+    typeWithHiddenFieldAlternativeId, {
+      reg: 'reg',
+      notHidden: 'notHidden',
+      hidden: 'Hidden',
+      hiddenValue: 'hidden val',
+    })
+
 
   // // Workspace elements should not contains hidden values
   // const workspaceInstance = hiddenValues.removeHiddenFieldsValues(hiddenInstance)
@@ -104,13 +137,18 @@ describe('fetch', () => {
     fields: { base: { refType: new ListType(BuiltinTypes.STRING) } },
     path: ['path', 'base'],
   })
+  const newTypeBaseModifiedDifferentId = new ObjectType({
+    elemID: newTypeDifferentAdapterID,
+    fields: { base: { refType: new ListType(BuiltinTypes.STRING) } },
+    path: ['path', 'base'],
+  })
   const newTypeExt = new ObjectType({
     elemID: newTypeID,
     fields: { ext: { refType: BuiltinTypes.STRING } },
     path: ['path', 'ext'],
   })
   const newTypeMerged = new ObjectType({
-    elemID: newTypeID,
+    elemID: newTypeDifferentAdapterID,
     fields: {
       base: { refType: BuiltinTypes.STRING },
       ext: { refType: BuiltinTypes.STRING },
@@ -119,7 +157,7 @@ describe('fetch', () => {
 
   describe('fetchChanges', () => {
     const mockAdapters = {
-      dummy: {
+      [newTypeDifferentAdapterID.adapter]: {
         fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
         deploy: mockFunction<AdapterOperations['deploy']>(),
       },
@@ -127,7 +165,7 @@ describe('fetch', () => {
     let changes: FetchChange[]
     describe('when the adapter returns elements with merge errors', () => {
       beforeEach(() => {
-        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+        mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
           { elements: [newTypeBase, newTypeBaseModified, typeWithField] },
         )
       })
@@ -135,6 +173,7 @@ describe('fetch', () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
           createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([]),
           [],
         )
@@ -144,12 +183,13 @@ describe('fetch', () => {
     describe('partial fetch results', () => {
       describe('fetch is partial', () => {
         it('should ignore deletions', async () => {
-          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
             { elements: [newTypeBaseModified], isPartial: true },
           )
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
-            createInMemoryElementSource([newTypeBaseModified, typeWithField]),
+            createInMemoryElementSource([newTypeBaseModifiedDifferentId, typeWithFieldDifferentID]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             createInMemoryElementSource([]),
             [],
           )
@@ -157,27 +197,30 @@ describe('fetch', () => {
         })
 
         it('should return the state elements with the service elements', async () => {
-          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
             { elements: [newTypeBaseModified], isPartial: true },
           )
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
             createInMemoryElementSource([]),
-            createInMemoryElementSource([newTypeBase, typeWithField]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
+            createInMemoryElementSource([newTypeBaseDifferentAdapterID, typeWithFieldDifferentID]),
             [],
           )
-          expect(fetchChangesResult.elements).toEqual([newTypeBaseModified, typeWithField])
+          expect(fetchChangesResult.elements).toEqual([newTypeBaseModifiedDifferentId,
+            typeWithFieldDifferentID])
         })
       })
       describe('fetch is not partial', () => {
         it('should not ignore deletions', async () => {
-          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
             { elements: [newTypeBaseModified], isPartial: false },
           )
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
-            createInMemoryElementSource([newTypeBaseModified, typeWithField]),
+            createInMemoryElementSource([newTypeBaseModifiedDifferentId, typeWithFieldDifferentID]),
             createInMemoryElementSource([]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             [],
           )
           const resultChanges = Array.from(fetchChangesResult.changes)
@@ -186,16 +229,17 @@ describe('fetch', () => {
         })
 
         it('should return only the service elements', async () => {
-          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
             { elements: [newTypeBaseModified], isPartial: false },
           )
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
             createInMemoryElementSource([]),
-            createInMemoryElementSource([newTypeBase, typeWithField]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
+            createInMemoryElementSource([newTypeBaseDifferentAdapterID, typeWithFieldDifferentID]),
             [],
           )
-          expect(fetchChangesResult.elements).toEqual([newTypeBaseModified])
+          expect(fetchChangesResult.elements).toEqual([newTypeBaseModifiedDifferentId])
         })
       })
 
@@ -203,18 +247,19 @@ describe('fetch', () => {
         const beforeElement = new InstanceElement(
           'name',
           new ObjectType({
-            elemID: new ElemID('dummy', 'type'),
+            elemID: new ElemID(newTypeDifferentAdapterID.adapter, 'type'),
             fields: {
               field: { refType: BuiltinTypes.NUMBER },
             },
           }),
-          { field: new ReferenceExpression(new ElemID('dummy', 'type', 'instance', 'referenced', 'field')) }
+          { field: new ReferenceExpression(new ElemID(newTypeDifferentAdapterID.adapter, 'type',
+            'instance', 'referenced', 'field')) }
         )
 
         const workspaceReferencedElement = new InstanceElement(
           'referenced',
           new ObjectType({
-            elemID: new ElemID('dummy', 'type'),
+            elemID: new ElemID(newTypeDifferentAdapterID.adapter, 'type'),
             fields: {
               field: { refType: BuiltinTypes.NUMBER },
             },
@@ -227,12 +272,13 @@ describe('fetch', () => {
         const afterElement = beforeElement.clone()
         afterElement.value.field = 4
 
-        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+        mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
           { elements: [afterElement], isPartial: true },
         )
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
           createInMemoryElementSource([beforeElement, workspaceReferencedElement]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createInMemoryElementSource([beforeElement, stateReferencedElement]),
           [],
         )
@@ -257,7 +303,7 @@ describe('fetch', () => {
 
       describe('multiple adapters', () => {
         const adapters = {
-          dummy1: {
+          dummy1AccountName: {
             fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [], isPartial: true }),
             deploy: mockFunction<AdapterOperations['deploy']>(),
           },
@@ -274,6 +320,7 @@ describe('fetch', () => {
               new ObjectType({ elemID: new ElemID('dummy1', 'type') }),
               new ObjectType({ elemID: new ElemID('dummy2', 'type') }),
             ]),
+            { dummy1AccountName: 'dummy1', dummy2: 'dummy2' },
             createInMemoryElementSource([]),
             [],
           )
@@ -329,6 +376,7 @@ describe('fetch', () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
           createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([]),
           [],
         )
@@ -347,6 +395,7 @@ describe('fetch', () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
           createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([]),
           [currentInstanceConfig],
         )
@@ -365,6 +414,7 @@ describe('fetch', () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
           createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([]),
           [configInstance],
         )
@@ -391,7 +441,7 @@ describe('fetch', () => {
         beforeEach(async () => {
           dupInstance = new InstanceElement('instance_elem_id_name', dupTypeBase, { fname: 'fvalue' })
           validInstance = new InstanceElement('instance_elem_id_name2', typeWithField, { fname: 'fvalue2' })
-          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
             Promise.resolve(
               { elements: [dupInstance, validInstance, dupTypeBase, dupTypeBase2, typeWithField] }
             )
@@ -399,6 +449,7 @@ describe('fetch', () => {
           fetchChangesResult = await fetchChanges(
             mockAdapters,
             createElementSource([]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             createElementSource([]),
             [],
           )
@@ -425,14 +476,15 @@ describe('fetch', () => {
     describe('when there are no changes', () => {
       let elements: Element[]
       beforeEach(async () => {
-        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+        mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
           Promise.resolve({ elements: [newTypeBase, newTypeExt, hiddenInstance] }),
         )
 
         const result = await fetchChanges(
           mockAdapters,
-          createElementSource([newTypeMerged, hiddenInstance]),
-          createElementSource([newTypeMerged, hiddenInstance]),
+          createElementSource([newTypeMerged, hiddenInstanceAlternateId]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
+          createElementSource([newTypeMerged, hiddenInstanceAlternateId]),
           [],
         )
         elements = result.elements
@@ -460,14 +512,15 @@ describe('fetch', () => {
         hiddenInstanceFromService.value.hiddenValue = hiddenValueChangedVal
         hiddenInstanceFromService.value.notHidden = 'notHiddenChanged'
 
-        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+        mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
           Promise.resolve({ elements: [typeWithFieldAndAnnotations, hiddenInstanceFromService] })
         )
 
         const result = await fetchChanges(
           mockAdapters,
-          createElementSource([typeWithField, hiddenInstance]),
-          createElementSource([typeWithField, hiddenInstance]),
+          createElementSource([typeWithFieldDifferentID, hiddenInstanceAlternateId]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
+          createElementSource([typeWithFieldDifferentID, hiddenInstanceAlternateId]),
           [],
         )
         changes = [...result.changes]
@@ -497,12 +550,13 @@ describe('fetch', () => {
 
       describe('when adapter progress is not reported', () => {
         beforeEach(async () => {
-          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
             Promise.resolve({ elements: [newTypeBase, newTypeExt] })
           )
           const result = await fetchChanges(
             mockAdapters,
             elementSource.createInMemoryElementSource([]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             elementSource.createInMemoryElementSource([]),
             [],
             progressEmitter
@@ -517,13 +571,15 @@ describe('fetch', () => {
       })
       describe('when adapter progress is reported ', () => {
         beforeEach(async () => {
-          mockAdapters.dummy.fetch.mockImplementationOnce(fetchOpts => {
-            fetchOpts.progressReporter.reportProgress({ message: 'done' })
-            return Promise.resolve({ elements: [newTypeBase, newTypeExt] })
-          })
+          mockAdapters[newTypeDifferentAdapterID.adapter].fetch
+            .mockImplementationOnce(fetchOpts => {
+              fetchOpts.progressReporter.reportProgress({ message: 'done' })
+              return Promise.resolve({ elements: [newTypeBase, newTypeExt] })
+            })
           const result = await fetchChanges(
             mockAdapters,
             elementSource.createInMemoryElementSource([]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             elementSource.createInMemoryElementSource([]),
             [],
             progressEmitter
@@ -534,7 +590,8 @@ describe('fetch', () => {
           expect(progressEmitter.emit).toHaveBeenCalledTimes(3)
           expect(progressEmitter.emit).toHaveBeenCalledWith('changesWillBeFetched', expect.anything(), expect.anything())
           expect(progressEmitter.emit).toHaveBeenCalledWith('diffWillBeCalculated', expect.anything())
-          expect(progressEmitter.emit).toHaveBeenCalledWith('adapterProgress', 'dummy', 'fetch', { message: 'done' })
+          expect(progressEmitter.emit).toHaveBeenCalledWith('adapterProgress',
+            newTypeDifferentAdapterID.adapter, 'fetch', { message: 'done' })
         })
       })
     })
@@ -542,12 +599,13 @@ describe('fetch', () => {
     describe('when the adapter returns elements that includes type and its instances', () => {
       const inst = new InstanceElement('inst', newTypeBase)
       beforeEach(async () => {
-        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+        mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
           Promise.resolve({ elements: [newTypeBase, inst, typeWithHiddenField] })
         )
         const result = await fetchChanges(
           mockAdapters,
-          createElementSource([typeWithHiddenField]),
+          createElementSource([typeWithHiddenFieldAlternativeId]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([]),
           [],
         )
@@ -564,12 +622,13 @@ describe('fetch', () => {
 
     describe('when the adapter returns elements that should be split', () => {
       beforeEach(async () => {
-        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+        mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
           Promise.resolve({ elements: [newTypeBase, newTypeExt] })
         )
         const result = await fetchChanges(
           mockAdapters,
           createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([]),
           [],
         )
@@ -591,18 +650,26 @@ describe('fetch', () => {
             newTypeBaseWPath.path = ['a', 'b']
             const newTypeExtWPath = newTypeExt.clone()
             newTypeExtWPath.path = ['c', 'd']
-            mockAdapters.dummy.fetch.mockResolvedValueOnce(
+            mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
               Promise.resolve({ elements: [
                 newTypeBaseWPath,
                 newTypeExtWPath] })
             )
+            const newTypeBaseWPathDifferentID = newTypeBaseWPath.clone()
+            _.set(newTypeBaseWPathDifferentID, 'elemID', newTypeBaseWPath.elemID
+              .createAdapterReplacedID(newTypeDifferentAdapterID.adapter))
             const result = await fetchChanges(
               mockAdapters,
-              createElementSource([newTypeBaseWPath]),
-              createElementSource([newTypeBaseWPath]),
+              createElementSource([newTypeBaseWPathDifferentID]),
+              { [newTypeDifferentAdapterID.adapter]: 'dummy' },
+              createElementSource([newTypeBaseWPathDifferentID]),
               [],
             )
             changes = [...result.changes]
+            changes.forEach(change => {
+              // eslint-disable-next-line no-console
+              console.log(change)
+            })
           })
 
 
@@ -627,7 +694,7 @@ describe('fetch', () => {
               path: ['c', 'd'],
             })
 
-            mockAdapters.dummy.fetch.mockResolvedValueOnce(
+            mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
               Promise.resolve({ elements: [
                 newTypeA,
                 newTypeB] })
@@ -635,6 +702,7 @@ describe('fetch', () => {
             const result = await fetchChanges(
               mockAdapters,
               createElementSource([newTypeA]),
+              { [newTypeDifferentAdapterID.adapter]: 'dummy1' },
               createElementSource([newTypeA]),
               [],
             )
@@ -653,12 +721,13 @@ describe('fetch', () => {
       })
       describe('when the working copy is already the same as the service', () => {
         beforeEach(async () => {
-          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
             Promise.resolve({ elements: [typeWithFieldChange] })
           )
           const result = await fetchChanges(
             mockAdapters,
             createElementSource([typeWithFieldChange]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             createElementSource([typeWithField]),
             [],
           )
@@ -671,12 +740,13 @@ describe('fetch', () => {
 
       describe('when the working copy has a conflicting change', () => {
         beforeEach(async () => {
-          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
             Promise.resolve({ elements: [typeWithFieldChange] })
           )
           const result = await fetchChanges(
             mockAdapters,
             createElementSource([typeWithFieldConflict]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             createElementSource([typeWithField]),
             [],
           )
@@ -691,10 +761,12 @@ describe('fetch', () => {
       })
       describe('when the changed element is removed in the working copy', () => {
         beforeEach(async () => {
-          mockAdapters.dummy.fetch.mockResolvedValueOnce({ elements: [typeWithFieldChange] })
+          mockAdapters[newTypeDifferentAdapterID.adapter].fetch
+            .mockResolvedValueOnce({ elements: [typeWithFieldChange] })
           const result = await fetchChanges(
             mockAdapters,
             createElementSource([]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             createElementSource([typeWithField]),
             [],
           )
@@ -725,10 +797,12 @@ describe('fetch', () => {
 
     describe('when the changed element is removed from the service', () => {
       beforeEach(async () => {
-        mockAdapters.dummy.fetch.mockResolvedValueOnce({ elements: [] })
+        mockAdapters[newTypeDifferentAdapterID.adapter]
+          .fetch.mockResolvedValueOnce({ elements: [] })
         const result = await fetchChanges(
           mockAdapters,
           createElementSource([typeWithFieldChange]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([typeWithField]),
           [],
         )
@@ -747,11 +821,13 @@ describe('fetch', () => {
 
     describe('when there is only a pending change and no service change', () => {
       beforeEach(async () => {
-        mockAdapters.dummy.fetch.mockResolvedValueOnce({ elements: [typeWithField] })
+        mockAdapters[newTypeDifferentAdapterID.adapter].fetch
+          .mockResolvedValueOnce({ elements: [typeWithField] })
         const result = await fetchChanges(
           mockAdapters,
-          createElementSource([typeWithFieldChange]),
-          createElementSource([typeWithField]),
+          createElementSource([typeWithFieldChangeDifferentId]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
+          createElementSource([typeWithFieldDifferentID]),
           [],
         )
         changes = [...result.changes]
@@ -918,12 +994,13 @@ describe('fetch', () => {
 
     describe('first fetch', () => {
       beforeEach(async () => {
-        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+        mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
           Promise.resolve({ elements: [typeWithField, hiddenInstance] })
         )
         const result = await fetchChanges(
           mockAdapters,
           createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([]),
           [],
         )
@@ -936,8 +1013,8 @@ describe('fetch', () => {
       })
 
       it('changes should be equal to the service elements', () => {
-        expect(getChangeElement(changes[0].change)).toEqual(typeWithField)
-        expect(getChangeElement(changes[1].change)).toEqual(hiddenInstance)
+        expect(getChangeElement(changes[0].change)).toEqual(typeWithFieldDifferentID)
+        expect(getChangeElement(changes[1].change)).toEqual(hiddenInstanceAlternateId)
       })
     })
 
@@ -950,23 +1027,28 @@ describe('fetch', () => {
           instancesPassed = elements
           return awu([])
         })
-        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+        mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
           Promise.resolve({ elements: [hiddenInstance] })
         )
         await fetchChanges(
           mockAdapters,
           createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([]),
           [],
         )
-        expect(await awu(instancesPassed).toArray()).toEqual([hiddenInstance])
+        // eslint-disable-next-line no-console
+        console.log((await awu(instancesPassed).toArray())[0])
+        // eslint-disable-next-line no-console
+        console.log(hiddenInstanceAlternateId)
+        expect(await awu(instancesPassed).toArray()).toEqual([hiddenInstanceAlternateId])
       })
     })
   })
 
   describe('fetchChanges with postFetch', () => {
     const mockAdapters = {
-      dummy: {
+      [newTypeDifferentAdapterID.adapter]: {
         fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
         deploy: mockFunction<AdapterOperations['deploy']>(),
         postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue(),
@@ -974,25 +1056,30 @@ describe('fetch', () => {
     }
     describe('fetch is partial', () => {
       it('should call postFetch with the state and service elements combined in elementsByAdapter, but only the fetched elements in currentAdapterElements', async () => {
-        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+        mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
           { elements: [newTypeBaseModified], isPartial: true },
         )
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
-          createElementSource([typeWithField]),
-          createElementSource([newTypeBase, typeWithField]),
+          createElementSource([typeWithFieldDifferentID]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
+          createElementSource([newTypeBaseDifferentAdapterID, typeWithFieldDifferentID]),
           [],
         )
-        expect(fetchChangesResult.elements).toEqual([newTypeBaseModified, typeWithField])
-        expect(mockAdapters.dummy.postFetch).toHaveBeenCalledWith({
+        expect(fetchChangesResult.elements).toEqual([newTypeBaseModifiedDifferentId,
+          typeWithFieldDifferentID])
+        expect(mockAdapters[newTypeDifferentAdapterID.adapter].postFetch).toHaveBeenCalledWith({
           currentAdapterElements: expect.arrayContaining([
-            newTypeBaseModified,
+            newTypeBaseModifiedDifferentId,
           ]),
           elementsByAdapter: {
-            dummy: expect.arrayContaining([
-              newTypeBaseModified,
-              typeWithField,
+            [newTypeDifferentAdapterID.adapter]: expect.arrayContaining([
+              newTypeBaseModifiedDifferentId,
+              typeWithFieldDifferentID,
             ]),
+          },
+          accountToServiceNameMap: {
+            [newTypeDifferentAdapterID.adapter]: 'dummy',
           },
           progressReporter: expect.anything(),
         })
@@ -1000,24 +1087,28 @@ describe('fetch', () => {
     })
     describe('fetch is not partial', () => {
       it('should call postFetch with only the service elements', async () => {
-        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+        mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
           { elements: [newTypeBaseModified], isPartial: false },
         )
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
           createElementSource([]),
-          createElementSource([newTypeBase, typeWithField]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
+          createElementSource([newTypeBaseDifferentAdapterID, typeWithFieldDifferentID]),
           [],
         )
-        expect(fetchChangesResult.elements).toEqual([newTypeBaseModified])
-        expect(mockAdapters.dummy.postFetch).toHaveBeenCalledWith({
+        expect(fetchChangesResult.elements).toEqual([newTypeBaseModifiedDifferentId])
+        expect(mockAdapters[newTypeDifferentAdapterID.adapter].postFetch).toHaveBeenCalledWith({
           currentAdapterElements: expect.arrayContaining([
-            newTypeBaseModified,
+            newTypeBaseModifiedDifferentId,
           ]),
           elementsByAdapter: {
-            dummy: expect.arrayContaining([
-              newTypeBaseModified,
+            [newTypeDifferentAdapterID.adapter]: expect.arrayContaining([
+              newTypeBaseModifiedDifferentId,
             ]),
+          },
+          accountToServiceNameMap: {
+            [newTypeDifferentAdapterID.adapter]: 'dummy',
           },
           progressReporter: expect.anything(),
         })
@@ -1037,7 +1128,6 @@ describe('fetch', () => {
         annotationRefsOrTypes: {},
         annotations: {},
       })
-      const dummy1 = new ObjectType({ elemID: new ElemID('dummy1', 'type') })
       const dummy2 = new ObjectType({ elemID: new ElemID('dummy2', 'type') })
       const dummy3 = new ObjectType({ elemID: new ElemID('dummy2', 'type') })
       const expectedDummy3ObjectAterRename = new ObjectType({ elemID: new ElemID('dummy3', 'type') })
@@ -1048,6 +1138,10 @@ describe('fetch', () => {
       const expectedDummy3Type1AfterRename = new ObjectType({ elemID: new ElemID('dummy3', 'd3t1'), fields: {} })
       dummy3Type1.fields.listListStr = new Field(dummy3Type1, 'listListStr',
         new ListType(new ListType(dummy2PrimStr)))
+      const expectedDummy1 = new ObjectType({ elemID: new ElemID('dummy1AlternateServiceName', 'type') })
+      const expectedDummy1Type1 = new ObjectType({ elemID: new ElemID(expectedDummy1.elemID
+        .adapter, 'd1t1'),
+      fields: {} })
       dummy3Type1.fields.listStr = new Field(dummy3Type1, 'listStr', new ListType(dummy2PrimStr))
       expectedDummy3Type1AfterRename.fields.listStr = new Field(expectedDummy3Type1AfterRename,
         'listStr', new ListType(dummy3PrimStr))
@@ -1063,7 +1157,7 @@ describe('fetch', () => {
         .createAdapterReplacedID('dummy2'))
 
       const adapters = {
-        dummy1: {
+        [expectedDummy1.elemID.adapter]: {
           fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy1Type1], isPartial: true }),
           deploy: mockFunction<AdapterOperations['deploy']>(),
         },
@@ -1086,24 +1180,38 @@ describe('fetch', () => {
         await fetchChanges(
           adapters,
           createElementSource([]),
-          createElementSource([dummy1, dummy2, dummy3]),
+          { [expectedDummy1.elemID.adapter]: 'dummy1', dummy2: 'dummy2', dummy3: 'dummy2' },
+          createElementSource([expectedDummy1, dummy2, dummy3]),
           [],
         )
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
           currentAdapterElements: expect.arrayContaining([dummy2Type1]),
           elementsByAdapter: {
-            dummy1: expect.arrayContaining([dummy1Type1, dummy1]),
+            [expectedDummy1.elemID.adapter]: expect.arrayContaining(
+              [expectedDummy1Type1, expectedDummy1]
+            ),
             dummy2: expect.arrayContaining([dummy2Type1]),
             dummy3: expect.arrayContaining([expectedDummy3Type1AfterRename]),
+          },
+          accountToServiceNameMap: {
+            [expectedDummy1.elemID.adapter]: 'dummy1',
+            dummy2: 'dummy2',
+            dummy3: 'dummy2',
           },
           progressReporter: expect.anything(),
         })
         expect(adapters.dummy3.postFetch).toHaveBeenCalledWith({
           currentAdapterElements: expect.arrayContaining([expectedDummy3Type1AfterRename]),
           elementsByAdapter: {
-            dummy1: expect.arrayContaining([dummy1Type1, dummy1]),
+            [expectedDummy1.elemID.adapter]: expect
+              .arrayContaining([expectedDummy1Type1, expectedDummy1]),
             dummy2: expect.arrayContaining([dummy2Type1]),
             dummy3: expect.arrayContaining([expectedDummy3Type1AfterRename]),
+          },
+          accountToServiceNameMap: {
+            [expectedDummy1.elemID.adapter]: 'dummy1',
+            dummy2: 'dummy2',
+            dummy3: 'dummy2',
           },
           progressReporter: expect.anything(),
         })
@@ -1112,17 +1220,28 @@ describe('fetch', () => {
         await fetchChanges(
           _.pick(adapters, ['dummy1', 'dummy2']),
           createElementSource([]),
-          createElementSource([dummy1, dummy2, expectedDummy3ObjectAterRename]),
+          {
+            [expectedDummy1.elemID.adapter]: 'dummy1',
+            dummy2: 'dummy2',
+            dummy3: 'dummy2',
+          },
+          createElementSource([expectedDummy1, dummy2, expectedDummy3ObjectAterRename]),
           [],
         )
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
           currentAdapterElements: expect.arrayContaining([dummy2Type1]),
           elementsByAdapter: {
             // dummy1 is partial so it also includes elements from the workspace
-            dummy1: expect.arrayContaining([dummy1Type1, dummy1]),
+            [expectedDummy1.elemID.adapter]: expect
+              .arrayContaining([expectedDummy1Type1, expectedDummy1]),
             dummy2: expect.arrayContaining([dummy2Type1]),
             // dummy3 was not fetched so it includes only elements from the workspace
             dummy3: expect.arrayContaining([expectedDummy3ObjectAterRename]),
+          },
+          accountToServiceNameMap: {
+            [expectedDummy1.elemID.adapter]: 'dummy1',
+            dummy2: 'dummy2',
+            dummy3: 'dummy2',
           },
           progressReporter: expect.anything(),
         })
@@ -1133,17 +1252,29 @@ describe('fetch', () => {
         await expect(fetchChanges(
           _.pick(adapters, ['dummy1', 'dummy2']),
           createElementSource([]),
-          createElementSource([dummy1, dummy2, expectedDummy3ObjectAterRename]),
+          {
+            [expectedDummy1.elemID.adapter]: 'dummy1',
+            dummy2: 'dummy2',
+            dummy3: 'dummy2',
+          },
+          createElementSource([expectedDummy1, dummy2, expectedDummy3ObjectAterRename]),
           [],
         )).resolves.not.toThrow()
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
           currentAdapterElements: expect.arrayContaining([dummy2Type1]),
           elementsByAdapter: {
             // dummy1 is partial so it also includes elements from the workspace
-            dummy1: expect.arrayContaining([dummy1Type1, dummy1]),
+            [expectedDummy1.elemID.adapter]: expect.arrayContaining(
+              [expectedDummy1Type1, expectedDummy1]
+            ),
             dummy2: expect.arrayContaining([dummy2Type1]),
             // dummy3 was not fetched so it includes only elements from the workspace
             dummy3: expect.arrayContaining([expectedDummy3ObjectAterRename]),
+          },
+          accountToServiceNameMap: {
+            [expectedDummy1.elemID.adapter]: 'dummy1',
+            dummy2: 'dummy2',
+            dummy3: 'dummy2',
           },
           progressReporter: expect.anything(),
         })

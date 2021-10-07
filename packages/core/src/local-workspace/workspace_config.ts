@@ -82,8 +82,8 @@ export const workspaceConfigSource = async (
           }
           delete env.services
           if (!env.accountToServiceName) {
-            env.accountToServiceName = Object.fromEntries(env.accounts.map(account => [account,
-              account]))
+            env.accountToServiceName = Object.fromEntries((env.accounts ?? []).map(account =>
+              [account, account]))
           }
         })
       }

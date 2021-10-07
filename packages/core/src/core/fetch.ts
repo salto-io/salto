@@ -309,12 +309,14 @@ const runPostFetch = async ({
   serviceElements,
   stateElementsByAdapter,
   partiallyFetchedAdapters,
+  accountToServiceNameMap,
   progressReporters,
 }: {
   adapters: Record<string, AdapterOperationsWithPostFetch>
   serviceElements: Element[]
   stateElementsByAdapter: Record<string, ReadonlyArray<Element>>
   partiallyFetchedAdapters: Set<string>
+  accountToServiceNameMap: Record<string, string>
   progressReporters: Record<string, ProgressReporter>
 }): Promise<void> => {
   const serviceElementsByAdapter = _.groupBy(serviceElements, e => e.elemID.adapter)
@@ -345,6 +347,7 @@ const runPostFetch = async ({
       adapter.postFetch({
         currentAdapterElements: serviceElementsByAdapter[adapterName],
         elementsByAdapter,
+        accountToServiceNameMap,
         progressReporter: progressReporters[adapterName],
       })
     ))
@@ -416,9 +419,10 @@ const updateElementsWithAlternativeAdapter = async (elements: Element[],
 
 const fetchAndProcessMergeErrors = async (
   adapters: Record<string, AdapterOperations>,
+  accountToServiceNameMap: Record<string, string>,
   stateElements: elementSource.ElementsSource,
   getChangesEmitter: StepEmitter,
-  progressEmitter?: EventEmitter<FetchProgressEvents>
+  progressEmitter?: EventEmitter<FetchProgressEvents>,
 ):
   Promise<{
     serviceElements: Element[]
@@ -445,7 +449,7 @@ const fetchAndProcessMergeErrors = async (
             fetchResult.elements = await expressions.resolve(fetchResult.elements,
               elementSource.createInMemoryElementSource(), true)
             await updateElementsWithAlternativeAdapter(fetchResult.elements,
-              accountName, fetchResult.elements[0].elemID.adapter)
+              accountName, accountToServiceNameMap[accountName])
             if (updatedConfig) {
               updatedConfig.config = (await expressions.resolve([updatedConfig.config],
                 elementSource.createInMemoryElementSource(), true))[0] as InstanceElement
@@ -503,6 +507,7 @@ const fetchAndProcessMergeErrors = async (
           serviceElements,
           stateElementsByAdapter,
           partiallyFetchedAdapters,
+          accountToServiceNameMap,
           progressReporters,
         })
         log.debug('ran post-fetch in the following adapters: %s', Object.keys(adaptersWithPostFetch))
@@ -565,6 +570,17 @@ const calcFetchChanges = async (
   partiallyFetchedAdapters: Set<string>,
   allFetchedAdapters: Set<string>
 ): Promise<Iterable<FetchChange>> => {
+  // eslint-disable-next-line no-console
+  console.log(new Error().stack)
+  // eslint-disable-next-line no-console
+  console.log(serviceElements)
+  // eslint-disable-next-line no-console
+  console.log(await (awu(await mergedServiceElements.getAll())).toArray())
+  // eslint-disable-next-line no-console
+  console.log(await (awu(await stateElements.getAll())).toArray())
+  // eslint-disable-next-line no-console
+  console.log(await (awu(await workspaceElements.getAll())).toArray())
+
   const partialFetchFilter: IDFilter = id => (
     !partiallyFetchedAdapters.has(id.adapter)
     || mergedServiceElements.has(id)
@@ -594,6 +610,10 @@ const calcFetchChanges = async (
     ),
     'calculate service-state changes',
   )
+  for (const change of serviceChanges.entries()) {
+    // eslint-disable-next-line no-console
+    console.log(change)
+  }
   const pendingChanges = await log.time(
     () => getDetailedChangeTree(
       stateElements,
@@ -603,6 +623,10 @@ const calcFetchChanges = async (
     ),
     'calculate pending changes',
   )
+  for (const change of pendingChanges.entries()) {
+    // eslint-disable-next-line no-console
+    console.log(change)
+  }
   const workspaceToServiceChanges = await log.time(
     () => getChangeMap(
       workspaceElements,
@@ -629,6 +653,7 @@ type CreateFetchChangesParams = {
   adapterNames: string[]
   workspaceElements: elementSource.ElementsSource
   stateElements: elementSource.ElementsSource
+  accountToServiceNameMap: Record<string, string>
   unmergedElements: Element[]
   processErrorsResult: ProcessMergeErrorsResult
   currentConfigs: InstanceElement[]

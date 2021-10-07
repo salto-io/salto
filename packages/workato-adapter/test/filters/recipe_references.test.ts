@@ -998,6 +998,10 @@ describe('Recipe references filter', () => {
           netsuite: netsuiteElements,
           zuora_billing: zuoraElements,
         },
+        accountToServiceNameMap: {
+          salesforce: 'salesforce',
+          netsuite: 'netsuite',
+        },
         progressReporter: { reportProgress: () => null },
       })
     })
@@ -1268,6 +1272,10 @@ describe('Recipe references filter', () => {
           salesforce: [],
           netsuite: [],
         },
+        accountToServiceNameMap: {
+          salesforce: 'salesforce',
+          netsuite: 'netsuite',
+        },
         progressReporter: { reportProgress: () => null },
       })).toBeFalsy()
     })
@@ -1301,6 +1309,10 @@ describe('Recipe references filter', () => {
         elementsByAdapter: {
           salesforce: [],
           netsuite: [],
+        },
+        accountToServiceNameMap: {
+          salesforce: 'salesforce',
+          netsuite: 'netsuite',
         },
         progressReporter: { reportProgress: () => null },
       })).toBeFalsy()
@@ -1344,6 +1356,10 @@ describe('Recipe references filter', () => {
         elementsByAdapter: {
           salesforce: generateSalesforceElements(),
           netsuite: generateNetsuiteElements(),
+        },
+        accountToServiceNameMap: {
+          salesforce: 'salesforce',
+          netsuite: 'netsuite',
         },
         progressReporter: { reportProgress: () => null },
       })
@@ -1411,6 +1427,10 @@ describe('Recipe references filter', () => {
         elementsByAdapter: {
           salesforce: salesforceElements,
           netsuite: netsuiteElements,
+        },
+        accountToServiceNameMap: {
+          salesforce: 'salesforce',
+          netsuite: 'netsuite',
         },
         progressReporter: { reportProgress: () => null },
       })

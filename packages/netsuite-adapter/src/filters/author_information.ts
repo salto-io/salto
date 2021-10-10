@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import _ from 'lodash'
+import _, { isUndefined } from 'lodash'
 import { TYPES_TO_INTERNAL_ID } from '../data_elements/types'
 import NetsuiteClient from '../client/client'
 import { FilterCreator, FilterWith } from '../filter'
@@ -42,68 +42,16 @@ const fetchSystemNotes = async (client: NetsuiteClient): Promise<Record<string, 
   return []
 }
 
-
-const fetchRecordIdsForRecordType = async (
-  recordType: string,
-  client: NetsuiteClient
-): Promise<Record<string, string>> => {
-  const fetchRecordType = async (idParamName: string): Promise<Record<string, string>> => {
-    const recordTypeIds = await client.runSuiteQL(`SELECT scriptid, ${idParamName} FROM ${recordType}`)
-    if (recordTypeIds) {
-      return Object.fromEntries(recordTypeIds.map(entry => [entry.scriptid, entry[idParamName]]))
-    }
-    return {}
-  }
-  const internalIdQueryResults = await fetchRecordType('internalid')
-  if (!_.isEmpty(internalIdQueryResults)) {
-    return internalIdQueryResults
-  }
-  return fetchRecordType('id')
-}
-
-const createRecordIdsMap = async (
-  client: NetsuiteClient,
-  recordTypes: string[]
-): Promise<Record<string, Record<string, string>>> =>
-  Object.fromEntries(
-    await Promise.all(recordTypes
-      .map(async recordType =>
-        [recordType, await fetchRecordIdsForRecordType(recordType, client)]))
-  )
-
-const getElementRecordId = (
-  element: InstanceElement,
-  recordIdsMap: Record<string, Record<string, string>>,
-): string | undefined => {
-  if (element.value.internalId) {
-    return element.value.internalId
-  }
-  if (element.value.scriptid && recordIdsMap[element.elemID.typeName][element.value.scriptid]) {
-    return recordIdsMap[element.elemID.typeName][element.value.scriptid]
-  }
-  return undefined
-}
-
-const getElementsRecordTypeIdSet = (elements: Element[]): string[] =>
-  _.uniq(elements
-    .filter(isInstanceElement)
-    .filter(elem => _.isUndefined(elem.value.internalId))
-    .map(elem => elem.elemID.typeName))
-
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     const employeeNames = await fetchEmployeeNames(client)
     const systemNotes = await fetchSystemNotes(client)
-    const recordIdMap = await createRecordIdsMap(
-      client, getElementsRecordTypeIdSet(elements)
-    )
     const getElementLastModifier = (
       element: InstanceElement,
     ): string | undefined => {
-      const elementRecordId = getElementRecordId(element, recordIdMap)
       const matchingNotes = systemNotes
-        .filter(note => note.recordid === elementRecordId)
         .filter(note => TYPES_TO_INTERNAL_ID[element.elemID.typeName] === note.recordtypeid)
+        .filter(note => note.recordid === element.value.internalId)
       if (!_.isEmpty(matchingNotes)) {
         return employeeNames[_.toString(matchingNotes[0].name)]
       }
@@ -118,6 +66,7 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
 
     elements
       .filter(isInstanceElement)
+      .filter(instance => !isUndefined(instance.value.internalId))
       .forEach(setAuthorName)
   },
 })

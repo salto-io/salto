@@ -124,6 +124,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       replaceInstanceReferencesFilter,
       serviceUrls,
       rolesInternalId,
+      internalIds,
       dataInstancesAttributes,
       redundantFields,
       hiddenFields,
@@ -136,7 +137,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       dataInstancesReferences,
       dataInstancesInternalId,
       addInternalId,
-      internalIds,
       // authorInformation must run after internal_ids
       authorInformation,
       translationConverter,

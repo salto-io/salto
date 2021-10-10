@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { ElemID, Element, Value, Field, isObjectType, isInstanceElement,
   ObjectType, InstanceElement } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { safeJsonStringify, filterByID } from '@salto-io/adapter-utils'
 import { RemoteMapEntry, RemoteMap } from './remote_map'
 
 const { awu } = collections.asynciterable
@@ -221,4 +221,35 @@ export const getFromPathIndex = async (
     idParts.pop()
   } while (idParts.length > 0 && key !== topLevelKey)
   return []
+}
+
+export const splitElementByPath = async (
+  element: Element,
+  index: PathIndex
+): Promise<Element[]> => {
+  const pathHints = await getFromPathIndex(element.elemID, index)
+  if (pathHints.length <= 1) {
+    const clonedElement = element.clone()
+    const [pathToSet] = pathHints
+    clonedElement.path = pathToSet
+    return [clonedElement]
+  }
+
+  return (await Promise.all(pathHints.map(async hint => {
+    const filterByPathHint = async (id: ElemID): Promise<boolean> => {
+      const idHints = await getFromPathIndex(id, index)
+      return idHints.some(idHint => _.isEqual(idHint, hint))
+    }
+    const filteredElement = await filterByID(
+      element.elemID,
+      element,
+      filterByPathHint
+    )
+
+    if (filteredElement) {
+      filteredElement.path = hint
+      return filteredElement
+    }
+    return undefined
+  }))).filter(values.isDefined)
 }

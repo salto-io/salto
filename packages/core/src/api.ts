@@ -16,7 +16,7 @@
 import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeElement, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult, isAdapterSuccessInstallResult,
-  AdapterSuccessInstallResult, AdapterAuthentication, SaltoError,
+  AdapterSuccessInstallResult, AdapterAuthentication, SaltoError, Element,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -27,17 +27,18 @@ import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterDependencyChangers,
-  initAdapters, getAdaptersCreatorConfigs, getDefaultAdapterConfig,
+  initAdapters, getDefaultAdapterConfig,
 } from './core/adapters'
 import { getPlan, Plan, PlanItem } from './core/plan'
 import {
-  createElemIdGetter,
   FetchChange,
   fetchChanges,
   FetchProgressEvents,
   getDetailedChanges,
   MergeErrorWithElements,
   toChangesWithPath,
+  fetchChangesFromWorkspace,
+  getFetchAdapterAndServicesSetup,
 } from './core/fetch'
 import { defaultDependencyChangers } from './core/plan/plan'
 import { createRestoreChanges } from './core/restore'
@@ -185,6 +186,32 @@ export type FetchFunc = (
   ignoreStateElemIdMapping?: boolean,
 ) => Promise<FetchResult>
 
+export type FetchFromWorkspaceFuncParams = {
+  workspace: Workspace
+  otherWorkspace: Workspace
+  progressEmitter?: EventEmitter<FetchProgressEvents>
+  services?: string[]
+  env: string
+}
+export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Promise<FetchResult>
+
+const updateStateWithFetchResults = async (
+  workspace: Workspace,
+  mergedElements: Element[],
+  unmergedElements: Element[],
+  fetchedServices: string[]
+): Promise<void> => {
+  const fetchElementsFilter = shouldElementBeIncluded(fetchedServices)
+  const stateElementsNotCoveredByFetch = await awu(await workspace.state().getAll())
+    .filter(element => !fetchElementsFilter(element.elemID)).toArray()
+  await workspace.state()
+    .override(awu(mergedElements)
+      .concat(stateElementsNotCoveredByFetch), fetchedServices)
+  await workspace.state().updatePathIndex(unmergedElements,
+    (await workspace.state().existingServices()).filter(key => !fetchedServices.includes(key)))
+  log.debug(`finish to override state with ${mergedElements.length} elements`)
+}
+
 export const fetch: FetchFunc = async (
   workspace,
   progressEmitter?,
@@ -192,25 +219,16 @@ export const fetch: FetchFunc = async (
   ignoreStateElemIdMapping?,
 ) => {
   log.debug('fetch starting..')
-
   const fetchServices = services ?? workspace.services()
-  const fetchElementsFilter = shouldElementBeIncluded(fetchServices)
-  const stateElementsNotCoveredByFetch = await awu(await workspace.state().getAll())
-    .filter(element => !fetchElementsFilter(element.elemID)).toArray()
-
-  const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
+  const {
+    currentConfigs,
+    adaptersCreatorConfigs,
+  } = await getFetchAdapterAndServicesSetup(
+    workspace,
     fetchServices,
-    await workspace.servicesCredentials(services),
-    workspace.serviceConfig.bind(workspace),
-    await workspace.elements(),
-    ignoreStateElemIdMapping ? undefined : await createElemIdGetter(
-      await (await workspace.elements()).getAll(),
-      workspace.state()
-    )
+    ignoreStateElemIdMapping
   )
-  const currentConfigs = Object.values(adaptersCreatorConfigs)
-    .map(creatorConfig => creatorConfig.config)
-    .filter(config => !_.isUndefined(config)) as InstanceElement[]
+
   const adapters = initAdapters(adaptersCreatorConfigs)
 
   if (progressEmitter) {
@@ -227,12 +245,7 @@ export const fetch: FetchFunc = async (
     progressEmitter,
   )
   log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-  await workspace.state()
-    .override(awu(elements)
-      .concat(stateElementsNotCoveredByFetch), fetchServices)
-  await workspace.state().updatePathIndex(unmergedElements,
-    (await workspace.state().existingServices()).filter(key => !fetchServices.includes(key)))
-  log.debug(`finish to override state with ${elements.length} elements`)
+  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchServices)
   return {
     changes,
     fetchErrors: errors,
@@ -241,6 +254,48 @@ export const fetch: FetchFunc = async (
     configChanges,
     updatedConfig,
     adapterNameToConfigMessage,
+  }
+}
+
+export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
+  workspace,
+  otherWorkspace,
+  progressEmitter,
+  services,
+  env,
+}: FetchFromWorkspaceFuncParams) => {
+  log.debug('fetch starting from workspace..')
+  const fetchServices = services ?? workspace.services()
+
+  const { currentConfigs } = await getFetchAdapterAndServicesSetup(
+    workspace,
+    fetchServices,
+  )
+
+  const {
+    changes, elements, mergeErrors, errors,
+    configChanges, adapterNameToConfigMessage, unmergedElements,
+  } = await fetchChangesFromWorkspace(
+    otherWorkspace,
+    fetchServices,
+    await workspace.elements(),
+    workspace.state(),
+    currentConfigs,
+    env,
+    progressEmitter,
+  )
+
+  log.debug(`${elements.length} elements were fetched from a remote workspace [mergedErrors=${mergeErrors.length}]`)
+  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchServices)
+  return {
+    changes,
+    fetchErrors: errors,
+    mergeErrors,
+    success: true,
+    updatedConfig: {},
+    configChanges,
+    adapterNameToConfigMessage,
+    progressEmitter,
   }
 }
 

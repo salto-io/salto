@@ -15,7 +15,8 @@
 */
 import { EventEmitter } from 'pietile-eventemitter'
 import { InstanceElement, DetailedChange } from '@salto-io/adapter-api'
-import { fetch, FetchChange, FetchProgressEvents, StepEmitter, FetchFunc } from '@salto-io/core'
+import { fetch, fetchFromWorkspace, FetchChange, FetchProgressEvents, StepEmitter, FetchFunc,
+  loadLocalWorkspace } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
 import { CliExitCode, CliTelemetry, CliError } from '../../src/types'
@@ -42,6 +43,12 @@ jest.mock('@salto-io/core', () => ({
     mergeErrors: [],
     success: true,
   })),
+  fetchFromWorkspace: jest.fn().mockImplementation(() => Promise.resolve({
+    changes: [],
+    mergeErrors: [],
+    success: true,
+  })),
+  loadLocalWorkspace: jest.fn().mockImplementation(() => mocks.mockWorkspace({})),
 }))
 describe('fetch command', () => {
   const services = ['salesforce']
@@ -821,6 +828,102 @@ describe('fetch command', () => {
         },
         workspace: mocks.mockWorkspace({}),
       })).rejects.toThrow(new CliError(CliExitCode.AppError))
+    })
+  })
+
+  describe('fetch from workspace', () => {
+    let mockFetchFromWorkspace: jest.Mock
+    let mockLoadLocalWorkspace: jest.Mock
+
+    beforeAll(() => {
+      mockFetchFromWorkspace = fetchFromWorkspace as jest.Mock
+      mockLoadLocalWorkspace = loadLocalWorkspace as jest.Mock
+    })
+
+    beforeEach(() => {
+      mockFetchFromWorkspace.mockClear()
+      mockLoadLocalWorkspace.mockClear()
+    })
+
+    it('should invoke the fetch from workspace method', async () => {
+      const workspace = mocks.mockWorkspace({ uid: 'target' })
+      const sourceWS = mocks.mockWorkspace({ uid: 'source' })
+      const sourcePath = 'path/to/source'
+      const env = 'sourceEnv'
+      mockLoadLocalWorkspace.mockResolvedValueOnce(sourceWS)
+      await action({
+        ...cliCommandArgs,
+        input: {
+          force: true,
+          mode: 'default',
+          services,
+          stateOnly: false,
+          regenerateSaltoIds: false,
+          fromEnv: env,
+          fromWorkspace: sourcePath,
+        },
+        workspace,
+      })
+      expect(mockLoadLocalWorkspace).toHaveBeenCalledWith(sourcePath, [], false)
+      expect(mockFetchFromWorkspace).toHaveBeenCalled()
+      const usedArgs = mockFetchFromWorkspace.mock.calls[0][0]
+      expect(usedArgs.workspace).toEqual(workspace)
+      expect(usedArgs.otherWorkspace).toEqual(sourceWS)
+      expect(usedArgs.services).toEqual(services)
+      expect(usedArgs.env).toEqual(env)
+    })
+
+    it('should throw an informative error if the workspace failed to load', async () => {
+      const errMsg = 'All your base are belong to us'
+      mockLoadLocalWorkspace.mockRejectedValueOnce(errMsg)
+      const workspace = mocks.mockWorkspace({ uid: 'target' })
+      await expect(() => action({
+        ...cliCommandArgs,
+        input: {
+          force: true,
+          mode: 'default',
+          services,
+          stateOnly: false,
+          regenerateSaltoIds: false,
+          fromEnv: 'what*env*er',
+          fromWorkspace: 'where*env*er',
+        },
+        workspace,
+      })).rejects.toThrow(`Failed to load source workspace: ${errMsg}`)
+    })
+
+    it('should return user input error if the from env argument is provided without the from workspace argument', async () => {
+      const workspace = mocks.mockWorkspace({ uid: 'target' })
+      const retValue = await action({
+        ...cliCommandArgs,
+        input: {
+          force: true,
+          mode: 'default',
+          services,
+          stateOnly: false,
+          regenerateSaltoIds: false,
+          fromEnv: 'what*env*er',
+        },
+        workspace,
+      })
+      expect(retValue).toEqual(CliExitCode.UserInputError)
+    })
+
+    it('should return user input error if the from fromWorkspace argument is provided without the from fromEnv argument', async () => {
+      const workspace = mocks.mockWorkspace({ uid: 'target' })
+      const retValue = await action({
+        ...cliCommandArgs,
+        input: {
+          force: true,
+          mode: 'default',
+          services,
+          stateOnly: false,
+          regenerateSaltoIds: false,
+          fromWorkspace: 'path/to/nowhere',
+        },
+        workspace,
+      })
+      expect(retValue).toEqual(CliExitCode.UserInputError)
     })
   })
 })

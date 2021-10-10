@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, Element, ElemID, InstanceElement, ObjectType, SaltoError } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { elementSource } from '@salto-io/workspace'
 import { mockState } from './state'
@@ -65,12 +65,16 @@ export const mockWorkspace = ({
   index = [],
   stateElements = undefined,
   services = SERVICES,
+  errors = [],
+  serviceConfigs = {},
 }: {
   elements?: Element[]
   name?: string
   index?: workspace.remoteMap.RemoteMapEntry<workspace.pathIndex.Path[]>[]
   stateElements?: Element[]
   services?: string[]
+  errors?: SaltoError[]
+  serviceConfigs?: Record<string, InstanceElement>
 }): workspace.Workspace => {
   const state = mockState(SERVICES, stateElements || elements, index)
   return {
@@ -88,11 +92,12 @@ export const mockWorkspace = ({
       [mockService]: mockConfigInstance,
       [emptyMockService]: mockEmptyConfigInstance,
     }),
-    serviceConfig: jest.fn().mockResolvedValue(undefined),
-    getWorkspaceErrors: jest.fn().mockResolvedValue([]),
+    serviceConfig: (serviceName: string) => serviceConfigs[serviceName],
+    getWorkspaceErrors: jest.fn().mockResolvedValue(errors),
     addService: jest.fn(),
     updateServiceCredentials: jest.fn(),
     updateServiceConfig: jest.fn(),
     clear: jest.fn(),
+    hasErrors: () => errors.length > 0,
   } as unknown as workspace.Workspace
 }

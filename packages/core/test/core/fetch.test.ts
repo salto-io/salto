@@ -20,14 +20,17 @@ import {
   PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement, CORE_ANNOTATIONS,
   ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ReferenceExpression,
   ReadOnlyElementsSource,
+  TypeReference,
+  createRefToElmWithValue,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { elementSource } from '@salto-io/workspace'
+import { elementSource, pathIndex, remoteMap } from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
+import { mockWorkspace } from '../common/workspace'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
-  FetchChangesResult, FetchProgressEvents, getAdaptersFirstFetchPartial,
+  FetchChangesResult, FetchProgressEvents, getAdaptersFirstFetchPartial, fetchChangesFromWorkspace,
 } from '../../src/core/fetch'
 import { getPlan, Plan } from '../../src/core/plan'
 import { createElementSource } from '../common/helpers'
@@ -329,8 +332,9 @@ describe('fetch', () => {
           createElementSource([]),
           [],
         )
+        expect(fetchChangesResult.configChanges).toBeDefined()
         verifyPlan(
-          fetchChangesResult.configChanges,
+          fetchChangesResult.configChanges as Plan,
           await getPlan({
             before: createElementSource([]),
             after: createElementSource([configInstance]),
@@ -346,8 +350,9 @@ describe('fetch', () => {
           createElementSource([]),
           [currentInstanceConfig],
         )
+        expect(fetchChangesResult.configChanges).toBeDefined()
         verifyPlan(
-          fetchChangesResult.configChanges,
+          fetchChangesResult.configChanges as Plan,
           await getPlan({
             before: createElementSource([currentInstanceConfig]),
             after: createElementSource([configInstance]),
@@ -363,9 +368,10 @@ describe('fetch', () => {
           createElementSource([]),
           [configInstance],
         )
-        expect([...fetchChangesResult.configChanges.itemsByEvalOrder()]).toHaveLength(0)
+        expect([...fetchChangesResult.configChanges?.itemsByEvalOrder() ?? []]).toHaveLength(0)
       })
     })
+
     describe('when merge elements returns errors', () => {
       const dupTypeID = new ElemID('dummy', 'dup')
       const dupTypeBase = new ObjectType({
@@ -1112,6 +1118,251 @@ describe('fetch', () => {
         })
         expect(adapters.dummy3.postFetch).not.toHaveBeenCalled()
       })
+    })
+  })
+})
+
+describe('fetch from workspace', () => {
+  describe('workspace mismatch errors', () => {
+    it('should fail when attempting to fetch an env not present in the source workspace', async () => {
+      const sourceWS = mockWorkspace({
+        services: ['salto'],
+      })
+
+      const fetchRes = await fetchChangesFromWorkspace(
+        sourceWS,
+        ['salto'],
+        createInMemoryElementSource([]),
+        createInMemoryElementSource([]),
+        [],
+        'nonexisiting'
+      )
+      expect([...fetchRes.changes]).toHaveLength(0)
+      expect(fetchRes.elements).toHaveLength(0)
+      expect(fetchRes.unmergedElements).toHaveLength(0)
+      expect(fetchRes.errors).toHaveLength(1)
+      expect(fetchRes.errors[0].message).toBe('nonexisiting env does not exist in the source workspace.')
+      expect(fetchRes.errors[0].severity).toBe('Error')
+    })
+
+    it('should fail when attempting to fetch a service not present in the source workspace', async () => {
+      const sourceWS = mockWorkspace({
+        services: ['salto'],
+      })
+
+      const fetchRes = await fetchChangesFromWorkspace(
+        sourceWS,
+        ['salto', 'salesforce'],
+        createInMemoryElementSource([]),
+        createInMemoryElementSource([]),
+        [],
+        'default'
+      )
+      expect([...fetchRes.changes]).toHaveLength(0)
+      expect(fetchRes.elements).toHaveLength(0)
+      expect(fetchRes.unmergedElements).toHaveLength(0)
+      expect(fetchRes.errors).toHaveLength(1)
+      expect(fetchRes.errors[0].message).toBe('Source env does not contain the following services: salesforce')
+      expect(fetchRes.errors[0].severity).toBe('Error')
+    })
+
+    it('should fail if the source workspace has errors', async () => {
+      const sourceWS = mockWorkspace({
+        services: ['salto'],
+        errors: [{ message: 'A glitch', severity: 'Error' }],
+      })
+
+      const fetchRes = await fetchChangesFromWorkspace(
+        sourceWS,
+        ['salto'],
+        createInMemoryElementSource([]),
+        createInMemoryElementSource([]),
+        [],
+        'default'
+      )
+      expect([...fetchRes.changes]).toHaveLength(0)
+      expect(fetchRes.elements).toHaveLength(0)
+      expect(fetchRes.unmergedElements).toHaveLength(0)
+      expect(fetchRes.errors).toHaveLength(1)
+      expect(fetchRes.errors[0].message).toBe('Can not fetch from a workspace with errors.')
+      expect(fetchRes.errors[0].severity).toBe('Error')
+    })
+
+    it('should fail if there is a mismatch in the adapter configs', async () => {
+      const currentServiceConfigs = [
+        new InstanceElement(
+          'salto_config',
+          new TypeReference(ElemID.fromFullName('salto_config')),
+          {
+            key: 'value',
+          }
+        ),
+        new InstanceElement(
+          'salto_config2',
+          new TypeReference(ElemID.fromFullName('salto_config2')),
+          {
+            key: 'value2',
+          }
+        ),
+      ]
+
+      const sourceServiceConfigs = {
+        salto_config: currentServiceConfigs[0].clone(),
+        salto_config2: currentServiceConfigs[1].clone(),
+      }
+      sourceServiceConfigs.salto_config2.value.key = 'otherValue'
+      const sourceWS = mockWorkspace({
+        serviceConfigs: sourceServiceConfigs,
+      })
+
+      const fetchRes = await fetchChangesFromWorkspace(
+        sourceWS,
+        ['salto'],
+        createInMemoryElementSource([]),
+        createInMemoryElementSource([]),
+        currentServiceConfigs,
+        'default'
+      )
+
+      expect([...fetchRes.changes]).toHaveLength(0)
+      expect(fetchRes.elements).toHaveLength(0)
+      expect(fetchRes.unmergedElements).toHaveLength(0)
+      expect(fetchRes.errors).toHaveLength(1)
+      expect(fetchRes.errors[0].message).toBe('Can not fetch from a workspace. Found different configs for salto_config2')
+      expect(fetchRes.errors[0].severity).toBe('Error')
+    })
+  })
+
+  describe('fetch changes from workspace', () => {
+    const objElemId = new ElemID('salto', 'obj')
+    const objFragStdFields = new ObjectType({
+      elemID: objElemId,
+      fields: {
+        stdField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      path: ['salto', 'obj', 'standardFields'],
+    })
+    const objFragCustomFields = new ObjectType({
+      elemID: objElemId,
+      fields: {
+        customField: {
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      path: ['salto', 'obj', 'customFields'],
+    })
+    const objFragAnnotations = new ObjectType({
+      elemID: objElemId,
+      annotationRefsOrTypes: {
+        anno: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      annotations: {
+        anno: 'Anno!!!! Anno!!!! Annnooooooooooo!!!!!!!!',
+      },
+      path: ['salto', 'obj', 'annotations'],
+    })
+
+    const objFull = new ObjectType({
+      elemID: objElemId,
+      fields: {
+        stdField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            test: 'test',
+          },
+        },
+        customField: {
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      annotationRefsOrTypes: {
+        anno: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      annotations: {
+        anno: 'Anno!!!! Anno!!!! Annnooooooooooo!!!!!!!!',
+      },
+    })
+    const otherAdapterElem = new ObjectType({
+      elemID: new ElemID('other', 'obj'),
+      path: ['other', 'obj', 'all'],
+    })
+    const existingElement = new ObjectType({
+      elemID: new ElemID('salto', 'existing'),
+      path: ['salto', 'existing', 'all'],
+    })
+    const mergedElements = [objFull, existingElement, otherAdapterElem]
+    const unmergedElements = [
+      objFragStdFields, objFragCustomFields,
+      objFragAnnotations, existingElement, otherAdapterElem,
+    ]
+    const pi = new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>()
+    let fetchRes: FetchChangesResult
+
+    beforeEach(async () => {
+      await pathIndex.overridePathIndex(pi, unmergedElements)
+      const configs = [
+        new InstanceElement('_config', new ReferenceExpression(new ElemID('salto'))),
+      ]
+      fetchRes = await fetchChangesFromWorkspace(
+        mockWorkspace({
+          elements: mergedElements,
+          index: await awu(pi.entries()).toArray(),
+          serviceConfigs: { salto: configs[0] },
+        }),
+        ['salto'],
+        createInMemoryElementSource([existingElement]),
+        createInMemoryElementSource([existingElement]),
+        configs,
+        'default'
+      )
+    })
+
+
+    it('should return all merged elements of the fetched services', () => {
+      const elemIDSorter = (a: Element, b: Element): number => {
+        if (a.elemID.getFullName() > b.elemID.getFullName()) {
+          return -1
+        }
+        if (a.elemID.getFullName() < b.elemID.getFullName()) {
+          return 1
+        }
+        return 0
+      }
+
+      const allMerged = [...fetchRes.elements]
+      expect(allMerged.sort(elemIDSorter)).toEqual(mergedElements
+        .filter(e => e.elemID.adapter === 'salto')
+        .sort(elemIDSorter))
+    })
+
+    it('should return all unmerged elements fragments with the same pathes as the source pathes', () => {
+      const unmerged = [...fetchRes.unmergedElements]
+      const expectedFrags = unmergedElements.filter(e => e.elemID.adapter === 'salto')
+      expect(unmerged).toHaveLength(expectedFrags.length)
+      expectedFrags
+        .forEach(frag => expect(unmerged.filter(e => e.isEqual(frag))).toHaveLength(1))
+    })
+
+    it('should create changes based on the current elements', () => {
+      const changes = [...fetchRes.changes]
+      const unmergedDiffElement = unmergedElements
+        .filter(elem => elem.elemID.getFullName() === 'salto.obj')
+      expect(changes).toHaveLength(unmergedDiffElement.length)
+      const changesElements = changes
+        .map(change => getChangeElement(change.change))
+      unmergedDiffElement
+        .forEach(frag => expect(changesElements.filter(e => e.isEqual(frag))).toHaveLength(1))
     })
   })
 })

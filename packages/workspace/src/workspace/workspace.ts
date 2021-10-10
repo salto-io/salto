@@ -109,7 +109,7 @@ export type Workspace = {
   state: (envName?: string) => State
   envs: () => ReadonlyArray<string>
   currentEnv: () => string
-  services: () => string[]
+  services: (env?: string) => string[]
   servicesCredentials: (names?: ReadonlyArray<string>) =>
     Promise<Readonly<Record<string, InstanceElement>>>
   serviceConfig: (name: string, defaultValue?: InstanceElement) =>
@@ -120,7 +120,7 @@ export type Workspace = {
   hasElementsInEnv(envName: string): Promise<boolean>
   envOfFile(filename: string): string
   getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment>
-  hasErrors(): Promise<boolean>
+  hasErrors(env?: string): Promise<boolean>
   errors(): Promise<Readonly<Errors>>
   transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>>
@@ -223,7 +223,12 @@ export const loadWorkspace = async (
     makeArray(workspaceConfig.envs).find(e => e.name === currentEnv()) as EnvConfig
   const currentEnvsConf = (): EnvConfig[] =>
     workspaceConfig.envs
-  const services = (): string[] => makeArray(currentEnvConf().services)
+  const services = (env?: string): string[] => {
+    const envConf = env
+      ? makeArray(workspaceConfig.envs).find(e => e.name === env)
+      : currentEnvConf()
+    return makeArray(envConf?.services)
+  }
   const state = (envName?: string): State => (
     enviormentsSources.sources[envName ?? currentEnv()].state as State
   )
@@ -645,15 +650,16 @@ export const loadWorkspace = async (
     return { ...error, sourceFragments: [] }
   }
 
-  const errors = async (): Promise<Errors> => {
+  const errors = async (env?: string): Promise<Errors> => {
+    const envToUse = env ?? currentEnv()
     const currentState = await getWorkspaceState()
-    const loadNaclFileSource = await getLoadedNaclFilesSource()
+    const loadNaclFileSource = getOrCreateNaclFilesSource(env)
     // It is important to make sure these are obtain using Promise.all in order to allow
     // the SaaS UI to debouce the DB accesses.
     const [errorsFromSource, validationErrors, mergeErrors] = await Promise.all([
       loadNaclFileSource.getErrors(),
-      awu(currentState.states[currentEnv()].validationErrors.values()).flat().toArray(),
-      awu(currentState.states[currentEnv()].errors.values()).flat().toArray(),
+      awu(currentState.states[envToUse].validationErrors.values()).flat().toArray(),
+      awu(currentState.states[envToUse].errors.values()).flat().toArray(),
     ])
     _(validationErrors)
       .groupBy(error => error.constructor.name)
@@ -689,7 +695,7 @@ export const loadWorkspace = async (
     currentEnv,
     services,
     errors,
-    hasErrors: async () => (await errors()).hasErrors(),
+    hasErrors: async (env?: string) => (await errors(env)).hasErrors(),
     servicesCredentials: async (names?: ReadonlyArray<string>) => _.fromPairs(await Promise.all(
       pickServices(names).map(async service => [service, await credentials.get(credsPath(service))])
     )),

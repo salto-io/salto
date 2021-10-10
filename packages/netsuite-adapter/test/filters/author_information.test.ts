@@ -27,7 +27,6 @@ describe('netsuite author information', () => {
   let elements: InstanceElement[]
   let accountInstance: InstanceElement
   let customTypeInstance: InstanceElement
-  let customListInstance: InstanceElement
   const runSuiteQLMock = jest.fn()
   const runSavedSearchQueryMock = jest.fn()
   const SDFClient = mockSdfClient()
@@ -50,20 +49,11 @@ describe('netsuite author information', () => {
       { recordid: '1', recordtypeid: '-123', name: '2' },
       { recordid: '2', recordtypeid: '-112', name: '3' },
     ])
-    runSuiteQLMock.mockResolvedValueOnce(undefined)
-    runSuiteQLMock.mockResolvedValueOnce([
-      { scriptid: '3', internalid: '3' },
-    ])
-    runSuiteQLMock.mockResolvedValueOnce([
-      { scriptid: '1', id: '1' },
-    ])
     accountInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
     accountInstance.value.internalId = '1'
     customTypeInstance = new InstanceElement('customRecordType', new ObjectType({ elemID: new ElemID(NETSUITE, 'customRecordType') }))
-    customTypeInstance.value.scriptid = '1'
-    customListInstance = new InstanceElement('customList', new ObjectType({ elemID: new ElemID(NETSUITE, 'customList') }))
-    customListInstance.value.scriptid = '2'
-    elements = [accountInstance, customTypeInstance, customListInstance]
+    customTypeInstance.value.internalId = '1'
+    elements = [accountInstance, customTypeInstance]
     filterOpts = {
       client,
       elementsSourceIndex: { getIndexes: () => Promise.resolve({
@@ -80,10 +70,7 @@ describe('netsuite author information', () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, SYSTEM_NOTE_QUERY)
-    expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, 'SELECT scriptid, internalid FROM customRecordType')
-    expect(runSuiteQLMock).toHaveBeenNthCalledWith(4, 'SELECT scriptid, internalid FROM customList')
-    expect(runSuiteQLMock).toHaveBeenNthCalledWith(5, 'SELECT scriptid, id FROM customRecordType')
-    expect(runSuiteQLMock).toHaveBeenCalledTimes(5)
+    expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
   })
 
   it('should add names to elements', async () => {

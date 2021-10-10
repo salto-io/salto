@@ -51,6 +51,7 @@ import dataInstancesNullFields from './filters/data_instances_null_fields'
 import dataInstancesDiff from './filters/data_instances_diff'
 import dataInstancesIdentifiers from './filters/data_instances_identifiers'
 import addInternalId from './filters/add_internal_ids'
+import internalIds from './filters/internal_ids'
 import accountSpecificValues from './filters/account_specific_values'
 import translationConverter from './filters/translation_converter'
 import authorInformation from './filters/author_information'
@@ -135,7 +136,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       dataInstancesReferences,
       dataInstancesInternalId,
       addInternalId,
-      // authorInformation must run after addInternalId
+      internalIds,
+      // authorInformation must run after internal_ids
       authorInformation,
       translationConverter,
       accountSpecificValues,

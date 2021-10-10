@@ -99,15 +99,21 @@ export const getReferencingFiles = async (
   }
 }
 
+export const getUsageOfElements = async (
+  elements: AsyncIterable<Element>,
+  id: ElemID,
+): Promise<ElemID[]> =>
+  awu(elements)
+    .flatMap(async e => getElemIDUsages(e, id))
+    .map(fullname => ElemID.fromFullName(fullname))
+    .toArray()
+
 export const getUsageInFile = async (
   workspace: EditorWorkspace,
   filename: string,
   id: ElemID
 ): Promise<ElemID[]> =>
-  awu(await workspace.getElements(filename))
-    .flatMap(async e => getElemIDUsages(e, id))
-    .map(fullname => ElemID.fromFullName(fullname))
-    .toArray()
+  getUsageOfElements(awu(await workspace.getElements(filename)), id)
 
 export const getWorkspaceReferences = async (
   workspace: EditorWorkspace,

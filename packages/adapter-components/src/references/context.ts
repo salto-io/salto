@@ -88,7 +88,12 @@ export const neighborContextGetter = ({
   }
 
   try {
-    const contextPath = getParent(fieldPath, levelsUp).createNestedID(contextFieldName)
+    const parent = getParent(fieldPath, levelsUp)
+    if (parent.isConfig()) {
+      // went up too many levels, the current rule is irrelevant for this potential reference
+      return undefined
+    }
+    const contextPath = parent.createNestedID(contextFieldName)
     const context = resolvePath(instance, contextPath)
     const contextStr = (isReferenceExpression(context)
       ? await resolveReference(context, contextPath)

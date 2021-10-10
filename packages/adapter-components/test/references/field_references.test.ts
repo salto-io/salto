@@ -127,6 +127,8 @@ describe('Field references', () => {
       nestedValues: { refType: new ListType(someTypeWithNestedListOfValuesAndValue) },
       subjectAndValues: { refType: new ListType(someTypeWithNestedValuesAndSubject) },
       product: { refType: BuiltinTypes.STRING },
+      fail: { refType: BuiltinTypes.STRING },
+      value: { refType: BuiltinTypes.STRING },
     },
   })
 
@@ -189,12 +191,14 @@ describe('Field references', () => {
         },
       ],
       product: 'ABC',
+      fail: 'fail',
+      value: 'fail',
     }),
   ])
 
   describe('addReferences', () => {
     let elements: Element[]
-    const fieldNameToTypeMappingDefs: FieldReferenceDefinition<'parentSubject' | 'parentValue' | 'neighborRef'>[] = [
+    const fieldNameToTypeMappingDefs: FieldReferenceDefinition<'parentSubject' | 'parentValue' | 'neighborRef' | 'fail'>[] = [
       {
         src: { field: 'api_client_id', parentTypes: ['api_access_profile'] },
         serializationStrategy: 'id',
@@ -240,6 +244,16 @@ describe('Field references', () => {
         serializationStrategy: 'name',
         target: { type: 'product' },
       },
+      {
+        src: { field: 'fail' },
+        serializationStrategy: 'id',
+        target: { typeContext: 'fail' },
+      },
+      {
+        src: { field: 'value' },
+        serializationStrategy: 'id',
+        target: { typeContext: 'fail' },
+      },
     ]
 
     beforeAll(async () => {
@@ -252,6 +266,7 @@ describe('Field references', () => {
           parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: val => val.replace('_id', '') }),
           parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: val => val.replace('_id', '') }),
           neighborRef: neighborContextFunc({ contextFieldName: 'ref' }),
+          fail: neighborContextFunc({ contextFieldName: 'product', contextValueMapper: () => { throw new Error('fail') } }),
         },
       })
     })
@@ -328,6 +343,7 @@ describe('Field references', () => {
           parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: val => val.replace('_id', '') }),
           parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: val => val.replace('_id', '') }),
           neighborRef: neighborContextFunc({ contextFieldName: 'ref' }),
+          fail: neighborContextFunc({ contextFieldName: 'fail', contextValueMapper: () => { throw new Error('fail') } }),
         },
         isEqualValue: (lhs, rhs) => _.toString(lhs) === _.toString(rhs),
       })
@@ -337,6 +353,20 @@ describe('Field references', () => {
       )[0] as InstanceElement
       expect(inst.value.subjectAndValues[0].valueList[0].value).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.subjectAndValues[0].valueList[0].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand1')
+    })
+    it('should not crash when context function throws an error', async () => {
+      // nothing to check really - just making sure the field was not removed
+      const inst = elements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'inst1'
+      )[0] as InstanceElement
+      expect(inst.value.fail).toEqual('fail')
+    })
+    it('should not crash when a matching rule has a too-high levelsUp value', async () => {
+      // nothing to check really - just making sure the field was not removed
+      const inst = elements.filter(
+        e => isInstanceElement(e) && e.elemID.name === 'inst1'
+      )[0] as InstanceElement
+      expect(inst.value.value).toEqual('fail')
     })
   })
 })

@@ -18,7 +18,7 @@ import {
   PrimitiveTypes, TypeElement, Variable,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { mergeElements, DuplicateAnnotationError } from '../src/merger'
+import { mergeElements, DuplicateAnnotationError, mergeSingleElement } from '../src/merger'
 import { ConflictingFieldTypesError, DuplicateAnnotationFieldDefinitionError,
   DuplicateAnnotationTypeError } from '../src/merger/internal/object_types'
 import { DuplicateInstanceKeyError } from '../src/merger/internal/instances'
@@ -481,6 +481,28 @@ describe('merger', () => {
         .find(e => e.elemID.isEqual(instanceElementContext.elemID))
       expect(mergedElement).toBeUndefined()
       expect(instanceElementContext.refType).not.toBe(objectType.elemID)
+    })
+  })
+
+  describe('merge single element', () => {
+    const type = new ObjectType({ elemID: new ElemID('adapter', 'type') })
+    it('should throw an error if there is a merge error', async () => {
+      const instance1 = new InstanceElement('instance', type, { value: 1 })
+      const instance2 = new InstanceElement('instance', type, { value: 2 })
+      await expect(mergeSingleElement([instance1, instance2])).rejects.toThrow('Received merge errors')
+    })
+
+    it('should throw an error if received more than one merged elements', async () => {
+      const instance1 = new InstanceElement('instance', type, { value: 1 })
+      const instance2 = new InstanceElement('instance2', type, { value: 2 })
+      await expect(mergeSingleElement([instance1, instance2])).rejects.toThrow('Received invalid number of merged elements when expected one')
+    })
+
+    it('should return the merged element when valid', async () => {
+      const instance1 = new InstanceElement('instance', type, { value1: 1 })
+      const instance2 = new InstanceElement('instance', type, { value2: 2 })
+      const merged = await mergeSingleElement([instance1, instance2])
+      expect(merged.value).toEqual({ value1: 1, value2: 2 })
     })
   })
 })

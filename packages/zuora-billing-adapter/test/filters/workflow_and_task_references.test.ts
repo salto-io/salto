@@ -20,6 +20,7 @@ import {
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { DetailedDependency } from '@salto-io/adapter-utils'
 import ZuoraClient from '../../src/client/client'
+import { paginate } from '../../src/client/pagination'
 import { ZUORA_BILLING, WORKFLOW_TYPE, TASK_TYPE, STANDARD_OBJECT, METADATA_TYPE } from '../../src/constants'
 import filterCreator from '../../src/filters/workflow_and_task_references'
 
@@ -244,7 +245,7 @@ describe('Workflow and task references filter', () => {
       client,
       paginator: clientUtils.createPaginator({
         client,
-        paginationFunc: clientUtils.getWithCursorPagination(),
+        paginationFuncCreator: paginate,
       }),
       config: {
         fetch: {

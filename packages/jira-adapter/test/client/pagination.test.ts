@@ -15,18 +15,16 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { client as clientUtils } from '@salto-io/adapter-components'
+import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import JiraClient from '../../src/client/client'
-import { pageByOffsetWithoutScopes } from '../../src/client/pagination'
+import { removeScopedObjects } from '../../src/client/pagination'
 
 const { toArrayAsync } = collections.asynciterable
-const { makeArray } = collections.array
+const { createPaginator, getWithOffsetAndLimit } = clientUtils
+const { extractPageEntriesByNestedField } = elementUtils.swagger
 
-const extractPageEntries: clientUtils.PageEntriesExtractor = page =>
-  makeArray(page) as clientUtils.ResponseValue[]
-
-describe('pageByOffsetWithoutScopes', () => {
+describe('pageByOffset', () => {
   let client: JiraClient
   let mockAxios: MockAdapter
   beforeEach(() => {
@@ -48,11 +46,13 @@ describe('pageByOffsetWithoutScopes', () => {
           { name: 'nested scope', nested: [{ name: 'valid' }, { name: 'bad', scope: {} }] },
         ],
       )
-      responses = await toArrayAsync(
-        pageByOffsetWithoutScopes(
-          { client, getParams: { url: 'http://myjira.net/thing' }, pageSize: 1, extractPageEntries }
-        )
-      )
+      const args = { url: 'http://myjira.net/thing' }
+      const paginator = createPaginator({
+        client,
+        paginationFuncCreator: getWithOffsetAndLimit,
+        customEntryExtractor: removeScopedObjects,
+      })
+      responses = await toArrayAsync(await paginator(args, extractPageEntriesByNestedField()))
     })
     it('should omit the scoped entities from the response', () => {
       expect(responses).toHaveLength(1)
@@ -73,14 +73,13 @@ describe('pageByOffsetWithoutScopes', () => {
     let responses: clientUtils.ResponseValue[][]
     beforeEach(async () => {
       mockAxios.onGet().reply(404)
-      responses = await toArrayAsync(
-        pageByOffsetWithoutScopes({
-          client,
-          getParams: { url: 'http://myjira.net/thing/1', paginationField: 'startAt' },
-          pageSize: 1,
-          extractPageEntries,
-        })
-      )
+      const args = { url: 'http://myjira.net/thing/1', paginationField: 'startAt' }
+      const paginator = createPaginator({
+        client,
+        paginationFuncCreator: getWithOffsetAndLimit,
+        customEntryExtractor: removeScopedObjects,
+      })
+      responses = await toArrayAsync(await paginator(args, extractPageEntriesByNestedField()))
     })
     it('should return an empty result', () => {
       expect(responses).toHaveLength(0)
@@ -91,12 +90,14 @@ describe('pageByOffsetWithoutScopes', () => {
     let responseIter: AsyncIterable<clientUtils.ResponseValue[]>
     beforeEach(() => {
       mockAxios.onGet().reply(400)
-      responseIter = pageByOffsetWithoutScopes({
+
+      const args = { url: 'http://myjira.net/thing/1', paginationField: 'startAt' }
+      const paginator = createPaginator({
         client,
-        getParams: { url: 'http://myjira.net/thing/1', paginationField: 'startAt' },
-        pageSize: 1,
-        extractPageEntries,
+        paginationFuncCreator: getWithOffsetAndLimit,
+        customEntryExtractor: removeScopedObjects,
       })
+      responseIter = paginator(args, extractPageEntriesByNestedField())
     })
     it('should throw the error', async () => {
       await expect(toArrayAsync(responseIter)).rejects.toThrow()

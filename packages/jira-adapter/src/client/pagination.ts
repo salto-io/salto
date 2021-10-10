@@ -14,43 +14,27 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 
-const log = logger(module)
-const { mapAsync, handleErrorsAsync } = collections.asynciterable
-const { getWithOffsetAndLimit } = clientUtils
+const { makeArray } = collections.array
 
-const removeScopedObjects = <T extends unknown>(response: T): T => {
+const removeScopedObjectsImpl = <T extends clientUtils.ResponseValue>(
+  response: T | T[],
+): T | T[] => {
   if (Array.isArray(response)) {
     return response
       .filter(item => !(_.isPlainObject(item) && Object.keys(item).includes('scope')))
-      .map(removeScopedObjects) as T
+      .flatMap(removeScopedObjectsImpl) as T[]
   }
   if (_.isObject(response)) {
-    return _.mapValues(response, removeScopedObjects) as T
+    return _.mapValues(response, removeScopedObjectsImpl) as T
   }
   return response
 }
 
-const suppressPageNotFoundError = (error: Error): void => {
-  // The http_client code catches the original error and transforms it such that it removes
-  // the parsed information (like the status code), so we have to parse the string here in order
-  // to realize what type of error was thrown
-  if (error.message.endsWith('Request failed with status code 404')) {
-    log.warn('%o', error)
-    return
-  }
-  throw error
-}
-
-export const pageByOffsetWithoutScopes: clientUtils.GetAllItemsFunc = args => (
-  mapAsync(
-    handleErrorsAsync(
-      getWithOffsetAndLimit(args),
-      suppressPageNotFoundError,
-    ),
-    removeScopedObjects,
-  )
+export const removeScopedObjects: clientUtils.PageEntriesExtractor = (
+  entry: clientUtils.ResponseValue,
+): clientUtils.ResponseValue[] => (
+  makeArray(removeScopedObjectsImpl([entry]))
 )

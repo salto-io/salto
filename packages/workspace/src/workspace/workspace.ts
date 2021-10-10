@@ -16,10 +16,10 @@
 import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
-  Value, isElement, isInstanceElement, toChange, isRemovalChange, getChangeElement,
+  Value, toChange, isRemovalChange, getChangeElement,
   ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { applyDetailedChanges, resolvePath, setPath } from '@salto-io/adapter-utils'
+import { applyDetailedChanges, resolvePath } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
@@ -39,6 +39,7 @@ import { RemoteElementSource, ElementsSource, mapReadOnlyElementsSource } from '
 import { createMergeManager, ElementMergeManager, ChangeSet, createEmptyChangeSet, MergedRecoveryMode } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
+import { AdaptersConfigSource } from './adapters_config_source'
 
 const log = logger(module)
 
@@ -108,18 +109,18 @@ export type Workspace = {
   state: (envName?: string) => State
   envs: () => ReadonlyArray<string>
   currentEnv: () => string
-  services: () => string[]
+  services: (env?: string) => string[]
   servicesCredentials: (names?: ReadonlyArray<string>) =>
     Promise<Readonly<Record<string, InstanceElement>>>
   serviceConfig: (name: string, defaultValue?: InstanceElement) =>
     Promise<InstanceElement | undefined>
-
+  serviceConfigPaths: (name: string) => Promise<string[]>
   isEmpty(naclFilesOnly?: boolean): Promise<boolean>
   hasElementsInServices(serviceNames: string[]): Promise<boolean>
   hasElementsInEnv(envName: string): Promise<boolean>
   envOfFile(filename: string): string
   getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment>
-  hasErrors(): Promise<boolean>
+  hasErrors(env?: string): Promise<boolean>
   errors(): Promise<Readonly<Errors>>
   transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>>
@@ -157,8 +158,10 @@ export type Workspace = {
   renameEnvironment: (envName: string, newEnvName: string, newSourceName? : string) => Promise<void>
   setCurrentEnv: (env: string, persist?: boolean) => Promise<void>
   updateServiceCredentials: (service: string, creds: Readonly<InstanceElement>) => Promise<void>
-  updateServiceConfig: (service: string, newConfig: Readonly<InstanceElement>) => Promise<void>
-
+  updateServiceConfig: (
+    service: string,
+    newConfig: Readonly<InstanceElement> | Readonly<InstanceElement>[]
+  ) => Promise<void>
   getStateRecency(services: string): Promise<StateRecency>
   promote(ids: ElemID[]): Promise<void>
   demote(ids: ElemID[]): Promise<void>
@@ -197,6 +200,7 @@ const compact = (sortedIds: ElemID[]): ElemID[] => {
 
 export const loadWorkspace = async (
   config: WorkspaceConfigSource,
+  adaptersConfig: AdaptersConfigSource,
   credentials: ConfigSource,
   enviormentsSources: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
@@ -219,7 +223,12 @@ export const loadWorkspace = async (
     makeArray(workspaceConfig.envs).find(e => e.name === currentEnv()) as EnvConfig
   const currentEnvsConf = (): EnvConfig[] =>
     workspaceConfig.envs
-  const services = (): string[] => makeArray(currentEnvConf().services)
+  const services = (env?: string): string[] => {
+    const envConf = env
+      ? makeArray(workspaceConfig.envs).find(e => e.name === env)
+      : currentEnvConf()
+    return makeArray(envConf?.services)
+  }
   const state = (envName?: string): State => (
     enviormentsSources.sources[envName ?? currentEnv()].state as State
   )
@@ -641,15 +650,16 @@ export const loadWorkspace = async (
     return { ...error, sourceFragments: [] }
   }
 
-  const errors = async (): Promise<Errors> => {
+  const errors = async (env?: string): Promise<Errors> => {
+    const envToUse = env ?? currentEnv()
     const currentState = await getWorkspaceState()
-    const loadNaclFileSource = await getLoadedNaclFilesSource()
+    const loadNaclFileSource = getOrCreateNaclFilesSource(env)
     // It is important to make sure these are obtain using Promise.all in order to allow
     // the SaaS UI to debouce the DB accesses.
     const [errorsFromSource, validationErrors, mergeErrors] = await Promise.all([
       loadNaclFileSource.getErrors(),
-      awu(currentState.states[currentEnv()].validationErrors.values()).flat().toArray(),
-      awu(currentState.states[currentEnv()].errors.values()).flat().toArray(),
+      awu(currentState.states[envToUse].validationErrors.values()).flat().toArray(),
+      awu(currentState.states[envToUse].errors.values()).flat().toArray(),
     ])
     _(validationErrors)
       .groupBy(error => error.constructor.name)
@@ -685,11 +695,12 @@ export const loadWorkspace = async (
     currentEnv,
     services,
     errors,
-    hasErrors: async () => (await errors()).hasErrors(),
+    hasErrors: async (env?: string) => (await errors(env)).hasErrors(),
     servicesCredentials: async (names?: ReadonlyArray<string>) => _.fromPairs(await Promise.all(
       pickServices(names).map(async service => [service, await credentials.get(credsPath(service))])
     )),
-    serviceConfig: (name, defaultValue) => config.getAdapter(name, defaultValue),
+    serviceConfig: (name, defaultValue) => adaptersConfig.getAdapter(name, defaultValue),
+    serviceConfigPaths: adaptersConfig.getElementNaclFiles,
     isEmpty: async (naclFilesOnly = false): Promise<boolean> => {
       const isNaclFilesSourceEmpty = !naclFilesSource
         || await (await getLoadedNaclFilesSource()).isEmpty()
@@ -779,7 +790,7 @@ export const loadWorkspace = async (
       const sources = _.mapValues(enviormentsSources.sources, source =>
         ({ naclFiles: source.naclFiles.clone(), state: source.state }))
       const envSources = { commonSourceName: enviormentsSources.commonSourceName, sources }
-      return loadWorkspace(config, credentials, envSources, remoteMapCreator)
+      return loadWorkspace(config, adaptersConfig, credentials, envSources, remoteMapCreator)
     },
     clear: async (args: ClearFlags) => {
       const currentWSState = await getWorkspaceState()
@@ -811,8 +822,8 @@ export const loadWorkspace = async (
       async (service: string, servicesCredentials: Readonly<InstanceElement>): Promise<void> =>
         credentials.set(credsPath(service), servicesCredentials),
     updateServiceConfig:
-      async (service: string, newConfig: Readonly<InstanceElement>): Promise<void> => {
-        await config.setAdapter(service, newConfig)
+      async (service, newConfig) => {
+        await adaptersConfig.setAdapter(service, newConfig)
       },
     addEnvironment: async (
       env: string,
@@ -953,7 +964,7 @@ export const loadWorkspace = async (
     listUnresolvedReferences: async (completeFromEnv?: string): Promise<UnresolvedElemIDs> => {
       const getUnresolvedElemIDsFromErrors = async (): Promise<ElemID[]> => {
         const workspaceErrors = (await errors()).validation.filter(isUnresolvedRefError)
-          .map(e => e.target)
+          .map(e => e.target.createBaseID().parent)
         return _.uniqBy(workspaceErrors, elemID => elemID.getFullName())
       }
       const getUnresolvedElemIDs = async (
@@ -982,21 +993,10 @@ export const loadWorkspace = async (
           if (!rootElem) {
             return undefined
           }
-          const val = resolvePath(rootElem, id)
-          if (isElement(val)) {
-            return val
-          }
-          if (isInstanceElement(rootElem) && !id.isTopLevel()) {
-            const newInstance = new InstanceElement(
-              rootElem.elemID.name,
-              rootElem.refType,
-              {},
-              rootElem.path,
-            )
-            setPath(newInstance, id, val)
-            return newInstance
-          }
-          return undefined
+          // Using the createBaseID method in getUnresolvedElemIDsFromErrors function let us know
+          // the returned unresolved element is in fact a type, an instance or a field,
+          // so it's unnecessary to verify is the resolved path is an element
+          return resolvePath(rootElem, id)
         }
         const completionRes = Object.fromEntries(
           await awu(ids).map(async id => ([
@@ -1032,6 +1032,7 @@ export const initWorkspace = async (
   uid: string,
   defaultEnvName: string,
   config: WorkspaceConfigSource,
+  adaptersConfig: AdaptersConfigSource,
   credentials: ConfigSource,
   envs: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
@@ -1043,5 +1044,5 @@ export const initWorkspace = async (
     envs: [{ name: defaultEnvName }],
     currentEnv: defaultEnvName,
   })
-  return loadWorkspace(config, credentials, envs, remoteMapCreator)
+  return loadWorkspace(config, adaptersConfig, credentials, envs, remoteMapCreator)
 }

@@ -26,7 +26,7 @@ import { ChangeGroup, ChangeGroupIdFunction } from './change_group'
 export interface FetchResult {
   elements: Element[]
   errors?: SaltoError[]
-  updatedConfig?: { config: InstanceElement; message: string }
+  updatedConfig?: { config: InstanceElement[]; message: string }
   isPartial?: boolean
 }
 
@@ -105,6 +105,7 @@ export type Adapter = {
   validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
   authenticationMethods: AdapterAuthentication
   configType?: ObjectType
+  getDefaultConfig?: () => Promise<InstanceElement[]>
   install?: () => Promise<AdapterInstallResult>
 }
 

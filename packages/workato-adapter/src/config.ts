@@ -99,6 +99,9 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       url: '/api_endpoints',
       paginationField: 'page',
     },
+    transformation: {
+      idFields: ['name', 'base_path'],
+    },
   },
   // eslint-disable-next-line camelcase
   api_client: {

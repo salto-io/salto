@@ -47,6 +47,7 @@ import { InMemoryRemoteMap, RemoteMapCreator, RemoteMap, CreateRemoteMapParams }
 import { Path } from '../../src/workspace/path_index'
 import { mockState } from '../common/state'
 import * as multiEnvSrcLib from '../../src/workspace/nacl_files/multi_env/multi_env_source'
+import { AdaptersConfigSource } from '../../src/workspace/adapters_config_source'
 
 
 const { awu } = collections.asynciterable
@@ -80,9 +81,14 @@ const mockWorkspaceConfigSource = (conf?: Values,
     ...conf,
   })),
   setWorkspaceConfig: jest.fn(),
+})
+
+const mockAdaptersConfigSource = (): AdaptersConfigSource => ({
   getAdapter: jest.fn(),
   setAdapter: jest.fn(),
+  getElementNaclFiles: jest.fn(),
 })
+
 const mockCredentialsSource = (): ConfigSource => ({
   get: jest.fn(),
   set: jest.fn(),
@@ -103,6 +109,7 @@ const createWorkspace = async (
   dirStore?: DirectoryStore<string>,
   state?: State,
   configSource?: WorkspaceConfigSource,
+  adaptersConfigSource?: AdaptersConfigSource,
   credentials?: ConfigSource,
   staticFilesSource?: StaticFilesSource,
   elementSources?: Record<string, EnvironmentSource>,
@@ -113,6 +120,7 @@ const createWorkspace = async (
   const actualStaticFilesSource = staticFilesSource || mockStaticFilesSource()
   return loadWorkspace(
     configSource || mockWorkspaceConfigSource(),
+    adaptersConfigSource || mockAdaptersConfigSource(),
     credentials || mockCredentialsSource(),
     {
       commonSourceName: '',
@@ -247,7 +255,13 @@ describe('workspace', () => {
         const primaryEnvObj = new ObjectType({ elemID: primaryEnvElemID })
         const secondaryEnvObj = new ObjectType({ elemID: secondaryEnvElemID })
         const newWorkspace = await createWorkspace(
-          undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined, {
+          undefined,
+          undefined,
+          mockWorkspaceConfigSource(undefined, true),
+          undefined,
+          undefined,
+          undefined,
+          {
             '': {
               naclFiles: createMockNaclFileSource([]),
             },
@@ -278,7 +292,8 @@ describe('workspace', () => {
         const primaryEnvObj = new ObjectType({ elemID: primaryEnvElemID })
         const secondaryEnvObj = new ObjectType({ elemID: secondaryEnvElemID })
         const newWorkspace = await createWorkspace(
-          undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined, {
+          undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
+          undefined, {
             '': {
               naclFiles: createMockNaclFileSource([]),
             },
@@ -392,6 +407,7 @@ describe('workspace', () => {
 
     it('should return names of top level elements and fields of desired sources', async () => {
       workspace = await createWorkspace(
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -595,6 +611,7 @@ describe('workspace', () => {
           mockWorkspaceConfigSource(undefined, true),
           undefined,
           undefined,
+          undefined,
           {
             [COMMON_ENV_PREFIX]: {
               naclFiles: await naclFilesSource(
@@ -731,6 +748,7 @@ describe('workspace', () => {
           undefined,
           undefined,
           mockWorkspaceConfigSource(undefined, true),
+          undefined,
           undefined,
           undefined,
           {
@@ -1846,6 +1864,7 @@ describe('workspace', () => {
           mockWorkspaceConfigSource(undefined, true),
           undefined,
           undefined,
+          undefined,
           {
             [COMMON_ENV_PREFIX]: {
               naclFiles: await naclFilesSource(
@@ -1905,6 +1924,7 @@ describe('workspace', () => {
         'uid',
         'default',
         workspaceConf,
+        mockAdaptersConfigSource(),
         mockCredentialsSource(),
         {
           commonSourceName: '',
@@ -1997,7 +2017,7 @@ describe('workspace', () => {
         getHash: jest.fn().mockResolvedValue(undefined),
       }
       const workspace = await createWorkspace(flushable as unknown as DirectoryStore<string>,
-        flushable as unknown as State, undefined, undefined, undefined,
+        flushable as unknown as State, undefined, undefined, undefined, undefined,
         undefined, mapCreatorWrapper as RemoteMapCreator)
       await workspace.flush()
       expect(mockFlush).toHaveBeenCalledTimes(2)
@@ -2023,7 +2043,7 @@ describe('workspace', () => {
       inactiveNaclFiles = createMockNaclFileSource([
         new ObjectType({ elemID: new ElemID('salto', 'inactive') }),
       ])
-      workspace = await createWorkspace(undefined, undefined, workspaceConf, credSource,
+      workspace = await createWorkspace(undefined, undefined, workspaceConf, undefined, credSource,
         undefined,
         {
           '': { naclFiles: createMockNaclFileSource([]) },
@@ -2134,6 +2154,7 @@ describe('workspace', () => {
           undefined,
           undefined,
           workspaceConf,
+          undefined,
           credSource,
           undefined,
           {
@@ -2225,7 +2246,7 @@ describe('workspace', () => {
           state: createState([]),
         },
       }
-      workspace = await createWorkspace(undefined, undefined, workspaceConf, credSource,
+      workspace = await createWorkspace(undefined, undefined, workspaceConf, undefined, credSource,
         undefined, elementSources)
     })
     it('should clear specified workspace components, but not the environments', async () => {
@@ -2318,8 +2339,8 @@ describe('workspace', () => {
         const envName = 'default'
         const newEnvName = 'new-default'
         beforeEach(async () => {
-          workspace = await createWorkspace(undefined, undefined, workspaceConf, credSource,
-            undefined, { [envName]: { naclFiles, state }, '': { naclFiles: createMockNaclFileSource([]) } })
+          workspace = await createWorkspace(undefined, undefined, workspaceConf, undefined,
+            credSource, undefined, { [envName]: { naclFiles, state }, '': { naclFiles: createMockNaclFileSource([]) } })
           await workspace.renameEnvironment(envName, newEnvName)
         })
         it('should change workspace state', async () => {
@@ -2343,7 +2364,8 @@ describe('workspace', () => {
         const envName = 'inactive'
         const newEnvName = 'new-inactive'
         beforeEach(async () => {
-          workspace = await createWorkspace(undefined, undefined, workspaceConf, credSource,
+          workspace = await createWorkspace(undefined, undefined, workspaceConf, undefined,
+            credSource,
             undefined, {
               [envName]: { naclFiles, state },
               '': { naclFiles: createMockNaclFileSource([]) },
@@ -2423,7 +2445,7 @@ describe('workspace', () => {
 
     beforeEach(async () => {
       credsSource = mockCredentialsSource()
-      workspace = await createWorkspace(undefined, undefined, undefined, credsSource)
+      workspace = await createWorkspace(undefined, undefined, undefined, undefined, credsSource)
       await workspace.updateServiceCredentials(services[0], newCreds)
     })
 
@@ -2437,21 +2459,21 @@ describe('workspace', () => {
   })
 
   describe('updateServiceConfig', () => {
-    let workspaceConf: WorkspaceConfigSource
+    let adaptersConf: AdaptersConfigSource
     let workspace: Workspace
     const newConf = new InstanceElement(services[0],
       new ObjectType({ elemID: new ElemID(services[0]) }), { conf1: 'val1' })
 
     beforeEach(async () => {
-      workspaceConf = mockWorkspaceConfigSource()
-      workspace = await createWorkspace(undefined, undefined, workspaceConf)
+      adaptersConf = mockAdaptersConfigSource()
+      workspace = await createWorkspace(undefined, undefined, undefined, adaptersConf)
       await workspace.updateServiceConfig(services[0], newConf)
     })
 
     it('should persist', () => {
-      expect(workspaceConf.setAdapter).toHaveBeenCalledTimes(1)
+      expect(adaptersConf.setAdapter).toHaveBeenCalledTimes(1)
       const setAdapterParams = (
-        workspaceConf.setAdapter as jest.Mock
+        adaptersConf.setAdapter as jest.Mock
       ).mock.calls[0]
       expect(setAdapterParams[0]).toEqual('salesforce')
       expect(setAdapterParams[1]).toEqual(newConf)
@@ -2472,7 +2494,7 @@ describe('workspace', () => {
         delete: jest.fn(),
         rename: jest.fn(),
       }
-      workspace = await createWorkspace(undefined, undefined, undefined, credsSource)
+      workspace = await createWorkspace(undefined, undefined, undefined, undefined, credsSource)
     })
 
     it('should get creds', async () => {
@@ -2617,9 +2639,8 @@ describe('workspace', () => {
             currentEnv: 'full',
           })),
           setWorkspaceConfig: jest.fn(),
-          getAdapter: jest.fn(),
-          setAdapter: jest.fn(),
         },
+        undefined,
         undefined,
         undefined,
         {
@@ -2661,6 +2682,7 @@ describe('workspace', () => {
       const remoteMapCreator = persistentMockCreateRemoteMap()
       workspace = await createWorkspace(
         undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
+        undefined,
         {
           '': {
             naclFiles: await naclFilesSource(
@@ -2878,6 +2900,7 @@ describe('workspace', () => {
         mockWorkspaceConfigSource(undefined, true),
         undefined,
         undefined,
+        undefined,
         {
           [COMMON_ENV_PREFIX]: {
             naclFiles: await naclFilesSource(
@@ -3006,7 +3029,7 @@ describe('getElementNaclFiles', () => {
 describe('non persistent workspace', () => {
   it('should not allow flush when the ws is non-persistent', async () => {
     const nonPWorkspace = await createWorkspace(undefined, undefined, undefined, undefined,
-      undefined, undefined, undefined, false)
+      undefined, undefined, undefined, undefined, false)
     await expect(() => nonPWorkspace.flush()).rejects.toThrow()
   })
 })
@@ -3224,7 +3247,7 @@ describe('listUnresolvedReferences', () => {
     })
     const inst1 = new InstanceElement(
       'inst1',
-      type1,
+      new TypeReference(type1.elemID),
       {
         f1: 'aaa',
         f2: new ReferenceExpression(new ElemID('salesforce', 'someType', 'field', 'f3')),
@@ -3233,7 +3256,7 @@ describe('listUnresolvedReferences', () => {
     )
     const inst2 = new InstanceElement(
       'inst2',
-      type2,
+      new TypeReference(type2.elemID),
       {
         f1: {
           f1: 'aaa',
@@ -3250,7 +3273,7 @@ describe('listUnresolvedReferences', () => {
     beforeAll(async () => {
       const elements = createEnvElements().slice(0, 1)
       workspace = await createWorkspace(
-        undefined, undefined, undefined, undefined, undefined,
+        undefined, undefined, undefined, undefined, undefined, undefined,
         {
           '': {
             naclFiles: await naclFilesSource(
@@ -3285,7 +3308,7 @@ describe('listUnresolvedReferences', () => {
       jest.resetAllMocks()
       const elements = createEnvElements()
       workspace = await createWorkspace(
-        undefined, undefined, undefined, undefined, undefined,
+        undefined, undefined, undefined, undefined, undefined, undefined,
         {
           '': {
             naclFiles: await naclFilesSource(
@@ -3321,7 +3344,7 @@ describe('listUnresolvedReferences', () => {
       const defaultElements = createEnvElements().slice(3)
       const otherElements = createEnvElements()
       workspace = await createWorkspace(
-        undefined, undefined, undefined, undefined, undefined,
+        undefined, undefined, undefined, undefined, undefined, undefined,
         {
           '': {
             naclFiles: await naclFilesSource(
@@ -3360,6 +3383,7 @@ describe('listUnresolvedReferences', () => {
       const otherElements = createEnvElements()
       workspace = await createWorkspace(
         undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
+        undefined,
         {
           '': {
             naclFiles: await naclFilesSource(
@@ -3395,14 +3419,15 @@ describe('listUnresolvedReferences', () => {
   describe('workspace with unresolved references that do not exist in other env', () => {
     beforeAll(async () => {
       jest.resetAllMocks()
-      const defaultElements = createEnvElements().slice(3) as InstanceElement[]
-      defaultElements[0].value = {
-        ...(defaultElements[0] as InstanceElement).value,
+      const defaultElements = createEnvElements() as InstanceElement[]
+      defaultElements[3].value = {
+        ...(defaultElements[3] as InstanceElement).value,
         f3: new TypeReference(new ElemID('salesforce', 'unresolved')),
       }
       const otherElements = createEnvElements().slice(1)
       workspace = await createWorkspace(
         undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
+        undefined,
         {
           '': {
             naclFiles: await naclFilesSource(
@@ -3427,15 +3452,57 @@ describe('listUnresolvedReferences', () => {
     })
 
     it('should resolve some of the references', () => {
-      expect(res.found).toEqual([
-        new ElemID('salesforce', 'someType', 'instance', 'inst1', 'f1'),
-      ])
+      expect(res.found).toHaveLength(0)
       expect(res.missing).toEqual([
         new ElemID('salesforce', 'unresolved'),
       ])
     })
   })
+
+  describe('workspace with unresolved value reference which lead to not exist unresolved reference in another env', () => {
+    beforeAll(async () => {
+      jest.resetAllMocks()
+      const defaultElements = createEnvElements().slice(3) as InstanceElement[]
+      const otherElements = createEnvElements().slice(1)
+      workspace = await createWorkspace(
+        undefined, undefined, mockWorkspaceConfigSource(undefined, true), undefined, undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: await naclFilesSource(
+              COMMON_ENV_PREFIX,
+              mockDirStore(),
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true
+            ),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource(defaultElements),
+            state: createState(defaultElements),
+          },
+          inactive: {
+            naclFiles: createMockNaclFileSource(otherElements),
+            state: createState(otherElements),
+          },
+        }
+      )
+      res = await workspace.listUnresolvedReferences('inactive')
+    })
+
+    it('should return the instance of the unresolved reference, although the reference is a value', () => {
+      expect(res.found).toEqual([
+        new ElemID('salesforce', 'someType', 'instance', 'inst1'),
+      ])
+    })
+    it('should mark the missing unresolved reference in the redirected env', () => {
+      expect(res.missing).toEqual([
+        new ElemID('salesforce', 'someType', 'field', 'f3'),
+      ])
+    })
+  })
 })
+
 describe('isValidEnvName', () => {
   it('should be valid env names', () => {
     expect(isValidEnvName('Production')).toEqual(true)
@@ -3502,7 +3569,7 @@ describe('nacl sources reuse', () => {
       },
     }
     ws = await createWorkspace(undefined, undefined, mockWorkspaceConfigSource(undefined, true),
-      undefined, undefined, elementSources)
+      undefined, undefined, undefined, elementSources)
   })
   afterAll(() => {
     mockMuiltiEnv.mockReset()

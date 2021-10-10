@@ -13,9 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import { InstanceElement } from '@salto-io/adapter-api'
 
-export const isDefined = <T>(val: T | undefined | void): val is T => val !== undefined
-
-export const isPlainObject = (val: unknown): val is object => _.isPlainObject(val)
-export const isPlainRecord = (val: unknown): val is Record<string, unknown> => _.isPlainObject(val)
+export type AdaptersConfigSource = {
+  getAdapter(adapter: string, defaultValue?: InstanceElement): Promise<InstanceElement | undefined>
+  setAdapter(
+    adapter: string,
+    config: Readonly<InstanceElement> | Readonly<InstanceElement>[]
+  ): Promise<void>
+  getElementNaclFiles(adapter: string): Promise<string[]>
+}

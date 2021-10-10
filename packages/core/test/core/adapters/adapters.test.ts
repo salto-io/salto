@@ -13,14 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, AdapterAuthentication, ObjectType } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, AdapterAuthentication, ObjectType, Adapter } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { adapter } from '@salto-io/salesforce-adapter'
+import { mockFunction } from '@salto-io/test-utils'
+import _ from 'lodash'
 import {
   initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs,
   getDefaultAdapterConfig,
+  adapterCreators,
 } from '../../../src/core/adapters'
 
 jest.mock('@salto-io/workspace', () => ({
@@ -32,6 +35,20 @@ jest.mock('@salto-io/adapter-utils', () => ({
   createDefaultInstanceFromType: jest.fn(),
 }))
 
+jest.mock('../../../src/core/adapters/creators', () => {
+  const actual = jest.requireActual('../../../src/core/adapters/creators')
+  return {
+    ...actual,
+    __esModule: true,
+    default: {
+      ...actual.default,
+      mockAdapter: {
+        configType: undefined,
+        getDefaultConfig: undefined,
+      },
+    },
+  }
+})
 describe('adapters.ts', () => {
   const { authenticationMethods } = adapter
   const services = ['salesforce']
@@ -60,9 +77,40 @@ describe('adapters.ts', () => {
   })
 
   describe('getDefaultAdapterConfig', () => {
-    it('should call createDefaultInstanceFromType', async () => {
-      await getDefaultAdapterConfig('salesforce')
-      expect(utils.createDefaultInstanceFromType).toHaveBeenCalled()
+    const { mockAdapter } = adapterCreators
+    const createDefaultInstanceFromTypeMock = createDefaultInstanceFromType as jest.MockedFunction<
+      typeof createDefaultInstanceFromType
+    >
+    beforeEach(() => {
+      const mockConfigType = new ObjectType({
+        elemID: new ElemID('mockAdapter', ElemID.CONFIG_NAME),
+      })
+
+      _.assign(mockAdapter, {
+        configType: mockConfigType,
+        getDefaultConfig: mockFunction<NonNullable<Adapter['getDefaultConfig']>>()
+          .mockResolvedValue([new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'bbb' })]),
+      })
+
+      createDefaultInstanceFromTypeMock.mockResolvedValue(new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, { val: 'aaa' }))
+    })
+
+    afterAll(() => {
+      createDefaultInstanceFromTypeMock.mockReset()
+    })
+
+    it('should call createDefaultInstanceFromType when getDefaultConfig is undefined', async () => {
+      delete mockAdapter.getDefaultConfig
+      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter')
+      expect(createDefaultInstanceFromType).toHaveBeenCalled()
+      expect(defaultConfigs).toHaveLength(1)
+      expect(defaultConfigs?.[0].value).toEqual({ val: 'aaa' })
+    })
+    it('should use getDefaultConfig when defined', async () => {
+      const defaultConfigs = await getDefaultAdapterConfig('mockAdapter')
+      expect(mockAdapter.getDefaultConfig).toHaveBeenCalled()
+      expect(defaultConfigs).toHaveLength(1)
+      expect(defaultConfigs?.[0].value).toEqual({ val: 'bbb' })
     })
   })
 
@@ -79,7 +127,10 @@ describe('adapters.ts', () => {
       expect(result[serviceName]).toEqual(
         expect.objectContaining({
           credentials: sfConfig,
-          config: await getDefaultAdapterConfig(serviceName),
+          config: await createDefaultInstanceFromType(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType
+          ),
           getElemIdFunc: undefined,
         })
       )

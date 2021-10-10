@@ -20,4 +20,6 @@ const { getWithCursorPagination } = clientUtils
 const pathChecker: clientUtils.PathCheckerFunc = (current, next) => (
   next === `/api/v2${current}.json`
 )
-export const paginate: clientUtils.GetAllItemsFunc = getWithCursorPagination(pathChecker)
+export const paginate: clientUtils.PaginationFuncCreator = () => (
+  getWithCursorPagination(pathChecker)
+)

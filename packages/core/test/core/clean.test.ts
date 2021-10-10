@@ -78,7 +78,7 @@ describe('clean', () => {
     expect(workspace.flush).toHaveBeenCalled()
   })
 
-  it('should finish even if some serviec configs cannot be restored', async () => {
+  it('should finish even if some service configs cannot be restored', async () => {
     jest.spyOn(adapters, 'getDefaultAdapterConfig')
       .mockImplementationOnce(async () => undefined)
       .mockImplementationOnce(async () => undefined)

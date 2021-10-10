@@ -17,6 +17,7 @@ import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, Buil
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../src/filters/field_references'
 import ZuoraClient from '../../src/client/client'
+import { paginate } from '../../src/client/pagination'
 import { ZUORA_BILLING } from '../../src/constants'
 
 
@@ -33,7 +34,7 @@ describe('Field references filter', () => {
       client,
       paginator: clientUtils.createPaginator({
         client,
-        paginationFunc: clientUtils.getWithCursorPagination(),
+        paginationFuncCreator: paginate,
       }),
       config: {
         fetch: {

@@ -39,6 +39,7 @@ const log = logger(module)
 
 export const ITEMS_TYPES = INTERNAL_ID_TO_TYPES[ITEM_TYPE_ID]
 export const WSDL_PATH = `${__dirname}/client/suiteapp_client/soap_client/wsdl/netsuite_1.wsdl`
+const REQUEST_MAX_RETRIES = 5
 
 // When updating the version, we should also update the types in src/data_elements/types.ts
 const NETSUITE_VERSION = '2020_2'
@@ -281,14 +282,21 @@ export default class SoapClient {
 
   private async sendSoapRequest(operation: string, body: object): Promise<unknown> {
     const client = await this.getClient()
-    try {
-      return await this.callsLimiter(async () => (await client[`${operation}Async`](body))[0])
-    } catch (e) {
-      if (e.message.includes('Invalid login attempt.')) {
-        throw new InvalidSuiteAppCredentialsError()
+    const sendWithRetries = async (retriesLeft: number): Promise<unknown> => {
+      try {
+        return await this.callsLimiter(async () => (await client[`${operation}Async`](body))[0])
+      } catch (e) {
+        if (e.message.includes('Invalid login attempt.')) {
+          throw new InvalidSuiteAppCredentialsError()
+        }
+        log.warn('Soap request failed with error: %o, retries left: %d', e, retriesLeft)
+        if (retriesLeft > 0) {
+          return sendWithRetries(retriesLeft - 1)
+        }
+        throw e
       }
-      throw e
     }
+    return sendWithRetries(REQUEST_MAX_RETRIES)
   }
 
   private static getSearchType(type: string): string {

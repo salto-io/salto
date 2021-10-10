@@ -38,15 +38,19 @@ describe('SalesforceAdapter creator', () => {
       authType: 'basic',
     }
   )
+  const oauthConfigObj = {
+    refreshToken: 'refreshToken',
+    accessToken: 'accessToken',
+    clientId: 'id',
+    clientSecret: 'secret',
+    instanceUrl: 'instance_url',
+    isSandbox: false,
+    authType: 'oauth',
+  }
   const oauthCredentials = new InstanceElement(
     ElemID.CONFIG_NAME,
     accessTokenCredentialsType,
-    {
-      accessToken: 'accessToken',
-      instanceUrl: 'instanceUrl',
-      isSandbox: false,
-      authType: 'oauth',
-    }
+    oauthConfigObj,
   )
   const config = new InstanceElement(
     ElemID.CONFIG_NAME,
@@ -94,9 +98,12 @@ describe('SalesforceAdapter creator', () => {
 
     it('should call validateCredentials with the correct credentials', () => {
       expect(validateCredentials).toHaveBeenCalledWith(new OauthAccessTokenCredentials({
-        accessToken: 'accessToken',
-        instanceUrl: 'instanceUrl',
-        isSandbox: false,
+        refreshToken: oauthConfigObj.refreshToken,
+        accessToken: oauthConfigObj.accessToken,
+        instanceUrl: oauthConfigObj.instanceUrl,
+        isSandbox: oauthConfigObj.isSandbox,
+        clientSecret: oauthConfigObj.clientSecret,
+        clientId: oauthConfigObj.clientId,
       }))
     })
   })
@@ -114,16 +121,24 @@ describe('SalesforceAdapter creator', () => {
     })
     it('creates the right object from the response', () => {
       const creds = (adapter.authenticationMethods.oauth as OAuthMethod).createFromOauthResponse(
-        { isSandbox: false },
         {
-          accessToken: 'testAccessToken',
-          instanceUrl: 'testInstanceUrl',
-        }
+          isSandbox: false,
+          consumerKey: oauthConfigObj.clientId,
+          consumerSecret: oauthConfigObj.clientSecret,
+        },
+        { fields: {
+          refreshToken: oauthConfigObj.refreshToken,
+          accessToken: oauthConfigObj.accessToken,
+          instanceUrl: oauthConfigObj.instanceUrl,
+        } },
       )
       expect(creds).toEqual({
         isSandbox: false,
-        accessToken: 'testAccessToken',
-        instanceUrl: 'testInstanceUrl',
+        accessToken: oauthConfigObj.accessToken,
+        instanceUrl: oauthConfigObj.instanceUrl,
+        clientSecret: oauthConfigObj.clientSecret,
+        clientId: oauthConfigObj.clientId,
+        refreshToken: oauthConfigObj.refreshToken,
       })
     })
   })
@@ -607,19 +622,19 @@ describe('SalesforceAdapter creator', () => {
       const configFromFetch = config.clone()
       const updatedConfig = getConfigChange(
         {
-          config,
+          config: [config],
           message: `Salto failed to fetch some items from salesforce.
 
 In order to complete the fetch operation, Salto needs to stop managing these items by applying the following configuration change:`,
         },
         {
-          config: configFromFetch,
+          config: [configFromFetch],
           message: 'The configuration options "metadataTypesSkippedList", "instancesRegexSkippedList" and "dataManagement" are deprecated. The following changes will update the deprecated options to the "fetch" configuration option.',
         },
       )
 
       it('return fetch configuration', () => {
-        expect(updatedConfig?.config).toBe(config)
+        expect(updatedConfig?.config[0]).toBe(config)
       })
       it('return combined message', () => {
         expect(updatedConfig?.message).toBe(`The configuration options "metadataTypesSkippedList", "instancesRegexSkippedList" and "dataManagement" are deprecated. The following changes will update the deprecated options to the "fetch" configuration option.
@@ -631,7 +646,7 @@ In order to complete the fetch operation, Salto needs to stop managing these ite
 
     describe('only configWithoutDeprecated is defined', () => {
       const configChange = {
-        config,
+        config: [config],
         message: 'The configuration options "metadataTypesSkippedList", "instancesRegexSkippedList" and "dataManagement" are deprecated. The following changes will update the deprecated options to the "fetch" configuration option.',
       }
       const updatedConfig = getConfigChange(
@@ -645,7 +660,7 @@ In order to complete the fetch operation, Salto needs to stop managing these ite
 
     describe('only fetchConfiguration is defined', () => {
       const configChange = {
-        config,
+        config: [config],
         message: `Salto failed to fetch some items from salesforce.
 
 In order to complete the fetch operation, Salto needs to stop managing these items by applying the following configuration change:`,

@@ -20,6 +20,7 @@ import { logger } from '@salto-io/logging'
 import { Values } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import SalesforceClient, { ApiLimitsTooLowError,
   getConnectionDetails, validateCredentials, API_VERSION } from '../src/client/client'
 import mockClient from './client'
@@ -300,6 +301,29 @@ describe('salesforce client', () => {
     })
   })
 
+  describe('when jsforce return a string instead of an object', () => {
+    let testClient: SalesforceClient
+    let testConnection: MockInterface<Connection>
+    beforeEach(() => {
+      const mockClientAndConnection = mockClient()
+      testConnection = mockClientAndConnection.connection
+      testClient = mockClientAndConnection.client
+    })
+    it('when the json is a valid string should parse and return it', async () => {
+      const expectedProperties = mockFileProperties({ type: 'CustomObject', fullName: 'A__c' })
+      testConnection.metadata.list
+        .mockResolvedValue(safeJsonStringify(expectedProperties) as unknown as FileProperties[])
+
+      const result = testClient.listMetadataObjects({ type: 'CustomObject' })
+      await expect(result).resolves.toMatchObject({ result: [expectedProperties] })
+    })
+    it('when the json is not a valid string should throw an error', async () => {
+      testConnection.metadata.list.mockResolvedValue('aaa' as unknown as FileProperties[])
+      const result = testClient.listMetadataObjects({ type: 'CustomObject' })
+      await expect(result).rejects.toThrow()
+    })
+  })
+
   describe('getConnectionDetails', () => {
     it('should return empty orgId', async () => {
       const { orgId, remainingDailyRequests } = await getConnectionDetails(credentials, connection)
@@ -544,6 +568,9 @@ describe('salesforce client', () => {
       isSandbox: false,
       instanceUrl: 'testInstanceUrl',
       accessToken: 'testAccessToken',
+      refreshToken: 'testRefreshToken',
+      clientSecret: 'secret',
+      clientId: 'clientId',
     })
     it('should return empty orgId for oauth credentials', async () => {
       const { orgId, remainingDailyRequests } = await getConnectionDetails(oauthCredentials,

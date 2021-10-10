@@ -13,12 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { EOL } from 'os'
 import _ from 'lodash'
 import wu from 'wu'
 import { getChangeElement, isInstanceElement, AdapterOperationName, Progress } from '@salto-io/adapter-api'
-import { fetch as apiFetch, FetchFunc, FetchChange, FetchProgressEvents, StepEmitter, PlanItem } from '@salto-io/core'
+import { fetch as apiFetch, FetchFunc, FetchChange, FetchProgressEvents, StepEmitter,
+  PlanItem, FetchFromWorkspaceFunc, loadLocalWorkspace, fetchFromWorkspace } from '@salto-io/core'
 import { Workspace, nacl, StateRecency } from '@salto-io/workspace'
-import { promises } from '@salto-io/lowerdash'
+import { promises, values } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import { progressOutputer, outputLine, errorOutputLine } from '../outputer'
@@ -57,6 +59,20 @@ export type FetchCommandArgs = {
   stateOnly: boolean
   services: string[]
   regenerateSaltoIds: boolean
+}
+
+const createFetchFromWorkspaceCommand = (
+  fetchFromWorkspaceFunc: FetchFromWorkspaceFunc,
+  otherWorkspacePath: string,
+  env : string
+): FetchFunc => async (workspace, progressEmitter, services) => {
+  let otherWorkspace: Workspace
+  try {
+    otherWorkspace = await loadLocalWorkspace(otherWorkspacePath, [], false)
+  } catch (err) {
+    throw new Error(`Failed to load source workspace: ${err.message ?? err}`)
+  }
+  return fetchFromWorkspaceFunc({ workspace, otherWorkspace, progressEmitter, services, env })
 }
 
 export const fetchCommand = async (
@@ -156,7 +172,7 @@ export const fetchCommand = async (
           planItem,
         )
         if (shouldWriteToConfig) {
-          await workspace.updateServiceConfig(adapterName, newConfig)
+          await workspace.updateServiceConfig(adapterName, fetchResult.updatedConfig[adapterName])
         }
         return !shouldWriteToConfig
       })
@@ -221,6 +237,8 @@ type FetchArgs = {
   stateOnly: boolean
   mode: nacl.RoutingMode
   regenerateSaltoIds: boolean
+  fromWorkspace?: string
+  fromEnv?: string
 } & ServicesArg & EnvArg
 
 export const action: WorkspaceCommandAction<FetchArgs> = async ({
@@ -231,7 +249,15 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   spinnerCreator,
   workspace,
 }): Promise<CliExitCode> => {
-  const { force, stateOnly, services, mode, regenerateSaltoIds } = input
+  const { force, stateOnly, services, mode, regenerateSaltoIds, fromWorkspace, fromEnv } = input
+  if (
+    [fromEnv, fromWorkspace].some(values.isDefined)
+    && ![fromEnv, fromWorkspace].every(values.isDefined)
+  ) {
+    errorOutputLine('The fromEnv and fromWorkspace arguments must both be provided.', output)
+    outputLine(EOL, output)
+    return CliExitCode.UserInputError
+  }
   const { shouldCalcTotalSize } = config
   await validateAndSetEnv(workspace, input, output)
   const activeServices = getAndValidateActiveServices(workspace, services)
@@ -267,7 +293,11 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
     force,
     cliTelemetry,
     output,
-    fetch: apiFetch,
+    fetch: fromWorkspace && fromEnv ? createFetchFromWorkspaceCommand(
+      fetchFromWorkspace,
+      fromWorkspace,
+      fromEnv
+    ) : apiFetch,
     getApprovedChanges: cliGetApprovedChanges,
     shouldUpdateConfig: cliShouldUpdateConfig,
     services: activeServices,
@@ -315,6 +345,20 @@ const fetchDef = createWorkspaceCommand({
         required: false,
         description: 'Regenerate configuration elements Salto IDs based on the current settings and fetch results',
         type: 'boolean',
+      },
+      {
+        name: 'fromWorkspace',
+        alias: 'w',
+        required: false,
+        description: 'Fetch the data from another workspace at this path',
+        type: 'string',
+      },
+      {
+        name: 'fromEnv',
+        alias: 'we',
+        required: false,
+        description: 'Fetch the data from another workspace at this path from this env',
+        type: 'string',
       },
     ],
   },

@@ -353,9 +353,9 @@ export const combineQueryParams = (
     .groupBy(type => type.name)
     .map((types, name) => ({
       name,
-      ids: types.some(type => type.ids === undefined)
-        ? undefined
-        : _.uniq(types.flatMap(type => type.ids as string[])),
+      ...types.some(type => type.ids === undefined)
+        ? {}
+        : { ids: _.uniq(types.flatMap(type => type.ids as string[])) },
     }))
     .value()
   return {
@@ -528,7 +528,7 @@ export const getConfigFromConfigChanges = (
   failedFilePaths: NetsuiteQueryParameters['filePaths'],
   failedTypeToInstances: NetsuiteQueryParameters['types'],
   currentConfig: NetsuiteConfig
-): { config: InstanceElement; message: string } | undefined => {
+): { config: InstanceElement[]; message: string } | undefined => {
   const conf = new InstanceElement(
     ElemID.CONFIG_NAME,
     configType,
@@ -561,5 +561,5 @@ export const getConfigFromConfigChanges = (
       : undefined,
   ].filter(values.isDefined).join(' In addition, ')
 
-  return message !== '' ? { config: conf, message } : undefined
+  return message !== '' ? { config: [conf], message } : undefined
 }

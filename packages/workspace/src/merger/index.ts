@@ -90,10 +90,35 @@ export const mergeElements = async (
   log.debug(`merged ${elementsCounter} elements to ${mergedCounter} elements [errors=${
     errorsCounter}]`)
   if (errorsCounter > 0) {
-    log.debug(`All merge errors:\n${(await awu(errors.values())
+    log.warn(`All merge errors:\n${(await awu(errors.values())
       .flatMap(elemErrs => elemErrs.map(e => e.message)).toArray())
       .join('\n')}`)
   }
 
   return { merged, errors }
+}
+
+export const mergeSingleElement = async <T extends Element>(elementParts: T[]): Promise<T> => {
+  const mergeRes = await mergeElements(awu(elementParts))
+
+  const errorMessages = await awu(await mergeRes.errors.entries())
+    .flatMap(err => err.value)
+    .map(err => err.message)
+    .toArray()
+  if (errorMessages.length !== 0) {
+    throw new Error(`Received merge errors: ${errorMessages.join(', ')}`)
+  }
+  const [error] = await awu(await mergeRes.errors.entries()).toArray()
+  if (error !== undefined) {
+    throw new Error(`Received merge errors: ${error.key}: ${error.value.map(err => err.message).join(', ')}`)
+  }
+
+  const mergedElements = await awu(mergeRes.merged.values()).toArray()
+
+  if (mergedElements.length !== 1) {
+    throw new Error(`Received invalid number of merged elements when expected one: ${mergedElements.map(e => e.elemID.getFullName()).join(', ')}`)
+  }
+
+  // A merge of elements of type T should result an element of type T
+  return mergedElements[0] as T
 }

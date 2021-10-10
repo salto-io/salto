@@ -447,10 +447,10 @@ describe('Adapter', () => {
         })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
-      getConfigFromConfigChangesMock.mockReturnValue({ config: updatedConfig, message: '' })
+      getConfigFromConfigChangesMock.mockReturnValue({ config: [updatedConfig], message: '' })
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, ['/path/to/file'], {}, config)
-      expect(fetchResult.updatedConfig?.config.isEqual(updatedConfig)).toBe(true)
+      expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
     })
 
     it('should call getConfigFromConfigChanges with failedTypeToInstances', async () => {
@@ -463,11 +463,11 @@ describe('Adapter', () => {
         })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
-      getConfigFromConfigChangesMock.mockReturnValue({ config: updatedConfig, message: '' })
+      getConfigFromConfigChangesMock.mockReturnValue({ config: [updatedConfig], message: '' })
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges)
         .toHaveBeenCalledWith(false, [], failedTypeToInstances, config)
-      expect(fetchResult.updatedConfig?.config.isEqual(updatedConfig)).toBe(true)
+      expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
     })
 
     it('should call getConfigFromConfigChanges with false for fetchAllAtOnce', async () => {
@@ -479,10 +479,10 @@ describe('Adapter', () => {
         })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
-      getConfigFromConfigChangesMock.mockReturnValue({ config: updatedConfig, message: '' })
+      getConfigFromConfigChangesMock.mockReturnValue({ config: [updatedConfig], message: '' })
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChangesMock).toHaveBeenCalledWith(true, [], {}, config)
-      expect(fetchResult.updatedConfig?.config.isEqual(updatedConfig)).toBe(true)
+      expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
     })
   })
 

@@ -283,10 +283,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const isPartial = this.fetchTarget !== undefined
 
-    const { failedToFetchAllAtOnce,
+    const {
+      failedToFetchAllAtOnce,
       failedFilePaths,
       failedTypeToInstances,
-      elements } = await this.fetchByQuery(fetchQuery, progressReporter, this.useChangesDetection)
+      elements,
+    } = await this.fetchByQuery(fetchQuery, progressReporter, this.useChangesDetection)
 
     const updatedConfig = getConfigFromConfigChanges(
       failedToFetchAllAtOnce, failedFilePaths, failedTypeToInstances, this.userConfig

@@ -301,6 +301,7 @@ export const mockWorkspace = ({
     services: mockFunction<Workspace['services']>().mockReturnValue(services),
     servicesCredentials: mockFunction<Workspace['servicesCredentials']>().mockResolvedValue({}),
     serviceConfig: mockFunction<Workspace['serviceConfig']>().mockResolvedValue(undefined),
+    serviceConfigPaths: mockFunction<Workspace['serviceConfigPaths']>().mockResolvedValue([]),
     isEmpty: mockFunction<Workspace['isEmpty']>().mockResolvedValue(false),
     hasElementsInServices: mockFunction<Workspace['hasElementsInServices']>().mockResolvedValue(true),
     hasElementsInEnv: mockFunction<Workspace['hasElementsInEnv']>().mockResolvedValue(false),
@@ -378,6 +379,7 @@ export const mockOauthCredentialsType = (adapterName: string,
     credentialsType: new ObjectType({
       elemID: new ElemID(adapterName),
       fields: {
+        refreshToken: { refType: BuiltinTypes.STRING },
         accessToken: { refType: BuiltinTypes.STRING },
         instanceUrl: { refType: BuiltinTypes.STRING },
       },
@@ -394,8 +396,8 @@ export const mockOauthCredentialsType = (adapterName: string,
     createFromOauthResponse: jest.fn().mockImplementation((oldConfig: Values,
       response: OauthAccessTokenResponse) => ({
       isSandbox: oldConfig.isSandbox,
-      accessToken: response.accessToken,
-      instanceUrl: response.instanceUrl,
+      accessToken: response.fields.accessToken,
+      instanceUrl: response.fields.instanceUrl,
     })),
   }
   return baseType

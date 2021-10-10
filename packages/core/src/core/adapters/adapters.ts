@@ -20,6 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { merger } from '@salto-io/workspace'
 import adapterCreators from './creators'
 
 const log = logger(module)
@@ -57,11 +58,30 @@ export const initAdapters = (
     }
   )
 
-export const getDefaultAdapterConfig = async (
+const getAdapterConfigFromType = async (
   adapterName: string
 ): Promise<InstanceElement | undefined> => {
   const { configType } = adapterCreators[adapterName]
   return configType ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType) : undefined
+}
+
+export const getDefaultAdapterConfig = async (
+  adapterName: string
+): Promise<InstanceElement[] | undefined> => {
+  const { getDefaultConfig } = adapterCreators[adapterName]
+  if (getDefaultConfig !== undefined) {
+    return getDefaultConfig()
+  }
+
+  const defaultConf = await getAdapterConfigFromType(adapterName)
+  return defaultConf && [defaultConf]
+}
+
+const getMergedDefaultAdapterConfig = async (
+  adapter: string
+): Promise<InstanceElement | undefined> => {
+  const defaultConfig = await getDefaultAdapterConfig(adapter)
+  return defaultConfig && merger.mergeSingleElement(defaultConfig)
 }
 
 const filterElementsSourceAdapter = (
@@ -112,7 +132,7 @@ export const getAdaptersCreatorConfigs = async (
       adapter,
       {
         credentials: credentials[adapter],
-        config: await getConfig(adapter, await getDefaultAdapterConfig(adapter)),
+        config: await getConfig(adapter, await getMergedDefaultAdapterConfig(adapter)),
         elementsSource: filterElementsSourceAdapter(elementsSource, adapter),
         getElemIdFunc: elemIdGetter,
       },

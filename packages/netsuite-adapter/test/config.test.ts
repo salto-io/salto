@@ -72,7 +72,7 @@ describe('config', () => {
 
   it('should return updated currentConfig with defined values when having suggestions and the currentConfig is empty', () => {
     const configFromConfigChanges = getConfigFromConfigChanges(true,
-      [newFailedFilePath], suggestedSkipListTypes, {})?.config as InstanceElement
+      [newFailedFilePath], suggestedSkipListTypes, {})?.config[0] as InstanceElement
     expect(configFromConfigChanges.isEqual(new InstanceElement(
       ElemID.CONFIG_NAME,
       configType,
@@ -103,7 +103,7 @@ describe('config', () => {
     const configChange = getConfigFromConfigChanges(
       true, [newFailedFilePath], suggestedSkipListTypes, currentConfigWithFetch
     )
-    expect(configChange?.config
+    expect(configChange?.config[0]
       .isEqual(new InstanceElement(
         ElemID.CONFIG_NAME,
         configType,
@@ -141,7 +141,7 @@ describe('config', () => {
       [FILE_PATHS_REGEX_SKIP_LIST]: ['someRegex1', '^someRegex2', 'someRegex3$', '^someRegex4$'],
     }
     const configChange = getConfigFromConfigChanges(false, [], {}, config)
-    expect(configChange?.config
+    expect(configChange?.config[0]
       .isEqual(new InstanceElement(
         ElemID.CONFIG_NAME,
         configType,
@@ -164,12 +164,13 @@ describe('config', () => {
       [DEPLOY_REFERENCED_ELEMENTS]: true,
     }
     const configChange = getConfigFromConfigChanges(false, [], {}, config)
-    expect(configChange?.config
+    expect(configChange?.config).toHaveLength(1)
+    expect(configChange?.config[0]
       .isEqual(new InstanceElement(
         ElemID.CONFIG_NAME,
         configType,
         {
-          [FETCH]: configChange?.config.value[FETCH],
+          [FETCH]: configChange?.config[0].value[FETCH],
           [CLIENT_CONFIG]: {
             [FETCH_TYPE_TIMEOUT_IN_MINUTES]: 15,
             [MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST]: 10,
@@ -190,8 +191,8 @@ describe('config', () => {
       [DEPLOY_REFERENCED_ELEMENTS]: false,
     }
     const configChange = getConfigFromConfigChanges(false, [], {}, config)
-    expect(configChange?.config?.value[DEPLOY_REFERENCED_ELEMENTS]).toBe(undefined)
-    expect(configChange?.config?.value[DEPLOY]).toBe(undefined)
+    expect(configChange?.config?.[0].value[DEPLOY_REFERENCED_ELEMENTS]).toBe(undefined)
+    expect(configChange?.config?.[0].value[DEPLOY]).toBe(undefined)
     expect(configChange?.message).toBe(UPDATE_DEPLOY_CONFIG)
   })
 
@@ -208,7 +209,7 @@ describe('config', () => {
     }
 
     const configChange = getConfigFromConfigChanges(false, [], {}, config)
-    expect(configChange?.config
+    expect(configChange?.config[0]
       .isEqual(new InstanceElement(
         ElemID.CONFIG_NAME,
         configType,
@@ -244,7 +245,7 @@ describe('config', () => {
     const conf = { ...currentConfigWithFetch,
       [SKIP_LIST]: currentConfigWithSkipList[SKIP_LIST] }
     const configChange = getConfigFromConfigChanges(false, [], {}, conf)
-    expect(configChange?.config
+    expect(configChange?.config[0]
       .isEqual(new InstanceElement(
         ElemID.CONFIG_NAME,
         configType,
@@ -280,7 +281,7 @@ describe('config', () => {
       },
     }
     const configChange = getConfigFromConfigChanges(false, [], {}, conf)
-    expect(configChange?.config?.value).toEqual({
+    expect(configChange?.config?.[0].value).toEqual({
       [FETCH]: {
         [EXCLUDE]: {
           types: [{

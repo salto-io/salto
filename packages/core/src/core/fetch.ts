@@ -395,7 +395,7 @@ const transformElemIDAdapter = (accountName: string): TransformFunc => async (
   return value
 }
 
-const updateElementsWithAlternativeAdapter = async (elements: Element[],
+export const updateElementsWithAlternativeAdapter = async (elements: Element[],
   newAdapter: string, oldAdapter: string): Promise<void> =>
   awu(elements).forEach(async element => {
     if (element.path && (element.path[0] === oldAdapter)) {
@@ -570,17 +570,6 @@ const calcFetchChanges = async (
   partiallyFetchedAdapters: Set<string>,
   allFetchedAdapters: Set<string>
 ): Promise<Iterable<FetchChange>> => {
-  // eslint-disable-next-line no-console
-  console.log(new Error().stack)
-  // eslint-disable-next-line no-console
-  console.log(serviceElements)
-  // eslint-disable-next-line no-console
-  console.log(await (awu(await mergedServiceElements.getAll())).toArray())
-  // eslint-disable-next-line no-console
-  console.log(await (awu(await stateElements.getAll())).toArray())
-  // eslint-disable-next-line no-console
-  console.log(await (awu(await workspaceElements.getAll())).toArray())
-
   const partialFetchFilter: IDFilter = id => (
     !partiallyFetchedAdapters.has(id.adapter)
     || mergedServiceElements.has(id)
@@ -610,10 +599,6 @@ const calcFetchChanges = async (
     ),
     'calculate service-state changes',
   )
-  for (const change of serviceChanges.entries()) {
-    // eslint-disable-next-line no-console
-    console.log(change)
-  }
   const pendingChanges = await log.time(
     () => getDetailedChangeTree(
       stateElements,
@@ -623,10 +608,6 @@ const calcFetchChanges = async (
     ),
     'calculate pending changes',
   )
-  for (const change of pendingChanges.entries()) {
-    // eslint-disable-next-line no-console
-    console.log(change)
-  }
   const workspaceToServiceChanges = await log.time(
     () => getChangeMap(
       workspaceElements,

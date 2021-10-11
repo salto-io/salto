@@ -21,10 +21,12 @@ import {
 import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger } from '@salto-io/workspace'
-import { values } from '@salto-io/lowerdash'
+import { values, collections } from '@salto-io/lowerdash'
 import { elements } from '@salto-io/adapter-components'
+import { updateElementsWithAlternativeAdapter } from '../fetch'
 import adapterCreators from './creators'
 
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 export const getAdaptersCredentialsTypes = (
@@ -96,10 +98,11 @@ const getMergedDefaultAdapterConfig = async (
 
 const filterElementsSourceAdapter = (
   elementsSource: ReadOnlyElementsSource,
-  adapter: string
+  account: string,
+  accountIDToServiceName: Record<string, string>,
 ): ReadOnlyElementsSource => {
   const isRelevantID = (elemID: ElemID): boolean =>
-    (elemID.adapter === adapter || elemID.adapter === GLOBAL_ADAPTER)
+    (elemID.adapter === account || elemID.adapter === GLOBAL_ADAPTER)
   return {
     getAll: async () => {
       async function *getElements(): AsyncIterable<Element> {
@@ -109,9 +112,28 @@ const filterElementsSourceAdapter = (
           }
         }
       }
+      if (account !== accountIDToServiceName[account]) {
+        const elements = await awu(getElements()).toArray()
+        await updateElementsWithAlternativeAdapter(elements,
+          accountIDToServiceName[account], account)
+        return awu(elements)
+      }
       return getElements()
     },
-    get: async id => (isRelevantID(id) ? elementsSource.get(id) : undefined),
+    get: async id => {
+      if (account !== accountIDToServiceName[account]) {
+        if (id.adapter !== accountIDToServiceName[account]) {
+          return undefined
+        }
+        const element = await elementsSource.get(id.createAdapterReplacedID(account))
+        if (element) {
+          await updateElementsWithAlternativeAdapter([element],
+            accountIDToServiceName[account], account)
+        }
+        return element
+      }
+      return isRelevantID(id) ? elementsSource.get(id) : undefined
+    },
     list: async () => {
       async function *getIds(): AsyncIterable<ElemID> {
         for await (const element of await elementsSource.getAll()) {
@@ -120,9 +142,15 @@ const filterElementsSourceAdapter = (
           }
         }
       }
-      return getIds()
+      return awu(getIds()).map(id => id.createAdapterReplacedID(accountIDToServiceName[account]))
     },
-    has: async id => (isRelevantID(id) ? elementsSource.has(id) : false),
+    has: async id => {
+      if (id.adapter !== accountIDToServiceName[account]) {
+        return false
+      }
+      const transformedId = id.createAdapterReplacedID(account)
+      return elementsSource.has(transformedId)
+    },
   }
 }
 
@@ -146,7 +174,8 @@ export const getAdaptersCreatorConfigs = async (
         config: await getConfig(account, await getMergedDefaultAdapterConfig(
           accountIDToServiceName[account]
         )),
-        elementsSource: filterElementsSourceAdapter(elementsSource, account),
+        elementsSource: filterElementsSourceAdapter(elementsSource,
+          account, accountIDToServiceName),
         getElemIdFunc: elemIdGetter,
       },
     ]

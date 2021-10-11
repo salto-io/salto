@@ -62,8 +62,6 @@ describe('fetch', () => {
   typeWithFieldConflict.fields.test.annotations.annotation = 'conflict'
   const newTypeID = new ElemID('dummy', 'new')
   const newTypeDifferentAdapterID = new ElemID('dummyServiceName', 'new')
-  const typeWithFieldChangeDifferentId = typeWithFieldChange.clone()
-  _.set(typeWithFieldChangeDifferentId, 'elemID', newTypeDifferentAdapterID.adapter)
   const typeWithFieldDifferentID = new ObjectType({
     elemID: new ElemID(newTypeDifferentAdapterID.adapter, typeWithField.elemID.typeName),
     fields: {
@@ -73,6 +71,11 @@ describe('fetch', () => {
       },
     },
   })
+  const typeWithFieldChangeDifferentID = typeWithFieldDifferentID.clone()
+  typeWithFieldChangeDifferentID.fields.test.annotations.annotation = 'changed'
+  typeWithFieldChangeDifferentID.fields.test.annotations.newAnnotation = 'new'
+  const typeWithFieldConflictDifferentID = typeWithFieldDifferentID.clone()
+  typeWithFieldConflictDifferentID.fields.test.annotations.annotation = 'conflict'
   const newTypeBase = new ObjectType({
     elemID: newTypeID,
     fields: { base: { refType: BuiltinTypes.STRING } },
@@ -105,12 +108,32 @@ describe('fetch', () => {
     },
     path: ['records', 'hidden'],
   })
-  const typeWithHiddenFieldAlternativeId = typeWithHiddenField.clone()
-  _.set(typeWithHiddenFieldAlternativeId, 'elemID', anotherTypeID
-    .createAdapterReplacedID(newTypeDifferentAdapterID.adapter))
+  const typeWithHiddenFieldAlternativeId = new ObjectType({
+    elemID: anotherTypeID.createAdapterReplacedID(newTypeDifferentAdapterID.adapter),
+    fields: {
+      reg: {
+        refType: BuiltinTypes.STRING,
+      },
+      notHidden: {
+        refType: BuiltinTypes.STRING,
+      },
+      hidden: {
+        refType: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
+      },
+      hiddenValue: {
+        refType: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+      },
+    },
+    path: ['records', 'hidden'],
+  })
   // parent isn't changed
   Object.values(typeWithHiddenFieldAlternativeId.fields).forEach(field => {
+    const parentId = field.parent.elemID
     field.parent = expect.anything()
+    _.set(field.parent, 'elemID', parentId
+      .createAdapterReplacedID(newTypeDifferentAdapterID.adapter))
   })
 
   const hiddenInstance = new InstanceElement('instance_elem_id_name', typeWithHiddenField, {
@@ -127,7 +150,6 @@ describe('fetch', () => {
       hidden: 'Hidden',
       hiddenValue: 'hidden val',
     })
-
 
   // // Workspace elements should not contains hidden values
   // const workspaceInstance = hiddenValues.removeHiddenFieldsValues(hiddenInstance)
@@ -615,8 +637,10 @@ describe('fetch', () => {
         expect(changes).toHaveLength(2)
       })
       it('should return correct changes', () => {
-        expect(changes[0].change).toMatchObject({ action: 'add', id: newTypeBase.elemID })
-        expect(changes[1].change).toMatchObject({ action: 'add', id: inst.elemID })
+        expect(changes[0].change).toMatchObject({ action: 'add',
+          id: newTypeBaseDifferentAdapterID.elemID })
+        expect(changes[1].change).toMatchObject({ action: 'add',
+          id: inst.elemID.createAdapterReplacedID(newTypeDifferentAdapterID.adapter) })
       })
     })
 
@@ -655,9 +679,8 @@ describe('fetch', () => {
                 newTypeBaseWPath,
                 newTypeExtWPath] })
             )
-            const newTypeBaseWPathDifferentID = newTypeBaseWPath.clone()
-            _.set(newTypeBaseWPathDifferentID, 'elemID', newTypeBaseWPath.elemID
-              .createAdapterReplacedID(newTypeDifferentAdapterID.adapter))
+            const newTypeBaseWPathDifferentID = newTypeBaseDifferentAdapterID.clone()
+            newTypeBaseWPathDifferentID.path = ['a', 'b']
             const result = await fetchChanges(
               mockAdapters,
               createElementSource([newTypeBaseWPathDifferentID]),
@@ -666,10 +689,6 @@ describe('fetch', () => {
               [],
             )
             changes = [...result.changes]
-            changes.forEach(change => {
-              // eslint-disable-next-line no-console
-              console.log(change)
-            })
           })
 
 
@@ -677,7 +696,7 @@ describe('fetch', () => {
             expect(changes.length).toEqual(1)
           })
           it('should populate the change with the containing parent path', () => {
-            expect(changes[0].change.id.getFullName()).toBe('dummy.new.field.ext')
+            expect(changes[0].change.id.getFullName()).toBe(`${newTypeDifferentAdapterID.adapter}.new.field.ext`)
             expect(changes[0].change.path).toEqual(['c', 'd'])
           })
         })
@@ -685,6 +704,11 @@ describe('fetch', () => {
           beforeEach(async () => {
             const newTypeA = new ObjectType({
               elemID: newTypeID,
+              path: ['a', 'b'],
+            })
+
+            const expectedNewTypeA = new ObjectType({
+              elemID: newTypeDifferentAdapterID,
               path: ['a', 'b'],
             })
 
@@ -701,9 +725,9 @@ describe('fetch', () => {
             )
             const result = await fetchChanges(
               mockAdapters,
-              createElementSource([newTypeA]),
+              createElementSource([expectedNewTypeA]),
               { [newTypeDifferentAdapterID.adapter]: 'dummy1' },
-              createElementSource([newTypeA]),
+              createElementSource([expectedNewTypeA]),
               [],
             )
             changes = [...result.changes]
@@ -714,7 +738,7 @@ describe('fetch', () => {
             expect(changes.length).toEqual(1)
           })
           it('should populate the change with the containing parent path', () => {
-            expect(changes[0].change.id.getFullName()).toBe('dummy.new.attr.baba')
+            expect(changes[0].change.id.getFullName()).toBe(`${newTypeDifferentAdapterID.adapter}.new.attr.baba`)
             expect(changes[0].change.path).toEqual(['c', 'd'])
           })
         })
@@ -726,9 +750,9 @@ describe('fetch', () => {
           )
           const result = await fetchChanges(
             mockAdapters,
-            createElementSource([typeWithFieldChange]),
+            createElementSource([typeWithFieldChangeDifferentID]),
             { [newTypeDifferentAdapterID.adapter]: 'dummy' },
-            createElementSource([typeWithField]),
+            createElementSource([typeWithFieldDifferentID]),
             [],
           )
           changes = [...result.changes]
@@ -745,9 +769,9 @@ describe('fetch', () => {
           )
           const result = await fetchChanges(
             mockAdapters,
-            createElementSource([typeWithFieldConflict]),
+            createElementSource([typeWithFieldConflictDifferentID]),
             { [newTypeDifferentAdapterID.adapter]: 'dummy' },
-            createElementSource([typeWithField]),
+            createElementSource([typeWithFieldDifferentID]),
             [],
           )
           changes = [...result.changes]
@@ -767,7 +791,7 @@ describe('fetch', () => {
             mockAdapters,
             createElementSource([]),
             { [newTypeDifferentAdapterID.adapter]: 'dummy' },
-            createElementSource([typeWithField]),
+            createElementSource([typeWithFieldDifferentID]),
             [],
           )
           changes = [...result.changes]
@@ -801,9 +825,9 @@ describe('fetch', () => {
           .fetch.mockResolvedValueOnce({ elements: [] })
         const result = await fetchChanges(
           mockAdapters,
-          createElementSource([typeWithFieldChange]),
+          createElementSource([typeWithFieldChangeDifferentID]),
           { [newTypeDifferentAdapterID.adapter]: 'dummy' },
-          createElementSource([typeWithField]),
+          createElementSource([typeWithFieldDifferentID]),
           [],
         )
         changes = [...result.changes]
@@ -825,7 +849,7 @@ describe('fetch', () => {
           .mockResolvedValueOnce({ elements: [typeWithField] })
         const result = await fetchChanges(
           mockAdapters,
-          createElementSource([typeWithFieldChangeDifferentId]),
+          createElementSource([typeWithFieldChangeDifferentID]),
           { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([typeWithFieldDifferentID]),
           [],
@@ -995,7 +1019,7 @@ describe('fetch', () => {
     describe('first fetch', () => {
       beforeEach(async () => {
         mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
-          Promise.resolve({ elements: [typeWithField, hiddenInstance] })
+          { elements: [typeWithField, hiddenInstance] }
         )
         const result = await fetchChanges(
           mockAdapters,
@@ -1014,7 +1038,13 @@ describe('fetch', () => {
 
       it('changes should be equal to the service elements', () => {
         expect(getChangeElement(changes[0].change)).toEqual(typeWithFieldDifferentID)
-        expect(getChangeElement(changes[1].change)).toEqual(hiddenInstanceAlternateId)
+        const expectedHiddenInstanceAlternateId = hiddenInstanceAlternateId.clone()
+        expectedHiddenInstanceAlternateId.refType = expectedHiddenInstanceAlternateId
+          .refType.clone()
+        expectedHiddenInstanceAlternateId.refType.value = expect.anything()
+        // refType's type property is not supposed to be transformed, so we don't assert on it.
+        _.set(expectedHiddenInstanceAlternateId.refType, 'type', expect.anything())
+        expect(getChangeElement(changes[1].change)).toEqual(expectedHiddenInstanceAlternateId)
       })
     })
 
@@ -1037,11 +1067,14 @@ describe('fetch', () => {
           createElementSource([]),
           [],
         )
-        // eslint-disable-next-line no-console
-        console.log((await awu(instancesPassed).toArray())[0])
-        // eslint-disable-next-line no-console
-        console.log(hiddenInstanceAlternateId)
-        expect(await awu(instancesPassed).toArray()).toEqual([hiddenInstanceAlternateId])
+        const passed = await awu(instancesPassed).toArray()
+        const expectedHiddenInstanceAlternateId = hiddenInstanceAlternateId.clone()
+        expectedHiddenInstanceAlternateId.refType = expectedHiddenInstanceAlternateId
+          .refType.clone()
+        expectedHiddenInstanceAlternateId.refType.value = expect.anything()
+        // refType's type property is not supposed to be transformed, so we don't assert on it.
+        _.set(expectedHiddenInstanceAlternateId.refType, 'type', expect.anything())
+        expect(passed).toEqual([expectedHiddenInstanceAlternateId])
       })
     })
   })
@@ -1057,7 +1090,7 @@ describe('fetch', () => {
     describe('fetch is partial', () => {
       it('should call postFetch with the state and service elements combined in elementsByAdapter, but only the fetched elements in currentAdapterElements', async () => {
         mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
-          { elements: [newTypeBaseModified], isPartial: true },
+          Promise.resolve({ elements: [newTypeBaseModified], isPartial: true }),
         )
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
@@ -1218,7 +1251,7 @@ describe('fetch', () => {
       })
       it('should call postFetch only for fetched adapters (with postFetch defined) when not all are fetched', async () => {
         await fetchChanges(
-          _.pick(adapters, ['dummy1', 'dummy2']),
+          _.pick(adapters, [expectedDummy1.elemID.adapter, 'dummy2']),
           createElementSource([]),
           {
             [expectedDummy1.elemID.adapter]: 'dummy1',
@@ -1250,7 +1283,7 @@ describe('fetch', () => {
       it('should not fail on errors', async () => {
         adapters.dummy2.postFetch.mockImplementationOnce(() => { throw new Error(' failure') })
         await expect(fetchChanges(
-          _.pick(adapters, ['dummy1', 'dummy2']),
+          _.pick(adapters, [expectedDummy1.elemID.adapter, 'dummy2']),
           createElementSource([]),
           {
             [expectedDummy1.elemID.adapter]: 'dummy1',

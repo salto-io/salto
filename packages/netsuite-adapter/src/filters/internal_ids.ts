@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, Field, getChangeElement, InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeElement, InstanceElement, isAdditionChange, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { isDataObjectType } from '../types'
 import { FilterCreator } from '../filter'
@@ -43,7 +43,7 @@ const fetchRecordIdsForRecordType = async (
   client: NetsuiteClient
 ): Promise<Record<string, string>> => {
   const fetchRecordType = async (idParamName: string): Promise<Record<string, string>> => {
-    const recordTypeIds = await client.runSuiteQL(`SELECT scriptid, ${idParamName} FROM ${recordType}`)
+    const recordTypeIds = await client.runSuiteQL(`SELECT scriptid, ${idParamName} FROM ${recordType} ORDER BY ${idParamName} ASC`)
     if (recordTypeIds) {
       return Object.fromEntries(recordTypeIds.map(entry => [entry.scriptid, entry[idParamName]]))
     }
@@ -73,6 +73,13 @@ const getListOfSDFInstances = async (elements: Element[]): Promise<InstanceEleme
     .filter(elem => elem.value.scriptid)
     .filter(async a => !isDataObjectType(await a.getType())))
 
+
+const getAdditionInstances = (changes: Change[]): InstanceElement[] =>
+  changes
+    .filter(isAdditionChange)
+    .map(getChangeElement)
+    .filter(isInstanceElement)
+
 /**
  * This filter adds the internal id to instances.
  * so we will be able to reference them in other instances
@@ -83,7 +90,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const instances = await getListOfSDFInstances(elements)
     await addInternalIdFieldToInstancesObjects(instances)
     const recordIdMap = await createRecordIdsMap(
-      client, instances.map(elem => elem.elemID.typeName)
+      client, _.uniq(instances.map(elem => elem.elemID.typeName))
     )
     instances
       .filter(instance => recordIdMap[instance.elemID.typeName][instance.value.scriptid])
@@ -101,6 +108,25 @@ const filterCreator: FilterCreator = ({ client }) => ({
     instances.forEach(element => {
       delete element.value.internalId
     })
+  },
+  /**
+   * This assign the internal id for new instances created through Salto
+   */
+  onDeploy: async changes => {
+    const additionInstances = getAdditionInstances(changes)
+
+    if (!client.isSuiteAppConfigured() || additionInstances.length === 0) {
+      return
+    }
+
+    const recordIdMap = await createRecordIdsMap(
+      client, _.uniq(additionInstances.map(instance => instance.elemID.typeName))
+    )
+
+    additionInstances
+      .forEach(instance => {
+        instance.value.internalId = recordIdMap[instance.elemID.typeName][instance.value.scriptid]
+      })
   },
 })
 

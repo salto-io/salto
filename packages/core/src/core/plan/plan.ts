@@ -107,7 +107,7 @@ const isEqualsNode = async (
   src2: ReadOnlyElementsSource,
 ): Promise<boolean> => {
   if (!values.isDefined(node1) || !values.isDefined(node2)) {
-    // Theoratically we should return true if both are undefined, but pratically
+    // Theoratically we should return true if both are undefined, but practically
     // this makes no sense, so we return false,
     return false
   }

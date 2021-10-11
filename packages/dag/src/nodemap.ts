@@ -71,9 +71,9 @@ export type NodeHandler = (id: NodeId) => void
 const promiseAllToSingle = (promises: Iterable<Promise<void>>): Promise<void> =>
   Promise.all(promises).then(() => undefined)
 
-class WalkErrors extends Map<NodeId, Error> {
+class WalkErrors<T> extends Map<NodeId, Error> {
   // eslint-disable-next-line no-use-before-define
-  constructor(readonly nodeMap: AbstractNodeMap) {
+  constructor(readonly nodeMap: DAG<T>) {
     super()
   }
 
@@ -175,19 +175,14 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
       .map(([k, v]) => [k, difference(v, ids)])
   }
 
-  // bulk alternative to deleteNode which returns a new NodeMap without the specified nodes
-  cloneWithout(ids: Set<NodeId>): this {
+  filterNodes(func: (node: NodeId) => boolean): this {
+    const nodesToDrop = new Set(wu(this.keys()).filter(node => !func(node)))
     return new (this.constructor as new (entries: Iterable<[NodeId, Set<NodeId>]>) => this)(
-      this.entriesWithout(ids)
+      this.entriesWithout(nodesToDrop)
     )
   }
 
-  filterNodes(func: (node: NodeId) => boolean): this {
-    const nodesToDrop = new Set(wu(this.keys()).filter(node => !func(node)))
-    return this.cloneWithout(nodesToDrop)
-  }
-
-  // used after walking the graph had finished - any undeleted nodes represent a cycle
+  // used after walking the graph had finished - any un deleted nodes represent a cycle
   ensureEmpty(): void {
     if (this.size !== 0) {
       throw new CircularDependencyError(this)

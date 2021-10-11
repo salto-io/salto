@@ -299,4 +299,82 @@ describe('filterInvalidChanges', () => {
     expect(planResult.changeErrors.every(v => v.severity === 'Error')).toBeTruthy()
     expect(planResult.size).toBe(0)
   })
+
+  it('should include nodes that were dropped due to a dependency to an error node', async () => {
+    const newInvalidObj = new ObjectType({
+      elemID: new ElemID('salto', 'new_invalid_obj'),
+      fields: {
+        valid: { refType: BuiltinTypes.STRING },
+      },
+      annotations: { value: 'value' },
+    })
+    const newDependentInst = new InstanceElement('valid', newInvalidObj, {})
+    const planResult = await getPlan({
+      before: createElementSource(allElements),
+      after: createElementSource([...allElements, newInvalidObj, newDependentInst]),
+      changeValidators: { salto: mockChangeValidator },
+      dependencyChangers: [async () => wu([
+        {
+          action: 'add',
+          dependency: {
+            source: `${newDependentInst.elemID.getFullName()}/add`,
+            target: `${newInvalidObj.elemID.getFullName()}/add`,
+          },
+        },
+      ])],
+    })
+    expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(1)
+    const objErr = planResult.changeErrors.filter(err => !isDependencyError(err))[0]
+    const depErr = planResult.changeErrors.filter(err => isDependencyError(err))[0]
+    expect(objErr.elemID.isEqual(newInvalidObj.elemID))
+      .toBeTruthy()
+    expect(depErr.severity === 'Error').toBeTruthy()
+    expect(depErr.elemID.isEqual(newDependentInst.elemID))
+      .toBeTruthy()
+    expect(depErr.severity === 'Error').toBeTruthy()
+    expect(planResult.size).toBe(1)
+    const planItem = getFirstPlanItem(planResult)
+    expect(planItem.items.size).toBe(1)
+  })
+
+  it('should include dependency error and actual error if a change has both', async () => {
+    const newInvalidObj = new ObjectType({
+      elemID: new ElemID('salto', 'new_invalid_obj'),
+      fields: {
+        valid: { refType: BuiltinTypes.STRING },
+      },
+      annotations: { value: 'value' },
+    })
+    const newInvalidDependentInst = new InstanceElement('invalid', newInvalidObj, {})
+    const planResult = await getPlan({
+      before: createElementSource(allElements),
+      after: createElementSource([...allElements, newInvalidObj, newInvalidDependentInst]),
+      changeValidators: { salto: mockChangeValidator },
+      dependencyChangers: [async () => wu([
+        {
+          action: 'add',
+          dependency: {
+            source: `${newInvalidDependentInst.elemID.getFullName()}/add`,
+            target: `${newInvalidObj.elemID.getFullName()}/add`,
+          },
+        },
+      ])],
+    })
+    expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(2)
+    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(1)
+    const [objErr, instErr] = planResult.changeErrors.filter(err => !isDependencyError(err))
+    const depErr = planResult.changeErrors.filter(err => isDependencyError(err))[0]
+    expect(objErr.elemID.isEqual(newInvalidObj.elemID))
+      .toBeTruthy()
+    expect(instErr.elemID.isEqual(newInvalidDependentInst.elemID))
+      .toBeTruthy()
+    expect(depErr.severity === 'Error').toBeTruthy()
+    expect(depErr.elemID.isEqual(newInvalidDependentInst.elemID))
+      .toBeTruthy()
+    expect(depErr.severity === 'Error').toBeTruthy()
+    expect(planResult.size).toBe(1)
+    const planItem = getFirstPlanItem(planResult)
+    expect(planItem.items.size).toBe(1)
+  })
 })

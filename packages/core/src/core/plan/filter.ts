@@ -161,7 +161,7 @@ export const filterInvalidChanges = async (
       .map(id => [id, diffGraph.getComponent({ roots: [id], reverse: true })]))
 
 
-    const dependentsToOmit = Object.values(dependenciesMap)
+    const nodesToOmitWithDependents = Object.values(dependenciesMap)
       .flatMap(nodeIds => [...nodeIds])
 
     const dependencyErrors = Object.entries(dependenciesMap)
@@ -176,7 +176,7 @@ export const filterInvalidChanges = async (
         ([causeID, elemIDs]) => elemIDs.map(elemID => createDependencyErr(causeID, elemID))
       )
 
-    const allNodeIdsToOmit = new Set([...nodeIdsToOmit, ...dependentsToOmit])
+    const allNodeIdsToOmit = new Set(nodesToOmitWithDependents)
     const nodesToInclude = new Set(wu(diffGraph.keys()).filter(
       id => !allNodeIdsToOmit.has(id)
     ))

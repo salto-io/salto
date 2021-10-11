@@ -33,14 +33,14 @@ type Cycle = Edge[]
 
 export type GroupKeyFunc = (id: NodeId) => string
 
-const getComponentWithoutNodestoAvoid = <T>(
+const getComponentWithoutNodesToAvoid = <T>(
   source: DataNodeMap<T>,
   currentGroupNodes: Set<NodeId>,
   possibleStartNodes: Set<NodeId>,
   nodesToAvoid: Set<NodeId>,
 ): Set<NodeId> | undefined => {
   const componentToAvoid = source.getComponent({
-    roots: [...nodesToAvoid.keys()],
+    roots: [...nodesToAvoid],
     filterFunc: id => currentGroupNodes.has(id),
     reverse: true,
   })
@@ -76,7 +76,7 @@ const modifyGroupKeyToRemoveCycle = <T>(
       id => wu(source.get(id).values())
         .some(destId => groupKey(destId) === nextGroup)
     ))
-    const componentToSplit = getComponentWithoutNodestoAvoid(
+    const componentToSplit = getComponentWithoutNodesToAvoid(
       source,
       new Set(currentGroupSrcIds),
       sourceNodesWithBackRef,
@@ -89,10 +89,12 @@ const modifyGroupKeyToRemoveCycle = <T>(
     return undefined
   }
 
-  const newGroup = knownCycle.map((inEdge, index) => {
-    const outEdge = knownCycle[(index + 1) % knownCycle.length]
-    return getNewGroupToCreateToRemoveEdgeFromCycle(inEdge, outEdge)
-  }).find(values.isDefined)
+  const newGroup = wu(knownCycle).enumerate()
+    .map(([inEdge, index]) => {
+      const outEdge = knownCycle[(index + 1) % knownCycle.length]
+      return getNewGroupToCreateToRemoveEdgeFromCycle(inEdge, outEdge)
+    })
+    .find(values.isDefined)
 
   if (values.isDefined(newGroup)) {
     return (id: NodeId) => (newGroup.nodesID.has(id)
@@ -100,8 +102,14 @@ const modifyGroupKeyToRemoveCycle = <T>(
       : groupKey(id))
   }
 
-  // We create a graph that contains only the nodes and edges from this cycle
-  // in order to creat an error with the original cycle in the source graph
+  // If we got here this means that none of the groups that participate in the cycle
+  // can be split in a way that would break the cycle. This can only happen if the cycle
+  // can be mapped to a cycle in the source graph, which contains nodes that can not be
+  // grouped together. If such a case - we really can't organize the group graph as a DAG
+  // And we fail.
+  //
+  // To display the error, We create a graph that contains only the nodes and edges from
+  // this cycle in order to creat an error with the original cycle in the source graph
   // (since using the group names would mean nothing to the user)
   const knowCycleNodes = new Set(knownCycle.flat())
   const origCycle = source.filterNodes(id => knowCycleNodes.has(groupKey(id)))
@@ -111,7 +119,7 @@ const modifyGroupKeyToRemoveCycle = <T>(
 const buildPossiblyCyclicGroupGraph = <T>(
   source: DataNodeMap<T>,
   groupKey: GroupKeyFunc,
-  originGroupKey: GroupKeyFunc
+  origGroupKey: GroupKeyFunc
 ): GroupedNodeMap<T> => {
   const itemToGroupId = new Map<NodeId, NodeId>()
   const graph = wu(source.keys())
@@ -119,7 +127,7 @@ const buildPossiblyCyclicGroupGraph = <T>(
       const groupId = groupKey(nodeId)
       if (!acc.has(groupId)) {
         acc.addNode(groupId, [], {
-          groupKey: originGroupKey(nodeId), items: new Map(),
+          groupKey: origGroupKey(nodeId), items: new Map(),
         })
       }
       acc.getData(groupId).items.set(nodeId, source.getData(nodeId))

@@ -712,6 +712,46 @@ describe('NodeMap', () => {
           })
         })
       })
+
+      describe('when there is a circular dependency AND the handler throws an error in a', () => {
+        class MyError extends Error {
+        }
+
+        let handlerError: MyError
+        let error: WalkError
+
+        beforeEach(() => {
+          subject.addNode(2, [3, 7])
+          subject.addNode(6, [5, 7])
+          subject.addNode(7, [])
+          try {
+            subject.walkSync((id: NodeId) => {
+              if (id === 7) {
+                handlerError = new MyError('My error message')
+                throw handlerError
+              }
+            })
+          } catch (e) {
+            error = e
+          }
+          expect(error).toBeDefined()
+        })
+
+        it('should throw a WalkError', () => {
+          expect(error).toBeInstanceOf(WalkError)
+        })
+
+        describe('the error\'s "errors" property', () => {
+          let errors: ReadonlyMap<NodeId, Error>
+          beforeEach(() => {
+            errors = (error as WalkError).handlerErrors
+          })
+
+          it('should contain the id of the errored node with the error', () => {
+            expect(errors.get(7)).toBe(handlerError)
+          })
+        })
+      })
     })
 
     describe('walkAsync', () => {

@@ -124,6 +124,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     )
 
     additionInstances
+      .filter(instance => recordIdMap[instance.elemID.typeName][instance.value.scriptid])
       .forEach(instance => {
         instance.value.internalId = recordIdMap[instance.elemID.typeName][instance.value.scriptid]
       })

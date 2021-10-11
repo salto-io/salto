@@ -37,22 +37,13 @@ describe('netsuite internal ids', () => {
   } as unknown as SuiteAppClient
 
   const client = new NetsuiteClient(SDFClient, suiteAppClient)
-
   beforeEach(() => {
-    runSuiteQLMock.mockReset()
-    runSuiteQLMock.mockResolvedValueOnce(undefined)
-    runSuiteQLMock.mockResolvedValueOnce([
-      { scriptid: '3', internalid: '3' },
-    ])
-    runSuiteQLMock.mockResolvedValueOnce([
-      { scriptid: '1', id: '1' },
-    ])
     accountInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
-    accountInstance.value.internalId = '1'
     customTypeInstance = new InstanceElement('customRecordType', new ObjectType({ elemID: new ElemID(NETSUITE, 'customRecordType') }))
-    customTypeInstance.value.scriptid = '1'
     customListInstance = new InstanceElement('customList', new ObjectType({ elemID: new ElemID(NETSUITE, 'customList') }))
-    customListInstance.value.scriptid = '3'
+    accountInstance.value.internalId = '1'
+    customTypeInstance.value.scriptid = 'scriptId2'
+    customListInstance.value.scriptid = 'scriptId3'
     elements = [accountInstance, customTypeInstance, customListInstance]
     filterOpts = {
       client,
@@ -64,32 +55,69 @@ describe('netsuite internal ids', () => {
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
     }
+    runSuiteQLMock.mockReset()
+    runSuiteQLMock.mockResolvedValueOnce(undefined)
+    runSuiteQLMock.mockResolvedValueOnce([
+      { scriptid: 'scriptId3', internalid: '3' },
+    ])
+    runSuiteQLMock.mockResolvedValueOnce([
+      { scriptid: 'scriptId2', id: '2' },
+    ])
   })
   describe('fetch', () => {
-    it('should query information from api', async () => {
+    beforeEach(async () => {
       await filterCreator(filterOpts).onFetch?.(elements)
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, internalid FROM customRecordType')
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, internalid FROM customList')
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, 'SELECT scriptid, id FROM customRecordType')
+    })
+    it('should query information from api', () => {
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, internalid FROM customRecordType ORDER BY internalid ASC')
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, internalid FROM customList ORDER BY internalid ASC')
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, 'SELECT scriptid, id FROM customRecordType ORDER BY id ASC')
       expect(runSuiteQLMock).toHaveBeenCalledTimes(3)
     })
-    it('should add internal ids to elements', async () => {
-      await filterCreator(filterOpts).onFetch?.(elements)
+    it('should add internal ids to elements', () => {
       expect(accountInstance.value.internalId).toBe('1')
-      expect(customTypeInstance.value.internalId).toBe('1')
+      expect(customTypeInstance.value.internalId).toBe('2')
       expect(customListInstance.value.internalId).toBe('3')
     })
   })
-  describe('predeploy', () => {
-    it('should add internal ids to elements', async () => {
+  describe('pre deploy', () => {
+    it('should remove internal ids from elements', async () => {
+      customTypeInstance.value.internalId = '2'
       customListInstance.value.internalId = '3'
-      customTypeInstance.value.internalId = '1'
       await filterCreator(filterOpts).preDeploy?.(
         elements.map(element => toChange({ after: element }))
       )
       expect(accountInstance.value.internalId).toBe('1')
       expect(customTypeInstance.value.internalId).toBe(undefined)
       expect(customListInstance.value.internalId).toBe(undefined)
+    })
+  })
+  describe('deploy', () => {
+    beforeEach(async () => {
+      await filterCreator(filterOpts).onDeploy?.(
+        [
+          toChange({ before: accountInstance, after: accountInstance }),
+          toChange({ after: customTypeInstance }),
+          toChange({ after: customListInstance }),
+        ],
+        {
+          appliedChanges: [],
+          errors: [],
+        },
+      )
+    })
+    it('should query information from api', () => {
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, internalid FROM customRecordType ORDER BY internalid ASC')
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, internalid FROM customList ORDER BY internalid ASC')
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, 'SELECT scriptid, id FROM customRecordType ORDER BY id ASC')
+      expect(runSuiteQLMock).toHaveBeenCalledTimes(3)
+    })
+    it('should add internal ids to new elements', () => {
+      expect(customTypeInstance.value.internalId).toBe('2')
+      expect(customListInstance.value.internalId).toBe('3')
+    })
+    it('should do nothing to modified elements', () => {
+      expect(accountInstance.value.internalId).toBe('1')
     })
   })
 })

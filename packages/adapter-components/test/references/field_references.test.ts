@@ -244,16 +244,6 @@ describe('Field references', () => {
         serializationStrategy: 'name',
         target: { type: 'product' },
       },
-      {
-        src: { field: 'fail' },
-        serializationStrategy: 'id',
-        target: { typeContext: 'fail' },
-      },
-      {
-        src: { field: 'value' },
-        serializationStrategy: 'id',
-        target: { typeContext: 'fail' },
-      },
     ]
 
     beforeAll(async () => {
@@ -354,6 +344,37 @@ describe('Field references', () => {
       expect(inst.value.subjectAndValues[0].valueList[0].value).toBeInstanceOf(ReferenceExpression)
       expect(inst.value.subjectAndValues[0].valueList[0].value.elemID.getFullName()).toEqual('myAdapter.brand.instance.brand1')
     })
+  })
+  describe('failure modes', () => {
+    let elements: Element[]
+    const fieldNameToTypeMappingDefs: FieldReferenceDefinition<'parentSubject' | 'parentValue' | 'neighborRef' | 'fail'>[] = [
+      {
+        src: { field: 'fail' },
+        serializationStrategy: 'id',
+        target: { typeContext: 'fail' },
+      },
+      {
+        src: { field: 'value' },
+        serializationStrategy: 'id',
+        target: { typeContext: 'fail' },
+      },
+    ]
+
+    beforeAll(async () => {
+      elements = generateElements()
+      await addReferences({
+        elements,
+        defs: fieldNameToTypeMappingDefs,
+        fieldsToGroupBy: ['id', 'name'],
+        contextStrategyLookup: {
+          parentSubject: neighborContextFunc({ contextFieldName: 'subject', levelsUp: 1, contextValueMapper: val => val.replace('_id', '') }),
+          parentValue: neighborContextFunc({ contextFieldName: 'value', levelsUp: 2, contextValueMapper: val => val.replace('_id', '') }),
+          neighborRef: neighborContextFunc({ contextFieldName: 'ref' }),
+          fail: neighborContextFunc({ contextFieldName: 'product', contextValueMapper: () => { throw new Error('fail') } }),
+        },
+      })
+    })
+
     it('should not crash when context function throws an error', async () => {
       // nothing to check really - just making sure the field was not removed
       const inst = elements.filter(

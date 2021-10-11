@@ -16,8 +16,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import {
-  NodeId, CircularDependencyError, WalkError, NodeSkippedError,
-  AbstractNodeMap, DataNodeMap,
+  NodeId, CircularDependencyError, WalkError, NodeSkippedError, DataNodeMap, DAG,
 } from '../src/nodemap'
 
 class MaxCounter {
@@ -41,7 +40,7 @@ class MaxCounter {
 }
 
 describe('NodeMap', () => {
-  class MyNodeMap extends AbstractNodeMap {
+  class MyNodeMap extends DAG<string> {
     addNode(id: NodeId, dependsOn: Iterable<NodeId> = []): void {
       super.addNodeBase(id, dependsOn)
     }
@@ -456,6 +455,33 @@ describe('NodeMap', () => {
       })
     })
   })
+  describe('get cycles', () => {
+    describe('for a graph with no cycles', () => {
+      beforeEach(() => {
+        subject.addNode(1, [3])
+        subject.addNode(2, [3])
+        subject.addNode(3, [])
+      })
+      it('should return undefined', () => {
+        expect(subject.getCycle()).not.toBeDefined()
+      })
+    })
+
+    describe('for a graph with cycles', () => {
+      beforeEach(() => {
+        subject.addNode(1, [6])
+        subject.addNode(2, [3])
+        subject.addNode(3, [4])
+        subject.addNode(4, [2])
+        subject.addNode(5, [6])
+        subject.addNode(6, [])
+      })
+
+      it('should return the cycles', () => {
+        expect(subject.getCycle()).toEqual([[2, 3], [3, 4], [4, 2]])
+      })
+    })
+  })
 
   describe('evaluationOrder', () => {
     let res: NodeId[]
@@ -683,6 +709,46 @@ describe('NodeMap', () => {
             expect(String(depError)).toContain(
               'Circular dependencies exist among these items: 2->[3], 3->[2], 4->[2]'
             )
+          })
+        })
+      })
+
+      describe('when there is a circular dependency AND the handler throws an error in a', () => {
+        class MyError extends Error {
+        }
+
+        let handlerError: MyError
+        let error: WalkError
+
+        beforeEach(() => {
+          subject.addNode(2, [3, 7])
+          subject.addNode(6, [5, 7])
+          subject.addNode(7, [])
+          try {
+            subject.walkSync((id: NodeId) => {
+              if (id === 7) {
+                handlerError = new MyError('My error message')
+                throw handlerError
+              }
+            })
+          } catch (e) {
+            error = e
+          }
+          expect(error).toBeDefined()
+        })
+
+        it('should throw a WalkError', () => {
+          expect(error).toBeInstanceOf(WalkError)
+        })
+
+        describe('the error\'s "errors" property', () => {
+          let errors: ReadonlyMap<NodeId, Error>
+          beforeEach(() => {
+            errors = (error as WalkError).handlerErrors
+          })
+
+          it('should contain the id of the errored node with the error', () => {
+            expect(errors.get(7)).toBe(handlerError)
           })
         })
       })
@@ -1016,6 +1082,8 @@ describe('DataNodeMap', () => {
   let n3d: object
   let n4d: object
   let n5d: object
+  let n6d: object
+  let n7d: object
 
   beforeEach(() => {
     subject = new DataNodeMap<object>()
@@ -1024,6 +1092,8 @@ describe('DataNodeMap', () => {
     n3d = {}
     n4d = {}
     n5d = {}
+    n6d = {}
+    n7d = {}
   })
 
   describe('addNode', () => {
@@ -1083,6 +1153,36 @@ describe('DataNodeMap', () => {
         expect([...result.get(1)]).toEqual([])
         expect([...result.get(4)]).toEqual([5])
       })
+    })
+  })
+  describe('get component', () => {
+    beforeEach(() => {
+      subject = new DataNodeMap<object>()
+      subject.addNode(1, [2, 3], n1d)
+      subject.addNode(2, [2, 3, 4], n2d)
+      subject.addNode(3, [1], n3d)
+      subject.addNode(4, [5, 2], n4d)
+      subject.addNode(5, [], n5d)
+      subject.addNode(6, [7, 4], n6d)
+      subject.addNode(6, [], n7d)
+    })
+    it('should return the connected components of a node', () => {
+      expect([...subject.getComponent({ roots: [3] }).keys()].sort()).toEqual([1, 2, 3, 4, 5])
+    })
+
+    it('should return the connected components of a node in reverse order', () => {
+      expect([...subject.getComponent({ roots: [3], reverse: true }).keys()].sort())
+        .toEqual([1, 2, 3, 4, 6])
+    })
+
+    it('should filter out nodes that are filtered by the filter func', () => {
+      expect([...subject.getComponent({ roots: [3], filterFunc: id => id !== 4 }).keys()].sort())
+        .toEqual([1, 2, 3])
+    })
+
+    it('should return the connected components of multiple roots', () => {
+      expect([...subject.getComponent({ roots: [3, 6], filterFunc: id => id !== 4 }).keys()].sort())
+        .toEqual([1, 2, 3, 6, 7])
     })
   })
 })

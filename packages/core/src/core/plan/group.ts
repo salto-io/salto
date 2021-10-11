@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
-import { DataNodeMap, GroupedNodeMap, NodeId, buildGroupedGraph } from '@salto-io/dag'
+import { DataNodeMap, NodeId, buildAcyclicGroupedGraph, GroupDAG } from '@salto-io/dag'
 import { Change, getChangeElement, isField, ChangeGroupId, ChangeId, ChangeGroupIdFunction } from '@salto-io/adapter-api'
 
 const { awu } = collections.asynciterable
@@ -46,7 +46,7 @@ export const getCustomGroupIds = async (
 
 export const buildGroupedGraphFromDiffGraph = (
   diffGraph: DataNodeMap<Change>, customGroupKeys?: Map<ChangeId, ChangeGroupId>
-): GroupedNodeMap<Change> => {
+): GroupDAG<Change> => {
   const groupKey = (nodeId: NodeId): string => {
     const customKey = customGroupKeys?.get(nodeId)
     if (customKey !== undefined) {
@@ -58,5 +58,5 @@ export const buildGroupedGraphFromDiffGraph = (
     return groupElement.elemID.getFullName()
   }
 
-  return buildGroupedGraph(diffGraph, groupKey)
+  return buildAcyclicGroupedGraph(diffGraph, groupKey)
 }

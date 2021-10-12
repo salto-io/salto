@@ -15,9 +15,9 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionChange, DetailedChange, Value, StaticFile, isStaticFile, isReferenceExpression, placeholderReadonlyElementsSource, TypeReference } from '@salto-io/adapter-api'
+import { getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionChange, DetailedChange, Value, StaticFile, isStaticFile, isReferenceExpression, TypeReference } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
-import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
+import { TransformFunc, walkOnElement } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { SourceRange, SourceMap } from '../../parser'
 
@@ -331,14 +331,7 @@ export const getNestedStaticFiles = async (value: Value): Promise<StaticFile[]> 
       }
       return val
     }
-    await transformElement({
-      element: value,
-      transformFunc,
-      strict: false,
-      // This transformElement does not need to types so this can be used
-      // Long term we should replace this with not using transformElement
-      elementsSource: placeholderReadonlyElementsSource,
-    })
+    await walkOnElement(value, transformFunc)
     return Array.from(allStaticFiles.values())
   }
   if (_.isArray(value)) {

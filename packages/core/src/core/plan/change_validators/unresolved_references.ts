@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ChangeValidator, getChangeElement, Element, ElemID, SaltoErrorSeverity, isReferenceExpression } from '@salto-io/adapter-api'
-import { transformElement } from '@salto-io/adapter-utils'
+import { walkOnElement } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 import { expressions } from '@salto-io/workspace'
 
@@ -22,16 +22,15 @@ const { awu } = collections.asynciterable
 
 const getUnresolvedReferences = async (element: Element): Promise<ElemID[]> => {
   const unresolvedReferences: ElemID[] = []
-  await transformElement({
+  await walkOnElement(
     element,
-    strict: false,
-    transformFunc: ({ value }) => {
+    ({ value }) => {
       if (isReferenceExpression(value) && value.value instanceof expressions.UnresolvedReference) {
         unresolvedReferences.push(value.elemID)
       }
       return value
-    },
-  })
+    }
+  )
   return unresolvedReferences
 }
 

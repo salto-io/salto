@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, ElemIDTypes, Value, ElemIDType } from '@salto-io/adapter-api'
-import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
+import { TransformFunc, walkOnElement } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
 
@@ -249,11 +249,7 @@ export const selectElementIdsByTraversal = async (
     return undefined
   }
 
-  await awu(stillRelevantIDs).forEach(async elemId => transformElement({
-    element: await source.get(elemId),
-    transformFunc: selectFromSubElements,
-    runOnFields: true,
-    elementsSource: source,
-  }))
+  await awu(stillRelevantIDs)
+    .forEach(async elemId => walkOnElement(await source.get(elemId), selectFromSubElements, true))
   return awu(topLevelIDs.concat(subElementIDs)).uniquify(id => id.getFullName())
 }

@@ -401,6 +401,77 @@ export const transformElement = async <T extends Element>(
   return element
 }
 
+export const applyRecursively = async (
+  {
+    values,
+    transformFunc,
+    pathID = undefined,
+  }: {
+    values: Values
+    transformFunc: TransformFunc
+    pathID?: ElemID
+  }
+): Promise<void> => {
+  const apply = async (value: Value, keyPathID?: ElemID): Promise<void> => {
+    // TODO: stop recursion if return value is undefined
+    if ((await transformFunc({ value, path: keyPathID })) === undefined) {
+      return
+    }
+    if (_.isArray(value)) {
+      await awu(value)
+        .forEach((item, index) => apply(item, keyPathID?.createNestedID(String(index))))
+      return
+    }
+
+    if (_.isPlainObject(value)) {
+      await mapValuesAsync(
+        value ?? {},
+        (val, key) => apply(val, keyPathID?.createNestedID(key)),
+      )
+    }
+  }
+  await mapValuesAsync(
+    values ?? {},
+    (value, key) => apply(value, pathID?.createNestedID(key))
+  )
+}
+
+export const walkOnElementAnnotations = async <T extends Element>(
+  element: T,
+  transformFunc: TransformFunc
+): Promise<void> => {
+  await applyRecursively({
+    values: element.annotations,
+    transformFunc,
+    pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
+  })
+}
+
+export const walkOnElement = async <T extends Element>(
+  element: T,
+  transformFunc: TransformFunc,
+  runOnFields = false,
+): Promise<void> => {
+  await walkOnElementAnnotations(element, transformFunc)
+  if (isInstanceElement(element)) {
+    await transformFunc({ value: element, path: element.elemID })
+    await applyRecursively({ values: element.value, transformFunc, pathID: element.elemID })
+  }
+  if (isObjectType(element)) {
+    await mapValuesAsync(
+      element.fields,
+      async field => {
+        if (runOnFields) {
+          if ((await transformFunc({ value: field, path: field.elemID })) === undefined) {
+            return
+          }
+        }
+        await walkOnElement(field, transformFunc)
+      },
+    )
+  }
+}
+
 export type GetLookupNameFuncArgs = {
   ref: ReferenceExpression
   field?: Field
@@ -455,11 +526,7 @@ export const restoreValues: RestoreValuesFunc = async (source, targetElement, ge
     return value
   }
 
-  await transformElement({
-    element: source,
-    transformFunc: createPathMapCallback,
-    strict: false,
-  })
+  await walkOnElement(source, createPathMapCallback)
 
   const restoreValuesFunc: TransformFunc = async ({ value, field, path }) => {
     if (path === undefined) {
@@ -863,7 +930,6 @@ export const safeJsonStringify = (value: Value,
 export const getAllReferencedIds = async (
   element: Element,
   onlyAnnotations = false,
-  elementsSource?: ReadOnlyElementsSource,
 ): Promise<Set<string>> => {
   const allReferencedIds = new Set<string>()
   const transformFunc: TransformFunc = ({ value }) => {
@@ -874,9 +940,9 @@ export const getAllReferencedIds = async (
   }
 
   if (onlyAnnotations) {
-    await transformElementAnnotations({ element, transformFunc, strict: false, elementsSource })
+    await walkOnElementAnnotations(element, transformFunc)
   } else {
-    await transformElement({ element, transformFunc, strict: false, elementsSource })
+    await walkOnElement(element, transformFunc)
   }
 
   return allReferencedIds

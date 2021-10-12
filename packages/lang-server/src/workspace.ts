@@ -21,7 +21,7 @@ import { Element, SaltoError, ElemID, Change, getChangeElement,
   isRemovalChange, isReferenceExpression, isContainerType,
   Value, isModificationChange } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
-import { detailedCompare, transformElement, TransformFunc } from '@salto-io/adapter-utils'
+import { detailedCompare, TransformFunc, walkOnElement } from '@salto-io/adapter-utils'
 
 
 const { validateElements } = validator
@@ -150,12 +150,10 @@ export class EditorWorkspace {
     await awu(fileElements)
       .filter(e => !isContainerType(e))
       .forEach(async element => (
-        transformElement({
+        walkOnElement(
           element,
-          transformFunc: getReferenceExpressions,
-          strict: false,
-          elementsSource: await this.elements,
-        })
+          getReferenceExpressions,
+        )
       ))
     return validationErrors
   }

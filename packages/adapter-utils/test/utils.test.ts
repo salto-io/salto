@@ -31,7 +31,7 @@ import {
   findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath, ResolveValuesFunc,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
-  transformElement, toObjectType, getParents, resolveTypeShallow, walkOnElement,
+  transformElement, toObjectType, getParents, resolveTypeShallow, walkOnElement, applyRecursively,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -704,6 +704,84 @@ describe('Test utils.ts', () => {
     })
   })
 
+  describe('applyRecursively', () => {
+    const objType = new ObjectType({
+      elemID: new ElemID('dummy', 'test'),
+      fields: {
+        f1: { refType: BuiltinTypes.STRING },
+        f2: {
+          refType: new ListType(BuiltinTypes.STRING),
+          annotations: { a1: 'foo' },
+        },
+        f3: {
+          refType: new MapType(BuiltinTypes.STRING),
+          annotations: { a2: 'foo' },
+        },
+      },
+      annotationRefsOrTypes: { a2: BuiltinTypes.STRING },
+      annotations: {
+        a2: '1',
+        a3: [{ reference: new ReferenceExpression(BuiltinTypes.STRING.elemID) }],
+      },
+    })
+    const inst = new InstanceElement(
+      'test',
+      objType,
+      { f1: 'str', f2: ['a', 'b', 'c'], f3: { f: 'test' } },
+      undefined,
+      { [CORE_ANNOTATIONS.PARENT]: ['me'] },
+    )
+    it('should not call transformFunc if values is undefined', async () => {
+      const transformFunc = jest.fn().mockResolvedValue(undefined)
+      await applyRecursively({
+        values: undefined as unknown as Values,
+        transformFunc,
+        isTopLevel: false,
+      })
+      expect(transformFunc).not.toHaveBeenCalled()
+    })
+    it('should run on the top level if isTopLevel is true', async () => {
+      const paths: string[] = []
+      const transformFunc = mockFunction<TransformFunc>()
+        .mockImplementation(({ value, path }) => {
+          paths.push(path?.getFullName() ?? '')
+          return value
+        })
+      await applyRecursively({
+        values: inst.value,
+        transformFunc,
+        isTopLevel: true,
+        pathID: inst.elemID,
+      })
+      expect(paths).toEqual([
+        'dummy.test.instance.test',
+        'dummy.test.instance.test.f1',
+        'dummy.test.instance.test.f2',
+        'dummy.test.instance.test.f2.0',
+        'dummy.test.instance.test.f2.1',
+        'dummy.test.instance.test.f2.2',
+        'dummy.test.instance.test.f3',
+        'dummy.test.instance.test.f3.f',
+      ])
+    })
+    it('should find ReferenceExpression', async () => {
+      const refs: string[] = []
+      const transformFunc = mockFunction<TransformFunc>()
+        .mockImplementation(({ value }) => {
+          if (isReferenceExpression(value)) {
+            refs.push(value.elemID.getFullName())
+          }
+          return value
+        })
+      await applyRecursively({
+        values: objType.annotations,
+        transformFunc,
+        isTopLevel: false,
+      })
+      expect(refs).toEqual([BuiltinTypes.STRING.elemID.getFullName()])
+    })
+  })
+
   describe('transformElement and walkOnElement', () => {
     let primType: PrimitiveType
     let listType: ListType
@@ -997,7 +1075,7 @@ describe('Test utils.ts', () => {
           await transformElement({ element: inst, transformFunc, strict: false })
           expect(walkPaths).toEqual(paths)
         })
-        it('should walk only on top level and its annotations1', async () => {
+        it('should walk only on top level and its annotations', async () => {
           let paths: string[] = []
           transformFunc = mockFunction<TransformFunc>()
             .mockImplementation(({ path }) => { paths.push(path?.getFullName() ?? '') })

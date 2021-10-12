@@ -68,7 +68,7 @@ export const addReferencesForService = async <T extends SalesforceBlock | Netsui
     return value
   }
 
-  await walkOnElement(inst, findReferences)
+  await walkOnElement({ element: inst, transformFunc: findReferences })
   if (dependencyMapping.length === 0) {
     return
   }

@@ -57,7 +57,7 @@ export const findDependingInstancesFromRefs = async (
     return value
   }
 
-  await walkOnElement(instance, createDependingElementsCallback)
+  await walkOnElement({ element: instance, transformFunc: createDependingElementsCallback })
   return wu(visitedIdToInstance.values()).toArray()
 }
 

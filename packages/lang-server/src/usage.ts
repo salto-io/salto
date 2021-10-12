@@ -52,7 +52,7 @@ const getElemIDUsages = async (
     return value
   }
   if (!isContainerType(element)) {
-    await walkOnElement(element, transformFunc)
+    await walkOnElement({ element, transformFunc })
   }
   return [...pathesToAdd]
 }

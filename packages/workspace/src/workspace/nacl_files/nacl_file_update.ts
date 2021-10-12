@@ -331,7 +331,7 @@ export const getNestedStaticFiles = async (value: Value): Promise<StaticFile[]> 
       }
       return val
     }
-    await walkOnElement(value, transformFunc)
+    await walkOnElement({ element: value, transformFunc })
     return Array.from(allStaticFiles.values())
   }
   if (_.isArray(value)) {

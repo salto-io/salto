@@ -250,6 +250,8 @@ export const selectElementIdsByTraversal = async (
   }
 
   await awu(stillRelevantIDs)
-    .forEach(async elemId => walkOnElement(await source.get(elemId), selectFromSubElements, true))
+    .forEach(async elemId => walkOnElement({
+      element: await source.get(elemId), transformFunc: selectFromSubElements, runOnFields: true,
+    }))
   return awu(topLevelIDs.concat(subElementIDs)).uniquify(id => id.getFullName())
 }

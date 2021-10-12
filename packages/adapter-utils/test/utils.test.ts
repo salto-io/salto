@@ -31,7 +31,7 @@ import {
   findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath, ResolveValuesFunc,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
-  transformElement, toObjectType, getParents, resolveTypeShallow,
+  transformElement, toObjectType, getParents, resolveTypeShallow, walkOnElement,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -704,7 +704,7 @@ describe('Test utils.ts', () => {
     })
   })
 
-  describe('transformElement', () => {
+  describe('transformElement and walkOnElement', () => {
     let primType: PrimitiveType
     let listType: ListType
     let mapType: MapType
@@ -761,166 +761,252 @@ describe('Test utils.ts', () => {
       )
       transformFunc = mockFunction<TransformFunc>().mockImplementation(({ value }) => value)
     })
-    describe('with PrimitiveType', () => {
-      let result: PrimitiveType
-      beforeEach(async () => {
-        result = await transformElement({ element: primType, transformFunc, strict: false })
+    describe('transformElement', () => {
+      describe('with PrimitiveType', () => {
+        let result: PrimitiveType
+        beforeEach(async () => {
+          result = await transformElement({ element: primType, transformFunc, strict: false })
+        })
+        it('should return new primitive type', () => {
+          expect(isPrimitiveType(result)).toBeTruthy()
+        })
+        it('should transform annotations', () => {
+          expect(transformFunc).toHaveBeenCalledWith({
+            value: 'asd', field: expect.any(Field), path: primType.elemID.createNestedID('attr', 'a1'),
+          })
+        })
       })
-      it('should return new primitive type', () => {
-        expect(isPrimitiveType(result)).toBeTruthy()
+      describe('with ListType', () => {
+        let result: ListType
+        beforeEach(async () => {
+          result = await transformElement({ element: listType, transformFunc, strict: false })
+        })
+        it('should return new list type', () => {
+          expect(isListType(result)).toBeTruthy()
+        })
+        it('should transform inner type annotations', () => {
+          expect(transformFunc).toHaveBeenCalledWith({
+            value: 'asd', field: expect.any(Field), path: primType.elemID.createNestedID('attr', 'a1'),
+          })
+        })
       })
-      it('should transform annotations', () => {
-        expect(transformFunc).toHaveBeenCalledWith({
-          value: 'asd', field: expect.any(Field), path: primType.elemID.createNestedID('attr', 'a1'),
+      describe('with MapType', () => {
+        let result: MapType
+        beforeEach(async () => {
+          result = await transformElement({ element: mapType, transformFunc, strict: false })
+        })
+        it('should return new map type', () => {
+          expect(isMapType(result)).toBeTruthy()
+        })
+        it('should transform inner type annotations', () => {
+          expect(transformFunc).toHaveBeenCalledWith({
+            value: 'asd', field: expect.any(Field), path: primType.elemID.createNestedID('attr', 'a1'),
+          })
+        })
+      })
+      describe('with ObjectType', () => {
+        let result: ObjectType
+        beforeEach(async () => {
+          result = await transformElement({ element: objType, transformFunc, strict: false })
+        })
+        it('should return new object type', () => {
+          expect(isObjectType(result)).toBeTruthy()
+        })
+        it('should transform type annotations', () => {
+          expect(transformFunc).toHaveBeenCalledWith({
+            value: 1,
+            field: expect
+              .objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) }),
+            path: objType.elemID.createNestedID('attr', 'a2'),
+          })
+        })
+        it('should transform field annotations', () => {
+          expect(transformFunc).toHaveBeenCalledWith({
+            value: 'foo', field: expect.any(Field), path: objType.fields.f2.elemID.createNestedID('a1'),
+          })
+          expect(transformFunc).toHaveBeenCalledWith({
+            value: { reference: new ReferenceExpression(primType.elemID) },
+            field: expect.objectContaining({ refType: expect.anything() }),
+            path: objType.fields.f2.elemID.createNestedID(CORE_ANNOTATIONS.DEPENDS_ON, '0'),
+          })
+        })
+        it('should not transform fields when runOnFields is not set', () => {
+          expect(transformFunc).not.toHaveBeenCalledWith({
+            value: expect.objectContaining({ refType: BuiltinTypes.STRING }),
+            field: undefined,
+            path: objType.fields.f4.elemID,
+          })
+        })
+      })
+      describe('with ObjectType and runOnFields', () => {
+        let result: ObjectType
+        beforeEach(async () => {
+          result = await transformElement({
+            element: objType, transformFunc, strict: false, runOnFields: true,
+          })
+        })
+        it('should return new object type', () => {
+          expect(isObjectType(result)).toBeTruthy()
+        })
+        it('should transform type annotations', () => {
+          expect(transformFunc).toHaveBeenCalledWith({
+            value: 1,
+            field: expect
+              .objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) }),
+            path: objType.elemID.createNestedID('attr', 'a2'),
+          })
+        })
+        it('should transform field annotations', () => {
+          expect(transformFunc).toHaveBeenCalledWith({
+            value: 'foo', field: expect.any(Field), path: objType.fields.f2.elemID.createNestedID('a1'),
+          })
+          expect(transformFunc).toHaveBeenCalledWith({
+            value: { reference: new ReferenceExpression(primType.elemID) },
+            field: expect.objectContaining({ refType: expect.anything() }),
+            path: objType.fields.f2.elemID.createNestedID(CORE_ANNOTATIONS.DEPENDS_ON, '0'),
+          })
+        })
+        it('should transform fields', () => {
+          expect(transformFunc).toHaveBeenCalledWith({
+            value: expect
+              .objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) }),
+            field: undefined,
+            path: objType.fields.f4.elemID,
+          })
+        })
+        it('should not run on annotations if transformFunc returned undefined on the field', async () => {
+          const otherFunc = mockFunction<TransformFunc>().mockImplementation(() => undefined)
+          await transformElement({
+            element: objType, transformFunc: otherFunc, strict: false, runOnFields: true,
+          })
+          expect(otherFunc).toHaveBeenCalledWith({
+            value: expect
+              .objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) }),
+            field: undefined,
+            path: objType.fields.f4.elemID,
+          })
+          expect(otherFunc).toHaveBeenCalledWith({
+            value: expect.objectContaining({ refType: createRefToElmWithValue(listType) }),
+            field: undefined,
+            path: objType.fields.f2.elemID,
+          })
+          expect(otherFunc).not.toHaveBeenCalledWith({
+            value: { reference: new ReferenceExpression(primType.elemID) },
+            field: expect.objectContaining({ refType: BuiltinTypes.STRING }),
+            path: objType.fields.f2.elemID.createNestedID(CORE_ANNOTATIONS.DEPENDS_ON, '0'),
+          })
+        })
+      })
+      describe('with InstanceElement', () => {
+        let result: InstanceElement
+        beforeEach(async () => {
+          result = await transformElement({ element: inst, transformFunc, strict: false })
+        })
+        it('should return a new instance', () => {
+          expect(isInstanceElement(result)).toBeTruthy()
+        })
+        it('should transform values', () => {
+          expect(transformFunc).toHaveBeenCalledWith(
+            { value: 'a', field: objType.fields.f1, path: inst.elemID.createNestedID('f1') }
+          )
+        })
+        it('should transform annotations', () => {
+          expect(transformFunc).toHaveBeenCalledWith({
+            value: 'me',
+            field: expect.any(Field),
+            path: inst.elemID.createNestedID(CORE_ANNOTATIONS.PARENT, '0'),
+          })
+        })
+        it('should copy the annotation type annotations to the field annotations', async () => {
+          const callArgs = transformFunc.mock.calls.flat().find(args => args.value === 'someUrl')
+          expect(callArgs?.field).toBeDefined()
+          const fieldArg = callArgs?.field
+          const fieldType = fieldArg !== undefined && await fieldArg.getType()
+          const annotations = fieldType && fieldType.annotations
+          expect(callArgs?.field?.annotations).toEqual(annotations)
+          expect(_.isEmpty(callArgs?.field?.annotations)).toBeFalsy()
         })
       })
     })
-    describe('with ListType', () => {
-      let result: ListType
-      beforeEach(async () => {
-        result = await transformElement({ element: listType, transformFunc, strict: false })
-      })
-      it('should return new list type', () => {
-        expect(isListType(result)).toBeTruthy()
-      })
-      it('should transform inner type annotations', () => {
-        expect(transformFunc).toHaveBeenCalledWith({
-          value: 'asd', field: expect.any(Field), path: primType.elemID.createNestedID('attr', 'a1'),
+    describe('walkOnElement', () => {
+      describe('with ObjectType', () => {
+        it('should walk on all the nodes', async () => {
+          let paths: string[] = []
+          transformFunc = mockFunction<TransformFunc>()
+            .mockImplementation(({ path, value }) => {
+              paths.push(path?.getFullName() ?? '')
+              return value
+            })
+          await walkOnElement({ element: objType, transformFunc, runOnFields: false })
+          const walkPaths = paths
+          paths = []
+          await transformElement({ element: objType, transformFunc, strict: false })
+          expect(walkPaths).toEqual(paths)
+        })
+        it('should walk only on top level and its annotations', async () => {
+          let paths: string[] = []
+          transformFunc = mockFunction<TransformFunc>()
+            .mockImplementation(({ path }) => { paths.push(path?.getFullName() ?? '') })
+          await walkOnElement({ element: objType, transformFunc, runOnFields: false })
+          const walkPaths = paths
+          paths = []
+          await transformElement({ element: objType, transformFunc, strict: false })
+          expect(walkPaths).toEqual(paths)
         })
       })
-    })
-    describe('with MapType', () => {
-      let result: MapType
-      beforeEach(async () => {
-        result = await transformElement({ element: mapType, transformFunc, strict: false })
-      })
-      it('should return new map type', () => {
-        expect(isMapType(result)).toBeTruthy()
-      })
-      it('should transform inner type annotations', () => {
-        expect(transformFunc).toHaveBeenCalledWith({
-          value: 'asd', field: expect.any(Field), path: primType.elemID.createNestedID('attr', 'a1'),
+      describe('with ObjectType and runOnFields', () => {
+        it('should walk on all the nodes', async () => {
+          let paths: string[] = []
+          transformFunc = mockFunction<TransformFunc>()
+            .mockImplementation(({ path, value }) => {
+              paths.push(path?.getFullName() ?? '')
+              return value
+            })
+          await walkOnElement({ element: objType, transformFunc, runOnFields: true })
+          const walkPaths = paths
+          paths = []
+          await transformElement({
+            element: objType, transformFunc, runOnFields: true, strict: false,
+          })
+          expect(walkPaths).toEqual(paths)
+        })
+        it('should walk only on top level, its annotations and fields', async () => {
+          let paths: string[] = []
+          transformFunc = mockFunction<TransformFunc>()
+            .mockImplementation(({ path }) => { paths.push(path?.getFullName() ?? '') })
+          await walkOnElement({ element: objType, transformFunc, runOnFields: true })
+          const walkPaths = paths
+          paths = []
+          await transformElement({
+            element: objType, transformFunc, runOnFields: true, strict: false,
+          })
+          expect(walkPaths).toEqual(paths)
         })
       })
-    })
-    describe('with ObjectType', () => {
-      let result: ObjectType
-      beforeEach(async () => {
-        result = await transformElement({ element: objType, transformFunc, strict: false })
-      })
-      it('should return new object type', () => {
-        expect(isObjectType(result)).toBeTruthy()
-      })
-      it('should transform type annotations', () => {
-        expect(transformFunc).toHaveBeenCalledWith({
-          value: 1,
-          field: expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) }),
-          path: objType.elemID.createNestedID('attr', 'a2'),
+      describe('with InstanceElement', () => {
+        it('should walk on all the nodes', async () => {
+          let paths: string[] = []
+          transformFunc = mockFunction<TransformFunc>()
+            .mockImplementation(({ path, value }) => {
+              paths.push(path?.getFullName() ?? '')
+              return value
+            })
+          await walkOnElement({ element: inst, transformFunc })
+          const walkPaths = paths
+          paths = []
+          await transformElement({ element: inst, transformFunc, strict: false })
+          expect(walkPaths).toEqual(paths)
         })
-      })
-      it('should transform field annotations', () => {
-        expect(transformFunc).toHaveBeenCalledWith({
-          value: 'foo', field: expect.any(Field), path: objType.fields.f2.elemID.createNestedID('a1'),
+        it('should walk only on top level and its annotations1', async () => {
+          let paths: string[] = []
+          transformFunc = mockFunction<TransformFunc>()
+            .mockImplementation(({ path }) => { paths.push(path?.getFullName() ?? '') })
+          await walkOnElement({ element: inst, transformFunc })
+          const walkPaths = paths
+          paths = []
+          await transformElement({ element: inst, transformFunc, strict: false })
+          expect(walkPaths).toEqual(paths)
         })
-        expect(transformFunc).toHaveBeenCalledWith({
-          value: { reference: new ReferenceExpression(primType.elemID) },
-          field: expect.objectContaining({ refType: expect.anything() }),
-          path: objType.fields.f2.elemID.createNestedID(CORE_ANNOTATIONS.DEPENDS_ON, '0'),
-        })
-      })
-      it('should not transform fields when runOnFields is not set', () => {
-        expect(transformFunc).not.toHaveBeenCalledWith({
-          value: expect.objectContaining({ refType: BuiltinTypes.STRING }),
-          field: undefined,
-          path: objType.fields.f4.elemID,
-        })
-      })
-    })
-    describe('with ObjectType and runOnFields', () => {
-      let result: ObjectType
-      beforeEach(async () => {
-        result = await transformElement({
-          element: objType, transformFunc, strict: false, runOnFields: true,
-        })
-      })
-      it('should return new object type', () => {
-        expect(isObjectType(result)).toBeTruthy()
-      })
-      it('should transform type annotations', () => {
-        expect(transformFunc).toHaveBeenCalledWith({
-          value: 1,
-          field: expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) }),
-          path: objType.elemID.createNestedID('attr', 'a2'),
-        })
-      })
-      it('should transform field annotations', () => {
-        expect(transformFunc).toHaveBeenCalledWith({
-          value: 'foo', field: expect.any(Field), path: objType.fields.f2.elemID.createNestedID('a1'),
-        })
-        expect(transformFunc).toHaveBeenCalledWith({
-          value: { reference: new ReferenceExpression(primType.elemID) },
-          field: expect.objectContaining({ refType: expect.anything() }),
-          path: objType.fields.f2.elemID.createNestedID(CORE_ANNOTATIONS.DEPENDS_ON, '0'),
-        })
-      })
-      it('should transform fields', () => {
-        expect(transformFunc).toHaveBeenCalledWith({
-          value: expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) }),
-          field: undefined,
-          path: objType.fields.f4.elemID,
-        })
-      })
-      it('should not run on annotations if transformFunc returned undefined on the field', async () => {
-        const otherFunc = mockFunction<TransformFunc>().mockImplementation(() => undefined)
-        await transformElement({
-          element: objType, transformFunc: otherFunc, strict: false, runOnFields: true,
-        })
-        expect(otherFunc).toHaveBeenCalledWith({
-          value: expect.objectContaining({ refType: createRefToElmWithValue(BuiltinTypes.STRING) }),
-          field: undefined,
-          path: objType.fields.f4.elemID,
-        })
-        expect(otherFunc).toHaveBeenCalledWith({
-          value: expect.objectContaining({ refType: createRefToElmWithValue(listType) }),
-          field: undefined,
-          path: objType.fields.f2.elemID,
-        })
-        expect(otherFunc).not.toHaveBeenCalledWith({
-          value: { reference: new ReferenceExpression(primType.elemID) },
-          field: expect.objectContaining({ refType: BuiltinTypes.STRING }),
-          path: objType.fields.f2.elemID.createNestedID(CORE_ANNOTATIONS.DEPENDS_ON, '0'),
-        })
-      })
-    })
-    describe('with InstanceElement', () => {
-      let result: InstanceElement
-      beforeEach(async () => {
-        result = await transformElement({ element: inst, transformFunc, strict: false })
-      })
-      it('should return a new instance', () => {
-        expect(isInstanceElement(result)).toBeTruthy()
-      })
-      it('should transform values', () => {
-        expect(transformFunc).toHaveBeenCalledWith(
-          { value: 'a', field: objType.fields.f1, path: inst.elemID.createNestedID('f1') }
-        )
-      })
-      it('should transform annotations', () => {
-        expect(transformFunc).toHaveBeenCalledWith({
-          value: 'me',
-          field: expect.any(Field),
-          path: inst.elemID.createNestedID(CORE_ANNOTATIONS.PARENT, '0'),
-        })
-      })
-
-      it('should copy the annotation type annotations to the field annotations', async () => {
-        const callArgs = transformFunc.mock.calls.flat().find(args => args.value === 'someUrl')
-        expect(callArgs?.field).toBeDefined()
-        const fieldArg = callArgs?.field
-        const fieldType = fieldArg !== undefined && await fieldArg.getType()
-        const annotations = fieldType && fieldType.annotations
-        expect(callArgs?.field?.annotations).toEqual(annotations)
-        expect(_.isEmpty(callArgs?.field?.annotations)).toBeFalsy()
       })
     })
   })

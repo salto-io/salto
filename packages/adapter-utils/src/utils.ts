@@ -415,7 +415,6 @@ export const applyRecursively = async (
   }
 ): Promise<void> => {
   const apply = async (value: Value, keyPathID?: ElemID): Promise<void> => {
-    // TODO: stop recursion if return value is undefined
     if ((await transformFunc({ value, path: keyPathID })) === undefined) {
       return
     }
@@ -433,7 +432,9 @@ export const applyRecursively = async (
     }
   }
   if (isTopLevel) {
-    await transformFunc({ value: values, path: pathID })
+    if ((await transformFunc({ value: values, path: pathID })) === undefined) {
+      return
+    }
   }
   await mapValuesAsync(
     values ?? {},
@@ -454,9 +455,15 @@ export const walkOnElementAnnotations = async <T extends Element>(
 }
 
 export const walkOnElement = async <T extends Element>(
-  element: T,
-  transformFunc: TransformFunc,
-  runOnFields = false,
+  {
+    element,
+    transformFunc,
+    runOnFields = false,
+  }: {
+    element: T
+    transformFunc: TransformFunc
+    runOnFields?: boolean
+  }
 ): Promise<void> => {
   await walkOnElementAnnotations(element, transformFunc)
   if (isInstanceElement(element)) {
@@ -476,7 +483,7 @@ export const walkOnElement = async <T extends Element>(
             return
           }
         }
-        await walkOnElement(field, transformFunc)
+        await walkOnElement({ element: field, transformFunc })
       },
     )
   }
@@ -536,7 +543,7 @@ export const restoreValues: RestoreValuesFunc = async (source, targetElement, ge
     return value
   }
 
-  await walkOnElement(source, createPathMapCallback)
+  await walkOnElement({ element: source, transformFunc: createPathMapCallback })
 
   const restoreValuesFunc: TransformFunc = async ({ value, field, path }) => {
     if (path === undefined) {
@@ -952,7 +959,7 @@ export const getAllReferencedIds = async (
   if (onlyAnnotations) {
     await walkOnElementAnnotations(element, transformFunc)
   } else {
-    await walkOnElement(element, transformFunc)
+    await walkOnElement({ element, transformFunc })
   }
 
   return allReferencedIds

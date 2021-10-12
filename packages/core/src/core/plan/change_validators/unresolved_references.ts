@@ -22,15 +22,15 @@ const { awu } = collections.asynciterable
 
 const getUnresolvedReferences = async (element: Element): Promise<ElemID[]> => {
   const unresolvedReferences: ElemID[] = []
-  await walkOnElement(
+  await walkOnElement({
     element,
-    ({ value }) => {
+    transformFunc: ({ value }) => {
       if (isReferenceExpression(value) && value.value instanceof expressions.UnresolvedReference) {
         unresolvedReferences.push(value.elemID)
       }
       return value
-    }
-  )
+    },
+  })
   return unresolvedReferences
 }
 

@@ -150,10 +150,10 @@ export class EditorWorkspace {
     await awu(fileElements)
       .filter(e => !isContainerType(e))
       .forEach(async element => (
-        walkOnElement(
+        walkOnElement({
           element,
-          getReferenceExpressions,
-        )
+          transformFunc: getReferenceExpressions,
+        })
       ))
     return validationErrors
   }

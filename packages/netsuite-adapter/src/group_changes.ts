@@ -22,7 +22,7 @@ import {
   isRemovalChange,
 } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
-import { transformValues } from '@salto-io/adapter-utils'
+import { applyRecursively } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import * as suiteAppFileCabinet from './suiteapp_file_cabinet'
 import { customTypes, fileCabinetTypes, isDataObjectType, isFileCabinetInstance } from './types'
@@ -68,16 +68,15 @@ const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes =>
 
 const getRecordDependencies = async (element: InstanceElement): Promise<string[]> => {
   const dependencies: string[] = []
-  await transformValues({
+  await applyRecursively({
     values: element.value,
-    type: await element.getType(),
-    strict: false,
     transformFunc: ({ value }) => {
       if (isReferenceExpression(value)) {
         dependencies.push(value.elemID.getFullName())
       }
       return value
     },
+    isTopLevel: true,
   })
   return dependencies
 }

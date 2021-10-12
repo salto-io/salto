@@ -22,7 +22,7 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
-import { transformValues } from '@salto-io/adapter-utils'
+import { applyRecursively } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isCustomType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE } from '../constants'
@@ -32,15 +32,15 @@ const { isDefined } = values
 
 const hasAccountSpecificValue = async (instance: InstanceElement): Promise<boolean> => {
   let foundAccountSpecificValue = false
-  await transformValues({
+  await applyRecursively({
     values: instance.value,
-    type: await instance.getType(),
     transformFunc: ({ value }) => {
       if (_.isString(value) && value.includes(ACCOUNT_SPECIFIC_VALUE)) {
         foundAccountSpecificValue = true
       }
       return value
     },
+    isTopLevel: true,
   })
   return foundAccountSpecificValue
 }

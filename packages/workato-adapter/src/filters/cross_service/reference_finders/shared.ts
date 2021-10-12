@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { InstanceElement, ElemID, Value, Values } from '@salto-io/adapter-api'
-import { transformElement, TransformFunc, safeJsonStringify, setPath, extendGeneratedDependencies, FlatDetailedDependency, DependencyDirection } from '@salto-io/adapter-utils'
+import { walkOnElement, TransformFunc, safeJsonStringify, setPath, extendGeneratedDependencies, FlatDetailedDependency, DependencyDirection } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { strings, types, values as lowerdashValues } from '@salto-io/lowerdash'
 import { NetsuiteBlock, SalesforceBlock, BlockBase } from './recipe_block_types'
@@ -68,12 +68,7 @@ export const addReferencesForService = async <T extends SalesforceBlock | Netsui
     return value
   }
 
-  // used for traversal, the transform result is ignored
-  await transformElement({
-    element: inst,
-    transformFunc: findReferences,
-    strict: false,
-  })
+  await walkOnElement(inst, findReferences)
   if (dependencyMapping.length === 0) {
     return
   }

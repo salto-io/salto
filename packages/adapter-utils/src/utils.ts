@@ -405,10 +405,12 @@ export const applyRecursively = async (
   {
     values,
     transformFunc,
+    isTopLevel,
     pathID = undefined,
   }: {
     values: Values
     transformFunc: TransformFunc
+    isTopLevel: boolean
     pathID?: ElemID
   }
 ): Promise<void> => {
@@ -430,6 +432,9 @@ export const applyRecursively = async (
       )
     }
   }
+  if (isTopLevel) {
+    await transformFunc({ value: values, path: pathID })
+  }
   await mapValuesAsync(
     values ?? {},
     (value, key) => apply(value, pathID?.createNestedID(key))
@@ -444,6 +449,7 @@ export const walkOnElementAnnotations = async <T extends Element>(
     values: element.annotations,
     transformFunc,
     pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
+    isTopLevel: false,
   })
 }
 
@@ -454,8 +460,12 @@ export const walkOnElement = async <T extends Element>(
 ): Promise<void> => {
   await walkOnElementAnnotations(element, transformFunc)
   if (isInstanceElement(element)) {
-    await transformFunc({ value: element, path: element.elemID })
-    await applyRecursively({ values: element.value, transformFunc, pathID: element.elemID })
+    await applyRecursively({
+      values: element.value,
+      transformFunc,
+      pathID: element.elemID,
+      isTopLevel: true,
+    })
   }
   if (isObjectType(element)) {
     await mapValuesAsync(

@@ -15,6 +15,7 @@
 */
 import { Change, InstanceElement, StaticFile, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { MockInterface } from '@salto-io/test-utils'
 import { NetsuiteQuery } from '../src/query'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, isChangeDeployable } from '../src/suiteapp_file_cabinet'
@@ -183,17 +184,14 @@ describe('suiteapp_file_cabinet', () => {
 
   const suiteAppClient = mockSuiteAppClient as unknown as SuiteAppClient
 
-  const mockQuery = {
-    isFileMatch: jest.fn(),
-    areSomeFilesMatch: jest.fn(),
-  }
-
-  const query = mockQuery as unknown as NetsuiteQuery
+  let query: MockInterface<NetsuiteQuery>
 
   beforeEach(() => {
     jest.resetAllMocks()
-    mockQuery.isFileMatch.mockReturnValue(true)
-    mockQuery.areSomeFilesMatch.mockReturnValue(true)
+    query = {
+      isFileMatch: jest.fn().mockReturnValue(true),
+      areSomeFilesMatch: jest.fn().mockReturnValue(true),
+    } as unknown as MockInterface<NetsuiteQuery>
 
     mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
       if (suiteQlQuery.includes('FROM file')) {
@@ -290,25 +288,7 @@ describe('suiteapp_file_cabinet', () => {
 
     it('should return failed paths', async () => {
       const filesContentWithError: Record<string, Buffer | Error> = {
-        1: new ReadFileError(),
-        2: new ReadFileEncodingError(),
-      }
-      mockSuiteAppClient.readFiles.mockImplementation(
-        async (ids: string[]) => ids.map(id => filesContentWithError[id])
-      )
-      mockSuiteAppClient.readLargeFile.mockResolvedValue(new ReadFileError())
-
-      const { failedPaths } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-        .importFileCabinet(query)
-      expect(failedPaths).toEqual([
-        '/folder5/folder3/file1',
-        '/folder5/folder4/file2',
-      ])
-    })
-
-    it('should not return locked files as failed paths', async () => {
-      const filesContentWithError: Record<string, Buffer | Error> = {
-        1: new ReadFileError(),
+        1: new ReadFileEncodingError(),
         2: new ReadFileInsufficientPermissionError(),
       }
       mockSuiteAppClient.readFiles.mockImplementation(
@@ -318,13 +298,18 @@ describe('suiteapp_file_cabinet', () => {
 
       const { failedPaths } = await createSuiteAppFileCabinetOperations(suiteAppClient)
         .importFileCabinet(query)
-      expect(failedPaths).toEqual([
-        '/folder5/folder3/file1',
-      ])
+      expect(failedPaths).toEqual({
+        lockedError: [
+          '/folder5/folder4/file2',
+        ],
+        otherError: [
+          '/folder5/folder3/file1',
+        ],
+      })
     })
 
     it('should filter files with query', async () => {
-      mockQuery.isFileMatch.mockImplementation(path => path !== '/folder5/folder4' && path !== '/folder5/folder3/file1')
+      query.isFileMatch.mockImplementation(path => path !== '/folder5/folder4' && path !== '/folder5/folder3/file1')
       const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
         .importFileCabinet(query)
       expect(elements).toEqual([
@@ -336,7 +321,7 @@ describe('suiteapp_file_cabinet', () => {
     })
 
     it('should not run queries of no files are matched', async () => {
-      mockQuery.areSomeFilesMatch.mockReturnValue(false)
+      query.areSomeFilesMatch.mockReturnValue(false)
       const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
         .importFileCabinet(query)
       expect(elements).toEqual([])

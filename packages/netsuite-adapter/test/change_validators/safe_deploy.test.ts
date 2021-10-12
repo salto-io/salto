@@ -90,8 +90,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
           Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [origInstance.clone(), origInstance1, origInstance2],
           }))
           const changeErrors = await safeDeployValidator(
@@ -110,8 +110,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
             Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [serviceInstance.clone(), origInstance1, origInstance2],
           }))
           const changeErrors = await safeDeployValidator(
@@ -129,8 +129,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
             Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [serviceInstance.clone(), origInstance1, origInstance2],
           }))
 
@@ -147,8 +147,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
             Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [afterInstance.clone(), origInstance1, origInstance2],
           }))
           const changeErrors = await safeDeployValidator(
@@ -164,8 +164,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
             Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [origInstance1, origInstance2],
           }))
 
@@ -186,8 +186,8 @@ describe('safe deploy change validator', () => {
         const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
         Promise<FetchByQueryReturnType> => (Promise.resolve({
           failedToFetchAllAtOnce: false,
-          failedFilePaths: [],
-          failedTypeToInstances: {},
+          failedFilePaths: { lockedError: [], otherError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {} },
           elements: [serviceInstance.clone(), origInstance1, origInstance2],
         }))
         const changeErrors = await safeDeployValidator(
@@ -201,8 +201,8 @@ describe('safe deploy change validator', () => {
         const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
         Promise<FetchByQueryReturnType> => (Promise.resolve({
           failedToFetchAllAtOnce: false,
-          failedFilePaths: [],
-          failedTypeToInstances: {},
+          failedFilePaths: { lockedError: [], otherError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {} },
           elements: [origInstance.clone(), origInstance1, origInstance2],
         }))
         const changeErrors = await safeDeployValidator(
@@ -218,8 +218,8 @@ describe('safe deploy change validator', () => {
         const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
         Promise<FetchByQueryReturnType> => (Promise.resolve({
           failedToFetchAllAtOnce: false,
-          failedFilePaths: [],
-          failedTypeToInstances: {},
+          failedFilePaths: { lockedError: [], otherError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {} },
           elements: [newInstance.clone()],
         }))
         const changeErrors = await safeDeployValidator(
@@ -234,8 +234,8 @@ describe('safe deploy change validator', () => {
         const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
         Promise<FetchByQueryReturnType> => (Promise.resolve({
           failedToFetchAllAtOnce: false,
-          failedFilePaths: [],
-          failedTypeToInstances: {},
+          failedFilePaths: { lockedError: [], otherError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {} },
           elements: [newInstanceModified],
         }))
         const changeErrors = await safeDeployValidator(
@@ -249,8 +249,8 @@ describe('safe deploy change validator', () => {
         const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
         Promise<FetchByQueryReturnType> => (Promise.resolve({
           failedToFetchAllAtOnce: false,
-          failedFilePaths: [],
-          failedTypeToInstances: {},
+          failedFilePaths: { lockedError: [], otherError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {} },
           elements: [],
         }))
         const changeErrors = await safeDeployValidator(
@@ -344,8 +344,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
           Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [origInstance.clone(), origInstance1, origInstance2],
           }))
           const changeErrors = await safeDeployValidator(
@@ -364,8 +364,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
             Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [serviceInstance.clone(), origInstance1, origInstance2],
           }))
           const changeErrors = await safeDeployValidator(
@@ -383,8 +383,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
             Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [serviceInstance.clone(), origInstance1, origInstance2],
           }))
 
@@ -401,8 +401,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
             Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [afterInstance.clone(), origInstance1, origInstance2],
           }))
           const changeErrors = await safeDeployValidator(
@@ -418,8 +418,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
             Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [origInstance1, origInstance2],
           }))
 
@@ -440,8 +440,8 @@ describe('safe deploy change validator', () => {
         const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
         Promise<FetchByQueryReturnType> => (Promise.resolve({
           failedToFetchAllAtOnce: false,
-          failedFilePaths: [],
-          failedTypeToInstances: {},
+          failedFilePaths: { lockedError: [], otherError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {} },
           elements: [serviceInstance.clone(), origInstance1, origInstance2],
         }))
         const changeErrors = await safeDeployValidator(
@@ -455,8 +455,8 @@ describe('safe deploy change validator', () => {
         const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
         Promise<FetchByQueryReturnType> => (Promise.resolve({
           failedToFetchAllAtOnce: false,
-          failedFilePaths: [],
-          failedTypeToInstances: {},
+          failedFilePaths: { lockedError: [], otherError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {} },
           elements: [origInstance.clone(), origInstance1, origInstance2],
         }))
         const changeErrors = await safeDeployValidator(
@@ -472,8 +472,8 @@ describe('safe deploy change validator', () => {
         const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
         Promise<FetchByQueryReturnType> => (Promise.resolve({
           failedToFetchAllAtOnce: false,
-          failedFilePaths: [],
-          failedTypeToInstances: {},
+          failedFilePaths: { lockedError: [], otherError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {} },
           elements: [newInstance.clone()],
         }))
         const changeErrors = await safeDeployValidator(
@@ -488,8 +488,8 @@ describe('safe deploy change validator', () => {
         const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
         Promise<FetchByQueryReturnType> => (Promise.resolve({
           failedToFetchAllAtOnce: false,
-          failedFilePaths: [],
-          failedTypeToInstances: {},
+          failedFilePaths: { lockedError: [], otherError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {} },
           elements: [newInstanceModified],
         }))
         const changeErrors = await safeDeployValidator(
@@ -503,8 +503,8 @@ describe('safe deploy change validator', () => {
         const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
         Promise<FetchByQueryReturnType> => (Promise.resolve({
           failedToFetchAllAtOnce: false,
-          failedFilePaths: [],
-          failedTypeToInstances: {},
+          failedFilePaths: { lockedError: [], otherError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {} },
           elements: [],
         }))
         const changeErrors = await safeDeployValidator(
@@ -546,8 +546,8 @@ describe('safe deploy change validator', () => {
             const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
             Promise<FetchByQueryReturnType> => (Promise.resolve({
               failedToFetchAllAtOnce: false,
-              failedFilePaths: [],
-              failedTypeToInstances: {},
+              failedFilePaths: { lockedError: [], otherError: [] },
+              failedTypes: { lockedError: {}, unexpectedError: {} },
               elements: [origInstance, origInstance1, origInstance2],
             }))
             const changeErrors = await safeDeployValidator(
@@ -566,8 +566,8 @@ describe('safe deploy change validator', () => {
             const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
               Promise<FetchByQueryReturnType> => (Promise.resolve({
               failedToFetchAllAtOnce: false,
-              failedFilePaths: [],
-              failedTypeToInstances: {},
+              failedFilePaths: { lockedError: [], otherError: [] },
+              failedTypes: { lockedError: {}, unexpectedError: {} },
               elements: [serviceInstance, origInstance1, origInstance2],
             }))
             const changeErrors = await safeDeployValidator(
@@ -583,8 +583,8 @@ describe('safe deploy change validator', () => {
             const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
               Promise<FetchByQueryReturnType> => (Promise.resolve({
               failedToFetchAllAtOnce: false,
-              failedFilePaths: [],
-              failedTypeToInstances: {},
+              failedFilePaths: { lockedError: [], otherError: [] },
+              failedTypes: { lockedError: {}, unexpectedError: {} },
               elements: [afterInstance, origInstance1, origInstance2],
             }))
             const changeErrors = await safeDeployValidator(
@@ -600,8 +600,8 @@ describe('safe deploy change validator', () => {
             const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
               Promise<FetchByQueryReturnType> => (Promise.resolve({
               failedToFetchAllAtOnce: false,
-              failedFilePaths: [],
-              failedTypeToInstances: {},
+              failedFilePaths: { lockedError: [], otherError: [] },
+              failedTypes: { lockedError: {}, unexpectedError: {} },
               elements: [origInstance1, origInstance2],
             }))
 
@@ -622,8 +622,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
           Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [serviceInstance, origInstance1, origInstance2],
           }))
           const changeErrors = await safeDeployValidator(
@@ -637,8 +637,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
           Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [origInstance, origInstance1, origInstance2],
           }))
           const changeErrors = await safeDeployValidator(
@@ -654,8 +654,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
           Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [newInstance.clone()],
           }))
           const changeErrors = await safeDeployValidator(
@@ -670,8 +670,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
           Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [newInstanceModified],
           }))
           const changeErrors = await safeDeployValidator(
@@ -685,8 +685,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
           Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [],
           }))
           const changeErrors = await safeDeployValidator(
@@ -725,8 +725,8 @@ describe('safe deploy change validator', () => {
             const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
             Promise<FetchByQueryReturnType> => (Promise.resolve({
               failedToFetchAllAtOnce: false,
-              failedFilePaths: [],
-              failedTypeToInstances: {},
+              failedFilePaths: { lockedError: [], otherError: [] },
+              failedTypes: { lockedError: {}, unexpectedError: {} },
               elements: [origInstance, origInstance1, origInstance2],
             }))
             const changeErrors = await safeDeployValidator(
@@ -745,8 +745,8 @@ describe('safe deploy change validator', () => {
             const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
               Promise<FetchByQueryReturnType> => (Promise.resolve({
               failedToFetchAllAtOnce: false,
-              failedFilePaths: [],
-              failedTypeToInstances: {},
+              failedFilePaths: { lockedError: [], otherError: [] },
+              failedTypes: { lockedError: {}, unexpectedError: {} },
               elements: [serviceInstance, origInstance1, origInstance2],
             }))
             const changeErrors = await safeDeployValidator(
@@ -762,8 +762,8 @@ describe('safe deploy change validator', () => {
             const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
               Promise<FetchByQueryReturnType> => (Promise.resolve({
               failedToFetchAllAtOnce: false,
-              failedFilePaths: [],
-              failedTypeToInstances: {},
+              failedFilePaths: { lockedError: [], otherError: [] },
+              failedTypes: { lockedError: {}, unexpectedError: {} },
               elements: [afterInstance, origInstance1, origInstance2],
             }))
             const changeErrors = await safeDeployValidator(
@@ -779,8 +779,8 @@ describe('safe deploy change validator', () => {
             const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
               Promise<FetchByQueryReturnType> => (Promise.resolve({
               failedToFetchAllAtOnce: false,
-              failedFilePaths: [],
-              failedTypeToInstances: {},
+              failedFilePaths: { lockedError: [], otherError: [] },
+              failedTypes: { lockedError: {}, unexpectedError: {} },
               elements: [origInstance1, origInstance2],
             }))
 
@@ -801,8 +801,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
           Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [serviceInstance, origInstance1, origInstance2],
           }))
           const changeErrors = await safeDeployValidator(
@@ -816,8 +816,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
           Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [origInstance, origInstance1, origInstance2],
           }))
           const changeErrors = await safeDeployValidator(
@@ -833,8 +833,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
           Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [newInstance.clone()],
           }))
           const changeErrors = await safeDeployValidator(
@@ -849,8 +849,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
           Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [newInstanceModified],
           }))
           const changeErrors = await safeDeployValidator(
@@ -864,8 +864,8 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
           Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: [],
-            failedTypeToInstances: {},
+            failedFilePaths: { lockedError: [], otherError: [] },
+            failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [],
           }))
           const changeErrors = await safeDeployValidator(

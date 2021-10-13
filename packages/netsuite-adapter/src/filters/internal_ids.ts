@@ -119,7 +119,6 @@ const filterCreator: FilterCreator = ({ client }) => ({
     if (!client.isSuiteAppConfigured() || additionInstances.length === 0) {
       return
     }
-    
     await addInternalIdFieldToInstancesObjects(additionInstances)
     const recordIdMap = await createRecordIdsMap(
       client, _.uniq(additionInstances.map(instance => instance.elemID.typeName))

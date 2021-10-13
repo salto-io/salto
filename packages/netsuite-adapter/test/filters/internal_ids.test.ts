@@ -25,6 +25,7 @@ import mockSdfClient from '../client/sdf_client'
 describe('netsuite internal ids', () => {
   let filterOpts: FilterOpts
   let elements: InstanceElement[]
+  let customTypeObject: ObjectType
   let accountInstance: InstanceElement
   let customTypeInstance: InstanceElement
   let customListInstance: InstanceElement
@@ -38,8 +39,9 @@ describe('netsuite internal ids', () => {
 
   const client = new NetsuiteClient(SDFClient, suiteAppClient)
   beforeEach(() => {
+    customTypeObject = new ObjectType({ elemID: new ElemID(NETSUITE, 'customRecordType') })
     accountInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
-    customTypeInstance = new InstanceElement('customRecordType', new ObjectType({ elemID: new ElemID(NETSUITE, 'customRecordType') }))
+    customTypeInstance = new InstanceElement('customRecordType', customTypeObject)
     customListInstance = new InstanceElement('customList', new ObjectType({ elemID: new ElemID(NETSUITE, 'customList') }))
     accountInstance.value.internalId = '1'
     customTypeInstance.value.scriptid = 'scriptId2'
@@ -78,6 +80,9 @@ describe('netsuite internal ids', () => {
       expect(accountInstance.value.internalId).toBe('1')
       expect(customTypeInstance.value.internalId).toBe('2')
       expect(customListInstance.value.internalId).toBe('3')
+    })
+    it('should add field to object', () => {
+      expect(customTypeObject.fields.internalId).toBeDefined()
     })
   })
   describe('pre deploy', () => {
@@ -118,6 +123,9 @@ describe('netsuite internal ids', () => {
     })
     it('should do nothing to modified elements', () => {
       expect(accountInstance.value.internalId).toBe('1')
+    })
+    it('should add field to object', () => {
+      expect(customTypeObject.fields.internalId).toBeDefined()
     })
   })
 })

@@ -157,7 +157,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.getElemIdFunc = getElemIdFunc
     this.fetchInclude = config[FETCH]?.[INCLUDE]
     this.fetchExclude = config[FETCH]?.[EXCLUDE]
-    this.lockedElements = config[LOCKED_ELEMENTS_TO_EXCLUDE]
+    this.lockedElements = config[FETCH]?.[LOCKED_ELEMENTS_TO_EXCLUDE]
     this.fetchTarget = config[FETCH_TARGET]
     this.skipList = config[SKIP_LIST] // old version
     this.useChangesDetection = config[USE_CHANGES_DETECTION] ?? DEFAULT_USE_CHANGES_DETECTION

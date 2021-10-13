@@ -607,7 +607,14 @@ export default class SdfClient {
       }))
 
     const lockedError = SdfClient.createFailedImportsMap(importResult.failedImports
-      .filter(failedImport => failedImport.customObject.result.message.includes('You cannot download the XML file for this object because it is locked')))
+      .filter(failedImport => {
+        if (failedImport.customObject.result.message.includes('You cannot download the XML file for this object because it is locked')) {
+          log.debug('Failed to fetch (%s) instance with id (%s) due to the instance being locked',
+            SdfClient.fixTypeName(failedImport.customObject.type), failedImport.customObject.id)
+          return true
+        }
+        return false
+      }))
 
     return { unexpectedError, lockedError }
   }
@@ -756,7 +763,7 @@ export default class SdfClient {
     await this.projectCleanup(project.projectName, project.authId)
     return {
       elements,
-      failedPaths: { lockedError: listFilesResults.failedPaths, otherError: [] },
+      failedPaths: { lockedError: [], otherError: listFilesResults.failedPaths },
     }
   }
 

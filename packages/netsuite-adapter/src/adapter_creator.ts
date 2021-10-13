@@ -34,7 +34,6 @@ import {
   DEPLOY,
   DEPLOY_REFERENCED_ELEMENTS,
   INSTALLED_SUITEAPPS,
-  LOCKED_ELEMENTS_TO_EXCLUDE,
 } from './constants'
 import { validateFetchParameters, convertToQueryParams } from './query'
 import { Credentials, toCredentialsAccountId } from './client/credentials'
@@ -164,7 +163,6 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
       [SKIP_LIST]: config?.value?.[SKIP_LIST], // support deprecated version
       [USE_CHANGES_DETECTION]: config?.value?.[USE_CHANGES_DETECTION],
       [FETCH]: config?.value?.[FETCH],
-      [LOCKED_ELEMENTS_TO_EXCLUDE]: config?.value?.[LOCKED_ELEMENTS_TO_EXCLUDE],
     }
 
     Object.keys(config?.value ?? {})

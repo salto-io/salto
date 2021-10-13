@@ -104,9 +104,11 @@ describe('config', () => {
       ElemID.CONFIG_NAME,
       configType,
       {
-        [LOCKED_ELEMENTS_TO_EXCLUDE]: {
-          types: Object.entries(lockedTypes).map(([name, ids]) => ({ name, ids })),
-          fileCabinet: lockedFiles,
+        [FETCH]: {
+          [LOCKED_ELEMENTS_TO_EXCLUDE]: {
+            types: Object.entries(lockedTypes).map(([name, ids]) => ({ name, ids })),
+            fileCabinet: lockedFiles,
+          },
         },
       }
     ))).toBe(true)

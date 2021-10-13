@@ -19,7 +19,7 @@ import {
   ElemID,
   ChangeError,
 } from '@salto-io/adapter-api'
-import { transformValues } from '@salto-io/adapter-utils'
+import { applyRecursively } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import wu from 'wu'
 import _ from 'lodash'
@@ -42,9 +42,8 @@ const getScriptId = (value: unknown): string | undefined => {
 const getScriptIdsUnderLists = async (instance: InstanceElement):
   Promise<collections.map.DefaultMap<string, Set<string>>> => {
   const pathToScriptIds = new collections.map.DefaultMap<string, Set<string>>(() => new Set())
-  await transformValues({
+  await applyRecursively({
     values: instance.value,
-    type: await instance.getType(),
     transformFunc: ({ value, path }) => {
       if (path !== undefined && Array.isArray(value)) {
         wu(value)
@@ -57,7 +56,7 @@ const getScriptIdsUnderLists = async (instance: InstanceElement):
       return value
     },
     pathID: instance.elemID,
-    strict: false,
+    isTopLevel: true,
   })
   return pathToScriptIds
 }

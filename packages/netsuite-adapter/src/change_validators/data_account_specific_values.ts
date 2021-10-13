@@ -25,7 +25,7 @@ import {
   ModificationChange,
   toChange,
 } from '@salto-io/adapter-api'
-import { transformValues } from '@salto-io/adapter-utils'
+import { applyRecursively } from '@salto-io/adapter-utils'
 import { removeIdenticalValues } from '../filters/data_instances_diff'
 import { isDataObjectType } from '../types'
 
@@ -33,10 +33,9 @@ const { awu } = collections.asynciterable
 
 const hasUnresolvedAccountSpecificValue = async (instance: InstanceElement): Promise<boolean> => {
   let foundAccountSpecificValue = false
-  await transformValues({
+  await applyRecursively({
     values: instance.value,
-    type: await instance.getType(),
-    strict: false,
+    isTopLevel: true,
     transformFunc: ({ value }) => {
       if ((value.id === '[ACCOUNT_SPECIFIC_VALUE]' && value.internalId === undefined) || value.internalId === '[ACCOUNT_SPECIFIC_VALUE]') {
         foundAccountSpecificValue = true

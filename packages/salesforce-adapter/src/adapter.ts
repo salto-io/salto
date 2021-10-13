@@ -459,9 +459,9 @@ export default class SalesforceAdapter implements AdapterOperations {
           .includes(await apiName(type)))
         .toArray()
 
-      const result = await awu(objectTypesToRead)
-        .map(async type => this.createMetadataInstances(type))
-        .toArray()
+      const result = await Promise.all(
+        objectTypesToRead.map(type => this.createMetadataInstances(type))
+      )
 
       return {
         elements: _.flatten(result.map(r => r.elements)),

@@ -36,7 +36,7 @@ export const getIdsForType = async (
   return Object.fromEntries(
     result
       .filter(info => info.id !== undefined && info.id !== '')
-      .map(info => [getFullName(info), info.id])
+      .map(info => [getFullName(info.fullName, info.namespacePrefix), info.id])
   )
 }
 

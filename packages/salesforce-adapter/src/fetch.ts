@@ -20,12 +20,13 @@ import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FetchElements, ConfigChangeSuggestion } from './types'
-import { METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE } from './constants'
+import { METADATA_CONTENT_FIELD, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
 import { apiName, createInstanceElement, MetadataObjectType, createMetadataTypeElements, getAuthorAnnotations } from './transformers/transformer'
 import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './transformers/xml_transformer'
 import { MetadataQuery } from './fetch_profile/metadata_query'
+import { getFullName } from './filters/utils'
 
 const { isDefined } = lowerDashValues
 const { makeArray } = collections.array
@@ -91,15 +92,6 @@ export const listMetadataObjects = async (
   }
 }
 
-const getFullName = (obj: FileProperties): string => {
-  const namePrefix = obj.namespacePrefix
-    ? `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}` : ''
-  // Ensure fullName starts with the namespace prefix if there is one
-  // needed due to a SF quirk where sometimes metadata instances return without a namespace
-  // in the fullName even when they should have it
-  return obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
-}
-
 const getNamespace = (obj: FileProperties): string => (
   obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
 )
@@ -130,7 +122,7 @@ export const fetchMetadataInstances = async ({
     metadataTypeName,
     fileProps.map(
       prop => ({
-        name: getFullName(prop),
+        name: getFullName(prop.fullName, prop.namespacePrefix),
         namespace: getNamespace(prop),
       })
     ).filter(
@@ -142,7 +134,10 @@ export const fetchMetadataInstances = async ({
     ).map(({ name }) => name)
   )
 
-  const filePropertiesMap = _.keyBy(fileProps, getFullName)
+  const filePropertiesMap = _.keyBy(
+    fileProps,
+    fileProp => getFullName(fileProp.fullName, fileProp.namespacePrefix)
+  )
   const elements = metadataInfos
     .filter(m => !_.isEmpty(m))
     .filter(m => m.fullName !== undefined)

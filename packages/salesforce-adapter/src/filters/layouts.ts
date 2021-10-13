@@ -23,8 +23,8 @@ import { multiIndex, collections } from '@salto-io/lowerdash'
 import { FileProperties } from 'jsforce-types'
 import { apiName, isCustomObject } from '../transformers/transformer'
 import { FilterContext, FilterCreator, FilterResult } from '../filter'
-import { addObjectParentReference, buildElementsSourceForFetch } from './utils'
-import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE, FULLNAME_SEPERATOR, SBQQ_PREFIX, NAMESPACE_SEPARATOR } from '../constants'
+import { addObjectParentReference, buildElementsSourceForFetch, getFullName } from './utils'
+import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE, SBQQ_PREFIX } from '../constants'
 import { getObjectDirectoryPath } from './custom_objects'
 import { FetchElements } from '../types'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
@@ -34,6 +34,7 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
+const LAYOUT_FULLNAME_SEPERATOR = '-'
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE)
 export const WEBLINK_TYPE_ID = new ElemID(SALESFORCE, WEBLINK_METADATA_TYPE)
 
@@ -43,9 +44,9 @@ export const specialLayoutObjects = new Map([
 ])
 
 // Layout full name starts with related sobject and then '-'
-const layoutObjAndName = async (layout: InstanceElement): Promise<[string, string]> => {
-  const [obj, ...name] = (await apiName(layout)).split('-')
-  return [specialLayoutObjects.get(obj) ?? obj, name.join('-')]
+const layoutObjAndName = async (fullName: string): Promise<[string, string]> => {
+  const [obj, ...name] = fullName.split(LAYOUT_FULLNAME_SEPERATOR)
+  return [specialLayoutObjects.get(obj) ?? obj, name.join(LAYOUT_FULLNAME_SEPERATOR)]
 }
 
 const fixLayoutPath = async (
@@ -60,16 +61,11 @@ const fixLayoutPath = async (
   ]
 }
 
-const transformPrefixedLayoutFileProp = (fileProp: FileProperties): FileProperties => {
-  const fullNameParts = fileProp.fullName.split(FULLNAME_SEPERATOR)
-  const transformedFullName = [
-    fullNameParts[0],
-    FULLNAME_SEPERATOR,
-    fileProp.namespacePrefix,
-    NAMESPACE_SEPARATOR,
-    ...fullNameParts.slice(1),
-  ].join('')
-  return { ...fileProp, fullName: transformedFullName }
+const transformPrefixedLayoutFileProp = async (fileProp: FileProperties):
+  Promise<FileProperties> => {
+  const [layoutObjName, layoutName] = await layoutObjAndName(fileProp.fullName)
+  const fixedLayoutName = getFullName(layoutName, fileProp.namespacePrefix)
+  return { ...fileProp, fullName: [layoutObjName, fixedLayoutName].join(LAYOUT_FULLNAME_SEPERATOR) }
 }
 
 const createLayoutMetadataInstances = async (
@@ -80,18 +76,20 @@ const createLayoutMetadataInstances = async (
   const type = elements
     .filter(isObjectType)
     .find(elem => elem.elemID.typeName === LAYOUT_TYPE_ID_METADATA_TYPE)
+
+  if (type === undefined) return { configChanges: [], elements: [] }
+
   const { elements: fileProps, configChanges } = await listMetadataObjects(
     client, LAYOUT_TYPE_ID_METADATA_TYPE, [],
   )
 
-  if (type === undefined) return { configChanges: [], elements: [] }
   const [filePropsToTransform,
     regularFileProps] = _.partition(fileProps,
     fileProp => fileProp.namespacePrefix === SBQQ_PREFIX)
 
   const correctedFileProps = [
     ...regularFileProps,
-    ...filePropsToTransform.map(transformPrefixedLayoutFileProp),
+    ...await Promise.all(filePropsToTransform.map(transformPrefixedLayoutFileProp)),
   ]
   const instances = await fetchMetadataInstances({
     client,
@@ -144,7 +142,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     })
 
     await awu(layouts).forEach(async layout => {
-      const [layoutObjName, layoutName] = await layoutObjAndName(layout)
+      const [layoutObjName, layoutName] = await layoutObjAndName(await apiName(layout))
       const layoutObjId = apiNameToCustomObject.get(layoutObjName)
       const layoutObj = layoutObjId !== undefined
         ? await referenceElements.get(layoutObjId)
@@ -156,8 +154,9 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
       addObjectParentReference(layout, layoutObj)
       await fixLayoutPath(layout, layoutObj, layoutName)
-      elements.push(layout)
     })
+
+    elements.push(...layouts)
 
     return {
       configSuggestions: configChanges,

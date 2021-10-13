@@ -23,7 +23,6 @@ import {
   createRefToElmWithValue,
 } from '@salto-io/adapter-api'
 import { getParents, buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { FileProperties } from 'jsforce-types'
 import { chunks, collections } from '@salto-io/lowerdash'
 import SalesforceClient from '../client/client'
 import { OptionalFeatures } from '../types'
@@ -188,10 +187,10 @@ export const addObjectParentReference = (instance: InstanceElement,
 export const fullApiName = (parent: string, child: string): string =>
   ([parent, child].join(API_NAME_SEPARATOR))
 
-export const getFullName = (obj: FileProperties): string => {
-  const namePrefix = obj.namespacePrefix
-    ? `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}` : ''
-  return obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
+export const getFullName = (name: string, namespacePrefix: string | undefined): string => {
+  const namePrefix = namespacePrefix
+    ? `${namespacePrefix}${NAMESPACE_SEPARATOR}` : ''
+  return name.startsWith(namePrefix) ? name : `${namePrefix}${name}`
 }
 
 export const getInternalId = (elem: Element): string => (

@@ -258,6 +258,24 @@ describe('salesforce client', () => {
       expect(result).toHaveLength(1)
       expect(dodoScope.isDone()).toBeTruthy()
     })
+
+    it('should return non error responses for valid TopicsForObjects', async () => {
+      const dodoScope = nock(`http://dodo22/servies/Soap/m/${API_VERSION}`)
+        .post(/.*/)
+        .times(2) // Once for the chunk and once for item
+        .reply(
+          500,
+          '<?xml version="1.0" encoding="UTF-8"?><soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:sf="http://soap.sforce.com/2006/04/metadata"><soapenv:Body><soapenv:Fault><faultcode>sf:INVALID_TYPE_FOR_OPERATION</faultcode><faultstring>INVALID_TYPE_FOR_OPERATION: Topics cant be enabled for this entityName: aaa</faultstring></soapenv:Fault></soapenv:Body></soapenv:Envelope>',
+          { 'content-type': 'text/xml' },
+        )
+        .post(/.*/)
+        .times(1)
+        .reply(200, workingReadReplay)
+
+      const { result } = await client.readMetadata('TopicsForObjects', ['aaa', 'bbb'])
+      expect(result).toHaveLength(1)
+      expect(dodoScope.isDone()).toBeTruthy()
+    })
   })
 
   describe('with jsforce accessing .result on null error', () => {

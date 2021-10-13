@@ -41,8 +41,9 @@ import {
 import { NetsuiteQuery, NetsuiteQueryParameters, ObjectID } from '../query'
 import { SdfCredentials } from './credentials'
 import {
-  CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo,
-  GetCustomObjectsResult, ImportFileCabinetResult, ImportObjectsResult, TemplateCustomTypeInfo,
+  CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
+  FolderCustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult, ImportObjectsResult,
+  TemplateCustomTypeInfo,
 } from './types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME, fileCabinetTopLevelFolders } from './constants'
 import {
@@ -380,7 +381,11 @@ export default class SdfClient {
   async getCustomObjects(typeNames: string[], query: NetsuiteQuery):
     Promise<GetCustomObjectsResult> {
     if (typeNames.every(type => !query.isTypeMatch(type))) {
-      return { elements: [], failedToFetchAllAtOnce: false, failedTypeToInstances: {} }
+      return {
+        elements: [],
+        failedToFetchAllAtOnce: false,
+        failedTypes: { unexpectedError: {}, lockedError: {} },
+      }
     }
 
     log.debug(`Running getCustomObjects with the following suiteApps ids: ${this.installedSuiteApps.join(', ')}`)
@@ -388,7 +393,7 @@ export default class SdfClient {
       [undefined, ...this.installedSuiteApps]
         .map(async suiteAppId => {
           const { executor, projectName, authId } = await this.initProject()
-          const { failedTypeToInstances, failedToFetchAllAtOnce } = await this.importObjects(
+          const { failedTypes, failedToFetchAllAtOnce } = await this.importObjects(
             executor,
             typeNames,
             query,
@@ -412,18 +417,23 @@ export default class SdfClient {
           }
           await this.projectCleanup(projectName, authId)
 
-          return { elements, failedToFetchAllAtOnce, failedTypeToInstances }
+          return { elements, failedToFetchAllAtOnce, failedTypes }
         })
     )
 
-    const failedTypeToInstances = objects.concatObjects(
-      importResult.map(res => res.failedTypeToInstances)
-    )
+    const failedTypes = {
+      unexpectedError: objects.concatObjects(
+        importResult.map(res => res.failedTypes.unexpectedError)
+      ),
+      lockedError: objects.concatObjects(
+        importResult.map(res => res.failedTypes.lockedError)
+      ),
+    }
 
     const elements = importResult.flatMap(res => res.elements)
     const failedToFetchAllAtOnce = importResult.some(res => res.failedToFetchAllAtOnce)
 
-    return { elements, failedToFetchAllAtOnce, failedTypeToInstances }
+    return { elements, failedToFetchAllAtOnce, failedTypes }
   }
 
   private async importObjects(
@@ -433,9 +443,9 @@ export default class SdfClient {
     suiteAppId: string | undefined,
   ): Promise<{
     failedToFetchAllAtOnce: boolean
-    failedTypeToInstances: NetsuiteQueryParameters['types']
+    failedTypes: FailedTypes
   }> {
-    const importAllAtOnce = async (): Promise<NetsuiteQueryParameters['types'] | undefined> => {
+    const importAllAtOnce = async (): Promise<FailedTypes | undefined> => {
       log.debug(`Fetching all custom objects at once with suiteApp: ${suiteAppId}`)
       try {
         // When fetchAllAtOnce we use the below heuristic in order to define a proper timeout,
@@ -449,18 +459,18 @@ export default class SdfClient {
     }
 
     if (this.fetchAllTypesAtOnce) {
-      const failedTypeToInstances = await importAllAtOnce()
-      if (failedTypeToInstances !== undefined) {
-        return { failedToFetchAllAtOnce: false, failedTypeToInstances }
+      const failedTypes = await importAllAtOnce()
+      if (failedTypes !== undefined) {
+        return { failedToFetchAllAtOnce: false, failedTypes }
       }
     }
-    const failedTypeToInstances = await this.importObjectsInChunks(
+    const failedTypes = await this.importObjectsInChunks(
       executor,
       typeNames,
       query,
       suiteAppId,
     )
-    return { failedToFetchAllAtOnce: this.fetchAllTypesAtOnce, failedTypeToInstances }
+    return { failedToFetchAllAtOnce: this.fetchAllTypesAtOnce, failedTypes }
   }
 
   private async importObjectsInChunks(
@@ -468,13 +478,13 @@ export default class SdfClient {
     typeNames: string[],
     query: NetsuiteQuery,
     suiteAppId: string | undefined,
-  ): Promise<NetsuiteQueryParameters['types']> {
+  ): Promise<FailedTypes> {
     const importObjectsChunk = async (
       { type, ids, index, total }: ObjectsChunk, retry = true
-    ): Promise<NetsuiteQueryParameters['types']> => {
+    ): Promise<FailedTypes> => {
       const retryFetchFailedInstances = async (
         failedInstancesIds: string[]
-      ): Promise<NetsuiteQueryParameters['types']> => {
+      ): Promise<FailedTypes> => {
         log.debug('Retrying to fetch failed instances with suiteApp: %s of chunk %d/%d of type %s: %o',
           suiteAppId, index, total, type, failedInstancesIds)
         const failedTypeToInstancesAfterRetry = await this.runImportObjectsCommand(
@@ -490,10 +500,15 @@ export default class SdfClient {
         let failedTypeToInstances = await this.runImportObjectsCommand(
           executor, type, ids.join(' '), suiteAppId
         )
-        if (failedTypeToInstances[type]?.length > 0) {
-          failedTypeToInstances = await retryFetchFailedInstances(failedTypeToInstances[type])
+        if (failedTypeToInstances.unexpectedError[type]?.length > 0) {
+          failedTypeToInstances = {
+            unexpectedError: (await retryFetchFailedInstances(
+              failedTypeToInstances.unexpectedError[type]
+            )).unexpectedError,
+            lockedError: failedTypeToInstances.lockedError,
+          }
         }
-        log.debug('Fetched chunk %d/%d with %d objects of type: %s with suiteApp: %s. failedTypeToInstances: %o',
+        log.debug('Fetched chunk %d/%d with %d objects of type: %s with suiteApp: %s. failedTypes: %o',
           index, total, ids.length, type, suiteAppId, failedTypeToInstances)
         return failedTypeToInstances
       } catch (e) {
@@ -512,7 +527,10 @@ export default class SdfClient {
           importObjectsChunk({ type, ids: ids.slice(0, middle), index, total }),
           importObjectsChunk({ type, ids: ids.slice(middle, ids.length), index, total }),
         ])
-        return mergeTypeToInstances(...results)
+        return {
+          lockedError: mergeTypeToInstances(...results.map(res => res.lockedError)),
+          unexpectedError: mergeTypeToInstances(...results.map(res => res.unexpectedError)),
+        }
       }
     }
 
@@ -543,7 +561,19 @@ export default class SdfClient {
       idsChunks.map(idsChunk => () => importObjectsChunk(idsChunk)),
       this.sdfConcurrencyLimit
     )
-    return mergeTypeToInstances(...results)
+    return {
+      lockedError: mergeTypeToInstances(...results.map(res => res.lockedError)),
+      unexpectedError: mergeTypeToInstances(...results.map(res => res.unexpectedError)),
+    }
+  }
+
+  private static createFailedImportsMap(failedImports: FailedImport[]): NetsuiteQueryParameters['types'] {
+    return _(failedImports)
+      .groupBy(failedImport => SdfClient.fixTypeName(failedImport.customObject.type))
+      .mapValues(failedImportsGroup => failedImportsGroup.map(
+        failedImport => failedImport.customObject.id
+      ))
+      .value()
   }
 
   private async runImportObjectsCommand(
@@ -551,7 +581,7 @@ export default class SdfClient {
     type: string,
     scriptIds: string,
     suiteAppId: string | undefined,
-  ): Promise<NetsuiteQueryParameters['types']> {
+  ): Promise<FailedTypes> {
     const actionResult = await this.executeProjectAction(
       COMMANDS.IMPORT_OBJECTS,
       {
@@ -565,7 +595,8 @@ export default class SdfClient {
       executor,
     )
     const importResult = actionResult.data as ImportObjectsResult
-    return _(importResult.failedImports)
+
+    const unexpectedError = SdfClient.createFailedImportsMap(importResult.failedImports
       .filter(failedImport => {
         if (failedImport.customObject.result.message.includes('unexpected error')) {
           log.debug('Failed to fetch (%s) instance with id (%s) due to SDF unexpected error',
@@ -573,10 +604,19 @@ export default class SdfClient {
           return true
         }
         return false
-      })
-      .groupBy(failedImport => SdfClient.fixTypeName(failedImport.customObject.type))
-      .mapValues(failedImports => failedImports.map(failedImport => failedImport.customObject.id))
-      .value()
+      }))
+
+    const lockedError = SdfClient.createFailedImportsMap(importResult.failedImports
+      .filter(failedImport => {
+        if (failedImport.customObject.result.message.includes('You cannot download the XML file for this object because it is locked')) {
+          log.debug('Failed to fetch (%s) instance with id (%s) due to the instance being locked',
+            SdfClient.fixTypeName(failedImport.customObject.type), failedImport.customObject.id)
+          return true
+        }
+        return false
+      }))
+
+    return { unexpectedError, lockedError }
   }
 
   private static fixTypeName(typeName: string): string {
@@ -657,7 +697,7 @@ export default class SdfClient {
     if (!query.areSomeFilesMatch()) {
       return {
         elements: [],
-        failedPaths: [],
+        failedPaths: { lockedError: [], otherError: [] },
       }
     }
 
@@ -723,7 +763,7 @@ export default class SdfClient {
     await this.projectCleanup(project.projectName, project.authId)
     return {
       elements,
-      failedPaths: listFilesResults.failedPaths,
+      failedPaths: { lockedError: [], otherError: listFilesResults.failedPaths },
     }
   }
 

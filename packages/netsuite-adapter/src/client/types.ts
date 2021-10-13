@@ -39,31 +39,43 @@ export interface FolderCustomizationInfo extends CustomizationInfo {
   path: string[]
 }
 
+export type FailedTypes = {
+  unexpectedError: NetsuiteQueryParameters['types']
+  lockedError: NetsuiteQueryParameters['types']
+}
+
 export type GetCustomObjectsResult = {
   elements: CustomTypeInfo[]
   failedToFetchAllAtOnce: boolean
-  failedTypeToInstances: NetsuiteQueryParameters['types']
+  failedTypes: FailedTypes
+}
+
+export type FailedFiles = {
+  lockedError: NetsuiteQueryParameters['filePaths']
+  otherError: NetsuiteQueryParameters['filePaths']
 }
 
 export type ImportFileCabinetResult = {
   elements: (FileCustomizationInfo | FolderCustomizationInfo)[]
-  failedPaths: NetsuiteQueryParameters['filePaths']
+  failedPaths: FailedFiles
+}
+
+export type FailedImport = {
+  customObject: {
+    id: string
+    type: string
+    result: {
+      code: 'FAILED'
+      message: string
+    }
+  }
+  referencedFileImportResult: unknown
 }
 
 export type ImportObjectsResult = {
   errorImports: unknown
   successfulImports: unknown
-  failedImports: {
-    customObject: {
-      id: string
-      type: string
-      result: {
-        code: 'FAILED'
-        message: string
-      }
-    }
-    referencedFileImportResult: unknown
-  }[]
+  failedImports: FailedImport[]
 }
 
 export class InvalidSuiteAppCredentialsError extends Error {

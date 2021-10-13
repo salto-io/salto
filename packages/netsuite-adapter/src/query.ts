@@ -15,7 +15,7 @@
 */
 
 import { regex, strings } from '@salto-io/lowerdash'
-import { INCLUDE, EXCLUDE } from './constants'
+import { INCLUDE, EXCLUDE, LOCKED_ELEMENTS_TO_EXCLUDE } from './constants'
 import { customTypes } from './types'
 import { SUPPORTED_TYPES, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 
@@ -42,6 +42,7 @@ export type QueryParams = {
 export type FetchParams = {
   [INCLUDE]?: QueryParams
   [EXCLUDE]?: QueryParams
+  [LOCKED_ELEMENTS_TO_EXCLUDE]?: QueryParams
 }
 
 export const convertToQueryParams = ({ types = {}, filePaths = [] }:

@@ -23,7 +23,7 @@ import {
   FETCH_TYPE_TIMEOUT_IN_MINUTES, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST,
   CLIENT_CONFIG, SKIP_LIST,
   TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH,
-  INCLUDE, EXCLUDE, DEPLOY_REFERENCED_ELEMENTS, DEPLOY,
+  INCLUDE, EXCLUDE, DEPLOY_REFERENCED_ELEMENTS, DEPLOY, LOCKED_ELEMENTS_TO_EXCLUDE,
 } from '../src/constants'
 
 describe('config', () => {
@@ -67,13 +67,24 @@ describe('config', () => {
   }
 
   it('should return undefined when having no currentConfig suggestions', () => {
-    expect(getConfigFromConfigChanges(false, [], {}, currentConfigWithFetch)).toBeUndefined()
+    expect(getConfigFromConfigChanges(
+      false,
+      { lockedError: [], otherError: [] },
+      { lockedError: {}, unexpectedError: {} },
+      currentConfigWithFetch
+    )).toBeUndefined()
   })
 
   it('should return updated currentConfig with defined values when having suggestions and the currentConfig is empty', () => {
-    const configFromConfigChanges = getConfigFromConfigChanges(true,
-      [newFailedFilePath], suggestedSkipListTypes, {})?.config[0] as InstanceElement
-    expect(configFromConfigChanges.isEqual(new InstanceElement(
+    const lockedFiles = ['lockedFile']
+    const lockedTypes = { lockedType: ['lockedInstance'] }
+    const configFromConfigChanges = getConfigFromConfigChanges(
+      true,
+      { lockedError: lockedFiles, otherError: [newFailedFilePath] },
+      { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes },
+      {}
+    )?.config as InstanceElement[]
+    expect(configFromConfigChanges[0].isEqual(new InstanceElement(
       ElemID.CONFIG_NAME,
       configType,
       {
@@ -88,6 +99,21 @@ describe('config', () => {
         },
       }
     ))).toBe(true)
+
+    expect(configFromConfigChanges[1].isEqual(new InstanceElement(
+      ElemID.CONFIG_NAME,
+      configType,
+      {
+        [FETCH]: {
+          [LOCKED_ELEMENTS_TO_EXCLUDE]: {
+            types: Object.entries(lockedTypes).map(([name, ids]) => ({ name, ids })),
+            fileCabinet: lockedFiles,
+          },
+        },
+      }
+    ))).toBe(true)
+
+    expect(configFromConfigChanges[1].path).toEqual(['lockedElements'])
   })
 
   it('should return updated currentConfig when having suggestions and the currentConfig has values', () => {
@@ -101,7 +127,10 @@ describe('config', () => {
     }
     newExclude.fileCabinet.push(_.escapeRegExp(newFailedFilePath))
     const configChange = getConfigFromConfigChanges(
-      true, [newFailedFilePath], suggestedSkipListTypes, currentConfigWithFetch
+      true,
+      { lockedError: [], otherError: [newFailedFilePath] },
+      { lockedError: {}, unexpectedError: suggestedSkipListTypes },
+      currentConfigWithFetch,
     )
     expect(configChange?.config[0]
       .isEqual(new InstanceElement(
@@ -140,7 +169,12 @@ describe('config', () => {
       [TYPES_TO_SKIP]: ['someType'],
       [FILE_PATHS_REGEX_SKIP_LIST]: ['someRegex1', '^someRegex2', 'someRegex3$', '^someRegex4$'],
     }
-    const configChange = getConfigFromConfigChanges(false, [], {}, config)
+    const configChange = getConfigFromConfigChanges(
+      false,
+      { lockedError: [], otherError: [] },
+      { lockedError: {}, unexpectedError: {} },
+      config
+    )
     expect(configChange?.config[0]
       .isEqual(new InstanceElement(
         ElemID.CONFIG_NAME,
@@ -163,7 +197,12 @@ describe('config', () => {
       ..._.omit(currentConfigWithFetch, DEPLOY_REFERENCED_ELEMENTS),
       [DEPLOY_REFERENCED_ELEMENTS]: true,
     }
-    const configChange = getConfigFromConfigChanges(false, [], {}, config)
+    const configChange = getConfigFromConfigChanges(
+      false,
+      { lockedError: [], otherError: [] },
+      { lockedError: {}, unexpectedError: {} },
+      config
+    )
     expect(configChange?.config).toHaveLength(1)
     expect(configChange?.config[0]
       .isEqual(new InstanceElement(
@@ -190,7 +229,12 @@ describe('config', () => {
       ..._.omit(currentConfigWithFetch, DEPLOY_REFERENCED_ELEMENTS),
       [DEPLOY_REFERENCED_ELEMENTS]: false,
     }
-    const configChange = getConfigFromConfigChanges(false, [], {}, config)
+    const configChange = getConfigFromConfigChanges(
+      false,
+      { lockedError: [], otherError: [] },
+      { lockedError: {}, unexpectedError: {} },
+      config
+    )
     expect(configChange?.config?.[0].value[DEPLOY_REFERENCED_ELEMENTS]).toBe(undefined)
     expect(configChange?.config?.[0].value[DEPLOY]).toBe(undefined)
     expect(configChange?.message).toBe(UPDATE_DEPLOY_CONFIG)
@@ -208,7 +252,12 @@ describe('config', () => {
       ),
     }
 
-    const configChange = getConfigFromConfigChanges(false, [], {}, config)
+    const configChange = getConfigFromConfigChanges(
+      false,
+      { lockedError: [], otherError: [] },
+      { lockedError: {}, unexpectedError: {} },
+      config,
+    )
     expect(configChange?.config[0]
       .isEqual(new InstanceElement(
         ElemID.CONFIG_NAME,
@@ -236,7 +285,12 @@ describe('config', () => {
       [FILE_PATHS_REGEX_SKIP_LIST]: ['someRegex'],
     }
 
-    const configChange = getConfigFromConfigChanges(false, ['someFailedFile'], {}, config)
+    const configChange = getConfigFromConfigChanges(
+      false,
+      { lockedError: [], otherError: ['someFailedFile'] },
+      { lockedError: {}, unexpectedError: {} },
+      config
+    )
 
     expect(configChange?.message).toBe(`${STOP_MANAGING_ITEMS_MSG} In addition, ${UPDATE_FETCH_CONFIG_FORMAT}`)
   })
@@ -244,7 +298,12 @@ describe('config', () => {
   it('should omit skipList and update "fetch.exclude". config with skipList AND fetch', () => {
     const conf = { ...currentConfigWithFetch,
       [SKIP_LIST]: currentConfigWithSkipList[SKIP_LIST] }
-    const configChange = getConfigFromConfigChanges(false, [], {}, conf)
+    const configChange = getConfigFromConfigChanges(
+      false,
+      { lockedError: [], otherError: [] },
+      { lockedError: {}, unexpectedError: {} },
+      conf
+    )
     expect(configChange?.config[0]
       .isEqual(new InstanceElement(
         ElemID.CONFIG_NAME,
@@ -280,7 +339,12 @@ describe('config', () => {
         },
       },
     }
-    const configChange = getConfigFromConfigChanges(false, [], {}, conf)
+    const configChange = getConfigFromConfigChanges(
+      false,
+      { lockedError: [], otherError: [] },
+      { lockedError: {}, unexpectedError: {} },
+      conf,
+    )
     expect(configChange?.config?.[0].value).toEqual({
       [FETCH]: {
         [EXCLUDE]: {

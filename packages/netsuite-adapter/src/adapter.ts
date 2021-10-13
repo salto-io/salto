@@ -30,7 +30,7 @@ import {
   customTypes, getMetadataTypes, fileCabinetTypes,
 } from './types'
 import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST,
-  INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS, WARN_STALE_DATA, APPLICATION_ID } from './constants'
+  INTEGRATION, FETCH_TARGET, SKIP_LIST, LAST_FETCH_TIME, USE_CHANGES_DETECTION, FETCH, INCLUDE, EXCLUDE, DEPLOY, DEPLOY_REFERENCED_ELEMENTS, WARN_STALE_DATA, APPLICATION_ID, LOCKED_ELEMENTS_TO_EXCLUDE } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import parseSavedSearch from './filters/parse_saved_searchs'
 import convertLists from './filters/convert_lists'
@@ -101,6 +101,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private getElemIdFunc?: ElemIdGetter
   private readonly fetchInclude?: QueryParams
   private readonly fetchExclude?: QueryParams
+  private readonly lockedElements?: QueryParams
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly skipList?: NetsuiteQueryParameters // old version
   private readonly useChangesDetection: boolean
@@ -156,6 +157,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.getElemIdFunc = getElemIdFunc
     this.fetchInclude = config[FETCH]?.[INCLUDE]
     this.fetchExclude = config[FETCH]?.[EXCLUDE]
+    this.lockedElements = config[FETCH]?.[LOCKED_ELEMENTS_TO_EXCLUDE]
     this.fetchTarget = config[FETCH_TARGET]
     this.skipList = config[SKIP_LIST] // old version
     this.useChangesDetection = config[USE_CHANGES_DETECTION] ?? DEFAULT_USE_CHANGES_DETECTION
@@ -210,7 +212,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const {
       elements: customObjects,
       failedToFetchAllAtOnce,
-      failedTypeToInstances,
+      failedTypes,
     } = await getCustomObjectsResult
 
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
@@ -252,7 +254,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return {
       failedToFetchAllAtOnce,
       failedFilePaths,
-      failedTypeToInstances,
+      failedTypes,
       elements,
     }
   }
@@ -272,6 +274,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       this.fetchInclude && buildNetsuiteQuery(this.fetchInclude),
       this.fetchTarget && buildNetsuiteQuery(convertToQueryParams(this.fetchTarget)),
       this.fetchExclude && notQuery(buildNetsuiteQuery(this.fetchExclude)),
+      this.lockedElements && notQuery(buildNetsuiteQuery(this.lockedElements)),
       this.skipList && notQuery(buildNetsuiteQuery(convertToQueryParams(this.skipList))),
       notQuery(deprecatedSkipList),
     ].filter(values.isDefined).reduce(andQuery)
@@ -281,12 +284,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const {
       failedToFetchAllAtOnce,
       failedFilePaths,
-      failedTypeToInstances,
+      failedTypes,
       elements,
     } = await this.fetchByQuery(fetchQuery, progressReporter, this.useChangesDetection)
 
     const updatedConfig = getConfigFromConfigChanges(
-      failedToFetchAllAtOnce, failedFilePaths, failedTypeToInstances, this.userConfig
+      failedToFetchAllAtOnce, failedFilePaths, failedTypes, this.userConfig
     )
 
     if (_.isUndefined(updatedConfig)) {

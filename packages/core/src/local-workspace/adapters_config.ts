@@ -114,7 +114,7 @@ export const adaptersConfigSource = async (
     const configsToUpdate = await Promise.all(configsArr.map(removeUndefined))
     await naclSource.updateNaclFiles(
       configsToUpdate.map(conf => ({
-        id: conf.elemID, action: 'add', data: { after: conf }, path: conf.path ?? [conf.elemID.adapter],
+        id: conf.elemID, action: 'add', data: { after: conf }, path: [conf.elemID.adapter, ...conf.path ?? [conf.elemID.adapter]],
       }))
     )
   }

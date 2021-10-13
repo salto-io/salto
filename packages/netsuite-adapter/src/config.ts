@@ -545,11 +545,11 @@ const updateConfigFormat = (
 }
 
 const splitConfig = (config: InstanceElement): InstanceElement[] => {
-  const lockedElementsToExclude = config.value[FETCH][LOCKED_ELEMENTS_TO_EXCLUDE]
+  const lockedElementsToExclude = config.value[FETCH]?.[LOCKED_ELEMENTS_TO_EXCLUDE]
   if (lockedElementsToExclude === undefined) {
     return [config]
   }
-  delete config.value[FETCH][LOCKED_ELEMENTS_TO_EXCLUDE]
+  delete config.value[FETCH]?.[LOCKED_ELEMENTS_TO_EXCLUDE]
   const lockedElementsToExcludeConf = new InstanceElement(ElemID.CONFIG_NAME, configType, { [FETCH]: { [LOCKED_ELEMENTS_TO_EXCLUDE]: lockedElementsToExclude } }, ['lockedElements'])
   return [config, lockedElementsToExcludeConf]
 }

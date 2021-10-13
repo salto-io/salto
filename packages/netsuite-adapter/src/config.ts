@@ -549,13 +549,12 @@ const updateConfigFormat = (
 }
 
 const splitConfig = (config: InstanceElement): InstanceElement[] => {
-  config.path = ['netsuite', 'netsuite']
   const lockedElementsToExclude = config.value[LOCKED_ELEMENTS_TO_EXCLUDE]
   if (lockedElementsToExclude === undefined) {
     return [config]
   }
   delete config.value[LOCKED_ELEMENTS_TO_EXCLUDE]
-  const lockedElementsToExcludeConf = new InstanceElement(ElemID.CONFIG_NAME, configType, { [LOCKED_ELEMENTS_TO_EXCLUDE]: lockedElementsToExclude }, ['netsuite', 'lockedElements'])
+  const lockedElementsToExcludeConf = new InstanceElement(ElemID.CONFIG_NAME, configType, { [LOCKED_ELEMENTS_TO_EXCLUDE]: lockedElementsToExclude }, ['lockedElements'])
   return [config, lockedElementsToExcludeConf]
 }
 

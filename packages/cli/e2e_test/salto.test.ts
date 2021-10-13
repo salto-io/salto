@@ -125,6 +125,7 @@ describe('cli e2e', () => {
     jest.spyOn(callbacksImpl, 'getCredentialsFromUser').mockResolvedValue(getSalesforceCredsInstance(credsLease.value))
     await mkdirp(`${fetchOutputDir}/salto.config`)
     await mkdirp(`${fetchOutputDir}/salto.config/adapters`)
+    await mkdirp(`${fetchOutputDir}/salto.config/adapters/salesforce`)
     await mkdirp(localStorageDir)
     await mkdirp(localWorkspaceDir)
     await copyFile(workspaceConfigFile, `${fetchOutputDir}/salto.config/workspace.nacl`)
@@ -443,8 +444,8 @@ describe('cli e2e', () => {
     // Note: this should be the last test to run, as it will clear out parts of the workspace
     let salesforceConfPath: string
     beforeAll(async () => {
-      salesforceConfPath = `${fetchOutputDir}/salto.config/adapters/salesforce.nacl`
-      await copyFile(salesforceConfigFile, `${fetchOutputDir}/salto.config/adapters/salesforce.nacl`)
+      salesforceConfPath = `${fetchOutputDir}/salto.config/adapters/salesforce/salesforce.nacl`
+      await copyFile(salesforceConfigFile, `${fetchOutputDir}/salto.config/adapters/salesforce/salesforce.nacl`)
     })
 
     it('should clear out only the requested parts - nacl', async () => {

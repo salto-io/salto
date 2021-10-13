@@ -100,8 +100,6 @@ describe('config', () => {
       }
     ))).toBe(true)
 
-    expect(configFromConfigChanges[0].path).toEqual(['netsuite', 'netsuite'])
-
     expect(configFromConfigChanges[1].isEqual(new InstanceElement(
       ElemID.CONFIG_NAME,
       configType,
@@ -113,7 +111,7 @@ describe('config', () => {
       }
     ))).toBe(true)
 
-    expect(configFromConfigChanges[1].path).toEqual(['netsuite', 'lockedElements'])
+    expect(configFromConfigChanges[1].path).toEqual(['lockedElements'])
   })
 
   it('should return updated currentConfig when having suggestions and the currentConfig has values', () => {

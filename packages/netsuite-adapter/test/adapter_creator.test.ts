@@ -539,10 +539,4 @@ describe('NetsuiteAdapter creator', () => {
       }
     })
   })
-
-  it('getDefaultConfig should return a config with the right path', async () => {
-    const defaultConfig = await adapter.getDefaultConfig?.()
-    expect(defaultConfig).toHaveLength(1)
-    expect(defaultConfig?.[0].path).toEqual(['netsuite', 'netsuite'])
-  })
 })

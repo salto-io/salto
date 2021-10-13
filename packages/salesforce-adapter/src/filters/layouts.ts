@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   Element, InstanceElement, ObjectType, ElemID, isObjectType,
@@ -24,7 +23,7 @@ import { FileProperties } from 'jsforce-types'
 import { apiName, isCustomObject } from '../transformers/transformer'
 import { FilterContext, FilterCreator, FilterResult } from '../filter'
 import { addObjectParentReference, buildElementsSourceForFetch, getFullName } from './utils'
-import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE, SBQQ_PREFIX } from '../constants'
+import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
 import { getObjectDirectoryPath } from './custom_objects'
 import { FetchElements } from '../types'
 import { fetchMetadataInstances, listMetadataObjects } from '../fetch'
@@ -83,14 +82,7 @@ const createLayoutMetadataInstances = async (
     client, LAYOUT_TYPE_ID_METADATA_TYPE, [],
   )
 
-  const [filePropsToTransform,
-    regularFileProps] = _.partition(fileProps,
-    fileProp => fileProp.namespacePrefix === SBQQ_PREFIX)
-
-  const correctedFileProps = [
-    ...regularFileProps,
-    ...await Promise.all(filePropsToTransform.map(transformPrefixedLayoutFileProp)),
-  ]
+  const correctedFileProps = await Promise.all(fileProps.map(transformPrefixedLayoutFileProp))
   const instances = await fetchMetadataInstances({
     client,
     fileProps: correctedFileProps,
@@ -121,7 +113,6 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     if (layouts.length === 0) {
       return {}
     }
-    
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const apiNameToCustomObject = await multiIndex.keyByAsync({
       iter: await referenceElements.getAll(),

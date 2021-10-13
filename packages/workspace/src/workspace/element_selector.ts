@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, ElemIDTypes, Value, ElemIDType } from '@salto-io/adapter-api'
-import { TransformFunc, walkOnElement } from '@salto-io/adapter-utils'
+import { walkOnElement, WalkOnFunc, WALK_STOP_VALUE } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
 
@@ -227,31 +227,28 @@ export const selectElementIdsByTraversal = async (
     : possibleParentIDs
 
   const subElementIDs: ElemID[] = []
-  const selectFromSubElements: TransformFunc = ({ path, value }) => {
-    if (path === undefined) {
-      return undefined
-    }
+  const selectFromSubElements: WalkOnFunc = ({ path }) => {
     const testId = path
     if (subElementSelectors.some(selector => match(testId, selector))) {
       subElementIDs.push(testId)
       if (compact) {
-        return undefined
+        return WALK_STOP_VALUE.SKIP
       }
     }
     const stillRelevantSelectors = selectors.filter(selector =>
       selector.origin.split(ElemID.NAMESPACE_SEPARATOR).length > testId.getFullNameParts().length)
     if (stillRelevantSelectors.length === 0) {
-      return undefined
+      return WALK_STOP_VALUE.SKIP
     }
     if (isElementPossiblyParentOfSearchedElement(stillRelevantSelectors, testId)) {
-      return value
+      return WALK_STOP_VALUE.RECURSE
     }
-    return undefined
+    return WALK_STOP_VALUE.SKIP
   }
 
   await awu(stillRelevantIDs)
     .forEach(async elemId => walkOnElement({
-      element: await source.get(elemId), transformFunc: selectFromSubElements, runOnFields: true,
+      element: await source.get(elemId), func: selectFromSubElements,
     }))
   return awu(topLevelIDs.concat(subElementIDs)).uniquify(id => id.getFullName())
 }

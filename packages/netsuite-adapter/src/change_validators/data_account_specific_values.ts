@@ -25,7 +25,7 @@ import {
   ModificationChange,
   toChange,
 } from '@salto-io/adapter-api'
-import { applyRecursively } from '@salto-io/adapter-utils'
+import { walkOnElement, WALK_STOP_VALUE } from '@salto-io/adapter-utils'
 import { removeIdenticalValues } from '../filters/data_instances_diff'
 import { isDataObjectType } from '../types'
 
@@ -33,14 +33,17 @@ const { awu } = collections.asynciterable
 
 const hasUnresolvedAccountSpecificValue = async (instance: InstanceElement): Promise<boolean> => {
   let foundAccountSpecificValue = false
-  await applyRecursively({
-    values: instance.value,
-    isTopLevel: true,
-    transformFunc: ({ value }) => {
+  walkOnElement({
+    element: instance,
+    func: ({ value, path }) => {
+      if (path.isAttrID()) {
+        return WALK_STOP_VALUE.SKIP
+      }
       if ((value.id === '[ACCOUNT_SPECIFIC_VALUE]' && value.internalId === undefined) || value.internalId === '[ACCOUNT_SPECIFIC_VALUE]') {
         foundAccountSpecificValue = true
+        return WALK_STOP_VALUE.EXIT
       }
-      return value
+      return WALK_STOP_VALUE.RECURSE
     },
   })
   return foundAccountSpecificValue

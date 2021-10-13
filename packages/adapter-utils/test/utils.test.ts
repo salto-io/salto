@@ -31,7 +31,8 @@ import {
   findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath, ResolveValuesFunc,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
-  transformElement, toObjectType, getParents, resolveTypeShallow, walkOnElement, applyRecursively,
+  transformElement, toObjectType, getParents, resolveTypeShallow, walkOnElement,
+  WALK_STOP_VALUE, WalkOnFunc,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -704,84 +705,6 @@ describe('Test utils.ts', () => {
     })
   })
 
-  describe('applyRecursively', () => {
-    const objType = new ObjectType({
-      elemID: new ElemID('dummy', 'test'),
-      fields: {
-        f1: { refType: BuiltinTypes.STRING },
-        f2: {
-          refType: new ListType(BuiltinTypes.STRING),
-          annotations: { a1: 'foo' },
-        },
-        f3: {
-          refType: new MapType(BuiltinTypes.STRING),
-          annotations: { a2: 'foo' },
-        },
-      },
-      annotationRefsOrTypes: { a2: BuiltinTypes.STRING },
-      annotations: {
-        a2: '1',
-        a3: [{ reference: new ReferenceExpression(BuiltinTypes.STRING.elemID) }],
-      },
-    })
-    const inst = new InstanceElement(
-      'test',
-      objType,
-      { f1: 'str', f2: ['a', 'b', 'c'], f3: { f: 'test' } },
-      undefined,
-      { [CORE_ANNOTATIONS.PARENT]: ['me'] },
-    )
-    it('should not call transformFunc if values is undefined', async () => {
-      const transformFunc = jest.fn().mockResolvedValue(undefined)
-      await applyRecursively({
-        values: undefined as unknown as Values,
-        transformFunc,
-        isTopLevel: false,
-      })
-      expect(transformFunc).not.toHaveBeenCalled()
-    })
-    it('should run on the top level if isTopLevel is true', async () => {
-      const paths: string[] = []
-      const transformFunc = mockFunction<TransformFunc>()
-        .mockImplementation(({ value, path }) => {
-          paths.push(path?.getFullName() ?? '')
-          return value
-        })
-      await applyRecursively({
-        values: inst.value,
-        transformFunc,
-        isTopLevel: true,
-        pathID: inst.elemID,
-      })
-      expect(paths).toEqual([
-        'dummy.test.instance.test',
-        'dummy.test.instance.test.f1',
-        'dummy.test.instance.test.f2',
-        'dummy.test.instance.test.f2.0',
-        'dummy.test.instance.test.f2.1',
-        'dummy.test.instance.test.f2.2',
-        'dummy.test.instance.test.f3',
-        'dummy.test.instance.test.f3.f',
-      ])
-    })
-    it('should find ReferenceExpression', async () => {
-      const refs: string[] = []
-      const transformFunc = mockFunction<TransformFunc>()
-        .mockImplementation(({ value }) => {
-          if (isReferenceExpression(value)) {
-            refs.push(value.elemID.getFullName())
-          }
-          return value
-        })
-      await applyRecursively({
-        values: objType.annotations,
-        transformFunc,
-        isTopLevel: false,
-      })
-      expect(refs).toEqual([BuiltinTypes.STRING.elemID.getFullName()])
-    })
-  })
-
   describe('transformElement and walkOnElement', () => {
     let primType: PrimitiveType
     let listType: ListType
@@ -1009,81 +932,74 @@ describe('Test utils.ts', () => {
     describe('walkOnElement', () => {
       describe('with ObjectType', () => {
         it('should walk on all the nodes', async () => {
-          let paths: string[] = []
-          transformFunc = mockFunction<TransformFunc>()
-            .mockImplementation(({ path, value }) => {
-              paths.push(path?.getFullName() ?? '')
-              return value
+          const paths: string[] = []
+          const func = mockFunction<WalkOnFunc>()
+            .mockImplementation(({ path }) => {
+              paths.push(path.getFullName())
+              return WALK_STOP_VALUE.RECURSE
             })
-          await walkOnElement({ element: objType, transformFunc, runOnFields: false })
-          const walkPaths = paths
-          paths = []
-          await transformElement({ element: objType, transformFunc, strict: false })
-          expect(walkPaths).toEqual(paths)
+          walkOnElement({ element: objType, func })
+          expect(paths).toEqual([
+            'test.test',
+            'test.test.attr',
+            'test.test.attr.a2',
+            'test.test.field',
+            'test.test.field.f1',
+            'test.test.field.f2',
+            'test.test.field.f2.a1',
+            'test.test.field.f2._depends_on',
+            'test.test.field.f2._depends_on.0',
+            'test.test.field.f2._depends_on.0.reference',
+            'test.test.field.f3',
+            'test.test.field.f3.a2',
+            'test.test.field.f3._depends_on',
+            'test.test.field.f3._depends_on.0',
+            'test.test.field.f3._depends_on.0.reference',
+            'test.test.field.f4',
+          ])
         })
-        it('should walk only on top level and its annotations', async () => {
-          let paths: string[] = []
-          transformFunc = mockFunction<TransformFunc>()
-            .mockImplementation(({ path }) => { paths.push(path?.getFullName() ?? '') })
-          await walkOnElement({ element: objType, transformFunc, runOnFields: false })
-          const walkPaths = paths
-          paths = []
-          await transformElement({ element: objType, transformFunc, strict: false })
-          expect(walkPaths).toEqual(paths)
-        })
-      })
-      describe('with ObjectType and runOnFields', () => {
-        it('should walk on all the nodes', async () => {
-          let paths: string[] = []
-          transformFunc = mockFunction<TransformFunc>()
-            .mockImplementation(({ path, value }) => {
-              paths.push(path?.getFullName() ?? '')
-              return value
+        it('should walk only on top level', () => {
+          const paths: string[] = []
+          const func = mockFunction<WalkOnFunc>()
+            .mockImplementation(({ path }) => {
+              paths.push(path.getFullName())
+              return WALK_STOP_VALUE.SKIP
             })
-          await walkOnElement({ element: objType, transformFunc, runOnFields: true })
-          const walkPaths = paths
-          paths = []
-          await transformElement({
-            element: objType, transformFunc, runOnFields: true, strict: false,
-          })
-          expect(walkPaths).toEqual(paths)
-        })
-        it('should walk only on top level, its annotations and fields', async () => {
-          let paths: string[] = []
-          transformFunc = mockFunction<TransformFunc>()
-            .mockImplementation(({ path }) => { paths.push(path?.getFullName() ?? '') })
-          await walkOnElement({ element: objType, transformFunc, runOnFields: true })
-          const walkPaths = paths
-          paths = []
-          await transformElement({
-            element: objType, transformFunc, runOnFields: true, strict: false,
-          })
-          expect(walkPaths).toEqual(paths)
+          walkOnElement({ element: objType, func })
+          expect(paths).toEqual([objType.elemID.getFullName()])
         })
       })
       describe('with InstanceElement', () => {
-        it('should walk on all the nodes', async () => {
-          let paths: string[] = []
-          transformFunc = mockFunction<TransformFunc>()
-            .mockImplementation(({ path, value }) => {
-              paths.push(path?.getFullName() ?? '')
-              return value
+        it('should walk on all the nodes', () => {
+          const paths: string[] = []
+          const func = mockFunction<WalkOnFunc>()
+            .mockImplementation(({ path }) => {
+              paths.push(path.getFullName())
+              return WALK_STOP_VALUE.RECURSE
             })
-          await walkOnElement({ element: inst, transformFunc })
-          const walkPaths = paths
-          paths = []
-          await transformElement({ element: inst, transformFunc, strict: false })
-          expect(walkPaths).toEqual(paths)
+          walkOnElement({ element: inst, func })
+          expect(paths).toEqual([
+            'test.test.instance.test',
+            'test.test.instance.test._parent',
+            'test.test.instance.test._parent.0',
+            'test.test.instance.test._service_url',
+            'test.test.instance.test.f1',
+            'test.test.instance.test.f2',
+            'test.test.instance.test.f2.0',
+            'test.test.instance.test.f2.1',
+            'test.test.instance.test.f2.2',
+            'test.test.instance.test.f3',
+          ])
         })
         it('should walk only on top level and its annotations', async () => {
-          let paths: string[] = []
-          transformFunc = mockFunction<TransformFunc>()
-            .mockImplementation(({ path }) => { paths.push(path?.getFullName() ?? '') })
-          await walkOnElement({ element: inst, transformFunc })
-          const walkPaths = paths
-          paths = []
-          await transformElement({ element: inst, transformFunc, strict: false })
-          expect(walkPaths).toEqual(paths)
+          const paths: string[] = []
+          const func = mockFunction<WalkOnFunc>()
+            .mockImplementation(({ path }) => {
+              paths.push(path.getFullName())
+              return WALK_STOP_VALUE.SKIP
+            })
+          walkOnElement({ element: inst, func })
+          expect(paths).toEqual([inst.elemID.getFullName()])
         })
       })
     })

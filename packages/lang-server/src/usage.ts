@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { Element, isInstanceElement, isReferenceExpression, ElemID, isObjectType, Value, isContainerType } from '@salto-io/adapter-api'
-import { walkOnElement, TransformFuncArgs } from '@salto-io/adapter-utils'
+import { walkOnElement, WalkOnFuncArgs, WALK_STOP_VALUE } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { getLocations, SaltoElemLocation, SaltoElemFileLocation } from './location'
 import { EditorWorkspace } from './workspace'
@@ -43,16 +43,17 @@ const getElemIDUsages = async (
   if (isInstanceElement(element) && element.refType.elemID.isEqual(id)) {
     pathesToAdd.add(element.elemID.getFullName())
   }
-  const transformFunc = ({ value, path }: TransformFuncArgs): Value => {
-    if (isReferenceExpression(value) && path) {
+  const func = ({ value, path }: WalkOnFuncArgs): Value => {
+    if (isReferenceExpression(value)) {
       if (id.isEqual(value.elemID) || id.isParentOf(value.elemID)) {
         pathesToAdd.add(path.getFullName())
       }
+      return WALK_STOP_VALUE.SKIP
     }
-    return value
+    return WALK_STOP_VALUE.RECURSE
   }
   if (!isContainerType(element)) {
-    await walkOnElement({ element, transformFunc })
+    walkOnElement({ element, func })
   }
   return [...pathesToAdd]
 }

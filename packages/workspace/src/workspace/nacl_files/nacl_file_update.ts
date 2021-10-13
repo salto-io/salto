@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import { getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionChange, DetailedChange, Value, StaticFile, isStaticFile, isReferenceExpression, TypeReference } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
-import { TransformFunc, walkOnElement } from '@salto-io/adapter-utils'
+import { walkOnElement, WalkOnFunc, WALK_STOP_VALUE } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { SourceRange, SourceMap } from '../../parser'
 
@@ -325,13 +325,14 @@ export const getChangesToUpdate = (
 export const getNestedStaticFiles = async (value: Value): Promise<StaticFile[]> => {
   if (isElement(value)) {
     const allStaticFiles = new Set<StaticFile>()
-    const transformFunc: TransformFunc = ({ value: val }) => {
+    const func: WalkOnFunc = ({ value: val }) => {
       if (isStaticFile(val)) {
         allStaticFiles.add(val)
+        return WALK_STOP_VALUE.SKIP
       }
-      return val
+      return WALK_STOP_VALUE.RECURSE
     }
-    await walkOnElement({ element: value, transformFunc })
+    walkOnElement({ element: value, func })
     return Array.from(allStaticFiles.values())
   }
   if (_.isArray(value)) {

@@ -17,7 +17,7 @@ import {
   InstanceElement, isInstanceElement, isPrimitiveType, ElemID, getFieldType,
   isReferenceExpression, Value, isServiceId,
 } from '@salto-io/adapter-api'
-import { TransformFunc, walkOnElement } from '@salto-io/adapter-utils'
+import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import wu from 'wu'
 import {
@@ -57,7 +57,11 @@ export const findDependingInstancesFromRefs = async (
     return value
   }
 
-  await walkOnElement({ element: instance, transformFunc: createDependingElementsCallback })
+  await transformElement({
+    element: instance,
+    transformFunc: createDependingElementsCallback,
+    strict: true,
+  })
   return wu(visitedIdToInstance.values()).toArray()
 }
 

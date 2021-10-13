@@ -24,7 +24,7 @@ import {
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType,
-  ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue,
+  ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
 } from '@salto-io/adapter-api'
 
 const { mapValuesAsync } = promises.object
@@ -32,6 +32,14 @@ const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
 
 const log = logger(module)
+
+export enum WALK_STOP_VALUE {
+  RECURSE,
+  SKIP,
+  EXIT,
+}
+
+export class ExitWalk extends Error {}
 
 export const applyFunctionToChangeData = async <T extends Change<unknown>>(
   change: T, func: (arg: ChangeData<T>) => Promise<ChangeData<T>> | ChangeData<T>,
@@ -96,12 +104,17 @@ const fieldMapperGenerator = (
   )
 }
 
+export type WalkOnFuncArgs = {
+  value: Value
+  path: ElemID
+}
 export type TransformFuncArgs = {
   value: Value
   path?: ElemID
   field?: Field
 }
 export type TransformFunc = (args: TransformFuncArgs) => Promise<Value> | Value | undefined
+export type WalkOnFunc = (args: WalkOnFuncArgs) => WALK_STOP_VALUE
 
 export const transformValues = async (
   {
@@ -245,6 +258,9 @@ export const elementAnnotationTypes = async (
   }
 }
 
+export const getAnnotationsPathID = <T extends Element>(element: T): ElemID =>
+  (isType(element) ? element.elemID.createNestedID('attr') : element.elemID)
+
 export const transformElementAnnotations = async <T extends Element>(
   {
     element,
@@ -262,7 +278,7 @@ export const transformElementAnnotations = async <T extends Element>(
   type: await elementAnnotationTypes(element, elementsSource),
   transformFunc,
   strict,
-  pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
+  pathID: getAnnotationsPathID(element),
   elementsSource,
   isTopLevel: false,
 }) || {}
@@ -401,91 +417,53 @@ export const transformElement = async <T extends Element>(
   return element
 }
 
-export const applyRecursively = async (
-  {
-    values,
-    transformFunc,
-    isTopLevel,
-    pathID = undefined,
-  }: {
-    values: Values
-    transformFunc: TransformFunc
-    isTopLevel: boolean
-    pathID?: ElemID
-  }
-): Promise<void> => {
-  const apply = async (value: Value, keyPathID?: ElemID): Promise<void> => {
-    if ((await transformFunc({ value, path: keyPathID })) === undefined) {
-      return
-    }
-    if (_.isArray(value)) {
-      await awu(value)
-        .forEach((item, index) => apply(item, keyPathID?.createNestedID(String(index))))
-      return
-    }
-
-    if (_.isPlainObject(value)) {
-      await mapValuesAsync(
-        value ?? {},
-        (val, key) => apply(val, keyPathID?.createNestedID(key)),
-      )
-    }
-  }
-  if (isTopLevel) {
-    if ((await transformFunc({ value: values, path: pathID })) === undefined) {
-      return
-    }
-  }
-  await mapValuesAsync(
-    values ?? {},
-    (value, key) => apply(value, pathID?.createNestedID(key))
-  )
-}
-
-export const walkOnElementAnnotations = async <T extends Element>(
-  element: T,
-  transformFunc: TransformFunc
-): Promise<void> => {
-  await applyRecursively({
-    values: element.annotations,
-    transformFunc,
-    pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
-    isTopLevel: false,
-  })
-}
-
-export const walkOnElement = async <T extends Element>(
+export const walkOnElement = (
   {
     element,
-    transformFunc,
-    runOnFields = false,
+    func,
   }: {
-    element: T
-    transformFunc: TransformFunc
-    runOnFields?: boolean
+    element: Value
+    func: WalkOnFunc
   }
-): Promise<void> => {
-  await walkOnElementAnnotations(element, transformFunc)
-  if (isInstanceElement(element)) {
-    await applyRecursively({
-      values: element.value,
-      transformFunc,
-      pathID: element.elemID,
-      isTopLevel: true,
-    })
+): void => {
+  const run = (value: Value, keyPathID: ElemID): void => {
+    const runOnValues = (values: Values): void => {
+      _.mapValues(values, (val, key) => run(val, keyPathID?.createNestedID(key)))
+    }
+    const res = func({ value, path: keyPathID })
+    if (res === WALK_STOP_VALUE.EXIT) {
+      throw new ExitWalk()
+    }
+    if (res === WALK_STOP_VALUE.SKIP) {
+      return
+    }
+    if (isElement(value)) {
+      if (isType(value)) {
+        run(value.annotations, value.elemID.createNestedID('attr'))
+      } else {
+        runOnValues(value.annotations)
+      }
+      if (isObjectType(value)) {
+        run(value.fields, value.elemID.createNestedID('field'))
+      }
+      if (isInstanceElement(value)) {
+        runOnValues(value.value)
+      }
+    }
+    if (_.isArray(value)) {
+      value.forEach((item, index) => run(item, keyPathID?.createNestedID(String(index))))
+    }
+    if (_.isPlainObject(value)) {
+      runOnValues(value)
+    }
   }
-  if (isObjectType(element)) {
-    await mapValuesAsync(
-      element.fields,
-      async field => {
-        if (runOnFields) {
-          if ((await transformFunc({ value: field, path: field.elemID })) === undefined) {
-            return
-          }
-        }
-        await walkOnElement({ element: field, transformFunc })
-      },
-    )
+  try {
+    run(element, element.elemID)
+  } catch (e) {
+    if (e instanceof ExitWalk) {
+      return
+    }
+    throw e
   }
 }
 
@@ -533,18 +511,19 @@ export type RestoreValuesFunc = <T extends Element>(
 export const restoreValues: RestoreValuesFunc = async (source, targetElement, getLookUpName) => {
   const allReferencesPaths = new Map<string, ReferenceExpression>()
   const allStaticFilesPaths = new Map<string, StaticFile>()
-  const createPathMapCallback: TransformFunc = ({ value, path }) => {
-    if (path && isReferenceExpression(value)) {
+  const createPathMapCallback: WalkOnFunc = ({ value, path }) => {
+    if (isReferenceExpression(value)) {
       allReferencesPaths.set(path.getFullName(), value)
+      return WALK_STOP_VALUE.SKIP
     }
-    if (path && isStaticFile(value)) {
+    if (isStaticFile(value)) {
       allStaticFilesPaths.set(path.getFullName(), value)
+      return WALK_STOP_VALUE.SKIP
     }
-    return value
+    return WALK_STOP_VALUE.RECURSE
   }
 
-  await walkOnElement({ element: source, transformFunc: createPathMapCallback })
-
+  walkOnElement({ element: source, func: createPathMapCallback })
   const restoreValuesFunc: TransformFunc = async ({ value, field, path }) => {
     if (path === undefined) {
       return value
@@ -944,24 +923,22 @@ export const safeJsonStringify = (value: Value,
   space?: string | number): string =>
   safeStringify(value, replacer, space)
 
-export const getAllReferencedIds = async (
+export const getAllReferencedIds = (
   element: Element,
   onlyAnnotations = false,
-): Promise<Set<string>> => {
+): Set<string> => {
   const allReferencedIds = new Set<string>()
-  const transformFunc: TransformFunc = ({ value }) => {
+  const func: WalkOnFunc = ({ value, path }) => {
+    if (onlyAnnotations && !isElement(value) && !path.isAttrID()) {
+      return WALK_STOP_VALUE.SKIP
+    }
     if (isReferenceExpression(value)) {
       allReferencedIds.add(value.elemID.getFullName())
+      return WALK_STOP_VALUE.SKIP
     }
-    return value
+    return WALK_STOP_VALUE.RECURSE
   }
-
-  if (onlyAnnotations) {
-    await walkOnElementAnnotations(element, transformFunc)
-  } else {
-    await walkOnElement({ element, transformFunc })
-  }
-
+  walkOnElement({ element, func })
   return allReferencedIds
 }
 

@@ -23,7 +23,7 @@ import { FilterCreator, FilterWith } from '../filter'
 
 const log = logger(module)
 export const EMPLOYEE_NAME_QUERY = 'SELECT id, entityid FROM employee'
-export const SYSTEM_NOTE_QUERY = 'SELECT recordid, recordtypeid, name FROM systemnote GROUP BY recordid, recordtypeid, name'
+export const SYSTEM_NOTE_QUERY = 'SELECT recordid, recordtypeid, name FROM systemnote ORDER BY date ASC'
 
 const fetchEmployeeNames = async (client: NetsuiteClient): Promise<Record<string, string>> => {
   const employees = await client.runSuiteQL(EMPLOYEE_NAME_QUERY)
@@ -33,10 +33,21 @@ const fetchEmployeeNames = async (client: NetsuiteClient): Promise<Record<string
   return {}
 }
 
+const distinctSortedSystemNotes = (
+  systemNotes: Record<string, unknown>[]
+): Record<string, unknown>[] =>
+  Object.values(
+    _.groupBy(
+      systemNotes
+        .filter(note => Object.keys(note).length === 3),
+      note => [note.recordid, note.recordtypeid]
+    )
+  ).map(notes => notes[0])
+
 const fetchSystemNotes = async (client: NetsuiteClient): Promise<Record<string, unknown>[]> => {
   const systemNotes = await client.runSuiteQL(SYSTEM_NOTE_QUERY)
   if (systemNotes) {
-    return systemNotes
+    return distinctSortedSystemNotes(systemNotes)
   }
   log.warn('System note query failed')
   return []

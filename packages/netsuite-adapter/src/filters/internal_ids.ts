@@ -20,12 +20,14 @@ import { FilterCreator } from '../filter'
 import NetsuiteClient from '../client/client'
 
 const addInternalIdFieldToType = (object: ObjectType): void => {
-  object.fields.internalId = new Field(
-    object,
-    'internalId',
-    BuiltinTypes.STRING,
-    { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-  )
+  if (_.isUndefined(object.fields.internalId)) {
+    object.fields.internalId = new Field(
+      object,
+      'internalId',
+      BuiltinTypes.STRING,
+      { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+    )
+  }
 }
 
 const addInternalIdFieldToInstancesObjects = async (
@@ -114,11 +116,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
    */
   onDeploy: async changes => {
     const additionInstances = getAdditionInstances(changes)
-
     if (!client.isSuiteAppConfigured() || additionInstances.length === 0) {
       return
     }
-
+    
+    await addInternalIdFieldToInstancesObjects(additionInstances)
     const recordIdMap = await createRecordIdsMap(
       client, _.uniq(additionInstances.map(instance => instance.elemID.typeName))
     )

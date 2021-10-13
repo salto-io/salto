@@ -468,8 +468,13 @@ export default class SalesforceClient {
       sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.read(type, chunk)),
       chunkSize: MAX_ITEMS_IN_READ_METADATA_REQUEST,
       isSuppressedError: error => (
+        // This seems to happen with actions that relate to sending emails - these are disabled in
+        // some way on sandboxes and for some reason this causes the SF API to fail reading
         (this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid')
         || (error.name === 'sf:INSUFFICIENT_ACCESS')
+        // Seems that reading TopicsForObjects for Problem, Incident and ChangeRequest fails.
+        // Unclear why this happens, might be a SF API bug, suppressing as this seems unimportant
+        || (type === 'TopicsForObjects' && error.name === 'sf:INVALID_TYPE_FOR_OPERATION')
       ),
       isUnhandledError,
     })

@@ -18,7 +18,7 @@ import { detailedCompare } from '@salto-io/adapter-utils'
 import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange, PrimitiveType, PrimitiveTypes, isField, getChangeElement, Change, ReferenceExpression, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { ModificationDiff, RemovalDiff, AdditionDiff } from '@salto-io/dag'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
-import { routeChanges, routePromote, routeDemote, routeCopyTo, getMergeableParentID } from '../../../src/workspace/nacl_files/multi_env/routers'
+import { routeChanges, routePromote, routeDemote, routeCopyTo, getMergeableParentID, routeRemoveFrom } from '../../../src/workspace/nacl_files/multi_env/routers'
 
 const hasChanges = (
   changes: DetailedChange[],
@@ -1784,6 +1784,49 @@ describe('copyTo', () => {
         path: ['other'],
         data: { after: multiFileInstaceOther } },
     ])
+  })
+})
+
+describe('routeRemoveFrom', () => {
+  const existingElemID = new ElemID('salto', 'exists')
+  const notExistingElemID = new ElemID('salto', 'notExists')
+  const existingObject = new ObjectType({ elemID: existingElemID })
+
+  it('should return the removal changes as secondary when env name is passed', async () => {
+    const changes = await routeRemoveFrom(
+      [existingElemID, notExistingElemID],
+      createMockNaclFileSource([existingObject]),
+      'env',
+    )
+    expect(changes).toEqual({
+      primarySource: [],
+      commonSource: [],
+      secondarySources: {
+        env: [{
+          action: 'remove',
+          id: existingElemID,
+          path: undefined,
+          data: { before: existingObject },
+        }],
+      },
+    })
+  })
+
+  it('should return the removal changes as primary when no env name was passed', async () => {
+    const changes = await routeRemoveFrom(
+      [existingElemID, notExistingElemID],
+      createMockNaclFileSource([existingObject]),
+    )
+    expect(changes).toEqual({
+      primarySource: [{
+        action: 'remove',
+        id: existingElemID,
+        path: undefined,
+        data: { before: existingObject },
+      }],
+      commonSource: [],
+      secondarySources: {},
+    })
   })
 })
 

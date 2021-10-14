@@ -3059,6 +3059,19 @@ describe('workspace', () => {
         ).toContainEqual(elemIDToMove)
       })
     })
+
+    describe('removeFrom', () => {
+      it('should update the elements correctly', async () => {
+        const elemIDToRemove = new ElemID('salesforce', 'lead')
+        expect(
+          await awu(await (await ws.elements()).list()).toArray()
+        ).toContainEqual(elemIDToRemove)
+        await ws.removeFrom([elemIDToRemove])
+        expect(
+          await awu(await (await ws.elements()).list()).toArray()
+        ).not.toContainEqual(elemIDToRemove)
+      })
+    })
   })
 
   describe('getNaclFile', () => {

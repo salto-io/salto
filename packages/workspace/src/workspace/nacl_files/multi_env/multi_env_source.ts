@@ -27,7 +27,7 @@ import { ElementSelector, selectElementIdsByTraversal } from '../../element_sele
 import { ValidationError } from '../../../validator'
 import { ParseError, SourceRange, SourceMap } from '../../../parser'
 import { mergeElements, MergeError } from '../../../merger'
-import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo } from './routers'
+import { routeChanges, RoutedChanges, routePromote, routeDemote, routeCopyTo, routeRemoveFrom } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode, SourceLoadParams } from '../nacl_files_source'
 import { ParsedNaclFile } from '../parsed_nacl_file'
 import { createMergeManager, ElementMergeManager, ChangeSet, MergedRecoveryMode, REBUILD_ON_RECOVERY } from '../elements_cache'
@@ -84,7 +84,14 @@ type MultiEnvState = {
 
 export type EnvsChanges = Record<string, ChangeSet<Change>>
 
-export type FromSource = 'env' | 'common' | 'all'
+export type FromSource = {
+  source: 'env'
+  envName?: string
+} | {
+  source: 'common'
+} | {
+  source: 'all'
+}
 
 export type MultiEnvSource = Omit<NaclFilesSource<EnvsChanges>
   , 'getAll' | 'getElementsSource'> & {
@@ -98,6 +105,7 @@ export type MultiEnvSource = Omit<NaclFilesSource<EnvsChanges>
   demote: (ids: ElemID[]) => Promise<EnvsChanges>
   demoteAll: () => Promise<EnvsChanges>
   copyTo: (ids: ElemID[], targetEnvs?: string[]) => Promise<EnvsChanges>
+  removeFrom: (ids: ElemID[], targetEnv?: string) => Promise<EnvsChanges>
   getElementsSource: (env?: string) => Promise<ElementsSource>
   getSearchableNamesOfEnv: (env?: string) => Promise<string[]>
   setCurrentEnv: (env: string) => void
@@ -324,9 +332,9 @@ const buildMultiEnvSource = (
   )
 
   const determineSource = async (fromSource: FromSource): Promise<ElementsSource> => {
-    switch (fromSource) {
+    switch (fromSource.source) {
       case 'env': {
-        return primarySource()
+        return fromSource.envName !== undefined ? sources[fromSource.envName] : primarySource()
       }
       case 'common': {
         return commonSource()
@@ -339,7 +347,7 @@ const buildMultiEnvSource = (
 
   const getElementIdsBySelectors = async (
     selectors: ElementSelector[],
-    fromSource: FromSource = 'env',
+    fromSource: FromSource = { source: 'env' },
     compact = false,
   ): Promise<AsyncIterable<ElemID>> => {
     const relevantSource: ElementsSource = await determineSource(fromSource)
@@ -384,6 +392,18 @@ const buildMultiEnvSource = (
       ids,
       primarySource(),
       targetSources,
+    )
+    const envChanges = await applyRoutedChanges(routedChanges)
+    const buildRes = await buildMultiEnvState({ envChanges })
+    state = buildRes.state
+    return buildRes.changes
+  }
+
+  const removeFrom = async (ids: ElemID[], targetEnv?: string): Promise<EnvsChanges> => {
+    const routedChanges = await routeRemoveFrom(
+      ids,
+      targetEnv !== undefined ? secondarySources()[targetEnv] : primarySource(),
+      targetEnv,
     )
     const envChanges = await applyRoutedChanges(routedChanges)
     const buildRes = await buildMultiEnvState({ envChanges })
@@ -478,6 +498,7 @@ const buildMultiEnvSource = (
     demote,
     demoteAll,
     copyTo,
+    removeFrom,
     list: async (): Promise<AsyncIterable<ElemID>> =>
       (await getState()).states[primarySourceName].elements.list(),
     isEmpty,

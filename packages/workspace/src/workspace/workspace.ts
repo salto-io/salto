@@ -167,6 +167,7 @@ export type Workspace = {
   demote(ids: ElemID[]): Promise<void>
   demoteAll(): Promise<void>
   copyTo(ids: ElemID[], targetEnvs?: string[]): Promise<void>
+  removeFrom(ids: ElemID[], targetEnv?: string): Promise<void>
   getValue(id: ElemID): Promise<Value | undefined>
   getSearchableNames(): Promise<string[]>
   getSearchableNamesOfEnv(env?: string): Promise<string[]>
@@ -822,6 +823,10 @@ export const loadWorkspace = async (
     },
     copyTo: async (ids: ElemID[], targetEnvs: string[]) => {
       const workspaceChanges = await (await getLoadedNaclFilesSource()).copyTo(ids, targetEnvs)
+      workspaceState = buildWorkspaceState({ workspaceChanges })
+    },
+    removeFrom: async (ids: ElemID[], targetEnv?: string) => {
+      const workspaceChanges = await (await getLoadedNaclFilesSource()).removeFrom(ids, targetEnv)
       workspaceState = buildWorkspaceState({ workspaceChanges })
     },
     transformToWorkspaceError,

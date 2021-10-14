@@ -20,7 +20,7 @@ import { Workspace, ElementSelector, createElementSelectors, FromSource } from '
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
-import { CliOutput, CliExitCode } from '../types'
+import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
 import { formatTargetEnvRequired, formatUnknownTargetEnv, formatInvalidEnvTargetCurrent, formatCloneToEnvFailed, formatInvalidFilters, formatMoveFailed, formatListFailed, emptyLine, formatListUnresolvedFound, formatListUnresolvedMissing, formatElementListUnresolvedFailed } from '../formatter'
 import { isValidWorkspaceForCommand } from '../workspace/workspace'
@@ -33,6 +33,17 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 type CommonOrEnvs = 'common' | 'envs'
+
+type AllowDeletionArg = {
+  allowElementDeletions: boolean
+}
+
+const ALLOW_DELETIONS_OPTION: KeyedOption<AllowDeletionArg> = {
+  name: 'allowElementDeletions',
+  alias: 'd',
+  default: false,
+  type: 'boolean',
+}
 
 const validateEnvs = (
   output: CliOutput,
@@ -57,7 +68,7 @@ const validateEnvs = (
 
 
 const runElementsOperationMessages = async (
-  elemIds: readonly ElemID[],
+  nothingToDo: boolean,
   { stdout }: CliOutput,
   nothingToDoMessage: string,
   informationMessage: string,
@@ -65,7 +76,7 @@ const runElementsOperationMessages = async (
   startMessage: string,
   force: boolean
 ): Promise<boolean> => {
-  if (elemIds.length === 0) {
+  if (nothingToDo) {
     stdout.write(nothingToDoMessage)
     return false
   }
@@ -79,17 +90,54 @@ const runElementsOperationMessages = async (
   return shouldStart
 }
 
+
+const getElementsToDelete = async (
+  workspace: Workspace,
+  sourceElemIds: ElemID[],
+  envs: ReadonlyArray<string>,
+  selectors: ElementSelector[]
+): Promise<Record<string, ElemID[]>> => {
+  const envsElemIds: Record<string, ElemID[]> = Object.fromEntries(await (awu(envs)).map(
+    async env =>
+      [
+        env,
+        await awu(await workspace.getElementIdsBySelectors(
+          selectors,
+          { source: 'env', envName: env },
+          true
+        )).toArray(),
+      ]
+  ).toArray())
+
+  const sourceElemIdsSet = new Set(sourceElemIds.map(id => id.getFullName()))
+  return _(envsElemIds)
+    .mapValues(ids => ids.filter(id => !sourceElemIdsSet.has(id.getFullName())))
+    .entries()
+    .filter(([_env, ids]) => ids.length !== 0)
+    .fromPairs()
+    .value()
+}
+
 const shouldMoveElements = async (
   to: string,
   elemIds: readonly ElemID[],
+  elemIdsToRemove: Record<string, ElemID[]>,
   output: CliOutput,
   force: boolean,
 ): Promise<boolean> =>
   runElementsOperationMessages(
-    elemIds,
+    elemIds.length === 0 && _.isEmpty(elemIdsToRemove),
     output,
     Prompts.NO_ELEMENTS_MESSAGE,
-    Prompts.MOVE_MESSAGE(to, elemIds.map(id => id.getFullName())),
+    [
+      Prompts.MOVE_MESSAGE(to, elemIds.map(id => id.getFullName())),
+      ...Object.entries(elemIdsToRemove).map(
+        ([envName, ids]) => Prompts.ELEMENTS_DELETION_MESSAGE(
+          envName,
+          ids.map(id => id.getFullName()),
+        )
+      ),
+    ].join(''),
     Prompts.SHOULD_MOVE_QUESTION(to),
     Prompts.MOVE_START(to),
     force,
@@ -101,14 +149,24 @@ const moveElement = async (
   to: CommonOrEnvs,
   elmSelectors: ElementSelector[],
   cliOutput: CliOutput,
-  force: boolean
+  force: boolean,
+  allowElementDeletions = false,
 ): Promise<CliExitCode> => {
   try {
     const elemIds = await awu(
-      await workspace.getElementIdsBySelectors(elmSelectors, to === 'envs' ? 'common' : 'env', true)
+      await workspace.getElementIdsBySelectors(elmSelectors, to === 'envs' ? { source: 'common' } : { source: 'env' }, true)
     ).toArray()
 
-    if (!await shouldMoveElements(to, elemIds, cliOutput, force)) {
+    const elemIdsToRemove = allowElementDeletions
+      ? await getElementsToDelete(
+        workspace,
+        elemIds,
+        workspace.envs().filter(env => env !== workspace.currentEnv()),
+        elmSelectors
+      )
+      : {}
+
+    if (!await shouldMoveElements(to, elemIds, elemIdsToRemove, cliOutput, force)) {
       return CliExitCode.Success
     }
 
@@ -117,6 +175,9 @@ const moveElement = async (
     } else if (to === 'envs') {
       await workspace.demote(elemIds)
     }
+    await Promise.all(
+      Object.entries(elemIdsToRemove).map(([env, ids]) => workspace.removeFrom(ids, env))
+    )
     await workspace.flush()
     return CliExitCode.Success
   } catch (e) {
@@ -129,6 +190,7 @@ const moveElement = async (
 type ElementMoveToCommonArgs = {
   elementSelector: string[]
   force?: boolean
+  allowElementDeletions: boolean
 } & EnvArg
 
 export const moveToCommonAction: WorkspaceCommandAction<ElementMoveToCommonArgs> = async ({
@@ -137,7 +199,7 @@ export const moveToCommonAction: WorkspaceCommandAction<ElementMoveToCommonArgs>
   spinnerCreator,
   workspace,
 }): Promise<CliExitCode> => {
-  const { elementSelector, force } = input
+  const { elementSelector, force, allowElementDeletions } = input
   const { validSelectors, invalidSelectors } = createElementSelectors(elementSelector)
   if (!_.isEmpty(invalidSelectors)) {
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
@@ -153,7 +215,7 @@ export const moveToCommonAction: WorkspaceCommandAction<ElementMoveToCommonArgs>
     return CliExitCode.AppError
   }
 
-  return moveElement(workspace, output, 'common', validSelectors, output, force ?? false)
+  return moveElement(workspace, output, 'common', validSelectors, output, force ?? false, allowElementDeletions)
 }
 
 const moveToCommonDef = createWorkspaceCommand({
@@ -177,6 +239,10 @@ const moveToCommonDef = createWorkspaceCommand({
         description: 'Do not prompt for confirmation during the move-to-common operation',
         type: 'boolean',
       },
+      {
+        ...ALLOW_DELETIONS_OPTION,
+        description: 'Delete all the elements in all the environments that match the selectors but do not exists in the source environment (to completely sync the environments)',
+      },
     ],
   },
   action: moveToCommonAction,
@@ -186,6 +252,7 @@ const moveToCommonDef = createWorkspaceCommand({
 type ElementMoveToEnvsArgs = {
   elementSelector: string[]
   force?: boolean
+  allowElementDeletions: boolean
 }
 
 export const moveToEnvsAction: WorkspaceCommandAction<ElementMoveToEnvsArgs> = async ({
@@ -238,14 +305,23 @@ const moveToEnvsDef = createWorkspaceCommand({
 const shouldCloneElements = async (
   targetEnvs: string[],
   elemIds: readonly ElemID[],
+  elemIdsToRemove: Record<string, ElemID[]>,
   output: CliOutput,
   force: boolean,
 ): Promise<boolean> =>
   runElementsOperationMessages(
-    elemIds,
+    elemIds.length === 0 && _.isEmpty(elemIdsToRemove),
     output,
     Prompts.NO_ELEMENTS_MESSAGE,
-    Prompts.CLONE_MESSAGE(elemIds.map(id => id.getFullName())),
+    [
+      Prompts.CLONE_MESSAGE(elemIds.map(id => id.getFullName())),
+      ...Object.entries(elemIdsToRemove).map(
+        ([envName, ids]) => Prompts.ELEMENTS_DELETION_MESSAGE(
+          envName,
+          ids.map(id => id.getFullName()),
+        )
+      ),
+    ].join(''),
     Prompts.SHOULD_CLONE_QUESTION,
     Prompts.CLONE_TO_ENV_START(targetEnvs),
     force,
@@ -256,6 +332,7 @@ type ElementCloneArgs = {
   elementSelector: string[]
   toEnvs: string[]
   force?: boolean
+  allowElementDeletions: boolean
 } & EnvArg
 
 export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
@@ -264,7 +341,7 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
   spinnerCreator,
   workspace,
 }): Promise<CliExitCode> => {
-  const { toEnvs, elementSelector, force } = input
+  const { toEnvs, elementSelector, force, allowElementDeletions } = input
   const { validSelectors, invalidSelectors } = createElementSelectors(elementSelector)
   if (!_.isEmpty(invalidSelectors)) {
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
@@ -283,14 +360,28 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
   }
 
   try {
-    const elemIds = await awu(
-      await workspace.getElementIdsBySelectors(validSelectors, 'env', true)
+    const sourceElemIds = await awu(
+      await workspace.getElementIdsBySelectors(validSelectors, { source: 'env' }, true)
     ).toArray()
-    if (!await shouldCloneElements(toEnvs, elemIds, output, force ?? false)) {
+
+    const elemIdsToRemove = allowElementDeletions
+      ? await getElementsToDelete(workspace, sourceElemIds, toEnvs, validSelectors)
+      : {}
+
+    if (!await shouldCloneElements(
+      toEnvs,
+      sourceElemIds,
+      elemIdsToRemove,
+      output,
+      force ?? false
+    )) {
       return CliExitCode.Success
     }
 
-    await workspace.copyTo(elemIds, toEnvs)
+    await Promise.all(
+      Object.entries(elemIdsToRemove).map(([env, ids]) => workspace.removeFrom(ids, env))
+    )
+    await workspace.copyTo(sourceElemIds, toEnvs)
     await workspace.flush()
     return CliExitCode.Success
   } catch (e) {
@@ -326,6 +417,10 @@ const cloneDef = createWorkspaceCommand({
         required: false,
         description: 'Do not prompt for confirmation during the cloning operation',
         type: 'boolean',
+      },
+      {
+        ...ALLOW_DELETIONS_OPTION,
+        description: 'Delete all the elements that match the selectors in the destination environments but do not exists in the source environment (to completely sync the environments)',
       },
     ],
   },
@@ -467,7 +562,7 @@ const elementOpenDef = createWorkspaceCommand({
 
 type ElementListArgs = {
   elementSelector: string[]
-  mode: FromSource
+  mode: FromSource['source']
 } & EnvArg
 
 const listElements = async (
@@ -506,7 +601,7 @@ export const listAction: WorkspaceCommandAction<ElementListArgs> = async ({
     if (!validWorkspace) {
       return CliExitCode.AppError
     }
-    return await listElements(workspace, output, mode, validSelectors)
+    return await listElements(workspace, output, { source: mode }, validSelectors)
   } catch (e) {
     errorOutputLine(formatListFailed(e.message), output)
     return CliExitCode.AppError

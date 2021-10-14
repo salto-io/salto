@@ -250,11 +250,11 @@ ${Prompts.SERVICE_ADD_HELP}`
     to: string,
     ids: readonly string[],
   ): string =>
-    `The following configuration elements will be moved to ${to}:
+    (ids.length !== 0 ? `The following configuration elements will be moved to ${to}:
 ${Prompts.LIST_IDS(ids)}
 
 
-`
+` : '')
 
   public static readonly MOVE_START = (
     to: string,
@@ -301,11 +301,21 @@ Nothing to do.
   public static readonly CLONE_MESSAGE = (
     ids: readonly string[],
   ): string =>
-    `The following configuration elements will be cloned:
+    (ids.length !== 0 ? `The following configuration elements will be cloned:
 ${Prompts.LIST_IDS(ids)}
 
 
-`
+` : '')
+
+  public static readonly ELEMENTS_DELETION_MESSAGE = (
+    envName: string,
+    ids: readonly string[],
+  ): string =>
+    (ids.length !== 0 ? `The following configuration elements will be deleted from ${envName}:
+${Prompts.LIST_IDS(ids)}
+
+
+` : '')
 
   public static readonly SHOULD_CLONE_QUESTION = Prompts.SHOULD_RUN_ELEMENTS_OPERATION('clone')
 

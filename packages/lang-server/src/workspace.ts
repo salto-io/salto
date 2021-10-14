@@ -21,7 +21,7 @@ import { Element, SaltoError, ElemID, Change, getChangeElement,
   isRemovalChange, isReferenceExpression, isContainerType,
   Value, isModificationChange } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
-import { detailedCompare, walkOnElement, WalkOnFunc, WALK_STOP_VALUE } from '@salto-io/adapter-utils'
+import { detailedCompare, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 
 
 const { validateElements } = validator
@@ -144,9 +144,9 @@ export class EditorWorkspace {
             ))
           }
         })
-        return WALK_STOP_VALUE.SKIP
+        return WALK_NEXT_STEP.SKIP
       }
-      return WALK_STOP_VALUE.RECURSE
+      return WALK_NEXT_STEP.RECURSE
     }
     await awu(fileElements)
       .filter(e => !isContainerType(e))

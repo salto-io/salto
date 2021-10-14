@@ -31,9 +31,9 @@ import {
   findInstances, flattenElementStr, valuesDeepSome, filterByID, setPath, ResolveValuesFunc,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   restoreChangeElement, RestoreValuesFunc, getAllReferencedIds, applyFunctionToChangeData,
-  transformElement, toObjectType, getParents, resolveTypeShallow, walkOnElement,
-  WALK_STOP_VALUE, WalkOnFunc,
+  transformElement, toObjectType, getParents, resolveTypeShallow,
 } from '../src/utils'
+import { walkOnElement, WALK_NEXT_STEP, WalkOnFunc } from '../src/walk_element'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
 const { awu } = collections.asynciterable
@@ -936,7 +936,7 @@ describe('Test utils.ts', () => {
           const func = mockFunction<WalkOnFunc>()
             .mockImplementation(({ path }) => {
               paths.push(path.getFullName())
-              return WALK_STOP_VALUE.RECURSE
+              return WALK_NEXT_STEP.RECURSE
             })
           walkOnElement({ element: objType, func })
           expect(paths).toEqual([
@@ -958,12 +958,31 @@ describe('Test utils.ts', () => {
             'test.test.field.f4',
           ])
         })
+        it('should top iteration when EXIT is returned', () => {
+          const paths: string[] = []
+          const func = mockFunction<WalkOnFunc>()
+            .mockImplementation(({ path }) => {
+              paths.push(path.getFullName())
+              if (path.getFullName() === 'test.test.field.f1') {
+                return WALK_NEXT_STEP.EXIT
+              }
+              return WALK_NEXT_STEP.RECURSE
+            })
+          walkOnElement({ element: objType, func })
+          expect(paths).toEqual([
+            'test.test',
+            'test.test.attr',
+            'test.test.attr.a2',
+            'test.test.field',
+            'test.test.field.f1',
+          ])
+        })
         it('should walk only on top level', () => {
           const paths: string[] = []
           const func = mockFunction<WalkOnFunc>()
             .mockImplementation(({ path }) => {
               paths.push(path.getFullName())
-              return WALK_STOP_VALUE.SKIP
+              return WALK_NEXT_STEP.SKIP
             })
           walkOnElement({ element: objType, func })
           expect(paths).toEqual([objType.elemID.getFullName()])
@@ -975,7 +994,7 @@ describe('Test utils.ts', () => {
           const func = mockFunction<WalkOnFunc>()
             .mockImplementation(({ path }) => {
               paths.push(path.getFullName())
-              return WALK_STOP_VALUE.RECURSE
+              return WALK_NEXT_STEP.RECURSE
             })
           walkOnElement({ element: inst, func })
           expect(paths).toEqual([
@@ -991,12 +1010,12 @@ describe('Test utils.ts', () => {
             'test.test.instance.test.f3',
           ])
         })
-        it('should walk only on top level and its annotations', async () => {
+        it('should walk only on top level', async () => {
           const paths: string[] = []
           const func = mockFunction<WalkOnFunc>()
             .mockImplementation(({ path }) => {
               paths.push(path.getFullName())
-              return WALK_STOP_VALUE.SKIP
+              return WALK_NEXT_STEP.SKIP
             })
           walkOnElement({ element: inst, func })
           expect(paths).toEqual([inst.elemID.getFullName()])
@@ -2083,11 +2102,11 @@ describe('Test utils.ts', () => {
 
   describe('getAllReferencedIds', () => {
     it('should find referenced ids', async () => {
-      const res = await getAllReferencedIds(mockInstance)
+      const res = getAllReferencedIds(mockInstance)
       expect(res).toEqual(new Set(['mockAdapter.test', 'mockAdapter.test2.field.aaa']))
     })
     it('should find referenced ids only in annotations', async () => {
-      const res = await getAllReferencedIds(mockInstance, true)
+      const res = getAllReferencedIds(mockInstance, true)
       expect(res).toEqual(new Set(['mockAdapter.test']))
     })
   })

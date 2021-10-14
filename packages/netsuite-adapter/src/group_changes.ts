@@ -22,7 +22,7 @@ import {
   isRemovalChange,
 } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
-import { walkOnElement, WALK_STOP_VALUE } from '@salto-io/adapter-utils'
+import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import * as suiteAppFileCabinet from './suiteapp_file_cabinet'
 import { customTypes, fileCabinetTypes, isDataObjectType, isFileCabinetInstance } from './types'
@@ -69,13 +69,16 @@ const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes =>
 const getRecordDependencies = (element: InstanceElement): string[] => {
   const dependencies: string[] = []
   walkOnElement({
-    element: element.value,
-    func: ({ value }) => {
+    element,
+    func: ({ value, path }) => {
+      if (path.isAttrID()) {
+        return WALK_NEXT_STEP.SKIP
+      }
       if (isReferenceExpression(value)) {
         dependencies.push(value.elemID.getFullName())
-        return WALK_STOP_VALUE.SKIP
+        return WALK_NEXT_STEP.SKIP
       }
-      return WALK_STOP_VALUE.RECURSE
+      return WALK_NEXT_STEP.RECURSE
     },
   })
   return dependencies

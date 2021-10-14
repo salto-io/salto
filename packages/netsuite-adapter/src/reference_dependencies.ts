@@ -17,7 +17,7 @@ import {
   InstanceElement, isInstanceElement, isPrimitiveType, ElemID, getFieldType,
   isReferenceExpression, Value, isServiceId,
 } from '@salto-io/adapter-api'
-import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
+import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import wu from 'wu'
 import {

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, ElemIDTypes, Value, ElemIDType } from '@salto-io/adapter-api'
-import { walkOnElement, WalkOnFunc, WALK_STOP_VALUE } from '@salto-io/adapter-utils'
+import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
 
@@ -228,22 +228,21 @@ export const selectElementIdsByTraversal = async (
 
   const subElementIDs: ElemID[] = []
   const selectFromSubElements: WalkOnFunc = ({ path }) => {
-    const testId = path
-    if (subElementSelectors.some(selector => match(testId, selector))) {
-      subElementIDs.push(testId)
+    if (subElementSelectors.some(selector => match(path, selector))) {
+      subElementIDs.push(path)
       if (compact) {
-        return WALK_STOP_VALUE.SKIP
+        return WALK_NEXT_STEP.SKIP
       }
     }
     const stillRelevantSelectors = selectors.filter(selector =>
-      selector.origin.split(ElemID.NAMESPACE_SEPARATOR).length > testId.getFullNameParts().length)
+      selector.origin.split(ElemID.NAMESPACE_SEPARATOR).length > path.getFullNameParts().length)
     if (stillRelevantSelectors.length === 0) {
-      return WALK_STOP_VALUE.SKIP
+      return WALK_NEXT_STEP.SKIP
     }
-    if (isElementPossiblyParentOfSearchedElement(stillRelevantSelectors, testId)) {
-      return WALK_STOP_VALUE.RECURSE
+    if (isElementPossiblyParentOfSearchedElement(stillRelevantSelectors, path)) {
+      return WALK_NEXT_STEP.RECURSE
     }
-    return WALK_STOP_VALUE.SKIP
+    return WALK_NEXT_STEP.SKIP
   }
 
   await awu(stillRelevantIDs)

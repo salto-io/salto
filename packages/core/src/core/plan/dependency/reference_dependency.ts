@@ -50,7 +50,7 @@ export const addReferencesDependency: DependencyChanger = async changes => {
     const onlyAnnotations = isObjectType(elem)
     // Not using ElementsSource here is legit because it's ran
     // after resolve
-    return (wu(await getAllReferencedIds(elem, onlyAnnotations))
+    return (wu(getAllReferencedIds(elem, onlyAnnotations))
       .map(targetId => ElemID.fromFullName(targetId).createBaseID().parent.getFullName())
       .filter(targetId => targetId !== elemId) // Ignore self references
       .map(targetId => changesById.get(targetId) ?? [])

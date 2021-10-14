@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ChangeValidator, getChangeElement, Element, ElemID, SaltoErrorSeverity, isReferenceExpression } from '@salto-io/adapter-api'
-import { walkOnElement, WalkOnFunc, WALK_STOP_VALUE } from '@salto-io/adapter-utils'
+import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { values, collections } from '@salto-io/lowerdash'
 import { expressions } from '@salto-io/workspace'
 
@@ -25,9 +25,9 @@ const getUnresolvedReferences = (element: Element): ElemID[] => {
   const func: WalkOnFunc = ({ value }) => {
     if (isReferenceExpression(value) && value.value instanceof expressions.UnresolvedReference) {
       unresolvedReferences.push(value.elemID)
-      return WALK_STOP_VALUE.SKIP
+      return WALK_NEXT_STEP.SKIP
     }
-    return WALK_STOP_VALUE.RECURSE
+    return WALK_NEXT_STEP.RECURSE
   }
   walkOnElement({ element, func })
   return unresolvedReferences

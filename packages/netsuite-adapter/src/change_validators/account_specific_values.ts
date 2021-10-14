@@ -23,7 +23,7 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
-import { walkOnElement, WALK_STOP_VALUE } from '@salto-io/adapter-utils'
+import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { isCustomType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE } from '../constants'
 
@@ -36,13 +36,13 @@ const hasAccountSpecificValue = (instance: InstanceElement): boolean => {
     element: instance,
     func: ({ value, path }) => {
       if (path.isAttrID()) {
-        return WALK_STOP_VALUE.SKIP
+        return WALK_NEXT_STEP.SKIP
       }
       if (_.isString(value) && value.includes(ACCOUNT_SPECIFIC_VALUE)) {
         foundAccountSpecificValue = true
-        return WALK_STOP_VALUE.EXIT
+        return WALK_NEXT_STEP.EXIT
       }
-      return WALK_STOP_VALUE.RECURSE
+      return WALK_NEXT_STEP.RECURSE
     },
   })
   return foundAccountSpecificValue

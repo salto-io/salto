@@ -26,20 +26,13 @@ import {
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType,
   ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
 } from '@salto-io/adapter-api'
+import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
 
 const { mapValuesAsync } = promises.object
 const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
 
 const log = logger(module)
-
-export enum WALK_STOP_VALUE {
-  RECURSE,
-  SKIP,
-  EXIT,
-}
-
-export class ExitWalk extends Error {}
 
 export const applyFunctionToChangeData = async <T extends Change<unknown>>(
   change: T, func: (arg: ChangeData<T>) => Promise<ChangeData<T>> | ChangeData<T>,
@@ -104,17 +97,12 @@ const fieldMapperGenerator = (
   )
 }
 
-export type WalkOnFuncArgs = {
-  value: Value
-  path: ElemID
-}
 export type TransformFuncArgs = {
   value: Value
   path?: ElemID
   field?: Field
 }
 export type TransformFunc = (args: TransformFuncArgs) => Promise<Value> | Value | undefined
-export type WalkOnFunc = (args: WalkOnFuncArgs) => WALK_STOP_VALUE
 
 export const transformValues = async (
   {
@@ -258,9 +246,6 @@ export const elementAnnotationTypes = async (
   }
 }
 
-export const getAnnotationsPathID = <T extends Element>(element: T): ElemID =>
-  (isType(element) ? element.elemID.createNestedID('attr') : element.elemID)
-
 export const transformElementAnnotations = async <T extends Element>(
   {
     element,
@@ -278,7 +263,7 @@ export const transformElementAnnotations = async <T extends Element>(
   type: await elementAnnotationTypes(element, elementsSource),
   transformFunc,
   strict,
-  pathID: getAnnotationsPathID(element),
+  pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
   elementsSource,
   isTopLevel: false,
 }) || {}
@@ -417,56 +402,6 @@ export const transformElement = async <T extends Element>(
   return element
 }
 
-export const walkOnElement = (
-  {
-    element,
-    func,
-  }: {
-    element: Value
-    func: WalkOnFunc
-  }
-): void => {
-  const run = (value: Value, keyPathID: ElemID): void => {
-    const runOnValues = (values: Values): void => {
-      _.mapValues(values, (val, key) => run(val, keyPathID?.createNestedID(key)))
-    }
-    const res = func({ value, path: keyPathID })
-    if (res === WALK_STOP_VALUE.EXIT) {
-      throw new ExitWalk()
-    }
-    if (res === WALK_STOP_VALUE.SKIP) {
-      return
-    }
-    if (isElement(value)) {
-      if (isType(value)) {
-        run(value.annotations, value.elemID.createNestedID('attr'))
-      } else {
-        runOnValues(value.annotations)
-      }
-      if (isObjectType(value)) {
-        run(value.fields, value.elemID.createNestedID('field'))
-      }
-      if (isInstanceElement(value)) {
-        runOnValues(value.value)
-      }
-    }
-    if (_.isArray(value)) {
-      value.forEach((item, index) => run(item, keyPathID?.createNestedID(String(index))))
-    }
-    if (_.isPlainObject(value)) {
-      runOnValues(value)
-    }
-  }
-  try {
-    run(element, element.elemID)
-  } catch (e) {
-    if (e instanceof ExitWalk) {
-      return
-    }
-    throw e
-  }
-}
-
 export type GetLookupNameFuncArgs = {
   ref: ReferenceExpression
   field?: Field
@@ -514,13 +449,13 @@ export const restoreValues: RestoreValuesFunc = async (source, targetElement, ge
   const createPathMapCallback: WalkOnFunc = ({ value, path }) => {
     if (isReferenceExpression(value)) {
       allReferencesPaths.set(path.getFullName(), value)
-      return WALK_STOP_VALUE.SKIP
+      return WALK_NEXT_STEP.SKIP
     }
     if (isStaticFile(value)) {
       allStaticFilesPaths.set(path.getFullName(), value)
-      return WALK_STOP_VALUE.SKIP
+      return WALK_NEXT_STEP.SKIP
     }
-    return WALK_STOP_VALUE.RECURSE
+    return WALK_NEXT_STEP.RECURSE
   }
 
   walkOnElement({ element: source, func: createPathMapCallback })
@@ -929,14 +864,16 @@ export const getAllReferencedIds = (
 ): Set<string> => {
   const allReferencedIds = new Set<string>()
   const func: WalkOnFunc = ({ value, path }) => {
-    if (onlyAnnotations && !isElement(value) && !path.isAttrID()) {
-      return WALK_STOP_VALUE.SKIP
+    // if onlyAnnotations is true - skip the non annotations part
+    if (onlyAnnotations && !path.isAttrID()) {
+      // If this is an element we need to recurse in order to get to the annotations
+      return isElement(value) ? WALK_NEXT_STEP.RECURSE : WALK_NEXT_STEP.SKIP
     }
     if (isReferenceExpression(value)) {
       allReferencedIds.add(value.elemID.getFullName())
-      return WALK_STOP_VALUE.SKIP
+      return WALK_NEXT_STEP.SKIP
     }
-    return WALK_STOP_VALUE.RECURSE
+    return WALK_NEXT_STEP.RECURSE
   }
   walkOnElement({ element, func })
   return allReferencedIds

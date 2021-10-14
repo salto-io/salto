@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement, isReferenceExpression, ElemID, isObjectType, Value, isContainerType } from '@salto-io/adapter-api'
-import { walkOnElement, WalkOnFuncArgs, WALK_STOP_VALUE } from '@salto-io/adapter-utils'
+import { Element, isInstanceElement, isReferenceExpression, ElemID, isObjectType, isContainerType } from '@salto-io/adapter-api'
+import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { getLocations, SaltoElemLocation, SaltoElemFileLocation } from './location'
 import { EditorWorkspace } from './workspace'
@@ -43,14 +43,14 @@ const getElemIDUsages = async (
   if (isInstanceElement(element) && element.refType.elemID.isEqual(id)) {
     pathesToAdd.add(element.elemID.getFullName())
   }
-  const func = ({ value, path }: WalkOnFuncArgs): Value => {
+  const func: WalkOnFunc = ({ value, path }) => {
     if (isReferenceExpression(value)) {
       if (id.isEqual(value.elemID) || id.isParentOf(value.elemID)) {
         pathesToAdd.add(path.getFullName())
       }
-      return WALK_STOP_VALUE.SKIP
+      return WALK_NEXT_STEP.SKIP
     }
-    return WALK_STOP_VALUE.RECURSE
+    return WALK_NEXT_STEP.RECURSE
   }
   if (!isContainerType(element)) {
     walkOnElement({ element, func })

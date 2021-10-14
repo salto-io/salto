@@ -21,7 +21,7 @@ import {
   ElemID,
   ChangeError,
 } from '@salto-io/adapter-api'
-import { walkOnElement, WALK_STOP_VALUE } from '@salto-io/adapter-utils'
+import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 
 const { awu } = collections.asynciterable
@@ -46,9 +46,9 @@ const getScriptIdsUnderLists = async (instance: InstanceElement):
     element: instance,
     func: ({ value, path }) => {
       if (path.isAttrID()) {
-        return WALK_STOP_VALUE.SKIP
+        return WALK_NEXT_STEP.SKIP
       }
-      if (path !== undefined && Array.isArray(value)) {
+      if (Array.isArray(value)) {
         wu(value)
           .map(getScriptId)
           .filter(values.isDefined)
@@ -56,7 +56,7 @@ const getScriptIdsUnderLists = async (instance: InstanceElement):
             pathToScriptIds.get(path.getFullName()).add(id)
           })
       }
-      return WALK_STOP_VALUE.RECURSE
+      return WALK_NEXT_STEP.RECURSE
     },
   })
   return pathToScriptIds

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { InstanceElement, ElemID, Value, Values } from '@salto-io/adapter-api'
-import { walkOnElement, safeJsonStringify, setPath, extendGeneratedDependencies, FlatDetailedDependency, DependencyDirection, WalkOnFunc, WALK_STOP_VALUE } from '@salto-io/adapter-utils'
+import { transformElement, TransformFunc, safeJsonStringify, setPath, extendGeneratedDependencies, FlatDetailedDependency, DependencyDirection } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { strings, types, values as lowerdashValues } from '@salto-io/lowerdash'
 import { NetsuiteBlock, SalesforceBlock, BlockBase } from './recipe_block_types'
@@ -51,17 +51,29 @@ export const addReferencesForService = async <T extends SalesforceBlock | Netsui
 ): Promise<void> => {
   const dependencyMapping: MappedReference[] = []
 
-  const findReferences: WalkOnFunc = ({ value, path }) => {
+  const findReferences: TransformFunc = ({ value, path }) => {
     if (typeGuard(value, appName)) {
-      dependencyMapping.push(...addReferences(value, path))
+      dependencyMapping.push(...addReferences(
+        value,
+        path ?? inst.elemID,
+      ))
     // we can't have both cases because on expects an object and the other a string
-    } else if (addFormulaReferences !== undefined && _.isString(value)) {
+    } else if (
+      addFormulaReferences !== undefined
+      && path !== undefined
+      && _.isString(value)
+    ) {
       dependencyMapping.push(...addFormulaReferences(value, path))
     }
-    return WALK_STOP_VALUE.RECURSE
+    return value
   }
 
-  walkOnElement({ element: inst, func: findReferences })
+  // used for traversal, the transform result is ignored
+  await transformElement({
+    element: inst,
+    transformFunc: findReferences,
+    strict: false,
+  })
   if (dependencyMapping.length === 0) {
     return
   }

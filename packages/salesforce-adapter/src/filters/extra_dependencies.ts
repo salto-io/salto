@@ -103,7 +103,7 @@ const addGeneratedDependencies = async (elem: Element, refElemIDs: ElemID[]): Pr
     return
   }
 
-  const existingReferences = await getAllReferencedIds(elem)
+  const existingReferences = getAllReferencedIds(elem)
   const newDependencies = refElemIDs
     .filter(elemId => !existingReferences.has(elemId.getFullName()))
     .map(elemId => new ReferenceExpression(elemId))

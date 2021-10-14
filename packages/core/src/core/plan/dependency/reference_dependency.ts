@@ -39,9 +39,9 @@ export const addReferencesDependency: DependencyChanger = async changes => {
     ([_id, change]) => getChangeElemId(change),
   )
 
-  const addChangeDependency = async (
+  const addChangeDependency = (
     [id, change]: ChangeEntry
-  ): Promise<Iterable<DependencyChange>> => {
+  ): Iterable<DependencyChange> => {
     const elem = getChangeElement(change)
     const parents = getParentIds(elem)
     const elemId = elem.elemID.getFullName()

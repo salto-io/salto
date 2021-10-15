@@ -13,16 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import wu from 'wu'
+import _ from 'lodash'
 import {
   ChangeValidator, getChangeElement, isModificationChange, InstanceElement, isInstanceChange,
   ModificationChange,
   ElemID,
   ChangeError,
 } from '@salto-io/adapter-api'
-import { transformValues } from '@salto-io/adapter-utils'
+import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
-import wu from 'wu'
-import _ from 'lodash'
 
 const { awu } = collections.asynciterable
 
@@ -42,11 +42,13 @@ const getScriptId = (value: unknown): string | undefined => {
 const getScriptIdsUnderLists = async (instance: InstanceElement):
   Promise<collections.map.DefaultMap<string, Set<string>>> => {
   const pathToScriptIds = new collections.map.DefaultMap<string, Set<string>>(() => new Set())
-  await transformValues({
-    values: instance.value,
-    type: await instance.getType(),
-    transformFunc: ({ value, path }) => {
-      if (path !== undefined && Array.isArray(value)) {
+  walkOnElement({
+    element: instance,
+    func: ({ value, path }) => {
+      if (path.isAttrID()) {
+        return WALK_NEXT_STEP.SKIP
+      }
+      if (Array.isArray(value)) {
         wu(value)
           .map(getScriptId)
           .filter(values.isDefined)
@@ -54,10 +56,8 @@ const getScriptIdsUnderLists = async (instance: InstanceElement):
             pathToScriptIds.get(path.getFullName()).add(id)
           })
       }
-      return value
+      return WALK_NEXT_STEP.RECURSE
     },
-    pathID: instance.elemID,
-    strict: false,
   })
   return pathToScriptIds
 }

@@ -98,12 +98,12 @@ const getDependencies = async (client: SalesforceClient): Promise<DependencyGrou
  * @param elem        The element to modify
  * @param refElemIDs  The reference ids to add
  */
-const addGeneratedDependencies = async (elem: Element, refElemIDs: ElemID[]): Promise<void> => {
+const addGeneratedDependencies = (elem: Element, refElemIDs: ElemID[]): void => {
   if (refElemIDs.length === 0) {
     return
   }
 
-  const existingReferences = await getAllReferencedIds(elem)
+  const existingReferences = getAllReferencedIds(elem)
   const newDependencies = refElemIDs
     .filter(elemId => !existingReferences.has(elemId.getFullName()))
     .map(elemId => new ReferenceExpression(elemId))
@@ -176,7 +176,7 @@ const addExtraReferences = async (
         elem.elemID.getFullName()}`)
     })
 
-    await addGeneratedDependencies(
+    addGeneratedDependencies(
       elem,
       dependencies.map(item => item.elemId).filter(isDefined),
     )

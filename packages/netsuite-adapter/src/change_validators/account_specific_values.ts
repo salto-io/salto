@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { values, collections } from '@salto-io/lowerdash'
 import {
   ChangeError,
@@ -22,24 +23,26 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
-import { transformValues } from '@salto-io/adapter-utils'
-import _ from 'lodash'
+import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { isCustomType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE } from '../constants'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
 
-const hasAccountSpecificValue = async (instance: InstanceElement): Promise<boolean> => {
+const hasAccountSpecificValue = (instance: InstanceElement): boolean => {
   let foundAccountSpecificValue = false
-  await transformValues({
-    values: instance.value,
-    type: await instance.getType(),
-    transformFunc: ({ value }) => {
+  walkOnElement({
+    element: instance,
+    func: ({ value, path }) => {
+      if (path.isAttrID()) {
+        return WALK_NEXT_STEP.SKIP
+      }
       if (_.isString(value) && value.includes(ACCOUNT_SPECIFIC_VALUE)) {
         foundAccountSpecificValue = true
+        return WALK_NEXT_STEP.EXIT
       }
-      return value
+      return WALK_NEXT_STEP.RECURSE
     },
   })
   return foundAccountSpecificValue

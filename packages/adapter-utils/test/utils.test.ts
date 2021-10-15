@@ -2002,12 +2002,12 @@ describe('Test utils.ts', () => {
   })
 
   describe('getAllReferencedIds', () => {
-    it('should find referenced ids', async () => {
-      const res = await getAllReferencedIds(mockInstance)
+    it('should find referenced ids', () => {
+      const res = getAllReferencedIds(mockInstance)
       expect(res).toEqual(new Set(['mockAdapter.test', 'mockAdapter.test2.field.aaa']))
     })
-    it('should find referenced ids only in annotations', async () => {
-      const res = await getAllReferencedIds(mockInstance, true)
+    it('should find referenced ids only in annotations', () => {
+      const res = getAllReferencedIds(mockInstance, true)
       expect(res).toEqual(new Set(['mockAdapter.test']))
     })
   })

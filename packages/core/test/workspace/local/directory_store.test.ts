@@ -76,6 +76,15 @@ describe('localDirectoryStore', () => {
       expect(mockReaddirp.mock.calls[0][1].fileFilter).toEqual(fileFilter)
       expect(mockReaddirp.mock.calls[0][1].directoryFilter({ basename: '.hidden' })).toBeFalsy()
     })
+
+    it('list only under accessible path', async () => {
+      const baseDir = '/baseDir'
+      mockFileExists.mockResolvedValue(true)
+      mockReaddirp.mockResolvedValue([{ fullPath: '/baseDir/access/test1' }, { fullPath: '/baseDir/access/test2' }])
+      const result = await localDirectoryStore({ baseDir, name: '', accessiblePath: 'access', encoding }).list()
+      expect(result).toEqual(['access/test1', 'access/test2'])
+      expect(mockReaddirp.mock.calls[0][0]).toEqual(path.join(baseDir, 'access'))
+    })
   })
 
   describe('isEmpty', () => {
@@ -355,7 +364,7 @@ describe('localDirectoryStore', () => {
 
   describe('contained', () => {
     const baseDir = '/base'
-    const fileStore = localDirectoryStore({ baseDir, name: '', encoding })
+    const fileStore = localDirectoryStore({ baseDir, name: '', accessiblePath: 'access', encoding })
     it('should fail for absolute paths', () =>
       fileStore.get('/absolutely/fabulous')
         .catch(err =>
@@ -364,12 +373,18 @@ describe('localDirectoryStore', () => {
       fileStore.get('../../bla')
         .catch(err =>
           expect(err.message).toEqual('Filepath not contained in dir store base dir: ../../bla')))
+
+    it('should fail for relative paths inside basedir but outside accessible path', () =>
+      fileStore.get('bla')
+        .catch(err =>
+          expect(err.message).toEqual('Filepath not contained in dir store base dir: bla')))
+
     it('should fail for relative paths outside basedir even for smart assets', () =>
       fileStore.mtimestamp('something/bla/../../../dev/null')
         .catch(err =>
           expect(err.message).toEqual('Filepath not contained in dir store base dir: something/bla/../../../dev/null')))
     it('should succeed for paths that contain ".." as part of the parts names', () =>
-      expect(fileStore.get('..relatively../..fabulous../..bla..jsonl')).resolves.not.toThrow())
+      expect(fileStore.get('access/..relatively../..fabulous../..bla..jsonl')).resolves.not.toThrow())
   })
 
   describe('getTotalSize', () => {

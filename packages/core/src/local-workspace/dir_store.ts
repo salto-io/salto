@@ -35,6 +35,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   baseDir: string,
   storeName?: string,
   nameSuffix?: string,
+  accessiblePath = '',
   encoding?: BufferEncoding,
   fileFilter?: string,
   directoryFilter?: (path: string) => boolean,
@@ -48,22 +49,25 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   const getAbsFileName = (filename: string, dir?: string): string =>
     path.resolve(dir ?? currentBaseDir, filename)
 
-  const getRelativeFileName = (filename: string, dir?: string): string => {
-    const base = dir || currentBaseDir
+  const getAccessibleFullPath = (): string =>
+    path.join(currentBaseDir, accessiblePath)
+
+  const getRelativeFileName = (filename: string): string => {
+    const accessibleFullPath = getAccessibleFullPath()
     const isAbsolute = path.isAbsolute(filename)
-    if (
-      (isAbsolute || filename.split(path.sep).includes('..'))
-        && path.relative(base, filename).startsWith(`..${path.sep}`)
-    ) {
+
+    if (path.relative(accessibleFullPath, isAbsolute ? filename : getAbsFileName(filename)).startsWith(`..${path.sep}`)) {
       throw new Error(`Filepath not contained in dir store base dir: ${filename}`)
     }
-    return isAbsolute
-      ? path.relative(base, filename)
+
+    return path.isAbsolute(filename)
+      ? path.relative(currentBaseDir, filename)
       : filename
   }
+
   const listDirFiles = async (listDirectories = false):
-  Promise<string[]> => (await fileUtils.exists(currentBaseDir)
-    ? readdirp.promise(currentBaseDir, {
+  Promise<string[]> => (await fileUtils.exists(getAccessibleFullPath())
+    ? readdirp.promise(getAccessibleFullPath(), {
       fileFilter: fileFilter || (() => true),
       directoryFilter: e => e.basename[0] !== '.'
         && (!directoryFilter || directoryFilter(e.fullPath)),
@@ -258,6 +262,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       currentBaseDir,
       storeName,
       nameSuffix,
+      accessiblePath,
       encoding,
       fileFilter,
       directoryFilter,
@@ -273,6 +278,7 @@ type LocalDirectoryStoreParams = {
   baseDir: string
   name?: string
   nameSuffix?: string
+  accessiblePath?: string
   encoding?: 'utf8'
   fileFilter?: string
   directoryFilter?: (path: string) => boolean
@@ -286,9 +292,10 @@ export function localDirectoryStore(
 ): dirStore.SyncDirectoryStore<string>
 
 export function localDirectoryStore(
-  { baseDir, name, nameSuffix, encoding, fileFilter, directoryFilter }: LocalDirectoryStoreParams
+  { baseDir, name, nameSuffix, accessiblePath, encoding, fileFilter, directoryFilter }
+  : LocalDirectoryStoreParams
 ): dirStore.SyncDirectoryStore<dirStore.ContentType> {
   return buildLocalDirectoryStore<dirStore.ContentType>(
-    baseDir, name, nameSuffix, encoding, fileFilter, directoryFilter,
+    baseDir, name, nameSuffix, accessiblePath, encoding, fileFilter, directoryFilter,
   )
 }

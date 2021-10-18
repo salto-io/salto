@@ -1232,13 +1232,13 @@ describe('track', () => {
     sec: createMockNaclFileSource(secondaryElements, { 'default.nacl': secondaryElements }),
   }
 
-  it('should throw the proper error when trying to move an element which is not in the origin env', async () => {
-    await expect(() => routePromote(
+  it('should return empty changes trying to move an element which is not in the origin env', async () => {
+    await expect(routePromote(
       [ElemID.fromFullName('salto.noop')],
       primarySrc,
       commonSrc,
       secondarySources
-    )).rejects.toThrow('does not exist in origin')
+    )).resolves.toEqual({ commonSource: [], primarySource: [], secondarySources: { sec: [] } })
   })
 
   it('should move an entire element in two diff files if not in common and split in source', async () => {
@@ -1508,13 +1508,13 @@ describe('untrack', () => {
     sec: createMockNaclFileSource(secondaryElements, { 'default.nacl': secondaryElements }),
   }
 
-  it('should throw the proper error when trying to move an element which is not in the origin env', async () => {
-    await expect(() => routeDemote(
+  it('should return empty changes when trying to move an element which is not in the origin env', async () => {
+    await expect(routeDemote(
       [ElemID.fromFullName('salto.noop')],
       primarySrc,
       commonSrc,
       secondarySources
-    )).rejects.toThrow('does not exist in origin')
+    )).resolves.toEqual({ commonSource: [], primarySource: [], secondarySources: { sec: [] } })
   })
 
   it('should move add element which is only in common to all envs', async () => {
@@ -1693,12 +1693,12 @@ describe('copyTo', () => {
     sec: createMockNaclFileSource(secondaryElements, { 'default.nacl': secondaryElements }),
   }
 
-  it('should throw the proper error when trying to move an element which is not in the origin env', async () => {
-    await expect(() => routeCopyTo(
+  it('should return empty changes when trying to move an element which is not in the origin env', async () => {
+    await expect(routeCopyTo(
       [ElemID.fromFullName('salto.noop')],
       primarySrc,
       secondarySources
-    )).rejects.toThrow('does not exist in origin')
+    )).resolves.toEqual({ commonSource: [], primarySource: [], secondarySources: { sec: [] } })
   })
 
   it('should copy an entire element which does not exist in the target env', async () => {

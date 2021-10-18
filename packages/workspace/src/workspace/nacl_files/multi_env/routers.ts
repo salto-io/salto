@@ -176,10 +176,7 @@ const addToSource = async ({
       ?? await originSource.get(topLevelGid)
     const before = await targetSource.get(topLevelGid)
     if (!values.isDefined(topLevelElement)) {
-      if (values.isDefined(before)) {
-        return []
-      }
-      throw new Error(`ElemID ${gids[0].getFullName()} does not exist in origin`)
+      return []
     }
     const topLevelIds = gids.filter(id => id.isTopLevel())
     const wrappedElement = !_.isEmpty(topLevelIds)

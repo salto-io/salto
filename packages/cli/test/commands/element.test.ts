@@ -382,12 +382,8 @@ Cloning the specified elements to inactive.
         it('should return success code', () => {
           expect(result).toBe(CliExitCode.Success)
         })
-        it('should call workspace copyTo', () => {
-          expect(workspace.copyTo).toHaveBeenCalledWith([elemToAdd], ['env2'])
-        })
-
-        it('should remove the right elements from the other envs', () => {
-          expect(workspace.removeFrom).toHaveBeenCalledWith([elemToRemoveFromEnv2], 'env2')
+        it('should call workspace sync', () => {
+          expect(workspace.sync).toHaveBeenCalledWith([elemToAdd, elemToRemoveFromEnv2], ['env2'])
         })
 
         it('should flush workspace', () => {
@@ -432,12 +428,8 @@ Cloning the specified elements to env2.
         it('should return success code', () => {
           expect(result).toBe(CliExitCode.Success)
         })
-        it('should call workspace copyTo', () => {
-          expect(workspace.copyTo).toHaveBeenCalledWith([elemToAdd], ['env2'])
-        })
-
-        it('should not call remove', () => {
-          expect(workspace.removeFrom).not.toHaveBeenCalled()
+        it('should call workspace sync', () => {
+          expect(workspace.sync).toHaveBeenCalledWith([elemToAdd], ['env2'])
         })
 
         it('should flush workspace', () => {
@@ -479,8 +471,8 @@ Cloning the specified elements to env2.
           expect(result).toBe(CliExitCode.Success)
         })
 
-        it('should remove the right elements from the other envs', () => {
-          expect(workspace.removeFrom).toHaveBeenCalledWith([elemToRemoveFromEnv2], 'env2')
+        it('should call workspace sync', () => {
+          expect(workspace.sync).toHaveBeenCalledWith([elemToRemoveFromEnv2], ['env2'])
         })
 
         it('should flush workspace', () => {
@@ -522,8 +514,8 @@ Cloning the specified elements to env2.
           expect(result).toBe(CliExitCode.Success)
         })
 
-        it('should not call remove', () => {
-          expect(workspace.removeFrom).not.toHaveBeenCalled()
+        it('should not call sync', () => {
+          expect(workspace.sync).not.toHaveBeenCalled()
         })
 
         it('should not flush workspace', () => {
@@ -868,12 +860,11 @@ Moving the specified elements to common.
         expect(result).toBe(CliExitCode.Success)
       })
       it('should call workspace promote', () => {
-        expect(workspace.promote).toHaveBeenCalledWith([elemToAdd])
-      })
-
-      it('should remove the right elements from the other envs', () => {
-        expect(workspace.removeFrom).toHaveBeenCalledWith([elemToRemoveFromEnv2], 'env2')
-        expect(workspace.removeFrom).toHaveBeenCalledWith([elemToRemoveFromEnv3], 'env3')
+        expect(workspace.promote).toHaveBeenCalledWith([
+          elemToAdd,
+          elemToRemoveFromEnv2,
+          elemToRemoveFromEnv3,
+        ])
       })
 
       it('should flush workspace', () => {

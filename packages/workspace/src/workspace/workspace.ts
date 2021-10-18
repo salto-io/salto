@@ -167,7 +167,7 @@ export type Workspace = {
   demote(ids: ElemID[]): Promise<void>
   demoteAll(): Promise<void>
   copyTo(ids: ElemID[], targetEnvs?: string[]): Promise<void>
-  removeFrom(ids: ElemID[], targetEnv?: string): Promise<void>
+  sync(ids: ElemID[], targetEnvs: string[]): Promise<void>
   getValue(id: ElemID): Promise<Value | undefined>
   getSearchableNames(): Promise<string[]>
   getSearchableNamesOfEnv(env?: string): Promise<string[]>
@@ -734,6 +734,16 @@ export const loadWorkspace = async (
   const pickServices = (names?: ReadonlyArray<string>): ReadonlyArray<string> =>
     (_.isUndefined(names) ? services() : services().filter(s => names.includes(s)))
   const credsPath = (service: string): string => path.join(currentEnv(), service)
+
+  const removeFrom = async (ids: ElemID[], targetEnv?: string): Promise<void> => {
+    const workspaceChanges = await (await getLoadedNaclFilesSource()).removeFrom(ids, targetEnv)
+    workspaceState = buildWorkspaceState({ workspaceChanges })
+  }
+  const copyTo = async (ids: ElemID[], targetEnvs: string[]): Promise<void> => {
+    const workspaceChanges = await (await getLoadedNaclFilesSource()).copyTo(ids, targetEnvs)
+    workspaceState = buildWorkspaceState({ workspaceChanges })
+  }
+
   return {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -821,13 +831,10 @@ export const loadWorkspace = async (
       const workspaceChanges = await (await getLoadedNaclFilesSource()).demoteAll()
       workspaceState = buildWorkspaceState({ workspaceChanges })
     },
-    copyTo: async (ids: ElemID[], targetEnvs: string[]) => {
-      const workspaceChanges = await (await getLoadedNaclFilesSource()).copyTo(ids, targetEnvs)
-      workspaceState = buildWorkspaceState({ workspaceChanges })
-    },
-    removeFrom: async (ids: ElemID[], targetEnv?: string) => {
-      const workspaceChanges = await (await getLoadedNaclFilesSource()).removeFrom(ids, targetEnv)
-      workspaceState = buildWorkspaceState({ workspaceChanges })
+    copyTo,
+    sync: async (ids, targetEnvs) => {
+      await Promise.all(targetEnvs.map(env => removeFrom(ids, env)))
+      await copyTo(ids, targetEnvs)
     },
     transformToWorkspaceError,
     transformError,

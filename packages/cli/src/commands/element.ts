@@ -171,13 +171,10 @@ const moveElement = async (
     }
 
     if (to === 'common') {
-      await workspace.promote(elemIds)
+      await workspace.promote([...elemIds, ...Object.values(elemIdsToRemove).flat()])
     } else if (to === 'envs') {
       await workspace.demote(elemIds)
     }
-    await Promise.all(
-      Object.entries(elemIdsToRemove).map(([env, ids]) => workspace.removeFrom(ids, env))
-    )
     await workspace.flush()
     return CliExitCode.Success
   } catch (e) {
@@ -378,10 +375,11 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
       return CliExitCode.Success
     }
 
-    await Promise.all(
-      Object.entries(elemIdsToRemove).map(([env, ids]) => workspace.removeFrom(ids, env))
-    )
-    await workspace.copyTo(sourceElemIds, toEnvs)
+    if (allowElementDeletions) {
+      await workspace.sync([...sourceElemIds, ...Object.values(elemIdsToRemove).flat()], toEnvs)
+    } else {
+      await workspace.copyTo(sourceElemIds, toEnvs)
+    }
     await workspace.flush()
     return CliExitCode.Success
   } catch (e) {

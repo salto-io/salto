@@ -3060,16 +3060,16 @@ describe('workspace', () => {
       })
     })
 
-    describe('removeFrom', () => {
+    describe('sync', () => {
       it('should update the elements correctly', async () => {
-        const elemIDToRemove = new ElemID('salesforce', 'lead')
-        expect(
-          await awu(await (await ws.elements()).list()).toArray()
-        ).toContainEqual(elemIDToRemove)
-        await ws.removeFrom([elemIDToRemove])
-        expect(
-          await awu(await (await ws.elements()).list()).toArray()
-        ).not.toContainEqual(elemIDToRemove)
+        const elemIDToRemove = new ElemID('salesforce', 'someType', 'instance', 'inst1')
+        const elemIDToAdd = new ElemID('salesforce', 'lead')
+        await ws.sync([elemIDToRemove, elemIDToAdd], [secondarySourceName])
+        const elements = await awu(
+          await (await ws.elements(undefined, secondarySourceName)).list()
+        ).toArray()
+        expect(elements).not.toContainEqual(elemIDToRemove)
+        expect(elements).toContainEqual(elemIDToAdd)
       })
     })
   })

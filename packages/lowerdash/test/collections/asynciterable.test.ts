@@ -186,7 +186,7 @@ describe('asynciterable', () => {
       describe('when given an empty iterable', () => {
         it('should return empty array', async () => {
           expect(await toArrayAsync(
-            await mapAsync(toAsyncIterable([]), toStringMock)
+            mapAsync(toAsyncIterable([]), toStringMock)
           )).toEqual([])
           expect(toStringMock).toHaveBeenCalledTimes(0)
         })
@@ -196,7 +196,7 @@ describe('asynciterable', () => {
         it('should return same result as a map on the original array', async () => {
           iterable = toAsyncIterable(baseArray)
           expect(await toArrayAsync(
-            await mapAsync(iterable, toStringMock)
+            mapAsync(iterable, toStringMock)
           )).toEqual(baseArray.map(v => v.toString()))
           expect(toStringMock).toHaveBeenCalledTimes(3)
         })
@@ -206,7 +206,7 @@ describe('asynciterable', () => {
       describe('when given an empty iterable', () => {
         it('should return empty array', async () => {
           expect(await toArrayAsync(
-            await mapAsync(toAsyncIterable([]), asyncToStringMock)
+            mapAsync(toAsyncIterable([]), asyncToStringMock)
           )).toEqual([])
           expect(asyncToStringMock).toHaveBeenCalledTimes(0)
         })
@@ -216,7 +216,7 @@ describe('asynciterable', () => {
         it('should return same result as a map on an array (not Promises)', async () => {
           iterable = toAsyncIterable(baseArray)
           expect(await toArrayAsync(
-            await mapAsync(iterable, asyncToStringMock)
+            mapAsync(iterable, asyncToStringMock)
           )).toEqual(baseArray.map(v => v.toString()))
           expect(asyncToStringMock).toHaveBeenCalledTimes(3)
         })
@@ -227,7 +227,7 @@ describe('asynciterable', () => {
       it('should call both map funcs on each element before calling on the next one', async () => {
         iterable = toAsyncIterable(baseArray)
         expect(await toArrayAsync(
-          await mapAsync(await mapAsync(iterable, numberIdentityMock), numberIdentityMock)
+          mapAsync(mapAsync(iterable, numberIdentityMock), numberIdentityMock)
         )).toEqual(baseArray)
         expect(numberIdentityMock).toHaveBeenCalledTimes(6)
         expect(numberIdentityMock).toHaveBeenNthCalledWith(1, 1, 0)
@@ -382,7 +382,7 @@ describe('asynciterable', () => {
       }
     }
     it('should order key-value pairs correctly', async () => {
-      const result = await awu(await iterateTogether(firstIter, secondIter, cmp)).toArray()
+      const result = await awu(iterateTogether(firstIter, secondIter, cmp)).toArray()
       const expected = [
         { before: 0, after: 0 },
         { before: 1, after: undefined },
@@ -394,14 +394,14 @@ describe('asynciterable', () => {
         { before: undefined, after: 9 },
       ]
       expectBeforeAfterEquals(result, expected)
-      const resultReversed = await awu(await iterateTogether(secondIter, firstIter, cmp)).toArray()
+      const resultReversed = await awu(iterateTogether(secondIter, firstIter, cmp)).toArray()
       expectBeforeAfterEquals(resultReversed,
         expected.map(ba => ({ before: ba.after, after: ba.before })))
     })
     it('should throw exception if iterator unsorted', async () => {
-      await expect(awu(await iterateTogether(awu(firstIter), awu([1, 0]), cmp)).toArray()).rejects
+      await expect(awu(iterateTogether(awu(firstIter), awu([1, 0]), cmp)).toArray()).rejects
         .toEqual(new Error('Runtime Error: iterators must be sorted'))
-      await expect(awu(await iterateTogether(awu([0, 5, 1]), secondIter, cmp)).toArray()).rejects
+      await expect(awu(iterateTogether(awu([0, 5, 1]), secondIter, cmp)).toArray()).rejects
         .toEqual(new Error('Runtime Error: iterators must be sorted'))
     })
   })
@@ -513,8 +513,8 @@ describe('asynciterable', () => {
         })
       })
       it('should delete copies from list when uniquifying', async () => {
-        expect(await (await awu([1, 2, 3, 5, 4, 6, 6, 4, 3, 7, 2, 1])
-          .uniquify(num => num).toArray())).toEqual([1, 2, 3, 5, 4, 6, 7])
+        expect(await awu([1, 2, 3, 5, 4, 6, 6, 4, 3, 7, 2, 1])
+          .uniquify(num => num).toArray()).toEqual([1, 2, 3, 5, 4, 6, 7])
       })
     })
     describe('function chaining', () => {

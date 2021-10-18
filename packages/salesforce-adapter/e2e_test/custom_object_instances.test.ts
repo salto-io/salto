@@ -158,7 +158,7 @@ describe('custom object instances e2e', () => {
           SBQQ__Taxable__c: false,
           fullName: 'TestProductName',
         }
-        const instance = await createInstance({
+        const instance = createInstance({
           value,
           type: productTwoObjectType as ObjectType,
         })

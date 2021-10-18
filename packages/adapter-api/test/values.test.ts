@@ -123,7 +123,7 @@ describe('Values', () => {
     it('should throw error when no elemID is not top level', async () => {
       const createReference = (): TypeReference =>
         new TypeReference(ElemID.fromFullName('A.nested.instance.id.should.throw.error'))
-      await expect(createReference).toThrow(new Error('Invalid id for type reference: A.nested.instance.id.should.throw.error. Type reference must be top level.'))
+      expect(createReference).toThrow(new Error('Invalid id for type reference: A.nested.instance.id.should.throw.error. Type reference must be top level.'))
     })
 
     it('should resolve with element source if possible', async () => {

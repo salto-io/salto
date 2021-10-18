@@ -378,7 +378,7 @@ describe('adapter', () => {
 
   describe('deploy', () => {
     it('should throw not implemented', async () => {
-      const operations = await adapter.operations({
+      const operations = adapter.operations({
         credentials: new InstanceElement(
           'config',
           oauthClientCredentialsType,

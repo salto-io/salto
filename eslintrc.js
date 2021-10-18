@@ -150,6 +150,7 @@ module.exports = {
         ],
         'no-unused-expressions': 'off',
         '@typescript-eslint/no-unused-expressions': ['error'],
+        '@typescript-eslint/await-thenable': ['error'],
     },
     overrides: [
         {

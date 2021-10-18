@@ -121,39 +121,39 @@ describe('reference dependencies', () => {
       })
 
     it('should not add dependencies that are not required', async () => {
-      const result = await getRequiredReferencedInstances([instanceWithManyRefs])
+      const result = getRequiredReferencedInstances([instanceWithManyRefs])
       expect(result).toEqual([instanceWithManyRefs])
     })
 
     it('should add CUSTOM_SEGMENT dependency of CUSTOM_RECORD_TYPE', async () => {
-      const result = await getRequiredReferencedInstances([customRecordTypeInstance])
+      const result = getRequiredReferencedInstances([customRecordTypeInstance])
       expect(result).toEqual([customRecordTypeInstance, customSegmentInstance])
     })
 
     it('should add CUSTOM_RECORD_TYPE dependency of CUSTOM_SEGMENT', async () => {
-      const result = await getRequiredReferencedInstances([customSegmentInstance])
+      const result = getRequiredReferencedInstances([customSegmentInstance])
       expect(result).toEqual([customSegmentInstance, customRecordTypeInstance])
     })
 
     it('should add DATASET dependency of WORKBOOK', async () => {
-      const result = await getRequiredReferencedInstances([workbookInstance])
+      const result = getRequiredReferencedInstances([workbookInstance])
       expect(result).toEqual([workbookInstance, datasetInstance])
     })
 
     it('should add dependency of TRANSACTION_COLUMN_CUSTOM_FIELD', async () => {
-      const result = await getRequiredReferencedInstances([transactionColumnCustomFieldInstance])
+      const result = getRequiredReferencedInstances([transactionColumnCustomFieldInstance])
       expect(result).toEqual([transactionColumnCustomFieldInstance, instance])
     })
 
     it('should add dependency of TRANSACTION_BODY_CUSTOM_FIELD', async () => {
-      const result = await getRequiredReferencedInstances([transactionBodyCustomFieldInstance])
+      const result = getRequiredReferencedInstances([transactionBodyCustomFieldInstance])
       expect(result).toEqual([transactionBodyCustomFieldInstance, instance])
     })
 
     it('should not add dependencies that already exist', async () => {
       const input = [customRecordTypeInstance, customSegmentInstance, workbookInstance,
         datasetInstance, transactionColumnCustomFieldInstance, instance]
-      const result = await getRequiredReferencedInstances(input)
+      const result = getRequiredReferencedInstances(input)
       expect(result).toEqual(input)
     })
 
@@ -166,7 +166,7 @@ describe('reference dependencies', () => {
           ),
         })
 
-      const result = await getRequiredReferencedInstances(
+      const result = getRequiredReferencedInstances(
         [customRecordTypeInstance, customRecordTypeInstance2]
       )
       expect(result)

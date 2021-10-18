@@ -368,7 +368,7 @@ describe('salesforce client', () => {
     const asyncCounter = async (
       iterator: AsyncIterable<Values[]>
     ): Promise<number> =>
-      _.sum((await toArrayAsync(await mapAsync(
+      _.sum((await toArrayAsync(mapAsync(
         iterator,
         vals => makeArray(vals).map(() => 1)
       ))).flat())

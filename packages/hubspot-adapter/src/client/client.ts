@@ -163,7 +163,7 @@ export default class HubspotClient {
       return await Promise.all(workflowsResp) as Workflows[]
     }
 
-    const objectAPI = await this.extractHubspotObjectAPI(typeName)
+    const objectAPI = this.extractHubspotObjectAPI(typeName)
     // Use a high limit to avoid issues with endpoints with low defaults (doesn't effect max limits)
     const responsePromise = objectAPI.getAll({ limit: 10000 })
     const responseValue = await responsePromise.catch((reason: StatusCodeError) => {
@@ -191,7 +191,7 @@ export default class HubspotClient {
     typeName: string,
     hubspotMetadata: HubspotMetadata
   ): Promise<HubspotMetadata> {
-    const objectAPI = await this.extractHubspotObjectAPI(typeName)
+    const objectAPI = this.extractHubspotObjectAPI(typeName)
 
     const resp = objectAPI.create(hubspotMetadata)
     await validateResponse(resp)
@@ -203,7 +203,7 @@ export default class HubspotClient {
     typeName: string,
     hubspotMetadata: HubspotMetadata
   ): Promise<HubspotMetadata> {
-    const objectAPI = await this.extractHubspotObjectAPI(typeName)
+    const objectAPI = this.extractHubspotObjectAPI(typeName)
 
     // TODO: remove this error checking when HubSpot API will support update operation for workflow
     if (objectAPI.update === undefined) {
@@ -218,7 +218,7 @@ export default class HubspotClient {
   }
 
   async deleteInstance(typeName: string, hubspotMetadata: HubspotMetadata): Promise<void> {
-    const objectAPI = await this.extractHubspotObjectAPI(typeName)
+    const objectAPI = this.extractHubspotObjectAPI(typeName)
     const resp = objectAPI.delete(extractInstanceId(hubspotMetadata, typeName))
     await resp.catch((reason: StatusCodeError) => {
       if (!_.isUndefined(reason)) {

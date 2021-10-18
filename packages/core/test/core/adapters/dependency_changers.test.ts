@@ -36,7 +36,7 @@ describe('getAdapterDependencyChangers', () => {
   }
   let depChangers: ReadonlyArray<DependencyChanger>
   beforeAll(async () => {
-    depChangers = await getAdapterDependencyChangers(mockCreators)
+    depChangers = getAdapterDependencyChangers(mockCreators)
   })
   it('should return only dep changes for adapters that defined dep changers', () => {
     expect(depChangers).toHaveLength(1)

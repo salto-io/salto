@@ -308,7 +308,7 @@ export const getConnectionDetails = async (
     maxAttempts: 2,
     retryStrategy: RetryStrategies.HTTPOrNetworkError,
   }
-  const conn = connection || (await createConnectionFromCredentials(creds, options))
+  const conn = connection || createConnectionFromCredentials(creds, options)
   const orgId = (await loginFromCredentialsAndReturnOrgId(conn, creds))
   const limits = await conn.limits()
   return {
@@ -442,7 +442,7 @@ export default class SalesforceClient {
   }
 
   @requiresLogin()
-  public getUrl(): URL | undefined {
+  public async getUrl(): Promise<URL | undefined> {
     try {
       return new URL(this.conn.instanceUrl)
     } catch (e) {
@@ -587,10 +587,12 @@ export default class SalesforceClient {
 
   /**
    * Queries for all the available Records given a query string
+   *
+   * This function should be called after logging in
+   *
    * @param queryString the string to query with for records
    */
-  @requiresLogin()
-  public async *queryAll(
+  private async *getQueryAllIterable(
     queryString: string,
     useToolingApi = false,
   ): AsyncIterable<SalesforceRecord[]> {
@@ -618,23 +620,35 @@ export default class SalesforceClient {
     }
   }
 
+  /**
+   * Queries for all the available Records given a query string
+   * @param queryString the string to query with for records
+   */
+   @requiresLogin()
+  public async queryAll(
+    queryString: string,
+    useToolingApi = false,
+  ): Promise<AsyncIterable<SalesforceRecord[]>> {
+    return this.getQueryAllIterable(queryString, useToolingApi)
+  }
+
   @logDecorator()
   @requiresLogin()
-  public async bulkLoadOperation(
-    type: string,
-    operation: BulkLoadOperation,
-    records: SalesforceRecord[]
-  ):
+   public async bulkLoadOperation(
+     type: string,
+     operation: BulkLoadOperation,
+     records: SalesforceRecord[]
+   ):
     Promise<BatchResultInfo[]> {
-    const batch = this.conn.bulk.load(
-      type,
-      operation,
-      { extIdField: CUSTOM_OBJECT_ID_FIELD, concurrencyMode: 'Parallel' },
-      records
-    )
-    const { job } = batch
-    await new Promise(resolve => job.on('close', resolve))
-    const result = await batch.then() as BatchResultInfo[]
-    return flatValues(result)
-  }
+     const batch = this.conn.bulk.load(
+       type,
+       operation,
+       { extIdField: CUSTOM_OBJECT_ID_FIELD, concurrencyMode: 'Parallel' },
+       records
+     )
+     const { job } = batch
+     await new Promise(resolve => job.on('close', resolve))
+     const result = await batch.then() as BatchResultInfo[]
+     return flatValues(result)
+   }
 }

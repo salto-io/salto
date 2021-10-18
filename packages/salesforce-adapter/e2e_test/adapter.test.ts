@@ -2855,7 +2855,7 @@ describe('Salesforce adapter E2E with real account', () => {
           let emailFolderInstance: InstanceElement
 
           beforeAll(async () => {
-            emailFolderInstance = await createInstance({
+            emailFolderInstance = createInstance({
               value: {
                 name: 'My Email Folder Name',
                 [constants.INSTANCE_FULL_NAME_FIELD]: 'MyEmailFolder',
@@ -2884,7 +2884,7 @@ describe('Salesforce adapter E2E with real account', () => {
           let emailTemplateInstance: InstanceElement
 
           beforeAll(async () => {
-            emailTemplateInstance = await createInstance({
+            emailTemplateInstance = createInstance({
               value: {
                 [constants.INSTANCE_FULL_NAME_FIELD]: 'TestEmailFolder/MyEmailTemplate',
                 name: 'My Email Template Name',
@@ -2924,7 +2924,7 @@ describe('Salesforce adapter E2E with real account', () => {
           let reportTypeInstance: InstanceElement
 
           beforeAll(async () => {
-            reportTypeInstance = await createInstance({
+            reportTypeInstance = createInstance({
               value: {
                 [constants.INSTANCE_FULL_NAME_FIELD]: 'MyReportType',
                 label: 'My Report Type Label',
@@ -2960,7 +2960,7 @@ describe('Salesforce adapter E2E with real account', () => {
           let reportFolderInstance: InstanceElement
 
           beforeAll(async () => {
-            reportFolderInstance = await createInstance({
+            reportFolderInstance = createInstance({
               value: {
                 [constants.INSTANCE_FULL_NAME_FIELD]: 'MyReportFolder',
                 name: 'My Report Folder Name',
@@ -2989,7 +2989,7 @@ describe('Salesforce adapter E2E with real account', () => {
           let reportInstance: InstanceElement
 
           beforeAll(async () => {
-            reportInstance = await createInstance({
+            reportInstance = createInstance({
               value: {
                 [constants.INSTANCE_FULL_NAME_FIELD]: 'TestReportFolder/MyReport',
                 name: 'My Report Name',
@@ -3020,7 +3020,7 @@ describe('Salesforce adapter E2E with real account', () => {
           let dashboardFolderInstance: InstanceElement
 
           beforeAll(async () => {
-            dashboardFolderInstance = await createInstance({
+            dashboardFolderInstance = createInstance({
               value: {
                 name: 'My Dashboard Folder Name',
                 [constants.INSTANCE_FULL_NAME_FIELD]: 'MyDashboardFolder',
@@ -3049,7 +3049,7 @@ describe('Salesforce adapter E2E with real account', () => {
           let dashboardInstance: InstanceElement
 
           beforeAll(async () => {
-            dashboardInstance = await createInstance({
+            dashboardInstance = createInstance({
               value: {
                 [constants.INSTANCE_FULL_NAME_FIELD]: 'TestDashboardFolder/MyDashboard',
                 backgroundEndColor: '#FFFFFF',
@@ -3092,7 +3092,7 @@ describe('Salesforce adapter E2E with real account', () => {
           let auraInstance: InstanceElement
 
           beforeAll(async () => {
-            auraInstance = await createInstance({
+            auraInstance = createInstance({
               value: {
                 ...mockDefaultValues.AuraDefinitionBundle,
                 [constants.INSTANCE_FULL_NAME_FIELD]: 'MyAuraDefinitionBundle',
@@ -3122,7 +3122,7 @@ describe('Salesforce adapter E2E with real account', () => {
           let lwcInstance: InstanceElement
 
           beforeAll(async () => {
-            lwcInstance = await createInstance({
+            lwcInstance = createInstance({
               value: {
                 ...mockDefaultValues.LightningComponentBundle,
                 [constants.INSTANCE_FULL_NAME_FIELD]: 'myLightningComponentBundle',
@@ -3177,7 +3177,7 @@ describe('Salesforce adapter E2E with real account', () => {
           let staticResourceInstance: InstanceElement
 
           beforeAll(async () => {
-            staticResourceInstance = await createInstance({
+            staticResourceInstance = createInstance({
               value: {
                 ...mockDefaultValues.StaticResource,
                 [constants.INSTANCE_FULL_NAME_FIELD]: 'MyStaticResource',
@@ -3207,7 +3207,7 @@ describe('Salesforce adapter E2E with real account', () => {
     describe('flow instance manipulations', () => {
       let flow: InstanceElement
       beforeAll(async () => {
-        flow = await createInstance({
+        flow = createInstance({
           value: {
             [constants.INSTANCE_FULL_NAME_FIELD]: 'MyFlow',
             decisions: {

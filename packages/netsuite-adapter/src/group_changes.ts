@@ -99,7 +99,7 @@ const getChangesChunks = async (
     .filter(change => isInstanceChange(change.change))
     .forEach(async change => {
       const instance = getChangeElement(change.change) as InstanceElement
-      const dependencies = await getRecordDependencies(instance)
+      const dependencies = getRecordDependencies(instance)
       if (dependencies.some(dependency => iteratedIds.has(dependency))) {
         changesChunks.push([])
         iteratedIds.clear()

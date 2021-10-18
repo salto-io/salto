@@ -587,6 +587,9 @@ export default class SalesforceClient {
 
   /**
    * Queries for all the available Records given a query string
+   *
+   * This function should be called after logging in
+   *
    * @param queryString the string to query with for records
    */
   private async *getQueryAllIterable(

@@ -382,7 +382,7 @@ describe('adapter', () => {
         credentials: new InstanceElement(
           'config',
           oauthClientCredentialsType,
-          { clientId: 'client', clientSecret: 'secret', subdomain: 'sandbox.na', production: false }
+          { clientId: 'client', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
         ),
         config: new InstanceElement(
           'config',

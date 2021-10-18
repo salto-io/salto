@@ -30,7 +30,6 @@ const { toArrayAsync } = collections.asynciterable
 const generateProfileInternalIdToName = async (
   client: SalesforceClient,
 ): Promise<Map<string, string>> => {
-  // eslint-disable-next-line @typescript-eslint/await-thenable
   const profileNames = await toArrayAsync(await client.queryAll('SELECT Id, Name FROM Profile'))
   return new Map(
     profileNames.flat().map(profile => [profile.Id, profile.Name])

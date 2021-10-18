@@ -589,7 +589,6 @@ export default class SalesforceClient {
    * Queries for all the available Records given a query string
    * @param queryString the string to query with for records
    */
-  @requiresLogin()
   private async *getQueryAllIterable(
     queryString: string,
     useToolingApi = false,

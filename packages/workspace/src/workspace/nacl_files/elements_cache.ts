@@ -282,7 +282,7 @@ export const createMergeManager = async (flushables: Flushable[],
           src2
         ))
         src2ElementsToMerge = awu(await getElementsToMergeFromChanges(
-          src2Changes, src1ChangeIDs, src1
+          src2Changes, src1ChangeIDs, src1,
         ))
       } else {
         log.warn(`Invalid data detected in local cache ${namespace}. Rebuilding cache.`)

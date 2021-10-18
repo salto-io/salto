@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement, isReferenceExpression, ElemID, isObjectType, Value, isContainerType, placeholderReadonlyElementsSource } from '@salto-io/adapter-api'
-import { transformElement, TransformFuncArgs } from '@salto-io/adapter-utils'
+import { Element, isInstanceElement, isReferenceExpression, ElemID, isObjectType, isContainerType } from '@salto-io/adapter-api'
+import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { getLocations, SaltoElemLocation, SaltoElemFileLocation } from './location'
 import { EditorWorkspace } from './workspace'
@@ -43,18 +43,17 @@ const getElemIDUsages = async (
   if (isInstanceElement(element) && element.refType.elemID.isEqual(id)) {
     pathesToAdd.add(element.elemID.getFullName())
   }
-  const transformFunc = ({ value, path }: TransformFuncArgs): Value => {
-    if (isReferenceExpression(value) && path) {
+  const func: WalkOnFunc = ({ value, path }) => {
+    if (isReferenceExpression(value)) {
       if (id.isEqual(value.elemID) || id.isParentOf(value.elemID)) {
         pathesToAdd.add(path.getFullName())
       }
+      return WALK_NEXT_STEP.SKIP
     }
-    return value
+    return WALK_NEXT_STEP.RECURSE
   }
   if (!isContainerType(element)) {
-    await transformElement(
-      { element, transformFunc, strict: false, elementsSource: placeholderReadonlyElementsSource },
-    )
+    walkOnElement({ element, func })
   }
   return [...pathesToAdd]
 }

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, ElemIDTypes, Value, ElemIDType } from '@salto-io/adapter-api'
-import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
+import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
 
@@ -227,33 +227,27 @@ export const selectElementIdsByTraversal = async (
     : possibleParentIDs
 
   const subElementIDs: ElemID[] = []
-  const selectFromSubElements: TransformFunc = ({ path, value }) => {
-    if (path === undefined) {
-      return undefined
-    }
-    const testId = path
-    if (subElementSelectors.some(selector => match(testId, selector))) {
-      subElementIDs.push(testId)
+  const selectFromSubElements: WalkOnFunc = ({ path }) => {
+    if (subElementSelectors.some(selector => match(path, selector))) {
+      subElementIDs.push(path)
       if (compact) {
-        return undefined
+        return WALK_NEXT_STEP.SKIP
       }
     }
     const stillRelevantSelectors = selectors.filter(selector =>
-      selector.origin.split(ElemID.NAMESPACE_SEPARATOR).length > testId.getFullNameParts().length)
+      selector.origin.split(ElemID.NAMESPACE_SEPARATOR).length > path.getFullNameParts().length)
     if (stillRelevantSelectors.length === 0) {
-      return undefined
+      return WALK_NEXT_STEP.SKIP
     }
-    if (isElementPossiblyParentOfSearchedElement(stillRelevantSelectors, testId)) {
-      return value
+    if (isElementPossiblyParentOfSearchedElement(stillRelevantSelectors, path)) {
+      return WALK_NEXT_STEP.RECURSE
     }
-    return undefined
+    return WALK_NEXT_STEP.SKIP
   }
 
-  await awu(stillRelevantIDs).forEach(async elemId => transformElement({
-    element: await source.get(elemId),
-    transformFunc: selectFromSubElements,
-    runOnFields: true,
-    elementsSource: source,
-  }))
+  await awu(stillRelevantIDs)
+    .forEach(async elemId => walkOnElement({
+      element: await source.get(elemId), func: selectFromSubElements,
+    }))
   return awu(topLevelIDs.concat(subElementIDs)).uniquify(id => id.getFullName())
 }

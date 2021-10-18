@@ -24,8 +24,9 @@ import {
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isAdditionChange,
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType,
-  ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue,
+  ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
 } from '@salto-io/adapter-api'
+import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
 
 const { mapValuesAsync } = promises.object
 const { awu } = collections.asynciterable
@@ -445,22 +446,19 @@ export type RestoreValuesFunc = <T extends Element>(
 export const restoreValues: RestoreValuesFunc = async (source, targetElement, getLookUpName) => {
   const allReferencesPaths = new Map<string, ReferenceExpression>()
   const allStaticFilesPaths = new Map<string, StaticFile>()
-  const createPathMapCallback: TransformFunc = ({ value, path }) => {
-    if (path && isReferenceExpression(value)) {
+  const createPathMapCallback: WalkOnFunc = ({ value, path }) => {
+    if (isReferenceExpression(value)) {
       allReferencesPaths.set(path.getFullName(), value)
+      return WALK_NEXT_STEP.SKIP
     }
-    if (path && isStaticFile(value)) {
+    if (isStaticFile(value)) {
       allStaticFilesPaths.set(path.getFullName(), value)
+      return WALK_NEXT_STEP.SKIP
     }
-    return value
+    return WALK_NEXT_STEP.RECURSE
   }
 
-  await transformElement({
-    element: source,
-    transformFunc: createPathMapCallback,
-    strict: false,
-  })
-
+  walkOnElement({ element: source, func: createPathMapCallback })
   const restoreValuesFunc: TransformFunc = async ({ value, field, path }) => {
     if (path === undefined) {
       return value
@@ -860,25 +858,24 @@ export const safeJsonStringify = (value: Value,
   space?: string | number): string =>
   safeStringify(value, replacer, space)
 
-export const getAllReferencedIds = async (
+export const getAllReferencedIds = (
   element: Element,
   onlyAnnotations = false,
-  elementsSource?: ReadOnlyElementsSource,
-): Promise<Set<string>> => {
+): Set<string> => {
   const allReferencedIds = new Set<string>()
-  const transformFunc: TransformFunc = ({ value }) => {
+  const func: WalkOnFunc = ({ value, path }) => {
+    // if onlyAnnotations is true - skip the non annotations part
+    if (onlyAnnotations && !path.isAttrID()) {
+      // If this is an element we need to recurse in order to get to the annotations
+      return isElement(value) ? WALK_NEXT_STEP.RECURSE : WALK_NEXT_STEP.SKIP
+    }
     if (isReferenceExpression(value)) {
       allReferencedIds.add(value.elemID.getFullName())
+      return WALK_NEXT_STEP.SKIP
     }
-    return value
+    return WALK_NEXT_STEP.RECURSE
   }
-
-  if (onlyAnnotations) {
-    await transformElementAnnotations({ element, transformFunc, strict: false, elementsSource })
-  } else {
-    await transformElement({ element, transformFunc, strict: false, elementsSource })
-  }
-
+  walkOnElement({ element, func })
   return allReferencedIds
 }
 

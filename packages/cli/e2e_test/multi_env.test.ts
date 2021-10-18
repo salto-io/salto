@@ -85,7 +85,7 @@ describe('multi env tests', () => {
     path.join(baseDir, 'salto.config', 'workspace.nacl')
   )
   const adapterConfigsFilePath = (): string => (
-    path.join(baseDir, 'salto.config', 'adapters', 'salesforce.nacl')
+    path.join(baseDir, 'salto.config', 'adapters', 'salesforce', 'salesforce.nacl')
   )
   const workspaceUserConfigFilePath = (): string => (
     path.join(homeWSDir(), 'workspaceUser.nacl')

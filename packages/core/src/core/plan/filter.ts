@@ -16,8 +16,8 @@
 import wu from 'wu'
 import _ from 'lodash'
 
-import { DataNodeMap, DiffGraph, DiffNode, WalkError } from '@salto-io/dag'
-import { ChangeError, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeElement, ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationChange, isField, isObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { DataNodeMap, DiffGraph, DiffNode, NodeId } from '@salto-io/dag'
+import { ChangeError, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeElement, ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationChange, isField, isObjectType, ReadOnlyElementsSource, SaltoErrorSeverity } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 
@@ -30,6 +30,12 @@ type FilterResult = {
 }
 
 type TopLevelElement = InstanceElement | TypeElement
+
+type DependencyError = ChangeError & {
+  causeID: ElemID
+}
+
+export const isDependencyError = (err: ChangeError): err is DependencyError => 'causeID' in err
 
 export const filterInvalidChanges = async (
   beforeElements: ReadOnlyElementsSource,
@@ -109,8 +115,8 @@ export const filterInvalidChanges = async (
     return _.keyBy(validChangeElements, e => e.elemID.getFullName())
   }
 
-  const buildValidDiffGraph = (nodeIdsToOmit: Set<string>, validAfterElementsMap: ElementMap):
-    DiffGraph<ChangeDataType> => {
+  const buildValidDiffGraph = (nodeElemIdsToOmit: Set<NodeId>, validAfterElementsMap: ElementMap):
+    { validDiffGraph: DiffGraph<ChangeDataType>; dependencyErrors: DependencyError[] } => {
     const getValidAfter = (elem: Element): Element | undefined => {
       if (isField(elem)) {
         const validParent = validAfterElementsMap[elem.parent.elemID.getFullName()] as ObjectType
@@ -125,30 +131,72 @@ export const filterInvalidChanges = async (
       }
       return change
     }
-    const validDiffGraph = new DataNodeMap<DiffNode<ChangeDataType>>()
-    try {
-      diffGraph.walkSync(nodeId => {
-        const change = diffGraph.getData(nodeId)
-        const { elemID } = getChangeElement(change)
-        if (nodeIdsToOmit.has(elemID.getFullName())) {
-          // in case this is an invalid node throw error so the walk will skip the dependent nodes
-          throw new Error()
-        }
-        const validChange = replaceAfterElement(change)
-        validDiffGraph.addNode(nodeId, diffGraph.get(nodeId), validChange)
-      })
-    } catch (e) {
-      if (e instanceof WalkError && e.circularDependencyError === undefined) {
-        // do nothing, we may have errors since we may skip nodes that depends on invalid nodes
-        log.warn('removing the following changes from plan: %o', e.handlerErrors)
-      } else {
-        // If we get a different error or a circular dependency, we have to report the error here
-        // If we silence the error here the rest of the code may succeed but with a partial plan
-        // and the user will not be able to know why the plan is partial
-        throw e
+
+    const nodeIdToElemId = (nodeId: NodeId): ElemID => (
+      getChangeElement(diffGraph.getData(nodeId)).elemID
+    )
+
+    const createDependencyErr = (causeID: ElemID, droppedID: ElemID): DependencyError => {
+      const message = `Dropped changes to ${
+        droppedID.getFullName()
+      } due to an error in ${droppedID.getFullName()}`
+      return {
+        causeID,
+        elemID: droppedID,
+        message,
+        detailedMessage: message,
+        severity: 'Error' as SaltoErrorSeverity,
       }
     }
-    return validDiffGraph
+
+    const validDiffGraph = new DataNodeMap<DiffNode<ChangeDataType>>()
+
+    const nodeIdsToOmit = wu(diffGraph.keys()).filter(nodeId => {
+      const change = diffGraph.getData(nodeId)
+      const changeElem = getChangeElement(change)
+      return nodeElemIdsToOmit.has(changeElem.elemID.getFullName())
+    }).toArray()
+
+    const dependenciesMap = Object.fromEntries(wu(nodeIdsToOmit)
+      .map(id => [id, diffGraph.getComponent({ roots: [id], reverse: true })]))
+
+
+    const nodesToOmitWithDependents = Object.values(dependenciesMap)
+      .flatMap(nodeIds => [...nodeIds])
+
+    const dependencyErrors = Object.entries(dependenciesMap)
+      .map(([causeNodeId, nodeIds]) => [
+        nodeIdToElemId(causeNodeId),
+        wu(nodeIds.keys()).map(nodeIdToElemId).toArray(),
+      ] as [ElemID, ElemID[]])
+      .map(([causeID, elemIds]) => [
+        causeID,
+        elemIds.filter(elemId => !elemId.isEqual(causeID)),
+      ] as [ElemID, ElemID[]]).flatMap(
+        ([causeID, elemIDs]) => elemIDs.map(elemID => createDependencyErr(causeID, elemID))
+      )
+
+    const allNodeIdsToOmit = new Set(nodesToOmitWithDependents)
+    const nodesToInclude = new Set(wu(diffGraph.keys()).filter(
+      id => !allNodeIdsToOmit.has(id)
+    ))
+
+    log.warn(
+      'removing the following changes from plan: %o',
+      wu(allNodeIdsToOmit.keys()).map(nodeId => diffGraph.getData(nodeId).originalId).toArray()
+    )
+
+    wu(nodesToInclude.keys()).forEach(nodeId => {
+      const change = diffGraph.getData(nodeId)
+      const validChange = replaceAfterElement(change)
+      validDiffGraph.addNode(
+        nodeId,
+        wu(diffGraph.get(nodeId)).filter(id => nodesToInclude.has(id)),
+        validChange
+      )
+    })
+
+    return { validDiffGraph, dependencyErrors }
   }
 
   if (Object.keys(changeValidators).length === 0) {
@@ -167,8 +215,11 @@ export const filterInvalidChanges = async (
     .toArray()
 
   const invalidChanges = changeErrors.filter(v => v.severity === 'Error')
-  const nodeIdsToOmit = new Set(invalidChanges.map(change => change.elemID.getFullName()))
+  const nodeElemIdsToOmit = new Set(invalidChanges.map(change => change.elemID.getFullName()))
   const validAfterElementsMap = await createValidAfterElementsMap(invalidChanges)
-  const validDiffGraph = buildValidDiffGraph(nodeIdsToOmit, validAfterElementsMap)
-  return { changeErrors, validDiffGraph }
+  const { validDiffGraph, dependencyErrors } = buildValidDiffGraph(
+    nodeElemIdsToOmit,
+    validAfterElementsMap
+  )
+  return { changeErrors: [...changeErrors, ...dependencyErrors], validDiffGraph }
 }

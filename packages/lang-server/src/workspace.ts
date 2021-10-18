@@ -21,7 +21,7 @@ import { Element, SaltoError, ElemID, Change, getChangeElement,
   isRemovalChange, isReferenceExpression, isContainerType,
   Value, isModificationChange } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
-import { detailedCompare, transformElement, TransformFunc } from '@salto-io/adapter-utils'
+import { detailedCompare, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 
 
 const { validateElements } = validator
@@ -135,8 +135,8 @@ export class EditorWorkspace {
       this.workspaceFilename(filename)
     ))?.elements()) ?? awu([])
     const validationErrors: errors.UnresolvedReferenceValidationError[] = []
-    const getReferenceExpressions: TransformFunc = ({ value, path: elemPath }): Value => {
-      if (isReferenceExpression(value) && elemPath) {
+    const getReferenceExpressions: WalkOnFunc = ({ value, path: elemPath }) => {
+      if (isReferenceExpression(value)) {
         elements.forEach(elem => {
           if (elem.isEqual(value.elemID) || elem.isParentOf(value.elemID)) {
             validationErrors.push(new errors.UnresolvedReferenceValidationError(
@@ -144,17 +144,16 @@ export class EditorWorkspace {
             ))
           }
         })
+        return WALK_NEXT_STEP.SKIP
       }
-      return value
+      return WALK_NEXT_STEP.RECURSE
     }
     await awu(fileElements)
       .filter(e => !isContainerType(e))
       .forEach(async element => (
-        transformElement({
+        walkOnElement({
           element,
-          transformFunc: getReferenceExpressions,
-          strict: false,
-          elementsSource: await this.elements,
+          func: getReferenceExpressions,
         })
       ))
     return validationErrors

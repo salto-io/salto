@@ -127,13 +127,13 @@ describe('Adapter', () => {
     client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
       .mockResolvedValue({
         elements: [],
-        failedTypeToInstances: {},
+        failedTypes: { lockedError: {}, unexpectedError: {} },
         failedToFetchAllAtOnce: false,
       })
     client.importFileCabinetContent = mockFunction<NetsuiteClient['importFileCabinetContent']>()
       .mockResolvedValue({
         elements: [],
-        failedPaths: [],
+        failedPaths: { lockedError: [], otherError: [] },
       })
 
     suiteAppImportFileCabinetMock.mockResolvedValue({ elements: [], failedPaths: [] })
@@ -163,13 +163,13 @@ describe('Adapter', () => {
       client.importFileCabinetContent = mockFunction<NetsuiteClient['importFileCabinetContent']>()
         .mockResolvedValue({
           elements: [folderCustomizationInfo, fileCustomizationInfo],
-          failedPaths: [],
+          failedPaths: { lockedError: [], otherError: [] },
         })
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [customTypeInfo],
           failedToFetchAllAtOnce: false,
-          failedTypeToInstances: {},
+          failedTypes: { lockedError: {}, unexpectedError: {} },
         })
       const { elements, isPartial } = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(isPartial).toBeFalsy()
@@ -412,7 +412,7 @@ describe('Adapter', () => {
         .mockResolvedValue({
           elements: [customTypeInfo],
           failedToFetchAllAtOnce: false,
-          failedTypeToInstances: {},
+          failedTypes: { lockedError: {}, unexpectedError: {} },
         })
       const { elements } = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(elements).toHaveLength(getMetadataTypes().length)
@@ -435,7 +435,12 @@ describe('Adapter', () => {
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       getConfigFromConfigChangesMock.mockReturnValue(undefined)
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
-      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, [], {}, config)
+      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
+        false,
+        { lockedError: [], otherError: [] },
+        { lockedError: {}, unexpectedError: {} },
+        config,
+      )
       expect(fetchResult.updatedConfig).toBeUndefined()
     })
 
@@ -443,13 +448,18 @@ describe('Adapter', () => {
       client.importFileCabinetContent = mockFunction<NetsuiteClient['importFileCabinetContent']>()
         .mockResolvedValue({
           elements: [],
-          failedPaths: ['/path/to/file'],
+          failedPaths: { lockedError: [], otherError: ['/path/to/file'] },
         })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue({ config: [updatedConfig], message: '' })
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
-      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, ['/path/to/file'], {}, config)
+      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
+        false,
+        { lockedError: [], otherError: ['/path/to/file'] },
+        { lockedError: {}, unexpectedError: {} },
+        config,
+      )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
     })
 
@@ -459,14 +469,18 @@ describe('Adapter', () => {
         .mockResolvedValue({
           elements: [],
           failedToFetchAllAtOnce: false,
-          failedTypeToInstances,
+          failedTypes: { lockedError: {}, unexpectedError: failedTypeToInstances },
         })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue({ config: [updatedConfig], message: '' })
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
-      expect(getConfigFromConfigChanges)
-        .toHaveBeenCalledWith(false, [], failedTypeToInstances, config)
+      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
+        false,
+        { lockedError: [], otherError: [] },
+        { lockedError: {}, unexpectedError: failedTypeToInstances },
+        config,
+      )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
     })
 
@@ -475,13 +489,18 @@ describe('Adapter', () => {
         .mockResolvedValue({
           elements: [],
           failedToFetchAllAtOnce: true,
-          failedTypeToInstances: {},
+          failedTypes: { lockedError: {}, unexpectedError: {} },
         })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue({ config: [updatedConfig], message: '' })
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
-      expect(getConfigFromConfigChangesMock).toHaveBeenCalledWith(true, [], {}, config)
+      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
+        true,
+        { lockedError: [], otherError: [] },
+        { lockedError: {}, unexpectedError: {} },
+        config,
+      )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
     })
   })

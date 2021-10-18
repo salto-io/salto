@@ -23,11 +23,12 @@ import { buildNetsuiteQuery, convertToQueryParams, NetsuiteQuery, NetsuiteQueryP
 import { isFileCabinetInstance } from '../types'
 import { PATH, SCRIPT_ID } from '../constants'
 import { getTypeIdentifier } from '../data_elements/types'
+import { FailedFiles, FailedTypes } from '../client/types'
 
 export type FetchByQueryReturnType = {
   failedToFetchAllAtOnce: boolean
-  failedFilePaths: string[]
-  failedTypeToInstances: Record<string, string[]>
+  failedFilePaths: FailedFiles
+  failedTypes: FailedTypes
   elements: Element[]
 }
 

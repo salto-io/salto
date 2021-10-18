@@ -26,10 +26,11 @@ import {
   CLIENT_CONFIG, MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, FETCH_TARGET, SKIP_LIST,
   SUITEAPP_CONCURRENCY_LIMIT, SUITEAPP_CLIENT_CONFIG, USE_CHANGES_DETECTION,
   CONCURRENCY_LIMIT, FETCH, INCLUDE, EXCLUDE, DEPLOY, DATASET, WORKBOOK, WARN_STALE_DATA,
-  INSTALLED_SUITEAPPS,
+  INSTALLED_SUITEAPPS, LOCKED_ELEMENTS_TO_EXCLUDE,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams } from './query'
 import { TYPES_TO_INTERNAL_ID } from './data_elements/types'
+import { FailedFiles, FailedTypes } from './client/types'
 
 const { makeArray } = collections.array
 
@@ -188,6 +189,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
   fields: {
     [INCLUDE]: { refType: queryParamsConfigType },
     [EXCLUDE]: { refType: queryParamsConfigType },
+    [LOCKED_ELEMENTS_TO_EXCLUDE]: { refType: queryParamsConfigType },
   },
 })
 
@@ -287,7 +289,7 @@ export type NetsuiteConfig = {
 }
 
 export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from NetSuite.'
-  + ' In order to complete the fetch operation, Salto needs to stop managing these items by adding the items to the configuration fetch.exclude.'
+  + ' In order to complete the fetch operation, Salto needs to stop managing these items by modifying the configuration.'
 
 export const UPDATE_FETCH_CONFIG_FORMAT = 'The configuration options "typeToSkip", "filePathRegexSkipList" and "skipList" are deprecated.'
   + ' To skip items in fetch, please use the "fetch.exclude" option.'
@@ -298,27 +300,34 @@ export const UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT = 'Some type names have been ch
 export const UPDATE_DEPLOY_CONFIG = 'All deploy\'s configuration flags are under "deploy" configuration.'
 + ' you may leave "deploy" section as undefined to set all deploy\'s configuration flags to their default value.'
 
+const createExclude = (failedPaths: NetsuiteQueryParameters['filePaths'], failedTypes: NetsuiteQueryParameters['types']): QueryParams =>
+  ({
+    fileCabinet: failedPaths.map(_.escapeRegExp),
+    types: Object.entries(failedTypes).map(([name, ids]) => ({ name, ids })),
+  })
+
 const toConfigSuggestions = (
   failedToFetchAllAtOnce: boolean,
-  failedFilePaths: NetsuiteQueryParameters['filePaths'],
-  failedTypeToInstances: NetsuiteQueryParameters['types']
-): Partial<Record<keyof Omit<NetsuiteConfig, 'client'> | keyof SdfClientConfig, Value>> => ({
-  ...(failedToFetchAllAtOnce ? { [FETCH_ALL_TYPES_AT_ONCE]: false } : {}),
-  ...(!_.isEmpty(failedFilePaths) || !_.isEmpty(failedTypeToInstances)
-    ? {
-      [FETCH]: {
-        [EXCLUDE]: {
-          fileCabinet:
-           failedFilePaths.map(_.escapeRegExp),
-          types:
-           Object.entries(failedTypeToInstances).map(([name, ids]) =>
-             ({ name, ids })),
-        },
-      },
-    }
-    : {}),
+  failedFilePaths: FailedFiles,
+  failedTypes: FailedTypes
+): Partial<Record<keyof Omit<NetsuiteConfig, 'client'> | keyof SdfClientConfig, Value>> => {
+  const fetch: FetchParams = {}
+  if (!_.isEmpty(failedFilePaths.otherError) || !_.isEmpty(failedTypes.unexpectedError)) {
+    fetch[EXCLUDE] = createExclude(failedFilePaths.otherError, failedTypes.unexpectedError)
+  }
 
-})
+  if (!_.isEmpty(failedFilePaths.lockedError) || !_.isEmpty(failedTypes.lockedError)) {
+    fetch[LOCKED_ELEMENTS_TO_EXCLUDE] = createExclude(
+      failedFilePaths.lockedError,
+      failedTypes.lockedError,
+    )
+  }
+
+  return {
+    ...(failedToFetchAllAtOnce ? { [FETCH_ALL_TYPES_AT_ONCE]: false } : {}),
+    ...(!_.isEmpty(fetch) ? { [FETCH]: fetch } : {}),
+  }
+}
 
 
 const convertDeprecatedFilePathRegex = (filePathRegex: string): string => {
@@ -366,12 +375,12 @@ export const combineQueryParams = (
 
 const updateConfigFromFailures = (
   failedToFetchAllAtOnce: boolean,
-  failedFilePaths: NetsuiteQueryParameters['filePaths'],
-  failedTypeToInstances: NetsuiteQueryParameters['types'],
+  failedFilePaths: FailedFiles,
+  failedTypes: FailedTypes,
   configToUpdate: InstanceElement,
 ): boolean => {
   const suggestions = toConfigSuggestions(
-    failedToFetchAllAtOnce, failedFilePaths, failedTypeToInstances
+    failedToFetchAllAtOnce, failedFilePaths, failedTypes
   )
   if (_.isEmpty(suggestions)) {
     return false
@@ -393,10 +402,22 @@ const updateConfigFromFailures = (
   const suggestedExclude = suggestions[FETCH]?.[EXCLUDE]
   const newExclude = combineQueryParams(currentExclude, suggestedExclude)
 
+  const newLockedElementToExclude = currentFetch?.[LOCKED_ELEMENTS_TO_EXCLUDE] !== undefined
+    || suggestions[FETCH]?.[LOCKED_ELEMENTS_TO_EXCLUDE] !== undefined
+    ? combineQueryParams(
+      currentFetch?.[LOCKED_ELEMENTS_TO_EXCLUDE],
+      suggestions[FETCH]?.[LOCKED_ELEMENTS_TO_EXCLUDE]
+    )
+    : undefined
+
   configToUpdate.value[FETCH] = {
     ...(configToUpdate.value[FETCH] ?? {}),
     [EXCLUDE]: newExclude,
+    ...(newLockedElementToExclude !== undefined
+      ? { [LOCKED_ELEMENTS_TO_EXCLUDE]: newLockedElementToExclude }
+      : {}),
   }
+
   return true
 }
 
@@ -523,10 +544,20 @@ const updateConfigFormat = (
   }
 }
 
+const splitConfig = (config: InstanceElement): InstanceElement[] => {
+  const lockedElementsToExclude = config.value[FETCH]?.[LOCKED_ELEMENTS_TO_EXCLUDE]
+  if (lockedElementsToExclude === undefined) {
+    return [config]
+  }
+  delete config.value[FETCH]?.[LOCKED_ELEMENTS_TO_EXCLUDE]
+  const lockedElementsToExcludeConf = new InstanceElement(ElemID.CONFIG_NAME, configType, { [FETCH]: { [LOCKED_ELEMENTS_TO_EXCLUDE]: lockedElementsToExclude } }, ['lockedElements'])
+  return [config, lockedElementsToExcludeConf]
+}
+
 export const getConfigFromConfigChanges = (
   failedToFetchAllAtOnce: boolean,
-  failedFilePaths: NetsuiteQueryParameters['filePaths'],
-  failedTypeToInstances: NetsuiteQueryParameters['types'],
+  failedFilePaths: FailedFiles,
+  failedTypes: FailedTypes,
   currentConfig: NetsuiteConfig
 ): { config: InstanceElement[]; message: string } | undefined => {
   const conf = new InstanceElement(
@@ -543,7 +574,7 @@ export const getConfigFromConfigChanges = (
   const didUpdateFromFailures = updateConfigFromFailures(
     failedToFetchAllAtOnce,
     failedFilePaths,
-    failedTypeToInstances,
+    failedTypes,
     conf
   )
   const message = [
@@ -561,5 +592,5 @@ export const getConfigFromConfigChanges = (
       : undefined,
   ].filter(values.isDefined).join(' In addition, ')
 
-  return message !== '' ? { config: [conf], message } : undefined
+  return message !== '' ? { config: splitConfig(conf), message } : undefined
 }

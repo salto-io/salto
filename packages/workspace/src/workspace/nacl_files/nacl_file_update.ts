@@ -15,9 +15,9 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionChange, DetailedChange, Value, StaticFile, isStaticFile, isReferenceExpression, placeholderReadonlyElementsSource, TypeReference } from '@salto-io/adapter-api'
+import { getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionChange, DetailedChange, Value, StaticFile, isStaticFile, isReferenceExpression, TypeReference } from '@salto-io/adapter-api'
 import { AdditionDiff, ActionName } from '@salto-io/dag'
-import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
+import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { SourceRange, SourceMap } from '../../parser'
 
@@ -325,20 +325,14 @@ export const getChangesToUpdate = (
 export const getNestedStaticFiles = async (value: Value): Promise<StaticFile[]> => {
   if (isElement(value)) {
     const allStaticFiles = new Set<StaticFile>()
-    const transformFunc: TransformFunc = ({ value: val }) => {
+    const func: WalkOnFunc = ({ value: val }) => {
       if (isStaticFile(val)) {
         allStaticFiles.add(val)
+        return WALK_NEXT_STEP.SKIP
       }
-      return val
+      return WALK_NEXT_STEP.RECURSE
     }
-    await transformElement({
-      element: value,
-      transformFunc,
-      strict: false,
-      // This transformElement does not need to types so this can be used
-      // Long term we should replace this with not using transformElement
-      elementsSource: placeholderReadonlyElementsSource,
-    })
+    walkOnElement({ element: value, func })
     return Array.from(allStaticFiles.values())
   }
   if (_.isArray(value)) {

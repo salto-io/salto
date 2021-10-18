@@ -22,7 +22,7 @@ import {
   Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
   isModificationChange, isRemovalChange,
 } from '@salto-io/adapter-api'
-import { DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, DiffGraph, Group } from '@salto-io/dag'
+import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { expressions, elementSource } from '@salto-io/workspace'
 import { collections, values } from '@salto-io/lowerdash'
@@ -107,7 +107,7 @@ const isEqualsNode = async (
   src2: ReadOnlyElementsSource,
 ): Promise<boolean> => {
   if (!values.isDefined(node1) || !values.isDefined(node2)) {
-    // Theoratically we should return true if both are undefined, but pratically
+    // Theoratically we should return true if both are undefined, but practically
     // this makes no sense, so we return false,
     return false
   }
@@ -164,21 +164,45 @@ const addDifferentElements = (
 ): PlanTransformer => graph => log.time(async () => {
   const outputGraph = graph.clone()
   const sieve = new Set<string>()
+
   const toChange = (
-    elem: ChangeDataType,
-    action: Change['action'] & ('add' | 'remove')
+    beforeElem?: ChangeDataType,
+    afterElem?: ChangeDataType
   ): DiffNode<ChangeDataType> => {
-    if (action === 'add') {
-      return { originalId: elem.elemID.getFullName(), action, data: { after: elem } }
+    if (beforeElem !== undefined && afterElem !== undefined) {
+      if (!beforeElem.elemID.isEqual(afterElem.elemID)) {
+        throw new Error('Can not compare elements with different Elem Ids')
+      }
+      return {
+        originalId: beforeElem.elemID.getFullName(),
+        action: 'modify',
+        data: { before: beforeElem, after: afterElem },
+      }
     }
-    return { originalId: elem.elemID.getFullName(), action, data: { before: elem } }
+    if (beforeElem !== undefined) {
+      return {
+        originalId: beforeElem.elemID.getFullName(),
+        action: 'remove',
+        data: { before: beforeElem },
+      }
+    }
+    if (afterElem !== undefined) {
+      return {
+        originalId: afterElem.elemID.getFullName(),
+        action: 'add',
+        data: { after: afterElem },
+      }
+    }
+    throw new Error('either before or after needs to be defined')
   }
 
   const addElemToOutputGraph = (
-    elem: ChangeDataType,
-    action: Change['action'] & ('add' | 'remove')
+    beforeElem? : ChangeDataType,
+    afterElem?: ChangeDataType
   ): void => {
-    outputGraph.addNode(changeId(elem, action), [], toChange(elem, action))
+    const change = toChange(beforeElem, afterElem)
+    const elem = getChangeElement(change)
+    outputGraph.addNode(changeId(elem, change.action), [], change)
   }
 
   const addNodeIfDifferent = async (
@@ -191,12 +215,7 @@ const addDifferentElements = (
     if (!sieve.has(fullname)) {
       sieve.add(fullname)
       if (!await isEqualsNode(beforeNode, afterNode, before, after)) {
-        if (values.isDefined(beforeNode)) {
-          addElemToOutputGraph(beforeNode, 'remove')
-        }
-        if (values.isDefined(afterNode)) {
-          addElemToOutputGraph(afterNode, 'add')
-        }
+        addElemToOutputGraph(beforeNode, afterNode)
       }
     }
   }
@@ -259,7 +278,7 @@ const resolveNodeElements = (
 ): PlanTransformer => async graph => {
   const beforeItemsToResolve: ChangeDataType[] = []
   const afterItemsToResolve: ChangeDataType[] = []
-  graph.walkSync(id => {
+  wu(graph.keys()).forEach(id => {
     const change = graph.getData(id)
     if (change.action !== 'add') {
       beforeItemsToResolve.push(change.data.before)
@@ -278,34 +297,33 @@ const resolveNodeElements = (
     e => e.elemID.getFullName()
   ) as Record<string, ChangeDataType>
 
-  graph.walkSync(id => {
+  wu(graph.keys()).forEach(id => {
     const change = graph.getData(id)
-    const resolvedChange = _.clone(change)
-    if (isAdditionChange(resolvedChange)) {
-      resolvedChange.data.after = resolvedAfter[resolvedChange.data.after.elemID.getFullName()]
+    if (isAdditionChange(change)) {
+      change.data.after = resolvedAfter[change.data.after.elemID.getFullName()]
     }
-    if (isModificationChange(resolvedChange)) {
-      resolvedChange.data.after = resolvedAfter[resolvedChange.data.after.elemID.getFullName()]
-      resolvedChange.data.before = resolvedBefore[resolvedChange.data.before.elemID.getFullName()]
+    if (isModificationChange(change)) {
+      change.data.after = resolvedAfter[change.data.after.elemID.getFullName()]
+      change.data.before = resolvedBefore[change.data.before.elemID.getFullName()]
     }
-    if (isRemovalChange(resolvedChange)) {
-      resolvedChange.data.before = resolvedBefore[resolvedChange.data.before.elemID.getFullName()]
+    if (isRemovalChange(change)) {
+      change.data.before = resolvedBefore[change.data.before.elemID.getFullName()]
     }
-    graph.setData(id, resolvedChange)
+    graph.setData(id, change)
   })
 
 
   return graph
 }
 
-export type Plan = GroupedNodeMap<Change> & {
+export type Plan = GroupDAG<Change> & {
   itemsByEvalOrder: () => Iterable<PlanItem>
   getItem: (id: PlanItemId) => PlanItem
   changeErrors: ReadonlyArray<ChangeError>
 }
 
 const addPlanFunctions = (
-  groupGraph: GroupedNodeMap<Change>, changeErrors: ReadonlyArray<ChangeError>
+  groupGraph: GroupDAG<Change>, changeErrors: ReadonlyArray<ChangeError>
 ): Plan => Object.assign(groupGraph,
   {
     itemsByEvalOrder(): Iterable<PlanItem> {
@@ -337,30 +355,12 @@ export const defaultDependencyChangers = [
   addInstanceToFieldsDependency,
 ]
 
-const addModifyNodes = (
-  addDependencies: PlanTransformer
-): PlanTransformer => {
-  const runMergeStep: PlanTransformer = async stepGraph => {
-    const mergedGraph = await addDependencies(stepGraph)
-    mergeNodesToModify(mergedGraph)
-    if (stepGraph.size !== mergedGraph.size) {
-      // Some of the nodes were merged, this may enable other nodes to be merged
-      // Note that with each iteration that changes the size we merge at least one node pair
-      // so if we have N node pairs this recursion will run at most N times
-      mergedGraph.clearEdges()
-      return runMergeStep(mergedGraph)
-    }
-    return mergedGraph
-  }
-  return runMergeStep
-}
-
 const removeRedundantFieldChanges = (
-  graph: GroupedNodeMap<Change<ChangeDataType>>
-): GroupedNodeMap<Change<ChangeDataType>> => (
+  graph: GroupDAG<Change<ChangeDataType>>
+): GroupDAG<Change<ChangeDataType>> => (
   // If we add / remove an object type, we can omit all the field add / remove
   // changes from the same group since they are included in the parent change
-  new DataNodeMap<Group<Change<ChangeDataType>>>(
+  new DAG<Group<Change<ChangeDataType>>>(
     graph.entries(),
     new Map(wu(graph.keys()).map(key => {
       const group = graph.getData(key)
@@ -412,7 +412,7 @@ export const getPlan = async ({
     const diffGraph = await buildDiffGraph(
       addDifferentElements(before, after, topLevelFilters, numBeforeElements + numAfterElements),
       resolveNodeElements(before, after),
-      addModifyNodes(addNodeDependencies(dependencyChangers)),
+      addNodeDependencies(dependencyChangers),
     )
     const filterResult = await filterInvalidChanges(
       before, after, diffGraph, changeValidators,

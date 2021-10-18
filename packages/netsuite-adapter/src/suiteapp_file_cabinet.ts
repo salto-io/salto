@@ -224,7 +224,7 @@ Promise<FileResult[]> => {
 
   const importFileCabinet = async (query: NetsuiteQuery): Promise<ImportFileCabinetResult> => {
     if (!query.areSomeFilesMatch()) {
-      return { elements: [], failedPaths: [] }
+      return { elements: [], failedPaths: { lockedError: [], otherError: [] } }
     }
     const [filesResults, foldersResults] = await Promise.all([
       queryFiles(),
@@ -302,12 +302,13 @@ Promise<FileResult[]> => {
     )).flat()
 
     const failedPaths: string[][] = []
+    const lockedPaths: string[][] = []
     const filesCustomizationWithContent = filesCustomizationWithoutContent.map((file, index) => {
       if (!(filesContent[index] instanceof Buffer)) {
         log.warn(`Failed reading file /${file.path.join('/')} with id ${file.id}`)
-        // SuiteBundles directory might contain hundreds of locked files so
-        // we don't report this kind of error so it won't be added to the skip list.
-        if (!(filesContent[index] instanceof ReadFileInsufficientPermissionError)) {
+        if (filesContent[index] instanceof ReadFileInsufficientPermissionError) {
+          lockedPaths.push(file.path)
+        } else {
           failedPaths.push(file.path)
         }
         return undefined
@@ -330,7 +331,10 @@ Promise<FileResult[]> => {
           values: file.values,
         })),
       ].filter(file => query.isFileMatch(`/${file.path.join('/')}`)),
-      failedPaths: failedPaths.map(fileCabinetPath => `/${fileCabinetPath.join('/')}`),
+      failedPaths: {
+        otherError: failedPaths.map(fileCabinetPath => `/${fileCabinetPath.join('/')}`),
+        lockedError: lockedPaths.map(fileCabinetPath => `/${fileCabinetPath.join('/')}`),
+      },
     }
   }
 

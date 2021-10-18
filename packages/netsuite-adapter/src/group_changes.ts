@@ -22,7 +22,7 @@ import {
   isRemovalChange,
 } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
-import { transformValues } from '@salto-io/adapter-utils'
+import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import * as suiteAppFileCabinet from './suiteapp_file_cabinet'
 import { customTypes, fileCabinetTypes, isDataObjectType, isFileCabinetInstance } from './types'
@@ -66,17 +66,19 @@ const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes =>
   )
 }
 
-const getRecordDependencies = async (element: InstanceElement): Promise<string[]> => {
+const getRecordDependencies = (element: InstanceElement): string[] => {
   const dependencies: string[] = []
-  await transformValues({
-    values: element.value,
-    type: await element.getType(),
-    strict: false,
-    transformFunc: ({ value }) => {
+  walkOnElement({
+    element,
+    func: ({ value, path }) => {
+      if (path.isAttrID()) {
+        return WALK_NEXT_STEP.SKIP
+      }
       if (isReferenceExpression(value)) {
         dependencies.push(value.elemID.getFullName())
+        return WALK_NEXT_STEP.SKIP
       }
-      return value
+      return WALK_NEXT_STEP.RECURSE
     },
   })
   return dependencies

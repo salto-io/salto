@@ -323,7 +323,7 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(7, deleteAuthIdCommandMatcher)
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
-      expect(getCustomObjectsResult.failedTypeToInstances).toEqual({})
+      expect(getCustomObjectsResult.failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
     })
 
     it('should fail when IMPORT_OBJECTS has failed without fetchAllAtOnce', async () => {
@@ -532,10 +532,10 @@ describe('netsuite client', () => {
       const {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
-        failedTypeToInstances,
+        failedTypes,
       } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
-      expect(failedTypeToInstances).toEqual({})
+      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
       expect(readDirMock).toHaveBeenCalledTimes(1)
       expect(readFileMock).toHaveBeenCalledTimes(3)
       expect(rmMock).toHaveBeenCalledTimes(1)
@@ -592,10 +592,10 @@ describe('netsuite client', () => {
       const {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
-        failedTypeToInstances,
+        failedTypes,
       } = await mockClient({ [INSTALLED_SUITEAPPS]: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
-      expect(failedTypeToInstances).toEqual({})
+      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
       expect(readDirMock).toHaveBeenCalledTimes(2)
       expect(readFileMock).toHaveBeenCalledTimes(6)
       expect(rmMock).toHaveBeenCalledTimes(2)
@@ -736,11 +736,16 @@ describe('netsuite client', () => {
         ],
       })
       const {
-        failedTypeToInstances,
+        failedTypes,
       } = await mockClient().getCustomObjects(typeNames, query)
-      expect(failedTypeToInstances).toEqual({
-        savedcsvimport: ['c'],
-        advancedpdftemplate: ['a'],
+      expect(failedTypes).toEqual({
+        lockedError: {
+          savedcsvimport: ['d'],
+        },
+        unexpectedError: {
+          savedcsvimport: ['c'],
+          advancedpdftemplate: ['a'],
+        },
       })
     })
 
@@ -788,10 +793,13 @@ describe('netsuite client', () => {
       })
 
       const {
-        failedTypeToInstances,
+        failedTypes,
       } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
-      expect(failedTypeToInstances).toEqual({
-        addressForm: ['a', 'b'],
+      expect(failedTypes).toEqual({
+        lockedError: {},
+        unexpectedError: {
+          addressForm: ['a', 'b'],
+        },
       })
     })
 
@@ -888,7 +896,7 @@ describe('netsuite client', () => {
       })
       const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toEqual(fileCabinetTopLevelFolders.map(folderPath => `^${folderPath}.*`))
+      expect(failedPaths).toEqual({ lockedError: [], otherError: fileCabinetTopLevelFolders.map(folderPath => `^${folderPath}.*`) })
     })
 
     it('should fail when SETUP_ACCOUNT has failed', async () => {
@@ -928,7 +936,7 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, deleteAuthIdCommandMatcher)
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toHaveLength(0)
+      expect(failedPaths).toEqual({ lockedError: [], otherError: [] })
     })
 
     it('should fail to importFiles when failing to import a certain file', async () => {
@@ -1050,7 +1058,7 @@ describe('netsuite client', () => {
         },
         path: ['Templates', 'E-mail Templates', 'InnerFolder'],
       }])
-      expect(failedPaths).toHaveLength(0)
+      expect(failedPaths).toEqual({ lockedError: [], otherError: [] })
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
@@ -1079,7 +1087,7 @@ describe('netsuite client', () => {
       const { elements, failedPaths } = await client.importFileCabinetContent(query)
       expect(readFileMock).toHaveBeenCalledTimes(0)
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toHaveLength(0)
+      expect(failedPaths).toEqual({ lockedError: [], otherError: [] })
       expect(mockExecuteAction).toHaveBeenCalledTimes(6)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -1096,7 +1104,7 @@ describe('netsuite client', () => {
         }))
 
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toHaveLength(0)
+      expect(failedPaths).toEqual({ lockedError: [], otherError: [] })
       expect(mockExecuteAction).not.toHaveBeenCalled()
     })
 
@@ -1146,7 +1154,7 @@ describe('netsuite client', () => {
         },
         path: ['Templates', 'E-mail Templates', 'InnerFolder'],
       }])
-      expect(failedPaths).toHaveLength(0)
+      expect(failedPaths).toEqual({ lockedError: [], otherError: [] })
       expect(rmMock).toHaveBeenCalledTimes(1)
     })
   })

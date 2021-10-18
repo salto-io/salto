@@ -14,12 +14,13 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 
 const { difference } = collections.set
+type DFS_STATUS = 'in_progress' | 'done'
 
 export type NodeId = collections.set.SetId
-
+export type Edge = [NodeId, NodeId]
 export class CircularDependencyError extends Error {
   public readonly causingNodeIds: NodeId[]
 
@@ -70,9 +71,9 @@ export type NodeHandler = (id: NodeId) => void
 const promiseAllToSingle = (promises: Iterable<Promise<void>>): Promise<void> =>
   Promise.all(promises).then(() => undefined)
 
-class WalkErrors extends Map<NodeId, Error> {
+class WalkErrors<T> extends Map<NodeId, Error> {
   // eslint-disable-next-line no-use-before-define
-  constructor(readonly nodeMap: AbstractNodeMap) {
+  constructor(readonly nodeMap: DAG<T>) {
     super()
   }
 
@@ -174,14 +175,14 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
       .map(([k, v]) => [k, difference(v, ids)])
   }
 
-  // bulk alternative to deleteNode which returns a new NodeMap without the specified nodes
-  cloneWithout(ids: Set<NodeId>): this {
+  filterNodes(func: (node: NodeId) => boolean): this {
+    const nodesToDrop = new Set(wu(this.keys()).filter(node => !func(node)))
     return new (this.constructor as new (entries: Iterable<[NodeId, Set<NodeId>]>) => this)(
-      this.entriesWithout(ids)
+      this.entriesWithout(nodesToDrop)
     )
   }
 
-  // used after walking the graph had finished - any undeleted nodes represent a cycle
+  // used after walking the graph had finished - any un deleted nodes represent a cycle
   ensureEmpty(): void {
     if (this.size !== 0) {
       throw new CircularDependencyError(this)
@@ -210,11 +211,11 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     this.reverseNeighbors.clear()
   }
 
-  edges(): [NodeId, NodeId][] {
+  edges(): Edge[] {
     return [...this.edgesIter()]
   }
 
-  edgesIter(): IterableIterator<[NodeId, NodeId]> {
+  edgesIter(): IterableIterator<Edge> {
     return wu(this)
       .map(([node, dependencies]) => wu(dependencies).map(dependency => [node, dependency]))
       .flatten(true)
@@ -230,8 +231,127 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     return wu(this.get(from)).some(d => this.hasCycle(d, new Set<NodeId>(visited)))
   }
 
-  *evaluationOrderGroups(): IterableIterator<Iterable<NodeId>> {
-    const dependencies = this.clone()
+  getCycle(): Edge[] | undefined {
+    const getCycleFrom = (
+      id: NodeId,
+      nodeColors: Map<NodeId, DFS_STATUS>,
+      path: Edge[] = []
+    ): Edge[] | undefined => {
+      if (nodeColors.has(id)) {
+        return nodeColors.get(id) === 'in_progress' ? path : undefined
+      }
+      nodeColors.set(id, 'in_progress')
+      const children = this.get(id).keys()
+      const cycle = wu(children).map(child => (
+        getCycleFrom(child, nodeColors, [...path, [id, child]])
+      )).find(values.isDefined)
+      nodeColors.set(id, 'done')
+      return cycle
+    }
+    const nodeColors = new Map()
+
+    return wu(this.keys())
+      .map(root => getCycleFrom(root, nodeColors))
+      .find(values.isDefined)
+  }
+
+  clear(): void {
+    super.clear()
+    this.reverseNeighbors.clear()
+  }
+}
+
+// This class adds storage of node data to NodeMap
+export class DataNodeMap<T> extends AbstractNodeMap {
+  readonly nodeData: Map<NodeId, T>
+
+  constructor(
+    entries?: Iterable<[NodeId, Set<NodeId>]>,
+    nodeData?: Map<NodeId, T>,
+  ) {
+    super(entries)
+    this.nodeData = nodeData || new Map<NodeId, T>()
+  }
+
+  addNode(id: NodeId, dependsOn: Iterable<NodeId>, data: T): void {
+    super.addNodeBase(id, dependsOn)
+    this.nodeData.set(id, data)
+  }
+
+  deleteNode(id: NodeId): Set<NodeId> {
+    this.nodeData.delete(id)
+    return super.deleteNode(id)
+  }
+
+  getComponent({ roots, filterFunc, reverse }:{
+    roots: NodeId[]
+    filterFunc?: (id: NodeId) => boolean
+    reverse?: boolean
+  }): Set<NodeId> {
+    const getComponentImpl = (
+      id: NodeId,
+      visited: Set<NodeId>,
+      filter: (id: NodeId) => boolean = () => true
+    ): Set<NodeId> => {
+      if (visited.has(id)) {
+        return new Set()
+      }
+      visited.add(id)
+      const directChildren = reverse ? this.getReverse(id) : this.get(id)
+      const children = new Set(
+        wu(directChildren.values())
+          .filter(filter)
+          .map(childId => getComponentImpl(childId, visited, filter))
+          .flatten(true)
+      )
+      return children.add(id)
+    }
+    const visited = new Set<NodeId>()
+
+    return new Set(roots.flatMap(root => [...getComponentImpl(root, visited, filterFunc).values()]))
+  }
+
+  cloneWithout(ids: Set<NodeId>): this {
+    return new (this.constructor as new (
+      entries: Iterable<[NodeId, Set<NodeId>]>,
+      nodeData: Map<NodeId, T>,
+    ) => this)(
+      this.entriesWithout(ids),
+      new Map<NodeId, T>(wu(this.nodeData).filter(([k]) => !ids.has(k))),
+    )
+  }
+
+  getData(id: NodeId): T {
+    const result = this.nodeData.get(id)
+    if (result === undefined) {
+      const reason = this.has(id) ? 'Node has no data' : 'Node does not exist'
+      throw new Error(`Cannot get data of "${id}": ${reason}`)
+    }
+    return result as T
+  }
+
+  setData(id: NodeId, data: T): void {
+    this.nodeData.set(id, data)
+  }
+
+  clear(): void {
+    super.clear()
+    this.nodeData.clear()
+  }
+
+  setDataFrom(source: DataNodeMap<T>): this {
+    wu(source.nodeData).forEach(([id, data]) => this.setData(id, data))
+    return this
+  }
+
+  clone(): this {
+    return super.clone().setDataFrom(this)
+  }
+}
+
+export class DAG<T> extends DataNodeMap<T> {
+  *evaluationOrderGroups(destructive = false): IterableIterator<Iterable<NodeId>> {
+    const dependencies = destructive ? this : this.clone()
     let nextNodes: Iterable<NodeId> = dependencies.keys()
 
     while (true) {
@@ -306,70 +426,5 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     const createsCycle = this.hasCycle(findCycleFrom)
     setMany(origEdges)
     return createsCycle
-  }
-
-  clear(): void {
-    super.clear()
-    this.reverseNeighbors.clear()
-  }
-}
-
-// This class adds storage of node data to NodeMap
-export class DataNodeMap<T> extends AbstractNodeMap {
-  protected readonly nodeData: Map<NodeId, T>
-
-  constructor(
-    entries?: Iterable<[NodeId, Set<NodeId>]>,
-    nodeData?: Map<NodeId, T>,
-  ) {
-    super(entries)
-    this.nodeData = nodeData || new Map<NodeId, T>()
-  }
-
-  addNode(id: NodeId, dependsOn: Iterable<NodeId>, data: T): void {
-    super.addNodeBase(id, dependsOn)
-    this.nodeData.set(id, data)
-  }
-
-  deleteNode(id: NodeId): Set<NodeId> {
-    this.nodeData.delete(id)
-    return super.deleteNode(id)
-  }
-
-  cloneWithout(ids: Set<NodeId>): this {
-    return new (this.constructor as new (
-      entries: Iterable<[NodeId, Set<NodeId>]>,
-      nodeData: Map<NodeId, T>,
-    ) => this)(
-      this.entriesWithout(ids),
-      new Map<NodeId, T>(wu(this.nodeData).filter(([k]) => !ids.has(k))),
-    )
-  }
-
-  getData(id: NodeId): T {
-    const result = this.nodeData.get(id)
-    if (result === undefined) {
-      const reason = this.has(id) ? 'Node has no data' : 'Node does not exist'
-      throw new Error(`Cannot get data of "${id}": ${reason}`)
-    }
-    return result as T
-  }
-
-  setData(id: NodeId, data: T): void {
-    this.nodeData.set(id, data)
-  }
-
-  clear(): void {
-    super.clear()
-    this.nodeData.clear()
-  }
-
-  private setDataFrom(source: this): this {
-    wu(source.nodeData).forEach(([id, data]) => this.setData(id, data))
-    return this
-  }
-
-  clone(): this {
-    return super.clone().setDataFrom(this)
   }
 }

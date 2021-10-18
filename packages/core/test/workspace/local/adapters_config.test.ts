@@ -103,7 +103,7 @@ describe('adapters local config', () => {
         elemID: new ElemID('salesforce', ElemID.CONFIG_NAME),
       })
     ))
-    expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalledWith([expect.objectContaining({ path: ['salesforce'] })])
+    expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalledWith([expect.objectContaining({ path: ['salesforce', 'salesforce'] })])
     expect(mockNaclFilesSource.flush).toHaveBeenCalled()
   })
 
@@ -116,7 +116,7 @@ describe('adapters local config', () => {
       {},
       ['dir', 'file']
     ))
-    expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalledWith([expect.objectContaining({ path: ['dir', 'file'] })])
+    expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalledWith([expect.objectContaining({ path: ['salesforce', 'dir', 'file'] })])
     expect(mockNaclFilesSource.flush).toHaveBeenCalled()
   })
 

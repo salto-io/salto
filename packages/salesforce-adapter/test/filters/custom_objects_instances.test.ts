@@ -822,7 +822,7 @@ describe('Custom Object Instances filter', () => {
     it('should add instances per configured object', async () => {
       // 2 new instances per configured object because of TestCustomRecords's length
       expect(elements.length).toEqual(27)
-      expect((await await awu(elements).filter(
+      expect((await awu(elements).filter(
         e => isInstanceElement(e)
       ).toArray()).length).toEqual(16)
     })

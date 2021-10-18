@@ -46,9 +46,9 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       paginationFunc.mockReturnValueOnce([])
-      const result = (await toArrayAsync(await traverseRequests(
+      const result = (await toArrayAsync(traverseRequests(
         paginationFunc,
-        extractPageEntries,
+        extractPageEntries
       )({
         client,
         pageSize: 123,
@@ -71,9 +71,9 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       paginationFunc.mockReturnValueOnce([])
-      const result = (await toArrayAsync(await traverseRequests(
+      const result = (await toArrayAsync(traverseRequests(
         paginationFunc,
-        extractPageEntries,
+        extractPageEntries
       )({
         client,
         pageSize: 123,
@@ -129,9 +129,9 @@ describe('client_pagination', () => {
       }))
       paginationFunc.mockReturnValueOnce([]).mockReturnValueOnce([])
         .mockReturnValueOnce([])
-      const result = (await toArrayAsync(await traverseRequests(
+      const result = (await toArrayAsync(traverseRequests(
         paginationFunc,
-        extractPageEntries,
+        extractPageEntries
       )({
         client,
         pageSize: 5,
@@ -165,9 +165,9 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       paginationFunc.mockReturnValueOnce([])
-      const result = (await toArrayAsync(await traverseRequests(
+      const result = (await toArrayAsync(traverseRequests(
         paginationFunc,
-        extractPageEntries,
+        extractPageEntries
       )({
         client,
         pageSize: 123,
@@ -228,9 +228,9 @@ describe('client_pagination', () => {
           paginationField: 'page',
         },
       }
-      const result = (await toArrayAsync(await traverseRequests(
+      const result = (await toArrayAsync(traverseRequests(
         paginationFunc,
-        extractPageEntries,
+        extractPageEntries
       )({
         client,
         ...params,
@@ -285,10 +285,10 @@ describe('client_pagination', () => {
           paginationField: 'page',
         },
       }
-      const result = (await toArrayAsync(await traverseRequests(
+      const result = (await toArrayAsync(traverseRequests(
         paginationFunc,
         extractPageEntries,
-        customEntryExtractor,
+        customEntryExtractor
       )({
         client,
         ...params,
@@ -327,9 +327,9 @@ describe('client_pagination', () => {
           arg1: 'val1',
         },
       }
-      const result = (await toArrayAsync(await traverseRequests(
+      const result = (await toArrayAsync(traverseRequests(
         paginationFunc,
-        extractPageEntries,
+        extractPageEntries
       )({
         client,
         pageSize: 1,

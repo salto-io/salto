@@ -378,11 +378,11 @@ describe('adapter', () => {
 
   describe('deploy', () => {
     it('should throw not implemented', async () => {
-      const operations = await adapter.operations({
+      const operations = adapter.operations({
         credentials: new InstanceElement(
           'config',
           oauthClientCredentialsType,
-          { clientId: 'client', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
+          { clientId: 'client', clientSecret: 'secret', subdomain: 'sandbox.na', production: false }
         ),
         config: new InstanceElement(
           'config',

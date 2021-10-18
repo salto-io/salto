@@ -50,7 +50,7 @@ describe('client_pagination', () => {
           url: '/ep',
         },
       }
-      const result = (await toArrayAsync(await clientUtils.traverseRequests(
+      const result = (await toArrayAsync(clientUtils.traverseRequests(
         getMinSinceIdPagination(args),
         extractPageEntries,
       )(args))).flat()
@@ -78,7 +78,7 @@ describe('client_pagination', () => {
           },
         },
       }
-      const result = (await toArrayAsync(await clientUtils.traverseRequests(
+      const result = (await toArrayAsync(clientUtils.traverseRequests(
         getMinSinceIdPagination(args),
         extractPageEntries,
       )(args))).flat()
@@ -132,7 +132,7 @@ describe('client_pagination', () => {
           },
         },
       }
-      const result = (await toArrayAsync(await clientUtils.traverseRequests(
+      const result = (await toArrayAsync(clientUtils.traverseRequests(
         getMinSinceIdPagination(args),
         extractPageEntries,
       )(args))).flat()
@@ -163,7 +163,7 @@ describe('client_pagination', () => {
           paginationField: 'page',
         },
       }
-      const result = (await toArrayAsync(await clientUtils.traverseRequests(
+      const result = (await toArrayAsync(clientUtils.traverseRequests(
         getMinSinceIdPagination(args),
         extractPageEntries,
       )(args))).flat()
@@ -216,7 +216,7 @@ describe('client_pagination', () => {
           paginationField: 'since_id',
         },
       }
-      const result = (await toArrayAsync(await clientUtils.traverseRequests(
+      const result = (await toArrayAsync(clientUtils.traverseRequests(
         getMinSinceIdPagination(args),
         extractPageEntries,
       )(args))).flat()
@@ -257,7 +257,7 @@ describe('client_pagination', () => {
           },
         },
       }
-      const result = (await toArrayAsync(await clientUtils.traverseRequests(
+      const result = (await toArrayAsync(clientUtils.traverseRequests(
         getMinSinceIdPagination(args),
         extractPageEntries,
       )(args))).flat()
@@ -312,7 +312,7 @@ describe('client_pagination', () => {
           paginationField: 'since_id',
         },
       }
-      const result = (await toArrayAsync(await clientUtils.traverseRequests(
+      const result = (await toArrayAsync(clientUtils.traverseRequests(
         getMinSinceIdPagination(args),
         extractPageEntries,
       )(args))).flat()
@@ -353,7 +353,7 @@ describe('client_pagination', () => {
           paginationField: 'since_id',
         },
       }
-      const result = (await toArrayAsync(await clientUtils.traverseRequests(
+      const result = (await toArrayAsync(clientUtils.traverseRequests(
         getMinSinceIdPagination(args),
         extractPageEntries,
       )(args))).flat()

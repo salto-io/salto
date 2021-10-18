@@ -37,7 +37,7 @@ describe('state', () => {
   })
 
   beforeAll(async () => {
-    pathIndex = new InMemoryRemoteMap(await getElementsPathHints([elem]))
+    pathIndex = new InMemoryRemoteMap(getElementsPathHints([elem]))
   })
   describe('build in-mem state', () => {
     let state: ReturnType<typeof buildInMemState>
@@ -92,7 +92,7 @@ describe('state', () => {
       const elements = [elem, newElem]
       await state.overridePathIndex(elements)
       const index = await awu((await state.getPathIndex()).entries()).toArray()
-      expect(index).toEqual(await getElementsPathHints([newElem, elem]))
+      expect(index).toEqual(getElementsPathHints([newElem, elem]))
     })
 
     it('updatePathIndex', async () => {
@@ -103,7 +103,7 @@ describe('state', () => {
       const oneElement = [newElem]
       await state.updatePathIndex(oneElement, ['salesforce'])
       const index = await awu((await state.getPathIndex()).entries()).toArray()
-      expect(index).toEqual(await getElementsPathHints([newElem, elem]))
+      expect(index).toEqual(getElementsPathHints([newElem, elem]))
     })
 
     it('clear should clear all data', async () => {

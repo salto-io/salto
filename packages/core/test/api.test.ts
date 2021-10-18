@@ -311,8 +311,8 @@ describe('api.ts', () => {
 
         // Create plan where both changes are in the same group
         const actionPlan = await plan.getPlan({
-          before: await createElementSource(stateElements),
-          after: await createElementSource(wsElements),
+          before: createElementSource(stateElements),
+          after: createElementSource(wsElements),
           customGroupIdFunctions: {
             salto: async changes => new Map([...changes.keys()].map(key => [key, 'group'])),
           },

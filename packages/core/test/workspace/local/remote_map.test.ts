@@ -280,7 +280,7 @@ describe('test operations on remote db', () => {
   })
   describe('values', () => {
     it('should get all values', async () => {
-      await remoteMap.setAll(await createAsyncIterable(elements))
+      await remoteMap.setAll(createAsyncIterable(elements))
       const iter = remoteMap.values()
       const res: Element[] = []
       for await (const element of iter) {
@@ -291,7 +291,7 @@ describe('test operations on remote db', () => {
     })
 
     it('should get all values - paginated', async () => {
-      await remoteMap.setAll(await createAsyncIterable(elements))
+      await remoteMap.setAll(createAsyncIterable(elements))
       const firstPageRes: Element[] = []
       for await (const element of remoteMap.values({ first: 5 })) {
         firstPageRes.push(element)
@@ -333,7 +333,7 @@ describe('test operations on remote db', () => {
   })
   describe('entries', () => {
     it('should get all entries', async () => {
-      await remoteMap.setAll(await createAsyncIterable(elements))
+      await remoteMap.setAll(createAsyncIterable(elements))
       const iter = remoteMap.entries()
       const res: { key: string; value: Element }[] = []
       for await (const element of iter) {
@@ -347,7 +347,7 @@ describe('test operations on remote db', () => {
 
     it('should get all entries after inserting empty string key', async () => {
       await remoteMap.set('', elements[0])
-      await remoteMap.setAll(await createAsyncIterable(elements))
+      await remoteMap.setAll(createAsyncIterable(elements))
       const iter = remoteMap.entries()
       const res: { key: string; value: Element }[] = []
       for await (const element of iter) {
@@ -360,7 +360,7 @@ describe('test operations on remote db', () => {
     })
 
     it('should get all entries - paginated', async () => {
-      await remoteMap.setAll(await createAsyncIterable(elements))
+      await remoteMap.setAll(createAsyncIterable(elements))
       const firstPageRes: { key: string; value: Element }[] = []
       for await (const element of remoteMap.entries({ first: 5 })) {
         firstPageRes.push(element)

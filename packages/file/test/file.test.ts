@@ -196,7 +196,7 @@ describe('file', () => {
       })
 
       it('should throw error', async () => {
-        await expect(await file.readZipFile(dest)).toBeUndefined()
+        expect(await file.readZipFile(dest)).toBeUndefined()
       })
     })
   })

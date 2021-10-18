@@ -35,7 +35,7 @@ import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
 import { buildDataManagement, DataManagement } from './fetch_profile/data_management'
 
-const { toArrayAsync, flatMapAsync, toAsyncIterable } = collections.asynciterable
+const { toArrayAsync } = collections.asynciterable
 const { partition } = promises.array
 const { awu, keyByAsync } = collections.asynciterable
 const { toMD5 } = hash
@@ -145,10 +145,7 @@ const getRecordsBySaltoIds = async (
     saltoIdFieldsWithIdField,
     instanceIdValues,
   )
-  const recordsIterable = flatMapAsync(
-    toAsyncIterable(queries),
-    query => client.queryAll(query)
-  )
+  const recordsIterable = awu(queries).flatMap(query => client.queryAll(query))
   // Possible REBASE issue
   // const selectStr = await buildSelectStr(saltoIdFieldsWithIdField)
   // const fieldsWheres = await awu(saltoIdFields)

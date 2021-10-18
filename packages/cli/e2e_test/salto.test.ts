@@ -234,7 +234,7 @@ describe('cli e2e', () => {
           Beta: apiNameAnno(newObjectApiName, 'Beta__c'),
         }
       )
-      await verifyTmpNaclFileObjectSourceMap(
+      verifyTmpNaclFileObjectSourceMap(
         await workspace.getSourceMap(tmpNaclFileRelativePath), newObject, ['Alpha', 'Beta']
       )
     })
@@ -306,7 +306,7 @@ describe('cli e2e', () => {
         }
       )
 
-      await verifyTmpNaclFileObjectSourceMap(
+      verifyTmpNaclFileObjectSourceMap(
         await workspace.getSourceMap(tmpNaclFileRelativePath), newObject, ['Alpha', 'Modified']
       )
       const annotationObjSourceMap = await workspace.getSourceMap(newObjectAnnotationsRelativePath)

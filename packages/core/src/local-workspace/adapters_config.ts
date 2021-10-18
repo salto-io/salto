@@ -158,7 +158,7 @@ export const adaptersConfigSource = async (
       applyConfigOverrides(currConf)
 
       const mergedConfig = await merger.mergeSingleElement(configsToUpdate)
-      const configChanges = await detailedCompare(currConf, mergedConfig)
+      const configChanges = detailedCompare(currConf, mergedConfig)
 
       validateConfigChanges(configChanges)
 
@@ -167,7 +167,7 @@ export const adaptersConfigSource = async (
       if (overridesForInstance !== undefined) {
         // configs includes the configuration overrides which we wouldn't want
         // to save so here we remove the configuration overrides from the NaCl
-        const reversedOverrides = await detailedCompare(currConf, currConfWithoutOverrides)
+        const reversedOverrides = detailedCompare(currConf, currConfWithoutOverrides)
         await naclSource.updateNaclFiles(reversedOverrides)
       }
       await naclSource.flush()

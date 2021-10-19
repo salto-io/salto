@@ -16,7 +16,6 @@
 
 import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, PrimitiveType, PrimitiveTypes, ReferenceExpression } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import _ from 'lodash'
 import { FileProperties } from 'jsforce-types'
 import { mockFileProperties } from '../../connection'
 import mockClient from '../../client'
@@ -104,7 +103,7 @@ describe('author information test', () => {
   })
   describe('when feature is disabled', () => {
     it('should not add any annotations', async () => {
-      filter = authorInformation({
+      filter = customObjects({
         client,
         config: {
           ...defaultFilterContext,

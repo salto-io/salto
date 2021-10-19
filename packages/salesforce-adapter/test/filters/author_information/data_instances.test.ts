@@ -31,47 +31,50 @@ describe('data instances author information test', () => {
   let filter: Filter
   let client: SalesforceClient
   let connection: MockInterface<Connection>
+  let testInst: InstanceElement
   const testType = new ObjectType({ elemID: new ElemID('', 'test'),
     annotations: { [METADATA_TYPE]: CUSTOM_OBJECT, [API_NAME]: 'otherName' } })
-  const testInst = new InstanceElement(
-    'Custom__c',
-    new ReferenceExpression(testType.elemID, testType),
-    { CreatedDate: 'created_date',
-      CreatedById: 'creator_id',
-      LastModifiedDate: 'changed_date',
-      LastModifiedById: 'changed_id' }
-  )
   const objectProperties = mockFileProperties({ fullName: 'Custom__c',
     type: 'test',
     createdByName: 'created_name',
     createdDate: 'created_date',
     lastModifiedByName: 'changed_name',
     lastModifiedDate: 'changed_date' })
+  const TestCustomRecords = mockQueryResult({
+    records: [
+      {
+        Id: 'creator_id',
+        Name: 'created_name',
+      },
+      {
+        Id: 'changed_id',
+        Name: 'changed_name',
+      },
+    ],
+    totalSize: 2,
+  })
   const checkElementAnnotations = (object: Element, properties: FileProperties): void => {
     expect(object.annotations[CORE_ANNOTATIONS.CREATED_BY]).toEqual(properties.createdByName)
     expect(object.annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual(properties.createdDate)
     expect(object.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual(properties.lastModifiedByName)
     expect(object.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual(properties.lastModifiedDate)
   }
+  beforeEach(async () => {
+    ({ connection, client } = mockClient())
+    testInst = new InstanceElement(
+      'Custom__c',
+      new ReferenceExpression(testType.elemID, testType),
+      { CreatedDate: 'created_date',
+        CreatedById: 'creator_id',
+        LastModifiedDate: 'changed_date',
+        LastModifiedById: 'changed_id' }
+    )
+    filter = dataInstances({ client, config: defaultFilterContext })
+  })
   describe('success', () => {
     beforeEach(async () => {
-      ({ connection, client } = mockClient())
-      const TestCustomRecords = mockQueryResult({
-        records: [
-          {
-            Id: 'creator_id',
-            Name: 'created_name',
-          },
-          {
-            Id: 'changed_id',
-            Name: 'changed_name',
-          },
-        ],
-        totalSize: 2,
-      })
       connection.metadata.list.mockResolvedValueOnce([objectProperties])
       connection.query.mockResolvedValue(TestCustomRecords)
-      filter = dataInstances({ client, config: defaultFilterContext })
       await filter.onFetch?.([testInst])
     })
     it('should add annotations to to custom object instances', async () => {

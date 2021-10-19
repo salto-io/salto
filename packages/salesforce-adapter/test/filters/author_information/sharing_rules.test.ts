@@ -50,7 +50,6 @@ describe('sharing rules author information test', () => {
   })
   beforeEach(async () => {
     ({ connection, client } = mockClient())
-    connection.metadata.list.mockResolvedValueOnce([firstRule, secondRule])
     filter = sharingRules({ client, config: defaultFilterContext })
     sharingRulesInstance = new InstanceElement('name', sharingRulesObjectType)
     sharingRulesInstance.value.fullName = 'Account'
@@ -58,11 +57,7 @@ describe('sharing rules author information test', () => {
   })
   describe('success', () => {
     beforeEach(async () => {
-      ({ connection, client } = mockClient())
       connection.metadata.list.mockResolvedValueOnce([firstRule, secondRule])
-      filter = sharingRules({ client, config: defaultFilterContext })
-      sharingRulesInstance = new InstanceElement('name', sharingRulesObjectType)
-      sharingRulesInstance.value.fullName = 'Account'
       await filter.onFetch?.([sharingRulesInstance])
     })
     it('should add author annotations to sharing rules', async () => {

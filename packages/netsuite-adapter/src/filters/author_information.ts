@@ -16,11 +16,13 @@
 
 import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import _, { isUndefined } from 'lodash'
+import _ from 'lodash'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { TYPES_TO_INTERNAL_ID } from '../data_elements/types'
 import NetsuiteClient from '../client/client'
 import { FilterCreator, FilterWith } from '../filter'
 
+const { isDefined } = lowerDashValues
 const log = logger(module)
 export const EMPLOYEE_NAME_QUERY = 'SELECT id, entityid FROM employee'
 export const SYSTEM_NOTE_QUERY = 'SELECT recordid, recordtypeid, name FROM systemnote ORDER BY date ASC'
@@ -44,8 +46,35 @@ const distinctSortedSystemNotes = (
     )
   ).map(notes => notes[0])
 
-const fetchSystemNotes = async (client: NetsuiteClient): Promise<Record<string, unknown>[]> => {
-  const systemNotes = await client.runSuiteQL(SYSTEM_NOTE_QUERY)
+const getRecordIdQueryLine = (recordIds: string[]): string =>
+  ['(', recordIds.map(id => `recordid = '${id}'`).join(' or '), ')'].join('')
+
+const getWhereQuery = (recordTypeId: string, recordIds: string[]): string => {
+  const recordIdsQueryLine = getRecordIdQueryLine(recordIds)
+  return `(${recordIdsQueryLine} AND recordtypeid = '${TYPES_TO_INTERNAL_ID[recordTypeId]}')`
+}
+
+const buildSystemNotesQuery = (instances: InstanceElement[]): string => {
+  const instancesWithID = instances
+    .filter(instance => isDefined(instance.value.internalId))
+    .filter(instance => isDefined(TYPES_TO_INTERNAL_ID[instance.elemID.typeName]))
+  if (_.isEmpty(instancesWithID)) {
+    return ''
+  }
+  const instancesByTypeName = _.groupBy(instancesWithID,
+    instance => TYPES_TO_INTERNAL_ID[instance.elemID.typeName])
+  const recordTypeIdsToRecordIds = Object.entries(instancesByTypeName)
+    .map(entries => [entries[0], entries[1].map(instance => instance.value.internalId)])
+  const whereQuery = recordTypeIdsToRecordIds
+    .map(entries => getWhereQuery(entries[0] as string, entries[1] as string[])).join(' or ')
+  return `SELECT recordid, recordtypeid, name FROM systemnote WHERE ${whereQuery} ORDER BY date DESC`
+}
+
+const fetchSystemNotes = async (
+  client: NetsuiteClient,
+  query: string
+): Promise<Record<string, unknown>[]> => {
+  const systemNotes = await client.runSuiteQL(query)
   if (systemNotes) {
     return distinctSortedSystemNotes(systemNotes)
   }
@@ -55,8 +84,12 @@ const fetchSystemNotes = async (client: NetsuiteClient): Promise<Record<string, 
 
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
+    const query = buildSystemNotesQuery(elements.filter(isInstanceElement))
+    if (_.isEmpty(query)) {
+      return
+    }
     const employeeNames = await fetchEmployeeNames(client)
-    const systemNotes = await fetchSystemNotes(client)
+    const systemNotes = await fetchSystemNotes(client, query)
     const getElementLastModifier = (
       element: InstanceElement,
     ): string | undefined => {
@@ -77,7 +110,7 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
 
     elements
       .filter(isInstanceElement)
-      .filter(instance => !isUndefined(instance.value.internalId))
+      .filter(instance => isDefined(instance.value.internalId))
       .forEach(setAuthorName)
   },
 })

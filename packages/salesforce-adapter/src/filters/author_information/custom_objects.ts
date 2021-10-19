@@ -13,16 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, Element, Field, InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { Element, Field, ObjectType } from '@salto-io/adapter-api'
 import { FileProperties } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { CUSTOM_FIELD, CUSTOM_OBJECT, SHARING_RULES_TYPE } from '../constants'
-import { apiName, getAuthorAnnotations, isCustomObject, isInstanceOfCustomObject } from '../transformers/transformer'
-import { FilterCreator, FilterWith } from '../filter'
-import SalesforceClient from '../client/client'
-import { conditionQueries, ensureSafeFilterFetch, isInstanceOfType, queryClient } from './utils'
+import { CUSTOM_FIELD, CUSTOM_OBJECT } from '../../constants'
+import { apiName, getAuthorAnnotations, isCustomObject } from '../../transformers/transformer'
+import { FilterCreator, FilterWith } from '../../filter'
+import SalesforceClient from '../../client/client'
+import { ensureSafeFilterFetch } from '../utils'
 
 const { awu } = collections.asynciterable
 type AwuIterable<T> = collections.asynciterable.AwuIterable<T>
@@ -30,10 +30,7 @@ type AwuIterable<T> = collections.asynciterable.AwuIterable<T>
 type FilePropertiesMap = Record<string, FileProperties>
 type FieldFileNameParts = {fieldName: string; objectName: string}
 const log = logger(module)
-const GET_ID_AND_NAMES_OF_USERS_QUERY = 'SELECT Id,Name FROM User'
-const SHARING_RULES_API_NAMES = ['SharingCriteriaRule', 'SharingGuestRule', 'SharingOwnerRule']
 
-const isSharingRulesInstance = isInstanceOfType(SHARING_RULES_TYPE)
 const getFieldNameParts = (fileProperties: FileProperties): FieldFileNameParts =>
   ({ fieldName: fileProperties.fullName.split('.')[1],
     objectName: fileProperties.fullName.split('.')[0] } as FieldFileNameParts)
@@ -63,17 +60,6 @@ const addAuthorAnnotationsToFields = (
       fileProp,
       getObjectFieldByFileProperties(fileProp, object)
     ))
-}
-
-const getSharingRulesFileProperties = async (client: SalesforceClient):
-  Promise<FileProperties[]> => {
-  const { result, errors } = await client.listMetadataObjects(
-    SHARING_RULES_API_NAMES.map(ruleType => ({ type: ruleType }))
-  )
-  if (errors && errors.length > 0) {
-    log.warn(`Encountered errors while listing file properties for CustomObjects: ${errors}`)
-  }
-  return result
 }
 
 const getCustomObjectFileProperties = async (client: SalesforceClient):
@@ -111,55 +97,10 @@ const objectAuthorInformationSupplier = async (
   }
 }
 
-const getIDToNameMap = async (client: SalesforceClient,
-  instances: InstanceElement[]): Promise<Record<string, string>> => {
-  const instancesIDs = Array.from(new Set(
-    instances.flatMap(instance => [instance.value.CreatedById, instance.value.LastModifiedById])
-  ))
-  const queries = conditionQueries(GET_ID_AND_NAMES_OF_USERS_QUERY,
-    instancesIDs.map(id => ({ Id: `'${id}'` })))
-  const records = await queryClient(client, queries)
-  return Object.fromEntries(records.map(record => [record.Id, record.Name]))
-}
-
-const moveAuthorFieldsToAnnotations = (
-  instance: InstanceElement,
-  IDToNameMap: Record<string, string>
-): void => {
-  instance.annotations[CORE_ANNOTATIONS.CREATED_AT] = instance.value.CreatedDate
-  instance.annotations[CORE_ANNOTATIONS.CREATED_BY] = IDToNameMap[instance.value.CreatedById]
-  instance.annotations[CORE_ANNOTATIONS.CHANGED_AT] = instance.value.LastModifiedDate
-  instance.annotations[CORE_ANNOTATIONS.CHANGED_BY] = IDToNameMap[
-    instance.value.LastModifiedById]
-}
-
-const moveInstancesAuthorFieldsToAnnotations = (
-  instances: InstanceElement[],
-  IDToNameMap: Record<string, string>
-): void => {
-  instances.forEach(instance => moveAuthorFieldsToAnnotations(instance, IDToNameMap))
-}
-
-
-const fetchAllSharingRules = async (
-  client: SalesforceClient
-): Promise<Record<string, FileProperties[]>> => {
-  const allRules = await getSharingRulesFileProperties(client)
-  return _.groupBy(allRules.flatMap(file => file),
-    fileProp => getFieldNameParts(fileProp).objectName)
-}
-
-const getLastSharingRuleFileProperties = (
-  sharingRules: InstanceElement,
-  sharingRulesMap: Record<string, FileProperties[]>,
-): FileProperties =>
-  _.sortBy(sharingRulesMap[sharingRules.value.fullName],
-    fileProp => Date.parse(fileProp.lastModifiedDate)).reverse()[0]
-
 export const WARNING_MESSAGE = 'Encountered an error while trying to populate author information in some of the Salesforce configuration elements.'
 
 /*
- * add author information to object types, and data instance elements.
+ * add author information to object types and fields.
  */
 const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
   onFetch: ensureSafeFilterFetch({
@@ -176,25 +117,6 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
             customFieldsFilePropertiesMap,
             object)
         })
-      const customObjectInstances = await awu(elements).filter(isInstanceOfCustomObject)
-        .toArray() as InstanceElement[]
-      const IDToNameMap = await getIDToNameMap(client, customObjectInstances)
-      moveInstancesAuthorFieldsToAnnotations(customObjectInstances, IDToNameMap)
-
-      const sharingRulesMap = await fetchAllSharingRules(client)
-      const sharingRulesInstances = await (awu(elements)
-        .filter(isInstanceElement)
-        .filter(isSharingRulesInstance)
-        .toArray())
-      sharingRulesInstances.forEach(sharingRules => {
-        const lastRuleFileProp = getLastSharingRuleFileProperties(sharingRules, sharingRulesMap)
-        if (!_.isUndefined(lastRuleFileProp)) {
-          const ruleAuthorInformation = getAuthorAnnotations(lastRuleFileProp)
-          delete ruleAuthorInformation[CORE_ANNOTATIONS.CREATED_AT]
-          delete ruleAuthorInformation[CORE_ANNOTATIONS.CREATED_BY]
-          sharingRules.annotate(getAuthorAnnotations(lastRuleFileProp))
-        }
-      })
     },
   }),
 })

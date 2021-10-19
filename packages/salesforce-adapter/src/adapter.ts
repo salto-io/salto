@@ -30,7 +30,9 @@ import layoutFilter from './filters/layouts'
 import customObjectsFilter, { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from './filters/custom_objects'
 import customSettingsFilter from './filters/custom_settings_filter'
 import customObjectsSplitFilter from './filters/custom_object_split'
-import authorInformationFilter from './filters/author_information'
+import customObjectAuthorFilter from './filters/author_information/custom_objects'
+import dataInstancesAuthorFilter from './filters/author_information/data_instances'
+import sharingRulesAuthorFilter from './filters/author_information/sharing_rules'
 import profileInstanceSplitFilter from './filters/profile_instance_split'
 import customObjectsInstancesFilter from './filters/custom_objects_instances'
 import profilePermissionsFilter from './filters/profile_permissions'
@@ -115,7 +117,9 @@ export const DEFAULT_FILTERS = [
   profilePathsFilter,
   territoryFilter,
   elementsUrlFilter,
-  authorInformationFilter,
+  customObjectAuthorFilter,
+  dataInstancesAuthorFilter,
+  sharingRulesAuthorFilter,
   hideReadOnlyValuesFilter,
   // The following filters should remain last in order to make sure they fix all elements
   convertListsFilter,

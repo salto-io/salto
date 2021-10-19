@@ -73,8 +73,6 @@ describe('custom objects author information test', () => {
   })
   beforeEach(() => {
     ({ connection, client } = mockClient())
-    connection.metadata.list.mockResolvedValueOnce([objectProperties])
-    connection.metadata.list.mockResolvedValueOnce([fieldProperties, nonExistentFieldProperties])
     filter = customObjects({ client, config: defaultFilterContext })
     customObject = new ObjectType({
       elemID: new ElemID('salesforce', 'Custom__c'),
@@ -84,22 +82,29 @@ describe('custom objects author information test', () => {
       },
     })
   })
-  it('should add author annotations to custom object', async () => {
-    await filter.onFetch?.([customObject, objectWithoutInformation])
-    checkElementAnnotations(customObject, objectProperties)
-    checkElementAnnotations(customObject.fields.StringField__c, fieldProperties)
-  })
-  it('should return a warning on failure', async () => {
-    connection.metadata.list.mockReset()
-    connection.metadata.list.mockImplementationOnce(() => {
-      throw new Error()
+  describe('success', () => {
+    beforeEach(() => {
+      connection.metadata.list.mockResolvedValueOnce([objectProperties])
+      connection.metadata.list.mockResolvedValueOnce([fieldProperties, nonExistentFieldProperties])
     })
-    const res = await filter.onFetch?.([customObject]) as FilterResult
-    const err = res.errors ?? []
-    expect(res.errors).toHaveLength(1)
-    expect(err[0]).toEqual({
-      severity: 'Warning',
-      message: WARNING_MESSAGE,
+    it('should add author annotations to custom object', async () => {
+      await filter.onFetch?.([customObject, objectWithoutInformation])
+      checkElementAnnotations(customObject, objectProperties)
+      checkElementAnnotations(customObject.fields.StringField__c, fieldProperties)
+    })
+  })
+  describe('failure', () => {
+    it('should return a warning', async () => {
+      connection.metadata.list.mockImplementationOnce(() => {
+        throw new Error()
+      })
+      const res = await filter.onFetch?.([customObject]) as FilterResult
+      const err = res.errors ?? []
+      expect(res.errors).toHaveLength(1)
+      expect(err[0]).toEqual({
+        severity: 'Warning',
+        message: WARNING_MESSAGE,
+      })
     })
   })
   describe('when feature is disabled', () => {

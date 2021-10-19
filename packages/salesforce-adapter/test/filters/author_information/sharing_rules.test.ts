@@ -16,12 +16,13 @@
 
 import { CORE_ANNOTATIONS, ElemID, ObjectType, InstanceElement } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
+import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
 import { mockFileProperties } from '../../connection'
 import mockClient from '../../client'
 import Connection from '../../../src/client/jsforce'
 import SalesforceClient from '../../../src/client/client'
-import { Filter } from '../../../src/filter'
-import sharingRules from '../../../src/filters/author_information/sharing_rules'
+import { Filter, FilterResult } from '../../../src/filter'
+import sharingRules, { WARNING_MESSAGE } from '../../../src/filters/author_information/sharing_rules'
 import { defaultFilterContext } from '../../utils'
 import { API_NAME } from '../../../src/constants'
 
@@ -47,7 +48,6 @@ describe('sharing rules author information test', () => {
     annotations: { [API_NAME]: 'SharingRules' },
     fields: {},
   })
-
   beforeEach(async () => {
     ({ connection, client } = mockClient())
     connection.metadata.list.mockResolvedValueOnce([firstRule, secondRule])
@@ -56,8 +56,46 @@ describe('sharing rules author information test', () => {
     sharingRulesInstance.value.fullName = 'Account'
     await filter.onFetch?.([sharingRulesInstance])
   })
-  it('should add author annotations to sharing rules', async () => {
-    expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual('secondRuler')
-    expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('2021-10-19T06:41:10.000Z')
+  describe('success', () => {
+    beforeEach(async () => {
+      ({ connection, client } = mockClient())
+      connection.metadata.list.mockResolvedValueOnce([firstRule, secondRule])
+      filter = sharingRules({ client, config: defaultFilterContext })
+      sharingRulesInstance = new InstanceElement('name', sharingRulesObjectType)
+      sharingRulesInstance.value.fullName = 'Account'
+      await filter.onFetch?.([sharingRulesInstance])
+    })
+    it('should add author annotations to sharing rules', async () => {
+      expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual('secondRuler')
+      expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('2021-10-19T06:41:10.000Z')
+    })
+  })
+  describe('failure', () => {
+    it('should return a warning', async () => {
+      connection.metadata.list.mockImplementationOnce(() => {
+        throw new Error()
+      })
+      const res = await filter.onFetch?.([sharingRulesInstance]) as FilterResult
+      const err = res.errors ?? []
+      expect(res.errors).toHaveLength(1)
+      expect(err[0]).toEqual({
+        severity: 'Warning',
+        message: WARNING_MESSAGE,
+      })
+    })
+  })
+  describe('when feature is disabled', () => {
+    it('should not add any annotations', async () => {
+      filter = sharingRules({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({ optionalFeatures: { authorInformation: false } }),
+        },
+      })
+      await filter.onFetch?.([sharingRulesInstance])
+      expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY]).not.toBeDefined()
+      expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT]).not.toBeDefined()
+    })
   })
 })

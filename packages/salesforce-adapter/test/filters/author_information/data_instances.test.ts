@@ -21,10 +21,11 @@ import { mockFileProperties, mockQueryResult } from '../../connection'
 import mockClient from '../../client'
 import Connection from '../../../src/client/jsforce'
 import SalesforceClient from '../../../src/client/client'
-import { Filter } from '../../../src/filter'
-import dataInstances from '../../../src/filters/author_information/data_instances'
+import { Filter, FilterResult } from '../../../src/filter'
+import dataInstances, { WARNING_MESSAGE } from '../../../src/filters/author_information/data_instances'
 import { defaultFilterContext } from '../../utils'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE } from '../../../src/constants'
+import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
 
 describe('data instances author information test', () => {
   let filter: Filter
@@ -52,29 +53,59 @@ describe('data instances author information test', () => {
     expect(object.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual(properties.lastModifiedByName)
     expect(object.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual(properties.lastModifiedDate)
   }
-  // In order to test an object without author information in server.
-
-  beforeEach(async () => {
-    ({ connection, client } = mockClient())
-    const TestCustomRecords = mockQueryResult({
-      records: [
-        {
-          Id: 'creator_id',
-          Name: 'created_name',
-        },
-        {
-          Id: 'changed_id',
-          Name: 'changed_name',
-        },
-      ],
-      totalSize: 2,
+  describe('success', () => {
+    beforeEach(async () => {
+      ({ connection, client } = mockClient())
+      const TestCustomRecords = mockQueryResult({
+        records: [
+          {
+            Id: 'creator_id',
+            Name: 'created_name',
+          },
+          {
+            Id: 'changed_id',
+            Name: 'changed_name',
+          },
+        ],
+        totalSize: 2,
+      })
+      connection.metadata.list.mockResolvedValueOnce([objectProperties])
+      connection.query.mockResolvedValue(TestCustomRecords)
+      filter = dataInstances({ client, config: defaultFilterContext })
+      await filter.onFetch?.([testInst])
     })
-    connection.metadata.list.mockResolvedValueOnce([objectProperties])
-    connection.query.mockResolvedValue(TestCustomRecords)
-    filter = dataInstances({ client, config: defaultFilterContext })
-    await filter.onFetch?.([testInst])
+    it('should add annotations to to custom object instances', async () => {
+      checkElementAnnotations(testInst, objectProperties)
+    })
   })
-  it('should add annotations to to custom object instances', async () => {
-    checkElementAnnotations(testInst, objectProperties)
+  describe('failure', () => {
+    it('should return a warning', async () => {
+      connection.metadata.list.mockImplementationOnce(() => {
+        throw new Error()
+      })
+      const res = await filter.onFetch?.([testInst]) as FilterResult
+      const err = res.errors ?? []
+      expect(res.errors).toHaveLength(1)
+      expect(err[0]).toEqual({
+        severity: 'Warning',
+        message: WARNING_MESSAGE,
+      })
+    })
+  })
+  describe('when feature is disabled', () => {
+    it('should not add any annotations', async () => {
+      filter = dataInstances({
+        client,
+        config: {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({ optionalFeatures: { authorInformation: false } }),
+        },
+      })
+      await filter.onFetch?.([testInst])
+      expect(testInst.annotations[CORE_ANNOTATIONS.CREATED_BY]).not.toBeDefined()
+      expect(testInst.annotations[CORE_ANNOTATIONS.CREATED_AT]).not.toBeDefined()
+      expect(testInst.annotations[CORE_ANNOTATIONS.CHANGED_BY]).not.toBeDefined()
+      expect(testInst.annotations[CORE_ANNOTATIONS.CHANGED_AT]).not.toBeDefined()
+    })
   })
 })

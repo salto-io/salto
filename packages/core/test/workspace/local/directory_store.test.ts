@@ -83,7 +83,8 @@ describe('localDirectoryStore', () => {
       mockReaddirp.mockResolvedValue([{ fullPath: '/baseDir/access/test1' }, { fullPath: '/baseDir/access/test2' }])
       const result = await localDirectoryStore({ baseDir, name: '', accessiblePath: 'access', encoding }).list()
       expect(result).toEqual(['access/test1', 'access/test2'])
-      expect(mockReaddirp.mock.calls[0][0]).toEqual(path.join(baseDir, 'access'))
+      expect(mockReaddirp).toHaveBeenCalledTimes(1)
+      expect(mockReaddirp).toHaveBeenCalledWith(path.join(baseDir, 'access'), expect.any(Object))
     })
   })
 

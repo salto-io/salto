@@ -27,8 +27,6 @@ import { defaultFilterContext } from '../../utils'
 import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
 import { API_NAME, CUSTOM_OBJECT } from '../../../src/constants'
 
-jest.setTimeout(22222222)
-
 describe('custom objects author information test', () => {
   let filter: Filter
   let client: SalesforceClient

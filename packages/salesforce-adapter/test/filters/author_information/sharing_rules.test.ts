@@ -48,6 +48,8 @@ describe('sharing rules author information test', () => {
     annotations: { [API_NAME]: 'SharingRules' },
     fields: {},
   })
+  const instanceToIgnore = new InstanceElement('ignore', sharingRulesObjectType)
+  instanceToIgnore.value.fullName = 'ignore'
   beforeEach(async () => {
     ({ connection, client } = mockClient())
     filter = sharingRules({ client, config: defaultFilterContext })
@@ -57,11 +59,15 @@ describe('sharing rules author information test', () => {
   describe('success', () => {
     beforeEach(async () => {
       connection.metadata.list.mockResolvedValueOnce([firstRule, secondRule])
-      await filter.onFetch?.([sharingRulesInstance])
+      await filter.onFetch?.([sharingRulesInstance, instanceToIgnore])
     })
     it('should add author annotations to sharing rules', async () => {
       expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual('secondRuler')
       expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('2021-10-19T06:41:10.000Z')
+    })
+    it('should leave rules with no information as they are', async () => {
+      expect(instanceToIgnore.annotations[CORE_ANNOTATIONS.CHANGED_BY]).not.toBeDefined()
+      expect(instanceToIgnore.annotations[CORE_ANNOTATIONS.CHANGED_AT]).not.toBeDefined()
     })
   })
   describe('failure', () => {

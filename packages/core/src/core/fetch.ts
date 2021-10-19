@@ -150,7 +150,7 @@ const findNestedElementPath = (
 )
 
 type ChangeTransformFunction = (sourceChange: FetchChange) => Promise<FetchChange[]>
-export const toChangesWithPath = (
+const toChangesWithPath = (
   serviceElementByFullName: (id: ElemID) => Promise<Element[]> | Element[]
 ): ChangeTransformFunction => (
   async change => {

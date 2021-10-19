@@ -36,7 +36,6 @@ import {
   FetchProgressEvents,
   getDetailedChanges,
   MergeErrorWithElements,
-  toChangesWithPath,
   fetchChangesFromWorkspace,
   getFetchAdapterAndServicesSetup,
 } from './core/fetch'
@@ -157,9 +156,7 @@ export const deploy = async (
     changedElements,
     [id => changedElements.has(id)]
   )).map(change => ({ change, serviceChanges: [change] }))
-    .flatMap(toChangesWithPath(
-      async name => collections.array.makeArray(await changedElements.get(name))
-    )).toArray()
+    .toArray()
   const errored = errors.length > 0
   return {
     success: !errored,

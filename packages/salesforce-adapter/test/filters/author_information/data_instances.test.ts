@@ -22,7 +22,7 @@ import mockClient from '../../client'
 import Connection from '../../../src/client/jsforce'
 import SalesforceClient from '../../../src/client/client'
 import { Filter } from '../../../src/filter'
-import data_instances from '../../../src/filters/author_information/data_instances'
+import dataInstances from '../../../src/filters/author_information/data_instances'
 import { defaultFilterContext } from '../../utils'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE } from '../../../src/constants'
 
@@ -71,7 +71,7 @@ describe('author information test', () => {
     })
     connection.metadata.list.mockResolvedValueOnce([objectProperties])
     connection.query.mockResolvedValue(TestCustomRecords)
-    filter = data_instances({ client, config: defaultFilterContext })
+    filter = dataInstances({ client, config: defaultFilterContext })
     await filter.onFetch?.([testInst])
   })
   it('should add annotations to to custom object instances', async () => {

@@ -23,7 +23,7 @@ import mockClient from '../../client'
 import Connection from '../../../src/client/jsforce'
 import SalesforceClient from '../../../src/client/client'
 import { Filter, FilterResult } from '../../../src/filter'
-import custom_objects, { WARNING_MESSAGE } from '../../../src/filters/author_information/custom_objects'
+import customObjects, { WARNING_MESSAGE } from '../../../src/filters/author_information/custom_objects'
 import { defaultFilterContext } from '../../utils'
 import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
 import { API_NAME, CUSTOM_OBJECT } from '../../../src/constants'
@@ -76,7 +76,7 @@ describe('author information test', () => {
     ({ connection, client } = mockClient())
     connection.metadata.list.mockResolvedValueOnce([objectProperties])
     connection.metadata.list.mockResolvedValueOnce([fieldProperties, nonExistentFieldProperties])
-    filter = custom_objects({ client, config: defaultFilterContext })
+    filter = customObjects({ client, config: defaultFilterContext })
     customObject = new ObjectType({
       elemID: new ElemID('salesforce', 'Custom__c'),
       annotations: { metadataType: CUSTOM_OBJECT, [API_NAME]: 'Custom__c' },

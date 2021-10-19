@@ -42,19 +42,11 @@ describe('author information test', () => {
     createdDate: 'created_date',
     lastModifiedByName: 'secondRuler',
     lastModifiedDate: '2021-10-19T06:41:10.000Z' })
-  // const checkElementAnnotations = (object: Element, properties: FileProperties): void => {
-  //   expect(object.annotations[CORE_ANNOTATIONS.CREATED_BY]).toEqual(properties.createdByName)
-  //   expect(object.annotations[CORE_ANNOTATIONS.CREATED_AT]).toEqual(properties.createdDate)
-  //   expect(object.annotations[CORE_ANNOTATIONS.CHANGED_BY]).t
-  // oEqual(properties.lastModifiedByName)
-  //   expect(object.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual(properties.lastModifiedDate)
-  // }
   const sharingRulesObjectType = new ObjectType({
     elemID: new ElemID('salesforce', 'SharingRules'),
     annotations: { [API_NAME]: 'SharingRules' },
     fields: {},
   })
-  // In order to test an object without author information in server.
 
   beforeEach(async () => {
     ({ connection, client } = mockClient())
@@ -68,32 +60,4 @@ describe('author information test', () => {
     expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY]).toEqual('secondRuler')
     expect(sharingRulesInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('2021-10-19T06:41:10.000Z')
   })
-  // it('should return a warning', async () => {
-  //   connection.metadata.list.mockImplementation(() => {
-  //     throw new Error()
-  //   })
-  //   const res = await filter.onFetch?.([customObject]) as FilterResult
-  //   const err = res.errors ?? []
-  //   expect(res.errors).toHaveLength(1)
-  //   expect(err[0]).toEqual({
-  //     severity: 'Warning',
-  //     message: WARNING_MESSAGE,
-  //   })
-  // })
-  // describe('when feature is disabled', () => {
-  //   it('should not add any annotations', async () => {
-  //     filter = authorInformation({
-  //       client,
-  //       config: {
-  //         ...defaultFilterContext,
-  //         fetchProfile: buildFetchProfile({ optionalFeatures: { authorInformation: false } }),
-  //       },
-  //     })
-  //     await filter.onFetch?.([customObject])
-  //     expect(customObject.annotations[CORE_ANNOTATIONS.CREATED_BY]).not.toBeDefined()
-  //     expect(customObject.annotations[CORE_ANNOTATIONS.CREATED_AT]).not.toBeDefined()
-  //     expect(customObject.annotations[CORE_ANNOTATIONS.CHANGED_BY]).not.toBeDefined()
-  //     expect(customObject.annotations[CORE_ANNOTATIONS.CHANGED_AT]).not.toBeDefined()
-  //   })
-  // })
 })

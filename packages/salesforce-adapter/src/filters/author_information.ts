@@ -13,16 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, Element, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, Field, InstanceElement, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { FileProperties } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { CUSTOM_FIELD, CUSTOM_OBJECT } from '../constants'
+import { CUSTOM_FIELD, CUSTOM_OBJECT, SHARING_RULES_TYPE } from '../constants'
 import { apiName, getAuthorAnnotations, isCustomObject, isInstanceOfCustomObject } from '../transformers/transformer'
 import { FilterCreator, FilterWith } from '../filter'
 import SalesforceClient from '../client/client'
-import { conditionQueries, ensureSafeFilterFetch, queryClient } from './utils'
+import { conditionQueries, ensureSafeFilterFetch, isInstanceOfType, queryClient } from './utils'
 
 const { awu } = collections.asynciterable
 type AwuIterable<T> = collections.asynciterable.AwuIterable<T>
@@ -31,7 +31,9 @@ type FilePropertiesMap = Record<string, FileProperties>
 type FieldFileNameParts = {fieldName: string; objectName: string}
 const log = logger(module)
 const GET_ID_AND_NAMES_OF_USERS_QUERY = 'SELECT Id,Name FROM User'
+const SHARING_RULES_API_NAMES = ['SharingCriteriaRule', 'SharingGuestRule', 'SharingOwnerRule']
 
+const isSharingRulesInstance = isInstanceOfType(SHARING_RULES_TYPE)
 const getFieldNameParts = (fileProperties: FileProperties): FieldFileNameParts =>
   ({ fieldName: fileProperties.fullName.split('.')[1],
     objectName: fileProperties.fullName.split('.')[0] } as FieldFileNameParts)
@@ -61,6 +63,17 @@ const addAuthorAnnotationsToFields = (
       fileProp,
       getObjectFieldByFileProperties(fileProp, object)
     ))
+}
+
+const getSharingRulesFileProperties = async (client: SalesforceClient):
+  Promise<FileProperties[]> => {
+  const { result, errors } = await client.listMetadataObjects(
+    SHARING_RULES_API_NAMES.map(ruleType => ({ type: ruleType }))
+  )
+  if (errors && errors.length > 0) {
+    log.warn(`Encountered errors while listing file properties for CustomObjects: ${errors}`)
+  }
+  return result
 }
 
 const getCustomObjectFileProperties = async (client: SalesforceClient):
@@ -127,9 +140,25 @@ const moveInstancesAuthorFieldsToAnnotations = (
   instances.forEach(instance => moveAuthorFieldsToAnnotations(instance, IDToNameMap))
 }
 
+
+const fetchAllSharingRules = async (
+  client: SalesforceClient
+): Promise<Record<string, FileProperties[]>> => {
+  const allRules = await getSharingRulesFileProperties(client)
+  return _.groupBy(allRules.flatMap(file => file),
+    fileProp => getFieldNameParts(fileProp).objectName)
+}
+
+const getLastSharingRuleFileProperties = (
+  sharingRules: InstanceElement,
+  sharingRulesMap: Record<string, FileProperties[]>,
+): FileProperties =>
+  _.sortBy(sharingRulesMap[sharingRules.value.fullName],
+    fileProp => Date.parse(fileProp.lastModifiedDate)).reverse()[0]
+
 export const WARNING_MESSAGE = 'Encountered an error while trying to populate author information in some of the Salesforce configuration elements.'
 
-/**
+/*
  * add author information to object types, and data instance elements.
  */
 const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
@@ -151,6 +180,21 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
         .toArray() as InstanceElement[]
       const IDToNameMap = await getIDToNameMap(client, customObjectInstances)
       moveInstancesAuthorFieldsToAnnotations(customObjectInstances, IDToNameMap)
+
+      const sharingRulesMap = await fetchAllSharingRules(client)
+      const sharingRulesInstances = await (awu(elements)
+        .filter(isInstanceElement)
+        .filter(isSharingRulesInstance)
+        .toArray())
+      sharingRulesInstances.forEach(sharingRules => {
+        const lastRuleFileProp = getLastSharingRuleFileProperties(sharingRules, sharingRulesMap)
+        if (!_.isUndefined(lastRuleFileProp)) {
+          const ruleAuthorInformation = getAuthorAnnotations(lastRuleFileProp)
+          delete ruleAuthorInformation[CORE_ANNOTATIONS.CREATED_AT]
+          delete ruleAuthorInformation[CORE_ANNOTATIONS.CREATED_BY]
+          sharingRules.annotate(getAuthorAnnotations(lastRuleFileProp))
+        }
+      })
     },
   }),
 })

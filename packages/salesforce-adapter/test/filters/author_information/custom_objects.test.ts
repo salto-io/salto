@@ -27,7 +27,9 @@ import { defaultFilterContext } from '../../utils'
 import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
 import { API_NAME, CUSTOM_OBJECT } from '../../../src/constants'
 
-describe('author information test', () => {
+jest.setTimeout(22222222)
+
+describe('custom objects author information test', () => {
   let filter: Filter
   let client: SalesforceClient
   let connection: MockInterface<Connection>
@@ -89,8 +91,9 @@ describe('author information test', () => {
     checkElementAnnotations(customObject, objectProperties)
     checkElementAnnotations(customObject.fields.StringField__c, fieldProperties)
   })
-  it('should return a warning', async () => {
-    connection.metadata.list.mockImplementation(() => {
+  it('should return a warning on failure', async () => {
+    connection.metadata.list.mockReset()
+    connection.metadata.list.mockImplementationOnce(() => {
       throw new Error()
     })
     const res = await filter.onFetch?.([customObject]) as FilterResult

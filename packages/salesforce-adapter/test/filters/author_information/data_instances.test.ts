@@ -26,7 +26,7 @@ import dataInstances from '../../../src/filters/author_information/data_instance
 import { defaultFilterContext } from '../../utils'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE } from '../../../src/constants'
 
-describe('author information test', () => {
+describe('data instances author information test', () => {
   let filter: Filter
   let client: SalesforceClient
   let connection: MockInterface<Connection>

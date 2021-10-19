@@ -25,7 +25,7 @@ import sharingRules from '../../../src/filters/author_information/sharing_rules'
 import { defaultFilterContext } from '../../utils'
 import { API_NAME } from '../../../src/constants'
 
-describe('author information test', () => {
+describe('sharing rules author information test', () => {
   let filter: Filter
   let client: SalesforceClient
   let connection: MockInterface<Connection>

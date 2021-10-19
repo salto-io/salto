@@ -52,7 +52,7 @@ describe('pageByOffset', () => {
         paginationFuncCreator: getWithOffsetAndLimit,
         customEntryExtractor: removeScopedObjects,
       })
-      responses = await toArrayAsync(await paginator(args, extractPageEntriesByNestedField()))
+      responses = await toArrayAsync(paginator(args, extractPageEntriesByNestedField()))
     })
     it('should omit the scoped entities from the response', () => {
       expect(responses).toHaveLength(1)
@@ -79,7 +79,7 @@ describe('pageByOffset', () => {
         paginationFuncCreator: getWithOffsetAndLimit,
         customEntryExtractor: removeScopedObjects,
       })
-      responses = await toArrayAsync(await paginator(args, extractPageEntriesByNestedField()))
+      responses = await toArrayAsync(paginator(args, extractPageEntriesByNestedField()))
     })
     it('should return an empty result', () => {
       expect(responses).toHaveLength(0)

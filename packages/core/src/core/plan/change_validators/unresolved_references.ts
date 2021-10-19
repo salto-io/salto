@@ -38,7 +38,7 @@ export const changeValidator: ChangeValidator = async changes => (
   awu(changes)
     .map(getChangeElement)
     .map(async element => {
-      const unresolvedReferences = await getUnresolvedReferences(element)
+      const unresolvedReferences = getUnresolvedReferences(element)
       if (unresolvedReferences.length === 0) {
         return undefined
       }

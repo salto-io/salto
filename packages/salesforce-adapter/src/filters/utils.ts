@@ -175,13 +175,13 @@ export const apiNameParts = async (elem: Element): Promise<string[]> =>
 export const parentApiName = async (elem: Element): Promise<string> =>
   (await apiNameParts(elem))[0]
 
-export const addObjectParentReference = (instance: InstanceElement,
-  { elemID: objectID }: ObjectType): void => {
+export const addElementParentReference = (instance: InstanceElement,
+  { elemID }: Element): void => {
   const instanceDeps = getParents(instance)
-  if (instanceDeps.filter(isReferenceExpression).some(ref => ref.elemID.isEqual(objectID))) {
+  if (instanceDeps.filter(isReferenceExpression).some(ref => ref.elemID.isEqual(elemID))) {
     return
   }
-  instanceDeps.push(new ReferenceExpression(objectID))
+  instanceDeps.push(new ReferenceExpression(elemID))
   instance.annotations[CORE_ANNOTATIONS.PARENT] = instanceDeps
 }
 

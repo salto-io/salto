@@ -100,12 +100,12 @@ describe('local workspace', () => {
     it('should return current folder if salto.config exists in it', async () => {
       mockExists.mockResolvedValue(true)
       const workspacePath = await locateWorkspaceRoot('/some/path')
-      await expect(workspacePath).toEqual('/some/path')
+      expect(workspacePath).toEqual('/some/path')
     })
     it('should find the corret folder in which salto.config exists in path', async () => {
       mockExists.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
       const workspacePath = await locateWorkspaceRoot('/some/path')
-      await expect(workspacePath).toEqual('/some')
+      expect(workspacePath).toEqual('/some')
     })
   })
 

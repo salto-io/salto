@@ -198,7 +198,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ? createServerTimeElements(serverTime)
       : []
 
-    const dataElementsPromise = await getDataElements(this.client, fetchQuery,
+    const dataElementsPromise = getDataElements(this.client, fetchQuery,
       this.getElemIdFunc)
 
     const getCustomObjectsResult = this.client.getCustomObjects(

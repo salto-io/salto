@@ -330,7 +330,7 @@ const getEntriesForType = async (
     const args = computeGetArgs(requestWithDefaults, contextElements, requestContext)
 
     const results = (await Promise.all(args.map(
-      async getArgs => ((await toArrayAsync(await paginator(
+      async getArgs => ((await toArrayAsync(paginator(
         getArgs,
         extractPageEntriesByNestedField(nestedFieldDetails?.field.name),
       ))).flat())

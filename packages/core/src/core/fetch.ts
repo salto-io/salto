@@ -589,7 +589,7 @@ const createFetchChanges = async ({
 
   const configsMerge = await mergeElements(awu(updatedConfigs.flatMap(c => c.config)))
 
-  const errorMessages = await awu(await configsMerge.errors.entries())
+  const errorMessages = await awu(configsMerge.errors.entries())
     .flatMap(err => err.value)
     .map(err => err.message)
     .toArray()

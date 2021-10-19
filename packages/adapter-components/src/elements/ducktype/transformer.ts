@@ -83,7 +83,7 @@ export const getTypeAndInstances = async ({
     const getArgs = computeGetArgs(requestWithDefaults, contextElements)
     return (await Promise.all(
       getArgs.map(async args => (await toArrayAsync(
-        await paginator(args, page => makeArray(page) as ResponseValue[])
+        paginator(args, page => makeArray(page) as ResponseValue[])
       )).flat())
     )).flat()
   }

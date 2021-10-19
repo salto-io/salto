@@ -242,7 +242,7 @@ export const fieldValueSuggestions = async (params: SuggestionsParams): Promise<
   )
   const valueToken = _.last(params.tokens) || ''
   return (valueField && valueFieldType)
-    ? awu(await await valueSuggestions(
+    ? awu(await valueSuggestions(
       attrName,
       valueField,
       valueFieldType,

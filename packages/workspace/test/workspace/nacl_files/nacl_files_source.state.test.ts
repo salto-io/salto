@@ -446,8 +446,8 @@ describe('Nacl Files Source', () => {
         expect(typeElement).toMatchObject(newObjectTypeObjectMatcher)
       })
       it('should remove multiple files correctly', async () => {
-        const changes = await (await naclFileSourceTest
-          .removeNaclFiles('file1.nacl', 'file2.nacl')).changes
+        const { changes } = await naclFileSourceTest
+          .removeNaclFiles('file1.nacl', 'file2.nacl')
         expect(changes).toMatchObject([
           {
             action: 'remove',

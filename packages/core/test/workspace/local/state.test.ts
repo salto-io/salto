@@ -240,7 +240,7 @@ describe('local state', () => {
     const state = localState('full', '', remoteMapCreator)
     await state.overridePathIndex([mockElement])
     const entries = await awu((await state.getPathIndex()).entries()).toArray()
-    expect(entries).toEqual(await pathIndex.getElementsPathHints([mockElement]))
+    expect(entries).toEqual(pathIndex.getElementsPathHints([mockElement]))
   })
 
   it('should update path index when asked to', async () => {
@@ -249,7 +249,7 @@ describe('local state', () => {
     // This just tests that we reach the function.
     await state.updatePathIndex([mockElement], [])
     const entries = await awu((await state.getPathIndex()).entries()).toArray()
-    expect(entries).toEqual(await pathIndex.getElementsPathHints([mockElement]))
+    expect(entries).toEqual(pathIndex.getElementsPathHints([mockElement]))
   })
 
   it('should throw an error if the state nacl file is not valid', async () => {

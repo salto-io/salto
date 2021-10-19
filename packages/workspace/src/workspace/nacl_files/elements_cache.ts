@@ -276,12 +276,12 @@ export const createMergeManager = async (flushables: Flushable[],
           potentialDeletedIds: deleted2 } = getChangeAndDeleteIds(src2Changes)
         deleted1.forEach(d => potentialDeletedIds.add(d))
         deleted2.forEach(d => potentialDeletedIds.add(d))
-        src1ElementsToMerge = await awu(await getElementsToMergeFromChanges(
+        src1ElementsToMerge = awu(await getElementsToMergeFromChanges(
           src1Changes,
           src2ChangeIDs,
-          src2,
+          src2
         ))
-        src2ElementsToMerge = await awu(await getElementsToMergeFromChanges(
+        src2ElementsToMerge = awu(await getElementsToMergeFromChanges(
           src2Changes, src1ChangeIDs, src1,
         ))
       } else {

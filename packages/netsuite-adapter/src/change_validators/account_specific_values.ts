@@ -57,7 +57,7 @@ const changeValidator: ChangeValidator = async changes => (
       if (!isCustomType(instance.refType.elemID)) {
         return undefined
       }
-      if (!(await hasAccountSpecificValue(instance))) {
+      if (!hasAccountSpecificValue(instance)) {
         return undefined
       }
       // We identified ACCOUNT_SPECIFIC_VALUE only in workflows and script related types,

@@ -23,7 +23,7 @@ describe('referenceBySelfLinkFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
   beforeEach(async () => {
     const { client, paginator } = mockClient()
-    filter = await referenceBySelfLinkFilter({
+    filter = referenceBySelfLinkFilter({
       client,
       paginator,
       config: await getDefaultAdapterConfig(),

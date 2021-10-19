@@ -95,7 +95,7 @@ describe('custom objects author information test', () => {
   })
   describe('failure', () => {
     it('should return a warning', async () => {
-      connection.metadata.list.mockImplementationOnce(() => {
+      connection.metadata.list.mockImplementation(() => {
         throw new Error()
       })
       const res = await filter.onFetch?.([customObject]) as FilterResult

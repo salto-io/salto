@@ -31,7 +31,7 @@ const log = logger(module)
 const SHARING_RULES_API_NAMES = ['SharingCriteriaRule', 'SharingGuestRule', 'SharingOwnerRule']
 
 const isSharingRulesInstance = isInstanceOfType(SHARING_RULES_TYPE)
-const getFieldNameParts = (fileProperties: FileProperties): FieldFileNameParts =>
+const getRuleNameParts = (fileProperties: FileProperties): FieldFileNameParts =>
   ({ fieldName: fileProperties.fullName.split('.')[1],
     objectName: fileProperties.fullName.split('.')[0] } as FieldFileNameParts)
 
@@ -52,7 +52,7 @@ const fetchAllSharingRules = async (
 ): Promise<Record<string, FileProperties[]>> => {
   const allRules = await getSharingRulesFileProperties(client)
   return _.groupBy(allRules.flatMap(file => file),
-    fileProp => getFieldNameParts(fileProp).objectName)
+    fileProp => getRuleNameParts(fileProp).objectName)
 }
 
 const getLastSharingRuleFileProperties = (

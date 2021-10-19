@@ -53,7 +53,6 @@ describe('sharing rules author information test', () => {
     filter = sharingRules({ client, config: defaultFilterContext })
     sharingRulesInstance = new InstanceElement('name', sharingRulesObjectType)
     sharingRulesInstance.value.fullName = 'Account'
-    await filter.onFetch?.([sharingRulesInstance])
   })
   describe('success', () => {
     beforeEach(async () => {
@@ -67,7 +66,7 @@ describe('sharing rules author information test', () => {
   })
   describe('failure', () => {
     it('should return a warning', async () => {
-      connection.metadata.list.mockImplementationOnce(() => {
+      connection.metadata.list.mockImplementation(() => {
         throw new Error()
       })
       const res = await filter.onFetch?.([sharingRulesInstance]) as FilterResult

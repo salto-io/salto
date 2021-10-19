@@ -73,7 +73,6 @@ describe('data instances author information test', () => {
   })
   describe('success', () => {
     beforeEach(async () => {
-      connection.metadata.list.mockResolvedValueOnce([objectProperties])
       connection.query.mockResolvedValue(TestCustomRecords)
       await filter.onFetch?.([testInst])
     })
@@ -83,7 +82,7 @@ describe('data instances author information test', () => {
   })
   describe('failure', () => {
     it('should return a warning', async () => {
-      connection.metadata.list.mockImplementationOnce(() => {
+      connection.query.mockImplementation(() => {
         throw new Error()
       })
       const res = await filter.onFetch?.([testInst]) as FilterResult

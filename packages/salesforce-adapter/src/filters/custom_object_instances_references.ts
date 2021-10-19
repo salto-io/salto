@@ -21,7 +21,7 @@ import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoErro
 import { FilterCreator, FilterResult } from '../filter'
 import { apiName, isInstanceOfCustomObject, isCustomObject } from '../transformers/transformer'
 import { FIELD_ANNOTATIONS, KEY_PREFIX, KEY_PREFIX_LENGTH } from '../constants'
-import { isLookupField, isMasterDetailField } from './utils'
+import { addElementParentReference, isLookupField, isMasterDetailField } from './utils'
 import { DataManagement } from '../fetch_profile/data_management'
 
 const { makeArray } = collections.array
@@ -191,7 +191,7 @@ Alternatively, you can exclude ${type} from the data management configuration in
   ]
 }
 
-const isReferenceField = (field?: Field): boolean => (
+const isReferenceField = (field?: Field): field is Field => (
   isDefined(field) && (isLookupField(field) || isMasterDetailField(field))
 )
 
@@ -251,6 +251,7 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
       }
       reverseReferencesMap.get(await serializeInstanceInternalID(refTarget))
         .add(await serializeInstanceInternalID(instance))
+      addElementParentReference(instance, refTarget)
       return new ReferenceExpression(refTarget.elemID)
     }
 

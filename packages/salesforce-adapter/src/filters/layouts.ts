@@ -21,7 +21,7 @@ import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { multiIndex, collections } from '@salto-io/lowerdash'
 import { apiName, isCustomObject } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
-import { addObjectParentReference, isInstanceOfType, buildElementsSourceForFetch } from './utils'
+import { addElementParentReference, isInstanceOfType, buildElementsSourceForFetch } from './utils'
 import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
 import { getObjectDirectoryPath } from './custom_objects'
 
@@ -105,7 +105,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
         return
       }
 
-      addObjectParentReference(layout, layoutObj)
+      addElementParentReference(layout, layoutObj)
       await fixLayoutPath(layout, layoutObj, layoutName)
     })
   },

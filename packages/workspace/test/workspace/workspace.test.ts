@@ -20,12 +20,14 @@ import {
   Values, CORE_ANNOTATIONS, isInstanceElement, isType, isField, PrimitiveTypes,
   isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType,
   Value, TypeReference, INSTANCE_ANNOTATIONS, ReferenceExpression, createRefToElmWithValue,
+  SaltoError,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
 import { METADATA_TYPE, INTERNAL_ID_ANNOTATION } from '@salto-io/salesforce-adapter/dist/src/constants'
 import { collections } from '@salto-io/lowerdash'
-import { ValidationError } from '../../src/validator'
+import { mockFunction, MockInterface } from '@salto-io/test-utils'
+import { InvalidValueValidationError, ValidationError } from '../../src/validator'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
 import { ConfigSource } from '../../src/workspace/config_source'
 import { naclFilesSource, NaclFilesSource, ChangeSet } from '../../src/workspace/nacl_files'
@@ -36,7 +38,7 @@ import { DirectoryStore } from '../../src/workspace/dir_store'
 import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
   COMMON_ENV_PREFIX, UnresolvedElemIDs, UpdateNaclFilesResult, isValidEnvName } from '../../src/workspace/workspace'
 import { DeleteCurrentEnvError, UnknownEnvError, EnvDuplicationError,
-  ServiceDuplicationError, InvalidEnvNameError } from '../../src/workspace/errors'
+  ServiceDuplicationError, InvalidEnvNameError, Errors } from '../../src/workspace/errors'
 import { StaticFilesSource } from '../../src/workspace/static_files'
 import * as dump from '../../src/parser/dump'
 import { mockDirStore } from '../common/nacl_file_store'
@@ -56,6 +58,12 @@ const changedNaclFile = {
   filename: 'file.nacl',
   buffer: `type salesforce.lead {
     salesforce.text new_base {}
+  }`,
+}
+const changedConfFile = {
+  filename: 'salto.config/adapters/salesforce.nacl',
+  buffer: `salesforce {
+    a = 2
   }`,
 }
 const emptyNaclFile = {
@@ -83,10 +91,24 @@ const mockWorkspaceConfigSource = (conf?: Values,
   setWorkspaceConfig: jest.fn(),
 })
 
-const mockAdaptersConfigSource = (): AdaptersConfigSource => ({
-  getAdapter: jest.fn(),
-  setAdapter: jest.fn(),
-  getElementNaclFiles: jest.fn(),
+const mockAdaptersConfigSource = (): MockInterface<AdaptersConfigSource> => ({
+  getAdapter: mockFunction<AdaptersConfigSource['getAdapter']>(),
+  setAdapter: mockFunction<AdaptersConfigSource['setAdapter']>(),
+  getElementNaclFiles: mockFunction<AdaptersConfigSource['getElementNaclFiles']>(),
+  getErrors: mockFunction<AdaptersConfigSource['getErrors']>().mockResolvedValue(new Errors({
+    parse: [],
+    validation: [],
+    merge: [],
+  })),
+  getSourceRanges: mockFunction<AdaptersConfigSource['getSourceRanges']>().mockResolvedValue([]),
+  getNaclFile: mockFunction<AdaptersConfigSource['getNaclFile']>(),
+  setNaclFiles: mockFunction<AdaptersConfigSource['setNaclFiles']>(),
+  flush: mockFunction<AdaptersConfigSource['flush']>(),
+  getElements: mockFunction<AdaptersConfigSource['getElements']>(),
+  getParsedNaclFile: mockFunction<AdaptersConfigSource['getParsedNaclFile']>(),
+  getSourceMap: mockFunction<AdaptersConfigSource['getSourceMap']>(),
+  listNaclFiles: mockFunction<AdaptersConfigSource['listNaclFiles']>(),
+  isConfigFile: mockFunction<AdaptersConfigSource['isConfigFile']>(),
 })
 
 const mockCredentialsSource = (): ConfigSource => ({
@@ -335,6 +357,51 @@ describe('workspace', () => {
     })
   })
 
+  describe('getElementSourceOfPath', () => {
+    let workspace: Workspace
+    let adaptersConfig: MockInterface<AdaptersConfigSource>
+    let mockNaclFilesSource: NaclFilesSource
+    const configElemId = new ElemID('adapter', 'config')
+    const envsElemId = new ElemID('adapter', 'envs')
+
+    beforeEach(async () => {
+      adaptersConfig = mockAdaptersConfigSource()
+      adaptersConfig.getElements.mockReturnValue(createInMemoryElementSource([
+        new ObjectType({ elemID: configElemId }),
+      ]))
+      mockNaclFilesSource = createMockNaclFileSource([new ObjectType({ elemID: envsElemId })])
+      workspace = await createWorkspace(
+        undefined,
+        undefined,
+        undefined,
+        adaptersConfig,
+        undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: mockNaclFilesSource,
+            state: createState([]),
+          },
+        },
+      )
+    })
+
+    it('when is config file should return the adapters config elements', async () => {
+      adaptersConfig.isConfigFile.mockReturnValue(true)
+      const ids = await awu(await (await workspace.getElementSourceOfPath('somePath')).list()).map(id => id.getFullName()).toArray()
+      expect(ids).toEqual([configElemId.getFullName()])
+    })
+
+    it('when is not a config file should return the envs elements', async () => {
+      adaptersConfig.isConfigFile.mockReturnValue(false)
+      const ids = await awu(await (await workspace.getElementSourceOfPath('somePath')).list()).map(id => id.getFullName()).toArray()
+      expect(ids).toEqual([envsElemId.getFullName()])
+    })
+  })
+
   describe('sourceMap', () => {
     let workspace: Workspace
     beforeAll(async () => {
@@ -552,6 +619,15 @@ describe('workspace', () => {
         expect(wsError.sourceFragments).toHaveLength(0)
       })
     })
+
+    it('should use adapters config source for errors in the configuration', async () => {
+      const mockAdaptersConfig = mockAdaptersConfigSource()
+      const ws = await createWorkspace(undefined, undefined, undefined, mockAdaptersConfig)
+      const error = new InvalidValueValidationError({ elemID: new ElemID('someID'), value: 'val', fieldName: 'field', expectedValue: 'expVal' });
+      (error as SaltoError).source = 'config'
+      await ws.transformError(error)
+      expect(mockAdaptersConfig.getSourceRanges).toHaveBeenCalled()
+    })
   })
 
   describe('removeNaclFiles', () => {
@@ -686,11 +762,21 @@ describe('workspace', () => {
     })
     const multiLocElemID = new ElemID('multi', 'loc')
     const mutliLocObject = new ObjectType({ elemID: multiLocElemID, annotations: { b: 1 } })
+    let mockAdaptersConfig: MockInterface<AdaptersConfigSource>
 
     beforeAll(async () => {
-      workspace = await createWorkspace(naclFileStore)
+      mockAdaptersConfig = mockAdaptersConfigSource()
+      mockAdaptersConfig.isConfigFile.mockImplementation(
+        filePath => filePath === changedConfFile.filename
+      )
+      workspace = await createWorkspace(naclFileStore, undefined, undefined, mockAdaptersConfig)
       await workspace.elements()
-      changes = await workspace.setNaclFiles([changedNaclFile, newNaclFile, emptyNaclFile])
+      changes = await workspace.setNaclFiles([
+        changedNaclFile,
+        newNaclFile,
+        emptyNaclFile,
+        changedConfFile,
+      ])
       elemMap = await getElemMap(await workspace.elements())
     })
 
@@ -717,6 +803,11 @@ describe('workspace', () => {
       expect(mockSetNaclFileStore).toHaveBeenCalledWith(changedNaclFile)
     })
 
+    it('should call the adaptersConfigSource when the path is in the config dir', async () => {
+      expect(naclFileStore.set as jest.Mock).not.toHaveBeenCalledWith(changedConfFile)
+      expect(mockAdaptersConfig.setNaclFiles as jest.Mock).toHaveBeenCalledWith(changedConfFile)
+    })
+
     it('should return the correct changes', async () => {
       const primaryEnvChanges = changes.default.changes
       expect(primaryEnvChanges).toHaveLength(27)
@@ -731,6 +822,10 @@ describe('workspace', () => {
           after: mutliLocObject,
         },
       })
+    })
+
+    it('setNaclFiles without files should return empty changes', async () => {
+      expect(await workspace.setNaclFiles([])).toEqual({})
     })
 
     describe('on secondary envs', () => {
@@ -2453,8 +2548,8 @@ describe('workspace', () => {
       expect(credsSource.set).toHaveBeenCalledTimes(1)
       const instance = (credsSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
       expect(instance).toEqual(newCreds)
-      const path = (credsSource.set as jest.Mock).mock.calls[0][0] as string
-      expect(path).toEqual(`default/${services[0]}`)
+      const credsPath = (credsSource.set as jest.Mock).mock.calls[0][0] as string
+      expect(credsPath).toEqual(`default/${services[0]}`)
     })
   })
 
@@ -2963,6 +3058,27 @@ describe('workspace', () => {
           await awu(await (await ws.elements(undefined, primarySourceName)).list()).toArray()
         ).toContainEqual(elemIDToMove)
       })
+    })
+  })
+
+  describe('getNaclFile', () => {
+    let ws: Workspace
+    let mockAdaptersConfig: MockInterface<AdaptersConfigSource>
+    beforeEach(async () => {
+      mockAdaptersConfig = mockAdaptersConfigSource()
+      ws = await createWorkspace(undefined, undefined, undefined, mockAdaptersConfig)
+    })
+
+    it('when the file is a config file should use the adapters config source', async () => {
+      mockAdaptersConfig.isConfigFile.mockReturnValue(true)
+      await ws.getNaclFile('someFile')
+      expect(mockAdaptersConfig.getNaclFile).toHaveBeenCalled()
+    })
+
+    it('when the file is not a config file should not use the adapters config source', async () => {
+      mockAdaptersConfig.isConfigFile.mockReturnValue(false)
+      await ws.getNaclFile('someFile')
+      expect(mockAdaptersConfig.getNaclFile).not.toHaveBeenCalled()
     })
   })
 })

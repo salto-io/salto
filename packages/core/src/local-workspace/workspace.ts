@@ -27,7 +27,8 @@ import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'
 import { createRemoteMapCreator } from './remote_map'
-import { adaptersConfigSource } from './adapters_config'
+import { getAdaptersConfigTypes } from '../core/adapters'
+import { buildLocalAdaptersConfigSource } from './adapters_config'
 
 const { configSource } = cs
 const { FILE_EXTENSION, naclFilesSource, ENVS_PREFIX } = nacl
@@ -197,11 +198,12 @@ export const loadLocalWorkspace = async (
   const workspaceConfig = await workspaceConfigSource(baseDir, undefined)
   const cacheDirName = path.join(workspaceConfig.localStorage, CACHE_DIR_NAME)
   const remoteMapCreator = createRemoteMapCreator(cacheDirName)
-  const adaptersConfig = await adaptersConfigSource(
+  const adaptersConfig = await buildLocalAdaptersConfigSource(
     baseDir,
     workspaceConfig.localStorage,
     remoteMapCreator,
     persistent,
+    await getAdaptersConfigTypes(),
     configOverrides,
   )
   const envs = (await workspaceConfig.getWorkspaceConfig()).envs.map(e => e.name)
@@ -274,11 +276,12 @@ Promise<Workspace> => {
   const remoteMapCreator = createRemoteMapCreator(path.join(localStorage, CACHE_DIR_NAME))
   const persistentMode = true
 
-  const adaptersConfig = await adaptersConfigSource(
+  const adaptersConfig = await buildLocalAdaptersConfigSource(
     baseDir,
     localStorage,
     remoteMapCreator,
-    persistentMode
+    persistentMode,
+    await getAdaptersConfigTypes(),
   )
   const credentials = credentialsSource(localStorage)
   const elemSources = await loadLocalElementsSources(

@@ -125,6 +125,7 @@ export const addAction: WorkspaceCommandAction<ServiceAddArgs> = async ({
   }
 
   await addAdapter(workspace, serviceName)
+  await workspace.flush()
   outputLine(formatServiceAdded(serviceName), output)
   return CliExitCode.Success
 }

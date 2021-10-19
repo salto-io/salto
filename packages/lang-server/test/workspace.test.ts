@@ -297,4 +297,20 @@ describe('workspace', () => {
 
     expect(arr).toEqual(['first', 'first', 'second', 'second'])
   })
+
+  describe('getElementSourceOfPath', () => {
+    let getElementSourceOfPathSpy: jest.SpyInstance
+    let workspace: EditorWorkspace
+
+    beforeEach(async () => {
+      const baseWs = await mockWorkspace()
+      getElementSourceOfPathSpy = jest.spyOn(baseWs, 'getElementSourceOfPath')
+      workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
+    })
+
+    it('should call the base workspace getElementSourceOfPath', async () => {
+      await workspace.getElementSourceOfPath(path.join(workspaceBaseDir, 'salto.config', 'adapters', 'file'))
+      expect(getElementSourceOfPathSpy).toHaveBeenCalledWith(path.join('salto.config', 'adapters', 'file'), false)
+    })
+  })
 })

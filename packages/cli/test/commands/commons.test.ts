@@ -16,6 +16,7 @@
 import { DetailedChange, ElemID, Value } from '@salto-io/adapter-api'
 import * as mocks from '../mocks'
 import { getAndValidateActiveServices } from '../../src/commands/common/services'
+import { validateAndSetEnv, EnvArg } from '../../src/commands/common/env'
 import { getConfigOverrideChanges } from '../../src/commands/common/config_override'
 
 describe('Commands commons tests', () => {
@@ -44,6 +45,14 @@ describe('Commands commons tests', () => {
 
     it('Should throw an error if input services were provided', () => {
       expect(() => getAndValidateActiveServices(mockWorkspace, ['wtfService'])).toThrow()
+    })
+  })
+  describe('validateAndSetEnv with workspace with no current environment', () => {
+    const mockWorkspace = mocks.mockWorkspace({ envs: [] })
+    const envArg: EnvArg = {}
+    const cliArgs = mocks.mockCliArgs()
+    it('Should throw an error if no environment is currently set', async () => {
+      await expect(validateAndSetEnv(mockWorkspace, envArg, cliArgs.output)).rejects.toThrow()
     })
   })
   describe('getConfigOverrideChanges', () => {

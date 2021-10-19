@@ -69,6 +69,7 @@ export default class Prompts {
   }
 
   private static readonly SERVICE_ADD_HELP = 'Use `salto service add <service-name>` to add services to the environment'
+  public static readonly ENV_CREATE_HELP = 'Use `salto env create <envName>` to create an environment'
 
   public static initCompleted(): string {
     return `Initiated empty workspace
@@ -159,6 +160,7 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
   public static readonly SERVICE_NAME_NOT_VALID = (serviceName: string, supportedServiceAdapters:string[]): string => `${serviceName} is not a valid service name, available service names are:\n${supportedServiceAdapters.join('\n')}`
   public static readonly WORKING_ON_ENV = 'The active environment is'
   public static readonly NO_CURRENT_ENV = 'No active environment is currently set'
+  public static readonly NO_ENVS = 'There are no environments in this workspace'
   public static readonly SET_ENV = 'Active environment is set to'
   public static readonly DELETED_ENV = (envName: string): string => `Deleted environment - ${envName}`
   public static readonly CREATED_ENV = (envName: string): string =>

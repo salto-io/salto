@@ -40,5 +40,8 @@ export const validateAndSetEnv = async (
       throw new CliError(CliExitCode.UserInputError)
     }
     await workspace.setCurrentEnv(envArg.env, false)
+  } else if (workspace.currentEnv() === undefined) {
+    errorOutputLine('No environment is currently set', cliOutput)
+    throw new CliError(CliExitCode.UserInputError)
   }
 }

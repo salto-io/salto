@@ -22,7 +22,7 @@ import {
 } from '../../../src/local-workspace/workspace_config'
 import * as mockDirStore from '../../../src/local-workspace/dir_store'
 import { WORKSPACE_CONFIG_NAME, ENVS_CONFIG_NAME, USER_CONFIG_NAME } from '../../../src/local-workspace/workspace_config_types'
-import { NoEnvsConfig, NoWorkspaceConfig } from '../../../src/local-workspace/errors'
+import { NoEnvsConfig, NoWorkspaceConfig, EnvsConfigError } from '../../../src/local-workspace/errors'
 
 jest.mock('../../../src/local-workspace/dir_store')
 describe('workspace local config', () => {
@@ -120,6 +120,44 @@ describe('workspace local config', () => {
       mockCreateDirStore.mockImplementation(() => noEnvsDirStore)
       const conf = await workspaceConfigSource('bla')
       await expect(conf.getWorkspaceConfig()).rejects.toThrow(new NoEnvsConfig())
+    })
+    it('should throw EnvsConfigError (missing name keyword)', async () => {
+      const envsErrorDirStore = mockDirStoreInstance({
+        [`${WORKSPACE_CONFIG_NAME}.nacl`]: 'workspace {}',
+        [`${ENVS_CONFIG_NAME}.nacl`]: `
+  envs {
+    envs = [
+      {
+        not_name = "default"
+      },
+      {
+        name = "env2"
+      },
+    ]
+  }`,
+      })
+      mockCreateDirStore.mockImplementation(() => envsErrorDirStore)
+      const conf = await workspaceConfigSource('bla')
+      await expect(conf.getWorkspaceConfig()).rejects.toThrow(new EnvsConfigError())
+    })
+    it('should throw EnvsConfigError (missing envs keyword)', async () => {
+      const envsErrorDirStore = mockDirStoreInstance({
+        [`${WORKSPACE_CONFIG_NAME}.nacl`]: 'workspace {}',
+        [`${ENVS_CONFIG_NAME}.nacl`]: `
+  envs {
+    not_envs = [
+      {
+        name = "default"
+      },
+      {
+        name = "env2"
+      },
+    ]
+  }`,
+      })
+      mockCreateDirStore.mockImplementation(() => envsErrorDirStore)
+      const conf = await workspaceConfigSource('bla')
+      await expect(conf.getWorkspaceConfig()).rejects.toThrow(new EnvsConfigError())
     })
     it('should throw no workspace Error', async () => {
       let times = 0

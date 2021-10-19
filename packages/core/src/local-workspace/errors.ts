@@ -26,3 +26,9 @@ export class NoEnvsConfig extends Error {
     super('cannot find envs config')
   }
 }
+
+export class EnvsConfigError extends Error {
+  constructor() {
+    super('envs config contains errors')
+  }
+}

@@ -22,7 +22,7 @@ import { getSaltoHome, CONFIG_DIR_NAME } from '../app_config'
 import { WORKSPACE_CONFIG_NAME, ENVS_CONFIG_NAME, EnvsConfig,
   USER_CONFIG_NAME, UserDataConfig, WorkspaceMetadataConfig, envsConfigInstance,
   userDataConfigInstance, workspaceMetadataConfigInstance } from './workspace_config_types'
-import { NoWorkspaceConfig, NoEnvsConfig } from './errors'
+import { NoWorkspaceConfig, NoEnvsConfig, EnvsConfigError } from './errors'
 
 
 export type WorkspaceConfigSource = wcs.WorkspaceConfigSource & {
@@ -60,6 +60,9 @@ export const workspaceConfigSource = async (
       }
       if (_.isUndefined(envs)) {
         throw new NoEnvsConfig()
+      }
+      if (envs.envs === undefined || envs.envs.map(e => Boolean(e.name)).includes(false)) {
+        throw new EnvsConfigError()
       }
       return {
         ...envs,

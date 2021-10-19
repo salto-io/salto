@@ -154,15 +154,16 @@ const getElemMap = async (
 
 describe('workspace', () => {
   describe('loadWorkspace', () => {
-    it('should fail if envs is empty', async () => {
+    it('should return envs=[] currentEnv=undefined', async () => {
       const noWorkspaceConfig = {
         getWorkspaceConfig: jest.fn().mockImplementation(() => ({ envs: [] })),
         setWorkspaceConfig: jest.fn(),
         getAdapter: jest.fn(),
         setAdapter: jest.fn(),
       }
-      await expect(createWorkspace(undefined, undefined, noWorkspaceConfig)).rejects
-        .toThrow(new Error('Workspace with no environments is illegal'))
+      const workspace = await createWorkspace(undefined, undefined, noWorkspaceConfig)
+      expect(workspace.envs()).toEqual([])
+      expect(workspace.currentEnv()).toBeUndefined()
     })
   })
   describe('elements', () => {

@@ -35,7 +35,7 @@ export const getAndValidateActiveServices = (
 ): string[] => {
   const workspaceServices = workspace.services()
   if (workspaceServices.length === 0) {
-    throw new Error(`No services are configured for env=${workspace.currentEnv()}. Use 'salto service add'.`)
+    throw new Error('No services are configured for the current env. Use \'salto service add\'.')
   }
   if (inputServices === undefined) {
     return [...workspaceServices]

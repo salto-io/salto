@@ -587,9 +587,10 @@ export const formatAddServiceFailed = (serviceName: string, errorMessage: string
 ].join('\n')
 
 export const formatEnvListItem = (envNames: ReadonlyArray<string>, currentEnv?: string): string => (
-  envNames
-    .map(name => `${name === currentEnv ? '*' : ' '} ${name}`)
-    .join('\n')
+  envNames.length > 0
+    ? envNames.map(name => `${name === currentEnv ? '*' : ' '} ${name}`).join('\n')
+    : `${Prompts.NO_ENVS}.
+${Prompts.ENV_CREATE_HELP}`
 )
 
 export const formatCurrentEnv = (envName?: string): string => (

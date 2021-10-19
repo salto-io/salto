@@ -211,11 +211,8 @@ export const loadWorkspace = async (
   const workspaceConfig = await config.getWorkspaceConfig()
   log.debug('Loading workspace with id: %s', workspaceConfig.uid)
 
-  if (_.isEmpty(workspaceConfig.envs)) {
-    throw new Error('Workspace with no environments is illegal')
-  }
   const envs = (): ReadonlyArray<string> => workspaceConfig.envs.map(e => e.name)
-  const currentEnv = (): string => workspaceConfig.currentEnv ?? workspaceConfig.envs[0].name
+  const currentEnv = (): string => workspaceConfig.currentEnv ?? workspaceConfig.envs[0]?.name
   const getRemoteMapNamespace = (
     namespace: string, env?: string
   ): string => `workspace-${env || currentEnv()}-${namespace}`
@@ -685,7 +682,7 @@ export const loadWorkspace = async (
   }
   const pickServices = (names?: ReadonlyArray<string>): ReadonlyArray<string> =>
     (_.isUndefined(names) ? services() : services().filter(s => names.includes(s)))
-  const credsPath = (service: string): string => path.join(currentEnv(), service)
+  const credsPath = (service: string): string => path.join(currentEnv() ?? '', service)
   return {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,

@@ -15,7 +15,7 @@
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import filterCreator, { EMPLOYEE_NAME_QUERY, SYSTEM_NOTE_QUERY } from '../../src/filters/author_information'
+import filterCreator, { EMPLOYEE_NAME_QUERY } from '../../src/filters/author_information'
 import { NETSUITE } from '../../src/constants'
 import NetsuiteClient from '../../src/client/client'
 import { FilterOpts } from '../../src/filter'
@@ -68,9 +68,15 @@ describe('netsuite author information', () => {
 
   it('should query information from api', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
+    const systemNotesQuery = "SELECT recordid, recordtypeid, name FROM systemnote WHERE ((recordid = '1') AND recordtypeid = '-112') or ((recordid = '1') AND recordtypeid = '-123') ORDER BY date DESC"
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
-    expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, SYSTEM_NOTE_QUERY)
+    expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, systemNotesQuery)
     expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('should not query at all if there is no elements', async () => {
+    await filterCreator(filterOpts).onFetch?.([])
+    expect(runSuiteQLMock).not.toHaveBeenCalled()
   })
 
   it('should add names to elements', async () => {

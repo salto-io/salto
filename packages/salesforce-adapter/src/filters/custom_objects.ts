@@ -50,7 +50,7 @@ import {
 } from '../transformers/transformer'
 import {
   id, addApiName, addMetadataType, addLabel, getNamespace, boolValue,
-  buildAnnotationsObjectType, addObjectParentReference, apiNameParts,
+  buildAnnotationsObjectType, addElementParentReference, apiNameParts,
   parentApiName,
   getDataFromChanges,
   isInstanceOfTypeChange,
@@ -629,7 +629,7 @@ const fixDependentInstancesPathAndSetParent = async (
         return
       }
       await setDependingInstancePath(instance, customObj)
-      addObjectParentReference(instance, customObj)
+      addElementParentReference(instance, customObj)
     })
 }
 

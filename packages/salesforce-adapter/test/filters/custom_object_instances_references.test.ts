@@ -162,6 +162,45 @@ describe('Custom Object Instances References filter', () => {
       },
     }
   )
+  const toParentName = 'toParentrName'
+  const toParentElemID = new ElemID(SALESFORCE, toParentName)
+  const toParentObj = new ObjectType({
+    elemID: toParentElemID,
+    annotations: {
+      [API_NAME]: toParentName,
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+    },
+    fields: {
+      Id: {
+        refType: stringType,
+        annotations: {
+          [CORE_ANNOTATIONS.REQUIRED]: false,
+          [LABEL]: 'Id',
+          [API_NAME]: 'Id',
+        },
+      },
+      MasterDetailToParent: {
+        refType: Types.primitiveDataTypes.MasterDetail,
+        annotations: {
+          [LABEL]: 'detailOfToParent',
+          [API_NAME]: 'MasterDetailToParent',
+          referenceTo: [
+            masterName,
+          ],
+        },
+      },
+      MasterDetailToParent2: {
+        refType: Types.primitiveDataTypes.MasterDetail,
+        annotations: {
+          [LABEL]: 'detailOfToParent2',
+          [API_NAME]: 'MasterDetailToParent2',
+          referenceTo: [
+            masterName,
+          ],
+        },
+      },
+    },
+  })
 
   beforeAll(() => {
     client = mockClient().client
@@ -224,6 +263,15 @@ describe('Custom Object Instances References filter', () => {
         MasterDetailExample: '',
       },
     )
+    const masterToAnotherInstanceName = 'masterToAnotherInstance'
+    const masterToAnotherInstance = new InstanceElement(
+      masterToAnotherInstanceName,
+      masterObj,
+      {
+        Id: 'masterToAnotherId',
+        MasterDetailExample: '',
+      },
+    )
     const duplicateInstName = 'duplicateInstance'
     const firstDupInst = new InstanceElement(
       duplicateInstName,
@@ -258,16 +306,59 @@ describe('Custom Object Instances References filter', () => {
         LookupExample: 'toDuplicate',
       }
     )
+    const toParentInstanceName = 'toParentInstance'
+    const toParentInstance = new InstanceElement(
+      toParentInstanceName,
+      toParentObj,
+      {
+        Id: '1234',
+        MasterDetailToParent: 'masterToId',
+        MasterDetailToParent2: 'masterToAnotherId',
+      },
+    )
+    const toParentDupInstanceName = 'toParentDupInstance'
+    const toParentDupInstance = new InstanceElement(
+      toParentDupInstanceName,
+      toParentObj,
+      {
+        Id: '1234',
+        MasterDetailToParent: 'masterToId',
+        MasterDetailToParent2: 'masterToId',
+      },
+    )
+    const toParentEmptyInsatceName = 'toParentEmptyInstance'
+    const toParentEmptyInstance = new InstanceElement(
+      toParentEmptyInsatceName,
+      toParentObj,
+      {
+        Id: '1234',
+      },
+    )
+    const toParentInvalidInstanceName = 'toParentInvalidInstance'
+    const toParentInvalidInstance = new InstanceElement(
+      toParentInvalidInstanceName,
+      toParentObj,
+      {
+        Id: '1234',
+        MasterDetailToParent: 'notExisted',
+      },
+    )
     const objects = [
       refFromObj,
       refToObj,
       masterObj,
       userObj,
+      toParentObj,
     ]
     const legalInstances = [
       refToInstance,
       refFromInstance,
       masterToInstance,
+      masterToAnotherInstance,
+      toParentInstance,
+      toParentDupInstance,
+      toParentEmptyInstance,
+      toParentInvalidInstance,
     ]
     const illegalInstances = [
       refFromEmptyRefsInstance,
@@ -359,6 +450,44 @@ describe('Custom Object Instances References filter', () => {
         ) || errorMessages.some(errorMsg => errorMsg.includes(instance.value.Id))
         expect(warningsIncludeNameOrId).toBeTruthy()
       })
+    })
+
+    it('should create a list of parent annotations in the instance of custom object with masterDetail field', () => {
+      const afterFilterParentAnnotation = elements.find(
+        e => e.elemID.isEqual(toParentInstance.elemID)
+      )
+      expect(afterFilterParentAnnotation).toBeDefined()
+      expect(afterFilterParentAnnotation?.annotations[CORE_ANNOTATIONS.PARENT])
+        .toEqual([
+          new ReferenceExpression(masterToInstance.elemID),
+          new ReferenceExpression(masterToAnotherInstance.elemID),
+        ])
+    })
+    it('should ignore references in the parent annotations in case of duplications', () => {
+      const afterFilterParentAnnotation = elements.find(
+        e => e.elemID.isEqual(toParentDupInstance.elemID)
+      )
+      expect(afterFilterParentAnnotation).toBeDefined()
+      expect(afterFilterParentAnnotation?.annotations[CORE_ANNOTATIONS.PARENT])
+        .toEqual([
+          new ReferenceExpression(masterToInstance.elemID),
+        ])
+    })
+    it('should not create a parent annotation in case of a non-existing value', () => {
+      const afterFilterParentAnnotation = elements.find(
+        e => e.elemID.isEqual(toParentEmptyInstance.elemID)
+      )
+      expect(afterFilterParentAnnotation).toBeDefined()
+      expect(afterFilterParentAnnotation?.annotations[CORE_ANNOTATIONS.PARENT])
+        .toEqual(undefined)
+    })
+    it('should not create a parent annotation in case of a non-ReferenceExpression value', () => {
+      const afterFilterParentAnnotation = elements.find(
+        e => e.elemID.isEqual(toParentInvalidInstance.elemID)
+      )
+      expect(afterFilterParentAnnotation).toBeDefined()
+      expect(afterFilterParentAnnotation?.annotations[CORE_ANNOTATIONS.PARENT])
+        .toEqual(undefined)
     })
   })
 })

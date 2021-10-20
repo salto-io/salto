@@ -278,18 +278,23 @@ describe('salesforce client', () => {
     })
   })
 
-  describe('with jsforce accessing .result on null error', () => {
+  describe('with jsforce returns invalid response', () => {
     let testClient: SalesforceClient
     let testConnection: MockInterface<Connection>
-    let failingImplementation: Metadata['list']
+    let nullFailingImplementation: Metadata['list']
+    let rangeErrorFailingImplementation: Metadata['list']
+
     beforeEach(() => {
       const mockClientAndConnection = mockClient()
       testConnection = mockClientAndConnection.connection
       testClient = mockClientAndConnection.client
-      failingImplementation = async () => (
+      nullFailingImplementation = async () => (
         // Intentionally access .result on null
         (null as unknown as { result: FileProperties[] }).result
       )
+      rangeErrorFailingImplementation = async () => {
+        throw new RangeError('Too many properties to enumerate')
+      }
     })
     describe('when the error is recoverable', () => {
       let result: ReturnType<typeof testClient.listMetadataObjects>
@@ -297,8 +302,9 @@ describe('salesforce client', () => {
       beforeEach(() => {
         expectedProperties = mockFileProperties({ type: 'CustomObject', fullName: 'A__c' })
         testConnection.metadata.list
-          .mockImplementationOnce(failingImplementation)
-          .mockImplementationOnce(failingImplementation)
+          .mockImplementationOnce(nullFailingImplementation)
+          .mockImplementationOnce(nullFailingImplementation)
+          .mockImplementationOnce(rangeErrorFailingImplementation)
           .mockResolvedValueOnce([expectedProperties])
 
         result = testClient.listMetadataObjects({ type: 'CustomObject' })
@@ -310,7 +316,7 @@ describe('salesforce client', () => {
     describe('when the error persists', () => {
       let result: ReturnType<typeof testClient.listMetadataObjects>
       beforeEach(() => {
-        testConnection.metadata.list.mockImplementation(failingImplementation)
+        testConnection.metadata.list.mockImplementation(nullFailingImplementation)
         result = testClient.listMetadataObjects({ type: 'CustomObject' })
       })
       it('should fail with the error', async () => {

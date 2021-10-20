@@ -50,7 +50,7 @@ import dataInstancesAttributes from './filters/data_instances_attributes'
 import dataInstancesNullFields from './filters/data_instances_null_fields'
 import dataInstancesDiff from './filters/data_instances_diff'
 import dataInstancesIdentifiers from './filters/data_instances_identifiers'
-import addInternalId from './filters/add_internal_ids'
+import SDFInternalIds from './filters/sdf_internal_ids'
 import internalIds from './filters/internal_ids'
 import accountSpecificValues from './filters/account_specific_values'
 import translationConverter from './filters/translation_converter'
@@ -137,7 +137,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       removeUnsupportedTypes,
       dataInstancesReferences,
       dataInstancesInternalId,
-      addInternalId,
+      SDFInternalIds,
       // authorInformation must run after internal_ids
       authorInformation,
       translationConverter,

@@ -18,6 +18,6 @@ import _ from 'lodash'
 
 export const createChangeValidator = (
   changeValidators: ReadonlyArray<ChangeValidator>
-): ChangeValidator => async changes => (
-  _.flatten(await Promise.all(changeValidators.map(validator => validator(changes))))
+): ChangeValidator => async (changes, adapterConfig) => (
+  _.flatten(await Promise.all(changeValidators.map(validator => validator(changes, adapterConfig))))
 )

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { ChangeValidator, ChangeError, ObjectType, ElemID, Change, toChange } from '@salto-io/adapter-api'
+import { ChangeValidator, ChangeError, ObjectType, ElemID, Change, toChange, InstanceElement } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { createChangeValidator } from '../src/change_validator'
 
@@ -23,6 +23,7 @@ describe('change_validator', () => {
 
   let mockValidators: jest.MockedFunction<ChangeValidator>[]
   let changes: ReadonlyArray<Change>
+  let adapterConfig: InstanceElement
   let errors: ChangeError[]
   let result: ReadonlyArray<ChangeError>
 
@@ -47,12 +48,12 @@ describe('change_validator', () => {
     ]
     changes = [toChange({ after: testElem })]
     const mainValidator = createChangeValidator(mockValidators)
-    result = await mainValidator(changes)
+    result = await mainValidator(changes, adapterConfig)
   })
 
   it('should call all validators', () => {
     mockValidators.forEach(
-      validator => expect(validator).toHaveBeenCalledWith(changes)
+      validator => expect(validator).toHaveBeenCalledWith(changes, adapterConfig)
     )
   })
 

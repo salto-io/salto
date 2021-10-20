@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 import { CORE_ANNOTATIONS, ElemID, ObjectType, InstanceElement } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'

@@ -17,13 +17,14 @@ import { CORE_ANNOTATIONS, Element, InstanceElement, isInstanceElement } from '@
 import { FileProperties } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { SHARING_RULES_TYPE } from '../../constants'
 import { getAuthorAnnotations } from '../../transformers/transformer'
 import { FilterCreator, FilterWith } from '../../filter'
 import SalesforceClient from '../../client/client'
 import { ensureSafeFilterFetch, isInstanceOfType } from '../utils'
 
+const { isDefined } = values
 const { awu } = collections.asynciterable
 const log = logger(module)
 const SHARING_RULES_API_NAMES = ['SharingCriteriaRule', 'SharingGuestRule', 'SharingOwnerRule']
@@ -38,7 +39,7 @@ const getSharingRulesFileProperties = async (client: SalesforceClient):
     SHARING_RULES_API_NAMES.map(ruleType => ({ type: ruleType }))
   )
   if (errors && errors.length > 0) {
-    log.warn(`Encountered errors while listing file properties for CustomObjects: ${errors}`)
+    log.warn(`Encountered errors while listing file properties for SharingRules: ${errors}`)
   }
   return result
 }
@@ -77,7 +78,7 @@ const filterCreator: FilterCreator = ({ client, config }): FilterWith<'onFetch'>
         .toArray())
       sharingRulesInstances.forEach(sharingRules => {
         const lastRuleFileProp = getLastSharingRuleFileProperties(sharingRules, sharingRulesMap)
-        if (!_.isUndefined(lastRuleFileProp)) {
+        if (isDefined(lastRuleFileProp)) {
           const ruleAuthorInformation = getAuthorAnnotations(lastRuleFileProp)
           delete ruleAuthorInformation[CORE_ANNOTATIONS.CREATED_AT]
           delete ruleAuthorInformation[CORE_ANNOTATIONS.CREATED_BY]

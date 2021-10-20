@@ -66,6 +66,52 @@ describe('netsuite internal ids', () => {
       { scriptid: 'scriptId2', id: '2' },
     ])
   })
+  describe('no suite app client', () => {
+    it('should not change any elements in fetch', async () => {
+      const clientWithoutSuiteApp = new NetsuiteClient(SDFClient)
+      filterOpts = {
+        client: clientWithoutSuiteApp,
+        elementsSourceIndex: { getIndexes: () => Promise.resolve({
+          serviceIdsIndex: {},
+          internalIdsIndex: {},
+          customFieldsIndex: {},
+        }) },
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }
+      await filterCreator(filterOpts).onFetch?.(elements)
+      expect(runSuiteQLMock).not.toHaveBeenCalled()
+      expect(customTypeInstance.value.internalId).not.toBeDefined()
+      expect(customListInstance.value.internalId).not.toBeDefined()
+    })
+    it('should not change any elements in deploy', async () => {
+      const clientWithoutSuiteApp = new NetsuiteClient(SDFClient)
+      filterOpts = {
+        client: clientWithoutSuiteApp,
+        elementsSourceIndex: { getIndexes: () => Promise.resolve({
+          serviceIdsIndex: {},
+          internalIdsIndex: {},
+          customFieldsIndex: {},
+        }) },
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }
+      await filterCreator(filterOpts).onDeploy?.(
+        [
+          toChange({ before: accountInstance, after: accountInstance }),
+          toChange({ after: customTypeInstance }),
+          toChange({ after: customListInstance }),
+        ],
+        {
+          appliedChanges: [],
+          errors: [],
+        },
+      )
+      expect(runSuiteQLMock).not.toHaveBeenCalled()
+      expect(customTypeInstance.value.internalId).not.toBeDefined()
+      expect(customListInstance.value.internalId).not.toBeDefined()
+    })
+  })
   describe('fetch', () => {
     beforeEach(async () => {
       await filterCreator(filterOpts).onFetch?.(elements)

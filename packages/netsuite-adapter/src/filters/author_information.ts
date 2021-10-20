@@ -25,7 +25,6 @@ import { FilterCreator, FilterWith } from '../filter'
 const { isDefined } = lowerDashValues
 const log = logger(module)
 export const EMPLOYEE_NAME_QUERY = 'SELECT id, entityid FROM employee'
-export const SYSTEM_NOTE_QUERY = 'SELECT recordid, recordtypeid, name FROM systemnote ORDER BY date ASC'
 
 const fetchEmployeeNames = async (client: NetsuiteClient): Promise<Record<string, string>> => {
   const employees = await client.runSuiteQL(EMPLOYEE_NAME_QUERY)
@@ -51,7 +50,7 @@ const getRecordIdQueryLine = (recordIds: string[]): string =>
 
 const getWhereQuery = (recordTypeId: string, recordIds: string[]): string => {
   const recordIdsQueryLine = getRecordIdQueryLine(recordIds)
-  return `(${recordIdsQueryLine} AND recordtypeid = '${TYPES_TO_INTERNAL_ID[recordTypeId]}')`
+  return `(${recordIdsQueryLine} AND recordtypeid = '${recordTypeId}')`
 }
 
 const buildSystemNotesQuery = (instances: InstanceElement[]): string => {

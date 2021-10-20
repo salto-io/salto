@@ -28,7 +28,7 @@ export const EMPLOYEE_NAME_QUERY = 'SELECT id, entityid FROM employee'
 
 const fetchEmployeeNames = async (client: NetsuiteClient): Promise<Record<string, string>> => {
   const employees = await client.runSuiteQL(EMPLOYEE_NAME_QUERY)
-  if (employees) {
+  if (isDefined(employees)) {
     return Object.fromEntries(employees.map(entry => [entry.id, entry.entityid]))
   }
   return {}
@@ -37,13 +37,7 @@ const fetchEmployeeNames = async (client: NetsuiteClient): Promise<Record<string
 const distinctSortedSystemNotes = (
   systemNotes: Record<string, unknown>[]
 ): Record<string, unknown>[] =>
-  Object.values(
-    _.groupBy(
-      systemNotes
-        .filter(note => Object.keys(note).length === 3),
-      note => [note.recordid, note.recordtypeid]
-    )
-  ).map(notes => notes[0])
+  _.uniqBy(systemNotes, note => [note.recordid, note.recordtypeid].join(','))
 
 const getRecordIdQueryLine = (recordIds: string[]): string =>
   ['(', recordIds.map(id => `recordid = '${id}'`).join(' or '), ')'].join('')

@@ -83,6 +83,9 @@ const fetchSystemNotes = async (
 
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
+    if (!client.isSuiteAppConfigured()) {
+      return
+    }
     const query = buildSystemNotesQuery(elements.filter(isInstanceElement))
     if (_.isEmpty(query)) {
       return

@@ -89,6 +89,9 @@ const getAdditionInstances = (changes: Change[]): InstanceElement[] =>
  */
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async elements => {
+    if (!client.isSuiteAppConfigured()) {
+      return
+    }
     const instances = await getListOfSDFInstances(elements)
     await addInternalIdFieldToInstancesObjects(instances)
     const recordIdMap = await createRecordIdsMap(
@@ -105,6 +108,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
    * This removes the internal id before deploy since we don't want to actually deploy it to SDF
    */
   preDeploy: async changes => {
+    if (!client.isSuiteAppConfigured()) {
+      return
+    }
     const instances = await getListOfSDFInstances(changes
       .map(getChangeElement))
     instances.forEach(element => {
@@ -115,8 +121,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
    * This assign the internal id for new instances created through Salto
    */
   onDeploy: async changes => {
+    if (!client.isSuiteAppConfigured()) {
+      return
+    }
     const additionInstances = getAdditionInstances(changes)
-    if (!client.isSuiteAppConfigured() || additionInstances.length === 0) {
+    if (additionInstances.length === 0) {
       return
     }
     await addInternalIdFieldToInstancesObjects(additionInstances)

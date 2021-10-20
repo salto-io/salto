@@ -40,22 +40,25 @@ const addInternalIdFieldToInstancesObjects = async (
   ).forEach(addInternalIdFieldToType)
 }
 
+const fetchRecordType = async (
+  idParamName: string,
+  client: NetsuiteClient,
+  recordType: string,
+): Promise<Record<string, string>> => {
+  const recordTypeIds = await client.runSuiteQL(`SELECT scriptid, ${idParamName} FROM ${recordType} ORDER BY ${idParamName} ASC`)
+  return _.isUndefined(recordTypeIds) || _.isEmpty(recordTypeIds) ? {}
+    : Object.fromEntries(recordTypeIds.map(entry => [entry.scriptid, entry[idParamName]]))
+}
+
 const fetchRecordIdsForRecordType = async (
   recordType: string,
   client: NetsuiteClient
 ): Promise<Record<string, string>> => {
-  const fetchRecordType = async (idParamName: string): Promise<Record<string, string>> => {
-    const recordTypeIds = await client.runSuiteQL(`SELECT scriptid, ${idParamName} FROM ${recordType} ORDER BY ${idParamName} ASC`)
-    if (recordTypeIds) {
-      return Object.fromEntries(recordTypeIds.map(entry => [entry.scriptid, entry[idParamName]]))
-    }
-    return {}
-  }
-  const internalIdQueryResults = await fetchRecordType('internalid')
+  const internalIdQueryResults = await fetchRecordType('id', client, recordType)
   if (!_.isEmpty(internalIdQueryResults)) {
     return internalIdQueryResults
   }
-  return fetchRecordType('id')
+  return fetchRecordType('internalid', client, recordType)
 }
 
 const createRecordIdsMap = async (

@@ -25,15 +25,12 @@ import SalesforceClient from '../../client/client'
 import { ensureSafeFilterFetch, isInstanceOfType } from '../utils'
 
 const { awu } = collections.asynciterable
-
-type FieldFileNameParts = {fieldName: string; objectName: string}
 const log = logger(module)
 const SHARING_RULES_API_NAMES = ['SharingCriteriaRule', 'SharingGuestRule', 'SharingOwnerRule']
 
 const isSharingRulesInstance = isInstanceOfType(SHARING_RULES_TYPE)
-const getRuleNameParts = (fileProperties: FileProperties): FieldFileNameParts =>
-  ({ fieldName: fileProperties.fullName.split('.')[1],
-    objectName: fileProperties.fullName.split('.')[0] } as FieldFileNameParts)
+const getRuleObjectName = (fileProperties: FileProperties): string =>
+  fileProperties.fullName.split('.')[0]
 
 const getSharingRulesFileProperties = async (client: SalesforceClient):
   Promise<FileProperties[]> => {
@@ -52,7 +49,7 @@ const fetchAllSharingRules = async (
 ): Promise<Record<string, FileProperties[]>> => {
   const allRules = await getSharingRulesFileProperties(client)
   return _.groupBy(allRules.flatMap(file => file),
-    fileProp => getRuleNameParts(fileProp).objectName)
+    fileProp => getRuleObjectName(fileProp))
 }
 
 const getLastSharingRuleFileProperties = (

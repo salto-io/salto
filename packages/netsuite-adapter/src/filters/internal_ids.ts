@@ -73,7 +73,7 @@ const getListOfSDFInstances = async (elements: Element[]): Promise<InstanceEleme
   Promise.all(elements
     .filter(isInstanceElement)
     .filter(elem => elem.value.scriptid)
-    .filter(async a => !isDataObjectType(await a.getType())))
+    .filter(async elem => !isDataObjectType(await elem.getType())))
 
 
 const getAdditionInstances = (changes: Change[]): InstanceElement[] =>

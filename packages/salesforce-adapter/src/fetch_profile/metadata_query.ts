@@ -39,7 +39,7 @@ const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
 ]
 
 export const buildMetadataQuery = (
-  { include = [{}], exclude = [], readChunkSize = [] }: MetadataParams,
+  { include = [{}], exclude = [], readChunkSize = {} }: MetadataParams,
   target?: string[],
 ): MetadataQuery => {
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
@@ -81,7 +81,7 @@ export const buildMetadataQuery = (
   )
 
   const chunkSize = (type: string): number | undefined =>
-    readChunkSize.find(chunk => chunk.metadataType === type)?.chunkSize
+    readChunkSize[type]?.chunkSize
 
   return {
     isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),

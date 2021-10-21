@@ -226,7 +226,7 @@ describe('buildMetadataQuery', () => {
       const query = buildMetadataQuery({
         include: [],
         exclude: [],
-        readChunkSize: [{ metadataType, chunkSize }],
+        readChunkSize: { [metadataType]: { chunkSize } },
       })
       expect(query.chunkSize(metadataType)).toEqual(chunkSize)
     })
@@ -234,7 +234,6 @@ describe('buildMetadataQuery', () => {
       const query = buildMetadataQuery({
         include: [],
         exclude: [],
-        readChunkSize: [],
       })
       expect(query.chunkSize(metadataType)).toEqual(undefined)
     })

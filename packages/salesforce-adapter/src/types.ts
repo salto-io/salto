@@ -16,7 +16,7 @@
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import {
   ElemID, ObjectType, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
-  FieldDefinition,
+  FieldDefinition, MapType,
 } from '@salto-io/adapter-api'
 import * as constants from './constants'
 import { SALESFORCE } from './constants'
@@ -54,14 +54,13 @@ export type MetadataInstance = {
 
 export type MetadataQueryParams = Partial<MetadataInstance>
 export type MetadataReadChunkSize = {
-  metadataType: string
   chunkSize: number
 }
 
 export type MetadataParams = {
   include?: MetadataQueryParams[]
   exclude?: MetadataQueryParams[]
-  [READ_CHUNK_SIZE]?: MetadataReadChunkSize[]
+  readChunkSize?: Record<string, MetadataReadChunkSize>
 }
 
 export type OptionalFeatures = {
@@ -409,23 +408,25 @@ const metadataQueryType = new ObjectType({
   },
 })
 
-const readChunkSize = new ObjectType({
+const readChunkSize = createMatchingObjectType<MetadataReadChunkSize>({
   elemID: new ElemID(SALESFORCE, READ_CHUNK_SIZE),
   fields: {
-    [METADATA_TYPE]: { refType: BuiltinTypes.STRING },
     [CHUNK_SIZE]: {
       refType: BuiltinTypes.NUMBER,
-      annotations: { [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1, max: 10 }) },
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1, max: 10 }),
+        _required: true,
+      },
     },
   },
 })
 
-const metadataConfigType = new ObjectType({
+const metadataConfigType = createMatchingObjectType<MetadataParams>({
   elemID: new ElemID(SALESFORCE, 'metadataConfig'),
   fields: {
     [METADATA_INCLUDE_LIST]: { refType: new ListType(metadataQueryType) },
     [METADATA_EXCLUDE_LIST]: { refType: new ListType(metadataQueryType) },
-    [READ_CHUNK_SIZE]: { refType: new ListType(readChunkSize) },
+    [READ_CHUNK_SIZE]: { refType: new MapType(readChunkSize) },
   },
 })
 
@@ -484,10 +485,10 @@ export const configType = new ObjectType({
                 namespace: '',
               },
             ],
-            [READ_CHUNK_SIZE]: [
-              { metadataType: 'Profile', chunkSize: 1 },
-              { metadataType: 'PermissionSet', chunkSize: 1 },
-            ],
+            [READ_CHUNK_SIZE]: {
+              Profile: { chunkSize: 1 },
+              PermissionSet: { chunkSize: 1 },
+            },
           },
           [SHOULD_FETCH_ALL_CUSTOM_SETTINGS]: false,
         },

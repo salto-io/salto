@@ -85,7 +85,7 @@ describe('workspace local config', () => {
 
   it('localStorage', async () => {
     expect(configSource.localStorage).toBe(
-      path.resolve(path.join(getSaltoHome(), 'test-98bb902f-a144-42da-9672-f36e312e8e09'))
+      path.resolve(path.join(getSaltoHome(), '98bb902f-a144-42da-9672-f36e312e8e09'))
     )
   })
 

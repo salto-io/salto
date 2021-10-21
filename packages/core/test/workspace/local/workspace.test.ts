@@ -153,7 +153,7 @@ describe('local workspace', () => {
         .map(params => toWorkspaceRelative(params))
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, envName))
       const uuid = mockInit.mock.calls[0][1]
-      const localStorage = `${wsName}-${uuid}`
+      const localStorage = `${uuid}`
       expect(dirStoresBaseDirs).toContain(localStorage)
       expect(dirStoresBaseDirs).toContain(path.join(localStorage, CREDENTIALS_CONFIG_PATH))
     })

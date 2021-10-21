@@ -24,44 +24,46 @@ import NetsuiteClient from '../client/client'
 
 const { isDefined } = values
 const log = logger(module)
-const RECORD_ID_SCHEMA = [{ items: {
-  properties: {
-    id: {
-      type: 'string',
+const RECORD_ID_SCHEMA = {
+  anyOf: [
+    {
+      properties: {
+        id: {
+          type: 'string',
+        },
+        internalid: {
+          type: 'string',
+        },
+        scriptid: {
+          type: 'string',
+        },
+      },
+      required: [
+        'internalid',
+        'scriptid',
+      ],
+      type: 'object',
     },
-    internalid: {
-      type: 'string',
+    {
+      properties: {
+        id: {
+          type: 'string',
+        },
+        internalid: {
+          type: 'string',
+        },
+        scriptid: {
+          type: 'string',
+        },
+      },
+      required: [
+        'id',
+        'scriptid',
+      ],
+      type: 'object',
     },
-    scriptid: {
-      type: 'string',
-    },
-  },
-  required: [
-    'scriptid',
-    'internalid',
   ],
-  type: 'object',
-},
-type: 'array' },
-{ items: {
-  properties: {
-    id: {
-      type: 'string',
-    },
-    internalid: {
-      type: 'string',
-    },
-    scriptid: {
-      type: 'string',
-    },
-  },
-  required: [
-    'scriptid',
-    'id',
-  ],
-  type: 'object',
-},
-type: 'array' }]
+}
 
 type RecordIdResult = {
   scriptid: string
@@ -118,7 +120,6 @@ const fetchRecordType = async (
   if (_.isUndefined(recordTypeIds) || _.isEmpty(recordTypeIds)) {
     return {}
   }
-  recordTypeIds.map(entry => [entry.scriptid, entry])
   const recordIdEntries = recordTypeIds.map(entry => {
     if (isDefined(entry.id)) {
       return [entry.scriptid, entry.id]

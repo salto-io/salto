@@ -25,7 +25,7 @@ import { FilterCreator, FilterWith } from '../filter'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
-export const EMPLOYEE_NAME_QUERY = 'SELECT id, entityid FROM employee'
+export const EMPLOYEE_NAME_QUERY = 'SELECT id, entityid FROM employee ORDER BY id ASC'
 const EMPLOYEE_SCHEMA = { items: {
   properties: {
     entityid: {
@@ -61,9 +61,6 @@ const SYSTEM_NOTE_SCHEMA = { items: {
     },
   },
   required: [
-    'name',
-    'recordid',
-    'recordtypeid',
   ],
   type: 'object',
 },
@@ -146,7 +143,7 @@ const fetchSystemNotes = async (
   query: string
 ): Promise<Record<string, unknown>[]> => {
   const systemNotes = await querySystemNotes(client, query)
-  if (systemNotes) {
+  if (_.isEmpty(systemNotes)) {
     return distinctSortedSystemNotes(systemNotes)
   }
   log.warn('System note query failed')

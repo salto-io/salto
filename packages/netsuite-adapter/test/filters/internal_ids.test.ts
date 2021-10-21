@@ -160,7 +160,7 @@ describe('netsuite internal ids', () => {
     it('should query information from api', () => {
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, id FROM customRecordType ORDER BY id ASC')
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, id FROM customList ORDER BY id ASC')
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, 'SELECT scriptid, internalid FROM customRecordType ORDER BY internalid ASC')
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, 'SELECT scriptid, internalid FROM customRecordType ORDER BY internal ASC')
       expect(runSuiteQLMock).toHaveBeenCalledTimes(3)
     })
     it('should add internal ids to new elements', () => {

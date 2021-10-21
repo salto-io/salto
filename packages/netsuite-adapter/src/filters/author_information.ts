@@ -150,6 +150,30 @@ const fetchSystemNotes = async (
   return []
 }
 
+const getElementLastModifier = (
+  element: InstanceElement,
+  systemNotes: Record<string, string>[],
+  employeeNames: Record<string, string>,
+): string | undefined => {
+  const matchingNotes = systemNotes
+    .filter(note => TYPES_TO_INTERNAL_ID[element.elemID.typeName] === note.recordtypeid)
+    .filter(note => note.recordid === element.value.internalId)
+  if (!_.isEmpty(matchingNotes)) {
+    return employeeNames[_.toString(matchingNotes[0].name)]
+  }
+  return undefined
+}
+const setAuthorName = (
+  instance: InstanceElement,
+  systemNotes: Record<string, string>[],
+  employeeNames: Record<string, string>,
+): void => {
+  const authorName = getElementLastModifier(instance, systemNotes, employeeNames)
+  if (authorName) {
+    instance.annotate({ [CORE_ANNOTATIONS.CHANGED_BY]: authorName })
+  }
+}
+
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     if (!client.isSuiteAppConfigured()) {
@@ -164,28 +188,10 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
       return
     }
     const systemNotes = await fetchSystemNotes(client, query)
-    const getElementLastModifier = (
-      element: InstanceElement,
-    ): string | undefined => {
-      const matchingNotes = systemNotes
-        .filter(note => TYPES_TO_INTERNAL_ID[element.elemID.typeName] === note.recordtypeid)
-        .filter(note => note.recordid === element.value.internalId)
-      if (!_.isEmpty(matchingNotes)) {
-        return employeeNames[_.toString(matchingNotes[0].name)]
-      }
-      return undefined
-    }
-    const setAuthorName = (element: InstanceElement): void => {
-      const authorName = getElementLastModifier(element)
-      if (authorName) {
-        element.annotate({ [CORE_ANNOTATIONS.CHANGED_BY]: authorName })
-      }
-    }
-
     elements
       .filter(isInstanceElement)
       .filter(instance => isDefined(instance.value.internalId))
-      .forEach(setAuthorName)
+      .forEach(instance => setAuthorName(instance, systemNotes, employeeNames))
   },
 })
 

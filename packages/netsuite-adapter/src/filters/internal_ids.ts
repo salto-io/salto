@@ -15,9 +15,77 @@
 */
 import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeElement, InstanceElement, isAdditionChange, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import Ajv from 'ajv'
+import { logger } from '@salto-io/logging'
+import { values } from '@salto-io/lowerdash'
 import { isDataObjectType } from '../types'
 import { FilterCreator } from '../filter'
 import NetsuiteClient from '../client/client'
+
+const { isDefined } = values
+const log = logger(module)
+const RECORD_ID_SCHEMA = [{ items: {
+  properties: {
+    id: {
+      type: 'string',
+    },
+    internalid: {
+      type: 'string',
+    },
+    scriptid: {
+      type: 'string',
+    },
+  },
+  required: [
+    'scriptid',
+    'internalid',
+  ],
+  type: 'object',
+},
+type: 'array' },
+{ items: {
+  properties: {
+    id: {
+      type: 'string',
+    },
+    internalid: {
+      type: 'string',
+    },
+    scriptid: {
+      type: 'string',
+    },
+  },
+  required: [
+    'scriptid',
+    'id',
+  ],
+  type: 'object',
+},
+type: 'array' }]
+
+type RecordIdResult = {
+  scriptid: string
+  internalid: string
+  id?: string
+} | {
+  scriptid: string
+  id: string
+  internalid?: string
+}
+
+const queryRecordIds = async (client: NetsuiteClient, query: string):
+Promise<RecordIdResult[]> => {
+  const recordIdResults = await client.runSuiteQL(query)
+  if (recordIdResults === undefined) {
+    return []
+  }
+  const ajv = new Ajv({ allErrors: true, strict: false })
+  if (!ajv.validate<RecordIdResult[]>(RECORD_ID_SCHEMA, recordIdResults)) {
+    log.error(`Got invalid results from listing employees table: ${ajv.errorsText()}`)
+    throw new Error('Failed to list employees')
+  }
+  return recordIdResults
+}
 
 const addInternalIdFieldToType = (object: ObjectType): void => {
   if (_.isUndefined(object.fields.internalId)) {
@@ -45,9 +113,22 @@ const fetchRecordType = async (
   client: NetsuiteClient,
   recordType: string,
 ): Promise<Record<string, string>> => {
-  const recordTypeIds = await client.runSuiteQL(`SELECT scriptid, ${idParamName} FROM ${recordType} ORDER BY ${idParamName} ASC`)
-  return _.isUndefined(recordTypeIds) || _.isEmpty(recordTypeIds) ? {}
-    : Object.fromEntries(recordTypeIds.map(entry => [entry.scriptid, entry[idParamName]]))
+  const query = `SELECT scriptid, ${idParamName} FROM ${recordType} ORDER BY ${idParamName} ASC`
+  const recordTypeIds = await queryRecordIds(client, query)
+  if (_.isUndefined(recordTypeIds) || _.isEmpty(recordTypeIds)) {
+    return {}
+  }
+  recordTypeIds.map(entry => [entry.scriptid, entry])
+  const recordIdEntries = recordTypeIds.map(entry => {
+    if (isDefined(entry.id)) {
+      return [entry.scriptid, entry.id]
+    }
+    if (isDefined(entry.internalid)) {
+      return [entry.scriptid, entry.internalid]
+    }
+    return undefined
+  }).filter(isDefined)
+  return Object.fromEntries(recordIdEntries)
 }
 
 const fetchRecordIdsForRecordType = async (

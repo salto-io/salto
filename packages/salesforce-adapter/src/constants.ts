@@ -282,9 +282,13 @@ export const MAX_METADATA_RESTRICTION_VALUES = 500
 export const DEFAULT_MAX_CONCURRENT_API_REQUESTS = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   retrieve: 3,
-  read: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+  read: 20,
+  list: 20,
   query: 4,
+  describe: 20,
+  upsert: 20,
+  delete: 20,
+  deploy: 20,
 }
 export const DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST = 2500
 export const DEFAULT_USE_OLD_PROFILES = false

@@ -93,7 +93,9 @@ describe('Test CustomFeedFilter', () => {
       const instanceName = 'Case.test'
       await filter.onFetch(testElements)
       expect(mockReadMetadata)
-        .toHaveBeenCalledWith(CUSTOM_FEED_FILTER_METADATA_TYPE, [instanceName])
+        .toHaveBeenCalledWith(
+          CUSTOM_FEED_FILTER_METADATA_TYPE, [instanceName], undefined, undefined
+        )
       expect(testElements).toHaveLength(4)
       const instance = testElements[3]
       expect(isInstanceElement(instance)).toBeTruthy()

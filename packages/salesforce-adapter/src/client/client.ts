@@ -460,18 +460,25 @@ export default class SalesforceClient {
    * Read metadata for salesforce object of specific type and name
    */
   @throttle<ClientRateLimitConfig>('read')
-  @logDecorator()
+  @logDecorator(
+    [],
+    args => {
+      const name = args[1] as string | string[]
+      return (_.isArray(name) ? name : [name]).length.toString()
+    },
+  )
   @requiresLogin()
   public async readMetadata(
     type: string,
     name: string | string[],
     isUnhandledError: ErrorFilter = isSFDCUnhandledException,
+    chunkSize = MAX_ITEMS_IN_READ_METADATA_REQUEST,
   ): Promise<SendChunkedResult<string, MetadataInfo>> {
     return sendChunked({
       operationInfo: `readMetadata (${type})`,
       input: name,
       sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.read(type, chunk)),
-      chunkSize: MAX_ITEMS_IN_READ_METADATA_REQUEST,
+      chunkSize,
       isSuppressedError: error => (
         // This seems to happen with actions that relate to sending emails - these are disabled in
         // some way on sandboxes and for some reason this causes the SF API to fail reading

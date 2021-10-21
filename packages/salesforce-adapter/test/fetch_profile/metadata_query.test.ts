@@ -218,4 +218,25 @@ describe('buildMetadataQuery', () => {
       })
     })
   })
+
+  describe('chunkSize', () => {
+    const metadataType = 'TestType'
+    const chunkSize = 3
+    it('should return the correct chunk size if specified in the configuration', () => {
+      const query = buildMetadataQuery({
+        include: [],
+        exclude: [],
+        readChunkSize: [{ metadataType, chunkSize }],
+      })
+      expect(query.chunkSize(metadataType)).toEqual(chunkSize)
+    })
+    it('should return undefined if metadata type is not listed', () => {
+      const query = buildMetadataQuery({
+        include: [],
+        exclude: [],
+        readChunkSize: [],
+      })
+      expect(query.chunkSize(metadataType)).toEqual(undefined)
+    })
+  })
 })

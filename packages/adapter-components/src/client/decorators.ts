@@ -35,6 +35,7 @@ export const logOperationDecorator = (
   { name, args }: decorators.OriginalCall,
   clientName: string,
   keys?: string[],
+  func?: (args: unknown[]) => string,
 ): string => {
   const printableArgs = args
     .map(arg => {
@@ -43,20 +44,22 @@ export const logOperationDecorator = (
         .filter(_.isString)
       return _.isEmpty(keysValues) ? arg : keysValues.join(', ')
     })
+    .concat(func?.(args))
     .filter(_.isString)
     .join(', ')
   return `${clientName}:client.${name}(${printableArgs})`
 }
 
 export const logDecorator = (
-  keys?: string[]
+  keys?: string[],
+  func?: (args: unknown[]) => string,
 ): decorators.InstanceMethodDecorator => (
   decorators.wrapMethodWith(
     async function logFailure(
       this: { clientName: string },
       originalMethod: decorators.OriginalCall,
     ): Promise<unknown> {
-      const desc = logOperationDecorator(originalMethod, this.clientName, keys)
+      const desc = logOperationDecorator(originalMethod, this.clientName, keys, func)
       try {
         // eslint-disable-next-line @typescript-eslint/return-await
         return await log.time(originalMethod.call, desc)

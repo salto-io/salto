@@ -23,6 +23,8 @@ import { SALESFORCE } from './constants'
 
 export const CLIENT_CONFIG = 'client'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
+export const READ_CHUNK_SIZE = 'readChunkSize'
+export const CHUNK_SIZE = 'chunkSize'
 export const CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS = 'customObjectsDeployRetryOptions'
 export const USE_OLD_PROFILES = 'useOldProfiles'
 export const FETCH_CONFIG = 'fetch'
@@ -51,10 +53,15 @@ export type MetadataInstance = {
 }
 
 export type MetadataQueryParams = Partial<MetadataInstance>
+export type MetadataReadChunkSize = {
+  metadataType: string
+  chunkSize: number
+}
 
 export type MetadataParams = {
   include?: MetadataQueryParams[]
   exclude?: MetadataQueryParams[]
+  [READ_CHUNK_SIZE]?: MetadataReadChunkSize[]
 }
 
 export type OptionalFeatures = {
@@ -402,11 +409,23 @@ const metadataQueryType = new ObjectType({
   },
 })
 
+const readChunkSize = new ObjectType({
+  elemID: new ElemID(SALESFORCE, READ_CHUNK_SIZE),
+  fields: {
+    [METADATA_TYPE]: { refType: BuiltinTypes.STRING },
+    [CHUNK_SIZE]: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: { [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1, max: 10 }) },
+    },
+  },
+})
+
 const metadataConfigType = new ObjectType({
   elemID: new ElemID(SALESFORCE, 'metadataConfig'),
   fields: {
     [METADATA_INCLUDE_LIST]: { refType: new ListType(metadataQueryType) },
     [METADATA_EXCLUDE_LIST]: { refType: new ListType(metadataQueryType) },
+    [READ_CHUNK_SIZE]: { refType: new ListType(readChunkSize) },
   },
 })
 
@@ -464,6 +483,10 @@ export const configType = new ObjectType({
                 name: '^(AddressCountryCode)|(AddressStateCode)$',
                 namespace: '',
               },
+            ],
+            [READ_CHUNK_SIZE]: [
+              { metadataType: 'Profile', chunkSize: 1 },
+              { metadataType: 'PermissionSet', chunkSize: 1 },
             ],
           },
           [SHOULD_FETCH_ALL_CUSTOM_SETTINGS]: false,

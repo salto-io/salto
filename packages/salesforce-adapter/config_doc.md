@@ -130,6 +130,7 @@ salesforce {
 | ------------------------------------------------------------| -------------------------------------------------| -----------
 | [include](#metadata-query)                                  | Include everything                               | Specified the metadata to fetch. Metadata that does not match any of the include criteria will not be fetched
 | [exclude](#metadata-query)                                  | [] (Exclude nothing)                             | Specified the metadata to not fetch. Metadata that matches any of the exclude criteria will not be fetched even if it also matches some of the include criteria
+| [readChunkSize](#read-chunk-size)                           | [] (All types use default value)                 | Specified the chunk size for read operations for those metadata types. The other types will use the default (which is 10). Note that the chunk size should be between 1 to 10
 
 ## Metadata Query
 | Name                                                        | Default when undefined                           | Description
@@ -137,6 +138,12 @@ salesforce {
 | namespace                                                   | ".*" (All namespaces)                            | A regular expression of a namespace to query with 
 | metadataType                                                | ".*" (All types)                                 | A regular expression of a metadata type to query with
 | name                                                        | ".*" (All names)                                 | A regular expression of a metadata instance name to query with
+
+## Read Chunk Size
+| Name                                                        | Default when undefined                           | Description
+| ------------------------------------------------------------| -------------------------------------------------| -----------
+| metadataType                                                | ".*" (All types)                                 | A regular expression of a metadata type to query with
+| chunkSize                                                   | 10                                               | Chunk size for readMetadata
 
 ## Optional Features
 

@@ -18,7 +18,7 @@ import path from 'path'
 import { logger } from '@salto-io/logging'
 import { workspaceConfigSource as wcs,
   WorkspaceConfig, configSource } from '@salto-io/workspace'
-import * as fileUtils from '@salto-io/file'
+import { exists, rename } from '@salto-io/file'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome, CONFIG_DIR_NAME } from '../app_config'
 import { WORKSPACE_CONFIG_NAME, ENVS_CONFIG_NAME, EnvsConfig,
@@ -36,10 +36,10 @@ export const getLocalStorage = async (workspaceName: string, uid: string): Promi
   const computedLocalStorage = path.join(getSaltoHome(), `${uid}`)
   const deprecatedLocalStorage = path.join(getSaltoHome(), `${workspaceName}-${uid}`)
 
-  if (!await fileUtils.exists(computedLocalStorage)) {
-    if (await fileUtils.exists(deprecatedLocalStorage)) {
+  if (!await exists(computedLocalStorage)) {
+    if (await exists(deprecatedLocalStorage)) {
       log.warn(`Found deprecated localStorage on ${deprecatedLocalStorage}. Moving it to ${computedLocalStorage}.`)
-      await fileUtils.rename(deprecatedLocalStorage, computedLocalStorage)
+      await rename(deprecatedLocalStorage, computedLocalStorage)
     }
   }
 

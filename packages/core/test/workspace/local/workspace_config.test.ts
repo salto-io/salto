@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 import path from 'path'
+import { exists, rename, mkdirp } from '@salto-io/file'
 import { Values } from '@salto-io/adapter-api'
 import { dirStore } from '@salto-io/workspace'
 import { getSaltoHome } from '../../../src/app_config'
 import {
-  workspaceConfigSource, WorkspaceConfigSource,
+  workspaceConfigSource, WorkspaceConfigSource, getLocalStorage,
 } from '../../../src/local-workspace/workspace_config'
 import * as mockDirStore from '../../../src/local-workspace/dir_store'
 import { WORKSPACE_CONFIG_NAME, ENVS_CONFIG_NAME, USER_CONFIG_NAME } from '../../../src/local-workspace/workspace_config_types'
@@ -73,71 +74,91 @@ describe('workspace local config', () => {
   `,
   })
   let configSource: WorkspaceConfigSource
-  beforeEach(async () => {
-    jest.clearAllMocks()
-    const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
-    mockCreateDirStore.mockImplementation(params =>
-      (params.baseDir.startsWith(getSaltoHome()) ? prefDirStore : repoDirStore))
 
-    configSource = await workspaceConfigSource('bla', undefined)
+  describe('getlocalStorage', () => {
+    const SALTO_HOME = getSaltoHome()
+    it('should return SALTO_HOME/<uid>', async () => {
+      expect(await getLocalStorage('ws', 'uid')).toEqual(`${SALTO_HOME}/uid`)
+    })
+
+    it('should move deprecated localStorage to new localStorage', async () => {
+      if (await exists(`${SALTO_HOME}/uid`)) {
+        await rename(`${SALTO_HOME}/uid`, `${SALTO_HOME}/ws-uid`)
+      } else {
+        await mkdirp(`${SALTO_HOME}/ws-uid`)
+      }
+      expect(await getLocalStorage('ws', 'uid')).toEqual(`${SALTO_HOME}/uid`)
+      expect(await exists(`${SALTO_HOME}/uid`)).toBeTruthy()
+    })
   })
 
-
-  it('localStorage', async () => {
-    expect(configSource.localStorage).toBe(
-      path.resolve(path.join(getSaltoHome(), '98bb902f-a144-42da-9672-f36e312e8e09'))
-    )
-  })
-
-  it('get from both dir stores', async () => {
-    expect(await configSource.getWorkspaceConfig()).toBeDefined()
-    expect((repoDirStore.get as jest.Mock).mock.calls[1][0]).toEqual(`${ENVS_CONFIG_NAME}.nacl`)
-    expect((repoDirStore.get as jest.Mock).mock.calls[0][0]).toEqual(`${WORKSPACE_CONFIG_NAME}.nacl`)
-    expect((prefDirStore.get as jest.Mock).mock.calls[0][0]).toEqual(`${USER_CONFIG_NAME}.nacl`)
-  })
-
-  it('set in repo dir store', async () => {
-    await configSource.setWorkspaceConfig({ uid: '1', name: 'foo', currentEnv: 'bar', envs: [], staleStateThresholdMinutes: 60 })
-    expect((repoDirStore.set as jest.Mock).mock.calls[0][0].filename).toEqual(`${ENVS_CONFIG_NAME}.nacl`)
-    expect((repoDirStore.set as jest.Mock).mock.calls[1][0].filename).toEqual(`${WORKSPACE_CONFIG_NAME}.nacl`)
-    expect((prefDirStore.set as jest.Mock).mock.calls[0][0].filename).toEqual(`${USER_CONFIG_NAME}.nacl`)
-  })
-
-  describe('edge cases', () => {
-    const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
+  describe('workspace config source', () => {
     beforeEach(async () => {
       jest.clearAllMocks()
+      const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
+      mockCreateDirStore.mockImplementation(params =>
+        (params.baseDir.startsWith(getSaltoHome()) ? prefDirStore : repoDirStore))
+
+      configSource = await workspaceConfigSource('bla', undefined)
     })
-    it('should throw error cannot find local storage', async () => {
-      const emptyDirStore = mockDirStoreInstance({})
-      mockCreateDirStore.mockImplementation(() => emptyDirStore)
-      await expect(workspaceConfigSource('bla')).rejects.toThrow(new Error('Cannot locate local storage directory'))
+
+
+    it('localStorage', async () => {
+      expect(configSource.localStorage).toBe(
+        path.resolve(path.join(getSaltoHome(), '98bb902f-a144-42da-9672-f36e312e8e09'))
+      )
     })
-    it('should throw noEnvsConfig', async () => {
-      const noEnvsDirStore = mockDirStoreInstance({
-        [`${WORKSPACE_CONFIG_NAME}.nacl`]: 'workspace {}',
+
+    it('get from both dir stores', async () => {
+      expect(await configSource.getWorkspaceConfig()).toBeDefined()
+      expect((repoDirStore.get as jest.Mock).mock.calls[1][0]).toEqual(`${ENVS_CONFIG_NAME}.nacl`)
+      expect((repoDirStore.get as jest.Mock).mock.calls[0][0]).toEqual(`${WORKSPACE_CONFIG_NAME}.nacl`)
+      expect((prefDirStore.get as jest.Mock).mock.calls[0][0]).toEqual(`${USER_CONFIG_NAME}.nacl`)
+    })
+
+    it('set in repo dir store', async () => {
+      await configSource.setWorkspaceConfig({ uid: '1', name: 'foo', currentEnv: 'bar', envs: [], staleStateThresholdMinutes: 60 })
+      expect((repoDirStore.set as jest.Mock).mock.calls[0][0].filename).toEqual(`${ENVS_CONFIG_NAME}.nacl`)
+      expect((repoDirStore.set as jest.Mock).mock.calls[1][0].filename).toEqual(`${WORKSPACE_CONFIG_NAME}.nacl`)
+      expect((prefDirStore.set as jest.Mock).mock.calls[0][0].filename).toEqual(`${USER_CONFIG_NAME}.nacl`)
+    })
+
+    describe('edge cases', () => {
+      const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
+      beforeEach(async () => {
+        jest.clearAllMocks()
       })
-      mockCreateDirStore.mockImplementation(() => noEnvsDirStore)
-      const conf = await workspaceConfigSource('bla')
-      await expect(conf.getWorkspaceConfig()).rejects.toThrow(new NoEnvsConfig())
-    })
-    it('should throw no workspace Error', async () => {
-      let times = 0
-      const secondWorkspaceError = {
-        get: jest.fn().mockImplementation((name: string) => {
-          if (name === `${WORKSPACE_CONFIG_NAME}.nacl` && times === 0) {
-            times += 1
-            return {
-              filename: 'workspace.nacl',
-              buffer: 'workspace {}',
+      it('should throw error cannot find local storage', async () => {
+        const emptyDirStore = mockDirStoreInstance({})
+        mockCreateDirStore.mockImplementation(() => emptyDirStore)
+        await expect(workspaceConfigSource('bla')).rejects.toThrow(new Error('Cannot locate local storage directory'))
+      })
+      it('should throw noEnvsConfig', async () => {
+        const noEnvsDirStore = mockDirStoreInstance({
+          [`${WORKSPACE_CONFIG_NAME}.nacl`]: 'workspace {}',
+        })
+        mockCreateDirStore.mockImplementation(() => noEnvsDirStore)
+        const conf = await workspaceConfigSource('bla')
+        await expect(conf.getWorkspaceConfig()).rejects.toThrow(new NoEnvsConfig())
+      })
+      it('should throw no workspace Error', async () => {
+        let times = 0
+        const secondWorkspaceError = {
+          get: jest.fn().mockImplementation((name: string) => {
+            if (name === `${WORKSPACE_CONFIG_NAME}.nacl` && times === 0) {
+              times += 1
+              return {
+                filename: 'workspace.nacl',
+                buffer: 'workspace {}',
+              }
             }
-          }
-          return undefined
-        }),
-      } as unknown as dirStore.DirectoryStore<string>
-      mockCreateDirStore.mockImplementation(() => secondWorkspaceError)
-      const conf = await workspaceConfigSource('bla')
-      await expect(conf.getWorkspaceConfig()).rejects.toThrow(new NoWorkspaceConfig())
+            return undefined
+          }),
+        } as unknown as dirStore.DirectoryStore<string>
+        mockCreateDirStore.mockImplementation(() => secondWorkspaceError)
+        const conf = await workspaceConfigSource('bla')
+        await expect(conf.getWorkspaceConfig()).rejects.toThrow(new NoWorkspaceConfig())
+      })
     })
   })
 })

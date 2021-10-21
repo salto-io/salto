@@ -110,8 +110,8 @@ const fetchEmployeeNames = async (client: NetsuiteClient): Promise<Record<string
 }
 
 const distinctSortedSystemNotes = (
-  systemNotes: Record<string, unknown>[]
-): Record<string, unknown>[] =>
+  systemNotes: Record<string, string>[]
+): Record<string, string>[] =>
   _.uniqBy(systemNotes, note => [note.recordid, note.recordtypeid].join(','))
 
 const getRecordIdQueryLine = (recordIds: string[]): string =>
@@ -141,7 +141,7 @@ const buildSystemNotesQuery = (instances: InstanceElement[]): string | undefined
 const fetchSystemNotes = async (
   client: NetsuiteClient,
   query: string
-): Promise<Record<string, unknown>[]> => {
+): Promise<Record<string, string>[]> => {
   const systemNotes = await querySystemNotes(client, query)
   if (_.isEmpty(systemNotes)) {
     return distinctSortedSystemNotes(systemNotes)

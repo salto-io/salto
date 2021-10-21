@@ -82,6 +82,7 @@ const DEFAULT_READ_METADATA_CHUNK_SIZE: Required<ReadMetadataChunkSizeConfig> = 
 const errorMessagesToRetry = [
   'Cannot read property \'result\' of null',
   'Too many properties to enumerate',
+  'Cannot read properties of null (reading \'result\')',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig
@@ -307,6 +308,10 @@ const createRateLimitersFromConfig = (
     read: new Bottleneck({ maxConcurrent: rateLimitConfig.read }),
     list: new Bottleneck({ maxConcurrent: rateLimitConfig.list }),
     query: new Bottleneck({ maxConcurrent: rateLimitConfig.query }),
+    describe: new Bottleneck({ maxConcurrent: rateLimitConfig.describe }),
+    upsert: new Bottleneck({ maxConcurrent: rateLimitConfig.upsert }),
+    delete: new Bottleneck({ maxConcurrent: rateLimitConfig.delete }),
+    deploy: new Bottleneck({ maxConcurrent: rateLimitConfig.deploy }),
   }
 }
 
@@ -427,6 +432,7 @@ export default class SalesforceClient {
   /**
    * Extract metadata object names
    */
+  // @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
   public async listMetadataTypes(): Promise<MetadataObject[]> {
@@ -438,6 +444,7 @@ export default class SalesforceClient {
    * Read information about a value type
    * @param type The name of the metadata type for which you want metadata
    */
+  @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
   public async describeMetadataType(type: string): Promise<DescribeValueTypeResult> {
@@ -448,7 +455,7 @@ export default class SalesforceClient {
     return flatValues(describeResult)
   }
 
-  @throttle<ClientRateLimitConfig>('list', ['type', '0.type'])
+  @throttle<ClientRateLimitConfig>({ bucketName: 'list', keys: ['type', '0.type'] })
   @logDecorator(['type', '0.type'])
   @requiresLogin()
   public async listMetadataObjects(
@@ -477,7 +484,7 @@ export default class SalesforceClient {
   /**
    * Read metadata for salesforce object of specific type and name
    */
-  @throttle<ClientRateLimitConfig>('read')
+  @throttle<ClientRateLimitConfig>({ bucketName: 'read' })
   @logDecorator(
     [],
     args => {
@@ -512,12 +519,14 @@ export default class SalesforceClient {
   /**
    * Extract sobject names
    */
+  @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
     return flatValues((await this.retryOnBadResponse(() => this.conn.describeGlobal())).sobjects)
   }
 
+  @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
   public async describeSObjects(objectNames: string[]):
@@ -536,6 +545,7 @@ export default class SalesforceClient {
    * @param metadata The metadata of the object
    * @returns The save result of the requested creation
    */
+  @throttle<ClientRateLimitConfig>({ bucketName: 'upsert' })
   @logDecorator(['fullName'])
   @validateSaveResult
   @requiresLogin()
@@ -557,6 +567,7 @@ export default class SalesforceClient {
    * @param fullNames The full names of the metadata components
    * @returns The save result of the requested deletion
    */
+  @throttle<ClientRateLimitConfig>({ bucketName: 'delete' })
   @logDecorator()
   @validateDeleteResult
   @requiresLogin()
@@ -570,7 +581,7 @@ export default class SalesforceClient {
     return result.result
   }
 
-  @throttle<ClientRateLimitConfig>('retrieve')
+  @throttle<ClientRateLimitConfig>({ bucketName: 'retrieve' })
   @logDecorator()
   @requiresLogin()
   public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
@@ -584,6 +595,7 @@ export default class SalesforceClient {
    * @param zip The package zip
    * @returns The save result of the requested update
    */
+  @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
   @logDecorator()
   @requiresLogin()
   public async deploy(zip: Buffer): Promise<DeployResult> {
@@ -598,7 +610,7 @@ export default class SalesforceClient {
     )
   }
 
-  @throttle<ClientRateLimitConfig>('query')
+  @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
   @logDecorator()
   @requiresLogin()
   private query<T>(queryString: string, useToolingApi: boolean): Promise<QueryResult<T>> {
@@ -606,7 +618,7 @@ export default class SalesforceClient {
     return this.retryOnBadResponse(() => conn.query(queryString))
   }
 
-  @throttle<ClientRateLimitConfig>('query')
+  @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
   @logDecorator()
   @requiresLogin()
   private queryMore<T>(queryString: string, useToolingApi: boolean): Promise<QueryResult<T>> {
@@ -653,7 +665,7 @@ export default class SalesforceClient {
    * Queries for all the available Records given a query string
    * @param queryString the string to query with for records
    */
-   @requiresLogin()
+  @requiresLogin()
   public async queryAll(
     queryString: string,
     useToolingApi = false,
@@ -663,21 +675,21 @@ export default class SalesforceClient {
 
   @logDecorator()
   @requiresLogin()
-   public async bulkLoadOperation(
-     type: string,
-     operation: BulkLoadOperation,
-     records: SalesforceRecord[]
-   ):
-    Promise<BatchResultInfo[]> {
-     const batch = this.conn.bulk.load(
-       type,
-       operation,
-       { extIdField: CUSTOM_OBJECT_ID_FIELD, concurrencyMode: 'Parallel' },
-       records
-     )
-     const { job } = batch
-     await new Promise(resolve => job.on('close', resolve))
-     const result = await batch.then() as BatchResultInfo[]
-     return flatValues(result)
-   }
+  public async bulkLoadOperation(
+    type: string,
+    operation: BulkLoadOperation,
+    records: SalesforceRecord[]
+  ):
+  Promise<BatchResultInfo[]> {
+    const batch = this.conn.bulk.load(
+      type,
+      operation,
+      { extIdField: CUSTOM_OBJECT_ID_FIELD, concurrencyMode: 'Parallel' },
+      records
+    )
+    const { job } = batch
+    await new Promise(resolve => job.on('close', resolve))
+    const result = await batch.then() as BatchResultInfo[]
+    return flatValues(result)
+  }
 }

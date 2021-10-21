@@ -34,8 +34,13 @@ const mockClient = (values?: Values):
       maxConcurrentApiRequests: {
         total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
         retrieve: 3,
-        read: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-        list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+        read: 20,
+        list: 20,
+        query: 4,
+        describe: 20,
+        upsert: 20,
+        delete: 20,
+        deploy: 20,
       },
       dataRetry: {
         maxAttempts: 3,

@@ -139,6 +139,10 @@ export type ClientRateLimitConfig = Partial<{
   read: number
   list: number
   query: number
+  describe: number
+  upsert: number
+  delete: number
+  deploy: number
 }>
 
 export type ClientPollingConfig = Partial<{

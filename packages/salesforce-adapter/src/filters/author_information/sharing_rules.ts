@@ -49,16 +49,18 @@ const fetchAllSharingRules = async (
   client: SalesforceClient
 ): Promise<Record<string, FileProperties[]>> => {
   const allRules = await getSharingRulesFileProperties(client)
-  return _.groupBy(allRules.flatMap(file => file),
+  return _.groupBy(allRules.flat(),
     fileProp => getRuleObjectName(fileProp))
 }
 
 const getLastSharingRuleFileProperties = (
   sharingRules: InstanceElement,
   sharingRulesMap: Record<string, FileProperties[]>,
-): FileProperties =>
-  _.sortBy(sharingRulesMap[sharingRules.value.fullName],
-    fileProp => Date.parse(fileProp.lastModifiedDate)).reverse()[0]
+): FileProperties => {
+  const rules = _.sortBy(sharingRulesMap[sharingRules.value.fullName],
+    fileProp => Date.parse(fileProp.lastModifiedDate))
+  return rules[rules.length - 1]
+}
 
 export const WARNING_MESSAGE = 'Encountered an error while trying to populate author information in some of the Salesforce configuration elements.'
 

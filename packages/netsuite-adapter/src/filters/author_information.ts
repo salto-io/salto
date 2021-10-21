@@ -115,23 +115,23 @@ const distinctSortedSystemNotes = (
   _.uniqBy(systemNotes, note => [note.recordid, note.recordtypeid].join(','))
 
 const getRecordIdQueryLine = (recordIds: string[]): string =>
-  ['(', recordIds.map(id => `recordid = '${id}'`).join(' or '), ')'].join('')
+  `(${recordIds.map(id => `recordid = '${id}'`).join(' or ')})`
 
 const getWhereQuery = (recordTypeId: string, recordIds: string[]): string => {
   const recordIdsQueryLine = getRecordIdQueryLine(recordIds)
   return `(${recordIdsQueryLine} AND recordtypeid = '${recordTypeId}')`
 }
 
-const buildSystemNotesQuery = (instances: InstanceElement[]): string => {
+const buildSystemNotesQuery = (instances: InstanceElement[]): string | undefined => {
   const instancesWithID = instances
     .filter(instance => isDefined(instance.value.internalId))
     .filter(instance => isDefined(TYPES_TO_INTERNAL_ID[instance.elemID.typeName]))
   if (_.isEmpty(instancesWithID)) {
-    return ''
+    return undefined
   }
-  const instancesByTypeName = _.groupBy(instancesWithID,
+  const instancesByTypeId = _.groupBy(instancesWithID,
     instance => TYPES_TO_INTERNAL_ID[instance.elemID.typeName])
-  const recordTypeIdsToRecordIds = Object.entries(instancesByTypeName)
+  const recordTypeIdsToRecordIds = Object.entries(instancesByTypeId)
     .map(entries => [entries[0], entries[1].map(instance => instance.value.internalId)])
   const whereQuery = recordTypeIdsToRecordIds
     .map(entries => getWhereQuery(entries[0] as string, entries[1] as string[])).join(' or ')
@@ -156,7 +156,7 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
       return
     }
     const query = buildSystemNotesQuery(elements.filter(isInstanceElement))
-    if (_.isEmpty(query)) {
+    if (_.isUndefined(query)) {
       return
     }
     const employeeNames = await fetchEmployeeNames(client)

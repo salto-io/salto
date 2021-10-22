@@ -192,10 +192,10 @@ vars {
 
 type salto.example {
   salto.text field1 {
-    length = vars.text_field_length
+    length = var.text_field_length
   }
   salto.text field2 {
-    length = vars.text_field_length
+    length = var.text_field_length
   }
 }
 ```

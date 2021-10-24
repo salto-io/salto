@@ -25,57 +25,55 @@ import NetsuiteClient from '../client/client'
 const { isDefined } = values
 const log = logger(module)
 const RECORD_ID_SCHEMA = {
-  anyOf: [
-    {
-      properties: {
-        id: {
-          type: 'string',
+  items: {
+    anyOf: [
+      {
+        properties: {
+          id: {
+            type: 'string',
+          },
+          scriptid: {
+            type: 'string',
+          },
         },
-        internalid: {
-          type: 'string',
-        },
-        scriptid: {
-          type: 'string',
-        },
+        required: [
+          'id',
+          'scriptid',
+        ],
+        type: 'object',
       },
-      required: [
-        'internalid',
-        'scriptid',
-      ],
-      type: 'object',
-    },
-    {
-      properties: {
-        id: {
-          type: 'string',
+      {
+        properties: {
+          internalid: {
+            type: 'string',
+          },
+          scriptid: {
+            type: 'string',
+          },
         },
-        internalid: {
-          type: 'string',
-        },
-        scriptid: {
-          type: 'string',
-        },
+        required: [
+          'internalid',
+          'scriptid',
+        ],
+        type: 'object',
       },
-      required: [
-        'id',
-        'scriptid',
-      ],
-      type: 'object',
-    },
-  ],
+    ],
+  },
+  type: 'array',
 }
 
-type RecordIdResult = {
-  scriptid: string
-  internalid: string
-  id?: string
-} | {
+type IdRecordIdResult = {
   scriptid: string
   id: string
-  internalid?: string
+}
+type InternalIdRecordIdResult = {
+  scriptid: string
+  internalid: string
 }
 
-const queryRecordIds = async (client: NetsuiteClient, query: string):
+type RecordIdResult = IdRecordIdResult | InternalIdRecordIdResult
+
+const queryRecordIds = async (client: NetsuiteClient, query: string, recordType: string):
 Promise<RecordIdResult[]> => {
   const recordIdResults = await client.runSuiteQL(query)
   if (recordIdResults === undefined) {
@@ -83,8 +81,8 @@ Promise<RecordIdResult[]> => {
   }
   const ajv = new Ajv({ allErrors: true, strict: false })
   if (!ajv.validate<RecordIdResult[]>(RECORD_ID_SCHEMA, recordIdResults)) {
-    log.error(`Got invalid results from listing employees table: ${ajv.errorsText()}`)
-    throw new Error('Failed to list employees')
+    log.error(`Got invalid results from listing ${recordType} table: ${ajv.errorsText()}`)
+    throw new Error(`Failed to list ${recordType}`)
   }
   return recordIdResults
 }
@@ -113,16 +111,16 @@ const fetchRecordType = async (
   recordType: string,
 ): Promise<Record<string, string>> => {
   const query = `SELECT scriptid, ${idParamName} FROM ${recordType} ORDER BY ${idParamName} ASC`
-  const recordTypeIds = await queryRecordIds(client, query)
+  const recordTypeIds = await queryRecordIds(client, query, recordType)
   if (_.isUndefined(recordTypeIds) || _.isEmpty(recordTypeIds)) {
     return {}
   }
   const recordIdEntries = recordTypeIds.map(entry => {
-    if (isDefined(entry.id)) {
-      return [entry.scriptid, entry.id]
+    if (isDefined((entry as IdRecordIdResult).id)) {
+      return [entry.scriptid, (entry as IdRecordIdResult).id]
     }
-    if (isDefined(entry.internalid)) {
-      return [entry.scriptid, entry.internalid]
+    if (isDefined((entry as InternalIdRecordIdResult).internalid)) {
+      return [entry.scriptid, (entry as InternalIdRecordIdResult).internalid]
     }
     return undefined
   }).filter(isDefined)

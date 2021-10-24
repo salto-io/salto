@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange, Element } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/internal_ids'
 import { NETSUITE } from '../../src/constants'
@@ -24,7 +24,8 @@ import mockSdfClient from '../client/sdf_client'
 
 describe('netsuite internal ids', () => {
   let filterOpts: FilterOpts
-  let elements: InstanceElement[]
+  let instances: InstanceElement[]
+  let elements: Element[]
   let customTypeObject: ObjectType
   let accountInstance: InstanceElement
   let customTypeInstance: InstanceElement
@@ -46,7 +47,8 @@ describe('netsuite internal ids', () => {
     accountInstance.value.internalId = '1'
     customTypeInstance.value.scriptid = 'scriptId2'
     customListInstance.value.scriptid = 'scriptId3'
-    elements = [accountInstance, customTypeInstance, customListInstance]
+    instances = [accountInstance, customTypeInstance, customListInstance]
+    elements = [...instances, customTypeObject]
     filterOpts = {
       client,
       elementsSourceIndex: { getIndexes: () => Promise.resolve({
@@ -136,7 +138,7 @@ describe('netsuite internal ids', () => {
       customTypeInstance.value.internalId = '2'
       customListInstance.value.internalId = '3'
       await filterCreator(filterOpts).preDeploy?.(
-        elements.map(element => toChange({ after: element }))
+        instances.map(instance => toChange({ after: instance }))
       )
       expect(accountInstance.value.internalId).toBe('1')
       expect(customTypeInstance.value.internalId).toBe(undefined)
@@ -160,7 +162,7 @@ describe('netsuite internal ids', () => {
     it('should query information from api', () => {
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, id FROM customRecordType ORDER BY id ASC')
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, id FROM customList ORDER BY id ASC')
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, 'SELECT scriptid, internalid FROM customRecordType ORDER BY internal ASC')
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, 'SELECT scriptid, internalid FROM customRecordType ORDER BY internalid ASC')
       expect(runSuiteQLMock).toHaveBeenCalledTimes(3)
     })
     it('should add internal ids to new elements', () => {
@@ -169,9 +171,6 @@ describe('netsuite internal ids', () => {
     })
     it('should do nothing to modified elements', () => {
       expect(accountInstance.value.internalId).toBe('1')
-    })
-    it('should add field to object', () => {
-      expect(customTypeObject.fields.internalId).toBeDefined()
     })
   })
 })

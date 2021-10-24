@@ -26,45 +26,52 @@ import { FilterCreator, FilterWith } from '../filter'
 const { isDefined } = lowerDashValues
 const log = logger(module)
 export const EMPLOYEE_NAME_QUERY = 'SELECT id, entityid FROM employee ORDER BY id ASC'
-const EMPLOYEE_SCHEMA = { items: {
-  properties: {
-    entityid: {
-      type: 'string',
+const EMPLOYEE_SCHEMA = {
+  items: {
+    properties: {
+      entityid: {
+        type: 'string',
+      },
+      id: {
+        type: 'string',
+      },
     },
-    id: {
-      type: 'string',
-    },
+    required: [
+      'entityid',
+      'id',
+    ],
+    type: 'object',
   },
-  required: [
-    'entityid',
-    'id',
-  ],
-  type: 'object',
-},
-type: 'array' }
+  type: 'array',
+}
 
 type EmployeeResult = {
   id: string
   entityid: string
 }
 
-const SYSTEM_NOTE_SCHEMA = { items: {
-  properties: {
-    name: {
-      type: 'string',
+const SYSTEM_NOTE_SCHEMA = {
+  items: {
+    properties: {
+      name: {
+        type: 'string',
+      },
+      recordid: {
+        type: 'string',
+      },
+      recordtypeid: {
+        type: 'string',
+      },
     },
-    recordid: {
-      type: 'string',
-    },
-    recordtypeid: {
-      type: 'string',
-    },
+    required: [
+      'name',
+      'recordid',
+      'recordtypeid',
+    ],
+    type: 'object',
   },
-  required: [
-  ],
-  type: 'object',
-},
-type: 'array' }
+  type: 'array',
+}
 
 type SystemNoteResult = {
   recordid: string
@@ -114,27 +121,16 @@ const distinctSortedSystemNotes = (
 ): Record<string, string>[] =>
   _.uniqBy(systemNotes, note => [note.recordid, note.recordtypeid].join(','))
 
-const getRecordIdQueryLine = (recordIds: string[]): string =>
-  `(${recordIds.map(id => `recordid = '${id}'`).join(' or ')})`
-
-const getWhereQuery = (recordTypeId: string, recordIds: string[]): string => {
-  const recordIdsQueryLine = getRecordIdQueryLine(recordIds)
-  return `(${recordIdsQueryLine} AND recordtypeid = '${recordTypeId}')`
-}
-
 const buildSystemNotesQuery = (instances: InstanceElement[]): string | undefined => {
-  const instancesWithID = instances
-    .filter(instance => isDefined(instance.value.internalId))
-    .filter(instance => isDefined(TYPES_TO_INTERNAL_ID[instance.elemID.typeName]))
-  if (_.isEmpty(instancesWithID)) {
+  const recordTypeIds = _.uniq(instances
+    .map(instance => TYPES_TO_INTERNAL_ID[instance.elemID.typeName]))
+    .filter(isDefined)
+  if (_.isEmpty(recordTypeIds)) {
     return undefined
   }
-  const instancesByTypeId = _.groupBy(instancesWithID,
-    instance => TYPES_TO_INTERNAL_ID[instance.elemID.typeName])
-  const recordTypeIdsToRecordIds = Object.entries(instancesByTypeId)
-    .map(entries => [entries[0], entries[1].map(instance => instance.value.internalId)])
-  const whereQuery = recordTypeIdsToRecordIds
-    .map(entries => getWhereQuery(entries[0] as string, entries[1] as string[])).join(' or ')
+  const whereQuery = recordTypeIds
+    .map(recordType => `recordtypeid = '${recordType}'`)
+    .join(' or ')
   return `SELECT recordid, recordtypeid, name FROM systemnote WHERE ${whereQuery} ORDER BY date DESC`
 }
 
@@ -144,10 +140,10 @@ const fetchSystemNotes = async (
 ): Promise<Record<string, string>[]> => {
   const systemNotes = await querySystemNotes(client, query)
   if (_.isEmpty(systemNotes)) {
-    return distinctSortedSystemNotes(systemNotes)
+    log.warn('System note query failed')
+    return []
   }
-  log.warn('System note query failed')
-  return []
+  return distinctSortedSystemNotes(systemNotes)
 }
 
 const getElementLastModifier = (
@@ -179,7 +175,10 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
     if (!client.isSuiteAppConfigured()) {
       return
     }
-    const query = buildSystemNotesQuery(elements.filter(isInstanceElement))
+    const instancesWithInternalId = elements
+      .filter(isInstanceElement)
+      .filter(instance => isDefined(instance.value.internalId))
+    const query = buildSystemNotesQuery(instancesWithInternalId)
     if (_.isUndefined(query)) {
       return
     }
@@ -188,9 +187,7 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
       return
     }
     const systemNotes = await fetchSystemNotes(client, query)
-    elements
-      .filter(isInstanceElement)
-      .filter(instance => isDefined(instance.value.internalId))
+    instancesWithInternalId
       .forEach(instance => setAuthorName(instance, systemNotes, employeeNames))
   },
 })

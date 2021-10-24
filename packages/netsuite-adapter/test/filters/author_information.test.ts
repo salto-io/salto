@@ -68,7 +68,7 @@ describe('netsuite author information', () => {
 
   it('should query information from api', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
-    const systemNotesQuery = "SELECT recordid, recordtypeid, name FROM systemnote WHERE ((recordid = '1') AND recordtypeid = '-112') or ((recordid = '1') AND recordtypeid = '-123') ORDER BY date DESC"
+    const systemNotesQuery = "SELECT recordid, recordtypeid, name FROM systemnote WHERE recordtypeid = '-112' or recordtypeid = '-123' ORDER BY date DESC"
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, systemNotesQuery)
     expect(runSuiteQLMock).toHaveBeenCalledTimes(2)

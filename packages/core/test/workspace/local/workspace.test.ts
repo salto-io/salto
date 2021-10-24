@@ -153,9 +153,8 @@ describe('local workspace', () => {
         .map(params => toWorkspaceRelative(params))
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, envName))
       const uuid = mockInit.mock.calls[0][1]
-      const localStorage = `${uuid}`
-      expect(dirStoresBaseDirs).toContain(localStorage)
-      expect(dirStoresBaseDirs).toContain(path.join(localStorage, CREDENTIALS_CONFIG_PATH))
+      expect(dirStoresBaseDirs).toContain(uuid)
+      expect(dirStoresBaseDirs).toContain(path.join(uuid, CREDENTIALS_CONFIG_PATH))
     })
 
     it('should set name according to path if name not given', async () => {

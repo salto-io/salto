@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import path from 'path'
-import { exists, rename, mkdirp } from '@salto-io/file'
+import { exists, rename } from '@salto-io/file'
 import { Values } from '@salto-io/adapter-api'
 import { dirStore } from '@salto-io/workspace'
 import { getSaltoHome } from '../../../src/app_config'
@@ -24,6 +24,12 @@ import {
 import * as mockDirStore from '../../../src/local-workspace/dir_store'
 import { WORKSPACE_CONFIG_NAME, ENVS_CONFIG_NAME, USER_CONFIG_NAME } from '../../../src/local-workspace/workspace_config_types'
 import { NoEnvsConfig, NoWorkspaceConfig } from '../../../src/local-workspace/errors'
+
+jest.mock('@salto-io/file', () => ({
+  ...jest.requireActual<{}>('@salto-io/file'),
+  exists: jest.fn(),
+  rename: jest.fn(),
+}))
 
 jest.mock('../../../src/local-workspace/dir_store')
 describe('workspace local config', () => {
@@ -76,19 +82,24 @@ describe('workspace local config', () => {
   let configSource: WorkspaceConfigSource
 
   describe('getlocalStorage', () => {
+    const mockExists = exists as jest.Mock
+    const mockRename = rename as unknown as jest.Mock
     const SALTO_HOME = getSaltoHome()
-    it('should return SALTO_HOME/<uid>', async () => {
+    beforeEach(() => {
+      jest.clearAllMocks()
+    })
+    it('should return SALTO_HOME/<uid> if it exists', async () => {
+      mockExists.mockResolvedValue(true)
       expect(await getLocalStorage('ws', 'uid')).toEqual(`${SALTO_HOME}/uid`)
     })
-
-    it('should move deprecated localStorage to new localStorage', async () => {
-      if (await exists(`${SALTO_HOME}/uid`)) {
-        await rename(`${SALTO_HOME}/uid`, `${SALTO_HOME}/ws-uid`)
-      } else {
-        await mkdirp(`${SALTO_HOME}/ws-uid`)
-      }
+    it('should return SALTO_HOME/<uid> if it doesn\'t exists', async () => {
+      mockExists.mockResolvedValueOnce(false).mockResolvedValueOnce(false)
       expect(await getLocalStorage('ws', 'uid')).toEqual(`${SALTO_HOME}/uid`)
-      expect(await exists(`${SALTO_HOME}/uid`)).toBeTruthy()
+    })
+    it('should move deprecated localStorage to new localStorage', async () => {
+      mockExists.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
+      expect(await getLocalStorage('ws', 'uid')).toEqual(`${SALTO_HOME}/uid`)
+      expect(mockRename).toHaveBeenCalledWith(`${SALTO_HOME}/ws-uid`, `${SALTO_HOME}/uid`)
     })
   })
 

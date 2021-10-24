@@ -20,7 +20,7 @@ import { workspaceConfigSource as wcs,
   WorkspaceConfig, configSource } from '@salto-io/workspace'
 import { exists, rename } from '@salto-io/file'
 import { localDirectoryStore } from './dir_store'
-import { getSaltoHome, CONFIG_DIR_NAME } from '../app_config'
+import { getSaltoHome, getLocalStoragePath, CONFIG_DIR_NAME } from '../app_config'
 import { WORKSPACE_CONFIG_NAME, ENVS_CONFIG_NAME, EnvsConfig,
   USER_CONFIG_NAME, UserDataConfig, WorkspaceMetadataConfig, envsConfigInstance,
   userDataConfigInstance, workspaceMetadataConfigInstance } from './workspace_config_types'
@@ -33,7 +33,7 @@ export type WorkspaceConfigSource = wcs.WorkspaceConfigSource & {
 }
 
 export const getLocalStorage = async (workspaceName: string, uid: string): Promise<string> => {
-  const computedLocalStorage = path.join(getSaltoHome(), `${uid}`)
+  const computedLocalStorage = getLocalStoragePath(uid)
   const deprecatedLocalStorage = path.join(getSaltoHome(), `${workspaceName}-${uid}`)
 
   if (!await exists(computedLocalStorage)) {

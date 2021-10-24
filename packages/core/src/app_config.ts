@@ -45,6 +45,10 @@ export const getConfigDir = (baseDir: string): string => (
 export const getSaltoHome = (): string =>
   process.env[SALTO_HOME_VAR] || DEFAULT_SALTO_HOME
 
+export const getLocalStoragePath = (uid: string): string => (
+  path.join(getSaltoHome(), `${uid}`)
+)
+
 const telemetryToken = (): string => (
   process.env.SALTO_TELEMETRY_TOKEN || ''
 )

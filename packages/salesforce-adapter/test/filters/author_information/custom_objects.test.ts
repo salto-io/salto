@@ -14,22 +14,20 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, PrimitiveType, PrimitiveTypes, ReferenceExpression, InstanceElement } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { CORE_ANNOTATIONS, ElemID, Element, ObjectType, PrimitiveType, PrimitiveTypes, ReferenceExpression } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
-import _ from 'lodash'
 import { FileProperties } from 'jsforce-types'
-import { mockFileProperties, mockQueryResult } from '../connection'
-import mockClient from '../client'
-import Connection from '../../src/client/jsforce'
-import SalesforceClient from '../../src/client/client'
-import { Filter, FilterResult } from '../../src/filter'
-import authorInformation, { WARNING_MESSAGE } from '../../src/filters/author_information'
-import { defaultFilterContext } from '../utils'
-import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import { API_NAME, CUSTOM_FIELD, CUSTOM_OBJECT, METADATA_TYPE } from '../../src/constants'
+import { mockFileProperties } from '../../connection'
+import mockClient from '../../client'
+import Connection from '../../../src/client/jsforce'
+import SalesforceClient from '../../../src/client/client'
+import { Filter, FilterResult } from '../../../src/filter'
+import customObjects, { WARNING_MESSAGE } from '../../../src/filters/author_information/custom_objects'
+import { defaultFilterContext } from '../../utils'
+import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
+import { API_NAME, CUSTOM_OBJECT } from '../../../src/constants'
 
-describe('author information test', () => {
+describe('custom objects author information test', () => {
   let filter: Filter
   let client: SalesforceClient
   let connection: MockInterface<Connection>
@@ -73,22 +71,9 @@ describe('author information test', () => {
       StringField__c: { refType: new ReferenceExpression(primNum.elemID, primNum) },
     },
   })
-  // In order to test an object without author information in server.
-
   beforeEach(() => {
     ({ connection, client } = mockClient())
-    connection.metadata.list
-      .mockImplementation(async inQuery => {
-        const query = collections.array.makeArray(inQuery)[0]
-        if (_.isEqual(query, { type: CUSTOM_OBJECT })) {
-          return [objectProperties]
-        }
-        if (_.isEqual(query, { type: CUSTOM_FIELD })) {
-          return [fieldProperties, nonExistentFieldProperties]
-        }
-        return []
-      })
-    filter = authorInformation({ client, config: defaultFilterContext })
+    filter = customObjects({ client, config: defaultFilterContext })
     customObject = new ObjectType({
       elemID: new ElemID('salesforce', 'Custom__c'),
       annotations: { metadataType: CUSTOM_OBJECT, [API_NAME]: 'Custom__c' },
@@ -97,54 +82,34 @@ describe('author information test', () => {
       },
     })
   })
-  it('should add author annotations to custom object', async () => {
-    await filter.onFetch?.([customObject, objectWithoutInformation])
-    checkElementAnnotations(customObject, objectProperties)
-    checkElementAnnotations(customObject.fields.StringField__c, fieldProperties)
-  })
-  it('should add annotations to to custom object instances', async () => {
-    const TestCustomRecords = mockQueryResult({
-      records: [
-        {
-          Id: 'creator_id',
-          Name: 'created_name',
-        },
-        {
-          Id: 'changed_id',
-          Name: 'changed_name',
-        },
-      ],
-      totalSize: 2,
+  describe('success', () => {
+    beforeEach(() => {
+      connection.metadata.list.mockResolvedValueOnce([objectProperties])
+      connection.metadata.list.mockResolvedValueOnce([fieldProperties, nonExistentFieldProperties])
     })
-    connection.query.mockResolvedValue(TestCustomRecords)
-    const testType = new ObjectType({ elemID: new ElemID('', 'test'),
-      annotations: { [METADATA_TYPE]: CUSTOM_OBJECT, [API_NAME]: 'otherName' } })
-    const testInst = new InstanceElement(
-      'Custom__c',
-      new ReferenceExpression(testType.elemID, testType),
-      { CreatedDate: 'created_date',
-        CreatedById: 'creator_id',
-        LastModifiedDate: 'changed_date',
-        LastModifiedById: 'changed_id' }
-    )
-    await filter.onFetch?.([testInst])
-    checkElementAnnotations(testInst, objectProperties)
-  })
-  it('should return a warning', async () => {
-    connection.metadata.list.mockImplementation(() => {
-      throw new Error()
+    it('should add author annotations to custom object', async () => {
+      await filter.onFetch?.([customObject, objectWithoutInformation])
+      checkElementAnnotations(customObject, objectProperties)
+      checkElementAnnotations(customObject.fields.StringField__c, fieldProperties)
     })
-    const res = await filter.onFetch?.([customObject]) as FilterResult
-    const err = res.errors ?? []
-    expect(res.errors).toHaveLength(1)
-    expect(err[0]).toEqual({
-      severity: 'Warning',
-      message: WARNING_MESSAGE,
+  })
+  describe('failure', () => {
+    it('should return a warning', async () => {
+      connection.metadata.list.mockImplementation(() => {
+        throw new Error()
+      })
+      const res = await filter.onFetch?.([customObject]) as FilterResult
+      const err = res.errors ?? []
+      expect(res.errors).toHaveLength(1)
+      expect(err[0]).toEqual({
+        severity: 'Warning',
+        message: WARNING_MESSAGE,
+      })
     })
   })
   describe('when feature is disabled', () => {
     it('should not add any annotations', async () => {
-      filter = authorInformation({
+      filter = customObjects({
         client,
         config: {
           ...defaultFilterContext,

@@ -68,6 +68,14 @@ const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   retryStrategy: 'NetworkError', // retry on network errors
 }
 
+// This is attempting to work around issues where the Salesforce API sometimes
+// returns invalid responses for no apparent reason, causing jsforce to crash.
+// We hope retrying will help...
+const errorMessagesToRetry = [
+  'Cannot read property \'result\' of null',
+  'Too many properties to enumerate',
+]
+
 type RateLimitBucketName = keyof ClientRateLimitConfig
 
 const isAlreadyDeletedError = (error: SfError): boolean => (
@@ -372,11 +380,8 @@ export default class SalesforceClient {
       try {
         res = await request()
       } catch (e) {
-        // This is attempting to work around a specific issue where the Salesforce API sometimes
-        // returns a null response for no apparent reason, causing jsforce to crash.
-        // We hope retrying will help...
-        if (attempts > 1 && e.message === 'Cannot read property \'result\' of null') {
-          log.warn('Encountered null result from salesforce, will retry %d more times', attempts - 1)
+        if (attempts > 1 && errorMessagesToRetry.includes(e.message)) {
+          log.warn('Encountered invalid result from salesforce, error message: %s, will retry %d more times', e.message, attempts - 1)
           return requestWithRetry(attempts - 1)
         }
         throw e

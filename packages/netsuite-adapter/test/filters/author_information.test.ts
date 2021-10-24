@@ -27,6 +27,7 @@ describe('netsuite author information', () => {
   let elements: InstanceElement[]
   let accountInstance: InstanceElement
   let customTypeInstance: InstanceElement
+  let missingInstance: InstanceElement
   const runSuiteQLMock = jest.fn()
   const runSavedSearchQueryMock = jest.fn()
   const SDFClient = mockSdfClient()
@@ -54,7 +55,9 @@ describe('netsuite author information', () => {
     accountInstance.value.internalId = '1'
     customTypeInstance = new InstanceElement('customRecordType', new ObjectType({ elemID: new ElemID(NETSUITE, 'customRecordType') }))
     customTypeInstance.value.internalId = '1'
-    elements = [accountInstance, customTypeInstance]
+    missingInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
+    missingInstance.value.internalId = '8'
+    elements = [accountInstance, customTypeInstance, missingInstance]
     filterOpts = {
       client,
       elementsSourceIndex: { getIndexes: () => Promise.resolve({
@@ -91,6 +94,50 @@ describe('netsuite author information', () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(Object.values(accountInstance.annotations)).toHaveLength(0)
     expect(Object.values(customTypeInstance.annotations)).toHaveLength(0)
+  })
+  describe('failure', () => {
+    it('bad employee schema', async () => {
+      runSuiteQLMock.mockReset()
+      runSuiteQLMock.mockResolvedValueOnce([
+        { id: '1', entityid: 'user 1 name' },
+        { id: '2', entityid: 'user 2 name' },
+        { id: '3', entityid: 'user 3 name' },
+        { id: '1', new_value: 'wow' },
+      ])
+      runSuiteQLMock.mockResolvedValueOnce([
+        { recordid: '1', recordtypeid: '-112', name: '1' },
+        { recordid: '1', recordtypeid: '-123', name: '2' },
+        { recordid: '2', recordtypeid: '-112', name: '3' },
+      ])
+      filterCreator(filterOpts).onFetch?.(elements)
+      expect(Object.values(accountInstance.annotations)).toHaveLength(0)
+    })
+    it('undefined system note result', async () => {
+      runSuiteQLMock.mockReset()
+      runSuiteQLMock.mockResolvedValueOnce([
+        { id: '1', entityid: 'user 1 name' },
+        { id: '2', entityid: 'user 2 name' },
+        { id: '3', entityid: 'user 3 name' },
+      ])
+      runSuiteQLMock.mockResolvedValueOnce(undefined)
+      filterCreator(filterOpts).onFetch?.(elements)
+    })
+    it('bad system note schema', async () => {
+      runSuiteQLMock.mockReset()
+      runSuiteQLMock.mockResolvedValueOnce([
+        { id: '1', entityid: 'user 1 name' },
+        { id: '2', entityid: 'user 2 name' },
+        { id: '3', entityid: 'user 3 name' },
+      ])
+      runSuiteQLMock.mockResolvedValueOnce([
+        { recordid: '1', recordtypeid: '-112', name: '1' },
+        { recordid: '1', recordtypeid: '-123', name: '2' },
+        { recordid: '2', recordtypeid: '-112', name: '3' },
+        { recordid: '1', test: 'wow', name: '1' },
+      ])
+      filterCreator(filterOpts).onFetch?.(elements)
+      expect(Object.values(accountInstance.annotations)).toHaveLength(0)
+    })
   })
 
   describe('no suite app client', () => {

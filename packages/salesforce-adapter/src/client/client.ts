@@ -432,7 +432,7 @@ export default class SalesforceClient {
   /**
    * Extract metadata object names
    */
-  // @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
+  @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
   public async listMetadataTypes(): Promise<MetadataObject[]> {

@@ -86,7 +86,7 @@ describe('workspace local config', () => {
     const mockRename = rename as unknown as jest.Mock
     const localStorage = path.join(getSaltoHome(), 'uid')
     beforeEach(() => {
-      jest.resetAllMocks()
+      jest.clearAllMocks()
     })
     it('should return SALTO_HOME/<uid> if it exists', async () => {
       mockExists.mockResolvedValue(true)

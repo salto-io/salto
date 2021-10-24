@@ -135,7 +135,9 @@ export const buildAdaptersConfigSource = async ({
     )
   }
 
-  const getConfigWithoutOverrides = (adapter: string): Promise<InstanceElement | undefined> => naclSource.get(new ElemID(adapter, ElemID.CONFIG_NAME, 'instance'))
+  const getConfigWithoutOverrides = (adapter: string): Promise<InstanceElement | undefined> => (
+    naclSource.get(new ElemID(adapter, ElemID.CONFIG_NAME, 'instance'))
+  )
 
   const validateConfigChanges = (configChanges: DetailedChange[]): void => {
     const updatedOverriddenIds = configOverrides.filter(
@@ -151,11 +153,7 @@ export const buildAdaptersConfigSource = async ({
     }
   }
 
-  const createConfigError = <T extends SaltoError>(error: T): T => {
-    const configError = _.cloneDeep(error)
-    configError.source = 'config'
-    return configError
-  }
+  const createConfigError = <T extends SaltoError>(error: T): T => ({ ...error, source: 'config' })
 
   return {
     getAdapter: async (adapter, defaultValue) => {

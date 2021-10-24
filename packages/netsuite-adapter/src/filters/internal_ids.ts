@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeElement, InstanceElement, isAdditionChange, isInstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeElement, InstanceElement, isAdditionChange, isInstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
@@ -101,14 +101,11 @@ const addInternalIdFieldToType = (object: ObjectType): void => {
 }
 
 const addInternalIdFieldToInstancesObjects = async (
-  instances: InstanceElement[]
-): Promise<void> => {
-  _.uniq(
-    await Promise.all(
-      instances.map(async instance => instance.getType())
-    )
-  ).forEach(addInternalIdFieldToType)
-}
+  elements: Element[]
+): Promise<void> =>
+  elements
+    .filter(isObjectType)
+    .forEach(addInternalIdFieldToType)
 
 const fetchRecordType = async (
   idParamName: string,
@@ -177,8 +174,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
     if (!client.isSuiteAppConfigured()) {
       return
     }
+    await addInternalIdFieldToInstancesObjects(elements)
     const instances = await getListOfSDFInstances(elements)
-    await addInternalIdFieldToInstancesObjects(instances)
     const recordIdMap = await createRecordIdsMap(
       client, _.uniq(instances.map(elem => elem.elemID.typeName))
     )
@@ -213,7 +210,6 @@ const filterCreator: FilterCreator = ({ client }) => ({
     if (additionInstances.length === 0) {
       return
     }
-    await addInternalIdFieldToInstancesObjects(additionInstances)
     const recordIdMap = await createRecordIdsMap(
       client, _.uniq(additionInstances.map(instance => instance.elemID.typeName))
     )

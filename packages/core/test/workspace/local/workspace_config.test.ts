@@ -84,22 +84,22 @@ describe('workspace local config', () => {
   describe('getlocalStorage', () => {
     const mockExists = exists as jest.Mock
     const mockRename = rename as unknown as jest.Mock
-    const SALTO_HOME = getSaltoHome()
+    const localStorage = path.join(getSaltoHome(), 'uid')
     beforeEach(() => {
-      jest.clearAllMocks()
+      jest.resetAllMocks()
     })
     it('should return SALTO_HOME/<uid> if it exists', async () => {
       mockExists.mockResolvedValue(true)
-      expect(await getLocalStorage('ws', 'uid')).toEqual(`${SALTO_HOME}/uid`)
+      expect(await getLocalStorage('ws', 'uid')).toEqual(localStorage)
     })
     it('should return SALTO_HOME/<uid> if it doesn\'t exists', async () => {
       mockExists.mockResolvedValueOnce(false).mockResolvedValueOnce(false)
-      expect(await getLocalStorage('ws', 'uid')).toEqual(`${SALTO_HOME}/uid`)
+      expect(await getLocalStorage('ws', 'uid')).toEqual(localStorage)
     })
     it('should move deprecated localStorage to new localStorage', async () => {
       mockExists.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
-      expect(await getLocalStorage('ws', 'uid')).toEqual(`${SALTO_HOME}/uid`)
-      expect(mockRename).toHaveBeenCalledWith(`${SALTO_HOME}/ws-uid`, `${SALTO_HOME}/uid`)
+      expect(await getLocalStorage('ws', 'uid')).toEqual(localStorage)
+      expect(mockRename).toHaveBeenCalledWith(`${getSaltoHome()}/ws-uid`, localStorage)
     })
   })
 

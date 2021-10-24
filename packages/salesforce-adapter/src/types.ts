@@ -372,6 +372,10 @@ const clientRateLimitConfigType = new ObjectType({
     read: { refType: BuiltinTypes.NUMBER },
     list: { refType: BuiltinTypes.NUMBER },
     query: { refType: BuiltinTypes.NUMBER },
+    describe: { refType: BuiltinTypes.NUMBER },
+    upsert: { refType: BuiltinTypes.NUMBER },
+    delete: { refType: BuiltinTypes.NUMBER },
+    deploy: { refType: BuiltinTypes.NUMBER },
 
   } as Record<keyof ClientRateLimitConfig, FieldDefinition>,
 })

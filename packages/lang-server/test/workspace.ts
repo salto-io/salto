@@ -17,7 +17,8 @@ import * as path from 'path'
 import { readFileSync } from 'fs'
 import _ from 'lodash'
 import { Workspace, parser, errors as wsErrors, state, nacl, staticFiles, dirStore,
-  loadWorkspace, EnvironmentsSources, remoteMap, elementSource, pathIndex } from '@salto-io/workspace'
+  loadWorkspace, EnvironmentsSources, remoteMap, elementSource, pathIndex,
+  adaptersConfigSource as acs } from '@salto-io/workspace'
 import { ElemID, SaltoError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
@@ -226,9 +227,19 @@ Promise<Workspace> => {
     setWorkspaceConfig: jest.fn(),
   }
   const mockAdaptersConf = {
-    getAdapter: jest.fn(),
-    setAdapter: jest.fn(),
-    getElementNaclFiles: jest.fn(),
+    getAdapter: mockFunction<acs.AdaptersConfigSource['getAdapter']>(),
+    setAdapter: mockFunction<acs.AdaptersConfigSource['setAdapter']>(),
+    getElementNaclFiles: mockFunction<acs.AdaptersConfigSource['getElementNaclFiles']>(),
+    getErrors: mockFunction<acs.AdaptersConfigSource['getErrors']>().mockResolvedValue(mockErrors([])),
+    getSourceRanges: mockFunction<acs.AdaptersConfigSource['getSourceRanges']>(),
+    getNaclFile: mockFunction<acs.AdaptersConfigSource['getNaclFile']>(),
+    setNaclFiles: mockFunction<acs.AdaptersConfigSource['setNaclFiles']>(),
+    flush: mockFunction<acs.AdaptersConfigSource['flush']>(),
+    getElements: mockFunction<acs.AdaptersConfigSource['getElements']>(),
+    getParsedNaclFile: mockFunction<acs.AdaptersConfigSource['getParsedNaclFile']>(),
+    getSourceMap: mockFunction<acs.AdaptersConfigSource['getSourceMap']>(),
+    listNaclFiles: mockFunction<acs.AdaptersConfigSource['listNaclFiles']>().mockResolvedValue([]),
+    isConfigFile: mockFunction<acs.AdaptersConfigSource['isConfigFile']>(),
   }
   const mockCredentialsSource = {
     get: jest.fn(),

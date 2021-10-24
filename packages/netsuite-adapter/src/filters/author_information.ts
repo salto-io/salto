@@ -137,31 +137,29 @@ const buildSystemNotesQuery = (instances: InstanceElement[]): string | undefined
 const fetchSystemNotes = async (
   client: NetsuiteClient,
   query: string
-): Promise<Record<string, string>[]> => {
+): Promise<Record<string, Record<string, string>>> => {
   const systemNotes = await querySystemNotes(client, query)
   if (_.isEmpty(systemNotes)) {
     log.warn('System note query failed')
-    return []
+    return {}
   }
-  return distinctSortedSystemNotes(systemNotes)
+  return _.keyBy(distinctSortedSystemNotes(systemNotes), note => [note.recordid, note.recordtypeid].join('_'))
 }
 
 const getElementLastModifier = (
-  element: InstanceElement,
-  systemNotes: Record<string, string>[],
+  instance: InstanceElement,
+  systemNotes: Record<string, Record<string, string>>,
   employeeNames: Record<string, string>,
 ): string | undefined => {
-  const matchingNotes = systemNotes
-    .filter(note => TYPES_TO_INTERNAL_ID[element.elemID.typeName] === note.recordtypeid)
-    .filter(note => note.recordid === element.value.internalId)
-  if (!_.isEmpty(matchingNotes)) {
-    return employeeNames[_.toString(matchingNotes[0].name)]
+  const lastNote = systemNotes[[instance.value.internalId, TYPES_TO_INTERNAL_ID[instance.elemID.typeName]].join('_')]
+  if (_.isEmpty(lastNote)) {
+    return undefined
   }
-  return undefined
+  return employeeNames[lastNote.name]
 }
 const setAuthorName = (
   instance: InstanceElement,
-  systemNotes: Record<string, string>[],
+  systemNotes: Record<string, Record<string, string>>,
   employeeNames: Record<string, string>,
 ): void => {
   const authorName = getElementLastModifier(instance, systemNotes, employeeNames)

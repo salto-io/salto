@@ -30,6 +30,7 @@ describe('netsuite author information', () => {
   const runSuiteQLMock = jest.fn()
   const runSavedSearchQueryMock = jest.fn()
   const SDFClient = mockSdfClient()
+  const clientWithoutSuiteApp = new NetsuiteClient(SDFClient)
   const suiteAppClient = {
     runSuiteQL: runSuiteQLMock,
     runSavedSearchQuery: runSavedSearchQueryMock,
@@ -90,5 +91,25 @@ describe('netsuite author information', () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(Object.values(accountInstance.annotations)).toHaveLength(0)
     expect(Object.values(customTypeInstance.annotations)).toHaveLength(0)
+  })
+
+  describe('no suite app client', () => {
+    beforeEach(() => {
+      filterOpts = {
+        client: clientWithoutSuiteApp,
+        elementsSourceIndex: { getIndexes: () => Promise.resolve({
+          serviceIdsIndex: {},
+          internalIdsIndex: {},
+          customFieldsIndex: {},
+        }) },
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }
+    })
+    it('should not change any elements in fetch', async () => {
+      await filterCreator(filterOpts).onFetch?.(elements)
+      expect(runSuiteQLMock).not.toHaveBeenCalled()
+      expect(Object.values(accountInstance.annotations)).toHaveLength(0)
+    })
   })
 })

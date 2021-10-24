@@ -73,7 +73,7 @@ describe('soap_client', () => {
 
   describe('retries', () => {
     it('when succeeds within the permitted retries should return the results', async () => {
-      getAsyncMock.mockRejectedValueOnce(new Error())
+      getAsyncMock.mockRejectedValueOnce(new Error('ECONNRESET'))
       getAsyncMock.mockResolvedValueOnce([{
         readResponse: {
           record: {
@@ -87,7 +87,7 @@ describe('soap_client', () => {
     })
 
     it('when still failing after the permitted retries should throw', async () => {
-      getAsyncMock.mockRejectedValue(new Error())
+      getAsyncMock.mockRejectedValue(new Error('ECONNRESET'))
       await expect(client.readFile(1)).rejects.toThrow()
     })
   })
@@ -611,6 +611,50 @@ describe('soap_client', () => {
 
       searchMoreWithIdAsyncMock.mockResolvedValue([{}])
       await expect(client.getAllRecords(['subsidiary'])).rejects.toThrow()
+    })
+
+    it('Should retry if got unexpected error', async () => {
+      searchAsyncMock.mockResolvedValue([{
+        searchResult: {
+          totalPages: 2,
+          searchId: 'someId',
+          recordList: {
+            record: [{ id: 'id1' }],
+          },
+        },
+      }])
+
+      searchMoreWithIdAsyncMock.mockResolvedValueOnce([{
+        searchResult: {
+          status: {
+            attributes: {
+              isSuccess: 'false',
+            },
+            statusDetail: [
+              {
+                attributes: {
+                  type: 'ERROR',
+                },
+                code: 'UNEXPECTED_ERROR',
+                message: 'An unexpected error occurred. Error ID: kv2v69egzfx8zkrdc802',
+              },
+            ],
+          },
+        },
+      }])
+
+      searchMoreWithIdAsyncMock.mockResolvedValueOnce([{
+        searchResult: {
+          totalPages: 2,
+          searchId: 'someId',
+          recordList: {
+            record: [{ id: 'id2' }],
+          },
+        },
+      }])
+
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{ id: 'id1' }, { id: 'id2' }])
+      expect(searchMoreWithIdAsyncMock).toHaveBeenCalledTimes(2)
     })
 
     it('Should use getAll if search not supported', async () => {

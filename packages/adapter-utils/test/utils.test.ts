@@ -923,6 +923,38 @@ describe('Test utils.ts', () => {
         expect(_.isEmpty(callArgs?.field?.annotations)).toBeFalsy()
       })
     })
+
+    describe('allowEmpty', () => {
+      const element = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+        {
+          val1: [],
+          val2: undefined,
+          val3: {},
+        }
+      )
+
+      it('allowEmpty = true should not remove empty objects and arrays', async () => {
+        const transformedElement = await transformElement({
+          element,
+          transformFunc: ({ value }) => value,
+          strict: false,
+          allowEmpty: true,
+        })
+        expect(transformedElement.value).toEqual({ val1: [], val3: {} })
+      })
+
+      it('allowEmpty = false should remove empty objects and arrays', async () => {
+        const transformedElement = await transformElement({
+          element,
+          transformFunc: ({ value }) => value,
+          strict: false,
+          allowEmpty: false,
+        })
+        expect(transformedElement.value).toEqual({})
+      })
+    })
   })
 
   describe('resolveValues func', () => {

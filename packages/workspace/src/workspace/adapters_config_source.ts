@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { DetailedChange, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
-import { applyDetailedChanges, buildElementsSourceFromElements, detailedCompare, transformValues } from '@salto-io/adapter-utils'
+import { applyDetailedChanges, buildElementsSourceFromElements, detailedCompare, transformElement } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import path from 'path'
@@ -44,17 +44,13 @@ export type AdaptersConfigSource = {
   isConfigFile(filePath: string): boolean
 } & PartialNaclFilesSource
 
-const removeUndefined = async (instance: InstanceElement): Promise<InstanceElement> => {
-  const transformedElement = instance.clone()
-  transformedElement.value = await transformValues({
-    values: instance.value,
-    type: await instance.getType(),
+const removeUndefined = async (instance: InstanceElement): Promise<InstanceElement> =>
+  transformElement({
+    element: instance,
     strict: false,
     allowEmpty: true,
     transformFunc: ({ value }) => value,
-  }) ?? {}
-  return transformedElement
-}
+  })
 
 const updateValidationErrorsCache = async (
   validationErrorsMap: RemoteMap<ValidationError[]>,
@@ -66,6 +62,7 @@ const updateValidationErrorsCache = async (
     elementsSource
   )
 
+  await validationErrorsMap.clear()
   await validationErrorsMap.setAll(
     _(validationErrors)
       .groupBy(err => err.elemID.createTopLevelParentID().parent.getFullName())

@@ -20,7 +20,7 @@ import path from 'path'
 import * as soap from 'soap'
 import _ from 'lodash'
 import { InstanceElement, isListType, isObjectType, ObjectType } from '@salto-io/adapter-api'
-import { collections, strings } from '@salto-io/lowerdash'
+import { collections, decorators, strings } from '@salto-io/lowerdash'
 import uuidv4 from 'uuid/v4'
 import { SuiteAppCredentials, toUrlAccountId } from '../../credentials'
 import { CONSUMER_KEY, CONSUMER_SECRET } from '../constants'
@@ -44,6 +44,8 @@ const REQUEST_MAX_RETRIES = 5
 // When updating the version, we should also update the types in src/data_elements/types.ts
 const NETSUITE_VERSION = '2020_2'
 const SEARCH_PAGE_SIZE = 100
+
+const RETRYABLE_MESSAGES = ['ECONN', 'UNEXPECTED_ERROR']
 
 type SoapSearchType = {
   type: string
@@ -73,6 +75,27 @@ export default class SoapClient {
     return this.client
   }
 
+  private static retryOnBadResponse = decorators.wrapMethodWith(
+    async (
+      call: decorators.OriginalCall,
+    ): Promise<unknown> => {
+      const runWithRetry = async (retriesLeft: number): Promise<unknown> => {
+        try {
+          // eslint-disable-next-line @typescript-eslint/return-await
+          return await call.call()
+        } catch (e) {
+          if (RETRYABLE_MESSAGES.some(message => e.message.includes(message)) && retriesLeft > 0) {
+            log.warn('Retrying soap request with error: %o. Retries left: %d', e, retriesLeft)
+            return runWithRetry(retriesLeft - 1)
+          }
+          throw e
+        }
+      }
+      return runWithRetry(REQUEST_MAX_RETRIES)
+    }
+  )
+
+  @SoapClient.retryOnBadResponse
   public async readFile(id: number): Promise<Buffer> {
     const body = {
       baseRef: {
@@ -177,6 +200,7 @@ export default class SoapClient {
     }
   }
 
+  @SoapClient.retryOnBadResponse
   public async addFileCabinetInstances(fileCabinetInstances:
     (FileCabinetInstanceDetails)[]): Promise<(number | Error)[]> {
     const body = {
@@ -209,6 +233,7 @@ export default class SoapClient {
     })
   }
 
+  @SoapClient.retryOnBadResponse
   public async deleteFileCabinetInstances(instances: ExistingFileCabinetInstanceDetails[]):
   Promise<(number | Error)[]> {
     const body = {
@@ -241,6 +266,7 @@ export default class SoapClient {
     })
   }
 
+  @SoapClient.retryOnBadResponse
   public async updateFileCabinetInstances(fileCabinetInstances:
     ExistingFileCabinetInstanceDetails[]): Promise<(number | Error)[]> {
     const body = {
@@ -282,27 +308,21 @@ export default class SoapClient {
 
   private async sendSoapRequest(operation: string, body: object): Promise<unknown> {
     const client = await this.getClient()
-    const sendWithRetries = async (retriesLeft: number): Promise<unknown> => {
-      try {
-        return await this.callsLimiter(async () => (await client[`${operation}Async`](body))[0])
-      } catch (e) {
-        if (e.message.includes('Invalid login attempt.')) {
-          throw new InvalidSuiteAppCredentialsError()
-        }
-        log.warn('Soap request failed with error: %o, retries left: %d', e, retriesLeft)
-        if (retriesLeft > 0) {
-          return sendWithRetries(retriesLeft - 1)
-        }
-        throw e
+    try {
+      return await this.callsLimiter(async () => (await client[`${operation}Async`](body))[0])
+    } catch (e) {
+      if (e.message.includes('Invalid login attempt.')) {
+        throw new InvalidSuiteAppCredentialsError()
       }
+      throw e
     }
-    return sendWithRetries(REQUEST_MAX_RETRIES)
   }
 
   private static getSearchType(type: string): string {
     return `${strings.capitalizeFirstLetter(type)}Search`
   }
 
+  @SoapClient.retryOnBadResponse
   public async getAllRecords(types: string[]): Promise<Record<string, unknown>[]> {
     log.debug(`Getting all records of ${types.join(', ')}`)
 
@@ -408,6 +428,7 @@ export default class SoapClient {
     })
   }
 
+  @SoapClient.retryOnBadResponse
   public async updateInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     const body = {
       attributes: {
@@ -420,6 +441,7 @@ export default class SoapClient {
     return this.runDeployAction(instances, body, 'updateList')
   }
 
+  @SoapClient.retryOnBadResponse
   public async addInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     const body = {
       attributes: {
@@ -432,6 +454,7 @@ export default class SoapClient {
     return this.runDeployAction(instances, body, 'addList')
   }
 
+  @SoapClient.retryOnBadResponse
   public async deleteInstances(instances: InstanceElement[]):
   Promise<(number | Error)[]> {
     const body = {

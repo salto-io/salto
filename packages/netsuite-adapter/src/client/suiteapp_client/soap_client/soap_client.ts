@@ -52,6 +52,26 @@ type SoapSearchType = {
   subtypes?: string[]
 }
 
+const retryOnBadResponse = decorators.wrapMethodWith(
+  async (
+    call: decorators.OriginalCall,
+  ): Promise<unknown> => {
+    const runWithRetry = async (retriesLeft: number): Promise<unknown> => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/return-await
+        return await call.call()
+      } catch (e) {
+        if (RETRYABLE_MESSAGES.some(message => e.message.includes(message)) && retriesLeft > 0) {
+          log.warn('Retrying soap request with error: %o. Retries left: %d', e, retriesLeft)
+          return runWithRetry(retriesLeft - 1)
+        }
+        throw e
+      }
+    }
+    return runWithRetry(REQUEST_MAX_RETRIES)
+  }
+)
+
 export default class SoapClient {
   private credentials: SuiteAppCredentials
   private callsLimiter: CallsLimiter
@@ -75,27 +95,7 @@ export default class SoapClient {
     return this.client
   }
 
-  private static retryOnBadResponse = decorators.wrapMethodWith(
-    async (
-      call: decorators.OriginalCall,
-    ): Promise<unknown> => {
-      const runWithRetry = async (retriesLeft: number): Promise<unknown> => {
-        try {
-          // eslint-disable-next-line @typescript-eslint/return-await
-          return await call.call()
-        } catch (e) {
-          if (RETRYABLE_MESSAGES.some(message => e.message.includes(message)) && retriesLeft > 0) {
-            log.warn('Retrying soap request with error: %o. Retries left: %d', e, retriesLeft)
-            return runWithRetry(retriesLeft - 1)
-          }
-          throw e
-        }
-      }
-      return runWithRetry(REQUEST_MAX_RETRIES)
-    }
-  )
-
-  @SoapClient.retryOnBadResponse
+  @retryOnBadResponse
   public async readFile(id: number): Promise<Buffer> {
     const body = {
       baseRef: {
@@ -200,7 +200,7 @@ export default class SoapClient {
     }
   }
 
-  @SoapClient.retryOnBadResponse
+  @retryOnBadResponse
   public async addFileCabinetInstances(fileCabinetInstances:
     (FileCabinetInstanceDetails)[]): Promise<(number | Error)[]> {
     const body = {
@@ -233,7 +233,7 @@ export default class SoapClient {
     })
   }
 
-  @SoapClient.retryOnBadResponse
+  @retryOnBadResponse
   public async deleteFileCabinetInstances(instances: ExistingFileCabinetInstanceDetails[]):
   Promise<(number | Error)[]> {
     const body = {
@@ -266,7 +266,7 @@ export default class SoapClient {
     })
   }
 
-  @SoapClient.retryOnBadResponse
+  @retryOnBadResponse
   public async updateFileCabinetInstances(fileCabinetInstances:
     ExistingFileCabinetInstanceDetails[]): Promise<(number | Error)[]> {
     const body = {
@@ -322,7 +322,7 @@ export default class SoapClient {
     return `${strings.capitalizeFirstLetter(type)}Search`
   }
 
-  @SoapClient.retryOnBadResponse
+  @retryOnBadResponse
   public async getAllRecords(types: string[]): Promise<Record<string, unknown>[]> {
     log.debug(`Getting all records of ${types.join(', ')}`)
 
@@ -428,7 +428,7 @@ export default class SoapClient {
     })
   }
 
-  @SoapClient.retryOnBadResponse
+  @retryOnBadResponse
   public async updateInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     const body = {
       attributes: {
@@ -441,7 +441,7 @@ export default class SoapClient {
     return this.runDeployAction(instances, body, 'updateList')
   }
 
-  @SoapClient.retryOnBadResponse
+  @retryOnBadResponse
   public async addInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
     const body = {
       attributes: {
@@ -454,7 +454,7 @@ export default class SoapClient {
     return this.runDeployAction(instances, body, 'addList')
   }
 
-  @SoapClient.retryOnBadResponse
+  @retryOnBadResponse
   public async deleteInstances(instances: InstanceElement[]):
   Promise<(number | Error)[]> {
     const body = {

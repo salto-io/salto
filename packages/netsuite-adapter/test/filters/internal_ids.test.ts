@@ -86,6 +86,27 @@ describe('netsuite internal ids', () => {
       expect(customTypeInstance.value.internalId).not.toBeDefined()
       expect(customListInstance.value.internalId).not.toBeDefined()
     })
+    it('should not change any elements in pre deploy', async () => {
+      customTypeInstance.value.internalId = '2'
+      customListInstance.value.internalId = '3'
+      const clientWithoutSuiteApp = new NetsuiteClient(SDFClient)
+      filterOpts = {
+        client: clientWithoutSuiteApp,
+        elementsSourceIndex: { getIndexes: () => Promise.resolve({
+          serviceIdsIndex: {},
+          internalIdsIndex: {},
+          customFieldsIndex: {},
+        }) },
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }
+      await filterCreator(filterOpts).preDeploy?.(
+        instances.map(instance => toChange({ after: instance }))
+      )
+      expect(accountInstance.value.internalId).toBe('1')
+      expect(customTypeInstance.value.internalId).toBe('2')
+      expect(customListInstance.value.internalId).toBe('3')
+    })
     it('should not change any elements in deploy', async () => {
       const clientWithoutSuiteApp = new NetsuiteClient(SDFClient)
       filterOpts = {
@@ -112,6 +133,13 @@ describe('netsuite internal ids', () => {
       expect(runSuiteQLMock).not.toHaveBeenCalled()
       expect(customTypeInstance.value.internalId).not.toBeDefined()
       expect(customListInstance.value.internalId).not.toBeDefined()
+    })
+  })
+  describe('bad schema', () => {
+    it('bad record id schema', async () => {
+      runSuiteQLMock.mockReset()
+      runSuiteQLMock.mockResolvedValueOnce({ scriptid: 'scriptId3' })
+      await expect(filterCreator(filterOpts).onFetch?.(elements)).rejects.toThrow()
     })
   })
   describe('fetch', () => {
@@ -146,31 +174,50 @@ describe('netsuite internal ids', () => {
     })
   })
   describe('deploy', () => {
-    beforeEach(async () => {
-      await filterCreator(filterOpts).onDeploy?.(
-        [
-          toChange({ before: accountInstance, after: accountInstance }),
-          toChange({ after: customTypeInstance }),
-          toChange({ after: customListInstance }),
-        ],
-        {
-          appliedChanges: [],
-          errors: [],
-        },
-      )
+    describe('success', () => {
+      beforeEach(async () => {
+        await filterCreator(filterOpts).onDeploy?.(
+          [
+            toChange({ before: accountInstance, after: accountInstance }),
+            toChange({ after: customTypeInstance }),
+            toChange({ after: customListInstance }),
+          ],
+          {
+            appliedChanges: [],
+            errors: [],
+          },
+        )
+      })
+      it('should query information from api', () => {
+        expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, id FROM customRecordType ORDER BY id ASC')
+        expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, id FROM customList ORDER BY id ASC')
+        expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, 'SELECT scriptid, internalid FROM customRecordType ORDER BY internalid ASC')
+        expect(runSuiteQLMock).toHaveBeenCalledTimes(3)
+      })
+      it('should add internal ids to new elements', () => {
+        expect(customTypeInstance.value.internalId).toBe('2')
+        expect(customListInstance.value.internalId).toBe('3')
+      })
+      it('should do nothing to modified elements', () => {
+        expect(accountInstance.value.internalId).toBe('1')
+      })
     })
-    it('should query information from api', () => {
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, id FROM customRecordType ORDER BY id ASC')
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, id FROM customList ORDER BY id ASC')
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, 'SELECT scriptid, internalid FROM customRecordType ORDER BY internalid ASC')
-      expect(runSuiteQLMock).toHaveBeenCalledTimes(3)
-    })
-    it('should add internal ids to new elements', () => {
-      expect(customTypeInstance.value.internalId).toBe('2')
-      expect(customListInstance.value.internalId).toBe('3')
-    })
-    it('should do nothing to modified elements', () => {
-      expect(accountInstance.value.internalId).toBe('1')
+    describe('failure', () => {
+      it('No addition instances', async () => {
+        await filterCreator(filterOpts).onDeploy?.(
+          [
+            toChange({ before: accountInstance, after: accountInstance }),
+            toChange({ before: customTypeInstance, after: customTypeInstance }),
+            toChange({ before: customListInstance, after: customListInstance }),
+          ],
+          {
+            appliedChanges: [],
+            errors: [],
+          },
+        )
+        expect(customTypeInstance.value.internalId).not.toBeDefined()
+        expect(customListInstance.value.internalId).not.toBeDefined()
+      })
     })
   })
 })

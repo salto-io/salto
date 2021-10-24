@@ -17,12 +17,10 @@ import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeElemen
 import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
-import { values } from '@salto-io/lowerdash'
 import { isDataObjectType } from '../types'
 import { FilterCreator } from '../filter'
 import NetsuiteClient from '../client/client'
 
-const { isDefined } = values
 const log = logger(module)
 const RECORD_ID_SCHEMA = {
   items: {
@@ -105,6 +103,14 @@ const addInternalIdFieldToInstancesObjects = async (
     .filter(isObjectType)
     .forEach(addInternalIdFieldToType)
 
+const formatRecordIdResult = (results: RecordIdResult[]): Record<string, string> =>
+  Object.fromEntries(results.map(entry => {
+    if ('id' in entry) {
+      return [entry.scriptid, entry.id]
+    }
+    return [entry.scriptid, entry.internalid]
+  }))
+
 const fetchRecordType = async (
   idParamName: string,
   client: NetsuiteClient,
@@ -115,16 +121,7 @@ const fetchRecordType = async (
   if (_.isUndefined(recordTypeIds) || _.isEmpty(recordTypeIds)) {
     return {}
   }
-  const recordIdEntries = recordTypeIds.map(entry => {
-    if (isDefined((entry as IdRecordIdResult).id)) {
-      return [entry.scriptid, (entry as IdRecordIdResult).id]
-    }
-    if (isDefined((entry as InternalIdRecordIdResult).internalid)) {
-      return [entry.scriptid, (entry as InternalIdRecordIdResult).internalid]
-    }
-    return undefined
-  }).filter(isDefined)
-  return Object.fromEntries(recordIdEntries)
+  return formatRecordIdResult(recordTypeIds)
 }
 
 const fetchRecordIdsForRecordType = async (

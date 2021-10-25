@@ -82,7 +82,6 @@ const DEFAULT_READ_METADATA_CHUNK_SIZE: Required<ReadMetadataChunkSizeConfig> = 
 const errorMessagesToRetry = [
   'Cannot read property \'result\' of null',
   'Too many properties to enumerate',
-  'Cannot read properties of null (reading \'result\')',
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig

@@ -93,7 +93,7 @@ describe('workspace local config', () => {
       expect(await getLocalStorage('ws', 'uid')).toEqual(localStorage)
     })
     it('should return SALTO_HOME/<uid> if it doesn\'t exists', async () => {
-      mockExists.mockResolvedValueOnce(false).mockResolvedValueOnce(false)
+      mockExists.mockResolvedValue(false)
       expect(await getLocalStorage('ws', 'uid')).toEqual(localStorage)
     })
     it('should move deprecated localStorage to new localStorage', async () => {
@@ -149,7 +149,7 @@ describe('workspace local config', () => {
           [`${WORKSPACE_CONFIG_NAME}.nacl`]: 'workspace {}',
         })
         mockCreateDirStore.mockImplementation(() => noEnvsDirStore)
-        const conf = await workspaceConfigSource('bla')
+        const conf = await workspaceConfigSource('bla', '/tmp/path')
         await expect(conf.getWorkspaceConfig()).rejects.toThrow(new NoEnvsConfig())
       })
       it('should throw no workspace Error', async () => {
@@ -167,7 +167,7 @@ describe('workspace local config', () => {
           }),
         } as unknown as dirStore.DirectoryStore<string>
         mockCreateDirStore.mockImplementation(() => secondWorkspaceError)
-        const conf = await workspaceConfigSource('bla')
+        const conf = await workspaceConfigSource('bla', '/tmp/path')
         await expect(conf.getWorkspaceConfig()).rejects.toThrow(new NoWorkspaceConfig())
       })
     })

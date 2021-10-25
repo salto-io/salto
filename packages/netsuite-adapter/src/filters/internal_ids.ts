@@ -19,46 +19,10 @@ import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import { isDataObjectType } from '../types'
 import { FilterCreator } from '../filter'
+import { RECORD_ID_SCHEMA, RECORD_ID_PARAMETER_MAP } from './constants'
 import NetsuiteClient from '../client/client'
 
 const log = logger(module)
-const RECORD_ID_SCHEMA = {
-  items: {
-    anyOf: [
-      {
-        properties: {
-          id: {
-            type: 'string',
-          },
-          scriptid: {
-            type: 'string',
-          },
-        },
-        required: [
-          'id',
-          'scriptid',
-        ],
-        type: 'object',
-      },
-      {
-        properties: {
-          internalid: {
-            type: 'string',
-          },
-          scriptid: {
-            type: 'string',
-          },
-        },
-        required: [
-          'internalid',
-          'scriptid',
-        ],
-        type: 'object',
-      },
-    ],
-  },
-  type: 'array',
-}
 
 type IdRecordIdResult = {
   scriptid: string
@@ -112,10 +76,13 @@ const formatRecordIdResult = (results: RecordIdResult[]): Record<string, string>
   }))
 
 const fetchRecordType = async (
-  idParamName: string,
+  idParamName: string | undefined,
   client: NetsuiteClient,
   recordType: string,
 ): Promise<Record<string, string>> => {
+  if (_.isUndefined(idParamName)) {
+    return {}
+  }
   const query = `SELECT scriptid, ${idParamName} FROM ${recordType} ORDER BY ${idParamName} ASC`
   const recordTypeIds = await queryRecordIds(client, query, recordType)
   if (_.isUndefined(recordTypeIds) || _.isEmpty(recordTypeIds)) {
@@ -127,13 +94,8 @@ const fetchRecordType = async (
 const fetchRecordIdsForRecordType = async (
   recordType: string,
   client: NetsuiteClient
-): Promise<Record<string, string>> => {
-  const internalIdQueryResults = await fetchRecordType('id', client, recordType)
-  if (!_.isEmpty(internalIdQueryResults)) {
-    return internalIdQueryResults
-  }
-  return fetchRecordType('internalid', client, recordType)
-}
+): Promise<Record<string, string>> =>
+  fetchRecordType(RECORD_ID_PARAMETER_MAP[recordType], client, recordType)
 
 const createRecordIdsMap = async (
   client: NetsuiteClient,

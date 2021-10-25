@@ -133,7 +133,7 @@ export const filterInvalidChanges = async (
     const createDependencyErr = (causeID: ElemID, droppedID: ElemID): DependencyError => {
       const message = `Dropped changes to ${
         droppedID.getFullName()
-      } due to an error in ${droppedID.getFullName()}`
+      } due to an error in ${causeID.getFullName()}`
       return {
         causeID,
         elemID: droppedID,

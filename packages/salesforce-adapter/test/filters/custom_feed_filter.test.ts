@@ -21,7 +21,7 @@ import filterCreator, {
 import mockClient from '../client'
 import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
-import SalesforceClient from '../../src/client/client'
+import SalesforceClient, { MAX_ITEMS_IN_READ_METADATA_REQUEST } from '../../src/client/client'
 import { apiName } from '../../src/transformers/transformer'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { defaultFilterContext } from '../utils'
@@ -94,7 +94,10 @@ describe('Test CustomFeedFilter', () => {
       await filter.onFetch(testElements)
       expect(mockReadMetadata)
         .toHaveBeenCalledWith(
-          CUSTOM_FEED_FILTER_METADATA_TYPE, [instanceName], undefined, undefined
+          CUSTOM_FEED_FILTER_METADATA_TYPE,
+          [instanceName],
+          undefined,
+          MAX_ITEMS_IN_READ_METADATA_REQUEST,
         )
       expect(testElements).toHaveLength(4)
       const instance = testElements[3]

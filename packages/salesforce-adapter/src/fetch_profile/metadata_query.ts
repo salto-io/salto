@@ -21,7 +21,6 @@ export type MetadataQuery = {
   isTypeMatch: (type: string) => boolean
   isInstanceMatch: (instance: MetadataInstance) => boolean
   isPartialFetch: () => boolean
-  chunkSize: (type: string) => number | undefined
 }
 
 const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
@@ -39,7 +38,7 @@ const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
 ]
 
 export const buildMetadataQuery = (
-  { include = [{}], exclude = [], readChunkSize = {} }: MetadataParams,
+  { include = [{}], exclude = [] }: MetadataParams,
   target?: string[],
 ): MetadataQuery => {
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
@@ -80,9 +79,6 @@ export const buildMetadataQuery = (
     ))
   )
 
-  const chunkSize = (type: string): number | undefined =>
-    readChunkSize[type]?.chunkSize
-
   return {
     isTypeMatch: type => isTypeIncluded(type) && !isTypeExcluded(type),
 
@@ -92,7 +88,6 @@ export const buildMetadataQuery = (
     ),
 
     isPartialFetch: () => target !== undefined,
-    chunkSize,
   }
 }
 

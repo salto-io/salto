@@ -23,7 +23,7 @@ import { MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, values, promises, objects } from '@salto-io/lowerdash'
-import SalesforceClient from './client/client'
+import SalesforceClient, { MAX_ITEMS_IN_READ_METADATA_REQUEST } from './client/client'
 import * as constants from './constants'
 import { apiName, Types, isMetadataObjectType } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
@@ -64,7 +64,7 @@ import valueToStaticFileFilter from './filters/value_to_static_file'
 import convertMapsFilter from './filters/convert_maps'
 import elementsUrlFilter from './filters/elements_url'
 import territoryFilter from './filters/territory'
-import { FetchElements, SalesforceConfig } from './types'
+import { CLIENT_CONFIG, FetchElements, ReadMetadataChunkSizeConfig, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { FilterCreator, Filter, FilterResult } from './filter'
 import { addDefaults } from './filters/utils'
@@ -171,6 +171,9 @@ export interface SalesforceAdapterParams {
   config: SalesforceConfig
 
   elementsSource: ReadOnlyElementsSource
+
+  // defines the chunk size for read metadata on specific metadata types and the default value
+  readMetadataChunkSize?: ReadMetadataChunkSizeConfig
 }
 
 const metadataToRetrieveAndDeploy = [
@@ -227,7 +230,6 @@ export const allSystemFields = [
   'SetupOwnerId',
 ]
 
-
 export default class SalesforceAdapter implements AdapterOperations {
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]
@@ -237,11 +239,19 @@ export default class SalesforceAdapter implements AdapterOperations {
   private client: SalesforceClient
   private userConfig: SalesforceConfig
   private fetchProfile: FetchProfile
+  private readMetadataChunkSize: ReadMetadataChunkSizeConfig
 
   public constructor({
     metadataTypesOfInstancesFetchedInFilters = [CUSTOM_FEED_FILTER_METADATA_TYPE],
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieve = metadataToRetrieveAndDeploy,
+    readMetadataChunkSize = {
+      default: MAX_ITEMS_IN_READ_METADATA_REQUEST,
+      overrides: {
+        Profile: 1,
+        PermissionSet: 1,
+      },
+    },
     nestedMetadataTypes = {
       CustomLabels: {
         nestedInstanceFields: ['labels'],
@@ -302,6 +312,11 @@ export default class SalesforceAdapter implements AdapterOperations {
 
     const fetchProfile = buildFetchProfile(config.fetch ?? {})
     this.fetchProfile = fetchProfile
+    this.readMetadataChunkSize = _.merge(
+      {},
+      readMetadataChunkSize,
+      (config[CLIENT_CONFIG]?.readMetadataChunkSize ?? {}),
+    )
     this.createFiltersRunner = () => filter.filtersRunner(
       {
         client,
@@ -311,6 +326,7 @@ export default class SalesforceAdapter implements AdapterOperations {
           useOldProfiles: config.useOldProfiles ?? useOldProfiles,
           fetchProfile,
           elementsSource,
+          readMetadataChunkSize: this.readMetadataChunkSize,
         },
       },
       filterCreators,
@@ -496,6 +512,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       fileProps,
       metadataType: type,
       metadataQuery: this.fetchProfile.metadataQuery,
+      readMetadataChunkSize: this.readMetadataChunkSize,
     })
     return {
       elements: instances.elements,

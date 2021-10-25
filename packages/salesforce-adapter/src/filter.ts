@@ -17,7 +17,7 @@ import { ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
 import { filter } from '@salto-io/adapter-utils'
 import SalesforceClient from './client/client'
 import { FetchProfile } from './fetch_profile/fetch_profile'
-import { ConfigChangeSuggestion } from './types'
+import { ConfigChangeSuggestion, ReadMetadataChunkSizeConfig } from './types'
 
 export type FilterContext = {
   unsupportedSystemFields?: string[]
@@ -25,6 +25,7 @@ export type FilterContext = {
   useOldProfiles?: boolean
   fetchProfile: FetchProfile
   elementsSource: ReadOnlyElementsSource
+  readMetadataChunkSize: ReadMetadataChunkSizeConfig
 }
 
 export type FilterOpts = {

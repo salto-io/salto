@@ -30,6 +30,7 @@ import { getNamespaceFromString } from '../src/filters/utils'
 import { FilterContext } from '../src/filter'
 import { allSystemFields } from '../src/adapter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
+import { MAX_ITEMS_IN_READ_METADATA_REQUEST } from '../src/client/client'
 
 export const findElements = (
   elements: ReadonlyArray<Element>,
@@ -287,4 +288,5 @@ export const defaultFilterContext: FilterContext = {
   systemFields: allSystemFields,
   fetchProfile: buildFetchProfile({}),
   elementsSource: buildElementsSourceFromElements([]),
+  readMetadataChunkSize: { default: MAX_ITEMS_IN_READ_METADATA_REQUEST, overrides: {} },
 }

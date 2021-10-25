@@ -213,6 +213,7 @@ export const makeFilter = (
         fileProps: [...standardValueSetNames].map(emptyFileProperties),
         metadataType: svsMetadataType,
         metadataQuery: config.fetchProfile.metadataQuery,
+        readMetadataChunkSize: config.readMetadataChunkSize,
       })
       elements.push(...svsInstances.elements)
 

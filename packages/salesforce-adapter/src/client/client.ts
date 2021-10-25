@@ -56,7 +56,7 @@ const MAX_ITEMS_IN_DESCRIBE_REQUEST = 100
 
 // Salesforce limitation of maximum number of items per readMetadata call
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_readMetadata.htm
-const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
+export const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
 
 // Salesforce limitation of maximum number of ListMetadataQuery per listMetadata call
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_listmetadata.htm?search_text=listmetadata

@@ -66,7 +66,7 @@ export type DependencyError = ChangeError & {
   causeID: ElemID
 }
 
-export const isDependencyError = (err: ChangeError): err is DependencyError => 'causeID' in err && err.causeID !== undefined
+export const isDependencyError = (err: ChangeError): err is DependencyError => 'causeID' in err
 
 export type ChangeValidator = (changes: ReadonlyArray<Change>) =>
   Promise<ReadonlyArray<ChangeError>>

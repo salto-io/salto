@@ -222,7 +222,11 @@ const sendChunked = async <TIn, TOut>({
   const sendSingleChunk = async (chunkInput: TIn[]):
   Promise<SendChunkedResult<TIn, TOut>> => {
     try {
-      return { result: makeArray(await sendChunk(chunkInput)).map(flatValues), errors: [] }
+      const result = makeArray(await sendChunk(chunkInput)).map(flatValues)
+      if (chunkSize === 1 && chunkInput.length > 0) {
+        log.debug('Finished %s on %o', operationInfo, chunkInput[0])
+      }
+      return { result, errors: [] }
     } catch (error) {
       if (chunkInput.length > 1) {
         // Try each input individually to single out the one that caused the error

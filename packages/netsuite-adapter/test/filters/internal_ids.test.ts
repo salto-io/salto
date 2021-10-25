@@ -29,7 +29,8 @@ describe('netsuite internal ids', () => {
   let customTypeObject: ObjectType
   let accountInstance: InstanceElement
   let customTypeInstance: InstanceElement
-  let customListInstance: InstanceElement
+  let customScriptInstance: InstanceElement
+  let savedSearchInstance: InstanceElement
   const runSuiteQLMock = jest.fn()
   const runSavedSearchQueryMock = jest.fn()
   const SDFClient = mockSdfClient()
@@ -43,11 +44,13 @@ describe('netsuite internal ids', () => {
     customTypeObject = new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecordtype') })
     accountInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
     customTypeInstance = new InstanceElement('customRecordType', customTypeObject)
-    customListInstance = new InstanceElement('customList', new ObjectType({ elemID: new ElemID(NETSUITE, 'customlist') }))
+    customScriptInstance = new InstanceElement('customScript', new ObjectType({ elemID: new ElemID(NETSUITE, 'clientscript') }))
+    savedSearchInstance = new InstanceElement('savedSearch', new ObjectType({ elemID: new ElemID(NETSUITE, 'savedseach') }))
     accountInstance.value.internalId = '1'
     customTypeInstance.value.scriptid = 'scriptId2'
-    customListInstance.value.scriptid = 'scriptId3'
-    instances = [accountInstance, customTypeInstance, customListInstance]
+    customScriptInstance.value.scriptid = 'scriptId3'
+    savedSearchInstance.value.scriptid = 'scriptId4'
+    instances = [accountInstance, customTypeInstance, customScriptInstance, savedSearchInstance]
     elements = [...instances, customTypeObject]
     filterOpts = {
       client,
@@ -64,7 +67,7 @@ describe('netsuite internal ids', () => {
       { scriptid: 'scriptId2', internalid: '2' },
     ])
     runSuiteQLMock.mockResolvedValueOnce([
-      { scriptid: 'scriptId3', internalid: '3' },
+      { scriptid: 'scriptId3', id: '3' },
     ])
   })
   describe('no suite app client', () => {
@@ -83,11 +86,11 @@ describe('netsuite internal ids', () => {
       await filterCreator(filterOpts).onFetch?.(elements)
       expect(runSuiteQLMock).not.toHaveBeenCalled()
       expect(customTypeInstance.value.internalId).not.toBeDefined()
-      expect(customListInstance.value.internalId).not.toBeDefined()
+      expect(customScriptInstance.value.internalId).not.toBeDefined()
     })
     it('should not change any elements in pre deploy', async () => {
       customTypeInstance.value.internalId = '2'
-      customListInstance.value.internalId = '3'
+      customScriptInstance.value.internalId = '3'
       const clientWithoutSuiteApp = new NetsuiteClient(SDFClient)
       filterOpts = {
         client: clientWithoutSuiteApp,
@@ -104,7 +107,7 @@ describe('netsuite internal ids', () => {
       )
       expect(accountInstance.value.internalId).toBe('1')
       expect(customTypeInstance.value.internalId).toBe('2')
-      expect(customListInstance.value.internalId).toBe('3')
+      expect(customScriptInstance.value.internalId).toBe('3')
     })
     it('should not change any elements in deploy', async () => {
       const clientWithoutSuiteApp = new NetsuiteClient(SDFClient)
@@ -122,7 +125,7 @@ describe('netsuite internal ids', () => {
         [
           toChange({ before: accountInstance, after: accountInstance }),
           toChange({ after: customTypeInstance }),
-          toChange({ after: customListInstance }),
+          toChange({ after: customScriptInstance }),
         ],
         {
           appliedChanges: [],
@@ -131,7 +134,7 @@ describe('netsuite internal ids', () => {
       )
       expect(runSuiteQLMock).not.toHaveBeenCalled()
       expect(customTypeInstance.value.internalId).not.toBeDefined()
-      expect(customListInstance.value.internalId).not.toBeDefined()
+      expect(customScriptInstance.value.internalId).not.toBeDefined()
     })
   })
   describe('bad schema', () => {
@@ -147,13 +150,13 @@ describe('netsuite internal ids', () => {
     })
     it('should query information from api', () => {
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, internalid FROM customrecordtype ORDER BY internalid ASC')
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, internalid FROM customlist ORDER BY internalid ASC')
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, id FROM clientscript ORDER BY id ASC')
       expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
     })
     it('should add internal ids to elements', () => {
       expect(accountInstance.value.internalId).toBe('1')
       expect(customTypeInstance.value.internalId).toBe('2')
-      expect(customListInstance.value.internalId).toBe('3')
+      expect(customScriptInstance.value.internalId).toBe('3')
     })
     it('should add field to object', () => {
       expect(customTypeObject.fields.internalId).toBeDefined()
@@ -162,13 +165,13 @@ describe('netsuite internal ids', () => {
   describe('pre deploy', () => {
     it('should remove internal ids from elements', async () => {
       customTypeInstance.value.internalId = '2'
-      customListInstance.value.internalId = '3'
+      customScriptInstance.value.internalId = '3'
       await filterCreator(filterOpts).preDeploy?.(
         instances.map(instance => toChange({ after: instance }))
       )
       expect(accountInstance.value.internalId).toBe('1')
       expect(customTypeInstance.value.internalId).toBe(undefined)
-      expect(customListInstance.value.internalId).toBe(undefined)
+      expect(customScriptInstance.value.internalId).toBe(undefined)
     })
   })
   describe('deploy', () => {
@@ -178,7 +181,7 @@ describe('netsuite internal ids', () => {
           [
             toChange({ before: accountInstance, after: accountInstance }),
             toChange({ after: customTypeInstance }),
-            toChange({ after: customListInstance }),
+            toChange({ after: customScriptInstance }),
           ],
           {
             appliedChanges: [],
@@ -188,12 +191,12 @@ describe('netsuite internal ids', () => {
       })
       it('should query information from api', () => {
         expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, internalid FROM customrecordtype ORDER BY internalid ASC')
-        expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, internalid FROM customlist ORDER BY internalid ASC')
+        expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, id FROM clientscript ORDER BY id ASC')
         expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
       })
       it('should add internal ids to new elements', () => {
         expect(customTypeInstance.value.internalId).toBe('2')
-        expect(customListInstance.value.internalId).toBe('3')
+        expect(customScriptInstance.value.internalId).toBe('3')
       })
       it('should do nothing to modified elements', () => {
         expect(accountInstance.value.internalId).toBe('1')
@@ -205,7 +208,7 @@ describe('netsuite internal ids', () => {
           [
             toChange({ before: accountInstance, after: accountInstance }),
             toChange({ before: customTypeInstance, after: customTypeInstance }),
-            toChange({ before: customListInstance, after: customListInstance }),
+            toChange({ before: customScriptInstance, after: customScriptInstance }),
           ],
           {
             appliedChanges: [],
@@ -213,7 +216,7 @@ describe('netsuite internal ids', () => {
           },
         )
         expect(customTypeInstance.value.internalId).not.toBeDefined()
-        expect(customListInstance.value.internalId).not.toBeDefined()
+        expect(customScriptInstance.value.internalId).not.toBeDefined()
       })
     })
   })

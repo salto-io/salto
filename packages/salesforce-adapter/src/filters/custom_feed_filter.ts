@@ -45,7 +45,6 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       fileProps: fileProps.map(fixCustomFeedFullName),
       metadataType: customFeedFilterType,
       metadataQuery: config.fetchProfile.metadataQuery,
-      readMetadataChunkSize: config.readMetadataChunkSize,
     })
     instances.elements.forEach(e => elements.push(e))
     return {

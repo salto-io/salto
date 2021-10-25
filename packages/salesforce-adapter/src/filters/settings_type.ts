@@ -99,7 +99,6 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
           metadataType: type,
           fileProps: [info],
           metadataQuery: config.fetchProfile.metadataQuery,
-          readMetadataChunkSize: config.readMetadataChunkSize,
         }))
     )
     const settingsInstances = settingsInstanceCreateResults.flatMap(res => res.elements)

@@ -52,14 +52,14 @@ export const logOperationDecorator = (
 
 export const logDecorator = (
   keys?: string[],
-  func?: (args: unknown[]) => string,
+  additionalKeysFunc?: (args: unknown[]) => string,
 ): decorators.InstanceMethodDecorator => (
   decorators.wrapMethodWith(
     async function logFailure(
       this: { clientName: string },
       originalMethod: decorators.OriginalCall,
     ): Promise<unknown> {
-      const desc = logOperationDecorator(originalMethod, this.clientName, keys, func)
+      const desc = logOperationDecorator(originalMethod, this.clientName, keys, additionalKeysFunc)
       try {
         // eslint-disable-next-line @typescript-eslint/return-await
         return await log.time(originalMethod.call, desc)

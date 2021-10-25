@@ -19,7 +19,7 @@ import { FileProperties, MetadataInfo, MetadataObject } from 'jsforce-types'
 import { InstanceElement, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { FetchElements, ConfigChangeSuggestion, ReadMetadataChunkSizeConfig } from './types'
+import { FetchElements, ConfigChangeSuggestion } from './types'
 import { METADATA_CONTENT_FIELD, NAMESPACE_SEPARATOR, INTERNAL_ID_FIELD, DEFAULT_NAMESPACE } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange, createSkippedListConfigChange } from './config_change'
@@ -114,13 +114,12 @@ const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
 }
 
 export const fetchMetadataInstances = async ({
-  client, metadataType, fileProps, metadataQuery, readMetadataChunkSize,
+  client, metadataType, fileProps, metadataQuery,
 }: {
   client: SalesforceClient
   fileProps: FileProperties[]
   metadataType: ObjectType
   metadataQuery: MetadataQuery
-  readMetadataChunkSize: ReadMetadataChunkSizeConfig
 }): Promise<FetchElements<InstanceElement[]>> => {
   if (fileProps.length === 0) {
     return { elements: [], configChanges: [] }
@@ -141,8 +140,6 @@ export const fetchMetadataInstances = async ({
         name,
       })
     ).map(({ name }) => name),
-    undefined,
-    readMetadataChunkSize.overrides[metadataTypeName] ?? readMetadataChunkSize.default,
   )
 
   const filePropertiesMap = _.keyBy(fileProps, getFullName)

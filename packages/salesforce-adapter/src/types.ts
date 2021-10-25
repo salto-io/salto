@@ -16,7 +16,7 @@
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import {
   ElemID, ObjectType, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
-  FieldDefinition, MapType, PrimitiveTypes, GLOBAL_ADAPTER, PrimitiveType,
+  FieldDefinition, MapType,
 } from '@salto-io/adapter-api'
 import * as constants from './constants'
 
@@ -175,8 +175,8 @@ export type CustomObjectsDeployRetryConfig = {
 }
 
 export type ReadMetadataChunkSizeConfig = {
-  default: number
-  overrides: Record<string, number>
+  default?: number
+  overrides?: Record<string, number>
 }
 
 export type SalesforceClientConfig = Partial<{
@@ -388,15 +388,14 @@ const clientRetryConfigType = new ObjectType({
   } as Record<keyof ClientRetryConfig, FieldDefinition>,
 })
 
-const readMetadataChunkSizeConfigType = new ObjectType({
+const readMetadataChunkSizeConfigType = createMatchingObjectType<ReadMetadataChunkSizeConfig>({
   elemID: new ElemID(constants.SALESFORCE, 'readMetadataChunkSizeConfig'),
   fields: {
     default: { refType: BuiltinTypes.NUMBER },
-    overrides: { refType: new MapType(new PrimitiveType({
-      elemID: new ElemID(GLOBAL_ADAPTER, 'number'),
-      primitive: PrimitiveTypes.NUMBER,
+    overrides: {
+      refType: new MapType(BuiltinTypes.NUMBER),
       annotations: { [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1, max: 10 }) },
-    })) },
+    },
   },
 })
 

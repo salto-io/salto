@@ -32,7 +32,6 @@ type InternalIdRecordIdResult = {
   scriptid: string
   internalid: string
 }
-
 type RecordIdResult = IdRecordIdResult | InternalIdRecordIdResult
 
 const queryRecordIds = async (client: NetsuiteClient, query: string, recordType: string):

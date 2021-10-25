@@ -29,7 +29,7 @@ import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountId, Value } from '@salto-io/adapter-api'
-import { CUSTOM_OBJECT_ID_FIELD, DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRTY_OPTIONS, DEFAULT_MAX_CONCURRENT_API_REQUESTS } from '../constants'
+import { CUSTOM_OBJECT_ID_FIELD, DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRTY_OPTIONS, DEFAULT_MAX_CONCURRENT_API_REQUESTS, SALESFORCE } from '../constants'
 import { CompleteSaveResult, SfError, SalesforceRecord } from './types'
 import { UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials,
   SalesforceClientConfig, ClientRateLimitConfig, ClientRetryConfig, ClientPollingConfig,
@@ -39,7 +39,7 @@ import Connection from './jsforce'
 const { makeArray } = collections.array
 
 const log = logger(module)
-const { logDecorator, throttle, requiresLogin } = clientUtils
+const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } = clientUtils
 
 export const API_VERSION = '50.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
@@ -293,28 +293,6 @@ const createConnectionFromCredentials = (
   return realConnection(creds.isSandbox, options)
 }
 
-const createRateLimitersFromConfig = (
-  rateLimit: ClientRateLimitConfig,
-): Record<RateLimitBucketName, Bottleneck> => {
-  const toLimit = (
-    num: number | undefined
-  // 0 is an invalid value (blocked in configuration)
-  ): number | undefined => (num && num < 0 ? undefined : num)
-  const rateLimitConfig = _.mapValues(rateLimit, toLimit)
-  log.debug('Salesforce rate limit config: %o', rateLimitConfig)
-  return {
-    total: new Bottleneck({ maxConcurrent: rateLimitConfig.total }),
-    retrieve: new Bottleneck({ maxConcurrent: rateLimitConfig.retrieve }),
-    read: new Bottleneck({ maxConcurrent: rateLimitConfig.read }),
-    list: new Bottleneck({ maxConcurrent: rateLimitConfig.list }),
-    query: new Bottleneck({ maxConcurrent: rateLimitConfig.query }),
-    describe: new Bottleneck({ maxConcurrent: rateLimitConfig.describe }),
-    upsert: new Bottleneck({ maxConcurrent: rateLimitConfig.upsert }),
-    delete: new Bottleneck({ maxConcurrent: rateLimitConfig.delete }),
-    deploy: new Bottleneck({ maxConcurrent: rateLimitConfig.deploy }),
-  }
-}
-
 export const loginFromCredentialsAndReturnOrgId = async (
   connection: Connection, creds: Credentials): Promise<string> => {
   if (creds instanceof UsernamePasswordCredentials) {
@@ -379,7 +357,8 @@ export default class SalesforceClient {
     )
     setPollIntervalForConnection(this.conn, _.defaults({}, config?.polling, DEFAULT_POLLING_CONFIG))
     this.rateLimiters = createRateLimitersFromConfig(
-      _.defaults({}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS)
+      _.defaults({}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS),
+      SALESFORCE
     )
     this.dataRetry = config?.dataRetry ?? DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRTY_OPTIONS
     this.clientName = 'SFDC'

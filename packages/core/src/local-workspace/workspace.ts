@@ -22,7 +22,7 @@ import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, rem
   configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors,
   COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource } from '@salto-io/workspace'
 import { localDirectoryStore } from './dir_store'
-import { getSaltoHome, CONFIG_DIR_NAME, getConfigDir } from '../app_config'
+import { CONFIG_DIR_NAME, getConfigDir, getLocalStoragePath } from '../app_config'
 import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'
@@ -261,7 +261,7 @@ export const initLocalWorkspace = async (
 Promise<Workspace> => {
   const workspaceName = name ?? path.basename(path.resolve(baseDir))
   const uid = uuidv4()
-  const localStorage = path.join(getSaltoHome(), `${workspaceName}-${uid}`)
+  const localStorage = getLocalStoragePath(uid)
   if (await locateWorkspaceRoot(path.resolve(baseDir))) {
     throw new ExistingWorkspaceError()
   }

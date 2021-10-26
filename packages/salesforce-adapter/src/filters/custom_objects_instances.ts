@@ -433,7 +433,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       client,
       validChangesFetchSettings,
     )
-    elements.push(...instances)
+    elements.concat(instances)
     log.debug(`Fetched ${instances.length} instances of Custom Objects`)
     const invalidFieldSuggestions = await awu(invalidFetchSettings)
       .map(async setting =>

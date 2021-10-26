@@ -39,7 +39,7 @@ import { RemoteElementSource, ElementsSource, mapReadOnlyElementsSource } from '
 import { createMergeManager, ElementMergeManager, ChangeSet, createEmptyChangeSet, MergedRecoveryMode } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
-import { AdaptersConfigSource } from './adapters_config_source'
+import { AdaptersConfigSource, PartialNaclFilesSource } from './adapters_config_source'
 
 const log = logger(module)
 
@@ -171,6 +171,7 @@ export type Workspace = {
   getSearchableNames(): Promise<string[]>
   getSearchableNamesOfEnv(env?: string): Promise<string[]>
   listUnresolvedReferences(completeFromEnv?: string): Promise<UnresolvedElemIDs>
+  getElementSourceOfPath(filePath: string, includeHidden?: boolean): Promise<ReadOnlyElementsSource>
 }
 
 type SingleState = {
@@ -591,9 +592,22 @@ export const loadWorkspace = async (
     }
   }
   const setNaclFiles = async (naclFiles: NaclFile[], validate = true): Promise<EnvsChanges> => {
-    const elementChanges = await (await getLoadedNaclFilesSource()).setNaclFiles(...naclFiles)
-    workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })
-    return elementChanges
+    const [configFiles, otherFiles] = _.partition(
+      naclFiles,
+      file => adaptersConfig.isConfigFile(file.filename),
+    )
+
+    if (configFiles.length !== 0) {
+      await adaptersConfig.setNaclFiles(...configFiles)
+    }
+
+    if (otherFiles.length !== 0) {
+      const elementChanges = await (await getLoadedNaclFilesSource()).setNaclFiles(...otherFiles)
+      workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })
+      return elementChanges
+    }
+
+    return {}
   }
 
   const removeNaclFiles = async (names: string[], validate = true): Promise<EnvsChanges> => {
@@ -603,8 +617,13 @@ export const loadWorkspace = async (
   }
 
   const getSourceFragment = async (
-    sourceRange: SourceRange, subRange?: SourceRange): Promise<SourceFragment> => {
-    const naclFile = await (await getLoadedNaclFilesSource()).getNaclFile(sourceRange.filename)
+    sourceRange: SourceRange,
+    subRange?: SourceRange,
+    sourceToUse?: Pick<NaclFilesSource, 'getNaclFile'>
+  ): Promise<SourceFragment> => {
+    const source = sourceToUse ?? await getLoadedNaclFilesSource()
+
+    const naclFile = await source.getNaclFile(sourceRange.filename)
     log.debug(`error context: start=${sourceRange.start.byte}, end=${sourceRange.end.byte}`)
     const fragment = naclFile
       ? naclFile.buffer.substring(sourceRange.start.byte, sourceRange.end.byte)
@@ -618,16 +637,28 @@ export const loadWorkspace = async (
       subRange,
     }
   }
+
+  const getErrorSource = async (error: SaltoError):
+    Promise<AdaptersConfigSource | MultiEnvSource> => (
+    error.source === 'config' ? adaptersConfig : getLoadedNaclFilesSource()
+  )
+
   const transformParseError = async (error: ParseError): Promise<WorkspaceError<SaltoError>> => ({
     ...error,
-    sourceFragments: [await getSourceFragment(error.context, error.subject)],
+    sourceFragments: [await getSourceFragment(
+      error.context,
+      error.subject,
+      await getErrorSource(error),
+    )],
   })
+
   const transformToWorkspaceError = async <T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>> => {
-    const sourceRanges = await (await getLoadedNaclFilesSource())
-      .getSourceRanges(saltoElemErr.elemID)
+    const source = await getErrorSource(saltoElemErr)
+
+    const sourceRanges = await source.getSourceRanges(saltoElemErr.elemID)
     const sourceFragments = await awu(sourceRanges)
-      .map(range => getSourceFragment(range))
+      .map(range => getSourceFragment(range, undefined, source))
       .toArray()
 
     return {
@@ -656,11 +687,13 @@ export const loadWorkspace = async (
     const loadNaclFileSource = getOrCreateNaclFilesSource(env)
     // It is important to make sure these are obtain using Promise.all in order to allow
     // the SaaS UI to debouce the DB accesses.
-    const [errorsFromSource, validationErrors, mergeErrors] = await Promise.all([
+    const [errorsFromSource, configErrors, validationErrors, mergeErrors] = await Promise.all([
       loadNaclFileSource.getErrors(),
+      adaptersConfig.getErrors(),
       awu(currentState.states[envToUse].validationErrors.values()).flat().toArray(),
       awu(currentState.states[envToUse].errors.values()).flat().toArray(),
     ])
+
     _(validationErrors)
       .groupBy(error => error.constructor.name)
       .entries()
@@ -668,12 +701,19 @@ export const loadWorkspace = async (
         log.error(`Invalid elements, error type: ${errorType}, element IDs: ${errorsGroup.map(e => e.elemID.getFullName()).join(', ')}`)
       })
     return new Errors({
-      ...errorsFromSource,
+      parse: [
+        ...errorsFromSource.parse,
+        ...configErrors.parse,
+      ],
       merge: [
         ...errorsFromSource.merge,
         ...mergeErrors,
+        ...configErrors.merge,
       ],
-      validation: validationErrors,
+      validation: [
+        ...validationErrors,
+        ...configErrors.validation,
+      ],
     })
   }
   const elementsImpl = async (includeHidden = true, env?: string): Promise<ElementsSource> => {
@@ -683,6 +723,13 @@ export const loadWorkspace = async (
     await getWorkspaceState()
     return (naclFileSources[env ?? currentEnv()]).getElementsSource()
   }
+
+  const getSourceByFilename = async (filename: string): Promise<Omit<PartialNaclFilesSource, 'setNaclFiles'>> => (
+    adaptersConfig.isConfigFile(filename)
+      ? adaptersConfig
+      : getLoadedNaclFilesSource()
+  )
+
   const pickServices = (names?: ReadonlyArray<string>): ReadonlyArray<string> =>
     (_.isUndefined(names) ? services() : services().filter(s => names.includes(s)))
   const credsPath = (service: string): string => path.join(currentEnv(), service)
@@ -730,13 +777,16 @@ export const loadWorkspace = async (
     updateNaclFiles: (changes, mode, stateOnly) => updateNaclFiles({ changes, mode, stateOnly }),
     removeNaclFiles,
     getSourceMap: async (filename: string) => (
-      (await getLoadedNaclFilesSource()).getSourceMap(filename)
+      (await getSourceByFilename(filename)).getSourceMap(filename)
     ),
     getSourceRanges: async (elemID: ElemID) => (
       (await getLoadedNaclFilesSource()).getSourceRanges(elemID)
     ),
     listNaclFiles: async () => (
-      (await getLoadedNaclFilesSource()).listNaclFiles()
+      [
+        ...await (await getLoadedNaclFilesSource()).listNaclFiles(),
+        ...await adaptersConfig.listNaclFiles(),
+      ]
     ),
     getElementIdsBySelectors: async (
       selectors: ElementSelector[], from, compacted = false,
@@ -753,10 +803,10 @@ export const loadWorkspace = async (
       (await getLoadedNaclFilesSource()).getTotalSize()
     ),
     getNaclFile: async (filename: string) => (
-      (await getLoadedNaclFilesSource()).getNaclFile(filename)
+      (await getSourceByFilename(filename)).getNaclFile(filename)
     ),
     getParsedNaclFile: async (filename: string) => (
-      (await getLoadedNaclFilesSource()).getParsedNaclFile(filename)
+      (await getSourceByFilename(filename)).getParsedNaclFile(filename)
     ),
     promote: async (ids: ElemID[]) => {
       const workspaceChanges = await (await getLoadedNaclFilesSource()).promote(ids)
@@ -785,6 +835,7 @@ export const loadWorkspace = async (
       await (await getLoadedNaclFilesSource()).flush()
       const currentWSState = await getWorkspaceState()
       await currentWSState.mergeManager.flush()
+      await adaptersConfig.flush()
     },
     clone: (): Promise<Workspace> => {
       const sources = _.mapValues(enviormentsSources.sources, source =>
@@ -1024,6 +1075,11 @@ export const loadWorkspace = async (
         missing: compact(missing.sort().map(ElemID.fromFullName)),
       }
     },
+    getElementSourceOfPath: async (filePath, includeHidden = true) => (
+      adaptersConfig.isConfigFile(filePath)
+        ? adaptersConfig.getElements()
+        : elementsImpl(includeHidden)
+    ),
   }
 }
 

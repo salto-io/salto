@@ -252,11 +252,13 @@ export const transformElementAnnotations = async <T extends Element>(
     transformFunc,
     strict,
     elementsSource,
+    allowEmpty,
   }: {
     element: T
     transformFunc: TransformFunc
     strict?: boolean
     elementsSource?: ReadOnlyElementsSource
+    allowEmpty?: boolean
   }
 ): Promise<Values> => await transformValues({
   values: element.annotations,
@@ -265,6 +267,7 @@ export const transformElementAnnotations = async <T extends Element>(
   strict,
   pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
   elementsSource,
+  allowEmpty,
   isTopLevel: false,
 }) || {}
 
@@ -275,12 +278,14 @@ export const transformElement = async <T extends Element>(
     strict,
     elementsSource,
     runOnFields,
+    allowEmpty,
   }: {
     element: T
     transformFunc: TransformFunc
     strict?: boolean
     elementsSource?: ReadOnlyElementsSource
     runOnFields?: boolean
+    allowEmpty?: boolean
   }
 ): Promise<T> => {
   let newElement: Element
@@ -289,6 +294,7 @@ export const transformElement = async <T extends Element>(
     transformFunc,
     strict,
     elementsSource,
+    allowEmpty,
   })
 
   if (isInstanceElement(element)) {
@@ -299,6 +305,7 @@ export const transformElement = async <T extends Element>(
       strict,
       elementsSource,
       pathID: element.elemID,
+      allowEmpty,
     }) || {}
 
     newElement = new InstanceElement(
@@ -326,6 +333,7 @@ export const transformElement = async <T extends Element>(
               strict,
               elementsSource,
               runOnFields,
+              allowEmpty,
             })
           }
           return undefined
@@ -377,6 +385,7 @@ export const transformElement = async <T extends Element>(
         strict,
         elementsSource,
         runOnFields,
+        allowEmpty,
       })
     )
     return newElement as T
@@ -390,6 +399,7 @@ export const transformElement = async <T extends Element>(
         strict,
         elementsSource,
         runOnFields,
+        allowEmpty,
       })
     )
     return newElement as T

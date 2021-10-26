@@ -16,10 +16,10 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  Element, isField, isType, isObjectType, ElemID,
+  Element, isField, isType, isObjectType, ElemID, ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import { resolvePath } from '@salto-io/adapter-utils'
-import { parser, elementSource } from '@salto-io/workspace'
+import { parser } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { EditorWorkspace } from './workspace'
 
@@ -34,6 +34,7 @@ export interface EditorPosition {
 export interface EditorRange {
   start: EditorPosition
   end: EditorPosition
+  filePath?: string
 }
 
 interface NamedRange {
@@ -179,7 +180,7 @@ export const buildDefinitionsTree = (
 }
 
 const getFullElement = async (
-  elements: elementSource.ElementsSource,
+  elements: ReadOnlyElementsSource,
   partial: Element
 ): Promise<Element> => {
   const { parent } = partial.elemID.createTopLevelParentID()
@@ -211,7 +212,10 @@ export const getPositionContext = async (
   const fullRef = (partialContext.ref)
     ? {
       ...partialContext.ref,
-      element: await getFullElement(await workspace.elements, partialContext.ref.element),
+      element: await getFullElement(
+        await workspace.getElementSourceOfPath(filename),
+        partialContext.ref.element
+      ),
     } : undefined
-  return { ...partialContext, ref: fullRef }
+  return { ...partialContext, ref: fullRef, range: { ...partialContext.range, filePath: filename } }
 }

@@ -13,15 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeElement, ChangeValidator, ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, ChangeDataType, Change, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { getChangeElement, ChangeValidator, ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, ChangeDataType, Change, createRefToElmWithValue, isDependencyError } from '@salto-io/adapter-api'
 import wu, { WuIterable } from 'wu'
 import { mockFunction } from '@salto-io/test-utils'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem } from '../../common/plan'
 import { getPlan } from '../../../src/core/plan'
 import { createElementSource } from '../../common/helpers'
-import { isDependencyError } from '../../../src/core/plan/filter'
-
 
 describe('filterInvalidChanges', () => {
   const allElements = mock.getAllElements()
@@ -332,6 +330,7 @@ describe('filterInvalidChanges', () => {
     expect(depErr.severity === 'Error').toBeTruthy()
     expect(depErr.elemID.isEqual(newDependentInst.elemID))
       .toBeTruthy()
+    expect(depErr.message).toEqual(`Dropped changes to ${depErr.elemID.getFullName()} due to an error in ${objErr.elemID.getFullName()}`)
     expect(depErr.severity === 'Error').toBeTruthy()
     expect(planResult.size).toBe(1)
     const planItem = getFirstPlanItem(planResult)

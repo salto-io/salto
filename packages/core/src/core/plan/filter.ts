@@ -17,7 +17,7 @@ import wu from 'wu'
 import _ from 'lodash'
 
 import { DataNodeMap, DiffGraph, DiffNode, NodeId } from '@salto-io/dag'
-import { ChangeError, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeElement, ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationChange, isField, isObjectType, ReadOnlyElementsSource, SaltoErrorSeverity } from '@salto-io/adapter-api'
+import { ChangeError, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeElement, ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationChange, isField, isObjectType, ReadOnlyElementsSource, SaltoErrorSeverity, DependencyError } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 
@@ -30,12 +30,6 @@ type FilterResult = {
 }
 
 type TopLevelElement = InstanceElement | TypeElement
-
-type DependencyError = ChangeError & {
-  causeID: ElemID
-}
-
-export const isDependencyError = (err: ChangeError): err is DependencyError => 'causeID' in err
 
 export const filterInvalidChanges = async (
   beforeElements: ReadOnlyElementsSource,
@@ -139,7 +133,7 @@ export const filterInvalidChanges = async (
     const createDependencyErr = (causeID: ElemID, droppedID: ElemID): DependencyError => {
       const message = `Dropped changes to ${
         droppedID.getFullName()
-      } due to an error in ${droppedID.getFullName()}`
+      } due to an error in ${causeID.getFullName()}`
       return {
         causeID,
         elemID: droppedID,

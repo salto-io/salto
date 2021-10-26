@@ -139,7 +139,7 @@ export const fetchMetadataInstances = async ({
         metadataType: metadataTypeName,
         name,
       })
-    ).map(({ name }) => name)
+    ).map(({ name }) => name),
   )
 
   const filePropertiesMap = _.keyBy(fileProps, getFullName)

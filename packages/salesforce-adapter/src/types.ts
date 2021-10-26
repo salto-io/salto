@@ -16,10 +16,9 @@
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import {
   ElemID, ObjectType, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
-  FieldDefinition,
+  FieldDefinition, MapType,
 } from '@salto-io/adapter-api'
 import * as constants from './constants'
-import { SALESFORCE } from './constants'
 
 export const CLIENT_CONFIG = 'client'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
@@ -175,12 +174,18 @@ export type CustomObjectsDeployRetryConfig = {
   retryableFailures: string[]
 }
 
+export type ReadMetadataChunkSizeConfig = {
+  default?: number
+  overrides?: Record<string, number>
+}
+
 export type SalesforceClientConfig = Partial<{
   polling: ClientPollingConfig
   deploy: ClientDeployConfig
   maxConcurrentApiRequests: ClientRateLimitConfig
   retry: ClientRetryConfig
   dataRetry: CustomObjectsDeployRetryConfig
+  readMetadataChunkSize: ReadMetadataChunkSizeConfig
 }>
 
 export type SalesforceConfig = {
@@ -383,6 +388,17 @@ const clientRetryConfigType = new ObjectType({
   } as Record<keyof ClientRetryConfig, FieldDefinition>,
 })
 
+const readMetadataChunkSizeConfigType = createMatchingObjectType<ReadMetadataChunkSizeConfig>({
+  elemID: new ElemID(constants.SALESFORCE, 'readMetadataChunkSizeConfig'),
+  fields: {
+    default: { refType: BuiltinTypes.NUMBER },
+    overrides: {
+      refType: new MapType(BuiltinTypes.NUMBER),
+      annotations: { [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1, max: 10 }) },
+    },
+  },
+})
+
 const clientConfigType = new ObjectType({
   elemID: new ElemID(constants.SALESFORCE, 'clientConfig'),
   fields: {
@@ -390,11 +406,12 @@ const clientConfigType = new ObjectType({
     deploy: { refType: clientDeployConfigType },
     retry: { refType: clientRetryConfigType },
     maxConcurrentApiRequests: { refType: clientRateLimitConfigType },
+    readMetadataChunkSize: { refType: readMetadataChunkSizeConfigType },
   } as Record<keyof SalesforceClientConfig, FieldDefinition>,
 })
 
 const metadataQueryType = new ObjectType({
-  elemID: new ElemID(SALESFORCE, 'metadataQuery'),
+  elemID: new ElemID(constants.SALESFORCE, 'metadataQuery'),
   fields: {
     [METADATA_TYPE]: { refType: BuiltinTypes.STRING },
     [METADATA_NAMESPACE]: { refType: BuiltinTypes.STRING },
@@ -402,8 +419,8 @@ const metadataQueryType = new ObjectType({
   },
 })
 
-const metadataConfigType = new ObjectType({
-  elemID: new ElemID(SALESFORCE, 'metadataConfig'),
+const metadataConfigType = createMatchingObjectType<MetadataParams>({
+  elemID: new ElemID(constants.SALESFORCE, 'metadataConfig'),
   fields: {
     [METADATA_INCLUDE_LIST]: { refType: new ListType(metadataQueryType) },
     [METADATA_EXCLUDE_LIST]: { refType: new ListType(metadataQueryType) },
@@ -411,7 +428,7 @@ const metadataConfigType = new ObjectType({
 })
 
 const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
-  elemID: new ElemID(SALESFORCE, 'optionalFeatures'),
+  elemID: new ElemID(constants.SALESFORCE, 'optionalFeatures'),
   fields: {
     extraDependencies: { refType: BuiltinTypes.BOOLEAN },
     elementsUrls: { refType: BuiltinTypes.BOOLEAN },
@@ -422,7 +439,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
 })
 
 const fetchConfigType = createMatchingObjectType<FetchParameters>({
-  elemID: new ElemID(SALESFORCE, 'fetchConfig'),
+  elemID: new ElemID(constants.SALESFORCE, 'fetchConfig'),
   fields: {
     metadata: { refType: metadataConfigType },
     data: { refType: dataManagementType },

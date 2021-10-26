@@ -82,12 +82,8 @@ const fetchRecordType = async (
 const fetchRecordIdsForRecordType = async (
   recordType: string,
   client: NetsuiteClient
-): Promise<Record<string, string>> => {
-  if (!(recordType in TABLE_NAME_TO_ID_PARAMETER_MAP)) {
-    return {}
-  }
-  return fetchRecordType(TABLE_NAME_TO_ID_PARAMETER_MAP[recordType], client, recordType)
-}
+): Promise<Record<string, string>> =>
+  fetchRecordType(TABLE_NAME_TO_ID_PARAMETER_MAP[recordType], client, recordType)
 
 const createRecordIdsMap = async (
   client: NetsuiteClient,

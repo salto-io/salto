@@ -24,6 +24,7 @@ import standardFieldLabelValidator from './change_validators/standard_field_labe
 import profileMapKeysValidator from './change_validators/profile_map_keys'
 import multipleDefaultsValidator from './change_validators/multiple_deafults'
 import picklistPromoteValidator from './change_validators/picklist_promote'
+import validateOnlyFlagValidator from './change_validators/validate_only_flag'
 
 const changeValidators: ChangeValidator[] = [
   packageValidator,
@@ -35,6 +36,7 @@ const changeValidators: ChangeValidator[] = [
   profileMapKeysValidator,
   multipleDefaultsValidator,
   picklistPromoteValidator,
+  validateOnlyFlagValidator,
 ]
 
 export default createChangeValidator(changeValidators)

@@ -14,37 +14,49 @@
 * limitations under the License.
 */
 import {
-  Element, isInstanceElement, ElemID, ReferenceExpression, InstanceElement,
-  CORE_ANNOTATIONS,
+  Element, isInstanceElement, ElemID, ReferenceExpression, InstanceElement, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import {
-  transformElement,
-  TransformFunc,
-} from '@salto-io/adapter-utils'
+import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { values as lowerdashValues, collections } from '@salto-io/lowerdash'
-import {
-  SCRIPT_ID,
-  PATH,
-} from '../constants'
+import { SCRIPT_ID, PATH } from '../constants'
 import { serviceId } from '../transformer'
 import { FilterCreator, FilterWith } from '../filter'
 import { isCustomType, typesElementSourceWrapper } from '../types'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 
 const CAPTURED_SERVICE_ID = 'serviceId'
 const CAPTURED_TYPE = 'type'
 // e.g. '[scriptid=customworkflow1]' & '[scriptid=customworkflow1.workflowstate17.workflowaction33]'
 //  & '[type=customsegment, scriptid=cseg1]'
-const scriptIdReferenceRegex = new RegExp(`^\\[(type=(?<${CAPTURED_TYPE}>[a-z_]+), )?${SCRIPT_ID}=(?<${CAPTURED_SERVICE_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)]$`)
+const scriptIdReferenceRegex = new RegExp(`\\[(type=(?<${CAPTURED_TYPE}>[a-z_]+), )?${SCRIPT_ID}=(?<${CAPTURED_SERVICE_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)]`, 'g')
 // e.g. '[/Templates/filename.html]' & '[/SuiteScripts/script.js]'
 const pathReferenceRegex = new RegExp(`^\\[(?<${CAPTURED_SERVICE_ID}>\\/.+)]$`)
 
 type ServiceIdInfo = {
   [CAPTURED_SERVICE_ID]: string
   [CAPTURED_TYPE]?: string
+  isFullMatch: boolean
+}
+
+const isRegExpFullMatch = (regExpMatches: Array<RegExpExecArray | null>): boolean => (
+  regExpMatches.length === 1
+  && regExpMatches[0] !== null
+  && regExpMatches[0][0] === regExpMatches[0].input
+)
+
+const addDependencies = (instance: InstanceElement, deps: Array<ElemID>): void => {
+  const dependenciesList = _.uniqBy(
+    makeArray(instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
+      .concat(deps.map(dep => ({ reference: new ReferenceExpression(dep) }))),
+    ref => ref.reference.elemID.getFullName()
+  )
+  if (dependenciesList.length > 0) {
+    instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = dependenciesList
+  }
 }
 
 /**
@@ -53,20 +65,28 @@ type ServiceIdInfo = {
  * '[/SuiteScripts/script.js]' => '/SuiteScripts/script.js'
  * 'Some string' => undefined
  */
-const captureServiceIdInfo = (value: string): ServiceIdInfo | undefined => {
+const captureServiceIdInfo = (value: string): ServiceIdInfo[] => {
   const pathRefMatches = value.match(pathReferenceRegex)?.groups
   if (pathRefMatches !== undefined) {
-    return { [CAPTURED_SERVICE_ID]: pathRefMatches[CAPTURED_SERVICE_ID] }
+    return [
+      { [CAPTURED_SERVICE_ID]: pathRefMatches[CAPTURED_SERVICE_ID],
+        isFullMatch: true }]
   }
 
-  const scriptIdRefMatches = value.match(scriptIdReferenceRegex)?.groups
-  if (scriptIdRefMatches !== undefined) {
-    return {
-      [CAPTURED_SERVICE_ID]: scriptIdRefMatches[CAPTURED_SERVICE_ID],
-      [CAPTURED_TYPE]: scriptIdRefMatches[CAPTURED_TYPE],
-    }
+  const regexMatches = [scriptIdReferenceRegex.exec(value)]
+  while (regexMatches[regexMatches.length - 1]) {
+    regexMatches.push(scriptIdReferenceRegex.exec(value))
   }
-  return undefined
+  const scriptIdRefMatches = regexMatches.slice(0, -1)
+  const isFullMatch = isRegExpFullMatch(scriptIdRefMatches)
+
+  return scriptIdRefMatches.map(match => match?.groups)
+    .filter(lowerdashValues.isDefined)
+    .map(serviceIdRef => ({
+      [CAPTURED_SERVICE_ID]: serviceIdRef[CAPTURED_SERVICE_ID],
+      [CAPTURED_TYPE]: serviceIdRef[CAPTURED_TYPE],
+      isFullMatch,
+    }))
 }
 
 const customTypeServiceIdsToElemIds = async (
@@ -127,34 +147,48 @@ const replaceReferenceValues = async (
   fetchedElementsServiceIdToElemID: Record<string, ElemID>,
   elementsSourceServiceIdToElemID: Record<string, ElemID>,
 ): Promise<InstanceElement> => {
+  const dependenciesToAdd: Array<ElemID> = []
   const replacePrimitive: TransformFunc = ({ path, value }) => {
     if (!_.isString(value)) {
       return value
     }
     const serviceIdInfo = captureServiceIdInfo(value)
-    if (_.isUndefined(serviceIdInfo)) {
-      return value
-    }
-    const elemID = fetchedElementsServiceIdToElemID[serviceIdInfo[CAPTURED_SERVICE_ID]]
-      ?? elementsSourceServiceIdToElemID[serviceIdInfo[CAPTURED_SERVICE_ID]]
+    let returnValue: ReferenceExpression | string = value
+    serviceIdInfo.forEach(serviceIdInfoRecord => {
+      const elemID = fetchedElementsServiceIdToElemID[serviceIdInfoRecord[CAPTURED_SERVICE_ID]]
+      ?? elementsSourceServiceIdToElemID[serviceIdInfoRecord[CAPTURED_SERVICE_ID]]
 
-    const type = serviceIdInfo[CAPTURED_TYPE]
-    if (_.isUndefined(elemID) || (type && type !== elemID.typeName)) {
-      return value
-    }
+      const type = serviceIdInfoRecord[CAPTURED_TYPE]
+      if (_.isUndefined(elemID) || (type && type !== elemID.typeName)) {
+        return
+      }
 
-    if (path?.isAttrID() && path.createParentID().name === CORE_ANNOTATIONS.PARENT) {
-      return new ReferenceExpression(elemID.createBaseID().parent)
-    }
+      if (path?.isAttrID() && path.createParentID().name === CORE_ANNOTATIONS.PARENT) {
+        if (serviceIdInfoRecord.isFullMatch) {
+          returnValue = new ReferenceExpression(elemID.createBaseID().parent)
+          return
+        }
+        dependenciesToAdd.push(elemID.createBaseID().parent)
+        return
+      }
+      if (serviceIdInfoRecord.isFullMatch) {
+        returnValue = new ReferenceExpression(elemID)
+        return
+      }
+      dependenciesToAdd.push(elemID)
+    })
 
-    return new ReferenceExpression(elemID)
+    return returnValue
   }
 
-  return transformElement({
+  const newInstance = await transformElement({
     element: instance,
     transformFunc: replacePrimitive,
     strict: false,
   })
+  addDependencies(newInstance, dependenciesToAdd)
+
+  return newInstance
 }
 
 const createElementsSourceServiceIdToElemID = async (

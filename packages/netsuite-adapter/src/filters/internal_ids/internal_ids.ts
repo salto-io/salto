@@ -17,9 +17,8 @@ import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeElemen
 import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
-import { isDataObjectType } from '../../types'
 import { FilterCreator } from '../../filter'
-import { RECORD_ID_SCHEMA, RECORD_ID_PARAMETER_MAP } from './constants'
+import { RECORD_ID_SCHEMA, TABLE_NAME_TO_ID_PARAMETER_MAP } from './constants'
 import NetsuiteClient from '../../client/client'
 
 const log = logger(module)
@@ -28,6 +27,11 @@ type RecordIdResult = {
   scriptid: string
   id: string
 }
+
+const getTableName = (element: Element): string =>
+  // This is currently the only way of finding the table, In some cases
+  // the typeName of an element wont be it's table name.
+  element.elemID.typeName
 
 const queryRecordIds = async (client: NetsuiteClient, query: string, recordType: string):
 Promise<RecordIdResult[]> => {
@@ -59,6 +63,7 @@ const addInternalIdFieldToInstancesObjects = async (
 ): Promise<void> =>
   elements
     .filter(isObjectType)
+    .filter(object => getTableName(object) in TABLE_NAME_TO_ID_PARAMETER_MAP)
     .forEach(addInternalIdFieldToType)
 
 const fetchRecordType = async (
@@ -78,10 +83,10 @@ const fetchRecordIdsForRecordType = async (
   recordType: string,
   client: NetsuiteClient
 ): Promise<Record<string, string>> => {
-  if (!(recordType in RECORD_ID_PARAMETER_MAP)) {
+  if (!(recordType in TABLE_NAME_TO_ID_PARAMETER_MAP)) {
     return {}
   }
-  return fetchRecordType(RECORD_ID_PARAMETER_MAP[recordType], client, recordType)
+  return fetchRecordType(TABLE_NAME_TO_ID_PARAMETER_MAP[recordType], client, recordType)
 }
 
 const createRecordIdsMap = async (
@@ -95,11 +100,11 @@ const createRecordIdsMap = async (
   )
 
 
-const getListOfSDFInstances = async (elements: Element[]): Promise<InstanceElement[]> =>
-  Promise.all(elements
+const getSupportedInstances = (elements: Element[]): InstanceElement[] =>
+  elements
     .filter(isInstanceElement)
     .filter(elem => elem.value.scriptid)
-    .filter(async elem => !isDataObjectType(await elem.getType())))
+    .filter(elem => getTableName(elem) in TABLE_NAME_TO_ID_PARAMETER_MAP)
 
 
 const getAdditionInstances = (changes: Change[]): InstanceElement[] =>
@@ -119,14 +124,14 @@ const filterCreator: FilterCreator = ({ client }) => ({
       return
     }
     await addInternalIdFieldToInstancesObjects(elements)
-    const instances = await getListOfSDFInstances(elements)
+    const instances = getSupportedInstances(elements)
     const recordIdMap = await createRecordIdsMap(
-      client, _.uniq(instances.map(elem => elem.elemID.typeName))
+      client, _.uniq(instances.map(getTableName))
     )
     instances
-      .filter(instance => recordIdMap[instance.elemID.typeName][instance.value.scriptid])
+      .filter(instance => recordIdMap[getTableName(instance)][instance.value.scriptid])
       .forEach(instance => {
-        instance.value.internalId = recordIdMap[instance.elemID.typeName][instance.value.scriptid]
+        instance.value.internalId = recordIdMap[getTableName(instance)][instance.value.scriptid]
       })
   },
 
@@ -137,7 +142,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     if (!client.isSuiteAppConfigured()) {
       return
     }
-    const instances = await getListOfSDFInstances(changes
+    const instances = getSupportedInstances(changes
       .map(getChangeElement))
     instances.forEach(element => {
       delete element.value.internalId
@@ -155,13 +160,13 @@ const filterCreator: FilterCreator = ({ client }) => ({
       return
     }
     const recordIdMap = await createRecordIdsMap(
-      client, _.uniq(additionInstances.map(instance => instance.elemID.typeName))
+      client, _.uniq(additionInstances.map(instance => getTableName(instance)))
     )
 
     additionInstances
-      .filter(instance => recordIdMap[instance.elemID.typeName][instance.value.scriptid])
+      .filter(instance => recordIdMap[getTableName(instance)][instance.value.scriptid])
       .forEach(instance => {
-        instance.value.internalId = recordIdMap[instance.elemID.typeName][instance.value.scriptid]
+        instance.value.internalId = recordIdMap[getTableName(instance)][instance.value.scriptid]
       })
   },
 })

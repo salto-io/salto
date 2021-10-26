@@ -45,7 +45,6 @@ import dataInstancesInternalId from './filters/data_instances_internal_id'
 import dataInstancesReferences from './filters/data_instances_references'
 import dataTypesCustomFields from './filters/data_types_custom_fields'
 import dataInstancesCustomFields from './filters/data_instances_custom_fields'
-import rolesInternalId from './filters/roles_internal_id'
 import dataInstancesAttributes from './filters/data_instances_attributes'
 import dataInstancesNullFields from './filters/data_instances_null_fields'
 import dataInstancesDiff from './filters/data_instances_diff'
@@ -124,7 +123,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       consistentValues,
       replaceInstanceReferencesFilter,
       serviceUrls,
-      rolesInternalId,
       internalIds,
       dataInstancesAttributes,
       redundantFields,

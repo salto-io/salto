@@ -145,7 +145,8 @@ const fetchSystemNotes = async (
     log.warn('System note query failed')
     return {}
   }
-  return _.keyBy(distinctSortedSystemNotes(systemNotes), note => getRecordIdAndTypeStringKey(note.recordid, note.recordtypeid))
+  return _.keyBy(distinctSortedSystemNotes(systemNotes),
+    note => getRecordIdAndTypeStringKey(note.recordid, note.recordtypeid))
 }
 
 const getElementLastModifier = (

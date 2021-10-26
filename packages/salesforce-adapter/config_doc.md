@@ -23,13 +23,13 @@ salesforce {
       retryStrategy = "NetworkError"
     }
     maxConcurrentApiRequests = {
-      total = -1
+      total = 100
       retrieve = 3
-      read = 20
-      list = 20
+      read = -1
+      list = -1
       query = 4
-      describe = 20
-      deploy = 20
+      describe = -1
+      deploy = -1
     }
   }
   fetch = {
@@ -217,13 +217,13 @@ For more details see the DeployOptions section in the [salesforce documentation 
 
 | Name                                                        | Default when undefined                           | Description
 | ------------------------------------------------------------| -------------------------------------------------| -----------
-| retrieve                                                    | `3`                                              | Max number of concurrent retrieve requests
-| read                                                        | `20`                                             | Max number of concurrent read requests
-| list                                                        | `20`                                             | Max number of concurrent list requests
-| query                                                       | `4`                                              | Max number of concurrent SOQL query requests
-| describe                                                    | `20`                                             | Max number of concurrent describe requests
-| deploy                                                      | `20`                                             | Max number of concurrent deploy requests
-| total                                                       | `-1` (unlimited)                                 | Shared limit for all of the above
+| retrieve                                                    | `3`                                              | Max number of concurrent retrieve requests (retrieve)
+| read                                                        | `-1` (unlimited)                                 | Max number of concurrent read requests (readMetadata)
+| list                                                        | `-1` (unlimited)                                 | Max number of concurrent list requests (listMetadataObjects)
+| query                                                       | `4`                                              | Max number of concurrent SOQL query requests (query, queryMore)
+| describe                                                    | `-1` (unlimited)                                 | Max number of concurrent describe requests (listMetadataTypes, describeMetadataType, listSObjects, describeSObjects)
+| deploy                                                      | `-1` (unlimited)                                 | Max number of concurrent deploy requests (deploy, bulkLoadOperation)
+| total                                                       | `100` (unlimited)                                | Global limit of concurrent api requests
 
 ### Client data retry options
 

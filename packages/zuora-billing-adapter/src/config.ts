@@ -80,6 +80,20 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       paginationField: 'pagination.next_page',
     },
   },
+  DetailedWorkflow: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'status', fieldType: 'string' },
+      ],
+    },
+  },
+  PublicEmailTemplate: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'eventCategory', fieldType: 'number' },
+      ],
+    },
+  },
   EventTriggers: {
     request: {
       url: '/events/event-triggers',

@@ -33,7 +33,7 @@ import { CUSTOM_OBJECT_ID_FIELD, DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRTY_OPTIONS, 
 import { CompleteSaveResult, SfError, SalesforceRecord } from './types'
 import { UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials,
   SalesforceClientConfig, ClientRateLimitConfig, ClientRetryConfig, ClientPollingConfig,
-  CustomObjectsDeployRetryConfig } from '../types'
+  CustomObjectsDeployRetryConfig, ReadMetadataChunkSizeConfig } from '../types'
 import Connection from './jsforce'
 
 const { makeArray } = collections.array
@@ -66,6 +66,14 @@ const DEFAULT_RETRY_OPTS: Required<ClientRetryConfig> = {
   maxAttempts: 5, // try 5 times
   retryDelay: 5000, // wait for 5s before trying again
   retryStrategy: 'NetworkError', // retry on network errors
+}
+
+const DEFAULT_READ_METADATA_CHUNK_SIZE: Required<ReadMetadataChunkSizeConfig> = {
+  default: MAX_ITEMS_IN_READ_METADATA_REQUEST,
+  overrides: {
+    Profile: 1,
+    PermissionSet: 1,
+  },
 }
 
 // This is attempting to work around issues where the Salesforce API sometimes
@@ -214,7 +222,11 @@ const sendChunked = async <TIn, TOut>({
   const sendSingleChunk = async (chunkInput: TIn[]):
   Promise<SendChunkedResult<TIn, TOut>> => {
     try {
-      return { result: makeArray(await sendChunk(chunkInput)).map(flatValues), errors: [] }
+      const result = makeArray(await sendChunk(chunkInput)).map(flatValues)
+      if (chunkSize === 1 && chunkInput.length > 0) {
+        log.debug('Finished %s on %o', operationInfo, chunkInput[0])
+      }
+      return { result, errors: [] }
     } catch (error) {
       if (chunkInput.length > 1) {
         // Try each input individually to single out the one that caused the error
@@ -348,6 +360,7 @@ export default class SalesforceClient {
   readonly rateLimiters: Record<RateLimitBucketName, Bottleneck>
   readonly dataRetry: CustomObjectsDeployRetryConfig
   readonly clientName: string
+  readonly readMetadataChunkSize: Required<ReadMetadataChunkSizeConfig>
 
   constructor(
     { credentials, connection, config }: SalesforceClientOpts
@@ -365,6 +378,11 @@ export default class SalesforceClient {
     )
     this.dataRetry = config?.dataRetry ?? DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRTY_OPTIONS
     this.clientName = 'SFDC'
+    this.readMetadataChunkSize = _.merge(
+      {},
+      DEFAULT_READ_METADATA_CHUNK_SIZE,
+      config?.readMetadataChunkSize,
+    )
   }
 
   async ensureLoggedIn(): Promise<void> {
@@ -460,7 +478,13 @@ export default class SalesforceClient {
    * Read metadata for salesforce object of specific type and name
    */
   @throttle<ClientRateLimitConfig>('read')
-  @logDecorator()
+  @logDecorator(
+    [],
+    args => {
+      const arg = args[1]
+      return (_.isArray(arg) ? arg : [arg]).length.toString()
+    },
+  )
   @requiresLogin()
   public async readMetadata(
     type: string,
@@ -471,7 +495,7 @@ export default class SalesforceClient {
       operationInfo: `readMetadata (${type})`,
       input: name,
       sendChunk: chunk => this.retryOnBadResponse(() => this.conn.metadata.read(type, chunk)),
-      chunkSize: MAX_ITEMS_IN_READ_METADATA_REQUEST,
+      chunkSize: this.readMetadataChunkSize.overrides[type] ?? this.readMetadataChunkSize.default,
       isSuppressedError: error => (
         // This seems to happen with actions that relate to sending emails - these are disabled in
         // some way on sandboxes and for some reason this causes the SF API to fail reading

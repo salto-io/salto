@@ -231,7 +231,6 @@ export const allSystemFields = [
   'SetupOwnerId',
 ]
 
-
 export default class SalesforceAdapter implements AdapterOperations {
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]

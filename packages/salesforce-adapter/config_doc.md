@@ -138,6 +138,7 @@ salesforce {
 | metadataType                                                | ".*" (All types)                                 | A regular expression of a metadata type to query with
 | name                                                        | ".*" (All names)                                 | A regular expression of a metadata instance name to query with
 
+
 ## Optional Features
 
 | Name                                                        | Default when undefined                           | Description
@@ -179,6 +180,7 @@ salesforce {
 | [retry](#retry-configuration-options)                         | `{}` (no overrides)      | Configuration for retrying on errors
 | [maxConcurrentApiRequests](#rate-limit-configuration-options) | `{}` (no overrides)      | Limits on the number of concurrent requests of different types
 | [dataRetry](#client-data-retry-options) | `{}` (no overrides)      | Configuration for retrying on specific errors regarding data objects (for custom object instances)
+| [readMetadataChunkSize](#read-metadata-chunk-size)            | 10 except for Profile and PermissionSet (which are 1) | Configuration for specifing the size of the chunk in readMetadata
 
 #### Client polling options
 
@@ -227,3 +229,9 @@ For more details see the DeployOptions section in the [salesforce documentation 
 | retryDelay                                                        | `1000`                                | Delay (in millis) between each retry
 | retryableFailures                                                        | `FIELD_CUSTOM_VALIDATION_EXCEPTION, UNABLE_TO_LOCK_ROW`                                | Error messages for which to retry
 | 
+
+### Read metadata chunk size
+| Name                                                        | Default when undefined                           | Description
+| ------------------------------------------------------------| -------------------------------------------------| -----------
+| default                                                     | `10`                                             | Default value for chunk size in readMetadata
+| overrides                                                   | Profile and PermissionSet are set to 1           | Chunk size for specific metadata types

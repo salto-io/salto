@@ -99,7 +99,6 @@ const createRecordIdsMap = async (
 const getSupportedInstances = (elements: Element[]): InstanceElement[] =>
   elements
     .filter(isInstanceElement)
-    .filter(elem => elem.value.scriptid)
     .filter(elem => getTableName(elem) in TABLE_NAME_TO_ID_PARAMETER_MAP)
 
 

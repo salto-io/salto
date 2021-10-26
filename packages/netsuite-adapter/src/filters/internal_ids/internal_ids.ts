@@ -17,10 +17,10 @@ import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeElemen
 import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
-import { isDataObjectType } from '../types'
-import { FilterCreator } from '../filter'
+import { isDataObjectType } from '../../types'
+import { FilterCreator } from '../../filter'
 import { RECORD_ID_SCHEMA, RECORD_ID_PARAMETER_MAP } from './constants'
-import NetsuiteClient from '../client/client'
+import NetsuiteClient from '../../client/client'
 
 const log = logger(module)
 

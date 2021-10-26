@@ -66,7 +66,7 @@ const fetchRecordType = async (
   client: NetsuiteClient,
   recordType: string,
 ): Promise<Record<string, string>> => {
-  const query = `SELECT scriptid, ${idParamName} as id FROM ${recordType} ORDER BY ${idParamName} ASC`
+  const query = `SELECT scriptid, ${idParamName} as id FROM ${recordType} ORDER BY id ASC`
   const recordTypeIds = await queryRecordIds(client, query, recordType)
   if (_.isUndefined(recordTypeIds) || _.isEmpty(recordTypeIds)) {
     return {}

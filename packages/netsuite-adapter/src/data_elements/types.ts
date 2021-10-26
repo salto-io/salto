@@ -189,7 +189,7 @@ const DOWNLOADED_TYPES_TO_INTERNAL_ID: Record<string, string> = {
   workOrderCompletion: TRANSACTION_TYPE_ID,
   workOrderIssue: TRANSACTION_TYPE_ID,
 }
-const EXTRA_TYPES_TO_INTERNAL_ID = {
+const EXTRA_TYPES_TO_INTERNAL_ID: Record<string, string> = {
   role: '-264',
 }
 

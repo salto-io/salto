@@ -53,7 +53,7 @@ import SDFInternalIds from './filters/sdf_internal_ids'
 import internalIds from './filters/internal_ids/internal_ids'
 import accountSpecificValues from './filters/account_specific_values'
 import translationConverter from './filters/translation_converter'
-import authorInformation from './filters/author_information'
+import systemNoteAuthorInformation from './filters/author_information/system_note'
 import { Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
@@ -136,8 +136,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       dataInstancesReferences,
       dataInstancesInternalId,
       SDFInternalIds,
-      // authorInformation must run after internal_ids
-      authorInformation,
+      // systemNoteAuthorInformation must run after internal_ids
+      systemNoteAuthorInformation,
       translationConverter,
       accountSpecificValues,
     ],

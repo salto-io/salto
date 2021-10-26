@@ -19,9 +19,9 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
-import { TYPES_TO_INTERNAL_ID } from '../data_elements/types'
-import NetsuiteClient from '../client/client'
-import { FilterCreator, FilterWith } from '../filter'
+import { TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
+import NetsuiteClient from '../../client/client'
+import { FilterCreator, FilterWith } from '../../filter'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)

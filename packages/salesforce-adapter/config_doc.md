@@ -29,8 +29,6 @@ salesforce {
       list = 20
       query = 4
       describe = 20
-      upsert = 20
-      delete = 20
       deploy = 20
     }
   }
@@ -224,8 +222,6 @@ For more details see the DeployOptions section in the [salesforce documentation 
 | list                                                        | `20`                                             | Max number of concurrent list requests
 | query                                                       | `4`                                              | Max number of concurrent SOQL query requests
 | describe                                                    | `20`                                             | Max number of concurrent describe requests
-| upsert                                                      | `20`                                             | Max number of concurrent upsert requests
-| delete                                                      | `20`                                             | Max number of concurrent delete requests
 | deploy                                                      | `20`                                             | Max number of concurrent deploy requests
 | total                                                       | `-1` (unlimited)                                 | Shared limit for all of the above
 

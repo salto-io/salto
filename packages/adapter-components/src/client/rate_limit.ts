@@ -44,7 +44,7 @@ export const createRateLimitersFromConfig = <TRateLimitConfig extends RateLimitE
   ) as BottleneckBuckets<TRateLimitConfig>
 }
 
-interface ThrottleParameters<TRateLimitConfig extends ClientRateLimitConfig> {
+type ThrottleParameters<TRateLimitConfig extends ClientRateLimitConfig> = {
   bucketName?: keyof Required<TRateLimitConfig>
   keys?: string[]
 }

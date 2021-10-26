@@ -286,8 +286,6 @@ export const DEFAULT_MAX_CONCURRENT_API_REQUESTS = {
   list: 20,
   query: 4,
   describe: 20,
-  upsert: 20,
-  delete: 20,
   deploy: 20,
 }
 export const DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST = 2500

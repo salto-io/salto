@@ -140,8 +140,6 @@ export type ClientRateLimitConfig = Partial<{
   list: number
   query: number
   describe: number
-  upsert: number
-  delete: number
   deploy: number
 }>
 
@@ -373,8 +371,6 @@ const clientRateLimitConfigType = new ObjectType({
     list: { refType: BuiltinTypes.NUMBER },
     query: { refType: BuiltinTypes.NUMBER },
     describe: { refType: BuiltinTypes.NUMBER },
-    upsert: { refType: BuiltinTypes.NUMBER },
-    delete: { refType: BuiltinTypes.NUMBER },
     deploy: { refType: BuiltinTypes.NUMBER },
 
   } as Record<keyof ClientRateLimitConfig, FieldDefinition>,

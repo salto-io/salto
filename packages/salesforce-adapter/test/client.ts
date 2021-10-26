@@ -38,8 +38,6 @@ const mockClient = (values?: Values):
         list: 20,
         query: 4,
         describe: 20,
-        upsert: 20,
-        delete: 20,
         deploy: 20,
       },
       dataRetry: {

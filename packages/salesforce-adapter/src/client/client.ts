@@ -523,7 +523,6 @@ export default class SalesforceClient {
    * @param metadata The metadata of the object
    * @returns The save result of the requested creation
    */
-  @throttle<ClientRateLimitConfig>({ bucketName: 'upsert' })
   @logDecorator(['fullName'])
   @validateSaveResult
   @requiresLogin()
@@ -545,7 +544,6 @@ export default class SalesforceClient {
    * @param fullNames The full names of the metadata components
    * @returns The save result of the requested deletion
    */
-  @throttle<ClientRateLimitConfig>({ bucketName: 'delete' })
   @logDecorator()
   @validateDeleteResult
   @requiresLogin()
@@ -651,6 +649,7 @@ export default class SalesforceClient {
     return this.getQueryAllIterable(queryString, useToolingApi)
   }
 
+  @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
   @logDecorator()
   @requiresLogin()
   public async bulkLoadOperation(

@@ -20,7 +20,7 @@ import {
   ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeElement,
   isAdditionOrRemovalChange, isFieldChange, ReadOnlyElementsSource, ElemID, isVariable,
   Value, isReferenceExpression, compareSpecialValues, BuiltinTypesByFullName, isAdditionChange,
-  isModificationChange, isRemovalChange,
+  isModificationChange, isRemovalChange, InstanceElement,
 } from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode, DiffGraph, Group, GroupDAG, DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
@@ -397,6 +397,7 @@ type GetPlanParameters = {
   customGroupIdFunctions?: Record<string, ChangeGroupIdFunction>
   additionalResolveContext?: ReadonlyArray<Element>
   topLevelFilters?: IDFilter[]
+  adapterGetConfig?: Record<string, InstanceElement | undefined>
 }
 export const getPlan = async ({
   before,
@@ -405,6 +406,7 @@ export const getPlan = async ({
   dependencyChangers = defaultDependencyChangers,
   customGroupIdFunctions = {},
   topLevelFilters = [],
+  adapterGetConfig,
 }: GetPlanParameters): Promise<Plan> => {
   const numBeforeElements = await awu(await before.list()).length()
   const numAfterElements = await awu(await after.list()).length()
@@ -415,7 +417,7 @@ export const getPlan = async ({
       addNodeDependencies(dependencyChangers),
     )
     const filterResult = await filterInvalidChanges(
-      before, after, diffGraph, changeValidators,
+      before, after, diffGraph, changeValidators, adapterGetConfig
     )
     const customGroupKeys = await getCustomGroupIds(
       // We need to resolve the fileted graph again.

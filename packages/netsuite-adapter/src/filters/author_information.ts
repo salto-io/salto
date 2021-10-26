@@ -25,6 +25,7 @@ import { FilterCreator, FilterWith } from '../filter'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
+const UNDERSCORE = '_'
 export const EMPLOYEE_NAME_QUERY = 'SELECT id, entityid FROM employee ORDER BY id ASC'
 const EMPLOYEE_SCHEMA = {
   items: {
@@ -79,6 +80,8 @@ type SystemNoteResult = {
   name: string
 }
 
+const getRecordIdAndTypeStringKey = (recordId: string, recordTypeId: string): string =>
+  `${recordId}${UNDERSCORE}${recordTypeId}`
 
 const queryEmployees = async (client: NetsuiteClient):
 Promise<EmployeeResult[]> => {
@@ -124,7 +127,6 @@ const distinctSortedSystemNotes = (
 const buildSystemNotesQuery = (instances: InstanceElement[]): string | undefined => {
   const recordTypeIds = _.uniq(instances
     .map(instance => TYPES_TO_INTERNAL_ID[instance.elemID.typeName]))
-    .filter(isDefined)
   if (_.isEmpty(recordTypeIds)) {
     return undefined
   }
@@ -143,7 +145,7 @@ const fetchSystemNotes = async (
     log.warn('System note query failed')
     return {}
   }
-  return _.keyBy(distinctSortedSystemNotes(systemNotes), note => [note.recordid, note.recordtypeid].join('_'))
+  return _.keyBy(distinctSortedSystemNotes(systemNotes), note => getRecordIdAndTypeStringKey(note.recordid, note.recordtypeid))
 }
 
 const getElementLastModifier = (
@@ -151,7 +153,11 @@ const getElementLastModifier = (
   systemNotes: Record<string, Record<string, string>>,
   employeeNames: Record<string, string>,
 ): string | undefined => {
-  const lastNote = systemNotes[[instance.value.internalId, TYPES_TO_INTERNAL_ID[instance.elemID.typeName]].join('_')]
+  const lastNote = systemNotes[
+    getRecordIdAndTypeStringKey(
+      instance.value.internalId,
+      TYPES_TO_INTERNAL_ID[instance.elemID.typeName]
+    )]
   if (_.isEmpty(lastNote)) {
     return undefined
   }
@@ -176,15 +182,16 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
     const instancesWithInternalId = elements
       .filter(isInstanceElement)
       .filter(instance => isDefined(instance.value.internalId))
-    const query = buildSystemNotesQuery(instancesWithInternalId)
-    if (_.isUndefined(query)) {
+      .filter(instance => instance.elemID.typeName in TYPES_TO_INTERNAL_ID)
+    const systemNoteQuery = buildSystemNotesQuery(instancesWithInternalId)
+    if (_.isUndefined(systemNoteQuery)) {
       return
     }
     const employeeNames = await fetchEmployeeNames(client)
     if (_.isEmpty(employeeNames)) {
       return
     }
-    const systemNotes = await fetchSystemNotes(client, query)
+    const systemNotes = await fetchSystemNotes(client, systemNoteQuery)
     instancesWithInternalId
       .forEach(instance => setAuthorName(instance, systemNotes, employeeNames))
   },

@@ -69,38 +69,19 @@ export const RECORD_ID_PARAMETER_MAP: Record<string, string> = {
 
 export const RECORD_ID_SCHEMA = {
   items: {
-    anyOf: [
-      {
-        properties: {
-          id: {
-            type: 'string',
-          },
-          scriptid: {
-            type: 'string',
-          },
-        },
-        required: [
-          'id',
-          'scriptid',
-        ],
-        type: 'object',
+    properties: {
+      id: {
+        type: 'string',
       },
-      {
-        properties: {
-          internalid: {
-            type: 'string',
-          },
-          scriptid: {
-            type: 'string',
-          },
-        },
-        required: [
-          'internalid',
-          'scriptid',
-        ],
-        type: 'object',
+      scriptid: {
+        type: 'string',
       },
+    },
+    required: [
+      'id',
+      'scriptid',
     ],
+    type: 'object',
   },
   type: 'array',
 }

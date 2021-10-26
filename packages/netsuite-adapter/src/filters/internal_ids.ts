@@ -24,15 +24,10 @@ import NetsuiteClient from '../client/client'
 
 const log = logger(module)
 
-type IdRecordIdResult = {
+type RecordIdResult = {
   scriptid: string
   id: string
 }
-type InternalIdRecordIdResult = {
-  scriptid: string
-  internalid: string
-}
-type RecordIdResult = IdRecordIdResult | InternalIdRecordIdResult
 
 const queryRecordIds = async (client: NetsuiteClient, query: string, recordType: string):
 Promise<RecordIdResult[]> => {
@@ -66,35 +61,28 @@ const addInternalIdFieldToInstancesObjects = async (
     .filter(isObjectType)
     .forEach(addInternalIdFieldToType)
 
-const formatRecordIdResult = (results: RecordIdResult[]): Record<string, string> =>
-  Object.fromEntries(results.map(entry => {
-    if ('id' in entry) {
-      return [entry.scriptid, entry.id]
-    }
-    return [entry.scriptid, entry.internalid]
-  }))
-
 const fetchRecordType = async (
-  idParamName: string | undefined,
+  idParamName: string,
   client: NetsuiteClient,
   recordType: string,
 ): Promise<Record<string, string>> => {
-  if (_.isUndefined(idParamName)) {
-    return {}
-  }
-  const query = `SELECT scriptid, ${idParamName} FROM ${recordType} ORDER BY ${idParamName} ASC`
+  const query = `SELECT scriptid, ${idParamName} as id FROM ${recordType} ORDER BY ${idParamName} ASC`
   const recordTypeIds = await queryRecordIds(client, query, recordType)
   if (_.isUndefined(recordTypeIds) || _.isEmpty(recordTypeIds)) {
     return {}
   }
-  return formatRecordIdResult(recordTypeIds)
+  return Object.fromEntries(recordTypeIds.map(entry => [entry.scriptid, entry.id]))
 }
 
 const fetchRecordIdsForRecordType = async (
   recordType: string,
   client: NetsuiteClient
-): Promise<Record<string, string>> =>
-  fetchRecordType(RECORD_ID_PARAMETER_MAP[recordType], client, recordType)
+): Promise<Record<string, string>> => {
+  if (!(recordType in RECORD_ID_PARAMETER_MAP)) {
+    return {}
+  }
+  return fetchRecordType(RECORD_ID_PARAMETER_MAP[recordType], client, recordType)
+}
 
 const createRecordIdsMap = async (
   client: NetsuiteClient,

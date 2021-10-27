@@ -22,63 +22,11 @@ import Ajv from 'ajv'
 import { TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
 import NetsuiteClient from '../../client/client'
 import { FilterCreator, FilterWith } from '../../filter'
+import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA } from './constants'
 
 const { isDefined } = lowerDashValues
 const log = logger(module)
 const UNDERSCORE = '_'
-export const EMPLOYEE_NAME_QUERY = 'SELECT id, entityid FROM employee ORDER BY id ASC'
-const EMPLOYEE_SCHEMA = {
-  items: {
-    properties: {
-      entityid: {
-        type: 'string',
-      },
-      id: {
-        type: 'string',
-      },
-    },
-    required: [
-      'entityid',
-      'id',
-    ],
-    type: 'object',
-  },
-  type: 'array',
-}
-
-type EmployeeResult = {
-  id: string
-  entityid: string
-}
-
-const SYSTEM_NOTE_SCHEMA = {
-  items: {
-    properties: {
-      name: {
-        type: 'string',
-      },
-      recordid: {
-        type: 'string',
-      },
-      recordtypeid: {
-        type: 'string',
-      },
-    },
-    required: [
-      'name',
-      'recordid',
-      'recordtypeid',
-    ],
-    type: 'object',
-  },
-  type: 'array',
-}
-
-type SystemNoteResult = {
-  recordid: string
-  recordtypeid: string
-  name: string
-}
 
 const getRecordIdAndTypeStringKey = (recordId: string, recordTypeId: string): string =>
   `${recordId}${UNDERSCORE}${recordTypeId}`

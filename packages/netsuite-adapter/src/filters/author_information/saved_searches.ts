@@ -20,52 +20,9 @@ import _ from 'lodash'
 import { SAVED_SEARCH } from '../../constants'
 import { FilterCreator, FilterWith } from '../../filter'
 import NetsuiteClient from '../../client/client'
+import { SavedSearchesResult, SAVED_SEARCH_RESULT_SCHEMA } from './constants'
 
 const log = logger(module)
-
-const SAVED_SEARCH_RESULT_SCHEMA = {
-  items: {
-    properties: {
-      id: {
-        type: 'string',
-      },
-      modifiedby: {
-        items: {
-          properties: {
-            text: {
-              type: 'string',
-            },
-            value: {
-              type: 'string',
-            },
-          },
-          required: [
-            'text',
-            'value',
-          ],
-          type: 'object',
-        },
-        type: 'array',
-      },
-    },
-    required: [
-      'id',
-      'modifiedby',
-    ],
-    type: 'object',
-  },
-  type: 'array',
-}
-
-type modifiedbyField = {
-  value: string
-  text: string
-}
-
-type SavedSearchesResult = {
-  id: string
-  modifiedby: modifiedbyField[]
-}
 
 const isSavedSearchInstance = (element: Element): element is InstanceElement =>
   isInstanceElement(element) && element.elemID.typeName === SAVED_SEARCH
@@ -82,7 +39,7 @@ const fetchSavedSearches = async (client: NetsuiteClient): Promise<SavedSearches
   const ajv = new Ajv({ allErrors: true, strict: false })
   if (!ajv.validate<SavedSearchesResult[]>(SAVED_SEARCH_RESULT_SCHEMA, savedSearches)) {
     log.error(`Got invalid results from listing employees table: ${ajv.errorsText()}`)
-    throw new Error('Failed to list employees')
+    return []
   }
   return savedSearches
 }
@@ -100,11 +57,14 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
     if (!client.isSuiteAppConfigured()) {
       return
     }
+    const savedSearchesInstances = elements.filter(isSavedSearchInstance)
+    if (_.isEmpty(savedSearchesInstances)) {
+      return
+    }
     const savedSearchesMap = await getSavedSearchesModifiersMap(client)
     if (_.isEmpty(savedSearchesMap)) {
       return
     }
-    const savedSearchesInstances = elements.filter(isSavedSearchInstance)
     savedSearchesInstances.forEach(search =>
       search.annotate({ [CORE_ANNOTATIONS.CHANGED_BY]: savedSearchesMap[search.value.scriptid] }))
   },

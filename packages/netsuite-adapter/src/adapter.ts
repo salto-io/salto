@@ -45,14 +45,15 @@ import dataInstancesInternalId from './filters/data_instances_internal_id'
 import dataInstancesReferences from './filters/data_instances_references'
 import dataTypesCustomFields from './filters/data_types_custom_fields'
 import dataInstancesCustomFields from './filters/data_instances_custom_fields'
-import rolesInternalId from './filters/roles_internal_id'
 import dataInstancesAttributes from './filters/data_instances_attributes'
 import dataInstancesNullFields from './filters/data_instances_null_fields'
 import dataInstancesDiff from './filters/data_instances_diff'
 import dataInstancesIdentifiers from './filters/data_instances_identifiers'
-import addInternalId from './filters/add_internal_ids'
+import SDFInternalIds from './filters/sdf_internal_ids'
+import internalIds from './filters/internal_ids/internal_ids'
 import accountSpecificValues from './filters/account_specific_values'
 import translationConverter from './filters/translation_converter'
+import authorInformation from './filters/author_information'
 import { Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
@@ -122,7 +123,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       consistentValues,
       replaceInstanceReferencesFilter,
       serviceUrls,
-      rolesInternalId,
+      internalIds,
       dataInstancesAttributes,
       redundantFields,
       hiddenFields,
@@ -134,7 +135,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       removeUnsupportedTypes,
       dataInstancesReferences,
       dataInstancesInternalId,
-      addInternalId,
+      SDFInternalIds,
+      // authorInformation must run after internal_ids
+      authorInformation,
       translationConverter,
       accountSpecificValues,
     ],
@@ -376,18 +379,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       errors: deployResult.errors,
       appliedChanges,
     }
-    // const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
-    // const customizationInfosToDeploy = await awu(
-    //   await this.getAllRequiredReferencedInstances(changedInstances)
-    // ).map(async instance => resolveValues(instance, getLookUpName))
-    //   .map(toCustomizationInfo)
-    //   .toArray()
-    // try {
-    //   await this.client.deploy(customizationInfosToDeploy, this.deployReferencedElements)
-    // } catch (e) {
-    //   return { errors: [e], appliedChanges: [] }
-    // }
-    // return { errors: [], appliedChanges: changeGroup.changes }
   }
 
   public get deployModifiers(): DeployModifiers {

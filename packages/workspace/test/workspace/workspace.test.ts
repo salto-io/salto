@@ -3059,6 +3059,23 @@ describe('workspace', () => {
         ).toContainEqual(elemIDToMove)
       })
     })
+
+    describe('sync', () => {
+      it('should update the elements correctly', async () => {
+        const elemIDToRemove = new ElemID('salesforce', 'someType', 'instance', 'inst1')
+        const elemIDToAdd = new ElemID('salesforce', 'lead')
+        await ws.sync(
+          [elemIDToAdd],
+          { [secondarySourceName]: [elemIDToRemove] },
+          [secondarySourceName]
+        )
+        const elements = await awu(
+          await (await ws.elements(undefined, secondarySourceName)).list()
+        ).toArray()
+        expect(elements).not.toContainEqual(elemIDToRemove)
+        expect(elements).toContainEqual(elemIDToAdd)
+      })
+    })
   })
 
   describe('getNaclFile', () => {

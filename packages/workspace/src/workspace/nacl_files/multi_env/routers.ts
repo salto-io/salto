@@ -650,3 +650,19 @@ export const routeCopyTo = async (
     })
   ),
 })
+
+export const routeRemoveFrom = async (
+  ids: ElemID[],
+  targetSource: NaclFilesSource,
+  targetSourceName?: string,
+): Promise<RoutedChanges> => (targetSourceName !== undefined ? {
+  primarySource: [],
+  commonSource: [],
+  secondarySources: {
+    [targetSourceName]: await removeFromSource(ids, targetSource),
+  },
+} : {
+  primarySource: await removeFromSource(ids, targetSource),
+  commonSource: [],
+  secondarySources: {},
+})

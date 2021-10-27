@@ -15,12 +15,13 @@
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import filterCreator, { EMPLOYEE_NAME_QUERY } from '../../../src/filters/author_information/system_note'
+import filterCreator from '../../../src/filters/author_information/system_note'
 import { NETSUITE } from '../../../src/constants'
 import NetsuiteClient from '../../../src/client/client'
 import { FilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
+import { EMPLOYEE_NAME_QUERY } from '../../../src/filters/author_information/constants'
 
 describe('netsuite system note author information', () => {
   let filterOpts: FilterOpts

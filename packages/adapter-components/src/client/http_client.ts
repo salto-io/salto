@@ -90,7 +90,7 @@ export abstract class AdapterHTTPClient<
   /**
    * Get a single response
    */
-  @throttle<TRateLimitConfig>('get', ['url', 'queryParams'])
+  @throttle<TRateLimitConfig>({ bucketName: 'get', keys: ['url', 'queryParams'] })
   @logDecorator(['url', 'queryParams'])
   @requiresLogin()
   public async getSinglePage({

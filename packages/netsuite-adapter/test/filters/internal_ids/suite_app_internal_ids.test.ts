@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import filterCreator from '../../src/filters/suite_app_internal_ids'
-import { NETSUITE } from '../../src/constants'
+import filterCreator from '../../../src/filters/internal_ids/suite_app_internal_ids'
+import { NETSUITE } from '../../../src/constants'
 
 describe('suite app internal ids filter tests', () => {
   it('should add the internal id to new instances', async () => {

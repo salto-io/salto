@@ -139,6 +139,8 @@ export type ClientRateLimitConfig = Partial<{
   read: number
   list: number
   query: number
+  describe: number
+  deploy: number
 }>
 
 export type ClientPollingConfig = Partial<{
@@ -368,6 +370,8 @@ const clientRateLimitConfigType = new ObjectType({
     read: { refType: BuiltinTypes.NUMBER },
     list: { refType: BuiltinTypes.NUMBER },
     query: { refType: BuiltinTypes.NUMBER },
+    describe: { refType: BuiltinTypes.NUMBER },
+    deploy: { refType: BuiltinTypes.NUMBER },
 
   } as Record<keyof ClientRateLimitConfig, FieldDefinition>,
 })

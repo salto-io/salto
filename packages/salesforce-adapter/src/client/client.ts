@@ -29,7 +29,7 @@ import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountId, Value } from '@salto-io/adapter-api'
-import { CUSTOM_OBJECT_ID_FIELD, DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRTY_OPTIONS, DEFAULT_MAX_CONCURRENT_API_REQUESTS } from '../constants'
+import { CUSTOM_OBJECT_ID_FIELD, DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRTY_OPTIONS, DEFAULT_MAX_CONCURRENT_API_REQUESTS, SALESFORCE } from '../constants'
 import { CompleteSaveResult, SfError, SalesforceRecord } from './types'
 import { UsernamePasswordCredentials, OauthAccessTokenCredentials, Credentials,
   SalesforceClientConfig, ClientRateLimitConfig, ClientRetryConfig, ClientPollingConfig,
@@ -39,7 +39,7 @@ import Connection from './jsforce'
 const { makeArray } = collections.array
 
 const log = logger(module)
-const { logDecorator, throttle, requiresLogin } = clientUtils
+const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } = clientUtils
 
 export const API_VERSION = '50.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
@@ -292,24 +292,6 @@ const createConnectionFromCredentials = (
   return realConnection(creds.isSandbox, options)
 }
 
-const createRateLimitersFromConfig = (
-  rateLimit: ClientRateLimitConfig,
-): Record<RateLimitBucketName, Bottleneck> => {
-  const toLimit = (
-    num: number | undefined
-  // 0 is an invalid value (blocked in configuration)
-  ): number | undefined => (num && num < 0 ? undefined : num)
-  const rateLimitConfig = _.mapValues(rateLimit, toLimit)
-  log.debug('Salesforce rate limit config: %o', rateLimitConfig)
-  return {
-    total: new Bottleneck({ maxConcurrent: rateLimitConfig.total }),
-    retrieve: new Bottleneck({ maxConcurrent: rateLimitConfig.retrieve }),
-    read: new Bottleneck({ maxConcurrent: rateLimitConfig.read }),
-    list: new Bottleneck({ maxConcurrent: rateLimitConfig.list }),
-    query: new Bottleneck({ maxConcurrent: rateLimitConfig.query }),
-  }
-}
-
 export const loginFromCredentialsAndReturnOrgId = async (
   connection: Connection, creds: Credentials): Promise<string> => {
   if (creds instanceof UsernamePasswordCredentials) {
@@ -374,7 +356,8 @@ export default class SalesforceClient {
     )
     setPollIntervalForConnection(this.conn, _.defaults({}, config?.polling, DEFAULT_POLLING_CONFIG))
     this.rateLimiters = createRateLimitersFromConfig(
-      _.defaults({}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS)
+      _.defaults({}, config?.maxConcurrentApiRequests, DEFAULT_MAX_CONCURRENT_API_REQUESTS),
+      SALESFORCE
     )
     this.dataRetry = config?.dataRetry ?? DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRTY_OPTIONS
     this.clientName = 'SFDC'
@@ -427,6 +410,7 @@ export default class SalesforceClient {
   /**
    * Extract metadata object names
    */
+  @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
   public async listMetadataTypes(): Promise<MetadataObject[]> {
@@ -438,6 +422,7 @@ export default class SalesforceClient {
    * Read information about a value type
    * @param type The name of the metadata type for which you want metadata
    */
+  @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
   public async describeMetadataType(type: string): Promise<DescribeValueTypeResult> {
@@ -448,7 +433,7 @@ export default class SalesforceClient {
     return flatValues(describeResult)
   }
 
-  @throttle<ClientRateLimitConfig>('list', ['type', '0.type'])
+  @throttle<ClientRateLimitConfig>({ bucketName: 'list', keys: ['type', '0.type'] })
   @logDecorator(['type', '0.type'])
   @requiresLogin()
   public async listMetadataObjects(
@@ -477,7 +462,7 @@ export default class SalesforceClient {
   /**
    * Read metadata for salesforce object of specific type and name
    */
-  @throttle<ClientRateLimitConfig>('read')
+  @throttle<ClientRateLimitConfig>({ bucketName: 'read' })
   @logDecorator(
     [],
     args => {
@@ -512,12 +497,14 @@ export default class SalesforceClient {
   /**
    * Extract sobject names
    */
+  @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
     return flatValues((await this.retryOnBadResponse(() => this.conn.describeGlobal())).sobjects)
   }
 
+  @throttle<ClientRateLimitConfig>({ bucketName: 'describe' })
   @logDecorator()
   @requiresLogin()
   public async describeSObjects(objectNames: string[]):
@@ -570,7 +557,7 @@ export default class SalesforceClient {
     return result.result
   }
 
-  @throttle<ClientRateLimitConfig>('retrieve')
+  @throttle<ClientRateLimitConfig>({ bucketName: 'retrieve' })
   @logDecorator()
   @requiresLogin()
   public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
@@ -584,6 +571,7 @@ export default class SalesforceClient {
    * @param zip The package zip
    * @returns The save result of the requested update
    */
+  @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
   @logDecorator()
   @requiresLogin()
   public async deploy(zip: Buffer): Promise<DeployResult> {
@@ -598,7 +586,7 @@ export default class SalesforceClient {
     )
   }
 
-  @throttle<ClientRateLimitConfig>('query')
+  @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
   @logDecorator()
   @requiresLogin()
   private query<T>(queryString: string, useToolingApi: boolean): Promise<QueryResult<T>> {
@@ -606,7 +594,7 @@ export default class SalesforceClient {
     return this.retryOnBadResponse(() => conn.query(queryString))
   }
 
-  @throttle<ClientRateLimitConfig>('query')
+  @throttle<ClientRateLimitConfig>({ bucketName: 'query' })
   @logDecorator()
   @requiresLogin()
   private queryMore<T>(queryString: string, useToolingApi: boolean): Promise<QueryResult<T>> {
@@ -653,7 +641,7 @@ export default class SalesforceClient {
    * Queries for all the available Records given a query string
    * @param queryString the string to query with for records
    */
-   @requiresLogin()
+  @requiresLogin()
   public async queryAll(
     queryString: string,
     useToolingApi = false,
@@ -661,23 +649,24 @@ export default class SalesforceClient {
     return this.getQueryAllIterable(queryString, useToolingApi)
   }
 
+  @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
   @logDecorator()
   @requiresLogin()
-   public async bulkLoadOperation(
-     type: string,
-     operation: BulkLoadOperation,
-     records: SalesforceRecord[]
-   ):
-    Promise<BatchResultInfo[]> {
-     const batch = this.conn.bulk.load(
-       type,
-       operation,
-       { extIdField: CUSTOM_OBJECT_ID_FIELD, concurrencyMode: 'Parallel' },
-       records
-     )
-     const { job } = batch
-     await new Promise(resolve => job.on('close', resolve))
-     const result = await batch.then() as BatchResultInfo[]
-     return flatValues(result)
-   }
+  public async bulkLoadOperation(
+    type: string,
+    operation: BulkLoadOperation,
+    records: SalesforceRecord[]
+  ):
+  Promise<BatchResultInfo[]> {
+    const batch = this.conn.bulk.load(
+      type,
+      operation,
+      { extIdField: CUSTOM_OBJECT_ID_FIELD, concurrencyMode: 'Parallel' },
+      records
+    )
+    const { job } = batch
+    await new Promise(resolve => job.on('close', resolve))
+    const result = await batch.then() as BatchResultInfo[]
+    return flatValues(result)
+  }
 }

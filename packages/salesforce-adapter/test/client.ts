@@ -18,7 +18,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import Connection from '../src/client/jsforce'
 import SalesforceClient from '../src/client/client'
 import { mockJsforce } from './connection'
-import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
+import { MAX_TOTAL_CONCURRENT_API_REQUEST, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
 
 const mockClient = (values?: Values):
 { connection: MockInterface<Connection>; client: SalesforceClient } => {
@@ -32,10 +32,13 @@ const mockClient = (values?: Values):
     connection,
     config: {
       maxConcurrentApiRequests: {
-        total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+        total: MAX_TOTAL_CONCURRENT_API_REQUEST,
         retrieve: 3,
         read: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
         list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+        query: 4,
+        describe: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+        deploy: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
       },
       dataRetry: {
         maxAttempts: 3,

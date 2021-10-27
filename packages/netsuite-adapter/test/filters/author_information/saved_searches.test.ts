@@ -67,7 +67,7 @@ describe('netsuite saved searches author information tests', () => {
     expect(runSavedSearchQueryMock).toHaveBeenNthCalledWith(1, {
       type: 'savedsearch',
       columns: ['modifiedby', 'id'],
-      filters: ['datemodified', 'noton', '7/11/2022 9:33 pm'],
+      filters: [],
     })
     expect(runSavedSearchQueryMock).toHaveBeenCalledTimes(1)
   })

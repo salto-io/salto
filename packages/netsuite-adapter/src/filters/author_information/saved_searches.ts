@@ -32,7 +32,7 @@ const fetchSavedSearches = async (client: NetsuiteClient): Promise<SavedSearches
   const savedSearches = await client.runSavedSearchQuery({
     type: 'savedsearch',
     columns: ['modifiedby', 'id'],
-    filters: ['datemodified', 'noton', '7/11/2022 9:33 pm'],
+    filters: [],
   })
   if (savedSearches === undefined) {
     return []

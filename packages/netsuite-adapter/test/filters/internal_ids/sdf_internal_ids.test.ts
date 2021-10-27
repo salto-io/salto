@@ -141,7 +141,9 @@ describe('sdf internal ids tests', () => {
     it('bad record id schema', async () => {
       runSuiteQLMock.mockReset()
       runSuiteQLMock.mockResolvedValueOnce({ scriptid: 'scriptId3' })
-      await expect(filterCreator(filterOpts).onFetch?.(elements)).rejects.toThrow()
+      await filterCreator(filterOpts).onFetch?.(elements)
+      expect(customTypeInstance.value.internalId).not.toBeDefined()
+      expect(customScriptInstance.value.internalId).not.toBeDefined()
     })
   })
   describe('fetch', () => {

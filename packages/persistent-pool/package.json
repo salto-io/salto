@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/persistent-pool",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "license": "Apache-2.0",
   "description": "Keeps a persistent pool of objects",
   "repository": {
@@ -27,8 +27,8 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/logging": "0.3.2",
-    "@salto-io/lowerdash": "0.3.2",
+    "@salto-io/logging": "0.3.3",
+    "@salto-io/lowerdash": "0.3.3",
     "aws-sdk": "^2.863.0",
     "uuid": "^3.3.3"
   },

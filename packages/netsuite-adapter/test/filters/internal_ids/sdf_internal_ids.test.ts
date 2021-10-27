@@ -15,14 +15,14 @@
 */
 import { ElemID, InstanceElement, ObjectType, toChange, Element } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import filterCreator from '../../../src/filters/internal_ids/internal_ids'
+import filterCreator from '../../../src/filters/internal_ids/sdf_internal_ids'
 import { NETSUITE } from '../../../src/constants'
 import NetsuiteClient from '../../../src/client/client'
 import { FilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
 
-describe('netsuite internal ids', () => {
+describe('sdf internal ids tests', () => {
   let filterOpts: FilterOpts
   let instances: InstanceElement[]
   let elements: Element[]

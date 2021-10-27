@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ElemIDTypes, Value, ElemIDType, isType } from '@salto-io/adapter-api'
+import { ElemID, ElemIDTypes, Value, ElemIDType } from '@salto-io/adapter-api'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
@@ -227,8 +227,8 @@ export const selectElementIdsByTraversal = async (
     : possibleParentIDs
 
   const subElementIDs: ElemID[] = []
-  const selectFromSubElements: WalkOnFunc = ({ path, value }) => {
-    if (isType(value)) {
+  const selectFromSubElements: WalkOnFunc = ({ path }) => {
+    if (path.getFullNameParts().length <= 1) {
       return WALK_NEXT_STEP.RECURSE
     }
 

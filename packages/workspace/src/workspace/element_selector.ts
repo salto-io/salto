@@ -228,6 +228,10 @@ export const selectElementIdsByTraversal = async (
 
   const subElementIDs: ElemID[] = []
   const selectFromSubElements: WalkOnFunc = ({ path }) => {
+    if (path.getFullNameParts().length <= 1) {
+      return WALK_NEXT_STEP.RECURSE
+    }
+
     if (subElementSelectors.some(selector => match(path, selector))) {
       subElementIDs.push(path)
       if (compact) {

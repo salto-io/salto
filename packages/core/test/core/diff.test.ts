@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange, TypeReference } from '@salto-io/adapter-api'
-import { merger, createElementSelector, elementSource } from '@salto-io/workspace'
+import { merger, createElementSelector, elementSource, createElementSelectors } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-
-import { createDiffChanges } from '../../src/core/diff'
+import { mockWorkspace } from '../common/workspace'
+import { createDiffChanges, getEnvsDeletionsDiff } from '../../src/core/diff'
 import { createElementSource } from '../common/helpers'
 
 const { createInMemoryElementSource } = elementSource
@@ -296,6 +296,22 @@ describe('diff', () => {
         expect(changes.map(change => change.id.getFullName()))
           .toEqual([simpleFieldId.createNestedID('description').getFullName()])
       })
+    })
+  })
+})
+
+describe('getEnvsDeletionsDiff', () => {
+  it('should return the deletions diff', async () => {
+    const idInSource = new ElemID('adapter', 'type1')
+    const selectors = createElementSelectors(['adapter.*'])
+
+    const workspace = mockWorkspace({})
+    const getElementIdsBySelectorsMock = workspace.getElementIdsBySelectors as jest.Mock
+    getElementIdsBySelectorsMock.mockResolvedValueOnce([idInSource, new ElemID('adapter', 'type2')])
+    getElementIdsBySelectorsMock.mockResolvedValueOnce([idInSource])
+    const elementsToDelete = await getEnvsDeletionsDiff(workspace, [idInSource], ['env2', 'env3'], selectors.validSelectors)
+    expect(elementsToDelete).toEqual({
+      env2: [new ElemID('adapter', 'type2')],
     })
   })
 })

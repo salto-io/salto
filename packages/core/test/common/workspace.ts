@@ -98,6 +98,7 @@ export const mockWorkspace = ({
     updateServiceCredentials: jest.fn(),
     updateServiceConfig: jest.fn(),
     clear: jest.fn(),
+    getElementIdsBySelectors: jest.fn(),
     hasErrors: () => errors.length > 0,
   } as unknown as workspace.Workspace
 }

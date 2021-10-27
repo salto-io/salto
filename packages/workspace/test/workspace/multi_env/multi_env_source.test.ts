@@ -851,11 +851,15 @@ describe('multi env source', () => {
       )
     })
   })
-  describe('removeFrom', () => {
-    it('should route a copy to the proper env sources when specified', async () => {
+  describe('sync', () => {
+    it('should route the removal to the proper env sources when specified', async () => {
       const selectors = createElementSelectors(['salto.*']).validSelectors
       jest.spyOn(routers, 'routeRemoveFrom').mockResolvedValue({ primarySource: [], commonSource: [], secondarySources: {} })
-      await source.removeFrom(await awu(await source.getElementIdsBySelectors(selectors)).toArray(), 'inactive')
+      await source.sync(
+        [],
+        { inactive: await awu(await source.getElementIdsBySelectors(selectors)).toArray() },
+        ['inactive'],
+      )
       expect(routers.routeRemoveFrom).toHaveBeenCalledWith(
         [envElemID, objectElemID], inactiveSource, 'inactive',
       )

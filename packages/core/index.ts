@@ -18,7 +18,7 @@ export { FetchChange, FetchProgressEvents, StepEmitter, FetchChangeMetadata } fr
 export * from './src/api'
 export { ItemStatus } from './src/core/deploy'
 export { getAdaptersCredentialsTypes, getDefaultAdapterConfig, getAdaptersConfigTypes } from './src/core/adapters/adapters'
-export { createDiffChanges } from './src/core/diff'
+export { createDiffChanges, getEnvsDeletionsDiff } from './src/core/diff'
 export {
   loadLocalWorkspace, initLocalWorkspace, loadLocalElementsSources, getNaclFilesSourceParams,
   CACHE_DIR_NAME, locateWorkspaceRoot, createEnvironmentSource,

@@ -3064,7 +3064,11 @@ describe('workspace', () => {
       it('should update the elements correctly', async () => {
         const elemIDToRemove = new ElemID('salesforce', 'someType', 'instance', 'inst1')
         const elemIDToAdd = new ElemID('salesforce', 'lead')
-        await ws.sync([elemIDToRemove, elemIDToAdd], [secondarySourceName])
+        await ws.sync(
+          [elemIDToAdd],
+          { [secondarySourceName]: [elemIDToRemove] },
+          [secondarySourceName]
+        )
         const elements = await awu(
           await (await ws.elements(undefined, secondarySourceName)).list()
         ).toArray()

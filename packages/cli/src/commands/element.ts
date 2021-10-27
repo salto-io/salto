@@ -19,6 +19,7 @@ import { ElemID, isElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { Workspace, ElementSelector, createElementSelectors, FromSource } from '@salto-io/workspace'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import { getEnvsDeletionsDiff } from '@salto-io/core'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
@@ -90,34 +91,6 @@ const runElementsOperationMessages = async (
   return shouldStart
 }
 
-
-const getElementsToDelete = async (
-  workspace: Workspace,
-  sourceElemIds: ElemID[],
-  envs: ReadonlyArray<string>,
-  selectors: ElementSelector[]
-): Promise<Record<string, ElemID[]>> => {
-  const envsElemIds: Record<string, ElemID[]> = Object.fromEntries(await (awu(envs)).map(
-    async env =>
-      [
-        env,
-        await awu(await workspace.getElementIdsBySelectors(
-          selectors,
-          { source: 'env', envName: env },
-          true
-        )).toArray(),
-      ]
-  ).toArray())
-
-  const sourceElemIdsSet = new Set(sourceElemIds.map(id => id.getFullName()))
-  return _(envsElemIds)
-    .mapValues(ids => ids.filter(id => !sourceElemIdsSet.has(id.getFullName())))
-    .entries()
-    .filter(([_env, ids]) => ids.length !== 0)
-    .fromPairs()
-    .value()
-}
-
 const shouldMoveElements = async (
   to: string,
   elemIds: readonly ElemID[],
@@ -158,7 +131,7 @@ const moveElement = async (
     ).toArray()
 
     const elemIdsToRemove = allowElementDeletions
-      ? await getElementsToDelete(
+      ? await getEnvsDeletionsDiff(
         workspace,
         elemIds,
         workspace.envs().filter(env => env !== workspace.currentEnv()),
@@ -171,7 +144,7 @@ const moveElement = async (
     }
 
     if (to === 'common') {
-      await workspace.promote([...elemIds, ...Object.values(elemIdsToRemove).flat()])
+      await workspace.promote(elemIds, elemIdsToRemove)
     } else if (to === 'envs') {
       await workspace.demote(elemIds)
     }
@@ -362,7 +335,7 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
     ).toArray()
 
     const elemIdsToRemove = allowElementDeletions
-      ? await getElementsToDelete(workspace, sourceElemIds, toEnvs, validSelectors)
+      ? await getEnvsDeletionsDiff(workspace, sourceElemIds, toEnvs, validSelectors)
       : {}
 
     if (!await shouldCloneElements(
@@ -375,11 +348,7 @@ export const cloneAction: WorkspaceCommandAction<ElementCloneArgs> = async ({
       return CliExitCode.Success
     }
 
-    if (allowElementDeletions) {
-      await workspace.sync([...sourceElemIds, ...Object.values(elemIdsToRemove).flat()], toEnvs)
-    } else {
-      await workspace.copyTo(sourceElemIds, toEnvs)
-    }
+    await workspace.sync(sourceElemIds, elemIdsToRemove, toEnvs)
     await workspace.flush()
     return CliExitCode.Success
   } catch (e) {

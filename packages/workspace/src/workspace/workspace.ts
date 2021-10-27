@@ -163,11 +163,18 @@ export type Workspace = {
     newConfig: Readonly<InstanceElement> | Readonly<InstanceElement>[]
   ) => Promise<void>
   getStateRecency(services: string): Promise<StateRecency>
-  promote(ids: ElemID[]): Promise<void>
+  promote(
+    idsToMove: ElemID[],
+    idsToRemove?: Record<string, ElemID[]>
+  ): Promise<void>
   demote(ids: ElemID[]): Promise<void>
   demoteAll(): Promise<void>
   copyTo(ids: ElemID[], targetEnvs?: string[]): Promise<void>
-  sync(ids: ElemID[], targetEnvs: string[]): Promise<void>
+  sync(
+    idsToCopy: ElemID[],
+    idsToRemove: Record<string, ElemID[]>,
+    targetEnvs: string[],
+  ): Promise<void>
   getValue(id: ElemID): Promise<Value | undefined>
   getSearchableNames(): Promise<string[]>
   getSearchableNamesOfEnv(env?: string): Promise<string[]>
@@ -735,10 +742,6 @@ export const loadWorkspace = async (
     (_.isUndefined(names) ? services() : services().filter(s => names.includes(s)))
   const credsPath = (service: string): string => path.join(currentEnv(), service)
 
-  const removeFrom = async (ids: ElemID[], targetEnv?: string): Promise<void> => {
-    const workspaceChanges = await (await getLoadedNaclFilesSource()).removeFrom(ids, targetEnv)
-    workspaceState = buildWorkspaceState({ workspaceChanges })
-  }
   const copyTo = async (ids: ElemID[], targetEnvs: string[]): Promise<void> => {
     const workspaceChanges = await (await getLoadedNaclFilesSource()).copyTo(ids, targetEnvs)
     workspaceState = buildWorkspaceState({ workspaceChanges })
@@ -819,8 +822,9 @@ export const loadWorkspace = async (
     getParsedNaclFile: async (filename: string) => (
       (await getSourceByFilename(filename)).getParsedNaclFile(filename)
     ),
-    promote: async (ids: ElemID[]) => {
-      const workspaceChanges = await (await getLoadedNaclFilesSource()).promote(ids)
+    promote: async (idsToMove, idsToRemove) => {
+      const workspaceChanges = await (await getLoadedNaclFilesSource())
+        .promote(idsToMove, idsToRemove)
       workspaceState = buildWorkspaceState({ workspaceChanges })
     },
     demote: async (ids: ElemID[]) => {
@@ -832,9 +836,13 @@ export const loadWorkspace = async (
       workspaceState = buildWorkspaceState({ workspaceChanges })
     },
     copyTo,
-    sync: async (ids, targetEnvs) => {
-      await Promise.all(targetEnvs.map(env => removeFrom(ids, env)))
-      await copyTo(ids, targetEnvs)
+    sync: async (idsToCopy, idsToRemove, targetEnvs) => {
+      const workspaceChanges = await (await getLoadedNaclFilesSource()).sync(
+        idsToCopy,
+        idsToRemove,
+        targetEnvs,
+      )
+      workspaceState = buildWorkspaceState({ workspaceChanges })
     },
     transformToWorkspaceError,
     transformError,

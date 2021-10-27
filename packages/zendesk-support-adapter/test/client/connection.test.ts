@@ -42,6 +42,11 @@ describe('client connection', () => {
       expect(res.data).toEqual({ something: 'bla' })
       expect(res.status).toEqual(200)
       expect(mockAxiosAdapter.history.get.length).toBe(2)
+      expect(mockAxiosAdapter.history.get[0].headers).toMatchObject({
+        'X-Zendesk-Marketplace-Name': 'Salto',
+        'X-Zendesk-Marketplace-Organization-Id': 5110,
+        'X-Zendesk-Marketplace-App-Id': 608042,
+      })
     })
 
     it('should throw when authentication fails', async () => {

@@ -26,6 +26,7 @@ describe('netsuite saved searches author information tests', () => {
   let filterOpts: FilterOpts
   let elements: InstanceElement[]
   let savedSearch: InstanceElement
+  let missingSavedSearch: InstanceElement
   const runSuiteQLMock = jest.fn()
   const runSavedSearchQueryMock = jest.fn()
   const SDFClient = mockSdfClient()
@@ -44,8 +45,11 @@ describe('netsuite saved searches author information tests', () => {
     ])
     savedSearch = new InstanceElement(SAVED_SEARCH,
       new ObjectType({ elemID: new ElemID(NETSUITE, SAVED_SEARCH) }))
+    missingSavedSearch = new InstanceElement(SAVED_SEARCH,
+      new ObjectType({ elemID: new ElemID(NETSUITE, SAVED_SEARCH) }))
     savedSearch.value.scriptid = '1'
-    elements = [savedSearch]
+    missingSavedSearch.value.scriptid = '2'
+    elements = [savedSearch, missingSavedSearch]
     filterOpts = {
       client,
       elementsSourceIndex: { getIndexes: () => Promise.resolve({

@@ -16,6 +16,7 @@
 import { isInstanceElement, Element, CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Ajv from 'ajv'
+import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { SAVED_SEARCH } from '../../constants'
 import { FilterCreator, FilterWith } from '../../filter'
@@ -23,7 +24,7 @@ import NetsuiteClient from '../../client/client'
 import { SavedSearchesResult, SAVED_SEARCH_RESULT_SCHEMA } from './constants'
 
 const log = logger(module)
-
+const { isDefined } = values
 const isSavedSearchInstance = (element: Element): element is InstanceElement =>
   isInstanceElement(element) && element.elemID.typeName === SAVED_SEARCH
 
@@ -65,8 +66,11 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
     if (_.isEmpty(savedSearchesMap)) {
       return
     }
-    savedSearchesInstances.forEach(search =>
-      search.annotate({ [CORE_ANNOTATIONS.CHANGED_BY]: savedSearchesMap[search.value.scriptid] }))
+    savedSearchesInstances.forEach(search => {
+      if (isDefined(savedSearchesMap[search.value.scriptid])) {
+        search.annotate({ [CORE_ANNOTATIONS.CHANGED_BY]: savedSearchesMap[search.value.scriptid] })
+      }
+    })
   },
 })
 

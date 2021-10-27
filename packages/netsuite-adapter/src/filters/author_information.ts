@@ -92,7 +92,7 @@ Promise<EmployeeResult[]> => {
   const ajv = new Ajv({ allErrors: true, strict: false })
   if (!ajv.validate<EmployeeResult[]>(EMPLOYEE_SCHEMA, employeeResults)) {
     log.error(`Got invalid results from listing employees table: ${ajv.errorsText()}`)
-    throw new Error('Failed to list employees')
+    return []
   }
   return employeeResults
 }
@@ -106,7 +106,7 @@ Promise<SystemNoteResult[]> => {
   const ajv = new Ajv({ allErrors: true, strict: false })
   if (!ajv.validate<SystemNoteResult[]>(SYSTEM_NOTE_SCHEMA, systemNoteResults)) {
     log.error(`Got invalid results from system note table: ${ajv.errorsText()}`)
-    throw new Error('Failed to list system notes')
+    return []
   }
   return systemNoteResults
 }

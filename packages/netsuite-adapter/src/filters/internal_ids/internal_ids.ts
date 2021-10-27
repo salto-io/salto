@@ -42,7 +42,7 @@ Promise<RecordIdResult[]> => {
   const ajv = new Ajv({ allErrors: true, strict: false })
   if (!ajv.validate<RecordIdResult[]>(RECORD_ID_SCHEMA, recordIdResults)) {
     log.error(`Got invalid results from listing ${recordType} table: ${ajv.errorsText()}`)
-    throw new Error(`Failed to list ${recordType}`)
+    return []
   }
   return recordIdResults
 }

@@ -141,7 +141,8 @@ describe('netsuite internal ids', () => {
     it('bad record id schema', async () => {
       runSuiteQLMock.mockReset()
       runSuiteQLMock.mockResolvedValueOnce({ scriptid: 'scriptId3' })
-      await expect(filterCreator(filterOpts).onFetch?.(elements)).rejects.toThrow()
+      expect(customTypeInstance.value.internalId).not.toBeDefined()
+      expect(customScriptInstance.value.internalId).not.toBeDefined()
     })
   })
   describe('fetch', () => {

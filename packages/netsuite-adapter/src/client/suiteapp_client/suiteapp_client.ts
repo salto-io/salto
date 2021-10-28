@@ -86,6 +86,7 @@ export default class SuiteAppClient {
    */
   public async runSuiteQL(query: string):
     Promise<Record<string, unknown>[] | undefined> {
+    log.debug('Running SuiteQL query: %s', query)
     if (!/ORDER BY .* ASC/.test(query)) {
       log.warn(`SuiteQL ${query} does not contain ORDER BY <unique identifier> ASC, which can cause the response to not contain all the results`)
     }
@@ -100,13 +101,14 @@ export default class SuiteAppClient {
         items.push(...results.items.map(item => _.omit(item, ['links'])))
         hasMore = results.hasMore
       } catch (error) {
-        log.error('SuiteQL query error', { error })
+        log.error('SuiteQL query error - %s', query, { error })
         if (error instanceof InvalidSuiteAppCredentialsError) {
           throw error
         }
         return undefined
       }
     }
+    log.debug('Finished running SuiteQL query: %s', query)
     return items
   }
 
@@ -195,6 +197,8 @@ export default class SuiteAppClient {
         { headers },
       ))
     } catch (e) {
+      log.warn('Received error from SuiteApp request to %s: error: %o',
+        href, e.response.data)
       if (UNAUTHORIZED_STATUSES.includes(e.response?.status)) {
         throw new InvalidSuiteAppCredentialsError()
       }

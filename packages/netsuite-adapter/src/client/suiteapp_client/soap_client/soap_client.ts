@@ -311,6 +311,7 @@ export default class SoapClient {
     try {
       return await this.callsLimiter(async () => (await client[`${operation}Async`](body))[0])
     } catch (e) {
+      log.warn('Received error from Soap request: operation - %s, body - %o, error - %o', operation, body, e)
       if (e.message.includes('Invalid login attempt.')) {
         throw new InvalidSuiteAppCredentialsError()
       }

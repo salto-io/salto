@@ -36,7 +36,7 @@ import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_v
 import { WorkspaceConfigSource } from './workspace_config_source'
 import { MergeError, mergeElements } from '../merger'
 import { RemoteElementSource, ElementsSource, mapReadOnlyElementsSource } from './elements_source'
-import { createMergeManager, ElementMergeManager, ChangeSet, createEmptyChangeSet, MergedRecoveryMode } from './nacl_files/elements_cache'
+import { createMergeManager, ElementMergeManager, ChangeSet, createEmptyChangeSet, MergedRecoveryMode, RecoveryOverrideFunc } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
 import { AdaptersConfigSource, PartialNaclFilesSource } from './adapters_config_source'
@@ -452,13 +452,25 @@ export const loadWorkspace = async (
           .toArray()
       )
 
-      const getInvalidateStateIgnoreSet = async (): Promise<Set<string>> => (
-        new Set(await awu(await state(envName).getAll())
-          .filter(async elem => !(await isHidden(elem, state(envName))))
-          .filter(async elem => !(await source.has(elem.elemID)))
-          .map(elem => elem.elemID.getFullName())
-          .toArray())
-      )
+      const dropStateOnlyElementsRecovery: RecoveryOverrideFunc = async (
+        src1RecElements,
+        src2RecElements
+      ) => {
+        const src1ElementsToMerge = await awu(src1RecElements).toArray()
+        const src1IDSet = new Set(src1ElementsToMerge.map(elem => elem.elemID.getFullName()))
+
+        const shouldIncludeStateElement = async (elem: Element): Promise<boolean> => (
+          src1IDSet.has(elem.elemID.getFullName()) || isHidden(elem, state(envName))
+        )
+
+        const src2ElementsToMerge = awu(src2RecElements)
+          .filter(shouldIncludeStateElement)
+
+        return {
+          src1ElementsToMerge: awu(src1ElementsToMerge),
+          src2ElementsToMerge,
+        }
+      }
 
       const changeResult = await stateToBuild.mergeManager.mergeComponents({
         src1Changes: workspaceChanges[envName],
@@ -469,7 +481,7 @@ export const loadWorkspace = async (
           )
         ),
         src2Overrides: workspaceChangedElements,
-        src2InvalidateIgnoreSet: getInvalidateStateIgnoreSet,
+        recoveryOverride: dropStateOnlyElementsRecovery,
         src1Prefix: MULTI_ENV_SOURCE_PREFIX + envName,
         src2Prefix: STATE_SOURCE_PREFIX + envName,
         mergeFunc: elements => mergeElements(elements),

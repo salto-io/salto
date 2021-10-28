@@ -464,6 +464,10 @@ export const configType = new ObjectType({
                 name: '^(AddressCountryCode)|(AddressStateCode)$',
                 namespace: '',
               },
+              {
+                metadataType: 'Layout',
+                name: 'CollaborationGroup-Group Layout',
+              },
             ],
           },
           [SHOULD_FETCH_ALL_CUSTOM_SETTINGS]: false,

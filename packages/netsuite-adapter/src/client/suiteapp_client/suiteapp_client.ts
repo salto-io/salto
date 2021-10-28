@@ -197,8 +197,8 @@ export default class SuiteAppClient {
         { headers },
       ))
     } catch (e) {
-      log.warn('Received error from SuiteApp request to %s: error: %o',
-        href, e.response.data)
+      log.warn('Received error from SuiteApp request to %s: error: %s',
+        href, safeJsonStringify(e.response.data, undefined, 2))
       if (UNAUTHORIZED_STATUSES.includes(e.response?.status)) {
         throw new InvalidSuiteAppCredentialsError()
       }

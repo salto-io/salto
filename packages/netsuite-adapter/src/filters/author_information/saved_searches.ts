@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, Element, CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
+import { isInstanceElement, CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Ajv from 'ajv'
 import { values } from '@salto-io/lowerdash'
@@ -25,8 +25,8 @@ import { SavedSearchesResult, SAVED_SEARCH_RESULT_SCHEMA } from './constants'
 
 const log = logger(module)
 const { isDefined } = values
-const isSavedSearchInstance = (element: Element): element is InstanceElement =>
-  isInstanceElement(element) && element.elemID.typeName === SAVED_SEARCH
+const isSavedSearchInstance = (instance: InstanceElement): boolean =>
+  instance.elemID.typeName === SAVED_SEARCH
 
 const fetchSavedSearches = async (client: NetsuiteClient): Promise<SavedSearchesResult[]> => {
   const savedSearches = await client.runSavedSearchQuery({
@@ -59,7 +59,9 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
     if (!client.isSuiteAppConfigured()) {
       return
     }
-    const savedSearchesInstances = elements.filter(isSavedSearchInstance)
+    const savedSearchesInstances = elements
+      .filter(isInstanceElement)
+      .filter(isSavedSearchInstance)
     if (_.isEmpty(savedSearchesInstances)) {
       return
     }

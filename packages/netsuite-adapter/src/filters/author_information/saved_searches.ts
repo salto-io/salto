@@ -49,9 +49,8 @@ const getSavedSearchesModifiersMap = async (
   client: NetsuiteClient,
 ): Promise<Record<string, string>> => {
   const savedSearches = await fetchSavedSearches(client)
-  return Object.fromEntries(savedSearches.map(savedSearch => {
-    return _.isEmpty(savedSearch.modifiedby) ? [] : [savedSearch.id, savedSearch.modifiedby[0].text]
-  }))
+  return Object.fromEntries(savedSearches.map(savedSearch =>
+    (_.isEmpty(savedSearch.modifiedby) ? [] : [savedSearch.id, savedSearch.modifiedby[0].text])))
 }
 
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({

@@ -39,7 +39,7 @@ const fetchSavedSearches = async (client: NetsuiteClient): Promise<SavedSearches
   }
   const ajv = new Ajv({ allErrors: true, strict: false })
   if (!ajv.validate<SavedSearchesResult[]>(SAVED_SEARCH_RESULT_SCHEMA, savedSearches)) {
-    log.error(`Got invalid results from listing employees table: ${ajv.errorsText()}`)
+    log.error(`Got invalid results from searching saved searches: ${ajv.errorsText()}`)
     return []
   }
   return savedSearches
@@ -49,8 +49,9 @@ const getSavedSearchesModifiersMap = async (
   client: NetsuiteClient,
 ): Promise<Record<string, string>> => {
   const savedSearches = await fetchSavedSearches(client)
-  return Object.fromEntries(savedSearches.map(savedSearch =>
-    [savedSearch.id, savedSearch.modifiedby[0].text]))
+  return Object.fromEntries(savedSearches.map(savedSearch => {
+    return _.isEmpty(savedSearch.modifiedby) ? [] : [savedSearch.id, savedSearch.modifiedby[0].text]
+  }))
 }
 
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({

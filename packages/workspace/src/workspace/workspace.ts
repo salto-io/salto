@@ -451,6 +451,15 @@ export const loadWorkspace = async (
           })
           .toArray()
       )
+
+      const getInvalidateStateIgnoreSet = async (): Promise<Set<string>> => (
+        new Set(await awu(await state(envName).getAll())
+          .filter(async elem => !(await isHidden(elem, state(envName))))
+          .filter(async elem => !(await source.has(elem.elemID)))
+          .map(elem => elem.elemID.getFullName())
+          .toArray())
+      )
+
       const changeResult = await stateToBuild.mergeManager.mergeComponents({
         src1Changes: workspaceChanges[envName],
         src2Changes: await completeStateOnlyChanges(
@@ -460,6 +469,7 @@ export const loadWorkspace = async (
           )
         ),
         src2Overrides: workspaceChangedElements,
+        src2InvalidateIgnoreSet: getInvalidateStateIgnoreSet,
         src1Prefix: MULTI_ENV_SOURCE_PREFIX + envName,
         src2Prefix: STATE_SOURCE_PREFIX + envName,
         mergeFunc: elements => mergeElements(elements),

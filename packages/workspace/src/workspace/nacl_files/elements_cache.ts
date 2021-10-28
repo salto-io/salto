@@ -61,6 +61,8 @@ export type CacheChangeSetUpdate = {
   src2Changes?: ChangeSet<Change<Element>>
   src1Overrides?: Record<string, Element>
   src2Overrides?: Record<string, Element>
+  src1InvalidateIgnoreSet?: () => Promise<Set<string>>
+  src2InvalidateIgnoreSet?: () => Promise<Set<string>>
   src1Prefix: string
   src2Prefix: string
   mergeFunc: (elements: AsyncIterable<Element>) => Promise<MergeResult>
@@ -256,7 +258,8 @@ export const createMergeManager = async (flushables: Flushable[],
       const getRecoveryElements = async (
         src: ReadOnlyElementsSource,
         srcOverrides: Record<string, Element>,
-        srcChanges: Change<Element>[]
+        srcChanges: Change<Element>[],
+        ignoreSet: Set<string>
       ): Promise<AsyncIterable<Element>> => ((src && recoveryOperation === REBUILD_ON_RECOVERY)
         ? (awu(await src.getAll())
         // using the 'in' notation here since undefined for an existing key is different
@@ -265,6 +268,7 @@ export const createMergeManager = async (flushables: Flushable[],
             ? srcOverrides[elem.elemID.getFullName()]
             : elem))
           .filter(values.isDefined)
+          .filter(elem => !ignoreSet.has(elem.elemID.getFullName()))
           .concat(await getContainerTypeChanges(srcChanges)))
         : awu([]))
 
@@ -288,8 +292,24 @@ export const createMergeManager = async (flushables: Flushable[],
         log.warn(`Invalid data detected in local cache ${namespace}. Rebuilding cache.`)
         const src1Overrides = cacheUpdate.src1Overrides ?? {}
         const src2Overrides = cacheUpdate.src2Overrides ?? {}
-        src1ElementsToMerge = await getRecoveryElements(src1, src1Overrides, src1Changes.changes)
-        src2ElementsToMerge = await getRecoveryElements(src2, src2Overrides, src2Changes.changes)
+        const src1IgnoreSet = cacheUpdate.src1InvalidateIgnoreSet
+          ? await cacheUpdate.src1InvalidateIgnoreSet()
+          : new Set<string>()
+        const src2IgnoreSet = cacheUpdate.src2InvalidateIgnoreSet
+          ? await cacheUpdate.src2InvalidateIgnoreSet()
+          : new Set<string>()
+        src1ElementsToMerge = await getRecoveryElements(
+          src1,
+          src1Overrides,
+          src1Changes.changes,
+          src1IgnoreSet
+        )
+        src2ElementsToMerge = await getRecoveryElements(
+          src2,
+          src2Overrides,
+          src2Changes.changes,
+          src2IgnoreSet
+        )
       }
       return { src1ElementsToMerge, src2ElementsToMerge, potentialDeletedIds }
     }

@@ -49,11 +49,12 @@ import dataInstancesAttributes from './filters/data_instances_attributes'
 import dataInstancesNullFields from './filters/data_instances_null_fields'
 import dataInstancesDiff from './filters/data_instances_diff'
 import dataInstancesIdentifiers from './filters/data_instances_identifiers'
-import SDFInternalIds from './filters/sdf_internal_ids'
-import internalIds from './filters/internal_ids/internal_ids'
+import suiteAppInternalIds from './filters/internal_ids/suite_app_internal_ids'
+import SDFInternalIds from './filters/internal_ids/sdf_internal_ids'
 import accountSpecificValues from './filters/account_specific_values'
 import translationConverter from './filters/translation_converter'
-import authorInformation from './filters/author_information'
+import systemNoteAuthorInformation from './filters/author_information/system_note'
+import savedSearchesAuthorInformation from './filters/author_information/saved_searches'
 import { Filter, FilterCreator } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams } from './query'
@@ -123,7 +124,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       consistentValues,
       replaceInstanceReferencesFilter,
       serviceUrls,
-      internalIds,
+      SDFInternalIds,
       dataInstancesAttributes,
       redundantFields,
       hiddenFields,
@@ -135,9 +136,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
       removeUnsupportedTypes,
       dataInstancesReferences,
       dataInstancesInternalId,
-      SDFInternalIds,
-      // authorInformation must run after internal_ids
-      authorInformation,
+      suiteAppInternalIds,
+      // systemNoteAuthorInformation must run after internal_ids
+      systemNoteAuthorInformation,
+      savedSearchesAuthorInformation,
       translationConverter,
       accountSpecificValues,
     ],

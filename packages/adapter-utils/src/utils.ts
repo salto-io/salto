@@ -184,8 +184,13 @@ export const transformValues = async (
         : transformed
     }
 
-    if ((_.isPlainObject(newVal) || !allowEmpty)
-      && (isObjectType(fieldType) || isMapType(fieldType))) {
+    if (isObjectType(fieldType) || isMapType(fieldType)) {
+      if (!_.isPlainObject(newVal)) {
+        if (strict) {
+          log.debug(`Value mis-match for field ${field?.name} - value is not an object`)
+        }
+        return (_.isEmpty(newVal) && !allowEmpty) ? undefined : newVal
+      }
       const transformed = _.omitBy(
         await transformValues({
           values: newVal,

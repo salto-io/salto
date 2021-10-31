@@ -892,7 +892,7 @@ describe('Test utils.ts', () => {
         })
       })
     })
-    describe('with InstanceElement', () => {
+    describe('with valid InstanceElement', () => {
       let result: InstanceElement
       beforeEach(async () => {
         result = await transformElement({ element: inst, transformFunc, strict: false })
@@ -923,7 +923,41 @@ describe('Test utils.ts', () => {
         expect(_.isEmpty(callArgs?.field?.annotations)).toBeFalsy()
       })
     })
-
+    describe('with invalid InstanceElement', () => {
+      let otherObjType: ObjectType
+      let invalidInst: InstanceElement
+      let result: InstanceElement
+      beforeEach(() => {
+        const nestedType = new ObjectType({ elemID: new ElemID('salesforce', 'nested') })
+        otherObjType = new ObjectType({
+          elemID: new ElemID('salesforce', 'obj'),
+          fields: {
+            nested: { refType: nestedType },
+            nestedArray: { refType: new ListType(nestedType) },
+          },
+        })
+        invalidInst = new InstanceElement(
+          'invalid',
+          otherObjType,
+          {
+            nested: 'aaa',
+            nestedArray: ['aaa', 'bbb'],
+          },
+        )
+      })
+      it('should correctly handle type inconsistencies when strict=false', async () => {
+        result = await transformElement({ element: invalidInst, transformFunc, strict: false })
+        expect(isInstanceElement(result)).toBeTruthy()
+        expect(result.value.nested).toEqual('aaa')
+        expect(result.value.nestedArray).toEqual(['aaa', 'bbb'])
+      })
+      it('should correctly handle type inconsistencies when strict=true', async () => {
+        result = await transformElement({ element: invalidInst, transformFunc, strict: true })
+        expect(isInstanceElement(result)).toBeTruthy()
+        expect(result.value.nested).toEqual('aaa')
+        expect(result.value.nestedArray).toEqual(['aaa', 'bbb'])
+      })
+    })
     describe('allowEmpty', () => {
       const element = new InstanceElement(
         'instance',

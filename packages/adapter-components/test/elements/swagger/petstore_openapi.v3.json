@@ -1090,7 +1090,7 @@
               "storage": {
                 "$ref": "#/components/schemas/FoodStorageType"
               },
-                "additionalProperties": {
+              "additionalProperties": {
                 "$ref": "#/components/schemas/Category"
               }
             }

@@ -19,6 +19,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
+import { FILE, FOLDER } from '../../constants'
 import NetsuiteClient from '../../client/client'
 import { FilterCreator, FilterWith } from '../../filter'
 import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteFilesResult, SYSTEM_NOTE_FILES_SCHEMA, SYSTEM_NOTE_FILE_QUERY } from './constants'
@@ -27,7 +28,7 @@ const { isDefined } = lowerDashValues
 const log = logger(module)
 
 const isFileOrFolderInstance = (instance: InstanceElement): boolean =>
-  instance.elemID.typeName === 'file' || instance.elemID.typeName === 'folder'
+  instance.elemID.typeName === FILE || instance.elemID.typeName === FOLDER
 
 const queryEmployees = async (client: NetsuiteClient):
 Promise<EmployeeResult[]> => {

@@ -16,7 +16,7 @@
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../../src/filters/author_information/files'
-import { NETSUITE } from '../../../src/constants'
+import { NETSUITE, FILE, FOLDER } from '../../../src/constants'
 import NetsuiteClient from '../../../src/client/client'
 import { FilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
@@ -52,11 +52,15 @@ describe('netsuite system note author information', () => {
       { recordid: '2', name: '2' },
       { recordid: '3', name: '3' },
     ])
-    fileInstance = new InstanceElement('file', new ObjectType({ elemID: new ElemID(NETSUITE, 'file') }))
+    fileInstance = new InstanceElement(FILE, new ObjectType({ elemID: new ElemID(NETSUITE, FILE) }))
     fileInstance.value.internalId = '1'
-    folderInstance = new InstanceElement('folder', new ObjectType({ elemID: new ElemID(NETSUITE, 'folder') }))
+    folderInstance = new InstanceElement(
+      FOLDER, new ObjectType({ elemID: new ElemID(NETSUITE, FOLDER) })
+    )
     folderInstance.value.internalId = '2'
-    missingInstance = new InstanceElement('file', new ObjectType({ elemID: new ElemID(NETSUITE, 'file') }))
+    missingInstance = new InstanceElement(
+      FILE, new ObjectType({ elemID: new ElemID(NETSUITE, FILE) })
+    )
     missingInstance.value.internalId = '8'
     elements = [fileInstance, folderInstance, missingInstance]
     filterOpts = {

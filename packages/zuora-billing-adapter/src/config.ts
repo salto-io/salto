@@ -497,26 +497,25 @@ export const getUpdatedConfig = (
 ): { config: InstanceElement[]; message: string } | undefined => {
   if (currentConfig[API_DEFINITIONS_CONFIG].types[`${SETTINGS_TYPE_PREFIX}Gateway`]?.transformation?.idFields === undefined) {
     // fix id for Settings_Gateway
-    const updatedConfig = new InstanceElement(
-      ElemID.CONFIG_NAME,
-      configType,
-      _.defaultsDeep(
-        currentConfig,
-        {
-          [API_DEFINITIONS_CONFIG]: {
-            types: {
-              [`${SETTINGS_TYPE_PREFIX}Gateway`]: {
-                transformation: {
-                  idFields: ['gatewayName'],
+    return {
+      config: [new InstanceElement(
+        ElemID.CONFIG_NAME,
+        configType,
+        _.defaultsDeep(
+          currentConfig,
+          {
+            [API_DEFINITIONS_CONFIG]: {
+              types: {
+                [`${SETTINGS_TYPE_PREFIX}Gateway`]: {
+                  transformation: {
+                    idFields: ['gatewayName'],
+                  },
                 },
               },
             },
           },
-        },
-      ),
-    )
-    return {
-      config: [updatedConfig],
+        ),
+      )],
       message: [FIXING_SYSTEM_CONFIGURATION_INTRO, `${SETTINGS_TYPE_PREFIX}Gateway`].join(' '),
     }
   }

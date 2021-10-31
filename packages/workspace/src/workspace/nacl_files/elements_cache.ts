@@ -370,6 +370,10 @@ export const createMergeManager = async (flushables: Flushable[],
           .map(change => getChangeElement(change).elemID.getFullName()).join(', ')}`)
       }
     }
+    const currentMergeErrors = mergedChanges.cacheValid ? Object.fromEntries(
+      await awu(currentErrors.entries())
+        .map(e => [e.key, e.value] as [string, SaltoError[]]).toArray()
+    ) : {}
     if (!mergedChanges.cacheValid) {
       log.debug('Clearing due to cache invalidation')
       await currentErrors.clear()
@@ -378,9 +382,13 @@ export const createMergeManager = async (flushables: Flushable[],
       const removalChanges = mergedChanges.changes.filter(isRemovalChange)
       await currentElements.deleteAll(removalChanges.map(change => getChangeElement(change).elemID))
       logChanges(removalChanges)
-      await currentErrors.deleteAll(noErrorMergeIds)
+      await currentErrors.deleteAll(
+        noErrorMergeIds.filter(id => !_.isEmpty(currentMergeErrors[id]))
+      )
     }
-    await currentErrors.setAll(mergeErrors)
+    await currentErrors.setAll(
+      awu(mergeErrors).filter(err => !_.isEqual(err.value, currentMergeErrors[err.key]))
+    )
     const additionOrModificationChanges = mergedChanges.changes
       .filter(isAdditionOrModificationChange)
     const [additionChanges, modificationChanges] = _.partition(additionOrModificationChanges,
@@ -480,13 +488,15 @@ export const buildNewMergedElementsAndErrors = async ({
         newMergedElementsResult.merged.get(fullname),
         newMergedElementsResult.errors.get(fullname),
       ])
-      if (!isEqualElements(before, mergedItem) || !_.isEqual(beforeErrors, mergeErrors)) {
+      if (!isEqualElements(before, mergedItem)) {
         if (mergedItem !== undefined) {
           await currentElements.set(mergedItem)
         } else if (before !== undefined) {
           await currentElements.delete(id)
         }
         changes.push(toChange({ before, after: mergedItem }))
+      }
+      if (!_.isEqual(beforeErrors, mergeErrors)) {
         if (mergeErrors !== undefined) {
           await currentErrors.set(fullname, mergeErrors ?? [])
         } else {

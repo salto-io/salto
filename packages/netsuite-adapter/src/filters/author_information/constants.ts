@@ -110,3 +110,27 @@ export type SavedSearchesResult = {
   id: string
   modifiedby: modifiedbyField[]
 }
+
+export const FILE_SYSTEM_NOTE_SCHEMA = {
+  items: {
+    properties: {
+      name: {
+        type: 'string',
+      },
+      recordid: {
+        type: 'string',
+      },
+    },
+    required: [
+      'name',
+      'recordid',
+    ],
+    type: 'object',
+  },
+  type: 'array',
+}
+
+export type FileSystemNoteResult = {
+  recordid: string
+  name: string
+}

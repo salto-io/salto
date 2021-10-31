@@ -130,7 +130,7 @@ export const FILE_SYSTEM_NOTE_SCHEMA = {
   type: 'array',
 }
 
-export type FileSystemNoteResult = {
+export type SystemNoteFilesResult = {
   recordid: string
   name: string
 }

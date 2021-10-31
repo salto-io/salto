@@ -21,9 +21,9 @@ import { values as lowerDashValues } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
 import NetsuiteClient from '../../client/client'
 import { FilterCreator, FilterWith } from '../../filter'
-import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, FileSystemNoteResult, FILE_SYSTEM_NOTE_SCHEMA } from './constants'
+import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, FileSystemNoteResult as SystemNoteFilesResult, FILE_SYSTEM_NOTE_SCHEMA } from './constants'
 
-const FILE_SYSTEM_NOTE_QUERY = 'SELECT systemnote.recordid, systemnote.name from systemnote where systemnote.recordtypeid is null and EXISTS (SELECT file.id from file where file.id = systemnote.recordid)'
+const SYSTEM_NOTE_FILE_QUERY = 'SELECT systemnote.recordid, systemnote.name FROM systemnote WHERE systemnote.recordtypeid IS NULL AND EXISTS (SELECT file.id FROM file WHERE file.id = systemnote.recordid)'
 const { isDefined } = lowerDashValues
 const log = logger(module)
 
@@ -45,13 +45,13 @@ Promise<EmployeeResult[]> => {
 }
 
 const querySystemNotes = async (client: NetsuiteClient):
-Promise<FileSystemNoteResult[]> => {
-  const systemNoteResults = await client.runSuiteQL(FILE_SYSTEM_NOTE_QUERY)
+Promise<SystemNoteFilesResult[]> => {
+  const systemNoteResults = await client.runSuiteQL(SYSTEM_NOTE_FILE_QUERY)
   if (systemNoteResults === undefined) {
     return []
   }
   const ajv = new Ajv({ allErrors: true, strict: false })
-  if (!ajv.validate<FileSystemNoteResult[]>(FILE_SYSTEM_NOTE_SCHEMA, systemNoteResults)) {
+  if (!ajv.validate<SystemNoteFilesResult[]>(FILE_SYSTEM_NOTE_SCHEMA, systemNoteResults)) {
     log.error(`Got invalid results from system note table: ${ajv.errorsText()}`)
     return []
   }
@@ -67,8 +67,8 @@ const fetchEmployeeNames = async (client: NetsuiteClient): Promise<Record<string
 }
 
 const distinctSortedSystemNotes = (
-  systemNotes: FileSystemNoteResult[]
-): FileSystemNoteResult[] =>
+  systemNotes: SystemNoteFilesResult[]
+): SystemNoteFilesResult[] =>
   _.uniqBy(systemNotes, note => note.recordid)
 
 const fetchSystemNotes = async (

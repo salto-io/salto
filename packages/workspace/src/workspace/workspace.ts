@@ -53,8 +53,9 @@ const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
 const MULTI_ENV_SOURCE_PREFIX = 'multi_env_element_source'
 const STATE_SOURCE_PREFIX = 'state_element_source'
 
+export const MAX_ENV_NAME_LEN = 100
 export const isValidEnvName = (envName: string): boolean =>
-  /^[a-z0-9-_.!\s/]+$/i.test(envName)
+  /^[a-z0-9-_.!\s/]+$/i.test(envName) && envName.length <= MAX_ENV_NAME_LEN
 
 export type SourceFragment = {
   sourceRange: SourceRange
@@ -886,6 +887,9 @@ export const loadWorkspace = async (
       const envConfig = envs().find(e => e === envName)
       if (_.isUndefined(envConfig)) {
         throw new UnknownEnvError(envName)
+      }
+      if (!isValidEnvName(newEnvName)) {
+        throw new InvalidEnvNameError(newEnvName)
       }
 
       if (!_.isUndefined(envs().find(e => e === newEnvName))) {

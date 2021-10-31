@@ -961,6 +961,9 @@
             "brand": {
               "type": "string"
             },
+            "storage": {
+              "$ref": "#/definitions/FoodStorageType",
+            },
             "additionalProperties": {
               "$ref": "#/definitions/Category"
             }
@@ -984,6 +987,12 @@
       ],
       "xml": {
         "name": "FoodAndCategory"
+      }
+    },
+    "FoodStorageType": {
+      "type": "array",
+      "items": {
+        "type": "string"
       }
     },
     "User": {

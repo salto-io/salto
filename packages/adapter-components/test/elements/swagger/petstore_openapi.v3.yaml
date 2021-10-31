@@ -708,6 +708,8 @@ components:
             format: int64
           brand:
             type: string
+          storage:
+            $ref: '#/components/schemas/FoodStorageType'
           additionalProperties:
             $ref: '#/components/schemas/Category'
     FoodAndCategory:
@@ -722,6 +724,10 @@ components:
       oneOf:
       - $ref: '#/components/schemas/Food'
       - $ref: '#/components/schemas/Category'
+    FoodStorageType:
+      type: array
+      items:
+        type: string
     User:
       allOf:
       - type: object

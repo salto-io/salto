@@ -1087,7 +1087,10 @@
               "brand": {
                 "type": "string"
               },
-              "additionalProperties": {
+              "storage": {
+                "$ref": "#/components/schemas/FoodStorageType"
+              },
+                "additionalProperties": {
                 "$ref": "#/components/schemas/Category"
               }
             }
@@ -1123,6 +1126,12 @@
             "$ref": "#/components/schemas/Category"
           }
         ]
+      },
+      "FoodStorageType": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
       },
       "User": {
         "allOf": [

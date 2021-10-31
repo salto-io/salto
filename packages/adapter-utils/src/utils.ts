@@ -184,8 +184,10 @@ export const transformValues = async (
         : transformed
     }
 
-    if ((_.isPlainObject(newVal) || !allowEmpty)
-      && (isObjectType(fieldType) || isMapType(fieldType))) {
+    if (isObjectType(fieldType) || isMapType(fieldType)) {
+      if (!_.isPlainObject(newVal)) {
+        return newVal
+      }
       const transformed = _.omitBy(
         await transformValues({
           values: newVal,

@@ -657,6 +657,8 @@ definitions:
           format: int64
         brand:
           type: string
+        storage:
+          $ref: '#/definitions/FoodStorageType'
         additionalProperties:
           $ref: '#/definitions/Category'
       type: object
@@ -669,6 +671,10 @@ definitions:
     - $ref: '#/definitions/Category'
     xml:
       name: FoodAndCategory
+  FoodStorageType:
+    type: array
+    items:
+      type: string
   User:
     type: object
     allOf:

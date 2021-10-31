@@ -111,7 +111,10 @@ export type SavedSearchesResult = {
   modifiedby: modifiedbyField[]
 }
 
-export const FILE_SYSTEM_NOTE_SCHEMA = {
+
+export const SYSTEM_NOTE_FILE_QUERY = 'SELECT systemnote.recordid, systemnote.name FROM systemnote WHERE systemnote.recordtypeid IS NULL AND EXISTS (SELECT file.id FROM file WHERE file.id = systemnote.recordid)'
+
+export const SYSTEM_NOTE_FILES_SCHEMA = {
   items: {
     properties: {
       name: {

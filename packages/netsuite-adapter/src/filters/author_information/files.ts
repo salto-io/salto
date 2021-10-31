@@ -21,9 +21,8 @@ import { values as lowerDashValues } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
 import NetsuiteClient from '../../client/client'
 import { FilterCreator, FilterWith } from '../../filter'
-import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, FileSystemNoteResult as SystemNoteFilesResult, FILE_SYSTEM_NOTE_SCHEMA } from './constants'
+import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteFilesResult, SYSTEM_NOTE_FILES_SCHEMA, SYSTEM_NOTE_FILE_QUERY } from './constants'
 
-const SYSTEM_NOTE_FILE_QUERY = 'SELECT systemnote.recordid, systemnote.name FROM systemnote WHERE systemnote.recordtypeid IS NULL AND EXISTS (SELECT file.id FROM file WHERE file.id = systemnote.recordid)'
 const { isDefined } = lowerDashValues
 const log = logger(module)
 
@@ -51,7 +50,7 @@ Promise<SystemNoteFilesResult[]> => {
     return []
   }
   const ajv = new Ajv({ allErrors: true, strict: false })
-  if (!ajv.validate<SystemNoteFilesResult[]>(FILE_SYSTEM_NOTE_SCHEMA, systemNoteResults)) {
+  if (!ajv.validate<SystemNoteFilesResult[]>(SYSTEM_NOTE_FILES_SCHEMA, systemNoteResults)) {
     log.error(`Got invalid results from system note table: ${ajv.errorsText()}`)
     return []
   }

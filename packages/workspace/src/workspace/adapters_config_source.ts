@@ -185,8 +185,6 @@ export const buildAdaptersConfigSource = async ({
       })
       const elementsSourceWithAdditionalConfig = buildElementsSourceFromElements(additionalConfigs,
         elementsSource)
-      // eslint-disable-next-line no-console
-      console.log(additionalConfigs)
       const configsToUpdate = collections.array.makeArray(configs).map(e => e.clone())
       const currConfWithoutOverrides = await getConfigWithoutOverrides(account)
       // Could happen at the initialization of a service.

@@ -15,14 +15,16 @@
 */
 import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeElement, isField,
-  Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult, isAdapterSuccessInstallResult,
-  AdapterSuccessInstallResult, AdapterAuthentication, SaltoError, Element,
+  Change, DetailedChange, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
+  isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
+  SaltoError, Element, isElement, isObjectType, ReferenceExpression, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource } from '@salto-io/workspace'
+import { Workspace, ElementSelector, elementSource/* , validator */ } from '@salto-io/workspace'
+import { walkOnElement, WalkOnFunc, WalkOnFuncArgs, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -404,3 +406,101 @@ export const getLoginStatuses = async (
 }
 
 export const getSupportedServiceAdapterNames = (): string[] => Object.keys(adapterCreators)
+
+export const getRenameElementChanges = async (
+  workspace: Workspace,
+  sourceElemId: ElemID,
+  targetElemId: ElemID
+): Promise<{
+  source: Element
+  target: Element
+  elementChanges: DetailedChange[]
+  getReferencesChanges: () => Promise<DetailedChange[]>
+}> => {
+  if (sourceElemId.getFullName() === targetElemId.getFullName()) {
+    throw new Error(`Source and target element ids are the same: ${sourceElemId.getFullName()}`)
+  }
+
+  if (sourceElemId.adapter !== targetElemId.adapter
+    || sourceElemId.idType !== targetElemId.idType
+    || !_.isEqual(sourceElemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
+      targetElemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS))) {
+    throw new Error(`Currently supporting renaming the element's typeName only (${sourceElemId.adapter}.${sourceElemId.typeName} -> ${sourceElemId.adapter}.${targetElemId.typeName})`)
+  }
+
+  if (await workspace.getValue(targetElemId) !== undefined) {
+    throw new Error(`Element ${targetElemId.getFullName()} already exists`)
+  }
+
+  const source = await workspace.getValue(sourceElemId)
+  if (source === undefined || !isElement(source)) {
+    throw new Error(`Did not find any matches for element ${sourceElemId.getFullName()}`)
+  }
+
+  if (!isObjectType(source)) {
+    throw new Error(`Currently supporting ObjectType only (${sourceElemId.getFullName()} is of type '${sourceElemId.idType}')`)
+  }
+
+  const target = new ObjectType({
+    ...source,
+    elemID: targetElemId,
+    annotationRefsOrTypes: source.annotationRefTypes,
+  })
+
+  const elementChanges: DetailedChange[] = [
+    {
+      id: sourceElemId,
+      action: 'remove',
+      data: { before: source },
+    },
+    {
+      id: targetElemId,
+      action: 'add',
+      data: { after: target },
+    },
+  ]
+
+  const getReferencesChanges = async (): Promise<DetailedChange[]> => {
+    const sourceElemIdFullNameParts = sourceElemId.getFullNameParts()
+    const getReferences = (element: Element): WalkOnFuncArgs[] => {
+      const references: WalkOnFuncArgs[] = []
+      const func: WalkOnFunc = ({ value, path }) => {
+        if (isReferenceExpression(value) && _.isEqual(sourceElemIdFullNameParts,
+          value.elemID.getFullNameParts().slice(0, sourceElemIdFullNameParts.length))) {
+          references.push({ value, path })
+          return WALK_NEXT_STEP.SKIP
+        }
+        return WALK_NEXT_STEP.RECURSE
+      }
+      walkOnElement({ element, func })
+      return references
+    }
+
+    const allElements = await awu(await (await workspace.elements()).getAll()).toArray()
+    const references = allElements.map(e => getReferences(e)).flat()
+
+    return references.map((r): DetailedChange => {
+      const targetReference = new ReferenceExpression(
+        new ElemID(
+          r.value.elemID.adapter,
+          targetElemId.typeName,
+          r.value.elemID.idType,
+          ...r.value.elemID.getFullNameParts()
+            .slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS)
+        ),
+        r.value.resValue,
+        r.value.topLevelParent
+      )
+      return {
+        id: r.path,
+        action: 'modify',
+        data: {
+          before: r.value,
+          after: targetReference,
+        },
+      }
+    })
+  }
+
+  return { source, target, elementChanges, getReferencesChanges }
+}

@@ -23,7 +23,7 @@ export enum WALK_NEXT_STEP {
   SKIP, // Don't go deeper in the recursion (on that branch)
   EXIT, // Stop the entire walk, no matter where you are
 }
-type WalkOnFuncArgs = {
+export type WalkOnFuncArgs = {
   value: Value
   path: ElemID
 }

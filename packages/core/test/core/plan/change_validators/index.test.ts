@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdapterOperations, ChangeValidator, ElemID, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { AdapterOperations, ChangeValidator, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { expressions } from '@salto-io/workspace'
-import getChangeValidators from '../../../../src/core/plan/change_validators'
+import { getChangeValidators } from '../../../../src/core/plan/change_validators'
 
 describe('getChangeValidators', () => {
   it('should call both the adapter change validators and the core change validators', async () => {
@@ -45,10 +45,14 @@ describe('getChangeValidators', () => {
       },
     })
     const changes = [toChange({ after: type })]
-    const errors = await changesValidators.adapter(changes)
+    const configType = new ObjectType({
+      elemID: new ElemID('adapter', '_config'),
+    })
+    const adapterConfig = new InstanceElement('_config', configType)
+    const errors = await changesValidators.adapter(changes, adapterConfig)
     expect(errors).toHaveLength(2)
     expect(errors[0].message).toBe('Element has unresolved references')
-    expect(adapterChangeValidator).toHaveBeenCalledWith(changes)
+    expect(adapterChangeValidator).toHaveBeenCalledWith(changes, adapterConfig)
     expect(errors[1].message).toBe('message')
   })
 })

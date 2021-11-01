@@ -20,7 +20,7 @@ export const ITEM_TYPE_ID = '-10'
 export const TRANSACTION_TYPE_ID = '-30'
 
 // Was taken from https://<account_id>.app.netsuite.com/app/help/helpcenter.nl?fid=section_n3432681.html&whence=
-export const TYPES_TO_INTERNAL_ID: Record<string, string> = {
+const DOWNLOADED_TYPES_TO_INTERNAL_ID: Record<string, string> = {
   account: '-112',
   accountingPeriod: '-105',
   address: '-289',
@@ -188,6 +188,14 @@ export const TYPES_TO_INTERNAL_ID: Record<string, string> = {
   workOrderClose: TRANSACTION_TYPE_ID,
   workOrderCompletion: TRANSACTION_TYPE_ID,
   workOrderIssue: TRANSACTION_TYPE_ID,
+}
+const EXTRA_TYPES_TO_INTERNAL_ID: Record<string, string> = {
+  role: '-264',
+}
+
+export const TYPES_TO_INTERNAL_ID = {
+  ...DOWNLOADED_TYPES_TO_INTERNAL_ID,
+  ...EXTRA_TYPES_TO_INTERNAL_ID,
 }
 
 export const INTERNAL_ID_TO_TYPES: Record<string, string[]> = _(TYPES_TO_INTERNAL_ID)

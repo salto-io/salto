@@ -36,7 +36,7 @@ type TypeAdderType = (
   schema: SchemaOrReference,
   origTypeName: string,
   endpointName?: string,
-) => PrimitiveType | ObjectType
+) => PrimitiveType | ObjectType | ListType
 
 /**
  * Helper function for creating type elements for the given swagger definitions.
@@ -233,6 +233,13 @@ const typeAdder = ({
     )
 
     if (isObjectSchema(schema)) {
+      // top-level schemas are still created as object types
+      if (isArraySchemaObject(schema) && endpointName === undefined) {
+        return new ListType(addType(
+          schema.items,
+          typeName,
+        ))
+      }
       return toObjectType(
         schema,
         typeName,

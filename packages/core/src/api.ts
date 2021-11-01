@@ -36,7 +36,6 @@ import {
   FetchProgressEvents,
   getDetailedChanges,
   MergeErrorWithElements,
-  toChangesWithPath,
   fetchChangesFromWorkspace,
   getFetchAdapterAndServicesSetup,
 } from './core/fetch'
@@ -44,7 +43,7 @@ import { defaultDependencyChangers } from './core/plan/plan'
 import { createRestoreChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
 import { createDiffChanges } from './core/diff'
-import getChangeValidators from './core/plan/change_validators'
+import { getChangeValidators, getAdaptersConfig } from './core/plan/change_validators'
 
 export { cleanWorkspace } from './core/clean'
 
@@ -98,6 +97,7 @@ export const preview = async (
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
     topLevelFilters: [shouldElementBeIncluded(services)],
+    adapterGetConfig: await getAdaptersConfig(adapters, workspace.serviceConfig.bind(workspace)),
   })
 }
 
@@ -157,9 +157,7 @@ export const deploy = async (
     changedElements,
     [id => changedElements.has(id)]
   )).map(change => ({ change, serviceChanges: [change] }))
-    .flatMap(toChangesWithPath(
-      async name => collections.array.makeArray(await changedElements.get(name))
-    )).toArray()
+    .toArray()
   const errored = errors.length > 0
   return {
     success: !errored,

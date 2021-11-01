@@ -22,6 +22,10 @@ const log = logger(module)
 
 const baseUrl = (subdomain: string): string => `https://${subdomain}.zendesk.com/api/v2`
 
+const MARKETPLACE_NAME = 'Salto'
+const MARKETPLACE_ORG_ID = 5110
+const MARKETPLACE_APP_ID = 608042
+
 // TODO change validation when switching to oauth
 export const validateCredentials = async ({ credentials, connection }: {
   credentials: UsernamePasswordCredentials
@@ -44,6 +48,11 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
       auth: {
         username,
         password,
+      },
+      headers: {
+        'X-Zendesk-Marketplace-Name': MARKETPLACE_NAME,
+        'X-Zendesk-Marketplace-Organization-Id': MARKETPLACE_ORG_ID,
+        'X-Zendesk-Marketplace-App-Id': MARKETPLACE_APP_ID,
       },
     }),
     baseURLFunc: ({ subdomain }) => baseUrl(subdomain),

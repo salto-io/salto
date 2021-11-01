@@ -69,6 +69,20 @@ SalesforceConfig => {
         && RetryStrategyName[clientConfig.retry.retryStrategy] === undefined) {
       throw new ConfigValidationError([CLIENT_CONFIG, 'clientConfig', 'retry', 'retryStrategy'], `retryStrategy value '${clientConfig.retry.retryStrategy}' is not supported`)
     }
+    if (clientConfig?.readMetadataChunkSize !== undefined) {
+      const defaultValue = clientConfig?.readMetadataChunkSize.default
+      if (defaultValue && (defaultValue < 1 || defaultValue > 10)) {
+        throw new ConfigValidationError([CLIENT_CONFIG, 'readMetadataChunkSize'], `readMetadataChunkSize default value should be between 1 to 10. current value is ${defaultValue}`)
+      }
+      const overrides = clientConfig?.readMetadataChunkSize.overrides
+      if (overrides) {
+        const invalidValues = Object.entries(overrides)
+          .filter(([_name, value]) => ((value < 1) || (value > 10)))
+        if (invalidValues.length > 0) {
+          throw new ConfigValidationError([CLIENT_CONFIG, 'readMetadataChunkSize'], `readMetadataChunkSize values should be between 1 to 10. Invalid keys: ${invalidValues.map(([name]) => name).join(', ')}`)
+        }
+      }
+    }
   }
 
   validateFetchParameters(config?.value?.[FETCH_CONFIG] ?? {}, [FETCH_CONFIG])

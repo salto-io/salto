@@ -349,10 +349,12 @@ export const mockWorkspace = ({
     demote: mockFunction<Workspace['demote']>(),
     demoteAll: mockFunction<Workspace['demoteAll']>(),
     copyTo: mockFunction<Workspace['copyTo']>(),
+    sync: mockFunction<Workspace['sync']>(),
     getValue: mockFunction<Workspace['getValue']>(),
     getSearchableNames: mockFunction<Workspace['getSearchableNames']>(),
     getSearchableNamesOfEnv: mockFunction<Workspace['getSearchableNamesOfEnv']>(),
     listUnresolvedReferences: mockFunction<Workspace['listUnresolvedReferences']>(),
+    getElementSourceOfPath: mockFunction<Workspace['getElementSourceOfPath']>(),
   }
 }
 

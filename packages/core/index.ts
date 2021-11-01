@@ -17,8 +17,8 @@ export { Plan, PlanItem } from './src/core/plan'
 export { FetchChange, FetchProgressEvents, StepEmitter, FetchChangeMetadata } from './src/core/fetch'
 export * from './src/api'
 export { ItemStatus } from './src/core/deploy'
-export { getAdaptersCredentialsTypes, getDefaultAdapterConfig } from './src/core/adapters/adapters'
-export { createDiffChanges } from './src/core/diff'
+export { getAdaptersCredentialsTypes, getDefaultAdapterConfig, getAdaptersConfigTypes } from './src/core/adapters/adapters'
+export { createDiffChanges, getEnvsDeletionsDiff } from './src/core/diff'
 export {
   loadLocalWorkspace, initLocalWorkspace, loadLocalElementsSources, getNaclFilesSourceParams,
   CACHE_DIR_NAME, locateWorkspaceRoot, createEnvironmentSource,
@@ -28,7 +28,7 @@ export {
   WorkspaceConfigSource as LocalWorkspaceConfigSource,
 } from './src/local-workspace/workspace_config'
 export {
-  adaptersConfigSource as localAdaptersConfigSource,
+  buildLocalAdaptersConfigSource as localAdaptersConfigSource,
 } from './src/local-workspace/adapters_config'
 export {
   SALTO_HOME_VAR,

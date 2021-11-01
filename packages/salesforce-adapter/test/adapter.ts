@@ -31,7 +31,7 @@ export type Opts = {
 }
 
 const mockAdapter = ({ adapterParams }: Opts = {}): Mocks => {
-  const { connection, client } = createClient()
+  const { connection, client } = createClient(adapterParams?.config?.client)
   const adapter = new SalesforceAdapter({
     client,
     config: {},

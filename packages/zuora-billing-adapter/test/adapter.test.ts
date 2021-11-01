@@ -23,7 +23,7 @@ import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-uti
 import { collections } from '@salto-io/lowerdash'
 import { adapter } from '../src/adapter_creator'
 import { oauthClientCredentialsType } from '../src/auth'
-import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG, DEFAULT_INCLUDE_TYPES, DEFAULT_API_DEFINITIONS, DEFAULT_SETTINGS_INCLUDE_TYPES } from '../src/config'
+import { configType, getUpdatedConfig, FETCH_CONFIG, API_DEFINITIONS_CONFIG, DEFAULT_INCLUDE_TYPES, DEFAULT_API_DEFINITIONS, DEFAULT_SETTINGS_INCLUDE_TYPES } from '../src/config'
 import mockReplies from './mock_replies.json'
 import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, CUSTOM_OBJECT, STANDARD_OBJECT, LIST_ALL_SETTINGS_TYPE } from '../src/constants'
 import { isObjectDef } from '../src/element_utils'
@@ -190,6 +190,14 @@ jest.mock('@salto-io/adapter-components', () => {
     },
   }
 })
+jest.mock('../src/config', () => {
+  const actual = jest.requireActual('../src/config')
+  return {
+    ...actual,
+    getUpdatedConfig: jest.fn().mockImplementation(actual.getUpdatedConfig),
+  }
+})
+const mockGetUpdatedConfig = getUpdatedConfig as jest.MockedFunction<typeof getUpdatedConfig>
 
 describe('adapter', () => {
   jest.setTimeout(10 * 1000)
@@ -288,6 +296,55 @@ describe('adapter', () => {
         // ensure pagination is working
         expect(elements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'WorkflowExport')).toHaveLength(6)
       })
+    })
+    it('should not update the fetch config when not needed', async () => {
+      mockGetUpdatedConfig.mockReturnValueOnce(undefined)
+      const { updatedConfig } = await adapter.operations({
+        credentials: new InstanceElement(
+          'config',
+          oauthClientCredentialsType,
+          { clientId: 'client', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
+        ),
+        config: new InstanceElement(
+          'config',
+          configType,
+          {
+            [FETCH_CONFIG]: {
+              includeTypes: [],
+              settingsIncludeTypes: [],
+            },
+            [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
+          }
+        ),
+        elementsSource: buildElementsSourceFromElements([]),
+      }).fetch({ progressReporter: { reportProgress: () => null } })
+      expect(updatedConfig).toBeUndefined()
+    })
+    it('should update the fetch config when needed', async () => {
+      mockGetUpdatedConfig.mockReturnValueOnce({
+        config: [new InstanceElement('config', configType, {})],
+        message: 'abc',
+      })
+      const { updatedConfig } = await adapter.operations({
+        credentials: new InstanceElement(
+          'config',
+          oauthClientCredentialsType,
+          { clientId: 'client', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
+        ),
+        config: new InstanceElement(
+          'config',
+          configType,
+          {
+            [FETCH_CONFIG]: {
+              includeTypes: [],
+              settingsIncludeTypes: [],
+            },
+            [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
+          }
+        ),
+        elementsSource: buildElementsSourceFromElements([]),
+      }).fetch({ progressReporter: { reportProgress: () => null } })
+      expect(updatedConfig).toBeDefined()
     })
     describe('without settings types', () => {
       it('should generate the right elements on fetch', async () => {

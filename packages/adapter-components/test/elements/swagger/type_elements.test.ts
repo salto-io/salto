@@ -106,6 +106,7 @@ describe('swagger_type_elements', () => {
         expect(_.mapValues(food.fields, f => f.refType.elemID.getFullName())).toEqual({
           brand: 'string',
           id: 'number',
+          storage: 'List<string>',
           additionalProperties: 'Map<unknown>',
         })
 

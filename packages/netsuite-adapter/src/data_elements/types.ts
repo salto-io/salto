@@ -193,8 +193,8 @@ const DOWNLOADED_TYPES_TO_INTERNAL_ID: Record<string, string> = {
 }
 const EXTRA_TYPES_TO_INTERNAL_ID: Record<string, string> = {
   role: '-264',
-  [FILE_TYPE]: FILE_TYPE,
-  [FOLDER_TYPE]: FOLDER_TYPE,
+  file: FILE_TYPE,
+  folder: FOLDER_TYPE,
 }
 
 export const TYPES_TO_INTERNAL_ID = {

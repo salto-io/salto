@@ -27,6 +27,7 @@ import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult,
 const { isDefined } = lowerDashValues
 const log = logger(module)
 const UNDERSCORE = '_'
+export const FOLDER_FIELD_IDENTIFIER = 'MEDIAITEMFOLDER'
 
 const getRecordIdAndTypeStringKey = (recordId: string, recordTypeId: string): string =>
   `${recordId}${UNDERSCORE}${recordTypeId}`
@@ -89,9 +90,9 @@ const getKeyForNote = (systemNote: SystemNoteResult): string => {
   if (isDefined(systemNote.recordtypeid)) {
     return getRecordIdAndTypeStringKey(systemNote.recordid, systemNote.recordtypeid)
   }
-  return systemNote.field.includes('MEDIAITEMFOLDER')
-    ? getRecordIdAndTypeStringKey(systemNote.recordid, 'FOLDER_TYPE')
-    : getRecordIdAndTypeStringKey(systemNote.recordid, 'FILE_TYPE')
+  return systemNote.field.includes(FOLDER_FIELD_IDENTIFIER)
+    ? getRecordIdAndTypeStringKey(systemNote.recordid, FOLDER_TYPE)
+    : getRecordIdAndTypeStringKey(systemNote.recordid, FILE_TYPE)
 }
 
 const distinctSortedSystemNotes = (
@@ -126,9 +127,6 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
       return
     }
     const instancesWithInternalId = getInstancesWithInternalIds(elements)
-    if (_.isEmpty(instancesWithInternalId)) {
-      return
-    }
     const systemNoteQuery = buildSystemNotesQuery(instancesWithInternalId)
     if (_.isUndefined(systemNoteQuery)) {
       return

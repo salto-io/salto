@@ -87,12 +87,12 @@ const transformElemIDAdapter = (accountName: string): TransformFunc => async (
     _.set(value, 'elemID', createAdapterReplacedID(value.elemID, accountName))
     value.annotationRefTypes = _.mapValues(value.annotationRefTypes,
       annotation => {
-        const annotationType = annotation.clone()
+        const annotationType = _.clone(annotation)
         updateRefTypeWithId(annotationType, accountName)
         return annotationType
       })
     if (isField(value)) {
-      const fieldType = value.refType.clone()
+      const fieldType = _.clone(value.refType)
       updateRefTypeWithId(fieldType, accountName)
       value.refType = fieldType
     }
@@ -115,7 +115,7 @@ export const updateElementsWithAlternativeAdapter = async (elementsToUpdate: Ele
     })
     _.set(element, 'elemID', createAdapterReplacedID(element.elemID, newAdapter))
     if (isInstanceElement(element)) {
-      element.refType = element.refType.clone()
+      element.refType = _.clone(element.refType)
       updateRefTypeWithId(element.refType, newAdapter)
     }
     Object.values(element.annotationRefTypes).forEach(annotation => updateRefTypeWithId(

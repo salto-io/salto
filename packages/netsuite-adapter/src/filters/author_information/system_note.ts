@@ -27,7 +27,8 @@ import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult,
 const { isDefined } = lowerDashValues
 const log = logger(module)
 const UNDERSCORE = '_'
-export const FOLDER_FIELD_IDENTIFIER = 'MEDIAITEMFOLDER'
+export const FILE_FIELD_IDENTIFIER = 'MEDIAITEM.'
+export const FOLDER_FIELD_IDENTIFIER = 'MEDIAITEMFOLDER.'
 
 const getRecordIdAndTypeStringKey = (recordId: string, recordTypeId: string): string =>
   `${recordId}${UNDERSCORE}${recordTypeId}`
@@ -72,10 +73,10 @@ const getWhereQueryPart = (recordType: string): string => {
   // file and folder types have system notes without record type ids
   // but have a prefix in the field column.
   if (recordType === FILE_TYPE) {
-    return 'field LIKE \'MEDIAITEM.%\''
+    return `field LIKE '${FILE_FIELD_IDENTIFIER}%'`
   }
   if (recordType === FOLDER_TYPE) {
-    return 'field LIKE \'MEDIAITEMFOLDER.%\''
+    return `field LIKE '${FOLDER_FIELD_IDENTIFIER}%'`
   }
   return `recordtypeid = '${recordType}'`
 }
@@ -96,7 +97,7 @@ const getKeyForNote = (systemNote: SystemNoteResult): string => {
   if (isDefined(systemNote.recordtypeid)) {
     return getRecordIdAndTypeStringKey(systemNote.recordid, systemNote.recordtypeid)
   }
-  return systemNote.field.includes(FOLDER_FIELD_IDENTIFIER)
+  return systemNote.field.startsWith(FOLDER_FIELD_IDENTIFIER)
     ? getRecordIdAndTypeStringKey(systemNote.recordid, FOLDER_TYPE)
     : getRecordIdAndTypeStringKey(systemNote.recordid, FILE_TYPE)
 }

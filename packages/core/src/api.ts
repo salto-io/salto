@@ -412,9 +412,7 @@ export const getRenameElementChanges = async (
   sourceElemId: ElemID,
   targetElemId: ElemID
 ): Promise<{
-  source: Element
-  target: Element
-  elementChanges: DetailedChange[]
+  getElementChanges: () => Promise<DetailedChange[]>
   getReferencesChanges: () => Promise<DetailedChange[]>
 }> => {
   if (sourceElemId.getFullName() === targetElemId.getFullName()) {
@@ -432,33 +430,35 @@ export const getRenameElementChanges = async (
     throw new Error(`Element ${targetElemId.getFullName()} already exists`)
   }
 
-  const source = await workspace.getValue(sourceElemId)
-  if (source === undefined || !isElement(source)) {
-    throw new Error(`Did not find any matches for element ${sourceElemId.getFullName()}`)
+  const getElementChanges = async (): Promise<DetailedChange[]> => {
+    const source = await workspace.getValue(sourceElemId)
+    if (source === undefined || !isElement(source)) {
+      throw new Error(`Did not find any matches for element ${sourceElemId.getFullName()}`)
+    }
+
+    if (!isObjectType(source)) {
+      throw new Error(`Currently supporting ObjectType only (${sourceElemId.getFullName()} is of type '${sourceElemId.idType}')`)
+    }
+
+    const target = new ObjectType({
+      ...source,
+      elemID: targetElemId,
+      annotationRefsOrTypes: source.annotationRefTypes,
+    })
+
+    return [
+      {
+        id: sourceElemId,
+        action: 'remove',
+        data: { before: source },
+      },
+      {
+        id: targetElemId,
+        action: 'add',
+        data: { after: target },
+      },
+    ]
   }
-
-  if (!isObjectType(source)) {
-    throw new Error(`Currently supporting ObjectType only (${sourceElemId.getFullName()} is of type '${sourceElemId.idType}')`)
-  }
-
-  const target = new ObjectType({
-    ...source,
-    elemID: targetElemId,
-    annotationRefsOrTypes: source.annotationRefTypes,
-  })
-
-  const elementChanges: DetailedChange[] = [
-    {
-      id: sourceElemId,
-      action: 'remove',
-      data: { before: source },
-    },
-    {
-      id: targetElemId,
-      action: 'add',
-      data: { after: target },
-    },
-  ]
 
   const getReferencesChanges = async (): Promise<DetailedChange[]> => {
     const sourceElemIdFullNameParts = sourceElemId.getFullNameParts()
@@ -502,5 +502,5 @@ export const getRenameElementChanges = async (
     })
   }
 
-  return { source, target, elementChanges, getReferencesChanges }
+  return { getElementChanges, getReferencesChanges }
 }

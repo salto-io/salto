@@ -18,6 +18,8 @@ import _ from 'lodash'
 
 export const ITEM_TYPE_ID = '-10'
 export const TRANSACTION_TYPE_ID = '-30'
+export const FILE_TYPE = 'FILE_TYPE'
+export const FOLDER_TYPE = 'FOLDER_TYPE'
 
 // Was taken from https://<account_id>.app.netsuite.com/app/help/helpcenter.nl?fid=section_n3432681.html&whence=
 const DOWNLOADED_TYPES_TO_INTERNAL_ID: Record<string, string> = {
@@ -191,6 +193,8 @@ const DOWNLOADED_TYPES_TO_INTERNAL_ID: Record<string, string> = {
 }
 const EXTRA_TYPES_TO_INTERNAL_ID: Record<string, string> = {
   role: '-264',
+  [FILE_TYPE]: FILE_TYPE,
+  [FOLDER_TYPE]: FOLDER_TYPE,
 }
 
 export const TYPES_TO_INTERNAL_ID = {

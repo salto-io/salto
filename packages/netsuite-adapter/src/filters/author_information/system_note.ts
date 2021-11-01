@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
-import { TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
+import { FILE_TYPE, FOLDER_TYPE, TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
 import NetsuiteClient from '../../client/client'
 import { FilterCreator, FilterWith } from '../../filter'
 import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA } from './constants'
@@ -67,71 +67,68 @@ const fetchEmployeeNames = async (client: NetsuiteClient): Promise<Record<string
   return {}
 }
 
-const distinctSortedSystemNotes = (
-  systemNotes: Record<string, string>[]
-): Record<string, string>[] =>
-  _.uniqBy(systemNotes, note => [note.recordid, note.recordtypeid].join(','))
-
 const buildSystemNotesQuery = (instances: InstanceElement[]): string | undefined => {
   const recordTypeIds = _.uniq(instances
     .map(instance => TYPES_TO_INTERNAL_ID[instance.elemID.typeName]))
   if (_.isEmpty(recordTypeIds)) {
     return undefined
   }
-  const whereQuery = recordTypeIds
+  let whereQuery = recordTypeIds
+    .filter(recordType => recordType !== FILE_TYPE && recordType !== FOLDER_TYPE)
     .map(recordType => `recordtypeid = '${recordType}'`)
-    .join(' or ')
-  return `SELECT recordid, recordtypeid, name FROM systemnote WHERE ${whereQuery} ORDER BY date DESC`
+    .join(' OR ')
+  // file and folder types have system notes without record type ids
+  if (recordTypeIds.includes(FILE_TYPE) || recordTypeIds.includes(FOLDER_TYPE)) {
+    whereQuery += ' OR recordtypeid IS NULL'
+  }
+
+  return `SELECT name, field, recordid, recordtypeid FROM systemnote WHERE ${whereQuery} ORDER BY date DESC`
 }
+
+const getKeyForNote = (systemNote: SystemNoteResult): string => {
+  if (isDefined(systemNote.recordtypeid)) {
+    return getRecordIdAndTypeStringKey(systemNote.recordid, systemNote.recordtypeid)
+  }
+  return systemNote.field.includes('MEDIAITEMFOLDER')
+    ? getRecordIdAndTypeStringKey(systemNote.recordid, 'FOLDER_TYPE')
+    : getRecordIdAndTypeStringKey(systemNote.recordid, 'FILE_TYPE')
+}
+
+const distinctSortedSystemNotes = (
+  systemNotes: SystemNoteResult[]
+): SystemNoteResult[] =>
+  _.uniqBy(systemNotes, note => getKeyForNote(note))
+
+const indexSystemNotes = (systemNotes: SystemNoteResult[]): Record<string, string> =>
+  Object.fromEntries(systemNotes.map(systemnote => [getKeyForNote(systemnote), systemnote.name]))
 
 const fetchSystemNotes = async (
   client: NetsuiteClient,
   query: string
-): Promise<Record<string, Record<string, string>>> => {
+): Promise<Record<string, string>> => {
   const systemNotes = await querySystemNotes(client, query)
   if (_.isEmpty(systemNotes)) {
     log.warn('System note query failed')
     return {}
   }
-  return _.keyBy(distinctSortedSystemNotes(systemNotes),
-    note => getRecordIdAndTypeStringKey(note.recordid, note.recordtypeid))
+  return indexSystemNotes(distinctSortedSystemNotes(systemNotes))
 }
 
-const getElementLastModifier = (
-  instance: InstanceElement,
-  systemNotes: Record<string, Record<string, string>>,
-  employeeNames: Record<string, string>,
-): string | undefined => {
-  const lastNote = systemNotes[
-    getRecordIdAndTypeStringKey(
-      instance.value.internalId,
-      TYPES_TO_INTERNAL_ID[instance.elemID.typeName]
-    )]
-  if (_.isEmpty(lastNote)) {
-    return undefined
-  }
-  return employeeNames[lastNote.name]
-}
-const setAuthorName = (
-  instance: InstanceElement,
-  systemNotes: Record<string, Record<string, string>>,
-  employeeNames: Record<string, string>,
-): void => {
-  const authorName = getElementLastModifier(instance, systemNotes, employeeNames)
-  if (authorName) {
-    instance.annotate({ [CORE_ANNOTATIONS.CHANGED_BY]: authorName })
-  }
-}
+const getInstancesWithInternalIds = (elements: Element[]): InstanceElement[] =>
+  elements
+    .filter(isInstanceElement)
+    .filter(instance => isDefined(instance.value.internalId))
+    .filter(instance => instance.elemID.typeName in TYPES_TO_INTERNAL_ID)
 
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
     if (!client.isSuiteAppConfigured()) {
       return
     }
-    const instancesWithInternalId = elements
-      .filter(isInstanceElement)
-      .filter(instance => isDefined(instance.value.internalId))
-      .filter(instance => instance.elemID.typeName in TYPES_TO_INTERNAL_ID)
+    const instancesWithInternalId = getInstancesWithInternalIds(elements)
+    if (_.isEmpty(instancesWithInternalId)) {
+      return
+    }
     const systemNoteQuery = buildSystemNotesQuery(instancesWithInternalId)
     if (_.isUndefined(systemNoteQuery)) {
       return
@@ -141,8 +138,19 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
       return
     }
     const systemNotes = await fetchSystemNotes(client, systemNoteQuery)
-    instancesWithInternalId
-      .forEach(instance => setAuthorName(instance, systemNotes, employeeNames))
+    if (_.isEmpty(systemNotes)) {
+      return
+    }
+    instancesWithInternalId.forEach(instance => {
+      const employeeId = systemNotes[
+        getRecordIdAndTypeStringKey(instance.value.internalId,
+          TYPES_TO_INTERNAL_ID[instance.elemID.typeName])]
+      if (isDefined(employeeId)) {
+        instance.annotate(
+          { [CORE_ANNOTATIONS.CHANGED_BY]: employeeNames[employeeId] }
+        )
+      }
+    })
   },
 })
 

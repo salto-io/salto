@@ -19,7 +19,8 @@ import { SaltoError } from '@salto-io/adapter-api'
 import { MergeError } from '../merger'
 import { ValidationError } from '../validator'
 import { ParseError } from '../parser'
-import {MAX_ENV_NAME_LEN} from "./workspace";
+
+export const MAX_ENV_NAME_LEN = 100
 
 export class Errors extends types.Bean<Readonly<{
     parse: ReadonlyArray<ParseError>
@@ -52,7 +53,7 @@ export class EnvDuplicationError extends Error {
 export class InvalidEnvNameError extends Error {
   constructor(envName: string) {
     super(
-        `The environment name: "${envName}" is invalid. Make sure your name meets the following rules:
+      `The environment name: "${envName}" is invalid. Make sure your name meets the following rules:
         - Contains only alphanumeric or one of the following special characters: _-.!
         - Cannot exceed ${MAX_ENV_NAME_LEN} chars`
     )

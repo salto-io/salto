@@ -29,8 +29,10 @@ import { multiEnvSource, getSourceNameForFilename, MultiEnvSource, EnvsChanges, 
 import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
 import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
 import { ElementSelector } from './element_selector'
-import { Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError,
-  DeleteCurrentEnvError, InvalidEnvNameError } from './errors'
+import {
+  Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError,
+  DeleteCurrentEnvError, InvalidEnvNameError, MAX_ENV_NAME_LEN,
+} from './errors'
 import { EnvConfig } from './config/workspace_config_types'
 import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
@@ -53,7 +55,6 @@ const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
 const MULTI_ENV_SOURCE_PREFIX = 'multi_env_element_source'
 const STATE_SOURCE_PREFIX = 'state_element_source'
 
-export const MAX_ENV_NAME_LEN = 100
 export const isValidEnvName = (envName: string): boolean =>
   /^[a-z0-9-_.!\s/]+$/i.test(envName) && envName.length <= MAX_ENV_NAME_LEN
 

@@ -23,7 +23,6 @@ import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
 import { EMPLOYEE_NAME_QUERY } from '../../../src/filters/author_information/constants'
 
-jest.setTimeout(11111111)
 describe('netsuite system note author information', () => {
   let filterOpts: FilterOpts
   let elements: InstanceElement[]
@@ -84,7 +83,7 @@ describe('netsuite system note author information', () => {
 
   it('should query information from api', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
-    const systemNotesQuery = "SELECT name, field, recordid, recordtypeid FROM systemnote WHERE recordtypeid = '-112' OR recordtypeid = '-123' OR recordtypeid IS NULL ORDER BY date DESC"
+    const systemNotesQuery = "SELECT name, field, recordid, recordtypeid FROM systemnote WHERE recordtypeid = '-112' OR recordtypeid = '-123' OR field LIKE 'MEDIAITEM.%' OR field LIKE 'MEDIAITEMFOLDER.%' ORDER BY date DESC"
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, systemNotesQuery)
     expect(runSuiteQLMock).toHaveBeenCalledTimes(2)

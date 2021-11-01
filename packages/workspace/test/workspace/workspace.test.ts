@@ -37,8 +37,10 @@ import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
   COMMON_ENV_PREFIX, UnresolvedElemIDs, UpdateNaclFilesResult, isValidEnvName } from '../../src/workspace/workspace'
-import { DeleteCurrentEnvError, UnknownEnvError, EnvDuplicationError,
-  ServiceDuplicationError, InvalidEnvNameError, Errors } from '../../src/workspace/errors'
+import {
+  DeleteCurrentEnvError, UnknownEnvError, EnvDuplicationError,
+  ServiceDuplicationError, InvalidEnvNameError, Errors, MAX_ENV_NAME_LEN,
+} from '../../src/workspace/errors'
 import { StaticFilesSource } from '../../src/workspace/static_files'
 import * as dump from '../../src/parser/dump'
 import { mockDirStore } from '../common/nacl_file_store'
@@ -2223,10 +2225,18 @@ describe('workspace', () => {
       await expect(workspace.addEnvironment(envName, mockRmcToSource))
         .rejects.toEqual(new EnvDuplicationError(envName))
     })
-    it('should throw InvalidEnvNameError', async () => {
-      const invalidEnvName = 'invalid:env'
-      await expect(workspace.addEnvironment(invalidEnvName, mockRmcToSource))
-        .rejects.toEqual(new InvalidEnvNameError(invalidEnvName))
+
+    describe('invalid new environment name', () => {
+      test('throws InvalidEnvNameError for name with illegal characters', async () => {
+        const nameWithIllegalChars = 'invalid:env'
+        await expect(workspace.addEnvironment(nameWithIllegalChars, mockRmcToSource))
+          .rejects.toThrow(InvalidEnvNameError)
+      })
+      test('throws InvalidEnvNameError when name is too long', async () => {
+        const longName = 'a'.repeat(MAX_ENV_NAME_LEN * 2)
+        await expect(workspace.addEnvironment(longName, mockRmcToSource))
+          .rejects.toThrow(InvalidEnvNameError)
+      })
     })
   })
 
@@ -2479,6 +2489,18 @@ describe('workspace', () => {
 
         it('should rename files', async () => {
           verifyRenameFiles()
+        })
+      })
+      describe('invalid new environment name', () => {
+        test('throws InvalidEnvNameError for name with illegal characters', async () => {
+          const nameWithIllegalChars = 'invalid:env'
+          await expect(workspace.renameEnvironment(workspace.currentEnv(), nameWithIllegalChars))
+            .rejects.toThrow(InvalidEnvNameError)
+        })
+        test('throws InvalidEnvNameError when name is too long', async () => {
+          const longName = 'a'.repeat(MAX_ENV_NAME_LEN * 2)
+          await expect(workspace.renameEnvironment(workspace.currentEnv(), longName))
+            .rejects.toThrow(InvalidEnvNameError)
         })
       })
     })

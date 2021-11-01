@@ -59,7 +59,6 @@ const compareValuesAndLazyResolveRefs = async (
   const resolvedSecond = shouldResolve(second)
     ? await resolveReferenceExpression(second, secondSrc, {})
     : second
-
   const specialCompareRes = compareSpecialValues(resolvedFirst, resolvedSecond)
   if (values.isDefined(specialCompareRes)) {
     return specialCompareRes

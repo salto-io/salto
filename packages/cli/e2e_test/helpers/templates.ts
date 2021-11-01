@@ -15,37 +15,19 @@
 */
 import { ObjectType, ElemID, PrimitiveType, PrimitiveTypes, BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
 
-const sfText = new PrimitiveType({
-  elemID: new ElemID('salesforce', 'Text'),
-  primitive: PrimitiveTypes.STRING,
-  annotationRefsOrTypes: {
-    label: BuiltinTypes.STRING,
-    _required: BuiltinTypes.BOOLEAN,
-  },
-})
-
-const sfRole = new ObjectType({
-  elemID: new ElemID('salesforce', 'Role'),
-  annotationRefsOrTypes: {
-    metadataType: BuiltinTypes.SERVICE_ID,
-    suffix: BuiltinTypes.STRING,
-    dirName: BuiltinTypes.STRING,
-  },
-  annotations: {
-    metadataType: 'Role',
-    suffix: 'role',
-    dirName: 'roles',
-  },
-  fields: {
-    description: { refType: BuiltinTypes.STRING },
-    name: { refType: BuiltinTypes.STRING },
-  },
-})
-
 export const customObject = (
-  data: {objName: string; alphaLabel: string; betaLabel: string}
+  data: {objName: string; alphaLabel: string; betaLabel: string; accountName?: string}
 ): ObjectType => {
-  const elemID = new ElemID('salesforce', data.objName)
+  const adapter = data.accountName ?? 'salesforce'
+  const sfText = new PrimitiveType({
+    elemID: new ElemID(adapter, 'Text'),
+    primitive: PrimitiveTypes.STRING,
+    annotationRefsOrTypes: {
+      label: BuiltinTypes.STRING,
+      _required: BuiltinTypes.BOOLEAN,
+    },
+  })
+  const elemID = new ElemID(adapter, data.objName)
   return new ObjectType({
     elemID,
     fields: {
@@ -62,8 +44,28 @@ export const customObject = (
 }
 
 export const instance = (
-  data: {instName: string; description: string}
-): InstanceElement => new InstanceElement(data.instName, sfRole, {
-  description: data.description,
-  name: data.instName,
-})
+  data: {instName: string; description: string; accountName?: string}
+): InstanceElement => {
+  const adapter = data.accountName ?? 'salesforce'
+  const sfRole = new ObjectType({
+    elemID: new ElemID(adapter, 'Role'),
+    annotationRefsOrTypes: {
+      metadataType: BuiltinTypes.SERVICE_ID,
+      suffix: BuiltinTypes.STRING,
+      dirName: BuiltinTypes.STRING,
+    },
+    annotations: {
+      metadataType: 'Role',
+      suffix: 'role',
+      dirName: 'roles',
+    },
+    fields: {
+      description: { refType: BuiltinTypes.STRING },
+      name: { refType: BuiltinTypes.STRING },
+    },
+  })
+  return new InstanceElement(data.instName, sfRole, {
+    description: data.description,
+    name: data.instName,
+  })
+}

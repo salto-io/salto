@@ -1,32 +1,32 @@
-type salesforce.NewObjectName {
+type e2esalesforce.NewObjectName {
   annotations {
     serviceid metadataType {
     }
   }
   metadataType = "CustomObject"
-  salesforce.Text Alpha {
+  e2esalesforce.Text Alpha {
     label = "Alpha"
     _required = false
   }
-  salesforce.Text Beta {
+  e2esalesforce.Text Beta {
     label = "Beta"
     _required = false
   }
 }
 
-salesforce.Role NewInstanceName {
+e2esalesforce.Role NewInstanceName {
   description = "To Be Modified"
   name = "New Role Instance"
 }
 
-salesforce.Role NewInstance2Name {
+e2esalesforce.Role NewInstance2Name {
   description = var.desc
   name = "Another new Role Instance"
   mayForecastManagerShare = var.isStaging
 }
 
 vars {
-  desc = salesforce.Role.instance.NewInstanceName.description
+  desc = e2esalesforce.Role.instance.NewInstanceName.description
   isStaging = false
   age = 60
 }

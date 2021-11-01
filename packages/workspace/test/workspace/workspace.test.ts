@@ -2591,7 +2591,7 @@ describe('workspace', () => {
     beforeEach(async () => {
       adaptersConf = mockAdaptersConfigSource()
       workspace = await createWorkspace(undefined, undefined, undefined, adaptersConf)
-      await workspace.updateServiceConfig(services[0], newConf)
+      await workspace.updateServiceConfig(services[0], services[0], newConf)
     })
 
     it('should persist', () => {
@@ -2600,7 +2600,8 @@ describe('workspace', () => {
         adaptersConf.setAdapter as jest.Mock
       ).mock.calls[0]
       expect(setAdapterParams[0]).toEqual('salesforce')
-      expect(setAdapterParams[1]).toEqual(newConf)
+      expect(setAdapterParams[1]).toEqual('salesforce')
+      expect(setAdapterParams[2]).toEqual(newConf)
     })
   })
 

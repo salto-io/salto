@@ -128,11 +128,6 @@ export class ReferenceExpression {
     }
     return value
   }
-
-  public clone(): ReferenceExpression {
-    // clone doesn't copy resolved value, just reference
-    return this.createWithValue(undefined, this.topLevelParent)
-  }
 }
 
 export class VariableExpression extends ReferenceExpression {
@@ -172,11 +167,6 @@ export class TypeReference extends ReferenceExpression {
   public createWithValue(resValue: Value, _resTopLevelParent?: Element): TypeReference {
     const ExpressionCtor = this.constructor as typeof TypeReference
     return new ExpressionCtor(this.elemID, resValue)
-  }
-
-  public clone(): ReferenceExpression {
-    // For TypeReference we need to copy the value, because it shouldn't work unresolved
-    return this.createWithValue(this.type, this.topLevelParent)
   }
 
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {

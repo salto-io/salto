@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DetailedChange, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
+import { DetailedChange, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, SaltoError, Element } from '@salto-io/adapter-api'
 import { applyDetailedChanges, buildElementsSourceFromElements, detailedCompare, transformElement } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -25,6 +25,7 @@ import { validateElements, ValidationError } from '../validator'
 import { Errors } from './errors'
 import { NaclFilesSource } from './nacl_files'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
+import { createAdapterReplacedID, updateElementsWithAlternativeAdapter } from '../element_manipulation'
 
 export type PartialNaclFilesSource = Pick<NaclFilesSource, 'getErrors' | 'getSourceRanges' | 'getNaclFile' | 'setNaclFiles' | 'flush' | 'getParsedNaclFile' | 'getSourceMap' | 'listNaclFiles'>
 
@@ -36,6 +37,7 @@ export const CONFIG_PATH = ['salto.config', 'adapters']
 export type AdaptersConfigSource = {
   getAdapter(adapter: string, defaultValue?: InstanceElement): Promise<InstanceElement | undefined>
   setAdapter(
+    account: string,
     adapter: string,
     config: Readonly<InstanceElement> | Readonly<InstanceElement>[]
   ): Promise<void>
@@ -169,13 +171,29 @@ export const buildAdaptersConfigSource = async ({
       return conf
     },
 
-    setAdapter: async (adapter, configs) => {
+    setAdapter: async (account, adapter, configs) => {
+      const additionalConfigs: Element[] = []
+      await awu([configs].flat()).forEach(async config => {
+        const configTypeID = config.refType.elemID
+        if (!(await elementsSource.get(configTypeID))) {
+          const accountConfigType = (await elementsSource.get(
+            createAdapterReplacedID(config.refType.elemID, adapter)
+          )).clone()
+          await updateElementsWithAlternativeAdapter([accountConfigType], account, adapter)
+          additionalConfigs.push(accountConfigType)
+        }
+      })
+      const elementsSourceWithAdditionalConfig = buildElementsSourceFromElements(additionalConfigs,
+        elementsSource)
+      // eslint-disable-next-line no-console
+      console.log(additionalConfigs)
       const configsToUpdate = collections.array.makeArray(configs).map(e => e.clone())
-      const currConfWithoutOverrides = await getConfigWithoutOverrides(adapter)
+      const currConfWithoutOverrides = await getConfigWithoutOverrides(account)
       // Could happen at the initialization of a service.
       if (currConfWithoutOverrides === undefined) {
         await overwriteNacl(configsToUpdate)
-        await updateValidationErrorsCache(validationErrorsMap, elementsSource, naclSource)
+        await updateValidationErrorsCache(validationErrorsMap,
+          elementsSourceWithAdditionalConfig, naclSource)
         return
       }
       const currConf = currConfWithoutOverrides.clone()
@@ -187,14 +205,15 @@ export const buildAdaptersConfigSource = async ({
       validateConfigChanges(configChanges)
 
       await overwriteNacl(configsToUpdate)
-      const overridesForInstance = configOverridesById[adapter]
+      const overridesForInstance = configOverridesById[account]
       if (overridesForInstance !== undefined) {
         // configs includes the configuration overrides which we wouldn't want
         // to save so here we remove the configuration overrides from the NaCl
         const reversedOverrides = detailedCompare(currConf, currConfWithoutOverrides)
         await naclSource.updateNaclFiles(reversedOverrides)
       }
-      await updateValidationErrorsCache(validationErrorsMap, elementsSource, naclSource)
+      await updateValidationErrorsCache(validationErrorsMap,
+        elementsSourceWithAdditionalConfig, naclSource)
     },
     getElementNaclFiles: async adapter => naclSource.getElementNaclFiles(
       new ElemID(adapter, ElemID.CONFIG_NAME, 'instance', ElemID.CONFIG_NAME)

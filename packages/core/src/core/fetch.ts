@@ -19,16 +19,15 @@ import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, AdapterOperations, Values, ServiceIds, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
-  ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
+  FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
-  ContainerType, isContainerType, isField, isReferenceExpression, TypeReference, isElement,
-  isMapType, MapType, isListType, ListType, CORE_ANNOTATIONS,
+  CORE_ANNOTATIONS, AdapterOperationsContext,
 } from '@salto-io/adapter-api'
 import {
-  applyInstancesDefaults, resolvePath, flattenElementStr, transformElement, TransformFunc,
+  applyInstancesDefaults, resolvePath, flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { merger, elementSource, expressions, Workspace, pathIndex } from '@salto-io/workspace'
+import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAdapter, createAdapterReplacedID } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
@@ -354,73 +353,10 @@ const runPostFetch = async ({
   )
 }
 
-const recursivelyUpdateContainerType = (type: ContainerType, accountName: string): void => {
-  const innerType = type.refInnerType
-  if (isContainerType(innerType.type)) {
-    recursivelyUpdateContainerType(innerType.type, accountName)
-    _.set(innerType, 'elemID', innerType.type.elemID)
-  } else {
-    _.set(innerType, 'elemID', innerType.elemID.createAdapterReplacedID(accountName))
-  }
-  if (isMapType(type)) {
-    _.set(type, 'elemID', MapType.createElemID(innerType))
-  } else if (isListType(type)) {
-    _.set(type, 'elemID', ListType.createElemID(innerType))
-  }
-}
-
-const updateRefTypeWithId = (refType: TypeReference, accountName: string): void => {
-  _.set(refType.value, 'elemID', refType.value.elemID.createAdapterReplacedID(accountName))
-  if (isContainerType(refType.value)) {
-    recursivelyUpdateContainerType(refType.value, accountName)
-  }
-  _.set(refType, 'elemID', refType.value.elemID)
-}
-
-const transformElemIDAdapter = (accountName: string): TransformFunc => async (
-  { value }
-) => {
-  if (isReferenceExpression(value)) {
-    _.set(value, 'elemID', value.elemID.createAdapterReplacedID(accountName))
-  }
-  if (isElement(value) && value.elemID.adapter !== accountName) {
-    _.set(value, 'elemID', value.elemID.createAdapterReplacedID(accountName))
-    Object.values(value.annotationRefTypes).forEach(
-      annotation => updateRefTypeWithId(annotation, accountName)
-    )
-    if (isField(value)) {
-      updateRefTypeWithId(value.refType, accountName)
-    }
-  }
-  return value
-}
-
-export const updateElementsWithAlternativeAdapter = async (elements: Element[],
-  newAdapter: string, oldAdapter: string): Promise<void> =>
-  awu(elements).forEach(async element => {
-    if (element.path && (element.path[0] === oldAdapter)) {
-      element.path = [newAdapter, ...element.path.slice(1)]
-    }
-    await transformElement({
-      element,
-      transformFunc: transformElemIDAdapter(newAdapter),
-      strict: false,
-      runOnFields: true,
-    })
-    _.set(element, 'elemID', element.elemID.createAdapterReplacedID(newAdapter))
-    if (isInstanceElement(element)) {
-      const { refType } = element
-      updateRefTypeWithId(refType, newAdapter)
-    }
-    Object.values(element.annotationRefTypes).forEach(annotation => updateRefTypeWithId(
-      annotation, newAdapter
-    ))
-  })
-
 const fetchAndProcessMergeErrors = async (
   adapters: Record<string, AdapterOperations>,
-  accountToServiceNameMap: Record<string, string>,
   stateElements: elementSource.ElementsSource,
+  accountToServiceNameMap: Record<string, string>,
   getChangesEmitter: StepEmitter,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
 ):
@@ -443,23 +379,23 @@ const fetchAndProcessMergeErrors = async (
             progressReporter: progressReporters[accountName],
           })
           const { updatedConfig, errors } = fetchResult
-          if (fetchResult.elements.length > 0 && accountName !== fetchResult.elements[0]
-            .elemID.adapter) {
+          if (fetchResult.elements.length > 0 && accountName
+            !== accountToServiceNameMap[accountName]) {
             // Resolve is used for an efficient deep clone
             fetchResult.elements = await expressions.resolve(fetchResult.elements,
               elementSource.createInMemoryElementSource(), true)
             await updateElementsWithAlternativeAdapter(fetchResult.elements,
               accountName, accountToServiceNameMap[accountName])
             if (updatedConfig) {
-              updatedConfig.config = (await expressions.resolve([updatedConfig.config],
-                elementSource.createInMemoryElementSource(), true))[0] as InstanceElement
-              _.set(updatedConfig.config, 'elemID', updatedConfig.config.elemID
-                .createAdapterReplacedID(accountName))
+              updatedConfig.config = (await expressions.resolve(updatedConfig.config,
+                elementSource.createInMemoryElementSource(), true)) as InstanceElement[]
+              updatedConfig.config.forEach(config =>
+                _.set(config, 'elemID', createAdapterReplacedID(config.elemID, accountName)))
             }
             if (errors) {
               errors.forEach(error => {
                 if (isSaltoElementError(error)) {
-                  error.elemID = error.elemID.createAdapterReplacedID(accountName)
+                  error.elemID = createAdapterReplacedID(error.elemID, accountName)
                 }
               })
             }
@@ -534,6 +470,7 @@ const fetchAndProcessMergeErrors = async (
 
     log.debug(`after merge there are ${processErrorsResult.keptElements.length} elements [errors=${
       mergeErrorsArr.length}]`)
+
     return {
       serviceElements: validServiceElements,
       errors: fetchErrors,
@@ -570,13 +507,11 @@ const calcFetchChanges = async (
   partiallyFetchedAdapters: Set<string>,
   allFetchedAdapters: Set<string>
 ): Promise<Iterable<FetchChange>> => {
-  const partialFetchFilter: IDFilter = id => (
+  const partialFetchFilter: IDFilter = id =>
     !partiallyFetchedAdapters.has(id.adapter)
-    || mergedServiceElements.has(id)
-  )
-  const serviceFetchFilter: IDFilter = id => (
+      || mergedServiceElements.has(id)
+  const serviceFetchFilter: IDFilter = id =>
     allFetchedAdapters.has(id.adapter)
-  )
   const partialFetchElementSource: ReadOnlyElementsSource = {
     get: async (id: ElemID): Promise<Element | undefined> => {
       const mergedElem = await mergedServiceElements.get(id)
@@ -599,6 +534,7 @@ const calcFetchChanges = async (
     ),
     'calculate service-state changes',
   )
+
   const pendingChanges = await log.time(
     () => getDetailedChangeTree(
       stateElements,
@@ -616,6 +552,7 @@ const calcFetchChanges = async (
     ),
     'calculate service-workspace changes',
   )
+
   // Merge pending changes and service changes into one tree so we can find conflicts between them
   serviceChanges.merge(pendingChanges)
   const fetchChanges = toFetchChanges(serviceChanges, workspaceToServiceChanges)
@@ -634,7 +571,6 @@ type CreateFetchChangesParams = {
   adapterNames: string[]
   workspaceElements: elementSource.ElementsSource
   stateElements: elementSource.ElementsSource
-  accountToServiceNameMap: Record<string, string>
   unmergedElements: Element[]
   processErrorsResult: ProcessMergeErrorsResult
   currentConfigs: InstanceElement[]
@@ -721,6 +657,7 @@ export const fetchChanges = async (
   adapters: Record<string, AdapterOperations>,
   workspaceElements: elementSource.ElementsSource,
   stateElements: elementSource.ElementsSource,
+  accountToServiceNameMap: Record<string, string>,
   currentConfigs: InstanceElement[],
   progressEmitter?: EventEmitter<FetchProgressEvents>
 ): Promise<FetchChangesResult> => {
@@ -734,6 +671,7 @@ export const fetchChanges = async (
   } = await fetchAndProcessMergeErrors(
     adapters,
     stateElements,
+    accountToServiceNameMap,
     getChangesEmitter,
     progressEmitter
   )
@@ -861,7 +799,6 @@ const getObjectServiceId = async (objectType: ObjectType,
   if (_.isEmpty(serviceIds)) {
     serviceIds[OBJECT_NAME] = id(objectType.elemID)
   }
-  serviceIds[ADAPTER] = objectType.elemID.adapter
   return toServiceIdsString(serviceIds)
 }
 
@@ -879,7 +816,6 @@ const getFieldServiceId = async (
   if (_.isEmpty(serviceIds)) {
     serviceIds[FIELD_NAME] = id(field.elemID)
   }
-  serviceIds[ADAPTER] = field.elemID.adapter
   serviceIds[OBJECT_SERVICE_ID] = objectServiceId
   return toServiceIdsString(serviceIds)
 }
@@ -898,7 +834,6 @@ const getInstanceServiceId = async (
   if (_.isEmpty(serviceIds)) {
     serviceIds[INSTANCE_NAME] = id(instanceElement.elemID)
   }
-  serviceIds[ADAPTER] = instanceElement.elemID.adapter
   serviceIds[OBJECT_SERVICE_ID] = await getObjectServiceId(instType, elementsSource)
   return toServiceIdsString(serviceIds)
 }
@@ -925,15 +860,17 @@ export const generateServiceIdToStateElemId = async (
 
 export const createElemIdGetter = async (
   elements: AsyncIterable<Element>,
-  src: ReadOnlyElementsSource
+  src: ReadOnlyElementsSource,
 ): Promise<ElemIdGetter> => {
   const serviceIdToStateElemId = await generateServiceIdToStateElemId(
     elements,
-    src
+    src,
   )
-
-  return (adapterName: string, serviceIds: ServiceIds, name: string): ElemID =>
-    serviceIdToStateElemId[toServiceIdsString(serviceIds)] || new ElemID(adapterName, name)
+  return (adapterName: string, serviceIds: ServiceIds, name: string): ElemID => {
+    const elemID = serviceIdToStateElemId[toServiceIdsString(serviceIds)]
+      || new ElemID(adapterName, name)
+    return createAdapterReplacedID(elemID, adapterName)
+  }
 }
 
 export const getFetchAdapterAndServicesSetup = async (
@@ -945,16 +882,18 @@ export const getFetchAdapterAndServicesSetup = async (
   adaptersCreatorConfigs: Record<string, AdapterOperationsContext>
   currentConfigs: InstanceElement[]
 }> => {
+  const createElemIdGetters = async (): Promise<Record<string, ElemIdGetter>> =>
+    Object.fromEntries(await awu(Object.keys(accountToServiceNameMap))
+      .map(async account => [account,
+        await createElemIdGetter(await (await workspace.elements()).getAll(),
+          workspace.state())]).toArray())
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
     await workspace.servicesCredentials(fetchServices),
     workspace.serviceConfig.bind(workspace),
     await workspace.elements(),
     accountToServiceNameMap,
-    ignoreStateElemIdMapping ? undefined : await createElemIdGetter(
-      await (await workspace.elements()).getAll(),
-      workspace.state()
-    )
+    ignoreStateElemIdMapping ? undefined : await createElemIdGetters(),
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)
     .map(creatorConfig => creatorConfig.config)

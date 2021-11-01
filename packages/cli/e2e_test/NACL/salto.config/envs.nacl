@@ -2,7 +2,10 @@ envs {
    envs = [
     {
       name = "default"
-      services = ["salesforce"]
+      accounts = ["e2esalesforce"]
+      accountToServiceName = {
+        e2esalesforce = "salesforce"
+      }
     }
   ]
 }

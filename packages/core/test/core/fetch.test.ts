@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
 import {
   ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, AdapterOperations, Element,
-  PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement, CORE_ANNOTATIONS,
+  PrimitiveType, PrimitiveTypes, OBJECT_SERVICE_ID, InstanceElement, CORE_ANNOTATIONS,
   ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ReferenceExpression,
   ReadOnlyElementsSource,
   TypeReference,
@@ -25,7 +25,7 @@ import {
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { elementSource, pathIndex, remoteMap } from '@salto-io/workspace'
+import { elementSource, pathIndex, remoteMap, createAdapterReplacedID } from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
 import { mockWorkspace } from '../common/workspace'
 import {
@@ -109,7 +109,7 @@ describe('fetch', () => {
     path: ['records', 'hidden'],
   })
   const typeWithHiddenFieldAlternativeId = new ObjectType({
-    elemID: anotherTypeID.createAdapterReplacedID(newTypeDifferentAdapterID.adapter),
+    elemID: createAdapterReplacedID(anotherTypeID, newTypeDifferentAdapterID.adapter),
     fields: {
       reg: {
         refType: BuiltinTypes.STRING,
@@ -132,8 +132,8 @@ describe('fetch', () => {
   Object.values(typeWithHiddenFieldAlternativeId.fields).forEach(field => {
     const parentId = field.parent.elemID
     field.parent = expect.anything()
-    _.set(field.parent, 'elemID', parentId
-      .createAdapterReplacedID(newTypeDifferentAdapterID.adapter))
+    _.set(field.parent, 'elemID', createAdapterReplacedID(parentId,
+      newTypeDifferentAdapterID.adapter))
   })
 
   const hiddenInstance = new InstanceElement('instance_elem_id_name', typeWithHiddenField, {
@@ -195,8 +195,8 @@ describe('fetch', () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
           createElementSource([]),
-          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
         expect(fetchChangesResult.mergeErrors).toHaveLength(1)
@@ -211,8 +211,8 @@ describe('fetch', () => {
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
             createInMemoryElementSource([newTypeBaseModifiedDifferentId, typeWithFieldDifferentID]),
-            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             createInMemoryElementSource([]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             [],
           )
           expect(Array.from(fetchChangesResult.changes).length).toBe(0)
@@ -225,8 +225,8 @@ describe('fetch', () => {
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
             createInMemoryElementSource([]),
-            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             createInMemoryElementSource([newTypeBaseDifferentAdapterID, typeWithFieldDifferentID]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             [],
           )
           expect(fetchChangesResult.elements).toEqual([newTypeBaseModifiedDifferentId,
@@ -257,8 +257,8 @@ describe('fetch', () => {
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
             createInMemoryElementSource([]),
-            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             createInMemoryElementSource([newTypeBaseDifferentAdapterID, typeWithFieldDifferentID]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             [],
           )
           expect(fetchChangesResult.elements).toEqual([newTypeBaseModifiedDifferentId])
@@ -300,8 +300,8 @@ describe('fetch', () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
           createInMemoryElementSource([beforeElement, workspaceReferencedElement]),
-          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createInMemoryElementSource([beforeElement, stateReferencedElement]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
 
@@ -342,8 +342,8 @@ describe('fetch', () => {
               new ObjectType({ elemID: new ElemID('dummy1', 'type') }),
               new ObjectType({ elemID: new ElemID('dummy2', 'type') }),
             ]),
-            { dummy1AccountName: 'dummy1', dummy2: 'dummy2' },
             createInMemoryElementSource([]),
+            { dummy1AccountName: 'dummy1', dummy2: 'dummy2' },
             [],
           )
           const resultChanges = Array.from(fetchChangesResult.changes)
@@ -390,7 +390,7 @@ describe('fetch', () => {
       }
 
       beforeEach(() => {
-        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+        mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
           { elements: [], updatedConfig: { config: [configInstance], message: 'test' } }
         )
       })
@@ -398,8 +398,8 @@ describe('fetch', () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
           createElementSource([]),
-          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
         expect(fetchChangesResult.configChanges).toBeDefined()
@@ -417,8 +417,8 @@ describe('fetch', () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
           createElementSource([]),
-          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [currentInstanceConfig],
         )
         expect(fetchChangesResult.configChanges).toBeDefined()
@@ -436,8 +436,8 @@ describe('fetch', () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
           createElementSource([]),
-          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [configInstance],
         )
         expect([...fetchChangesResult.configChanges?.itemsByEvalOrder() ?? []]).toHaveLength(0)
@@ -471,8 +471,8 @@ describe('fetch', () => {
           fetchChangesResult = await fetchChanges(
             mockAdapters,
             createElementSource([]),
-            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             createElementSource([]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             [],
           )
         })
@@ -505,8 +505,8 @@ describe('fetch', () => {
         const result = await fetchChanges(
           mockAdapters,
           createElementSource([newTypeMerged, hiddenInstanceAlternateId]),
-          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([newTypeMerged, hiddenInstanceAlternateId]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
         elements = result.elements
@@ -541,8 +541,8 @@ describe('fetch', () => {
         const result = await fetchChanges(
           mockAdapters,
           createElementSource([typeWithFieldDifferentID, hiddenInstanceAlternateId]),
-          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([typeWithFieldDifferentID, hiddenInstanceAlternateId]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
         changes = [...result.changes]
@@ -578,8 +578,8 @@ describe('fetch', () => {
           const result = await fetchChanges(
             mockAdapters,
             elementSource.createInMemoryElementSource([]),
-            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             elementSource.createInMemoryElementSource([]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             [],
             progressEmitter
           )
@@ -601,8 +601,8 @@ describe('fetch', () => {
           const result = await fetchChanges(
             mockAdapters,
             elementSource.createInMemoryElementSource([]),
-            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             elementSource.createInMemoryElementSource([]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             [],
             progressEmitter
           )
@@ -627,8 +627,8 @@ describe('fetch', () => {
         const result = await fetchChanges(
           mockAdapters,
           createElementSource([typeWithHiddenFieldAlternativeId]),
-          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
         changes = [...result.changes]
@@ -640,7 +640,7 @@ describe('fetch', () => {
         expect(changes[0].change).toMatchObject({ action: 'add',
           id: newTypeBaseDifferentAdapterID.elemID })
         expect(changes[1].change).toMatchObject({ action: 'add',
-          id: inst.elemID.createAdapterReplacedID(newTypeDifferentAdapterID.adapter) })
+          id: createAdapterReplacedID(inst.elemID, newTypeDifferentAdapterID.adapter) })
       })
     })
 
@@ -652,8 +652,8 @@ describe('fetch', () => {
         const result = await fetchChanges(
           mockAdapters,
           createElementSource([]),
-          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
         changes = [...result.changes]
@@ -684,8 +684,8 @@ describe('fetch', () => {
             const result = await fetchChanges(
               mockAdapters,
               createElementSource([newTypeBaseWPathDifferentID]),
-              { [newTypeDifferentAdapterID.adapter]: 'dummy' },
               createElementSource([newTypeBaseWPathDifferentID]),
+              { [newTypeDifferentAdapterID.adapter]: 'dummy' },
               [],
             )
             changes = [...result.changes]
@@ -726,8 +726,8 @@ describe('fetch', () => {
             const result = await fetchChanges(
               mockAdapters,
               createElementSource([expectedNewTypeA]),
-              { [newTypeDifferentAdapterID.adapter]: 'dummy1' },
               createElementSource([expectedNewTypeA]),
+              { [newTypeDifferentAdapterID.adapter]: 'dummy1' },
               [],
             )
             changes = [...result.changes]
@@ -751,8 +751,8 @@ describe('fetch', () => {
           const result = await fetchChanges(
             mockAdapters,
             createElementSource([typeWithFieldChangeDifferentID]),
-            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             createElementSource([typeWithFieldDifferentID]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             [],
           )
           changes = [...result.changes]
@@ -770,8 +770,8 @@ describe('fetch', () => {
           const result = await fetchChanges(
             mockAdapters,
             createElementSource([typeWithFieldConflictDifferentID]),
-            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             createElementSource([typeWithFieldDifferentID]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             [],
           )
           changes = [...result.changes]
@@ -790,8 +790,8 @@ describe('fetch', () => {
           const result = await fetchChanges(
             mockAdapters,
             createElementSource([]),
-            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             createElementSource([typeWithFieldDifferentID]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
             [],
           )
           changes = [...result.changes]
@@ -826,8 +826,8 @@ describe('fetch', () => {
         const result = await fetchChanges(
           mockAdapters,
           createElementSource([typeWithFieldChangeDifferentID]),
-          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([typeWithFieldDifferentID]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
         changes = [...result.changes]
@@ -850,8 +850,8 @@ describe('fetch', () => {
         const result = await fetchChanges(
           mockAdapters,
           createElementSource([typeWithFieldChangeDifferentID]),
-          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([typeWithFieldDifferentID]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
         changes = [...result.changes]
@@ -920,11 +920,11 @@ describe('fetch', () => {
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(2)
         const objectServiceId = Object.entries(serviceIdToStateElemId)[1][0]
         expect(objectServiceId)
-          .toEqual(`${ADAPTER},${obj.elemID.adapter},${SERVICE_ID_ANNOTATION},${obj.annotations[SERVICE_ID_ANNOTATION]}`)
+          .toEqual(`${SERVICE_ID_ANNOTATION},${obj.annotations[SERVICE_ID_ANNOTATION]}`)
         expect(Object.entries(serviceIdToStateElemId)[1][1]).toEqual(obj.elemID)
 
         expect(Object.entries(serviceIdToStateElemId)[0][0])
-          .toEqual(`${ADAPTER},${regularField.elemID.adapter},${OBJECT_SERVICE_ID},${objectServiceId},${SERVICE_ID_ANNOTATION},${regularField.annotations[SERVICE_ID_ANNOTATION]}`)
+          .toEqual(`${OBJECT_SERVICE_ID},${objectServiceId},${SERVICE_ID_ANNOTATION},${regularField.annotations[SERVICE_ID_ANNOTATION]}`)
         expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(regularField.elemID)
       })
       it('should generate for ObjectType and its fields with no SERVICE_ID annotations', async () => {
@@ -940,11 +940,11 @@ describe('fetch', () => {
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(2)
         const objectServiceId = Object.entries(serviceIdToStateElemId)[1][0]
         expect(objectServiceId)
-          .toEqual(`${ADAPTER},${obj.elemID.adapter},${SERVICE_ID_ANNOTATION},${obj.elemID.getFullName()}`)
+          .toEqual(`${SERVICE_ID_ANNOTATION},${obj.elemID.getFullName()}`)
         expect(Object.entries(serviceIdToStateElemId)[1][1]).toEqual(obj.elemID)
 
         expect(Object.entries(serviceIdToStateElemId)[0][0])
-          .toEqual(`${ADAPTER},${regularField.elemID.adapter},${OBJECT_SERVICE_ID},${objectServiceId},${SERVICE_ID_ANNOTATION},${regularField.elemID.getFullName()}`)
+          .toEqual(`${OBJECT_SERVICE_ID},${objectServiceId},${SERVICE_ID_ANNOTATION},${regularField.elemID.getFullName()}`)
         expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(regularField.elemID)
       })
       it('should generate for ObjectType and its fields with no SERVICE_ID annotations & annotationType', async () => {
@@ -962,11 +962,11 @@ describe('fetch', () => {
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(2)
         const objectServiceId = Object.entries(serviceIdToStateElemId)[1][0]
         expect(objectServiceId)
-          .toEqual(`${ADAPTER},${obj.elemID.adapter},${OBJECT_NAME},${obj.elemID.getFullName()}`)
+          .toEqual(`${OBJECT_NAME},${obj.elemID.getFullName()}`)
         expect(Object.entries(serviceIdToStateElemId)[1][1]).toEqual(obj.elemID)
 
         expect(Object.entries(serviceIdToStateElemId)[0][0])
-          .toEqual(`${ADAPTER},${regularField.elemID.adapter},${FIELD_NAME},${regularField.elemID.getFullName()},${OBJECT_SERVICE_ID},${objectServiceId}`)
+          .toEqual(`${FIELD_NAME},${regularField.elemID.getFullName()},${OBJECT_SERVICE_ID},${objectServiceId}`)
         expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(regularField.elemID)
       })
       it('should generate for InstanceElement with no SERVICE_ID value', async () => {
@@ -979,9 +979,9 @@ describe('fetch', () => {
         )
 
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(1)
-        const expectedObjectServiceId = `${ADAPTER},${obj.elemID.adapter},${SERVICE_ID_ANNOTATION},${obj.annotations[SERVICE_ID_ANNOTATION]}`
+        const expectedObjectServiceId = `${SERVICE_ID_ANNOTATION},${obj.annotations[SERVICE_ID_ANNOTATION]}`
         expect(Object.entries(serviceIdToStateElemId)[0][0])
-          .toEqual(`${ADAPTER},${instance.elemID.adapter},${OBJECT_SERVICE_ID},${expectedObjectServiceId},${SERVICE_ID_FIELD_NAME},${instance.elemID.getFullName()}`)
+          .toEqual(`${OBJECT_SERVICE_ID},${expectedObjectServiceId},${SERVICE_ID_FIELD_NAME},${instance.elemID.getFullName()}`)
         expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(instance.elemID)
       })
       it('should generate for InstanceElement', async () => {
@@ -993,9 +993,9 @@ describe('fetch', () => {
         )
 
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(1)
-        const expectedObjectServiceId = `${ADAPTER},${obj.elemID.adapter},${SERVICE_ID_ANNOTATION},${obj.annotations[SERVICE_ID_ANNOTATION]}`
+        const expectedObjectServiceId = `${SERVICE_ID_ANNOTATION},${obj.annotations[SERVICE_ID_ANNOTATION]}`
         expect(Object.entries(serviceIdToStateElemId)[0][0])
-          .toEqual(`${ADAPTER},${instance.elemID.adapter},${OBJECT_SERVICE_ID},${expectedObjectServiceId},${SERVICE_ID_FIELD_NAME},${instance.value[SERVICE_ID_FIELD_NAME]}`)
+          .toEqual(`${OBJECT_SERVICE_ID},${expectedObjectServiceId},${SERVICE_ID_FIELD_NAME},${instance.value[SERVICE_ID_FIELD_NAME]}`)
         expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(instance.elemID)
       })
       it('should generate for InstanceElement with no SERVICE_ID value & field', async () => {
@@ -1009,9 +1009,9 @@ describe('fetch', () => {
         )
 
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(1)
-        const expectedObjectServiceId = `${ADAPTER},${obj.elemID.adapter},${SERVICE_ID_ANNOTATION},${obj.annotations[SERVICE_ID_ANNOTATION]}`
+        const expectedObjectServiceId = `${SERVICE_ID_ANNOTATION},${obj.annotations[SERVICE_ID_ANNOTATION]}`
         expect(Object.entries(serviceIdToStateElemId)[0][0])
-          .toEqual(`${ADAPTER},${instance.elemID.adapter},${INSTANCE_NAME},${instance.elemID.getFullName()},${OBJECT_SERVICE_ID},${expectedObjectServiceId}`)
+          .toEqual(`${INSTANCE_NAME},${instance.elemID.getFullName()},${OBJECT_SERVICE_ID},${expectedObjectServiceId}`)
         expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(instance.elemID)
       })
     })
@@ -1024,8 +1024,8 @@ describe('fetch', () => {
         const result = await fetchChanges(
           mockAdapters,
           createElementSource([]),
-          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
         changes = [...result.changes]
@@ -1063,8 +1063,8 @@ describe('fetch', () => {
         await fetchChanges(
           mockAdapters,
           createElementSource([]),
-          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
         const passed = await awu(instancesPassed).toArray()
@@ -1095,8 +1095,8 @@ describe('fetch', () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
           createElementSource([typeWithFieldDifferentID]),
-          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([newTypeBaseDifferentAdapterID, typeWithFieldDifferentID]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
         expect(fetchChangesResult.elements).toEqual([newTypeBaseModifiedDifferentId,
@@ -1126,8 +1126,8 @@ describe('fetch', () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
           createElementSource([]),
-          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           createElementSource([newTypeBaseDifferentAdapterID, typeWithFieldDifferentID]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
           [],
         )
         expect(fetchChangesResult.elements).toEqual([newTypeBaseModifiedDifferentId])
@@ -1164,7 +1164,6 @@ describe('fetch', () => {
       const dummy2 = new ObjectType({ elemID: new ElemID('dummy2', 'type') })
       const dummy3 = new ObjectType({ elemID: new ElemID('dummy2', 'type') })
       const expectedDummy3ObjectAterRename = new ObjectType({ elemID: new ElemID('dummy3', 'type') })
-
       const dummy1Type1 = new ObjectType({ elemID: new ElemID('dummy1', 'd1t1'), fields: {} })
       const dummy2Type1 = new ObjectType({ elemID: new ElemID('dummy2', 'd2t1'), fields: {} })
       const dummy3Type1 = new ObjectType({ elemID: new ElemID('dummy2', 'd3t1'), fields: {} })
@@ -1180,14 +1179,12 @@ describe('fetch', () => {
         'listStr', new ListType(dummy3PrimStr))
       expectedDummy3Type1AfterRename.fields.listListStr = new Field(expectedDummy3Type1AfterRename,
         'listListStr', new ListType(new ListType(dummy3PrimStr)))
-      const listlistStrFieldInnerValue = expectedDummy3Type1AfterRename.fields.listListStr
-        .refType.value.refInnerType.resValue.refInnerType.resValue
-      const listStrFieldInnerValue = expectedDummy3Type1AfterRename.fields.listStr.refType.value
-        .refInnerType.resValue
-      _.set(listStrFieldInnerValue, 'elemID', listStrFieldInnerValue.elemID
-        .createAdapterReplacedID('dummy2'))
-      _.set(listlistStrFieldInnerValue, 'elemID', listlistStrFieldInnerValue.elemID
-        .createAdapterReplacedID('dummy2'))
+      // These next lines remove expectation from resolved values
+      expectedDummy3Type1AfterRename.fields.listListStr.refType.value = expect.anything()
+      _.set(expectedDummy3Type1AfterRename.fields.listListStr.refType, 'type', expect.anything())
+      expectedDummy3Type1AfterRename.fields.listStr.refType.value = expect.anything()
+      _.set(expectedDummy3Type1AfterRename.fields.listStr.refType, 'type', expect.anything())
+
 
       const adapters = {
         [expectedDummy1.elemID.adapter]: {
@@ -1213,8 +1210,8 @@ describe('fetch', () => {
         await fetchChanges(
           adapters,
           createElementSource([]),
-          { [expectedDummy1.elemID.adapter]: 'dummy1', dummy2: 'dummy2', dummy3: 'dummy2' },
           createElementSource([expectedDummy1, dummy2, dummy3]),
+          { [expectedDummy1.elemID.adapter]: 'dummy1', dummy2: 'dummy2', dummy3: 'dummy2' },
           [],
         )
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
@@ -1253,12 +1250,12 @@ describe('fetch', () => {
         await fetchChanges(
           _.pick(adapters, [expectedDummy1.elemID.adapter, 'dummy2']),
           createElementSource([]),
+          createElementSource([expectedDummy1, dummy2, expectedDummy3ObjectAterRename]),
           {
             [expectedDummy1.elemID.adapter]: 'dummy1',
             dummy2: 'dummy2',
             dummy3: 'dummy2',
           },
-          createElementSource([expectedDummy1, dummy2, expectedDummy3ObjectAterRename]),
           [],
         )
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
@@ -1285,12 +1282,12 @@ describe('fetch', () => {
         await expect(fetchChanges(
           _.pick(adapters, [expectedDummy1.elemID.adapter, 'dummy2']),
           createElementSource([]),
+          createElementSource([expectedDummy1, dummy2, expectedDummy3ObjectAterRename]),
           {
             [expectedDummy1.elemID.adapter]: 'dummy1',
             dummy2: 'dummy2',
             dummy3: 'dummy2',
           },
-          createElementSource([expectedDummy1, dummy2, expectedDummy3ObjectAterRename]),
           [],
         )).resolves.not.toThrow()
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({

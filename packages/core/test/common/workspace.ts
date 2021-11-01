@@ -87,6 +87,7 @@ export const mockWorkspace = ({
     envs: () => ['default'],
     currentEnv: () => 'default',
     services: () => services,
+    accounts: () => services,
     state: jest.fn().mockReturnValue(state),
     updateNaclFiles: jest.fn(),
     flush: jest.fn(),

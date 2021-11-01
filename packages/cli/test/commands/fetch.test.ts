@@ -239,7 +239,8 @@ describe('fetch command', () => {
           mockShouldUpdateConfig.mockResolvedValueOnce(Promise.resolve(true))
           result = await fetchCommand(fetchArgs)
           expect(result).toBe(CliExitCode.Success)
-          expect(fetchArgs.workspace.updateServiceConfig).toHaveBeenCalledWith('salesforce', [newConfig])
+          expect(fetchArgs.workspace.updateServiceConfig).toHaveBeenCalledWith('salesforce',
+            'salesforce', [newConfig])
         })
 
         it('should not write config when abort was requested', async () => {

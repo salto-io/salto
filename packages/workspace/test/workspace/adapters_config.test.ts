@@ -155,7 +155,7 @@ describe('adapters config', () => {
     expect(await configSource.getAdapter('salesforce')).toBeUndefined()
   })
   it('should set adapter in nacl files source with the default path', async () => {
-    await configSource.setAdapter('salesforce', new InstanceElement(
+    await configSource.setAdapter('salesforce', 'salesforce', new InstanceElement(
       ElemID.CONFIG_NAME,
       new ObjectType({
         elemID: new ElemID('salesforce', ElemID.CONFIG_NAME),
@@ -166,7 +166,7 @@ describe('adapters config', () => {
   })
 
   it('should set adapter in nacl files source with the config path', async () => {
-    await configSource.setAdapter('salesforce', new InstanceElement(
+    await configSource.setAdapter('salesforce', 'salesforce', new InstanceElement(
       ElemID.CONFIG_NAME,
       new ObjectType({
         elemID: new ElemID('salesforce', ElemID.CONFIG_NAME),
@@ -191,7 +191,7 @@ describe('adapters config', () => {
   })
 
   it('should remove undefined values when setting the configuration', async () => {
-    await configSource.setAdapter('salesforce', new InstanceElement(
+    await configSource.setAdapter('salesforce', 'salesforce', new InstanceElement(
       ElemID.CONFIG_NAME,
       new ObjectType({
         elemID: new ElemID('salesforce', ElemID.CONFIG_NAME),
@@ -217,7 +217,7 @@ describe('adapters config', () => {
     it('update to an overridden field should throw an exception', async () => {
       const conf = await configSource.getAdapter(SALESFORCE) as InstanceElement
       conf.value.overridden = 3
-      await expect(configSource.setAdapter(SALESFORCE, conf)).rejects.toThrow()
+      await expect(configSource.setAdapter(SALESFORCE, SALESFORCE, conf)).rejects.toThrow()
       expect(mockNaclFilesSource.updateNaclFiles).not.toHaveBeenCalled()
       expect(mockNaclFilesSource.flush).not.toHaveBeenCalled()
     })
@@ -225,7 +225,7 @@ describe('adapters config', () => {
     it('update a none overridden field should not throw an exception', async () => {
       const conf = await configSource.getAdapter(SALESFORCE) as InstanceElement
       conf.value.other = 3
-      await configSource.setAdapter(SALESFORCE, conf)
+      await configSource.setAdapter(SALESFORCE, SALESFORCE, conf)
       expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalled()
       expect(mockNaclFilesSource.flush).toHaveBeenCalled()
     })
@@ -233,7 +233,7 @@ describe('adapters config', () => {
     it('should call updateNaclFiles twice when there is no configuration', async () => {
       const conf = await configSource.getAdapter(SALESFORCE) as InstanceElement
       mockNaclFilesSource.get.mockResolvedValue(undefined)
-      await configSource.setAdapter(SALESFORCE, conf)
+      await configSource.setAdapter(SALESFORCE, SALESFORCE, conf)
       expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalledTimes(2)
       expect(mockNaclFilesSource.flush).toHaveBeenCalled()
     })

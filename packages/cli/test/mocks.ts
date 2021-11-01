@@ -371,6 +371,8 @@ export const mockWorkspace = ({
     getNaclFile: mockFunction<Workspace['getNaclFile']>(),
     setNaclFiles: mockFunction<Workspace['setNaclFiles']>(),
     removeNaclFiles: mockFunction<Workspace['removeNaclFiles']>(),
+    getServiceFromAccountName: mockFunction<Workspace['getServiceFromAccountName']>()
+      .mockImplementation(account => account),
     getSourceMap: mockFunction<Workspace['getSourceMap']>().mockResolvedValue(new parser.SourceMap()),
     getSourceRanges: mockFunction<Workspace['getSourceRanges']>().mockResolvedValue([]),
     getElementReferencedFiles: mockFunction<Workspace['getElementReferencedFiles']>().mockResolvedValue([]),
@@ -395,7 +397,6 @@ export const mockWorkspace = ({
     getStateRecency: mockFunction<Workspace['getStateRecency']>().mockImplementation(
       async serviceName => ({ serviceName, status: 'Nonexistent', date: undefined })
     ),
-    getServiceFromAccountName: mockFunction<Workspace['getServiceFromAccountName']>(),
     promote: mockFunction<Workspace['promote']>(),
     demote: mockFunction<Workspace['demote']>(),
     demoteAll: mockFunction<Workspace['demoteAll']>(),

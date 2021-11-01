@@ -16,11 +16,12 @@
 import _ from 'lodash'
 import path from 'path'
 import uuidv4 from 'uuid/v4'
-import { DetailedChange } from '@salto-io/adapter-api'
+import { DetailedChange, ObjectType } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, remoteMap,
   configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors,
-  COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource } from '@salto-io/workspace'
+  COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource, EnvConfig, updateElementsWithAlternativeAdapter } from '@salto-io/workspace'
+import { collections } from '@salto-io/lowerdash'
 import { localDirectoryStore } from './dir_store'
 import { CONFIG_DIR_NAME, getConfigDir, getLocalStoragePath } from '../app_config'
 import { localState } from './state'
@@ -30,6 +31,7 @@ import { createRemoteMapCreator } from './remote_map'
 import { getAdaptersConfigTypes } from '../core/adapters'
 import { buildLocalAdaptersConfigSource } from './adapters_config'
 
+const { awu } = collections.asynciterable
 const { configSource } = cs
 const { FILE_EXTENSION, naclFilesSource, ENVS_PREFIX } = nacl
 const { buildStaticFilesSource } = staticFiles
@@ -188,6 +190,22 @@ const credentialsSource = (localStorage: string): cs.ConfigSource =>
     encoding: 'utf8',
   }))
 
+const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<ObjectType[]> => {
+  const adapterConfigTypes = await getAdaptersConfigTypes()
+  const configTypesByAdapter = _.groupBy(adapterConfigTypes, type => type.elemID.adapter)
+  const differentlyNamedAccounts = Object.fromEntries(envs
+    .flatMap(env => Object
+      .entries(env.accountToServiceName ?? {}))
+    .filter(entry => entry[0] !== entry[1]))
+  await awu(Object.keys(differentlyNamedAccounts)).forEach(async account => {
+    const configCopies = configTypesByAdapter[differentlyNamedAccounts[account]].map(_.cloneDeep)
+    await updateElementsWithAlternativeAdapter(configCopies, account,
+      differentlyNamedAccounts[account])
+    configCopies.forEach(configCopy => adapterConfigTypes.push(configCopy))
+  })
+  return adapterConfigTypes
+}
+
 export const loadLocalWorkspace = async (
   lookupDir: string, configOverrides?: DetailedChange[], persistent = true
 ): Promise<Workspace> => {
@@ -196,6 +214,7 @@ export const loadLocalWorkspace = async (
     throw new NotAWorkspaceError()
   }
   const workspaceConfig = await workspaceConfigSource(baseDir, undefined)
+  const { envs } = await workspaceConfig.getWorkspaceConfig()
   const cacheDirName = path.join(workspaceConfig.localStorage, CACHE_DIR_NAME)
   const remoteMapCreator = createRemoteMapCreator(cacheDirName)
   const adaptersConfig = await buildLocalAdaptersConfigSource(
@@ -203,16 +222,16 @@ export const loadLocalWorkspace = async (
     workspaceConfig.localStorage,
     remoteMapCreator,
     persistent,
-    await getAdaptersConfigTypes(),
+    await getAdapterConfigsPerAccount(envs),
     configOverrides,
   )
-  const envs = (await workspaceConfig.getWorkspaceConfig()).envs.map(e => e.name)
+  const envNames = envs.map(e => e.name)
   const credentials = credentialsSource(workspaceConfig.localStorage)
 
   const elemSources = await loadLocalElementsSources(
     baseDir,
     workspaceConfig.localStorage,
-    envs,
+    envNames,
     remoteMapCreator,
     persistent
   )

@@ -270,7 +270,6 @@ export const deployMetadata = async (
     // Skip deploy if there are no valid changes
     return { appliedChanges: [], errors: validationErrors }
   }
-
   const changeToDeployedIds: Record<string, MetadataIdsMap> = {}
   await awu(validChanges).forEach(async change => {
     const deployedIds = await addChangeToPackage(pkg, change, nestedMetadataTypes)

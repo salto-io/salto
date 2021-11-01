@@ -161,18 +161,19 @@ export const fetchCommand = async (
       wu(fetchResult.configChanges.itemsByEvalOrder()).map(planItem => async () => {
         const [change] = planItem.changes()
         const newConfig = getChangeElement(change)
-        const adapterName = newConfig.elemID.adapter
+        const accountName = newConfig.elemID.adapter
         if (!isInstanceElement(newConfig)) {
-          log.error('Got non instance config from adapter %s - %o', adapterName, newConfig)
+          log.error('Got non instance config from adapter %s - %o', accountName, newConfig)
           return false
         }
         const shouldWriteToConfig = force || await shouldUpdateConfig(
           output,
-          fetchResult.adapterNameToConfigMessage?.[adapterName] || '',
+          fetchResult.adapterNameToConfigMessage?.[accountName] || '',
           planItem,
         )
         if (shouldWriteToConfig) {
-          await workspace.updateServiceConfig(adapterName, fetchResult.updatedConfig[adapterName])
+          await workspace.updateServiceConfig(accountName, workspace
+            .getServiceFromAccountName(accountName), fetchResult.updatedConfig[accountName])
         }
         return !shouldWriteToConfig
       })

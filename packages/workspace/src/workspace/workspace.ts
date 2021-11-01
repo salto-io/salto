@@ -122,6 +122,8 @@ export type Workspace = {
   envs: () => ReadonlyArray<string>
   currentEnv: () => string
   accounts: (env?: string) => string[]
+  // services is deprecated, kept for backwards compatibility. use accounts.
+  // Remove this when no longer used, https://salto-io.atlassian.net/jira/software/c/projects/SALTO/issues/SALTO-1661
   services: (env?: string) => string[]
   servicesCredentials: (names?: ReadonlyArray<string>) =>
     Promise<Readonly<Record<string, InstanceElement>>>
@@ -169,6 +171,7 @@ export type Workspace = {
   clear: (args: ClearFlags) => Promise<void>
   addAccount: (service: string, account?: string) => Promise<void>
   // addService is deprecated, kept for backwards compatibility. use addAccount.
+  // Remove this when no longer used, https://salto-io.atlassian.net/jira/software/c/projects/SALTO/issues/SALTO-1661
   addService: (service: string, account?: string) => Promise<void>
   addEnvironment: (
     env: string,
@@ -179,7 +182,8 @@ export type Workspace = {
   setCurrentEnv: (env: string, persist?: boolean) => Promise<void>
   updateServiceCredentials: (service: string, creds: Readonly<InstanceElement>) => Promise<void>
   updateServiceConfig: (
-    service: string,
+    account: string,
+    adapter: string,
     newConfig: Readonly<InstanceElement> | Readonly<InstanceElement>[]
   ) => Promise<void>
   getServiceFromAccountName: (account: string) => string
@@ -1015,8 +1019,8 @@ export const loadWorkspace = async (
       async (account: string, servicesCredentials: Readonly<InstanceElement>): Promise<void> =>
         credentials.set(credsPath(account), servicesCredentials),
     updateServiceConfig:
-      async (service, newConfig) => {
-        await adaptersConfig.setAdapter(service, newConfig)
+      async (account, service, newConfig) => {
+        await adaptersConfig.setAdapter(account, service, newConfig)
       },
     getServiceFromAccountName: (account: string): string => {
       const serviceName = currentEnvConf().accountToServiceName[account]

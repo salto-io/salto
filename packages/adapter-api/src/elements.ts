@@ -183,16 +183,9 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
       && this.refInnerType.elemID.isEqual(other.refInnerType.elemID) && isListType(other)
   }
 
-  clone(_annotations?: Values): ListType {
+  clone(): ListType {
     return new ListType(
       new TypeReference(this.refInnerType.elemID, this.refInnerType.type)
-    )
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  createWithInnerType(ref: TypeReference): ListType {
-    return new ListType(
-      new TypeReference(ref.elemID, ref.type)
     )
   }
 
@@ -255,13 +248,6 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
   clone(_annotations?: Values): MapType {
     return new MapType(
       new TypeReference(this.refInnerType.elemID, this.refInnerType.type)
-    )
-  }
-
-  // eslint-disable-next-line class-methods-use-this
-  createWithInnerType(ref: TypeReference): MapType {
-    return new MapType(
-      new TypeReference(ref.elemID, ref.type)
     )
   }
 

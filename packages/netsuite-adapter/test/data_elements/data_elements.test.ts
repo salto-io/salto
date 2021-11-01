@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ADAPTER, BuiltinTypes, ElemID, ElemIdGetter, Field, InstanceElement, ObjectType, OBJECT_NAME, OBJECT_SERVICE_ID, toServiceIdsString } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, ElemIdGetter, Field, InstanceElement, ObjectType, OBJECT_NAME, OBJECT_SERVICE_ID, toServiceIdsString } from '@salto-io/adapter-api'
 import * as soap from 'soap'
 import Bottleneck from 'bottleneck'
 import { elements as elementsComponents } from '@salto-io/adapter-components'
@@ -302,10 +302,8 @@ describe('data_elements', () => {
         if (adapterName === NETSUITE
           && name === 'name'
           && _.isEqual(serviceIds, {
-            [ADAPTER]: NETSUITE,
             name: 'name',
             [OBJECT_SERVICE_ID]: toServiceIdsString({
-              [ADAPTER]: NETSUITE,
               [OBJECT_NAME]: 'netsuite.subsidiary',
             }),
           })) {

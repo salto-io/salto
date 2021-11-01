@@ -90,7 +90,7 @@ const getAccountToServiceNameMap = (workspace: Workspace,
 
 export const preview = async (
   workspace: Workspace,
-  accounts = workspace.services(),
+  accounts = workspace.accounts(),
 ): Promise<Plan> => {
   const stateElements = workspace.state()
   const adapters = await getAdapters(
@@ -250,8 +250,8 @@ export const fetch: FetchFunc = async (
   } = await fetchChanges(
     adapters,
     await workspace.elements(),
-    accountToServiceNameMap,
     workspace.state(),
+    accountToServiceNameMap,
     currentConfigs,
     progressEmitter,
   )
@@ -390,15 +390,15 @@ export const installAdapter = async (adapterName: string):
 export const addAdapter = async (
   workspace: Workspace,
   adapterName: string,
-  accountID?: string,
+  accountName?: string,
 ): Promise<AdapterAuthentication> => {
   const adapter = getAdapterCreator(adapterName)
-  await workspace.addService(adapterName, accountID)
-
-  if (_.isUndefined((await workspace.serviceConfig(adapterName)))) {
-    const defaultConfig = await getDefaultAdapterConfig(adapterName)
+  await workspace.addService(adapterName, accountName)
+  const adapterAccountName = accountName ?? adapterName
+  if (_.isUndefined((await workspace.serviceConfig(adapterAccountName)))) {
+    const defaultConfig = await getDefaultAdapterConfig(adapterName, adapterAccountName)
     if (!_.isUndefined(defaultConfig)) {
-      await workspace.updateServiceConfig(adapterName, defaultConfig)
+      await workspace.updateServiceConfig(adapterAccountName, adapterName, defaultConfig)
     }
   }
   return adapter.authenticationMethods
@@ -407,17 +407,20 @@ export const addAdapter = async (
 export type LoginStatus = { configTypeOptions: AdapterAuthentication; isLoggedIn: boolean }
 export const getLoginStatuses = async (
   workspace: Workspace,
-  accountIDs = workspace.services(),
+  accounts = workspace.accounts(),
 ): Promise<Record<string, LoginStatus>> => {
-  const creds = await workspace.servicesCredentials(accountIDs)
-  const logins = _.mapValues(getAdaptersCredentialsTypes(accountIDs),
-    async (configTypeOptions, adapter) =>
-      ({
-        configTypeOptions,
-        isLoggedIn: !!creds[adapter],
-      }))
-
-  return promises.object.resolveValues(logins)
+  const creds = await workspace.servicesCredentials(accounts)
+  const accountToServiceMap = Object.fromEntries(accounts.map(account => [account,
+    workspace.getServiceFromAccountName(account)]))
+  const logins = _.mapValues(getAdaptersCredentialsTypes(_.uniq(Object
+    .values(accountToServiceMap))),
+  async (configTypeOptions, adapter) =>
+    ({
+      configTypeOptions,
+      isLoggedIn: !!creds[adapter],
+    }))
+  return promises.object.resolveValues(Object.fromEntries(accounts.map(account => [account,
+    logins[accountToServiceMap[account]]])))
 }
 
 export const getSupportedServiceAdapterNames = (): string[] => Object.keys(adapterCreators)

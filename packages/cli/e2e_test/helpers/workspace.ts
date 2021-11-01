@@ -63,7 +63,7 @@ expect.extend({
 export type ReplacementPair = [string | RegExp, string]
 
 const { parse } = parser
-const services = ['salesforce']
+const accounts = ['e2esalesforce']
 
 const mockCliOutput = (): CliOutput =>
   ({ stdout: new MockWriteStream(), stderr: new MockWriteStream() })
@@ -133,13 +133,13 @@ export const runInit = async (
 
 export const runAddSalesforceService = async (workspacePath: string): Promise<void> => {
   await runCommand({
-    workspacePath, args: ['service', 'add', 'salesforce'],
+    workspacePath, args: ['service', 'add', 'salesforce', '--account', accounts[0]],
   })
 }
 
 export const runSalesforceLogin = async (workspacePath: string): Promise<void> => {
   await runCommand({
-    workspacePath, args: ['service', 'login', 'salesforce'],
+    workspacePath, args: ['service', 'login', accounts[0]],
   })
 }
 
@@ -180,7 +180,7 @@ export const runFetch = async (
     workspacePath: fetchOutputDir,
     args: [
       'fetch',
-      '-f',
+      '-f', 'v',
       ...inputEnvironment ? ['-e', inputEnvironment] : [],
       '-m', isolated ? 'isolated' : 'override',
       ...(configOverrides ?? []).flatMap(override => ['-C', override]),
@@ -242,7 +242,7 @@ export const loadValidWorkspace = async (fetchOutputDir: string): Promise<Worksp
 
 export const runPreviewGetPlan = async (fetchOutputDir: string): Promise<Plan> => {
   const workspace = await loadLocalWorkspace(fetchOutputDir)
-  return preview(workspace, services)
+  return preview(workspace, accounts)
 }
 
 const getChangedElementName = (change: Change): string => getChangeElement(change).elemID.name

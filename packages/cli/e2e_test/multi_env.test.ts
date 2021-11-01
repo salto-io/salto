@@ -43,6 +43,8 @@ import * as templates from './helpers/templates'
 const { awu } = collections.asynciterable
 const { dumpElements } = parser
 
+const SALESFORCE_ACCOUNT_NAME = 'e2esalesforce'
+
 describe('multi env tests', () => {
   jest.setTimeout(15 * 60 * 1000)
 
@@ -64,28 +66,29 @@ describe('multi env tests', () => {
     path.join(saltoHomeDir, '*')
   )
   const commonObjectDir = (): string => (
-    path.join(baseDir, 'salesforce', 'Objects')
+    path.join(baseDir, SALESFORCE_ACCOUNT_NAME, 'Objects')
   )
   const commonInstanceDir = (): string => (
-    path.join(baseDir, 'salesforce', 'Records', 'Role')
+    path.join(baseDir, SALESFORCE_ACCOUNT_NAME, 'Records', 'Role')
   )
   const env1ObjectDir = (): string => (
-    path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'Objects')
+    path.join(baseDir, 'envs', ENV1_NAME, SALESFORCE_ACCOUNT_NAME, 'Objects')
   )
   const env2ObjectDir = (): string => (
-    path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'Objects')
+    path.join(baseDir, 'envs', ENV2_NAME, SALESFORCE_ACCOUNT_NAME, 'Objects')
   )
   const env1InstanceDir = (): string => (
-    path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'Records', 'Role')
+    path.join(baseDir, 'envs', ENV1_NAME, SALESFORCE_ACCOUNT_NAME, 'Records', 'Role')
   )
   const env2InstanceDir = (): string => (
-    path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'Records', 'Role')
+    path.join(baseDir, 'envs', ENV2_NAME, SALESFORCE_ACCOUNT_NAME, 'Records', 'Role')
   )
   const workspaceConfigFilePath = (): string => (
     path.join(baseDir, 'salto.config', 'workspace.nacl')
   )
   const adapterConfigsFilePath = (): string => (
-    path.join(baseDir, 'salto.config', 'adapters', 'salesforce', 'salesforce.nacl')
+    path.join(baseDir, 'salto.config', 'adapters', SALESFORCE_ACCOUNT_NAME,
+      `${SALESFORCE_ACCOUNT_NAME}.nacl`)
   )
   const workspaceUserConfigFilePath = (): string => (
     path.join(homeWSDir(), 'workspaceUser.nacl')
@@ -124,56 +127,66 @@ describe('multi env tests', () => {
   const commonInst = templates.instance({
     instName: commonInstName,
     description: 'Common instance',
+    accountName: SALESFORCE_ACCOUNT_NAME,
   })
 
   const env1Inst = templates.instance({
     instName: env1InstName,
     description: 'Common instance',
+    accountName: SALESFORCE_ACCOUNT_NAME,
   })
 
   const env2Inst = templates.instance({
     instName: env2InstName,
     description: 'Common instance',
+    accountName: SALESFORCE_ACCOUNT_NAME,
   })
 
   const diffInstEnv1 = templates.instance({
     instName: commonInstWithDiffName,
     description: 'Common instance Env 1',
+    accountName: SALESFORCE_ACCOUNT_NAME,
   })
 
   const diffInstEnv2 = templates.instance({
     instName: commonInstWithDiffName,
     description: 'Common instance Env 2',
+    accountName: SALESFORCE_ACCOUNT_NAME,
   })
 
   const commonObj = templates.customObject({
     objName: commonObjName,
     alphaLabel: 'alpha',
     betaLabel: 'beta',
+    accountName: SALESFORCE_ACCOUNT_NAME,
   })
 
   const env1Obj = templates.customObject({
     objName: env1ObjName,
     alphaLabel: 'alpha',
     betaLabel: 'beta',
+    accountName: SALESFORCE_ACCOUNT_NAME,
   })
 
   const env2Obj = templates.customObject({
     objName: env2ObjName,
     alphaLabel: 'alpha',
     betaLabel: 'beta',
+    accountName: SALESFORCE_ACCOUNT_NAME,
   })
 
   const diffObjEnv1 = templates.customObject({
     objName: commonWithDiffName,
     alphaLabel: 'alpha1',
     betaLabel: 'beta1',
+    accountName: SALESFORCE_ACCOUNT_NAME,
   })
 
   const diffObjEnv2 = templates.customObject({
     objName: commonWithDiffName,
     alphaLabel: 'alpha2',
     betaLabel: 'beta2',
+    accountName: SALESFORCE_ACCOUNT_NAME,
   })
 
   const env1Elements = [commonObj, env1Obj, diffObjEnv1, commonInst, env1Inst, diffInstEnv1]
@@ -341,10 +354,12 @@ describe('multi env tests', () => {
       objName: objToSyncFromServiceName,
       alphaLabel: 'alpha2',
       betaLabel: 'beta2',
+      accountName: SALESFORCE_ACCOUNT_NAME,
     })
     const instToSyncFromService = templates.instance({
       instName: instToSyncFromServiceName,
       description: 'This was created on the service',
+      accountName: SALESFORCE_ACCOUNT_NAME,
     })
     const elementsAddedToService = [objToSyncFromService, instToSyncFromService]
     let fromSyncToRemove: typeof elementsAddedToService
@@ -469,19 +484,19 @@ describe('multi env tests', () => {
     const commonNaclFileInstName = `CommonInstNacl${tempID}`
     const env1NaclFileInstName = `Env1InstNacl${tempID}`
     const env2NaclFileInstName = `Env2InstNacl${tempID}`
-    const commonNaclFileName = (): string => path.join(baseDir, 'salesforce', 'common.nacl')
+    const commonNaclFileName = (): string => path.join(baseDir, SALESFORCE_ACCOUNT_NAME, 'common.nacl')
     const env1NaclFileName = (): string => path.join(
       baseDir,
       'envs',
       ENV1_NAME,
-      'salesforce',
+      SALESFORCE_ACCOUNT_NAME,
       'env1.nacl'
     )
     const env2NaclFileName = (): string => path.join(
       baseDir,
       'envs',
       ENV2_NAME,
-      'salesforce',
+      SALESFORCE_ACCOUNT_NAME,
       'env2.nacl'
     )
 
@@ -492,10 +507,12 @@ describe('multi env tests', () => {
             objName: commonNaclFileObjectName,
             alphaLabel: 'alpha1',
             betaLabel: 'beta1',
+            accountName: SALESFORCE_ACCOUNT_NAME,
           }),
           templates.instance({
             instName: commonNaclFileInstName,
             description: 'Common from Nacl',
+            accountName: SALESFORCE_ACCOUNT_NAME,
           }),
         ])
         const env1NaclFile = await dumpElements([
@@ -503,10 +520,12 @@ describe('multi env tests', () => {
             objName: env1NaclFileObjectName,
             alphaLabel: 'alpha1',
             betaLabel: 'beta1',
+            accountName: SALESFORCE_ACCOUNT_NAME,
           }),
           templates.instance({
             instName: env1NaclFileInstName,
             description: 'Env1 from Nacl',
+            accountName: SALESFORCE_ACCOUNT_NAME,
           }),
         ])
         const env2NaclFile = await dumpElements([
@@ -514,10 +533,12 @@ describe('multi env tests', () => {
             objName: env2NaclFileObjectName,
             alphaLabel: 'alpha1',
             betaLabel: 'beta1',
+            accountName: SALESFORCE_ACCOUNT_NAME,
           }),
           templates.instance({
             instName: env2NaclFileInstName,
             description: 'Env2 from Nacl',
+            accountName: SALESFORCE_ACCOUNT_NAME,
           }),
         ])
         await writeFile(commonNaclFileName(), commonNaclFile)

@@ -17,13 +17,13 @@ import _ from 'lodash'
 import {
   AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
   Adapter, AdapterAuthentication, Element, ReadOnlyElementsSource, GLOBAL_ADAPTER, ObjectType,
+  ServiceIds,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { merger } from '@salto-io/workspace'
+import { createAdapterReplacedID, merger, updateElementsWithAlternativeAdapter } from '@salto-io/workspace'
 import { values, collections } from '@salto-io/lowerdash'
 import { elements } from '@salto-io/adapter-components'
-import { updateElementsWithAlternativeAdapter } from '../fetch'
 import adapterCreators from './creators'
 
 const { awu } = collections.asynciterable
@@ -78,31 +78,76 @@ export const getAdaptersConfigTypes = async (): Promise<ObjectType[]> => {
 }
 
 export const getDefaultAdapterConfig = async (
-  adapterName: string
+  adapterName: string,
+  accountName: string,
 ): Promise<InstanceElement[] | undefined> => {
   const { getDefaultConfig } = adapterCreators[adapterName]
+  let defaultConf: InstanceElement[] | undefined
   if (getDefaultConfig !== undefined) {
-    return getDefaultConfig()
+    defaultConf = await getDefaultConfig()
+  } else {
+    const adapterConf = await getAdapterConfigFromType(adapterName)
+    defaultConf = adapterConf && [adapterConf]
   }
-
-  const defaultConf = await getAdapterConfigFromType(adapterName)
-  return defaultConf && [defaultConf]
+  if (defaultConf && adapterName !== accountName) {
+    defaultConf = _.cloneDeep(defaultConf)
+    defaultConf = defaultConf.map(conf => conf.clone())
+    await updateElementsWithAlternativeAdapter(defaultConf, accountName, adapterName)
+  }
+  return defaultConf
 }
 
 const getMergedDefaultAdapterConfig = async (
-  adapter: string
+  adapter: string,
+  accountName: string,
 ): Promise<InstanceElement | undefined> => {
-  const defaultConfig = await getDefaultAdapterConfig(adapter)
+  const defaultConfig = await getDefaultAdapterConfig(adapter, accountName)
   return defaultConfig && merger.mergeSingleElement(defaultConfig)
 }
 
-const filterElementsSourceAdapter = (
+export const createElemIDReplacedElementsSource = (
   elementsSource: ReadOnlyElementsSource,
   account: string,
-  accountIDToServiceName: Record<string, string>,
+  adapter: string,
+): ReadOnlyElementsSource => ({
+  getAll: async () => {
+    if (account !== adapter) {
+      const sourceElements = await awu(await elementsSource.getAll()).toArray()
+      await updateElementsWithAlternativeAdapter(sourceElements, adapter, account, elementsSource)
+      return awu(sourceElements)
+    }
+    return elementsSource.getAll()
+  },
+  get: async id => {
+    if (account !== adapter) {
+      if (id.adapter !== adapter) {
+        return undefined
+      }
+      const element = await elementsSource.get(createAdapterReplacedID(id, account))
+      if (element) {
+        await updateElementsWithAlternativeAdapter([element], adapter, account, elementsSource)
+      }
+      return element
+    }
+    return elementsSource.get(id)
+  },
+  list: async () =>
+    awu(await elementsSource.list()).map(id => createAdapterReplacedID(id, adapter)),
+  has: async id => {
+    if (id.adapter !== adapter) {
+      return false
+    }
+    const transformedId = createAdapterReplacedID(id, account)
+    return elementsSource.has(transformedId)
+  },
+})
+
+const filterElementsSource = (
+  elementsSource: ReadOnlyElementsSource,
+  adapterName: string,
 ): ReadOnlyElementsSource => {
   const isRelevantID = (elemID: ElemID): boolean =>
-    (elemID.adapter === account || elemID.adapter === GLOBAL_ADAPTER)
+    (elemID.adapter === adapterName || elemID.adapter === GLOBAL_ADAPTER)
   return {
     getAll: async () => {
       async function *getElements(): AsyncIterable<Element> {
@@ -112,28 +157,9 @@ const filterElementsSourceAdapter = (
           }
         }
       }
-      if (account !== accountIDToServiceName[account]) {
-        const elements = await awu(getElements()).toArray()
-        await updateElementsWithAlternativeAdapter(elements,
-          accountIDToServiceName[account], account)
-        return awu(elements)
-      }
       return getElements()
     },
-    get: async id => {
-      if (account !== accountIDToServiceName[account]) {
-        if (id.adapter !== accountIDToServiceName[account]) {
-          return undefined
-        }
-        const element = await elementsSource.get(id.createAdapterReplacedID(account))
-        if (element) {
-          await updateElementsWithAlternativeAdapter([element],
-            accountIDToServiceName[account], account)
-        }
-        return element
-      }
-      return isRelevantID(id) ? elementsSource.get(id) : undefined
-    },
+    get: async id => (isRelevantID(id) ? elementsSource.get(id) : undefined),
     list: async () => {
       async function *getIds(): AsyncIterable<ElemID> {
         for await (const element of await elementsSource.getAll()) {
@@ -142,15 +168,9 @@ const filterElementsSourceAdapter = (
           }
         }
       }
-      return awu(getIds()).map(id => id.createAdapterReplacedID(accountIDToServiceName[account]))
+      return awu(getIds())
     },
-    has: async id => {
-      if (id.adapter !== accountIDToServiceName[account]) {
-        return false
-      }
-      const transformedId = id.createAdapterReplacedID(account)
-      return elementsSource.has(transformedId)
-    },
+    has: async id => elementsSource.has(id),
   }
 }
 
@@ -164,21 +184,36 @@ export const getAdaptersCreatorConfigs = async (
   getConfig: AdapterConfigGetter,
   elementsSource: ReadOnlyElementsSource,
   accountIDToServiceName: Record<string, string>,
-  elemIdGetter?: ElemIdGetter,
+  elemIdGetters: Record<string, ElemIdGetter> = {},
 ): Promise<Record<string, AdapterOperationsContext>> => (
   Object.fromEntries(await Promise.all(accounts.map(
-    async account => [
-      account,
-      {
-        credentials: credentials[account],
-        config: await getConfig(account, await getMergedDefaultAdapterConfig(
-          accountIDToServiceName[account]
-        )),
-        elementsSource: filterElementsSourceAdapter(elementsSource,
-          account, accountIDToServiceName),
-        getElemIdFunc: elemIdGetter,
-      },
-    ]
+    async account => {
+      const defaultConfig = await getMergedDefaultAdapterConfig(accountIDToServiceName[account],
+        account)
+      if (defaultConfig && account !== accountIDToServiceName[account]) {
+        await updateElementsWithAlternativeAdapter(
+          [defaultConfig],
+          account,
+          accountIDToServiceName[account],
+          elementsSource,
+        )
+      }
+      return [
+        account,
+        {
+          credentials: credentials[account],
+          config: await getConfig(account, defaultConfig),
+          elementsSource: createElemIDReplacedElementsSource(filterElementsSource(
+            elementsSource, accountIDToServiceName[account]
+          ), account, accountIDToServiceName[account]),
+          getElemIdFunc: (elemIdGetters[account]
+            ? ((adapterIds: string, serviceIds: ServiceIds,
+              name: string) => createAdapterReplacedID(elemIdGetters[account](
+              adapterIds, serviceIds, name,
+            ), accountIDToServiceName[account])) : undefined),
+        },
+      ]
+    }
   )))
 )
 
@@ -188,7 +223,7 @@ export const getAdapters = async (
   getConfig: AdapterConfigGetter,
   workspaceElementsSource: ReadOnlyElementsSource,
   accountIDToServiceName: Record<string, string>,
-  elemIdGetter?: ElemIdGetter,
+  elemIdGetters: Record<string, ElemIdGetter> = {},
 ): Promise<Record<string, AdapterOperations>> =>
   initAdapters(await getAdaptersCreatorConfigs(
     adapters,
@@ -196,5 +231,5 @@ export const getAdapters = async (
     getConfig,
     workspaceElementsSource,
     accountIDToServiceName,
-    elemIdGetter
+    elemIdGetters
   ), accountIDToServiceName)

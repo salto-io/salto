@@ -68,21 +68,27 @@ const fetchEmployeeNames = async (client: NetsuiteClient): Promise<Record<string
   return {}
 }
 
+const getWhereQueryPart = (recordType: string): string => {
+  // file and folder types have system notes without record type ids
+  // but have a prefix in the field column.
+  if (recordType === FILE_TYPE) {
+    return 'field LIKE \'MEDIAITEM.%\''
+  }
+  if (recordType === FOLDER_TYPE) {
+    return 'field LIKE \'MEDIAITEMFOLDER.%\''
+  }
+  return `recordtypeid = '${recordType}'`
+}
+
 const buildSystemNotesQuery = (instances: InstanceElement[]): string | undefined => {
   const recordTypeIds = _.uniq(instances
     .map(instance => TYPES_TO_INTERNAL_ID[instance.elemID.typeName]))
   if (_.isEmpty(recordTypeIds)) {
     return undefined
   }
-  let whereQuery = recordTypeIds
-    .filter(recordType => recordType !== FILE_TYPE && recordType !== FOLDER_TYPE)
-    .map(recordType => `recordtypeid = '${recordType}'`)
+  const whereQuery = recordTypeIds
+    .map(getWhereQueryPart)
     .join(' OR ')
-  // file and folder types have system notes without record type ids
-  if (recordTypeIds.includes(FILE_TYPE) || recordTypeIds.includes(FOLDER_TYPE)) {
-    whereQuery += ' OR recordtypeid IS NULL'
-  }
-
   return `SELECT name, field, recordid, recordtypeid FROM systemnote WHERE ${whereQuery} ORDER BY date DESC`
 }
 

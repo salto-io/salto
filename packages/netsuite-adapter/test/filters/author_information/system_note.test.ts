@@ -15,7 +15,7 @@
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import filterCreator, { FOLDER_FIELD_IDENTIFIER } from '../../../src/filters/author_information/system_note'
+import filterCreator, { FILE_FIELD_IDENTIFIER, FOLDER_FIELD_IDENTIFIER } from '../../../src/filters/author_information/system_note'
 import { FILE, FOLDER, NETSUITE } from '../../../src/constants'
 import NetsuiteClient from '../../../src/client/client'
 import { FilterOpts } from '../../../src/filter'
@@ -54,7 +54,7 @@ describe('netsuite system note author information', () => {
       { recordid: '1', recordtypeid: '-123', field: '', name: '2' },
       { recordid: '2', recordtypeid: '-112', field: '', name: '3' },
       { recordid: '2', field: FOLDER_FIELD_IDENTIFIER, name: '3' },
-      { recordid: '2', field: '', name: '3' },
+      { recordid: '2', field: FILE_FIELD_IDENTIFIER, name: '3' },
     ])
     accountInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
     accountInstance.value.internalId = '1'

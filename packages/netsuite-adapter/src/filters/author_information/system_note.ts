@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
-import { FILE_TYPE, FOLDER_TYPE, TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
+import { TYPES_TO_INTERNAL_ID as ORIGINAL_TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
 import NetsuiteClient from '../../client/client'
 import { FilterCreator, FilterWith } from '../../filter'
 import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA } from './constants'
@@ -29,6 +29,16 @@ const log = logger(module)
 const UNDERSCORE = '_'
 export const FILE_FIELD_IDENTIFIER = 'MEDIAITEM.'
 export const FOLDER_FIELD_IDENTIFIER = 'MEDIAITEMFOLDER.'
+const FILE_TYPE = 'FILE_TYPE'
+const FOLDER_TYPE = 'FOLDER_TYPE'
+const TYPES_TO_INTERNAL_ID: Record<string, string> = {
+  ...ORIGINAL_TYPES_TO_INTERNAL_ID,
+  // types not found in the documentation but added later manually.
+  role: '-264',
+  // types without record type id that are given new ids.
+  file: FILE_TYPE,
+  folder: FOLDER_TYPE,
+}
 
 const getRecordIdAndTypeStringKey = (recordId: string, recordTypeId: string): string =>
   `${recordId}${UNDERSCORE}${recordTypeId}`

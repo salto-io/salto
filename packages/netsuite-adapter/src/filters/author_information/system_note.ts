@@ -143,7 +143,7 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
       const employeeId = systemNotes[
         getRecordIdAndTypeStringKey(instance.value.internalId,
           TYPES_TO_INTERNAL_ID[instance.elemID.typeName])]
-      if (isDefined(employeeId)) {
+      if (isDefined(employeeId) && isDefined(employeeNames[employeeId])) {
         instance.annotate(
           { [CORE_ANNOTATIONS.CHANGED_BY]: employeeNames[employeeId] }
         )

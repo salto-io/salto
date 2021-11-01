@@ -1039,8 +1039,8 @@ describe('fetch', () => {
       it('changes should be equal to the service elements', () => {
         expect(getChangeElement(changes[0].change)).toEqual(typeWithFieldDifferentID)
         const expectedHiddenInstanceAlternateId = hiddenInstanceAlternateId.clone()
-        expectedHiddenInstanceAlternateId.refType = expectedHiddenInstanceAlternateId
-          .refType.clone()
+        expectedHiddenInstanceAlternateId.refType = _.clone(expectedHiddenInstanceAlternateId
+          .refType)
         expectedHiddenInstanceAlternateId.refType.value = expect.anything()
         // refType's type property is not supposed to be transformed, so we don't assert on it.
         _.set(expectedHiddenInstanceAlternateId.refType, 'type', expect.anything())
@@ -1069,8 +1069,8 @@ describe('fetch', () => {
         )
         const passed = await awu(instancesPassed).toArray()
         const expectedHiddenInstanceAlternateId = hiddenInstanceAlternateId.clone()
-        expectedHiddenInstanceAlternateId.refType = expectedHiddenInstanceAlternateId
-          .refType.clone()
+        expectedHiddenInstanceAlternateId.refType = _.clone(expectedHiddenInstanceAlternateId
+          .refType)
         expectedHiddenInstanceAlternateId.refType.value = expect.anything()
         // refType's type property is not supposed to be transformed, so we don't assert on it.
         _.set(expectedHiddenInstanceAlternateId.refType, 'type', expect.anything())

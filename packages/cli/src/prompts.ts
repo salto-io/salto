@@ -329,6 +329,7 @@ ${Prompts.LIST_IDS(ids)}
   ${source} -> ${target}`
 
   public static readonly RENAME_ELEMENT_REFERENCES = (source: string): string => `Renaming all references of ${source}`
+  public static readonly RENAME_FILES_CHANGES = (filesChangesCount: number): string => `${filesChangesCount} nacl files changed`
 
   public static readonly FINISHED_SUCCESSFULLY = (): string => 'Finished successfully!'
 

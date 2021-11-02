@@ -28,6 +28,7 @@ import { isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
 import { getUserBooleanInput } from '../callbacks'
+import { UpdateNaclFilesResult } from '@salto-io/workspace/src/workspace/workspace'
 
 const { awu } = collections.asynciterable
 
@@ -631,11 +632,14 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
     return CliExitCode.UserInputError
   }
 
+  let result: UpdateNaclFilesResult
   const renameElementChanges = await getRenameElementChanges(workspace, sourceElemId, targetElemId)
   outputLine(Prompts.RENAME_ELEMENT(sourceElemId.getFullName(), targetElemId.getFullName()), output)
-  await workspace.updateNaclFiles(await renameElementChanges.getElementChanges())
+  result = await workspace.updateNaclFiles(await renameElementChanges.getElementChanges())
+  outputLine(Prompts.RENAME_FILES_CHANGES(result.naclFilesChangesCount), output)
   outputLine(Prompts.RENAME_ELEMENT_REFERENCES(sourceElemId.getFullName()), output)
-  await workspace.updateNaclFiles(await renameElementChanges.getReferencesChanges())
+  result = await workspace.updateNaclFiles(await renameElementChanges.getReferencesChanges())
+  outputLine(Prompts.RENAME_FILES_CHANGES(result.naclFilesChangesCount), output)
 
   const targetElement = await workspace.getValue(targetElemId)
   await workspace.state().set(targetElement)
@@ -651,7 +655,7 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
 const renameElementsDef = createWorkspaceCommand({
   properties: {
     name: 'rename',
-    description: 'Rename an element',
+    description: 'Rename an element (currently supporting ObjectType only)',
     positionalOptions: [
       {
         name: 'sourceElementId',
@@ -661,7 +665,7 @@ const renameElementsDef = createWorkspaceCommand({
       },
       {
         name: 'targetElementId',
-        description: 'Target name of the element',
+        description: 'Target element ID of the element',
         type: 'string',
         required: true,
       },

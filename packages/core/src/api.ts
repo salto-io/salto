@@ -407,14 +407,11 @@ export const getLoginStatuses = async (
 
 export const getSupportedServiceAdapterNames = (): string[] => Object.keys(adapterCreators)
 
-export const getRenameElementChanges = async (
+const renameElementIdChecks = async (
   workspace: Workspace,
   sourceElemId: ElemID,
   targetElemId: ElemID
-): Promise<{
-  getElementChanges: () => Promise<DetailedChange[]>
-  getReferencesChanges: () => Promise<DetailedChange[]>
-}> => {
+): Promise<void> => {
   if (sourceElemId.getFullName() === targetElemId.getFullName()) {
     throw new Error(`Source and target element ids are the same: ${sourceElemId.getFullName()}`)
   }
@@ -429,6 +426,17 @@ export const getRenameElementChanges = async (
   if (await workspace.getValue(targetElemId) !== undefined) {
     throw new Error(`Element ${targetElemId.getFullName()} already exists`)
   }
+}
+
+export const getRenameElementChanges = async (
+  workspace: Workspace,
+  sourceElemId: ElemID,
+  targetElemId: ElemID
+): Promise<{
+  getElementChanges: () => Promise<DetailedChange[]>
+  getReferencesChanges: () => Promise<DetailedChange[]>
+}> => {
+  await renameElementIdChecks(workspace, sourceElemId, targetElemId)
 
   const getElementChanges = async (): Promise<DetailedChange[]> => {
     const source = await workspace.getValue(sourceElemId)

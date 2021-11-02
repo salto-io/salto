@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import open from 'open'
 import { ElemID, isElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { Workspace, ElementSelector, createElementSelectors, FromSource } from '@salto-io/workspace'
+import { Workspace, ElementSelector, createElementSelectors, FromSource, UpdateNaclFilesResult } from '@salto-io/workspace'
 import { getRenameElementChanges, getEnvsDeletionsDiff } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -28,7 +28,6 @@ import { isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
 import { getUserBooleanInput } from '../callbacks'
-import { UpdateNaclFilesResult } from '@salto-io/workspace/src/workspace/workspace'
 
 const { awu } = collections.asynciterable
 

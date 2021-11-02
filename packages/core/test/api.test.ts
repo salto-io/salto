@@ -579,13 +579,14 @@ describe('api.ts', () => {
       const beforeRef = new ReferenceExpression(sourceElemId)
       const afterRef = new ReferenceExpression(targetElemId)
 
-      const renameElementChanges = await api.getRenameElementChanges(ws, sourceElemId, targetElemId)
       const removeChange = { id: sourceElemId, action: 'remove', data: { before: sourceElement } }
       const addChange = { id: targetElemId, action: 'add', data: { after: targetElement } }
       const refChange = { id: refElemId, action: 'modify', data: { before: beforeRef, after: afterRef } }
 
-      expect(await renameElementChanges.getElementChanges()).toEqual([removeChange, addChange])
-      expect(await renameElementChanges.getReferencesChanges()).toEqual([refChange])
+      expect(await api.getRenameElementChanges(ws, sourceElemId, targetElemId))
+        .toEqual([removeChange, addChange])
+      expect(await api.getRenameReferencesChanges(ws, sourceElemId, targetElemId))
+        .toEqual([refChange])
     })
     it('should throw when source and target ids are the same', async () =>
       expect(api.getRenameElementChanges(ws, sourceElemId, sourceElemId))
@@ -604,10 +605,7 @@ describe('api.ts', () => {
     it('should throw when sourceElementId doesn\'t exists', async () => {
       const notSourceElemId = new ElemID(sourceElemId.adapter, `not${sourceElemId.typeName}`, sourceElemId.idType)
       const targetElemId = new ElemID(sourceElemId.adapter, `tmp4${sourceElemId.typeName}`, sourceElemId.idType)
-      const renameElementChanges = await api.getRenameElementChanges(
-        ws, notSourceElemId, targetElemId
-      )
-      return expect(renameElementChanges.getElementChanges())
+      return expect(api.getRenameElementChanges(ws, notSourceElemId, targetElemId))
         .rejects.toThrow(`Did not find any matches for element ${notSourceElemId.getFullName()}`)
     })
     it('should throw when source is not ObjectType', async () => {
@@ -615,10 +613,7 @@ describe('api.ts', () => {
         .find(e => !isObjectType(e)) as Element).elemID
       const targetElemId = new ElemID(notObjectType.adapter, `tmp${notObjectType.typeName}`, notObjectType.idType,
         ...notObjectType.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS))
-      const renameElementChanges = await api.getRenameElementChanges(
-        ws, notObjectType, targetElemId
-      )
-      return expect(renameElementChanges.getElementChanges())
+      return expect(api.getRenameElementChanges(ws, notObjectType, targetElemId))
         .rejects.toThrow(`Currently supporting ObjectType only (${notObjectType.getFullName()} is of type '${notObjectType.idType}')`)
     })
   })

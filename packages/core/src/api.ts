@@ -407,24 +407,45 @@ export const getLoginStatuses = async (
 
 export const getSupportedServiceAdapterNames = (): string[] => Object.keys(adapterCreators)
 
-const renameElementIdChecks = async (
-  workspace: Workspace,
+export class RenameElementIdError extends Error {
+  constructor(message: string) {
+    super(message)
+    Object.setPrototypeOf(this, RenameElementIdError.prototype)
+  }
+}
+
+const renameElementIdChecks = (
   sourceElemId: ElemID,
   targetElemId: ElemID
-): Promise<void> => {
+): void => {
   if (sourceElemId.getFullName() === targetElemId.getFullName()) {
-    throw new Error(`Source and target element ids are the same: ${sourceElemId.getFullName()}`)
+    throw new RenameElementIdError(`Source and target element ids are the same: ${sourceElemId.getFullName()}`)
   }
 
   if (sourceElemId.adapter !== targetElemId.adapter
     || sourceElemId.idType !== targetElemId.idType
     || !_.isEqual(sourceElemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
       targetElemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS))) {
-    throw new Error(`Currently supporting renaming the element's typeName only (${sourceElemId.adapter}.${sourceElemId.typeName} -> ${sourceElemId.adapter}.${targetElemId.typeName})`)
+    throw new RenameElementIdError(`Currently supporting renaming the element's typeName only (${sourceElemId.adapter}.${sourceElemId.typeName} -> ${sourceElemId.adapter}.${targetElemId.typeName})`)
+  }
+}
+
+const renameElementChecks = async (
+  workspace: Workspace,
+  sourceElement: Element,
+  sourceElemId: ElemID,
+  targetElemId: ElemID
+): Promise<void> => {
+  if (sourceElement === undefined || !isElement(sourceElement)) {
+    throw new RenameElementIdError(`Did not find any matches for element ${sourceElemId.getFullName()}`)
+  }
+
+  if (!isObjectType(sourceElement)) {
+    throw new RenameElementIdError(`Currently supporting ObjectType only (${sourceElemId.getFullName()} is of type '${sourceElemId.idType}')`)
   }
 
   if (await workspace.getValue(targetElemId) !== undefined) {
-    throw new Error(`Element ${targetElemId.getFullName()} already exists`)
+    throw new RenameElementIdError(`Element ${targetElemId.getFullName()} already exists`)
   }
 }
 
@@ -432,83 +453,76 @@ export const getRenameElementChanges = async (
   workspace: Workspace,
   sourceElemId: ElemID,
   targetElemId: ElemID
-): Promise<{
-  getElementChanges: () => Promise<DetailedChange[]>
-  getReferencesChanges: () => Promise<DetailedChange[]>
-}> => {
-  await renameElementIdChecks(workspace, sourceElemId, targetElemId)
+): Promise<DetailedChange[]> => {
+  renameElementIdChecks(sourceElemId, targetElemId)
 
-  const getElementChanges = async (): Promise<DetailedChange[]> => {
-    const source = await workspace.getValue(sourceElemId)
-    if (source === undefined || !isElement(source)) {
-      throw new Error(`Did not find any matches for element ${sourceElemId.getFullName()}`)
+  const source = await workspace.getValue(sourceElemId)
+  await renameElementChecks(workspace, source, sourceElemId, targetElemId)
+
+  const target = new ObjectType({
+    ...source,
+    elemID: targetElemId,
+    annotationRefsOrTypes: source.annotationRefTypes,
+  })
+
+  return [
+    {
+      id: sourceElemId,
+      action: 'remove',
+      data: { before: source },
+    },
+    {
+      id: targetElemId,
+      action: 'add',
+      data: { after: target },
+    },
+  ]
+}
+
+export const getRenameReferencesChanges = async (
+  workspace: Workspace,
+  sourceElemId: ElemID,
+  targetElemId: ElemID
+): Promise<DetailedChange[]> => {
+  renameElementIdChecks(sourceElemId, targetElemId)
+
+  const sourceElemIdFullNameParts = sourceElemId.getFullNameParts()
+  const getReferences = (element: Element): WalkOnFuncArgs[] => {
+    const references: WalkOnFuncArgs[] = []
+    const func: WalkOnFunc = ({ value, path }) => {
+      if (isReferenceExpression(value) && _.isEqual(sourceElemIdFullNameParts,
+        value.elemID.getFullNameParts().slice(0, sourceElemIdFullNameParts.length))) {
+        references.push({ value, path })
+        return WALK_NEXT_STEP.SKIP
+      }
+      return WALK_NEXT_STEP.RECURSE
     }
-
-    if (!isObjectType(source)) {
-      throw new Error(`Currently supporting ObjectType only (${sourceElemId.getFullName()} is of type '${sourceElemId.idType}')`)
-    }
-
-    const target = new ObjectType({
-      ...source,
-      elemID: targetElemId,
-      annotationRefsOrTypes: source.annotationRefTypes,
-    })
-
-    return [
-      {
-        id: sourceElemId,
-        action: 'remove',
-        data: { before: source },
-      },
-      {
-        id: targetElemId,
-        action: 'add',
-        data: { after: target },
-      },
-    ]
+    walkOnElement({ element, func })
+    return references
   }
 
-  const getReferencesChanges = async (): Promise<DetailedChange[]> => {
-    const sourceElemIdFullNameParts = sourceElemId.getFullNameParts()
-    const getReferences = (element: Element): WalkOnFuncArgs[] => {
-      const references: WalkOnFuncArgs[] = []
-      const func: WalkOnFunc = ({ value, path }) => {
-        if (isReferenceExpression(value) && _.isEqual(sourceElemIdFullNameParts,
-          value.elemID.getFullNameParts().slice(0, sourceElemIdFullNameParts.length))) {
-          references.push({ value, path })
-          return WALK_NEXT_STEP.SKIP
-        }
-        return WALK_NEXT_STEP.RECURSE
-      }
-      walkOnElement({ element, func })
-      return references
+  const allElements = await awu(await (await workspace.elements()).getAll()).toArray()
+  const references = allElements.map(e => getReferences(e)).flat()
+
+  return references.map((r): DetailedChange => {
+    const targetReference = new ReferenceExpression(
+      new ElemID(
+        r.value.elemID.adapter,
+        targetElemId.typeName,
+        r.value.elemID.idType,
+        ...r.value.elemID.getFullNameParts()
+          .slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS)
+      ),
+      r.value.resValue,
+      r.value.topLevelParent
+    )
+    return {
+      id: r.path,
+      action: 'modify',
+      data: {
+        before: r.value,
+        after: targetReference,
+      },
     }
-
-    const allElements = await awu(await (await workspace.elements()).getAll()).toArray()
-    const references = allElements.map(e => getReferences(e)).flat()
-
-    return references.map((r): DetailedChange => {
-      const targetReference = new ReferenceExpression(
-        new ElemID(
-          r.value.elemID.adapter,
-          targetElemId.typeName,
-          r.value.elemID.idType,
-          ...r.value.elemID.getFullNameParts()
-            .slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS)
-        ),
-        r.value.resValue,
-        r.value.topLevelParent
-      )
-      return {
-        id: r.path,
-        action: 'modify',
-        data: {
-          before: r.value,
-          after: targetReference,
-        },
-      }
-    })
-  }
-
-  return { getElementChanges, getReferencesChanges }
+  })
 }

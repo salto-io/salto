@@ -17,7 +17,7 @@ import _ from 'lodash'
 import open from 'open'
 import { ElemID, isElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { Workspace, ElementSelector, createElementSelectors, FromSource, UpdateNaclFilesResult } from '@salto-io/workspace'
-import { getRenameElementChanges, getEnvsDeletionsDiff } from '@salto-io/core'
+import { getRenameElementChanges, getRenameReferencesChanges, getEnvsDeletionsDiff, RenameElementIdError } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
@@ -624,6 +624,7 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
   if (!validWorkspace) {
     return CliExitCode.AppError
   }
+  outputLine(emptyLine(), output)
 
   const sourceElemId = safeGetElementId(sourceElementId, output)
   const targetElemId = safeGetElementId(targetElementId, output)
@@ -632,13 +633,32 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
   }
 
   let result: UpdateNaclFilesResult
-  const renameElementChanges = await getRenameElementChanges(workspace, sourceElemId, targetElemId)
-  outputLine(Prompts.RENAME_ELEMENT(sourceElemId.getFullName(), targetElemId.getFullName()), output)
-  result = await workspace.updateNaclFiles(await renameElementChanges.getElementChanges())
-  outputLine(Prompts.RENAME_FILES_CHANGES(result.naclFilesChangesCount), output)
-  outputLine(Prompts.RENAME_ELEMENT_REFERENCES(sourceElemId.getFullName()), output)
-  result = await workspace.updateNaclFiles(await renameElementChanges.getReferencesChanges())
-  outputLine(Prompts.RENAME_FILES_CHANGES(result.naclFilesChangesCount), output)
+  let filesChanged = 0
+  try {
+    result = await workspace.updateNaclFiles(
+      await getRenameElementChanges(workspace, sourceElemId, targetElemId)
+    )
+    outputLine(Prompts.RENAME_ELEMENT(
+      sourceElemId.getFullName(), targetElemId.getFullName()
+    ), output)
+    filesChanged += result.naclFilesChangesCount
+
+    result = await workspace.updateNaclFiles(
+      await getRenameReferencesChanges(workspace, sourceElemId, targetElemId)
+    )
+    outputLine(Prompts.RENAME_ELEMENT_REFERENCES(
+      sourceElemId.getFullName()
+    ), output)
+    filesChanged += result.naclFilesChangesCount
+
+    outputLine(Prompts.RENAME_FILES_CHANGES(filesChanged), output)
+  } catch (error) {
+    if (error instanceof RenameElementIdError) {
+      errorOutputLine(error.message, output)
+      return CliExitCode.UserInputError
+    }
+    throw error
+  }
 
   const targetElement = await workspace.getValue(targetElemId)
   await workspace.state().set(targetElement)

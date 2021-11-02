@@ -1345,8 +1345,8 @@ Moving the specified elements to common.
         })
 
         workspace.getValue
-          .mockResolvedValueOnce(undefined)
           .mockResolvedValueOnce(sourceElement)
+          .mockResolvedValueOnce(undefined)
           .mockResolvedValueOnce(targetElement)
         result = await renameAction({
           ...mocks.mockCliCommandArgs(commandName, cliArgs),

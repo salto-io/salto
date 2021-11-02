@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import open from 'open'
-import { ElemID, isElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ElemID, isElement, CORE_ANNOTATIONS, DetailedChange } from '@salto-io/adapter-api'
 import { Workspace, ElementSelector, createElementSelectors, FromSource, UpdateNaclFilesResult } from '@salto-io/workspace'
 import { getRenameElementChanges, getRenameReferencesChanges, getEnvsDeletionsDiff, RenameElementIdError } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
@@ -634,6 +634,7 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
 
   let result: UpdateNaclFilesResult
   let filesChanged = 0
+  let refChanges: DetailedChange[]
   try {
     result = await workspace.updateNaclFiles(
       await getRenameElementChanges(workspace, sourceElemId, targetElemId)
@@ -643,15 +644,12 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
     ), output)
     filesChanged += result.naclFilesChangesCount
 
-    result = await workspace.updateNaclFiles(
-      await getRenameReferencesChanges(workspace, sourceElemId, targetElemId)
-    )
+    refChanges = await getRenameReferencesChanges(workspace, sourceElemId, targetElemId)
+    result = await workspace.updateNaclFiles(refChanges)
     outputLine(Prompts.RENAME_ELEMENT_REFERENCES(
       sourceElemId.getFullName()
     ), output)
     filesChanged += result.naclFilesChangesCount
-
-    outputLine(Prompts.RENAME_FILES_CHANGES(filesChanged), output)
   } catch (error) {
     if (error instanceof RenameElementIdError) {
       errorOutputLine(error.message, output)
@@ -663,6 +661,20 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
   const targetElement = await workspace.getValue(targetElemId)
   await workspace.state().set(targetElement)
   await workspace.state().delete(sourceElemId)
+
+  const elementsToReload = _.uniqBy(
+    refChanges.map(reference => reference.id.createTopLevelParentID().parent),
+    (elemId: ElemID): string => elemId.getFullName()
+  )
+
+  await Promise.all(elementsToReload.map(async elemId => {
+    const element = await workspace.getValue(elemId)
+    await workspace.state().delete(elemId)
+    await workspace.state().set(element)
+  }))
+
+  outputLine(Prompts.RENAME_ELEMENTS_AFFECTED(elementsToReload.length), output)
+  outputLine(Prompts.RENAME_FILES_CHANGES(filesChanged), output)
 
   await workspace.flush()
 

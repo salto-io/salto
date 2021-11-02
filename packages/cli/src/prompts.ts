@@ -325,10 +325,11 @@ ${Prompts.LIST_IDS(ids)}
   public static readonly LIST_UNRESOLVED_FOUND = (env: string): string => `The following unresolved references can be copied from ${env}:`
   public static readonly LIST_UNRESOLVED_MISSING = (): string => 'The following unresolved references could not be found:'
 
-  public static readonly RENAME_ELEMENT = (source: string, target: string): string => `Renaming the following element:
+  public static readonly RENAME_ELEMENT = (source: string, target: string): string => `The following element was renamed:
   ${source} -> ${target}`
 
-  public static readonly RENAME_ELEMENT_REFERENCES = (source: string): string => `Renaming all references of ${source}`
+  public static readonly RENAME_ELEMENT_REFERENCES = (source: string): string => `Renamed all references of ${source}:`
+  public static readonly RENAME_ELEMENTS_AFFECTED = (elementsAffected: number): string => `  ${elementsAffected} elements affected`
   public static readonly RENAME_FILES_CHANGES = (filesChangesCount: number): string => `${filesChangesCount} nacl files changed in total`
 
   public static readonly FINISHED_SUCCESSFULLY = (): string => 'Finished successfully!'

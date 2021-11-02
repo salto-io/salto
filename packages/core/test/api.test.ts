@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
+import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, ReferenceExpression } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
@@ -561,25 +561,31 @@ describe('api.ts', () => {
   describe('getRenameElementChanges', () => {
     let ws: workspace.Workspace
     let sourceElemId: ElemID
-    let sourceElement: Element
     beforeAll(async () => {
       const workspaceElements = mockElements.getAllElements()
-      sourceElement = workspaceElements.find(isObjectType) as ObjectType
-      sourceElemId = sourceElement.elemID
       ws = mockWorkspace({ elements: workspaceElements })
+      sourceElemId = new ElemID('salto', 'employee')
     })
     it('should return changes', async () => {
+      const sourceElement = await ws.getValue(sourceElemId)
       const targetElemId = new ElemID(sourceElemId.adapter, `tmp4${sourceElemId.typeName}`, sourceElemId.idType)
       const targetElement = new ObjectType({
         ...sourceElement,
         elemID: targetElemId,
         annotationRefsOrTypes: sourceElement.annotationRefTypes,
       })
+
+      const refElemId = new ElemID('salto', 'employeeChildren', 'field', 'parent', 'referenceTo', '0')
+      const beforeRef = new ReferenceExpression(sourceElemId)
+      const afterRef = new ReferenceExpression(targetElemId)
+
       const renameElementChanges = await api.getRenameElementChanges(ws, sourceElemId, targetElemId)
       const removeChange = { id: sourceElemId, action: 'remove', data: { before: sourceElement } }
       const addChange = { id: targetElemId, action: 'add', data: { after: targetElement } }
+      const refChange = { id: refElemId, action: 'modify', data: { before: beforeRef, after: afterRef } }
+
       expect(await renameElementChanges.getElementChanges()).toEqual([removeChange, addChange])
-      expect(await renameElementChanges.getReferencesChanges()).toEqual([])
+      expect(await renameElementChanges.getReferencesChanges()).toEqual([refChange])
     })
     it('should throw when source and target ids are the same', async () =>
       expect(api.getRenameElementChanges(ws, sourceElemId, sourceElemId))

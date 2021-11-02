@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, BuiltinTypes, ElemID, ObjectType, InstanceElement, PrimitiveType, ListType, MapType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, BuiltinTypes, ElemID, ObjectType, InstanceElement, PrimitiveType, ListType, MapType, ReferenceExpression } from '@salto-io/adapter-api'
 
 type AllElementsTypes = [PrimitiveType, ObjectType, ObjectType,
-    ObjectType, InstanceElement, ListType, MapType]
+    ObjectType, InstanceElement, ListType, MapType, ObjectType]
 export const getAllElements = (): AllElementsTypes => {
   const addrElemID = new ElemID('salto', 'address')
   const saltoAddr = new ObjectType({
@@ -90,6 +90,29 @@ export const getAllElements = (): AllElementsTypes => {
     },
   })
 
+  const employeeChildrenElemID = new ElemID('salto', 'employeeChildren')
+  const saltoEmployeeChildren = new ObjectType({
+    elemID: employeeChildrenElemID,
+    fields: {
+      name: {
+        refType: BuiltinTypes.STRING,
+        annotations: { _required: true },
+      },
+      nicknames: {
+        refType: stringListType,
+        annotations: {},
+      },
+      age: {
+        refType: BuiltinTypes.NUMBER,
+        annotations: { _required: true },
+      },
+      parent: {
+        refType: saltoEmployee,
+        annotations: { referenceTo: [new ReferenceExpression(employeeElemID)] },
+      },
+    },
+  })
+
   const saltoEmployeeInstance = new InstanceElement(
     'instance',
     saltoEmployee,
@@ -97,5 +120,5 @@ export const getAllElements = (): AllElementsTypes => {
   )
 
   return [BuiltinTypes.STRING, saltoAddr, saltoOffice,
-    saltoEmployee, saltoEmployeeInstance, stringListType, stringMapType]
+    saltoEmployee, saltoEmployeeInstance, stringListType, stringMapType, saltoEmployeeChildren]
 }

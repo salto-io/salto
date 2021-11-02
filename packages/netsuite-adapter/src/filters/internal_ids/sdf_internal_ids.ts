@@ -28,10 +28,26 @@ type RecordIdResult = {
   id: string
 }
 
-const getTableName = (element: Element): string =>
-  // This is currently the only way of finding the table, In some cases
-  // the typeName of an element wont be it's table name.
-  element.elemID.typeName
+const CUSTOM_FIELD = 'customfield'
+
+const TYPE_NAMES_TO_TABLE_NAME: Record<string, string> = {
+  entitycustomfield: CUSTOM_FIELD,
+  transactionbodycustomfield: CUSTOM_FIELD,
+  itemcustomfield: CUSTOM_FIELD,
+  crmcustomfield: CUSTOM_FIELD,
+  itemnumbercustomfield: CUSTOM_FIELD,
+  itemoptioncustomfield: CUSTOM_FIELD,
+  transactioncolumncustomfield: CUSTOM_FIELD,
+  othercustomfield: CUSTOM_FIELD,
+  sspapplication: 'webapp',
+}
+
+const getTableName = (element: Element): string => {
+  if (element.elemID.typeName in TYPE_NAMES_TO_TABLE_NAME) {
+    return TYPE_NAMES_TO_TABLE_NAME[element.elemID.typeName]
+  }
+  return element.elemID.typeName
+}
 
 const queryRecordIds = async (client: NetsuiteClient, query: string, recordType: string):
 Promise<RecordIdResult[]> => {
@@ -76,7 +92,7 @@ const fetchRecordType = async (
   if (_.isUndefined(recordTypeIds) || _.isEmpty(recordTypeIds)) {
     return {}
   }
-  return Object.fromEntries(recordTypeIds.map(entry => [entry.scriptid, entry.id]))
+  return Object.fromEntries(recordTypeIds.map(entry => [entry.scriptid.toLowerCase(), entry.id]))
 }
 
 const fetchRecordIdsForRecordType = async (

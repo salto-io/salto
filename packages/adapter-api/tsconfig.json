@@ -14,5 +14,6 @@
     "references": [
         { "path": "../dag" },
         { "path": "../lowerdash" },
+        { "path": "../logging" },
     ]
 }

@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import open from 'open'
-import { ElemID, ObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, CORE_ANNOTATIONS, isObjectType } from '@salto-io/adapter-api'
 import { errors, UnresolvedElemIDs, createElementSelector } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { CliExitCode } from '../../src/types'
-import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction, openAction, listAction } from '../../src/commands/element'
+import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction, openAction, listAction, renameAction } from '../../src/commands/element'
 import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
 import Prompts from '../../src/prompts'
@@ -1294,6 +1294,71 @@ Moving the specified elements to common.
 
       it('should print to stdout', () => {
         expect(output.stdout.content).toContain('The following configuration elements were found')
+      })
+    })
+  })
+
+  describe('rename command', () => {
+    const commandName = 'rename'
+
+    describe('with invalid element ids', () => {
+      let result: CliExitCode
+      let workspace: mocks.MockWorkspace
+      let output: mocks.MockCliOutput
+      beforeAll(async () => {
+        const cliArgs = mocks.mockCliArgs()
+        output = cliArgs.output
+        workspace = mocks.mockWorkspace({})
+        result = await renameAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
+          input: {
+            sourceElementId: 'salto.object',
+            targetElementId: 'salto.object.notId',
+          },
+          workspace,
+        })
+      })
+      it('should fail', () => {
+        expect(result).toEqual(CliExitCode.UserInputError)
+        expect(output.stderr.content).toEqual('Cannot create ID salto.object.notId - Invalid ID type notId\n')
+      })
+    })
+    describe('valid rename', () => {
+      let result: CliExitCode
+      let workspace: mocks.MockWorkspace
+      let allElements: Element[]
+      let sourceElement: ObjectType
+      let targetElement: ObjectType
+
+      beforeAll(async () => {
+        const cliArgs = mocks.mockCliArgs()
+        workspace = mocks.mockWorkspace({})
+
+        allElements = await awu(await (await workspace.elements()).getAll()).toArray()
+        sourceElement = allElements.find(isObjectType) as ObjectType
+        const sourceElemId = sourceElement.elemID
+        const targetElemId = new ElemID(sourceElemId.adapter, `${sourceElemId.typeName}2`, sourceElemId.idType)
+        targetElement = new ObjectType({
+          ...sourceElement,
+          elemID: targetElemId,
+          annotationRefsOrTypes: sourceElement.annotationRefTypes,
+        })
+
+        workspace.getValue
+          .mockResolvedValueOnce(undefined)
+          .mockResolvedValueOnce(sourceElement)
+          .mockResolvedValueOnce(targetElement)
+        result = await renameAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
+          input: {
+            sourceElementId: sourceElemId.getFullName(),
+            targetElementId: targetElemId.getFullName(),
+          },
+          workspace,
+        })
+      })
+      it('should return success code', () => {
+        expect(result).toBe(CliExitCode.Success)
       })
     })
   })

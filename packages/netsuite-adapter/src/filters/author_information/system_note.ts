@@ -31,14 +31,22 @@ export const FILE_FIELD_IDENTIFIER = 'MEDIAITEM.'
 export const FOLDER_FIELD_IDENTIFIER = 'MEDIAITEMFOLDER.'
 const FILE_TYPE = 'FILE_TYPE'
 const FOLDER_TYPE = 'FOLDER_TYPE'
-const TYPES_TO_INTERNAL_ID: Record<string, string> = {
+
+
+// types not found in the documentation but added later manually.
+// entitycustomfield: FIELD_TYPE, // lowercase
+// customlist: '-123', // same as customList but with lowercase... should find better option
+// itemcustomfield: FIELD_TYPE, // lowercase
+// crmcustomfield: FIELD_TYPE, // lowercase
+// types without record type id that are given new ids.
+
+
+const TYPES_TO_INTERNAL_ID: Record<string, string> = _.mapKeys({
   ...ORIGINAL_TYPES_TO_INTERNAL_ID,
-  // types not found in the documentation but added later manually.
-  role: '-264',
-  // types without record type id that are given new ids.
+  // Types without record type id that are given new ids.
   file: FILE_TYPE,
   folder: FOLDER_TYPE,
-}
+}, key => key.toLowerCase())
 
 const getRecordIdAndTypeStringKey = (recordId: string, recordTypeId: string): string =>
   `${recordId}${UNDERSCORE}${recordTypeId}`
@@ -80,8 +88,8 @@ const fetchEmployeeNames = async (client: NetsuiteClient): Promise<Record<string
 }
 
 const getWhereQueryPart = (recordType: string): string => {
-  // file and folder types have system notes without record type ids
-  // but have a prefix in the field column.
+  // File and folder types have system notes without record type ids,
+  // But they have a prefix in the field column.
   if (recordType === FILE_TYPE) {
     return `field LIKE '${FILE_FIELD_IDENTIFIER}%'`
   }
@@ -93,7 +101,7 @@ const getWhereQueryPart = (recordType: string): string => {
 
 const buildSystemNotesQuery = (instances: InstanceElement[]): string | undefined => {
   const recordTypeIds = _.uniq(instances
-    .map(instance => TYPES_TO_INTERNAL_ID[instance.elemID.typeName]))
+    .map(instance => TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()]))
   if (_.isEmpty(recordTypeIds)) {
     return undefined
   }
@@ -136,7 +144,7 @@ const getInstancesWithInternalIds = (elements: Element[]): InstanceElement[] =>
   elements
     .filter(isInstanceElement)
     .filter(instance => isDefined(instance.value.internalId))
-    .filter(instance => instance.elemID.typeName in TYPES_TO_INTERNAL_ID)
+    .filter(instance => instance.elemID.typeName.toLowerCase() in TYPES_TO_INTERNAL_ID)
 
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
   onFetch: async elements => {
@@ -159,7 +167,7 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
     instancesWithInternalId.forEach(instance => {
       const employeeId = systemNotes[
         getRecordIdAndTypeStringKey(instance.value.internalId,
-          TYPES_TO_INTERNAL_ID[instance.elemID.typeName])]
+          TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()])]
       if (isDefined(employeeId) && isDefined(employeeNames[employeeId])) {
         instance.annotate(
           { [CORE_ANNOTATIONS.CHANGED_BY]: employeeNames[employeeId] }

@@ -32,15 +32,6 @@ export const FOLDER_FIELD_IDENTIFIER = 'MEDIAITEMFOLDER.'
 const FILE_TYPE = 'FILE_TYPE'
 const FOLDER_TYPE = 'FOLDER_TYPE'
 
-
-// types not found in the documentation but added later manually.
-// entitycustomfield: FIELD_TYPE, // lowercase
-// customlist: '-123', // same as customList but with lowercase... should find better option
-// itemcustomfield: FIELD_TYPE, // lowercase
-// crmcustomfield: FIELD_TYPE, // lowercase
-// types without record type id that are given new ids.
-
-
 const TYPES_TO_INTERNAL_ID: Record<string, string> = _.mapKeys({
   ...ORIGINAL_TYPES_TO_INTERNAL_ID,
   // Types without record type id that are given new ids.

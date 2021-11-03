@@ -22,10 +22,11 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { FETCH_CONFIG } from '../../config'
-import { SALESFORCE, NETSUITE } from '../../constants'
-import { indexSalesforceByMetadataTypeAndApiName, indexNetsuiteByTypeAndScriptId } from './element_indexes'
+import { SALESFORCE, NETSUITE, ZUORA_BILLING } from '../../constants'
+import { indexSalesforceByMetadataTypeAndApiName, indexNetsuiteByTypeAndScriptId, indexZuoraByElemId } from './element_indexes'
 import { addNetsuiteRecipeReferences } from './reference_finders/netsuite'
 import { addSalesforceRecipeReferences } from './reference_finders/salesforce'
+import { addZuoraRecipeReferences } from './reference_finders/zuora'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -117,6 +118,13 @@ const addReferencesForConnectionRecipes = async (
     const index = indexNetsuiteByTypeAndScriptId(serviceElements)
     await awu(relevantRecipeCodes).forEach(
       inst => addNetsuiteRecipeReferences(inst, index, appName)
+    )
+  }
+
+  if (serviceName === ZUORA_BILLING) {
+    const index = indexZuoraByElemId(serviceElements)
+    await awu(relevantRecipeCodes).forEach(
+      inst => addZuoraRecipeReferences(inst, index, appName)
     )
   }
 }

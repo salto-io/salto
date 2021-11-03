@@ -23,6 +23,8 @@ export type NetsuiteIndex = {
   type: Record<string, Readonly<ObjectType>>
 }
 
+export type ZuoraIndex = Record<string, Readonly<Element>[]>
+
 // salesforce indexes
 
 const API_NAME = 'apiName'
@@ -129,3 +131,17 @@ export const indexNetsuiteByTypeAndScriptId = (
     type: indexTypesAndFields(),
   }
 }
+
+// Zuora indexes
+
+export const indexZuoraByElemId = (
+  elements: ReadonlyArray<Readonly<Element>>
+): ZuoraIndex => _(elements)
+  .groupBy(e => e.elemID.getFullName())
+  .entries()
+  // Currently we only index objects
+  // (metadataType is our way to differ between Zuora objects to the rest of the elements)
+  .filter(([_key, group]) => group.some(e => e.annotations.metadataType !== undefined))
+  .fromPairs()
+  .mapKeys((_val, key) => key.toLowerCase())
+  .value()

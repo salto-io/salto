@@ -108,6 +108,16 @@ describe('Recipe references filter', () => {
       }
     )
 
+    const zuoraSandbox = new InstanceElement(
+      'zuora_sbx_123',
+      connectionType,
+      {
+        id: 1237,
+        application: 'zuora',
+        name: 'zuora sbx 123',
+      }
+    )
+
     const secondarySalesforce = new InstanceElement(
       'secondary_sf',
       connectionType,
@@ -619,11 +629,105 @@ describe('Recipe references filter', () => {
       code: new ReferenceExpression(recipe6NetsuiteTypesCode.elemID),
     })
 
+    const recipe7ZuoraCode = new InstanceElement('recipe7_code', codeType, {
+      as: 'eadbb773',
+      provider: 'zuora',
+      name: 'updated_custom_object',
+      keyword: 'trigger',
+      dynamicPickListSelection: {
+        object: 'AccountingPeriod',
+      },
+      input: {
+        object: 'AccountingPeriod',
+        since: "#{_('data.workato.job_context.user_id')}",
+      },
+      block: [
+        {
+          number: 1,
+          keyword: 'if',
+          input: {
+            type: 'compound',
+            operand: 'and',
+            conditions: [
+              {
+                operand: 'greater_than',
+                lhs: "#{_('data.zuora.eadbb773.Name')}",
+                rhs: '111111111',
+                uuid: 'condition-uuid',
+              },
+            ],
+          },
+          block: [
+            {
+              number: 2,
+              provider: 'zuora',
+              name: 'update_record',
+              as: 'efe25cd2',
+              description: 'Update <span class="provider">accounting code</span> in <span class="provider">Zuora</span>',
+              keyword: 'action',
+              dynamicPickListSelection: {
+                object: 'Accounting Code',
+              },
+              input: {
+                object: 'AccountingCode',
+                Id: "=_('data.zuora.eadbb773.Notes').split(\"123123123123\")",
+              },
+              visible_config_fields: [
+                'object',
+                'Fax',
+              ],
+              uuid: 'uuid1',
+            },
+          ],
+          uuid: 'uuid2',
+        },
+        {
+          number: 3,
+          provider: 'zuora',
+          name: 'search_records',
+          as: 'dac4bc89',
+          description: 'Search <span class="provider">products</span> in <span class="provider">Zuora</span>',
+          keyword: 'action',
+          dynamicPickListSelection: {
+            object: 'Product',
+          },
+          input: {
+            object: 'Product',
+            SKU: 'aaaaaa',
+          },
+          visible_config_fields: [
+            'object',
+            'Fax',
+            'Description',
+            'County',
+            'UpdatedById',
+            'SKU',
+            'Name',
+          ],
+          uuid: 'uuid3',
+        },
+      ],
+    })
+
+    const recipe7Zuora = new InstanceElement('recipe7', recipeType, {
+      config: [
+        {
+          keyword: 'application',
+          name: 'zuora',
+          provider: 'zuora',
+          account_id: new ReferenceExpression(zuoraSandbox.elemID),
+        },
+      ],
+      code: new ReferenceExpression(recipe7ZuoraCode.elemID),
+    })
+
+
     return [
       connectionType,
       sfSandbox1,
       anotherSfSandbox,
       netsuiteSandbox123,
+      zuoraSandbox,
       secondarySalesforce,
       secondaryNetsuite,
       labelValueType,
@@ -647,6 +751,8 @@ describe('Recipe references filter', () => {
       recipe5WithSecondaryCode,
       recipe6NetsuiteTypes,
       recipe6NetsuiteTypesCode,
+      recipe7Zuora,
+      recipe7ZuoraCode,
     ]
   }
 
@@ -812,10 +918,47 @@ describe('Recipe references filter', () => {
     ]
   }
 
+  const generateZuoraElements = (): Element[] => {
+    const accountingPeriodType = new ObjectType({
+      elemID: new ElemID('zuora_billing', 'accountingperiod'),
+      fields: {
+        Name: { refType: BuiltinTypes.STRING },
+        Notes: { refType: BuiltinTypes.STRING },
+        Id: { refType: BuiltinTypes.STRING },
+      },
+      annotations: {
+        metadataType: 'StandardObject',
+      },
+    })
+
+    const accountingCodeType = new ObjectType({
+      elemID: new ElemID('zuora_billing', 'accountingcode'),
+      fields: {
+        Id: { refType: BuiltinTypes.STRING },
+      },
+      annotations: {
+        metadataType: 'StandardObject',
+      },
+    })
+
+    const productType = new ObjectType({
+      elemID: new ElemID('zuora_billing', 'product'),
+      fields: {
+        SKU: { refType: BuiltinTypes.STRING },
+      },
+      annotations: {
+        metadataType: 'StandardObject',
+      },
+    })
+
+    return [accountingPeriodType, accountingCodeType, productType]
+  }
+
   describe('on post-fetch primary', () => {
     let currentAdapterElements: Element[]
     let salesforceElements: Element[]
     let netsuiteElements: Element[]
+    let zuoraElements: Element[]
 
     beforeAll(async () => {
       filter = filterCreator({
@@ -830,6 +973,7 @@ describe('Recipe references filter', () => {
             serviceConnectionNames: {
               salesforce: ['salesforce sandbox 1'],
               netsuite: ['netsuite sbx 123'],
+              zuora_billing: ['zuora sbx 123'],
             },
           },
           apiDefinitions: {
@@ -846,11 +990,13 @@ describe('Recipe references filter', () => {
       currentAdapterElements = generateCurrentAdapterElements()
       salesforceElements = generateSalesforceElements()
       netsuiteElements = generateNetsuiteElements()
+      zuoraElements = generateZuoraElements()
       await filter.onPostFetch({
         currentAdapterElements,
         elementsByAdapter: {
           salesforce: salesforceElements,
           netsuite: netsuiteElements,
+          zuora_billing: zuoraElements,
         },
         progressReporter: { reportProgress: () => null },
       })
@@ -1076,6 +1222,41 @@ describe('Recipe references filter', () => {
         )
         expect(recipeCode.value.input.netsuite_object.elemID.getFullName()).toEqual('netsuite.Customer')
         // TODO decide if should also override under dynamicPickListSelection
+      })
+    })
+
+    describe('recipe7Zuora', () => {
+      it('should show all resolved references in the _generated_dependencies annotation, in alphabetical order', () => {
+        const recipeCode = currentAdapterElements.find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe7_code')
+        expect(recipeCode).toBeDefined()
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(7)
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
+          dereferenceDep
+        )).toEqual([
+          { reference: 'zuora_billing.accountingcode', occurrences: [{ location: 'workato.recipe__code.instance.recipe7_code.block.0.block.0', direction: 'output' }] },
+          { reference: 'zuora_billing.accountingcode.field.Id', occurrences: [{ location: 'workato.recipe__code.instance.recipe7_code.block.0.block.0', direction: 'output' }] },
+          { reference: 'zuora_billing.accountingperiod', occurrences: [{ location: 'workato.recipe__code.instance.recipe7_code', direction: 'input' }] },
+          { reference: 'zuora_billing.accountingperiod.field.Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe7_code.block.0.input.conditions.0.lhs', direction: 'input' }] },
+          { reference: 'zuora_billing.accountingperiod.field.Notes', occurrences: [{ location: 'workato.recipe__code.instance.recipe7_code.block.0.block.0.input.Id', direction: 'input' }] },
+          { reference: 'zuora_billing.product', occurrences: [{ location: 'workato.recipe__code.instance.recipe7_code.block.1', direction: 'output' }] },
+          { reference: 'zuora_billing.product.field.SKU', occurrences: [{ location: 'workato.recipe__code.instance.recipe7_code.block.1', direction: 'output' }] },
+        ])
+      })
+
+      it('should resolve references in-place where possible', () => {
+        const recipeCode = currentAdapterElements.find(
+          e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe7_code'
+        ) as InstanceElement
+        expect(recipeCode).toBeInstanceOf(InstanceElement)
+        expect(recipeCode.value.input.object).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.input.object.elemID.getFullName()).toEqual('zuora_billing.accountingperiod')
+        expect(recipeCode.value.input.object).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.input.object.elemID.getFullName()).toEqual('zuora_billing.accountingperiod')
+        expect(recipeCode.value.block[0].block[0].input.object).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[0].block[0].input.object.elemID.getFullName()).toEqual('zuora_billing.accountingcode')
+        expect(recipeCode.value.block[1].input.object).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[1].input.object.elemID.getFullName()).toEqual('zuora_billing.product')
       })
     })
 

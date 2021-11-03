@@ -56,6 +56,17 @@ export type NetsuiteBlock = BlockBase & {
   }
 }
 
+export type ZuoraBlock = BlockBase & {
+  as: string
+  provider: 'zuora'
+  input: {
+    object: string
+  }
+}
+
+export type SupportedRecipeBlock = SalesforceBlock | NetsuiteBlock | ZuoraBlock
+
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const isListItem = (value: any): value is RefListItem => (
   _.isObjectLike(value) && _.isString(value.label) && _.isString(value.value)
@@ -87,4 +98,15 @@ export const isNetsuiteBlock = (value: any, application: string): value is Netsu
   && (value.dynamicPickListSelection.custom_list ?? []).every(isListItem)
   && _.isObjectLike(value.input)
   && _.isString(value.input.netsuite_object)
+)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isZuoraBlock = (value: any, application: string): value is ZuoraBlock => (
+  _.isObjectLike(value)
+  && CROSS_SERVICE_SUPPORTED_APPS.zuora_billing.includes(application)
+  && value.provider === application
+  && _.isString(value.keyword)
+  && _.isObjectLike(value.input)
+  && _.isString(value.input.object)
+  && _.isString(value.as)
 )

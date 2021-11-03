@@ -37,7 +37,7 @@ const TYPES_TO_INTERNAL_ID: Record<string, string> = _.mapKeys({
   // Types without record type id that are given new ids.
   file: FILE_TYPE,
   folder: FOLDER_TYPE,
-}, key => key.toLowerCase())
+}, (_value, key) => key.toLowerCase())
 
 const getRecordIdAndTypeStringKey = (recordId: string, recordTypeId: string): string =>
   `${recordId}${UNDERSCORE}${recordTypeId}`

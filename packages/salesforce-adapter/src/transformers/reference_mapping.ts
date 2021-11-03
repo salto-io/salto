@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Field, isElement, Value, Element } from '@salto-io/adapter-api'
+import { Field, isElement, Value, Element, ReferenceExpression, ElemID } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -43,35 +43,52 @@ export type ReferenceSerializationStrategy = {
   lookup: LookupFunc
 }
 
+const safeApiName = ({ ref, path, relative }: {
+  ref: ReferenceExpression
+  path?: ElemID
+  relative?: boolean
+}): Promise<string | Value> => {
+  const { value } = ref
+  if (!isElement(value)) {
+    log.warn('Unexpected non-element value for ref id %s in path %s', ref.elemID.getFullName(), path?.getFullName())
+    return value
+  }
+  return apiName(value, relative)
+}
+
 type ReferenceSerializationStrategyName = 'absoluteApiName' | 'relativeApiName' | 'configurationAttributeMapping' | 'lookupQueryMapping' | 'scheduleConstraintFieldMapping'
  | 'mapKey'
 const ReferenceSerializationStrategyLookup: Record<
   ReferenceSerializationStrategyName, ReferenceSerializationStrategy
 > = {
   absoluteApiName: {
-    serialize: ({ ref }) => apiName(ref.value),
+    serialize: ({ ref, path }) => safeApiName({ ref, path, relative: false }),
     lookup: val => val,
   },
   relativeApiName: {
-    serialize: ({ ref }) => apiName(ref.value, true),
+    serialize: ({ ref, path }) => safeApiName({ ref, path, relative: true }),
     lookup: (val, context) => (context !== undefined
       ? [context, val].join(API_NAME_SEPARATOR)
       : val
     ),
   },
   configurationAttributeMapping: {
-    serialize: async ({ ref }) => (_.invert(DEFAULT_OBJECT_TO_API_MAPPING)[await apiName(ref.value)]
-      ?? apiName(ref.value)),
+    serialize: async ({ ref, path }) => (
+      _.invert(DEFAULT_OBJECT_TO_API_MAPPING)[await safeApiName({ ref, path })]
+      ?? safeApiName({ ref, path })
+    ),
     lookup: val => (_.isString(val) ? (DEFAULT_OBJECT_TO_API_MAPPING[val] ?? val) : val),
   },
   lookupQueryMapping: {
-    serialize: async ({ ref }) => (_.invert(TEST_OBJECT_TO_API_MAPPING)[await apiName(ref.value)]
-      ?? apiName(ref.value)),
+    serialize: async ({ ref, path }) => (
+      _.invert(TEST_OBJECT_TO_API_MAPPING)[await safeApiName({ ref, path })]
+      ?? safeApiName({ ref, path })
+    ),
     lookup: val => (_.isString(val) ? (TEST_OBJECT_TO_API_MAPPING[val] ?? val) : val),
   },
   scheduleConstraintFieldMapping: {
-    serialize: async ({ ref }) => {
-      const relativeApiName = await apiName(ref.value, true)
+    serialize: async ({ ref, path }) => {
+      const relativeApiName = await safeApiName({ ref, path, relative: true })
       return (
         _.invert(SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING)[relativeApiName]
           ?? relativeApiName

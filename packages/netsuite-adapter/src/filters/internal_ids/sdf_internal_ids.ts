@@ -92,6 +92,7 @@ const fetchRecordType = async (
   if (_.isUndefined(recordTypeIds) || _.isEmpty(recordTypeIds)) {
     return {}
   }
+  // SDF returns script ids as lowercase even if they are in upper case in the service.
   return Object.fromEntries(recordTypeIds.map(entry => [entry.scriptid.toLowerCase(), entry.id]))
 }
 
@@ -140,9 +141,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
       client, _.uniq(instances.map(getTableName))
     )
     instances
-      .filter(instance => recordIdMap[getTableName(instance)][instance.value.scriptid])
+      .filter(instance => recordIdMap[
+        getTableName(instance)][instance.value.scriptid.toLowerCase()])
       .forEach(instance => {
-        instance.value.internalId = recordIdMap[getTableName(instance)][instance.value.scriptid]
+        instance.value.internalId = recordIdMap[
+          getTableName(instance)][instance.value.scriptid.toLowerCase()]
       })
   },
 
@@ -175,9 +178,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
     )
 
     additionInstances
-      .filter(instance => recordIdMap[getTableName(instance)][instance.value.scriptid])
+      .filter(instance => recordIdMap[
+        getTableName(instance)][instance.value.scriptid.toLowerCase()])
       .forEach(instance => {
-        instance.value.internalId = recordIdMap[getTableName(instance)][instance.value.scriptid]
+        instance.value.internalId = recordIdMap[
+          getTableName(instance)][instance.value.scriptid.toLowerCase()]
       })
   },
 })

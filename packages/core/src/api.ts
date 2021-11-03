@@ -17,7 +17,8 @@ import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeElement, isField,
   Change, DetailedChange, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
-  SaltoError, Element, isElement, isObjectType, ReferenceExpression, isReferenceExpression,
+  SaltoError, Element, isElement, ReferenceExpression, isReferenceExpression,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -422,11 +423,15 @@ const renameElementIdChecks = (
     throw new RenameElementIdError(`Source and target element ids are the same: ${sourceElemId.getFullName()}`)
   }
 
-  if (sourceElemId.adapter !== targetElemId.adapter
-    || sourceElemId.idType !== targetElemId.idType
-    || !_.isEqual(sourceElemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
-      targetElemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS))) {
-    throw new RenameElementIdError(`Currently supporting renaming the element's typeName only (${sourceElemId.adapter}.${sourceElemId.typeName} -> ${sourceElemId.adapter}.${targetElemId.typeName})`)
+  const sourceElemIdFullNameParts = sourceElemId.getFullNameParts()
+  const targetElemIdFullNameParts = targetElemId.getFullNameParts()
+  if (sourceElemIdFullNameParts.length !== ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1
+    || sourceElemIdFullNameParts.length !== targetElemIdFullNameParts.length
+    || sourceElemId.adapter !== targetElemId.adapter
+    || sourceElemId.typeName !== targetElemId.typeName
+    || sourceElemId.idType !== targetElemId.idType) {
+    const renameMessage = `(${sourceElemIdFullNameParts.slice(0, ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1).join(ElemID.NAMESPACE_SEPARATOR)})`
+    throw new RenameElementIdError(`Currently supporting renaming the instance name only ${renameMessage}`)
   }
 }
 
@@ -440,8 +445,8 @@ const renameElementChecks = async (
     throw new RenameElementIdError(`Did not find any matches for element ${sourceElemId.getFullName()}`)
   }
 
-  if (!isObjectType(sourceElement)) {
-    throw new RenameElementIdError(`Currently supporting ObjectType only (${sourceElemId.getFullName()} is of type '${sourceElemId.idType}')`)
+  if (!isInstanceElement(sourceElement)) {
+    throw new RenameElementIdError(`Currently supporting InstanceElement only (${sourceElemId.getFullName()} is of type '${sourceElemId.idType}')`)
   }
 
   if (await workspace.getValue(targetElemId) !== undefined) {
@@ -458,11 +463,13 @@ export const getRenameElementChanges = async (
   await renameElementChecks(workspace, sourceElemId, targetElemId)
 
   const source = await workspace.getValue(sourceElemId)
-  const target = new ObjectType({
-    ...source,
-    elemID: targetElemId,
-    annotationRefsOrTypes: source.annotationRefTypes,
-  })
+  const target = new InstanceElement(
+    targetElemId.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS],
+    source.refType,
+    source.value,
+    source.path,
+    source.annotations
+  )
 
   return [
     {
@@ -507,10 +514,11 @@ export const getRenameReferencesChanges = async (
     const targetReference = new ReferenceExpression(
       new ElemID(
         r.value.elemID.adapter,
-        targetElemId.typeName,
+        r.value.elemID.typeName,
         r.value.elemID.idType,
+        targetElemId.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS],
         ...r.value.elemID.getFullNameParts()
-          .slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS)
+          .slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1)
       ),
       r.value.resValue,
       r.value.topLevelParent

@@ -564,57 +564,58 @@ describe('api.ts', () => {
     beforeAll(async () => {
       const workspaceElements = mockElements.getAllElements()
       ws = mockWorkspace({ elements: workspaceElements })
-      sourceElemId = new ElemID('salto', 'employee')
+      sourceElemId = new ElemID('salto', 'employee', 'instance', 'instance')
     })
     it('should return changes', async () => {
       const sourceElement = await ws.getValue(sourceElemId)
-      const targetElemId = new ElemID(sourceElemId.adapter, `tmp4${sourceElemId.typeName}`, sourceElemId.idType)
-      const targetElement = new ObjectType({
-        ...sourceElement,
-        elemID: targetElemId,
-        annotationRefsOrTypes: sourceElement.annotationRefTypes,
-      })
+      const targetElement = new InstanceElement(
+        'renamed',
+        sourceElement.refType,
+        sourceElement.value,
+        sourceElement.path,
+        sourceElement.annotations
+      )
 
-      const refElemId = new ElemID('salto', 'employeeChildren', 'field', 'parent', 'referenceTo', '0')
+      const refElemId = new ElemID('salto', 'employee', 'instance', 'anotherInstance', 'friend')
       const beforeRef = new ReferenceExpression(sourceElemId)
-      const afterRef = new ReferenceExpression(targetElemId)
+      const afterRef = new ReferenceExpression(targetElement.elemID)
 
       const removeChange = { id: sourceElemId, action: 'remove', data: { before: sourceElement } }
-      const addChange = { id: targetElemId, action: 'add', data: { after: targetElement } }
+      const addChange = { id: targetElement.elemID, action: 'add', data: { after: targetElement } }
       const refChange = { id: refElemId, action: 'modify', data: { before: beforeRef, after: afterRef } }
 
-      expect(await api.getRenameElementChanges(ws, sourceElemId, targetElemId))
+      expect(await api.getRenameElementChanges(ws, sourceElemId, targetElement.elemID))
         .toEqual([removeChange, addChange])
-      expect(await api.getRenameReferencesChanges(ws, sourceElemId, targetElemId))
+      expect(await api.getRenameReferencesChanges(ws, sourceElemId, targetElement.elemID))
         .toEqual([refChange])
     })
     it('should throw when source and target ids are the same', async () =>
       expect(api.getRenameElementChanges(ws, sourceElemId, sourceElemId))
         .rejects.toThrow(`Source and target element ids are the same: ${sourceElemId.getFullName()}`))
-    it('should throw when trying to rename something else than typeName', async () => {
-      const fieldElemId = new ElemID(sourceElemId.adapter, sourceElemId.typeName, 'field')
-      return expect(api.getRenameElementChanges(ws, sourceElemId, fieldElemId))
-        .rejects.toThrow(`Currently supporting renaming the element's typeName only (${sourceElemId.adapter}.${sourceElemId.typeName} -> ${sourceElemId.adapter}.${fieldElemId.typeName})`)
+    it('should throw when trying to rename something else than instance name', async () => {
+      const targetElemId = new ElemID(sourceElemId.adapter, 'renamed', sourceElemId.idType, ...sourceElemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS))
+      const renameMessage = `(${sourceElemId.getFullNameParts().slice(0, ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1).join(ElemID.NAMESPACE_SEPARATOR)})`
+      return expect(api.getRenameElementChanges(ws, sourceElemId, targetElemId))
+        .rejects.toThrow(`Currently supporting renaming the instance name only ${renameMessage}`)
     })
     it('should throw when targetElementId already exists', async () => {
-      const existElementId = mockElements.getAllElements().filter(isObjectType).map(e => e.elemID)
+      const existElementId = mockElements.getAllElements()
+        .filter(isInstanceElement).map(e => e.elemID)
         .find(e => e.getFullName() !== sourceElemId.getFullName()) as ElemID
       return expect(api.getRenameElementChanges(ws, sourceElemId, existElementId))
         .rejects.toThrow(`Element ${existElementId.getFullName()} already exists`)
     })
     it('should throw when sourceElementId doesn\'t exists', async () => {
-      const notSourceElemId = new ElemID(sourceElemId.adapter, `not${sourceElemId.typeName}`, sourceElemId.idType)
-      const targetElemId = new ElemID(sourceElemId.adapter, `tmp4${sourceElemId.typeName}`, sourceElemId.idType)
+      const notSourceElemId = new ElemID(sourceElemId.adapter, sourceElemId.typeName, sourceElemId.idType, 'notExist')
+      const targetElemId = new ElemID(sourceElemId.adapter, sourceElemId.typeName, sourceElemId.idType, 'renamed')
       return expect(api.getRenameElementChanges(ws, notSourceElemId, targetElemId))
         .rejects.toThrow(`Did not find any matches for element ${notSourceElemId.getFullName()}`)
     })
-    it('should throw when source is not ObjectType', async () => {
-      const notObjectType = (mockElements.getAllElements()
-        .find(e => !isObjectType(e)) as Element).elemID
-      const targetElemId = new ElemID(notObjectType.adapter, `tmp${notObjectType.typeName}`, notObjectType.idType,
-        ...notObjectType.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS))
-      return expect(api.getRenameElementChanges(ws, notObjectType, targetElemId))
-        .rejects.toThrow(`Currently supporting ObjectType only (${notObjectType.getFullName()} is of type '${notObjectType.idType}')`)
+    it('should throw when source is not InstanceElement', async () => {
+      const fieldElemId = new ElemID('salto', 'address', 'field', 'country')
+      const targetElemId = new ElemID('salto', 'address', 'field', 'renamed')
+      return expect(api.getRenameElementChanges(ws, fieldElemId, targetElemId))
+        .rejects.toThrow(`Currently supporting InstanceElement only (${fieldElemId.getFullName()} is of type '${fieldElemId.idType}')`)
     })
   })
 })

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import open from 'open'
-import { Element, ElemID, ObjectType, CORE_ANNOTATIONS, isObjectType } from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, CORE_ANNOTATIONS, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
 import { errors, UnresolvedElemIDs, createElementSelector } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { CliExitCode } from '../../src/types'
@@ -1327,26 +1327,29 @@ Moving the specified elements to common.
       let result: CliExitCode
       let workspace: mocks.MockWorkspace
       let allElements: Element[]
-      let sourceElement: ObjectType
-      let targetElement: ObjectType
+      let sourceElement: InstanceElement
+      let targetElement: InstanceElement
 
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
         workspace = mocks.mockWorkspace({})
 
         allElements = await awu(await (await workspace.elements()).getAll()).toArray()
-        sourceElement = allElements.find(isObjectType) as ObjectType
+        sourceElement = allElements.find(isInstanceElement) as InstanceElement
         const sourceElemId = sourceElement.elemID
-        const targetElemId = new ElemID(sourceElemId.adapter, `${sourceElemId.typeName}2`, sourceElemId.idType)
-        targetElement = new ObjectType({
-          ...sourceElement,
-          elemID: targetElemId,
-          annotationRefsOrTypes: sourceElement.annotationRefTypes,
-        })
+        const targetElemId = new ElemID(sourceElemId.adapter, sourceElemId.typeName, sourceElemId.idType, 'renamed')
+        targetElement = new InstanceElement(
+          targetElemId.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS],
+          sourceElement.refType,
+          sourceElement.value,
+          sourceElement.path,
+          sourceElement.annotations
+        )
 
         workspace.getValue
           .mockResolvedValueOnce(sourceElement)
           .mockResolvedValueOnce(undefined)
+          .mockResolvedValueOnce(sourceElement)
           .mockResolvedValueOnce(targetElement)
         result = await renameAction({
           ...mocks.mockCliCommandArgs(commandName, cliArgs),

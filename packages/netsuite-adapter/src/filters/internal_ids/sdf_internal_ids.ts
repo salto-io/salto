@@ -40,6 +40,7 @@ const TYPE_NAMES_TO_TABLE_NAME: Record<string, string> = {
   transactioncolumncustomfield: CUSTOM_FIELD,
   othercustomfield: CUSTOM_FIELD,
   sspapplication: 'webapp',
+  sdfinstallationscript: 'script',
 }
 
 const getTableName = (element: Element): string => {

@@ -64,7 +64,7 @@ export type ZuoraBlock = BlockBase & {
   }
 }
 
-export type RecipeBlock = SalesforceBlock | NetsuiteBlock | ZuoraBlock
+export type SupportedRecipeBlock = SalesforceBlock | NetsuiteBlock | ZuoraBlock
 
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

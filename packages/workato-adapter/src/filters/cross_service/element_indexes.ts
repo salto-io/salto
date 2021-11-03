@@ -139,6 +139,8 @@ export const indexZuoraByElemId = (
 ): ZuoraIndex => _(elements)
   .groupBy(e => e.elemID.getFullName())
   .entries()
+  // Currently we only index objects
+  // (metadataType is our way to differ between Zuora objects to the rest of the elements)
   .filter(([_key, group]) => group.some(e => e.annotations.metadataType !== undefined))
   .fromPairs()
   .mapKeys((_val, key) => key.toLowerCase())

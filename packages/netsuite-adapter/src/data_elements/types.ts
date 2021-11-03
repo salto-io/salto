@@ -211,6 +211,7 @@ const MANUALLY_MAPPED_TYPES_TO_INTERNAL_IDS: Record<string, string> = {
   mapreducescript: SCRIPT_TYPE,
   customsegment: FIELD_TYPE,
   usereventscript: SCRIPT_TYPE,
+  sdfinstallationscript: SCRIPT_TYPE,
 }
 
 

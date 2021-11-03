@@ -432,10 +432,10 @@ const renameElementIdChecks = (
 
 const renameElementChecks = async (
   workspace: Workspace,
-  sourceElement: Element,
   sourceElemId: ElemID,
   targetElemId: ElemID
 ): Promise<void> => {
+  const sourceElement = await workspace.getValue(targetElemId)
   if (sourceElement === undefined || !isElement(sourceElement)) {
     throw new RenameElementIdError(`Did not find any matches for element ${sourceElemId.getFullName()}`)
   }
@@ -455,10 +455,9 @@ export const getRenameElementChanges = async (
   targetElemId: ElemID
 ): Promise<DetailedChange[]> => {
   renameElementIdChecks(sourceElemId, targetElemId)
+  await renameElementChecks(workspace, sourceElemId, targetElemId)
 
   const source = await workspace.getValue(sourceElemId)
-  await renameElementChecks(workspace, source, sourceElemId, targetElemId)
-
   const target = new ObjectType({
     ...source,
     elemID: targetElemId,

@@ -501,8 +501,8 @@ export const getRenameReferencesChanges = async (
     return references
   }
 
-  const allElements = await awu(await (await workspace.elements()).getAll()).toArray()
-  const references = allElements.map(e => getReferences(e)).flat()
+  const references = await awu(await (await workspace.elements()).getAll())
+    .flatMap(elem => getReferences(elem)).toArray()
 
   return references.map((r): DetailedChange => {
     const targetReference = new ReferenceExpression(

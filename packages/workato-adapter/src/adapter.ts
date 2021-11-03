@@ -25,6 +25,7 @@ import { FilterCreator, Filter, filtersRunner } from './filter'
 import { WorkatoConfig } from './config'
 import fieldReferencesFilter from './filters/field_references'
 import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
+import serviceUrlFilter from './filters/service_url'
 import { WORKATO } from './constants'
 import changeValidator from './change_validator'
 import { paginate } from './client/pagination'
@@ -37,6 +38,7 @@ const { getAllElements } = elementUtils.ducktype
 export const DEFAULT_FILTERS = [
   fieldReferencesFilter,
   recipeCrossServiceReferencesFilter,
+  serviceUrlFilter,
 ]
 
 export interface WorkatoAdapterParams {

@@ -17,8 +17,11 @@ export const WORKATO = 'workato'
 
 export const SALESFORCE = 'salesforce'
 export const NETSUITE = 'netsuite'
+export const ZUORA_BILLING = 'zuora_billing'
+
 
 export const CROSS_SERVICE_SUPPORTED_APPS = {
   [SALESFORCE]: ['salesforce', 'salesforce_secondary'],
   [NETSUITE]: ['netsuite', 'netsuite_secondary'],
+  [ZUORA_BILLING]: ['zuora'],
 }

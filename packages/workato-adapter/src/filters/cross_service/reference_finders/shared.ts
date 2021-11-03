@@ -18,7 +18,7 @@ import { InstanceElement, ElemID, Value, Values } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc, safeJsonStringify, setPath, extendGeneratedDependencies, FlatDetailedDependency, DependencyDirection } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { strings, types, values as lowerdashValues } from '@salto-io/lowerdash'
-import { NetsuiteBlock, SalesforceBlock, BlockBase } from './recipe_block_types'
+import { BlockBase, RecipeBlock } from './recipe_block_types'
 
 const { isDefined } = lowerdashValues
 const { matchAll } = strings
@@ -32,7 +32,7 @@ export type MappedReference = FlatDetailedDependency & {
   pathToOverride?: ElemID
 }
 
-export type ReferenceFinder<T extends SalesforceBlock | NetsuiteBlock> = (
+export type ReferenceFinder<T extends RecipeBlock> = (
   value: T,
   path: ElemID,
 ) => MappedReference[]
@@ -42,7 +42,7 @@ export type FormulaReferenceFinder = (
   path: ElemID,
 ) => MappedReference[]
 
-export const addReferencesForService = async <T extends SalesforceBlock | NetsuiteBlock>(
+export const addReferencesForService = async <T extends RecipeBlock>(
   inst: InstanceElement,
   appName: string,
   typeGuard: (value: Value, app: string) => value is T,

@@ -686,7 +686,7 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
 const renameElementsDef = createWorkspaceCommand({
   properties: {
     name: 'rename',
-    description: 'Rename an element (currently supporting ObjectType only)',
+    description: 'Rename an element (currently supporting InstanceElement only)',
     positionalOptions: [
       {
         name: 'sourceElementId',

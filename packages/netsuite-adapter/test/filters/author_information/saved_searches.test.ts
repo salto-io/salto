@@ -102,7 +102,7 @@ describe('netsuite saved searches author information tests', () => {
       filterCreator(filterOpts).onFetch?.(elements)
       expect(Object.values(savedSearch.annotations)).toHaveLength(0)
     })
-    it('bad system note schema', async () => {
+    it('bad search result schema', async () => {
       runSavedSearchQueryMock.mockReset()
       runSavedSearchQueryMock.mockResolvedValueOnce([
         { id: '1', modifiedby: { text: 'user 1 name' } },

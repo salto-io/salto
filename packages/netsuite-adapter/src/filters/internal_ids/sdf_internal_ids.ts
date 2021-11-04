@@ -28,10 +28,27 @@ type RecordIdResult = {
   id: string
 }
 
-const getTableName = (element: Element): string =>
-  // This is currently the only way of finding the table, In some cases
-  // the typeName of an element wont be it's table name.
-  element.elemID.typeName
+const CUSTOM_FIELD = 'customfield'
+
+const TYPE_NAMES_TO_TABLE_NAME: Record<string, string> = {
+  entitycustomfield: CUSTOM_FIELD,
+  transactionbodycustomfield: CUSTOM_FIELD,
+  itemcustomfield: CUSTOM_FIELD,
+  crmcustomfield: CUSTOM_FIELD,
+  itemnumbercustomfield: CUSTOM_FIELD,
+  itemoptioncustomfield: CUSTOM_FIELD,
+  transactioncolumncustomfield: CUSTOM_FIELD,
+  othercustomfield: CUSTOM_FIELD,
+  sspapplication: 'webapp',
+  sdfinstallationscript: 'script',
+}
+
+const getTableName = (element: Element): string => {
+  if (element.elemID.typeName in TYPE_NAMES_TO_TABLE_NAME) {
+    return TYPE_NAMES_TO_TABLE_NAME[element.elemID.typeName]
+  }
+  return element.elemID.typeName
+}
 
 const queryRecordIds = async (client: NetsuiteClient, query: string, recordType: string):
 Promise<RecordIdResult[]> => {
@@ -76,7 +93,8 @@ const fetchRecordType = async (
   if (_.isUndefined(recordTypeIds) || _.isEmpty(recordTypeIds)) {
     return {}
   }
-  return Object.fromEntries(recordTypeIds.map(entry => [entry.scriptid, entry.id]))
+  // SDF returns script ids as lowercase even if they are in upper case in the service.
+  return Object.fromEntries(recordTypeIds.map(entry => [entry.scriptid.toLowerCase(), entry.id]))
 }
 
 const fetchRecordIdsForRecordType = async (
@@ -103,10 +121,9 @@ const getSupportedInstances = (elements: Element[]): InstanceElement[] =>
 
 
 const getAdditionInstances = (changes: Change[]): InstanceElement[] =>
-  changes
+  getSupportedInstances(changes
     .filter(isAdditionChange)
-    .map(getChangeElement)
-    .filter(isInstanceElement)
+    .map(getChangeElement))
 
 /**
  * This filter adds the internal id to instances.
@@ -124,9 +141,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
       client, _.uniq(instances.map(getTableName))
     )
     instances
-      .filter(instance => recordIdMap[getTableName(instance)][instance.value.scriptid])
+      .filter(instance => recordIdMap[
+        getTableName(instance)][instance.value.scriptid.toLowerCase()])
       .forEach(instance => {
-        instance.value.internalId = recordIdMap[getTableName(instance)][instance.value.scriptid]
+        instance.value.internalId = recordIdMap[
+          getTableName(instance)][instance.value.scriptid.toLowerCase()]
       })
   },
 
@@ -159,9 +178,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
     )
 
     additionInstances
-      .filter(instance => recordIdMap[getTableName(instance)][instance.value.scriptid])
+      .filter(instance => recordIdMap[
+        getTableName(instance)][instance.value.scriptid.toLowerCase()])
       .forEach(instance => {
-        instance.value.internalId = recordIdMap[getTableName(instance)][instance.value.scriptid]
+        instance.value.internalId = recordIdMap[
+          getTableName(instance)][instance.value.scriptid.toLowerCase()]
       })
   },
 })

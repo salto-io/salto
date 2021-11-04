@@ -121,10 +121,9 @@ const getSupportedInstances = (elements: Element[]): InstanceElement[] =>
 
 
 const getAdditionInstances = (changes: Change[]): InstanceElement[] =>
-  changes
+  getSupportedInstances(changes
     .filter(isAdditionChange)
-    .map(getChangeElement)
-    .filter(isInstanceElement)
+    .map(getChangeElement))
 
 /**
  * This filter adds the internal id to instances.

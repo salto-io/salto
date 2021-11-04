@@ -25,3 +25,14 @@ export const CROSS_SERVICE_SUPPORTED_APPS = {
   [NETSUITE]: ['netsuite', 'netsuite_secondary'],
   [ZUORA_BILLING]: ['zuora'],
 }
+
+export const PROPERTY_TYPE = 'property'
+export const ROLE_TYPE = 'role'
+export const CONNECTION_TYPE = 'connection'
+export const RECIPE_TYPE = 'recipe'
+export const RECIPE_CODE_TYPE = 'recipe__code'
+export const FOLDER_TYPE = 'folder'
+export const API_COLLECTION_TYPE = 'api_collection'
+export const API_ENDPOINT_TYPE = 'api_endpoint'
+export const API_CLIENT_TYPE = 'api_client'
+export const API_ACCESS_PROFILE_TYPE = 'api_access_profile'

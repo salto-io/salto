@@ -412,7 +412,7 @@ describe('netsuite client', () => {
       const ids = [
         { type: 'addressForm', scriptId: 'a' },
       ]
-      let isFirstImportTry = true
+      let numberOfTries = 0
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_OBJECTS) {
           return Promise.resolve({
@@ -421,8 +421,8 @@ describe('netsuite client', () => {
           })
         }
         if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
-          if (isFirstImportTry) {
-            isFirstImportTry = false
+          if (numberOfTries < 2) {
+            numberOfTries += 1
             return Promise.resolve({
               isSuccess: () => false,
               data: { failedImports: [] },
@@ -437,8 +437,8 @@ describe('netsuite client', () => {
       })
       const client = mockClient({ fetchAllTypesAtOnce: false })
       await client.getCustomObjects(typeNames, typeNamesQuery)
-      // createProject & setupAccount & listObjects & 2*importObjects & deleteAuthId
-      const numberOfExecuteActions = 6
+      // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
+      const numberOfExecuteActions = 7
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -451,6 +451,12 @@ describe('netsuite client', () => {
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
       expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(expect.objectContaining({
+        type: 'addressForm',
+        scriptid: 'a',
+      }))
+
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectsCommandMatcher)
+      expect(mockExecuteAction.mock.calls[5][0].arguments).toEqual(expect.objectContaining({
         type: 'addressForm',
         scriptid: 'a',
       }))

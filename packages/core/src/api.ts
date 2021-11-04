@@ -18,7 +18,7 @@ import {
   Change, DetailedChange, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
   SaltoError, Element, isElement, ReferenceExpression, isReferenceExpression,
-  isInstanceElement,
+  isInstanceElement, RemovalChange, AdditionChange,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -436,11 +436,11 @@ const renameElementIdChecks = (
 }
 
 const renameElementChecks = async (
-  workspace: Workspace,
+  elementsSource: elementSource.ElementsSource,
   sourceElemId: ElemID,
   targetElemId: ElemID
 ): Promise<void> => {
-  const sourceElement = await workspace.getValue(sourceElemId)
+  const sourceElement = await elementsSource.get(sourceElemId)
   if (sourceElement === undefined || !isElement(sourceElement)) {
     throw new RenameElementIdError(`Did not find any matches for element ${sourceElemId.getFullName()}`)
   }
@@ -449,20 +449,25 @@ const renameElementChecks = async (
     throw new RenameElementIdError(`Currently supporting InstanceElement only (${sourceElemId.getFullName()} is of type '${sourceElemId.idType}')`)
   }
 
-  if (await workspace.getValue(targetElemId) !== undefined) {
+  if (await elementsSource.get(targetElemId) !== undefined) {
     throw new RenameElementIdError(`Element ${targetElemId.getFullName()} already exists`)
   }
 }
 
+export type RenameChange = {
+  remove: RemovalChange<Element> & { id: ElemID }
+  add: AdditionChange<Element> & { id: ElemID }
+}
+
 export const getRenameElementChanges = async (
-  workspace: Workspace,
+  elementsSource: elementSource.ElementsSource,
   sourceElemId: ElemID,
   targetElemId: ElemID
-): Promise<DetailedChange[]> => {
+): Promise<RenameChange> => {
   renameElementIdChecks(sourceElemId, targetElemId)
-  await renameElementChecks(workspace, sourceElemId, targetElemId)
+  await renameElementChecks(elementsSource, sourceElemId, targetElemId)
 
-  const source = await workspace.getValue(sourceElemId)
+  const source = await elementsSource.get(sourceElemId)
   const target = new InstanceElement(
     targetElemId.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS],
     source.refType,
@@ -471,22 +476,22 @@ export const getRenameElementChanges = async (
     source.annotations
   )
 
-  return [
-    {
+  return {
+    remove: {
       id: sourceElemId,
       action: 'remove',
       data: { before: source },
     },
-    {
+    add: {
       id: targetElemId,
       action: 'add',
       data: { after: target },
     },
-  ]
+  }
 }
 
 export const getRenameReferencesChanges = async (
-  workspace: Workspace,
+  elementsSource: elementSource.ElementsSource,
   sourceElemId: ElemID,
   targetElemId: ElemID
 ): Promise<DetailedChange[]> => {
@@ -507,7 +512,7 @@ export const getRenameReferencesChanges = async (
     return references
   }
 
-  const references = await awu(await (await workspace.elements()).getAll())
+  const references = await awu(await elementsSource.getAll())
     .flatMap(elem => getReferences(elem)).toArray()
 
   return references.map((r): DetailedChange => {
@@ -532,4 +537,26 @@ export const getRenameReferencesChanges = async (
       },
     }
   })
+}
+
+export const getUpdatedTopLevelElements = async (
+  elementsSource: elementSource.ElementsSource,
+  changes: DetailedChange[]
+): Promise<Element[]> => {
+  const changesByTopLevelElemId = _.groupBy(
+    changes, r => r.id.createTopLevelParentID().parent.getFullName()
+  )
+  return Promise.all(
+    Object.entries(changesByTopLevelElemId).map(async ([e, refs]) => {
+      const topLevelElem = await elementsSource.get(ElemID.fromFullName(e)) as InstanceElement
+      return new InstanceElement(
+        topLevelElem.elemID.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS],
+        topLevelElem.refType,
+        _.merge({}, topLevelElem.value, ...refs
+          .map(r => ({ [r.id.getFullNameParts().slice(-1)[0]]: getChangeElement(r) }))),
+        topLevelElem.path,
+        topLevelElem.annotations
+      )
+    })
+  )
 }

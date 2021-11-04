@@ -1324,33 +1324,22 @@ Moving the specified elements to common.
       })
     })
     describe('valid rename', () => {
+      let output: mocks.MockCliOutput
       let result: CliExitCode
       let workspace: mocks.MockWorkspace
       let allElements: Element[]
       let sourceElement: InstanceElement
-      let targetElement: InstanceElement
 
       beforeAll(async () => {
         const cliArgs = mocks.mockCliArgs()
+        output = cliArgs.output
         workspace = mocks.mockWorkspace({})
 
         allElements = await awu(await (await workspace.elements()).getAll()).toArray()
         sourceElement = allElements.find(isInstanceElement) as InstanceElement
         const sourceElemId = sourceElement.elemID
         const targetElemId = new ElemID(sourceElemId.adapter, sourceElemId.typeName, sourceElemId.idType, 'renamed')
-        targetElement = new InstanceElement(
-          targetElemId.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS],
-          sourceElement.refType,
-          sourceElement.value,
-          sourceElement.path,
-          sourceElement.annotations
-        )
 
-        workspace.getValue
-          .mockResolvedValueOnce(sourceElement)
-          .mockResolvedValueOnce(undefined)
-          .mockResolvedValueOnce(sourceElement)
-          .mockResolvedValueOnce(targetElement)
         result = await renameAction({
           ...mocks.mockCliCommandArgs(commandName, cliArgs),
           input: {
@@ -1362,6 +1351,9 @@ Moving the specified elements to common.
       })
       it('should return success code', () => {
         expect(result).toBe(CliExitCode.Success)
+      })
+      it('should return no errors', () => {
+        expect(output.stderr.content).toEqual('')
       })
     })
   })

@@ -328,8 +328,11 @@ ${Prompts.LIST_IDS(ids)}
   public static readonly RENAME_ELEMENT = (source: string, target: string): string => `The following element was renamed:
   ${source} -> ${target}`
 
-  public static readonly RENAME_ELEMENT_REFERENCES = (source: string): string => `Renamed all references of ${source}:`
-  public static readonly RENAME_ELEMENTS_AFFECTED = (elementsAffected: number): string => `  ${elementsAffected} elements affected`
+  public static readonly RENAME_ELEMENT_REFERENCES = (source: string, elementsAffected: number): string => `Renamed all references of ${source}:
+  ${Prompts.RENAME_ELEMENTS_AFFECTED(elementsAffected)}`
+
+  public static readonly RENAME_ELEMENTS_AFFECTED = (elementsAffected: number): string => `${elementsAffected} elements affected`
+  public static readonly RENAME_UPDATING_STATE = (): string => 'Updating state file'
   public static readonly RENAME_FILES_CHANGES = (filesChangesCount: number): string => `${filesChangesCount} nacl files changed in total`
 
   public static readonly FINISHED_SUCCESSFULLY = (): string => 'Finished successfully!'

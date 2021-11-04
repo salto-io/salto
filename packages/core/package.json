@@ -43,7 +43,7 @@
     "@salto-io/logging": "0.3.3",
     "@salto-io/lowerdash": "0.3.3",
     "@salto-io/netsuite-adapter": "0.3.3",
-    "@salto-io/rocksdb": "5.1.1-salto-17",
+    "@salto-io/rocksdb": "5.1.1-salto-18",
     "@salto-io/salesforce-adapter": "0.3.3",
     "@salto-io/stripe-adapter": "0.3.3",
     "@salto-io/workato-adapter": "0.3.3",

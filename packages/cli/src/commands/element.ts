@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import open from 'open'
-import { Element, ElemID, isElement, CORE_ANNOTATIONS, DetailedChange } from '@salto-io/adapter-api'
+import { ElemID, isElement, CORE_ANNOTATIONS, DetailedChange } from '@salto-io/adapter-api'
 import { Workspace, ElementSelector, createElementSelectors, FromSource, elementSource } from '@salto-io/workspace'
 import { RenameChange, getRenameElementChanges, getRenameReferencesChanges, getEnvsDeletionsDiff, RenameElementIdError, getUpdatedTopLevelElements } from '@salto-io/core'
 import { logger } from '@salto-io/logging'

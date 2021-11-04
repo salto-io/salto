@@ -23,10 +23,12 @@ import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { FETCH_CONFIG } from '../../config'
 import { SALESFORCE, NETSUITE, ZUORA_BILLING } from '../../constants'
-import { indexSalesforceByMetadataTypeAndApiName, indexNetsuiteByTypeAndScriptId, indexZuoraByElemId } from './element_indexes'
-import { addNetsuiteRecipeReferences } from './reference_finders/netsuite'
-import { addSalesforceRecipeReferences } from './reference_finders/salesforce'
-import { addZuoraRecipeReferences } from './reference_finders/zuora'
+import { addNetsuiteRecipeReferences } from './netsuite/reference_finder'
+import { addSalesforceRecipeReferences } from './salesforce/reference_finder'
+import { addZuoraRecipeReferences } from './zuora_billing/reference_finder'
+import { indexSalesforceByMetadataTypeAndApiName } from './salesforce/element_index'
+import { indexNetsuiteByTypeAndScriptId } from './netsuite/element_index'
+import { indexZuoraByElemId } from './zuora_billing/element_index'
 
 const log = logger(module)
 const { makeArray } = collections.array

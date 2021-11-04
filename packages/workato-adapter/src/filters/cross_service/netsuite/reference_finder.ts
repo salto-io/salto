@@ -18,9 +18,9 @@ import {
   InstanceElement, ElemID, ReferenceExpression, Values, ObjectType,
 } from '@salto-io/adapter-api'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
-import { NetsuiteIndex } from '../element_indexes'
+import { addReferencesForService, FormulaReferenceFinder, MappedReference, ReferenceFinder, createMatcher, Matcher, getBlockDependencyDirection } from '../reference_finders'
+import { NetsuiteIndex } from './element_index'
 import { isNetsuiteBlock, NetsuiteBlock } from './recipe_block_types'
-import { addReferencesForService, FormulaReferenceFinder, MappedReference, ReferenceFinder, createMatcher, Matcher, getBlockDependencyDirection } from './shared'
 
 const { isDefined } = lowerdashValues
 

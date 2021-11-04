@@ -17,25 +17,36 @@ import { CORE_ANNOTATIONS, Element, InstanceElement, isInstanceElement } from '@
 import { API_COLLECTION_TYPE, API_ENDPOINT_TYPE, CONNECTION_TYPE, FOLDER_TYPE, PROPERTY_TYPE, RECIPE_TYPE, RECIPE_CODE_TYPE, ROLE_TYPE, API_CLIENT_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
 
-const BASE_URL = 'https://app.workato.com'
-const getApiCollectionUrl = (instance: InstanceElement): string | undefined => instance.value.id && `${BASE_URL}/api_groups/${instance.value.id}/endpoints`
-const getRecipeUrl = (instance: InstanceElement): string | undefined => instance.value.id && `${BASE_URL}/recipes/${instance.value.id}`
+type GetUrlFunc = (instance: InstanceElement) => string | undefined
 
-const ID_TO_URL_GENERATOR: Record<string, (instance: InstanceElement) => string | undefined> = {
-  [CONNECTION_TYPE]: instance => instance.value.id && `${BASE_URL}/connections/${instance.value.id}`,
+const BASE_URL = 'https://app.workato.com'
+
+const getApiCollectionUrl: GetUrlFunc = instance => instance.value.id && `${BASE_URL}/api_groups/${instance.value.id}/endpoints`
+const getRecipeUrl: GetUrlFunc = instance => instance.value.id && `${BASE_URL}/recipes/${instance.value.id}`
+const getConnectionUrl: GetUrlFunc = instance => instance.value.id && `${BASE_URL}/connections/${instance.value.id}`
+const getRecipeCodeUrl: GetUrlFunc = instance =>
+  instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.value
+    && getRecipeUrl(instance.annotations[CORE_ANNOTATIONS.PARENT][0].value)
+const getFolderUrl: GetUrlFunc = instance => instance.value.id && `${BASE_URL}/recipes?fid=${instance.value.id}`
+const getRoleUrl: GetUrlFunc = instance => instance.value.id && `${BASE_URL}/privilege_groups/${instance.value.id}/edit`
+const getApiEndpointUrl: GetUrlFunc = instance => {
+  const base = instance.value.api_collection_id?.value
+    && getApiCollectionUrl(instance.value.api_collection_id.value)
+  return instance.value.id && base && `${base}/${instance.value.id}`
+}
+const getPropertyUrl: GetUrlFunc = () => `${BASE_URL}/account_properties`
+const getApiClientUrl: GetUrlFunc = instance => instance.value.id && `${BASE_URL}/api_customers/${instance.value.id}`
+
+const ID_TO_URL_GENERATOR: Record<string, GetUrlFunc> = {
+  [CONNECTION_TYPE]: getConnectionUrl,
   [RECIPE_TYPE]: getRecipeUrl,
-  [RECIPE_CODE_TYPE]: instance => instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.value
-    && getRecipeUrl(instance.annotations[CORE_ANNOTATIONS.PARENT][0].value),
-  [FOLDER_TYPE]: instance => instance.value.id && `${BASE_URL}/recipes?fid=${instance.value.id}`,
-  [ROLE_TYPE]: instance => instance.value.id && `${BASE_URL}/privilege_groups/${instance.value.id}/edit`,
+  [RECIPE_CODE_TYPE]: getRecipeCodeUrl,
+  [FOLDER_TYPE]: getFolderUrl,
+  [ROLE_TYPE]: getRoleUrl,
   [API_COLLECTION_TYPE]: getApiCollectionUrl,
-  [API_ENDPOINT_TYPE]: instance => {
-    const base = instance.value.api_collection_id?.value
-      && getApiCollectionUrl(instance.value.api_collection_id.value)
-    return instance.value.id && base && `${base}/${instance.value.id}`
-  },
-  [PROPERTY_TYPE]: () => `${BASE_URL}/account_properties`,
-  [API_CLIENT_TYPE]: instance => instance.value.id && `${BASE_URL}/api_customers/${instance.value.id}`,
+  [API_ENDPOINT_TYPE]: getApiEndpointUrl,
+  [PROPERTY_TYPE]: getPropertyUrl,
+  [API_CLIENT_TYPE]: getApiClientUrl,
 }
 
 const filter: FilterCreator = () => ({

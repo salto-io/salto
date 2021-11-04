@@ -19,7 +19,7 @@ import filterCreator from '../../src/filters/service_url'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
 import { DEFAULT_TYPES, DEFAULT_ID_FIELDS } from '../../src/config'
-import { WORKATO } from '../../src/constants'
+import { CONNECTION_TYPE, RECIPE_TYPE, RECIPE_CODE_TYPE, WORKATO, FOLDER_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, API_ENDPOINT_TYPE, PROPERTY_TYPE } from '../../src/constants'
 
 
 describe('service_url', () => {
@@ -37,14 +37,49 @@ describe('service_url', () => {
 
 
   beforeAll(async () => {
-    connectionInstance = new InstanceElement('connection', new ObjectType({ elemID: new ElemID(WORKATO, 'connection') }), { id: 1 })
-    recipeInstance = new InstanceElement('recipe', new ObjectType({ elemID: new ElemID(WORKATO, 'recipe') }), { id: 2 })
-    recipeCodeInstance = new InstanceElement('recipe__code', new ObjectType({ elemID: new ElemID(WORKATO, 'recipe__code') }), undefined, undefined, { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(recipeInstance.elemID, recipeInstance)] })
-    folderInstance = new InstanceElement('folder', new ObjectType({ elemID: new ElemID(WORKATO, 'folder') }), { id: 4 })
-    roleInstance = new InstanceElement('role', new ObjectType({ elemID: new ElemID(WORKATO, 'role') }), { id: 5 })
-    apiCollectionInstance = new InstanceElement('api_collection', new ObjectType({ elemID: new ElemID(WORKATO, 'api_collection') }), { id: 6 })
-    apiEndpointInstance = new InstanceElement('api_endpoint', new ObjectType({ elemID: new ElemID(WORKATO, 'api_endpoint') }), { id: 7, api_collection_id: new ReferenceExpression(apiCollectionInstance.elemID, apiCollectionInstance) })
-    propertyInstance = new InstanceElement('property', new ObjectType({ elemID: new ElemID(WORKATO, 'property') }), { id: 8 })
+    connectionInstance = new InstanceElement(
+      CONNECTION_TYPE,
+      new ObjectType({ elemID: new ElemID(WORKATO, CONNECTION_TYPE) }),
+      { id: 1 }
+    )
+    recipeInstance = new InstanceElement(
+      RECIPE_TYPE,
+      new ObjectType({ elemID: new ElemID(WORKATO, RECIPE_TYPE) }), { id: 2 },
+    )
+    recipeCodeInstance = new InstanceElement(
+      RECIPE_CODE_TYPE,
+      new ObjectType({ elemID: new ElemID(WORKATO, RECIPE_CODE_TYPE) }), undefined, undefined,
+      { [CORE_ANNOTATIONS.PARENT]: [
+        new ReferenceExpression(recipeInstance.elemID, recipeInstance),
+      ] }
+    )
+    folderInstance = new InstanceElement(
+      FOLDER_TYPE,
+      new ObjectType({ elemID: new ElemID(WORKATO, FOLDER_TYPE) }), { id: 4 },
+    )
+    roleInstance = new InstanceElement(
+      ROLE_TYPE,
+      new ObjectType({ elemID: new ElemID(WORKATO, ROLE_TYPE) }), { id: 5 },
+    )
+    apiCollectionInstance = new InstanceElement(
+      API_COLLECTION_TYPE,
+      new ObjectType({ elemID: new ElemID(WORKATO, API_COLLECTION_TYPE) }), { id: 6 },
+    )
+    apiEndpointInstance = new InstanceElement(
+      API_ENDPOINT_TYPE,
+      new ObjectType({ elemID: new ElemID(WORKATO, API_ENDPOINT_TYPE) }),
+      {
+        id: 7,
+        api_collection_id: new ReferenceExpression(
+          apiCollectionInstance.elemID,
+          apiCollectionInstance,
+        ),
+      }
+    )
+    propertyInstance = new InstanceElement(
+      PROPERTY_TYPE,
+      new ObjectType({ elemID: new ElemID(WORKATO, PROPERTY_TYPE) }), { id: 8 },
+    )
 
     filter = filterCreator({
       client,

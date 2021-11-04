@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ElemID, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
-import { WORKATO, CROSS_SERVICE_SUPPORTED_APPS } from './constants'
+import { WORKATO, CROSS_SERVICE_SUPPORTED_APPS, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RECIPE_TYPE, CONNECTION_TYPE, API_ENDPOINT_TYPE } from './constants'
 
 const { createClientConfigType } = clientUtils
 const {
@@ -50,12 +50,12 @@ export type WorkatoConfig = {
 }
 
 export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
-  connection: {
+  [CONNECTION_TYPE]: {
     request: {
       url: '/connections',
     },
   },
-  recipe: {
+  [RECIPE_TYPE]: {
     request: {
       url: '/recipes',
       paginationField: 'since_id',
@@ -73,7 +73,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       ],
     },
   },
-  folder: {
+  [FOLDER_TYPE]: {
     request: {
       url: '/folders',
       recursiveQueryByResponseField: {
@@ -87,14 +87,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
   },
   // eslint-disable-next-line camelcase
-  api_collection: {
+  [API_COLLECTION_TYPE]: {
     request: {
       url: '/api_collections',
       paginationField: 'page',
     },
   },
   // eslint-disable-next-line camelcase
-  api_endpoint: {
+  [API_ENDPOINT_TYPE]: {
     request: {
       url: '/api_endpoints',
       paginationField: 'page',
@@ -117,12 +117,12 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
       paginationField: 'page',
     },
   },
-  role: {
+  [ROLE_TYPE]: {
     request: {
       url: '/roles',
     },
   },
-  property: {
+  [PROPERTY_TYPE]: {
     request: {
       url: '/properties',
       queryParams: {

@@ -13,41 +13,38 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, Element, ElemID, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
-import { WORKATO } from '../constants'
+import { CORE_ANNOTATIONS, Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { API_COLLECTION_TYPE, API_ENDPOINT_TYPE, CONNECTION_TYPE, FOLDER_TYPE, PROPERTY_TYPE, RECIPE_TYPE, RECIPE_CODE_TYPE, ROLE_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
 
-const { awu } = collections.asynciterable
-
-const baseURL = 'https://app.workato.com'
-const getApiCollectionUrl = (instance: InstanceElement): string | undefined => instance.value.id && `${baseURL}/api_groups/${instance.value.id}/endpoints`
-const getRecipeUrl = (instance: InstanceElement): string | undefined => instance.value.id && `${baseURL}/recipes/${instance.value.id}`
+const BASE_URL = 'https://app.workato.com'
+const getApiCollectionUrl = (instance: InstanceElement): string | undefined => instance.value.id && `${BASE_URL}/api_groups/${instance.value.id}/endpoints`
+const getRecipeUrl = (instance: InstanceElement): string | undefined => instance.value.id && `${BASE_URL}/recipes/${instance.value.id}`
 
 const ID_TO_URL_GENERATOR: Record<string, (instance: InstanceElement) => string | undefined> = {
-  [new ElemID(WORKATO, 'connection').getFullName()]: instance => instance.value.id && `${baseURL}/connections/${instance.value.id}`,
-  [new ElemID(WORKATO, 'recipe').getFullName()]: getRecipeUrl,
-  [new ElemID(WORKATO, 'recipe__code').getFullName()]: instance => instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.value && getRecipeUrl(instance.annotations[CORE_ANNOTATIONS.PARENT][0].value),
-  [new ElemID(WORKATO, 'folder').getFullName()]: instance => instance.value.id && `${baseURL}/recipes?fid=${instance.value.id}`,
-  [new ElemID(WORKATO, 'role').getFullName()]: instance => instance.value.id && `${baseURL}/privilege_groups/${instance.value.id}/edit`,
-  [new ElemID(WORKATO, 'api_collection').getFullName()]: getApiCollectionUrl,
-  [new ElemID(WORKATO, 'api_endpoint').getFullName()]: instance => {
+  [CONNECTION_TYPE]: instance => instance.value.id && `${BASE_URL}/connections/${instance.value.id}`,
+  [RECIPE_TYPE]: getRecipeUrl,
+  [RECIPE_CODE_TYPE]: instance => instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.value
+    && getRecipeUrl(instance.annotations[CORE_ANNOTATIONS.PARENT][0].value),
+  [FOLDER_TYPE]: instance => instance.value.id && `${BASE_URL}/recipes?fid=${instance.value.id}`,
+  [ROLE_TYPE]: instance => instance.value.id && `${BASE_URL}/privilege_groups/${instance.value.id}/edit`,
+  [API_COLLECTION_TYPE]: getApiCollectionUrl,
+  [API_ENDPOINT_TYPE]: instance => {
     const base = instance.value.api_collection_id?.value
       && getApiCollectionUrl(instance.value.api_collection_id.value)
     return instance.value.id && base && `${base}/${instance.value.id}`
   },
-  [new ElemID(WORKATO, 'property').getFullName()]: () => `${baseURL}/account_properties`,
+  [PROPERTY_TYPE]: () => `${BASE_URL}/account_properties`,
 }
 
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    await awu(elements)
+    elements
       .filter(isInstanceElement)
-      .filter(async element => (await element.getType())
-        .elemID.getFullName() in ID_TO_URL_GENERATOR)
-      .forEach(async element => {
+      .filter(element => element.elemID.typeName in ID_TO_URL_GENERATOR)
+      .forEach(element => {
         const url = ID_TO_URL_GENERATOR[
-          (await element.getType()).elemID.getFullName()
+          element.elemID.typeName
         ](element)
 
         if (url !== undefined) {

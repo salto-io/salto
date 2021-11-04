@@ -19,7 +19,7 @@ import filterCreator from '../../src/filters/service_url'
 import WorkatoClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
 import { DEFAULT_TYPES, DEFAULT_ID_FIELDS } from '../../src/config'
-import { CONNECTION_TYPE, RECIPE_TYPE, RECIPE_CODE_TYPE, WORKATO, FOLDER_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, API_ENDPOINT_TYPE, PROPERTY_TYPE } from '../../src/constants'
+import { CONNECTION_TYPE, RECIPE_TYPE, RECIPE_CODE_TYPE, WORKATO, FOLDER_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, API_ENDPOINT_TYPE, PROPERTY_TYPE, API_CLIENT_TYPE } from '../../src/constants'
 
 
 describe('service_url', () => {
@@ -34,7 +34,7 @@ describe('service_url', () => {
   let apiCollectionInstance: InstanceElement
   let apiEndpointInstance: InstanceElement
   let propertyInstance: InstanceElement
-
+  let apiClientInstance: InstanceElement
 
   beforeAll(async () => {
     connectionInstance = new InstanceElement(
@@ -81,6 +81,11 @@ describe('service_url', () => {
       new ObjectType({ elemID: new ElemID(WORKATO, PROPERTY_TYPE) }), { id: 8 },
     )
 
+    apiClientInstance = new InstanceElement(
+      PROPERTY_TYPE,
+      new ObjectType({ elemID: new ElemID(WORKATO, API_CLIENT_TYPE) }), { id: 9 },
+    )
+
     filter = filterCreator({
       client,
       paginator: clientUtils.createPaginator({
@@ -111,6 +116,7 @@ describe('service_url', () => {
       apiCollectionInstance,
       apiEndpointInstance,
       propertyInstance,
+      apiClientInstance,
     ])
   })
 
@@ -144,5 +150,9 @@ describe('service_url', () => {
 
   it('should set the right url for property', () => {
     expect(propertyInstance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://app.workato.com/account_properties')
+  })
+
+  it('should set the right url for api client', () => {
+    expect(apiClientInstance.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://app.workato.com/api_customers/9')
   })
 })

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ElemID, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
-import { WORKATO, CROSS_SERVICE_SUPPORTED_APPS, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RECIPE_TYPE, CONNECTION_TYPE, API_ENDPOINT_TYPE } from './constants'
+import { WORKATO, CROSS_SERVICE_SUPPORTED_APPS, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RECIPE_TYPE, CONNECTION_TYPE, API_ENDPOINT_TYPE, API_CLIENT_TYPE, API_ACCESS_PROFILE_TYPE } from './constants'
 
 const { createClientConfigType } = clientUtils
 const {
@@ -104,14 +104,14 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     },
   },
   // eslint-disable-next-line camelcase
-  api_client: {
+  [API_CLIENT_TYPE]: {
     request: {
       url: '/api_clients',
       paginationField: 'page',
     },
   },
   // eslint-disable-next-line camelcase
-  api_access_profile: {
+  [API_ACCESS_PROFILE_TYPE]: {
     request: {
       url: '/api_access_profiles',
       paginationField: 'page',

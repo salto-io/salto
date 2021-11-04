@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
-import { API_COLLECTION_TYPE, API_ENDPOINT_TYPE, CONNECTION_TYPE, FOLDER_TYPE, PROPERTY_TYPE, RECIPE_TYPE, RECIPE_CODE_TYPE, ROLE_TYPE } from '../constants'
+import { API_COLLECTION_TYPE, API_ENDPOINT_TYPE, CONNECTION_TYPE, FOLDER_TYPE, PROPERTY_TYPE, RECIPE_TYPE, RECIPE_CODE_TYPE, ROLE_TYPE, API_CLIENT_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
 
 const BASE_URL = 'https://app.workato.com'
@@ -35,6 +35,7 @@ const ID_TO_URL_GENERATOR: Record<string, (instance: InstanceElement) => string 
     return instance.value.id && base && `${base}/${instance.value.id}`
   },
   [PROPERTY_TYPE]: () => `${BASE_URL}/account_properties`,
+  [API_CLIENT_TYPE]: instance => instance.value.id && `${BASE_URL}/api_customers/${instance.value.id}`,
 }
 
 const filter: FilterCreator = () => ({

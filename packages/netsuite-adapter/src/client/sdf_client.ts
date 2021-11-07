@@ -90,7 +90,7 @@ const ALL = 'ALL'
 const ADDITIONAL_FILE_PATTERN = '.template.'
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
-const SINGLE_OBJECT_RETRIES = 5
+const SINGLE_OBJECT_RETRIES = 3
 const READ_CONCURRENCY = 100
 
 const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING', 'WMSSYSTEM', 'BILLINGACCOUNTS']
@@ -519,7 +519,7 @@ export default class SdfClient {
           throw e
         }
         if (ids.length === 1) {
-          log.debug('Retrying to fetch chunk %d/%d with a single object of type: %s', index, total, type)
+          log.debug('Retrying to fetch chunk %d/%d with a single object of type: %s. %d retries left', index, total, type, retriesLeft - 1)
           return importObjectsChunk({ type, ids, index, total }, retriesLeft - 1)
         }
         log.debug('Retrying to fetch chunk %d/%d with %d objects of type: %s with smaller chunks', index, total, ids.length, type)

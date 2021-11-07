@@ -90,6 +90,7 @@ const ALL = 'ALL'
 const ADDITIONAL_FILE_PATTERN = '.template.'
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
+const SINGLE_OBJECT_RETRIES = 3
 const READ_CONCURRENCY = 100
 
 const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING', 'WMSSYSTEM', 'BILLINGACCOUNTS']
@@ -480,7 +481,7 @@ export default class SdfClient {
     suiteAppId: string | undefined,
   ): Promise<FailedTypes> {
     const importObjectsChunk = async (
-      { type, ids, index, total }: ObjectsChunk, retry = true
+      { type, ids, index, total }: ObjectsChunk, retriesLeft = SINGLE_OBJECT_RETRIES
     ): Promise<FailedTypes> => {
       const retryFetchFailedInstances = async (
         failedInstancesIds: string[]
@@ -514,12 +515,12 @@ export default class SdfClient {
       } catch (e) {
         log.warn('Failed to fetch chunk %d/%d with %d objects of type: %s with suiteApp: %s', index, total, ids.length, type, suiteAppId)
         log.warn(e)
-        if (!retry) {
+        if (retriesLeft === 0) {
           throw e
         }
         if (ids.length === 1) {
-          log.debug('Retrying to fetch chunk %d/%d with a single object of type: %s', index, total, type)
-          return importObjectsChunk({ type, ids, index, total }, false)
+          log.debug('Retrying to fetch chunk %d/%d with a single object of type: %s. %d retries left', index, total, type, retriesLeft - 1)
+          return importObjectsChunk({ type, ids, index, total }, retriesLeft - 1)
         }
         log.debug('Retrying to fetch chunk %d/%d with %d objects of type: %s with smaller chunks', index, total, ids.length, type)
         const middle = (ids.length + 1) / 2

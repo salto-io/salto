@@ -97,11 +97,14 @@ describe('Nacl Files Source', () => {
       values: jest.fn().mockReturnValue(awu([])),
       entries: jest.fn().mockReturnValue(awu([])),
       setAll: jest.fn(),
+      set: jest.fn().mockResolvedValue(undefined),
       deleteAll: jest.fn(),
       clear: jest.fn(),
       flush: jest.fn(),
       isEmpty: jest.fn().mockResolvedValue(true),
-      get: jest.fn().mockResolvedValue(undefined),
+      get: jest.fn().mockImplementation(
+        async (key: string) => (key.endsWith('hash') ? 'HASH' : undefined)
+      ),
       getMany: jest.fn().mockImplementation((keys: string[]) => keys.map(_k => undefined)),
     }
     createdMaps[namespace] = mockMap as unknown as RemoteMap<Value>
@@ -260,17 +263,19 @@ describe('Nacl Files Source', () => {
   describe('rename', () => {
     it('should rename everything', async () => {
       const newName = 'new'
+      const oldName = 'old'
       mockDirStore.rename = jest.fn().mockResolvedValue(Promise.resolve())
       mockCache.rename = jest.fn().mockResolvedValue(Promise.resolve())
       mockedStaticFilesSource.rename = jest.fn().mockResolvedValue(Promise.resolve())
       const naclSrc = await naclFilesSource(
-        '',
+        oldName,
         mockDirStore,
         mockedStaticFilesSource,
         mockRemoteMapCreator,
         true
       )
       await naclSrc.load({})
+      jest.clearAllMocks()
       await naclSrc.rename(newName)
       expect(mockDirStore.rename).toHaveBeenCalledTimes(1)
       expect(mockDirStore.rename).toHaveBeenCalledWith(newName)
@@ -288,6 +293,21 @@ describe('Nacl Files Source', () => {
         expect(createdMaps[newMap].setAll).toHaveBeenCalledTimes(1)
         expect(createdMaps[oldMap].entries).toHaveBeenCalledTimes(1)
       })
+
+      // make sure the meta data hash value was renamed
+      const mapNames = Object.keys(createdMaps)
+        .filter(namespace => !namespace.includes('parsedResultCache'))
+        .filter(namespaces => namespaces.includes('metadata'))
+      const [[newMetadata], [oldMetadata]] = _.partition(mapNames, name => name.includes(newName))
+      expect(createdMaps[newMetadata].set).toHaveBeenCalledTimes(1)
+      expect(createdMaps[oldMetadata].get).toHaveBeenCalledTimes(1)
+
+      // make sure all new maps are created with the proper names
+      const oldNames = Object.keys(createdMaps).filter(namespaces => namespaces.includes(oldName))
+      const newNames = new Set(Object.keys(createdMaps)
+        .filter(namespaces => namespaces.includes(newName)))
+      oldNames.forEach(namespace =>
+        expect(newNames.has(namespace.replace(oldName, newName))).toBeTruthy())
     })
   })
 

@@ -49,14 +49,15 @@ const isRegExpFullMatch = (regExpMatches: Array<RegExpExecArray | null>): boolea
 )
 
 const addDependencies = (instance: InstanceElement, deps: Array<ElemID>): void => {
+  if (deps.length === 0) {
+    return
+  }
   const dependenciesList = _.uniqBy(
     makeArray(instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
       .concat(deps.map(dep => ({ reference: new ReferenceExpression(dep) }))),
     ref => ref.reference.elemID.getFullName()
   )
-  if (dependenciesList.length > 0) {
-    instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = dependenciesList
-  }
+  instance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES] = dependenciesList
 }
 
 /**

@@ -727,7 +727,7 @@ describe('fetch', () => {
               mockAdapters,
               createElementSource([expectedNewTypeA]),
               createElementSource([expectedNewTypeA]),
-              { [newTypeDifferentAdapterID.adapter]: 'dummy1' },
+              { [newTypeDifferentAdapterID.adapter]: 'dummy' },
               [],
             )
             changes = [...result.changes]

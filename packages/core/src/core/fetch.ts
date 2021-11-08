@@ -21,7 +21,7 @@ import {
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
-  CORE_ANNOTATIONS, AdapterOperationsContext,
+  CORE_ANNOTATIONS, AdapterOperationsContext, FetchResult,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
@@ -353,8 +353,32 @@ const runPostFetch = async ({
   )
 }
 
+const handleAccountNameUpdate = async (
+  fetchResult: FetchResult,
+  accountName: string,
+  service: string,
+): Promise<void> => {
+  // Resolve is used for an efficient deep clone
+  fetchResult.elements = await expressions.resolve(fetchResult.elements,
+    elementSource.createInMemoryElementSource(), true)
+  await updateElementsWithAlternativeAdapter(fetchResult.elements, accountName, service)
+  if (fetchResult.updatedConfig) {
+    fetchResult.updatedConfig.config = (await expressions.resolve(fetchResult.updatedConfig.config,
+      elementSource.createInMemoryElementSource(), true)) as InstanceElement[]
+    await updateElementsWithAlternativeAdapter(fetchResult.updatedConfig.config, accountName,
+      service)
+  }
+  if (fetchResult.errors) {
+    fetchResult.errors.forEach(error => {
+      if (isSaltoElementError(error)) {
+        error.elemID = createAdapterReplacedID(error.elemID, accountName)
+      }
+    })
+  }
+}
+
 const fetchAndProcessMergeErrors = async (
-  adapters: Record<string, AdapterOperations>,
+  accountsToAdapters: Record<string, AdapterOperations>,
   stateElements: elementSource.ElementsSource,
   accountToServiceNameMap: Record<string, string>,
   getChangesEmitter: StepEmitter,
@@ -369,36 +393,21 @@ const fetchAndProcessMergeErrors = async (
   }> => {
   try {
     const progressReporters = _.mapValues(
-      adapters,
+      accountsToAdapters,
       (_adapter, accountName) => createAdapterProgressReporter(accountName, 'fetch', progressEmitter)
     )
     const fetchResults = await Promise.all(
-      Object.entries(adapters)
+      Object.entries(accountsToAdapters)
         .map(async ([accountName, adapter]) => {
           const fetchResult = await adapter.fetch({
             progressReporter: progressReporters[accountName],
           })
           const { updatedConfig, errors } = fetchResult
-          if (fetchResult.elements.length > 0 && accountName
-            !== accountToServiceNameMap[accountName]) {
-            // Resolve is used for an efficient deep clone
-            fetchResult.elements = await expressions.resolve(fetchResult.elements,
-              elementSource.createInMemoryElementSource(), true)
-            await updateElementsWithAlternativeAdapter(fetchResult.elements,
-              accountName, accountToServiceNameMap[accountName])
-            if (updatedConfig) {
-              updatedConfig.config = (await expressions.resolve(updatedConfig.config,
-                elementSource.createInMemoryElementSource(), true)) as InstanceElement[]
-              updatedConfig.config.forEach(config =>
-                _.set(config, 'elemID', createAdapterReplacedID(config.elemID, accountName)))
-            }
-            if (errors) {
-              errors.forEach(error => {
-                if (isSaltoElementError(error)) {
-                  error.elemID = createAdapterReplacedID(error.elemID, accountName)
-                }
-              })
-            }
+          if (
+            fetchResult.elements.length > 0 && accountName !== accountToServiceNameMap[accountName]
+          ) {
+            await handleAccountNameUpdate(fetchResult, accountName,
+              accountToServiceNameMap[accountName])
           }
           // We need to flatten the elements string to avoid a memory leak. See docs
           // of the flattenElementStr method for more details.
@@ -416,7 +425,6 @@ const fetchAndProcessMergeErrors = async (
           }
         })
     )
-
     const serviceElements = _.flatten(fetchResults.map(res => res.elements))
     const fetchErrors = fetchResults.flatMap(res => res.errors)
     const updatedConfigs = fetchResults
@@ -434,7 +442,7 @@ const fetchAndProcessMergeErrors = async (
       await stateElements.getAll(),
       elem => elem.elemID.adapter
     )
-    const adaptersWithPostFetch = _.pickBy(adapters, isAdapterOperationsWithPostFetch)
+    const adaptersWithPostFetch = _.pickBy(accountsToAdapters, isAdapterOperationsWithPostFetch)
     if (!_.isEmpty(adaptersWithPostFetch)) {
       try {
         // update elements based on fetch results from other services
@@ -452,6 +460,7 @@ const fetchAndProcessMergeErrors = async (
         log.error(`failed to run postFetch: ${e}, stack: ${e.stack}`)
       }
     }
+
     const { errors: mergeErrors, merged: elements } = await mergeElements(awu(serviceElements))
     const mergeErrorsArr = await awu(mergeErrors.values()).flat().toArray()
     const processErrorsResult = await processMergeErrors(
@@ -467,7 +476,6 @@ const fetchAndProcessMergeErrors = async (
     )
     const validServiceElements = serviceElements
       .filter(e => !droppedElements.has(e.elemID.getFullName()))
-
     log.debug(`after merge there are ${processErrorsResult.keptElements.length} elements [errors=${
       mergeErrorsArr.length}]`)
 
@@ -507,9 +515,10 @@ const calcFetchChanges = async (
   partiallyFetchedAdapters: Set<string>,
   allFetchedAdapters: Set<string>
 ): Promise<Iterable<FetchChange>> => {
-  const partialFetchFilter: IDFilter = id =>
+  const partialFetchFilter: IDFilter = id => (
     !partiallyFetchedAdapters.has(id.adapter)
-      || mergedServiceElements.has(id)
+    || mergedServiceElements.has(id)
+  )
   const serviceFetchFilter: IDFilter = id =>
     allFetchedAdapters.has(id.adapter)
   const partialFetchElementSource: ReadOnlyElementsSource = {
@@ -654,22 +663,22 @@ const createFetchChanges = async ({
   }
 }
 export const fetchChanges = async (
-  adapters: Record<string, AdapterOperations>,
+  accountsToAdapters: Record<string, AdapterOperations>,
   workspaceElements: elementSource.ElementsSource,
   stateElements: elementSource.ElementsSource,
   accountToServiceNameMap: Record<string, string>,
   currentConfigs: InstanceElement[],
   progressEmitter?: EventEmitter<FetchProgressEvents>
 ): Promise<FetchChangesResult> => {
-  const adapterNames = _.keys(adapters)
+  const accountNames = _.keys(accountsToAdapters)
   const getChangesEmitter = new StepEmitter()
   if (progressEmitter) {
-    progressEmitter.emit('changesWillBeFetched', getChangesEmitter, adapterNames)
+    progressEmitter.emit('changesWillBeFetched', getChangesEmitter, accountNames)
   }
   const {
     serviceElements, errors, processErrorsResult, updatedConfigs, partiallyFetchedAdapters,
   } = await fetchAndProcessMergeErrors(
-    adapters,
+    accountsToAdapters,
     stateElements,
     accountToServiceNameMap,
     getChangesEmitter,
@@ -683,10 +692,9 @@ export const fetchChanges = async (
   adaptersFirstFetchPartial.forEach(
     adapter => log.warn('Received partial results from %s before full fetch', adapter)
   )
-
   return createFetchChanges({
     unmergedElements: serviceElements,
-    adapterNames: Object.keys(adapters),
+    adapterNames: Object.keys(accountsToAdapters),
     workspaceElements,
     stateElements,
     currentConfigs,
@@ -882,18 +890,14 @@ export const getFetchAdapterAndServicesSetup = async (
   adaptersCreatorConfigs: Record<string, AdapterOperationsContext>
   currentConfigs: InstanceElement[]
 }> => {
-  const createElemIdGetters = async (): Promise<Record<string, ElemIdGetter>> =>
-    Object.fromEntries(await awu(Object.keys(accountToServiceNameMap))
-      .map(async account => [account,
-        await createElemIdGetter(await (await workspace.elements()).getAll(),
-          workspace.state())]).toArray())
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
     await workspace.servicesCredentials(fetchServices),
     workspace.serviceConfig.bind(workspace),
     await workspace.elements(),
     accountToServiceNameMap,
-    ignoreStateElemIdMapping ? undefined : await createElemIdGetters(),
+    ignoreStateElemIdMapping ? undefined
+      : await createElemIdGetter(await (await workspace.elements()).getAll(), workspace.state())
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)
     .map(creatorConfig => creatorConfig.config)

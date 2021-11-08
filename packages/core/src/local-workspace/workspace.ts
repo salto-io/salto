@@ -198,7 +198,8 @@ const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<ObjectTyp
       .entries(env.accountToServiceName ?? {}))
     .filter(entry => entry[0] !== entry[1]))
   await awu(Object.keys(differentlyNamedAccounts)).forEach(async account => {
-    const configCopies = configTypesByAdapter[differentlyNamedAccounts[account]].map(_.cloneDeep)
+    const configCopies = configTypesByAdapter[differentlyNamedAccounts[account]]
+      .map(element => element.clone())
     await updateElementsWithAlternativeAdapter(configCopies, account,
       differentlyNamedAccounts[account])
     configCopies.forEach(configCopy => adapterConfigTypes.push(configCopy))

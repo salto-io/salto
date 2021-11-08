@@ -74,7 +74,7 @@ export const workspaceConfigSource = async (
     localStorage: computedLocalStorage,
     getWorkspaceConfig: async (): Promise<WorkspaceConfig> => {
       const envs = (await repoCs.get(ENVS_CONFIG_NAME))?.value
-      // Fix env in case configuration doesn't is deprecated, before multiple accounts refactor
+      // Fix env in case configuration is deprecated, before multiple accounts refactor SALTO-1264
       if (envs) {
         envs.envs.forEach((env: OldOrNewEnvConfig) => {
           if (!env.accounts && env.services) {

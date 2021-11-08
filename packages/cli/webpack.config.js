@@ -46,7 +46,7 @@ module.exports = {
     ],
   },
   node: {
-    __dirname: true,
+    __dirname: false,
     __filename: true,
   },
   stats: {

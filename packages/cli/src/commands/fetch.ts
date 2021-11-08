@@ -172,8 +172,11 @@ export const fetchCommand = async (
           planItem,
         )
         if (shouldWriteToConfig) {
-          await workspace.updateServiceConfig(accountName, workspace
-            .getServiceFromAccountName(accountName), fetchResult.updatedConfig[accountName])
+          await workspace.updateServiceConfig(
+            accountName,
+            workspace.getServiceFromAccountName(accountName),
+            fetchResult.updatedConfig[accountName]
+          )
         }
         return !shouldWriteToConfig
       })

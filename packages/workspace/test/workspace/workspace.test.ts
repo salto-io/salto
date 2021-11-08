@@ -2158,7 +2158,7 @@ describe('workspace', () => {
 
     it('should change workspace state', async () => {
       await workspace.setCurrentEnv('inactive')
-      expect(workspace.services()).toEqual([...services, 'hubspot'])
+      expect(workspace.services().sort()).toEqual([...services, 'hubspot'].sort())
     })
 
     it('should persist', async () => {

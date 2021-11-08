@@ -164,7 +164,7 @@ export class TypeReference extends ReferenceExpression {
     }
   }
 
-  public createWithValue(resValue: Value, _resTopLevelParent?: Element): TypeReference {
+  public createWithValue(resValue: Value): TypeReference {
     const ExpressionCtor = this.constructor as typeof TypeReference
     return new ExpressionCtor(this.elemID, resValue)
   }

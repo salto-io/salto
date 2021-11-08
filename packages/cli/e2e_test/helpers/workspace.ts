@@ -180,7 +180,7 @@ export const runFetch = async (
     workspacePath: fetchOutputDir,
     args: [
       'fetch',
-      '-f', 'v',
+      '-f',
       ...inputEnvironment ? ['-e', inputEnvironment] : [],
       '-m', isolated ? 'isolated' : 'override',
       ...(configOverrides ?? []).flatMap(override => ['-C', override]),

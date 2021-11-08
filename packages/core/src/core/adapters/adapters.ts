@@ -47,18 +47,18 @@ export const getAdaptersCredentialsTypes = (
 
 export const initAdapters = (
   config: Record<string, AdapterOperationsContext>,
-  accountIDToServiceNameMap: Record<string, string> = {},
+  accountToServiceNameMap: Record<string, string> = {},
 ): Record<string, AdapterOperations> =>
   _.mapValues(
-    config, (context, adapter) => {
+    config, (context, account) => {
       if (!context.credentials) {
-        throw new Error(`${adapter} is not logged in.\n\nPlease login and try again.`)
+        throw new Error(`${account} is not logged in.\n\nPlease login and try again.`)
       }
-      const creator = adapterCreators[accountIDToServiceNameMap[adapter] ?? adapter]
+      const creator = adapterCreators[accountToServiceNameMap[account] ?? account]
       if (!creator) {
-        throw new Error(`${adapter} adapter is not registered.`)
+        throw new Error(`${account} adapter is not registered.`)
       }
-      log.debug('Using the following config for %s adapter: %s', adapter, safeJsonStringify(context.config?.value, undefined, 2))
+      log.debug('Using the following config for %s adapter: %s', account, safeJsonStringify(context.config?.value, undefined, 2))
       return creator.operations(context)
     }
   )
@@ -90,7 +90,6 @@ export const getDefaultAdapterConfig = async (
     defaultConf = adapterConf && [adapterConf]
   }
   if (defaultConf && adapterName !== accountName) {
-    defaultConf = _.cloneDeep(defaultConf)
     defaultConf = defaultConf.map(conf => conf.clone())
     await updateElementsWithAlternativeAdapter(defaultConf, accountName, adapterName)
   }
@@ -109,27 +108,21 @@ export const createElemIDReplacedElementsSource = (
   elementsSource: ReadOnlyElementsSource,
   account: string,
   adapter: string,
-): ReadOnlyElementsSource => ({
+): ReadOnlyElementsSource => (account === adapter ? elementsSource : ({
   getAll: async () => {
-    if (account !== adapter) {
-      const sourceElements = await awu(await elementsSource.getAll()).toArray()
-      await updateElementsWithAlternativeAdapter(sourceElements, adapter, account, elementsSource)
-      return awu(sourceElements)
-    }
-    return elementsSource.getAll()
+    const sourceElements = await awu(await elementsSource.getAll()).toArray()
+    await updateElementsWithAlternativeAdapter(sourceElements, adapter, account, elementsSource)
+    return awu(sourceElements)
   },
   get: async id => {
-    if (account !== adapter) {
-      if (id.adapter !== adapter) {
-        return undefined
-      }
-      const element = await elementsSource.get(createAdapterReplacedID(id, account))
-      if (element) {
-        await updateElementsWithAlternativeAdapter([element], adapter, account, elementsSource)
-      }
-      return element
+    if (id.adapter !== adapter) {
+      return undefined
     }
-    return elementsSource.get(id)
+    const element = await elementsSource.get(createAdapterReplacedID(id, account))
+    if (element) {
+      await updateElementsWithAlternativeAdapter([element], adapter, account, elementsSource)
+    }
+    return element
   },
   list: async () =>
     awu(await elementsSource.list()).map(id => createAdapterReplacedID(id, adapter)),
@@ -140,7 +133,7 @@ export const createElemIDReplacedElementsSource = (
     const transformedId = createAdapterReplacedID(id, account)
     return elementsSource.has(transformedId)
   },
-})
+}))
 
 const filterElementsSource = (
   elementsSource: ReadOnlyElementsSource,
@@ -168,9 +161,9 @@ const filterElementsSource = (
           }
         }
       }
-      return awu(getIds())
+      return getIds()
     },
-    has: async id => elementsSource.has(id),
+    has: async id => (isRelevantID(id) ? elementsSource.has(id) : false),
   }
 }
 
@@ -183,34 +176,26 @@ export const getAdaptersCreatorConfigs = async (
   credentials: Readonly<Record<string, InstanceElement>>,
   getConfig: AdapterConfigGetter,
   elementsSource: ReadOnlyElementsSource,
-  accountIDToServiceName: Record<string, string>,
-  elemIdGetters: Record<string, ElemIdGetter> = {},
+  accountToServiceName: Record<string, string>,
+  elemIdGetter?: ElemIdGetter,
 ): Promise<Record<string, AdapterOperationsContext>> => (
   Object.fromEntries(await Promise.all(accounts.map(
     async account => {
-      const defaultConfig = await getMergedDefaultAdapterConfig(accountIDToServiceName[account],
+      const defaultConfig = await getMergedDefaultAdapterConfig(accountToServiceName[account],
         account)
-      if (defaultConfig && account !== accountIDToServiceName[account]) {
-        await updateElementsWithAlternativeAdapter(
-          [defaultConfig],
-          account,
-          accountIDToServiceName[account],
-          elementsSource,
-        )
-      }
       return [
         account,
         {
           credentials: credentials[account],
           config: await getConfig(account, defaultConfig),
           elementsSource: createElemIDReplacedElementsSource(filterElementsSource(
-            elementsSource, accountIDToServiceName[account]
-          ), account, accountIDToServiceName[account]),
-          getElemIdFunc: (elemIdGetters[account]
+            elementsSource, accountToServiceName[account]
+          ), account, accountToServiceName[account]),
+          getElemIdFunc: (elemIdGetter
             ? ((adapterIds: string, serviceIds: ServiceIds,
-              name: string) => createAdapterReplacedID(elemIdGetters[account](
+              name: string) => createAdapterReplacedID(elemIdGetter(
               adapterIds, serviceIds, name,
-            ), accountIDToServiceName[account])) : undefined),
+            ), accountToServiceName[account])) : undefined),
         },
       ]
     }
@@ -222,14 +207,14 @@ export const getAdapters = async (
   credentials: Readonly<Record<string, InstanceElement>>,
   getConfig: AdapterConfigGetter,
   workspaceElementsSource: ReadOnlyElementsSource,
-  accountIDToServiceName: Record<string, string>,
-  elemIdGetters: Record<string, ElemIdGetter> = {},
+  accountToServiceName: Record<string, string>,
+  elemIdGetter?: ElemIdGetter,
 ): Promise<Record<string, AdapterOperations>> =>
   initAdapters(await getAdaptersCreatorConfigs(
     adapters,
     credentials,
     getConfig,
     workspaceElementsSource,
-    accountIDToServiceName,
-    elemIdGetters
-  ), accountIDToServiceName)
+    accountToServiceName,
+    elemIdGetter
+  ), accountToServiceName)

@@ -18,8 +18,7 @@ import { InstanceElement } from '@salto-io/adapter-api'
 
 export type EnvConfig = {
     name: string
-    accounts?: string[]
-    accountToServiceName: Record<string, string>
+    accountToServiceName?: Record<string, string>
 }
 
 // The adapters config is dynamic, for this reason it returns an InstanceElement.

@@ -123,15 +123,33 @@ export type Workspace = {
   currentEnv: () => string
   accounts: (env?: string) => string[]
   // services is deprecated, kept for backwards compatibility. use accounts.
-  // Remove this when no longer used, https://salto-io.atlassian.net/jira/software/c/projects/SALTO/issues/SALTO-1661
+  // Remove this when no longer used, SALTO-1661
   services: (env?: string) => string[]
+  accountCredentials: (names?: ReadonlyArray<string>) =>
+    Promise<Readonly<Record<string, InstanceElement>>>
+  // servicesCredentials is deprecated, kept for backwards compatibility.
+  // use accountsCredentials.
+  // Remove this when no longer used, SALTO-1661
   servicesCredentials: (names?: ReadonlyArray<string>) =>
     Promise<Readonly<Record<string, InstanceElement>>>
+  accountConfig: (name: string, defaultValue?: InstanceElement) =>
+    Promise<InstanceElement | undefined>
+  // serviceConfig is deprecated, kept for backwards compatibility.
+  // use accountConfig.
+  // Remove this when no longer used, SALTO-1661
   serviceConfig: (name: string, defaultValue?: InstanceElement) =>
     Promise<InstanceElement | undefined>
+  accountConfigPaths: (name: string) => Promise<string[]>
+  // serviceConfigPaths is deprecated, kept for backwards compatibility.
+  // use accountConfigPaths.
+  // Remove this when no longer used, SALTO-1661
   serviceConfigPaths: (name: string) => Promise<string[]>
   isEmpty(naclFilesOnly?: boolean): Promise<boolean>
+  // hasElementsInServices is deprecated, kept for backwards compatibility.
+  // use hasElementsInAccounts.
+  // Remove this when no longer used, SALTO-1661
   hasElementsInServices(serviceNames: string[]): Promise<boolean>
+  hasElementsInAccounts(serviceNames: string[]): Promise<boolean>
   hasElementsInEnv(envName: string): Promise<boolean>
   envOfFile(filename: string): string
   getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment>
@@ -171,7 +189,7 @@ export type Workspace = {
   clear: (args: ClearFlags) => Promise<void>
   addAccount: (service: string, account?: string) => Promise<void>
   // addService is deprecated, kept for backwards compatibility. use addAccount.
-  // Remove this when no longer used, https://salto-io.atlassian.net/jira/software/c/projects/SALTO/issues/SALTO-1661
+  // Remove this when no longer used, SALTO-1661
   addService: (service: string, account?: string) => Promise<void>
   addEnvironment: (
     env: string,
@@ -180,7 +198,19 @@ export type Workspace = {
   deleteEnvironment: (env: string, keepNacls?: boolean) => Promise<void>
   renameEnvironment: (envName: string, newEnvName: string, newSourceName? : string) => Promise<void>
   setCurrentEnv: (env: string, persist?: boolean) => Promise<void>
+  updateAccountCredentials: (service: string, creds: Readonly<InstanceElement>) => Promise<void>
+  // updateServiceCredentials is deprecated, kept for backwards compatibility.
+  // use updateAccountCredentials.
+  // Remove this when no longer used, SALTO-1661
   updateServiceCredentials: (service: string, creds: Readonly<InstanceElement>) => Promise<void>
+  updateAccountConfig: (
+    account: string,
+    adapter: string,
+    newConfig: Readonly<InstanceElement> | Readonly<InstanceElement>[]
+  ) => Promise<void>
+  // updateServiceConfig is deprecated, kept for backwards compatibility.
+  // use updateAccountConfig.
+  // Remove this when no longer used, SALTO-1661
   updateServiceConfig: (
     account: string,
     adapter: string,
@@ -264,7 +294,7 @@ export const loadWorkspace = async (
     const envConf = env
       ? makeArray(workspaceConfig.envs).find(e => e.name === env)
       : currentEnvConf()
-    return makeArray(envConf?.accounts)
+    return makeArray(Object.keys(envConf?.accountToServiceName || {}))
   }
   const state = (envName?: string): State => (
     environmentsSources.sources[envName ?? currentEnv()].state as State
@@ -824,28 +854,45 @@ export const loadWorkspace = async (
       : getLoadedNaclFilesSource()
   )
 
-  const pickServices = (names?: ReadonlyArray<string>): ReadonlyArray<string> =>
+  const pickAccounts = (names?: ReadonlyArray<string>): ReadonlyArray<string> =>
     (_.isUndefined(names) ? accounts() : accounts().filter(s => names.includes(s)))
   const credsPath = (account: string): string => path.join(currentEnv(), account)
-
   const copyTo = async (ids: ElemID[], targetEnvs: string[]): Promise<void> => {
     const workspaceChanges = await (await getLoadedNaclFilesSource())
       .copyTo(currentEnv(), ids, targetEnvs)
     workspaceState = buildWorkspaceState({ workspaceChanges })
   }
 
+  const accountCredentials = async (names?: ReadonlyArray<string>): Promise<Readonly<Record<string,
+    InstanceElement>>> => _.fromPairs(await Promise.all(
+    pickAccounts(names).map(async account => [account, await credentials.get(credsPath(account))])
+  ))
   const addAccount = async (service: string, account?: string): Promise<void> => {
-    if (account && !(naclCase(account) === account)) {
+    if (account && (naclCase(account) !== account)) {
       throw new InvalidAccountNameError(account)
     }
-    const accountID = account ?? service
+    const accountName = account ?? service
     const currentAccounts = accounts() || []
-    if (currentAccounts.includes(accountID)) {
-      throw new AccountDuplicationError(accountID)
+    if (currentAccounts.includes(accountName)) {
+      throw new AccountDuplicationError(accountName)
     }
-    currentEnvConf().accounts = [...currentAccounts, accountID]
-    currentEnvConf().accountToServiceName[accountID] = service
+    const envConf = currentEnvConf()
+    if (!envConf.accountToServiceName) {
+      envConf.accountToServiceName = {}
+    }
+    envConf.accountToServiceName[accountName] = service
     await config.setWorkspaceConfig(workspaceConfig)
+  }
+  const hasElementsInAccounts = async (accountNames: string[]): Promise<boolean> => {
+    const source = await (await getLoadedNaclFilesSource()).getElementsSource(currentEnv())
+    return awu(await source.list()).some(elemId => accountNames.includes(elemId.adapter))
+  }
+  const updateAccountCredentials = async (account: string,
+    servicesCredentials: Readonly<InstanceElement>): Promise<void> =>
+    credentials.set(credsPath(account), servicesCredentials)
+  const updateAccountConfig = async (account: string, service: string,
+    newConfig: Readonly<InstanceElement> | Readonly<InstanceElement>[]): Promise<void> => {
+    await adaptersConfig.setAdapter(account, service, newConfig)
   }
   return {
     uid: workspaceConfig.uid,
@@ -858,19 +905,18 @@ export const loadWorkspace = async (
     services: accounts,
     errors,
     hasErrors: async (env?: string) => (await errors(env)).hasErrors(),
-    servicesCredentials: async (names?: ReadonlyArray<string>) => _.fromPairs(await Promise.all(
-      pickServices(names).map(async service => [service, await credentials.get(credsPath(service))])
-    )),
+    accountCredentials,
+    servicesCredentials: accountCredentials,
+    accountConfig: (name, defaultValue) => adaptersConfig.getAdapter(name, defaultValue),
     serviceConfig: (name, defaultValue) => adaptersConfig.getAdapter(name, defaultValue),
+    accountConfigPaths: adaptersConfig.getElementNaclFiles,
     serviceConfigPaths: adaptersConfig.getElementNaclFiles,
     isEmpty: async (naclFilesOnly = false): Promise<boolean> => {
       const isNaclFilesSourceEmpty = await (await getLoadedNaclFilesSource()).isEmpty(currentEnv())
       return isNaclFilesSourceEmpty && (naclFilesOnly || state().isEmpty())
     },
-    hasElementsInServices: async (serviceNames: string[]): Promise<boolean> => {
-      const source = await (await getLoadedNaclFilesSource()).getElementsSource(currentEnv())
-      return awu(await source.list()).some(elemId => serviceNames.includes(elemId.adapter))
-    },
+    hasElementsInAccounts,
+    hasElementsInServices: hasElementsInAccounts,
     hasElementsInEnv: async envName => {
       const envSource = environmentsSources.sources[envName]
       if (envSource === undefined) {
@@ -1015,17 +1061,18 @@ export const loadWorkspace = async (
     },
     addAccount,
     addService: addAccount,
-    updateServiceCredentials:
-      async (account: string, servicesCredentials: Readonly<InstanceElement>): Promise<void> =>
-        credentials.set(credsPath(account), servicesCredentials),
-    updateServiceConfig:
-      async (account, service, newConfig) => {
-        await adaptersConfig.setAdapter(account, service, newConfig)
-      },
+    updateAccountCredentials,
+    updateServiceCredentials: updateAccountCredentials,
+    updateAccountConfig,
+    updateServiceConfig: updateAccountConfig,
     getServiceFromAccountName: (account: string): string => {
-      const serviceName = currentEnvConf().accountToServiceName[account]
-      if (!serviceName) {
-        throw new UnknownAccountError(serviceName)
+      const mapping = currentEnvConf().accountToServiceName
+      if (mapping === undefined) {
+        throw new UnknownAccountError(account)
+      }
+      const serviceName = mapping[account]
+      if (serviceName === undefined) {
+        throw new UnknownAccountError(account)
       }
       return serviceName
     },

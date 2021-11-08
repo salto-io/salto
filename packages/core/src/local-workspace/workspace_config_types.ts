@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 
-import { WorkspaceConfig } from '@salto-io/workspace'
+import { EnvConfig, WorkspaceConfig } from '@salto-io/workspace'
 import { InstanceElement, ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType, MapType } from '@salto-io/adapter-api'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 
 export type WorkspaceMetadataConfig = Pick<
   WorkspaceConfig, 'uid' | 'name' | 'staleStateThresholdMinutes'
@@ -39,11 +40,10 @@ const userDataConfigType = new ObjectType({
   isSettings: true,
 })
 const envConfigElemID = new ElemID(ENVS_CONFIG_NAME, 'env')
-const envConfigType = new ObjectType({
+const envConfigType = createMatchingObjectType<EnvConfig>({
   elemID: envConfigElemID,
   fields: {
-    name: { refType: BuiltinTypes.STRING, annotations: requireAnno },
-    accounts: { refType: new ListType(BuiltinTypes.STRING) },
+    name: { refType: BuiltinTypes.STRING, annotations: { _required: true } },
     accountToServiceName: { refType: new MapType(BuiltinTypes.STRING) },
   },
 })

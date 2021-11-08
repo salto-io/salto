@@ -52,6 +52,8 @@ export { cleanWorkspace } from './core/clean'
 const { awu } = collections.asynciterable
 const log = logger(module)
 
+const { mapValuesAsync } = promises.object
+
 const getAdapterFromLoginConfig = (serviceName: string): Adapter =>
   adapterCreators[serviceName]
 
@@ -85,8 +87,8 @@ const shouldElementBeIncluded = (services: ReadonlyArray<string>) =>
 
 const getAccountToServiceNameMap = (workspace: Workspace,
   accounts: string[]): Record<string, string> =>
-  Object.fromEntries(accounts.map(account => [account, workspace
-    .getServiceFromAccountName(account)]))
+  Object.fromEntries(accounts.map(account =>
+    [account, workspace.getServiceFromAccountName(account)]))
 
 export const preview = async (
   workspace: Workspace,
@@ -239,7 +241,7 @@ export const fetch: FetchFunc = async (
     accountToServiceNameMap,
     ignoreStateElemIdMapping,
   )
-  const adapters = initAdapters(adaptersCreatorConfigs, accountToServiceNameMap)
+  const accountToAdapter = initAdapters(adaptersCreatorConfigs, accountToServiceNameMap)
 
   if (progressEmitter) {
     progressEmitter.emit('adaptersDidInitialize')
@@ -248,7 +250,7 @@ export const fetch: FetchFunc = async (
     changes, elements, mergeErrors, errors, updatedConfig,
     configChanges, adapterNameToConfigMessage, unmergedElements,
   } = await fetchChanges(
-    adapters,
+    accountToAdapter,
     await workspace.elements(),
     workspace.state(),
     accountToServiceNameMap,
@@ -412,15 +414,18 @@ export const getLoginStatuses = async (
   const creds = await workspace.servicesCredentials(accounts)
   const accountToServiceMap = Object.fromEntries(accounts.map(account => [account,
     workspace.getServiceFromAccountName(account)]))
-  const logins = _.mapValues(getAdaptersCredentialsTypes(_.uniq(Object
-    .values(accountToServiceMap))),
-  async (configTypeOptions, adapter) =>
-    ({
-      configTypeOptions,
-      isLoggedIn: !!creds[adapter],
-    }))
-  return promises.object.resolveValues(Object.fromEntries(accounts.map(account => [account,
-    logins[accountToServiceMap[account]]])))
+  const relevantServices = _.uniq(Object.values(accountToServiceMap))
+  const logins = await mapValuesAsync(
+    getAdaptersCredentialsTypes(relevantServices),
+    async (configTypeOptions, adapter) =>
+      ({
+        configTypeOptions,
+        isLoggedIn: !!creds[adapter],
+      })
+  )
+  return Object.fromEntries(accounts.map(
+    account => [account, logins[accountToServiceMap[account]]]
+  ))
 }
 
 export const getSupportedServiceAdapterNames = (): string[] => Object.keys(adapterCreators)

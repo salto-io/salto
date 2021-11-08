@@ -129,7 +129,6 @@ export abstract class Element {
   /**
    * Return an independent copy of this instance. Needs to be implemented
    * by each subclass as this is structure dependent.
-   * Optional argument: ElemID - to create a clone with a different element id.
    * @return {Type} the cloned instance
    */
   abstract clone(annotations?: Values): Element
@@ -162,7 +161,6 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
   protected _typeMarker?: T
 
   public refInnerType: TypeReference
-
   public constructor(
     innerTypeOrRef: TypeOrRef<T>
   ) {
@@ -245,7 +243,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
       && this.refInnerType.elemID.isEqual(other.refInnerType.elemID) && isMapType(other)
   }
 
-  clone(_annotations?: Values): MapType {
+  clone(): MapType {
     return new MapType(
       new TypeReference(this.refInnerType.elemID, this.refInnerType.type)
     )
@@ -490,7 +488,7 @@ export class InstanceElement extends Element {
    * Return an independent copy of this instance.
    * @return {InstanceElement} the cloned instance
    */
-  clone(_annotations?: Values): InstanceElement {
+  clone(): InstanceElement {
     return new InstanceElement(this.elemID.name, this.refType, _.cloneDeep(this.value), this.path,
       _.cloneDeep(this.annotations))
   }

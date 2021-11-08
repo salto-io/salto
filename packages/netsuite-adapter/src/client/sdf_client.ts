@@ -30,6 +30,7 @@ import _ from 'lodash'
 import uuidv4 from 'uuid/v4'
 import AsyncLock from 'async-lock'
 import wu from 'wu'
+import shellQuote from 'shell-quote'
 import {
   APPLICATION_ID,
   FILE_CABINET_PATH_SEPARATOR,
@@ -278,6 +279,11 @@ export default class SdfClient {
     commandArguments: Values,
     projectCommandActionExecutor: CommandActionExecutor,
   ): Promise<ActionResult> {
+    _.mapValues(commandArguments, (value, key) => {
+      if (typeof value === 'string') {
+        commandArguments[key] = shellQuote.quote([value])
+      }
+    })
     const actionResult = await this.globalLimiter.schedule(
       () => this.sdfCallsLimiter.schedule(() =>
         projectCommandActionExecutor.executeAction({

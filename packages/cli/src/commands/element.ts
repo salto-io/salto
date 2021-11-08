@@ -624,6 +624,11 @@ const renameNaclElement = async (
   )
 
   await workspace.updateNaclFiles(elemChanges)
+
+  // The renamed element will be located according to the element's path and not the actual
+  // locations in the nacl. Such that if the user renamed the file before she renamed the Element,
+  // the renamed element will be placed in the original file name. This is because we use and update
+  // the pathIndex and not the ChangeLocation (SourceMap) logic in the current implementation.
   await index.delete(sourceElemId.getFullName())
   await index.set(targetElemId.getFullName(), elemChanges.filter(c => c.action === 'add').map(c => getChangeElement(c).path))
 

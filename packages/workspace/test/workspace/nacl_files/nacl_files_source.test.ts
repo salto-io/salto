@@ -285,22 +285,18 @@ describe('Nacl Files Source', () => {
       const cacheKeysToRename = [
         'elements_index',
         'referenced_index',
+        'metadata',
+        'searchableNamesIndex',
       ]
       cacheKeysToRename.forEach(key => {
-        const mapNames = Object.keys(createdMaps).filter(namespaces => namespaces.includes(key))
+        const mapNames = Object.keys(createdMaps)
+          .filter(namespace => !namespace.includes('parsedResultCache'))
+          .filter(namespaces => namespaces.includes(key))
         expect(mapNames).toHaveLength(2)
         const [[newMap], [oldMap]] = _.partition(mapNames, name => name.includes(newName))
         expect(createdMaps[newMap].setAll).toHaveBeenCalledTimes(1)
         expect(createdMaps[oldMap].entries).toHaveBeenCalledTimes(1)
       })
-
-      // make sure the meta data hash value was renamed
-      const mapNames = Object.keys(createdMaps)
-        .filter(namespace => !namespace.includes('parsedResultCache'))
-        .filter(namespaces => namespaces.includes('metadata'))
-      const [[newMetadata], [oldMetadata]] = _.partition(mapNames, name => name.includes(newName))
-      expect(createdMaps[newMetadata].set).toHaveBeenCalledTimes(1)
-      expect(createdMaps[oldMetadata].get).toHaveBeenCalledTimes(1)
 
       // make sure all new maps are created with the proper names
       const oldNames = Object.keys(createdMaps).filter(namespaces => namespaces.includes(oldName))

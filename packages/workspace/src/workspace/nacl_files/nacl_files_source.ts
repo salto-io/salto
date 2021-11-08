@@ -893,11 +893,14 @@ const buildNaclFilesSource = (
         currentState.referencedIndex.entries()
       )
       await currentState.referencedIndex.clear()
-      const currentHash = await currentState.metadata.get(HASH_KEY)
-      if (currentHash !== undefined) {
-        await newCurrentState.metadata.set(HASH_KEY, currentHash)
-      }
+      await newCurrentState.metadata.setAll(
+        currentState.metadata.entries()
+      )
       await currentState.metadata.clear()
+      await newCurrentState.searchableNamesIndex.setAll(
+        currentState.searchableNamesIndex.entries()
+      )
+      await currentState.searchableNamesIndex.clear()
       state = Promise.resolve(newCurrentState)
     },
 

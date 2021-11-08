@@ -871,7 +871,7 @@ const buildNaclFilesSource = (
       await naclFilesStore.rename(name)
       await staticFilesSource.rename(name)
       const currentState = await getState()
-      await currentState.parsedNaclFiles.rename(name)
+      await currentState.parsedNaclFiles.rename(getRemoteMapNamespace('parsed_nacl_files', name))
       const newCurrentState = await createNaclFilesState(
         remoteMapCreator,
         staticFilesSource,
@@ -893,6 +893,14 @@ const buildNaclFilesSource = (
         currentState.referencedIndex.entries()
       )
       await currentState.referencedIndex.clear()
+      await newCurrentState.metadata.setAll(
+        currentState.metadata.entries()
+      )
+      await currentState.metadata.clear()
+      await newCurrentState.searchableNamesIndex.setAll(
+        currentState.searchableNamesIndex.entries()
+      )
+      await currentState.searchableNamesIndex.clear()
       state = Promise.resolve(newCurrentState)
     },
 

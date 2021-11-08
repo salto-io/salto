@@ -355,6 +355,7 @@ export const mockWorkspace = ({
     getSearchableNamesOfEnv: mockFunction<Workspace['getSearchableNamesOfEnv']>(),
     listUnresolvedReferences: mockFunction<Workspace['listUnresolvedReferences']>(),
     getElementSourceOfPath: mockFunction<Workspace['getElementSourceOfPath']>(),
+    updateStateElements: mockFunction<Workspace['updateStateElements']>().mockResolvedValue({ topLevelElementsChangesCount: 2 }),
   }
 }
 

@@ -40,6 +40,7 @@ import { createMergeManager, ElementMergeManager, ChangeSet, createEmptyChangeSe
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
 import { AdaptersConfigSource, PartialNaclFilesSource } from './adapters_config_source'
+import { getUpdatedTopLevelElements } from './update_elements'
 
 const log = logger(module)
 
@@ -92,6 +93,10 @@ export type UnresolvedElemIDs = {
 export type UpdateNaclFilesResult = {
   naclFilesChangesCount: number
   stateOnlyChangesCount: number
+}
+
+export type UpdateStateElementsResult = {
+  topLevelElementsChangesCount: number
 }
 
 // common source has no state
@@ -180,6 +185,7 @@ export type Workspace = {
   getSearchableNamesOfEnv(env?: string): Promise<string[]>
   listUnresolvedReferences(completeFromEnv?: string): Promise<UnresolvedElemIDs>
   getElementSourceOfPath(filePath: string, includeHidden?: boolean): Promise<ReadOnlyElementsSource>
+  updateStateElements(changes: DetailedChange[]): Promise<UpdateStateElementsResult>
 }
 
 type SingleState = {
@@ -1122,6 +1128,24 @@ export const loadWorkspace = async (
         ? adaptersConfig.getElements()
         : elementsImpl(includeHidden)
     ),
+    updateStateElements: async changes => {
+      const topLevelElementsChanges = changes.filter(c => c.id.isTopLevel())
+      await Promise.all(topLevelElementsChanges.filter(e => ['remove', 'modify'].includes(e.action))
+        .map(e => state().remove(getChangeElement(e).elemID)))
+      await Promise.all(topLevelElementsChanges.filter(e => ['add', 'modify'].includes(e.action))
+        .map(e => state().set(getChangeElement(e))))
+
+      // Currently only modifying non-top-elements, not removing or adding
+      const nestedElementsChanges = changes.filter(c => !c.id.isTopLevel() && c.action === 'modify')
+      const updatedElements = await getUpdatedTopLevelElements(state(), nestedElementsChanges)
+      await Promise.all(updatedElements.map(async e => {
+        await state().delete(e.elemID)
+        await state().set(e)
+      }))
+      return {
+        topLevelElementsChangesCount: topLevelElementsChanges.length + updatedElements.length,
+      }
+    },
   }
 }
 

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import open from 'open'
 import { ElemID, isElement, CORE_ANNOTATIONS, getChangeElement } from '@salto-io/adapter-api'
 import { Workspace, ElementSelector, createElementSelectors, FromSource } from '@salto-io/workspace'
-import { getRenameMergedElementChanges, getRenameFragmentedElementChanges, getRenameReferencesChanges, getEnvsDeletionsDiff, RenameElementIdError, getUpdatedTopLevelElements } from '@salto-io/core'
+import { getRenameMergedElementChanges, getRenameFragmentedElementChanges, getRenameReferencesChanges, getEnvsDeletionsDiff, RenameElementIdError } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
@@ -646,18 +646,10 @@ const renameStateElement = async (
 
   const state = workspace.state()
   const elemChanges = await getRenameMergedElementChanges(state, sourceElemId, targetElemId)
-
-  await state.delete(sourceElemId)
-  await Promise.all(elemChanges.filter(e => e.action === 'add').map(e => state.set(getChangeElement(e))))
-
   const refChanges = await getRenameReferencesChanges(state, sourceElemId, targetElemId)
-  const updatedElements = await getUpdatedTopLevelElements(state, refChanges)
-  await Promise.all(updatedElements.map(async e => {
-    await state.delete(e.elemID)
-    await state.set(e)
-  }))
 
-  outputLine(Prompts.RENAME_ELEMENTS_AFFECTED((updatedElements.length as number) + 1), output)
+  const result = await workspace.updateStateElements([...elemChanges, ...refChanges])
+  outputLine(Prompts.RENAME_ELEMENTS_AFFECTED(result.topLevelElementsChangesCount), output)
 }
 
 export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({

@@ -147,8 +147,9 @@ const buildMultiEnvSource = (
   const getStaticFile = async (
     filePath: string,
     encoding: BufferEncoding,
+    envName? : string
   ): Promise<StaticFile> => {
-    const sourcesFiles = (await Promise.all(Object.values(getActiveSources())
+    const sourcesFiles = (await Promise.all(Object.values(getActiveSources(envName))
       .map(src => src.getStaticFile(filePath, encoding))))
       .filter(values.isDefined)
     if (sourcesFiles.length > 1
@@ -169,6 +170,7 @@ const buildMultiEnvSource = (
         async staticFile => await getStaticFile(
           staticFile.filepath,
           staticFile.encoding,
+          envName
         ) ?? staticFile
       ),
       persistent,

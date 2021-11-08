@@ -18,8 +18,8 @@ module.exports = {
   testEnvironment: 'node',
   testMatch: [
     process.env['RUN_E2E_TESTS']
-      ? '<rootDir>/dist/e2e_test/**/*.test.js'
-      : '<rootDir>/dist/test/**/*.test.js'
+      ? '<rootDir>/dist/e2e_test/**/*.test.ts'
+      : '<rootDir>/test/**/*.test.ts'
   ],
   testRunner: "jest-circus/runner",
   collectCoverage: true,
@@ -33,5 +33,8 @@ module.exports = {
     '!dist/test/**',
     '!dist/e2e_test/**',
   ],
+  transform: {
+    '^.+\\.(ts|tsx)$': 'ts-jest',
+  }
 }
 

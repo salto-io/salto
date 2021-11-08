@@ -18,7 +18,7 @@ import {
   Change, DetailedChange, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
   SaltoError, Element, isElement, ReferenceExpression, isReferenceExpression,
-  isInstanceElement, Values, Value,
+  isInstanceElement, Values, Value, Field, isObjectType,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -576,10 +576,72 @@ const updateValue = (
   id: string[],
   values: Values,
   value: Value
-): Values => (
-  (id.length < 2)
+): Values => {
+  if (_.isEmpty(id) || !(id[0] in values)) {
+    return values
+  }
+  return (id.length < 2)
     ? _.merge({}, values, { [id[0]]: value })
-    : _.merge({}, values, { [id[0]]: updateValue(id.slice(1), values[id[0]], value) }))
+    : _.merge({}, values, { [id[0]]: updateValue(id.slice(1), values[id[0]], value) })
+}
+
+const getUpdatedField = (
+  field: Field,
+  ref: DetailedChange
+): Field => new Field(
+  field.parent,
+  field.name,
+  field.refType,
+  updateValue(ref.id.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1),
+    field.annotations, getChangeElement(ref))
+)
+
+const getUpdatedObjectType = (
+  topLevelElem: ObjectType,
+  refs: DetailedChange[]
+): ObjectType => {
+  let { fields, annotations } = topLevelElem
+
+  refs.filter(r => r.id.idType === 'field')
+    .forEach(r => {
+      const field = fields[r.id.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS)[0]]
+      fields = _.merge({}, fields, { [field.name]: getUpdatedField(field, r) })
+    })
+
+  refs.filter(r => r.id.idType === 'annotation')
+    .forEach(r => {
+      annotations = updateValue(r.id.getFullNameParts()
+        .slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS), annotations, getChangeElement(r))
+    })
+
+  return new ObjectType({
+    ...topLevelElem,
+    annotationRefsOrTypes: topLevelElem.annotationRefTypes,
+    fields,
+    annotations,
+  })
+}
+
+const getUpdatedInstanceElement = (
+  topLevelElem: InstanceElement,
+  refs: DetailedChange[]
+): InstanceElement => {
+  let { value, annotations } = topLevelElem
+  refs.forEach(r => {
+    value = updateValue(r.id.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1),
+      value, getChangeElement(r))
+    annotations = updateValue(r.id.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1),
+      annotations, getChangeElement(r))
+  })
+
+  return new InstanceElement(
+    topLevelElem.elemID.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS],
+    topLevelElem.refType,
+    value,
+    topLevelElem.path,
+    annotations
+  )
+}
 
 export const getUpdatedTopLevelElements = async (
   elementsSource: elementSource.ElementsSource,
@@ -591,20 +653,14 @@ export const getUpdatedTopLevelElements = async (
 
   return Promise.all(
     Object.entries(changesByTopLevelElemId).map(async ([e, refs]) => {
-      const topLevelElem = await elementsSource.get(ElemID.fromFullName(e)) as InstanceElement
-      let { value } = topLevelElem
-      refs.forEach(r => {
-        value = updateValue(r.id.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1),
-          value, getChangeElement(r))
-      })
-
-      return new InstanceElement(
-        topLevelElem.elemID.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS],
-        topLevelElem.refType,
-        value,
-        topLevelElem.path,
-        topLevelElem.annotations
-      )
+      const topLevelElem = await elementsSource.get(ElemID.fromFullName(e))
+      if (isObjectType(topLevelElem)) {
+        return getUpdatedObjectType(topLevelElem, refs)
+      }
+      if (isInstanceElement(topLevelElem)) {
+        return getUpdatedInstanceElement(topLevelElem, refs)
+      }
+      return topLevelElem
     })
   )
 }

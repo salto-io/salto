@@ -309,6 +309,36 @@ describe('formatter', () => {
           expect(output).not.toContain('bla')
         })
       })
+      describe('with array of objects', () => {
+        const formatedObjectsExpectedResults = `[
+          {
+            name: "salsal"
+            nicknames: ["o","s","s"]
+            office: 
+                {
+                  label: "1"
+                  name: "2"
+                }
+          },
+          {
+            name: "to"
+            nicknames: ["s","a","a","s"]
+            office: 
+                {
+                  label: "a"
+                  name: "b"
+                }
+          }]`
+        beforeAll(async () => {
+          const instanceBefore = allElements[6] as InstanceElement
+          const instanceAfter = allElements[7] as InstanceElement
+          const instanceChange = detailedChange('modify', instanceBefore.elemID, instanceBefore, instanceAfter)
+          output = await formatChange(instanceChange, true)
+        })
+        it('should match expected value', () => {
+          expect(output).toContain(formatedObjectsExpectedResults)
+        })
+      })
     })
   })
   describe('formatFetchChangeForApproval', () => {

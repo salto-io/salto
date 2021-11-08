@@ -1029,5 +1029,46 @@ describe('swagger_instance_elements', () => {
         objectTypes,
       })).rejects.toThrow(new Error('Invalid type config - type myAdapter.Pet has no request config'))
     })
+    test('omits undefined or null values from file name', async () => {
+      const objectTypes = generateObjectTypes()
+      const res = await getAllInstances({
+        paginator: mockPaginator,
+        apiConfig: {
+          typeDefaults: {
+            transformation: {
+              idFields: ['id'],
+            },
+          },
+          types: {
+            Owner: {
+              request: {
+                url: '/owner',
+              },
+              transformation: {
+                idFields: ['name'],
+              },
+            },
+            Pet: {
+              request: {
+                url: '/pet',
+                queryParams: {
+                  a: 'b',
+                },
+              },
+              transformation: {
+                fileNameFields: ['id', 'name'],
+              },
+            },
+          },
+        },
+        fetchConfig: {
+          includeTypes: ['Owner', 'Pet'],
+        },
+        objectTypes,
+        computeGetArgs: simpleGetArgs,
+        nestedFieldFinder: returnFullEntry,
+      })
+      res.reverse()
+    })
   })
 })

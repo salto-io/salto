@@ -79,7 +79,38 @@ export const DEFAULT_API_DEFINITIONS: StripeApiConfig = {
       fieldsToOmit: FIELDS_TO_OMIT,
     },
   },
-  types: {},
+  types: {
+    coupon: {
+      transformation: {
+        idFields: ['name', 'id'],
+        fileNameFields: ['name'],
+      },
+    },
+    product: {
+      transformation: {
+        idFields: ['name', 'id'],
+        fileNameFields: ['name'],
+      },
+    },
+    tax_rate: {
+      transformation: {
+        idFields: ['display_name', 'id'],
+        fileNameFields: ['display_name'],
+      },
+    },
+    plan: {
+      transformation: {
+        idFields: ['nickname', 'id'],
+        fileNameFields: ['nickname', 'id'],
+      },
+    },
+    price: {
+      transformation: {
+        idFields: ['nickname', 'id'],
+        fileNameFields: ['nickname', 'id'],
+      },
+    },
+  },
   supportedTypes: ALL_SUPPORTED_TYPES,
 }
 

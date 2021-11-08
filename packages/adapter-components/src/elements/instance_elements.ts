@@ -25,6 +25,7 @@ import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault
 const log = logger(module)
 
 const ID_SEPARATOR = '__'
+const UNDEFINED_FIELDS_VALUE = ''
 
 export type InstanceCreationParams = {
   entry: Values
@@ -82,14 +83,15 @@ export const toBasicInstance = async ({
     transformationDefaultConfig,
   )
 
-  const nameParts = idFields.map(field => _.get(entry, field))
-  if (nameParts.includes(undefined)) {
+  let nameParts = idFields.map(field => _.get(entry, field))
+  if (nameParts.some(value => !value)) {
+    nameParts = nameParts.map(value => value || UNDEFINED_FIELDS_VALUE)
     log.warn(`could not find id for entry - expected id fields ${idFields}, available fields ${Object.keys(entry)}`)
   }
   const name = nameParts.every(part => part !== undefined && part !== '') ? nameParts.map(String).join('_') : defaultName
 
   const fileNameParts = (fileNameFields !== undefined
-    ? fileNameFields.map(field => _.get(entry, field))
+    ? fileNameFields.map(field => _.get(entry, field)).filter(value => value)
     : undefined)
   const fileName = ((fileNameParts?.every(p => _.isString(p) || _.isNumber(p))
     ? fileNameParts.join('_')

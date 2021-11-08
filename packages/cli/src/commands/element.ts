@@ -15,9 +15,9 @@
 */
 import _ from 'lodash'
 import open from 'open'
-import { ElemID, isElement, CORE_ANNOTATIONS, DetailedChange } from '@salto-io/adapter-api'
-import { Workspace, ElementSelector, createElementSelectors, FromSource, elementSource } from '@salto-io/workspace'
-import { RenameChange, getRenameElementChanges, getRenameReferencesChanges, getEnvsDeletionsDiff, RenameElementIdError, getUpdatedTopLevelElements } from '@salto-io/core'
+import { ElemID, isElement, CORE_ANNOTATIONS, getChangeElement } from '@salto-io/adapter-api'
+import { Workspace, ElementSelector, createElementSelectors, FromSource } from '@salto-io/workspace'
+import { getRenameMergedElementChanges, getRenameFragmentedElementChanges, getRenameReferencesChanges, getEnvsDeletionsDiff, RenameElementIdError, getUpdatedTopLevelElements } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
@@ -608,22 +608,56 @@ type ElementRenameArgs = {
   targetElementId: string
 } & EnvArg
 
-const renameElement = async (
-  elementsSource: elementSource.ElementsSource,
+const renameNaclElement = async (
+  workspace: Workspace,
+  output: CliOutput,
   sourceElemId: ElemID,
-  targetElemId: ElemID,
-  updateElement: (elementChanges: RenameChange) => Promise<unknown>,
-  updateReferences: (referencesChanges: DetailedChange[]) => Promise<unknown>
-): Promise<{ updateElementResult: unknown; updateReferencesResult: unknown }> => {
-  const elementChanges = await getRenameElementChanges(elementsSource, sourceElemId, targetElemId)
-  const updateElementResult = await updateElement(elementChanges)
-  const referencesChanges = await getRenameReferencesChanges(elementsSource, sourceElemId,
-    targetElemId)
-  const updateReferencesResult = await updateReferences(referencesChanges)
-  return {
-    updateElementResult,
-    updateReferencesResult,
-  }
+  targetElemId: ElemID
+): Promise<void> => {
+  const elements = await workspace.elements()
+  const index = await workspace.state().getPathIndex()
+  const elemChanges = await getRenameFragmentedElementChanges(
+    elements,
+    index,
+    sourceElemId,
+    targetElemId
+  )
+
+  await workspace.updateNaclFiles(elemChanges)
+  await index.delete(sourceElemId.getFullName())
+  await index.set(targetElemId.getFullName(), elemChanges.filter(c => c.action === 'add').map(c => getChangeElement(c).path))
+
+  outputLine(Prompts.RENAME_ELEMENT(sourceElemId.getFullName(), targetElemId.getFullName()), output)
+
+  const refChanges = await getRenameReferencesChanges(elements, sourceElemId, targetElemId)
+  const result = await workspace.updateNaclFiles(refChanges)
+  outputLine(Prompts.RENAME_ELEMENT_REFERENCES(sourceElemId.getFullName(),
+    result.naclFilesChangesCount), output)
+}
+
+const renameStateElement = async (
+  workspace: Workspace,
+  output: CliOutput,
+  sourceElemId: ElemID,
+  targetElemId: ElemID
+): Promise<void> => {
+  outputLine(emptyLine(), output)
+  outputLine(Prompts.RENAME_UPDATING_STATE(), output)
+
+  const state = workspace.state()
+  const elemChanges = await getRenameMergedElementChanges(state, sourceElemId, targetElemId)
+
+  await state.delete(sourceElemId)
+  await Promise.all(elemChanges.filter(e => e.action === 'add').map(e => state.set(getChangeElement(e))))
+
+  const refChanges = await getRenameReferencesChanges(state, sourceElemId, targetElemId)
+  const updatedElements = await getUpdatedTopLevelElements(state, refChanges)
+  await Promise.all(updatedElements.map(async e => {
+    await state.delete(e.elemID)
+    await state.set(e)
+  }))
+
+  outputLine(Prompts.RENAME_ELEMENTS_AFFECTED((updatedElements.length as number) + 1), output)
 }
 
 export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
@@ -651,46 +685,8 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
   }
 
   try {
-    const elementsSource = await workspace.elements()
-    const naclResult = await renameElement(
-      elementsSource,
-      sourceElemId,
-      targetElemId,
-      async ec => workspace.updateNaclFiles([ec.remove, ec.add]),
-      async rc => {
-        await workspace.updateNaclFiles(rc)
-        return _.uniqBy(rc.map(r => r.id.createTopLevelParentID().parent),
-          (elemId: ElemID): string => elemId.getFullName()).length
-      }
-    )
-    outputLine(Prompts.RENAME_ELEMENT(sourceElemId.getFullName(),
-      targetElemId.getFullName()), output)
-    outputLine(Prompts.RENAME_ELEMENT_REFERENCES(sourceElemId.getFullName(),
-      naclResult.updateReferencesResult as number), output)
-
-    outputLine(emptyLine(), output)
-    outputLine(Prompts.RENAME_UPDATING_STATE(), output)
-    const stateSource = workspace.state()
-    const stateResult = await renameElement(
-      stateSource,
-      sourceElemId,
-      targetElemId,
-      async ec => {
-        await stateSource.delete(sourceElemId)
-        await stateSource.set(ec.add.data.after)
-      },
-      async rc => {
-        const updatedElements = await getUpdatedTopLevelElements(stateSource, rc)
-        await Promise.all(updatedElements.map(async e => {
-          await stateSource.delete(e.elemID)
-          await stateSource.set(e)
-        }))
-        return updatedElements.length
-      }
-    )
-    outputLine(Prompts.RENAME_ELEMENTS_AFFECTED(
-      (stateResult.updateReferencesResult as number) + 1
-    ), output)
+    await renameNaclElement(workspace, output, sourceElemId, targetElemId)
+    await renameStateElement(workspace, output, sourceElemId, targetElemId)
   } catch (error) {
     if (error instanceof RenameElementIdError) {
       errorOutputLine(error.message, output)

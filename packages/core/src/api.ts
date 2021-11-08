@@ -18,13 +18,13 @@ import {
   Change, DetailedChange, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
   SaltoError, Element, isElement, ReferenceExpression, isReferenceExpression,
-  isInstanceElement, RemovalChange, AdditionChange,
+  isInstanceElement, Values, Value,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource } from '@salto-io/workspace'
+import { Workspace, ElementSelector, elementSource, pathIndex } from '@salto-io/workspace'
 import { walkOnElement, WalkOnFunc, WalkOnFuncArgs, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
@@ -454,40 +454,73 @@ const renameElementChecks = async (
   }
 }
 
-export type RenameChange = {
-  remove: RemovalChange<Element> & { id: ElemID }
-  add: AdditionChange<Element> & { id: ElemID }
+export const getRenamedElementPath = (
+  sourceElemId: ElemID,
+  targetElemId: ElemID,
+  sourcePath?: pathIndex.Path
+): pathIndex.Path | undefined => {
+  if (sourcePath === undefined) {
+    return undefined
+  }
+  const sourceName = sourceElemId.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS]
+  const targetName = targetElemId.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS]
+  return sourcePath.map(p => (p === sourceName ? targetName : p))
 }
 
-export const getRenameElementChanges = async (
+const getRenameInstanceChanges = (
+  sourceElemId: ElemID,
+  targetElemId: ElemID,
+  ...sourceElements: InstanceElement[]
+): DetailedChange[] => {
+  const removeChanges = sourceElements.map((e): DetailedChange => ({
+    id: sourceElemId,
+    action: 'remove',
+    data: {
+      before: e,
+    },
+  }))
+
+  const addChanges = sourceElements.map((e): DetailedChange => ({
+    id: targetElemId,
+    action: 'add',
+    data: {
+      after: new InstanceElement(
+        targetElemId.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS],
+        e.refType,
+        e.value,
+        getRenamedElementPath(sourceElemId, targetElemId, e.path),
+        e.annotations
+      ),
+    },
+  }))
+
+  return [...removeChanges, ...addChanges]
+}
+
+export const getRenameFragmentedElementChanges = async (
   elementsSource: elementSource.ElementsSource,
+  index: pathIndex.PathIndex,
   sourceElemId: ElemID,
   targetElemId: ElemID
-): Promise<RenameChange> => {
+): Promise<DetailedChange[]> => {
   renameElementIdChecks(sourceElemId, targetElemId)
   await renameElementChecks(elementsSource, sourceElemId, targetElemId)
 
   const source = await elementsSource.get(sourceElemId)
-  const target = new InstanceElement(
-    targetElemId.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS],
-    source.refType,
-    source.value,
-    source.path,
-    source.annotations
-  )
+  const fragmentedElement = await pathIndex.splitElementByPath(source, index) as InstanceElement[]
+  return getRenameInstanceChanges(sourceElemId, targetElemId, ...fragmentedElement)
+}
 
-  return {
-    remove: {
-      id: sourceElemId,
-      action: 'remove',
-      data: { before: source },
-    },
-    add: {
-      id: targetElemId,
-      action: 'add',
-      data: { after: target },
-    },
-  }
+export const getRenameMergedElementChanges = async (
+  elementsSource: elementSource.ElementsSource,
+  sourceElemId: ElemID,
+  targetElemId: ElemID
+): Promise<DetailedChange[]> => {
+  renameElementIdChecks(sourceElemId, targetElemId)
+  await renameElementChecks(elementsSource, sourceElemId, targetElemId)
+
+  const source = await elementsSource.get(sourceElemId)
+  return getRenameInstanceChanges(sourceElemId, targetElemId, source)
 }
 
 export const getRenameReferencesChanges = async (
@@ -539,6 +572,15 @@ export const getRenameReferencesChanges = async (
   })
 }
 
+const updateValue = (
+  id: string[],
+  values: Values,
+  value: Value
+): Values => (
+  (id.length < 2)
+    ? _.merge({}, values, { [id[0]]: value })
+    : _.merge({}, values, { [id[0]]: updateValue(id.slice(1), values[id[0]], value) }))
+
 export const getUpdatedTopLevelElements = async (
   elementsSource: elementSource.ElementsSource,
   changes: DetailedChange[]
@@ -546,14 +588,20 @@ export const getUpdatedTopLevelElements = async (
   const changesByTopLevelElemId = _.groupBy(
     changes, r => r.id.createTopLevelParentID().parent.getFullName()
   )
+
   return Promise.all(
     Object.entries(changesByTopLevelElemId).map(async ([e, refs]) => {
       const topLevelElem = await elementsSource.get(ElemID.fromFullName(e)) as InstanceElement
+      let { value } = topLevelElem
+      refs.forEach(r => {
+        value = updateValue(r.id.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1),
+          value, getChangeElement(r))
+      })
+
       return new InstanceElement(
         topLevelElem.elemID.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS],
         topLevelElem.refType,
-        _.merge({}, topLevelElem.value, ...refs
-          .map(r => ({ [r.id.getFullNameParts().slice(-1)[0]]: getChangeElement(r) }))),
+        value,
         topLevelElem.path,
         topLevelElem.annotations
       )

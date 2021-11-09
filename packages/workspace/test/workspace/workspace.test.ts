@@ -3744,8 +3744,7 @@ describe('nacl sources reuse', () => {
     await ws.flush()
     const invocations = createMultiEnvSrcEnvInvocationCount(mockMuiltiEnv)
     expect(invocations).toEqual({
-      default: 1,
-      inactive: 1,
+      '': 2,
     })
   })
 
@@ -3753,8 +3752,7 @@ describe('nacl sources reuse', () => {
     await ws.elements(true, 'inactive')
     const invocations = createMultiEnvSrcEnvInvocationCount(mockMuiltiEnv)
     expect(invocations).toEqual({
-      default: 1,
-      inactive: 1,
+      '': 2,
     })
   })
 })

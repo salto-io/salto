@@ -3730,29 +3730,13 @@ describe('nacl sources reuse', () => {
     mockMuiltiEnv.mockReset()
   })
 
-  const createMultiEnvSrcEnvInvocationCount = (
-    mockFunc: jest.SpyInstance
-  ): Record<string, number> => (
-    mockFunc.mock.calls.reduce((acc, args) => {
-      const envName = args[1]
-      acc[envName] = (acc[envName] ?? 0) + 1
-      return acc
-    }, {})
-  )
-
-  it('should create only one copy of each env on initiation', async () => {
+  it('should create only one copy the multi env source', async () => {
     await ws.flush()
-    const invocations = createMultiEnvSrcEnvInvocationCount(mockMuiltiEnv)
-    expect(invocations).toEqual({
-      '': 2,
-    })
+    expect(mockMuiltiEnv).toHaveBeenCalledTimes(1)
   })
 
   it('should not create a new copy of a secondary env when invoking a command directly on the secondary env', async () => {
     await ws.elements(true, 'inactive')
-    const invocations = createMultiEnvSrcEnvInvocationCount(mockMuiltiEnv)
-    expect(invocations).toEqual({
-      '': 2,
-    })
+    expect(mockMuiltiEnv).toHaveBeenCalledTimes(1)
   })
 })

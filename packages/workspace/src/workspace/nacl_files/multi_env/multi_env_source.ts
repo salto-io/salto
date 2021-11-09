@@ -303,20 +303,18 @@ const buildMultiEnvSource = (
   }
 
   const applyRoutedChanges = async (routedChanges: RoutedChanges):
-  Promise<EnvsChanges> => {
-    const secondaryChanges = routedChanges.secondarySources || {}
-    const primaryChanges = [...(routedChanges.primarySource ?? [])]
-    return {
-      ...(await resolveValues({
-        [primarySourceName]: primarySource()
-          .updateNaclFiles(primaryChanges),
-        [commonSourceName]: commonSource()
-          .updateNaclFiles(routedChanges.commonSource ?? []),
-        ..._.mapValues(secondaryChanges,
-          (changes, srcName) => secondarySources()[srcName].updateNaclFiles(changes)),
-      })),
-    }
+  Promise<EnvsChanges> => ({
+    ...(await resolveValues({
+      [commonSourceName]: commonSource()
+        .updateNaclFiles(routedChanges.commonSource ?? []),
+      ..._.mapValues(routedChanges.envSources,
+        (changes, srcName) => ({
+          [primarySourceName]: primarySource(),
+          ...secondarySources(),
+        }[srcName].updateNaclFiles(changes))),
+    })),
   }
+  )
 
   const updateNaclFiles = async (
     changes: DetailedChange[],
@@ -324,9 +322,12 @@ const buildMultiEnvSource = (
   ): Promise<EnvsChanges> => {
     const routedChanges = await routeChanges(
       changes,
-      primarySource(),
+      primarySourceName,
       commonSource(),
-      secondarySources(),
+      {
+        [primarySourceName]: primarySource(),
+        ...secondarySources(),
+      },
       mode
     )
     const elementChanges = await applyRoutedChanges(routedChanges)
@@ -367,10 +368,9 @@ const buildMultiEnvSource = (
   }
 
   const mergeRoutedChanges = (routedChanges: RoutedChanges[]): RoutedChanges => ({
-    primarySource: routedChanges.flatMap(change => change.primarySource).filter(values.isDefined),
     commonSource: routedChanges.flatMap(change => change.commonSource).filter(values.isDefined),
-    secondarySources: concatObjects(
-      routedChanges.map(change => change.secondarySources).filter(values.isDefined)
+    envSources: concatObjects(
+      routedChanges.map(change => change.envSources).filter(values.isDefined)
     ),
   })
 
@@ -380,9 +380,12 @@ const buildMultiEnvSource = (
   ): Promise<EnvsChanges> => {
     const routedMoveChanges = await routePromote(
       idsToMove,
-      primarySource(),
+      primarySourceName,
       commonSource(),
-      secondarySources(),
+      {
+        [primarySourceName]: primarySource(),
+        ...secondarySources(),
+      },
     )
 
     const routedRemovalChanges = await Promise.all(Object.entries(idsToRemove ?? {})
@@ -403,9 +406,11 @@ const buildMultiEnvSource = (
   const demote = async (ids: ElemID[]): Promise<EnvsChanges> => {
     const routedChanges = await routeDemote(
       ids,
-      primarySource(),
       commonSource(),
-      secondarySources(),
+      {
+        [primarySourceName]: primarySource(),
+        ...secondarySources(),
+      },
     )
     const envChanges = await applyRoutedChanges(routedChanges)
     const buildRes = await buildMultiEnvState({ envChanges })
@@ -461,9 +466,11 @@ const buildMultiEnvSource = (
     const commonFileSource = commonSource()
     const routedChanges = await routeDemote(
       await awu(await commonFileSource.list()).toArray(),
-      primarySource(),
       commonFileSource,
-      secondarySources(),
+      {
+        [primarySourceName]: primarySource(),
+        ...secondarySources(),
+      },
     )
     const envChanges = await applyRoutedChanges(routedChanges)
     const buildRes = await buildMultiEnvState({ envChanges })

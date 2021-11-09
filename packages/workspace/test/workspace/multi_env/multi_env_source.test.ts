@@ -854,7 +854,7 @@ describe('multi env source', () => {
   describe('sync', () => {
     it('should route the removal to the proper env sources when specified', async () => {
       const selectors = createElementSelectors(['salto.*']).validSelectors
-      jest.spyOn(routers, 'routeRemoveFrom').mockResolvedValue({ primarySource: [], commonSource: [], secondarySources: {} })
+      jest.spyOn(routers, 'routeRemoveFrom').mockResolvedValue({ commonSource: [], envSources: {} })
       await source.sync(
         [],
         { inactive: await awu(await source.getElementIdsBySelectors(selectors)).toArray() },
@@ -958,7 +958,10 @@ describe('multi env source', () => {
         await awu(await source.getElementIdsBySelectors(selectors, { source: 'env' }, true)).toArray()
       )
       expect(routers.routePromote).toHaveBeenCalledWith(
-        [envElemID, objectElemID], envSource, commonSource, { inactive: inactiveSource }
+        [envElemID, objectElemID], 'active', commonSource, {
+          active: envSource,
+          inactive: inactiveSource,
+        }
       )
     })
   })
@@ -972,7 +975,10 @@ describe('multi env source', () => {
         await source.getElementIdsBySelectors(selectors, { source: 'common' }, true)
       ).toArray())
       expect(routers.routeDemote).toHaveBeenCalledWith(
-        [commonObject.elemID, objectElemID], envSource, commonSource, { inactive: inactiveSource }
+        [commonObject.elemID, objectElemID], commonSource, {
+          active: envSource,
+          inactive: inactiveSource,
+        }
       )
     })
   })
@@ -984,7 +990,10 @@ describe('multi env source', () => {
       )
       await source.demoteAll()
       expect(routers.routeDemote).toHaveBeenCalledWith(
-        [envElemID, objectElemID], envSource, commonSource, { inactive: inactiveSource }
+        [envElemID, objectElemID], commonSource, {
+          active: envSource,
+          inactive: inactiveSource,
+        }
       )
     })
   })

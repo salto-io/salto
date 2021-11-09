@@ -18,7 +18,7 @@ module.exports = {
   testEnvironment: 'node',
   testMatch: [
     process.env['RUN_E2E_TESTS']
-      ? '<rootDir>/dist/e2e_test/**/*.test.ts'
+      ? '<rootDir>/e2e_test/**/*.test.ts'
       : '<rootDir>/test/**/*.test.ts'
   ],
   testRunner: "jest-circus/runner",

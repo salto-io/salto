@@ -492,8 +492,6 @@ export const getRenameReferencesChanges = async (
   sourceElemId: ElemID,
   targetElemId: ElemID
 ): Promise<DetailedChange[]> => {
-  renameElementIdChecks(sourceElemId, targetElemId)
-
   const getReferences = (element: Element): WalkOnFuncArgs[] => {
     const references: WalkOnFuncArgs[] = []
     const func: WalkOnFunc = ({ value, path }) => {

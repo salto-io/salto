@@ -18,13 +18,13 @@ import {
   Change, DetailedChange, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
   SaltoError, Element, isElement, ReferenceExpression, isReferenceExpression,
-  isInstanceElement,
+  isInstanceElement, isObjectType, Value, ElemIDType,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource, pathIndex, UpdateNaclFilesResult, UpdateStateElementsResult } from '@salto-io/workspace'
+import { Workspace, ElementSelector, state, elementSource, pathIndex } from '@salto-io/workspace'
 import { walkOnElement, WalkOnFunc, WalkOnFuncArgs, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
@@ -532,9 +532,107 @@ export const getRenameReferencesChanges = async (
   })
 }
 
+const getUpdatedObjectType = (
+  topLevelElem: ObjectType,
+  values: { idType: ElemIDType; path: string[]; value: Value }[]
+): ObjectType => {
+  const { fields, annotations } = topLevelElem
+
+  values.filter(v => v.idType === 'field')
+    .forEach(v => {
+      // the path of values in Field are without 'annotations' attribute so it needs to be added:
+      // field.key -> field.annotations.key
+      const path = _.concat(_.head(v.path), 'annotations', ..._.tail(v.path)) as string[]
+      _.set(fields, path, v.value)
+    })
+
+  values.filter(v => v.idType === 'annotation')
+    .forEach(v => {
+      _.set(annotations, v.path, v.value)
+    })
+
+  return new ObjectType({
+    ...topLevelElem,
+    annotationRefsOrTypes: topLevelElem.annotationRefTypes,
+    fields,
+    annotations,
+  })
+}
+
+const getUpdatedInstanceElement = (
+  topLevelElem: InstanceElement,
+  values: { path: string[]; value: Value }[]
+): InstanceElement => {
+  const { value, annotations } = topLevelElem
+  values.forEach(v => {
+    if (_.get(value, v.path)) {
+      _.set(value, v.path, v.value)
+    }
+    if (_.get(annotations, v.path)) {
+      _.set(annotations, v.path, v.value)
+    }
+  })
+
+  return new InstanceElement(
+    topLevelElem.elemID.name,
+    topLevelElem.refType,
+    value,
+    topLevelElem.path,
+    annotations
+  )
+}
+
+export const getUpdatedTopLevelElements = async (
+  elementsSource: elementSource.ElementsSource,
+  changes: DetailedChange[]
+): Promise<Element[]> => {
+  const changesByTopLevelElemId = _.groupBy(
+    changes, r => r.id.createTopLevelParentID().parent.getFullName()
+  )
+
+  return Promise.all(
+    Object.entries(changesByTopLevelElemId).map(async ([e, changesInTopLevelElement]) => {
+      const topLevelElem = await elementsSource.get(ElemID.fromFullName(e))
+      if (isObjectType(topLevelElem)) {
+        const values = changesInTopLevelElement.map(c => ({
+          idType: c.id.idType,
+          path: c.id.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
+          value: getChangeElement(c),
+        }))
+        return getUpdatedObjectType(topLevelElem, values)
+      }
+      if (isInstanceElement(topLevelElem)) {
+        const values = changesInTopLevelElement.map(c => ({
+          path: c.id.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1),
+          value: getChangeElement(c),
+        }))
+        return getUpdatedInstanceElement(topLevelElem, values)
+      }
+      return topLevelElem
+    })
+  )
+}
+
+const updateStateElements = async (
+  stateSource: state.State,
+  changes: DetailedChange[]
+): Promise<number> => {
+  const topLevelElementsChanges = changes.filter(c => c.id.isTopLevel())
+  await Promise.all(topLevelElementsChanges.filter(e => ['remove', 'modify'].includes(e.action))
+    .map(e => stateSource.remove(getChangeElement(e).elemID)))
+  await Promise.all(topLevelElementsChanges.filter(e => ['add', 'modify'].includes(e.action))
+    .map(e => stateSource.set(getChangeElement(e))))
+
+  // Currently only modifying non-top-elements, not removing or adding
+  const nestedElementsChanges = changes.filter(c => !c.id.isTopLevel() && c.action === 'modify')
+  const updatedElements = await getUpdatedTopLevelElements(stateSource, nestedElementsChanges)
+  await Promise.all(updatedElements.map(e => stateSource.set(e)))
+  return topLevelElementsChanges.length + updatedElements.length
+}
+
 export type RenameElementResult = {
-  naclFilesElement: UpdateNaclFilesResult
-  stateElement: UpdateStateElementsResult
+  naclFilesChangesCount: number
+  stateElementsChangesCount: number
 }
 
 export const renameElement = async (
@@ -549,11 +647,11 @@ export const renameElement = async (
   renameElementIdChecks(sourceElemId, targetElemId)
 
   const elements = await workspace.elements()
-  const state = workspace.state()
-  const index = await state.getPathIndex()
+  const stateSource = workspace.state()
+  const index = await stateSource.getPathIndex()
 
   await renameElementChecks(elements, sourceElemId, targetElemId)
-  await renameElementChecks(state, sourceElemId, targetElemId)
+  await renameElementChecks(stateSource, sourceElemId, targetElemId)
 
   source = await elements.get(sourceElemId)
   const fragmentedElement = await pathIndex.splitElementByPath(source, index) as InstanceElement[]
@@ -571,17 +669,16 @@ export const renameElement = async (
   refChanges = await getRenameReferencesChanges(elements, sourceElemId, targetElemId)
   const updateNaclFileResults = await workspace.updateNaclFiles(refChanges)
 
-  source = await state.get(sourceElemId) as InstanceElement
+  source = await stateSource.get(sourceElemId) as InstanceElement
   elemChanges = getRenameElementChanges(sourceElemId, targetElemId, source)
-  refChanges = await getRenameReferencesChanges(state, sourceElemId, targetElemId)
+  refChanges = await getRenameReferencesChanges(stateSource, sourceElemId, targetElemId)
 
-  const updateStateElementsResult = await workspace.updateStateElements(
-    [...elemChanges, ...refChanges]
-  )
+  const updateStateElementsResult = await updateStateElements(stateSource,
+    [...elemChanges, ...refChanges])
 
   await workspace.flush()
   return {
-    naclFilesElement: updateNaclFileResults,
-    stateElement: updateStateElementsResult,
+    naclFilesChangesCount: updateNaclFileResults.naclFilesChangesCount,
+    stateElementsChangesCount: updateStateElementsResult,
   }
 }

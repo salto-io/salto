@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, ReferenceExpression } from '@salto-io/adapter-api'
+import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, ReferenceExpression, DetailedChange } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
@@ -626,6 +626,121 @@ describe('api.ts', () => {
       const targetElemId = new ElemID('salto', 'address', 'field', 'renamed')
       return expect(api.renameElement(ws, fieldElemId, targetElemId))
         .rejects.toThrow(`Source element should be top level (${fieldElemId.createTopLevelParentID().parent.getFullName()})`)
+    })
+
+    describe('getUpdatedTopLevelElements', () => {
+      let elementsSource: workspace.elementSource.ElementsSource
+      beforeAll(async () => {
+        elementsSource = await ws.elements()
+      })
+      it('should return updated field in ObjectType', async () => {
+        const changes: DetailedChange[] = [
+          {
+            id: new ElemID('salto', 'office', 'field', 'name'),
+            action: 'modify',
+            data: {
+              before: 'original',
+              after: 'changed',
+            },
+          },
+        ]
+        const updatedElement = (await api.getUpdatedTopLevelElements(elementsSource,
+          changes))[0] as ObjectType
+        expect(updatedElement.elemID).toEqual(new ElemID('salto', 'office'))
+        expect(updatedElement.fields.name.annotations).toEqual('changed')
+      })
+      it('should return updated element with multiple changes', async () => {
+        const changes: DetailedChange[] = [
+          {
+            id: new ElemID('salto', 'office', 'field', 'location', 'label'),
+            action: 'modify',
+            data: {
+              before: 'Office Location',
+              after: 'New Location',
+            },
+          },
+          {
+            id: new ElemID('salto', 'office', 'field', 'rooms'),
+            action: 'modify',
+            data: {
+              before: [],
+              after: ['small', 'big'],
+            },
+          },
+          {
+            id: new ElemID('salto', 'office', 'field', 'seats'),
+            action: 'modify',
+            data: {
+              before: {},
+              after: { nick: 'grean chair' },
+            },
+          },
+        ]
+        const updatedElement = await api.getUpdatedTopLevelElements(elementsSource, changes)
+        expect(updatedElement.length).toEqual(1)
+        const element = updatedElement[0] as ObjectType
+        expect(element.fields.location.annotations.label).toEqual('New Location')
+        expect(element.fields.rooms.annotations).toEqual(['small', 'big'])
+        expect(element.fields.seats.annotations).toEqual({ nick: 'grean chair' })
+      })
+      it('should return updated value in InstanceElement', async () => {
+        const changes: DetailedChange[] = [
+          {
+            id: new ElemID('salto', 'employee', 'instance', 'instance', 'name'),
+            action: 'modify',
+            data: {
+              before: 'FirstEmployee',
+              after: 'SecondEmployee',
+            },
+          },
+          {
+            id: new ElemID('salto', 'employee', 'instance', 'instance', 'nicknames', '1'),
+            action: 'modify',
+            data: {
+              before: 'hi',
+              after: 'bye',
+            },
+          },
+          {
+            id: new ElemID('salto', 'employee', 'instance', 'instance', 'office', 'label'),
+            action: 'modify',
+            data: {
+              before: 'bla',
+              after: 'lala',
+            },
+          },
+        ]
+        const updatedElement = (await api.getUpdatedTopLevelElements(elementsSource,
+          changes))[0] as InstanceElement
+        expect(updatedElement.elemID).toEqual(new ElemID('salto', 'employee', 'instance', 'instance'))
+        expect(updatedElement.value.name).toEqual('SecondEmployee')
+        expect(updatedElement.value.nicknames).toEqual(['you', 'bye'])
+        expect(updatedElement.value.office.label).toEqual('lala')
+      })
+      it('should return multiple updated elements', async () => {
+        const changes: DetailedChange[] = [
+          {
+            id: new ElemID('salto', 'employee', 'instance', 'anotherInstance', 'name'),
+            action: 'modify',
+            data: {
+              before: 'FirstEmployee',
+              after: 'changed',
+            },
+          },
+          {
+            id: new ElemID('salto', 'address', 'field', 'country'),
+            action: 'modify',
+            data: {
+              before: undefined,
+              after: 'Argentina',
+            },
+          },
+        ]
+        const updatedElements = await api.getUpdatedTopLevelElements(elementsSource, changes)
+        expect(updatedElements.length).toEqual(2)
+        expect(updatedElements.find(isInstanceElement)?.value.name).toEqual('changed')
+        expect(updatedElements.find(isObjectType)?.fields.country.annotations).toEqual('Argentina')
+      })
     })
   })
 })

@@ -1037,13 +1037,13 @@ export const loadWorkspace = async (
       if (persist) {
         await config.setWorkspaceConfig(workspaceConfig)
       }
-      naclFilesSource = multiEnvSource(
-        _.mapValues(environmentsSources.sources, e => e.naclFiles),
-        environmentsSources.commonSourceName,
-        remoteMapCreator,
-        persistent,
-        mergedRecoveryMode
-      )
+      // naclFilesSource = multiEnvSource(
+      //   _.mapValues(environmentsSources.sources, e => e.naclFiles),
+      //   environmentsSources.commonSourceName,
+      //   remoteMapCreator,
+      //   persistent,
+      //   mergedRecoveryMode
+      // )
     },
 
     getStateRecency: async (serviceName: string): Promise<StateRecency> => {

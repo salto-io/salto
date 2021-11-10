@@ -1138,10 +1138,7 @@ export const loadWorkspace = async (
       // Currently only modifying non-top-elements, not removing or adding
       const nestedElementsChanges = changes.filter(c => !c.id.isTopLevel() && c.action === 'modify')
       const updatedElements = await getUpdatedTopLevelElements(state(), nestedElementsChanges)
-      await Promise.all(updatedElements.map(async e => {
-        await state().delete(e.elemID)
-        await state().set(e)
-      }))
+      await Promise.all(updatedElements.map(e => state().set(e)))
       return {
         topLevelElementsChangesCount: topLevelElementsChanges.length + updatedElements.length,
       }

@@ -78,6 +78,10 @@ const instanceA = new InstanceElement(
   {
     a: 'A',
   },
+  undefined,
+  {
+    ann: 'off',
+  }
 )
 
 const varElemId = new ElemID('var', 'samobar')
@@ -163,10 +167,19 @@ describe('getUpdatedTopLevelElements', () => {
           after: 'B',
         },
       },
+      {
+        id: new ElemID('salto', 'obj', 'instance', 'inst', 'ann'),
+        action: 'modify',
+        data: {
+          before: 'off',
+          after: 'on',
+        },
+      },
     ]
     const updatedElement = (await getUpdatedTopLevelElements(state, changes))[0] as InstanceElement
     expect(updatedElement.elemID).toEqual(new ElemID('salto', 'obj', 'instance', 'inst'))
-    expect(updatedElement.value.a).toEqual('B')
+    expect(updatedElement.value).toEqual({ a: 'B' })
+    expect(updatedElement.annotations).toEqual({ ann: 'on' })
   })
   it('should return multiple updated elements', async () => {
     const changes: DetailedChange[] = [

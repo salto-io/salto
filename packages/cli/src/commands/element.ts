@@ -15,9 +15,9 @@
 */
 import _ from 'lodash'
 import open from 'open'
-import { ElemID, isElement, CORE_ANNOTATIONS, getChangeElement } from '@salto-io/adapter-api'
+import { ElemID, isElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { Workspace, ElementSelector, createElementSelectors, FromSource } from '@salto-io/workspace'
-import { getRenameMergedElementChanges, getRenameFragmentedElementChanges, getRenameReferencesChanges, getEnvsDeletionsDiff, RenameElementIdError } from '@salto-io/core'
+import { getEnvsDeletionsDiff, RenameElementIdError, renameElement, RenameElementResult } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
@@ -608,55 +608,6 @@ type ElementRenameArgs = {
   targetElementId: string
 } & EnvArg
 
-const renameNaclElement = async (
-  workspace: Workspace,
-  output: CliOutput,
-  sourceElemId: ElemID,
-  targetElemId: ElemID
-): Promise<void> => {
-  const elements = await workspace.elements()
-  const index = await workspace.state().getPathIndex()
-  const elemChanges = await getRenameFragmentedElementChanges(
-    elements,
-    index,
-    sourceElemId,
-    targetElemId
-  )
-
-  await workspace.updateNaclFiles(elemChanges)
-
-  // The renamed element will be located according to the element's path and not the actual
-  // locations in the nacl. Such that if the user renamed the file before she renamed the Element,
-  // the renamed element will be placed in the original file name. This is because we use and update
-  // the pathIndex and not the ChangeLocation (SourceMap) logic in the current implementation.
-  await index.delete(sourceElemId.getFullName())
-  await index.set(targetElemId.getFullName(), elemChanges.filter(c => c.action === 'add').map(c => getChangeElement(c).path))
-
-  outputLine(Prompts.RENAME_ELEMENT(sourceElemId.getFullName(), targetElemId.getFullName()), output)
-
-  const refChanges = await getRenameReferencesChanges(elements, sourceElemId, targetElemId)
-  const result = await workspace.updateNaclFiles(refChanges)
-  outputLine(Prompts.RENAME_ELEMENT_REFERENCES(sourceElemId.getFullName(),
-    result.naclFilesChangesCount), output)
-}
-
-const renameStateElement = async (
-  workspace: Workspace,
-  output: CliOutput,
-  sourceElemId: ElemID,
-  targetElemId: ElemID
-): Promise<void> => {
-  outputLine(emptyLine(), output)
-  outputLine(Prompts.RENAME_UPDATING_STATE(), output)
-
-  const state = workspace.state()
-  const elemChanges = await getRenameMergedElementChanges(state, sourceElemId, targetElemId)
-  const refChanges = await getRenameReferencesChanges(state, sourceElemId, targetElemId)
-
-  const result = await workspace.updateStateElements([...elemChanges, ...refChanges])
-  outputLine(Prompts.RENAME_ELEMENTS_AFFECTED(result.topLevelElementsChangesCount), output)
-}
-
 export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
   input,
   output,
@@ -681,9 +632,9 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
     return CliExitCode.UserInputError
   }
 
+  let result: RenameElementResult
   try {
-    await renameNaclElement(workspace, output, sourceElemId, targetElemId)
-    await renameStateElement(workspace, output, sourceElemId, targetElemId)
+    result = await renameElement(workspace, sourceElemId, targetElemId)
   } catch (error) {
     if (error instanceof RenameElementIdError) {
       errorOutputLine(error.message, output)
@@ -692,9 +643,12 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
     throw error
   }
 
-  await workspace.flush()
-  outputLine(emptyLine(), output)
-  outputLine(Prompts.FINISHED_SUCCESSFULLY(), output)
+  outputLine(Prompts.RENAME_ELEMENT(sourceElemId.getFullName(),
+    targetElemId.getFullName()), output)
+
+  outputLine(Prompts.RENAME_ELEMENT_REFERENCES(sourceElemId.getFullName(),
+    result.naclFilesElement.naclFilesChangesCount), output)
+
   return CliExitCode.Success
 }
 

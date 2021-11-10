@@ -24,7 +24,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource, pathIndex } from '@salto-io/workspace'
+import { Workspace, ElementSelector, elementSource, pathIndex, UpdateNaclFilesResult, UpdateStateElementsResult } from '@salto-io/workspace'
 import { walkOnElement, WalkOnFunc, WalkOnFuncArgs, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
@@ -419,19 +419,22 @@ const renameElementIdChecks = (
   sourceElemId: ElemID,
   targetElemId: ElemID
 ): void => {
-  if (sourceElemId.getFullName() === targetElemId.getFullName()) {
+  if (sourceElemId.isEqual(targetElemId)) {
     throw new RenameElementIdError(`Source and target element ids are the same: ${sourceElemId.getFullName()}`)
   }
 
-  const sourceElemIdFullNameParts = sourceElemId.getFullNameParts()
-  const targetElemIdFullNameParts = targetElemId.getFullNameParts()
-  if (sourceElemIdFullNameParts.length !== ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1
-    || sourceElemIdFullNameParts.length !== targetElemIdFullNameParts.length
-    || sourceElemId.adapter !== targetElemId.adapter
+  if (!sourceElemId.isEqual(sourceElemId.createTopLevelParentID().parent)) {
+    throw new RenameElementIdError(`Source element should be top level (${sourceElemId.createTopLevelParentID().parent.getFullName()})`)
+  }
+
+  if (!targetElemId.isEqual(targetElemId.createTopLevelParentID().parent)) {
+    throw new RenameElementIdError(`Target element should be top level (${targetElemId.createTopLevelParentID().parent.getFullName()})`)
+  }
+
+  if (sourceElemId.adapter !== targetElemId.adapter
     || sourceElemId.typeName !== targetElemId.typeName
     || sourceElemId.idType !== targetElemId.idType) {
-    const renameMessage = `(${sourceElemIdFullNameParts.slice(0, ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1).join(ElemID.NAMESPACE_SEPARATOR)})`
-    throw new RenameElementIdError(`Currently supporting renaming the instance name only ${renameMessage}`)
+    throw new RenameElementIdError('Currently supporting renaming the instance name only')
   }
 }
 
@@ -454,20 +457,7 @@ const renameElementChecks = async (
   }
 }
 
-export const getRenamedElementPath = (
-  sourceElemId: ElemID,
-  targetElemId: ElemID,
-  sourcePath?: pathIndex.Path
-): pathIndex.Path | undefined => {
-  if (sourcePath === undefined) {
-    return undefined
-  }
-  const sourceName = sourceElemId.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS]
-  const targetName = targetElemId.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS]
-  return sourcePath.map(p => (p === sourceName ? targetName : p))
-}
-
-const getRenameInstanceChanges = (
+export const getRenameElementChanges = (
   sourceElemId: ElemID,
   targetElemId: ElemID,
   ...sourceElements: InstanceElement[]
@@ -485,42 +475,16 @@ const getRenameInstanceChanges = (
     action: 'add',
     data: {
       after: new InstanceElement(
-        targetElemId.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS],
+        targetElemId.name,
         e.refType,
         e.value,
-        getRenamedElementPath(sourceElemId, targetElemId, e.path),
+        e.path?.map(p => (p === sourceElemId.name ? targetElemId.name : p)),
         e.annotations
       ),
     },
   }))
 
   return [...removeChanges, ...addChanges]
-}
-
-export const getRenameFragmentedElementChanges = async (
-  elementsSource: elementSource.ElementsSource,
-  index: pathIndex.PathIndex,
-  sourceElemId: ElemID,
-  targetElemId: ElemID
-): Promise<DetailedChange[]> => {
-  renameElementIdChecks(sourceElemId, targetElemId)
-  await renameElementChecks(elementsSource, sourceElemId, targetElemId)
-
-  const source = await elementsSource.get(sourceElemId)
-  const fragmentedElement = await pathIndex.splitElementByPath(source, index) as InstanceElement[]
-  return getRenameInstanceChanges(sourceElemId, targetElemId, ...fragmentedElement)
-}
-
-export const getRenameMergedElementChanges = async (
-  elementsSource: elementSource.ElementsSource,
-  sourceElemId: ElemID,
-  targetElemId: ElemID
-): Promise<DetailedChange[]> => {
-  renameElementIdChecks(sourceElemId, targetElemId)
-  await renameElementChecks(elementsSource, sourceElemId, targetElemId)
-
-  const source = await elementsSource.get(sourceElemId)
-  return getRenameInstanceChanges(sourceElemId, targetElemId, source)
 }
 
 export const getRenameReferencesChanges = async (
@@ -530,12 +494,11 @@ export const getRenameReferencesChanges = async (
 ): Promise<DetailedChange[]> => {
   renameElementIdChecks(sourceElemId, targetElemId)
 
-  const sourceElemIdFullNameParts = sourceElemId.getFullNameParts()
   const getReferences = (element: Element): WalkOnFuncArgs[] => {
     const references: WalkOnFuncArgs[] = []
     const func: WalkOnFunc = ({ value, path }) => {
-      if (isReferenceExpression(value) && _.isEqual(sourceElemIdFullNameParts,
-        value.elemID.getFullNameParts().slice(0, sourceElemIdFullNameParts.length))) {
+      if (isReferenceExpression(value)
+      && (sourceElemId.isEqual(value.elemID) || sourceElemId.isParentOf(value.elemID))) {
         references.push({ value, path })
         return WALK_NEXT_STEP.SKIP
       }
@@ -554,9 +517,8 @@ export const getRenameReferencesChanges = async (
         r.value.elemID.adapter,
         r.value.elemID.typeName,
         r.value.elemID.idType,
-        targetElemId.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS],
-        ...r.value.elemID.getFullNameParts()
-          .slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1)
+        targetElemId.name,
+        ...r.value.elemID.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1)
       ),
       r.value.resValue,
       r.value.topLevelParent
@@ -570,4 +532,58 @@ export const getRenameReferencesChanges = async (
       },
     }
   })
+}
+
+export type RenameElementResult = {
+  naclFilesElement: UpdateNaclFilesResult
+  stateElement: UpdateStateElementsResult
+}
+
+export const renameElement = async (
+  workspace: Workspace,
+  sourceElemId: ElemID,
+  targetElemId: ElemID
+): Promise<RenameElementResult> => {
+  let source: InstanceElement
+  let elemChanges: DetailedChange[]
+  let refChanges: DetailedChange[]
+
+  renameElementIdChecks(sourceElemId, targetElemId)
+
+  const elements = await workspace.elements()
+  const state = workspace.state()
+  const index = await state.getPathIndex()
+
+  await renameElementChecks(elements, sourceElemId, targetElemId)
+  await renameElementChecks(state, sourceElemId, targetElemId)
+
+  source = await elements.get(sourceElemId)
+  const fragmentedElement = await pathIndex.splitElementByPath(source, index) as InstanceElement[]
+  elemChanges = getRenameElementChanges(sourceElemId, targetElemId, ...fragmentedElement)
+
+  await workspace.updateNaclFiles(elemChanges)
+
+  // The renamed element will be located according to the element's path and not the actual
+  // locations in the nacl. Such that if the user renamed the file before she renamed the Element,
+  // the renamed element will be placed in the original file name. This is because we use and update
+  // the pathIndex and not the ChangeLocation (SourceMap) logic in the current implementation.
+  await index.delete(sourceElemId.getFullName())
+  await index.set(targetElemId.getFullName(), elemChanges.filter(c => c.action === 'add').map(c => getChangeElement(c).path))
+
+  refChanges = await getRenameReferencesChanges(elements, sourceElemId, targetElemId)
+  const updateNaclFileResults = await workspace.updateNaclFiles(refChanges)
+
+  source = await state.get(sourceElemId) as InstanceElement
+  elemChanges = getRenameElementChanges(sourceElemId, targetElemId, source)
+  refChanges = await getRenameReferencesChanges(state, sourceElemId, targetElemId)
+
+  const updateStateElementsResult = await workspace.updateStateElements(
+    [...elemChanges, ...refChanges]
+  )
+
+  await workspace.flush()
+  return {
+    naclFilesElement: updateNaclFileResults,
+    stateElement: updateStateElementsResult,
+  }
 }

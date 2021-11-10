@@ -558,66 +558,74 @@ describe('api.ts', () => {
     })
   })
 
-  describe('getRenameElementChanges', () => {
+  describe('renameElement', () => {
     let ws: workspace.Workspace
-    let elemSource: workspace.elementSource.ElementsSource
     let sourceElemId: ElemID
     beforeAll(async () => {
       const workspaceElements = mockElements.getAllElements()
       ws = mockWorkspace({ elements: workspaceElements })
       sourceElemId = new ElemID('salto', 'employee', 'instance', 'instance')
-      elemSource = await ws.elements()
     })
-    it('should return changes', async () => {
-      const sourceElement = await ws.getValue(sourceElemId)
-      const targetElement = new InstanceElement(
-        'renamed',
-        sourceElement.refType,
-        sourceElement.value,
-        sourceElement.path,
-        sourceElement.annotations
-      )
 
-      const refElemId = new ElemID('salto', 'employee', 'instance', 'anotherInstance', 'friend')
-      const beforeRef = new ReferenceExpression(sourceElemId)
-      const afterRef = new ReferenceExpression(targetElement.elemID)
-
-      const removeChange = { id: sourceElemId, action: 'remove', data: { before: sourceElement } }
-      const addChange = { id: targetElement.elemID, action: 'add', data: { after: targetElement } }
-      const refChange = { id: refElemId, action: 'modify', data: { before: beforeRef, after: afterRef } }
-
-      expect(await api.getRenameMergedElementChanges(elemSource, sourceElemId,
-        targetElement.elemID)).toEqual([removeChange, addChange])
-      expect(await api.getRenameReferencesChanges(elemSource, sourceElemId, targetElement.elemID))
-        .toEqual([refChange])
+    describe('valid changes', () => {
+      it('should return element changes', async () => {
+        const sourceElement = await ws.getValue(sourceElemId)
+        const sourceElementWithPath = new InstanceElement(
+          sourceElement.elemID.name,
+          sourceElement.refType,
+          sourceElement.value,
+          ['salto', 'records', 'instance'],
+          sourceElement.annotations
+        )
+        const targetElement = new InstanceElement(
+          'renamed',
+          sourceElement.refType,
+          sourceElement.value,
+          ['salto', 'records', 'renamed'],
+          sourceElement.annotations
+        )
+        const removeChange = { id: sourceElemId, action: 'remove', data: { before: sourceElementWithPath } }
+        const addChange = { id: targetElement.elemID, action: 'add', data: { after: targetElement } }
+        expect(api.getRenameElementChanges(sourceElemId, targetElement.elemID,
+          sourceElementWithPath)).toEqual([removeChange, addChange])
+      })
+      it('should return references changes', async () => {
+        const targetElemId = new ElemID('salto', 'employee', 'instance', 'renamed')
+        const refElemId = new ElemID('salto', 'employee', 'instance', 'anotherInstance', 'friend')
+        const beforeRef = new ReferenceExpression(sourceElemId)
+        const afterRef = new ReferenceExpression(targetElemId)
+        const refChange = { id: refElemId, action: 'modify', data: { before: beforeRef, after: afterRef } }
+        expect(await api.getRenameReferencesChanges(await ws.elements(), sourceElemId,
+          targetElemId)).toEqual([refChange])
+      })
     })
+
     it('should throw when source and target ids are the same', async () =>
-      expect(api.getRenameMergedElementChanges(elemSource, sourceElemId, sourceElemId))
+      expect(api.renameElement(ws, sourceElemId, sourceElemId))
         .rejects.toThrow(`Source and target element ids are the same: ${sourceElemId.getFullName()}`))
     it('should throw when trying to rename something else than instance name', async () => {
       const targetElemId = new ElemID(sourceElemId.adapter, 'renamed', sourceElemId.idType, ...sourceElemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS))
-      const renameMessage = `(${sourceElemId.getFullNameParts().slice(0, ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1).join(ElemID.NAMESPACE_SEPARATOR)})`
-      return expect(api.getRenameMergedElementChanges(elemSource, sourceElemId, targetElemId))
-        .rejects.toThrow(`Currently supporting renaming the instance name only ${renameMessage}`)
+      return expect(api.renameElement(ws, sourceElemId, targetElemId))
+        .rejects.toThrow('Currently supporting renaming the instance name only')
     })
     it('should throw when targetElementId already exists', async () => {
       const existElementId = mockElements.getAllElements()
         .filter(isInstanceElement).map(e => e.elemID)
         .find(e => e.getFullName() !== sourceElemId.getFullName()) as ElemID
-      return expect(api.getRenameMergedElementChanges(elemSource, sourceElemId, existElementId))
+      return expect(api.renameElement(ws, sourceElemId, existElementId))
         .rejects.toThrow(`Element ${existElementId.getFullName()} already exists`)
     })
     it('should throw when sourceElementId doesn\'t exists', async () => {
       const notSourceElemId = new ElemID(sourceElemId.adapter, sourceElemId.typeName, sourceElemId.idType, 'notExist')
       const targetElemId = new ElemID(sourceElemId.adapter, sourceElemId.typeName, sourceElemId.idType, 'renamed')
-      return expect(api.getRenameMergedElementChanges(elemSource, notSourceElemId, targetElemId))
+      return expect(api.renameElement(ws, notSourceElemId, targetElemId))
         .rejects.toThrow(`Did not find any matches for element ${notSourceElemId.getFullName()}`)
     })
     it('should throw when source is not InstanceElement', async () => {
       const fieldElemId = new ElemID('salto', 'address', 'field', 'country')
       const targetElemId = new ElemID('salto', 'address', 'field', 'renamed')
-      return expect(api.getRenameMergedElementChanges(elemSource, fieldElemId, targetElemId))
-        .rejects.toThrow(`Currently supporting InstanceElement only (${fieldElemId.getFullName()} is of type '${fieldElemId.idType}')`)
+      return expect(api.renameElement(ws, fieldElemId, targetElemId))
+        .rejects.toThrow(`Source element should be top level (${fieldElemId.createTopLevelParentID().parent.getFullName()})`)
     })
   })
 })

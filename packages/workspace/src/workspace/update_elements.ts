@@ -15,51 +15,29 @@
 */
 import {
   InstanceElement, ObjectType, ElemID, getChangeElement, DetailedChange, Element,
-  isInstanceElement, Values, Value, Field, isObjectType, isVariable, Variable,
+  isInstanceElement, isObjectType, isVariable, Variable, Value, ElemIDType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { ElementsSource } from './elements_source'
-
-const updateValue = (
-  id: string[],
-  values: Values,
-  value: Value
-): Values => {
-  if (_.isEmpty(id) || !(id[0] in values)) {
-    return values
-  }
-  return (id.length < 2)
-    ? _.merge({}, values, { [id[0]]: value })
-    : _.merge({}, values, { [id[0]]: updateValue(id.slice(1), values[id[0]], value) })
-}
-
-const getUpdatedField = (
-  field: Field,
-  change: DetailedChange
-): Field => new Field(
-  field.parent,
-  field.name,
-  field.refType,
-  updateValue(change.id.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1),
-    field.annotations, getChangeElement(change))
-)
+import { Path } from './path_index'
 
 const getUpdatedObjectType = (
   topLevelElem: ObjectType,
-  changes: DetailedChange[]
+  values: { idType: ElemIDType; path: Path; value: Value }[]
 ): ObjectType => {
-  let { fields, annotations } = topLevelElem
+  const { fields, annotations } = topLevelElem
 
-  changes.filter(r => r.id.idType === 'field')
-    .forEach(r => {
-      const field = fields[r.id.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS)[0]]
-      fields = _.merge({}, fields, { [field.name]: getUpdatedField(field, r) })
+  values.filter(v => v.idType === 'field')
+    .forEach(v => {
+      // the path of values in Field are without 'annotations' attribute so it needs to be added:
+      // field.key -> field.annotations.key
+      const path = _.concat(_.head(v.path), 'annotations', ..._.tail(v.path)) as Path
+      _.set(fields, path, v.value)
     })
 
-  changes.filter(r => r.id.idType === 'annotation')
-    .forEach(r => {
-      annotations = updateValue(r.id.getFullNameParts()
-        .slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS), annotations, getChangeElement(r))
+  values.filter(v => v.idType === 'annotation')
+    .forEach(v => {
+      _.set(annotations, v.path, v.value)
     })
 
   return new ObjectType({
@@ -72,18 +50,20 @@ const getUpdatedObjectType = (
 
 const getUpdatedInstanceElement = (
   topLevelElem: InstanceElement,
-  changes: DetailedChange[]
+  values: { path: Path; value: Value }[]
 ): InstanceElement => {
-  let { value, annotations } = topLevelElem
-  changes.forEach(r => {
-    value = updateValue(r.id.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1),
-      value, getChangeElement(r))
-    annotations = updateValue(r.id.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1),
-      annotations, getChangeElement(r))
+  const { value, annotations } = topLevelElem
+  values.forEach(v => {
+    if (_.get(value, v.path)) {
+      _.set(value, v.path, v.value)
+    }
+    if (_.get(annotations, v.path)) {
+      _.set(annotations, v.path, v.value)
+    }
   })
 
   return new InstanceElement(
-    topLevelElem.elemID.getFullNameParts()[ElemID.NUM_ELEM_ID_NON_NAME_PARTS],
+    topLevelElem.elemID.name,
     topLevelElem.refType,
     value,
     topLevelElem.path,
@@ -112,10 +92,19 @@ export const getUpdatedTopLevelElements = async (
     Object.entries(changesByTopLevelElemId).map(async ([e, changesInTopLevelElement]) => {
       const topLevelElem = await elementsSource.get(ElemID.fromFullName(e))
       if (isObjectType(topLevelElem)) {
-        return getUpdatedObjectType(topLevelElem, changesInTopLevelElement)
+        const values = changesInTopLevelElement.map(c => ({
+          idType: c.id.idType,
+          path: c.id.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
+          value: getChangeElement(c),
+        }))
+        return getUpdatedObjectType(topLevelElem, values)
       }
       if (isInstanceElement(topLevelElem)) {
-        return getUpdatedInstanceElement(topLevelElem, changesInTopLevelElement)
+        const values = changesInTopLevelElement.map(c => ({
+          path: c.id.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1),
+          value: getChangeElement(c),
+        }))
+        return getUpdatedInstanceElement(topLevelElem, values)
       }
       if (isVariable(topLevelElem)) {
         return getUpdatedVariable(topLevelElem, changesInTopLevelElement.pop() as DetailedChange)

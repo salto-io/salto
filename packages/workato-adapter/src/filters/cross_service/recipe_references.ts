@@ -124,7 +124,7 @@ const addReferencesForConnectionRecipes = async (
     )
   }
 
-  if (serviceName === ZUORA_BILLING) {
+  if (accountName === ZUORA_BILLING) {
     const index = indexZuoraByElemId(serviceElements)
     await awu(relevantRecipeCodes).forEach(
       inst => addZuoraRecipeReferences(inst, index, appName)

@@ -260,16 +260,14 @@ export const createParseResultCache = (
       (awu(Object.values(await cacheSources)).forEach(source =>
         source.deleteAll(filenames))),
     getHash: async () => {
+      cachedHash = ''
+      await awu((await cacheSources).metadata.values()).forEach(value => {
+        cachedHash += value.hash
+      })
       if (!cachedHash) {
-        cachedHash = ''
-        await awu((await cacheSources).metadata.values()).forEach(value => {
-          cachedHash += value.hash
-        })
-        if (!cachedHash) {
-          return undefined
-        }
-        cachedHash = toMD5(cachedHash)
+        return undefined
       }
+      cachedHash = toMD5(cachedHash)
       return cachedHash
     },
     list: async () => awu((await cacheSources).metadata.keys()).toArray(),

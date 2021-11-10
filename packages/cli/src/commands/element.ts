@@ -647,7 +647,7 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
     targetElemId.getFullName()), output)
 
   outputLine(Prompts.RENAME_ELEMENT_REFERENCES(sourceElemId.getFullName(),
-    result.naclFilesElement.naclFilesChangesCount), output)
+    result.naclFilesChangesCount), output)
 
   return CliExitCode.Success
 }

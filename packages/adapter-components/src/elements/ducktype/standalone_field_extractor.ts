@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, ObjectType, Element, createRefToElmWithValue } from '@salto-io/adapter-api'
+import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, ObjectType, Element, createRefToElmWithValue, isListType, ListType, TypeElement } from '@salto-io/adapter-api'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { StandaloneFieldConfigType, TransformationConfig, TransformationDefaultConfig } from '../../config'
@@ -81,25 +81,44 @@ const addFieldTypeAndInstances = async ({
     return []
   }
 
+  const getInnerType = async (elem: TypeElement): Promise<TypeElement> => (
+    isListType(elem)
+      ? elem.getInnerType()
+      : elem
+  )
+
   const elements: Element[] = []
-  const fieldType = generateType({
-    adapterName,
-    name: toNestedTypeName(typeName, fieldName),
-    entries: instancesWithValues.flatMap(inst => inst.value[fieldName]),
-    hasDynamicFields: false,
-    isSubType: true,
-    transformationConfigByType,
-    transformationDefaultConfig,
-  })
-  type.fields[fieldName].refType = createRefToElmWithValue(fieldType.type)
-  elements.push(fieldType.type, ...fieldType.nestedTypes)
+  const currentType = await type.fields[fieldName].refType.getResolvedValue()
+  if (!isObjectType(await getInnerType(currentType))) {
+    const fieldType = generateType({
+      adapterName,
+      name: toNestedTypeName(typeName, fieldName),
+      entries: instancesWithValues.flatMap(inst => inst.value[fieldName]),
+      hasDynamicFields: false,
+      isSubType: true,
+      transformationConfigByType,
+      transformationDefaultConfig,
+    })
+    type.fields[fieldName].refType = isListType(type.fields[fieldName].refType.type)
+      ? createRefToElmWithValue(new ListType(createRefToElmWithValue(fieldType.type)))
+      : createRefToElmWithValue(fieldType.type)
+    elements.push(fieldType.type, ...fieldType.nestedTypes)
+  }
+
+  const updatedFieldType = await type.fields[fieldName].refType.getResolvedValue()
+  const fieldType = await getInnerType(updatedFieldType)
+  if (!isObjectType(fieldType)) {
+    // should not happen
+    log.warn('expected field type %s to be an object type, not extracting standalone fields', fieldType.elemID.getFullName())
+    return []
+  }
 
   await awu(instancesWithValues).forEach(async inst => {
-    const fieldInstances = await awu(makeArray(inst.value[fieldName])).map(async val => {
+    const fieldInstances = await awu(makeArray(inst.value[fieldName])).map(async (val, index) => {
       const fieldInstance = await toInstance({
         entry: val,
-        type: fieldType.type,
-        defaultName: 'unnamed',
+        type: fieldType,
+        defaultName: `unnamed_${index}`,
         parent: inst,
         nestName: true,
         transformationConfigByType,

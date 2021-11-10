@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { collections, decorators, objects, promises, values } from '@salto-io/lowerdash'
-import { Values, AccountId } from '@salto-io/adapter-api'
+import { Values, AccountId, Value } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile, rm, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import {
@@ -98,6 +98,13 @@ const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING'
 const INVALID_DEPENDENCIES_PATTERN = new RegExp(`^.*(<feature required=".*">${INVALID_DEPENDENCIES.join('|')})</feature>.*\n`, 'gm')
 
 const baseExecutionPath = os.tmpdir()
+
+const safeQuoteArgument = (argument: Value): Value => {
+  if (typeof argument === 'string') {
+    return shellQuote.quote([argument])
+  }
+  return argument
+}
 
 export const convertToCustomizationInfo = (xmlContent: string):
   CustomizationInfo => {
@@ -279,17 +286,13 @@ export default class SdfClient {
     commandArguments: Values,
     projectCommandActionExecutor: CommandActionExecutor,
   ): Promise<ActionResult> {
-    _.mapValues(commandArguments, (value, key) => {
-      if (typeof value === 'string') {
-        commandArguments[key] = shellQuote.quote([value])
-      }
-    })
+    const safeArguments: Values = _.mapValues(commandArguments, safeQuoteArgument)
     const actionResult = await this.globalLimiter.schedule(
       () => this.sdfCallsLimiter.schedule(() =>
         projectCommandActionExecutor.executeAction({
           commandName,
           runInInteractiveMode: false,
-          arguments: commandArguments,
+          arguments: safeArguments,
         }))
     )
     SdfClient.verifySuccessfulAction(actionResult, commandName)

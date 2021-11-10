@@ -353,30 +353,6 @@ const runPostFetch = async ({
   )
 }
 
-const handleAccountNameUpdate = async (
-  fetchResult: FetchResult,
-  accountName: string,
-  service: string,
-): Promise<void> => {
-  // Resolve is used for an efficient deep clone
-  fetchResult.elements = await expressions.resolve(fetchResult.elements,
-    elementSource.createInMemoryElementSource(), true)
-  await updateElementsWithAlternativeAdapter(fetchResult.elements, accountName, service)
-  if (fetchResult.updatedConfig) {
-    fetchResult.updatedConfig.config = (await expressions.resolve(fetchResult.updatedConfig.config,
-      elementSource.createInMemoryElementSource(), true)) as InstanceElement[]
-    await updateElementsWithAlternativeAdapter(fetchResult.updatedConfig.config, accountName,
-      service)
-  }
-  if (fetchResult.errors) {
-    fetchResult.errors.forEach(error => {
-      if (isSaltoElementError(error)) {
-        error.elemID = createAdapterReplacedID(error.elemID, accountName)
-      }
-    })
-  }
-}
-
 const fetchAndProcessMergeErrors = async (
   accountsToAdapters: Record<string, AdapterOperations>,
   stateElements: elementSource.ElementsSource,
@@ -391,6 +367,29 @@ const fetchAndProcessMergeErrors = async (
     updatedConfigs: UpdatedConfig[]
     partiallyFetchedAdapters: Set<string>
   }> => {
+  const handleAccountNameUpdate = async (
+    fetchResult: FetchResult,
+    accountName: string,
+    service: string,
+  ): Promise<void> => {
+    // Resolve is used for an efficient deep clone
+    fetchResult.elements = await expressions.resolve(fetchResult.elements,
+      stateElements, true)
+    await updateElementsWithAlternativeAdapter(fetchResult.elements, accountName, service)
+    if (fetchResult.updatedConfig) {
+      fetchResult.updatedConfig.config = (await expressions.resolve(fetchResult
+        .updatedConfig.config, stateElements, true)) as InstanceElement[]
+      await updateElementsWithAlternativeAdapter(fetchResult.updatedConfig.config, accountName,
+        service)
+    }
+    if (fetchResult.errors) {
+      fetchResult.errors.forEach(error => {
+        if (isSaltoElementError(error)) {
+          error.elemID = createAdapterReplacedID(error.elemID, accountName)
+        }
+      })
+    }
+  }
   try {
     const progressReporters = _.mapValues(
       accountsToAdapters,

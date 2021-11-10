@@ -47,6 +47,7 @@ export const getLocalStorage = async (workspaceName: string, uid: string): Promi
 }
 
 type OldOrNewEnvConfig = {
+  name: string
   services?: string[]
   accounts: string[]
   accountToServiceName: Record<string, string>
@@ -74,17 +75,20 @@ export const workspaceConfigSource = async (
     localStorage: computedLocalStorage,
     getWorkspaceConfig: async (): Promise<WorkspaceConfig> => {
       const envs = (await repoCs.get(ENVS_CONFIG_NAME))?.value
+      const fixedEnvs: EnvsConfig = {
+        envs: [],
+      }
       // Fix env in case configuration is deprecated, before multiple accounts refactor SALTO-1264
       if (envs) {
         envs.envs.forEach((env: OldOrNewEnvConfig) => {
-          if (!env.accounts && env.services) {
-            env.accounts = env.services
-          }
+          const accountToServiceName = env.accountToServiceName
+            ?? Object.fromEntries((env.services ?? []).map(account => [account, account]))
+          fixedEnvs.envs.push({
+            name: env.name,
+            accountToServiceName,
+          })
           delete env.services
-          if (!env.accountToServiceName) {
-            env.accountToServiceName = Object.fromEntries((env.accounts ?? []).map(account =>
-              [account, account]))
-          }
+          env.accountToServiceName = accountToServiceName
         })
       }
       const userData = (await localCs.get(USER_CONFIG_NAME))?.value as UserDataConfig
@@ -98,7 +102,7 @@ export const workspaceConfigSource = async (
         throw new NoEnvsConfig()
       }
       return {
-        ...(envs as EnvsConfig),
+        ...fixedEnvs,
         ...userData,
         ...workspaceMetadata,
       }

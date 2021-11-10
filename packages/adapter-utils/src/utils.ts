@@ -270,8 +270,7 @@ export const transformElementAnnotations = async <T extends Element>(
   type: await elementAnnotationTypes(element, elementsSource),
   transformFunc,
   strict,
-  pathID: (isType(element) ? element.elemID.createNestedID('attr')
-    : element.elemID),
+  pathID: (isType(element) ? element.elemID.createNestedID('attr') : element.elemID),
   elementsSource,
   allowEmpty,
   isTopLevel: false,
@@ -294,7 +293,6 @@ export const transformElement = async <T extends Element>(
     allowEmpty?: boolean
   }
 ): Promise<T> => {
-  const relevantID = element.elemID
   let newElement: Element
   const transformedAnnotations = await transformElementAnnotations({
     element,
@@ -315,7 +313,7 @@ export const transformElement = async <T extends Element>(
       allowEmpty,
     }) || {}
     newElement = new InstanceElement(
-      relevantID.name,
+      element.elemID.name,
       element.refType,
       transformedValues,
       element.path,
@@ -349,7 +347,7 @@ export const transformElement = async <T extends Element>(
     )
 
     newElement = new ObjectType({
-      elemID: relevantID,
+      elemID: element.elemID,
       fields: clonedFields,
       annotationRefsOrTypes: element.annotationRefTypes,
       annotations: transformedAnnotations,
@@ -373,7 +371,7 @@ export const transformElement = async <T extends Element>(
 
   if (isPrimitiveType(element)) {
     newElement = new PrimitiveType({
-      elemID: relevantID,
+      elemID: element.elemID,
       primitive: element.primitive,
       annotationRefsOrTypes: element.annotationRefTypes,
       path: element.path,

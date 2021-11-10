@@ -104,7 +104,11 @@ export const addAction: WorkspaceCommandAction<ServiceAddArgs> = async ({
 }): Promise<CliExitCode> => {
   const { login, serviceName, authType, account } = input
   if (account && !(naclCase(account) === account)) {
-    errorOutputLine(`Invalid account name: ${account}, account name may only include letters or digits.`, output)
+    errorOutputLine(`Invalid account name: ${account}, account name may only include letters or digits`, output)
+    return CliExitCode.UserInputError
+  }
+  if (account !== undefined && (account.includes('var') || account === '')) {
+    errorOutputLine('Account name may not be "var" or an empty string.', output)
     return CliExitCode.UserInputError
   }
   const accountName = account ?? serviceName

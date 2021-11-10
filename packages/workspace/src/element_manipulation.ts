@@ -121,7 +121,6 @@ export const updateElementsWithAlternativeAdapter = async (elementsToUpdate: Ele
       })
       _.set(element, 'elemID', createAdapterReplacedID(element.elemID, newAdapter))
       if (isInstanceElement(element)) {
-        element.refType = _.clone(element.refType)
         updateRefTypeWithId(element.refType, newAdapter)
       }
       Object.values(element.annotationRefTypes).forEach(annotation => updateRefTypeWithId(

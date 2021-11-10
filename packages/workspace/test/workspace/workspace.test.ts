@@ -21,6 +21,8 @@ import {
   isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType,
   Value, TypeReference, INSTANCE_ANNOTATIONS, ReferenceExpression, createRefToElmWithValue,
   SaltoError,
+  StaticFile,
+  isStaticFile,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
@@ -3118,6 +3120,95 @@ describe('workspace', () => {
       mockAdaptersConfig.isConfigFile.mockReturnValue(false)
       await ws.getNaclFile('someFile')
       expect(mockAdaptersConfig.getNaclFile).not.toHaveBeenCalled()
+    })
+  })
+
+
+  describe('static files deserialization', () => {
+    let workspace: Workspace
+    const elemID = ElemID.fromFullName('salto.withStatic')
+    const defaultStaticFile = new StaticFile({
+      content: Buffer.from('I am a little static file'),
+      filepath: 'salto/static.txt',
+      hash: 'FFFF',
+    })
+    const defaultElem = new ObjectType({
+      elemID,
+      annotationRefsOrTypes: {
+        static: new TypeReference(BuiltinTypes.STRING.elemID),
+      },
+      annotations: {
+        static: defaultStaticFile,
+      },
+    })
+
+    const defaultStaticFileSource = mockStaticFilesSource([defaultStaticFile])
+    const inactiveStaticFile = new StaticFile({
+      content: Buffer.from('I am a big static file'),
+      filepath: 'salto/static.txt',
+      hash: 'FFFF',
+    })
+    const inactiveElem = new ObjectType({
+      elemID,
+      annotationRefsOrTypes: {
+        static: new TypeReference(BuiltinTypes.STRING.elemID),
+      },
+      annotations: {
+        static: inactiveStaticFile,
+      },
+    })
+    const inactiveStaticFileSource = mockStaticFilesSource([inactiveStaticFile])
+
+    beforeEach(async () => {
+      workspace = await createWorkspace(
+        undefined,
+        undefined,
+        {
+          getWorkspaceConfig: jest.fn().mockImplementation(() => ({
+            envs: [
+              { name: 'default', services: ['salto'] },
+              { name: 'inactive', services: ['salto'] },
+            ],
+            uid: '',
+            name: 'test',
+            currentEnv: 'default',
+          })),
+          setWorkspaceConfig: jest.fn(),
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource(
+              [defaultElem], undefined, undefined, undefined, undefined, defaultStaticFileSource
+            ),
+            state: createState([]),
+          },
+          inactive: {
+            naclFiles: createMockNaclFileSource(
+              [inactiveElem], undefined, undefined, undefined, undefined, inactiveStaticFileSource
+            ),
+            state: createState([]),
+          },
+        }
+      )
+    })
+    it('should deserialize static files from the active env', async () => {
+      const elem = await (await workspace.elements()).get(elemID) as Element
+      expect(isStaticFile(elem.annotations.static)).toBeTruthy()
+      const elemStaticFile = elem.annotations.static as StaticFile
+      expect(elemStaticFile.content).toEqual(defaultStaticFile.content)
+    })
+
+    it('should deserialize static files from the non-active env', async () => {
+      const elem = await (await workspace.elements(true, 'inactive')).get(elemID) as Element
+      expect(isStaticFile(elem.annotations.static)).toBeTruthy()
+      const elemStaticFile = elem.annotations.static as StaticFile
+      expect(elemStaticFile.content).toEqual(inactiveStaticFile.content)
     })
   })
 })

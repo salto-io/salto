@@ -923,7 +923,7 @@ describe('multi env source', () => {
 
       it('should extract the proper ids from a specific env when passed', async () => {
         const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
-        const res = await awu(await source.getElementIdsBySelectors(activePrefix, selectors, { source: 'env', envName: 'inactive' })).toArray()
+        const res = await awu(await source.getElementIdsBySelectors(inactivePrefix, selectors, { source: 'env' })).toArray()
         expect(res.map(id => id.getFullName()).sort()).toEqual([
           inactiveElemID,
           inactiveElemID.createNestedID('field', 'field'),

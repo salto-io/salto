@@ -171,10 +171,9 @@ const buildMultiEnvSource = (
   ): string => (env === undefined ? `multi_env-${namespace}`
     : `multi_env-${env}-${namespace}`)
 
-  const getActiveSources = (env: string): Record<string, NaclFilesSource> => ({
-    [env]: sources[env],
-    [commonSourceName]: sources[commonSourceName],
-  })
+  const getActiveSources = (env: string): Record<string, NaclFilesSource> => (
+    _.pick(sources, [commonSourceName, env])
+  )
 
   const getStaticFile = async (
     filePath: string,
@@ -367,10 +366,13 @@ const buildMultiEnvSource = (
     (await getState()).states[env].elements
   )
 
-  const determineSource = async (env: string, fromSource: FromSource): Promise<ElementsSource> => {
+  const determineSource = async (
+    env: string,
+    fromSource: Pick<FromSource, 'source'>
+  ): Promise<ElementsSource> => {
     switch (fromSource.source) {
       case 'env': {
-        return fromSource.envName !== undefined ? sources[fromSource.envName] : envSources()[env]
+        return envSources()[env]
       }
       case 'common': {
         return commonSource()
@@ -384,7 +386,7 @@ const buildMultiEnvSource = (
   const getElementIdsBySelectors = async (
     env: string,
     selectors: ElementSelector[],
-    fromSource: FromSource = { source: 'env' },
+    fromSource: Pick<FromSource, 'source'> = { source: 'env' },
     compact = false,
   ): Promise<AsyncIterable<ElemID>> => {
     const relevantSource: ElementsSource = await determineSource(env, fromSource)
@@ -651,7 +653,7 @@ const buildMultiEnvSource = (
           await source.getElementReferencedFiles(id)).map(p => buildFullPath(prefix, p))))),
     clear: async (args = { nacl: true, staticResources: true, cache: true }) => {
       // We use loop here since we don't want to perform too much delete operation concurrently
-      await awu([commonSource(), ...Object.values(envSources())])
+      await awu(Object.values(sources))
         .forEach(async s => {
           await s.load({})
           await s.clear(args)
@@ -661,8 +663,7 @@ const buildMultiEnvSource = (
       state = undefined
     },
     rename: async (name: string): Promise<void> => {
-      await series([commonSource(), ...Object.values(envSources())]
-        .map(f => () => f.rename(name)))
+      await series(Object.values(sources).map(f => () => f.rename(name)))
     },
     clone: () => buildMultiEnvSource(
       _.mapValues(sources, source => source.clone()),
@@ -672,12 +673,11 @@ const buildMultiEnvSource = (
       state
     ),
     load,
-    getSearchableNames: async (env: string): Promise<string[]> => {
-      const [primarySearchableNames, commonSearchableNames] = await Promise.all(
-        [envSources()[env].getSearchableNames(), commonSource().getSearchableNames()]
-      )
-      return _.uniq([...primarySearchableNames, ...commonSearchableNames])
-    },
+    getSearchableNames: async (env: string): Promise<string[]> => _.uniq(
+      await awu(
+        Object.values(getActiveSources(env))
+      ).flatMap(s => s.getSearchableNames()).toArray()
+    ),
     getSearchableNamesOfEnv: async (env: string): Promise<string[]> => {
       const naclSource = sources[env]
       return naclSource === undefined ? [] : naclSource.getSearchableNames()

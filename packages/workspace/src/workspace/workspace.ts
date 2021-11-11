@@ -800,13 +800,10 @@ export const loadWorkspace = async (
         || await (await getLoadedNaclFilesSource()).isEmpty(currentEnv())
       return isNaclFilesSourceEmpty && (naclFilesOnly || state().isEmpty())
     },
-    hasElementsInServices: async (serviceNames: string[]): Promise<boolean> => (
-      await (awu(await (
-        await (await getLoadedNaclFilesSource()).getElementsSource(currentEnv())
-      ).list()).find(
-        elemId => serviceNames.includes(elemId.adapter)
-      )) !== undefined
-    ),
+    hasElementsInServices: async (serviceNames: string[]): Promise<boolean> => {
+      const source = await (await getLoadedNaclFilesSource()).getElementsSource(currentEnv())
+      return awu(await source.list()).some(elemId => serviceNames.includes(elemId.adapter))
+    },
     hasElementsInEnv: async envName => {
       const envSource = environmentsSources.sources[envName]
       if (envSource === undefined) {
@@ -1037,13 +1034,6 @@ export const loadWorkspace = async (
       if (persist) {
         await config.setWorkspaceConfig(workspaceConfig)
       }
-      naclFilesSource = multiEnvSource(
-        _.mapValues(environmentsSources.sources, e => e.naclFiles),
-        environmentsSources.commonSourceName,
-        remoteMapCreator,
-        persistent,
-        mergedRecoveryMode
-      )
     },
 
     getStateRecency: async (serviceName: string): Promise<StateRecency> => {

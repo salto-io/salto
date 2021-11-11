@@ -3135,7 +3135,7 @@ describe('workspace', () => {
     const defaultElem = new ObjectType({
       elemID,
       annotationRefsOrTypes: {
-        static: new TypeReference(BuiltinTypes.STRING.elemID),
+        static: BuiltinTypes.STRING,
       },
       annotations: {
         static: defaultStaticFile,

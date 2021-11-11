@@ -15,17 +15,15 @@
 */
 import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeElement, isField,
-  Change, DetailedChange, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
+  Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
-  SaltoError, Element, isElement, ReferenceExpression, isReferenceExpression,
-  isInstanceElement, isObjectType, Value, ElemIDType,
+  SaltoError, Element,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, state, elementSource, pathIndex } from '@salto-io/workspace'
-import { walkOnElement, WalkOnFunc, WalkOnFuncArgs, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { Workspace, ElementSelector, elementSource, UpdateNaclFilesResult } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -47,6 +45,7 @@ import { createRestoreChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
 import { createDiffChanges } from './core/diff'
 import { getChangeValidators, getAdaptersConfig } from './core/plan/change_validators'
+import { renameChecks, renameElement, renameElementPathIndex, RenameElementResult, updateStateElements } from './core/rename'
 
 export { cleanWorkspace } from './core/clean'
 
@@ -408,277 +407,38 @@ export const getLoginStatuses = async (
 
 export const getSupportedServiceAdapterNames = (): string[] => Object.keys(adapterCreators)
 
-export class RenameElementIdError extends Error {
-  constructor(message: string) {
-    super(message)
-    Object.setPrototypeOf(this, RenameElementIdError.prototype)
-  }
-}
-
-const renameElementIdChecks = (
-  sourceElemId: ElemID,
-  targetElemId: ElemID
-): void => {
-  if (sourceElemId.isEqual(targetElemId)) {
-    throw new RenameElementIdError(`Source and target element ids are the same: ${sourceElemId.getFullName()}`)
-  }
-
-  if (!sourceElemId.isEqual(sourceElemId.createTopLevelParentID().parent)) {
-    throw new RenameElementIdError(`Source element should be top level (${sourceElemId.createTopLevelParentID().parent.getFullName()})`)
-  }
-
-  if (!targetElemId.isEqual(targetElemId.createTopLevelParentID().parent)) {
-    throw new RenameElementIdError(`Target element should be top level (${targetElemId.createTopLevelParentID().parent.getFullName()})`)
-  }
-
-  if (sourceElemId.adapter !== targetElemId.adapter
-    || sourceElemId.typeName !== targetElemId.typeName
-    || sourceElemId.idType !== targetElemId.idType) {
-    throw new RenameElementIdError('Currently supporting renaming the instance name only')
-  }
-}
-
-const renameElementChecks = async (
-  elementsSource: elementSource.ElementsSource,
-  sourceElemId: ElemID,
-  targetElemId: ElemID
-): Promise<void> => {
-  const sourceElement = await elementsSource.get(sourceElemId)
-  if (sourceElement === undefined || !isElement(sourceElement)) {
-    throw new RenameElementIdError(`Did not find any matches for element ${sourceElemId.getFullName()}`)
-  }
-
-  if (!isInstanceElement(sourceElement)) {
-    throw new RenameElementIdError(`Currently supporting InstanceElement only (${sourceElemId.getFullName()} is of type '${sourceElemId.idType}')`)
-  }
-
-  if (await elementsSource.get(targetElemId) !== undefined) {
-    throw new RenameElementIdError(`Element ${targetElemId.getFullName()} already exists`)
-  }
-}
-
-export const getRenameElementChanges = (
-  sourceElemId: ElemID,
-  targetElemId: ElemID,
-  ...sourceElements: InstanceElement[]
-): DetailedChange[] => {
-  const removeChanges = sourceElements.map((e): DetailedChange => ({
-    id: sourceElemId,
-    action: 'remove',
-    data: {
-      before: e,
-    },
-  }))
-
-  const addChanges = sourceElements.map((e): DetailedChange => ({
-    id: targetElemId,
-    action: 'add',
-    data: {
-      after: new InstanceElement(
-        targetElemId.name,
-        e.refType,
-        e.value,
-        e.path?.map(p => (p === sourceElemId.name ? targetElemId.name : p)),
-        e.annotations
-      ),
-    },
-  }))
-
-  return [...removeChanges, ...addChanges]
-}
-
-export const getRenameReferencesChanges = async (
-  elementsSource: elementSource.ElementsSource,
-  sourceElemId: ElemID,
-  targetElemId: ElemID
-): Promise<DetailedChange[]> => {
-  const getReferences = (element: Element): WalkOnFuncArgs[] => {
-    const references: WalkOnFuncArgs[] = []
-    const func: WalkOnFunc = ({ value, path }) => {
-      if (isReferenceExpression(value)
-      && (sourceElemId.isEqual(value.elemID) || sourceElemId.isParentOf(value.elemID))) {
-        references.push({ value, path })
-        return WALK_NEXT_STEP.SKIP
-      }
-      return WALK_NEXT_STEP.RECURSE
-    }
-    walkOnElement({ element, func })
-    return references
-  }
-
-  const references = await awu(await elementsSource.getAll())
-    .flatMap(elem => getReferences(elem)).toArray()
-
-  return references.map((r): DetailedChange => {
-    const targetReference = new ReferenceExpression(
-      new ElemID(
-        r.value.elemID.adapter,
-        r.value.elemID.typeName,
-        r.value.elemID.idType,
-        targetElemId.name,
-        ...r.value.elemID.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1)
-      ),
-      r.value.resValue,
-      r.value.topLevelParent
-    )
-    return {
-      id: r.path,
-      action: 'modify',
-      data: {
-        before: r.value,
-        after: targetReference,
-      },
-    }
-  })
-}
-
-const getUpdatedObjectType = (
-  topLevelElem: ObjectType,
-  values: { idType: ElemIDType; path: string[]; value: Value }[]
-): ObjectType => {
-  const { fields, annotations } = topLevelElem
-
-  values.filter(v => v.idType === 'field')
-    .forEach(v => {
-      // the path of values in Field are without 'annotations' attribute so it needs to be added:
-      // field.key -> field.annotations.key
-      const path = _.concat(_.head(v.path), 'annotations', ..._.tail(v.path)) as string[]
-      _.set(fields, path, v.value)
-    })
-
-  values.filter(v => v.idType === 'annotation')
-    .forEach(v => {
-      _.set(annotations, v.path, v.value)
-    })
-
-  return new ObjectType({
-    ...topLevelElem,
-    annotationRefsOrTypes: topLevelElem.annotationRefTypes,
-    fields,
-    annotations,
-  })
-}
-
-const getUpdatedInstanceElement = (
-  topLevelElem: InstanceElement,
-  values: { path: string[]; value: Value }[]
-): InstanceElement => {
-  const { value, annotations } = topLevelElem
-  values.forEach(v => {
-    if (_.get(value, v.path)) {
-      _.set(value, v.path, v.value)
-    }
-    if (_.get(annotations, v.path)) {
-      _.set(annotations, v.path, v.value)
-    }
-  })
-
-  return new InstanceElement(
-    topLevelElem.elemID.name,
-    topLevelElem.refType,
-    value,
-    topLevelElem.path,
-    annotations
-  )
-}
-
-export const getUpdatedTopLevelElements = async (
-  elementsSource: elementSource.ElementsSource,
-  changes: DetailedChange[]
-): Promise<Element[]> => {
-  const changesByTopLevelElemId = _.groupBy(
-    changes, r => r.id.createTopLevelParentID().parent.getFullName()
-  )
-
-  return Promise.all(
-    Object.entries(changesByTopLevelElemId).map(async ([e, changesInTopLevelElement]) => {
-      const topLevelElem = await elementsSource.get(ElemID.fromFullName(e))
-      if (isObjectType(topLevelElem)) {
-        const values = changesInTopLevelElement.map(c => ({
-          idType: c.id.idType,
-          path: c.id.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
-          value: getChangeElement(c),
-        }))
-        return getUpdatedObjectType(topLevelElem, values)
-      }
-      if (isInstanceElement(topLevelElem)) {
-        const values = changesInTopLevelElement.map(c => ({
-          path: c.id.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1),
-          value: getChangeElement(c),
-        }))
-        return getUpdatedInstanceElement(topLevelElem, values)
-      }
-      return topLevelElem
-    })
-  )
-}
-
-const updateStateElements = async (
-  stateSource: state.State,
-  changes: DetailedChange[]
-): Promise<number> => {
-  const topLevelElementsChanges = changes.filter(c => c.id.isTopLevel())
-  await Promise.all(topLevelElementsChanges.filter(e => ['remove', 'modify'].includes(e.action))
-    .map(e => stateSource.remove(getChangeElement(e).elemID)))
-  await Promise.all(topLevelElementsChanges.filter(e => ['add', 'modify'].includes(e.action))
-    .map(e => stateSource.set(getChangeElement(e))))
-
-  // Currently only modifying non-top-elements, not removing or adding
-  const nestedElementsChanges = changes.filter(c => !c.id.isTopLevel() && c.action === 'modify')
-  const updatedElements = await getUpdatedTopLevelElements(stateSource, nestedElementsChanges)
-  await Promise.all(updatedElements.map(e => stateSource.set(e)))
-  return topLevelElementsChanges.length + updatedElements.length
-}
-
-export type RenameElementResult = {
-  naclFilesChangesCount: number
-  stateElementsChangesCount: number
-}
-
-export const renameElement = async (
+export const rename = async (
   workspace: Workspace,
   sourceElemId: ElemID,
   targetElemId: ElemID
 ): Promise<RenameElementResult> => {
-  let source: InstanceElement
-  let elemChanges: DetailedChange[]
-  let refChanges: DetailedChange[]
-
-  renameElementIdChecks(sourceElemId, targetElemId)
-
   const elements = await workspace.elements()
   const stateSource = workspace.state()
   const index = await stateSource.getPathIndex()
 
-  await renameElementChecks(elements, sourceElemId, targetElemId)
-  await renameElementChecks(stateSource, sourceElemId, targetElemId)
+  await renameChecks(sourceElemId, targetElemId, elements, stateSource)
 
-  source = await elements.get(sourceElemId)
-  const fragmentedElement = await pathIndex.splitElementByPath(source, index) as InstanceElement[]
-  elemChanges = getRenameElementChanges(sourceElemId, targetElemId, ...fragmentedElement)
+  let result
+  result = await renameElement(
+    elements,
+    sourceElemId,
+    targetElemId,
+    changes => workspace.updateNaclFiles(changes),
+    index
+  )
+  const { naclFilesChangesCount } = (result.referencesChangesResult as UpdateNaclFilesResult)
 
-  await workspace.updateNaclFiles(elemChanges)
+  result = await renameElement(
+    stateSource,
+    sourceElemId,
+    targetElemId,
+    changes => updateStateElements(stateSource, changes)
+  )
+  const stateElementsChangesCount = (result.elementChangesResult as number)
+    + (result.referencesChangesResult as number)
 
-  // The renamed element will be located according to the element's path and not the actual
-  // locations in the nacl. Such that if the user renamed the file before she renamed the Element,
-  // the renamed element will be placed in the original file name. This is because we use and update
-  // the pathIndex and not the ChangeLocation (SourceMap) logic in the current implementation.
-  await index.delete(sourceElemId.getFullName())
-  await index.set(targetElemId.getFullName(), elemChanges.filter(c => c.action === 'add').map(c => getChangeElement(c).path))
-
-  refChanges = await getRenameReferencesChanges(elements, sourceElemId, targetElemId)
-  const updateNaclFileResults = await workspace.updateNaclFiles(refChanges)
-
-  source = await stateSource.get(sourceElemId) as InstanceElement
-  elemChanges = getRenameElementChanges(sourceElemId, targetElemId, source)
-  refChanges = await getRenameReferencesChanges(stateSource, sourceElemId, targetElemId)
-
-  const updateStateElementsResult = await updateStateElements(stateSource,
-    [...elemChanges, ...refChanges])
+  await renameElementPathIndex(index, sourceElemId, targetElemId)
 
   await workspace.flush()
-  return {
-    naclFilesChangesCount: updateNaclFileResults.naclFilesChangesCount,
-    stateElementsChangesCount: updateStateElementsResult,
-  }
+  return { naclFilesChangesCount, stateElementsChangesCount }
 }

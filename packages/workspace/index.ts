@@ -37,8 +37,10 @@ import { createElementSelector, ElementSelector, validateSelectorsMatches,
 import * as validator from './src/validator'
 import * as elementSource from './src/workspace/elements_source'
 import * as remoteMap from './src/workspace/remote_map'
-import { RemoteElementSource } from './src/workspace/elements_source'
+import { RemoteElementSource, ElementsSource } from './src/workspace/elements_source'
 import { FromSource } from './src/workspace/nacl_files/multi_env/multi_env_source'
+import { State } from './src/workspace/state'
+import { PathIndex, splitElementByPath } from './src/workspace/path_index'
 
 export {
   errors,
@@ -83,4 +85,8 @@ export {
   isValidEnvName,
   FromSource,
   UpdateNaclFilesResult,
+  ElementsSource,
+  State,
+  splitElementByPath,
+  PathIndex,
 }

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import open from 'open'
 import { ElemID, isElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { Workspace, ElementSelector, createElementSelectors, FromSource } from '@salto-io/workspace'
-import { getEnvsDeletionsDiff, RenameElementIdError, renameElement, RenameElementResult } from '@salto-io/core'
+import { getEnvsDeletionsDiff, RenameElementIdError, rename, RenameElementResult } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
@@ -634,7 +634,7 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
 
   let result: RenameElementResult
   try {
-    result = await renameElement(workspace, sourceElemId, targetElemId)
+    result = await rename(workspace, sourceElemId, targetElemId)
   } catch (error) {
     if (error instanceof RenameElementIdError) {
       errorOutputLine(error.message, output)

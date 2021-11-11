@@ -796,8 +796,7 @@ export const loadWorkspace = async (
     serviceConfig: (name, defaultValue) => adaptersConfig.getAdapter(name, defaultValue),
     serviceConfigPaths: adaptersConfig.getElementNaclFiles,
     isEmpty: async (naclFilesOnly = false): Promise<boolean> => {
-      const isNaclFilesSourceEmpty = !naclFilesSource
-        || await (await getLoadedNaclFilesSource()).isEmpty(currentEnv())
+      const isNaclFilesSourceEmpty = await (await getLoadedNaclFilesSource()).isEmpty(currentEnv())
       return isNaclFilesSourceEmpty && (naclFilesOnly || state().isEmpty())
     },
     hasElementsInServices: async (serviceNames: string[]): Promise<boolean> => {

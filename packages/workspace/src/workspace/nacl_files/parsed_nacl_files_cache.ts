@@ -195,6 +195,7 @@ export const createParseResultCache = (
     },
     putAll: async (files: Record<string, ParsedNaclFile>): Promise<void> => {
       const { metadata, errors, referenced, sourceMap, elements } = await cacheSources
+      cachedHash = undefined
       const errorEntriesToAdd = awu(Object.keys(files))
         .map(async file => {
           const value = (await files[file].data.errors()) ?? []
@@ -256,9 +257,11 @@ export const createParseResultCache = (
       return (awu(Object.values(await cacheSources))
         .forEach(async source => source.delete(filename)))
     },
-    deleteAll: async (filenames: string[]): Promise<void> =>
-      (awu(Object.values(await cacheSources)).forEach(source =>
-        source.deleteAll(filenames))),
+    deleteAll: async (filenames: string[]): Promise<void> => {
+      cachedHash = undefined
+      await awu(Object.values(await cacheSources)).forEach(source =>
+        source.deleteAll(filenames))
+    },
     getHash: async () => {
       if (!cachedHash) {
         cachedHash = ''

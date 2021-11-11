@@ -64,6 +64,36 @@ describe('ParsedNaclFileCache', () => {
     lastModified: beforeTimestamp,
   }
   let parsedDummy: ParsedNaclFile
+
+  const dummy2Filename = 'dummy2.nacl'
+  const mockCacheFileContentDummy2 = 'content2'
+  const mockSourceRangeDummy2 = {
+    filename: dummy2Filename,
+    start: {
+      line: 1,
+      col: 1,
+      byte: 2,
+    },
+    end: {
+      line: 12,
+      col: 3,
+      byte: 4,
+    },
+  }
+  const dummy2ObjectType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy2') })
+  sourceMap.push(new ElemID('salesforce', 'dummy2').getFullName(), mockSourceRangeDummy2)
+  const parseResultWithoutMD5Dummy2 = {
+    elements: [dummy2ObjectType],
+    errors: [],
+    sourceMap,
+  }
+  const dummy2ParsedKey = {
+    filename: dummy2Filename,
+    buffer: mockCacheFileContentDummy2,
+    lastModified: beforeTimestamp,
+  }
+  let parsedDummy2: ParsedNaclFile
+
   const toDeleteFilename = 'toDelete.nacl'
   const toDeleteContent = 'toDelete'
   const toDeleteObjectType = new ObjectType({ elemID: new ElemID('salesforce', 'toDelete') })
@@ -92,6 +122,63 @@ describe('ParsedNaclFileCache', () => {
   }
   let parsedToDelete: ParsedNaclFile
 
+  const toDelete2Filename = 'toDelete2.nacl'
+  const toDelete2Content = 'toDelete2'
+  const toDelete2ObjectType = new ObjectType({ elemID: new ElemID('salesforce', 'toDelete2') })
+  sourceMap.push(new ElemID('salesforce', 'toDelete2').getFullName(), {
+    filename: toDelete2Filename,
+    start: {
+      line: 1,
+      col: 2,
+      byte: 3,
+    },
+    end: {
+      line: 12,
+      col: 6,
+      byte: 15,
+    },
+  })
+  const toDelete2ParseResult = {
+    elements: [toDelete2ObjectType],
+    errors: [],
+    sourceMap,
+  }
+  const toDelete2Key = {
+    filename: toDelete2Filename,
+    buffer: toDelete2Content,
+    lastModified: someDateTimestamp,
+  }
+  let parsedToDelete2: ParsedNaclFile
+
+  const initDummyFilename = 'initDummy.nacl'
+  const mockCacheFileContentInitDummy = 'content'
+  const mockSourceRangeInitDummy = {
+    filename: initDummyFilename,
+    start: {
+      line: 1,
+      col: 1,
+      byte: 2,
+    },
+    end: {
+      line: 12,
+      col: 3,
+      byte: 4,
+    },
+  }
+  const initDummyObjectType = new ObjectType({ elemID: new ElemID('salesforce', 'initDummy') })
+  sourceMap.push(new ElemID('salesforce', 'initDummy').getFullName(), mockSourceRangeInitDummy)
+  const parseResultWithoutMD5InitDummy = {
+    elements: [initDummyObjectType],
+    errors: [],
+    sourceMap,
+  }
+  const initDummyParsedKey = {
+    filename: initDummyFilename,
+    buffer: mockCacheFileContentInitDummy,
+    lastModified: beforeTimestamp,
+  }
+  let parsedInitDummy: ParsedNaclFile
+
   const parsedWithoutBuffer = (parsed: ParsedNaclFile): ParsedNaclFile => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { buffer, ...parsedWithoutBuff } = parsed
@@ -112,13 +199,25 @@ describe('ParsedNaclFileCache', () => {
 
   beforeAll(async () => {
     jest.spyOn(Date, 'now').mockImplementation(() => someDateTimestamp)
+    parsedInitDummy = await toParsedNaclFile(
+      initDummyParsedKey,
+      parseResultWithoutMD5InitDummy
+    )
     parsedDummy = await toParsedNaclFile(
       dummyParsedKey,
       parseResultWithoutMD5
     )
+    parsedDummy2 = await toParsedNaclFile(
+      dummy2ParsedKey,
+      parseResultWithoutMD5Dummy2
+    )
     parsedToDelete = await toParsedNaclFile(
       toDeleteKey,
       toDeleteParseResult
+    )
+    parsedToDelete2 = await toParsedNaclFile(
+      toDelete2Key,
+      toDelete2ParseResult
     )
   })
 
@@ -132,15 +231,58 @@ describe('ParsedNaclFileCache', () => {
   })
 
   describe('put', () => {
-    it('Should return the same value as inserted', async () => {
+    let initCache: string | undefined
+    beforeEach(async () => {
       await cache.put(
         dummyFilename,
         parsedDummy,
       )
+      initCache = await cache.getHash()
+      await cache.put(
+        dummy2Filename,
+        parsedDummy2,
+      )
+    })
+
+    it('Should return the same value as inserted', async () => {
       await validateParsedNaclFileEquals(
         await cache.get(dummyFilename),
         parsedWithoutBuffer(parsedDummy),
       )
+    })
+
+    it('should update the hash value', async () => {
+      expect(await cache.getHash()).not.toEqual(initCache)
+    })
+  })
+
+  describe('putAll', () => {
+    let initCache: string | undefined
+    beforeEach(async () => {
+      await cache.put(
+        initDummyFilename,
+        parsedInitDummy,
+      )
+      initCache = await cache.getHash()
+      await cache.putAll({
+        [dummyFilename]: parsedDummy,
+        [dummy2Filename]: parsedDummy2,
+      })
+    })
+
+    it('Should return the same value as inserted', async () => {
+      await validateParsedNaclFileEquals(
+        await cache.get(dummyFilename),
+        parsedWithoutBuffer(parsedDummy),
+      )
+      await validateParsedNaclFileEquals(
+        await cache.get(dummy2Filename),
+        parsedWithoutBuffer(parsedDummy2),
+      )
+    })
+
+    it('should update the hash value', async () => {
+      expect(await cache.getHash()).not.toEqual(initCache)
     })
   })
 
@@ -187,16 +329,47 @@ describe('ParsedNaclFileCache', () => {
   })
 
   describe('delete', () => {
-    it('Should delete by a specific key', async () => {
+    let initCache: string | undefined
+    beforeEach(async () => {
       await cache.put(
         toDeleteFilename,
         parsedToDelete,
       )
+      initCache = await cache.getHash()
       expect(await fileExistsInCache(toDeleteFilename)).toEqual(true)
+      await cache.delete(toDeleteKey.filename)
+    })
+    it('Should delete by a specific key', async () => {
       await cache.delete(toDeleteKey.filename)
       expect(await fileExistsInCache(toDeleteFilename)).toEqual(false)
     })
+
+    it('should update the hash value', async () => {
+      expect(await cache.getHash()).not.toEqual(initCache)
+    })
   })
+
+  describe('deleteAll', () => {
+    let initCache: string | undefined
+    beforeEach(async () => {
+      await cache.putAll({
+        [toDeleteFilename]: parsedToDelete,
+        [toDelete2Filename]: parsedToDelete2,
+      })
+      initCache = await cache.getHash()
+      expect(await fileExistsInCache(toDeleteFilename)).toEqual(true)
+      await cache.deleteAll([toDeleteKey.filename, toDelete2Key.filename])
+    })
+    it('Should delete by a specific key', async () => {
+      expect(await fileExistsInCache(toDeleteFilename)).toEqual(false)
+      expect(await fileExistsInCache(toDelete2Filename)).toEqual(false)
+    })
+
+    it('should update the hash value', async () => {
+      expect(await cache.getHash()).not.toEqual(initCache)
+    })
+  })
+
 
   describe('list', () => {
     it('Should list all filenames', async () => {

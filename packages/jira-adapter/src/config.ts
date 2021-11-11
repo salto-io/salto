@@ -146,7 +146,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       paginationField: 'startAt',
     },
   },
-  PageBeanFieldConfiguration: {
+  PageBeanFieldConfigurationDetails: {
     request: {
       url: '/rest/api/3/fieldconfiguration',
       paginationField: 'startAt',
@@ -159,7 +159,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
     },
   },
-  FieldConfiguration: {
+  FieldConfigurationDetails: {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'fields', fieldType: 'list<FieldConfigurationItem>' },
@@ -206,7 +206,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   FilterDetails: {
     transformation: {
       fieldTypeOverrides: [
-        { fieldName: 'columns', fieldType: 'ColumnItem' },
+        { fieldName: 'columns', fieldType: 'list<ColumnItem>' },
       ],
     },
   },
@@ -267,6 +267,23 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       queryParams: {
         expand: 'description,lead,issueTypes,url,projectKeys,permissions',
       },
+      recurseInto: [
+        {
+          type: 'PageBeanComponentWithIssueCount',
+          toField: 'components',
+          context: [{ name: 'projectIdOrKey', fromField: 'id' }],
+        },
+      ],
+    },
+  },
+  Project: {
+    transformation: {
+      fieldTypeOverrides: [{ fieldName: 'components', fieldType: 'list<ComponentWithIssueCount>' }],
+    },
+  },
+  ComponentWithIssueCount: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'issueCount' }],
     },
   },
   PageBeanScreen: {
@@ -413,7 +430,7 @@ export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
   'rest__api__3__configuration__timetracking__list', // TimeTrackingProvider
   'PageBeanDashboard',
   'PageBeanField',
-  'PageBeanFieldConfiguration',
+  'PageBeanFieldConfigurationDetails',
   'PageBeanFieldConfigurationScheme',
   'PageBeanFieldConfigurationIssueTypeItem',
   'PageBeanFilterDetails',

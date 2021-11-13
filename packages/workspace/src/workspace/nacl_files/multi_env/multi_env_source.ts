@@ -85,14 +85,7 @@ type MultiEnvState = {
 
 export type EnvsChanges = Record<string, ChangeSet<Change>>
 
-export type FromSource = {
-  source: 'env'
-  envName?: string
-} | {
-  source: 'common'
-} | {
-  source: 'all'
-}
+export type FromSource = 'env' | 'common' | 'all'
 
 export type MultiEnvSource = {
   updateNaclFiles: (
@@ -134,7 +127,7 @@ export type MultiEnvSource = {
   getElementIdsBySelectors: (
     env: string,
     selectors: ElementSelector[],
-    fromSoruce?: FromSource,
+    fromSource?: FromSource,
     compact?: boolean,
   ) => Promise<AsyncIterable<ElemID>>
   demote: (ids: ElemID[]) => Promise<EnvsChanges>
@@ -368,9 +361,9 @@ const buildMultiEnvSource = (
 
   const determineSource = async (
     env: string,
-    fromSource: Pick<FromSource, 'source'>
+    source: FromSource,
   ): Promise<ElementsSource> => {
-    switch (fromSource.source) {
+    switch (source) {
       case 'env': {
         return envSources()[env]
       }
@@ -386,7 +379,7 @@ const buildMultiEnvSource = (
   const getElementIdsBySelectors = async (
     env: string,
     selectors: ElementSelector[],
-    fromSource: Pick<FromSource, 'source'> = { source: 'env' },
+    fromSource: FromSource = 'env',
     compact = false,
   ): Promise<AsyncIterable<ElemID>> => {
     const relevantSource: ElementsSource = await determineSource(env, fromSource)

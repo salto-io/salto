@@ -913,7 +913,7 @@ describe('multi env source', () => {
       it('should extract the proper ids without overlaps when compact=true', async () => {
         const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
         const res = await awu(
-          await source.getElementIdsBySelectors(activePrefix, selectors, { source: 'env' }, true)
+          await source.getElementIdsBySelectors(activePrefix, selectors, 'env', true)
         ).toArray()
         expect(res.map(id => id.getFullName()).sort()).toEqual([
           envElemID,
@@ -923,7 +923,7 @@ describe('multi env source', () => {
 
       it('should extract the proper ids from a specific env when passed', async () => {
         const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
-        const res = await awu(await source.getElementIdsBySelectors(inactivePrefix, selectors, { source: 'env' })).toArray()
+        const res = await awu(await source.getElementIdsBySelectors(inactivePrefix, selectors, 'env')).toArray()
         expect(res.map(id => id.getFullName()).sort()).toEqual([
           inactiveElemID,
           inactiveElemID.createNestedID('field', 'field'),
@@ -935,7 +935,7 @@ describe('multi env source', () => {
     describe('from=common should select only common elements', () => {
       it('should extract the proper ids with overlaps when compact=false', async () => {
         const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
-        const res = await awu(await source.getElementIdsBySelectors(activePrefix, selectors, { source: 'common' })).toArray()
+        const res = await awu(await source.getElementIdsBySelectors(activePrefix, selectors, 'common')).toArray()
         expect(res.map(id => id.getFullName()).sort()).toEqual([
           commonObject.elemID,
           commonObject.elemID.createNestedID('field', 'field'),
@@ -946,7 +946,7 @@ describe('multi env source', () => {
       it('should extract the proper ids without overlaps when compact=true', async () => {
         const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
         const res = await awu(
-          await source.getElementIdsBySelectors(activePrefix, selectors, { source: 'common' }, true)
+          await source.getElementIdsBySelectors(activePrefix, selectors, 'common', true)
         ).toArray()
         expect(res.map(id => id.getFullName()).sort()).toEqual([
           commonObject.elemID,
@@ -957,7 +957,7 @@ describe('multi env source', () => {
     describe('from=both should select both env and common elements', () => {
       it('should extract the proper ids with overlaps when compact=false', async () => {
         const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
-        const res = await awu(await source.getElementIdsBySelectors(activePrefix, selectors, { source: 'all' })).toArray()
+        const res = await awu(await source.getElementIdsBySelectors(activePrefix, selectors, 'all')).toArray()
         expect(res.map(id => id.getFullName()).sort()).toEqual([
           commonObject.elemID,
           commonObject.elemID.createNestedID('field', 'field'),
@@ -971,7 +971,7 @@ describe('multi env source', () => {
       it('should extract the proper ids without overlaps when compact=true', async () => {
         const selectors = createElementSelectors(['salto.*', 'salto.*.field.*']).validSelectors
         const res = await awu(
-          await source.getElementIdsBySelectors(activePrefix, selectors, { source: 'all' }, true)
+          await source.getElementIdsBySelectors(activePrefix, selectors, 'all', true)
         ).toArray()
         expect(res.map(id => id.getFullName()).sort()).toEqual([
           commonObject.elemID,
@@ -989,7 +989,7 @@ describe('multi env source', () => {
       )
       await source.promote(
         activePrefix,
-        await awu(await source.getElementIdsBySelectors(activePrefix, selectors, { source: 'env' }, true)).toArray()
+        await awu(await source.getElementIdsBySelectors(activePrefix, selectors, 'env', true)).toArray()
       )
       expect(routers.routePromote).toHaveBeenCalledWith(
         [envElemID, objectElemID], 'active', commonSource, {
@@ -1006,7 +1006,7 @@ describe('multi env source', () => {
         () => Promise.resolve({ primarySource: [], commonSource: [], secondarySources: {} })
       )
       await source.demote(await awu(
-        await source.getElementIdsBySelectors(activePrefix, selectors, { source: 'common' }, true)
+        await source.getElementIdsBySelectors(activePrefix, selectors, 'common', true)
       ).toArray())
       expect(routers.routeDemote).toHaveBeenCalledWith(
         [commonObject.elemID, objectElemID], commonSource, {
@@ -1089,6 +1089,20 @@ describe('multi env source', () => {
       expect(await src.getStaticFile(
         staticFile.filepath, staticFile.encoding, activePrefix
       )).toEqual(new MissingStaticFile(staticFile.filepath))
+    })
+  })
+
+  describe('clear', () => {
+    it('should clear the envSource', async () => {
+      const src = multiEnvSource(
+        sources,
+        commonPrefix,
+        () => Promise.resolve(new InMemoryRemoteMap()),
+        false
+      )
+      await src.clear()
+      const postClearElements = await awu(await source.getAll('active')).toArray()
+      expect(postClearElements).toEqual([])
     })
   })
 })

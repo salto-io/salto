@@ -3211,6 +3211,29 @@ describe('workspace', () => {
       expect(elemStaticFile.content).toEqual(inactiveStaticFile.content)
     })
   })
+
+  describe('isEmpty', () => {
+    it('should return true if the workspace is empty', async () => {
+      const ws = await createWorkspace(
+        mockDirStore(undefined, undefined, {}),
+        mockState([])
+      )
+      expect(await ws.isEmpty()).toBeTruthy()
+    })
+
+    it('should return false is the workspace is not empty', async () => {
+      const ws = await createWorkspace()
+      expect(await ws.isEmpty()).toBeFalsy()
+    })
+
+    it('should return true if state is not empty but the withNaclFilesOnly flag is provided', async () => {
+      const ws = await createWorkspace(
+        mockDirStore(undefined, undefined, {}),
+        mockState([new ObjectType({ elemID: new ElemID('salto', 'something') })])
+      )
+      expect(await ws.isEmpty(true)).toBeTruthy()
+    })
+  })
 })
 
 describe('getElementNaclFiles', () => {

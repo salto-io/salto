@@ -103,6 +103,19 @@ export type EnvironmentsSources = {
   sources: Record<string, EnvironmentSource>
 }
 
+type FromSourceWithEnv = {
+  source: 'env'
+  fromEnv? : string
+}
+
+const isFromSourceWithEnv = (
+  value: {source: FromSource} | FromSourceWithEnv
+): value is FromSourceWithEnv => {
+  if (value.source === 'env') {
+    return 'fromEnv' in value
+  }
+  return false
+}
 export type Workspace = {
   uid: string
   name: string
@@ -143,7 +156,12 @@ export type Workspace = {
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementIdsBySelectors: (
     selectors: ElementSelector[],
-    from?: FromSource,
+    from: {
+      source: 'env'
+      envName?: string
+    } | {
+      source: FromSource
+    },
     compact?: boolean,
   ) => Promise<AsyncIterable<ElemID>>
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
@@ -835,10 +853,14 @@ export const loadWorkspace = async (
     ),
     getElementIdsBySelectors: async (
       selectors: ElementSelector[], from, compacted = false,
-    ) => (
-      (await getLoadedNaclFilesSource())
-        .getElementIdsBySelectors(currentEnv(), selectors, from, compacted)
-    ),
+    ) => {
+      const env = isFromSourceWithEnv(from)
+        ? from.fromEnv ?? currentEnv()
+        : currentEnv()
+
+      return (await getLoadedNaclFilesSource())
+        .getElementIdsBySelectors(env, selectors, from.source, compacted)
+    },
     getElementReferencedFiles: async id => (
       (await getLoadedNaclFilesSource()).getElementReferencedFiles(currentEnv(), id)
     ),
@@ -903,6 +925,9 @@ export const loadWorkspace = async (
           throw new Error('Cannot clear static resources without clearing the state, cache and nacls')
         }
         await currentWSState.mergeManager.clear()
+        // We shouldn't really be accessing naclFilesSource directly outside of its
+        // init flow, but in this specific case, there is not point in loading anything
+        // since everything is deleted.
         await naclFilesSource.clear(args)
       }
       if (args.state) {

@@ -61,7 +61,7 @@ const match = (elemId: ElemID, selector: ElementSelector, includeNested = false)
 
 
 const createRegex = (selector: string, caseInSensitive: boolean): RegExp => new RegExp(
-  `^${selector.replace(/\*/g, '[^\\.]*')}$`, caseInSensitive ? 'i' : undefined
+  `^(${selector.replace(/\*/g, '[^\\.]*')})$`, caseInSensitive ? 'i' : undefined
 )
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */

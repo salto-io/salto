@@ -19,7 +19,7 @@ import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, Detail
   Value, toChange, isRemovalChange, getChangeElement,
   ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { applyDetailedChanges, resolvePath } from '@salto-io/adapter-utils'
+import { applyDetailedChanges, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
@@ -42,6 +42,7 @@ import { createMergeManager, ElementMergeManager, ChangeSet, createEmptyChangeSe
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
 import { AdaptersConfigSource } from './adapters_config_source'
+import { updateReferenceIndexes } from './reference_indexes'
 
 const log = logger(module)
 
@@ -153,6 +154,8 @@ export type Workspace = {
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
+  getElementOutgoingReferences: (id: ElemID) => Promise<ElemID[]>
+  getElementIncomingReferences: (id: ElemID) => Promise<ElemID[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementIdsBySelectors: (
     selectors: ElementSelector[],
@@ -206,6 +209,9 @@ type SingleState = {
   merged: ElementsSource
   errors: RemoteMap<MergeError[]>
   validationErrors: RemoteMap<ValidationError[]>
+  referencedBy: RemoteMap<ElemID[]>
+  references: RemoteMap<ElemID[]>
+  mapsVersions: RemoteMap<number>
 }
 type WorkspaceState = {
   states: Record<string, SingleState>
@@ -308,6 +314,24 @@ export const loadWorkspace = async (
             namespace: getRemoteMapNamespace('validationErrors', envName),
             serialize: validationErrors => serialize(validationErrors, 'keepRef'),
             deserialize: async data => deserializeValidationErrors(data),
+            persistent,
+          }),
+          referencedBy: await remoteMapCreator<ElemID[]>({
+            namespace: getRemoteMapNamespace('referencedBy', envName),
+            serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
+            deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+            persistent,
+          }),
+          references: await remoteMapCreator<ElemID[]>({
+            namespace: getRemoteMapNamespace('references', envName),
+            serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
+            deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+            persistent,
+          }),
+          mapsVersions: await remoteMapCreator<number>({
+            namespace: getRemoteMapNamespace('mapsVersions', envName),
+            serialize: val => val.toString(),
+            deserialize: async data => parseInt(data, 10),
             persistent,
           }),
         }]).toArray())
@@ -503,6 +527,16 @@ export const loadWorkspace = async (
         await stateToBuild.states[envName].validationErrors.clear()
       }
       const { changes } = changeResult
+
+      await updateReferenceIndexes(
+        changes,
+        stateToBuild.states[envName].references,
+        stateToBuild.states[envName].referencedBy,
+        stateToBuild.states[envName].mapsVersions,
+        stateToBuild.states[envName].merged,
+        changeResult.cacheValid,
+      )
+
       const changedElements = changes
         .filter(isAdditionOrModificationChange)
         .map(getChangeElement)
@@ -864,6 +898,22 @@ export const loadWorkspace = async (
     getElementReferencedFiles: async id => (
       (await getLoadedNaclFilesSource()).getElementReferencedFiles(currentEnv(), id)
     ),
+    getElementOutgoingReferences: async id => {
+      if (!id.createBaseID().parent.isEqual(id)) {
+        log.warn(`getElementOutgoingReferences only support base ids, received ${id.getFullName()}`)
+        throw new Error(`getElementOutgoingReferences only support base ids, received ${id.getFullName()}`)
+      }
+      return await (await getWorkspaceState()).states[currentEnv()]
+        .references.get(id.getFullName()) ?? []
+    },
+    getElementIncomingReferences: async id => {
+      if (!id.createBaseID().parent.isEqual(id)) {
+        log.warn(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
+        throw new Error(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
+      }
+      return await (await getWorkspaceState()).states[currentEnv()]
+        .referencedBy.get(id.getFullName()) ?? []
+    },
     getElementNaclFiles: async id => (
       (await getLoadedNaclFilesSource()).getElementNaclFiles(currentEnv(), id)
     ),

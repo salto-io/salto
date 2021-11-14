@@ -88,7 +88,7 @@ const addFieldTypeAndInstances = async ({
   )
 
   const elements: Element[] = []
-  const currentType = await type.fields[fieldName].refType.getResolvedValue()
+  const currentType = await type.fields[fieldName].getType()
   if (!isObjectType(await getInnerType(currentType))) {
     const fieldType = generateType({
       adapterName,
@@ -99,13 +99,13 @@ const addFieldTypeAndInstances = async ({
       transformationConfigByType,
       transformationDefaultConfig,
     })
-    type.fields[fieldName].refType = isListType(type.fields[fieldName].refType.type)
+    type.fields[fieldName].refType = isListType(await type.fields[fieldName].getType())
       ? createRefToElmWithValue(new ListType(createRefToElmWithValue(fieldType.type)))
       : createRefToElmWithValue(fieldType.type)
     elements.push(fieldType.type, ...fieldType.nestedTypes)
   }
 
-  const updatedFieldType = await type.fields[fieldName].refType.getResolvedValue()
+  const updatedFieldType = await type.fields[fieldName].getType()
   const fieldType = await getInnerType(updatedFieldType)
   if (!isObjectType(fieldType)) {
     // should not happen

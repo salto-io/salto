@@ -99,8 +99,8 @@ const addFieldTypeAndInstances = async ({
       transformationConfigByType,
       transformationDefaultConfig,
     })
-    type.fields[fieldName].refType = isListType(await type.fields[fieldName].getType())
-      ? createRefToElmWithValue(new ListType(createRefToElmWithValue(fieldType.type)))
+    type.fields[fieldName].refType = isListType(currentType)
+      ? createRefToElmWithValue(new ListType(fieldType.type))
       : createRefToElmWithValue(fieldType.type)
     elements.push(fieldType.type, ...fieldType.nestedTypes)
   }

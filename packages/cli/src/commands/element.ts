@@ -529,7 +529,7 @@ const elementOpenDef = createWorkspaceCommand({
 
 type ElementListArgs = {
   elementSelector: string[]
-  mode: FromSource['source']
+  mode: FromSource
 } & EnvArg
 
 const listElements = async (
@@ -539,7 +539,7 @@ const listElements = async (
   elmSelectors: ElementSelector[]
 ): Promise<CliExitCode> => {
   const elemIds = await awu(
-    await workspace.getElementIdsBySelectors(elmSelectors, mode, true)
+    await workspace.getElementIdsBySelectors(elmSelectors, { source: mode }, true)
   ).toArray()
 
   output.stdout.write(Prompts.LIST_MESSAGE(elemIds.map(id => id.getFullName())))
@@ -568,7 +568,7 @@ export const listAction: WorkspaceCommandAction<ElementListArgs> = async ({
     if (!validWorkspace) {
       return CliExitCode.AppError
     }
-    return await listElements(workspace, output, { source: mode }, validSelectors)
+    return await listElements(workspace, output, mode, validSelectors)
   } catch (e) {
     errorOutputLine(formatListFailed(e.message), output)
     return CliExitCode.AppError

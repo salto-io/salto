@@ -21,6 +21,8 @@ import {
   isObjectType, ContainerType, Change, AdditionChange, getChangeElement, PrimitiveType,
   Value, TypeReference, INSTANCE_ANNOTATIONS, ReferenceExpression, createRefToElmWithValue,
   SaltoError,
+  StaticFile,
+  isStaticFile,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges } from '@salto-io/adapter-utils'
 // eslint-disable-next-line no-restricted-imports
@@ -3120,6 +3122,118 @@ describe('workspace', () => {
       expect(mockAdaptersConfig.getNaclFile).not.toHaveBeenCalled()
     })
   })
+
+
+  describe('static files deserialization', () => {
+    let workspace: Workspace
+    const elemID = ElemID.fromFullName('salto.withStatic')
+    const defaultStaticFile = new StaticFile({
+      content: Buffer.from('I am a little static file'),
+      filepath: 'salto/static.txt',
+      hash: 'FFFF',
+    })
+    const defaultElem = new ObjectType({
+      elemID,
+      annotationRefsOrTypes: {
+        static: BuiltinTypes.STRING,
+      },
+      annotations: {
+        static: defaultStaticFile,
+      },
+    })
+
+    const defaultStaticFileSource = mockStaticFilesSource([defaultStaticFile])
+    const inactiveStaticFile = new StaticFile({
+      content: Buffer.from('I am a big static file'),
+      filepath: 'salto/static.txt',
+      hash: 'FFFF',
+    })
+    const inactiveElem = new ObjectType({
+      elemID,
+      annotationRefsOrTypes: {
+        static: new TypeReference(BuiltinTypes.STRING.elemID),
+      },
+      annotations: {
+        static: inactiveStaticFile,
+      },
+    })
+    const inactiveStaticFileSource = mockStaticFilesSource([inactiveStaticFile])
+
+    beforeEach(async () => {
+      workspace = await createWorkspace(
+        undefined,
+        undefined,
+        {
+          getWorkspaceConfig: jest.fn().mockImplementation(() => ({
+            envs: [
+              { name: 'default', services: ['salto'] },
+              { name: 'inactive', services: ['salto'] },
+            ],
+            uid: '',
+            name: 'test',
+            currentEnv: 'default',
+          })),
+          setWorkspaceConfig: jest.fn(),
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource(
+              [defaultElem], undefined, undefined, undefined, undefined, defaultStaticFileSource
+            ),
+            state: createState([]),
+          },
+          inactive: {
+            naclFiles: createMockNaclFileSource(
+              [inactiveElem], undefined, undefined, undefined, undefined, inactiveStaticFileSource
+            ),
+            state: createState([]),
+          },
+        }
+      )
+    })
+    it('should deserialize static files from the active env', async () => {
+      const elem = await (await workspace.elements()).get(elemID) as Element
+      expect(isStaticFile(elem.annotations.static)).toBeTruthy()
+      const elemStaticFile = elem.annotations.static as StaticFile
+      expect(elemStaticFile.content).toEqual(defaultStaticFile.content)
+    })
+
+    it('should deserialize static files from the non-active env', async () => {
+      const elem = await (await workspace.elements(true, 'inactive')).get(elemID) as Element
+      expect(isStaticFile(elem.annotations.static)).toBeTruthy()
+      const elemStaticFile = elem.annotations.static as StaticFile
+      expect(elemStaticFile.content).toEqual(inactiveStaticFile.content)
+    })
+  })
+
+  describe('isEmpty', () => {
+    it('should return true if the workspace is empty', async () => {
+      const ws = await createWorkspace(
+        mockDirStore(undefined, undefined, {}),
+        mockState([])
+      )
+      expect(await ws.isEmpty()).toBeTruthy()
+    })
+
+    it('should return false is the workspace is not empty', async () => {
+      const ws = await createWorkspace()
+      expect(await ws.isEmpty()).toBeFalsy()
+    })
+
+    it('should return true if state is not empty but the withNaclFilesOnly flag is provided', async () => {
+      const ws = await createWorkspace(
+        mockDirStore(undefined, undefined, {}),
+        mockState([new ObjectType({ elemID: new ElemID('salto', 'something') })])
+      )
+      expect(await ws.isEmpty(true)).toBeTruthy()
+    })
+  })
 })
 
 describe('getElementNaclFiles', () => {
@@ -3730,31 +3844,13 @@ describe('nacl sources reuse', () => {
     mockMuiltiEnv.mockReset()
   })
 
-  const createMultiEnvSrcEnvInvocationCount = (
-    mockFunc: jest.SpyInstance
-  ): Record<string, number> => (
-    mockFunc.mock.calls.reduce((acc, args) => {
-      const envName = args[1]
-      acc[envName] = (acc[envName] ?? 0) + 1
-      return acc
-    }, {})
-  )
-
-  it('should create only one copy of each env on initiation', async () => {
+  it('should create only one copy the multi env source', async () => {
     await ws.flush()
-    const invocations = createMultiEnvSrcEnvInvocationCount(mockMuiltiEnv)
-    expect(invocations).toEqual({
-      default: 1,
-      inactive: 1,
-    })
+    expect(mockMuiltiEnv).toHaveBeenCalledTimes(1)
   })
 
   it('should not create a new copy of a secondary env when invoking a command directly on the secondary env', async () => {
     await ws.elements(true, 'inactive')
-    const invocations = createMultiEnvSrcEnvInvocationCount(mockMuiltiEnv)
-    expect(invocations).toEqual({
-      default: 1,
-      inactive: 1,
-    })
+    expect(mockMuiltiEnv).toHaveBeenCalledTimes(1)
   })
 })

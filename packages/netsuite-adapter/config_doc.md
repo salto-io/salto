@@ -57,8 +57,8 @@ netsuite {
 ### Fetch exclude configuration options
 | Name                           | Default when undefined  | Description
 | -------------------------------| ------------------------| -----------
-| types                          | non types are excluded  | Specify which types to exclude on fetch
-| fileCabinet                    | non files are excluded  | Specify which Files to include on fetch
+| types                          | no types are excluded  | Specify which types to exclude on fetch
+| fileCabinet                    | no files are excluded  | Specify which files to exclude on fetch
 
 ### SDF Client configuration options
 
@@ -82,8 +82,3 @@ netsuite {
 | -------------------------------| ------------------------| -----------
 | types                          | {}                      | A map of a type name to a list of regexes of script ids. Any object whose script id matches any of the regexes of its type will be skipped
 | filePaths                      | []                      | A list of regexes of file paths. Any file whose path matches any of the regexes will be skipped
-
-### Salto deploy flags
-| Name                           | Default when undefined  | Description
-| -------------------------------| ------------------------| -----------
-| deployReferencedElements       | false                   | A flag for deploying referenced elements or not

@@ -231,6 +231,23 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(accountId).toEqual(DUMMY_CREDENTIALS.accountId)
     })
+
+    it('should quote strings with space', async () => {
+      const credentialsWithSpaces = expect.objectContaining({
+        commandName: COMMANDS.SAVE_TOKEN,
+        arguments: expect.objectContaining({
+          account: '\'account with space\'',
+          tokenid: DUMMY_CREDENTIALS.tokenId,
+          tokensecret: DUMMY_CREDENTIALS.tokenSecret,
+          authid: expect.anything(),
+        }),
+      })
+      mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
+      const accountId = await SdfClient.validateCredentials({ ...DUMMY_CREDENTIALS, accountId: 'account with space' })
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, credentialsWithSpaces)
+      expect(accountId).toEqual('account with space')
+    })
   })
 
   describe('getCustomObjects', () => {

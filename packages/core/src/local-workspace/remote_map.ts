@@ -383,6 +383,7 @@ remoteMap.RemoteMapCreator => {
       deserialize }:
     remoteMap.CreateRemoteMapParams<T>
   ): Promise<remoteMap.RemoteMap<T, K> > => {
+    let wasClearCalled = false
     const delKeys = new Set<string>()
     const locationTmpDir = getDBTmpDir(location)
     if (!await fileUtils.exists(location)) {
@@ -420,6 +421,7 @@ remoteMap.RemoteMapCreator => {
         tmpDB
       )
     }
+
     const createPersistentIterator = (opts: CreateIteratorOpts): rocksdb.Iterator => {
       const normalizedOpts = {
         ...opts,
@@ -469,7 +471,7 @@ remoteMap.RemoteMapCreator => {
       const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
       const tempIter = createTempIterator(opts)
       const iter = createPersistentIterator(opts)
-      return awu(aggregatedIterable(tempOnly ? [tempIter] : [tempIter, iter]))
+      return awu(aggregatedIterable(tempOnly || wasClearCalled ? [tempIter] : [tempIter, iter]))
         .filter(entry => !delKeys.has(entry.key))
         .map(async entry => deserialize(entry.value))
     }
@@ -479,7 +481,7 @@ remoteMap.RemoteMapCreator => {
       const tempIter = createTempIterator(opts)
       const iter = createPersistentIterator(opts)
       return awu(aggregatedIterablesWithPages(
-        tempOnly ? [tempIter] : [tempIter, iter],
+        tempOnly || wasClearCalled ? [tempIter] : [tempIter, iter],
         opts.pageSize
       )).map(async entries => Promise.all(
         entries.filter(entry => !delKeys.has(entry.key)).map(entry => deserialize(entry.value))
@@ -490,7 +492,7 @@ remoteMap.RemoteMapCreator => {
       const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
       const tempIter = createTempIterator(opts)
       const iter = createPersistentIterator(opts)
-      return awu(aggregatedIterable([tempIter, iter]))
+      return awu(aggregatedIterable(wasClearCalled ? [tempIter] : [tempIter, iter]))
         .filter(entry => !delKeys.has(entry.key))
         .map(
           async entry => ({ key: entry.key as K, value: await deserialize(entry.value) })
@@ -501,14 +503,16 @@ remoteMap.RemoteMapCreator => {
       const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
       const tempIter = createTempIterator(opts)
       const iter = createPersistentIterator(opts)
-      return awu(aggregatedIterablesWithPages([tempIter, iter], opts.pageSize))
-        .map(entries => Promise.all(
-          entries
-            .filter(entry => !delKeys.has(entry.key))
-            .map(
-              async entry => ({ key: entry.key as K, value: await deserialize(entry.value) })
-            )
-        ))
+      return awu(aggregatedIterablesWithPages(
+        wasClearCalled ? [tempIter] : [tempIter, iter],
+        opts.pageSize
+      )).map(entries => Promise.all(
+        entries
+          .filter(entry => !delKeys.has(entry.key))
+          .map(
+            async entry => ({ key: entry.key as K, value: await deserialize(entry.value) })
+          )
+      ))
     }
     const clearImpl = (
       connection: rocksdb,
@@ -527,7 +531,7 @@ remoteMap.RemoteMapCreator => {
       const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
       const tempKeyIter = createTempIterator(opts)
       const keyIter = createPersistentIterator(opts)
-      return awu(aggregatedIterable([tempKeyIter, keyIter]))
+      return awu(aggregatedIterable(wasClearCalled ? [tempKeyIter] : [tempKeyIter, keyIter]))
         .map(async (entry: remoteMap.RemoteMapEntry<string>) => entry.key as K)
         .filter(key => !delKeys.has(key))
     }
@@ -536,9 +540,11 @@ remoteMap.RemoteMapCreator => {
       const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
       const tempKeyIter = createTempIterator(opts)
       const keyIter = createPersistentIterator(opts)
-      return awu(aggregatedIterablesWithPages([tempKeyIter, keyIter], opts.pageSize))
-        .map(async entries =>
-          entries.map(entry => entry.key as K).filter(key => !delKeys.has(key)))
+      return awu(aggregatedIterablesWithPages(
+        wasClearCalled ? [tempKeyIter] : [tempKeyIter, keyIter],
+        opts.pageSize
+      )).map(async entries =>
+        entries.map(entry => entry.key as K).filter(key => !delKeys.has(key)))
     }
     const getImpl = (key: string): Promise<T | undefined> => new Promise(resolve => {
       if (delKeys.has(key)) {
@@ -554,6 +560,9 @@ remoteMap.RemoteMapCreator => {
         }
         tmpDB.get(keyToTempDBKey(key), async (error, value) => {
           if (error) {
+            if (wasClearCalled) {
+              resolve(undefined)
+            }
             persistentDB.get(keyToDBKey(key), async (innerError, innerValue) => {
               if (innerError) {
                 resolve(undefined)
@@ -602,6 +611,7 @@ remoteMap.RemoteMapCreator => {
       mainDBConnections[location] = connectionPromise
       persistentDB = await connectionPromise
     }
+
     await createDBConnections()
     return {
       get: getImpl,
@@ -644,6 +654,11 @@ remoteMap.RemoteMapCreator => {
         if (!persistent) {
           throw new Error('can not flush a non persistent remote map')
         }
+
+        if (wasClearCalled) {
+          await clearImpl(persistentDB, keyPrefix)
+        }
+
         const writeRes = await batchUpdate(awu(aggregatedIterable(
           [createTempIterator({ keys: true, values: true })]
         )), false)
@@ -653,17 +668,20 @@ remoteMap.RemoteMapCreator => {
           false,
           DELETE_OPERATION
         )
-        return writeRes || deleteRes
+        const flushRes = writeRes || deleteRes || wasClearCalled
+        wasClearCalled = false
+        return flushRes
       },
       revert: async () => {
         locationCache.reset()
         delKeys.clear()
+        wasClearCalled = false
         await clearImpl(tmpDB, tempKeyPrefix)
       },
       clear: async () => {
         locationCache.reset()
-        await clearImpl(persistentDB, keyPrefix)
         await clearImpl(tmpDB, tempKeyPrefix)
+        wasClearCalled = true
       },
       delete: deleteImpl,
       has: async (key: string): Promise<boolean> => {
@@ -677,7 +695,7 @@ remoteMap.RemoteMapCreator => {
             })
           })
         return (await hasKeyImpl(keyToTempDBKey(key), tmpDB))
-          || hasKeyImpl(keyToDBKey(key), persistentDB)
+          || (!wasClearCalled && hasKeyImpl(keyToDBKey(key), persistentDB))
       },
       close: async (): Promise<void> => {
         // Do nothing - we can not close the connection here

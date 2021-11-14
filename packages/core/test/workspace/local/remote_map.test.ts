@@ -178,11 +178,33 @@ describe('test operations on remote db', () => {
     })
   })
   describe('clear', () => {
-    it('should clear the remote map', async () => {
-      await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
-      expect(await awu(remoteMap.keys()).toArray()).not.toHaveLength(0)
-      await remoteMap.clear()
-      expect(await awu(remoteMap.keys()).toArray()).toHaveLength(0)
+    describe('when called in writeable remote map', async () => {
+      beforeEach(async () => {
+        await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
+        expect(await awu(remoteMap.keys()).toArray()).not.toHaveLength(0)
+        await remoteMap.clear()
+      })
+      it('should clear the results from keys', async () => {
+        expect(await awu(remoteMap.keys()).toArray()).toHaveLength(0)
+      })
+      it('should clear the results from values', async () => {
+        expect(await awu(remoteMap.values()).toArray()).toHaveLength(0)
+      })
+      it('should clear the results from entries', async () => {
+        expect(await awu(remoteMap.entries()).toArray()).toHaveLength(0)
+      })
+      it('should return false from has', async () => {
+        expect(await remoteMap.has(elements[0].elemID.getFullName())).toBeFalsy()
+      })
+      it('should return undefined from get', async () => {
+        expect(await remoteMap.get(elements[0].elemID.getFullName())).toBeUndefined()
+      })
+      it('should return undefined from getMany', async () => {
+        expect(await remoteMap.getMany([elements[0].elemID.getFullName()])).toEqual([undefined])
+      })
+      it('should return true from flush', async () => {
+        expect(await remoteMap.flush()).toBeTruthy()
+      })
     })
     describe('read only', () => {
       it('should throw an error', async () => {

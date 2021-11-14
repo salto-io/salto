@@ -57,8 +57,8 @@ netsuite {
 ### Fetch exclude configuration options
 | Name                           | Default when undefined  | Description
 | -------------------------------| ------------------------| -----------
-| types                          | no types are excluded  | Specify which types to exclude on fetch
-| fileCabinet                    | no files are excluded  | Specify which files to exclude on fetch
+| types                          | no types are excluded   | Specify which types to exclude on fetch
+| fileCabinet                    | no files are excluded   | Specify which files to exclude on fetch
 
 ### SDF Client configuration options
 

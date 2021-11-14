@@ -389,7 +389,7 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
       expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
         type: 'addressForm',
-        scriptid: '\'a b\'',
+        scriptid: 'a b',
       }))
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
@@ -499,7 +499,7 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
       expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
         type: 'addressForm',
-        scriptid: '\'a b\'',
+        scriptid: 'a b',
       }))
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)

@@ -286,13 +286,12 @@ export default class SdfClient {
     commandArguments: Values,
     projectCommandActionExecutor: CommandActionExecutor,
   ): Promise<ActionResult> {
-    const safeArguments: Values = _.mapValues(commandArguments, safeQuoteArgument)
     const actionResult = await this.globalLimiter.schedule(
       () => this.sdfCallsLimiter.schedule(() =>
         projectCommandActionExecutor.executeAction({
           commandName,
           runInInteractiveMode: false,
-          arguments: safeArguments,
+          arguments: commandArguments,
         }))
     )
     SdfClient.verifySuccessfulAction(actionResult, commandName)
@@ -315,12 +314,13 @@ export default class SdfClient {
       tokenid: this.credentials.tokenId,
       tokensecret: this.credentials.tokenSecret,
     }
+    const safeArguments: Values = _.mapValues(setupCommandArguments, safeQuoteArgument)
     await this.withAuthIdsLock(async () => {
       log.debug(`Setting up account using authId: ${authId}`)
       try {
         await this.executeProjectAction(
           COMMANDS.SAVE_TOKEN,
-          setupCommandArguments,
+          safeArguments,
           projectCommandActionExecutor
         )
       } catch (e) {

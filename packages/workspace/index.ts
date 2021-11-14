@@ -17,6 +17,7 @@ import * as errors from './src/errors'
 import * as nacl from './src/workspace/nacl_files'
 import { Workspace, SourceFragment, StateRecency, loadWorkspace, isValidEnvName,
   EnvironmentsSources, EnvironmentSource, initWorkspace, WorkspaceComponents, UnresolvedElemIDs,
+  FromSourceWithEnv,
   COMMON_ENV_PREFIX } from './src/workspace/workspace'
 import * as hiddenValues from './src/workspace/hidden_values'
 import * as configSource from './src/workspace/config_source'
@@ -82,4 +83,5 @@ export {
   UnresolvedElemIDs,
   isValidEnvName,
   FromSource,
+  FromSourceWithEnv
 }

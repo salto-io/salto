@@ -103,7 +103,7 @@ export type EnvironmentsSources = {
   sources: Record<string, EnvironmentSource>
 }
 
-type FromSourceWithEnv = {
+export type FromSourceWithEnv = {
   source: 'env'
   fromEnv? : string
 }

@@ -652,6 +652,11 @@ const buildMultiEnvSource = (
           await s.clear(args)
         })
       const currentState = await getState()
+      await awu(Object.values(currentState.states))
+        .forEach(async s => {
+          await s.elements.clear()
+          await s.mergeErrors.clear()
+        })
       await currentState.mergeManager.clear()
       state = undefined
     },

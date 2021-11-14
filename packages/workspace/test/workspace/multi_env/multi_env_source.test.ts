@@ -1101,7 +1101,7 @@ describe('multi env source', () => {
         false
       )
       await src.clear()
-      const postClearElements = await awu(await source.getAll('active')).toArray()
+      const postClearElements = await awu(await src.getAll('active')).toArray()
       expect(postClearElements).toEqual([])
     })
   })

@@ -8,8 +8,8 @@ netsuite {
         { name = ".*" },
       ]
       fileCabinet = [
-        '^/SuiteScripts/.*',
-        '^/Templates/.*',
+        "^/SuiteScripts/.*",
+        "^/Templates/.*",
       ]
     }
     exclude = {
@@ -46,6 +46,19 @@ netsuite {
 | deploy.deployReferencedElements                            | false                   | Deployment of a certain configuration element will include all elements referred by it
 | deploy.warnOnStaleWorkspaceData                            | false                   | If assigned 'true' runs a validation upon deploy which warns the user if the changes override other changes made in the service since the last fetch
 | concurrencyLimit                                    | The higher value between `suiteAppConcurrencyLimit` and `sdfConcurrencyLimit`                    | Limits the max number of concurrent API calls (Both SDF calls and Salto SuiteApp calls). The number should not exceed the concurrency limit enforced by the upstream service.
+
+### Fetch include configuration options
+
+| Name                           | Default when undefined  | Description
+| -------------------------------| ------------------------| -----------
+| types                          | fetch all types         | Specify which types to include on fetch
+| fileCabinet                    | fetch all files         | Specify which Files to include on fetch
+
+### Fetch exclude configuration options
+| Name                           | Default when undefined  | Description
+| -------------------------------| ------------------------| -----------
+| types                          | no types are excluded   | Specify which types to exclude on fetch
+| fileCabinet                    | no files are excluded   | Specify which files to exclude on fetch
 
 ### SDF Client configuration options
 

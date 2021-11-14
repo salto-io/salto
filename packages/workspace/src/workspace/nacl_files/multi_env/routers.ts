@@ -27,10 +27,15 @@ import { mergeElements } from '../../../merger'
 
 const { awu } = collections.asynciterable
 
-export interface RoutedChanges {
+export interface RoutedChangesByRole {
   primarySource?: DetailedChange[]
   commonSource?: DetailedChange[]
   secondarySources?: Record<string, DetailedChange[]>
+}
+
+export type RoutedChanges = {
+  commonSource?: DetailedChange[]
+  envSources?: Record<string, DetailedChange[]>
 }
 
 type DetailedChangeWithMergeableID<T = Value> = DetailedChange<T> & {
@@ -315,7 +320,7 @@ const routeDefaultRemoveOrModify = async (
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
   secondarySources: Record<string, NaclFilesSource>
-): Promise<RoutedChanges> => {
+): Promise<RoutedChangesByRole> => {
   // We add to the current defining source.
   const currentChanges = await projectChange(change, primarySource)
   const commonChanges = await projectChange(change, commonSource)
@@ -340,7 +345,7 @@ export const routeOverride = async (
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
   secondarySources: Record<string, NaclFilesSource>
-): Promise<RoutedChanges> => {
+): Promise<RoutedChangesByRole> => {
   // If the add change projects to a secondary source we can't
   // add it to common since it is already marked as env specific.
   if (change.action === 'add') {
@@ -365,7 +370,7 @@ export const routeAlign = async (
   change: DetailedChange,
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource
-): Promise<RoutedChanges> => {
+): Promise<RoutedChangesByRole> => {
   // All add changes to the current active env specific folder
   // unless it is an unmergeable id, and the mergeableID is in common
   if (change.action === 'add') {
@@ -394,7 +399,7 @@ export const routeDefault = async (
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
   secondarySources: Record<string, NaclFilesSource>
-): Promise<RoutedChanges> => {
+): Promise<RoutedChangesByRole> => {
   if (change.action === 'add') {
     const parentID = change.id.isTopLevel() ? change.id : change.id.createParentID()
     const commonParent = await commonSource.get(parentID)
@@ -436,7 +441,7 @@ export const routeIsolated = async (
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
   secondarySources: Record<string, NaclFilesSource>
-): Promise<RoutedChanges> => {
+): Promise<RoutedChangesByRole> => {
   // This is an add change, which means the element is not in common.
   // so we will add it to the current action environment.
   const pathHint = await getChangePathHint(change, commonSource)
@@ -533,13 +538,27 @@ const toMergeableChanges = async (
   ]
 }
 
+const unpackSources = (
+  primarySourceName: string,
+  envSources: Record<string, NaclFilesSource>,
+): {
+  primarySource: NaclFilesSource
+  secondarySources: Record<string, NaclFilesSource>
+} => ({
+  primarySource: envSources[primarySourceName],
+  secondarySources: Object.fromEntries(
+    Object.entries(envSources).filter(([name, _src]) => name !== primarySourceName)
+  ),
+})
+
 export const routeChanges = async (
   rawChanges: DetailedChange[],
-  primarySource: NaclFilesSource,
+  primarySourceName: string,
   commonSource: NaclFilesSource,
-  secondarySources: Record<string, NaclFilesSource>,
+  envSources: Record<string, NaclFilesSource>,
   mode?: RoutingMode
 ): Promise<RoutedChanges> => {
+  const { primarySource, secondarySources } = unpackSources(primarySourceName, envSources)
   const changes = mode === 'isolated'
     ? await toMergeableChanges(rawChanges, primarySource, commonSource)
     : rawChanges
@@ -561,24 +580,26 @@ export const routeChanges = async (
     changeEntries => changeEntries.flatMap(e => e[1])
   )
   return {
-    primarySource: await createUpdateChanges(
-      _.flatten(routedChanges.map(r => r.primarySource || [])),
-      commonSource,
-      primarySource
-    ),
     commonSource: await createUpdateChanges(
       _.flatten(routedChanges.map(r => r.commonSource || [])),
       commonSource,
       commonSource
     ),
-    secondarySources: await promises.object.mapValuesAsync(
-      secondaryEnvsChanges,
-      (srcChanges, srcName) => createUpdateChanges(
-        srcChanges,
+    envSources: {
+      [primarySourceName]: await createUpdateChanges(
+        _.flatten(routedChanges.map(r => r.primarySource || [])),
         commonSource,
-        secondarySources[srcName]
-      )
-    ),
+        primarySource
+      ),
+      ...await promises.object.mapValuesAsync(
+        secondaryEnvsChanges,
+        (srcChanges, srcName) => createUpdateChanges(
+          srcChanges,
+          commonSource,
+          secondarySources[srcName]
+        )
+      ),
+    },
   }
 }
 
@@ -599,32 +620,35 @@ const removeFromSource = async (
 
 export const routePromote = async (
   ids: ElemID[],
-  primarySource: NaclFilesSource,
+  primarySourceName: string,
   commonSource: NaclFilesSource,
-  secondarySources: Record<string, NaclFilesSource>,
-): Promise<RoutedChanges> => ({
-  primarySource: await removeFromSource(ids, primarySource),
-  commonSource: await addToSource({ ids, originSource: primarySource, targetSource: commonSource }),
-  secondarySources: await promises.object.mapValuesAsync(
-    secondarySources,
-    (source: NaclFilesSource) => removeFromSource(ids, source)
-  ),
-})
+  envSources: Record<string, NaclFilesSource>,
+): Promise<RoutedChanges> => {
+  const { primarySource, secondarySources } = unpackSources(primarySourceName, envSources)
+  return {
+    commonSource: await addToSource({
+      ids,
+      originSource: primarySource,
+      targetSource: commonSource,
+    }),
+    envSources: {
+      [primarySourceName]: await removeFromSource(ids, primarySource),
+      ...await promises.object.mapValuesAsync(
+        secondarySources,
+        (source: NaclFilesSource) => removeFromSource(ids, source)
+      ),
+    },
+  }
+}
 
 export const routeDemote = async (
   ids: ElemID[],
-  primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
-  secondarySources: Record<string, NaclFilesSource>,
+  envSources: Record<string, NaclFilesSource>,
 ): Promise<RoutedChanges> => ({
-  primarySource: await addToSource({
-    ids,
-    originSource: commonSource,
-    targetSource: primarySource,
-  }),
   commonSource: await removeFromSource(ids, commonSource),
-  secondarySources: await promises.object.mapValuesAsync(
-    secondarySources,
+  envSources: await promises.object.mapValuesAsync(
+    envSources,
     (source: NaclFilesSource) => addToSource({
       ids,
       originSource: commonSource,
@@ -635,16 +659,15 @@ export const routeDemote = async (
 
 export const routeCopyTo = async (
   ids: ElemID[],
-  primarySource: NaclFilesSource,
+  originSource: NaclFilesSource,
   targetSources: Record<string, NaclFilesSource>,
 ): Promise<RoutedChanges> => ({
-  primarySource: [],
   commonSource: [],
-  secondarySources: await promises.object.mapValuesAsync(
+  envSources: await promises.object.mapValuesAsync(
     targetSources,
     (source: NaclFilesSource) => addToSource({
       ids,
-      originSource: primarySource,
+      originSource,
       targetSource: source,
       overrideTargetElements: true,
     })
@@ -654,15 +677,10 @@ export const routeCopyTo = async (
 export const routeRemoveFrom = async (
   ids: ElemID[],
   targetSource: NaclFilesSource,
-  targetSourceName?: string,
-): Promise<RoutedChanges> => (targetSourceName !== undefined ? {
-  primarySource: [],
+  targetSourceName: string,
+): Promise<RoutedChanges> => ({
   commonSource: [],
-  secondarySources: {
+  envSources: {
     [targetSourceName]: await removeFromSource(ids, targetSource),
   },
-} : {
-  primarySource: await removeFromSource(ids, targetSource),
-  commonSource: [],
-  secondarySources: {},
 })

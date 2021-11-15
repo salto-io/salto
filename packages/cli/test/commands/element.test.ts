@@ -1340,6 +1340,7 @@ Moving the specified elements to common.
         const sourceElemId = sourceElement.elemID
         const targetElemId = new ElemID(sourceElemId.adapter, sourceElemId.typeName, sourceElemId.idType, 'renamed')
 
+        workspace.getValue.mockResolvedValueOnce(sourceElement).mockResolvedValueOnce(undefined)
         result = await renameAction({
           ...mocks.mockCliCommandArgs(commandName, cliArgs),
           input: {

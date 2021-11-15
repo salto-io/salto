@@ -179,10 +179,10 @@ export const renameElement = async <T>(
   targetElemId: ElemID,
   applyChanges: (changes: DetailedChange[]) => Promise<T>,
   index?: PathIndex,
-): Promise<{ elementChangesResult: T; referencesChangesResult: T } | undefined> => {
+): Promise<{ elementChangesResult: T; referencesChangesResult: T }> => {
   const source = await elementsSource.get(sourceElemId)
   if (source === undefined) {
-    return undefined
+    throw new RenameElementIdError(`${sourceElemId.getFullName()} doesn't exists`)
   }
 
   const elements = index === undefined

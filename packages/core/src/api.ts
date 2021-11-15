@@ -45,7 +45,7 @@ import { createRestoreChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
 import { createDiffChanges } from './core/diff'
 import { getChangeValidators, getAdaptersConfig } from './core/plan/change_validators'
-import { renameChecks, renameElement, RenameElementResult, updateStateElements } from './core/rename'
+import { renameChecks, renameElement, RenameElementIdError, RenameElementResult, updateStateElements } from './core/rename'
 
 export { cleanWorkspace } from './core/clean'
 
@@ -421,21 +421,25 @@ export const rename = async (
     changes => workspace.updateNaclFiles(changes),
     await workspace.state().getPathIndex()
   )
-  const naclFilesChangesCount = renameNaclElementResult
-    ? renameNaclElementResult.elementChangesResult.naclFilesChangesCount
-      + renameNaclElementResult.referencesChangesResult.naclFilesChangesCount
-    : 0
+  const naclFilesChangesCount = renameNaclElementResult.elementChangesResult
+    .naclFilesChangesCount + renameNaclElementResult.referencesChangesResult.naclFilesChangesCount
 
-  const renameStateElementResult = await renameElement(
-    workspace.state(),
-    sourceElemId,
-    targetElemId,
-    changes => updateStateElements(workspace.state(), changes)
-  )
-  const stateElementsChangesCount = renameStateElementResult
-    ? renameStateElementResult.elementChangesResult
+  let stateElementsChangesCount = 0
+  try {
+    const renameStateElementResult = await renameElement(
+      workspace.state(),
+      sourceElemId,
+      targetElemId,
+      changes => updateStateElements(workspace.state(), changes)
+    )
+    stateElementsChangesCount = renameStateElementResult.elementChangesResult
       + renameStateElementResult.referencesChangesResult
-    : 0
+  } catch (error) {
+    // in case that the element was added manually and isn't in the state file
+    if (!(error instanceof RenameElementIdError)) {
+      throw error
+    }
+  }
 
   await workspace.flush()
   return { naclFilesChangesCount, stateElementsChangesCount }

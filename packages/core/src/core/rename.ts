@@ -179,8 +179,12 @@ export const renameElement = async <T>(
   targetElemId: ElemID,
   applyChanges: (changes: DetailedChange[]) => Promise<T>,
   index?: PathIndex,
-): Promise<{ elementChangesResult: T; referencesChangesResult: T }> => {
+): Promise<{ elementChangesResult: T; referencesChangesResult: T } | undefined> => {
   const source = await elementsSource.get(sourceElemId)
+  if (source === undefined) {
+    return undefined
+  }
+
   const elements = index === undefined
     ? [source]
     : await splitElementByPath(source, index) as InstanceElement[]

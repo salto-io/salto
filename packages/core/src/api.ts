@@ -421,8 +421,10 @@ export const rename = async (
     changes => workspace.updateNaclFiles(changes),
     await workspace.state().getPathIndex()
   )
-  const naclFilesChangesCount = renameNaclElementResult.elementChangesResult.naclFilesChangesCount
-    + renameNaclElementResult.referencesChangesResult.naclFilesChangesCount
+  const naclFilesChangesCount = renameNaclElementResult
+    ? renameNaclElementResult.elementChangesResult.naclFilesChangesCount
+      + renameNaclElementResult.referencesChangesResult.naclFilesChangesCount
+    : 0
 
   const renameStateElementResult = await renameElement(
     workspace.state(),
@@ -430,8 +432,10 @@ export const rename = async (
     targetElemId,
     changes => updateStateElements(workspace.state(), changes)
   )
-  const stateElementsChangesCount = renameStateElementResult.elementChangesResult
-    + renameStateElementResult.referencesChangesResult
+  const stateElementsChangesCount = renameStateElementResult
+    ? renameStateElementResult.elementChangesResult
+      + renameStateElementResult.referencesChangesResult
+    : 0
 
   await workspace.flush()
   return { naclFilesChangesCount, stateElementsChangesCount }

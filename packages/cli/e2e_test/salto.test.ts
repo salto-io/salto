@@ -17,7 +17,7 @@ import path from 'path'
 import wu from 'wu'
 import tmp from 'tmp-promise'
 import { strings, collections } from '@salto-io/lowerdash'
-import { copyFile, rm, mkdirp, exists, readFile } from '@salto-io/file'
+import { copyFile, rm, mkdirp, exists, readFile, writeFile } from '@salto-io/file'
 import { testHelpers as salesforceTestHelpers, SalesforceClient, UsernamePasswordCredentials } from '@salto-io/salesforce-adapter'
 import { Plan, SALTO_HOME_VAR } from '@salto-io/core'
 import { Workspace, parser } from '@salto-io/workspace'
@@ -47,7 +47,7 @@ import { instanceExists, objectExists, getSalesforceCredsInstance, getSalesforce
 const { awu } = collections.asynciterable
 // let lastPlan: Plan
 let credsLease: CredsLease<UsernamePasswordCredentials>
-const SALESFORCE_ACCOUNT_NAME = 'e2esalesforce'
+const SALESFORCE_ACCOUNT_NAME = 'salesforce'
 const apiNameAnno = (
   obj: string,
   field: string
@@ -58,10 +58,7 @@ describe('cli e2e', () => {
 
   afterAll(workspaceHelpersCleanup)
 
-  const addModelNaclFile = `${__dirname}/../../e2e_test/NACL/add.nacl`
   const workspaceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/workspace.nacl`
-  const envsConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/envs.nacl`
-  const salesforceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/adapters/${SALESFORCE_ACCOUNT_NAME}/${SALESFORCE_ACCOUNT_NAME}.nacl`
   const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/local/workspaceUser.nacl`
   const NEW_INSTANCE_BASE_ELEM_NAME = 'NewInstanceName'
   const NEW_INSTANCE2_BASE_ELEM_NAME = 'NewInstance2Name'
@@ -127,7 +124,17 @@ describe('cli e2e', () => {
     await mkdirp(localStorageDir)
     await mkdirp(localWorkspaceDir)
     await copyFile(workspaceConfigFile, `${fetchOutputDir}/salto.config/workspace.nacl`)
-    await copyFile(envsConfigFile, `${fetchOutputDir}/salto.config/envs.nacl`)
+    await writeFile(`${fetchOutputDir}/salto.config/envs.nacl`, `envs {
+      envs = [
+       {
+         name = "default"
+         accounts = ["${SALESFORCE_ACCOUNT_NAME}"]
+         accountToServiceName = {
+           ${SALESFORCE_ACCOUNT_NAME} = "salesforce"
+         }
+       }
+     ]
+   }`)
     await copyFile(localWorkspaceConfigFile, `${localWorkspaceDir}/workspaceUser.nacl`)
     await rm(fullPath(tmpNaclFileRelativePath))
     if (await objectExists(client, newObjectApiName)) {
@@ -139,7 +146,7 @@ describe('cli e2e', () => {
     if (await instanceExists(client, ROLE, newInstance2FullName)) {
       await client.delete(ROLE, newInstance2FullName)
     }
-    await runSalesforceLogin(fetchOutputDir)
+    await runSalesforceLogin(fetchOutputDir, SALESFORCE_ACCOUNT_NAME)
     await runFetch(fetchOutputDir)
   })
 
@@ -194,7 +201,38 @@ describe('cli e2e', () => {
     let workspace: Workspace
     let deployPlan: Plan
     beforeAll(async () => {
-      await copyFile(addModelNaclFile, fullPath(tmpNaclFileRelativePath))
+      await writeFile(fullPath(tmpNaclFileRelativePath), `type ${SALESFORCE_ACCOUNT_NAME}.NewObjectName {
+        annotations {
+          serviceid metadataType {
+          }
+        }
+        metadataType = "CustomObject"
+        ${SALESFORCE_ACCOUNT_NAME}.Text Alpha {
+          label = "Alpha"
+          _required = false
+        }
+        ${SALESFORCE_ACCOUNT_NAME}.Text Beta {
+          label = "Beta"
+          _required = false
+        }
+      }
+      
+      ${SALESFORCE_ACCOUNT_NAME}.Role NewInstanceName {
+        description = "To Be Modified"
+        name = "New Role Instance"
+      }
+      
+      ${SALESFORCE_ACCOUNT_NAME}.Role NewInstance2Name {
+        description = var.desc
+        name = "Another new Role Instance"
+        mayForecastManagerShare = var.isStaging
+      }
+      
+      vars {
+        desc = ${SALESFORCE_ACCOUNT_NAME}.Role.instance.NewInstanceName.description
+        isStaging = false
+        age = 60
+      }`)
       await editNaclFile(fullPath(tmpNaclFileRelativePath), [
         // Replace all occurrences
         [new RegExp(NEW_OBJECT_BASE_ELEM_NAME, 'g'), newObjectElemName],
@@ -446,7 +484,40 @@ describe('cli e2e', () => {
     let salesforceConfPath: string
     beforeAll(async () => {
       salesforceConfPath = `${fetchOutputDir}/salto.config/adapters/${SALESFORCE_ACCOUNT_NAME}/${SALESFORCE_ACCOUNT_NAME}.nacl`
-      await copyFile(salesforceConfigFile, `${fetchOutputDir}/salto.config/adapters/${SALESFORCE_ACCOUNT_NAME}/${SALESFORCE_ACCOUNT_NAME}.nacl`)
+      await writeFile(`${fetchOutputDir}/salto.config/adapters/${SALESFORCE_ACCOUNT_NAME}/${SALESFORCE_ACCOUNT_NAME}.nacl`,
+        `${SALESFORCE_ACCOUNT_NAME} {
+        fetch = {
+          exclude = [
+            {
+              metadataType = "Report"
+            },
+            {
+              metadataType = "ReportType"
+            },
+            {
+              metadataType = "ReportFolder"
+            },
+            {
+              metadataType = "Dashboard"
+            },
+            {
+              metadataType = "DashboardFolder"
+            },
+            {
+              metadataType = "Profile"
+            },
+            {
+              metadataType = "EmailTemplate"
+            },
+          ]
+        }
+        maxItemsInRetrieveRequest = 2500
+        client = {
+          maxConcurrentApiRequests = {
+            retrieve = 3
+          }
+        }
+      }`)
     })
 
     it('should clear out only the requested parts - nacl', async () => {

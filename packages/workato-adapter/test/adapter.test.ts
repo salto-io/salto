@@ -332,6 +332,7 @@ describe('adapter', () => {
             salesforce: [fishCustomObject],
           },
           accountToServiceNameMap: {
+            netsuite: 'netsuite',
             salesforce: 'salesforce',
           },
           progressReporter: { reportProgress: () => null },

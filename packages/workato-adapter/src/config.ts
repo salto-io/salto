@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ElemID, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
-import { WORKATO, CROSS_SERVICE_SUPPORTED_APPS, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RECIPE_TYPE, CONNECTION_TYPE, API_ENDPOINT_TYPE, API_CLIENT_TYPE, API_ACCESS_PROFILE_TYPE } from './constants'
+import { WORKATO, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RECIPE_TYPE, CONNECTION_TYPE, API_ENDPOINT_TYPE, API_CLIENT_TYPE, API_ACCESS_PROFILE_TYPE } from './constants'
 
 const { createClientConfigType } = clientUtils
 const {
@@ -188,16 +188,4 @@ export const validateFetchConfig = (
   adapterApiConfig: configUtils.AdapterApiConfig,
 ): void => {
   validateDuckTypeFetchConfig(fetchConfigPath, userFetchConfig, adapterApiConfig)
-  // TODO change to adapterTypes when allowing multiple adapters of the same type
-  const supportedAdapters = Object.keys(CROSS_SERVICE_SUPPORTED_APPS)
-  const { serviceConnectionNames } = userFetchConfig
-
-  if (serviceConnectionNames !== undefined) {
-    const unsupportedServices = Object.keys(serviceConnectionNames).filter(
-      adapterName => !supportedAdapters.includes(adapterName)
-    )
-    if (unsupportedServices.length > 0) {
-      throw Error(`Unsupported service names in ${fetchConfigPath}.serviceConnectionNames: ${unsupportedServices}. The supported services are: ${supportedAdapters}`)
-    }
-  }
 }

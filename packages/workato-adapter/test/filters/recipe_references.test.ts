@@ -999,6 +999,7 @@ describe('Recipe references filter', () => {
           zuora_billing: zuoraElements,
         },
         accountToServiceNameMap: {
+          zuora_billing: 'zuora_billing',
           salesforce: 'salesforce',
           netsuite: 'netsuite',
         },

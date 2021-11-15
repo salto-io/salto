@@ -145,6 +145,21 @@ const filter: FilterCreator = ({ config }) => ({
     if (serviceConnectionNames === undefined || _.isEmpty(serviceConnectionNames)) {
       return
     }
+    // TODO change to adapterTypes when allowing multiple adapters of the same type
+    const supportedAdapters = Object.keys(accountToServiceNameMap)
+    if (serviceConnectionNames !== undefined) {
+      const unsupportedAccounts = Object.keys(serviceConnectionNames).filter(
+        adapterName => !supportedAdapters.includes(adapterName)
+      )
+      // eslint-disable-next-line no-console
+      console.log(unsupportedAccounts)
+      // eslint-disable-next-line no-console
+      console.log('Here')
+      if (unsupportedAccounts.length > 0) {
+        log.error(`The following account names don't exist in the workspace: ${unsupportedAccounts}. Existing accounts are ${supportedAdapters}.`)
+        return
+      }
+    }
 
     const serviceConnectionDetails = getServiceConnectionDetails(
       serviceConnectionNames,

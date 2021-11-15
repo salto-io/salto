@@ -43,7 +43,7 @@ import * as templates from './helpers/templates'
 const { awu } = collections.asynciterable
 const { dumpElements } = parser
 
-const SALESFORCE_ACCOUNT_NAME = 'e2esalesforce'
+const SALESFORCE_ACCOUNT_NAME = 'salesforce'
 
 describe('multi env tests', () => {
   jest.setTimeout(15 * 60 * 1000)
@@ -239,13 +239,13 @@ describe('multi env tests', () => {
       const mockGetCreds = jest.spyOn(callbacks, 'getCredentialsFromUser')
       mockGetCreds.mockImplementation(() =>
         Promise.resolve(getSalesforceCredsInstance(env1Creds)))
-      await runAddSalesforceService(baseDir)
+      await runAddSalesforceService(baseDir, SALESFORCE_ACCOUNT_NAME)
       // run create env with env2
       await runCreateEnv(baseDir, ENV2_NAME)
       // run add salesforce service
       mockGetCreds.mockImplementation(() =>
         Promise.resolve(getSalesforceCredsInstance(env2Creds)))
-      await runAddSalesforceService(baseDir)
+      await runAddSalesforceService(baseDir, SALESFORCE_ACCOUNT_NAME)
     })
 
     it('should create proper env structure', () => {

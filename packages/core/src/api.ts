@@ -231,7 +231,7 @@ export const fetch: FetchFunc = async (
 ) => {
   log.debug('fetch starting..')
   const fetchServices = services ?? workspace.services()
-  const accountToServiceNameMap = getAccountToServiceNameMap(workspace, fetchServices)
+  const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
   const {
     currentConfigs,
     adaptersCreatorConfigs,

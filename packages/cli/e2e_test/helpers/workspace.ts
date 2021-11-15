@@ -63,7 +63,6 @@ expect.extend({
 export type ReplacementPair = [string | RegExp, string]
 
 const { parse } = parser
-const accounts = ['e2esalesforce']
 
 const mockCliOutput = (): CliOutput =>
   ({ stdout: new MockWriteStream(), stderr: new MockWriteStream() })
@@ -84,6 +83,7 @@ const telemetry = telemetrySender(
 )
 
 export const cleanup = async (): Promise<void> => telemetry.stop(0)
+const accounts: string[] = []
 
 export const editNaclFile = async (filename: string, replacements: ReplacementPair[]):
   Promise<void> => {
@@ -126,20 +126,25 @@ export const runInit = async (
   workspaceName: string,
   workspacePath: string,
 ): Promise<void> => {
+  accounts.splice(0, accounts.length)
   await runCommand({
     workspacePath, args: ['init', workspaceName],
   })
 }
 
-export const runAddSalesforceService = async (workspacePath: string): Promise<void> => {
+export const runAddSalesforceService = async (workspacePath: string,
+  accountName: string): Promise<void> => {
+  accounts.push(accountName)
   await runCommand({
-    workspacePath, args: ['service', 'add', 'salesforce', '--account', accounts[0]],
+    workspacePath, args: ['service', 'add', 'salesforce', '--account', accountName],
   })
 }
 
-export const runSalesforceLogin = async (workspacePath: string): Promise<void> => {
+export const runSalesforceLogin = async (workspacePath: string,
+  accountName: string): Promise<void> => {
+  accounts.push(accountName)
   await runCommand({
-    workspacePath, args: ['service', 'login', accounts[0]],
+    workspacePath, args: ['service', 'login', accountName],
   })
 }
 

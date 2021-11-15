@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ElemID, Element, isElement, isInstanceElement, InstanceElement, DetailedChange, isReferenceExpression, ReferenceExpression, getChangeElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { setPath, walkOnElement, WalkOnFunc, WalkOnFuncArgs, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
-import { ElementsSource, PathIndex, splitElementByPath, State } from '@salto-io/workspace'
+import { ElementsSource, getElementsPathHints, PathIndex, splitElementByPath, State, Workspace } from '@salto-io/workspace'
 
 const { awu } = collections.asynciterable
 
@@ -34,9 +34,9 @@ export type RenameElementResult = {
 }
 
 export const renameChecks = async (
+  workspace: Workspace,
   sourceElemId: ElemID,
-  targetElemId: ElemID,
-  elementsSource: ElementsSource
+  targetElemId: ElemID
 ): Promise<void> => {
   if (sourceElemId.isEqual(targetElemId)) {
     throw new RenameElementIdError(`Source and target element ids are the same: ${sourceElemId.getFullName()}`)
@@ -57,7 +57,7 @@ export const renameChecks = async (
     throw new RenameElementIdError('Currently supporting renaming the instance name only')
   }
 
-  const sourceElement = await elementsSource.get(sourceElemId)
+  const sourceElement = await workspace.getValue(sourceElemId)
   if (sourceElement === undefined || !isElement(sourceElement)) {
     throw new RenameElementIdError(`Did not find any matches for element ${sourceElemId.getFullName()}`)
   }
@@ -66,7 +66,7 @@ export const renameChecks = async (
     throw new RenameElementIdError(`Currently supporting InstanceElement only (${sourceElemId.getFullName()} is of type '${sourceElemId.idType}')`)
   }
 
-  if (await elementsSource.get(targetElemId) !== undefined) {
+  if (await workspace.getValue(targetElemId) !== undefined) {
     throw new RenameElementIdError(`Element ${targetElemId.getFullName()} already exists`)
   }
 }
@@ -146,6 +146,33 @@ const getRenameReferencesChanges = async (
   })
 }
 
+const renameElementPathIndex = async (
+  index: PathIndex,
+  splittedElement: Element[],
+  sourceElemId: ElemID,
+  targetElemId: ElemID
+): Promise<void> => {
+  // The renamed element will be located according to the element's path and not the actual
+  // locations in the nacl. Such that if the user renamed the file before she renamed the Element,
+  // the renamed element will be placed in the original file name. This is because we use and update
+  // the pathIndex and not the ChangeLocation (SourceMap) logic in the current implementation.
+  const pathHints = getElementsPathHints(splittedElement)
+
+  await Promise.all(pathHints.map(e => index.delete(e.key)))
+  await Promise.all(pathHints.map(e => {
+    const elemId = new ElemID(
+      sourceElemId.adapter,
+      sourceElemId.typeName,
+      sourceElemId.idType,
+      targetElemId.name,
+      // this implementation works on InstanceElement only
+      // it won't work on Field elements because they aren't top-level elements
+      ...ElemID.fromFullName(e.key).createTopLevelParentID().path
+    )
+    return index.set(elemId.getFullName(), e.value)
+  }))
+}
+
 export const renameElement = async <T>(
   elementsSource: ElementsSource,
   sourceElemId: ElemID,
@@ -164,6 +191,10 @@ export const renameElement = async <T>(
   const referencesChanges = await getRenameReferencesChanges(elementsSource, sourceElemId,
     targetElemId)
   const referencesChangesResult = await applyChanges(referencesChanges)
+
+  if (index !== undefined) {
+    await renameElementPathIndex(index, elements, sourceElemId, targetElemId)
+  }
 
   return { elementChangesResult, referencesChangesResult }
 }
@@ -200,34 +231,4 @@ export const updateStateElements = async (
   const updatedElements = await getUpdatedTopLevelElements(stateSource, nestedElementsChanges)
   await Promise.all(updatedElements.map(e => stateSource.set(e)))
   return topLevelElementsChanges.length + updatedElements.length
-}
-
-export const renameElementPathIndex = async (
-  index: PathIndex,
-  sourceElemId: ElemID,
-  targetElemId: ElemID
-): Promise<void> => {
-  // The renamed element will be located according to the element's path and not the actual
-  // locations in the nacl. Such that if the user renamed the file before she renamed the Element,
-  // the renamed element will be placed in the original file name. This is because we use and update
-  // the pathIndex and not the ChangeLocation (SourceMap) logic in the current implementation.
-  const elemIdsToPaths = await awu(index.entries())
-    .filter(e => {
-      const elemId = ElemID.fromFullName(e.key)
-      return sourceElemId.isEqual(elemId) || sourceElemId.isParentOf(elemId)
-    }).toArray()
-
-  await Promise.all(elemIdsToPaths.map(e => index.delete(e.key)))
-  await Promise.all(elemIdsToPaths.map(e => {
-    const elemId = new ElemID(
-      sourceElemId.adapter,
-      sourceElemId.typeName,
-      sourceElemId.idType,
-      targetElemId.name,
-      // this implementation works on InstanceElement only
-      // it won't work on Field elements because they aren't top-level elements
-      ...ElemID.fromFullName(e.key).createTopLevelParentID().path
-    )
-    return index.set(elemId.getFullName(), e.value)
-  }))
 }

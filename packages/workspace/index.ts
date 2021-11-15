@@ -40,7 +40,7 @@ import * as remoteMap from './src/workspace/remote_map'
 import { RemoteElementSource, ElementsSource } from './src/workspace/elements_source'
 import { FromSource } from './src/workspace/nacl_files/multi_env/multi_env_source'
 import { State } from './src/workspace/state'
-import { PathIndex, splitElementByPath } from './src/workspace/path_index'
+import { PathIndex, splitElementByPath, getElementsPathHints } from './src/workspace/path_index'
 
 export {
   errors,
@@ -89,4 +89,5 @@ export {
   State,
   splitElementByPath,
   PathIndex,
+  getElementsPathHints,
 }

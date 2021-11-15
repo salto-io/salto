@@ -45,7 +45,7 @@ import { createRestoreChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
 import { createDiffChanges } from './core/diff'
 import { getChangeValidators, getAdaptersConfig } from './core/plan/change_validators'
-import { renameChecks, renameElement, renameElementPathIndex, RenameElementResult, updateStateElements } from './core/rename'
+import { renameChecks, renameElement, RenameElementResult, updateStateElements } from './core/rename'
 
 export { cleanWorkspace } from './core/clean'
 
@@ -412,32 +412,26 @@ export const rename = async (
   sourceElemId: ElemID,
   targetElemId: ElemID
 ): Promise<RenameElementResult> => {
-  const elements = await workspace.elements()
-  const stateSource = workspace.state()
-  const index = await stateSource.getPathIndex()
-
-  await renameChecks(sourceElemId, targetElemId, elements)
+  await renameChecks(workspace, sourceElemId, targetElemId)
 
   const renameNaclElementResult = await renameElement(
-    elements,
+    await workspace.elements(),
     sourceElemId,
     targetElemId,
     changes => workspace.updateNaclFiles(changes),
-    index
+    await workspace.state().getPathIndex()
   )
   const naclFilesChangesCount = renameNaclElementResult.elementChangesResult.naclFilesChangesCount
     + renameNaclElementResult.referencesChangesResult.naclFilesChangesCount
 
   const renameStateElementResult = await renameElement(
-    stateSource,
+    workspace.state(),
     sourceElemId,
     targetElemId,
-    changes => updateStateElements(stateSource, changes)
+    changes => updateStateElements(workspace.state(), changes)
   )
   const stateElementsChangesCount = renameStateElementResult.elementChangesResult
     + renameStateElementResult.referencesChangesResult
-
-  await renameElementPathIndex(index, sourceElemId, targetElemId)
 
   await workspace.flush()
   return { naclFilesChangesCount, stateElementsChangesCount }

@@ -35,33 +35,33 @@ describe('rename.ts', () => {
   describe('renameChecks', () => {
     it('should pass checks', async () => {
       const targetElemId = new ElemID(sourceElemId.adapter, sourceElemId.typeName, sourceElemId.idType, 'renamed')
-      expect(await rename.renameChecks(sourceElemId, targetElemId, elements)).toBeUndefined()
+      expect(await rename.renameChecks(ws, sourceElemId, targetElemId)).toBeUndefined()
     })
     it('should throw when source and target ids are the same', async () =>
-      expect(rename.renameChecks(sourceElemId, sourceElemId, elements))
+      expect(rename.renameChecks(ws, sourceElemId, sourceElemId))
         .rejects.toThrow(`Source and target element ids are the same: ${sourceElemId.getFullName()}`))
     it('should throw when trying to rename something else than instance name', async () => {
       const targetElemId = new ElemID(sourceElemId.adapter, 'renamed', sourceElemId.idType, ...sourceElemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS))
-      return expect(rename.renameChecks(sourceElemId, targetElemId, elements))
+      return expect(rename.renameChecks(ws, sourceElemId, targetElemId))
         .rejects.toThrow('Currently supporting renaming the instance name only')
     })
     it('should throw when targetElementId already exists', async () => {
       const existElementId = mockElements.getAllElements()
         .filter(isInstanceElement).map(e => e.elemID)
         .find(e => e.getFullName() !== sourceElemId.getFullName()) as ElemID
-      return expect(rename.renameChecks(sourceElemId, existElementId, elements))
+      return expect(rename.renameChecks(ws, sourceElemId, existElementId))
         .rejects.toThrow(`Element ${existElementId.getFullName()} already exists`)
     })
     it('should throw when sourceElementId doesn\'t exists', async () => {
       const notSourceElemId = new ElemID(sourceElemId.adapter, sourceElemId.typeName, sourceElemId.idType, 'notExist')
       const targetElemId = new ElemID(sourceElemId.adapter, sourceElemId.typeName, sourceElemId.idType, 'renamed')
-      return expect(rename.renameChecks(notSourceElemId, targetElemId, elements))
+      return expect(rename.renameChecks(ws, notSourceElemId, targetElemId))
         .rejects.toThrow(`Did not find any matches for element ${notSourceElemId.getFullName()}`)
     })
     it('should throw when source is not InstanceElement', async () => {
       const fieldElemId = new ElemID('salto', 'address', 'field', 'country')
       const targetElemId = new ElemID('salto', 'address', 'field', 'renamed')
-      return expect(rename.renameChecks(fieldElemId, targetElemId, elements))
+      return expect(rename.renameChecks(ws, fieldElemId, targetElemId))
         .rejects.toThrow(`Source element should be top level (${fieldElemId.createTopLevelParentID().parent.getFullName()})`)
     })
   })
@@ -93,19 +93,51 @@ describe('rename.ts', () => {
       referencesChanges = [{ id: refElemId, action: 'modify', data: { before: beforeRef, after: afterRef } }]
     })
     describe('renameElement', () => {
-      it('should return changes', async () => {
-        const returnAsync = async (value: unknown): Promise<unknown> => value
-        const result = await rename.renameElement(
+      let result: {
+        elementChangesResult: DetailedChange[]
+        referencesChangesResult: DetailedChange[]
+      }
+      beforeAll(async () => {
+        const returnAsync = async (value: DetailedChange[]): Promise<DetailedChange[]> => value
+        result = await rename.renameElement(
           elements,
           sourceElemId,
           targetElement.elemID,
           changes => returnAsync(changes)
         )
-
+      })
+      it('should return changes', async () => {
         expect(result).toEqual({
           elementChangesResult: elementChanges,
           referencesChangesResult: referencesChanges,
         })
+      })
+      it('should update pathIndex', async () => {
+        const topLevelPaths = [['salto', 'records', 'instance', 'main'],
+          ['salto', 'records', 'instance', 'personal']]
+        const specificPath = [topLevelPaths[1]]
+
+        const workspaceElements = mockElements.getAllElements()
+        const newWs = mockWorkspace({ elements: workspaceElements })
+        const index = await newWs.state().getPathIndex()
+        await index.set(sourceElemId.getFullName(), topLevelPaths)
+        const nestedElemId = sourceElemId.createNestedID('name')
+        await index.set(nestedElemId.getFullName(), specificPath)
+
+        const targetElemId = new ElemID(sourceElemId.adapter, sourceElemId.typeName, sourceElemId.idType, 'renamed')
+
+        const returnAsync = async (value: DetailedChange[]): Promise<DetailedChange[]> => value
+        await rename.renameElement(
+          await newWs.elements(),
+          sourceElemId,
+          targetElemId,
+          changes => returnAsync(changes),
+          index
+        )
+        expect(await index.get(sourceElemId.getFullName())).toBeUndefined()
+        expect(await index.get(nestedElemId.getFullName())).toBeUndefined()
+        expect(await index.get(targetElemId.getFullName())).toEqual(topLevelPaths)
+        expect(await index.get(targetElemId.createNestedID('name').getFullName())).toEqual(specificPath)
       })
     })
     describe('updateStateElements', () => {
@@ -117,23 +149,6 @@ describe('rename.ts', () => {
         expect(resolvePath(await state.get(refElemId.createTopLevelParentID().parent),
           refElemId)).toEqual(new ReferenceExpression(targetElement.elemID))
       })
-    })
-  })
-
-  describe('renameElementPathIndex', () => {
-    it('should update pathIndex', async () => {
-      const index = await ws.state().getPathIndex()
-      await index.set(sourceElemId.getFullName(), [['salto', 'records', 'instance', 'main']])
-      const nestedElemId = sourceElemId.createNestedID('name')
-      await index.set(nestedElemId.getFullName(), [['salto', 'records', 'instance', 'personal']])
-
-      const targetElemId = new ElemID(sourceElemId.adapter, sourceElemId.typeName, sourceElemId.idType, 'renamed')
-      await rename.renameElementPathIndex(index, sourceElemId, targetElemId)
-
-      expect(await index.get(sourceElemId.getFullName())).toBeUndefined()
-      expect(await index.get(nestedElemId.getFullName())).toBeUndefined()
-      expect(await index.get(targetElemId.getFullName())).toEqual([['salto', 'records', 'instance', 'main']])
-      expect(await index.get(targetElemId.createNestedID('name').getFullName())).toEqual([['salto', 'records', 'instance', 'personal']])
     })
   })
 })

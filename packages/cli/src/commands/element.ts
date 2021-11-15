@@ -17,7 +17,7 @@ import _ from 'lodash'
 import open from 'open'
 import { ElemID, isElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { Workspace, ElementSelector, createElementSelectors, FromSource } from '@salto-io/workspace'
-import { getEnvsDeletionsDiff, RenameElementIdError, rename, RenameElementResult } from '@salto-io/core'
+import { getEnvsDeletionsDiff, RenameElementIdError, rename } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
@@ -632,9 +632,13 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
     return CliExitCode.UserInputError
   }
 
-  let result: RenameElementResult
   try {
-    result = await rename(workspace, sourceElemId, targetElemId)
+    const result = await rename(workspace, sourceElemId, targetElemId)
+
+    outputLine(Prompts.RENAME_ELEMENT(sourceElemId.getFullName(),
+      targetElemId.getFullName()), output)
+    outputLine(Prompts.RENAME_ELEMENT_REFERENCES(sourceElemId.getFullName(),
+      result.naclFilesChangesCount), output)
   } catch (error) {
     if (error instanceof RenameElementIdError) {
       errorOutputLine(error.message, output)
@@ -642,13 +646,6 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
     }
     throw error
   }
-
-  outputLine(Prompts.RENAME_ELEMENT(sourceElemId.getFullName(),
-    targetElemId.getFullName()), output)
-
-  outputLine(Prompts.RENAME_ELEMENT_REFERENCES(sourceElemId.getFullName(),
-    result.naclFilesChangesCount), output)
-
   return CliExitCode.Success
 }
 
@@ -665,7 +662,7 @@ const renameElementsDef = createWorkspaceCommand({
       },
       {
         name: 'targetElementId',
-        description: 'Target element ID of the element',
+        description: 'New Element ID',
         type: 'string',
         required: true,
       },

@@ -23,7 +23,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource, UpdateNaclFilesResult } from '@salto-io/workspace'
+import { Workspace, ElementSelector, elementSource } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -416,26 +416,26 @@ export const rename = async (
   const stateSource = workspace.state()
   const index = await stateSource.getPathIndex()
 
-  await renameChecks(sourceElemId, targetElemId, elements, stateSource)
+  await renameChecks(sourceElemId, targetElemId, elements)
 
-  let result
-  result = await renameElement(
+  const renameNaclElementResult = await renameElement(
     elements,
     sourceElemId,
     targetElemId,
     changes => workspace.updateNaclFiles(changes),
     index
   )
-  const { naclFilesChangesCount } = (result.referencesChangesResult as UpdateNaclFilesResult)
+  const naclFilesChangesCount = renameNaclElementResult.elementChangesResult.naclFilesChangesCount
+    + renameNaclElementResult.referencesChangesResult.naclFilesChangesCount
 
-  result = await renameElement(
+  const renameStateElementResult = await renameElement(
     stateSource,
     sourceElemId,
     targetElemId,
     changes => updateStateElements(stateSource, changes)
   )
-  const stateElementsChangesCount = (result.elementChangesResult as number)
-    + (result.referencesChangesResult as number)
+  const stateElementsChangesCount = renameStateElementResult.elementChangesResult
+    + renameStateElementResult.referencesChangesResult
 
   await renameElementPathIndex(index, sourceElemId, targetElemId)
 

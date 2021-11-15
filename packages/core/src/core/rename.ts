@@ -33,34 +33,30 @@ export type RenameElementResult = {
   stateElementsChangesCount: number
 }
 
-const renameElementIdChecks = (
+export const renameChecks = async (
   sourceElemId: ElemID,
-  targetElemId: ElemID
-): void => {
+  targetElemId: ElemID,
+  elementsSource: ElementsSource
+): Promise<void> => {
   if (sourceElemId.isEqual(targetElemId)) {
     throw new RenameElementIdError(`Source and target element ids are the same: ${sourceElemId.getFullName()}`)
   }
 
-  if (!sourceElemId.isEqual(sourceElemId.createTopLevelParentID().parent)) {
+  if (!sourceElemId.isTopLevel()) {
     throw new RenameElementIdError(`Source element should be top level (${sourceElemId.createTopLevelParentID().parent.getFullName()})`)
   }
 
-  if (!targetElemId.isEqual(targetElemId.createTopLevelParentID().parent)) {
+  if (!targetElemId.isTopLevel()) {
     throw new RenameElementIdError(`Target element should be top level (${targetElemId.createTopLevelParentID().parent.getFullName()})`)
   }
 
   if (sourceElemId.adapter !== targetElemId.adapter
     || sourceElemId.typeName !== targetElemId.typeName
-    || sourceElemId.idType !== targetElemId.idType) {
+    || sourceElemId.idType !== targetElemId.idType
+    || !ElemID.TOP_LEVEL_ID_TYPES_WITH_NAME.includes(sourceElemId.idType)) {
     throw new RenameElementIdError('Currently supporting renaming the instance name only')
   }
-}
 
-const renameElementChecks = async (
-  elementsSource: ElementsSource,
-  sourceElemId: ElemID,
-  targetElemId: ElemID
-): Promise<void> => {
   const sourceElement = await elementsSource.get(sourceElemId)
   if (sourceElement === undefined || !isElement(sourceElement)) {
     throw new RenameElementIdError(`Did not find any matches for element ${sourceElemId.getFullName()}`)
@@ -75,19 +71,10 @@ const renameElementChecks = async (
   }
 }
 
-export const renameChecks = async (
-  sourceElemId: ElemID,
-  targetElemId: ElemID,
-  ...elementsSources: ElementsSource[]
-): Promise<void> => {
-  renameElementIdChecks(sourceElemId, targetElemId)
-  await Promise.all(elementsSources.map(s => renameElementChecks(s, sourceElemId, targetElemId)))
-}
-
 const getRenameElementChanges = (
   sourceElemId: ElemID,
   targetElemId: ElemID,
-  ...sourceElements: InstanceElement[]
+  sourceElements: InstanceElement[]
 ): DetailedChange[] => {
   const removeChanges = sourceElements.map(e => ({
     id: sourceElemId,
@@ -159,19 +146,19 @@ const getRenameReferencesChanges = async (
   })
 }
 
-export const renameElement = async (
+export const renameElement = async <T>(
   elementsSource: ElementsSource,
   sourceElemId: ElemID,
   targetElemId: ElemID,
-  applyChanges: (changes: DetailedChange[]) => Promise<unknown>,
+  applyChanges: (changes: DetailedChange[]) => Promise<T>,
   index?: PathIndex,
-): Promise<{ elementChangesResult: unknown; referencesChangesResult: unknown }> => {
+): Promise<{ elementChangesResult: T; referencesChangesResult: T }> => {
   const source = await elementsSource.get(sourceElemId)
   const elements = index === undefined
     ? [source]
     : await splitElementByPath(source, index) as InstanceElement[]
 
-  const elementChanges = getRenameElementChanges(sourceElemId, targetElemId, ...elements)
+  const elementChanges = getRenameElementChanges(sourceElemId, targetElemId, elements)
   const elementChangesResult = await applyChanges(elementChanges)
 
   const referencesChanges = await getRenameReferencesChanges(elementsSource, sourceElemId,
@@ -237,6 +224,8 @@ export const renameElementPathIndex = async (
       sourceElemId.typeName,
       sourceElemId.idType,
       targetElemId.name,
+      // this implementation works on InstanceElement only
+      // it won't work on Field elements because they aren't top-level elements
       ...ElemID.fromFullName(e.key).createTopLevelParentID().path
     )
     return index.set(elemId.getFullName(), e.value)

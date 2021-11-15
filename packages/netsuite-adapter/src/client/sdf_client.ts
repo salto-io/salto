@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { collections, decorators, objects, promises, values } from '@salto-io/lowerdash'
-import { Values, AccountId } from '@salto-io/adapter-api'
+import { Values, AccountId, Value } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile, rm, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import {
@@ -30,6 +30,7 @@ import _ from 'lodash'
 import uuidv4 from 'uuid/v4'
 import AsyncLock from 'async-lock'
 import wu from 'wu'
+import shellQuote from 'shell-quote'
 import {
   APPLICATION_ID,
   FILE_CABINET_PATH_SEPARATOR,
@@ -97,6 +98,13 @@ const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING'
 const INVALID_DEPENDENCIES_PATTERN = new RegExp(`^.*(<feature required=".*">${INVALID_DEPENDENCIES.join('|')})</feature>.*\n`, 'gm')
 
 const baseExecutionPath = os.tmpdir()
+
+const safeQuoteArgument = (argument: Value): Value => {
+  if (typeof argument === 'string') {
+    return shellQuote.quote([argument])
+  }
+  return argument
+}
 
 export const convertToCustomizationInfo = (xmlContent: string):
   CustomizationInfo => {
@@ -306,12 +314,13 @@ export default class SdfClient {
       tokenid: this.credentials.tokenId,
       tokensecret: this.credentials.tokenSecret,
     }
+    const safeArguments: Values = _.mapValues(setupCommandArguments, safeQuoteArgument)
     await this.withAuthIdsLock(async () => {
       log.debug(`Setting up account using authId: ${authId}`)
       try {
         await this.executeProjectAction(
           COMMANDS.SAVE_TOKEN,
-          setupCommandArguments,
+          safeArguments,
           projectCommandActionExecutor
         )
       } catch (e) {

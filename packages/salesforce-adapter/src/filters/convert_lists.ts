@@ -128,13 +128,11 @@ const castListRecursively = async (
   await applyRecursive(type, values, castLists)
 }
 
-const ignoreAdapter = (id: string): string => id.split('.').slice(1).join('.')
-
 const markHardcodedLists = async (
   type: ObjectType,
   knownListIds: Set<string>,
 ): Promise<void> => awu(_.values(type.fields))
-  .filter(f => knownListIds.has(ignoreAdapter(f.elemID.getFullName())))
+  .filter(f => knownListIds.has(f.elemID.getFullName()))
   .forEach(async f => {
     const fieldType = await f.getType()
     // maps are created synthetically and should not be converted here
@@ -182,7 +180,7 @@ const getMapFieldIds = async (
       .filter(async f => metadataTypeToFieldToMapDef[await metadataType(f.parent)] !== undefined)
       .filter(
         async f => metadataTypeToFieldToMapDef[await metadataType(f.parent)][f.name] !== undefined
-      ).map(f => ignoreAdapter(f.elemID.getFullName()))
+      ).map(f => f.elemID.getFullName())
       .toArray())
   }
   return new Set()
@@ -215,8 +213,8 @@ export const makeFilter = (
 
     const mapFieldIds = await getMapFieldIds(objectTypes, config.useOldProfiles)
     const knownListIds = new Set([
-      ...hardcodedLists.map(item => ignoreAdapter(item)),
-      ...unorderedListFields.map(sortDef => ignoreAdapter(sortDef.elemID.getFullName())),
+      ...hardcodedLists,
+      ...unorderedListFields.map(sortDef => sortDef.elemID.getFullName()),
     ].filter(id => !mapFieldIds.has(id)))
 
     await awu(objectTypes).forEach(t => markHardcodedLists(t, knownListIds))

@@ -47,7 +47,7 @@ import { instanceExists, objectExists, getSalesforceCredsInstance, getSalesforce
 const { awu } = collections.asynciterable
 // let lastPlan: Plan
 let credsLease: CredsLease<UsernamePasswordCredentials>
-const SALESFORCE_ACCOUNT_NAME = 'salesforce'
+const SALESFORCE_ACCOUNT_NAME = 'e2esalesforce'
 const apiNameAnno = (
   obj: string,
   field: string

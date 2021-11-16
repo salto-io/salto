@@ -177,7 +177,7 @@ export const getAdaptersCreatorConfigs = async (
   getConfig: AdapterConfigGetter,
   elementsSource: ReadOnlyElementsSource,
   accountToServiceName: Record<string, string>,
-  elemIdGetter?: ElemIdGetter,
+  elemIdGetters: Record<string, ElemIdGetter> = {},
 ): Promise<Record<string, AdapterOperationsContext>> => (
   Object.fromEntries(await Promise.all(accounts.map(
     async account => {
@@ -191,9 +191,9 @@ export const getAdaptersCreatorConfigs = async (
           elementsSource: createElemIDReplacedElementsSource(filterElementsSource(
             elementsSource, accountToServiceName[account]
           ), account, accountToServiceName[account]),
-          getElemIdFunc: (elemIdGetter
+          getElemIdFunc: (elemIdGetters[account]
             ? ((adapterIds: string, serviceIds: ServiceIds,
-              name: string) => createAdapterReplacedID(elemIdGetter(
+              name: string) => createAdapterReplacedID(elemIdGetters[account](
               adapterIds, serviceIds, name,
             ), accountToServiceName[account])) : undefined),
         },
@@ -208,7 +208,7 @@ export const getAdapters = async (
   getConfig: AdapterConfigGetter,
   workspaceElementsSource: ReadOnlyElementsSource,
   accountToServiceName: Record<string, string>,
-  elemIdGetter?: ElemIdGetter,
+  elemIdGetters: Record<string, ElemIdGetter> = {},
 ): Promise<Record<string, AdapterOperations>> =>
   initAdapters(await getAdaptersCreatorConfigs(
     adapters,
@@ -216,5 +216,5 @@ export const getAdapters = async (
     getConfig,
     workspaceElementsSource,
     accountToServiceName,
-    elemIdGetter
+    elemIdGetters
   ), accountToServiceName)

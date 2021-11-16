@@ -36,6 +36,7 @@ import { IDFilter } from './plan/plan'
 import { getAdaptersCreatorConfigs } from './adapters'
 
 const { awu, groupByAsync } = collections.asynciterable
+const { mapValuesAsync } = promises.object
 const { mergeElements } = merger
 const log = logger(module)
 const { isDefined } = values
@@ -889,14 +890,18 @@ export const getFetchAdapterAndServicesSetup = async (
   adaptersCreatorConfigs: Record<string, AdapterOperationsContext>
   currentConfigs: InstanceElement[]
 }> => {
+  const elemIDGetters = ignoreStateElemIdMapping ? {}
+    : await mapValuesAsync(accountToServiceNameMap, async (_service, account) =>
+      createElemIdGetter(awu(await (
+        await workspace.elements()).getAll()).filter(e => e.elemID.adapter === account),
+      workspace.state()))
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
     await workspace.servicesCredentials(fetchServices),
     workspace.serviceConfig.bind(workspace),
     await workspace.elements(),
     accountToServiceNameMap,
-    ignoreStateElemIdMapping ? undefined
-      : await createElemIdGetter(await (await workspace.elements()).getAll(), workspace.state())
+    elemIDGetters,
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)
     .map(creatorConfig => creatorConfig.config)

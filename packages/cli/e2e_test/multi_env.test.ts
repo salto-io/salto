@@ -43,7 +43,7 @@ import * as templates from './helpers/templates'
 const { awu } = collections.asynciterable
 const { dumpElements } = parser
 
-const SALESFORCE_ACCOUNT_NAME = 'salesforce'
+const SALESFORCE_ACCOUNT_NAME = 'e2esalesforce'
 
 describe('multi env tests', () => {
   jest.setTimeout(15 * 60 * 1000)

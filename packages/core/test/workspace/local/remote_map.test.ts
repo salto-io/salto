@@ -163,6 +163,24 @@ describe('test operations on remote db', () => {
       expect(await remoteMap.get(elemID)).toBeUndefined()
     })
 
+    it('deleted elements should not be returned from keys', async () => {
+      const elemID = elements[0].elemID.getFullName()
+      await remoteMap.set(elemID, elements[0])
+      expect(await awu(remoteMap.keys()).toArray()).toContain(elements[0].elemID.getFullName())
+      await remoteMap.delete(elemID)
+      expect(await awu(remoteMap.keys()).toArray()).not.toContain(elements[0].elemID.getFullName())
+    })
+
+    it('deleted elements should not be returned from keys with pages', async () => {
+      const elemID = elements[0].elemID.getFullName()
+      await remoteMap.set(elemID, elements[0])
+      expect(await awu(remoteMap.keys({ pageSize: 2 })).flat().toArray())
+        .toContain(elements[0].elemID.getFullName())
+      await remoteMap.delete(elemID)
+      expect(await awu(remoteMap.keys({ pageSize: 2 })).flat().toArray())
+        .not.toContain(elements[0].elemID.getFullName())
+    })
+
     it('should delete all elements chosen when deleting all', async () => {
       await remoteMap.setAll(createAsyncIterable(elements))
       await remoteMap.deleteAll(awu(createAsyncIterable(elements.slice(1))).map(entry => entry.key))
@@ -183,24 +201,41 @@ describe('test operations on remote db', () => {
         await remoteMap.set(elements[0].elemID.getFullName(), elements[0])
         expect(await awu(remoteMap.keys()).toArray()).not.toHaveLength(0)
         await remoteMap.clear()
+        await remoteMap.set(elements[1].elemID.getFullName(), elements[1])
       })
-      it('should clear the results from keys', async () => {
-        expect(await awu(remoteMap.keys()).toArray()).toHaveLength(0)
+      it('should return keys that were only set after clear', async () => {
+        expect(await awu(remoteMap.keys()).toArray()).toEqual([elements[1].elemID.getFullName()])
       })
-      it('should clear the results from values', async () => {
-        expect(await awu(remoteMap.values()).toArray()).toHaveLength(0)
+      it('should return values that were only set after clear', async () => {
+        const vals = await awu(remoteMap.values()).toArray()
+        expect(vals).toHaveLength(1)
+        expect(vals[0].isEqual(elements[1])).toBeTruthy()
       })
-      it('should clear the results from entries', async () => {
-        expect(await awu(remoteMap.entries()).toArray()).toHaveLength(0)
+      it('should return entries that were only set after clear', async () => {
+        const entries = await awu(remoteMap.entries()).toArray()
+        expect(entries).toHaveLength(1)
+        expect(entries[0].key).toBe(elements[1].elemID.getFullName())
+        expect(entries[0].value.isEqual(elements[1])).toBeTruthy()
       })
-      it('should return false from has', async () => {
+      it('should return false for cleared keys', async () => {
         expect(await remoteMap.has(elements[0].elemID.getFullName())).toBeFalsy()
       })
-      it('should return undefined from get', async () => {
-        expect(await remoteMap.get(elements[0].elemID.getFullName())).toBeUndefined()
+
+      it('should return true for keys set after clear', async () => {
+        expect(await remoteMap.has(elements[1].elemID.getFullName())).toBeTruthy()
       })
-      it('should return undefined from getMany', async () => {
-        expect(await remoteMap.getMany([elements[0].elemID.getFullName()])).toEqual([undefined])
+      it('should return from get only values set after clear', async () => {
+        expect(await remoteMap.get(elements[0].elemID.getFullName())).toBeUndefined()
+        expect((await remoteMap.get(elements[1].elemID.getFullName()))
+          ?.isEqual(elements[1])).toBeTruthy()
+      })
+      it('should return from getMany only values set after clear', async () => {
+        const vals = await remoteMap.getMany([
+          elements[0].elemID.getFullName(),
+          elements[1].elemID.getFullName(),
+        ])
+        expect(vals[0]).toBeUndefined()
+        expect(vals[1]?.isEqual(elements[1])).toBeTruthy()
       })
       it('should return true from flush', async () => {
         expect(await remoteMap.flush()).toBeTruthy()

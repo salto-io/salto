@@ -455,6 +455,26 @@ remoteMap.RemoteMapCreator => {
       }
       return i > 0
     }
+
+    const getDataIterable = (opts: CreateIteratorOpts, tempOnly = false):
+      AsyncIterable<remoteMap.RemoteMapEntry<string>> => (
+      awu(aggregatedIterable(tempOnly || wasClearCalled
+        ? [createTempIterator(opts)]
+        : [createTempIterator(opts), createPersistentIterator(opts)]))
+        .filter(entry => !delKeys.has(entry.key))
+    )
+
+    const getDataIterableWithPages = (opts: CreateIteratorOpts, tempOnly = false):
+      AsyncIterable<remoteMap.RemoteMapEntry<string>[]> => (
+      awu(aggregatedIterablesWithPages(
+        tempOnly || wasClearCalled
+          ? [createTempIterator(opts)]
+          : [createTempIterator(opts), createPersistentIterator(opts)],
+        opts.pageSize,
+      )).map(async entries =>
+        entries.filter(entry => !delKeys.has(entry.key)))
+    )
+
     const setAllImpl = async (
       elementsEntries: AsyncIterable<remoteMap.RemoteMapEntry<T, K>>,
       temp = true,
@@ -469,31 +489,21 @@ remoteMap.RemoteMapCreator => {
     const valuesImpl = (tempOnly = false, iterationOpts?: remoteMap.IterationOpts):
     AsyncIterable<T> => {
       const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
-      const tempIter = createTempIterator(opts)
-      const iter = createPersistentIterator(opts)
-      return awu(aggregatedIterable(tempOnly || wasClearCalled ? [tempIter] : [tempIter, iter]))
-        .filter(entry => !delKeys.has(entry.key))
+      return awu(getDataIterable(opts, tempOnly))
         .map(async entry => deserialize(entry.value))
     }
     const valuesPagesImpl = (tempOnly = false, iterationOpts?: remoteMap.IterationOpts):
     AsyncIterable<T[]> => {
       const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
-      const tempIter = createTempIterator(opts)
-      const iter = createPersistentIterator(opts)
-      return awu(aggregatedIterablesWithPages(
-        tempOnly || wasClearCalled ? [tempIter] : [tempIter, iter],
-        opts.pageSize
-      )).map(async entries => Promise.all(
-        entries.filter(entry => !delKeys.has(entry.key)).map(entry => deserialize(entry.value))
-      ))
+      return awu(getDataIterableWithPages(opts, tempOnly))
+        .map(async entries => Promise.all(
+          entries.map(entry => deserialize(entry.value))
+        ))
     }
     const entriesImpl = (iterationOpts?: remoteMap.IterationOpts):
     AsyncIterable<remoteMap.RemoteMapEntry<T, K>> => {
       const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
-      const tempIter = createTempIterator(opts)
-      const iter = createPersistentIterator(opts)
-      return awu(aggregatedIterable(wasClearCalled ? [tempIter] : [tempIter, iter]))
-        .filter(entry => !delKeys.has(entry.key))
+      return awu(getDataIterable(opts, false))
         .map(
           async entry => ({ key: entry.key as K, value: await deserialize(entry.value) })
         )
@@ -501,18 +511,13 @@ remoteMap.RemoteMapCreator => {
     const entriesPagesImpl = (iterationOpts?: remoteMap.IterationOpts):
     AsyncIterable<remoteMap.RemoteMapEntry<T, K>[]> => {
       const opts = { ...(iterationOpts ?? {}), keys: true, values: true }
-      const tempIter = createTempIterator(opts)
-      const iter = createPersistentIterator(opts)
-      return awu(aggregatedIterablesWithPages(
-        wasClearCalled ? [tempIter] : [tempIter, iter],
-        opts.pageSize
-      )).map(entries => Promise.all(
-        entries
-          .filter(entry => !delKeys.has(entry.key))
-          .map(
-            async entry => ({ key: entry.key as K, value: await deserialize(entry.value) })
-          )
-      ))
+      return awu(getDataIterableWithPages(opts, false))
+        .map(entries => Promise.all(
+          entries
+            .map(
+              async entry => ({ key: entry.key as K, value: await deserialize(entry.value) })
+            )
+        ))
     }
     const clearImpl = (
       connection: rocksdb,
@@ -529,22 +534,14 @@ remoteMap.RemoteMapCreator => {
       })
     const keysImpl = (iterationOpts?: remoteMap.IterationOpts): AsyncIterable<K> => {
       const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
-      const tempKeyIter = createTempIterator(opts)
-      const keyIter = createPersistentIterator(opts)
-      return awu(aggregatedIterable(wasClearCalled ? [tempKeyIter] : [tempKeyIter, keyIter]))
+      return awu(getDataIterable(opts, false))
         .map(async (entry: remoteMap.RemoteMapEntry<string>) => entry.key as K)
-        .filter(key => !delKeys.has(key))
     }
     const keysPagesImpl = (iterationOpts?: remoteMap.IterationOpts):
     AsyncIterable<K[]> => {
       const opts = { ...(iterationOpts ?? {}), keys: true, values: false }
-      const tempKeyIter = createTempIterator(opts)
-      const keyIter = createPersistentIterator(opts)
-      return awu(aggregatedIterablesWithPages(
-        wasClearCalled ? [tempKeyIter] : [tempKeyIter, keyIter],
-        opts.pageSize
-      )).map(async entries =>
-        entries.map(entry => entry.key as K).filter(key => !delKeys.has(key)))
+      return awu(getDataIterableWithPages(opts, false)).map(async entries =>
+        entries.map(entry => entry.key as K))
     }
     const getImpl = (key: string): Promise<T | undefined> => new Promise(resolve => {
       if (delKeys.has(key)) {

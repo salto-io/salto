@@ -137,7 +137,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       dataInstancesReferences,
       dataInstancesInternalId,
       suiteAppInternalIds,
-      // systemNoteAuthorInformation must run after internal_ids
+      // AuthorInformation filters must run after SDFInternalIds filter
       systemNoteAuthorInformation,
       savedSearchesAuthorInformation,
       translationConverter,

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { collections, decorators, objects, promises, values } from '@salto-io/lowerdash'
-import { Values, AccountId } from '@salto-io/adapter-api'
+import { Values, AccountId, Value } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile, rm, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import {
@@ -30,6 +30,7 @@ import _ from 'lodash'
 import uuidv4 from 'uuid/v4'
 import AsyncLock from 'async-lock'
 import wu from 'wu'
+import shellQuote from 'shell-quote'
 import {
   APPLICATION_ID,
   FILE_CABINET_PATH_SEPARATOR,
@@ -90,12 +91,20 @@ const ALL = 'ALL'
 const ADDITIONAL_FILE_PATTERN = '.template.'
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
+const SINGLE_OBJECT_RETRIES = 3
 const READ_CONCURRENCY = 100
 
 const INVALID_DEPENDENCIES = ['ADVANCEDEXPENSEMANAGEMENT', 'SUBSCRIPTIONBILLING', 'WMSSYSTEM', 'BILLINGACCOUNTS']
 const INVALID_DEPENDENCIES_PATTERN = new RegExp(`^.*(<feature required=".*">${INVALID_DEPENDENCIES.join('|')})</feature>.*\n`, 'gm')
 
 const baseExecutionPath = os.tmpdir()
+
+const safeQuoteArgument = (argument: Value): Value => {
+  if (typeof argument === 'string') {
+    return shellQuote.quote([argument])
+  }
+  return argument
+}
 
 export const convertToCustomizationInfo = (xmlContent: string):
   CustomizationInfo => {
@@ -305,12 +314,13 @@ export default class SdfClient {
       tokenid: this.credentials.tokenId,
       tokensecret: this.credentials.tokenSecret,
     }
+    const safeArguments: Values = _.mapValues(setupCommandArguments, safeQuoteArgument)
     await this.withAuthIdsLock(async () => {
       log.debug(`Setting up account using authId: ${authId}`)
       try {
         await this.executeProjectAction(
           COMMANDS.SAVE_TOKEN,
-          setupCommandArguments,
+          safeArguments,
           projectCommandActionExecutor
         )
       } catch (e) {
@@ -480,7 +490,7 @@ export default class SdfClient {
     suiteAppId: string | undefined,
   ): Promise<FailedTypes> {
     const importObjectsChunk = async (
-      { type, ids, index, total }: ObjectsChunk, retry = true
+      { type, ids, index, total }: ObjectsChunk, retriesLeft = SINGLE_OBJECT_RETRIES
     ): Promise<FailedTypes> => {
       const retryFetchFailedInstances = async (
         failedInstancesIds: string[]
@@ -514,12 +524,12 @@ export default class SdfClient {
       } catch (e) {
         log.warn('Failed to fetch chunk %d/%d with %d objects of type: %s with suiteApp: %s', index, total, ids.length, type, suiteAppId)
         log.warn(e)
-        if (!retry) {
+        if (retriesLeft === 0) {
           throw e
         }
         if (ids.length === 1) {
-          log.debug('Retrying to fetch chunk %d/%d with a single object of type: %s', index, total, type)
-          return importObjectsChunk({ type, ids, index, total }, false)
+          log.debug('Retrying to fetch chunk %d/%d with a single object of type: %s. %d retries left', index, total, type, retriesLeft - 1)
+          return importObjectsChunk({ type, ids, index, total }, retriesLeft - 1)
         }
         log.debug('Retrying to fetch chunk %d/%d with %d objects of type: %s with smaller chunks', index, total, ids.length, type)
         const middle = (ids.length + 1) / 2

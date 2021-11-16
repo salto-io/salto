@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { Element } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { hash, collections, values } from '@salto-io/lowerdash'
@@ -174,10 +175,13 @@ export const createParseResultCache = (
       cachedHash = undefined
       const { metadata, errors, referenced, sourceMap, elements } = await cacheSources
       const fileErrors = await value.data.errors()
-      if (fileErrors && fileErrors.length > 0) {
-        await errors.set(value.filename, fileErrors)
-      } else {
-        await errors.delete(value.filename)
+      const currentError = await errors.get(filename)
+      if (!_.isEqual((currentError ?? []), (fileErrors ?? []))) {
+        if (fileErrors && fileErrors.length > 0) {
+          await errors.set(value.filename, fileErrors)
+        } else {
+          await errors.delete(value.filename)
+        }
       }
       await referenced.set(value.filename, (await value.data.referenced()) ?? [])
       const sourceMapValue = await value.sourceMap?.()
@@ -191,10 +195,11 @@ export const createParseResultCache = (
     },
     putAll: async (files: Record<string, ParsedNaclFile>): Promise<void> => {
       const { metadata, errors, referenced, sourceMap, elements } = await cacheSources
+      cachedHash = undefined
       const errorEntriesToAdd = awu(Object.keys(files))
         .map(async file => {
-          const value = await files[file].data.errors()
-          return { key: file, value: value === undefined ? [] : value }
+          const value = (await files[file].data.errors()) ?? []
+          return { key: file, value: _.isEqual(await errors.get(file), value) ? [] : value }
         })
         .filter(entry => entry.value.length > 0)
       const errorEntriesToDelete = awu(Object.keys(files))
@@ -203,7 +208,7 @@ export const createParseResultCache = (
           if (value === undefined || value.length > 0) {
             return undefined
           }
-          return file
+          return _.isEmpty(await errors.get(file)) ? undefined : file
         })
         .filter(values.isDefined)
       await errors.setAll(errorEntriesToAdd)
@@ -252,9 +257,11 @@ export const createParseResultCache = (
       return (awu(Object.values(await cacheSources))
         .forEach(async source => source.delete(filename)))
     },
-    deleteAll: async (filenames: string[]): Promise<void> =>
-      (awu(Object.values(await cacheSources)).forEach(source =>
-        source.deleteAll(filenames))),
+    deleteAll: async (filenames: string[]): Promise<void> => {
+      cachedHash = undefined
+      await awu(Object.values(await cacheSources)).forEach(source =>
+        source.deleteAll(filenames))
+    },
     getHash: async () => {
       if (!cachedHash) {
         cachedHash = ''

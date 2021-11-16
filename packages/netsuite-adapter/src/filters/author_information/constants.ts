@@ -44,6 +44,9 @@ export const SYSTEM_NOTE_SCHEMA = {
       name: {
         type: 'string',
       },
+      field: {
+        type: 'string',
+      },
       recordid: {
         type: 'string',
       },
@@ -53,8 +56,8 @@ export const SYSTEM_NOTE_SCHEMA = {
     },
     required: [
       'name',
+      'field',
       'recordid',
-      'recordtypeid',
     ],
     type: 'object',
   },
@@ -62,9 +65,10 @@ export const SYSTEM_NOTE_SCHEMA = {
 }
 
 export type SystemNoteResult = {
-  recordid: string
-  recordtypeid: string
   name: string
+  field: string
+  recordid: string
+  recordtypeid?: string
 }
 
 export const SAVED_SEARCH_RESULT_SCHEMA = {

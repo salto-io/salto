@@ -66,8 +66,8 @@ describe('adapter', () => {
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(elements).toHaveLength(270)
-        expect(elements.filter(isObjectType)).toHaveLength(154)
+        expect(elements).toHaveLength(268)
+        expect(elements.filter(isObjectType)).toHaveLength(152)
         expect(elements.filter(isInstanceElement)).toHaveLength(116)
         expect(elements.map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk_support.account_setting',
@@ -251,7 +251,6 @@ describe('adapter', () => {
           'zendesk_support.ticket_field.instance.text_agent_field_431_1900000813305@ussu',
           'zendesk_support.ticket_field.instance.tickettype_Type_1500004937782',
           'zendesk_support.ticket_field__custom_field_options',
-          'zendesk_support.ticket_field__custom_field_options',
           'zendesk_support.ticket_field__custom_field_options.instance.multiselect_agent_dropdown_643_for_agent_1500009152882_ussssu__v1_1500015072702@uuuuuumuuu',
           'zendesk_support.ticket_field__custom_field_options.instance.multiselect_agent_dropdown_643_for_agent_1500009152882_ussssu__v2_1500015072722@uuuuuumuuu',
           'zendesk_support.ticket_field__system_field_options',
@@ -302,7 +301,6 @@ describe('adapter', () => {
           'zendesk_support.user_field.instance.numeric65',
           'zendesk_support.user_field.instance.regex_6546',
           'zendesk_support.user_field.instance.this_is_a_checkbox',
-          'zendesk_support.user_field__custom_field_options',
           'zendesk_support.user_field__custom_field_options',
           'zendesk_support.user_field__custom_field_options.instance.dropdown_25__Choice1_1500001753322',
           'zendesk_support.user_field__custom_field_options.instance.dropdown_25__another_choice_1500001753342@uuusu',

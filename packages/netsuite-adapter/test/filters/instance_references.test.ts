@@ -94,6 +94,8 @@ describe('instance_references filter', () => {
           refToCustomSegment: '[type=customsegment, scriptid=cseg_1]',
           refToNonExistingTypedScriptId: '[type=customsegment, scriptid=non_existing_script_id]',
           refToScriptIdOfAnotherType: '[type=transactionbodycustomfield, scriptid=cseg_1]',
+          stringWithMultipleRef: '[type=customsegment, scriptid=cseg_1]|STDBODYCUSTOMER|[type=customsegment, scriptid=cseg_1]|[scriptid=top_level.one_nesting.two_nesting]',
+          stringWithMultipleNonExistingRef: '[type=nonExistingType, scriptid=nonExist]:STDBODYCUSTOMER:[scriptid=nonExisting.one_nesting]',
         },
         undefined,
         {
@@ -298,6 +300,46 @@ describe('instance_references filter', () => {
 
       expect(instanceWithRefs.value.refToInstanceInElementSourcePath)
         .toEqual('[/Templates/instanceInElementsSource]')
+    })
+
+    it('should create _genereated_dependencies annotation and not replace the value in complexed values', async () => {
+      await filterCreator({
+        client: {} as NetsuiteClient,
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }).onFetch?.([customSegmentInstance, workflowInstance, instanceWithRefs])
+
+
+      expect(instanceWithRefs.value.stringWithMultipleRef)
+        .toEqual('[type=customsegment, scriptid=cseg_1]|STDBODYCUSTOMER|[type=customsegment, scriptid=cseg_1]|[scriptid=top_level.one_nesting.two_nesting]')
+
+      expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
+        .toHaveLength(2)
+      expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES])
+        .toEqual([
+          { reference: new ReferenceExpression(
+            customSegmentInstance.elemID.createNestedID(SCRIPT_ID)
+          ) },
+          { reference: new ReferenceExpression(
+            workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', 'workflowactions', '0', 'setfieldvalueaction', '0', SCRIPT_ID)
+          ) },
+        ])
+    })
+
+    it('should not replace complexed strings and ignore non existing refs', async () => {
+      await filterCreator({
+        client: {} as NetsuiteClient,
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+      }).onFetch?.([instanceWithRefs])
+
+
+      expect(instanceWithRefs.value.stringWithMultipleNonExistingRef)
+        .toEqual('[type=nonExistingType, scriptid=nonExist]:STDBODYCUSTOMER:[scriptid=nonExisting.one_nesting]')
+
+      expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
     })
   })
 })

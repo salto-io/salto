@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { Value, StaticFile, calculateStaticFileHash, ObjectType, isObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { Functions, FunctionImplementation, FunctionExpression } from '../src/parser/functions'
-import { StaticFilesSource } from '../src/workspace/static_files/common'
+import { StaticFilesSource, MissingStaticFile } from '../src/workspace/static_files/common'
 import { File } from '../src/workspace/dir_store'
 import { RemoteMap, RemoteMapEntry, CreateRemoteMapParams, RemoteMapCreator } from '../src/workspace/remote_map'
 
@@ -61,9 +61,13 @@ export const registerTestFunction = (
   )
 )
 
-export const mockStaticFilesSource = (): StaticFilesSource => ({
-  getStaticFile: jest.fn(),
-  getContent: jest.fn(),
+export const mockStaticFilesSource = (staticFiles: StaticFile[] = []): StaticFilesSource => ({
+  getStaticFile: jest.fn().mockImplementation((filepath: string, _encoding: BufferEncoding) => (
+    staticFiles.find(sf => sf.filepath === filepath) ?? new MissingStaticFile(filepath)
+  )),
+  getContent: jest.fn().mockImplementation((filepath: string) => (
+    staticFiles.find(sf => sf.filepath === filepath)?.content ?? undefined
+  )),
   persistStaticFile: jest.fn().mockReturnValue([]),
   flush: jest.fn(),
   clone: jest.fn(),

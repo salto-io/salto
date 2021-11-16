@@ -37,7 +37,7 @@ export const createMockNaclFileSource = (
   changes: ChangeSet<Change> = { changes: [], cacheValid: true },
   staticFileSource = mockStaticFilesSource()
 ): MockInterface<NaclFilesSource> => {
-  const currentElements = elements
+  let currentElements = elements
   const getElementNaclFiles = (elemID: ElemID): string[] =>
     Object.entries(naclFiles).filter(([_filename, fileElements]) => fileElements.find(
       element => resolvePath(element, elemID) !== undefined
@@ -62,7 +62,9 @@ export const createMockNaclFileSource = (
     deleteAll: mockFunction<NaclFilesSource['deleteAll']>().mockImplementation(async (_ids: ThenableIterable<ElemID>) => Promise.resolve(undefined)),
     getAll: mockFunction<NaclFilesSource['getAll']>().mockImplementation(async () => awu(currentElements)),
     getElementsSource: mockFunction<NaclFilesSource['getElementsSource']>().mockImplementation(async () => createInMemoryElementSource(currentElements)),
-    clear: mockFunction<NaclFilesSource['clear']>().mockResolvedValue(),
+    clear: mockFunction<NaclFilesSource['clear']>().mockImplementation(async _args => {
+      currentElements = []
+    }),
     rename: mockFunction<NaclFilesSource['rename']>().mockResolvedValue(),
     flush: mockFunction<NaclFilesSource['flush']>().mockResolvedValue(),
     updateNaclFiles: mockFunction<NaclFilesSource['updateNaclFiles']>().mockResolvedValue(changes),

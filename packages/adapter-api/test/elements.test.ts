@@ -18,7 +18,7 @@ import { BuiltinTypes, CORE_ANNOTATIONS } from '../src/builtins'
 import {
   Field, InstanceElement, ObjectType, PrimitiveType, isObjectType, isInstanceElement,
   PrimitiveTypes, ListType, isPrimitiveType, isType, isListType, isEqualElements, Variable,
-  isVariable, isMapType, MapType, isContainerType, createRefToElmWithValue,
+  isVariable, isMapType, MapType, isContainerType, createRefToElmWithValue, PlaceholderObjectType,
 } from '../src/elements'
 import { ElemID, INSTANCE_ANNOTATIONS } from '../src/element_id'
 import { TypeReference } from '../src/values'
@@ -765,6 +765,13 @@ describe('Test elements.ts', () => {
       const objRef = createRefToElmWithValue(obj)
       expect(objRef.elemID).toEqual(obj.elemID)
       expect(objRef.value).toEqual(obj)
+    })
+  })
+
+  describe('getType', () => {
+    it('Should return placeholder type if type is not ObjectType', async () => {
+      const instance = new InstanceElement('instance', BuiltinTypes.STRING as unknown as ObjectType)
+      expect(await instance.getType()).toBeInstanceOf(PlaceholderObjectType)
     })
   })
 })

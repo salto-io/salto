@@ -128,6 +128,23 @@ describe('element selector', () => {
     expect(selectedElements).toEqual([elements[0]])
   })
 
+  it('should only select specific types when given multiple typeNames', async () => {
+    const elements = [
+      new ElemID('salesforce', 'sometype'),
+      new ElemID('salesforce', 'sometypewithsameprefix'),
+      new ElemID('salesforce', 'withsamesuffixsometype'),
+      new ElemID('salesforce', 'othertype'),
+      new ElemID('salesforce', 'othertypewithsameprefix'),
+      new ElemID('salesforce', 'withsamesuffixothertype'),
+      new ElemID('otheradapter', 'sometype'),
+      new ElemID('otheradapter', 'othertype'),
+      new ElemID('salesforce', 'othertype', 'instance', 'y'),
+      new ElemID('salesforce', 'sometype', 'instance', 'x'),
+    ]
+    const selectedElements = await selectElements({ elements, selectors: ['salesforce.sometype|othertype'] })
+    expect(selectedElements).toEqual([elements[0], elements[3]])
+  })
+
   it('should handle asterisks in field type and instance name', async () => {
     const elements = [
       new ElemID('salesforce', 'sometype', 'instance', 'one_instance'),

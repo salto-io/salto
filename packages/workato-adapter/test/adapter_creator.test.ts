@@ -140,7 +140,7 @@ describe('adapter creator', () => {
         },
       ),
       elementsSource: buildElementsSourceFromElements([]),
-    })).toThrow(new Error('Unsupported service names in fetch.serviceConnectionNames: unsupportedName. The supported services are: salesforce,netsuite'))
+    })).toThrow(new Error('Unsupported service names in fetch.serviceConnectionNames: unsupportedName. The supported services are: salesforce,netsuite,zuora_billing'))
   })
 
   it('should validate credentials using createConnection', async () => {

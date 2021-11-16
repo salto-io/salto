@@ -18,11 +18,17 @@ import { InstanceElement, ElemID, Value, Values } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc, safeJsonStringify, setPath, extendGeneratedDependencies, FlatDetailedDependency, DependencyDirection } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { strings, types, values as lowerdashValues } from '@salto-io/lowerdash'
-import { NetsuiteBlock, SalesforceBlock, BlockBase } from './recipe_block_types'
+import { SalesforceBlock } from './salesforce/recipe_block_types'
+import { NetsuiteBlock } from './netsuite/recipe_block_types'
+import { ZuoraBlock } from './zuora_billing/recipe_block_types'
+import { BlockBase } from './recipe_block_types'
 
 const { isDefined } = lowerdashValues
 const { matchAll } = strings
 const log = logger(module)
+
+type SupportedRecipeBlock = SalesforceBlock | NetsuiteBlock | ZuoraBlock
+
 
 export type MappedReference = FlatDetailedDependency & {
   // pathToOverride is used to denote where in the element to put the reference.
@@ -32,7 +38,7 @@ export type MappedReference = FlatDetailedDependency & {
   pathToOverride?: ElemID
 }
 
-export type ReferenceFinder<T extends SalesforceBlock | NetsuiteBlock> = (
+export type ReferenceFinder<T extends SupportedRecipeBlock> = (
   value: T,
   path: ElemID,
 ) => MappedReference[]
@@ -42,7 +48,7 @@ export type FormulaReferenceFinder = (
   path: ElemID,
 ) => MappedReference[]
 
-export const addReferencesForService = async <T extends SalesforceBlock | NetsuiteBlock>(
+export const addReferencesForService = async <T extends SupportedRecipeBlock>(
   inst: InstanceElement,
   appName: string,
   typeGuard: (value: Value, app: string) => value is T,

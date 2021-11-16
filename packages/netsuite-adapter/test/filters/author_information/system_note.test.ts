@@ -15,8 +15,8 @@
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import filterCreator from '../../../src/filters/author_information/system_note'
-import { NETSUITE } from '../../../src/constants'
+import filterCreator, { FILE_FIELD_IDENTIFIER, FOLDER_FIELD_IDENTIFIER } from '../../../src/filters/author_information/system_note'
+import { FILE, FOLDER, NETSUITE } from '../../../src/constants'
 import NetsuiteClient from '../../../src/client/client'
 import { FilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
@@ -26,6 +26,8 @@ import { EMPLOYEE_NAME_QUERY } from '../../../src/filters/author_information/con
 describe('netsuite system note author information', () => {
   let filterOpts: FilterOpts
   let elements: InstanceElement[]
+  let fileInstance: InstanceElement
+  let folderInstance: InstanceElement
   let accountInstance: InstanceElement
   let customTypeInstance: InstanceElement
   let missingInstance: InstanceElement
@@ -48,17 +50,25 @@ describe('netsuite system note author information', () => {
       { id: '3', entityid: 'user 3 name' },
     ])
     runSuiteQLMock.mockResolvedValueOnce([
-      { recordid: '1', recordtypeid: '-112', name: '1' },
-      { recordid: '1', recordtypeid: '-123', name: '2' },
-      { recordid: '2', recordtypeid: '-112', name: '3' },
+      { recordid: '1', recordtypeid: '-112', field: '', name: '1' },
+      { recordid: '1', recordtypeid: '-123', field: '', name: '2' },
+      { recordid: '2', recordtypeid: '-112', field: '', name: '3' },
+      { recordid: '2', field: FOLDER_FIELD_IDENTIFIER, name: '3' },
+      { recordid: '2', field: FILE_FIELD_IDENTIFIER, name: '3' },
     ])
     accountInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
     accountInstance.value.internalId = '1'
     customTypeInstance = new InstanceElement('customRecordType', new ObjectType({ elemID: new ElemID(NETSUITE, 'customRecordType') }))
     customTypeInstance.value.internalId = '1'
+    fileInstance = new InstanceElement(FILE, new ObjectType({ elemID: new ElemID(NETSUITE, FILE) }))
+    fileInstance.value.internalId = '2'
+    folderInstance = new InstanceElement(
+      FOLDER, new ObjectType({ elemID: new ElemID(NETSUITE, FOLDER) })
+    )
+    folderInstance.value.internalId = '2'
     missingInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
     missingInstance.value.internalId = '8'
-    elements = [accountInstance, customTypeInstance, missingInstance]
+    elements = [accountInstance, customTypeInstance, missingInstance, fileInstance, folderInstance]
     filterOpts = {
       client,
       elementsSourceIndex: { getIndexes: () => Promise.resolve({
@@ -73,7 +83,17 @@ describe('netsuite system note author information', () => {
 
   it('should query information from api', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
-    const systemNotesQuery = "SELECT recordid, recordtypeid, name FROM systemnote WHERE recordtypeid = '-112' or recordtypeid = '-123' ORDER BY date DESC"
+    const systemNotesQuery = "SELECT name, field, recordid, recordtypeid FROM systemnote WHERE recordtypeid = '-112' OR recordtypeid = '-123' OR field LIKE 'MEDIAITEM.%' OR field LIKE 'MEDIAITEMFOLDER.%' ORDER BY date DESC"
+    expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
+    expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, systemNotesQuery)
+    expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('should query information from api when there are no files', async () => {
+    await filterCreator(filterOpts).onFetch?.(
+      [accountInstance, customTypeInstance, missingInstance]
+    )
+    const systemNotesQuery = "SELECT name, field, recordid, recordtypeid FROM systemnote WHERE recordtypeid = '-112' OR recordtypeid = '-123' ORDER BY date DESC"
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, systemNotesQuery)
     expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
@@ -88,6 +108,9 @@ describe('netsuite system note author information', () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 1 name').toBeTruthy()
     expect(customTypeInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 2 name').toBeTruthy()
+    expect(Object.values(missingInstance.annotations)).toHaveLength(0)
+    expect(fileInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
+    expect(folderInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
   })
 
   it('elements will stay the same if there is no author information', async () => {
@@ -95,6 +118,8 @@ describe('netsuite system note author information', () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(Object.values(accountInstance.annotations)).toHaveLength(0)
     expect(Object.values(customTypeInstance.annotations)).toHaveLength(0)
+    expect(Object.values(fileInstance.annotations)).toHaveLength(0)
+    expect(Object.values(folderInstance.annotations)).toHaveLength(0)
   })
   describe('failure', () => {
     it('bad employee schema', async () => {
@@ -112,6 +137,9 @@ describe('netsuite system note author information', () => {
       ])
       filterCreator(filterOpts).onFetch?.(elements)
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
+      expect(Object.values(customTypeInstance.annotations)).toHaveLength(0)
+      expect(Object.values(fileInstance.annotations)).toHaveLength(0)
+      expect(Object.values(folderInstance.annotations)).toHaveLength(0)
     })
     it('undefined system note result', async () => {
       runSuiteQLMock.mockReset()
@@ -138,6 +166,9 @@ describe('netsuite system note author information', () => {
       ])
       filterCreator(filterOpts).onFetch?.(elements)
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
+      expect(Object.values(customTypeInstance.annotations)).toHaveLength(0)
+      expect(Object.values(fileInstance.annotations)).toHaveLength(0)
+      expect(Object.values(folderInstance.annotations)).toHaveLength(0)
     })
   })
 
@@ -158,6 +189,9 @@ describe('netsuite system note author information', () => {
       await filterCreator(filterOpts).onFetch?.(elements)
       expect(runSuiteQLMock).not.toHaveBeenCalled()
       expect(Object.values(accountInstance.annotations)).toHaveLength(0)
+      expect(Object.values(customTypeInstance.annotations)).toHaveLength(0)
+      expect(Object.values(fileInstance.annotations)).toHaveLength(0)
+      expect(Object.values(folderInstance.annotations)).toHaveLength(0)
     })
   })
 })

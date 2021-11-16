@@ -567,6 +567,10 @@ remoteMap.RemoteMapCreator => {
         })
       }
     })
+    const deleteImpl = async (key: string): Promise<void> => {
+      delKeys.add(key)
+      locationCache.del(key)
+    }
     const createDBConnections = async (): Promise<void> => {
       tmpDBConnections[location] = tmpDBConnections[location] ?? {}
       if (tmpDB === undefined) {
@@ -627,7 +631,7 @@ remoteMap.RemoteMapCreator => {
         await promisify(tmpDB.put.bind(tmpDB))(keyToTempDBKey(key), serialize(element))
       },
       setAll: setAllImpl,
-      deleteAll: async (iterator: AsyncIterable<K>) => awu(iterator).forEach(k => delKeys.add(k)),
+      deleteAll: async (iterator: AsyncIterable<K>) => awu(iterator).forEach(deleteImpl),
       keys: <Opts extends remoteMap.IterationOpts>(
         iterationOpts?: Opts
       ): remoteMap.RemoteMapIterator<K, Opts> => {
@@ -661,9 +665,7 @@ remoteMap.RemoteMapCreator => {
         await clearImpl(persistentDB, keyPrefix)
         await clearImpl(tmpDB, tempKeyPrefix)
       },
-      delete: async (key: string) => {
-        delKeys.add(key)
-      },
+      delete: deleteImpl,
       has: async (key: string): Promise<boolean> => {
         if (locationCache.has(keyToTempDBKey(key))) {
           return true

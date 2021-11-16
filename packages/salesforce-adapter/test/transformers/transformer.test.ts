@@ -1695,6 +1695,21 @@ describe('transformer', () => {
           ),
         })).toEqual('Test__c')
       })
+      it('should resolve to current value if referenced value is not an element', async () => {
+        const testField = refObject.fields.test
+        const refValue = { obj: { with: { some: 'details' } } }
+        expect(await getLookUpName({
+          ref: new ReferenceExpression(testField.elemID, refValue),
+          field: mockLayoutItem.fields.field,
+          path: mockLayoutInstance.elemID.createNestedID(
+            'layoutSections', '0', 'layoutColumns', '0', 'layoutItems', '0', 'field'
+          ),
+        })).toEqual(refValue)
+        expect(await getLookUpName({
+          ref: new ReferenceExpression(testField.elemID, refValue),
+          field: mockLayoutItem.fields.field,
+        })).toEqual(refValue)
+      })
     })
     describe('with fields in workflow field update instance', () => {
       const workflowFieldUpdate = new ObjectType({

@@ -7,7 +7,6 @@ Salto helps you keep track of the main configuration entities in the Zuora Billi
 We do this using the [Zuora REST API](https://www.zuora.com/developer/api-reference/).
 
 **Known limitations:**
-* Multi-entity tenants are not yet supported. Please reach out if you would like use Salto on a tenant with multiple entities.
 * Some parts of the configuration may not yet be accessible via API on your tenant. If you are unable to see something that you think should be available, we are happy to help understand what needs to be enabled (with help from the Zuora support team).
 * Zuora has many different feature combinations, and we have not yet covered all of them. If you see something missing and would like to make it available, contact us and we will do our best to support it.
 
@@ -15,6 +14,7 @@ We do this using the [Zuora REST API](https://www.zuora.com/developer/api-refere
 Salto authenticates with Zuora using [OAuth v2.0](https://www.zuora.com/developer/api-reference/#section/Authentication/OAuth-v2.0). If you do not have one already, follow the steps to:
 - Create [an API user role and an API user](https://knowledgecenter.zuora.com/Billing/Tenant_Management/A_Administrator_Settings/Manage_Users/Create_an_API_User)
 - Add an [OAuth client](https://knowledgecenter.zuora.com/Billing/Tenant_Management/A_Administrator_Settings/Manage_Users#Create_an_OAuth_Client_for_a_User) for your API user - by going to Administration -> Manage Users -> (choose the user) -> OAuth Clients -> create (and keep the client ID and secret shown on screen)
+  - Note: If you are using an entity with multiple tenants, make sure to select only a single entity under `Accessible Entities` when defining the OAuth client
 
 When logging in with Salto, you will be asked to provide:
 - The OAuth client ID and secret

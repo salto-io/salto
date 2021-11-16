@@ -14,16 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { SALESFORCE, CROSS_SERVICE_SUPPORTED_APPS, NETSUITE } from '../../../constants'
-
-type RefListItem = {
-  label: string
-  value: string
-}
-
-export type BlockBase = {
-  keyword: string
-}
+import { SALESFORCE, CROSS_SERVICE_SUPPORTED_APPS } from '../../../constants'
+import { BlockBase, isListItem, RefListItem } from '../recipe_block_types'
 
 export type SalesforceBlock = BlockBase & {
   as: string
@@ -42,25 +34,6 @@ export type SalesforceBlock = BlockBase & {
   }
 }
 
-export type NetsuiteBlock = BlockBase & {
-  provider: 'netsuite' | 'netsuite_secondary'
-  dynamicPickListSelection: {
-    // eslint-disable-next-line camelcase
-    netsuite_object: string
-    // eslint-disable-next-line camelcase
-    custom_list?: RefListItem[]
-  }
-  input?: {
-    // eslint-disable-next-line camelcase
-    netsuite_object: string
-  }
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const isListItem = (value: any): value is RefListItem => (
-  _.isObjectLike(value) && _.isString(value.label) && _.isString(value.value)
-)
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isSalesforceBlock = (value: any, application: string): value is SalesforceBlock => (
   _.isObjectLike(value)
@@ -74,17 +47,4 @@ export const isSalesforceBlock = (value: any, application: string): value is Sal
   && _.isObjectLike(value.input)
   && _.isString(value.input.sobject_name)
   && _.isString(value.as)
-)
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isNetsuiteBlock = (value: any, application: string): value is NetsuiteBlock => (
-  _.isObjectLike(value)
-  && CROSS_SERVICE_SUPPORTED_APPS[NETSUITE].includes(application)
-  && value.provider === application
-  && _.isString(value.keyword)
-  && _.isObjectLike(value.dynamicPickListSelection)
-  && _.isString(value.dynamicPickListSelection.netsuite_object)
-  && (value.dynamicPickListSelection.custom_list ?? []).every(isListItem)
-  && _.isObjectLike(value.input)
-  && _.isString(value.input.netsuite_object)
 )

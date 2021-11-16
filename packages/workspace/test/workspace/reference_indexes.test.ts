@@ -107,6 +107,7 @@ describe('updateReferenceIndexes', () => {
         [
           new ElemID('test', 'target1'),
           new ElemID('test', 'target1', 'attr', 'someAttr'),
+          new ElemID('test', 'target2'),
         ]
       )
 
@@ -131,6 +132,7 @@ describe('updateReferenceIndexes', () => {
         'test.target2',
         [
           new ElemID('test', 'object', 'field', 'someField', 'fieldRef'),
+          new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
         ]
       )
 
@@ -212,6 +214,10 @@ describe('updateReferenceIndexes', () => {
       expect(referencedByIndex.delete).toHaveBeenCalledWith(
         'test.target2.field.someField',
       )
+
+      expect(referencedByIndex.delete).toHaveBeenCalledWith(
+        'test.target2',
+      )
     })
   })
 
@@ -265,6 +271,10 @@ describe('updateReferenceIndexes', () => {
 
       expect(referencedByIndex.delete).toHaveBeenCalledWith(
         'test.target2.field.someField',
+      )
+
+      expect(referencedByIndex.delete).toHaveBeenCalledWith(
+        'test.target2',
       )
     })
   })

@@ -47,7 +47,9 @@ const getReferences = (element: Element): ReferenceDetails[] => {
 }
 
 const updateIndex = (index: RemoteMap<ElemID[]>, id: string, values: ElemID[]): Promise<void> => (
-  values.length !== 0 ? index.set(id, values) : index.delete(id)
+  values.length !== 0
+    ? index.set(id, _.uniqBy(values, elemId => elemId.getFullName()))
+    : index.delete(id)
 )
 
 const updateReferencesIndex = async (
@@ -64,11 +66,6 @@ const updateReferencesIndex = async (
       .mapValues(referencesGroup => referencesGroup.map(ref => ref.reference))
       .value() : {}
 
-    await updateIndex(
-      index,
-      element.elemID.getFullName(),
-      baseIdToReferences[element.elemID.getFullName()] ?? []
-    )
     if (isObjectType(element)) {
       await Promise.all(
         Object.values(element.fields)
@@ -79,6 +76,13 @@ const updateReferencesIndex = async (
           ))
       )
     }
+    await updateIndex(
+      index,
+      element.elemID.getFullName(),
+      !isRemovalChange(change)
+        ? elementToReferences[element.elemID.getFullName()].map(ref => ref.reference)
+        : []
+    )
   }))
 }
 
@@ -102,7 +106,8 @@ const updateIdOfReferenceByIndex = async (
   newReferencedBy.push(
     ...Array.from(referenceByGroup)
       .flatMap(elemId => (idToAction[elemId] !== 'remove' ? elementToReferences[elemId] : []))
-      .filter(ref => ref.reference.createBaseID().parent.getFullName() === id)
+      .filter(ref => ElemID.fromFullName(id).isParentOf(ref.reference)
+        || ElemID.fromFullName(id).isEqual(ref.reference))
       .map(ref => ref.referenceBy)
   )
 
@@ -143,6 +148,18 @@ const updateReferencedByIndex = async (
     .flatten()
     .groupBy(({ reference }) => reference.createBaseID().parent.getFullName())
     .value()
+
+  // Add to a type its fields references
+  Object.entries(referenceByChanges).forEach(([id, referencesGroup]) => {
+    const elemId = ElemID.fromFullName(id)
+    if (elemId.idType === 'field') {
+      const topLevelId = elemId.createTopLevelParentID().parent.getFullName()
+      if (referenceByChanges[topLevelId] === undefined) {
+        referenceByChanges[topLevelId] = []
+      }
+      referenceByChanges[topLevelId].push(...referencesGroup)
+    }
+  })
 
   await Promise.all(
     _(referenceByChanges)

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ElemID, Element, isElement, isInstanceElement, InstanceElement, DetailedChange, isReferenceExpression, ReferenceExpression, getChangeElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { setPath, walkOnElement, WalkOnFunc, WalkOnFuncArgs, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { setPath, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { ElementsSource, getElementsPathHints, PathIndex, splitElementByPath, State, Workspace } from '@salto-io/workspace'
 
 const { awu } = collections.asynciterable
@@ -26,11 +26,6 @@ export class RenameElementIdError extends Error {
     super(message)
     Object.setPrototypeOf(this, RenameElementIdError.prototype)
   }
-}
-
-export type RenameElementResult = {
-  naclFilesChangesCount: number
-  stateElementsChangesCount: number
 }
 
 export const renameChecks = async (
@@ -50,11 +45,14 @@ export const renameChecks = async (
     throw new RenameElementIdError(`Target element should be top level (${targetElemId.createTopLevelParentID().parent.getFullName()})`)
   }
 
+  if (sourceElemId.idType !== 'instance') {
+    throw new RenameElementIdError(`Currently supporting InstanceElement only (${sourceElemId.getFullName()} is of type '${sourceElemId.idType}')`)
+  }
+
   if (sourceElemId.adapter !== targetElemId.adapter
     || sourceElemId.typeName !== targetElemId.typeName
-    || sourceElemId.idType !== targetElemId.idType
-    || !ElemID.TOP_LEVEL_ID_TYPES_WITH_NAME.includes(sourceElemId.idType)) {
-    throw new RenameElementIdError('Currently supporting renaming the instance name only')
+    || sourceElemId.idType !== targetElemId.idType) {
+    throw new RenameElementIdError('Only instance name renaming is allowed')
   }
 
   const sourceElement = await workspace.getValue(sourceElemId)
@@ -76,24 +74,24 @@ const getRenameElementChanges = (
   targetElemId: ElemID,
   sourceElements: InstanceElement[]
 ): DetailedChange[] => {
-  const removeChanges = sourceElements.map(e => ({
+  const removeChanges = sourceElements.map(element => ({
     id: sourceElemId,
     action: 'remove',
     data: {
-      before: e,
+      before: element,
     },
   })) as DetailedChange[]
 
-  const addChanges = sourceElements.map(e => ({
+  const addChanges = sourceElements.map(element => ({
     id: targetElemId,
     action: 'add',
     data: {
       after: new InstanceElement(
         targetElemId.name,
-        e.refType,
-        e.value,
-        e.path,
-        e.annotations
+        element.refType,
+        element.value,
+        element.path,
+        element.annotations
       ),
     },
   })) as DetailedChange[]
@@ -106,12 +104,12 @@ const getRenameReferencesChanges = async (
   sourceElemId: ElemID,
   targetElemId: ElemID
 ): Promise<DetailedChange[]> => {
-  const getReferences = (element: Element): WalkOnFuncArgs[] => {
-    const references: WalkOnFuncArgs[] = []
-    const func: WalkOnFunc = ({ value, path }) => {
+  const getReferences = (element: Element): { path: ElemID; value: ReferenceExpression }[] => {
+    const references: { path: ElemID; value: ReferenceExpression }[] = []
+    const func: WalkOnFunc = ({ path, value }) => {
       if (isReferenceExpression(value)
       && (sourceElemId.isEqual(value.elemID) || sourceElemId.isParentOf(value.elemID))) {
-        references.push({ value, path })
+        references.push({ path, value })
         return WALK_NEXT_STEP.SKIP
       }
       return WALK_NEXT_STEP.RECURSE
@@ -121,25 +119,25 @@ const getRenameReferencesChanges = async (
   }
 
   const references = await awu(await elementsSource.getAll())
-    .flatMap(elem => getReferences(elem)).toArray()
+    .flatMap(element => getReferences(element)).toArray()
 
-  return references.map(r => {
+  return references.map(reference => {
     const targetReference = new ReferenceExpression(
       new ElemID(
         sourceElemId.adapter,
         sourceElemId.typeName,
         sourceElemId.idType,
         targetElemId.name,
-        ...r.value.elemID.createTopLevelParentID().path
+        ...reference.value.elemID.createTopLevelParentID().path
       ),
-      r.value.resValue,
-      r.value.topLevelParent
+      reference.value.value,
+      reference.value.topLevelParent
     )
     return {
-      id: r.path,
+      id: reference.path,
       action: 'modify',
       data: {
-        before: r.value,
+        before: reference.value,
         after: targetReference,
       },
     }
@@ -158,8 +156,8 @@ const renameElementPathIndex = async (
   // the pathIndex and not the ChangeLocation (SourceMap) logic in the current implementation.
   const pathHints = getElementsPathHints(splittedElement)
 
-  await Promise.all(pathHints.map(e => index.delete(e.key)))
-  await Promise.all(pathHints.map(e => {
+  await Promise.all(pathHints.map(entry => index.delete(entry.key)))
+  await Promise.all(pathHints.map(entry => {
     const elemId = new ElemID(
       sourceElemId.adapter,
       sourceElemId.typeName,
@@ -167,40 +165,32 @@ const renameElementPathIndex = async (
       targetElemId.name,
       // this implementation works on InstanceElement only
       // it won't work on Field elements because they aren't top-level elements
-      ...ElemID.fromFullName(e.key).createTopLevelParentID().path
+      ...ElemID.fromFullName(entry.key).createTopLevelParentID().path
     )
-    return index.set(elemId.getFullName(), e.value)
+    return index.set(elemId.getFullName(), entry.value)
   }))
 }
 
-export const renameElement = async <T>(
+export const renameElement = async (
   elementsSource: ElementsSource,
   sourceElemId: ElemID,
   targetElemId: ElemID,
-  applyChanges: (changes: DetailedChange[]) => Promise<T>,
-  index?: PathIndex,
-): Promise<{ elementChangesResult: T; referencesChangesResult: T }> => {
+  index?: PathIndex
+): Promise<DetailedChange[]> => {
   const source = await elementsSource.get(sourceElemId)
-  if (source === undefined) {
-    throw new RenameElementIdError(`${sourceElemId.getFullName()} doesn't exists`)
-  }
-
   const elements = index === undefined
     ? [source]
     : await splitElementByPath(source, index) as InstanceElement[]
 
   const elementChanges = getRenameElementChanges(sourceElemId, targetElemId, elements)
-  const elementChangesResult = await applyChanges(elementChanges)
-
   const referencesChanges = await getRenameReferencesChanges(elementsSource, sourceElemId,
     targetElemId)
-  const referencesChangesResult = await applyChanges(referencesChanges)
 
   if (index !== undefined) {
     await renameElementPathIndex(index, elements, sourceElemId, targetElemId)
   }
 
-  return { elementChangesResult, referencesChangesResult }
+  return [...elementChanges, ...referencesChanges]
 }
 
 const getUpdatedTopLevelElements = async (
@@ -212,9 +202,10 @@ const getUpdatedTopLevelElements = async (
   )
 
   return Promise.all(
-    Object.entries(changesByTopLevelElemId).map(async ([e, changesInTopLevelElement]) => {
-      const topLevelElem = await elementsSource.get(ElemID.fromFullName(e))
-      changesInTopLevelElement.forEach(c => setPath(topLevelElem, c.id, getChangeElement(c)))
+    Object.entries(changesByTopLevelElemId).map(async ([elemId, changesInTopLevelElement]) => {
+      const topLevelElem = await elementsSource.get(ElemID.fromFullName(elemId))
+      changesInTopLevelElement.forEach(change =>
+        setPath(topLevelElem, change.id, getChangeElement(change)))
       return topLevelElem
     })
   )
@@ -224,15 +215,15 @@ export const updateStateElements = async (
   stateSource: State,
   changes: DetailedChange[]
 ): Promise<number> => {
-  const topLevelElementsChanges = changes.filter(c => c.id.isTopLevel())
-  await Promise.all(topLevelElementsChanges.filter(e => ['remove', 'modify'].includes(e.action))
-    .map(e => stateSource.remove(getChangeElement(e).elemID)))
-  await Promise.all(topLevelElementsChanges.filter(e => ['add', 'modify'].includes(e.action))
-    .map(e => stateSource.set(getChangeElement(e))))
+  const topLevelElementsChanges = changes.filter(change => change.id.isTopLevel())
+  await Promise.all(topLevelElementsChanges.filter(change => ['remove', 'modify'].includes(change.action))
+    .map(change => stateSource.remove(getChangeElement(change).elemID)))
+  await Promise.all(topLevelElementsChanges.filter(change => ['add', 'modify'].includes(change.action))
+    .map(change => stateSource.set(getChangeElement(change))))
 
   // Currently only modifying non-top-elements, not removing or adding
-  const nestedElementsChanges = changes.filter(c => !c.id.isTopLevel() && c.action === 'modify')
+  const nestedElementsChanges = changes.filter(change => !change.id.isTopLevel() && change.action === 'modify')
   const updatedElements = await getUpdatedTopLevelElements(stateSource, nestedElementsChanges)
-  await Promise.all(updatedElements.map(e => stateSource.set(e)))
+  await Promise.all(updatedElements.map(element => stateSource.set(element)))
   return topLevelElementsChanges.length + updatedElements.length
 }

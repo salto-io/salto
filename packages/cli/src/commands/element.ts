@@ -633,12 +633,15 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
   }
 
   try {
-    const result = await rename(workspace, sourceElemId, targetElemId)
+    const changes = await rename(workspace, sourceElemId, targetElemId)
+    await workspace.updateNaclFiles(changes)
+    await workspace.flush()
 
     outputLine(Prompts.RENAME_ELEMENT(sourceElemId.getFullName(),
       targetElemId.getFullName()), output)
     outputLine(Prompts.RENAME_ELEMENT_REFERENCES(sourceElemId.getFullName(),
-      result.naclFilesChangesCount), output)
+    // changes without the renamed element removal and addition
+      changes.length - 2), output)
   } catch (error) {
     if (error instanceof RenameElementIdError) {
       errorOutputLine(error.message, output)

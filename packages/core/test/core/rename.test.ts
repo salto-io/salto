@@ -43,7 +43,7 @@ describe('rename.ts', () => {
     it('should throw when trying to rename something else than instance name', async () => {
       const targetElemId = new ElemID(sourceElemId.adapter, 'renamed', sourceElemId.idType, ...sourceElemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS))
       return expect(rename.renameChecks(ws, sourceElemId, targetElemId))
-        .rejects.toThrow('Currently supporting renaming the instance name only')
+        .rejects.toThrow('Only instance name renaming is allowed')
     })
     it('should throw when targetElementId already exists', async () => {
       const existElementId = mockElements.getAllElements()
@@ -93,24 +93,16 @@ describe('rename.ts', () => {
       referencesChanges = [{ id: refElemId, action: 'modify', data: { before: beforeRef, after: afterRef } }]
     })
     describe('renameElement', () => {
-      let result: {
-        elementChangesResult: DetailedChange[]
-        referencesChangesResult: DetailedChange[]
-      }
+      let changes: DetailedChange[]
       beforeAll(async () => {
-        const returnAsync = async (value: DetailedChange[]): Promise<DetailedChange[]> => value
-        result = await rename.renameElement(
+        changes = await rename.renameElement(
           elements,
           sourceElemId,
-          targetElement.elemID,
-          changes => returnAsync(changes)
+          targetElement.elemID
         )
       })
       it('should return changes', async () => {
-        expect(result).toEqual({
-          elementChangesResult: elementChanges,
-          referencesChangesResult: referencesChanges,
-        })
+        expect(changes).toEqual([...elementChanges, ...referencesChanges])
       })
       it('should update pathIndex', async () => {
         const topLevelPaths = [['salto', 'records', 'instance', 'main'],
@@ -126,12 +118,10 @@ describe('rename.ts', () => {
 
         const targetElemId = new ElemID(sourceElemId.adapter, sourceElemId.typeName, sourceElemId.idType, 'renamed')
 
-        const returnAsync = async (value: DetailedChange[]): Promise<DetailedChange[]> => value
         await rename.renameElement(
           await newWs.elements(),
           sourceElemId,
           targetElemId,
-          changes => returnAsync(changes),
           index
         )
         expect(await index.get(sourceElemId.getFullName())).toBeUndefined()

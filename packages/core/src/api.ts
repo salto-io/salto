@@ -17,7 +17,7 @@ import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeElement, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
-  SaltoError, Element,
+  SaltoError, Element, DetailedChange,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -45,7 +45,7 @@ import { createRestoreChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
 import { createDiffChanges } from './core/diff'
 import { getChangeValidators, getAdaptersConfig } from './core/plan/change_validators'
-import { renameChecks, renameElement, RenameElementIdError, RenameElementResult, updateStateElements } from './core/rename'
+import { renameChecks, renameElement, updateStateElements } from './core/rename'
 
 export { cleanWorkspace } from './core/clean'
 
@@ -411,36 +411,24 @@ export const rename = async (
   workspace: Workspace,
   sourceElemId: ElemID,
   targetElemId: ElemID
-): Promise<RenameElementResult> => {
+): Promise<DetailedChange[]> => {
   await renameChecks(workspace, sourceElemId, targetElemId)
 
-  const renameNaclElementResult = await renameElement(
+  const renameElementChanges = await renameElement(
     await workspace.elements(),
     sourceElemId,
     targetElemId,
-    changes => workspace.updateNaclFiles(changes),
     await workspace.state().getPathIndex()
   )
-  const naclFilesChangesCount = renameNaclElementResult.elementChangesResult
-    .naclFilesChangesCount + renameNaclElementResult.referencesChangesResult.naclFilesChangesCount
 
-  let stateElementsChangesCount = 0
-  try {
-    const renameStateElementResult = await renameElement(
+  if (await workspace.state().get(sourceElemId) !== undefined) {
+    const changes = await renameElement(
       workspace.state(),
       sourceElemId,
       targetElemId,
-      changes => updateStateElements(workspace.state(), changes)
     )
-    stateElementsChangesCount = renameStateElementResult.elementChangesResult
-      + renameStateElementResult.referencesChangesResult
-  } catch (error) {
-    // in case that the element was added manually and isn't in the state file
-    if (!(error instanceof RenameElementIdError)) {
-      throw error
-    }
+    await updateStateElements(workspace.state(), changes)
   }
 
-  await workspace.flush()
-  return { naclFilesChangesCount, stateElementsChangesCount }
+  return renameElementChanges
 }

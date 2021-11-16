@@ -62,7 +62,7 @@ describe('rename.ts', () => {
       const fieldElemId = new ElemID('salto', 'address', 'field', 'country')
       const targetElemId = new ElemID('salto', 'address', 'field', 'renamed')
       return expect(rename.renameChecks(ws, fieldElemId, targetElemId))
-        .rejects.toThrow(`Source element should be top level (${fieldElemId.createTopLevelParentID().parent.getFullName()})`)
+        .rejects.toThrow(`Source element should be top level (${fieldElemId.getFullName()} is of type '${fieldElemId.idType}')`)
     })
   })
   describe('validate changes', () => {

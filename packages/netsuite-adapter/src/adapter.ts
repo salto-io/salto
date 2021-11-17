@@ -123,7 +123,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       convertLists,
       consistentValues,
       replaceInstanceReferencesFilter,
-      serviceUrls,
       SDFInternalIds,
       dataInstancesAttributes,
       redundantFields,
@@ -142,6 +141,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       savedSearchesAuthorInformation,
       translationConverter,
       accountSpecificValues,
+      // serviceUrls must run after suiteAppInternalIds filter
+      serviceUrls,
     ],
     typesToSkip = [
       INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard

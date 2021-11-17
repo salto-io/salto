@@ -25,6 +25,7 @@ import setRoleUrls from '../service_url/role'
 import setSublistsUrls from '../service_url/sublist'
 import setSavedSearchUrls from '../service_url/savedsearch'
 import setConstantUrls from '../service_url/constant_urls'
+import setSuiteAppUrls from '../service_url/suiteapp_elements_url'
 
 const log = logger(module)
 
@@ -39,6 +40,7 @@ const SERVICE_URL_SETTERS = [
   setSublistsUrls,
   setSavedSearchUrls,
   setConstantUrls,
+  setSuiteAppUrls,
 ]
 
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({

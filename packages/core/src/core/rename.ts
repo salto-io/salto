@@ -77,13 +77,13 @@ const getRenameElementChanges = (
   targetElemId: ElemID,
   sourceElements: InstanceElement[]
 ): DetailedChange[] => {
-  const removeChanges = sourceElements.map(element => ({
+  const removeChange = {
     id: sourceElemId,
     action: 'remove' as const,
     data: {
-      before: element,
+      before: sourceElements[0],
     },
-  }))
+  }
 
   const addChanges = sourceElements.map(element => ({
     id: targetElemId,
@@ -99,7 +99,7 @@ const getRenameElementChanges = (
     },
   }))
 
-  return [...removeChanges, ...addChanges]
+  return [removeChange, ...addChanges]
 }
 
 const getRenameReferencesChanges = async (
@@ -182,7 +182,7 @@ export const renameElement = async (
 ): Promise<DetailedChange[]> => {
   const source = await elementsSource.get(sourceElemId)
   const elements = isDefined(index)
-    ? await splitElementByPath(source, index) as InstanceElement[]
+    ? await splitElementByPath(source, index)
     : [source]
 
   const elementChanges = getRenameElementChanges(sourceElemId, targetElemId, elements)

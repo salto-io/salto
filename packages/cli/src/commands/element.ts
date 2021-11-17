@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import open from 'open'
-import { ElemID, isElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ElemID, isElement, CORE_ANNOTATIONS, isModificationChange } from '@salto-io/adapter-api'
 import { Workspace, ElementSelector, createElementSelectors, FromSource } from '@salto-io/workspace'
 import { getEnvsDeletionsDiff, RenameElementIdError, rename } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
@@ -637,11 +637,10 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
     await workspace.updateNaclFiles(changes)
     await workspace.flush()
 
-    outputLine(Prompts.RENAME_ELEMENT(sourceElemId.getFullName(),
-      targetElemId.getFullName()), output)
+    outputLine(Prompts.RENAME_ELEMENT(sourceElemId.getFullName(), targetElemId.getFullName()),
+      output)
     outputLine(Prompts.RENAME_ELEMENT_REFERENCES(sourceElemId.getFullName(),
-    // changes without the renamed element removal and addition
-      changes.length - 2), output)
+      changes.filter(isModificationChange).length), output)
   } catch (error) {
     if (error instanceof RenameElementIdError) {
       errorOutputLine(error.message, output)

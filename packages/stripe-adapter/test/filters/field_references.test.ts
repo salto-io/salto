@@ -18,7 +18,7 @@ import { client as clientUtils, filterUtils } from '@salto-io/adapter-components
 import filterCreator from '../../src/filters/field_references'
 import StripeClient from '../../src/client/client'
 import { STRIPE } from '../../src/constants'
-import { FETCH_CONFIG, DEFAULT_INCLUDE_TYPES, API_DEFINITIONS_CONFIG, DEFAULT_API_DEFINITIONS } from '../../src/config'
+import { FETCH_CONFIG, ALL_SUPPORTED_TYPES, API_DEFINITIONS_CONFIG, DEFAULT_API_DEFINITIONS } from '../../src/config'
 
 describe('Field references filter', () => {
   let client: StripeClient
@@ -37,7 +37,7 @@ describe('Field references filter', () => {
       }),
       config: {
         [FETCH_CONFIG]: {
-          includeTypes: DEFAULT_INCLUDE_TYPES,
+          includeTypes: ALL_SUPPORTED_TYPES,
         },
         [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
       },

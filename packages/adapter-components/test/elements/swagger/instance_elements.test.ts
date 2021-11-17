@@ -21,6 +21,7 @@ import { getAllInstances } from '../../../src/elements/swagger'
 import { returnFullEntry } from '../../../src/elements/field_finder'
 import { Paginator } from '../../../src/client'
 import { simpleGetArgs } from '../../../src/elements/request_parameters'
+import {beforeEach} from "jest-circus";
 
 const { toAsyncIterable } = collections.asynciterable
 
@@ -1029,46 +1030,119 @@ describe('swagger_instance_elements', () => {
         objectTypes,
       })).rejects.toThrow(new Error('Invalid type config - type myAdapter.Pet has no request config'))
     })
-    test('omits undefined or null values from file name', async () => {
-      const objectTypes = generateObjectTypes()
-      const res = await getAllInstances({
-        paginator: mockPaginator,
-        apiConfig: {
-          typeDefaults: {
-            transformation: {
-              idFields: ['id'],
-            },
+    describe('element ids and file names transformation', async () => {
+      const NAME = 'name'
+      const ID = 'id'
+      const NUMBER = 9
+      interface GetInstanceParams {
+        fileNameFields?: string[]
+        idFields?: string[]
+      }
+      const getInstance = async ({fileNameFields = [], idFields = []}: GetInstanceParams): Promise<InstanceElement> => {
+        const paginator: Paginator = jest.fn((
+            async function *getAll(_, extractPageEntries) {
+                yield [
+                  {
+                    id: ID,
+                    name: NAME,
+                    number: NUMBER,
+                    list: [1, 2, 3],
+                  }
+                ].flatMap(extractPageEntries)
+            }))
+        const customType = new ObjectType({
+          elemID: new ElemID(ADAPTER_NAME, 'customType'),
+          fields: {
+            name: { refType: BuiltinTypes.STRING },
+            id: {refType: BuiltinTypes.STRING},
+            number: {refType: BuiltinTypes.NUMBER}
           },
-          types: {
-            Owner: {
-              request: {
-                url: '/owner',
-              },
+        })
+        return (await getAllInstances({
+          paginator: paginator,
+          apiConfig: {
+            typeDefaults: {
               transformation: {
-                idFields: ['name'],
+                idFields: ['id'],
               },
             },
-            Pet: {
-              request: {
-                url: '/pet',
-                queryParams: {
-                  a: 'b',
+            types: {
+              customType:{
+                request: {
+                  url: '/someObject'
                 },
-              },
-              transformation: {
-                fileNameFields: ['id', 'name'],
-              },
+                transformation: {
+                  fileNameFields: fileNameFields,
+                  idFields: idFields,
+                }
+              }
             },
           },
-        },
-        fetchConfig: {
-          includeTypes: ['Owner', 'Pet'],
-        },
-        objectTypes,
-        computeGetArgs: simpleGetArgs,
-        nestedFieldFinder: returnFullEntry,
+          fetchConfig: {
+            includeTypes: ['customType'],
+          },
+          objectTypes: {customType: customType},
+          computeGetArgs: simpleGetArgs,
+          nestedFieldFinder: returnFullEntry,
+        }))[0]
+      }
+
+      describe('file name', async () => {
+        test('generates name with non missing fields', async () => {
+          const instance = await getInstance({fileNameFields: ['id', 'name', 'number']})
+          const path = instance.path
+          const fileName = path?.[path.length - 1]
+          expect(fileName).toEqual(`${ID}_${NAME}_${NUMBER}`)
+        })
+        // TODO - Consider replacing missing fields cases with jest parametrized
+        test('generates name with missing field at the beginning', async () => {
+          const instance = await getInstance({fileNameFields: ['missing', 'name', 'number']})
+          const path = instance.path
+          const fileName = path?.[path.length - 1]
+          expect(fileName).toEqual(`_${NAME}_${NUMBER}`) // TODO - Consider less flaky approach (using the separator const). Should use array[].join?
+        })
+        test('generates name with missing field at the middle', async () => {
+          const instance = await getInstance({fileNameFields: ['id', 'missing', 'number']})
+          const path = instance.path
+          const fileName = path?.[path.length - 1]
+          expect(fileName).toEqual(`${ID}__${NUMBER}`)
+        })
+        test('generates name with missing field at the end', async () => {
+          const instance = await getInstance({fileNameFields: ['id', 'name', 'missing']})
+          const path = instance.path
+          const fileName = path?.[path.length - 1]
+          expect(fileName).toEqual(`${ID}_${NAME}_`)
+        })
+        // TODO - Consider replacing default name cases with jest parametrized
+        test('generates default name when all fields are filtered out', async () => {
+          const instance = await getInstance({fileNameFields: ['missing', 'anotherMissing']})
+          const path = instance.path
+          const fileName = path?.[path.length - 1]
+          expect(fileName).toEqual('unnamed_0')
+        })
+        test('generates default name when empty list is provided', async () => {
+          const instance = await getInstance({fileNameFields: []})
+          const path = instance.path
+          const fileName = path?.[path.length - 1]
+          expect(fileName).toEqual('unnamed_0')
+        })
+        test('filters out unsupported field of type "list"', async () => {
+          const instance = await getInstance({fileNameFields: ['id', 'name', 'list', 'number']})
+          const path = instance.path
+          const fileName = path?.[path.length - 1]
+          expect(fileName).toEqual(`${ID}_${NAME}__${NUMBER}`)
+        })
       })
-      res.reverse()
+      describe('element id', async () => {
+        test('generates id with non missing fields', async () => {
+          const instance = await getInstance({fileNameFields: ['id', 'name', 'list', 'number']})
+          const path = instance.path
+          const fileName = path!![path!!.length - 1]
+          expect(fileName).toEqual(`${ID}_${NAME}__${NUMBER}`)
+        })
+      })
     })
+
   })
 })
+

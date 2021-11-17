@@ -25,7 +25,8 @@ import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault
 const log = logger(module)
 
 const ID_SEPARATOR = '__'
-const UNDEFINED_FIELDS_VALUE = ''
+const UNDEFINED_FIELDS_REPRESENTATION = ''
+export const NAME_PARTS_SEPARATOR = '_'
 
 export type InstanceCreationParams = {
   entry: Values
@@ -77,28 +78,35 @@ export const toBasicInstance = async ({
   })
 
   const {
-    idFields, fileNameFields,
+    fileNameFields,
   } = getConfigWithDefault(
     transformationConfigByType[type.elemID.name],
     transformationDefaultConfig,
   )
 
-  let nameParts = idFields.map(field => _.get(entry, field))
-  if (nameParts.some(value => !value)) {
-    nameParts = nameParts.map(value => value || UNDEFINED_FIELDS_VALUE)
-    log.warn(`could not find id for entry - expected id fields ${idFields}, available fields ${Object.keys(entry)}`)
+  const isValueTypeSupported = (value: any) => {
+    const valueType = typeof value
+    return valueType === 'string' || valueType === 'number'
   }
-  const name = nameParts.every(part => part !== undefined && part !== '') ? nameParts.map(String).join('_') : defaultName
 
-  const fileNameParts = (fileNameFields !== undefined
-    ? fileNameFields.map(field => _.get(entry, field)).filter(value => value)
-    : undefined)
-  const fileName = ((fileNameParts?.every(p => _.isString(p) || _.isNumber(p))
-    ? fileNameParts.join('_')
-    : undefined))
+  let hasDefinedField = false
+  const nameParts = fileNameFields?.map(field => {
+        const value = _.get(entry, field)
+        let namePart = UNDEFINED_FIELDS_REPRESENTATION
+        if (value === undefined || value === null ) {
+          log.warn(`Ignoring undefined value for field "${field}"`)
+        } else if (!isValueTypeSupported(value)) {
+          log.warn(`Ignoring field "${field}" with unsupported type "${typeof value}". Supported types: String, Number`)
+        } else {
+          hasDefinedField = true
+          namePart = value
+        }
+        return namePart
+      }) ?? []
+  const fileName = hasDefinedField ? nameParts.map(String).join(NAME_PARTS_SEPARATOR) : defaultName
 
   const naclName = naclCase(
-    parent && nestName ? `${parent.elemID.name}${ID_SEPARATOR}${name}` : String(name)
+    parent && nestName ? `${parent.elemID.name}${ID_SEPARATOR}${fileName}` : fileName
   )
   const adapterName = type.elemID.adapter
 
@@ -116,7 +124,7 @@ export const toBasicInstance = async ({
       adapterName,
       RECORDS_PATH,
       pathNaclCase(type.elemID.name),
-      fileName ? pathNaclCase(naclCase(fileName)) : pathNaclCase(naclName),
+      pathNaclCase(fileName),
     ],
     parent ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID)] } : undefined,
   )

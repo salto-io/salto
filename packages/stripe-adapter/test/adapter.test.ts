@@ -23,7 +23,7 @@ import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { accessTokenCredentialsType } from '../src/auth'
 import { configType, FETCH_CONFIG,
-  DEFAULT_INCLUDE_TYPES,
+  ALL_SUPPORTED_TYPES,
   DEFAULT_API_DEFINITIONS,
   API_DEFINITIONS_CONFIG } from '../src/config'
 import { STRIPE } from '../src/constants'
@@ -33,7 +33,7 @@ type MockReply = {
   params: Record<string, string>
   response: unknown
 }
-const pluralToSingularTypes: Record<string, string> = _.zipObject(DEFAULT_INCLUDE_TYPES,
+const pluralToSingularTypes: Record<string, string> = _.zipObject(ALL_SUPPORTED_TYPES,
   ['country_spec', 'coupon', 'plan', 'price', 'product', 'reporting_report_type', 'tax_rate', 'webhook_endpoint'])
 
 const singularTypes = Object.fromEntries(Object.values(pluralToSingularTypes).map(
@@ -44,7 +44,7 @@ const generateMockTypes: typeof elementUtils.swagger.generateTypes = async () =>
   {
     allTypes: {
       ...singularTypes,
-      ...Object.fromEntries(DEFAULT_INCLUDE_TYPES.map(
+      ...Object.fromEntries(ALL_SUPPORTED_TYPES.map(
         type => [naclCase(type), new ObjectType({ elemID: new ElemID(STRIPE, type),
           fields: { data: {
             refType: new ListType(singularTypes[pluralToSingularTypes[type]]),
@@ -138,7 +138,7 @@ describe('adapter', () => {
           configType,
           {
             [FETCH_CONFIG]: {
-              includeTypes: DEFAULT_INCLUDE_TYPES,
+              includeTypes: ALL_SUPPORTED_TYPES,
             },
             [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
           }
@@ -223,7 +223,7 @@ describe('adapter', () => {
         configType,
         {
           [FETCH_CONFIG]: {
-            includeTypes: DEFAULT_INCLUDE_TYPES,
+            includeTypes: ALL_SUPPORTED_TYPES,
           },
           [API_DEFINITIONS_CONFIG]: {
             ...DEFAULT_API_DEFINITIONS,
@@ -255,7 +255,7 @@ describe('adapter', () => {
           configType,
           {
             [FETCH_CONFIG]: {
-              includeTypes: DEFAULT_INCLUDE_TYPES,
+              includeTypes: ALL_SUPPORTED_TYPES,
             },
             [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
           }

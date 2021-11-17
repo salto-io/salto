@@ -25,7 +25,7 @@ import {
   Credentials, accessTokenCredentialsType,
 } from './auth'
 import { configType, StripeConfig, CLIENT_CONFIG, DEFAULT_API_DEFINITIONS, API_DEFINITIONS_CONFIG,
-  StripeApiConfig, FETCH_CONFIG, StripeFetchConfig, DEFAULT_INCLUDE_TYPES } from './config'
+  StripeApiConfig, FETCH_CONFIG, StripeFetchConfig, ALL_SUPPORTED_TYPES } from './config'
 import { createConnection } from './client/connection'
 
 const log = logger(module)
@@ -41,7 +41,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     {}, config?.value?.apiDefinitions, DEFAULT_API_DEFINITIONS
   )
   const fetch: StripeFetchConfig = _.defaults(
-    {}, config?.value?.fetch, { includeTypes: DEFAULT_INCLUDE_TYPES },
+    {}, config?.value?.fetch, { includeTypes: ALL_SUPPORTED_TYPES },
   )
 
   validateClientConfig(CLIENT_CONFIG, config?.value?.client)

@@ -19,6 +19,7 @@ export * from './src/api'
 export { ItemStatus } from './src/core/deploy'
 export { getAdaptersCredentialsTypes, getDefaultAdapterConfig, getAdaptersConfigTypes } from './src/core/adapters/adapters'
 export { createDiffChanges, getEnvsDeletionsDiff } from './src/core/diff'
+export { RenameElementIdError } from './src/core/rename'
 export {
   loadLocalWorkspace, initLocalWorkspace, loadLocalElementsSources, getNaclFilesSourceParams,
   CACHE_DIR_NAME, locateWorkspaceRoot, createEnvironmentSource,

@@ -17,8 +17,7 @@ import * as errors from './src/errors'
 import * as nacl from './src/workspace/nacl_files'
 import { Workspace, SourceFragment, StateRecency, loadWorkspace, isValidEnvName,
   EnvironmentsSources, EnvironmentSource, initWorkspace, WorkspaceComponents, UnresolvedElemIDs,
-  FromSourceWithEnv,
-  COMMON_ENV_PREFIX } from './src/workspace/workspace'
+  FromSourceWithEnv, COMMON_ENV_PREFIX, UpdateNaclFilesResult } from './src/workspace/workspace'
 import * as hiddenValues from './src/workspace/hidden_values'
 import * as configSource from './src/workspace/config_source'
 import * as workspaceConfigSource from './src/workspace/workspace_config_source'
@@ -38,8 +37,10 @@ import { createElementSelector, ElementSelector, validateSelectorsMatches,
 import * as validator from './src/validator'
 import * as elementSource from './src/workspace/elements_source'
 import * as remoteMap from './src/workspace/remote_map'
-import { RemoteElementSource } from './src/workspace/elements_source'
+import { RemoteElementSource, ElementsSource } from './src/workspace/elements_source'
 import { FromSource } from './src/workspace/nacl_files/multi_env/multi_env_source'
+import { State } from './src/workspace/state'
+import { PathIndex, splitElementByPath, getElementsPathHints } from './src/workspace/path_index'
 
 export {
   errors,
@@ -84,4 +85,10 @@ export {
   isValidEnvName,
   FromSource,
   FromSourceWithEnv,
+  UpdateNaclFilesResult,
+  ElementsSource,
+  State,
+  splitElementByPath,
+  PathIndex,
+  getElementsPathHints,
 }

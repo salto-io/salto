@@ -325,7 +325,7 @@ export const mockWorkspace = ({
 }: MockWorkspaceArgs): MockWorkspace => {
   const state = wsState.buildInMemState(
     async () => ({
-      elements: createInMemoryElementSource(),
+      elements: createInMemoryElementSource(elements()),
       pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
       servicesUpdateDate: new InMemoryRemoteMap(),
       saltoMetadata: new InMemoryRemoteMap([

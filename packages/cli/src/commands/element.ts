@@ -15,11 +15,11 @@
 */
 import _ from 'lodash'
 import open from 'open'
-import { ElemID, isElement, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ElemID, isElement, CORE_ANNOTATIONS, isModificationChange } from '@salto-io/adapter-api'
 import { Workspace, ElementSelector, createElementSelectors, FromSource } from '@salto-io/workspace'
+import { getEnvsDeletionsDiff, RenameElementIdError, rename } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { getEnvsDeletionsDiff } from '@salto-io/core'
 import { createCommandGroupDef, createWorkspaceCommand, WorkspaceCommandAction } from '../command_builder'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { errorOutputLine, outputLine } from '../outputer'
@@ -603,6 +603,85 @@ const listElementsDef = createWorkspaceCommand({
   action: listAction,
 })
 
+type ElementRenameArgs = {
+  sourceElementId: string
+  targetElementId: string
+} & EnvArg
+
+export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
+  input,
+  output,
+  spinnerCreator,
+  workspace,
+}) => {
+  const { sourceElementId, targetElementId } = input
+
+  await validateAndSetEnv(workspace, input, output)
+
+  const validWorkspace = await isValidWorkspaceForCommand(
+    { workspace, cliOutput: output, spinnerCreator }
+  )
+  if (!validWorkspace) {
+    return CliExitCode.AppError
+  }
+  outputLine(emptyLine(), output)
+
+  const sourceElemId = safeGetElementId(sourceElementId, output)
+  const targetElemId = safeGetElementId(targetElementId, output)
+  if (sourceElemId === undefined || targetElemId === undefined) {
+    return CliExitCode.UserInputError
+  }
+
+  try {
+    const changes = await rename(workspace, sourceElemId, targetElemId)
+    await workspace.updateNaclFiles(changes)
+    await workspace.flush()
+
+    outputLine(
+      Prompts.RENAME_ELEMENT(sourceElemId.getFullName(), targetElemId.getFullName()),
+      output
+    )
+
+    outputLine(
+      Prompts.RENAME_ELEMENT_REFERENCES(
+        sourceElemId.getFullName(), changes.filter(isModificationChange).length
+      ), output
+    )
+  } catch (error) {
+    if (error instanceof RenameElementIdError) {
+      errorOutputLine(error.message, output)
+      return CliExitCode.UserInputError
+    }
+    throw error
+  }
+  return CliExitCode.Success
+}
+
+const renameElementsDef = createWorkspaceCommand({
+  properties: {
+    name: 'rename',
+    description: 'Rename an element (currently supporting InstanceElement only)',
+    positionalOptions: [
+      {
+        name: 'sourceElementId',
+        description: 'Element ID to rename',
+        type: 'string',
+        required: true,
+      },
+      {
+        name: 'targetElementId',
+        description: 'New Element ID',
+        type: 'string',
+        required: true,
+      },
+    ],
+    keyedOptions: [
+      ENVIRONMENT_OPTION,
+    ],
+  },
+  action: renameAction,
+})
+
 const elementGroupDef = createCommandGroupDef({
   properties: {
     name: 'element',
@@ -615,6 +694,7 @@ const elementGroupDef = createCommandGroupDef({
     listUnresolvedDef,
     elementOpenDef,
     listElementsDef,
+    renameElementsDef,
   ],
 })
 

@@ -325,6 +325,12 @@ ${Prompts.LIST_IDS(ids)}
   public static readonly LIST_UNRESOLVED_FOUND = (env: string): string => `The following unresolved references can be copied from ${env}:`
   public static readonly LIST_UNRESOLVED_MISSING = (): string => 'The following unresolved references could not be found:'
 
+  public static readonly RENAME_ELEMENT = (source: string, target: string): string => `The following element was renamed:
+  ${source} -> ${target}`
+
+  public static readonly RENAME_ELEMENT_REFERENCES = (source: string, elementsAffected: number): string => `Renamed all references of ${source}:
+  ${elementsAffected} elements affected`
+
   public static readonly CLONE_TO_ENV_FAILED = (
     error: string
   ): string => `Failed to clone the specified elements to the target environments: ${error}`

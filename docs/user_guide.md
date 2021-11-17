@@ -391,7 +391,7 @@ Manage the workspace configuration elements
 * `move-to-envs <elementSelector...>` :    Move common configuration elements to env-specific configurations
 * `clone <elementSelector...>` :           Clone elements from one env-specific configuration to others
 * `list-unresolved` :                      Lists unresolved references to configuration elements
-
+* `rename <sourceElementId> <targetElementId>`:  Rename an element (currently supporting InstanceElement only)
 
 ### Generic Flags
 

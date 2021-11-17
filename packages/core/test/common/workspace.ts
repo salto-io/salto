@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Element, ElemID, InstanceElement, ObjectType, SaltoError } from '@salto-io/adapter-api'
+import { BuiltinTypes, Element, ElemID, InstanceElement, ObjectType, SaltoError, Value } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { elementSource } from '@salto-io/workspace'
 import { mockState } from './state'
@@ -75,6 +75,7 @@ export const mockWorkspace = ({
   services?: string[]
   errors?: SaltoError[]
   serviceConfigs?: Record<string, InstanceElement>
+  getValue?: Promise<Value | undefined>
 }): workspace.Workspace => {
   const state = mockState(SERVICES, stateElements || elements, index)
   return {
@@ -100,5 +101,6 @@ export const mockWorkspace = ({
     clear: jest.fn(),
     getElementIdsBySelectors: jest.fn(),
     hasErrors: () => errors.length > 0,
+    getValue: async (id: ElemID) => elements.find(e => e.elemID.getFullName() === id.getFullName()),
   } as unknown as workspace.Workspace
 }

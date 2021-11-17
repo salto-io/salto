@@ -15,8 +15,9 @@
 */
 import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeElement, isField,
-  Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult, isAdapterSuccessInstallResult,
-  AdapterSuccessInstallResult, AdapterAuthentication, SaltoError, Element,
+  Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
+  isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
+  SaltoError, Element, DetailedChange,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -44,6 +45,7 @@ import { createRestoreChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
 import { createDiffChanges } from './core/diff'
 import { getChangeValidators, getAdaptersConfig } from './core/plan/change_validators'
+import { renameChecks, renameElement, updateStateElements } from './core/rename'
 
 export { cleanWorkspace } from './core/clean'
 
@@ -404,3 +406,29 @@ export const getLoginStatuses = async (
 }
 
 export const getSupportedServiceAdapterNames = (): string[] => Object.keys(adapterCreators)
+
+export const rename = async (
+  workspace: Workspace,
+  sourceElemId: ElemID,
+  targetElemId: ElemID
+): Promise<DetailedChange[]> => {
+  await renameChecks(workspace, sourceElemId, targetElemId)
+
+  const renameElementChanges = await renameElement(
+    await workspace.elements(),
+    sourceElemId,
+    targetElemId,
+    await workspace.state().getPathIndex()
+  )
+
+  if (await workspace.state().get(sourceElemId) !== undefined) {
+    const changes = await renameElement(
+      workspace.state(),
+      sourceElemId,
+      targetElemId,
+    )
+    await updateStateElements(workspace.state(), changes)
+  }
+
+  return renameElementChanges
+}

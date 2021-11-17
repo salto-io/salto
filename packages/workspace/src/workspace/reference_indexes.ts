@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, getChangeElement, isReferenceExpression, isRemovalChange, Element, isObjectType, isModificationChange, ModificationChange, toChange } from '@salto-io/adapter-api'
+import { Change, ElemID, getChangeElement, isReferenceExpression, Element, isModificationChange, toChange, isObjectTypeChange, isRemovalOrModificationChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -28,22 +28,37 @@ export const REFERENCE_INDEXES_VERSION = 1
 export const REFERENCE_INDEXES_KEY = 'reference_indexes'
 
 type ReferenceDetails = {
-  referenceBy: ElemID
-  reference: ElemID
+  referenceSource: ElemID
+  referenceTarget: ElemID
+}
+
+type ChangeReferences = {
+  removed: ReferenceDetails[]
+  added: ReferenceDetails[]
 }
 
 const getReferences = (element: Element): ReferenceDetails[] => {
   const references: ReferenceDetails[] = []
   walkOnElement({
     element,
-    func: ({ value, path: referenceBy }) => {
+    func: ({ value, path: referenceSource }) => {
       if (isReferenceExpression(value)) {
-        references.push({ referenceBy, reference: value.elemID })
+        references.push({ referenceSource, referenceTarget: value.elemID })
       }
       return WALK_NEXT_STEP.RECURSE
     },
   })
   return references
+}
+
+const getReferencesFromChange = (change: Change<Element>): ChangeReferences => {
+  const before = isRemovalOrModificationChange(change) ? getReferences(change.data.before) : []
+  const after = isAdditionOrModificationChange(change) ? getReferences(change.data.after) : []
+  const removedReferences = _.differenceBy(before, after, ref => `${ref.referenceTarget.getFullName()} - ${ref.referenceSource.getFullName()}`)
+  return {
+    removed: removedReferences,
+    added: after,
+  }
 }
 
 const updateIndex = (index: RemoteMap<ElemID[]>, id: string, values: ElemID[]): Promise<void> => (
@@ -52,23 +67,30 @@ const updateIndex = (index: RemoteMap<ElemID[]>, id: string, values: ElemID[]): 
     : index.delete(id)
 )
 
-const updateReferencesIndex = async (
+const updateReferenceTargetsIndex = async (
   changes: Change<Element>[],
   index: RemoteMap<ElemID[]>,
-  elementToReferences: Record<string, ReferenceDetails[]>
+  changeToReferences: Record<string, ChangeReferences>
 ): Promise<void> => {
   await Promise.all(changes.map(async change => {
     const element = getChangeElement(change)
+    const references = changeToReferences[getChangeElement(change).elemID.getFullName()].added
+    const baseIdToReferences = _(references)
+      .groupBy(reference => reference.referenceSource.createBaseID().parent.getFullName())
+      .mapValues(referencesGroup => referencesGroup.map(ref => ref.referenceTarget))
+      .value()
 
-    const references = elementToReferences[element.elemID.getFullName()]
-    const baseIdToReferences = !isRemovalChange(change) ? _(references)
-      .groupBy(reference => reference.referenceBy.createBaseID().parent.getFullName())
-      .mapValues(referencesGroup => referencesGroup.map(ref => ref.reference))
-      .value() : {}
+    if (isObjectTypeChange(change)) {
+      const type = getChangeElement(change)
 
-    if (isObjectType(element)) {
+      const allFields = isModificationChange(change)
+        ? {
+          ...change.data.before.fields,
+          ...type.fields,
+        }
+        : type.fields
       await Promise.all(
-        Object.values(element.fields)
+        Object.values(allFields)
           .map(async field => updateIndex(
             index,
             field.elemID.getFullName(),
@@ -79,98 +101,79 @@ const updateReferencesIndex = async (
     await updateIndex(
       index,
       element.elemID.getFullName(),
-      !isRemovalChange(change)
-        ? elementToReferences[element.elemID.getFullName()].map(ref => ref.reference)
-        : []
+      changeToReferences[element.elemID.getFullName()].added.map(ref => ref.referenceTarget),
     )
   }))
 }
 
-const updateIdOfReferenceByIndex = async (
+const updateIdOfReferenceSourcesIndex = async (
   id: string,
-  referencesGroup: ReferenceDetails[],
+  referenceSourcesGroup: ElemID[],
+  allChangedReferenceSources: Set<string>,
   index: RemoteMap<ElemID[]>,
-  elementToReferences: Record<string, ReferenceDetails[]>,
-  idToAction: Record<string, string>,
+  changeToReferences: Record<string, ChangeReferences>,
 ): Promise<void> => {
-  const oldReferencedBy = await index.get(id) ?? []
+  const oldReferenceSources = await index.get(id) ?? []
 
-  const referenceByGroup = new Set(
-    referencesGroup.map(ref => ref.referenceBy.createTopLevelParentID().parent.getFullName())
+  const unchangedReferenceSources = oldReferenceSources.filter(
+    elemId => !allChangedReferenceSources.has(elemId.createTopLevelParentID().parent.getFullName())
   )
 
-  const newReferencedBy = oldReferencedBy.filter(
-    elemId => !referenceByGroup.has(elemId.createTopLevelParentID().parent.getFullName())
-  )
+  const changedReferenceSources = referenceSourcesGroup
+    .flatMap(elemId => changeToReferences[elemId.getFullName()].added)
+    .filter(ref => ElemID.fromFullName(id).isParentOf(ref.referenceTarget)
+        || ElemID.fromFullName(id).isEqual(ref.referenceTarget))
+    .map(ref => ref.referenceSource)
 
-  newReferencedBy.push(
-    ...Array.from(referenceByGroup)
-      .flatMap(elemId => (idToAction[elemId] !== 'remove' ? elementToReferences[elemId] : []))
-      .filter(ref => ElemID.fromFullName(id).isParentOf(ref.reference)
-        || ElemID.fromFullName(id).isEqual(ref.reference))
-      .map(ref => ref.referenceBy)
-  )
-
-  await updateIndex(index, id, _.uniq(newReferencedBy))
+  await updateIndex(index, id, _.concat(unchangedReferenceSources, changedReferenceSources))
 }
 
-const getRemovedReferencesFromChange = (
-  change: ModificationChange<Element>,
-  elementToReferences: Record<string, ReferenceDetails[]>,
-): ReferenceDetails[] => {
-  const beforeReferences = getReferences(change.data.before)
-  const afterReferences = elementToReferences[getChangeElement(change).elemID.getFullName()]
-  return _.differenceBy(beforeReferences, afterReferences, ref => `${ref.reference.getFullName()} - ${ref.referenceBy.getFullName()}`)
-}
-
-const getRemovedReferences = (
-  changes: Change<Element>[],
-  elementToReferences: Record<string, ReferenceDetails[]>
-): ReferenceDetails[] => changes
-  .filter(isModificationChange)
-  .flatMap(change => getRemovedReferencesFromChange(change, elementToReferences))
-
-const updateReferencedByIndex = async (
-  changes: Change<Element>[],
+const updateReferenceSourcesIndex = async (
   index: RemoteMap<ElemID[]>,
-  elementToReferences: Record<string, ReferenceDetails[]>
+  changeToReferences: Record<string, ChangeReferences>
 ): Promise<void> => {
-  const idToAction = _(changes)
-    .keyBy(change => getChangeElement(change).elemID.getFullName())
-    .mapValues(change => change.action)
-    .value()
+  const removedReferences = Object.values(changeToReferences).flatMap(change => change.removed)
+  const addedReferences = Object.values(changeToReferences).flatMap(change => change.added)
 
-  const removedReferences = getRemovedReferences(changes, elementToReferences)
-
-  const referenceByChanges = _(elementToReferences)
-    .values()
+  const referenceSourcesChanges = _(addedReferences)
     .concat(removedReferences)
     .flatten()
-    .groupBy(({ reference }) => reference.createBaseID().parent.getFullName())
+    .groupBy(({ referenceTarget: reference }) => reference.createBaseID().parent.getFullName())
+    .mapValues(refs => refs.map(ref => ref.referenceSource))
     .value()
 
   // Add to a type its fields references
-  Object.entries(referenceByChanges).forEach(([id, referencesGroup]) => {
+  Object.entries(referenceSourcesChanges).forEach(([id, referencesGroup]) => {
     const elemId = ElemID.fromFullName(id)
     if (elemId.idType === 'field') {
       const topLevelId = elemId.createTopLevelParentID().parent.getFullName()
-      if (referenceByChanges[topLevelId] === undefined) {
-        referenceByChanges[topLevelId] = []
+      if (referenceSourcesChanges[topLevelId] === undefined) {
+        referenceSourcesChanges[topLevelId] = []
       }
-      referenceByChanges[topLevelId].push(...referencesGroup)
+      referenceSourcesChanges[topLevelId].push(...referencesGroup)
     }
   })
 
+  const changedReferenceSources = new Set(
+    Object.values(referenceSourcesChanges)
+      .flatMap(refs => refs.map(
+        ref => ref.createTopLevelParentID().parent.getFullName()
+      ))
+  )
+
   await Promise.all(
-    _(referenceByChanges)
+    _(referenceSourcesChanges)
       .entries()
-      .map(async ([id, referencesGroup]) => {
-        await updateIdOfReferenceByIndex(
+      .map(async ([id, referenceSourcesGroup]) => {
+        await updateIdOfReferenceSourcesIndex(
           id,
-          referencesGroup,
+          _.uniqBy(
+            referenceSourcesGroup.map(elemId => elemId.createTopLevelParentID().parent),
+            elemId => elemId.getFullName()
+          ),
+          changedReferenceSources,
           index,
-          elementToReferences,
-          idToAction,
+          changeToReferences,
         )
       })
       .value()
@@ -187,45 +190,43 @@ const getAllElementsChanges = async (
 
 export const updateReferenceIndexes = async (
   changes: Change<Element>[],
-  referencesIndex: RemoteMap<ElemID[]>,
-  referencedByIndex: RemoteMap<ElemID[]>,
-  mapsVersions: RemoteMap<number>,
+  referenceTargetsIndex: RemoteMap<ElemID[]>,
+  referenceSourcesIndex: RemoteMap<ElemID[]>,
+  mapVersions: RemoteMap<number>,
   elementsSource: ElementsSource,
   isCacheValid: boolean,
-): Promise<void> => {
-  log.debug('Starting to update reference indexes')
-
+): Promise<void> => log.time(async () => {
   let relevantChanges = changes
-  const isVersionMatch = await mapsVersions.get(REFERENCE_INDEXES_KEY) === REFERENCE_INDEXES_VERSION
+  const isVersionMatch = await mapVersions.get(REFERENCE_INDEXES_KEY) === REFERENCE_INDEXES_VERSION
   if (!isCacheValid || !isVersionMatch) {
     if (!isVersionMatch) {
+      relevantChanges = await getAllElementsChanges(changes, elementsSource)
       log.info('references indexes maps are out of date, re-indexing')
     }
     if (!isCacheValid) {
       log.info('cache is invalid, re-indexing references indexes')
     }
     await Promise.all([
-      referencesIndex.clear(),
-      referencedByIndex.clear(),
-      mapsVersions.set(REFERENCE_INDEXES_KEY, REFERENCE_INDEXES_VERSION),
+      referenceTargetsIndex.clear(),
+      referenceSourcesIndex.clear(),
+      mapVersions.set(REFERENCE_INDEXES_KEY, REFERENCE_INDEXES_VERSION),
     ])
-    relevantChanges = await getAllElementsChanges(changes, elementsSource)
   }
 
-  const elementToReferences = Object.fromEntries(relevantChanges
-    .map(getChangeElement)
-    .map(element => [element.elemID.getFullName(), getReferences(element)]))
+  const changeToReferences = Object.fromEntries(relevantChanges
+    .map(change => [
+      getChangeElement(change).elemID.getFullName(),
+      getReferencesFromChange(change),
+    ]))
 
-  await updateReferencesIndex(
+  await updateReferenceTargetsIndex(
     relevantChanges,
-    referencesIndex,
-    elementToReferences,
+    referenceTargetsIndex,
+    changeToReferences,
   )
 
-  await updateReferencedByIndex(
-    relevantChanges,
-    referencedByIndex,
-    elementToReferences,
+  await updateReferenceSourcesIndex(
+    referenceSourcesIndex,
+    changeToReferences,
   )
-  log.debug('Finished to update reference indexes')
-}
+}, 'updating references indexes')

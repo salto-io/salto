@@ -209,9 +209,9 @@ type SingleState = {
   merged: ElementsSource
   errors: RemoteMap<MergeError[]>
   validationErrors: RemoteMap<ValidationError[]>
-  referencedBy: RemoteMap<ElemID[]>
-  references: RemoteMap<ElemID[]>
-  mapsVersions: RemoteMap<number>
+  referenceSources: RemoteMap<ElemID[]>
+  referenceTargets: RemoteMap<ElemID[]>
+  mapVersions: RemoteMap<number>
 }
 type WorkspaceState = {
   states: Record<string, SingleState>
@@ -316,20 +316,20 @@ export const loadWorkspace = async (
             deserialize: async data => deserializeValidationErrors(data),
             persistent,
           }),
-          referencedBy: await remoteMapCreator<ElemID[]>({
-            namespace: getRemoteMapNamespace('referencedBy', envName),
+          referenceSources: await remoteMapCreator<ElemID[]>({
+            namespace: getRemoteMapNamespace('referenceSources', envName),
             serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
             persistent,
           }),
-          references: await remoteMapCreator<ElemID[]>({
-            namespace: getRemoteMapNamespace('references', envName),
+          referenceTargets: await remoteMapCreator<ElemID[]>({
+            namespace: getRemoteMapNamespace('referenceTargets', envName),
             serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
             persistent,
           }),
-          mapsVersions: await remoteMapCreator<number>({
-            namespace: getRemoteMapNamespace('mapsVersions', envName),
+          mapVersions: await remoteMapCreator<number>({
+            namespace: getRemoteMapNamespace('mapVersions', envName),
             serialize: val => val.toString(),
             deserialize: async data => parseInt(data, 10),
             persistent,
@@ -530,9 +530,9 @@ export const loadWorkspace = async (
 
       await updateReferenceIndexes(
         changes,
-        stateToBuild.states[envName].references,
-        stateToBuild.states[envName].referencedBy,
-        stateToBuild.states[envName].mapsVersions,
+        stateToBuild.states[envName].referenceTargets,
+        stateToBuild.states[envName].referenceSources,
+        stateToBuild.states[envName].mapVersions,
         stateToBuild.states[envName].merged,
         changeResult.cacheValid,
       )
@@ -899,20 +899,18 @@ export const loadWorkspace = async (
       (await getLoadedNaclFilesSource()).getElementReferencedFiles(currentEnv(), id)
     ),
     getElementOutgoingReferences: async id => {
-      if (!id.createBaseID().parent.isEqual(id)) {
-        log.warn(`getElementOutgoingReferences only support base ids, received ${id.getFullName()}`)
+      if (!id.isBaseLevel()) {
         throw new Error(`getElementOutgoingReferences only support base ids, received ${id.getFullName()}`)
       }
       return await (await getWorkspaceState()).states[currentEnv()]
-        .references.get(id.getFullName()) ?? []
+        .referenceTargets.get(id.getFullName()) ?? []
     },
     getElementIncomingReferences: async id => {
-      if (!id.createBaseID().parent.isEqual(id)) {
-        log.warn(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
+      if (!id.isBaseLevel()) {
         throw new Error(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
       }
       return await (await getWorkspaceState()).states[currentEnv()]
-        .referencedBy.get(id.getFullName()) ?? []
+        .referenceSources.get(id.getFullName()) ?? []
     },
     getElementNaclFiles: async id => (
       (await getLoadedNaclFilesSource()).getElementNaclFiles(currentEnv(), id)

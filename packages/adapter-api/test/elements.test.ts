@@ -333,6 +333,30 @@ describe('Test elements.ts', () => {
       })
     })
 
+    describe('isBaseLevel', () => {
+      it('should return true for type ID', () => {
+        expect(typeId.isBaseLevel()).toBeTruthy()
+      })
+      it('should return true for field ID', () => {
+        expect(fieldId.isBaseLevel()).toBeTruthy()
+      })
+      it('should return false for annotation ID', () => {
+        expect(annotationTypeId.isBaseLevel()).toBeFalsy()
+      })
+      it('should return true for instance ID', () => {
+        expect(typeInstId.isBaseLevel()).toBeTruthy()
+      })
+      it('should return false for value ID', () => {
+        expect(valueId.isBaseLevel()).toBeFalsy()
+      })
+      it('should return true for config type ID', () => {
+        expect(configTypeId.isBaseLevel()).toBeTruthy()
+      })
+      it('should return true for config instance ID', () => {
+        expect(configInstId.isBaseLevel()).toBeTruthy()
+      })
+    })
+
     describe('fromFullName', () => {
       it('should create elem ID from its full name', () => {
         [typeId, fieldId, annotationTypesId, annotationTypeId, typeInstId, valueId, configTypeId,

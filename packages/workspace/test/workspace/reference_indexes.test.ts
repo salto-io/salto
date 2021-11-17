@@ -40,7 +40,7 @@ const createMockRemoteMap = <T>(): MockInterface<RemoteMap<T>> => ({
 describe('updateReferenceIndexes', () => {
   let referencesIndex: MockInterface<RemoteMap<ElemID[]>>
   let referencedByIndex: MockInterface<RemoteMap<ElemID[]>>
-  let mapsVersions: MockInterface<RemoteMap<number>>
+  let mapVersions: MockInterface<RemoteMap<number>>
   let elementsSource: ElementsSource
   let object: ObjectType
   let instance: InstanceElement
@@ -51,8 +51,8 @@ describe('updateReferenceIndexes', () => {
     referencedByIndex = createMockRemoteMap<ElemID[]>()
     referencedByIndex.get.mockResolvedValue([])
 
-    mapsVersions = createMockRemoteMap<number>()
-    mapsVersions.get.mockResolvedValue(REFERENCE_INDEXES_VERSION)
+    mapVersions = createMockRemoteMap<number>()
+    mapVersions.get.mockResolvedValue(REFERENCE_INDEXES_VERSION)
 
     elementsSource = createInMemoryElementSource()
 
@@ -88,7 +88,7 @@ describe('updateReferenceIndexes', () => {
         changes,
         referencesIndex,
         referencedByIndex,
-        mapsVersions,
+        mapVersions,
         elementsSource,
         true
       )
@@ -186,7 +186,7 @@ describe('updateReferenceIndexes', () => {
         changes,
         referencesIndex,
         referencedByIndex,
-        mapsVersions,
+        mapVersions,
         elementsSource,
         true
       )
@@ -215,6 +215,46 @@ describe('updateReferenceIndexes', () => {
         'test.target2.field.someField',
       )
 
+      expect(referencedByIndex.delete).toHaveBeenCalledWith(
+        'test.target2',
+      )
+    })
+  })
+
+  describe('when a field was deleted', () => {
+    beforeEach(async () => {
+      const objectAfter = object.clone()
+      delete objectAfter.fields.someField
+
+      const changes = [toChange({ before: object, after: objectAfter })]
+
+      referencedByIndex.get.mockImplementation(async id => {
+        if (id === 'test.target2') {
+          return [
+            new ElemID('test', 'object', 'field', 'someField', 'fieldRef'),
+          ]
+        }
+
+        return undefined
+      })
+
+      await updateReferenceIndexes(
+        changes,
+        referencesIndex,
+        referencedByIndex,
+        mapVersions,
+        elementsSource,
+        true
+      )
+    })
+
+    it('should update references index correctly', () => {
+      expect(referencesIndex.delete).toHaveBeenCalledWith(
+        'test.object.field.someField',
+      )
+    })
+
+    it('should update referencedBy index correctly', () => {
       expect(referencedByIndex.delete).toHaveBeenCalledWith(
         'test.target2',
       )
@@ -252,7 +292,7 @@ describe('updateReferenceIndexes', () => {
         changes,
         referencesIndex,
         referencedByIndex,
-        mapsVersions,
+        mapVersions,
         elementsSource,
         true
       )
@@ -282,17 +322,17 @@ describe('updateReferenceIndexes', () => {
   describe('invalid indexes', () => {
     describe('When cache is invalid', () => {
       beforeEach(async () => {
-        await elementsSource.set(instance)
         await updateReferenceIndexes(
-          [],
+          [toChange({ after: instance })],
           referencesIndex,
           referencedByIndex,
-          mapsVersions,
+          mapVersions,
           elementsSource,
           false
         )
       })
       it('should update references index correctly', () => {
+        expect(referencesIndex.clear).toHaveBeenCalled()
         expect(referencesIndex.set).toHaveBeenCalledWith(
           'test.object.instance.instance',
           [
@@ -303,6 +343,7 @@ describe('updateReferenceIndexes', () => {
       })
 
       it('should update referencedBy index correctly', () => {
+        expect(referencedByIndex.clear).toHaveBeenCalled()
         expect(referencedByIndex.set).toHaveBeenCalledWith(
           'test.target2.instance.someInstance',
           [
@@ -322,17 +363,18 @@ describe('updateReferenceIndexes', () => {
     describe('When indexes are out of date', () => {
       beforeEach(async () => {
         await elementsSource.set(instance)
-        mapsVersions.get.mockResolvedValue(0)
+        mapVersions.get.mockResolvedValue(0)
         await updateReferenceIndexes(
           [],
           referencesIndex,
           referencedByIndex,
-          mapsVersions,
+          mapVersions,
           elementsSource,
           true
         )
       })
       it('should update references index correctly', () => {
+        expect(referencesIndex.clear).toHaveBeenCalled()
         expect(referencesIndex.set).toHaveBeenCalledWith(
           'test.object.instance.instance',
           [
@@ -343,6 +385,7 @@ describe('updateReferenceIndexes', () => {
       })
 
       it('should update referencedBy index correctly', () => {
+        expect(referencedByIndex.clear).toHaveBeenCalled()
         expect(referencedByIndex.set).toHaveBeenCalledWith(
           'test.target2.instance.someInstance',
           [

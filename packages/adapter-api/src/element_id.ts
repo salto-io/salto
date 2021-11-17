@@ -196,6 +196,10 @@ export class ElemID {
         && this.nameParts.length === 1)
   }
 
+  isBaseLevel(): boolean {
+    return (this.idType === 'field' && this.nameParts.length === 1) || this.isTopLevel()
+  }
+
   isEqual(other: ElemID): boolean {
     return this.getFullName() === other.getFullName()
   }

@@ -893,7 +893,13 @@ export const loadWorkspace = async (
         : currentEnv()
 
       return (await getLoadedNaclFilesSource())
-        .getElementIdsBySelectors(env, selectors, from.source, compacted)
+        .getElementIdsBySelectors(
+          env,
+          selectors,
+          (await getWorkspaceState()).states[env].referenceSources,
+          from.source,
+          compacted
+        )
     },
     getElementReferencedFiles: async id => (
       (await getLoadedNaclFilesSource()).getElementReferencedFiles(currentEnv(), id)

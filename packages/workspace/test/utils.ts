@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { Value, StaticFile, calculateStaticFileHash, ObjectType, isObjectType, TypeElement } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
+import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { Functions, FunctionImplementation, FunctionExpression } from '../src/parser/functions'
 import { StaticFilesSource, MissingStaticFile } from '../src/workspace/static_files/common'
 import { File } from '../src/workspace/dir_store'
@@ -167,3 +168,21 @@ export const getFieldsAndAnnoTypes = async (
   }).filter(isDefined)
     .toArray()
 }
+
+export const createMockRemoteMap = <T>(): MockInterface<RemoteMap<T>> => ({
+  delete: mockFunction<RemoteMap<T>['delete']>(),
+  get: mockFunction<RemoteMap<T>['get']>(),
+  getMany: mockFunction<RemoteMap<T>['getMany']>(),
+  has: mockFunction<RemoteMap<T>['has']>(),
+  set: mockFunction<RemoteMap<T>['set']>(),
+  setAll: mockFunction<RemoteMap<T>['setAll']>(),
+  deleteAll: mockFunction<RemoteMap<T>['deleteAll']>(),
+  entries: mockFunction<RemoteMap<T>['entries']>(),
+  keys: mockFunction<RemoteMap<T>['keys']>(),
+  values: mockFunction<RemoteMap<T>['values']>(),
+  flush: mockFunction<RemoteMap<T>['flush']>(),
+  revert: mockFunction<RemoteMap<T>['revert']>(),
+  clear: mockFunction<RemoteMap<T>['clear']>(),
+  close: mockFunction<RemoteMap<T>['close']>(),
+  isEmpty: mockFunction<RemoteMap<T>['isEmpty']>(),
+})

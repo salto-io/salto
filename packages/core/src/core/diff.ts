@@ -103,7 +103,7 @@ const getFilteredIds = async (
   elementSelectors: ElementSelector[],
   src: elementSource.ElementsSource
 ): Promise<ElemID[]> => (
-  awu(await selectElementIdsByTraversal(elementSelectors, src, true)).toArray()
+  awu(await selectElementIdsByTraversal(elementSelectors, src, undefined, true)).toArray()
 )
 
 export const createDiffChanges = async (

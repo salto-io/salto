@@ -14,21 +14,26 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ElemIDTypes, Value, ElemIDType } from '@salto-io/adapter-api'
+import { ElemID, ElemIDTypes, Value, ElemIDType, isObjectType } from '@salto-io/adapter-api'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
+import { RemoteMap } from './remote_map'
 
 const { asynciterable } = collections
 const { awu } = asynciterable
 
-export type ElementSelector = {
+type FlatElementSelector = {
   adapterSelector: RegExp
   typeNameSelector: RegExp
   idTypeSelector: ElemIDType
   nameSelectors?: RegExp[]
   caseInsensitive?: boolean
   origin: string
+}
+
+export type ElementSelector = FlatElementSelector & {
+  referencedBy?: FlatElementSelector
 }
 
 export type ElementIDToValue = {
@@ -59,6 +64,20 @@ const match = (elemId: ElemID, selector: ElementSelector, includeNested = false)
     includeNested
   )
 
+const matchWithReferenceBy = async (
+  elemId: ElemID,
+  selector: ElementSelector,
+  referencedByIndex?: RemoteMap<ElemID[]>,
+  includeNested = false
+): Promise<boolean> => {
+  const { referencedBy } = selector
+  return match(elemId, selector, includeNested)
+    && (referencedBy === undefined
+      || referencedByIndex === undefined
+      || (await referencedByIndex.get(elemId.getFullName()) ?? [])
+        .some(id => match(id, referencedBy, true)))
+}
+
 
 const createRegex = (selector: string, caseInSensitive: boolean): RegExp => new RegExp(
   `^(${selector.replace(/\*/g, '[^\\.]*')})$`, caseInSensitive ? 'i' : undefined
@@ -82,10 +101,11 @@ export const validateSelectorsMatches = (selectors: ElementSelector[],
 
 export const selectElementsBySelectors = (
   {
-    elementIds, selectors, includeNested = false,
+    elementIds, selectors, referencedByIndex, includeNested = false,
   }: {
     elementIds: AsyncIterable<ElemID>
     selectors: ElementSelector[]
+    referencedByIndex?: RemoteMap<ElemID[]>
     includeNested?: boolean
   }
 ): AsyncIterable<ElemID> => {
@@ -93,11 +113,12 @@ export const selectElementsBySelectors = (
   if (selectors.length === 0) {
     return elementIds
   }
-  return awu(elementIds).filter(obj => selectors.some(
-    selector => {
-      const result = match(
+  return awu(elementIds).filter(obj => awu(selectors).some(
+    async selector => {
+      const result = await matchWithReferenceBy(
         isElementContainer(obj) ? obj.elemID : obj as ElemID,
         selector,
+        referencedByIndex,
         includeNested
       )
       matches[selector.origin] = matches[selector.origin] || result
@@ -168,6 +189,7 @@ const createTopLevelSelector = (selector: ElementSelector): ElementSelector => {
       caseInsensitive: selector.caseInsensitive,
       origin: selector.origin.split(ElemID.NAMESPACE_SEPARATOR).slice(0,
         ElemID.NUM_ELEM_ID_NON_NAME_PARTS + 1).join(ElemID.NAMESPACE_SEPARATOR),
+      referencedBy: selector.referencedBy,
     }
   }
   const idType = isTopLevelSelector(selector) ? selector.idTypeSelector
@@ -191,14 +213,33 @@ const isElementPossiblyParentOfSearchedElement = (
 ): boolean =>
   selectors.some(selector => match(testId, createSameDepthSelector(selector, testId)))
 
+const isBaseIdSelector = (selector: ElementSelector): boolean =>
+  selector.idTypeSelector !== 'attr' && (selector.nameSelectors ?? []).length <= 1
+
+const validateSelector = (selector: ElementSelector, referencedByIndex?: RemoteMap<ElemID[]>):
+  void => {
+  if (selector.referencedBy !== undefined) {
+    if (!isBaseIdSelector(selector)) {
+      throw new Error(`Unsupported selector: referencedBy is only supported for selector of base ids (types, fields or instances), received: ${selector.origin}`)
+    }
+
+    if (referencedByIndex === undefined) {
+      throw new Error(`Received selector with referencedBy: ${selector.origin}, but did not get referencedByIndex`)
+    }
+  }
+}
+
 export const selectElementIdsByTraversal = async (
   selectors: ElementSelector[],
   source: ElementsSource,
+  referencedByIndex?: RemoteMap<ElemID[]>,
   compact = false,
 ): Promise<AsyncIterable<ElemID>> => {
   if (selectors.length === 0) {
     return awu([])
   }
+  selectors.forEach(selector => validateSelector(selector, referencedByIndex))
+
   const [topLevelSelectors, subElementSelectors] = _.partition(
     selectors,
     isTopLevelSelector,
@@ -211,6 +252,7 @@ export const selectElementIdsByTraversal = async (
     return awu(selectElementsBySelectors({
       elementIds: awu(await source.list()),
       selectors: topLevelSelectors,
+      referencedByIndex,
     })).toArray()
   }
 
@@ -221,10 +263,16 @@ export const selectElementIdsByTraversal = async (
   const possibleParentIDs = selectElementsBySelectors({
     elementIds: awu(await source.list()),
     selectors: possibleParentSelectors,
+    referencedByIndex,
   })
   const stillRelevantIDs = compact
     ? awu(possibleParentIDs).filter(id => !currentIds.has(id.getFullName()))
     : possibleParentIDs
+
+  const [subSelectorsWithReferencedBy, subSelectorsWithoutReferencedBy] = _.partition(
+    subElementSelectors,
+    selector => selector.referencedBy !== undefined
+  )
 
   const subElementIDs: ElemID[] = []
   const selectFromSubElements: WalkOnFunc = ({ path }) => {
@@ -232,7 +280,7 @@ export const selectElementIdsByTraversal = async (
       return WALK_NEXT_STEP.RECURSE
     }
 
-    if (subElementSelectors.some(selector => match(path, selector))) {
+    if (subSelectorsWithoutReferencedBy.some(selector => match(path, selector))) {
       subElementIDs.push(path)
       if (compact) {
         return WALK_NEXT_STEP.SKIP
@@ -250,8 +298,24 @@ export const selectElementIdsByTraversal = async (
   }
 
   await awu(stillRelevantIDs)
-    .forEach(async elemId => walkOnElement({
-      element: await source.get(elemId), func: selectFromSubElements,
-    }))
+    .forEach(async elemId => {
+      const element = await source.get(elemId)
+
+      walkOnElement({
+        element, func: selectFromSubElements,
+      })
+
+      if (isObjectType(element)) {
+        await awu(Object.values(element.fields)).forEach(async field => {
+          // Since we only support referenceBy on a base elemID, a selector
+          // that is not top level and that has referenceBy is necessarily a field selector
+          if (await awu(subSelectorsWithReferencedBy).some(
+            selector => matchWithReferenceBy(field.elemID, selector, referencedByIndex)
+          )) {
+            subElementIDs.push(field.elemID)
+          }
+        })
+      }
+    })
   return awu(topLevelIDs.concat(subElementIDs)).uniquify(id => id.getFullName())
 }

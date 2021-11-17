@@ -16,10 +16,13 @@
 import { ElemID, PrimitiveTypes, ObjectType, PrimitiveType, BuiltinTypes,
   ListType, MapType, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { MockInterface } from '@salto-io/test-utils'
 import { selectElementsBySelectors, createElementSelectors, createElementSelector,
   selectElementIdsByTraversal,
   ElementSelector } from '../src/workspace/element_selector'
 import { createInMemoryElementSource } from '../src/workspace/elements_source'
+import { RemoteMap } from '../src/workspace/remote_map'
+import { createMockRemoteMap } from './utils'
 
 const { awu } = collections.asynciterable
 
@@ -90,7 +93,10 @@ const mockInstance = new InstanceElement(
 )
 
 const selectElements = async ({
-  elements, selectors, caseInsensitive = false, includeNested = false,
+  elements,
+  selectors,
+  caseInsensitive = false,
+  includeNested = false,
 }: {
   elements: ElemID[]
   selectors: string[]
@@ -100,6 +106,7 @@ const selectElements = async ({
   (selectElementsBySelectors({
     elementIds: awu(elements),
     selectors: createElementSelectors(selectors, caseInsensitive).validSelectors,
+    referencedByIndex: undefined,
     includeNested,
   }))
 ).toArray()
@@ -355,6 +362,7 @@ describe('select elements recursively', () => {
     awu(await selectElementIdsByTraversal(
       selectors,
       createInMemoryElementSource(testElements),
+      {} as RemoteMap<ElemID[]>,
       compact,
     )).toArray()
   it('finds subElements one and two layers deep', async () => {
@@ -438,8 +446,170 @@ describe('select elements recursively', () => {
     const elementIds = await awu(await selectElementIdsByTraversal(
       selectors,
       createInMemoryElementSource([mockInstance, mockType]),
+      {} as RemoteMap<ElemID[]>,
       false,
     )).toArray()
     expect(elementIds).toEqual([ElemID.fromFullName('mockAdapter.test.field.strMap')])
+  })
+})
+
+describe('referencedBy', () => {
+  let referencedByIndex: MockInterface<RemoteMap<ElemID[]>>
+
+  const objectType = new ObjectType({
+    elemID: new ElemID('salesforce', 'type'),
+    fields: {
+      field1: { refType: BuiltinTypes.STRING },
+      field2: { refType: BuiltinTypes.STRING },
+    },
+  })
+
+  const anotherObjectType = new ObjectType({
+    elemID: new ElemID('salesforce', 'type2'),
+    fields: {
+      field1: { refType: BuiltinTypes.STRING },
+      field2: { refType: BuiltinTypes.STRING },
+    },
+  })
+
+  beforeEach(() => {
+    referencedByIndex = createMockRemoteMap<ElemID[]>()
+  })
+
+  it('should return referenced instances', async () => {
+    const [selector] = createElementSelectors(['salesforce.*.instance.*']).validSelectors
+    const [referencedBy] = createElementSelectors(['workato.*.instance.*']).validSelectors
+
+    selector.referencedBy = referencedBy
+
+    referencedByIndex.get.mockImplementation(async id => {
+      if (id === 'salesforce.type.instance.inst1') {
+        return [new ElemID('workato', 'type', 'instance', 'inst1', 'val')]
+      }
+      return undefined
+    })
+
+    const elements = [
+      new InstanceElement('inst1', objectType),
+      new InstanceElement('inst2', objectType),
+    ]
+
+    const selectedElements = await awu(await selectElementIdsByTraversal(
+      [selector],
+      createInMemoryElementSource(elements),
+      referencedByIndex,
+    )).toArray()
+
+    expect(selectedElements).toEqual([elements[0].elemID])
+  })
+
+  describe('when a field is referenced', () => {
+    beforeEach(() => {
+      referencedByIndex.get.mockImplementation(async id => {
+        if (id === 'salesforce.type.field.field1') {
+          return [new ElemID('workato', 'type', 'instance', 'inst1', 'val')]
+        }
+        if (id === 'salesforce.type') {
+          return [new ElemID('workato', 'type', 'instance', 'inst1', 'val')]
+        }
+        return undefined
+      })
+    })
+
+    it('should return the type of the referenced field', async () => {
+      const [selector] = createElementSelectors(['salesforce.*']).validSelectors
+      const [referencedBy] = createElementSelectors(['workato.*.instance.*']).validSelectors
+
+      selector.referencedBy = referencedBy
+
+      const elements = [
+        objectType,
+        anotherObjectType,
+      ]
+
+      const selectedElements = await awu(await selectElementIdsByTraversal(
+        [selector],
+        createInMemoryElementSource(elements),
+        referencedByIndex,
+      )).toArray()
+
+      expect(selectedElements).toEqual([objectType.elemID])
+    })
+
+    it('should return the referenced field', async () => {
+      const [selector] = createElementSelectors(['salesforce.*.field.*']).validSelectors
+      const [referencedBy] = createElementSelectors(['workato.*.instance.*']).validSelectors
+
+      selector.referencedBy = referencedBy
+
+      const elements = [
+        objectType,
+        anotherObjectType,
+      ]
+
+      const selectedElements = await awu(await selectElementIdsByTraversal(
+        [selector],
+        createInMemoryElementSource(elements),
+        referencedByIndex,
+      )).toArray()
+
+      expect(selectedElements).toEqual([objectType.fields.field1.elemID])
+    })
+  })
+
+  it('should return referenced types', async () => {
+    referencedByIndex.get.mockImplementation(async id => {
+      if (id === 'salesforce.type') {
+        return [new ElemID('workato', 'type', 'instance', 'inst1', 'val')]
+      }
+
+      if (id === 'salesforce.type2') {
+        return [new ElemID('workato', 'type', 'instance', 'inst1', 'val2')]
+      }
+      return undefined
+    })
+
+    const [selector] = createElementSelectors(['salesforce.*']).validSelectors
+    const [referencedBy] = createElementSelectors(['workato.*.instance.*.val']).validSelectors
+
+    selector.referencedBy = referencedBy
+
+    const elements = [
+      objectType,
+      anotherObjectType,
+    ]
+
+    const selectedElements = await awu(await selectElementIdsByTraversal(
+      [selector],
+      createInMemoryElementSource(elements),
+      referencedByIndex,
+    )).toArray()
+
+    expect(selectedElements).toEqual([objectType.elemID])
+  })
+
+  it('should throw an error if selector is not for base ids', async () => {
+    const [selector] = createElementSelectors(['salesforce.*.instance.*.aa']).validSelectors
+    const [referencedBy] = createElementSelectors(['workato.*.instance.*']).validSelectors
+
+    selector.referencedBy = referencedBy
+
+    await expect(selectElementIdsByTraversal(
+      [selector],
+      createInMemoryElementSource([]),
+      referencedByIndex,
+    )).rejects.toThrow()
+  })
+
+  it('should throw an error if referencedByIndex were not passed', async () => {
+    const [selector] = createElementSelectors(['salesforce.*.instance.*']).validSelectors
+    const [referencedBy] = createElementSelectors(['workato.*.instance.*']).validSelectors
+
+    selector.referencedBy = referencedBy
+
+    await expect(selectElementIdsByTraversal(
+      [selector],
+      createInMemoryElementSource([]),
+    )).rejects.toThrow()
   })
 })

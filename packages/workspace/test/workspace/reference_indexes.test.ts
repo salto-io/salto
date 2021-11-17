@@ -14,28 +14,11 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { mockFunction, MockInterface } from '@salto-io/test-utils'
+import { MockInterface } from '@salto-io/test-utils'
 import { REFERENCE_INDEXES_VERSION, updateReferenceIndexes } from '../../src/workspace/reference_indexes'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { RemoteMap } from '../../src/workspace/remote_map'
-
-const createMockRemoteMap = <T>(): MockInterface<RemoteMap<T>> => ({
-  delete: mockFunction<RemoteMap<T>['delete']>(),
-  get: mockFunction<RemoteMap<T>['get']>(),
-  getMany: mockFunction<RemoteMap<T>['getMany']>(),
-  has: mockFunction<RemoteMap<T>['has']>(),
-  set: mockFunction<RemoteMap<T>['set']>(),
-  setAll: mockFunction<RemoteMap<T>['setAll']>(),
-  deleteAll: mockFunction<RemoteMap<T>['deleteAll']>(),
-  entries: mockFunction<RemoteMap<T>['entries']>(),
-  keys: mockFunction<RemoteMap<T>['keys']>(),
-  values: mockFunction<RemoteMap<T>['values']>(),
-  flush: mockFunction<RemoteMap<T>['flush']>(),
-  revert: mockFunction<RemoteMap<T>['revert']>(),
-  clear: mockFunction<RemoteMap<T>['clear']>(),
-  close: mockFunction<RemoteMap<T>['close']>(),
-  isEmpty: mockFunction<RemoteMap<T>['isEmpty']>(),
-})
+import { createMockRemoteMap } from '../utils'
 
 describe('updateReferenceIndexes', () => {
   let referenceTargetsIndex: MockInterface<RemoteMap<ElemID[]>>

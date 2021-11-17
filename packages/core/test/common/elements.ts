@@ -102,7 +102,8 @@ export const getAllElements = (): AllElementsTypes => {
     { name: 'FirstEmployee',
       nicknames: ['you', 'hi'],
       office: { label: 'bla', name: 'foo', seats: { c1: 'n1', c2: 'n2' } },
-      friend: new ReferenceExpression(saltoEmployeeInstance.elemID) }
+      friend: new ReferenceExpression(saltoEmployeeInstance.elemID),
+      parent: new ReferenceExpression(saltoEmployee.elemID) }
   )
 
   const fieldElement = new Field(saltoAddr, 'country', BuiltinTypes.STRING)

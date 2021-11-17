@@ -1300,7 +1300,26 @@ Moving the specified elements to common.
 
   describe('rename command', () => {
     const commandName = 'rename'
+    describe('with errored workspace', () => {
+      let result: CliExitCode
+      beforeAll(async () => {
+        const workspace = mocks.mockWorkspace({})
+        workspace.errors.mockResolvedValue(mocks.mockErrors([{ severity: 'Error', message: 'some error' }]))
+        const cliArgs = mocks.mockCliArgs()
+        result = await renameAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
+          input: {
+            sourceElementId: 'salto.object',
+            targetElementId: 'salto.object.notId',
+          },
+          workspace,
+        })
+      })
 
+      it('should fail', async () => {
+        expect(result).toBe(CliExitCode.AppError)
+      })
+    })
     describe('with invalid element ids', () => {
       let result: CliExitCode
       let workspace: mocks.MockWorkspace
@@ -1322,6 +1341,46 @@ Moving the specified elements to common.
         expect(result).toEqual(CliExitCode.UserInputError)
         expect(output.stderr.content).toEqual('Cannot create ID salto.object.notId - Invalid ID type notId\n')
       })
+    })
+    describe('when RenameElementIdError is throwen', () => {
+      let result: CliExitCode
+      let workspace: mocks.MockWorkspace
+      let output: mocks.MockCliOutput
+      beforeAll(async () => {
+        const cliArgs = mocks.mockCliArgs()
+        output = cliArgs.output
+        workspace = mocks.mockWorkspace({})
+        result = await renameAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
+          input: {
+            sourceElementId: 'salto.object.field.name',
+            targetElementId: 'salto.object.field.rename',
+          },
+          workspace,
+        })
+      })
+      it('should fail', () => {
+        expect(result).toEqual(CliExitCode.UserInputError)
+        expect(output.stderr.content).toEqual('Source element should be top level\n')
+      })
+    })
+    describe('when other error throwen', () => {
+      let workspace: mocks.MockWorkspace
+      let cliArgs: mocks.MockCliArgs
+      beforeAll(async () => {
+        cliArgs = mocks.mockCliArgs()
+        workspace = mocks.mockWorkspace({})
+        workspace.getValue.mockRejectedValue(new Error('some error'))
+      })
+      it('should fail', async () =>
+        expect(renameAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
+          input: {
+            sourceElementId: 'salto.object.instance.name',
+            targetElementId: 'salto.object.instance.rename',
+          },
+          workspace,
+        })).rejects.toThrow('some error'))
     })
     describe('valid rename', () => {
       let output: mocks.MockCliOutput

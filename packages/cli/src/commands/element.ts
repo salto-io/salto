@@ -637,10 +637,16 @@ export const renameAction: WorkspaceCommandAction<ElementRenameArgs> = async ({
     await workspace.updateNaclFiles(changes)
     await workspace.flush()
 
-    outputLine(Prompts.RENAME_ELEMENT(sourceElemId.getFullName(), targetElemId.getFullName()),
-      output)
-    outputLine(Prompts.RENAME_ELEMENT_REFERENCES(sourceElemId.getFullName(),
-      changes.filter(isModificationChange).length), output)
+    outputLine(
+      Prompts.RENAME_ELEMENT(sourceElemId.getFullName(), targetElemId.getFullName()),
+      output
+    )
+
+    outputLine(
+      Prompts.RENAME_ELEMENT_REFERENCES(
+        sourceElemId.getFullName(), changes.filter(isModificationChange).length
+      ), output
+    )
   } catch (error) {
     if (error instanceof RenameElementIdError) {
       errorOutputLine(error.message, output)

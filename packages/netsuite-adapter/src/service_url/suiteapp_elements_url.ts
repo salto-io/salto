@@ -18,6 +18,7 @@ import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { isDataObjectType } from '../types'
 import { ServiceUrlSetter } from './types'
+import { ITEM_TYPE_TO_SEARCH_STRING } from '../data_elements/types'
 
 const { awu } = collections.asynciterable
 
@@ -37,7 +38,6 @@ const TYPE_TO_URL: Record<string, (id: string) => string> = {
   partner: id => `app/common/entity/partner.nl?id=${id}`,
   solution: id => `app/crm/support/kb/solution.nl?id=${id}`,
   item: id => `app/common/item/item.nl?id=${id}`,
-  itemGroup: id => `app/common/item/item.nl?id=${id}`,
 }
 
 const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
@@ -45,7 +45,7 @@ const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
     .filter(isInstanceElement)
     .filter(async element => isDataObjectType(await element.getType()))
     .forEach(element => {
-      const typeName = (element.elemID.typeName).slice(-4) === 'Item' ? 'item' : element.elemID.typeName
+      const typeName = element.elemID.typeName in ITEM_TYPE_TO_SEARCH_STRING ? 'item' : element.elemID.typeName
       const url = element.value.internalId !== undefined
         ? TYPE_TO_URL[typeName]?.(element.value.internalId)
         : undefined

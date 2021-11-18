@@ -25,7 +25,7 @@ import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault
 const log = logger(module)
 
 const ID_SEPARATOR = '__'
-const UNDEFINED_FIELDS_REPRESENTATION = ''
+const UNSUPPORTED_FIELD_REPRESENTATION = ''
 export const NAME_PARTS_SEPARATOR = '_'
 
 export type InstanceCreationParams = {
@@ -78,35 +78,42 @@ export const toBasicInstance = async ({
   })
 
   const {
-    fileNameFields,
+    idFields, fileNameFields,
   } = getConfigWithDefault(
     transformationConfigByType[type.elemID.name],
     transformationDefaultConfig,
   )
 
   const isValueTypeSupported = (value: any) => {
-    const valueType = typeof value
-    return valueType === 'string' || valueType === 'number'
+    return _.isString(value) || _.isNumber(value)
   }
 
-  let hasDefinedField = false
-  const nameParts = fileNameFields?.map(field => {
-        const value = _.get(entry, field)
-        let namePart = UNDEFINED_FIELDS_REPRESENTATION
-        if (value === undefined || value === null ) {
-          log.warn(`Ignoring undefined value for field "${field}"`)
-        } else if (!isValueTypeSupported(value)) {
-          log.warn(`Ignoring field "${field}" with unsupported type "${typeof value}". Supported types: String, Number`)
-        } else {
-          hasDefinedField = true
-          namePart = value
-        }
-        return namePart
-      }) ?? []
-  const fileName = hasDefinedField ? nameParts.map(String).join(NAME_PARTS_SEPARATOR) : defaultName
+  const hasDefinedField = (fields: string[] | undefined): boolean =>
+    fields !== undefined && fields.some(field => {
+      const value = _.get(entry, field)
+      return value !== undefined && value !== null && isValueTypeSupported(value)
+    })
 
+
+  const getNamePart = (field: string): string => {
+    const value = _.get(entry, field)
+    if (value === undefined || value === null) {
+      log.warn('Ignoring field "%s" with value "%s"', field, value)
+      return UNSUPPORTED_FIELD_REPRESENTATION
+    } else if (!isValueTypeSupported(value)) {
+      log.warn('Ignoring field "%s" with unsupported type "$%s". Supported types: String, Number', field, typeof value)
+      return UNSUPPORTED_FIELD_REPRESENTATION
+    }
+    return value
+  }
+
+  const fileNameParts = fileNameFields?.map(getNamePart) ?? []
+  const fileName = hasDefinedField(fileNameFields) ? fileNameParts.map(String).join(NAME_PARTS_SEPARATOR) : defaultName
+
+  const idParts = idFields?.map(getNamePart) ?? []
+  const elementIdName = hasDefinedField(idFields) ? idParts.map(String).join(NAME_PARTS_SEPARATOR) : defaultName
   const naclName = naclCase(
-    parent && nestName ? `${parent.elemID.name}${ID_SEPARATOR}${fileName}` : fileName
+      parent && nestName ? `${parent.elemID.name}${ID_SEPARATOR}${elementIdName}` : String(elementIdName)
   )
   const adapterName = type.elemID.adapter
 
@@ -124,7 +131,7 @@ export const toBasicInstance = async ({
       adapterName,
       RECORDS_PATH,
       pathNaclCase(type.elemID.name),
-      pathNaclCase(fileName),
+      fileName ? pathNaclCase(naclCase(fileName)) : pathNaclCase(naclName),
     ],
     parent ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID)] } : undefined,
   )

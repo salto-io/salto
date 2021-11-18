@@ -48,7 +48,7 @@ export type StripeConfig = {
 const DEFAULT_TYPE_CUSTOMIZATIONS: StripeApiConfig['types'] = {
   coupon: {
     transformation: {
-      idFields: ['name', 'id'],
+      idFields: ['name', 'duration', 'id'],
       fileNameFields: ['name'],
     },
   },
@@ -85,21 +85,10 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: StripeApiConfig['types'] = {
       ],
     },
   },
-  list: {
-    transformation: {
-      dataField: 'data'
-    },
-  },
   tax_rate: {
     transformation: {
       idFields: ['display_name', 'id'],
       fileNameFields: ['display_name'],
-    },
-  },
-  plan: {
-    transformation: {
-      idFields: ['nickname', 'id'],
-      fileNameFields: ['nickname', 'id'],
     },
   },
 }
@@ -110,7 +99,6 @@ export const DEFAULT_API_DEFINITIONS: StripeApiConfig = {
     typeNameOverrides: [
       { originalName: 'v1__country_specs', newName: 'country_specs' },
       { originalName: 'v1__coupons', newName: 'coupons' },
-      { originalName: 'v1__plans', newName: 'plans' },
       { originalName: 'v1__prices', newName: 'prices' },
       { originalName: 'v1__products', newName: 'products' },
       { originalName: 'v1__reporting__report_types', newName: 'reporting__report_types' },
@@ -127,7 +115,7 @@ export const DEFAULT_API_DEFINITIONS: StripeApiConfig = {
   types: DEFAULT_TYPE_CUSTOMIZATIONS,
 }
 
-export const ALL_SUPPORTED_TYPES = [
+const ALL_SUPPORTED_TYPES = [
   'country_specs',
   'coupons',
   'products',
@@ -135,6 +123,8 @@ export const ALL_SUPPORTED_TYPES = [
   'tax_rates',
   'webhook_endpoints',
 ]
+
+export const DEFAULT_INCLUDE_TYPES = ALL_SUPPORTED_TYPES
 
 export const configType = createMatchingObjectType<StripeConfig>({
   elemID: new ElemID(STRIPE),
@@ -147,7 +137,7 @@ export const configType = createMatchingObjectType<StripeConfig>({
       annotations: {
         _required: true,
         [CORE_ANNOTATIONS.DEFAULT]: {
-          includeTypes: ALL_SUPPORTED_TYPES,
+          includeTypes: DEFAULT_INCLUDE_TYPES,
         },
       },
     },

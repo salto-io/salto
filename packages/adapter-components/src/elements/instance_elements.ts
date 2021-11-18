@@ -84,9 +84,7 @@ export const toBasicInstance = async ({
     transformationDefaultConfig,
   )
 
-  const isValueTypeSupported = (value: any) => {
-    return _.isString(value) || _.isNumber(value)
-  }
+  const isValueTypeSupported = (value: unknown): boolean => _.isString(value) || _.isNumber(value)
 
   const hasDefinedField = (fields: string[] | undefined): boolean =>
     fields !== undefined && fields.some(field => {
@@ -100,7 +98,7 @@ export const toBasicInstance = async ({
     if (value === undefined || value === null) {
       log.warn('Ignoring field "%s" with value "%s"', field, value)
       return UNSUPPORTED_FIELD_REPRESENTATION
-    } else if (!isValueTypeSupported(value)) {
+    } if (!isValueTypeSupported(value)) {
       log.warn('Ignoring field "%s" with unsupported type "$%s". Supported types: String, Number', field, typeof value)
       return UNSUPPORTED_FIELD_REPRESENTATION
     }
@@ -108,12 +106,14 @@ export const toBasicInstance = async ({
   }
 
   const fileNameParts = fileNameFields?.map(getNamePart) ?? []
-  const fileName = hasDefinedField(fileNameFields) ? fileNameParts.map(String).join(NAME_PARTS_SEPARATOR) : defaultName
+  const fileName = hasDefinedField(fileNameFields)
+    ? fileNameParts.map(String).join(NAME_PARTS_SEPARATOR) : defaultName
 
   const idParts = idFields?.map(getNamePart) ?? []
-  const elementIdName = hasDefinedField(idFields) ? idParts.map(String).join(NAME_PARTS_SEPARATOR) : defaultName
+  const elementIdName = hasDefinedField(idFields)
+    ? idParts.map(String).join(NAME_PARTS_SEPARATOR) : defaultName
   const naclName = naclCase(
-      parent && nestName ? `${parent.elemID.name}${ID_SEPARATOR}${elementIdName}` : String(elementIdName)
+    parent && nestName ? `${parent.elemID.name}${ID_SEPARATOR}${elementIdName}` : String(elementIdName)
   )
   const adapterName = type.elemID.adapter
 

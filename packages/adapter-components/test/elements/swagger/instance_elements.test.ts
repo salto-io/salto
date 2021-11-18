@@ -67,47 +67,47 @@ describe('swagger_instance_elements', () => {
 
     beforeEach(() => {
       mockPaginator = mockFunction<Paginator>().mockImplementation(
-          async function *getAll(getParams, extractPageEntries) {
-            if (getParams.url === '/pet') {
-              yield [
-                {
-                  id: 'dog',
-                  name: 'def',
-                  owners: [
-                    { name: 'o1', bla: 'BLA', x: { nested: 'value' } },
-                  ],
-                  primaryOwner: { name: 'primary' },
-                  food1: { id: 'f1' },
-                  food2: { id: 'f2' },
-                },
-                {
-                  id: 'cat',
-                  name: 'def',
-                  owners: [
-                    { name: 'o2', bla: 'BLA', x: { nested: 'value' } },
-                  ],
-                  food1: { id: 'f1' },
-                  food2: { id: 'f2' },
-                },
-              ].flatMap(extractPageEntries)
-              yield [
-                {
-                  id: 'mouse',
-                  name: 'def',
-                  owners: [
-                    { name: 'o3', bla: 'BLA', x: { nested: 'value' } },
-                  ],
-                  food1: { id: 'f1' },
-                  food2: { id: 'f2' },
-                },
-              ].flatMap(extractPageEntries)
-            }
-            if (getParams.url === '/owner') {
-              yield [
-                { name: 'owner2' },
-              ].flatMap(extractPageEntries)
-            }
+        async function *getAll(getParams, extractPageEntries) {
+          if (getParams.url === '/pet') {
+            yield [
+              {
+                id: 'dog',
+                name: 'def',
+                owners: [
+                  { name: 'o1', bla: 'BLA', x: { nested: 'value' } },
+                ],
+                primaryOwner: { name: 'primary' },
+                food1: { id: 'f1' },
+                food2: { id: 'f2' },
+              },
+              {
+                id: 'cat',
+                name: 'def',
+                owners: [
+                  { name: 'o2', bla: 'BLA', x: { nested: 'value' } },
+                ],
+                food1: { id: 'f1' },
+                food2: { id: 'f2' },
+              },
+            ].flatMap(extractPageEntries)
+            yield [
+              {
+                id: 'mouse',
+                name: 'def',
+                owners: [
+                  { name: 'o3', bla: 'BLA', x: { nested: 'value' } },
+                ],
+                food1: { id: 'f1' },
+                food2: { id: 'f2' },
+              },
+            ].flatMap(extractPageEntries)
           }
+          if (getParams.url === '/owner') {
+            yield [
+              { name: 'owner2' },
+            ].flatMap(extractPageEntries)
+          }
+        }
       )
     })
 
@@ -1037,28 +1037,29 @@ describe('swagger_instance_elements', () => {
         fileNameFields?: string[]
         idFields?: string[]
       }
-      const getInstance = async ({fileNameFields = [], idFields = []}: GetInstanceParams): Promise<InstanceElement> => {
+      const getInstance = async ({ fileNameFields = [], idFields = [] }
+                                     : GetInstanceParams): Promise<InstanceElement> => {
         const paginator: Paginator = jest.fn((
-            async function *getAll(_, extractPageEntries) {
-                yield [
-                  {
-                    id: ID,
-                    name: NAME,
-                    number: NUMBER,
-                    list: [1, 2, 3],
-                  }
-                ].flatMap(extractPageEntries)
-            }))
+          async function *getAll(_, extractPageEntries) {
+            yield [
+              {
+                id: ID,
+                name: NAME,
+                number: NUMBER,
+                list: [1, 2, 3],
+              },
+            ].flatMap(extractPageEntries)
+          }))
         const customType = new ObjectType({
           elemID: new ElemID(ADAPTER_NAME, 'customType'),
           fields: {
             name: { refType: BuiltinTypes.STRING },
-            id: {refType: BuiltinTypes.STRING},
-            number: {refType: BuiltinTypes.NUMBER}
+            id: { refType: BuiltinTypes.STRING },
+            number: { refType: BuiltinTypes.NUMBER },
           },
         })
         return (await getAllInstances({
-          paginator: paginator,
+          paginator,
           apiConfig: {
             typeDefaults: {
               transformation: {
@@ -1066,21 +1067,21 @@ describe('swagger_instance_elements', () => {
               },
             },
             types: {
-              customType:{
+              customType: {
                 request: {
-                  url: '/someObject'
+                  url: '/someObject',
                 },
                 transformation: {
-                  fileNameFields: fileNameFields,
-                  idFields: idFields,
-                }
-              }
+                  fileNameFields,
+                  idFields,
+                },
+              },
             },
           },
           fetchConfig: {
             includeTypes: ['customType'],
           },
-          objectTypes: {customType: customType},
+          objectTypes: { customType },
           computeGetArgs: simpleGetArgs,
           nestedFieldFinder: returnFullEntry,
         }))[0]
@@ -1088,80 +1089,79 @@ describe('swagger_instance_elements', () => {
 
       describe('file name', async () => {
         test('generates name with non missing fields', async () => {
-          const instance = await getInstance({fileNameFields: ['id', 'name', 'number']})
-          const path = instance.path
+          const instance = await getInstance({ fileNameFields: ['id', 'name', 'number'] })
+          const { path } = instance
           const fileName = path?.[path.length - 1]
           expect(fileName).toEqual(`${ID}_${NAME}_${NUMBER}`)
         })
         test('generates name with missing field at the beginning', async () => {
-          const instance = await getInstance({fileNameFields: ['missing', 'name', 'number']})
-          const path = instance.path
+          const instance = await getInstance({ fileNameFields: ['missing', 'name', 'number'] })
+          const { path } = instance
           const fileName = path?.[path.length - 1]
           expect(fileName).toEqual(`_${NAME}_${NUMBER}`)
         })
         test('generates name with missing field at the middle', async () => {
-          const instance = await getInstance({fileNameFields: ['id', 'missing', 'number']})
-          const path = instance.path
+          const instance = await getInstance({ fileNameFields: ['id', 'missing', 'number'] })
+          const { path } = instance
           const fileName = path?.[path.length - 1]
           expect(fileName).toEqual(`${ID}__${NUMBER}`)
         })
         test('generates name with missing field at the end', async () => {
-          const instance = await getInstance({fileNameFields: ['id', 'name', 'missing']})
-          const path = instance.path
+          const instance = await getInstance({ fileNameFields: ['id', 'name', 'missing'] })
+          const { path } = instance
           const fileName = path?.[path.length - 1]
           expect(fileName).toEqual(`${ID}_${NAME}_`)
         })
         // TODO - Consider replacing default name cases with jest parametrized
         test('generates default name when no fields are provided', async () => {
-          const instance = await getInstance({fileNameFields: []})
-          const path = instance.path
+          const instance = await getInstance({ fileNameFields: [] })
+          const { path } = instance
           const fileName = path?.[path.length - 1]
           expect(fileName).toEqual('unnamed_0')
         })
         test('generates default name when all fields are filtered out', async () => {
-          const instance = await getInstance({fileNameFields: ['missing', 'anotherMissing']})
-          const path = instance.path
+          const instance = await getInstance({ fileNameFields: ['missing', 'anotherMissing'] })
+          const { path } = instance
           const fileName = path?.[path.length - 1]
           expect(fileName).toEqual('unnamed_0')
         })
         test('filters out unsupported field of type "list"', async () => {
-          const instance = await getInstance({fileNameFields: ['id', 'name', 'list', 'number']})
-          const path = instance.path
+          const instance = await getInstance({ fileNameFields: ['id', 'name', 'list', 'number'] })
+          const { path } = instance
           const fileName = path?.[path.length - 1]
           expect(fileName).toEqual(`${ID}_${NAME}__${NUMBER}`)
         })
       })
       describe('element id', async () => {
         test('generates id with non missing fields', async () => {
-          const instance = await getInstance({idFields: ['id', 'name', 'number']})
+          const instance = await getInstance({ idFields: ['id', 'name', 'number'] })
           expect(instance.elemID.name).toEqual(`${ID}_${NAME}_${NUMBER}`)
         })
         test('generates id with missing field at the beginning', async () => {
-          const instance = await getInstance({idFields: ['missing', 'name', 'number']})
+          const instance = await getInstance({ idFields: ['missing', 'name', 'number'] })
           expect(instance.elemID.name).toEqual(`_${NAME}_${NUMBER}`)
         })
         test('generates id with missing field at the middle', async () => {
-          const instance = await getInstance({idFields: ['id', 'missing', 'number']})
+          const instance = await getInstance({ idFields: ['id', 'missing', 'number'] })
           expect(instance.elemID.name).toEqual(`${ID}__${NUMBER}`)
         })
         test('generates id with missing field at the end', async () => {
-          const instance = await getInstance({idFields: ['id', 'name', 'missing']})
+          const instance = await getInstance({ idFields: ['id', 'name', 'missing'] })
           expect(instance.elemID.name).toEqual(`${ID}_${NAME}_`)
         })
         test('generates default name when no fields are provided', async () => {
-          const instance = await getInstance({idFields: []})
-          expect(instance.elemID.name).toEqual(`unnamed_0`)
+          const instance = await getInstance({ idFields: [] })
+          expect(instance.elemID.name).toEqual('unnamed_0')
         })
         test('generates default name when all fields are filtered out', async () => {
-          const instance = await getInstance({idFields: ['missing', 'anotherMissing']})
-          expect(instance.elemID.name).toEqual(`unnamed_0`)
+          const instance = await getInstance({ idFields: ['missing', 'anotherMissing'] })
+          expect(instance.elemID.name).toEqual('unnamed_0')
         })
         test('filters out unsupported field of type "list"', async () => {
-          const instance = await getInstance({idFields: ['id', 'name', 'list', 'number']})
+          const instance = await getInstance({ idFields: ['id', 'name', 'list', 'number'] })
           expect(instance.elemID.name).toEqual(`${ID}_${NAME}__${NUMBER}`)
         })
       })
     })
   })
 })
-

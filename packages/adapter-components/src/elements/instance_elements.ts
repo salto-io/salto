@@ -26,7 +26,7 @@ const log = logger(module)
 
 const ID_SEPARATOR = '__'
 const UNSUPPORTED_FIELD_REPRESENTATION = ''
-export const NAME_PARTS_SEPARATOR = '_'
+const NAME_PARTS_SEPARATOR = '_'
 
 export type InstanceCreationParams = {
   entry: Values

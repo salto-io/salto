@@ -335,25 +335,25 @@ describe('Test elements.ts', () => {
 
     describe('isBaseLevel', () => {
       it('should return true for type ID', () => {
-        expect(typeId.isBaseLevel()).toBeTruthy()
+        expect(typeId.isBaseId()).toBeTruthy()
       })
       it('should return true for field ID', () => {
-        expect(fieldId.isBaseLevel()).toBeTruthy()
+        expect(fieldId.isBaseId()).toBeTruthy()
       })
       it('should return false for annotation ID', () => {
-        expect(annotationTypeId.isBaseLevel()).toBeFalsy()
+        expect(annotationTypeId.isBaseId()).toBeFalsy()
       })
       it('should return true for instance ID', () => {
-        expect(typeInstId.isBaseLevel()).toBeTruthy()
+        expect(typeInstId.isBaseId()).toBeTruthy()
       })
       it('should return false for value ID', () => {
-        expect(valueId.isBaseLevel()).toBeFalsy()
+        expect(valueId.isBaseId()).toBeFalsy()
       })
       it('should return true for config type ID', () => {
-        expect(configTypeId.isBaseLevel()).toBeTruthy()
+        expect(configTypeId.isBaseId()).toBeTruthy()
       })
       it('should return true for config instance ID', () => {
-        expect(configInstId.isBaseLevel()).toBeTruthy()
+        expect(configInstId.isBaseId()).toBeTruthy()
       })
     })
 

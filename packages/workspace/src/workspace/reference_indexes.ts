@@ -34,7 +34,7 @@ type ReferenceDetails = {
 
 type ChangeReferences = {
   removed: ReferenceDetails[]
-  added: ReferenceDetails[]
+  currentAndNew: ReferenceDetails[]
 }
 
 const getReferences = (element: Element): ReferenceDetails[] => {
@@ -51,13 +51,18 @@ const getReferences = (element: Element): ReferenceDetails[] => {
   return references
 }
 
+const getReferenceDetailsIdentifier = (referenceDetails: ReferenceDetails): string =>
+  `${referenceDetails.referenceTarget.getFullName()} - ${referenceDetails.referenceSource.getFullName()}`
+
 const getReferencesFromChange = (change: Change<Element>): ChangeReferences => {
   const before = isRemovalOrModificationChange(change) ? getReferences(change.data.before) : []
   const after = isAdditionOrModificationChange(change) ? getReferences(change.data.after) : []
-  const removedReferences = _.differenceBy(before, after, ref => `${ref.referenceTarget.getFullName()} - ${ref.referenceSource.getFullName()}`)
+
+  const afterIds = new Set(after.map(getReferenceDetailsIdentifier))
+  const removedReferences = before.filter(ref => !afterIds.has(getReferenceDetailsIdentifier(ref)))
   return {
     removed: removedReferences,
-    added: after,
+    currentAndNew: after,
   }
 }
 
@@ -73,8 +78,8 @@ const updateReferenceTargetsIndex = async (
   changeToReferences: Record<string, ChangeReferences>
 ): Promise<void> => {
   await Promise.all(changes.map(async change => {
-    const element = getChangeElement(change)
-    const references = changeToReferences[getChangeElement(change).elemID.getFullName()].added
+    const references = changeToReferences[getChangeElement(change).elemID.getFullName()]
+      .currentAndNew
     const baseIdToReferences = _(references)
       .groupBy(reference => reference.referenceSource.createBaseID().parent.getFullName())
       .mapValues(referencesGroup => referencesGroup.map(ref => ref.referenceTarget))
@@ -98,10 +103,12 @@ const updateReferenceTargetsIndex = async (
           ))
       )
     }
+    const elemId = getChangeElement(change).elemID.getFullName()
     await updateIndex(
       index,
-      element.elemID.getFullName(),
-      changeToReferences[element.elemID.getFullName()].added.map(ref => ref.referenceTarget),
+      elemId,
+      changeToReferences[elemId].currentAndNew
+        .map(ref => ref.referenceTarget),
     )
   }))
 }
@@ -119,51 +126,50 @@ const updateIdOfReferenceSourcesIndex = async (
     elemId => !allChangedReferenceSources.has(elemId.createTopLevelParentID().parent.getFullName())
   )
 
+  const currentId = ElemID.fromFullName(id)
   const changedReferenceSources = referenceSourcesGroup
-    .flatMap(elemId => changeToReferences[elemId.getFullName()].added)
-    .filter(ref => ElemID.fromFullName(id).isParentOf(ref.referenceTarget)
-        || ElemID.fromFullName(id).isEqual(ref.referenceTarget))
+    .flatMap(elemId => changeToReferences[elemId.getFullName()].currentAndNew)
+    .filter(ref => currentId.isParentOf(ref.referenceTarget)
+        || currentId.isEqual(ref.referenceTarget))
     .map(ref => ref.referenceSource)
 
   await updateIndex(index, id, _.concat(unchangedReferenceSources, changedReferenceSources))
 }
 
 const updateReferenceSourcesIndex = async (
+  changes: Change<Element>[],
   index: RemoteMap<ElemID[]>,
   changeToReferences: Record<string, ChangeReferences>
 ): Promise<void> => {
   const removedReferences = Object.values(changeToReferences).flatMap(change => change.removed)
-  const addedReferences = Object.values(changeToReferences).flatMap(change => change.added)
+  const addedReferences = Object.values(changeToReferences).flatMap(change => change.currentAndNew)
 
   const referenceSourcesChanges = _(addedReferences)
     .concat(removedReferences)
-    .flatten()
-    .groupBy(({ referenceTarget: reference }) => reference.createBaseID().parent.getFullName())
+    .groupBy(({ referenceTarget }) => referenceTarget.createBaseID().parent.getFullName())
     .mapValues(refs => refs.map(ref => ref.referenceSource))
     .value()
 
   // Add to a type its fields references
-  Object.entries(referenceSourcesChanges).forEach(([id, referencesGroup]) => {
-    const elemId = ElemID.fromFullName(id)
+  Object.entries(referenceSourcesChanges).forEach(([targetId, sourceIds]) => {
+    const elemId = ElemID.fromFullName(targetId)
     if (elemId.idType === 'field') {
       const topLevelId = elemId.createTopLevelParentID().parent.getFullName()
       if (referenceSourcesChanges[topLevelId] === undefined) {
         referenceSourcesChanges[topLevelId] = []
       }
-      referenceSourcesChanges[topLevelId].push(...referencesGroup)
+      referenceSourcesChanges[topLevelId].push(...sourceIds)
     }
   })
 
   const changedReferenceSources = new Set(
-    Object.values(referenceSourcesChanges)
-      .flatMap(refs => refs.map(
-        ref => ref.createTopLevelParentID().parent.getFullName()
-      ))
+    changes
+      .map(getChangeElement)
+      .map(elem => elem.elemID.getFullName())
   )
 
   await Promise.all(
-    _(referenceSourcesChanges)
-      .entries()
+    Object.entries(referenceSourcesChanges)
       .map(async ([id, referenceSourcesGroup]) => {
         await updateIdOfReferenceSourcesIndex(
           id,
@@ -176,7 +182,6 @@ const updateReferenceSourcesIndex = async (
           changeToReferences,
         )
       })
-      .value()
   )
 }
 
@@ -226,6 +231,7 @@ export const updateReferenceIndexes = async (
   )
 
   await updateReferenceSourcesIndex(
+    relevantChanges,
     referenceSourcesIndex,
     changeToReferences,
   )

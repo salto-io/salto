@@ -38,18 +38,18 @@ const createMockRemoteMap = <T>(): MockInterface<RemoteMap<T>> => ({
 })
 
 describe('updateReferenceIndexes', () => {
-  let referencesIndex: MockInterface<RemoteMap<ElemID[]>>
-  let referencedByIndex: MockInterface<RemoteMap<ElemID[]>>
+  let referenceTargetsIndex: MockInterface<RemoteMap<ElemID[]>>
+  let referenceSourcesIndex: MockInterface<RemoteMap<ElemID[]>>
   let mapVersions: MockInterface<RemoteMap<number>>
   let elementsSource: ElementsSource
   let object: ObjectType
   let instance: InstanceElement
 
   beforeEach(() => {
-    referencesIndex = createMockRemoteMap<ElemID[]>()
+    referenceTargetsIndex = createMockRemoteMap<ElemID[]>()
 
-    referencedByIndex = createMockRemoteMap<ElemID[]>()
-    referencedByIndex.get.mockResolvedValue([])
+    referenceSourcesIndex = createMockRemoteMap<ElemID[]>()
+    referenceSourcesIndex.get.mockResolvedValue([])
 
     mapVersions = createMockRemoteMap<number>()
     mapVersions.get.mockResolvedValue(REFERENCE_INDEXES_VERSION)
@@ -69,6 +69,10 @@ describe('updateReferenceIndexes', () => {
           refType: BuiltinTypes.STRING,
           annotations: { fieldRef: new ReferenceExpression(new ElemID('test', 'target2')) },
         },
+        fieldWithRefToType: {
+          refType: BuiltinTypes.STRING,
+          annotations: { fieldRef: new ReferenceExpression(new ElemID('test', 'object')) },
+        },
       },
     })
 
@@ -86,15 +90,15 @@ describe('updateReferenceIndexes', () => {
       const changes = [toChange({ after: instance }), toChange({ after: object })]
       await updateReferenceIndexes(
         changes,
-        referencesIndex,
-        referencedByIndex,
+        referenceTargetsIndex,
+        referenceSourcesIndex,
         mapVersions,
         elementsSource,
         true
       )
     })
-    it('should update references index correctly', () => {
-      expect(referencesIndex.set).toHaveBeenCalledWith(
+    it('should add the new references to the referenceTargets index', () => {
+      expect(referenceTargetsIndex.set).toHaveBeenCalledWith(
         'test.object.instance.instance',
         [
           new ElemID('test', 'target2', 'field', 'someField', 'value'),
@@ -102,25 +106,33 @@ describe('updateReferenceIndexes', () => {
         ]
       )
 
-      expect(referencesIndex.set).toHaveBeenCalledWith(
+      expect(referenceTargetsIndex.set).toHaveBeenCalledWith(
         'test.object',
         [
           new ElemID('test', 'target1'),
           new ElemID('test', 'target1', 'attr', 'someAttr'),
           new ElemID('test', 'target2'),
+          new ElemID('test', 'object'),
         ]
       )
 
-      expect(referencesIndex.set).toHaveBeenCalledWith(
+      expect(referenceTargetsIndex.set).toHaveBeenCalledWith(
         'test.object.field.someField',
         [
           new ElemID('test', 'target2'),
         ]
       )
+
+      expect(referenceTargetsIndex.set).toHaveBeenCalledWith(
+        'test.object.field.fieldWithRefToType',
+        [
+          new ElemID('test', 'object'),
+        ]
+      )
     })
 
-    it('should update referencedBy index correctly', () => {
-      expect(referencedByIndex.set).toHaveBeenCalledWith(
+    it('should add the new references to the referenceSources index', () => {
+      expect(referenceSourcesIndex.set).toHaveBeenCalledWith(
         'test.target1',
         [
           new ElemID('test', 'object', 'attr', 'typeRef'),
@@ -128,7 +140,7 @@ describe('updateReferenceIndexes', () => {
         ]
       )
 
-      expect(referencedByIndex.set).toHaveBeenCalledWith(
+      expect(referenceSourcesIndex.set).toHaveBeenCalledWith(
         'test.target2',
         [
           new ElemID('test', 'object', 'field', 'someField', 'fieldRef'),
@@ -136,17 +148,24 @@ describe('updateReferenceIndexes', () => {
         ]
       )
 
-      expect(referencedByIndex.set).toHaveBeenCalledWith(
+      expect(referenceSourcesIndex.set).toHaveBeenCalledWith(
         'test.target2.instance.someInstance',
         [
           new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
         ]
       )
 
-      expect(referencedByIndex.set).toHaveBeenCalledWith(
+      expect(referenceSourcesIndex.set).toHaveBeenCalledWith(
         'test.target2.field.someField',
         [
           new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
+        ]
+      )
+
+      expect(referenceSourcesIndex.set).toHaveBeenCalledWith(
+        'test.object',
+        [
+          new ElemID('test', 'object', 'field', 'fieldWithRefToType', 'fieldRef'),
         ]
       )
     })
@@ -158,7 +177,7 @@ describe('updateReferenceIndexes', () => {
       delete instanceAfter.annotations.someAnnotation
       instanceAfter.annotations.someAnnotation2 = new ReferenceExpression(new ElemID('test', 'target2', 'instance', 'someInstance', 'value'))
       const changes = [toChange({ before: instance, after: instanceAfter })]
-      referencesIndex.get.mockImplementation(async id => (
+      referenceTargetsIndex.get.mockImplementation(async id => (
         instanceAfter.elemID.getFullName() === id
           ? [
             new ElemID('test', 'target2', 'instance', 'someInstance'),
@@ -167,7 +186,7 @@ describe('updateReferenceIndexes', () => {
           : undefined
       ))
 
-      referencedByIndex.get.mockImplementation(async id => {
+      referenceSourcesIndex.get.mockImplementation(async id => {
         if (id === 'test.target2.field.someField') {
           return [
             new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
@@ -184,16 +203,16 @@ describe('updateReferenceIndexes', () => {
 
       await updateReferenceIndexes(
         changes,
-        referencesIndex,
-        referencedByIndex,
+        referenceTargetsIndex,
+        referenceSourcesIndex,
         mapVersions,
         elementsSource,
         true
       )
     })
 
-    it('should update references index correctly', () => {
-      expect(referencesIndex.set).toHaveBeenCalledWith(
+    it('old values should be removed and new values should be added from referenceTargets index', () => {
+      expect(referenceTargetsIndex.set).toHaveBeenCalledWith(
         'test.object.instance.instance',
         [
           new ElemID('test', 'target2', 'instance', 'someInstance', 'value'),
@@ -202,20 +221,22 @@ describe('updateReferenceIndexes', () => {
       )
     })
 
-    it('should update referencedBy index correctly', () => {
-      expect(referencedByIndex.set).toHaveBeenCalledWith(
+    it('should add the new references to referenceSources index', () => {
+      expect(referenceSourcesIndex.set).toHaveBeenCalledWith(
         'test.target2.instance.someInstance',
         [
           new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation2'),
           new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
         ]
       )
+    })
 
-      expect(referencedByIndex.delete).toHaveBeenCalledWith(
+    it('should remove old references from referenceSources index', () => {
+      expect(referenceSourcesIndex.delete).toHaveBeenCalledWith(
         'test.target2.field.someField',
       )
 
-      expect(referencedByIndex.delete).toHaveBeenCalledWith(
+      expect(referenceSourcesIndex.delete).toHaveBeenCalledWith(
         'test.target2',
       )
     })
@@ -228,7 +249,7 @@ describe('updateReferenceIndexes', () => {
 
       const changes = [toChange({ before: object, after: objectAfter })]
 
-      referencedByIndex.get.mockImplementation(async id => {
+      referenceSourcesIndex.get.mockImplementation(async id => {
         if (id === 'test.target2') {
           return [
             new ElemID('test', 'object', 'field', 'someField', 'fieldRef'),
@@ -240,22 +261,22 @@ describe('updateReferenceIndexes', () => {
 
       await updateReferenceIndexes(
         changes,
-        referencesIndex,
-        referencedByIndex,
+        referenceTargetsIndex,
+        referenceSourcesIndex,
         mapVersions,
         elementsSource,
         true
       )
     })
 
-    it('should update references index correctly', () => {
-      expect(referencesIndex.delete).toHaveBeenCalledWith(
+    it('should remove the references from the referenceTargets index', () => {
+      expect(referenceTargetsIndex.delete).toHaveBeenCalledWith(
         'test.object.field.someField',
       )
     })
 
-    it('should update referencedBy index correctly', () => {
-      expect(referencedByIndex.delete).toHaveBeenCalledWith(
+    it('should remove the references from the referenceSources index', () => {
+      expect(referenceSourcesIndex.delete).toHaveBeenCalledWith(
         'test.target2',
       )
     })
@@ -264,7 +285,7 @@ describe('updateReferenceIndexes', () => {
   describe('when elements were removed', () => {
     beforeEach(async () => {
       const changes = [toChange({ before: instance })]
-      referencesIndex.get.mockImplementation(async id => (
+      referenceTargetsIndex.get.mockImplementation(async id => (
         instance.elemID.getFullName() === id
           ? [
             new ElemID('test', 'target2', 'instance', 'someInstance'),
@@ -273,7 +294,7 @@ describe('updateReferenceIndexes', () => {
           : undefined
       ))
 
-      referencedByIndex.get.mockImplementation(async id => {
+      referenceSourcesIndex.get.mockImplementation(async id => {
         if (id === 'test.target2.field.someField') {
           return [
             new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
@@ -290,30 +311,30 @@ describe('updateReferenceIndexes', () => {
 
       await updateReferenceIndexes(
         changes,
-        referencesIndex,
-        referencedByIndex,
+        referenceTargetsIndex,
+        referenceSourcesIndex,
         mapVersions,
         elementsSource,
         true
       )
     })
 
-    it('should update references index correctly', () => {
-      expect(referencesIndex.delete).toHaveBeenCalledWith(
+    it('should remove the references from the referenceTargets index', () => {
+      expect(referenceTargetsIndex.delete).toHaveBeenCalledWith(
         'test.object.instance.instance',
       )
     })
 
-    it('should update referencedBy index correctly', () => {
-      expect(referencedByIndex.delete).toHaveBeenCalledWith(
+    it('should remove the references from the referenceSources index', () => {
+      expect(referenceSourcesIndex.delete).toHaveBeenCalledWith(
         'test.target2.instance.someInstance',
       )
 
-      expect(referencedByIndex.delete).toHaveBeenCalledWith(
+      expect(referenceSourcesIndex.delete).toHaveBeenCalledWith(
         'test.target2.field.someField',
       )
 
-      expect(referencedByIndex.delete).toHaveBeenCalledWith(
+      expect(referenceSourcesIndex.delete).toHaveBeenCalledWith(
         'test.target2',
       )
     })
@@ -324,16 +345,16 @@ describe('updateReferenceIndexes', () => {
       beforeEach(async () => {
         await updateReferenceIndexes(
           [toChange({ after: instance })],
-          referencesIndex,
-          referencedByIndex,
+          referenceTargetsIndex,
+          referenceSourcesIndex,
           mapVersions,
           elementsSource,
           false
         )
       })
-      it('should update references index correctly', () => {
-        expect(referencesIndex.clear).toHaveBeenCalled()
-        expect(referencesIndex.set).toHaveBeenCalledWith(
+      it('should update referenceTargets index using the element source', () => {
+        expect(referenceTargetsIndex.clear).toHaveBeenCalled()
+        expect(referenceTargetsIndex.set).toHaveBeenCalledWith(
           'test.object.instance.instance',
           [
             new ElemID('test', 'target2', 'field', 'someField', 'value'),
@@ -342,16 +363,16 @@ describe('updateReferenceIndexes', () => {
         )
       })
 
-      it('should update referencedBy index correctly', () => {
-        expect(referencedByIndex.clear).toHaveBeenCalled()
-        expect(referencedByIndex.set).toHaveBeenCalledWith(
+      it('should update referenceSources index using the element source', () => {
+        expect(referenceSourcesIndex.clear).toHaveBeenCalled()
+        expect(referenceSourcesIndex.set).toHaveBeenCalledWith(
           'test.target2.instance.someInstance',
           [
             new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
           ]
         )
 
-        expect(referencedByIndex.set).toHaveBeenCalledWith(
+        expect(referenceSourcesIndex.set).toHaveBeenCalledWith(
           'test.target2.field.someField',
           [
             new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),
@@ -366,16 +387,16 @@ describe('updateReferenceIndexes', () => {
         mapVersions.get.mockResolvedValue(0)
         await updateReferenceIndexes(
           [],
-          referencesIndex,
-          referencedByIndex,
+          referenceTargetsIndex,
+          referenceSourcesIndex,
           mapVersions,
           elementsSource,
           true
         )
       })
-      it('should update references index correctly', () => {
-        expect(referencesIndex.clear).toHaveBeenCalled()
-        expect(referencesIndex.set).toHaveBeenCalledWith(
+      it('should update referenceTargets index using the element source', () => {
+        expect(referenceTargetsIndex.clear).toHaveBeenCalled()
+        expect(referenceTargetsIndex.set).toHaveBeenCalledWith(
           'test.object.instance.instance',
           [
             new ElemID('test', 'target2', 'field', 'someField', 'value'),
@@ -384,16 +405,16 @@ describe('updateReferenceIndexes', () => {
         )
       })
 
-      it('should update referencedBy index correctly', () => {
-        expect(referencedByIndex.clear).toHaveBeenCalled()
-        expect(referencedByIndex.set).toHaveBeenCalledWith(
+      it('should update referenceSources index using the element source', () => {
+        expect(referenceSourcesIndex.clear).toHaveBeenCalled()
+        expect(referenceSourcesIndex.set).toHaveBeenCalledWith(
           'test.target2.instance.someInstance',
           [
             new ElemID('test', 'object', 'instance', 'instance', 'someValue'),
           ]
         )
 
-        expect(referencedByIndex.set).toHaveBeenCalledWith(
+        expect(referenceSourcesIndex.set).toHaveBeenCalledWith(
           'test.target2.field.someField',
           [
             new ElemID('test', 'object', 'instance', 'instance', 'someAnnotation'),

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, BuiltinTypes, ElemID, ObjectType, InstanceElement, PrimitiveType, ListType, MapType, ReferenceExpression, Field } from '@salto-io/adapter-api'
+import { setPath } from '@salto-io/adapter-utils'
 
 type AllElementsTypes = [PrimitiveType, ObjectType, ObjectType,
     ObjectType, InstanceElement, ListType, MapType, InstanceElement, Field]
@@ -94,6 +95,11 @@ export const getAllElements = (): AllElementsTypes => {
     'instance',
     saltoEmployee,
     { name: 'FirstEmployee', nicknames: ['you', 'hi'], office: { label: 'bla', name: 'foo', seats: { c1: 'n1', c2: 'n2' } } }
+  )
+  setPath(
+    saltoEmployeeInstance,
+    saltoEmployeeInstance.elemID.createNestedID('friend'),
+    new ReferenceExpression(saltoEmployeeInstance.elemID)
   )
 
   const anotherSaltoEmployeeInstance = new InstanceElement(

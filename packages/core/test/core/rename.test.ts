@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DetailedChange, ElemID, InstanceElement, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { DetailedChange, ElemID, getChangeElement, InstanceElement, isAdditionChange, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { resolvePath } from '@salto-io/adapter-utils'
 import * as workspace from '@salto-io/workspace'
 import * as rename from '../../src/core/rename'
@@ -93,10 +93,11 @@ describe('rename.ts', () => {
   describe('renameElement', () => {
     let expectedChanges: DetailedChange[]
     let changes: DetailedChange[]
+    let targetElement: InstanceElement
     beforeAll(async () => {
       const sourceElement = await ws.getValue(sourceElemId)
 
-      const targetElement = new InstanceElement(
+      targetElement = new InstanceElement(
         'renamed',
         sourceElement.refType,
         sourceElement.value,
@@ -122,6 +123,12 @@ describe('rename.ts', () => {
     })
     it('should return changes', () => {
       expect(changes).toEqual(expectedChanges)
+    })
+    it('should rename references in the renamed element', () => {
+      const addChange = changes.find(isAdditionChange)
+      expect(addChange).toBeDefined()
+      expect(getChangeElement(addChange as DetailedChange).value.friend)
+        .toEqual(new ReferenceExpression(targetElement.elemID))
     })
     it('should update pathIndex', async () => {
       const topLevelPaths = [['salto', 'records', 'instance', 'main'],

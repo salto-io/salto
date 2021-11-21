@@ -18,7 +18,7 @@ import { ElemID, Element, isElement, InstanceElement, DetailedChange,
   isReferenceExpression, ReferenceExpression, getChangeElement, isRemovalOrModificationChange,
   isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
-import { applyDetailedChanges, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { applyDetailedChanges, setPath, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { ElementsSource, getElementsPathHints, PathIndex, splitElementByPath, State, Workspace } from '@salto-io/workspace'
 
 const { awu } = collections.asynciterable
@@ -72,6 +72,23 @@ export const renameChecks = async (
   }
 }
 
+const getReferences = (
+  element: Element,
+  referredElemId: ElemID
+): { path: ElemID; value: ReferenceExpression }[] => {
+  const references: { path: ElemID; value: ReferenceExpression }[] = []
+  const func: WalkOnFunc = ({ path, value }) => {
+    if (isReferenceExpression(value)
+    && (referredElemId.isEqual(value.elemID) || referredElemId.isParentOf(value.elemID))) {
+      references.push({ path, value })
+      return WALK_NEXT_STEP.SKIP
+    }
+    return WALK_NEXT_STEP.RECURSE
+  }
+  walkOnElement({ element, func })
+  return references
+}
+
 const getRenameElementChanges = (
   sourceElemId: ElemID,
   targetElemId: ElemID,
@@ -84,6 +101,19 @@ const getRenameElementChanges = (
       before: sourceElements[0],
     },
   }
+
+  // updating references inside the renamed element
+  sourceElements.forEach(element => {
+    const references = getReferences(element, sourceElemId)
+    references.forEach(reference => {
+      const updatedReference = new ReferenceExpression(
+        targetElemId.createNestedID(...reference.value.elemID.createTopLevelParentID().path),
+        reference.value.value,
+        reference.value.topLevelParent
+      )
+      setPath(element, reference.path, updatedReference)
+    })
+  })
 
   const addChanges = sourceElements.map(element => ({
     id: targetElemId,
@@ -107,22 +137,10 @@ const getRenameReferencesChanges = async (
   sourceElemId: ElemID,
   targetElemId: ElemID
 ): Promise<DetailedChange[]> => {
-  const getReferences = (element: Element): { path: ElemID; value: ReferenceExpression }[] => {
-    const references: { path: ElemID; value: ReferenceExpression }[] = []
-    const func: WalkOnFunc = ({ path, value }) => {
-      if (isReferenceExpression(value)
-      && (sourceElemId.isEqual(value.elemID) || sourceElemId.isParentOf(value.elemID))) {
-        references.push({ path, value })
-        return WALK_NEXT_STEP.SKIP
-      }
-      return WALK_NEXT_STEP.RECURSE
-    }
-    walkOnElement({ element, func })
-    return references
-  }
-
   const references = await awu(await elementsSource.getAll())
-    .flatMap(element => getReferences(element)).toArray()
+    // filtering the renamed element - its references are taken care in getRenameElementChanges
+    .filter(element => !sourceElemId.isEqual(element.elemID))
+    .flatMap(element => getReferences(element, sourceElemId)).toArray()
 
   return references.map(reference => {
     const targetReference = new ReferenceExpression(

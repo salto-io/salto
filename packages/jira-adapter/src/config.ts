@@ -365,6 +365,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       paginationField: 'startAt',
     },
   },
+  IssueTypeDetails: {
+    request: {
+      url: '/rest/api/3/issuetype',
+    },
+    transformation: {
+      dataField: '.',
+    },
+  },
 
   // Jira API
   'agile__1_0__board@uuvuu': {
@@ -434,6 +442,7 @@ export const DEFAULT_INCLUDE_ENDPOINTS: string[] = [
   'PageBeanFieldConfigurationScheme',
   'PageBeanFieldConfigurationIssueTypeItem',
   'PageBeanFilterDetails',
+  'IssueTypeDetails',
   'IssueLinkTypes',
   'SecuritySchemes',
   'PageBeanIssueTypeScheme',

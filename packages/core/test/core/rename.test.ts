@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { DetailedChange, ElemID, getChangeElement, InstanceElement, isAdditionChange, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { resolvePath } from '@salto-io/adapter-utils'
+import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import * as workspace from '@salto-io/workspace'
 import * as rename from '../../src/core/rename'
 
@@ -96,6 +96,11 @@ describe('rename.ts', () => {
     let targetElement: InstanceElement
     beforeAll(async () => {
       const sourceElement = await ws.getValue(sourceElemId)
+      setPath(
+        sourceElement,
+        sourceElemId.createNestedID('friend'),
+        new ReferenceExpression(sourceElemId)
+      )
 
       targetElement = new InstanceElement(
         'renamed',

@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DetailedChange, ElemID, getChangeElement, InstanceElement, isAdditionChange, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { resolvePath, setPath } from '@salto-io/adapter-utils'
+import _ from 'lodash'
+import { DetailedChange, ElemID, InstanceElement, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { resolvePath } from '@salto-io/adapter-utils'
 import * as workspace from '@salto-io/workspace'
 import * as rename from '../../src/core/rename'
 
@@ -29,7 +30,7 @@ describe('rename.ts', () => {
     const workspaceElements = mockElements.getAllElements()
     ws = mockWorkspace({ elements: workspaceElements })
     elements = await ws.elements()
-    sourceElemId = new ElemID('salto', 'employee', 'instance', 'instance')
+    sourceElemId = new ElemID('salto', 'employee', 'instance', 'original')
   })
 
   describe('renameChecks', () => {
@@ -96,16 +97,13 @@ describe('rename.ts', () => {
     let targetElement: InstanceElement
     beforeAll(async () => {
       const sourceElement = await ws.getValue(sourceElemId)
-      setPath(
-        sourceElement,
-        sourceElemId.createNestedID('friend'),
-        new ReferenceExpression(sourceElemId)
-      )
 
       targetElement = new InstanceElement(
         'renamed',
         sourceElement.refType,
-        sourceElement.value,
+        _.merge({}, sourceElement.value, {
+          friend: new ReferenceExpression(ElemID.fromFullName('salto.employee.instance.renamed')),
+        }),
         sourceElement.path,
         sourceElement.annotations
       )
@@ -128,12 +126,6 @@ describe('rename.ts', () => {
     })
     it('should return changes', () => {
       expect(changes).toEqual(expectedChanges)
-    })
-    it('should rename references in the renamed element', () => {
-      const addChange = changes.find(isAdditionChange)
-      expect(addChange).toBeDefined()
-      expect(getChangeElement(addChange as DetailedChange).value.friend)
-        .toEqual(new ReferenceExpression(targetElement.elemID))
     })
     it('should update pathIndex', async () => {
       const topLevelPaths = [['salto', 'records', 'instance', 'main'],

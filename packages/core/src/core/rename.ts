@@ -18,7 +18,7 @@ import { ElemID, Element, isElement, InstanceElement, DetailedChange,
   isReferenceExpression, ReferenceExpression, getChangeElement, isRemovalOrModificationChange,
   isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
-import { applyDetailedChanges, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { applyDetailedChanges, transformElement, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { ElementsSource, getElementsPathHints, PathIndex, splitElementByPath, State, Workspace } from '@salto-io/workspace'
 
 const { awu } = collections.asynciterable
@@ -72,11 +72,28 @@ export const renameChecks = async (
   }
 }
 
-const getRenameElementChanges = (
+const isReferenceOfElement = <T>(
+  value: T,
+  elemId: ElemID
+): boolean =>
+    isReferenceExpression(value)
+    && (elemId.isEqual(value.elemID) || elemId.isParentOf(value.elemID))
+
+const getUpdatedReference = (
+  referenceExpression: ReferenceExpression,
+  targetElemId: ElemID
+): ReferenceExpression => new ReferenceExpression(
+  targetElemId.createNestedID(...referenceExpression.elemID.createTopLevelParentID().path),
+  referenceExpression.value,
+  referenceExpression.topLevelParent
+)
+
+const getRenameElementChanges = async (
+  elementsSource: ElementsSource,
   sourceElemId: ElemID,
   targetElemId: ElemID,
   sourceElements: InstanceElement[]
-): DetailedChange[] => {
+): Promise<DetailedChange[]> => {
   const removeChange = {
     id: sourceElemId,
     action: 'remove' as const,
@@ -85,7 +102,19 @@ const getRenameElementChanges = (
     },
   }
 
-  const addChanges = sourceElements.map(element => ({
+  // updating references inside the renamed element
+  const updatedElements = await Promise.all(sourceElements.map(element => transformElement({
+    element,
+    transformFunc: ({ value }) => (
+      isReferenceOfElement(value, sourceElemId)
+        ? getUpdatedReference(value, targetElemId)
+        : value
+    ),
+    elementsSource,
+    strict: false,
+  })))
+
+  const addChanges = updatedElements.map(element => ({
     id: targetElemId,
     action: 'add' as const,
     data: {
@@ -110,8 +139,7 @@ const getRenameReferencesChanges = async (
   const getReferences = (element: Element): { path: ElemID; value: ReferenceExpression }[] => {
     const references: { path: ElemID; value: ReferenceExpression }[] = []
     const func: WalkOnFunc = ({ path, value }) => {
-      if (isReferenceExpression(value)
-      && (sourceElemId.isEqual(value.elemID) || sourceElemId.isParentOf(value.elemID))) {
+      if (isReferenceOfElement(value, sourceElemId)) {
         references.push({ path, value })
         return WALK_NEXT_STEP.SKIP
       }
@@ -122,23 +150,18 @@ const getRenameReferencesChanges = async (
   }
 
   const references = await awu(await elementsSource.getAll())
+    // filtering the renamed element - its references are taken care in getRenameElementChanges
+    .filter(element => !sourceElemId.isEqual(element.elemID))
     .flatMap(element => getReferences(element)).toArray()
 
-  return references.map(reference => {
-    const targetReference = new ReferenceExpression(
-      targetElemId.createNestedID(...reference.value.elemID.createTopLevelParentID().path),
-      reference.value.value,
-      reference.value.topLevelParent
-    )
-    return {
-      id: reference.path,
-      action: 'modify',
-      data: {
-        before: reference.value,
-        after: targetReference,
-      },
-    }
-  })
+  return references.map(reference => ({
+    id: reference.path,
+    action: 'modify',
+    data: {
+      before: reference.value,
+      after: getUpdatedReference(reference.value, targetElemId),
+    },
+  }))
 }
 
 const renameElementPathIndex = async (
@@ -173,11 +196,11 @@ export const renameElement = async (
     ? await splitElementByPath(source, index)
     : [source]
 
-  const elementChanges = getRenameElementChanges(sourceElemId, targetElemId, elements)
+  const elementChanges = await getRenameElementChanges(
+    elementsSource, sourceElemId, targetElemId, elements
+  )
   const referencesChanges = await getRenameReferencesChanges(
-    elementsSource,
-    sourceElemId,
-    targetElemId
+    elementsSource, sourceElemId, targetElemId
   )
 
   if (isDefined(index)) {

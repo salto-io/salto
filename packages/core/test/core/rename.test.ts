@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { DetailedChange, ElemID, InstanceElement, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { resolvePath } from '@salto-io/adapter-utils'
 import * as workspace from '@salto-io/workspace'
@@ -29,7 +30,7 @@ describe('rename.ts', () => {
     const workspaceElements = mockElements.getAllElements()
     ws = mockWorkspace({ elements: workspaceElements })
     elements = await ws.elements()
-    sourceElemId = new ElemID('salto', 'employee', 'instance', 'instance')
+    sourceElemId = new ElemID('salto', 'employee', 'instance', 'original')
   })
 
   describe('renameChecks', () => {
@@ -93,13 +94,16 @@ describe('rename.ts', () => {
   describe('renameElement', () => {
     let expectedChanges: DetailedChange[]
     let changes: DetailedChange[]
+    let targetElement: InstanceElement
     beforeAll(async () => {
       const sourceElement = await ws.getValue(sourceElemId)
 
-      const targetElement = new InstanceElement(
+      targetElement = new InstanceElement(
         'renamed',
         sourceElement.refType,
-        sourceElement.value,
+        _.merge({}, sourceElement.value, {
+          friend: new ReferenceExpression(ElemID.fromFullName('salto.employee.instance.renamed')),
+        }),
         sourceElement.path,
         sourceElement.annotations
       )

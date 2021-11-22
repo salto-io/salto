@@ -16,7 +16,7 @@
 import { CORE_ANNOTATIONS, BuiltinTypes, ElemID, ObjectType, InstanceElement, PrimitiveType, ListType, MapType, ReferenceExpression, Field } from '@salto-io/adapter-api'
 
 type AllElementsTypes = [PrimitiveType, ObjectType, ObjectType,
-    ObjectType, InstanceElement, ListType, MapType, InstanceElement, Field]
+    ObjectType, InstanceElement, ListType, MapType, InstanceElement, InstanceElement, Field]
 export const getAllElements = (): AllElementsTypes => {
   const addrElemID = new ElemID('salto', 'address')
   const saltoAddr = new ObjectType({
@@ -96,13 +96,22 @@ export const getAllElements = (): AllElementsTypes => {
     { name: 'FirstEmployee', nicknames: ['you', 'hi'], office: { label: 'bla', name: 'foo', seats: { c1: 'n1', c2: 'n2' } } }
   )
 
+  const saltoEmployeeToRename = new InstanceElement(
+    'original',
+    saltoEmployee,
+    { name: 'FirstEmployee',
+      nicknames: ['you', 'hi'],
+      office: { label: 'bla', name: 'foo', seats: { c1: 'n1', c2: 'n2' } },
+      friend: new ReferenceExpression(employeeElemID.createNestedID('instance', 'original')) }
+  )
+
   const anotherSaltoEmployeeInstance = new InstanceElement(
     'anotherInstance',
     saltoEmployee,
     { name: 'FirstEmployee',
       nicknames: ['you', 'hi'],
       office: { label: 'bla', name: 'foo', seats: { c1: 'n1', c2: 'n2' } },
-      friend: new ReferenceExpression(saltoEmployeeInstance.elemID),
+      friend: new ReferenceExpression(saltoEmployeeToRename.elemID),
       parent: new ReferenceExpression(saltoEmployee.elemID) }
   )
 
@@ -110,5 +119,5 @@ export const getAllElements = (): AllElementsTypes => {
 
   return [BuiltinTypes.STRING, saltoAddr, saltoOffice,
     saltoEmployee, saltoEmployeeInstance, stringListType, stringMapType,
-    anotherSaltoEmployeeInstance, fieldElement]
+    saltoEmployeeToRename, anotherSaltoEmployeeInstance, fieldElement]
 }

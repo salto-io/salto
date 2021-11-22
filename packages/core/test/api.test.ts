@@ -563,12 +563,14 @@ describe('api.ts', () => {
     beforeAll(async () => {
       const workspaceElements = mockElements.getAllElements()
       const ws = mockWorkspace({ elements: workspaceElements })
-      const sourceElemId = new ElemID('salto', 'employee', 'instance', 'instance')
+      const sourceElemId = new ElemID('salto', 'employee', 'instance', 'original')
       const sourceElement = await ws.getValue(sourceElemId)
       const targetElement = new InstanceElement(
         'renamed',
         sourceElement.refType,
-        sourceElement.value,
+        _.merge({}, sourceElement.value, {
+          friend: new ReferenceExpression(ElemID.fromFullName('salto.employee.instance.renamed')),
+        }),
         sourceElement.path,
         sourceElement.annotations
       )

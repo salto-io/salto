@@ -1030,7 +1030,7 @@ describe('swagger_instance_elements', () => {
       })).rejects.toThrow(new Error('Invalid type config - type myAdapter.Pet has no request config'))
     })
 
-    describe('element ids and file names transformation', async () => {
+    describe('element ids and file names transformation', () => {
       const NAME = 'name'
       const ID = 'id'
       const NUMBER = 9
@@ -1124,7 +1124,7 @@ describe('swagger_instance_elements', () => {
           expect(fileName).toEqual(`${ID}_${NAME}__${NUMBER}`)
         })
       })
-      describe('element id', async () => {
+      describe('element id', () => {
         test('generates id with non undefined fields', async () => {
           const instance = await getInstance({ idFields: ['id', 'name', 'number'] })
           expect(instance.elemID.name).toEqual(`${ID}_${NAME}_${NUMBER}`)

@@ -182,7 +182,7 @@ describe('adapter creator', () => {
 
   it('should validate credentials using createConnection', async () => {
     jest.spyOn(connection, 'createConnection')
-    mockAxiosAdapter.onGet('/v1/products').reply(200, {})
+    mockAxiosAdapter.onGet('/v1/coupons').reply(200, {})
     expect(await adapter.validateCredentials(new InstanceElement(
       'config',
       accessTokenCredentialsType,

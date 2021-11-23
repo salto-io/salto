@@ -193,7 +193,7 @@ describe('cli e2e', () => {
         .toBe(true)
     })
     afterAll(async () => {
-      await runEmptyPreview(fetchOutputDir)
+      await runEmptyPreview(fetchOutputDir, [SALESFORCE_ACCOUNT_NAME])
     })
   })
 
@@ -239,7 +239,7 @@ describe('cli e2e', () => {
         [new RegExp(NEW_INSTANCE_BASE_ELEM_NAME, 'g'), newInstanceElemName],
         [new RegExp(NEW_INSTANCE2_BASE_ELEM_NAME, 'g'), newInstance2ElemName],
       ])
-      deployPlan = await runPreviewGetPlan(fetchOutputDir)
+      deployPlan = await runPreviewGetPlan(fetchOutputDir, [SALESFORCE_ACCOUNT_NAME])
       await runDeploy({ workspacePath: fetchOutputDir })
       workspace = await loadValidWorkspace(fetchOutputDir)
     })
@@ -283,7 +283,7 @@ describe('cli e2e', () => {
       )
     })
     afterAll(async () => {
-      await runEmptyPreview(fetchOutputDir)
+      await runEmptyPreview(fetchOutputDir, [SALESFORCE_ACCOUNT_NAME])
     })
   })
 
@@ -295,7 +295,7 @@ describe('cli e2e', () => {
         ['Beta__c', 'Modified__c'],
         ['To Be Modified', 'I Am Modified'],
       ])
-      deployPlan = await runPreviewGetPlan(fetchOutputDir)
+      deployPlan = await runPreviewGetPlan(fetchOutputDir, [SALESFORCE_ACCOUNT_NAME])
       await runDeploy({ workspacePath: fetchOutputDir })
     })
     it('should have "modify" changes', async () => {
@@ -316,7 +316,7 @@ describe('cli e2e', () => {
         { description: 'I Am Modified' })).toBe(true)
     })
     afterAll(async () => {
-      await runEmptyPreview(fetchOutputDir)
+      await runEmptyPreview(fetchOutputDir, [SALESFORCE_ACCOUNT_NAME])
     })
   })
   describe('fetch expecting no changes', () => {
@@ -371,7 +371,7 @@ describe('cli e2e', () => {
       )
     })
     afterAll(async () => {
-      await runEmptyPreview(fetchOutputDir)
+      await runEmptyPreview(fetchOutputDir, [SALESFORCE_ACCOUNT_NAME])
     })
   })
 
@@ -427,7 +427,7 @@ describe('cli e2e', () => {
       await rm(fullPath(newObjectStandardFieldRelativePath))
       await rm(fullPath(newObjectCustomFieldRelativePath))
       // We have to run preview before the deploy to get the plan
-      deployPlan = await runPreviewGetPlan(fetchOutputDir)
+      deployPlan = await runPreviewGetPlan(fetchOutputDir, [SALESFORCE_ACCOUNT_NAME])
       await runDeploy({ workspacePath: fetchOutputDir })
     })
     it('should have "remove" changes', async () => {
@@ -444,7 +444,7 @@ describe('cli e2e', () => {
       expect(await instanceExists(client, ROLE, newInstanceFullName)).toBe(false)
     })
     afterAll(async () => {
-      await runEmptyPreview(fetchOutputDir)
+      await runEmptyPreview(fetchOutputDir, [SALESFORCE_ACCOUNT_NAME])
     })
   })
   describe('multi-env after initial fetch', () => {

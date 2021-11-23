@@ -21,7 +21,7 @@ import { naclCase } from '@salto-io/adapter-utils'
 import { getCredentialsFromUser } from '../callbacks'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { createCommandGroupDef, WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
-import { formatServiceAlreadyAdded, formatServiceAdded, formatLoginToServiceFailed, formatCredentialsHeader, formatLoginUpdated, formatServiceNotConfigured, formatLoginOverride, formatConfiguredAndAdditionalServices, formatAddServiceFailed, formatInvalidServiceInput } from '../formatter'
+import { formatAccountAlreadyAdded, formatAccountAdded, formatLoginToAccountFailed, formatCredentialsHeader, formatLoginUpdated, formatAccountNotConfigured, formatLoginOverride, formatConfiguredAndAdditionalAccounts, formatAddAccountFailed, formatInvalidServiceInput } from '../formatter'
 import { errorOutputLine, outputLine } from '../outputer'
 import { processOauthCredentials } from '../cli_oauth_authenticator'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
@@ -91,24 +91,28 @@ const getLoginInputFlow = async (
 }
 
 // Add
-type ServiceAddArgs = {
+type AccountAddArgs = {
     login: boolean
     serviceName: string
     account?: string
 } & AuthTypeArgs & EnvArg
 
-export const addAction: WorkspaceCommandAction<ServiceAddArgs> = async ({
+export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
   input,
   output,
   workspace,
 }): Promise<CliExitCode> => {
   const { login, serviceName, authType, account } = input
   if (account && !(naclCase(account) === account)) {
-    errorOutputLine(`Invalid account name: ${account}, account name may only include letters or digits`, output)
+    errorOutputLine(`Invalid account name: ${account}, account name may only include letters, digits or underscores`, output)
     return CliExitCode.UserInputError
   }
-  if (account !== undefined && (account.includes('var') || account === '')) {
-    errorOutputLine('Account name may not be "var" or an empty string.', output)
+  if (account !== undefined && (account === '')) {
+    errorOutputLine('Account name may not be an empty string.', output)
+    return CliExitCode.UserInputError
+  }
+  if (account !== undefined && account.includes('var')) {
+    errorOutputLine('Account name may not be "var"', output)
     return CliExitCode.UserInputError
   }
   const accountName = account ?? serviceName
@@ -120,8 +124,8 @@ export const addAction: WorkspaceCommandAction<ServiceAddArgs> = async ({
     return CliExitCode.UserInputError
   }
 
-  if (workspace.services().includes(accountName)) {
-    errorOutputLine(formatServiceAlreadyAdded(accountName), output)
+  if (workspace.accounts().includes(accountName)) {
+    errorOutputLine(formatAccountAlreadyAdded(accountName), output)
     return CliExitCode.UserInputError
   }
 
@@ -131,14 +135,14 @@ export const addAction: WorkspaceCommandAction<ServiceAddArgs> = async ({
     try {
       await getLoginInputFlow(workspace, adapterCredentialsTypes, output, authType, accountName)
     } catch (e) {
-      errorOutputLine(formatAddServiceFailed(serviceName, e.message), output)
+      errorOutputLine(formatAddAccountFailed(serviceName, e.message), output)
       return CliExitCode.AppError
     }
   }
 
   await addAdapter(workspace, serviceName, accountName)
   await workspace.flush()
-  outputLine(formatServiceAdded(serviceName), output)
+  outputLine(formatAccountAdded(serviceName), output)
   return CliExitCode.Success
 }
 
@@ -184,7 +188,7 @@ export const listAction: WorkspaceCommandAction<ServiceListArgs> = async (
   { input, output, workspace },
 ): Promise<CliExitCode> => {
   await validateAndSetEnv(workspace, input, output)
-  outputLine(formatConfiguredAndAdditionalServices(workspace.services()), output)
+  outputLine(formatConfiguredAndAdditionalAccounts(workspace.accounts()), output)
   return CliExitCode.Success
 }
 
@@ -213,8 +217,8 @@ export const loginAction: WorkspaceCommandAction<ServiceLoginArgs> = async ({
   const { serviceName, authType, account } = input
   await validateAndSetEnv(workspace, input, output)
   const accountName = account ?? serviceName
-  if (!workspace.services().includes(serviceName)) {
-    errorOutputLine(formatServiceNotConfigured(serviceName), output)
+  if (!workspace.accounts().includes(serviceName)) {
+    errorOutputLine(formatAccountNotConfigured(serviceName), output)
     return CliExitCode.AppError
   }
   const serviceLoginStatus = (await getLoginStatuses(
@@ -228,7 +232,7 @@ export const loginAction: WorkspaceCommandAction<ServiceLoginArgs> = async ({
     await getLoginInputFlow(workspace, serviceLoginStatus.configTypeOptions,
       output, authType, accountName)
   } catch (e) {
-    errorOutputLine(formatLoginToServiceFailed(serviceName, e.message), output)
+    errorOutputLine(formatLoginToAccountFailed(accountName, e.message), output)
     return CliExitCode.AppError
   }
   return CliExitCode.Success

@@ -52,10 +52,10 @@ describe('clean', () => {
     })
     expect(adapters.getDefaultAdapterConfig).toHaveBeenCalledWith('salesforce', 'salesforce')
     expect(adapters.getDefaultAdapterConfig).toHaveBeenCalledWith('netsuite', 'netsuite')
-    expect(workspace.updateServiceConfig).toHaveBeenCalledWith('salesforce', 'salesforce',
-      { service: 'salesforce', aaa: 'aaa' })
-    expect(workspace.updateServiceConfig).toHaveBeenCalledWith('netsuite', 'netsuite',
-      { service: 'netsuite', aaa: 'aaa' })
+    expect(workspace.updateAccountConfig).toHaveBeenCalledWith('salesforce',
+      { service: 'salesforce', aaa: 'aaa' }, 'salesforce')
+    expect(workspace.updateAccountConfig).toHaveBeenCalledWith('netsuite',
+      { service: 'netsuite', aaa: 'aaa' }, 'netsuite')
     expect(workspace.flush).toHaveBeenCalled()
   })
 
@@ -76,7 +76,7 @@ describe('clean', () => {
       credentials: false,
     })
     expect(adapters.getDefaultAdapterConfig).not.toHaveBeenCalled()
-    expect(workspace.updateServiceConfig).not.toHaveBeenCalled()
+    expect(workspace.updateAccountConfig).not.toHaveBeenCalled()
     expect(workspace.flush).toHaveBeenCalled()
   })
 
@@ -94,7 +94,7 @@ describe('clean', () => {
     })
     expect(adapters.getDefaultAdapterConfig).toHaveBeenCalledWith('salesforce', 'salesforce')
     expect(adapters.getDefaultAdapterConfig).toHaveBeenCalledWith('netsuite', 'netsuite')
-    expect(workspace.updateServiceConfig).not.toHaveBeenCalled()
+    expect(workspace.updateAccountConfig).not.toHaveBeenCalled()
     expect(workspace.flush).toHaveBeenCalled()
   })
 })

@@ -38,7 +38,7 @@ export const cleanWorkspace = async (
         log.info('Cannot restore config for account %s', account)
         return
       }
-      await workspace.updateServiceConfig(account, service, defaultConfig)
+      await workspace.updateAccountConfig(service, defaultConfig, account)
     })
   }
   await workspace.flush()

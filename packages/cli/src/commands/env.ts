@@ -27,7 +27,7 @@ import {
 import Prompts from '../prompts'
 import { cliApproveIsolateBeforeMultiEnv } from '../callbacks'
 import { outputLine, errorOutputLine } from '../outputer'
-import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './common/services'
+import { ServicesArg, SERVICES_OPTION, getAndValidateActiveAccounts } from './common/services'
 import { ConfigOverrideArg, CONFIG_OVERRIDE_OPTION, getConfigOverrideChanges } from './common/config_override'
 import { getWorkspaceTelemetryTags } from '../workspace/workspace'
 
@@ -97,7 +97,7 @@ export const diffAction: WorkspaceCommandAction<EnvDiffArgs> = async ({
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
     return CliExitCode.UserInputError
   }
-  const actualServices = getAndValidateActiveServices(workspace, services)
+  const actualServices = getAndValidateActiveAccounts(workspace, services)
   if (!(workspace.envs().includes(fromEnv))) {
     errorOutputLine(`Unknown environment ${fromEnv}`, output)
     return CliExitCode.UserInputError

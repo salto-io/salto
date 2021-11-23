@@ -67,7 +67,7 @@ export const mockWorkspace = ({
   stateElements = undefined,
   services = SERVICES,
   errors = [],
-  serviceConfigs = {},
+  accountConfigs = {},
 }: {
   elements?: Element[]
   name?: string
@@ -75,7 +75,7 @@ export const mockWorkspace = ({
   stateElements?: Element[]
   services?: string[]
   errors?: SaltoError[]
-  serviceConfigs?: Record<string, InstanceElement>
+  accountConfigs?: Record<string, InstanceElement>
   getValue?: Promise<Value | undefined>
 }): workspace.Workspace => {
   const state = mockState(SERVICES, stateElements || elements, index)
@@ -91,11 +91,11 @@ export const mockWorkspace = ({
     state: jest.fn().mockReturnValue(state),
     updateNaclFiles: jest.fn(),
     flush: jest.fn(),
-    servicesCredentials: jest.fn().mockResolvedValue({
+    accountCredentials: jest.fn().mockResolvedValue({
       [mockService]: mockConfigInstance,
       [emptyMockService]: mockEmptyConfigInstance,
     }),
-    serviceConfig: (accountName: string) => serviceConfigs[accountName],
+    accountConfig: (accountName: string) => accountConfigs[accountName],
     getWorkspaceErrors: jest.fn().mockResolvedValue(errors),
     getServiceFromAccountName: (account: string) => account,
     addService: jest.fn(),
@@ -103,6 +103,9 @@ export const mockWorkspace = ({
     updateServiceConfig: jest.fn(),
     getReferenceSourcesIndex: mockFunction<workspace.Workspace['getReferenceSourcesIndex']>(),
     getReferenceTargetsIndex: mockFunction<workspace.Workspace['getReferenceSourcesIndex']>(),
+    addAccount: jest.fn(),
+    updateAccountCredentials: jest.fn(),
+    updateAccountConfig: jest.fn(),
     clear: jest.fn(),
     getElementIdsBySelectors: jest.fn(),
     hasErrors: () => errors.length > 0,

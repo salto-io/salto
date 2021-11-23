@@ -299,6 +299,15 @@ describe('adapter', () => {
             label: 'Fish',
           },
         })
+        const fishCustomObject2 = new ObjectType({
+          elemID: new ElemID('salesforce2', 'Fish__c'),
+          fields: {},
+          annotations: {
+            metadataType: 'CustomObject',
+            apiName: 'Fish__c',
+            label: 'Fish',
+          },
+        })
 
         const adapterOperations = adapter.operations({
           credentials: new InstanceElement(
@@ -314,6 +323,7 @@ describe('adapter', () => {
                 includeTypes: [...Object.keys(DEFAULT_TYPES)].sort(),
                 serviceConnectionNames: {
                   salesforce: ['sfdev1'],
+                  salesforce2: ['sfdev1'],
                   netsuite: ['Test NetSuite account'],
                 },
               },
@@ -330,10 +340,12 @@ describe('adapter', () => {
           currentAdapterElements,
           elementsByAdapter: {
             salesforce: [fishCustomObject],
+            salesforce2: [fishCustomObject2],
           },
           accountToServiceNameMap: {
             netsuite: 'netsuite',
             salesforce: 'salesforce',
+            salesforce2: 'salesforce',
           },
           progressReporter: { reportProgress: () => null },
         })

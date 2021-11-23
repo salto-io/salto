@@ -505,54 +505,54 @@ export const formatServiceConfigured = (serviceName: string): string => [
   emptyLine(),
 ].join('\n')
 
-export const formatServiceNotConfigured = (serviceName: string): string => [
-  Prompts.SERVICE_NOT_CONFIGURED(serviceName),
+export const formatAccountNotConfigured = (accountName: string): string => [
+  Prompts.SERVICE_NOT_CONFIGURED(accountName),
   emptyLine(),
-  Prompts.SERVICE_HOW_ADD(serviceName),
+  Prompts.SERVICE_HOW_ADD(accountName),
   emptyLine(),
 ].join('\n')
 
-const formatConfiguredServices = (serviceNames: ReadonlyArray<string>): string => {
-  if (serviceNames.length === 0) {
+const formatConfiguredAccounts = (accountNames: ReadonlyArray<string>): string => {
+  if (accountNames.length === 0) {
     return [
       Prompts.NO_CONFIGURED_SERVICES,
       emptyLine(),
     ].join('\n')
   }
 
-  const formattedServices = serviceNames.map(service => indent(`* ${service}`, 1))
-  formattedServices.unshift(Prompts.CONFIGURED_SERVICES_TITLE)
-  formattedServices.push(emptyLine())
-  return formattedServices.join('\n')
+  const formattedAccounts = accountNames.map(account => indent(`* ${account}`, 1))
+  formattedAccounts.unshift(Prompts.CONFIGURED_SERVICES_TITLE)
+  formattedAccounts.push(emptyLine())
+  return formattedAccounts.join('\n')
 }
 
 export const getPrivateAdaptersNames = (): ReadonlyArray<string> => ['dummy']
 
-const formatAdditionalServices = (services: ReadonlyArray<string>): string => {
-  const formattedServices = getSupportedServiceAdapterNames()
-    .filter(serviceName => !services.includes(serviceName)
-      && !getPrivateAdaptersNames().includes(serviceName))
-    .map(serviceName => indent(`- ${serviceName}`, 1))
-  if (formattedServices.length === 0) {
+const formatAdditionalAccounts = (accounts: ReadonlyArray<string>): string => {
+  const formattedAccounts = getSupportedServiceAdapterNames()
+    .filter(accountName => !accounts.includes(accountName)
+      && !getPrivateAdaptersNames().includes(accountName))
+    .map(accountName => indent(`- ${accountName}`, 1))
+  if (formattedAccounts.length === 0) {
     return Prompts.NO_ADDITIONAL_CONFIGURED_SERVICES.concat(EOL)
   }
 
-  formattedServices.unshift(Prompts.ADDITIONAL_SUPPORTED_SERVICES_TITLE)
-  formattedServices.push(emptyLine())
-  return formattedServices.join(EOL)
+  formattedAccounts.unshift(Prompts.ADDITIONAL_SUPPORTED_SERVICES_TITLE)
+  formattedAccounts.push(emptyLine())
+  return formattedAccounts.join(EOL)
 }
 
-export const formatConfiguredAndAdditionalServices = (services: ReadonlyArray<string>): string =>
-  [formatConfiguredServices(services), formatAdditionalServices(services)].join(EOL)
+export const formatConfiguredAndAdditionalAccounts = (accounts: ReadonlyArray<string>): string =>
+  [formatConfiguredAccounts(accounts), formatAdditionalAccounts(accounts)].join(EOL)
 
-export const formatServiceAdded = (serviceName: string): string => [
-  formatSuccess(Prompts.SERVICE_ADDED(serviceName)),
+export const formatAccountAdded = (accountName: string): string => [
+  formatSuccess(Prompts.SERVICE_ADDED(accountName)),
   emptyLine(),
   emptyLine(),
 ].join('\n')
 
-export const formatServiceAlreadyAdded = (serviceName: string): string => [
-  formatSimpleError(Prompts.SERVICE_ALREADY_ADDED(serviceName)),
+export const formatAccountAlreadyAdded = (accountName: string): string => [
+  formatSimpleError(Prompts.SERVICE_ALREADY_ADDED(accountName)),
   emptyLine(),
 ].join('\n')
 
@@ -573,15 +573,15 @@ export const formatInvalidServiceInput = (
   ].join('\n')
 }
 
-export const formatLoginToServiceFailed = (serviceName: string, errorMessage: string): string => [
-  formatSimpleError(Prompts.SERVICE_LOGIN_FAILED(serviceName, errorMessage)),
-  Prompts.SERVICE_LOGIN_FAILED_TRY_AGAIN(serviceName),
+export const formatLoginToAccountFailed = (accountName: string, errorMessage: string): string => [
+  formatSimpleError(Prompts.SERVICE_LOGIN_FAILED(accountName, errorMessage)),
+  Prompts.SERVICE_LOGIN_FAILED_TRY_AGAIN(accountName),
   emptyLine(),
 ].join('\n')
 
-export const formatAddServiceFailed = (serviceName: string, errorMessage: string): string => [
-  formatSimpleError(Prompts.SERVICE_LOGIN_FAILED(serviceName, errorMessage)),
-  Prompts.SERVICE_ADD_FAILED_TRY_AGAIN(serviceName),
+export const formatAddAccountFailed = (accountName: string, errorMessage: string): string => [
+  formatSimpleError(Prompts.SERVICE_LOGIN_FAILED(accountName, errorMessage)),
+  Prompts.SERVICE_ADD_FAILED_TRY_AGAIN(accountName),
   emptyLine(),
 ].join('\n')
 

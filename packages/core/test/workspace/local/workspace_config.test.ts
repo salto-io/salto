@@ -122,7 +122,8 @@ describe('workspace local config', () => {
 
     it('get from both dir stores', async () => {
       expect(await configSource.getWorkspaceConfig()).toBeDefined()
-      expect((repoDirStore.get as jest.Mock).mock.calls[1][0]).toEqual(`${ENVS_CONFIG_NAME}.nacl`)
+      expect((repoDirStore.get as jest.Mock).mock.calls[2][0]).toEqual(`${ENVS_CONFIG_NAME}.nacl`)
+      expect((repoDirStore.get as jest.Mock).mock.calls[1][0]).toEqual(`${WORKSPACE_CONFIG_NAME}.nacl`)
       expect((repoDirStore.get as jest.Mock).mock.calls[0][0]).toEqual(`${WORKSPACE_CONFIG_NAME}.nacl`)
       expect((prefDirStore.get as jest.Mock).mock.calls[0][0]).toEqual(`${USER_CONFIG_NAME}.nacl`)
     })

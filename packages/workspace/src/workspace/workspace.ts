@@ -204,17 +204,17 @@ export type Workspace = {
   // Remove this when no longer used, SALTO-1661
   updateServiceCredentials: (service: string, creds: Readonly<InstanceElement>) => Promise<void>
   updateAccountConfig: (
-    account: string,
     adapter: string,
-    newConfig: Readonly<InstanceElement> | Readonly<InstanceElement>[]
+    newConfig: Readonly<InstanceElement> | Readonly<InstanceElement>[],
+    account?: string,
   ) => Promise<void>
   // updateServiceConfig is deprecated, kept for backwards compatibility.
   // use updateAccountConfig.
   // Remove this when no longer used, SALTO-1661
   updateServiceConfig: (
-    account: string,
     adapter: string,
-    newConfig: Readonly<InstanceElement> | Readonly<InstanceElement>[]
+    newConfig: Readonly<InstanceElement> | Readonly<InstanceElement>[],
+    account?: string,
   ) => Promise<void>
   getServiceFromAccountName: (account: string) => string
   getStateRecency(services: string): Promise<StateRecency>
@@ -888,11 +888,12 @@ export const loadWorkspace = async (
     return awu(await source.list()).some(elemId => accountNames.includes(elemId.adapter))
   }
   const updateAccountCredentials = async (account: string,
-    servicesCredentials: Readonly<InstanceElement>): Promise<void> =>
-    credentials.set(credsPath(account), servicesCredentials)
-  const updateAccountConfig = async (account: string, service: string,
-    newConfig: Readonly<InstanceElement> | Readonly<InstanceElement>[]): Promise<void> => {
-    await adaptersConfig.setAdapter(account, service, newConfig)
+    credentialElements: Readonly<InstanceElement>): Promise<void> =>
+    credentials.set(credsPath(account), credentialElements)
+  const updateAccountConfig = async (service: string,
+    newConfig: Readonly<InstanceElement> | Readonly<InstanceElement>[],
+    account?: string): Promise<void> => {
+    await adaptersConfig.setAdapter(account ?? service, service, newConfig)
   }
   return {
     uid: workspaceConfig.uid,

@@ -83,7 +83,6 @@ const telemetry = telemetrySender(
 )
 
 export const cleanup = async (): Promise<void> => telemetry.stop(0)
-const accounts: string[] = []
 
 export const editNaclFile = async (filename: string, replacements: ReplacementPair[]):
   Promise<void> => {
@@ -126,7 +125,6 @@ export const runInit = async (
   workspaceName: string,
   workspacePath: string,
 ): Promise<void> => {
-  accounts.splice(0, accounts.length)
   await runCommand({
     workspacePath, args: ['init', workspaceName],
   })
@@ -134,7 +132,6 @@ export const runInit = async (
 
 export const runAddSalesforceService = async (workspacePath: string,
   accountName: string): Promise<void> => {
-  accounts.push(accountName)
   await runCommand({
     workspacePath, args: ['service', 'add', 'salesforce', '--account', accountName],
   })
@@ -142,7 +139,6 @@ export const runAddSalesforceService = async (workspacePath: string,
 
 export const runSalesforceLogin = async (workspacePath: string,
   accountName: string): Promise<void> => {
-  accounts.push(accountName)
   await runCommand({
     workspacePath, args: ['service', 'login', accountName],
   })
@@ -245,7 +241,10 @@ export const loadValidWorkspace = async (fetchOutputDir: string): Promise<Worksp
   return workspace
 }
 
-export const runPreviewGetPlan = async (fetchOutputDir: string): Promise<Plan> => {
+export const runPreviewGetPlan = async (
+  fetchOutputDir: string,
+  accounts: string[]
+): Promise<Plan> => {
   const workspace = await loadLocalWorkspace(fetchOutputDir)
   return preview(workspace, accounts)
 }
@@ -273,8 +272,11 @@ export const verifyChanges = (plan: Plan,
   expect(changes).toEqual(expectedChanges.sort(compareChanges))
 }
 
-export const runEmptyPreview = async (fetchOutputDir: string): Promise<void> => {
-  const plan = await runPreviewGetPlan(fetchOutputDir)
+export const runEmptyPreview = async (
+  fetchOutputDir: string,
+  accounts: string[]
+): Promise<void> => {
+  const plan = await runPreviewGetPlan(fetchOutputDir, accounts)
   verifyChanges(plan, [])
 }
 

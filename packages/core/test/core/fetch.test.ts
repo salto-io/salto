@@ -1404,7 +1404,7 @@ describe('fetch from workspace', () => {
       }
       sourceServiceConfigs.salto_config2.value.key = 'otherValue'
       const sourceWS = mockWorkspace({
-        serviceConfigs: sourceServiceConfigs,
+        accountConfigs: sourceServiceConfigs,
       })
 
       const fetchRes = await fetchChangesFromWorkspace(
@@ -1510,7 +1510,7 @@ describe('fetch from workspace', () => {
         mockWorkspace({
           elements: mergedElements,
           index: await awu(pi.entries()).toArray(),
-          serviceConfigs: { salto: configs[0] },
+          accountConfigs: { salto: configs[0] },
         }),
         ['salto'],
         createInMemoryElementSource([existingElement]),

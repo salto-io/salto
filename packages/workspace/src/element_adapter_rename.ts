@@ -30,6 +30,7 @@ import {
   ReadOnlyElementsSource,
   Element,
   ElemID,
+  GLOBAL_ADAPTER,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { UnresolvedReference } from './expressions'
@@ -41,10 +42,10 @@ const { awu } = collections.asynciterable
 // with a modified adapter. This is used when an account has a different name than the
 // service it represents. Created for the multiple accounts per service features (SALTO-1264).
 export const createAdapterReplacedID = (elemID: ElemID, adapter: string): ElemID => {
-  if (elemID.adapter === '' || elemID.adapter === ElemID.VARIABLES_NAMESPACE) {
+  if (elemID.adapter === GLOBAL_ADAPTER || elemID.adapter === ElemID.VARIABLES_NAMESPACE) {
     return elemID
   }
-  return ElemID.fromFullName(`${adapter}.${elemID.getFullName().split('.').slice(1).join('.')}`)
+  return ElemID.fromFullNameParts([adapter, ...elemID.getFullNameParts().slice(1)])
 }
 
 const recursivelyUpdateContainerType = (type: ContainerType, accountName: string): void => {
@@ -105,26 +106,26 @@ const transformElemIDAdapter = (accountName: string): TransformFunc => async (
   return value
 }
 
-export const updateElementsWithAlternativeAdapter = async (elementsToUpdate: Element[],
-  newAdapter: string, oldAdapter: string, source?: ReadOnlyElementsSource): Promise<void> =>
+export const updateElementsWithAlternativeAccount = async (elementsToUpdate: Element[],
+  newAccount: string, oldAccount: string, source?: ReadOnlyElementsSource): Promise<void> =>
   awu(elementsToUpdate).forEach(async element => {
-    if (element.path !== undefined && (element.path[0] === oldAdapter)) {
-      element.path = [newAdapter, ...element.path.slice(1)]
+    if (element.path !== undefined && (element.path[0] === oldAccount)) {
+      element.path = [newAccount, ...element.path.slice(1)]
     }
-    if (element.elemID.adapter === oldAdapter) {
+    if (element.elemID.adapter === oldAccount) {
       await transformElement({
         element,
-        transformFunc: transformElemIDAdapter(newAdapter),
+        transformFunc: transformElemIDAdapter(newAccount),
         strict: false,
         runOnFields: true,
         elementsSource: source,
       })
-      _.set(element, 'elemID', createAdapterReplacedID(element.elemID, newAdapter))
+      _.set(element, 'elemID', createAdapterReplacedID(element.elemID, newAccount))
       if (isInstanceElement(element)) {
-        updateRefTypeWithId(element.refType, newAdapter)
+        updateRefTypeWithId(element.refType, newAccount)
       }
       Object.values(element.annotationRefTypes).forEach(annotation => updateRefTypeWithId(
-        annotation, newAdapter
+        annotation, newAccount
       ))
     }
   })

@@ -20,7 +20,7 @@ import { DetailedChange, ObjectType } from '@salto-io/adapter-api'
 import { exists, isEmptyDir, rm } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl, remoteMap,
   configSource as cs, staticFiles, dirStore, WorkspaceComponents, errors,
-  COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource, EnvConfig, updateElementsWithAlternativeAdapter } from '@salto-io/workspace'
+  COMMON_ENV_PREFIX, isValidEnvName, EnvironmentSource, EnvConfig, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { localDirectoryStore } from './dir_store'
 import { CONFIG_DIR_NAME, getConfigDir, getLocalStoragePath } from '../app_config'
@@ -191,20 +191,18 @@ const credentialsSource = (localStorage: string): cs.ConfigSource =>
   }))
 
 const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<ObjectType[]> => {
-  const adapterConfigTypes = await getAdaptersConfigTypes()
-  const configTypesByAdapter = _.groupBy(adapterConfigTypes, type => type.elemID.adapter)
+  const configTypesByAccount = await getAdaptersConfigTypes()
   const differentlyNamedAccounts = Object.fromEntries(envs
-    .flatMap(env => Object
-      .entries(env.accountToServiceName ?? {}))
+    .flatMap(env => Object.entries(env.accountToServiceName ?? {}))
     .filter(entry => entry[0] !== entry[1]))
   await awu(Object.keys(differentlyNamedAccounts)).forEach(async account => {
-    const configCopies = configTypesByAdapter[differentlyNamedAccounts[account]]
+    const configCopies = configTypesByAccount[differentlyNamedAccounts[account]]
       .map(element => element.clone())
-    await updateElementsWithAlternativeAdapter(configCopies, account,
+    await updateElementsWithAlternativeAccount(configCopies, account,
       differentlyNamedAccounts[account])
-    configCopies.forEach(configCopy => adapterConfigTypes.push(configCopy))
+    configTypesByAccount[account] = configCopies
   })
-  return adapterConfigTypes
+  return Object.values(configTypesByAccount).flat()
 }
 
 export const loadLocalWorkspace = async (
@@ -301,7 +299,7 @@ Promise<Workspace> => {
     localStorage,
     remoteMapCreator,
     persistentMode,
-    await getAdaptersConfigTypes(),
+    Object.values(await getAdaptersConfigTypes()).flat(),
   )
   const credentials = credentialsSource(localStorage)
   const elemSources = await loadLocalElementsSources(

@@ -300,9 +300,9 @@ describe('multi env tests', () => {
       let env2Plan: Plan | undefined
       beforeAll(async () => {
         await runSetEnv(baseDir, ENV1_NAME)
-        env1Plan = await runPreviewGetPlan(baseDir)
+        env1Plan = await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
         await runSetEnv(baseDir, ENV2_NAME)
-        env2Plan = await runPreviewGetPlan(baseDir)
+        env2Plan = await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
       })
       it('should have empty previews for all envs', async () => {
         expect(env1Plan?.size).toBe(0)
@@ -372,7 +372,7 @@ describe('multi env tests', () => {
         // We fetch it to common
         await runSetEnv(baseDir, ENV1_NAME)
         await runFetch(baseDir, false) // Fetch in normal mode
-        afterFetchPlan = await runPreviewGetPlan(baseDir)
+        afterFetchPlan = await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
       })
 
       it('should add the fetched element to the common folder', () => {
@@ -395,7 +395,7 @@ describe('multi env tests', () => {
       beforeAll(async () => {
         // We fetch it to common
         await runSetEnv(baseDir, ENV2_NAME)
-        afterOtherEnvFetchPlan = await runPreviewGetPlan(baseDir)
+        afterOtherEnvFetchPlan = await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
         // Just a safety check to avoid deploying changes if something
         // went wrong.
         if (afterOtherEnvFetchPlan && afterOtherEnvFetchPlan.size > 10) {
@@ -429,7 +429,7 @@ describe('multi env tests', () => {
         ])
         await runSetEnv(baseDir, ENV1_NAME)
         await runFetch(baseDir, false) // Fetch in normal mode
-        afterDeleteFetchPlan = await runPreviewGetPlan(baseDir)
+        afterDeleteFetchPlan = await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
       })
 
       it('should remove the elements from the nacl files in the common folder', () => {
@@ -458,7 +458,7 @@ describe('multi env tests', () => {
       beforeAll(async () => {
         // We fetch it to common
         await runSetEnv(baseDir, ENV2_NAME)
-        afterDeleteOtherEnvFetchPlan = await runPreviewGetPlan(baseDir)
+        afterDeleteOtherEnvFetchPlan = await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
         await runDeploy({ workspacePath: baseDir, allowErrors: true })
       })
 
@@ -545,9 +545,9 @@ describe('multi env tests', () => {
         await writeFile(env1NaclFileName(), env1NaclFile)
         await writeFile(env2NaclFileName(), env2NaclFile)
         await runSetEnv(baseDir, ENV1_NAME)
-        await runPreviewGetPlan(baseDir)
+        await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
         await runSetEnv(baseDir, ENV2_NAME)
-        await runPreviewGetPlan(baseDir)
+        await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
         await runSetEnv(baseDir, ENV1_NAME)
         await runDeploy({ workspacePath: baseDir, allowErrors: true })
         await runSetEnv(baseDir, ENV2_NAME)
@@ -629,9 +629,9 @@ describe('multi env tests', () => {
         await rm(env2ObjFilePath())
         await rm(env2InstFilePath())
         await runSetEnv(baseDir, ENV1_NAME)
-        env1DeployPlan = await runPreviewGetPlan(baseDir)
+        env1DeployPlan = await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
         await runSetEnv(baseDir, ENV2_NAME)
-        env2DeployPlan = await runPreviewGetPlan(baseDir)
+        env2DeployPlan = await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
         await runSetEnv(baseDir, ENV1_NAME)
         await runDeploy({ workspacePath: baseDir, allowErrors: true })
         await runSetEnv(baseDir, ENV2_NAME)

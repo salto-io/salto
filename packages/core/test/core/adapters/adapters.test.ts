@@ -135,8 +135,8 @@ describe('adapters.ts', () => {
 
     it('should return the config type and its sub-types', async () => {
       const types = await getAdaptersConfigTypes()
-      expect(types).toContain(mockConfigType)
-      expect(types).toContain(mockConfigSubType)
+      expect(types.mockAdapter).toContain(mockConfigType)
+      expect(types.mockAdapter).toContain(mockConfigSubType)
     })
   })
 
@@ -212,13 +212,16 @@ describe('adapters.ts', () => {
 
   describe('init adapter', () => {
     it('should return adapter when config is defined', () => {
-      const adapters = initAdapters({
-        salesforce: {
-          credentials: sfConfig,
-          config: undefined,
-          elementsSource: utils.buildElementsSourceFromElements([]),
+      const adapters = initAdapters(
+        {
+          salesforce: {
+            credentials: sfConfig,
+            config: undefined,
+            elementsSource: utils.buildElementsSourceFromElements([]),
+          },
         },
-      })
+        { salesforce: 'salesforce' },
+      )
       expect(adapters.salesforce).toBeDefined()
     })
 

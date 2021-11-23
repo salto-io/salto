@@ -144,11 +144,6 @@ export class VariableExpression extends ReferenceExpression {
       } is a ${elemID.idType}`)
     }
   }
-
-  public createWithValue(resValue: Value, resTopLevelParent?: Element): VariableExpression {
-    const ExpressionCtor = this.constructor as typeof VariableExpression
-    return new ExpressionCtor(this.elemID, resValue, resTopLevelParent)
-  }
 }
 
 export class TypeReference extends ReferenceExpression {

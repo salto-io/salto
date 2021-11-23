@@ -16,12 +16,13 @@
 import _ from 'lodash'
 import path from 'path'
 import { logger } from '@salto-io/logging'
+import { Value } from '@salto-io/adapter-api'
 import { workspaceConfigSource as wcs,
   WorkspaceConfig, configSource } from '@salto-io/workspace'
 import { exists, rename } from '@salto-io/file'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome, getLocalStoragePath, CONFIG_DIR_NAME } from '../app_config'
-import { WORKSPACE_CONFIG_NAME, ENVS_CONFIG_NAME, EnvsConfig,
+import { WORKSPACE_CONFIG_NAME, ENVS_CONFIG_NAME,
   USER_CONFIG_NAME, UserDataConfig, WorkspaceMetadataConfig, envsConfigInstance,
   userDataConfigInstance, workspaceMetadataConfigInstance } from './workspace_config_types'
 import { NoWorkspaceConfig, NoEnvsConfig } from './errors'
@@ -46,13 +47,6 @@ export const getLocalStorage = async (workspaceName: string, uid: string): Promi
   return computedLocalStorage
 }
 
-type OldOrNewEnvConfig = {
-  name: string
-  services?: string[]
-  accounts: string[]
-  accountToServiceName: Record<string, string>
-}
-
 export const workspaceConfigSource = async (
   baseDir: string, localStorage?: string
 ): Promise<WorkspaceConfigSource> => {
@@ -74,35 +68,30 @@ export const workspaceConfigSource = async (
   return {
     localStorage: computedLocalStorage,
     getWorkspaceConfig: async (): Promise<WorkspaceConfig> => {
-      const envs = (await repoCs.get(ENVS_CONFIG_NAME))?.value
-      const fixedEnvs: EnvsConfig = {
-        envs: [],
-      }
-      // Fix env in case configuration is deprecated, before multiple accounts refactor SALTO-1264
-      if (envs) {
-        envs.envs.forEach((env: OldOrNewEnvConfig) => {
-          const accountToServiceName = env.accountToServiceName
-            ?? Object.fromEntries((env.services ?? []).map(account => [account, account]))
-          fixedEnvs.envs.push({
-            name: env.name,
-            accountToServiceName,
-          })
-          delete env.services
-          env.accountToServiceName = accountToServiceName
-        })
-      }
-      const userData = (await localCs.get(USER_CONFIG_NAME))?.value as UserDataConfig
       const workspaceMetadata = (
         await repoCs.get(WORKSPACE_CONFIG_NAME)
       )?.value as WorkspaceMetadataConfig
       if (_.isUndefined(workspaceMetadata)) {
         throw new NoWorkspaceConfig()
       }
+      const envs = (await repoCs.get(ENVS_CONFIG_NAME))?.value
       if (_.isUndefined(envs)) {
         throw new NoEnvsConfig()
       }
+      // Fix env in case configuration is deprecated, before multiple accounts refactor SALTO-1264
+      const fixedEnvs = envs.envs.map((env: Value) => {
+        if (env.services) {
+          return {
+            accountToServiceName: Object.fromEntries(
+              env.services.map((service: string) => [service, service])
+            ),
+          }
+        }
+        return env
+      })
+      const userData = (await localCs.get(USER_CONFIG_NAME))?.value as UserDataConfig
       return {
-        ...fixedEnvs,
+        envs: fixedEnvs,
         ...userData,
         ...workspaceMetadata,
       }

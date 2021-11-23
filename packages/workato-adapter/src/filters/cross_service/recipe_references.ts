@@ -52,7 +52,6 @@ const getServiceConnectionDetails = (
         ({ id: inst.elemID, applicationName: inst.value.application as string }),
       ])
   )
-
   const connectionDetailsByService = _.mapValues(
     serviceConnectionConfig,
     connectionNames => Object.fromEntries(
@@ -106,25 +105,24 @@ const filterRelevantRecipeCodes = (
 const addReferencesForConnectionRecipes = async (
   relevantRecipeCodes: InstanceElement[],
   appName: string,
-  accountName: string,
+  serviceName: string,
   serviceElements: ReadonlyArray<Readonly<Element>>,
-  accountToServiceTypeMapping: Record<string, string>,
 ): Promise<void> => {
-  if (accountToServiceTypeMapping[accountName] === SALESFORCE) {
+  if (serviceName === SALESFORCE) {
     const index = indexSalesforceByMetadataTypeAndApiName(serviceElements)
     await awu(relevantRecipeCodes).forEach(
       inst => addSalesforceRecipeReferences(inst, index, appName)
     )
     return
   }
-  if (accountToServiceTypeMapping[accountName] === NETSUITE) {
+  if (serviceName === NETSUITE) {
     const index = indexNetsuiteByTypeAndScriptId(serviceElements)
     await awu(relevantRecipeCodes).forEach(
       inst => addNetsuiteRecipeReferences(inst, index, appName)
     )
   }
 
-  if (accountName === ZUORA_BILLING) {
+  if (serviceName === ZUORA_BILLING) {
     const index = indexZuoraByElemId(serviceElements)
     await awu(relevantRecipeCodes).forEach(
       inst => addZuoraRecipeReferences(inst, index, appName)
@@ -156,7 +154,6 @@ const filter: FilterCreator = ({ config }) => ({
         return
       }
     }
-
     const serviceConnectionDetails = getServiceConnectionDetails(
       serviceConnectionNames,
       currentAdapterElements
@@ -186,9 +183,8 @@ const filter: FilterCreator = ({ config }) => ({
           await addReferencesForConnectionRecipes(
             relevantRecipeCodes,
             applicationName,
-            accountName,
+            accountToServiceNameMap[accountName],
             elementsByAdapter[accountName] ?? [],
-            accountToServiceNameMap,
           )
         })
       })

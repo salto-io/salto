@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DetailedChange, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, SaltoError, Element } from '@salto-io/adapter-api'
+import { DetailedChange, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
 import { applyDetailedChanges, buildElementsSourceFromElements, detailedCompare, transformElement } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import path from 'path'
+import { createAdapterReplacedID, updateElementsWithAlternativeAccount } from '../element_adapter_rename'
 import { mergeSingleElement } from '../merger'
 import { serialize } from '../serializer'
 import { deserializeValidationErrors } from '../serializer/elements'
@@ -25,7 +26,6 @@ import { validateElements, ValidationError } from '../validator'
 import { Errors } from './errors'
 import { NaclFilesSource } from './nacl_files'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
-import { createAdapterReplacedID, updateElementsWithAlternativeAdapter } from '../element_manipulation'
 
 export type PartialNaclFilesSource = Pick<NaclFilesSource, 'getErrors' | 'getSourceRanges' | 'getNaclFile' | 'setNaclFiles' | 'flush' | 'getParsedNaclFile' | 'getSourceMap' | 'listNaclFiles'>
 
@@ -100,7 +100,7 @@ export const buildAdaptersConfigSource = async ({
 
   const changes = await naclSource.load({ ignoreFileChanges })
 
-  const elementsSource = buildElementsSourceFromElements(configTypes, naclSource)
+  let elementsSource = buildElementsSourceFromElements(configTypes, naclSource)
 
   const validationErrorsMap = await remoteMapCreator<ValidationError[]>({
     namespace: VALIDATION_ERRORS_NAMESPACE,
@@ -172,26 +172,24 @@ export const buildAdaptersConfigSource = async ({
     },
 
     setAdapter: async (account, adapter, configs) => {
-      const additionalConfigs: Element[] = []
+      const additionalConfigs: InstanceElement[] = []
       await awu([configs].flat()).forEach(async config => {
         const configTypeID = config.refType.elemID
         if (!(await elementsSource.get(configTypeID))) {
           const accountConfigType = (await elementsSource.get(
             createAdapterReplacedID(config.refType.elemID, adapter)
           )).clone()
-          await updateElementsWithAlternativeAdapter([accountConfigType], account, adapter)
+          await updateElementsWithAlternativeAccount([accountConfigType], account, adapter)
           additionalConfigs.push(accountConfigType)
         }
       })
-      const elementsSourceWithAdditionalConfig = buildElementsSourceFromElements(additionalConfigs,
-        elementsSource)
+      elementsSource = buildElementsSourceFromElements(additionalConfigs, elementsSource)
       const configsToUpdate = collections.array.makeArray(configs).map(e => e.clone())
       const currConfWithoutOverrides = await getConfigWithoutOverrides(account)
       // Could happen at the initialization of a service.
       if (currConfWithoutOverrides === undefined) {
         await overwriteNacl(configsToUpdate)
-        await updateValidationErrorsCache(validationErrorsMap,
-          elementsSourceWithAdditionalConfig, naclSource)
+        await updateValidationErrorsCache(validationErrorsMap, elementsSource, naclSource)
         return
       }
       const currConf = currConfWithoutOverrides.clone()
@@ -210,8 +208,7 @@ export const buildAdaptersConfigSource = async ({
         const reversedOverrides = detailedCompare(currConf, currConfWithoutOverrides)
         await naclSource.updateNaclFiles(reversedOverrides)
       }
-      await updateValidationErrorsCache(validationErrorsMap,
-        elementsSourceWithAdditionalConfig, naclSource)
+      await updateValidationErrorsCache(validationErrorsMap, elementsSource, naclSource)
     },
     getElementNaclFiles: async adapter => naclSource.getElementNaclFiles(
       new ElemID(adapter, ElemID.CONFIG_NAME, 'instance', ElemID.CONFIG_NAME)

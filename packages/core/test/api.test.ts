@@ -34,7 +34,7 @@ const mockService = 'salto'
 const emptyMockService = 'salto2'
 const mockServiceWithInstall = 'adapterWithInstallMethod'
 
-const SERVICES = [mockService, emptyMockService]
+const ACCOUNTS = [mockService, emptyMockService]
 
 jest.mock('../src/core/fetch', () => ({
   ...jest.requireActual<{}>('../src/core/fetch'),
@@ -138,7 +138,7 @@ describe('api.ts', () => {
         stateOverride = jest.spyOn(ws.state(), 'override')
         mockGetAdaptersCreatorConfigs = jest.spyOn(adapters, 'getAdaptersCreatorConfigs')
         mockFetchChanges.mockClear()
-        await api.fetch(ws, undefined, SERVICES)
+        await api.fetch(ws, undefined, ACCOUNTS)
       })
 
       it('should call fetch changes', () => {
@@ -199,7 +199,7 @@ describe('api.ts', () => {
       mockedGetPlan = jest.spyOn(plan, 'getPlan')
       mockGetPlanResult = mockPlan.getPlan()
       mockedGetPlan.mockResolvedValue(mockGetPlanResult)
-      result = await api.preview(mockWorkspace({}), SERVICES)
+      result = await api.preview(mockWorkspace({}), ACCOUNTS)
     })
 
     afterAll(() => {
@@ -249,7 +249,7 @@ describe('api.ts', () => {
             .map(change => (isAdditionChange(change) ? cloneAndAddAnnotation(change) : change)),
           errors: [],
         }))
-        result = await api.deploy(ws, actionPlan, jest.fn(), SERVICES)
+        result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS)
       })
 
       it('should call adapter deploy function', async () => {
@@ -323,7 +323,7 @@ describe('api.ts', () => {
           appliedChanges: changeGroup.changes.filter(isModificationChange),
           errors: [new Error('cannot add new employee')],
         }))
-        result = await api.deploy(ws, actionPlan, jest.fn(), SERVICES)
+        result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS)
       })
 
       it('should return error for the failed part', () => {
@@ -356,7 +356,7 @@ describe('api.ts', () => {
         const newConf = mockConfigInstance.clone()
         newConf.value.password = 'bla'
         await api.updateCredentials(ws, newConf)
-        expect(ws.updateServiceCredentials).toHaveBeenCalledTimes(1)
+        expect(ws.updateAccountCredentials).toHaveBeenCalledTimes(1)
       })
       it('should call validateCredentials', async () => {
         const newConf = mockConfigInstance.clone()
@@ -401,7 +401,7 @@ describe('api.ts', () => {
         }
         const wsp = mockWorkspace({})
         await api.addAdapter(wsp, serviceName)
-        expect((wsp.addService as jest.Mock).call).toHaveLength(1)
+        expect((wsp.addAccount as jest.Mock).call).toHaveLength(1)
       })
     })
 
@@ -409,7 +409,7 @@ describe('api.ts', () => {
       const newConf = mockConfigInstance.clone()
       newConf.value.password = 'bla'
       await api.updateCredentials(ws, newConf)
-      expect((ws.updateServiceConfig as jest.Mock).call).toHaveLength(1)
+      expect((ws.updateAccountConfig as jest.Mock).call).toHaveLength(1)
     })
   })
 
@@ -505,7 +505,7 @@ describe('api.ts', () => {
         await api.fetchFromWorkspace({
           otherWorkspace: ws,
           workspace: ows,
-          services: SERVICES,
+          accounts: ACCOUNTS,
           env: 'default',
         })
       })
@@ -525,7 +525,7 @@ describe('api.ts', () => {
         await api.fetchFromWorkspace({
           otherWorkspace: ws,
           workspace: ows,
-          services: [mockService],
+          accounts: [mockService],
           env: 'default',
         })
       })

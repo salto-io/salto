@@ -29,11 +29,11 @@ export const SERVICES_OPTION: KeyedOption<ServicesArg> = {
   type: 'stringsList',
 }
 
-export const getAndValidateActiveServices = (
+export const getAndValidateActiveAccounts = (
   workspace: Workspace,
   inputServices?: string[]
 ): string[] => {
-  const workspaceServices = workspace.services()
+  const workspaceServices = workspace.accounts()
   if (workspaceServices.length === 0) {
     throw new Error(`No services are configured for env=${workspace.currentEnv()}. Use 'salto service add'.`)
   }

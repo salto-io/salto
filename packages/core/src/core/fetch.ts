@@ -27,7 +27,7 @@ import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAdapter, createAdapterReplacedID } from '@salto-io/workspace'
+import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
@@ -368,27 +368,54 @@ const fetchAndProcessMergeErrors = async (
     updatedConfigs: UpdatedConfig[]
     partiallyFetchedAdapters: Set<string>
   }> => {
+  const updateConfigAccountName = async (
+    configs: InstanceElement[],
+    accountName: string,
+    service: string,
+  ): Promise<InstanceElement[]> => {
+    const configClones = (await expressions.resolve(
+      configs,
+      stateElements,
+      true
+    )).filter(isInstanceElement)
+    await updateElementsWithAlternativeAccount(
+      configClones,
+      accountName,
+      service
+    )
+    return configClones
+  }
+  const updateErrorAccountNames = async (
+    errors: SaltoError[],
+    accountName: string,
+  ): Promise<void> => {
+    errors.forEach(error => {
+      if (isSaltoElementError(error)) {
+        error.elemID = createAdapterReplacedID(error.elemID, accountName)
+      }
+    })
+  }
   const handleAccountNameUpdate = async (
     fetchResult: FetchResult,
     accountName: string,
     service: string,
   ): Promise<void> => {
     // Resolve is used for an efficient deep clone
-    fetchResult.elements = await expressions.resolve(fetchResult.elements,
-      stateElements, true)
-    await updateElementsWithAlternativeAdapter(fetchResult.elements, accountName, service)
+    fetchResult.elements = await expressions.resolve(
+      fetchResult.elements,
+      stateElements,
+      true
+    )
+    await updateElementsWithAlternativeAccount(fetchResult.elements, accountName, service)
     if (fetchResult.updatedConfig) {
-      fetchResult.updatedConfig.config = (await expressions.resolve(fetchResult
-        .updatedConfig.config, stateElements, true)) as InstanceElement[]
-      await updateElementsWithAlternativeAdapter(fetchResult.updatedConfig.config, accountName,
-        service)
+      fetchResult.updatedConfig.config = await updateConfigAccountName(
+        fetchResult.updatedConfig.config,
+        accountName,
+        service
+      )
     }
     if (fetchResult.errors) {
-      fetchResult.errors.forEach(error => {
-        if (isSaltoElementError(error)) {
-          error.elemID = createAdapterReplacedID(error.elemID, accountName)
-        }
-      })
+      await updateErrorAccountNames(fetchResult.errors, accountName)
     }
   }
   try {
@@ -406,8 +433,9 @@ const fetchAndProcessMergeErrors = async (
           if (
             fetchResult.elements.length > 0 && accountName !== accountToServiceNameMap[accountName]
           ) {
-            await handleAccountNameUpdate(fetchResult, accountName,
-              accountToServiceNameMap[accountName])
+            await handleAccountNameUpdate(
+              fetchResult, accountName, accountToServiceNameMap[accountName],
+            )
           }
           // We need to flatten the elements string to avoid a memory leak. See docs
           // of the flattenElementStr method for more details.
@@ -720,7 +748,7 @@ const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult =>
 })
 export const fetchChangesFromWorkspace = async (
   otherWorkspace: Workspace,
-  fetchServices: string[],
+  fetchAccounts: string[],
   workspaceElements: elementSource.ElementsSource,
   stateElements: elementSource.ElementsSource,
   currentConfigs: InstanceElement[],
@@ -729,7 +757,7 @@ export const fetchChangesFromWorkspace = async (
 ): Promise<FetchChangesResult> => {
   const getDifferentConfigs = async (): Promise<InstanceElement[]> => (
     awu(currentConfigs).filter(async config => {
-      const otherConfig = await otherWorkspace.serviceConfig(config.elemID.adapter)
+      const otherConfig = await otherWorkspace.accountConfig(config.elemID.adapter)
       return !otherConfig || !otherConfig.isEqual(config)
     }).toArray()
   )
@@ -738,12 +766,12 @@ export const fetchChangesFromWorkspace = async (
     return createEmptyFetchChangeDueToError(`${env} env does not exist in the source workspace.`)
   }
 
-  const otherServices = otherWorkspace.services(env)
-  const missingServices = fetchServices.filter(service => !otherServices.includes(service))
+  const otherAccounts = otherWorkspace.accounts(env)
+  const missingAccounts = fetchAccounts.filter(account => !otherAccounts.includes(account))
 
-  if (missingServices.length > 0) {
+  if (missingAccounts.length > 0) {
     return createEmptyFetchChangeDueToError(
-      `Source env does not contain the following services: ${missingServices.join(',')}`
+      `Source env does not contain the following services: ${missingAccounts.join(',')}`
     )
   }
 
@@ -760,13 +788,13 @@ export const fetchChangesFromWorkspace = async (
 
   const getChangesEmitter = new StepEmitter()
   if (progressEmitter) {
-    progressEmitter.emit('changesWillBeFetched', getChangesEmitter, fetchServices)
+    progressEmitter.emit('changesWillBeFetched', getChangesEmitter, fetchAccounts)
   }
 
   const fullElements = await awu(
     await (await otherWorkspace.elements(true, env)).getAll()
   )
-    .filter(elem => fetchServices.includes(elem.elemID.adapter))
+    .filter(elem => fetchAccounts.includes(elem.elemID.adapter))
     .toArray()
 
   const otherPathIndex = await otherWorkspace.state(env).getPathIndex()
@@ -774,7 +802,7 @@ export const fetchChangesFromWorkspace = async (
     elem => pathIndex.splitElementByPath(elem, otherPathIndex)
   ).flat().toArray()
   return createFetchChanges({
-    adapterNames: fetchServices,
+    adapterNames: fetchAccounts,
     currentConfigs,
     getChangesEmitter,
     processErrorsResult: {
@@ -874,10 +902,14 @@ export const createElemIdGetter = async (
     elements,
     src,
   )
-  return (adapterName: string, serviceIds: ServiceIds, name: string): ElemID => {
+  // Here we expect the serviceName to come from the service. So, it's not aware of the
+  // account name of the relevant account. However, the map we search in was built to
+  // accomodate this. The only thing we need is to make sure that we change the ElemID
+  // we get from the map back to fit the service name.
+  return (serviceName: string, serviceIds: ServiceIds, name: string): ElemID => {
     const elemID = serviceIdToStateElemId[toServiceIdsString(serviceIds)]
-      || new ElemID(adapterName, name)
-    return createAdapterReplacedID(elemID, adapterName)
+      || new ElemID(serviceName, name)
+    return createAdapterReplacedID(elemID, serviceName)
   }
 }
 
@@ -890,15 +922,17 @@ export const getFetchAdapterAndServicesSetup = async (
   adaptersCreatorConfigs: Record<string, AdapterOperationsContext>
   currentConfigs: InstanceElement[]
 }> => {
-  const elemIDGetters = ignoreStateElemIdMapping ? {}
+  const elemIDGetters = ignoreStateElemIdMapping
+    ? {}
     : await mapValuesAsync(accountToServiceNameMap, async (_service, account) =>
-      createElemIdGetter(awu(await (
-        await workspace.elements()).getAll()).filter(e => e.elemID.adapter === account),
-      workspace.state()))
+      createElemIdGetter(
+        awu(await (await workspace.elements()).getAll()).filter(e => e.elemID.adapter === account),
+        workspace.state()
+      ))
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
-    await workspace.servicesCredentials(fetchServices),
-    workspace.serviceConfig.bind(workspace),
+    await workspace.accountCredentials(fetchServices),
+    workspace.accountConfig.bind(workspace),
     await workspace.elements(),
     accountToServiceNameMap,
     elemIDGetters,

@@ -31,7 +31,7 @@ import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliS
 import { getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
-import { SERVICES_OPTION, ServicesArg, getAndValidateActiveServices } from './common/services'
+import { SERVICES_OPTION, ServicesArg, getAndValidateActiveAccounts } from './common/services'
 
 const log = logger(module)
 const { series } = promises.array
@@ -57,7 +57,7 @@ export type FetchCommandArgs = {
   shouldUpdateConfig: ShouldUpdateConfigFunc
   shouldCalcTotalSize: boolean
   stateOnly: boolean
-  services: string[]
+  accounts: string[]
   regenerateSaltoIds: boolean
 }
 
@@ -65,20 +65,20 @@ const createFetchFromWorkspaceCommand = (
   fetchFromWorkspaceFunc: FetchFromWorkspaceFunc,
   otherWorkspacePath: string,
   env : string
-): FetchFunc => async (workspace, progressEmitter, services) => {
+): FetchFunc => async (workspace, progressEmitter, accounts) => {
   let otherWorkspace: Workspace
   try {
     otherWorkspace = await loadLocalWorkspace(otherWorkspacePath, [], false)
   } catch (err) {
     throw new Error(`Failed to load source workspace: ${err.message ?? err}`)
   }
-  return fetchFromWorkspaceFunc({ workspace, otherWorkspace, progressEmitter, services, env })
+  return fetchFromWorkspaceFunc({ workspace, otherWorkspace, progressEmitter, accounts, env })
 }
 
 export const fetchCommand = async (
   {
     workspace, force, mode,
-    getApprovedChanges, shouldUpdateConfig, services,
+    getApprovedChanges, shouldUpdateConfig, accounts,
     cliTelemetry, output, fetch, shouldCalcTotalSize,
     stateOnly, regenerateSaltoIds,
   }: FetchCommandArgs): Promise<CliExitCode> => {
@@ -143,7 +143,7 @@ export const fetchCommand = async (
   const fetchResult = await fetch(
     workspace,
     fetchProgress,
-    services,
+    accounts,
     regenerateSaltoIds,
   )
 
@@ -172,10 +172,10 @@ export const fetchCommand = async (
           planItem,
         )
         if (shouldWriteToConfig) {
-          await workspace.updateServiceConfig(
-            accountName,
+          await workspace.updateAccountConfig(
             workspace.getServiceFromAccountName(accountName),
-            fetchResult.updatedConfig[accountName]
+            fetchResult.updatedConfig[accountName],
+            accountName
           )
         }
         return !shouldWriteToConfig
@@ -264,9 +264,9 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   }
   const { shouldCalcTotalSize } = config
   await validateAndSetEnv(workspace, input, output)
-  const activeServices = getAndValidateActiveServices(workspace, services)
+  const activeAccounts = getAndValidateActiveAccounts(workspace, services)
   const stateRecencies = await Promise.all(
-    activeServices.map(service => workspace.getStateRecency(service))
+    activeAccounts.map(account => workspace.getStateRecency(account))
   )
   // Print state recencies
   outputLine(formatStateRecencies(stateRecencies), output)
@@ -279,7 +279,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   }
 
   let useAlignMode = false
-  if (!force && mode !== 'align' && await shouldRecommendAlignMode(workspace, stateRecencies, activeServices)) {
+  if (!force && mode !== 'align' && await shouldRecommendAlignMode(workspace, stateRecencies, activeAccounts)) {
     const userChoice = await getChangeToAlignAction(mode, output)
     if (userChoice === 'cancel operation') {
       log.info('Canceling operation based on user input')
@@ -304,7 +304,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
     ) : apiFetch,
     getApprovedChanges: cliGetApprovedChanges,
     shouldUpdateConfig: cliShouldUpdateConfig,
-    services: activeServices,
+    accounts: activeAccounts,
     mode: useAlignMode ? 'align' : mode,
     shouldCalcTotalSize,
     stateOnly,

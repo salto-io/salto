@@ -26,7 +26,7 @@ import Prompts from '../prompts'
 import { getWorkspaceTelemetryTags, updateWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import { getApprovedChanges } from '../callbacks'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
-import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './common/services'
+import { ServicesArg, SERVICES_OPTION, getAndValidateActiveAccounts } from './common/services'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
 
 const log = logger(module)
@@ -133,9 +133,9 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
     return CliExitCode.UserInputError
   }
   await validateAndSetEnv(workspace, input, output)
-  const activeServices = getAndValidateActiveServices(workspace, services)
+  const activeAccounts = getAndValidateActiveAccounts(workspace, services)
   const stateRecencies = await Promise.all(
-    activeServices.map(service => workspace.getStateRecency(service))
+    activeAccounts.map(account => workspace.getStateRecency(account))
   )
   // Print state recencies
   outputLine(formatStateRecencies(stateRecencies), output)
@@ -150,7 +150,7 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
   outputLine(EOL, output)
   outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_START), output)
 
-  const changes = await restore(workspace, activeServices, validSelectors)
+  const changes = await restore(workspace, activeAccounts, validSelectors)
   if (listPlannedChanges || dryRun) {
     await printRestorePlan(changes, detailedPlan, output)
   }

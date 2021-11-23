@@ -20,7 +20,7 @@ import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy } from '@salt
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
-import { ServicesArg, SERVICES_OPTION, getAndValidateActiveServices } from './common/services'
+import { ServicesArg, SERVICES_OPTION, getAndValidateActiveAccounts } from './common/services'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { outputLine, errorOutputLine } from '../outputer'
 import { header, formatExecutionPlan, deployPhaseHeader, cancelDeployOutput, formatItemDone, formatItemError, formatCancelAction, formatActionInProgress, formatActionStart, deployPhaseEpilogue, formatStateRecencies } from '../formatter'
@@ -177,7 +177,7 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
 }): Promise<CliExitCode> => {
   const { force, dryRun, detailedPlan, services } = input
   await validateAndSetEnv(workspace, input, output)
-  const actualServices = getAndValidateActiveServices(workspace, services)
+  const actualServices = getAndValidateActiveAccounts(workspace, services)
   const stateRecencies = await Promise.all(
     actualServices.map(service => workspace.getStateRecency(service))
   )

@@ -2158,7 +2158,7 @@ describe('workspace', () => {
 
     it('should change workspace state', async () => {
       await workspace.setCurrentEnv('inactive')
-      expect(workspace.services().sort()).toEqual([...services, 'hubspot'].sort())
+      expect(workspace.accounts().sort()).toEqual([...services, 'hubspot'].sort())
     })
 
     it('should persist', async () => {
@@ -2530,22 +2530,22 @@ describe('workspace', () => {
     })
   })
 
-  describe('addService', () => {
+  describe('addAccount', () => {
     let workspaceConf: WorkspaceConfigSource
     let workspace: Workspace
 
     beforeEach(async () => {
       workspaceConf = mockWorkspaceConfigSource()
       workspace = await createWorkspace(undefined, undefined, workspaceConf)
-      await workspace.addService('new')
+      await workspace.addAccount('new')
     })
 
     it('should change workspace state', async () => {
-      expect(workspace.services().includes('new')).toBeTruthy()
+      expect(workspace.accounts().includes('new')).toBeTruthy()
     })
 
     it('should throw service duplication error', async () => {
-      await expect(workspace.addService('new')).rejects.toThrow(AccountDuplicationError)
+      await expect(workspace.addAccount('new')).rejects.toThrow(AccountDuplicationError)
     })
 
     it('should persist', () => {
@@ -2558,7 +2558,7 @@ describe('workspace', () => {
     })
   })
 
-  describe('updateServiceCredentials', () => {
+  describe('updateAccountCredentials', () => {
     let credsSource: ConfigSource
     let workspace: Workspace
     const newCreds = new InstanceElement(
@@ -2570,7 +2570,7 @@ describe('workspace', () => {
     beforeEach(async () => {
       credsSource = mockCredentialsSource()
       workspace = await createWorkspace(undefined, undefined, undefined, undefined, credsSource)
-      await workspace.updateServiceCredentials(services[0], newCreds)
+      await workspace.updateAccountCredentials(services[0], newCreds)
     })
 
     it('should persist', () => {
@@ -2582,7 +2582,7 @@ describe('workspace', () => {
     })
   })
 
-  describe('updateServiceConfig', () => {
+  describe('updateAccountConfig', () => {
     let adaptersConf: AdaptersConfigSource
     let workspace: Workspace
     const newConf = new InstanceElement(services[0],
@@ -2591,7 +2591,7 @@ describe('workspace', () => {
     beforeEach(async () => {
       adaptersConf = mockAdaptersConfigSource()
       workspace = await createWorkspace(undefined, undefined, undefined, adaptersConf)
-      await workspace.updateServiceConfig(services[0], services[0], newConf)
+      await workspace.updateAccountConfig(services[0], newConf, services[0])
     })
 
     it('should persist', () => {
@@ -2605,7 +2605,7 @@ describe('workspace', () => {
     })
   })
 
-  describe('servicesCredentials', () => {
+  describe('accountCredentials', () => {
     let credsSource: ConfigSource
     let workspace: Workspace
 
@@ -2623,12 +2623,12 @@ describe('workspace', () => {
     })
 
     it('should get creds', async () => {
-      await workspace.servicesCredentials()
+      await workspace.accountCredentials()
       expect(credsSource.get).toHaveBeenCalledTimes(1)
     })
 
     it('should get creds partials', async () => {
-      await workspace.servicesCredentials(services)
+      await workspace.accountCredentials(services)
       expect(credsSource.get).toHaveBeenCalledTimes(1)
     })
   })

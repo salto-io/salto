@@ -84,7 +84,7 @@ describe('diff command', () => {
       expect(result).toBe(CliExitCode.Success)
     })
     it('should invoke the diff api command', async () => {
-      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', false, false, workspace.services(), [])
+      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', false, false, workspace.accounts(), [])
     })
   })
 
@@ -110,7 +110,7 @@ describe('diff command', () => {
       expect(result).toBe(CliExitCode.Success)
     })
     it('should invoke the diff api command', async () => {
-      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', true, false, workspace.services(), [])
+      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', true, false, workspace.accounts(), [])
     })
   })
 
@@ -136,7 +136,7 @@ describe('diff command', () => {
       expect(result).toBe(CliExitCode.Success)
     })
     it('should invoke the diff api command', async () => {
-      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', false, true, workspace.services(), [])
+      expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive', false, true, workspace.accounts(), [])
     })
   })
 
@@ -165,7 +165,7 @@ describe('diff command', () => {
     })
     it('should invoke the diff api command', async () => {
       expect(diff).toHaveBeenCalledWith(workspace, 'active', 'inactive',
-        false, true, workspace.services(), expectElementSelector(regex))
+        false, true, workspace.accounts(), expectElementSelector(regex))
     })
   })
 

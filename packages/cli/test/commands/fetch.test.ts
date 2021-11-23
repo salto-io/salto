@@ -51,7 +51,7 @@ jest.mock('@salto-io/core', () => ({
   loadLocalWorkspace: jest.fn().mockImplementation(() => mocks.mockWorkspace({})),
 }))
 describe('fetch command', () => {
-  const services = ['salesforce']
+  const accounts = ['salesforce']
   let cliCommandArgs: mocks.MockCommandArgs
   let telemetry: mocks.MockTelemetry
   let cliTelemetry: CliTelemetry
@@ -78,7 +78,7 @@ describe('fetch command', () => {
           input: {
             force: true,
             mode: 'default',
-            services,
+            services: accounts,
             stateOnly: false,
             regenerateSaltoIds: false,
           },
@@ -101,7 +101,7 @@ describe('fetch command', () => {
           input: {
             force: true,
             mode: 'default',
-            services,
+            services: accounts,
             stateOnly: false,
             regenerateSaltoIds: false,
           },
@@ -158,7 +158,7 @@ describe('fetch command', () => {
             shouldUpdateConfig: mockUpdateConfig,
             mode: 'default',
             shouldCalcTotalSize: true,
-            services,
+            accounts,
             stateOnly: false,
             regenerateSaltoIds: false,
           })
@@ -184,7 +184,7 @@ describe('fetch command', () => {
             workspace,
             force: true,
             output,
-            services,
+            accounts,
             cliTelemetry,
             fetch: mockFetch,
             getApprovedChanges: mockEmptyApprove,
@@ -222,7 +222,7 @@ describe('fetch command', () => {
           fetchArgs = {
             workspace,
             force: false,
-            services,
+            accounts,
             cliTelemetry,
             output,
             fetch: mockFetchWithChanges,
@@ -239,15 +239,15 @@ describe('fetch command', () => {
           mockShouldUpdateConfig.mockResolvedValueOnce(Promise.resolve(true))
           result = await fetchCommand(fetchArgs)
           expect(result).toBe(CliExitCode.Success)
-          expect(fetchArgs.workspace.updateServiceConfig).toHaveBeenCalledWith('salesforce',
-            'salesforce', [newConfig])
+          expect(fetchArgs.workspace.updateAccountConfig).toHaveBeenCalledWith('salesforce',
+            [newConfig], 'salesforce')
         })
 
         it('should not write config when abort was requested', async () => {
           mockShouldUpdateConfig.mockResolvedValueOnce(Promise.resolve(false))
           result = await fetchCommand(fetchArgs)
           expect(result).toBe(CliExitCode.UserInputError)
-          expect(fetchArgs.workspace.updateServiceConfig).not.toHaveBeenCalled()
+          expect(fetchArgs.workspace.updateAccountConfig).not.toHaveBeenCalled()
         })
       })
       describe('with upstream changes', () => {
@@ -268,7 +268,7 @@ describe('fetch command', () => {
             result = await fetchCommand({
               workspace,
               force: true,
-              services,
+              accounts,
               cliTelemetry,
               output,
               fetch: mockFetchWithChanges,
@@ -294,7 +294,7 @@ describe('fetch command', () => {
             result = await fetchCommand({
               workspace,
               force: true,
-              services,
+              accounts,
               cliTelemetry,
               output,
               fetch: mockFetchWithChanges,
@@ -320,7 +320,7 @@ describe('fetch command', () => {
             result = await fetchCommand({
               workspace,
               force: true,
-              services,
+              accounts,
               cliTelemetry,
               output,
               fetch: mockFetchWithChanges,
@@ -346,7 +346,7 @@ describe('fetch command', () => {
             result = await fetchCommand({
               workspace,
               force: true,
-              services,
+              accounts,
               cliTelemetry,
               output,
               fetch: mockFetchWithChanges,
@@ -370,7 +370,7 @@ describe('fetch command', () => {
             it('should throw an error', () => expect(fetchCommand({
               workspace: mocks.mockWorkspace({}),
               force: true,
-              services,
+              accounts,
               cliTelemetry,
               output,
               fetch: mockFetchWithChanges,
@@ -389,7 +389,7 @@ describe('fetch command', () => {
               result = await fetchCommand({
                 workspace,
                 force: true,
-                services,
+                accounts,
                 cliTelemetry,
                 output,
                 fetch: mockFetchWithChanges,
@@ -418,7 +418,7 @@ describe('fetch command', () => {
               result = await fetchCommand({
                 workspace,
                 force: true,
-                services,
+                accounts,
                 cliTelemetry,
                 output,
                 fetch: mockFetchWithChanges,
@@ -443,7 +443,7 @@ describe('fetch command', () => {
             await fetchCommand({
               workspace,
               force: false,
-              services,
+              accounts,
               cliTelemetry,
               output,
               fetch: mockFetchWithChanges,
@@ -471,7 +471,7 @@ describe('fetch command', () => {
               await fetchCommand({
                 workspace,
                 force: false,
-                services,
+                accounts,
                 cliTelemetry,
                 output,
                 fetch: mockFetchWithChanges,
@@ -502,7 +502,7 @@ describe('fetch command', () => {
               const res = await fetchCommand({
                 workspace,
                 force: false,
-                services,
+                accounts,
                 cliTelemetry,
                 output,
                 fetch: mockFetchWithChanges,
@@ -532,7 +532,7 @@ describe('fetch command', () => {
               const res = await fetchCommand({
                 workspace,
                 force: false,
-                services,
+                accounts,
                 cliTelemetry,
                 output,
                 fetch: mockFetchWithChanges,
@@ -583,7 +583,7 @@ describe('fetch command', () => {
             mode: 'default',
             shouldCalcTotalSize: true,
             stateOnly: false,
-            services: [],
+            accounts: [],
             regenerateSaltoIds: false,
           })
         })
@@ -625,7 +625,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'default',
-          services,
+          services: accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -646,7 +646,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'override',
-          services,
+          services: accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -666,7 +666,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'default',
-          services,
+          services: accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -685,7 +685,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'override',
-          services,
+          services: accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -708,7 +708,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'default',
-          services,
+          services: accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -728,7 +728,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'align',
-          services,
+          services: accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -748,7 +748,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'default',
-          services,
+          services: accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -792,7 +792,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services,
+          services: accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -807,7 +807,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services,
+          services: accounts,
           stateOnly: false,
           env: mocks.withEnvironmentParam,
           regenerateSaltoIds: false,
@@ -822,7 +822,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'default',
-          services,
+          services: accounts,
           stateOnly: false,
           env: 'envThatDoesNotExist',
           regenerateSaltoIds: false,
@@ -857,7 +857,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services,
+          services: accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
           fromEnv: env,
@@ -870,7 +870,7 @@ describe('fetch command', () => {
       const usedArgs = mockFetchFromWorkspace.mock.calls[0][0]
       expect(usedArgs.workspace).toEqual(workspace)
       expect(usedArgs.otherWorkspace).toEqual(sourceWS)
-      expect(usedArgs.services).toEqual(services)
+      expect(usedArgs.accounts).toEqual(accounts)
       expect(usedArgs.env).toEqual(env)
     })
 
@@ -883,7 +883,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services,
+          services: accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
           fromEnv: 'what*env*er',
@@ -900,7 +900,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services,
+          services: accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
           fromEnv: 'what*env*er',
@@ -917,7 +917,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services,
+          services: accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
           fromWorkspace: 'path/to/nowhere',

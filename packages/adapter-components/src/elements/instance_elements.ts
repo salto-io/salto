@@ -86,35 +86,37 @@ export const toBasicInstance = async ({
 
   const isValueTypeSupported = (value: unknown): boolean => _.isString(value) || _.isNumber(value)
 
-  const hasDefinedField = (fields: string[] | undefined): boolean =>
-    fields !== undefined && fields.some(field => {
+  const hasDefinedField = (fields: string[]): boolean =>
+    fields.some(field => {
       const value = _.get(entry, field)
       return value !== undefined && value !== null && isValueTypeSupported(value)
     })
 
-
   const getNamePart = (field: string): string => {
     const value = _.get(entry, field)
-    if (value === undefined || value === null) {
-      log.warn('Ignoring field "%s" with value "%s"', field, value)
+    if (value === null) {
+      log.warn('Ignoring null field "%s"', field)
       return UNSUPPORTED_FIELD_REPRESENTATION
     } if (!isValueTypeSupported(value)) {
-      log.warn('Ignoring field "%s" with unsupported type "$%s". Supported types: String, Number', field, typeof value)
+      log.warn('Ignoring field "%s" with unsupported type "%s". Supported types: String, Number', field, typeof value)
       return UNSUPPORTED_FIELD_REPRESENTATION
     }
     return value
   }
 
-  const fileNameParts = fileNameFields?.map(getNamePart) ?? []
-  const fileName = hasDefinedField(fileNameFields)
-    ? fileNameParts.map(String).join(NAME_PARTS_SEPARATOR) : defaultName
-
   const idParts = idFields?.map(getNamePart) ?? []
   const elementIdName = hasDefinedField(idFields)
-    ? idParts.map(String).join(NAME_PARTS_SEPARATOR) : defaultName
+    ? idParts.join(NAME_PARTS_SEPARATOR)
+    : defaultName
   const naclName = naclCase(
     parent && nestName ? `${parent.elemID.name}${ID_SEPARATOR}${elementIdName}` : String(elementIdName)
   )
+
+  const fileNameParts = fileNameFields?.map(getNamePart) ?? []
+  const fileName = hasDefinedField(fileNameFields ?? [])
+    ? fileNameParts.join(NAME_PARTS_SEPARATOR)
+    : elementIdName
+
   const adapterName = type.elemID.adapter
 
   return new InstanceElement(
@@ -131,7 +133,7 @@ export const toBasicInstance = async ({
       adapterName,
       RECORDS_PATH,
       pathNaclCase(type.elemID.name),
-      fileName ? pathNaclCase(naclCase(fileName)) : pathNaclCase(naclName),
+      pathNaclCase(naclCase(fileName)),
     ],
     parent ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID)] } : undefined,
   )

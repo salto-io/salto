@@ -25,6 +25,7 @@ const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configU
 const DEFAULT_ID_FIELDS = ['id']
 export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'object', fieldType: 'string' },
+  { fieldName: 'created', fieldType: 'number' },
 ]
 
 export const CLIENT_CONFIG = 'client'
@@ -35,9 +36,7 @@ export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 export type StripeClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 
 export type StripeFetchConfig = configUtils.UserFetchConfig
-export type StripeApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
-  swagger: configUtils.AdapterSwaggerApiConfig['swagger']
-}
+export type StripeApiConfig = configUtils.AdapterSwaggerApiConfig
 
 export type StripeConfig = {
   [CLIENT_CONFIG]?: StripeClientConfig
@@ -80,14 +79,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: StripeApiConfig['types'] = {
     },
     transformation: {
       dataField: 'data',
-      fieldsToOmit: [
-        { fieldName: 'product', fieldType: 'unknown' },
-      ],
     },
   },
   tax_rate: {
     transformation: {
-      idFields: ['display_name', 'id'],
+      idFields: ['id', 'country', 'percentage'],
       fileNameFields: ['display_name'],
     },
   },
@@ -124,6 +120,7 @@ const ALL_SUPPORTED_TYPES = [
   'webhook_endpoints',
 ]
 
+// noinspection UnnecessaryLocalVariableJS
 export const DEFAULT_INCLUDE_TYPES = ALL_SUPPORTED_TYPES
 
 export const configType = createMatchingObjectType<StripeConfig>({

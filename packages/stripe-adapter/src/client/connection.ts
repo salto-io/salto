@@ -26,7 +26,7 @@ export const validateCredentials = async ({ connection }: {
   connection: clientUtils.APIConnection
 }): Promise<AccountId> => {
   try {
-    const res = await connection.get('/v1/products')
+    const res = await connection.get('/v1/coupons')
     if (res.status !== 200) {
       throw new clientUtils.UnauthorizedError('Authentication failed')
     }

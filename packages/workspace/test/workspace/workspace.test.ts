@@ -2739,38 +2739,6 @@ describe('workspace', () => {
     })
   })
 
-  describe('getElementOutgoingReferences', () => {
-    let workspace: Workspace
-
-    beforeAll(async () => {
-      workspace = await createWorkspace()
-    })
-
-    it('None-base type should throw', async () => {
-      await expect(workspace.getElementOutgoingReferences(new ElemID('adapter', 'type', 'attr', 'aaa'))).rejects.toThrow()
-    })
-
-    it('None-exist type should return empty array', async () => {
-      expect(await workspace.getElementOutgoingReferences(new ElemID('adapter', 'notExists'))).toEqual([])
-    })
-  })
-
-  describe('getElementIncomingReferences', () => {
-    let workspace: Workspace
-
-    beforeAll(async () => {
-      workspace = await createWorkspace()
-    })
-
-    it('None-base type should throw', async () => {
-      await expect(workspace.getElementIncomingReferences(new ElemID('adapter', 'type', 'attr', 'aaa'))).rejects.toThrow()
-    })
-
-    it('None-exist type should return empty array', async () => {
-      expect(await workspace.getElementIncomingReferences(new ElemID('adapter', 'notExists'))).toEqual([])
-    })
-  })
-
   describe('hasElementsInEnv', () => {
     let workspace: Workspace
     beforeEach(async () => {

@@ -571,6 +571,37 @@ describe('suiteapp_file_cabinet', () => {
           .deploy([change], 'update')
         expect(errors).toEqual([new Error('Failed to find the internal id of the file /instance10000')])
         expect(appliedChanges).toHaveLength(0)
+        expect(mockSuiteAppClient.updateFileCabinetInstances).not.toHaveBeenCalledWith()
+      })
+
+      it('should return both update errors and invalid instance errors', async () => {
+        const notExistsChange = toChange({
+          before: new InstanceElement(
+            'instance10000',
+            folder,
+            {
+              path: '/instance10000',
+            }
+          ),
+          after: new InstanceElement(
+            'instance10000',
+            folder,
+            {
+              path: '/instance10000',
+              description: 'aaa',
+            }
+          ),
+        })
+
+        mockSuiteAppClient.updateFileCabinetInstances.mockRejectedValue(new Error('someError'))
+        const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+          .deploy([changes[0], notExistsChange], 'update')
+        expect(errors).toEqual([
+          new Error('someError'),
+          new Error('Failed to find the internal id of the file /instance10000'),
+        ])
+        expect(appliedChanges).toHaveLength(0)
+        expect(mockSuiteAppClient.updateFileCabinetInstances).not.toHaveBeenCalledWith()
       })
 
       it('should return an error if file parent is not found', async () => {

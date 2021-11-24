@@ -32,6 +32,10 @@ module.exports = deepMerge(
         statements: 95,
       },
     },
+    transform: {
+      "\\.(ts|tsx)$": "ts-jest",
+      "^.+\\.jsx?$": "babel-jest",
+    },
   },
 )
 

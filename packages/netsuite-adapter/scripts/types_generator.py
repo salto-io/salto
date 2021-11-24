@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 import os
 import pyotp
 import re
@@ -234,13 +235,13 @@ def parse_field_def(type_name, cells, is_attribute, is_inner_type, script_id_pre
 
 def parse_enums(account_id):
     webpage.get(enums_link_template.format(account_id = account_id))
-    enums_list_items = webpage.find_elements_by_xpath('//*[@id="nshelp"]/div[2]/div/ul/li/p/a')
+    enums_list_items = webpage.find_elements(By.XPATH, '//*[@id="nshelp"]/div[2]/div/ul/li/p/a')
     enum_name_to_page_link = { enum_link.text : enum_link.get_attribute('href') for enum_link in enums_list_items }
     enum_to_possible_values = {}
     for enum_name, page_link in enum_name_to_page_link.items():
         try:
             webpage.get(page_link)
-            enum_to_possible_values[enum_name] = [possible_value.text.split()[0] for possible_value in webpage.find_elements_by_xpath('//*[@id="nshelp"]/div[2]/div/div/ul/li/p')]
+            enum_to_possible_values[enum_name] = [possible_value.text.split()[0] for possible_value in webpage.find_elements(By.XPATH, '//*[@id="nshelp"]/div[2]/div/div/ul/li/p')]
         except Exception as e:
             logging.error('Failed to extract possible values for enum: ' + enum_name + '. Error: ', e)
     return enum_to_possible_values
@@ -259,27 +260,27 @@ def parse_type(type_name, script_id_prefix, inner_type_name_to_def, top_level_ty
     is_inner_type = type_name != top_level_type_name
 
     def is_structured_list_field(fields_tables_len, structured_fields_len):
-        type_description_sections = webpage.find_elements_by_xpath('//*[@id="nshelp"]/div[2]/div/p')
+        type_description_sections = webpage.find_elements(By.XPATH, '//*[@id="nshelp"]/div[2]/div/p')
         is_explicitly_not_a_list = any([('field group is a DEFAULT' in type_description_section.text) for type_description_section in type_description_sections])
         is_explicitly_a_list = any([('field group is a COLLECTION' in type_description_section.text) for type_description_section in type_description_sections])
         return is_explicitly_a_list or (fields_tables_len == 1 and structured_fields_len == 1 and not is_explicitly_not_a_list)
 
-    fields_tables = webpage.find_elements_by_xpath('//*[@class="nshelp_section"]')
+    fields_tables = webpage.find_elements(By.XPATH, '//*[@class="nshelp_section"]')
     field_definitions = []
     annotations = {}
     for fields_table in fields_tables:
-        fields_section_headline = fields_table.find_element_by_xpath('.//h2').text
+        fields_section_headline = fields_table.find_element(By.XPATH, './/h2').text
         if fields_section_headline == 'Feature Dependencies':
             # we don't have anything interesting to extract here
             continue
         if fields_section_headline == 'Additional Files':
-            additional_file_suffix = fields_table.find_element_by_xpath('.//ul/li/p/strong').text[len('Object-Script-ID.template.'):]
+            additional_file_suffix = fields_table.find_element(By.XPATH, './/ul/li/p/strong').text[len('Object-Script-ID.template.'):]
             field_definitions.append({ NAME: 'content', TYPE: 'fieldTypes.fileContent',
                 ANNOTATIONS: {'[constants.ADDITIONAL_FILE_SUFFIX]': "'{0}'".format(additional_file_suffix)}, IS_LIST: False })
             continue
         if fields_section_headline == 'Structured Fields':
             inner_structured_field_name_to_link = { inner_structured_field.text : inner_structured_field.get_attribute('href')
-                for inner_structured_field in fields_table.find_elements_by_xpath('.//ul/li/p/a') }
+                for inner_structured_field in fields_table.find_elements(By.XPATH, './/ul/li/p/a') }
             is_list_from_doc = is_structured_list_field(len(fields_tables), len(inner_structured_field_name_to_link.items()))
             for inner_structured_field_name, link in inner_structured_field_name_to_link.items():
                 webpage.get(link)
@@ -298,8 +299,8 @@ def parse_type(type_name, script_id_prefix, inner_type_name_to_def, top_level_ty
         else:
             raise Exception('unknown fields section ', fields_section_headline)
 
-        for field_row in fields_table.find_elements_by_xpath('.//tbody/tr'):
-            cells = field_row.find_elements_by_xpath('.//td')
+        for field_row in fields_table.find_elements(By.XPATH, './/tbody/tr'):
+            cells = field_row.find_elements(By.XPATH, './/td')
             field_def = parse_field_def(type_name, cells, is_attribute, is_inner_type, script_id_prefix)
             field_def[IS_LIST] = False
             field_definitions.append(field_def)
@@ -314,7 +315,7 @@ def parse_types_definitions(account_id, type_name_to_script_id_prefix):
         return "'FIX_ME!'"
 
     webpage.get(sdf_xml_definitions_link_template.format(account_id = account_id))
-    types_list_items = webpage.find_elements_by_xpath('//*[@id="nshelp"]/div[2]/div/ul/li/p/a')
+    types_list_items = webpage.find_elements(By.XPATH, '//*[@id="nshelp"]/div[2]/div/ul/li/p/a')
     type_name_to_page_link = { type_link.text : type_link.get_attribute('href') for type_link in types_list_items }
     type_name_to_types_defs = {}
     for type_name, page_link in type_name_to_page_link.items():
@@ -331,8 +332,8 @@ def parse_types_definitions(account_id, type_name_to_script_id_prefix):
 
 def generate_type_name_to_script_id_prefix():
     type_name_to_script_id_prefix = {}
-    for row in webpage.find_elements_by_xpath('//*[@id="nshelp"]/div[2]/div/div[2]/table/tbody/tr'):
-        cells = row.find_elements_by_xpath('.//td/p')
+    for row in webpage.find_elements(By.XPATH, '//*[@id="nshelp"]/div[2]/div/div[2]/table/tbody/tr'):
+        cells = row.find_elements(By.XPATH, './/td/p')
         type_name_to_script_id_prefix[cells[0].text] = cells[1].text
     return type_name_to_script_id_prefix
 
@@ -341,15 +342,15 @@ def login(username, password, secret_key_2fa):
     logging.info('Trying to login to NetSuite documentation')
     # submit username & password
     time.sleep(1)
-    webpage.find_element_by_xpath('/html/body/div/div/div[2]/form/div[2]/input').send_keys(username)
-    webpage.find_element_by_xpath('/html/body/div/div/div[2]/form/div[3]/input').send_keys(password)
-    webpage.find_element_by_xpath('//*[@id="login-submit"]').click()
+    webpage.find_element(By.XPATH, '//*[@id="userName"]').send_keys(username)
+    webpage.find_element(By.XPATH, '//*[@id="password"]').send_keys(password)
+    webpage.find_element(By.XPATH, '//*[@id="login-submit"]').click()
     time.sleep(2)
 
     # generate 2FA token and submit
     token2fa = pyotp.TOTP(secret_key_2fa).now()
-    webpage.find_element_by_xpath('//*[@id="n-id-component-20"]').send_keys(token2fa)
-    webpage.find_element_by_xpath('//*[@id="n-id-component-41"]').click()
+    webpage.find_element(By.XPATH, '//*[@id="n-id-component-34"]').send_keys(token2fa)
+    webpage.find_element(By.XPATH, '//*[@id="n-id-component-60"]').click()
     time.sleep(1)
 
 

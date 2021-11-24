@@ -37,7 +37,7 @@ const translationcollection_strings_string = new ObjectType({
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    }, /* Original description: This attribute value can be up to 60 characters long. */
+    }, /* Original description: This attribute value can be up to 255 characters long. */
     defaulttranslation: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {

@@ -73,6 +73,18 @@ export const advancedpdftemplate = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    trantype: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 4000 }),
+      },
+    }, /* Original description: This field value can be up to 4000 characters long. */
+    printtype: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 4000 }),
+      },
+    }, /* Original description: This field value can be up to 4000 characters long. */
     savedsearch: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {

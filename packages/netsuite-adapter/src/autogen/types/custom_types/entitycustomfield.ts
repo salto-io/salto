@@ -318,10 +318,10 @@ export const entitycustomfield = new ObjectType({
       },
     }, /* Original description: This field accepts references to the entitycustomfield custom type.   For information about other possible values, see generic_standard_field. */
     sourcefrom: {
-      refType: createRefToElmWithValue(enums.generic_standard_field),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
-    }, /* Original description: For information about possible values, see generic_standard_field. */
+    }, /* Original description: This field accepts references to the entitycustomfield custom type.   For information about other possible values, see generic_standard_field. */
     sourcelist: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {

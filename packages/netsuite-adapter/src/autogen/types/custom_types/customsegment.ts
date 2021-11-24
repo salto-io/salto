@@ -346,6 +346,67 @@ const customsegment_segmentapplication_items = new ObjectType({
 
 customsegmentInnerTypes.push(customsegment_segmentapplication_items)
 
+const customsegment_segmentapplication_otherrecords_applications_applicationElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_otherrecords_applications_application')
+
+const customsegment_segmentapplication_otherrecords_applications_application = new ObjectType({
+  elemID: customsegment_segmentapplication_otherrecords_applications_applicationElemID,
+  annotations: {
+  },
+  fields: {
+    id: {
+      refType: createRefToElmWithValue(enums.customsegment_otherrecords_application_id),
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    }, /* Original description: For information about possible values, see customsegment_otherrecords_application_id. */
+    isapplied: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    }, /* Original description: The default value is F. */
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
+})
+
+customsegmentInnerTypes.push(customsegment_segmentapplication_otherrecords_applications_application)
+
+const customsegment_segmentapplication_otherrecords_applicationsElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_otherrecords_applications')
+
+const customsegment_segmentapplication_otherrecords_applications = new ObjectType({
+  elemID: customsegment_segmentapplication_otherrecords_applicationsElemID,
+  annotations: {
+  },
+  fields: {
+    application: {
+      refType: createRefToElmWithValue(new ListType(customsegment_segmentapplication_otherrecords_applications_application)),
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
+})
+
+customsegmentInnerTypes.push(customsegment_segmentapplication_otherrecords_applications)
+
+const customsegment_segmentapplication_otherrecordsElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_otherrecords')
+
+const customsegment_segmentapplication_otherrecords = new ObjectType({
+  elemID: customsegment_segmentapplication_otherrecordsElemID,
+  annotations: {
+  },
+  fields: {
+    applications: {
+      refType: createRefToElmWithValue(customsegment_segmentapplication_otherrecords_applications),
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
+})
+
+customsegmentInnerTypes.push(customsegment_segmentapplication_otherrecords)
+
 const customsegment_segmentapplication_transactionbody_applications_applicationElemID = new ElemID(constants.NETSUITE, 'customsegment_segmentapplication_transactionbody_applications_application')
 
 const customsegment_segmentapplication_transactionbody_applications_application = new ObjectType({
@@ -502,6 +563,11 @@ const customsegment_segmentapplication = new ObjectType({
     },
     items: {
       refType: createRefToElmWithValue(customsegment_segmentapplication_items),
+      annotations: {
+      },
+    },
+    otherrecords: {
+      refType: createRefToElmWithValue(customsegment_segmentapplication_otherrecords),
       annotations: {
       },
     },

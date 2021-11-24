@@ -58,6 +58,28 @@ E2E tests are run on CircleCI builds, and you should also run them locally befor
 
 **Important** E2E tests for the `cli` and `salesforce-adapter` need [valid SFDC credentials](packages/salesforce-adapter/README.md#E2E-tests) to run.
 
+### Running TypeScript Tests Directly
+
+* Add **ts-jest** and **babel-jest** to your package. Make sure their version matches your jest version.
+```text
+"jest": "^26.6.3",
+"ts-jest": "26.5.6",
+"babel-jest": "26.6.3",
+```
+* In your jest config file, define the following transform config:
+```text
+transform: {
+          "\\.(ts|tsx)$": "ts-jest",
+          "^.+\\.jsx?$": "babel-jest",
+      },
+```
+
+* Define the Environment Variable **RUN_TS_JEST=1** and run your tests.
+```bash
+RUN_TS_JEST=1 yarn test  # run unit tests
+RUN_TS_JEST=1 RUN_E2E_TESTS=1 yarn test  # run e2e tests
+```
+
 ### Creating a release
 
 _Salto_ is versioned using the [semantic versioning scheme](https://semver.org/). Therefore, when composing a new

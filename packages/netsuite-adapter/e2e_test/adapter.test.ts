@@ -139,7 +139,7 @@ describe('Netsuite adapter E2E with real account', () => {
       FILE,
       {
         description: randomString,
-        ...(withSuiteApp ? { [PATH]: '/Images/InnerFolder/e2eTest.js' } : {}),
+        ...(withSuiteApp ? { [PATH]: '/Images/e2eTest.js' } : {}),
       }
     )
 
@@ -147,7 +147,7 @@ describe('Netsuite adapter E2E with real account', () => {
       FOLDER,
       {
         description: randomString,
-        ...(withSuiteApp ? { [PATH]: '/Images/InnerFolder' } : {}),
+        ...(withSuiteApp ? { [PATH]: '/Images' } : {}),
       }
     )
 

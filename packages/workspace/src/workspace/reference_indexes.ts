@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ElementsSource } from './elements_source'
-import { RemoteMap } from './remote_map'
+import { RemoteMap, RemoteMapEntry } from './remote_map'
 
 const { awu } = collections.asynciterable
 
@@ -66,18 +66,29 @@ const getReferencesFromChange = (change: Change<Element>): ChangeReferences => {
   }
 }
 
-const updateIndex = (index: RemoteMap<ElemID[]>, id: string, values: ElemID[]): Promise<void> => (
-  values.length !== 0
-    ? index.set(id, _.uniqBy(values, elemId => elemId.getFullName()))
-    : index.delete(id)
-)
+const updateIndex = async (
+  index: RemoteMap<ElemID[]>,
+  updates: RemoteMapEntry<ElemID[]>[]
+): Promise<void> => {
+  const [deletions, modifications] = _.partition(updates, update => update.value.length === 0)
+  const uniqueModification = modifications.map(modification => ({
+    ...modification,
+    value: _.uniqBy(modification.value, id => id.getFullName()),
+  }))
+  await Promise.all([
+    modifications.length !== 0 ? index.setAll(uniqueModification) : undefined,
+    deletions.length !== 0 ? index.deleteAll(deletions.map(deletion => deletion.key)) : undefined,
+  ])
+}
 
 const updateReferenceTargetsIndex = async (
   changes: Change<Element>[],
   index: RemoteMap<ElemID[]>,
   changeToReferences: Record<string, ChangeReferences>
 ): Promise<void> => {
-  await Promise.all(changes.map(async change => {
+  const updates = changes.flatMap(change => {
+    const indexUpdates: RemoteMapEntry<ElemID[]>[] = []
+
     const references = changeToReferences[getChangeElement(change).elemID.getFullName()]
       .currentAndNew
     const baseIdToReferences = _(references)
@@ -94,58 +105,45 @@ const updateReferenceTargetsIndex = async (
           ...type.fields,
         }
         : type.fields
-      await Promise.all(
-        Object.values(allFields)
-          .map(async field => updateIndex(
-            index,
-            field.elemID.getFullName(),
-            baseIdToReferences[field.elemID.getFullName()] ?? []
-          ))
+
+      indexUpdates.push(
+        ...Object.values(allFields)
+          .map(field => ({
+            key: field.elemID.getFullName(),
+            value: baseIdToReferences[field.elemID.getFullName()] ?? [],
+          }))
       )
     }
     const elemId = getChangeElement(change).elemID.getFullName()
-    await updateIndex(
-      index,
-      elemId,
-      changeToReferences[elemId].currentAndNew
+    indexUpdates.push({
+      key: elemId,
+      value: changeToReferences[elemId].currentAndNew
         .map(ref => ref.referenceTarget),
-    )
-  }))
+    })
+
+    return indexUpdates
+  })
+
+  await updateIndex(index, updates)
 }
 
-const updateIdOfReferenceSourcesIndex = async (
+const updateIdOfReferenceSourcesIndex = (
   id: string,
-  referenceSourcesGroup: ElemID[],
+  addedSources: ElemID[],
+  oldSources: ElemID[],
   allChangedReferenceSources: Set<string>,
-  index: RemoteMap<ElemID[]>,
-  changeToReferences: Record<string, ChangeReferences>,
-): Promise<void> => {
-  const oldReferenceSources = await index.get(id) ?? []
-
-  const unchangedReferenceSources = oldReferenceSources.filter(
+): RemoteMapEntry<ElemID[]> => {
+  const unchangedReferenceSources = oldSources.filter(
     elemId => !allChangedReferenceSources.has(elemId.createTopLevelParentID().parent.getFullName())
   )
 
-  const currentId = ElemID.fromFullName(id)
-  const changedReferenceSources = referenceSourcesGroup
-    .flatMap(elemId => changeToReferences[elemId.getFullName()].currentAndNew)
-    .filter(ref => currentId.isParentOf(ref.referenceTarget)
-        || currentId.isEqual(ref.referenceTarget))
-    .map(ref => ref.referenceSource)
-
-  await updateIndex(index, id, _.concat(unchangedReferenceSources, changedReferenceSources))
+  return { key: id, value: _.concat(unchangedReferenceSources, addedSources) }
 }
 
-const updateReferenceSourcesIndex = async (
-  changes: Change<Element>[],
-  index: RemoteMap<ElemID[]>,
-  changeToReferences: Record<string, ChangeReferences>
-): Promise<void> => {
-  const removedReferences = Object.values(changeToReferences).flatMap(change => change.removed)
-  const addedReferences = Object.values(changeToReferences).flatMap(change => change.currentAndNew)
-
-  const referenceSourcesChanges = _(addedReferences)
-    .concat(removedReferences)
+const getReferenceSourcesMap = (
+  references: ReferenceDetails[],
+): Record<string, ElemID[]> => {
+  const referenceSourcesChanges = _(references)
     .groupBy(({ referenceTarget }) => referenceTarget.createBaseID().parent.getFullName())
     .mapValues(refs => refs.map(ref => ref.referenceSource))
     .value()
@@ -161,6 +159,20 @@ const updateReferenceSourcesIndex = async (
       referenceSourcesChanges[topLevelId].push(...sourceIds)
     }
   })
+  return referenceSourcesChanges
+}
+
+const updateReferenceSourcesIndex = async (
+  changes: Change<Element>[],
+  index: RemoteMap<ElemID[]>,
+  changeToReferences: Record<string, ChangeReferences>,
+  initialIndex: boolean
+): Promise<void> => {
+  const removedReferences = Object.values(changeToReferences).flatMap(change => change.removed)
+  const addedReferences = Object.values(changeToReferences).flatMap(change => change.currentAndNew)
+
+  const referenceSourcesAdditions = getReferenceSourcesMap(addedReferences)
+  const referenceSourcesRemovals = getReferenceSourcesMap(removedReferences)
 
   const changedReferenceSources = new Set(
     changes
@@ -168,21 +180,30 @@ const updateReferenceSourcesIndex = async (
       .map(elem => elem.elemID.getFullName())
   )
 
-  await Promise.all(
-    Object.entries(referenceSourcesChanges)
-      .map(async ([id, referenceSourcesGroup]) => {
-        await updateIdOfReferenceSourcesIndex(
-          id,
-          _.uniqBy(
-            referenceSourcesGroup.map(elemId => elemId.createTopLevelParentID().parent),
-            elemId => elemId.getFullName()
-          ),
-          changedReferenceSources,
-          index,
-          changeToReferences,
-        )
-      })
-  )
+  const relevantKeys = _(referenceSourcesAdditions)
+    .keys()
+    .concat(Object.keys(referenceSourcesRemovals))
+    .uniq()
+    .value()
+
+  const oldReferencesSources = !initialIndex
+    ? _(await index.getMany(relevantKeys))
+      .map((ids, i) => ({ ids, i }))
+      .keyBy(({ i }) => relevantKeys[i])
+      .mapValues(({ ids }) => ids)
+      .value()
+    : {}
+
+  const updates = relevantKeys
+    .map(id =>
+      updateIdOfReferenceSourcesIndex(
+        id,
+        referenceSourcesAdditions[id] ?? [],
+        oldReferencesSources[id] ?? [],
+        changedReferenceSources,
+      ))
+
+  await updateIndex(index, updates)
 }
 
 const getAllElementsChanges = async (
@@ -202,6 +223,7 @@ export const updateReferenceIndexes = async (
   isCacheValid: boolean,
 ): Promise<void> => log.time(async () => {
   let relevantChanges = changes
+  let initialIndex = false
   const isVersionMatch = await mapVersions.get(REFERENCE_INDEXES_KEY) === REFERENCE_INDEXES_VERSION
   if (!isCacheValid || !isVersionMatch) {
     if (!isVersionMatch) {
@@ -216,6 +238,7 @@ export const updateReferenceIndexes = async (
       referenceSourcesIndex.clear(),
       mapVersions.set(REFERENCE_INDEXES_KEY, REFERENCE_INDEXES_VERSION),
     ])
+    initialIndex = true
   }
 
   const changeToReferences = Object.fromEntries(relevantChanges
@@ -229,10 +252,10 @@ export const updateReferenceIndexes = async (
     referenceTargetsIndex,
     changeToReferences,
   )
-
   await updateReferenceSourcesIndex(
     relevantChanges,
     referenceSourcesIndex,
     changeToReferences,
+    initialIndex,
   )
 }, 'updating references indexes')

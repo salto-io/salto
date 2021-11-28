@@ -14,55 +14,121 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { collections, strings, multiIndex, promises, values as lowerdashValues } from '@salto-io/lowerdash'
+import { collections, multiIndex, promises, strings, values as lowerdashValues } from '@salto-io/lowerdash'
 import {
-  ADAPTER, Element, Field, ObjectType, TypeElement, isObjectType, isInstanceElement, ElemID,
-  BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement, Values, ReadOnlyElementsSource,
-  ReferenceExpression, ListType, Change, getChangeElement, isField, isObjectTypeChange,
-  isAdditionOrRemovalChange, isFieldChange, isRemovalChange, isInstanceChange, toChange,
+  ADAPTER,
+  BuiltinTypes,
+  Change,
+  CORE_ANNOTATIONS,
   createRefToElmWithValue,
+  Element,
+  ElemID,
+  Field,
+  getChangeElement,
+  InstanceElement,
+  isAdditionOrRemovalChange,
+  isField,
+  isFieldChange,
+  isInstanceChange,
+  isInstanceElement,
+  isObjectType,
+  isObjectTypeChange,
+  isRemovalChange,
+  ListType,
+  ObjectType,
+  ReadOnlyElementsSource,
+  ReferenceExpression,
+  toChange,
+  TypeElement,
+  TypeMap,
+  Values,
 } from '@salto-io/adapter-api'
-import { findObjectType, transformValues, getParents, pathNaclCase } from '@salto-io/adapter-utils'
+import { findObjectType, getParents, pathNaclCase, transformValues } from '@salto-io/adapter-utils'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
 import {
-  API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
-  LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
-  VALUE_SETTINGS_FIELDS, API_NAME_SEPARATOR, FIELD_ANNOTATIONS, VALUE_SET_DEFINITION_FIELDS,
-  VALUE_SET_FIELDS, DEFAULT_VALUE_FORMULA, FIELD_TYPE_NAMES, OBJECTS_PATH, INSTALLED_PACKAGES_PATH,
-  FORMULA, LEAD_CONVERT_SETTINGS_METADATA_TYPE, ASSIGNMENT_RULES_METADATA_TYPE,
-  QUICK_ACTION_METADATA_TYPE, CUSTOM_TAB_METADATA_TYPE,
-  DUPLICATE_RULE_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
-  VALIDATION_RULES_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE,
-  WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_FIELD, NAME_FIELDS,
-  COMPOUND_FIELD_TYPE_NAMES, INTERNAL_ID_ANNOTATION, INTERNAL_ID_FIELD, LIGHTNING_PAGE_TYPE,
+  API_NAME,
+  API_NAME_SEPARATOR,
+  ASSIGNMENT_RULES_METADATA_TYPE,
+  BUSINESS_PROCESS_METADATA_TYPE,
+  COMPOUND_FIELD_TYPE_NAMES,
+  CUSTOM_FIELD,
+  CUSTOM_OBJECT,
+  CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE,
+  CUSTOM_TAB_METADATA_TYPE,
+  DEFAULT_VALUE_FORMULA,
+  DUPLICATE_RULE_METADATA_TYPE,
+  FIELD_ANNOTATIONS,
+  FIELD_DEPENDENCY_FIELDS,
+  FIELD_TYPE_NAMES,
   FLEXI_PAGE_TYPE,
+  FORMULA,
+  INSTALLED_PACKAGES_PATH,
+  INSTANCE_FULL_NAME_FIELD,
+  INTERNAL_FIELD_TYPE_NAMES,
+  INTERNAL_ID_ANNOTATION,
+  INTERNAL_ID_FIELD,
+  LABEL,
+  LEAD_CONVERT_SETTINGS_METADATA_TYPE,
+  LIGHTNING_PAGE_TYPE,
+  LOOKUP_FILTER_FIELDS,
+  METADATA_TYPE,
+  NAME_FIELDS,
+  OBJECTS_PATH,
+  QUICK_ACTION_METADATA_TYPE,
+  RECORD_TYPE_METADATA_TYPE,
+  SALESFORCE,
+  SHARING_RULES_TYPE,
+  VALIDATION_RULES_METADATA_TYPE,
+  VALUE_SET_DEFINITION_FIELDS,
+  VALUE_SET_FIELDS,
+  VALUE_SETTINGS_FIELDS,
+  WEBLINK_METADATA_TYPE,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
-  getSObjectFieldElement, Types, isCustomObject, apiName, transformPrimitive, MetadataValues,
-  formulaTypeName, metadataType, isCustom, isCustomSettings, metadataAnnotationTypes,
-  MetadataTypeAnnotations, createInstanceElement, toCustomField, toCustomProperties, isLocalOnly,
-  toMetadataInfo,
-  isFieldOfCustomObject,
+  apiName,
+  createInstanceElement,
   createInstanceServiceIds,
+  formulaTypeName,
+  getSObjectFieldElement,
+  isCustom,
+  isCustomObject,
+  isCustomSettings,
+  isFieldOfCustomObject,
+  isLocalOnly,
+  metadataAnnotationTypes,
+  metadataType,
+  MetadataTypeAnnotations,
+  MetadataValues,
+  toCustomField,
+  toCustomProperties,
+  toMetadataInfo,
+  transformPrimitive,
+  Types,
 } from '../transformers/transformer'
 import {
-  id, addApiName, addMetadataType, addLabel, getNamespace, boolValue,
-  buildAnnotationsObjectType, addElementParentReference, apiNameParts,
-  parentApiName,
-  getDataFromChanges,
-  isInstanceOfTypeChange,
-  isInstanceOfType,
-  isMasterDetailField,
-  buildElementsSourceForFetch,
+  addApiName,
+  addElementParentReference,
   addKeyPrefix,
+  addLabel,
+  addMetadataType,
+  apiNameParts,
+  boolValue,
+  buildAnnotationsObjectType,
+  buildElementsSourceForFetch,
+  getDataFromChanges,
+  id,
+  isInstanceOfType,
+  isInstanceOfTypeChange,
+  isMasterDetailField,
+  parentApiName,
 } from './utils'
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
 import { CustomObject } from '../client/types'
-import { WORKFLOW_FIELD_TO_TYPE, WORKFLOW_TYPE_TO_FIELD, WORKFLOW_DIR_NAME } from './workflow'
+import { WORKFLOW_DIR_NAME, WORKFLOW_FIELD_TO_TYPE, WORKFLOW_TYPE_TO_FIELD } from './workflow'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -161,9 +227,8 @@ export const getObjectDirectoryPath = async (
   namespace?: string,
 ): Promise<string[]> => {
   const objFileName = pathNaclCase(obj.elemID.name)
-  const objNamespace = namespace ?? await getNamespace(obj)
-  if (objNamespace) {
-    return [SALESFORCE, INSTALLED_PACKAGES_PATH, objNamespace, OBJECTS_PATH, objFileName]
+  if (namespace) {
+    return [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, objFileName]
   }
   return [SALESFORCE, OBJECTS_PATH, objFileName]
 }

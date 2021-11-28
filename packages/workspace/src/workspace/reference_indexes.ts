@@ -66,7 +66,7 @@ const getReferencesFromChange = (change: Change<Element>): ChangeReferences => {
   }
 }
 
-const updateIndex = async (
+const updateUniqueIndex = async (
   index: RemoteMap<ElemID[]>,
   updates: RemoteMapEntry<ElemID[]>[]
 ): Promise<void> => {
@@ -81,50 +81,57 @@ const updateIndex = async (
   ])
 }
 
+const getReferenceTargetIndexUpdates = (
+  change: Change<Element>,
+  changeToReferences: Record<string, ChangeReferences>,
+): RemoteMapEntry<ElemID[]>[] => {
+  const indexUpdates: RemoteMapEntry<ElemID[]>[] = []
+
+  const references = changeToReferences[getChangeElement(change).elemID.getFullName()]
+    .currentAndNew
+  const baseIdToReferences = _(references)
+    .groupBy(reference => reference.referenceSource.createBaseID().parent.getFullName())
+    .mapValues(referencesGroup => referencesGroup.map(ref => ref.referenceTarget))
+    .value()
+
+  if (isObjectTypeChange(change)) {
+    const type = getChangeElement(change)
+
+    const allFields = isModificationChange(change)
+      ? {
+        ...change.data.before.fields,
+        ...type.fields,
+      }
+      : type.fields
+
+    indexUpdates.push(
+      ...Object.values(allFields)
+        .map(field => ({
+          key: field.elemID.getFullName(),
+          value: baseIdToReferences[field.elemID.getFullName()] ?? [],
+        }))
+    )
+  }
+  const elemId = getChangeElement(change).elemID.getFullName()
+  indexUpdates.push({
+    key: elemId,
+    value: changeToReferences[elemId].currentAndNew
+      .map(ref => ref.referenceTarget),
+  })
+
+  return indexUpdates
+}
+
 const updateReferenceTargetsIndex = async (
   changes: Change<Element>[],
   index: RemoteMap<ElemID[]>,
   changeToReferences: Record<string, ChangeReferences>
 ): Promise<void> => {
-  const updates = changes.flatMap(change => {
-    const indexUpdates: RemoteMapEntry<ElemID[]>[] = []
+  const updates = changes.flatMap(
+    change => getReferenceTargetIndexUpdates(change, changeToReferences)
+  )
 
-    const references = changeToReferences[getChangeElement(change).elemID.getFullName()]
-      .currentAndNew
-    const baseIdToReferences = _(references)
-      .groupBy(reference => reference.referenceSource.createBaseID().parent.getFullName())
-      .mapValues(referencesGroup => referencesGroup.map(ref => ref.referenceTarget))
-      .value()
-
-    if (isObjectTypeChange(change)) {
-      const type = getChangeElement(change)
-
-      const allFields = isModificationChange(change)
-        ? {
-          ...change.data.before.fields,
-          ...type.fields,
-        }
-        : type.fields
-
-      indexUpdates.push(
-        ...Object.values(allFields)
-          .map(field => ({
-            key: field.elemID.getFullName(),
-            value: baseIdToReferences[field.elemID.getFullName()] ?? [],
-          }))
-      )
-    }
-    const elemId = getChangeElement(change).elemID.getFullName()
-    indexUpdates.push({
-      key: elemId,
-      value: changeToReferences[elemId].currentAndNew
-        .map(ref => ref.referenceTarget),
-    })
-
-    return indexUpdates
-  })
-
-  await updateIndex(index, updates)
+  await updateUniqueIndex(index, updates)
 }
 
 const updateIdOfReferenceSourcesIndex = (
@@ -186,13 +193,13 @@ const updateReferenceSourcesIndex = async (
     .uniq()
     .value()
 
-  const oldReferencesSources = !initialIndex
-    ? _(await index.getMany(relevantKeys))
+  const oldReferencesSources = initialIndex
+    ? {}
+    : _(await index.getMany(relevantKeys))
       .map((ids, i) => ({ ids, i }))
       .keyBy(({ i }) => relevantKeys[i])
       .mapValues(({ ids }) => ids)
       .value()
-    : {}
 
   const updates = relevantKeys
     .map(id =>
@@ -203,7 +210,7 @@ const updateReferenceSourcesIndex = async (
         changedReferenceSources,
       ))
 
-  await updateIndex(index, updates)
+  await updateUniqueIndex(index, updates)
 }
 
 const getAllElementsChanges = async (

@@ -156,8 +156,13 @@ export const provideWorkspaceCompletionItems = async (
 ): Promise<SaltoCompletion[]> => {
   const tokens = getLineTokens(removeLinePrefix(line))
   const lineType = getLineType(context, tokens, position)
+
+  const elements = context.range.filePath !== undefined
+    ? await workspace.getElementSourceOfPath(context.range.filePath)
+    : await workspace.elements
+
   const suggestionsParams = {
-    elements: await workspace.elements,
+    elements,
     tokens,
     ref: context.ref,
   }

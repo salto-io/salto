@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import open from 'open'
-import { ElemID, ObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { Element, ElemID, ObjectType, CORE_ANNOTATIONS, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
 import { errors, UnresolvedElemIDs, createElementSelector } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { CliExitCode } from '../../src/types'
-import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction, openAction, listAction } from '../../src/commands/element'
+import { cloneAction, moveToEnvsAction, moveToCommonAction, listUnresolvedAction, openAction, listAction, renameAction } from '../../src/commands/element'
 import * as mocks from '../mocks'
 import * as callbacks from '../../src/callbacks'
 import Prompts from '../../src/prompts'
@@ -53,6 +53,7 @@ describe('Element command group', () => {
             toEnvs: ['inactive'],
             env: 'active',
             force: true,
+            allowElementDeletions: false,
           },
           workspace,
         })
@@ -80,6 +81,7 @@ describe('Element command group', () => {
             toEnvs: ['inactive'],
             env: 'active',
             force: true,
+            allowElementDeletions: false,
           },
           workspace,
         })
@@ -112,6 +114,7 @@ describe('Element command group', () => {
             toEnvs: ['inactive'],
             env: 'active',
             force: true,
+            allowElementDeletions: false,
           },
           workspace,
         })
@@ -161,6 +164,7 @@ describe('Element command group', () => {
             toEnvs: ['inactive'],
             env: 'active',
             force: false,
+            allowElementDeletions: false,
           },
           workspace,
         })
@@ -193,6 +197,7 @@ describe('Element command group', () => {
             toEnvs: ['inactive'],
             env: 'active',
             force: true,
+            allowElementDeletions: false,
           },
           workspace,
         })
@@ -201,8 +206,8 @@ describe('Element command group', () => {
       it('should return success code', () => {
         expect(result).toBe(CliExitCode.Success)
       })
-      it('should call workspace copyTo', () => {
-        expect(workspace.copyTo).toHaveBeenCalledWith([selector], ['inactive'])
+      it('should call workspace sync', () => {
+        expect(workspace.sync).toHaveBeenCalledWith([selector], {}, ['inactive'])
       })
 
       it('should flush workspace', () => {
@@ -233,6 +238,7 @@ Cloning the specified elements to inactive.
             toEnvs: ['inactive', 'unknown', 'unknown2'],
             env: 'active',
             force: true,
+            allowElementDeletions: false,
           },
           workspace: mocks.mockWorkspace({}),
         })
@@ -262,6 +268,7 @@ Cloning the specified elements to inactive.
             toEnvs: ['inactive', 'unknown'],
             env: 'active',
             force: true,
+            allowElementDeletions: false,
           },
           workspace: mocks.mockWorkspace({}),
         })
@@ -290,6 +297,7 @@ Cloning the specified elements to inactive.
             toEnvs: [],
             env: 'active',
             force: true,
+            allowElementDeletions: false,
           },
           workspace: mocks.mockWorkspace({}),
         })
@@ -318,6 +326,7 @@ Cloning the specified elements to inactive.
             toEnvs: ['active'],
             env: 'active',
             force: true,
+            allowElementDeletions: false,
           },
           workspace: mocks.mockWorkspace({}),
         })
@@ -330,6 +339,194 @@ Cloning the specified elements to inactive.
       it('should print failure to console', () => {
         expect(output.stderr.content)
           .toContain(Prompts.INVALID_ENV_TARGET_CURRENT)
+      })
+    })
+
+    describe('allowElementDeletions', () => {
+      let result: CliExitCode
+      let workspace: mocks.MockWorkspace
+      let cliArgs: mocks.MockCliArgs
+      let output: mocks.MockCliOutput
+
+      const elemToAdd = new ElemID('salto', 'elemToAdd')
+      const elemToRemoveFromEnv2 = new ElemID('salto', 'elemToRemoveFromEnv2')
+      const elemToRemoveFromEnv3 = new ElemID('salto', 'elemToRemoveFromEnv3')
+      beforeEach(() => {
+        workspace = mocks.mockWorkspace({
+          envs: ['env1', 'env2', 'env3'],
+        })
+        cliArgs = mocks.mockCliArgs()
+        output = cliArgs.output
+      })
+      describe('both elements to copy and elements to delete', () => {
+        beforeEach(async () => {
+          workspace.getElementIdsBySelectors.mockResolvedValueOnce(awu([elemToAdd]))
+          workspace.getElementIdsBySelectors.mockResolvedValueOnce(awu([elemToRemoveFromEnv2]))
+          workspace.getElementIdsBySelectors.mockResolvedValueOnce(awu([elemToRemoveFromEnv3]))
+          result = await cloneAction({
+            ...mocks.mockCliCommandArgs(cloneName, cliArgs),
+            input: {
+              elementSelector: [
+                elemToAdd.getFullName(),
+                elemToRemoveFromEnv2.getFullName(),
+                elemToRemoveFromEnv3.getFullName(),
+              ],
+              toEnvs: ['env2'],
+              env: 'env1',
+              force: true,
+              allowElementDeletions: true,
+            },
+            workspace,
+          })
+        })
+        it('should return success code', () => {
+          expect(result).toBe(CliExitCode.Success)
+        })
+        it('should call workspace sync', () => {
+          expect(workspace.sync).toHaveBeenCalledWith([elemToAdd], { env2: [elemToRemoveFromEnv2] }, ['env2'])
+        })
+
+        it('should flush workspace', () => {
+          expect(workspace.flush).toHaveBeenCalled()
+        })
+
+        it('should print clone to console', () => {
+          expect(output.stdout.content).toBe(`The following configuration elements will be cloned:
+  - salto.elemToAdd
+
+
+The following configuration elements will be deleted from env2:
+  - salto.elemToRemoveFromEnv2
+
+
+Cloning the specified elements to env2.
+`)
+        })
+      })
+
+      describe('only elements to copy', () => {
+        beforeEach(async () => {
+          workspace.getElementIdsBySelectors.mockResolvedValueOnce(awu([elemToAdd]))
+          workspace.getElementIdsBySelectors.mockResolvedValueOnce(awu([]))
+          workspace.getElementIdsBySelectors.mockResolvedValueOnce(awu([]))
+          result = await cloneAction({
+            ...mocks.mockCliCommandArgs(cloneName, cliArgs),
+            input: {
+              elementSelector: [
+                elemToAdd.getFullName(),
+                elemToRemoveFromEnv2.getFullName(),
+                elemToRemoveFromEnv3.getFullName(),
+              ],
+              toEnvs: ['env2'],
+              env: 'env1',
+              force: true,
+              allowElementDeletions: true,
+            },
+            workspace,
+          })
+        })
+        it('should return success code', () => {
+          expect(result).toBe(CliExitCode.Success)
+        })
+        it('should call workspace sync', () => {
+          expect(workspace.sync).toHaveBeenCalledWith([elemToAdd], {}, ['env2'])
+        })
+
+        it('should flush workspace', () => {
+          expect(workspace.flush).toHaveBeenCalled()
+        })
+
+        it('should print clone to console', () => {
+          expect(output.stdout.content).toBe(`The following configuration elements will be cloned:
+  - salto.elemToAdd
+
+
+Cloning the specified elements to env2.
+`)
+        })
+      })
+
+      describe('only elements to delete', () => {
+        beforeEach(async () => {
+          workspace.getElementIdsBySelectors.mockResolvedValueOnce(awu([]))
+          workspace.getElementIdsBySelectors.mockResolvedValueOnce(awu([elemToRemoveFromEnv2]))
+          workspace.getElementIdsBySelectors.mockResolvedValueOnce(awu([elemToRemoveFromEnv3]))
+          result = await cloneAction({
+            ...mocks.mockCliCommandArgs(cloneName, cliArgs),
+            input: {
+              elementSelector: [
+                elemToAdd.getFullName(),
+                elemToRemoveFromEnv2.getFullName(),
+                elemToRemoveFromEnv3.getFullName(),
+              ],
+              toEnvs: ['env2'],
+              env: 'env1',
+              force: true,
+              allowElementDeletions: true,
+            },
+            workspace,
+          })
+        })
+        it('should return success code', () => {
+          expect(result).toBe(CliExitCode.Success)
+        })
+
+        it('should call workspace sync', () => {
+          expect(workspace.sync).toHaveBeenCalledWith([], { env2: [elemToRemoveFromEnv2] }, ['env2'])
+        })
+
+        it('should flush workspace', () => {
+          expect(workspace.flush).toHaveBeenCalled()
+        })
+
+        it('should print clone to console', () => {
+          expect(output.stdout.content).toBe(`The following configuration elements will be deleted from env2:
+  - salto.elemToRemoveFromEnv2
+
+
+Cloning the specified elements to env2.
+`)
+        })
+      })
+
+      describe('nothing to do', () => {
+        beforeEach(async () => {
+          workspace.getElementIdsBySelectors.mockResolvedValueOnce(awu([]))
+          workspace.getElementIdsBySelectors.mockResolvedValueOnce(awu([]))
+          workspace.getElementIdsBySelectors.mockResolvedValueOnce(awu([]))
+          result = await cloneAction({
+            ...mocks.mockCliCommandArgs(cloneName, cliArgs),
+            input: {
+              elementSelector: [
+                elemToAdd.getFullName(),
+                elemToRemoveFromEnv2.getFullName(),
+                elemToRemoveFromEnv3.getFullName(),
+              ],
+              toEnvs: ['env2'],
+              env: 'env1',
+              force: true,
+              allowElementDeletions: true,
+            },
+            workspace,
+          })
+        })
+        it('should return success code', () => {
+          expect(result).toBe(CliExitCode.Success)
+        })
+
+        it('should not call sync', () => {
+          expect(workspace.sync).not.toHaveBeenCalled()
+        })
+
+        it('should not flush workspace', () => {
+          expect(workspace.flush).not.toHaveBeenCalled()
+        })
+
+        it('should print clone to console', () => {
+          expect(output.stdout.content).toBe(`Did not find any configuration elements that match your criteria.
+Nothing to do.
+`)
+        })
       })
     })
   })
@@ -350,6 +547,7 @@ Cloning the specified elements to inactive.
           input: {
             elementSelector: ['salto.Account'],
             force: true,
+            allowElementDeletions: false,
           },
           workspace,
         })
@@ -379,6 +577,7 @@ Cloning the specified elements to inactive.
           input: {
             elementSelector: ['a.b.c.d'],
             force: true,
+            allowElementDeletions: false,
           },
           workspace,
         })
@@ -415,6 +614,7 @@ Cloning the specified elements to inactive.
           input: {
             elementSelector: [selector.getFullName()],
             force: false,
+            allowElementDeletions: false,
           },
           workspace,
         })
@@ -445,6 +645,7 @@ Cloning the specified elements to inactive.
           input: {
             elementSelector: [selector.getFullName()],
             force: true,
+            allowElementDeletions: false,
           },
           workspace,
         })
@@ -489,6 +690,7 @@ Moving the specified elements to envs.
           input: {
             elementSelector: ['salto.Account'],
             force: true,
+            allowElementDeletions: false,
           },
           workspace,
         })
@@ -518,6 +720,7 @@ Moving the specified elements to envs.
           input: {
             elementSelector: ['a.b.c.d', 'e.f.g.h'],
             force: true,
+            allowElementDeletions: false,
           },
           workspace,
         })
@@ -556,6 +759,7 @@ Moving the specified elements to envs.
             elementSelector: ['salto.Account'],
             env: 'active',
             force: true,
+            allowElementDeletions: false,
           },
           workspace,
         })
@@ -564,7 +768,7 @@ Moving the specified elements to envs.
         expect(result).toBe(CliExitCode.Success)
       })
       it('should call workspace promote', () => {
-        expect(workspace.promote).toHaveBeenCalledWith([selector])
+        expect(workspace.promote).toHaveBeenCalledWith([selector], {})
       })
 
       it('should flush workspace', () => {
@@ -593,6 +797,7 @@ Moving the specified elements to envs.
             elementSelector: ['salto.Account'],
             env: 'active',
             force: true,
+            allowElementDeletions: false,
           },
           workspace,
         })
@@ -602,7 +807,7 @@ Moving the specified elements to envs.
         expect(result).toBe(CliExitCode.Success)
       })
       it('should call workspace promote', () => {
-        expect(workspace.promote).toHaveBeenCalledWith([selector])
+        expect(workspace.promote).toHaveBeenCalledWith([selector], {})
       })
 
       it('should flush workspace', () => {
@@ -612,6 +817,73 @@ Moving the specified elements to envs.
       it('should print deployment to console', () => {
         expect(output.stdout.content).toBe(`The following configuration elements will be moved to common:
   - salto.Account
+
+
+Moving the specified elements to common.
+`)
+      })
+    })
+
+    describe('allowElementDeletions', () => {
+      let result: CliExitCode
+      let workspace: mocks.MockWorkspace
+      const elemToAdd = new ElemID('salto', 'elemToAdd')
+      const elemToRemoveFromEnv2 = new ElemID('salto', 'elemToRemoveFromEnv2')
+      const elemToRemoveFromEnv3 = new ElemID('salto', 'elemToRemoveFromEnv3')
+      let output: mocks.MockCliOutput
+      beforeAll(async () => {
+        const cliArgs = mocks.mockCliArgs()
+        output = cliArgs.output
+        workspace = mocks.mockWorkspace({
+          envs: ['env1', 'env2', 'env3'],
+        })
+        workspace.getElementIdsBySelectors.mockResolvedValueOnce(awu([elemToAdd]))
+        workspace.getElementIdsBySelectors.mockResolvedValueOnce(awu([elemToRemoveFromEnv2]))
+        workspace.getElementIdsBySelectors.mockResolvedValueOnce(awu([elemToRemoveFromEnv3]))
+        result = await moveToCommonAction({
+          ...mocks.mockCliCommandArgs(moveToCommonName, cliArgs),
+          input: {
+            elementSelector: [
+              elemToAdd.getFullName(),
+              elemToRemoveFromEnv2.getFullName(),
+              elemToRemoveFromEnv3.getFullName(),
+            ],
+            env: 'env1',
+            force: true,
+            allowElementDeletions: true,
+          },
+          workspace,
+        })
+      })
+
+      it('should return success code', () => {
+        expect(result).toBe(CliExitCode.Success)
+      })
+      it('should call workspace promote', () => {
+        expect(workspace.promote).toHaveBeenCalledWith([
+          elemToAdd,
+        ],
+        {
+          env2: [elemToRemoveFromEnv2],
+          env3: [elemToRemoveFromEnv3],
+        })
+      })
+
+      it('should flush workspace', () => {
+        expect(workspace.flush).toHaveBeenCalled()
+      })
+
+      it('should print deployment to console', () => {
+        expect(output.stdout.content).toBe(`The following configuration elements will be moved to common:
+  - salto.elemToAdd
+
+
+The following configuration elements will be deleted from env2:
+  - salto.elemToRemoveFromEnv2
+
+
+The following configuration elements will be deleted from env3:
+  - salto.elemToRemoveFromEnv3
 
 
 Moving the specified elements to common.
@@ -1013,11 +1285,135 @@ Moving the specified elements to common.
       })
       it('should call workspace getElementIdsBySelectors', () => {
         const elemSelector = createElementSelector(stringSelector)
-        expect(workspace.getElementIdsBySelectors).toHaveBeenCalledWith([elemSelector], mode, true)
+        expect(workspace.getElementIdsBySelectors).toHaveBeenCalledWith(
+          [elemSelector],
+          { source: mode },
+          true,
+        )
       })
 
       it('should print to stdout', () => {
         expect(output.stdout.content).toContain('The following configuration elements were found')
+      })
+    })
+  })
+
+  describe('rename command', () => {
+    const commandName = 'rename'
+    describe('with errored workspace', () => {
+      let result: CliExitCode
+      beforeAll(async () => {
+        const workspace = mocks.mockWorkspace({})
+        workspace.errors.mockResolvedValue(mocks.mockErrors([{ severity: 'Error', message: 'some error' }]))
+        const cliArgs = mocks.mockCliArgs()
+        result = await renameAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
+          input: {
+            sourceElementId: 'salto.object',
+            targetElementId: 'salto.object.notId',
+          },
+          workspace,
+        })
+      })
+
+      it('should fail', async () => {
+        expect(result).toBe(CliExitCode.AppError)
+      })
+    })
+    describe('with invalid element ids', () => {
+      let result: CliExitCode
+      let workspace: mocks.MockWorkspace
+      let output: mocks.MockCliOutput
+      beforeAll(async () => {
+        const cliArgs = mocks.mockCliArgs()
+        output = cliArgs.output
+        workspace = mocks.mockWorkspace({})
+        result = await renameAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
+          input: {
+            sourceElementId: 'salto.object',
+            targetElementId: 'salto.object.notId',
+          },
+          workspace,
+        })
+      })
+      it('should fail', () => {
+        expect(result).toEqual(CliExitCode.UserInputError)
+        expect(output.stderr.content).toEqual('Cannot create ID salto.object.notId - Invalid ID type notId\n')
+      })
+    })
+    describe('when RenameElementIdError is throwen', () => {
+      let result: CliExitCode
+      let workspace: mocks.MockWorkspace
+      let output: mocks.MockCliOutput
+      beforeAll(async () => {
+        const cliArgs = mocks.mockCliArgs()
+        output = cliArgs.output
+        workspace = mocks.mockWorkspace({})
+        result = await renameAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
+          input: {
+            sourceElementId: 'salto.object.field.name',
+            targetElementId: 'salto.object.field.rename',
+          },
+          workspace,
+        })
+      })
+      it('should fail', () => {
+        expect(result).toEqual(CliExitCode.UserInputError)
+        expect(output.stderr.content).toEqual('Source element should be top level\n')
+      })
+    })
+    describe('when other error throwen', () => {
+      let workspace: mocks.MockWorkspace
+      let cliArgs: mocks.MockCliArgs
+      beforeAll(async () => {
+        cliArgs = mocks.mockCliArgs()
+        workspace = mocks.mockWorkspace({})
+        workspace.getValue.mockRejectedValue(new Error('some error'))
+      })
+      it('should fail', async () =>
+        expect(renameAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
+          input: {
+            sourceElementId: 'salto.object.instance.name',
+            targetElementId: 'salto.object.instance.rename',
+          },
+          workspace,
+        })).rejects.toThrow('some error'))
+    })
+    describe('valid rename', () => {
+      let output: mocks.MockCliOutput
+      let result: CliExitCode
+      let workspace: mocks.MockWorkspace
+      let allElements: Element[]
+      let sourceElement: InstanceElement
+
+      beforeAll(async () => {
+        const cliArgs = mocks.mockCliArgs()
+        output = cliArgs.output
+        workspace = mocks.mockWorkspace({})
+
+        allElements = await awu(await (await workspace.elements()).getAll()).toArray()
+        sourceElement = allElements.find(isInstanceElement) as InstanceElement
+        const sourceElemId = sourceElement.elemID
+        const targetElemId = new ElemID(sourceElemId.adapter, sourceElemId.typeName, sourceElemId.idType, 'renamed')
+
+        workspace.getValue.mockResolvedValueOnce(sourceElement).mockResolvedValueOnce(undefined)
+        result = await renameAction({
+          ...mocks.mockCliCommandArgs(commandName, cliArgs),
+          input: {
+            sourceElementId: sourceElemId.getFullName(),
+            targetElementId: targetElemId.getFullName(),
+          },
+          workspace,
+        })
+      })
+      it('should return success code', () => {
+        expect(result).toBe(CliExitCode.Success)
+      })
+      it('should return no errors', () => {
+        expect(output.stderr.content).toEqual('')
       })
     })
   })

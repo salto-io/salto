@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, isInstanceElement, ReferenceExpression, ListType } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, isInstanceElement, ReferenceExpression, ListType, isEqualElements } from '@salto-io/adapter-api'
 import { extractStandaloneFields } from '../../../src/elements/ducktype/standalone_field_extractor'
 
 const ADAPTER_NAME = 'myAdapter'
@@ -25,6 +25,18 @@ describe('Extract standalone fields', () => {
       fields: {
         name: { refType: BuiltinTypes.STRING },
         code: { refType: BuiltinTypes.STRING },
+      },
+    })
+    const coverType = new ObjectType({
+      elemID: new ElemID(ADAPTER_NAME, 'book__cover'),
+      fields: {
+        material: { refType: BuiltinTypes.STRING },
+      },
+    })
+    const bookType = new ObjectType({
+      elemID: new ElemID(ADAPTER_NAME, 'book'),
+      fields: {
+        cover: { refType: new ListType(coverType) },
       },
     })
     const connectionType = new ObjectType({
@@ -53,6 +65,13 @@ describe('Extract standalone fields', () => {
         },
       ),
       new InstanceElement(
+        'book1',
+        bookType,
+        {
+          cover: [{ material: 'leather' }, { material: 'paper' }],
+        },
+      ),
+      new InstanceElement(
         'conn',
         connectionType,
         {
@@ -64,7 +83,7 @@ describe('Extract standalone fields', () => {
     const typeWithNoInstances = new ObjectType({
       elemID: new ElemID(ADAPTER_NAME, 'typeWithNoInstances'),
     })
-    return [recipeType, connectionType, ...instances, typeWithNoInstances]
+    return [recipeType, coverType, bookType, connectionType, ...instances, typeWithNoInstances]
   }
 
   const transformationDefaultConfig = {
@@ -74,6 +93,11 @@ describe('Extract standalone fields', () => {
     recipe: {
       standaloneFields: [
         { fieldName: 'code', parseJSON: true },
+      ],
+    },
+    book: {
+      standaloneFields: [
+        { fieldName: 'cover' },
       ],
     },
     nonexistentType: {
@@ -119,9 +143,9 @@ describe('Extract standalone fields', () => {
     })
 
     it('should add two types and two instances', () => {
-      expect(elements.length).toEqual(numElements + 4)
+      expect(elements.length).toEqual(numElements + 6)
     })
-    it('should modify the recipe type', async () => {
+    it('should modify the recipe type if its code type is not an object type', async () => {
       const recipeType = elements[0] as ObjectType
       expect(await recipeType.fields.code.getType()).toBeInstanceOf(ObjectType)
       const codeType = await recipeType.fields.code.getType() as ObjectType
@@ -140,18 +164,18 @@ describe('Extract standalone fields', () => {
     })
 
     it('should create new recipe__code instances and reference them', () => {
-      expect(elements[2]).toBeInstanceOf(InstanceElement)
-      expect(elements[3]).toBeInstanceOf(InstanceElement)
-      const recipe123 = elements[2] as InstanceElement
-      const recipe456 = elements[3] as InstanceElement
-      expect(elements[6]).toBeInstanceOf(ObjectType)
-      expect(elements[7]).toBeInstanceOf(ObjectType)
-      expect(elements[8]).toBeInstanceOf(InstanceElement)
-      expect(elements[9]).toBeInstanceOf(InstanceElement)
-      const recipeCode = elements[6] as ObjectType
-      const recipeCodeNested = elements[7] as ObjectType
-      const recipe123Code = elements[8] as InstanceElement
-      const recipe456Code = elements[9] as InstanceElement
+      expect(elements[4]).toBeInstanceOf(InstanceElement)
+      expect(elements[5]).toBeInstanceOf(InstanceElement)
+      const recipe123 = elements[4] as InstanceElement
+      const recipe456 = elements[5] as InstanceElement
+      expect(elements[9]).toBeInstanceOf(ObjectType)
+      expect(elements[10]).toBeInstanceOf(ObjectType)
+      expect(elements[11]).toBeInstanceOf(InstanceElement)
+      expect(elements[12]).toBeInstanceOf(InstanceElement)
+      const recipeCode = elements[9] as ObjectType
+      const recipeCodeNested = elements[10] as ObjectType
+      const recipe123Code = elements[11] as InstanceElement
+      const recipe456Code = elements[12] as InstanceElement
 
       expect(Object.keys(recipeCode.fields)).toEqual(['flat', 'nested'])
       expect(Object.keys(recipeCodeNested.fields)).toEqual(['inner', 'other'])
@@ -174,8 +198,36 @@ describe('Extract standalone fields', () => {
       )
     })
 
+    it('should not modify the book type since cover type is already defined', async () => {
+      const bookType = elements[2] as ObjectType
+      const coverListType = await bookType.fields.cover.getType() as ListType
+      expect(coverListType).toBeInstanceOf(ListType)
+      const coverType = await coverListType.getInnerType()
+      expect(coverType).toBeInstanceOf(ObjectType)
+      expect(isEqualElements(coverType, elements[1])).toBeTruthy()
+    })
+    it('should create new book__cover instances and reference them', () => {
+      expect(elements[4]).toBeInstanceOf(InstanceElement)
+      const book1 = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === 'book')[0]
+      const book1Covers = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === 'book__cover')
+
+      const origBook1 = origInstances.filter(e => e.elemID.typeName === 'book')[0]
+
+      expect(book1Covers[0].value).toEqual(origBook1.value.cover[0])
+      expect(book1Covers[1].value).toEqual(origBook1.value.cover[1])
+
+      expect(book1.value.cover[0]).toBeInstanceOf(ReferenceExpression)
+      expect(book1.value.cover[1]).toBeInstanceOf(ReferenceExpression)
+      expect((book1.value.cover[0] as ReferenceExpression).elemID.getFullName()).toEqual(
+        book1Covers[0].elemID.getFullName()
+      )
+      expect((book1.value.cover[1] as ReferenceExpression).elemID.getFullName()).toEqual(
+        book1Covers[1].elemID.getFullName()
+      )
+    })
+
     it('should not modify the connection type', () => {
-      const connectionType = elements[1] as ObjectType
+      const connectionType = elements[3] as ObjectType
       expect(connectionType.fields.code.refType.elemID.isEqual(BuiltinTypes.STRING.elemID))
         .toBeTruthy()
     })
@@ -284,7 +336,7 @@ describe('Extract standalone fields', () => {
     })
 
     it('should add two types and two instances', () => {
-      expect(elements.length).toEqual(numElements + 4)
+      expect(elements.length).toEqual(numElements + 6)
     })
     it('should modify the recipe type', async () => {
       const recipeType = elements[0] as ObjectType
@@ -305,18 +357,18 @@ describe('Extract standalone fields', () => {
     })
 
     it('should create new recipe__code instances and reference them', () => {
-      expect(elements[2]).toBeInstanceOf(InstanceElement)
-      expect(elements[3]).toBeInstanceOf(InstanceElement)
-      const recipe123 = elements[2] as InstanceElement
-      const recipe456 = elements[3] as InstanceElement
-      expect(elements[6]).toBeInstanceOf(ObjectType)
-      expect(elements[7]).toBeInstanceOf(ObjectType)
-      expect(elements[8]).toBeInstanceOf(InstanceElement)
-      expect(elements[9]).toBeInstanceOf(InstanceElement)
-      const recipeCode = elements[6] as ObjectType
-      const recipeCodeNested = elements[7] as ObjectType
-      const recipe123Code = elements[8] as InstanceElement
-      const recipe456Code = elements[9] as InstanceElement
+      expect(elements[4]).toBeInstanceOf(InstanceElement)
+      expect(elements[5]).toBeInstanceOf(InstanceElement)
+      const recipe123 = elements[4] as InstanceElement
+      const recipe456 = elements[5] as InstanceElement
+      expect(elements[9]).toBeInstanceOf(ObjectType)
+      expect(elements[10]).toBeInstanceOf(ObjectType)
+      expect(elements[11]).toBeInstanceOf(InstanceElement)
+      expect(elements[12]).toBeInstanceOf(InstanceElement)
+      const recipeCode = elements[9] as ObjectType
+      const recipeCodeNested = elements[10] as ObjectType
+      const recipe123Code = elements[11] as InstanceElement
+      const recipe456Code = elements[12] as InstanceElement
 
       expect(Object.keys(recipeCode.fields)).toEqual(['flat', 'nested'])
       expect(Object.keys(recipeCodeNested.fields)).toEqual(['inner', 'other'])
@@ -340,7 +392,7 @@ describe('Extract standalone fields', () => {
     })
 
     it('should not modify the connection type', () => {
-      const connectionType = elements[1] as ObjectType
+      const connectionType = elements[3] as ObjectType
       expect(connectionType.fields.code.refType.elemID.isEqual(BuiltinTypes.STRING.elemID))
         .toBeTruthy()
     })
@@ -353,7 +405,7 @@ describe('Extract standalone fields', () => {
 
     beforeAll(async () => {
       elements = generateElements(false)
-      const recipe456 = elements[3] as InstanceElement
+      const recipe456 = elements[5] as InstanceElement
       recipe456.value.code = 'invalid'
       origInstances = elements.filter(isInstanceElement).map(e => e.clone())
       numElements = elements.length
@@ -365,15 +417,15 @@ describe('Extract standalone fields', () => {
       })
     })
 
-    it('should not modify elements', () => {
-      expect(elements.length).toEqual(numElements)
+    it('should not modify the recipe and connection elements', () => {
+      expect(elements.length).toEqual(numElements + 2)
     })
-    it('should not modify the recipe type', () => {
+    it('should not modify the recipe and connection instances', () => {
       const recipeType = elements[0] as ObjectType
       expect(recipeType.fields.code.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
-      expect(elements[2]).toEqual(origInstances[0])
-      expect(elements[3]).toEqual(origInstances[1])
-      expect(elements[4]).toEqual(origInstances[2])
+      expect(elements[4]).toEqual(origInstances[0])
+      expect(elements[5]).toEqual(origInstances[1])
+      expect(elements[7]).toEqual(origInstances[3])
     })
   })
 
@@ -384,7 +436,7 @@ describe('Extract standalone fields', () => {
 
     beforeAll(async () => {
       elements = generateElements(false)
-      const recipe456 = elements[3] as InstanceElement
+      const recipe456 = elements[5] as InstanceElement
       recipe456.value.code = '{invalid'
       origInstances = elements.filter(isInstanceElement).map(e => e.clone())
       numElements = elements.length
@@ -396,15 +448,15 @@ describe('Extract standalone fields', () => {
       })
     })
 
-    it('should not modify elements', () => {
-      expect(elements.length).toEqual(numElements)
+    it('should not modify the recipe and connection elements', () => {
+      expect(elements.length).toEqual(numElements + 2)
     })
-    it('should not modify the recipe type', () => {
+    it('should not modify the recipe and connection instances', () => {
       const recipeType = elements[0] as ObjectType
       expect(recipeType.fields.code.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
-      expect(elements[2]).toEqual(origInstances[0])
-      expect(elements[3]).toEqual(origInstances[1])
-      expect(elements[4]).toEqual(origInstances[2])
+      expect(elements[4]).toEqual(origInstances[0])
+      expect(elements[5]).toEqual(origInstances[1])
+      expect(elements[7]).toEqual(origInstances[3])
     })
   })
 })

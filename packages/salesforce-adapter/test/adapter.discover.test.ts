@@ -68,6 +68,9 @@ describe('SalesforceAdapter fetch', () => {
             },
           },
           maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
+          client: {
+            readMetadataChunkSize: { default: 3, overrides: { Test: 2 } },
+          },
         },
       },
     }))
@@ -395,6 +398,61 @@ describe('SalesforceAdapter fetch', () => {
         const flow = findElements(result, 'Flow', 'my_FlowInstance').pop() as InstanceElement
         expect((await flow.getType()).elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
         expect(flow.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('FlowInstance')
+      })
+
+      it('should use default configured chunk size', async () => {
+        const chunkSize = 3
+        const type = 'MyType'
+        const instances = [
+          { props: { fullName: 'MyType0' }, values: { fullName: 'MyType0' } },
+          { props: { fullName: 'MyType1' }, values: { fullName: 'MyType1' } },
+          { props: { fullName: 'MyType2' }, values: { fullName: 'MyType2' } },
+          { props: { fullName: 'MyType3' }, values: { fullName: 'MyType3' } },
+        ]
+        mockMetadataType(
+          { xmlName: 'MyType' },
+          { valueTypeFields: [{ name: 'fullName', soapType: 'string', valueRequired: true }] },
+          instances,
+        )
+        const res = await adapter.fetch(mockFetchOpts)
+        expect(res).toBeDefined()
+        expect(connection.metadata.read)
+          .toHaveBeenNthCalledWith(
+            1,
+            type,
+            instances.slice(0, chunkSize).map(e => e.values.fullName),
+          )
+        expect(connection.metadata.read)
+          .toHaveBeenNthCalledWith(
+            2,
+            type,
+            instances.slice(chunkSize).map(e => e.values.fullName),
+          )
+      })
+      it('should use overrided configured chunk size', async () => {
+        const chunkSize = 2
+        const type = 'Test'
+        const instances = [
+          { props: { fullName: 'Test0' }, values: { fullName: 'Test0' } },
+          { props: { fullName: 'Test1' }, values: { fullName: 'Test1' } },
+          { props: { fullName: 'Test2' }, values: { fullName: 'Test2' } },
+          { props: { fullName: 'Test3' }, values: { fullName: 'Test3' } },
+        ]
+        mockMetadataType(
+          { xmlName: 'Test' },
+          { valueTypeFields: [{ name: 'fullName', soapType: 'string', valueRequired: true }] },
+          instances,
+        )
+        const res = await adapter.fetch(mockFetchOpts)
+        expect(res).toBeDefined()
+        expect(connection.metadata.read)
+          .toHaveBeenNthCalledWith(
+            1, type, instances.slice(0, chunkSize).map(e => e.values.fullName)
+          )
+        expect(connection.metadata.read)
+          .toHaveBeenNthCalledWith(
+            2, type, instances.slice(chunkSize).map(e => e.values.fullName)
+          )
       })
     })
 
@@ -962,6 +1020,12 @@ public class MyClass${index} {
                   { metadataType: 'MetadataTest1', name: 'instance1' },
                   { metadataType: 'MetadataTest2' },
                 ],
+              },
+            },
+            client: {
+              readMetadataChunkSize: {
+                default: 3,
+                overrides: { Test: 2 },
               },
             },
             [MAX_ITEMS_IN_RETRIEVE_REQUEST]: testMaxItemsInRetrieveRequest,

@@ -19,7 +19,7 @@ import wu from 'wu'
 import { Workspace, nacl, errors, parser, validator, COMMON_ENV_PREFIX, elementSource } from '@salto-io/workspace'
 import { Element, SaltoError, ElemID, Change, getChangeElement,
   isRemovalChange, isReferenceExpression, isContainerType,
-  Value, isModificationChange } from '@salto-io/adapter-api'
+  Value, isModificationChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { detailedCompare, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 
@@ -49,6 +49,10 @@ export class EditorWorkspace {
 
   get elements(): Promise<elementSource.ElementsSource> {
     return this.workspace.elements(false)
+  }
+
+  async getElementSourceOfPath(filePath: string): Promise<ReadOnlyElementsSource> {
+    return this.workspace.getElementSourceOfPath(this.workspaceFilename(filePath), false)
   }
 
   errors(): Promise<errors.Errors> {
@@ -250,11 +254,17 @@ export class EditorWorkspace {
           [...opDeletes, ...Object.keys(opUpdates)].filter(f => this.isWorkspaceFile(f)),
           [...removeChanges, ...updateChanges],
         )
-        const errorsWithoutValidation = await this.workspace.errors()
+        const workspaceErrors = await this.workspace.errors()
         this.wsErrors = Promise.resolve(new errors.Errors({
-          merge: errorsWithoutValidation.merge,
-          parse: errorsWithoutValidation.parse,
-          validation,
+          merge: workspaceErrors.merge,
+          parse: workspaceErrors.parse,
+          validation: [
+            // Validation errors (that are not from configuration elements) are calculated
+            // in this class to avoid recalculating the entire workspace validation errors on
+            // each update. Thus, we take from workspace.errors only the config validation errors
+            ...validation,
+            ...workspaceErrors.validation.filter((err: SaltoError) => err.source === 'config'),
+          ],
         }))
       }
 

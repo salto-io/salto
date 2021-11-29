@@ -108,7 +108,6 @@ const formatValue = async (value: Element | Value): Promise<string> => {
     (_.isEmpty(types) ? '' : indent(`\nannotations:${await formatValue(types)}`, 2))
   const formatFields = async (fields: Record<string, Field>): Promise<string> =>
     (_.isEmpty(fields) ? '' : indent(`\nfields:${await formatValue(fields)}`, 2))
-
   if (isInstanceElement(value)) {
     return formatValue(value.value)
   }
@@ -145,7 +144,7 @@ const formatValue = async (value: Element | Value): Promise<string> => {
     const formattedKeys = (await awu(_.entries(value))
       .map(async ([k, v]) => `${k}: ${await formatValue(v)}`).toArray())
       .join('\n')
-    return `\n${indent(formattedKeys, 2)}`
+    return `\n${indent(`{\n${indent(formattedKeys, 1)}\n}`, 2)}`
   }
   if (value instanceof ReferenceExpression) {
     return isElement(value.value) ? value.elemID.getFullName() : formatValue(value.value)

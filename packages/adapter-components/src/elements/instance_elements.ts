@@ -135,6 +135,8 @@ export const toBasicInstance = async ({
       pathNaclCase(type.elemID.name),
       pathNaclCase(naclCase(fileName)),
     ],
-    parent ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID)] } : undefined,
+    parent
+      ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] }
+      : undefined,
   )
 }

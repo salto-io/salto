@@ -18,9 +18,11 @@ import _ from 'lodash'
 
 export const ITEM_TYPE_ID = '-10'
 export const TRANSACTION_TYPE_ID = '-30'
+const FIELD_TYPE = '-124'
+const SCRIPT_TYPE = '-417'
 
 // Was taken from https://<account_id>.app.netsuite.com/app/help/helpcenter.nl?fid=section_n3432681.html&whence=
-export const TYPES_TO_INTERNAL_ID: Record<string, string> = {
+const ORIGINAL_TYPES_TO_INTERNAL_ID: Record<string, string> = {
   account: '-112',
   accountingPeriod: '-105',
   address: '-289',
@@ -58,7 +60,7 @@ export const TYPES_TO_INTERNAL_ID: Record<string, string> = {
   contactRole: '-157',
   costCategory: '-155',
   creditMemo: TRANSACTION_TYPE_ID,
-  crmCustomField: '-124',
+  crmCustomField: FIELD_TYPE,
   currency: '-122',
   customer: '-2',
   customerCategory: '-109',
@@ -68,7 +70,7 @@ export const TYPES_TO_INTERNAL_ID: Record<string, string> = {
   customerRefund: TRANSACTION_TYPE_ID,
   customerStatus: '-104',
   customList: '-123',
-  customRecordCustomField: '-124',
+  customRecordCustomField: FIELD_TYPE,
   customRecordType: '-123',
   customTransaction: TRANSACTION_TYPE_ID,
   department: '-102',
@@ -78,7 +80,7 @@ export const TYPES_TO_INTERNAL_ID: Record<string, string> = {
   discountItem: ITEM_TYPE_ID,
   downloadItem: ITEM_TYPE_ID,
   employee: '-4',
-  entityCustomField: '-124',
+  entityCustomField: FIELD_TYPE,
   estimate: TRANSACTION_TYPE_ID,
   expenseCategory: '-126',
   expenseReport: TRANSACTION_TYPE_ID,
@@ -99,12 +101,12 @@ export const TYPES_TO_INTERNAL_ID: Record<string, string> = {
   invoice: TRANSACTION_TYPE_ID,
   issue: '-26',
   itemAccountMapping: '-251',
-  itemCustomField: '-124',
+  itemCustomField: FIELD_TYPE,
   itemDemandPlan: '-246',
   itemFulfillment: TRANSACTION_TYPE_ID,
   itemGroup: ITEM_TYPE_ID,
-  itemNumberCustomField: '-124',
-  itemOptionCustomField: '-124',
+  itemNumberCustomField: FIELD_TYPE,
+  itemOptionCustomField: FIELD_TYPE,
   itemReceipt: TRANSACTION_TYPE_ID,
   itemRevision: '-269',
   itemSupplyPlan: '-247',
@@ -129,7 +131,7 @@ export const TYPES_TO_INTERNAL_ID: Record<string, string> = {
   otherChargePurchaseItem: ITEM_TYPE_ID,
   otherChargeResaleItem: ITEM_TYPE_ID,
   otherChargeSaleItem: ITEM_TYPE_ID,
-  otherCustomField: '-124',
+  otherCustomField: FIELD_TYPE,
   otherNameCategory: '-181',
   partner: '-5',
   partnerCategory: '-182',
@@ -172,8 +174,8 @@ export const TYPES_TO_INTERNAL_ID: Record<string, string> = {
   timeBill: '-256',
   timeEntry: '-295',
   timeSheet: '-292',
-  transactionBodyCustomField: '-124',
-  transactionColumnCustomField: '-124',
+  transactionBodyCustomField: FIELD_TYPE,
+  transactionColumnCustomField: FIELD_TYPE,
   transferOrder: TRANSACTION_TYPE_ID,
   unitsType: '-201',
   usage: '-362',
@@ -188,6 +190,34 @@ export const TYPES_TO_INTERNAL_ID: Record<string, string> = {
   workOrderClose: TRANSACTION_TYPE_ID,
   workOrderCompletion: TRANSACTION_TYPE_ID,
   workOrderIssue: TRANSACTION_TYPE_ID,
+}
+
+const MANUALLY_MAPPED_TYPES_TO_INTERNAL_IDS: Record<string, string> = {
+  // Some types from the original map were wrong and some were missing.
+  // This map was manually added with corrected types to ids.
+  role: '-264',
+  workflow: '-129',
+  vendor: '-9',
+  customrecordtype: '-123',
+  priceLevel: ITEM_TYPE_ID,
+  scheduledscript: SCRIPT_TYPE,
+  workflowactionscript: SCRIPT_TYPE,
+  clientscript: SCRIPT_TYPE,
+  suitelet: SCRIPT_TYPE,
+  portlet: SCRIPT_TYPE,
+  bundleinstallationscript: SCRIPT_TYPE,
+  restlet: SCRIPT_TYPE,
+  massupdatescript: SCRIPT_TYPE,
+  mapreducescript: SCRIPT_TYPE,
+  customsegment: FIELD_TYPE,
+  usereventscript: SCRIPT_TYPE,
+  sdfinstallationscript: SCRIPT_TYPE,
+}
+
+
+export const TYPES_TO_INTERNAL_ID: Record<string, string> = {
+  ...ORIGINAL_TYPES_TO_INTERNAL_ID,
+  ...MANUALLY_MAPPED_TYPES_TO_INTERNAL_IDS,
 }
 
 export const INTERNAL_ID_TO_TYPES: Record<string, string[]> = _(TYPES_TO_INTERNAL_ID)

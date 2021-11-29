@@ -20,9 +20,9 @@ import {
 } from '@salto-io/adapter-api'
 import { DependencyDirection } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
-import { SalesforceIndex } from '../element_indexes'
+import { addReferencesForService, FormulaReferenceFinder, MappedReference, ReferenceFinder, createMatcher, Matcher, getBlockDependencyDirection } from '../reference_finders'
+import { SalesforceIndex } from './element_index'
 import { isSalesforceBlock, SalesforceBlock } from './recipe_block_types'
-import { addReferencesForService, FormulaReferenceFinder, MappedReference, ReferenceFinder, createMatcher, Matcher, getBlockDependencyDirection } from './shared'
 
 const { isDefined } = lowerdashValues
 

@@ -44,15 +44,15 @@ export const createRateLimitersFromConfig = <TRateLimitConfig extends RateLimitE
   ) as BottleneckBuckets<TRateLimitConfig>
 }
 
-export type Throttle<TRateLimitConfig extends ClientRateLimitConfig> = (
-  bucketName?: keyof Required<TRateLimitConfig>,
-  keys?: string[],
-) => decorators.InstanceMethodDecorator
+type ThrottleParameters<TRateLimitConfig extends ClientRateLimitConfig> = {
+  bucketName?: keyof Required<TRateLimitConfig>
+  keys?: string[]
+}
 
-export const throttle = <TRateLimitConfig extends ClientRateLimitConfig>(
-  bucketName?: keyof Required<TRateLimitConfig>,
-  keys?: string[],
-): decorators.InstanceMethodDecorator => (
+export const throttle = <TRateLimitConfig extends ClientRateLimitConfig>({
+  bucketName,
+  keys,
+}: ThrottleParameters<TRateLimitConfig>): decorators.InstanceMethodDecorator => (
     decorators.wrapMethodWith(
       async function withRateLimit(
         this: {

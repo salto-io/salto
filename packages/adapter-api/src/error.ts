@@ -17,9 +17,12 @@ import { ElemID } from './element_id'
 
 export type SaltoErrorSeverity = 'Error' | 'Warning'
 
+export type SaltoErrorSource = 'config'
+
 export type SaltoError = {
     message: string
     severity: SaltoErrorSeverity
+    source?: SaltoErrorSource
 }
 
 export type SaltoElementError = SaltoError & {

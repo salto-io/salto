@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
+import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
@@ -555,6 +555,40 @@ describe('api.ts', () => {
         const servicesUsed = mockFetchChangesFromWorkspace.mock.calls[0][1]
         expect(servicesUsed).toEqual(['salto', 'netsuite'])
       })
+    })
+  })
+  describe('rename', () => {
+    let expectedChanges: DetailedChange[]
+    let changes: DetailedChange[]
+    beforeAll(async () => {
+      const workspaceElements = mockElements.getAllElements()
+      const ws = mockWorkspace({ elements: workspaceElements })
+      const sourceElemId = new ElemID('salto', 'employee', 'instance', 'original')
+      const sourceElement = await ws.getValue(sourceElemId)
+      const targetElement = new InstanceElement(
+        'renamed',
+        sourceElement.refType,
+        _.merge({}, sourceElement.value, {
+          friend: new ReferenceExpression(ElemID.fromFullName('salto.employee.instance.renamed')),
+        }),
+        sourceElement.path,
+        sourceElement.annotations
+      )
+
+      const refElemId = new ElemID('salto', 'employee', 'instance', 'anotherInstance', 'friend')
+      const beforeRef = new ReferenceExpression(sourceElemId)
+      const afterRef = new ReferenceExpression(targetElement.elemID)
+
+      expectedChanges = [
+        { id: sourceElemId, action: 'remove', data: { before: sourceElement } },
+        { id: targetElement.elemID, action: 'add', data: { after: targetElement } },
+        { id: refElemId, action: 'modify', data: { before: beforeRef, after: afterRef } },
+      ]
+      changes = await api.rename(ws, sourceElemId, targetElement.elemID)
+    })
+
+    it('should return changes', () => {
+      expect(changes).toEqual(expectedChanges)
     })
   })
 })

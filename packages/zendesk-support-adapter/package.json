@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/zendesk-support-adapter",
-  "version": "0.3.2",
+  "version": "0.3.4",
   "license": "Apache-2.0",
   "description": "Salto Zendesk support adapter",
   "repository": {
@@ -30,12 +30,12 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.3.2",
-    "@salto-io/adapter-components": "0.3.2",
-    "@salto-io/adapter-utils": "0.3.2",
-    "@salto-io/e2e-credentials-store": "0.3.2",
-    "@salto-io/logging": "0.3.2",
-    "@salto-io/lowerdash": "0.3.2",
+    "@salto-io/adapter-api": "0.3.4",
+    "@salto-io/adapter-components": "0.3.4",
+    "@salto-io/adapter-utils": "0.3.4",
+    "@salto-io/e2e-credentials-store": "0.3.4",
+    "@salto-io/logging": "0.3.4",
+    "@salto-io/lowerdash": "0.3.4",
     "lodash": "^4.17.21"
   },
   "devDependencies": {

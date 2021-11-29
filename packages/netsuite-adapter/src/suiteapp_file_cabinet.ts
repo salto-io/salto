@@ -427,22 +427,22 @@ Promise<FileResult[]> => {
   ): Promise<DeployResult> => {
     log.debug(`Deploying chunk of ${chunk.length} file changes`)
 
+    const instancesDetails = chunk.map(
+      change => ({
+        details: type === 'add' ? convertToFileCabinetDetails(change, pathToId) : convertToExistingFileCabinetDetails(change, pathToId),
+        change,
+      })
+    )
+
+    const [errorsInstances, validInstances] = _.partition(
+      instancesDetails,
+      ({ details }) => details instanceof Error,
+    )
+
     try {
-      const instancesDetails = chunk.map(
-        change => ({
-          details: type === 'add' ? convertToFileCabinetDetails(change, pathToId) : convertToExistingFileCabinetDetails(change, pathToId),
-          change,
-        })
-      )
-
-      const [errorsInstances, validInstances] = _.partition(
-        instancesDetails,
-        ({ details }) => details instanceof Error,
-      )
-
-      const deployResults = await deployInstances(validInstances.map(
+      const deployResults = validInstances.length > 0 ? await deployInstances(validInstances.map(
         ({ details }) => details as FileCabinetInstanceDetails
-      ), type)
+      ), type) : []
 
       log.debug(`Deployed chunk of ${chunk.length} file changes`)
 
@@ -463,7 +463,13 @@ Promise<FileResult[]> => {
         appliedChanges: deployChanges.map(({ change }) => change),
       }
     } catch (e) {
-      return { errors: [e], appliedChanges: [] }
+      return {
+        errors: [
+          e,
+          ...errorsInstances.map(({ details }) => details as Error),
+        ],
+        appliedChanges: [],
+      }
     }
   }
 

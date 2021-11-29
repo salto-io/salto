@@ -247,8 +247,52 @@ export const elements = (): Element[] => {
     'test', saltoEmployee,
     { name: 'FirstEmployee', nicknames: ['you', 'hi'], office: { label: 'bla', name: 'foo' } }
   )
-
-  return [BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee, saltoEmployeeInstance]
+  const objectFormatTesting = new ObjectType({
+    elemID: new ElemID('salto', 'test1'),
+    fields: {
+      country: { refType: new ListType(saltoEmployee) },
+    },
+  })
+  const objectFormatTestingInstanceBefore = new InstanceElement('myinstance', objectFormatTesting, {
+    country: [
+      {
+        name: 'sal',
+        nicknames: ['o', 's', 's'],
+      },
+      {
+        name: 'to',
+        nicknames: ['s', 'a', 'a', 's'],
+        office: {
+          label: 'a',
+          name: 'b',
+        },
+      },
+    ],
+  })
+  const objectFormatTestingInstanceAfter = new InstanceElement('myinstance', objectFormatTesting, {
+    country: [
+      {
+        name: 'salsal',
+        nicknames: ['o', 's', 's'],
+        office: {
+          label: '1',
+          name: '2',
+        },
+      },
+      {
+        name: 'to',
+        nicknames: ['s', 'a', 'a', 's'],
+        office: {
+          label: 'a',
+          name: 'b',
+        },
+      },
+    ],
+  })
+  return [
+    BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee, saltoEmployeeInstance,
+    objectFormatTesting, objectFormatTestingInstanceBefore, objectFormatTestingInstanceAfter,
+  ]
 }
 
 export const mockErrors = (errors: SaltoError[]): wsErrors.Errors => ({
@@ -281,7 +325,7 @@ export const mockWorkspace = ({
 }: MockWorkspaceArgs): MockWorkspace => {
   const state = wsState.buildInMemState(
     async () => ({
-      elements: createInMemoryElementSource(),
+      elements: createInMemoryElementSource(elements()),
       pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
       servicesUpdateDate: new InMemoryRemoteMap(),
       saltoMetadata: new InMemoryRemoteMap([
@@ -329,6 +373,8 @@ export const mockWorkspace = ({
     getSourceMap: mockFunction<Workspace['getSourceMap']>().mockResolvedValue(new parser.SourceMap()),
     getSourceRanges: mockFunction<Workspace['getSourceRanges']>().mockResolvedValue([]),
     getElementReferencedFiles: mockFunction<Workspace['getElementReferencedFiles']>().mockResolvedValue([]),
+    getElementOutgoingReferences: mockFunction<Workspace['getElementOutgoingReferences']>().mockResolvedValue([]),
+    getElementIncomingReferences: mockFunction<Workspace['getElementIncomingReferences']>().mockResolvedValue([]),
     getElementNaclFiles: mockFunction<Workspace['getElementNaclFiles']>().mockResolvedValue([]),
     getElementIdsBySelectors: mockFunction<Workspace['getElementIdsBySelectors']>().mockResolvedValue(awu([])),
     getParsedNaclFile: mockFunction<Workspace['getParsedNaclFile']>(),
@@ -349,10 +395,12 @@ export const mockWorkspace = ({
     demote: mockFunction<Workspace['demote']>(),
     demoteAll: mockFunction<Workspace['demoteAll']>(),
     copyTo: mockFunction<Workspace['copyTo']>(),
+    sync: mockFunction<Workspace['sync']>(),
     getValue: mockFunction<Workspace['getValue']>(),
     getSearchableNames: mockFunction<Workspace['getSearchableNames']>(),
     getSearchableNamesOfEnv: mockFunction<Workspace['getSearchableNamesOfEnv']>(),
     listUnresolvedReferences: mockFunction<Workspace['listUnresolvedReferences']>(),
+    getElementSourceOfPath: mockFunction<Workspace['getElementSourceOfPath']>(),
   }
 }
 

@@ -20,6 +20,8 @@ import { MergeError } from '../merger'
 import { ValidationError } from '../validator'
 import { ParseError } from '../parser'
 
+export const MAX_ENV_NAME_LEN = 100
+
 export class Errors extends types.Bean<Readonly<{
     parse: ReadonlyArray<ParseError>
     merge: ReadonlyArray<MergeError>
@@ -50,7 +52,11 @@ export class EnvDuplicationError extends Error {
 
 export class InvalidEnvNameError extends Error {
   constructor(envName: string) {
-    super(`${envName} is an invalid name.\nEnvironment name should includes only alphanumeric characters or one of the following characters: _-.!`)
+    super(
+      `The environment name: "${envName}" is invalid. Make sure your name meets the following rules:
+        - Contains only alphanumeric or one of the following special characters: _-.!
+        - Cannot exceed ${MAX_ENV_NAME_LEN} chars`
+    )
   }
 }
 

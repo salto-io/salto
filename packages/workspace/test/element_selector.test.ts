@@ -29,6 +29,7 @@ const mockStrType = new PrimitiveType({
   annotations: { testAnno: 'TEST ANNO TYPE' },
   path: ['here', 'we', 'go'],
 })
+const mockPrimitive = new ListType(BuiltinTypes.BOOLEAN)
 const mockElem = new ElemID('mockAdapter', 'test')
 const mockType = new ObjectType({
   elemID: mockElem,
@@ -125,6 +126,23 @@ describe('element selector', () => {
     ]
     const selectedElements = await selectElements({ elements, selectors: ['salesforce.sometype'] })
     expect(selectedElements).toEqual([elements[0]])
+  })
+
+  it('should only select specific types when given multiple typeNames', async () => {
+    const elements = [
+      new ElemID('salesforce', 'sometype'),
+      new ElemID('salesforce', 'sometypewithsameprefix'),
+      new ElemID('salesforce', 'withsamesuffixsometype'),
+      new ElemID('salesforce', 'othertype'),
+      new ElemID('salesforce', 'othertypewithsameprefix'),
+      new ElemID('salesforce', 'withsamesuffixothertype'),
+      new ElemID('otheradapter', 'sometype'),
+      new ElemID('otheradapter', 'othertype'),
+      new ElemID('salesforce', 'othertype', 'instance', 'y'),
+      new ElemID('salesforce', 'sometype', 'instance', 'x'),
+    ]
+    const selectedElements = await selectElements({ elements, selectors: ['salesforce.sometype|othertype'] })
+    expect(selectedElements).toEqual([elements[0], elements[3]])
   })
 
   it('should handle asterisks in field type and instance name', async () => {
@@ -332,7 +350,7 @@ describe.skip('validation tests', () => {
   })
 })
 describe('select elements recursively', () => {
-  const testElements = [mockInstance, mockType]
+  const testElements = [mockInstance, mockType, mockPrimitive]
   const testSelect = async (selectors: ElementSelector[], compact = false): Promise<ElemID[]> =>
     awu(await selectElementIdsByTraversal(
       selectors,
@@ -362,6 +380,13 @@ describe('select elements recursively', () => {
       e2) => e1.getFullName().localeCompare(e2.getFullName()))
     expect(elementIds).toEqual(expectedElements)
   })
+
+  it('finds the required id for a single top level element', async () => {
+    const selectors = createElementSelectors([mockElem.getFullName()]).validSelectors
+    const elementIds = await testSelect(selectors)
+    expect(elementIds).toEqual([mockElem])
+  })
+
   it('returns nothing with non-matching subelements', async () => {
     const selectors = createElementSelectors(['mockAdapter.test.instance.mockInstance.obj.NoSuchThingExists*']).validSelectors
     const elementIds = await testSelect(selectors)

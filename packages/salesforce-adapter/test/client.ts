@@ -13,13 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { Values } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import Connection from '../src/client/jsforce'
 import SalesforceClient from '../src/client/client'
 import { mockJsforce } from './connection'
-import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
+import { MAX_TOTAL_CONCURRENT_API_REQUEST, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
 
-const mockClient = (): { connection: MockInterface<Connection>; client: SalesforceClient } => {
+const mockClient = (values?: Values):
+{ connection: MockInterface<Connection>; client: SalesforceClient } => {
   const connection = mockJsforce()
   const client = new SalesforceClient({
     credentials: {
@@ -30,16 +32,20 @@ const mockClient = (): { connection: MockInterface<Connection>; client: Salesfor
     connection,
     config: {
       maxConcurrentApiRequests: {
-        total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+        total: MAX_TOTAL_CONCURRENT_API_REQUEST,
         retrieve: 3,
         read: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
         list: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+        query: 4,
+        describe: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
+        deploy: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
       },
       dataRetry: {
         maxAttempts: 3,
         retryDelay: 1000,
         retryableFailures: ['err1', 'err2'],
       },
+      ...(values ?? {}),
     },
   })
 

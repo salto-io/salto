@@ -23,11 +23,13 @@ salesforce {
       retryStrategy = "NetworkError"
     }
     maxConcurrentApiRequests = {
-      total = -1
+      total = 100
       retrieve = 3
       read = -1
       list = -1
       query = 4
+      describe = -1
+      deploy = -1
     }
   }
   fetch = {
@@ -138,6 +140,7 @@ salesforce {
 | metadataType                                                | ".*" (All types)                                 | A regular expression of a metadata type to query with
 | name                                                        | ".*" (All names)                                 | A regular expression of a metadata instance name to query with
 
+
 ## Optional Features
 
 | Name                                                        | Default when undefined                           | Description
@@ -179,6 +182,7 @@ salesforce {
 | [retry](#retry-configuration-options)                         | `{}` (no overrides)      | Configuration for retrying on errors
 | [maxConcurrentApiRequests](#rate-limit-configuration-options) | `{}` (no overrides)      | Limits on the number of concurrent requests of different types
 | [dataRetry](#client-data-retry-options) | `{}` (no overrides)      | Configuration for retrying on specific errors regarding data objects (for custom object instances)
+| [readMetadataChunkSize](#read-metadata-chunk-size)            | 10 except for Profile and PermissionSet (which are 1) | Configuration for specifing the size of the chunk in readMetadata
 
 #### Client polling options
 
@@ -213,11 +217,13 @@ For more details see the DeployOptions section in the [salesforce documentation 
 
 | Name                                                        | Default when undefined                           | Description
 | ------------------------------------------------------------| -------------------------------------------------| -----------
-| retrieve                                                    | `3`                                              | Max number of concurrent retrieve requests
-| read                                                        | `-1` (unlimited)                                 | Max number of concurrent read requests
-| list                                                        | `-1` (unlimited)                                 | Max number of concurrent list requests
-| query                                                       | `4`                                              | Max number of concurrent SOQL query requests
-| total                                                       | `-1` (unlimited)                                 | Shared limit for read, retrieve and list
+| retrieve                                                    | `3`                                              | Max number of concurrent retrieve requests (retrieve)
+| read                                                        | `-1` (unlimited)                                 | Max number of concurrent read requests (readMetadata)
+| list                                                        | `-1` (unlimited)                                 | Max number of concurrent list requests (listMetadataObjects)
+| query                                                       | `4`                                              | Max number of concurrent SOQL query requests (query, queryMore)
+| describe                                                    | `-1` (unlimited)                                 | Max number of concurrent describe requests (listMetadataTypes, describeMetadataType, listSObjects, describeSObjects)
+| deploy                                                      | `-1` (unlimited)                                 | Max number of concurrent deploy requests (deploy, bulkLoadOperation)
+| total                                                       | `100` (unlimited)                                | Global limit of concurrent api requests
 
 ### Client data retry options
 
@@ -227,3 +233,9 @@ For more details see the DeployOptions section in the [salesforce documentation 
 | retryDelay                                                        | `1000`                                | Delay (in millis) between each retry
 | retryableFailures                                                        | `FIELD_CUSTOM_VALIDATION_EXCEPTION, UNABLE_TO_LOCK_ROW`                                | Error messages for which to retry
 | 
+
+### Read metadata chunk size
+| Name                                                        | Default when undefined                           | Description
+| ------------------------------------------------------------| -------------------------------------------------| -----------
+| default                                                     | `10`                                             | Default value for chunk size in readMetadata
+| overrides                                                   | Profile and PermissionSet are set to 1           | Chunk size for specific metadata types

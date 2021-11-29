@@ -110,7 +110,7 @@ describe('getPlan', () => {
   it('should split elements on addition if their fields create a dependency cycle', async () => {
     const [plan, splitElem] = await planWithSplitElem(true)
     const planItems = [...plan.itemsByEvalOrder()]
-    expect(planItems).toHaveLength(5)
+    expect(planItems).toHaveLength(7)
     const splitElemChanges = planItems
       .filter(item => item.groupKey === splitElem.elemID.getFullName())
     expect(splitElemChanges).toHaveLength(2)
@@ -122,7 +122,7 @@ describe('getPlan', () => {
     const [plan, splitElem] = await planWithSplitElem(false)
 
     const planItems = [...plan.itemsByEvalOrder()]
-    expect(planItems).toHaveLength(5)
+    expect(planItems).toHaveLength(7)
     const splitElemChanges = planItems
       .filter(item => item.groupKey === splitElem.elemID.getFullName())
     expect(splitElemChanges).toHaveLength(2)
@@ -140,13 +140,13 @@ describe('getPlan', () => {
   it('should ignore cycles within a group', async () => {
     const plan = await planWithDependencyCycleWithinAGroup(false)
     const planItems = [...plan.itemsByEvalOrder()]
-    expect(planItems).toHaveLength(4)
+    expect(planItems).toHaveLength(6)
   })
 
   it('should ignore cycles within a group with change validators', async () => {
     const plan = await planWithDependencyCycleWithinAGroup(true)
     const planItems = [...plan.itemsByEvalOrder()]
-    expect(planItems).toHaveLength(4)
+    expect(planItems).toHaveLength(6)
   })
 
   describe('with custom group key function', () => {

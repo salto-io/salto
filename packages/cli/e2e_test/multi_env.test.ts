@@ -61,7 +61,7 @@ describe('multi env tests', () => {
   const env1InstName = `Env1TestInst${tempID}`
   const env2InstName = `Env2TestInst${tempID}`
   const homeWSDir = (): string => (
-    path.join(saltoHomeDir, `${WS_NAME}*`)
+    path.join(saltoHomeDir, '*')
   )
   const commonObjectDir = (): string => (
     path.join(baseDir, 'salesforce', 'Objects')

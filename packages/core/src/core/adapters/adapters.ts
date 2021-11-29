@@ -16,11 +16,13 @@
 import _ from 'lodash'
 import {
   AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
-  Adapter, AdapterAuthentication, Element, ReadOnlyElementsSource, GLOBAL_ADAPTER,
+  Adapter, AdapterAuthentication, Element, ReadOnlyElementsSource, GLOBAL_ADAPTER, ObjectType,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { merger } from '@salto-io/workspace'
+import { values } from '@salto-io/lowerdash'
+import { elements } from '@salto-io/adapter-components'
 import adapterCreators from './creators'
 
 const log = logger(module)
@@ -63,6 +65,13 @@ const getAdapterConfigFromType = async (
 ): Promise<InstanceElement | undefined> => {
   const { configType } = adapterCreators[adapterName]
   return configType ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType) : undefined
+}
+
+export const getAdaptersConfigTypes = async (): Promise<ObjectType[]> => {
+  const types = Object.values(adapterCreators)
+    .map(adapterCreator => adapterCreator.configType)
+    .filter(values.isDefined)
+  return [...types, ...await elements.subtypes.getSubtypes(types)]
 }
 
 export const getDefaultAdapterConfig = async (
@@ -116,7 +125,7 @@ const filterElementsSourceAdapter = (
   }
 }
 
-type AdapterConfigGetter = (
+export type AdapterConfigGetter = (
   adapter: string, defaultValue?: InstanceElement
 ) => Promise<InstanceElement | undefined>
 

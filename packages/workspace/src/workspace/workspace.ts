@@ -19,7 +19,7 @@ import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, Detail
   Value, toChange, isRemovalChange, getChangeElement,
   ReadOnlyElementsSource, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { applyDetailedChanges, resolvePath } from '@salto-io/adapter-utils'
+import { applyDetailedChanges, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
@@ -29,17 +29,20 @@ import { multiEnvSource, getSourceNameForFilename, MultiEnvSource, EnvsChanges, 
 import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
 import { ParsedNaclFile } from './nacl_files/parsed_nacl_file'
 import { ElementSelector } from './element_selector'
-import { Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError,
-  DeleteCurrentEnvError, InvalidEnvNameError } from './errors'
+import {
+  Errors, ServiceDuplicationError, EnvDuplicationError, UnknownEnvError,
+  DeleteCurrentEnvError, InvalidEnvNameError, MAX_ENV_NAME_LEN,
+} from './errors'
 import { EnvConfig } from './config/workspace_config_types'
 import { handleHiddenChanges, getElementHiddenParts, isHidden } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
 import { MergeError, mergeElements } from '../merger'
 import { RemoteElementSource, ElementsSource, mapReadOnlyElementsSource } from './elements_source'
-import { createMergeManager, ElementMergeManager, ChangeSet, createEmptyChangeSet, MergedRecoveryMode } from './nacl_files/elements_cache'
+import { createMergeManager, ElementMergeManager, ChangeSet, createEmptyChangeSet, MergedRecoveryMode, RecoveryOverrideFunc } from './nacl_files/elements_cache'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
 import { AdaptersConfigSource } from './adapters_config_source'
+import { updateReferenceIndexes } from './reference_indexes'
 
 const log = logger(module)
 
@@ -54,7 +57,7 @@ const MULTI_ENV_SOURCE_PREFIX = 'multi_env_element_source'
 const STATE_SOURCE_PREFIX = 'state_element_source'
 
 export const isValidEnvName = (envName: string): boolean =>
-  /^[a-z0-9-_.!\s/]+$/i.test(envName)
+  /^[a-z0-9-_.!\s/]+$/i.test(envName) && envName.length <= MAX_ENV_NAME_LEN
 
 export type SourceFragment = {
   sourceRange: SourceRange
@@ -101,6 +104,19 @@ export type EnvironmentsSources = {
   sources: Record<string, EnvironmentSource>
 }
 
+export type FromSourceWithEnv = {
+  source: 'env'
+  fromEnv? : string
+}
+
+const isFromSourceWithEnv = (
+  value: {source: FromSource} | FromSourceWithEnv
+): value is FromSourceWithEnv => {
+  if (value.source === 'env') {
+    return 'fromEnv' in value
+  }
+  return false
+}
 export type Workspace = {
   uid: string
   name: string
@@ -138,10 +154,17 @@ export type Workspace = {
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
+  getElementOutgoingReferences: (id: ElemID) => Promise<ElemID[]>
+  getElementIncomingReferences: (id: ElemID) => Promise<ElemID[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementIdsBySelectors: (
     selectors: ElementSelector[],
-    from?: FromSource,
+    from: {
+      source: 'env'
+      envName?: string
+    } | {
+      source: FromSource
+    },
     compact?: boolean,
   ) => Promise<AsyncIterable<ElemID>>
   getParsedNaclFile: (filename: string) => Promise<ParsedNaclFile | undefined>
@@ -163,20 +186,32 @@ export type Workspace = {
     newConfig: Readonly<InstanceElement> | Readonly<InstanceElement>[]
   ) => Promise<void>
   getStateRecency(services: string): Promise<StateRecency>
-  promote(ids: ElemID[]): Promise<void>
+  promote(
+    idsToMove: ElemID[],
+    idsToRemove?: Record<string, ElemID[]>
+  ): Promise<void>
   demote(ids: ElemID[]): Promise<void>
   demoteAll(): Promise<void>
   copyTo(ids: ElemID[], targetEnvs?: string[]): Promise<void>
+  sync(
+    idsToCopy: ElemID[],
+    idsToRemove: Record<string, ElemID[]>,
+    targetEnvs: string[],
+  ): Promise<void>
   getValue(id: ElemID): Promise<Value | undefined>
   getSearchableNames(): Promise<string[]>
   getSearchableNamesOfEnv(env?: string): Promise<string[]>
   listUnresolvedReferences(completeFromEnv?: string): Promise<UnresolvedElemIDs>
+  getElementSourceOfPath(filePath: string, includeHidden?: boolean): Promise<ReadOnlyElementsSource>
 }
 
 type SingleState = {
   merged: ElementsSource
   errors: RemoteMap<MergeError[]>
   validationErrors: RemoteMap<ValidationError[]>
+  referenceSources: RemoteMap<ElemID[]>
+  referenceTargets: RemoteMap<ElemID[]>
+  mapVersions: RemoteMap<number>
 }
 type WorkspaceState = {
   states: Record<string, SingleState>
@@ -202,7 +237,7 @@ export const loadWorkspace = async (
   config: WorkspaceConfigSource,
   adaptersConfig: AdaptersConfigSource,
   credentials: ConfigSource,
-  enviormentsSources: EnvironmentsSources,
+  environmentsSources: EnvironmentsSources,
   remoteMapCreator: RemoteMapCreator,
   ignoreFileChanges = false,
   persistent = true,
@@ -230,23 +265,16 @@ export const loadWorkspace = async (
     return makeArray(envConf?.services)
   }
   const state = (envName?: string): State => (
-    enviormentsSources.sources[envName ?? currentEnv()].state as State
+    environmentsSources.sources[envName ?? currentEnv()].state as State
   )
-  const naclFileSources: Record<string, MultiEnvSource> = {}
 
-  const getOrCreateNaclFilesSource = (envName: string = currentEnv()): MultiEnvSource => {
-    naclFileSources[envName] = naclFileSources[envName] ?? multiEnvSource(
-      _.mapValues(enviormentsSources.sources, e => e.naclFiles),
-      envName,
-      enviormentsSources.commonSourceName,
-      remoteMapCreator,
-      persistent,
-      mergedRecoveryMode
-    )
-    return naclFileSources[envName]
-  }
-
-  let naclFilesSource = getOrCreateNaclFilesSource()
+  let naclFilesSource = multiEnvSource(
+    _.mapValues(environmentsSources.sources, e => e.naclFiles),
+    environmentsSources.commonSourceName,
+    remoteMapCreator,
+    persistent,
+    mergedRecoveryMode
+  )
   let workspaceState: Promise<WorkspaceState> | undefined
   const buildWorkspaceState = async ({
     workspaceChanges = {},
@@ -259,38 +287,54 @@ export const loadWorkspace = async (
   }): Promise<WorkspaceState> => {
     const initState = async (): Promise<WorkspaceState> => {
       const states: Record<string, SingleState> = Object.fromEntries(await awu(envs())
-        .map(async envName => {
-          const envSrc = getOrCreateNaclFilesSource(envName)
-          return [envName, {
-            merged: new RemoteElementSource(
-              await remoteMapCreator<Element>({
-                namespace: getRemoteMapNamespace('merged', envName),
-                serialize: element => serialize([element], 'keepRef'),
-                // TODO: we might need to pass static file reviver to the deserialization func
-                deserialize: s => deserializeSingleElement(
-                  s,
-                  async staticFile => await envSrc.getStaticFile(
-                    staticFile.filepath,
-                    staticFile.encoding,
-                  ) ?? staticFile
-                ),
-                persistent,
-              })
-            ),
-            errors: await remoteMapCreator<MergeError[]>({
-              namespace: getRemoteMapNamespace('errors', envName),
-              serialize: mergeErrors => serialize(mergeErrors, 'keepRef'),
-              deserialize: async data => deserializeMergeErrors(data),
+        .map(async envName => [envName, {
+          merged: new RemoteElementSource(
+            await remoteMapCreator<Element>({
+              namespace: getRemoteMapNamespace('merged', envName),
+              serialize: element => serialize([element], 'keepRef'),
+              // TODO: we might need to pass static file reviver to the deserialization func
+              deserialize: s => deserializeSingleElement(
+                s,
+                async staticFile => await naclFilesSource.getStaticFile(
+                  staticFile.filepath,
+                  staticFile.encoding,
+                  envName
+                ) ?? staticFile
+              ),
               persistent,
-            }),
-            validationErrors: await remoteMapCreator<ValidationError[]>({
-              namespace: getRemoteMapNamespace('validationErrors', envName),
-              serialize: validationErrors => serialize(validationErrors, 'keepRef'),
-              deserialize: async data => deserializeValidationErrors(data),
-              persistent,
-            }),
-          }]
-        }).toArray())
+            })
+          ),
+          errors: await remoteMapCreator<MergeError[]>({
+            namespace: getRemoteMapNamespace('errors', envName),
+            serialize: mergeErrors => serialize(mergeErrors, 'keepRef'),
+            deserialize: async data => deserializeMergeErrors(data),
+            persistent,
+          }),
+          validationErrors: await remoteMapCreator<ValidationError[]>({
+            namespace: getRemoteMapNamespace('validationErrors', envName),
+            serialize: validationErrors => serialize(validationErrors, 'keepRef'),
+            deserialize: async data => deserializeValidationErrors(data),
+            persistent,
+          }),
+          referenceSources: await remoteMapCreator<ElemID[]>({
+            namespace: getRemoteMapNamespace('referenceSources', envName),
+            serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
+            deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+            persistent,
+          }),
+          referenceTargets: await remoteMapCreator<ElemID[]>({
+            namespace: getRemoteMapNamespace('referenceTargets', envName),
+            serialize: val => safeJsonStringify(val.map(id => id.getFullName())),
+            deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+            persistent,
+          }),
+          mapVersions: await remoteMapCreator<number>({
+            namespace: getRemoteMapNamespace('mapVersions', envName),
+            serialize: val => val.toString(),
+            deserialize: async data => parseInt(data, 10),
+            persistent,
+          }),
+        }]).toArray())
       const sources: Record<string, ReadOnlyElementsSource> = {}
       await awu(envs()).forEach(async envName => {
         sources[MULTI_ENV_SOURCE_PREFIX + envName] = await naclFilesSource
@@ -325,7 +369,7 @@ export const loadWorkspace = async (
       ? await workspaceState
       : await initState()
     const updateWorkspace = async (envName: string): Promise<void> => {
-      const source = getOrCreateNaclFilesSource(envName)
+      const source = naclFilesSource
       const getElementsDependents = async (
         elemIDs: ElemID[],
         addedIDs: Set<string>
@@ -333,7 +377,7 @@ export const loadWorkspace = async (
         elemIDs.forEach(id => addedIDs.add(id.getFullName()))
         const filesWithDependencies = _.uniq(
           await awu(elemIDs)
-            .flatMap(id => source.getElementReferencedFiles(id))
+            .flatMap(id => source.getElementReferencedFiles(envName, id))
             .toArray()
         )
         const dependentsIDs = _.uniqBy(
@@ -408,7 +452,7 @@ export const loadWorkspace = async (
             const changeElement = getChangeElement(change)
             const changeID = changeElement.elemID
             return isRemovalChange(change)
-            || await source.get(changeID)
+            || await (await source.getElementsSource(envName)).get(changeID)
             || isHidden(changeElement, state(envName))
           }
         )
@@ -442,6 +486,27 @@ export const loadWorkspace = async (
           })
           .toArray()
       )
+
+      const dropStateOnlyElementsRecovery: RecoveryOverrideFunc = async (
+        src1RecElements,
+        src2RecElements
+      ) => {
+        const src1ElementsToMerge = await awu(src1RecElements).toArray()
+        const src1IDSet = new Set(src1ElementsToMerge.map(elem => elem.elemID.getFullName()))
+
+        const shouldIncludeStateElement = async (elem: Element): Promise<boolean> => (
+          src1IDSet.has(elem.elemID.getFullName()) || isHidden(elem, state(envName))
+        )
+
+        const src2ElementsToMerge = awu(src2RecElements)
+          .filter(shouldIncludeStateElement)
+
+        return {
+          src1ElementsToMerge: awu(src1ElementsToMerge),
+          src2ElementsToMerge,
+        }
+      }
+
       const changeResult = await stateToBuild.mergeManager.mergeComponents({
         src1Changes: workspaceChanges[envName],
         src2Changes: await completeStateOnlyChanges(
@@ -451,6 +516,7 @@ export const loadWorkspace = async (
           )
         ),
         src2Overrides: workspaceChangedElements,
+        recoveryOverride: dropStateOnlyElementsRecovery,
         src1Prefix: MULTI_ENV_SOURCE_PREFIX + envName,
         src2Prefix: STATE_SOURCE_PREFIX + envName,
         mergeFunc: elements => mergeElements(elements),
@@ -461,6 +527,16 @@ export const loadWorkspace = async (
         await stateToBuild.states[envName].validationErrors.clear()
       }
       const { changes } = changeResult
+
+      await updateReferenceIndexes(
+        changes,
+        stateToBuild.states[envName].referenceTargets,
+        stateToBuild.states[envName].referenceSources,
+        stateToBuild.states[envName].mapVersions,
+        stateToBuild.states[envName].merged,
+        changeResult.cacheValid,
+      )
+
       const changedElements = changes
         .filter(isAdditionOrModificationChange)
         .map(getChangeElement)
@@ -483,8 +559,16 @@ export const loadWorkspace = async (
         const elementsWithNoErrors = validatedElementsIDs
           .map(id => id.getFullName())
           .filter(fullname => _.isEmpty(validationErrorsById[fullname]))
-        await stateToBuild.states[envName].validationErrors.setAll(errorsToUpdate)
-        await stateToBuild.states[envName].validationErrors.deleteAll(elementsWithNoErrors)
+        const currentValidationErrors = Object.fromEntries(await awu(
+          stateToBuild.states[envName].validationErrors.entries()
+        ).map(error => [error.key, error.value] as [string, ValidationError[]]).toArray())
+        await stateToBuild.states[envName].validationErrors.setAll(
+          errorsToUpdate.filter(error =>
+            !_.isEqual(error.value, (currentValidationErrors[error.key] ?? [])))
+        )
+        await stateToBuild.states[envName].validationErrors.deleteAll(
+          elementsWithNoErrors.filter(error => !_.isEmpty(currentValidationErrors[error]))
+        )
       }
     }
     const relevantEnvs = awu(envs())
@@ -562,10 +646,11 @@ export const loadWorkspace = async (
     const { visible: visibleChanges, hidden: hiddenChanges } = await handleHiddenChanges(
       changes,
       state(),
-      await getLoadedNaclFilesSource(),
+      await (await getLoadedNaclFilesSource()).getElementsSource(currentEnv()),
     )
     const workspaceChanges = await ((await getLoadedNaclFilesSource())
       .updateNaclFiles(
+        currentEnv(),
         stateOnly ? [] : visibleChanges,
         mode
       ))
@@ -591,9 +676,22 @@ export const loadWorkspace = async (
     }
   }
   const setNaclFiles = async (naclFiles: NaclFile[], validate = true): Promise<EnvsChanges> => {
-    const elementChanges = await (await getLoadedNaclFilesSource()).setNaclFiles(...naclFiles)
-    workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })
-    return elementChanges
+    const [configFiles, otherFiles] = _.partition(
+      naclFiles,
+      file => adaptersConfig.isConfigFile(file.filename),
+    )
+
+    if (configFiles.length !== 0) {
+      await adaptersConfig.setNaclFiles(...configFiles)
+    }
+
+    if (otherFiles.length !== 0) {
+      const elementChanges = await (await getLoadedNaclFilesSource()).setNaclFiles(...otherFiles)
+      workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })
+      return elementChanges
+    }
+
+    return {}
   }
 
   const removeNaclFiles = async (names: string[], validate = true): Promise<EnvsChanges> => {
@@ -603,8 +701,13 @@ export const loadWorkspace = async (
   }
 
   const getSourceFragment = async (
-    sourceRange: SourceRange, subRange?: SourceRange): Promise<SourceFragment> => {
-    const naclFile = await (await getLoadedNaclFilesSource()).getNaclFile(sourceRange.filename)
+    sourceRange: SourceRange,
+    subRange?: SourceRange,
+    sourceToUse?: Pick<NaclFilesSource, 'getNaclFile'>
+  ): Promise<SourceFragment> => {
+    const source = sourceToUse ?? await getLoadedNaclFilesSource()
+
+    const naclFile = await source.getNaclFile(sourceRange.filename)
     log.debug(`error context: start=${sourceRange.start.byte}, end=${sourceRange.end.byte}`)
     const fragment = naclFile
       ? naclFile.buffer.substring(sourceRange.start.byte, sourceRange.end.byte)
@@ -618,16 +721,34 @@ export const loadWorkspace = async (
       subRange,
     }
   }
+
+  const getErrorSource = async (error: SaltoError):
+    Promise<AdaptersConfigSource | MultiEnvSource> => (
+    error.source === 'config' ? adaptersConfig : getLoadedNaclFilesSource()
+  )
+
+  const getErrorSourceRange = async <T extends SaltoElementError>(error: T):
+  Promise<SourceRange[]> => (
+    error.source === 'config'
+      ? adaptersConfig.getSourceRanges(error.elemID)
+      : (await getLoadedNaclFilesSource()).getSourceRanges(currentEnv(), error.elemID)
+  )
+
   const transformParseError = async (error: ParseError): Promise<WorkspaceError<SaltoError>> => ({
     ...error,
-    sourceFragments: [await getSourceFragment(error.context, error.subject)],
+    sourceFragments: [await getSourceFragment(
+      error.context,
+      error.subject,
+      await getErrorSource(error),
+    )],
   })
+
   const transformToWorkspaceError = async <T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>> => {
-    const sourceRanges = await (await getLoadedNaclFilesSource())
-      .getSourceRanges(saltoElemErr.elemID)
+    const source = await getErrorSource(saltoElemErr)
+    const sourceRanges = await getErrorSourceRange(saltoElemErr)
     const sourceFragments = await awu(sourceRanges)
-      .map(range => getSourceFragment(range))
+      .map(range => getSourceFragment(range, undefined, source))
       .toArray()
 
     return {
@@ -653,14 +774,16 @@ export const loadWorkspace = async (
   const errors = async (env?: string): Promise<Errors> => {
     const envToUse = env ?? currentEnv()
     const currentState = await getWorkspaceState()
-    const loadNaclFileSource = getOrCreateNaclFilesSource(env)
+    const loadNaclFileSource = await getLoadedNaclFilesSource()
     // It is important to make sure these are obtain using Promise.all in order to allow
-    // the SaaS UI to debouce the DB accesses.
-    const [errorsFromSource, validationErrors, mergeErrors] = await Promise.all([
-      loadNaclFileSource.getErrors(),
+    // the SaaS UI to debounce the DB accesses.
+    const [errorsFromSource, configErrors, validationErrors, mergeErrors] = await Promise.all([
+      loadNaclFileSource.getErrors(env ?? currentEnv()),
+      adaptersConfig.getErrors(),
       awu(currentState.states[envToUse].validationErrors.values()).flat().toArray(),
       awu(currentState.states[envToUse].errors.values()).flat().toArray(),
     ])
+
     _(validationErrors)
       .groupBy(error => error.constructor.name)
       .entries()
@@ -668,12 +791,19 @@ export const loadWorkspace = async (
         log.error(`Invalid elements, error type: ${errorType}, element IDs: ${errorsGroup.map(e => e.elemID.getFullName()).join(', ')}`)
       })
     return new Errors({
-      ...errorsFromSource,
+      parse: [
+        ...errorsFromSource.parse,
+        ...configErrors.parse,
+      ],
       merge: [
         ...errorsFromSource.merge,
         ...mergeErrors,
+        ...configErrors.merge,
       ],
-      validation: validationErrors,
+      validation: [
+        ...validationErrors,
+        ...configErrors.validation,
+      ],
     })
   }
   const elementsImpl = async (includeHidden = true, env?: string): Promise<ElementsSource> => {
@@ -681,11 +811,27 @@ export const loadWorkspace = async (
       return elements(env)
     }
     await getWorkspaceState()
-    return (naclFileSources[env ?? currentEnv()]).getElementsSource()
+    return (await getLoadedNaclFilesSource()).getElementsSource(env ?? currentEnv())
   }
+
+  const getSourceByFilename = async (
+    filename: string
+  ): Promise<AdaptersConfigSource | MultiEnvSource> => (
+    adaptersConfig.isConfigFile(filename)
+      ? adaptersConfig
+      : getLoadedNaclFilesSource()
+  )
+
   const pickServices = (names?: ReadonlyArray<string>): ReadonlyArray<string> =>
     (_.isUndefined(names) ? services() : services().filter(s => names.includes(s)))
   const credsPath = (service: string): string => path.join(currentEnv(), service)
+
+  const copyTo = async (ids: ElemID[], targetEnvs: string[]): Promise<void> => {
+    const workspaceChanges = await (await getLoadedNaclFilesSource())
+      .copyTo(currentEnv(), ids, targetEnvs)
+    workspaceState = buildWorkspaceState({ workspaceChanges })
+  }
+
   return {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -702,24 +848,22 @@ export const loadWorkspace = async (
     serviceConfig: (name, defaultValue) => adaptersConfig.getAdapter(name, defaultValue),
     serviceConfigPaths: adaptersConfig.getElementNaclFiles,
     isEmpty: async (naclFilesOnly = false): Promise<boolean> => {
-      const isNaclFilesSourceEmpty = !naclFilesSource
-        || await (await getLoadedNaclFilesSource()).isEmpty()
+      const isNaclFilesSourceEmpty = await (await getLoadedNaclFilesSource()).isEmpty(currentEnv())
       return isNaclFilesSourceEmpty && (naclFilesOnly || state().isEmpty())
     },
-    hasElementsInServices: async (serviceNames: string[]): Promise<boolean> => (
-      await (awu(await (await getLoadedNaclFilesSource()).list()).find(
-        elemId => serviceNames.includes(elemId.adapter)
-      )) !== undefined
-    ),
+    hasElementsInServices: async (serviceNames: string[]): Promise<boolean> => {
+      const source = await (await getLoadedNaclFilesSource()).getElementsSource(currentEnv())
+      return awu(await source.list()).some(elemId => serviceNames.includes(elemId.adapter))
+    },
     hasElementsInEnv: async envName => {
-      const envSource = enviormentsSources.sources[envName]
+      const envSource = environmentsSources.sources[envName]
       if (envSource === undefined) {
         return false
       }
       return !(await envSource.naclFiles.isEmpty())
     },
     envOfFile: filename => getSourceNameForFilename(
-      filename, envs() as string[], enviormentsSources.commonSourceName
+      filename, envs() as string[], environmentsSources.commonSourceName
     ),
     // Returning the functions from the nacl file source directly (eg: promote: src.promote)
     // may seem better, but the setCurrentEnv method replaced the naclFileSource.
@@ -730,36 +874,59 @@ export const loadWorkspace = async (
     updateNaclFiles: (changes, mode, stateOnly) => updateNaclFiles({ changes, mode, stateOnly }),
     removeNaclFiles,
     getSourceMap: async (filename: string) => (
-      (await getLoadedNaclFilesSource()).getSourceMap(filename)
+      (await getSourceByFilename(filename)).getSourceMap(filename)
     ),
     getSourceRanges: async (elemID: ElemID) => (
-      (await getLoadedNaclFilesSource()).getSourceRanges(elemID)
+      (await getLoadedNaclFilesSource()).getSourceRanges(currentEnv(), elemID)
     ),
     listNaclFiles: async () => (
-      (await getLoadedNaclFilesSource()).listNaclFiles()
+      [
+        ...await (await getLoadedNaclFilesSource()).listNaclFiles(currentEnv()),
+        ...await adaptersConfig.listNaclFiles(),
+      ]
     ),
     getElementIdsBySelectors: async (
       selectors: ElementSelector[], from, compacted = false,
-    ) => (
-      (await getLoadedNaclFilesSource()).getElementIdsBySelectors(selectors, from, compacted)
-    ),
+    ) => {
+      const env = isFromSourceWithEnv(from)
+        ? from.fromEnv ?? currentEnv()
+        : currentEnv()
+
+      return (await getLoadedNaclFilesSource())
+        .getElementIdsBySelectors(env, selectors, from.source, compacted)
+    },
     getElementReferencedFiles: async id => (
-      (await getLoadedNaclFilesSource()).getElementReferencedFiles(id)
+      (await getLoadedNaclFilesSource()).getElementReferencedFiles(currentEnv(), id)
     ),
+    getElementOutgoingReferences: async id => {
+      if (!id.isBaseId()) {
+        throw new Error(`getElementOutgoingReferences only support base ids, received ${id.getFullName()}`)
+      }
+      return await (await getWorkspaceState()).states[currentEnv()]
+        .referenceTargets.get(id.getFullName()) ?? []
+    },
+    getElementIncomingReferences: async id => {
+      if (!id.isBaseId()) {
+        throw new Error(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
+      }
+      return await (await getWorkspaceState()).states[currentEnv()]
+        .referenceSources.get(id.getFullName()) ?? []
+    },
     getElementNaclFiles: async id => (
-      (await getLoadedNaclFilesSource()).getElementNaclFiles(id)
+      (await getLoadedNaclFilesSource()).getElementNaclFiles(currentEnv(), id)
     ),
     getTotalSize: async () => (
       (await getLoadedNaclFilesSource()).getTotalSize()
     ),
     getNaclFile: async (filename: string) => (
-      (await getLoadedNaclFilesSource()).getNaclFile(filename)
+      (await getSourceByFilename(filename)).getNaclFile(filename)
     ),
     getParsedNaclFile: async (filename: string) => (
-      (await getLoadedNaclFilesSource()).getParsedNaclFile(filename)
+      (await getSourceByFilename(filename)).getParsedNaclFile(filename)
     ),
-    promote: async (ids: ElemID[]) => {
-      const workspaceChanges = await (await getLoadedNaclFilesSource()).promote(ids)
+    promote: async (idsToMove, idsToRemove) => {
+      const workspaceChanges = await (await getLoadedNaclFilesSource())
+        .promote(currentEnv(), idsToMove, idsToRemove)
       workspaceState = buildWorkspaceState({ workspaceChanges })
     },
     demote: async (ids: ElemID[]) => {
@@ -770,8 +937,14 @@ export const loadWorkspace = async (
       const workspaceChanges = await (await getLoadedNaclFilesSource()).demoteAll()
       workspaceState = buildWorkspaceState({ workspaceChanges })
     },
-    copyTo: async (ids: ElemID[], targetEnvs: string[]) => {
-      const workspaceChanges = await (await getLoadedNaclFilesSource()).copyTo(ids, targetEnvs)
+    copyTo,
+    sync: async (idsToCopy, idsToRemove, targetEnvs) => {
+      const workspaceChanges = await (await getLoadedNaclFilesSource()).sync(
+        currentEnv(),
+        idsToCopy,
+        idsToRemove,
+        targetEnvs,
+      )
       workspaceState = buildWorkspaceState({ workspaceChanges })
     },
     transformToWorkspaceError,
@@ -785,11 +958,12 @@ export const loadWorkspace = async (
       await (await getLoadedNaclFilesSource()).flush()
       const currentWSState = await getWorkspaceState()
       await currentWSState.mergeManager.flush()
+      await adaptersConfig.flush()
     },
     clone: (): Promise<Workspace> => {
-      const sources = _.mapValues(enviormentsSources.sources, source =>
+      const sources = _.mapValues(environmentsSources.sources, source =>
         ({ naclFiles: source.naclFiles.clone(), state: source.state }))
-      const envSources = { commonSourceName: enviormentsSources.commonSourceName, sources }
+      const envSources = { commonSourceName: environmentsSources.commonSourceName, sources }
       return loadWorkspace(config, adaptersConfig, credentials, envSources, remoteMapCreator)
     },
     clear: async (args: ClearFlags) => {
@@ -799,6 +973,9 @@ export const loadWorkspace = async (
           throw new Error('Cannot clear static resources without clearing the state, cache and nacls')
         }
         await currentWSState.mergeManager.clear()
+        // We shouldn't really be accessing naclFilesSource directly outside of its
+        // init flow, but in this specific case, there is not point in loading anything
+        // since everything is deleted.
         await naclFilesSource.clear(args)
       }
       if (args.state) {
@@ -839,11 +1016,10 @@ export const loadWorkspace = async (
       await getWorkspaceState()
       workspaceConfig.envs = [...workspaceConfig.envs, { name: env }]
       await config.setWorkspaceConfig(workspaceConfig)
-      enviormentsSources.sources[env] = await environmentSourceCreator(remoteMapCreator)
+      environmentsSources.sources[env] = await environmentSourceCreator(remoteMapCreator)
       naclFilesSource = multiEnvSource(
-        _.mapValues(enviormentsSources.sources, e => e.naclFiles),
-        currentEnv(),
-        enviormentsSources.commonSourceName,
+        _.mapValues(environmentsSources.sources, e => e.naclFiles),
+        environmentsSources.commonSourceName,
         remoteMapCreator,
         persistent,
         mergedRecoveryMode
@@ -864,7 +1040,7 @@ export const loadWorkspace = async (
       await credentials.delete(env)
 
       if (!keepNacls) {
-        const environmentSource = enviormentsSources.sources[env]
+        const environmentSource = environmentsSources.sources[env]
         // ensure that the env is loaded
         await environmentSource.naclFiles.load({})
         if (environmentSource) {
@@ -872,11 +1048,10 @@ export const loadWorkspace = async (
           await environmentSource.state?.clear()
         }
       }
-      delete enviormentsSources.sources[env]
+      delete environmentsSources.sources[env]
       naclFilesSource = multiEnvSource(
-        _.mapValues(enviormentsSources.sources, e => e.naclFiles),
-        currentEnv(),
-        enviormentsSources.commonSourceName,
+        _.mapValues(environmentsSources.sources, e => e.naclFiles),
+        environmentsSources.commonSourceName,
         remoteMapCreator,
         persistent,
         mergedRecoveryMode
@@ -886,6 +1061,9 @@ export const loadWorkspace = async (
       const envConfig = envs().find(e => e === envName)
       if (_.isUndefined(envConfig)) {
         throw new UnknownEnvError(envName)
+      }
+      if (!isValidEnvName(newEnvName)) {
+        throw new InvalidEnvNameError(newEnvName)
       }
 
       if (!_.isUndefined(envs().find(e => e === newEnvName))) {
@@ -903,19 +1081,18 @@ export const loadWorkspace = async (
       await config.setWorkspaceConfig(workspaceConfig)
       await credentials.rename(envName, newEnvName)
 
-      const environmentSource = enviormentsSources.sources[envName]
+      const environmentSource = environmentsSources.sources[envName]
       if (environmentSource) {
         // ensure that the env is loaded
         await environmentSource.naclFiles.load({})
         await environmentSource.naclFiles.rename(newEnvNaclPath || newEnvName)
         await environmentSource.state?.rename(newEnvName)
       }
-      enviormentsSources.sources[newEnvName] = environmentSource
-      delete enviormentsSources.sources[envName]
+      environmentsSources.sources[newEnvName] = environmentSource
+      delete environmentsSources.sources[envName]
       naclFilesSource = multiEnvSource(
-        _.mapValues(enviormentsSources.sources, e => e.naclFiles),
-        currentEnv(),
-        enviormentsSources.commonSourceName,
+        _.mapValues(environmentsSources.sources, e => e.naclFiles),
+        environmentsSources.commonSourceName,
         remoteMapCreator,
         persistent,
         mergedRecoveryMode
@@ -929,14 +1106,6 @@ export const loadWorkspace = async (
       if (persist) {
         await config.setWorkspaceConfig(workspaceConfig)
       }
-      naclFilesSource = multiEnvSource(
-        _.mapValues(enviormentsSources.sources, e => e.naclFiles),
-        currentEnv(),
-        enviormentsSources.commonSourceName,
-        remoteMapCreator,
-        persistent,
-        mergedRecoveryMode
-      )
     },
 
     getStateRecency: async (serviceName: string): Promise<StateRecency> => {
@@ -958,9 +1127,9 @@ export const loadWorkspace = async (
       (await elements(env)).get(id)
     ),
     getSearchableNames: async (): Promise<string[]> =>
-      (await getLoadedNaclFilesSource()).getSearchableNames(),
+      (await getLoadedNaclFilesSource()).getSearchableNames(currentEnv()),
     getSearchableNamesOfEnv: async (env?: string): Promise<string[]> =>
-      (await getLoadedNaclFilesSource()).getSearchableNamesOfEnv(env),
+      (await getLoadedNaclFilesSource()).getSearchableNamesOfEnv(env ?? currentEnv()),
     listUnresolvedReferences: async (completeFromEnv?: string): Promise<UnresolvedElemIDs> => {
       const getUnresolvedElemIDsFromErrors = async (): Promise<ElemID[]> => {
         const workspaceErrors = (await errors()).validation.filter(isUnresolvedRefError)
@@ -1024,6 +1193,11 @@ export const loadWorkspace = async (
         missing: compact(missing.sort().map(ElemID.fromFullName)),
       }
     },
+    getElementSourceOfPath: async (filePath, includeHidden = true) => (
+      adaptersConfig.isConfigFile(filePath)
+        ? adaptersConfig.getElements()
+        : elementsImpl(includeHidden)
+    ),
   }
 }
 

@@ -22,7 +22,7 @@ import { client as clientUtils, config as configUtils, elements as elementUtils 
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import ZuoraClient from './client/client'
-import { ZuoraConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZuoraApiConfig } from './config'
+import { ZuoraConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, ZuoraApiConfig, getUpdatedConfig } from './config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import fieldReferencesFilter from './filters/field_references'
 import objectDefsFilter from './filters/object_defs'
@@ -216,6 +216,11 @@ export default class ZuoraAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
 
     await this.createFiltersRunner().onFetch(elements)
+
+    const updatedConfig = getUpdatedConfig(this.userConfig)
+    if (updatedConfig !== undefined) {
+      return { elements, updatedConfig }
+    }
     return { elements }
   }
 

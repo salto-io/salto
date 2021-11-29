@@ -17,6 +17,7 @@
 
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { ElemID, LIST_ID_PREFIX, MAP_ID_PREFIX } from './element_id'
 // There is a real cycle here and alternatively values.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
@@ -24,6 +25,8 @@ import { Values, isEqualValues, Value, TypeReference, isTypeReference } from './
 
 const { awu } = collections.asynciterable
 const { mapValuesAsync } = promises.object
+
+const log = logger(module)
 
 export const BuiltinTypesRefByFullName: Record<string, TypeReference> = {}
 
@@ -454,9 +457,15 @@ export class InstanceElement extends Element {
 
   async getType(elementsSource?: ReadOnlyElementsSource): Promise<ObjectType> {
     const type = await getRefTypeValue(this.refType, elementsSource)
-    // eslint-disable-next-line no-use-before-define
+    // This can happen when the user has an instance like
+    // string name {}
+    // an instance like that can be created in some cases of syntax errors in the user's nacl
+    // In this case the type will be a primitive type of string
     if (!isObjectType(type)) {
-      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-ObjectType`)
+      log.warn(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-ObjectType`)
+      return new PlaceholderObjectType({
+        elemID: this.elemID,
+      })
     }
     return type
   }

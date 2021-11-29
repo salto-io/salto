@@ -24,6 +24,7 @@ import {
   initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs,
   getDefaultAdapterConfig,
   adapterCreators,
+  getAdaptersConfigTypes,
 } from '../../../src/core/adapters'
 
 jest.mock('@salto-io/workspace', () => ({
@@ -111,6 +112,31 @@ describe('adapters.ts', () => {
       expect(mockAdapter.getDefaultConfig).toHaveBeenCalled()
       expect(defaultConfigs).toHaveLength(1)
       expect(defaultConfigs?.[0].value).toEqual({ val: 'bbb' })
+    })
+  })
+
+  describe('getAdaptersConfigTypes', () => {
+    const mockConfigSubType = new ObjectType({
+      elemID: new ElemID('mockAdapter', ElemID.CONFIG_NAME),
+    })
+    const mockConfigType = new ObjectType({
+      elemID: new ElemID('mockAdapter', ElemID.CONFIG_NAME),
+      fields: {
+        a: { refType: mockConfigSubType },
+      },
+    })
+
+    beforeEach(() => {
+      const { mockAdapter } = adapterCreators
+      _.assign(mockAdapter, {
+        configType: mockConfigType,
+      })
+    })
+
+    it('should return the config type and its sub-types', async () => {
+      const types = await getAdaptersConfigTypes()
+      expect(types).toContain(mockConfigType)
+      expect(types).toContain(mockConfigSubType)
     })
   })
 

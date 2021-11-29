@@ -13,61 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { Element, ElemID, InstanceElement, isInstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { Element, InstanceElement, isInstanceElement, ElemID, isObjectType, ObjectType } from '@salto-io/adapter-api'
 
-export type SalesforceIndex = Record<string, Record<string, Readonly<Element>[]>>
 
 export type NetsuiteIndex = {
   scriptId: Record<string, ElemID>
   type: Record<string, Readonly<ObjectType>>
 }
-
-// salesforce indexes
-
-const API_NAME = 'apiName'
-export const METADATA_TYPE = 'metadataType'
-
-const metadataType: (elem: Readonly<Element>) => string | undefined = elem => (
-  elem.annotations[METADATA_TYPE]
-)
-
-const apiName: (elem: Readonly<Element>) => string | undefined = elem => (
-  elem.annotations[API_NAME] ?? metadataType(elem)
-)
-
-export const indexSalesforceByMetadataTypeAndApiName = (
-  salesforceElements: ReadonlyArray<Readonly<Element>>,
-): SalesforceIndex => {
-  // needed in order to handle element fragments in custom objects
-  const elementsById = _.groupBy(salesforceElements, e => e.elemID.getFullName())
-
-  const mapApiNameToElem = (elements: Readonly<Element>[]): Record<string, Readonly<Element>[]> => (
-    _.mapValues(
-      _.keyBy(
-        elements.filter(e => apiName(e) !== undefined),
-        elem => apiName(elem) as string,
-      ),
-      e => elementsById[e.elemID.getFullName()],
-    )
-  )
-
-  const groupByMetadataTypeAndApiName = (
-    elements: ReadonlyArray<Readonly<Element>>
-  ): SalesforceIndex => (
-    _.mapValues(
-      _.groupBy(
-        elements.filter(e => metadataType(e) !== undefined),
-        metadataType
-      ),
-      mapApiNameToElem
-    )
-  )
-
-  return groupByMetadataTypeAndApiName(salesforceElements)
-}
-
-// netsuite indexes
 
 const CUSTOM_RECORD_TYPE = 'customrecordtype'
 const CUSTOM_RECORD_CUSTOM_FIELDS = 'customrecordcustomfields'

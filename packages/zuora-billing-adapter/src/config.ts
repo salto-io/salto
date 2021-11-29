@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, CORE_ANNOTATIONS, ListType, BuiltinTypes } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { ElemID, CORE_ANNOTATIONS, ListType, BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX } from './constants'
@@ -78,6 +79,20 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
     request: {
       url: '/workflows',
       paginationField: 'pagination.next_page',
+    },
+  },
+  DetailedWorkflow: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'status', fieldType: 'string' },
+      ],
+    },
+  },
+  PublicEmailTemplate: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'eventCategory', fieldType: 'number' },
+      ],
     },
   },
   EventTriggers: {
@@ -245,6 +260,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       dependsOn: [
         { pathParam: 'id', from: { type: `${SETTINGS_TYPE_PREFIX}PaymentGateways`, field: 'id' } },
       ],
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}Gateway`]: {
+    transformation: {
+      idFields: ['gatewayName'],
     },
   },
   [`${SETTINGS_TYPE_PREFIX}Currency`]: {
@@ -468,4 +488,36 @@ export const configType = createMatchingObjectType<ZuoraConfig>({
 export type FilterContext = {
   [FETCH_CONFIG]: ZuoraFetchConfig
   [API_DEFINITIONS_CONFIG]: ZuoraApiConfig
+}
+
+const FIXING_SYSTEM_CONFIGURATION_INTRO = 'Fixing system configuration for the following types:'
+
+export const getUpdatedConfig = (
+  currentConfig: ZuoraConfig
+): { config: InstanceElement[]; message: string } | undefined => {
+  if (currentConfig[API_DEFINITIONS_CONFIG].types[`${SETTINGS_TYPE_PREFIX}Gateway`]?.transformation?.idFields === undefined) {
+    // fix id for Settings_Gateway
+    return {
+      config: [new InstanceElement(
+        ElemID.CONFIG_NAME,
+        configType,
+        _.defaultsDeep(
+          currentConfig,
+          {
+            [API_DEFINITIONS_CONFIG]: {
+              types: {
+                [`${SETTINGS_TYPE_PREFIX}Gateway`]: {
+                  transformation: {
+                    idFields: ['gatewayName'],
+                  },
+                },
+              },
+            },
+          },
+        ),
+      )],
+      message: [FIXING_SYSTEM_CONFIGURATION_INTRO, `${SETTINGS_TYPE_PREFIX}Gateway`].join(' '),
+    }
+  }
+  return undefined
 }

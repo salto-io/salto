@@ -250,11 +250,11 @@ ${Prompts.SERVICE_ADD_HELP}`
     to: string,
     ids: readonly string[],
   ): string =>
-    `The following configuration elements will be moved to ${to}:
+    (ids.length !== 0 ? `The following configuration elements will be moved to ${to}:
 ${Prompts.LIST_IDS(ids)}
 
 
-`
+` : '')
 
   public static readonly MOVE_START = (
     to: string,
@@ -301,11 +301,21 @@ Nothing to do.
   public static readonly CLONE_MESSAGE = (
     ids: readonly string[],
   ): string =>
-    `The following configuration elements will be cloned:
+    (ids.length !== 0 ? `The following configuration elements will be cloned:
 ${Prompts.LIST_IDS(ids)}
 
 
-`
+` : '')
+
+  public static readonly ELEMENTS_DELETION_MESSAGE = (
+    envName: string,
+    ids: readonly string[],
+  ): string =>
+    (ids.length !== 0 ? `The following configuration elements will be deleted from ${envName}:
+${Prompts.LIST_IDS(ids)}
+
+
+` : '')
 
   public static readonly SHOULD_CLONE_QUESTION = Prompts.SHOULD_RUN_ELEMENTS_OPERATION('clone')
 
@@ -314,6 +324,12 @@ ${Prompts.LIST_IDS(ids)}
 
   public static readonly LIST_UNRESOLVED_FOUND = (env: string): string => `The following unresolved references can be copied from ${env}:`
   public static readonly LIST_UNRESOLVED_MISSING = (): string => 'The following unresolved references could not be found:'
+
+  public static readonly RENAME_ELEMENT = (source: string, target: string): string => `The following element was renamed:
+  ${source} -> ${target}`
+
+  public static readonly RENAME_ELEMENT_REFERENCES = (source: string, elementsAffected: number): string => `Renamed all references of ${source}:
+  ${elementsAffected} elements affected`
 
   public static readonly CLONE_TO_ENV_FAILED = (
     error: string

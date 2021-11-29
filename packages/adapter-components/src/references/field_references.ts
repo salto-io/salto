@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { values as lowerDashValues, collections, multiIndex } from '@salto-io/lowerdash'
 import {
   ReferenceSerializationStrategy, ExtendedReferenceTargetDefinition, ReferenceResolverFinder,
-  generateReferenceResolverFinder, FieldReferenceDefinition,
+  FieldReferenceResolver, generateReferenceResolverFinder, FieldReferenceDefinition,
 } from './reference_mapping'
 import { ContextFunc } from './context'
 
@@ -172,21 +172,27 @@ export const replaceReferenceValues = async <
  *
  */
 export const addReferences = async <
-  T extends string
+  T extends string,
+  GerericFieldReferenceDefinition extends FieldReferenceDefinition<T>
 >({
   elements,
   defs,
   fieldsToGroupBy = ['id'],
   contextStrategyLookup,
   isEqualValue,
+  fieldReferenceResolverCreator,
 }: {
   elements: Element[]
-  defs: FieldReferenceDefinition<T>[]
+  defs: GerericFieldReferenceDefinition[]
   fieldsToGroupBy?: string[]
   contextStrategyLookup?: Record<T, ContextFunc>
   isEqualValue?: ValueIsEqualFunc
+  fieldReferenceResolverCreator?:
+    (def: GerericFieldReferenceDefinition) => FieldReferenceResolver<T>
 }): Promise<void> => {
-  const resolverFinder = generateReferenceResolverFinder<T>(defs)
+  const resolverFinder = generateReferenceResolverFinder<T, GerericFieldReferenceDefinition>(
+    defs, fieldReferenceResolverCreator
+  )
   const instances = elements.filter(isInstanceElement)
 
   // copied from Salesforce - both should be handled similarly:

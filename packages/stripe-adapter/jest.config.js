@@ -30,9 +30,9 @@ module.exports = deepMerge(
     coverageThreshold: {
       'global': {
         branches: 83,
-        functions: 77,
+        functions: 80,
         lines: 92,
-        statements: 88,
+        statements: 89,
       },
     },
     setupFilesAfterEnv: ["jest-extended/all"],
@@ -41,6 +41,7 @@ module.exports = deepMerge(
     ],
     transform: {
       '^.+\\.(ts|tsx)?$': 'ts-jest',
+      '^.+\\.(js|jsx)?$': 'babel-jest',
     }
   },
 )

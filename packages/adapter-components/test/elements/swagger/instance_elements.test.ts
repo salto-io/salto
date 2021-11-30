@@ -15,8 +15,17 @@
 */
 
 import { collections } from '@salto-io/lowerdash'
-import { ObjectType, ElemID, BuiltinTypes, ListType, MapType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  ElemID,
+  InstanceElement,
+  ListType,
+  MapType,
+  ObjectType,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { getAllInstances } from '../../../src/elements/swagger'
 import { returnFullEntry } from '../../../src/elements/field_finder'
 import { Paginator } from '../../../src/client'
@@ -1034,6 +1043,7 @@ describe('swagger_instance_elements', () => {
       const NAME = 'name'
       const ID = 'id'
       const NUMBER = 9
+      const LIST = [1, 2, 3]
       interface GetInstanceParams {
         fileNameFields?: string[]
         idFields?: string[]
@@ -1047,7 +1057,7 @@ describe('swagger_instance_elements', () => {
                 id: ID,
                 name: NAME,
                 number: NUMBER,
-                list: [1, 2, 3],
+                list: LIST,
                 nullField: null,
               },
             ].flatMap(extractPageEntries)
@@ -1095,83 +1105,82 @@ describe('swagger_instance_elements', () => {
           const { path } = await getInstance(params)
           return path?.[path.length - 1] ?? ''
         }
-
         it('generates name with non undefined fields', async () => {
           const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'name', 'number'] })
-          expect(fileName).toEqual(`${ID}_${NAME}_${NUMBER}`)
+          expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_${NUMBER}`)))
         })
 
         describe('generates name with null field', () => {
           it('at the beginning', async () => {
             const fileName: string = await getInstanceFileName({ fileNameFields: ['nullField', 'name', 'number'] })
-            expect(fileName).toEqual(`_${NAME}_${NUMBER}`)
+            expect(fileName).toEqual(pathNaclCase(naclCase(`_${NAME}_${NUMBER}`)))
           })
           it('in the middle', async () => {
             const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'nullField', 'number'] })
-            expect(fileName).toEqual(`${ID}__${NUMBER}`)
+            expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}__${NUMBER}`)))
           })
           it('at the end', async () => {
             const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'name', 'nullField'] })
-            expect(fileName).toEqual(`${ID}_${NAME}_`)
+            expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_`)))
           })
         })
 
         describe('uses naclName as filename', () => {
           it('no fields are provided', async () => {
-            const fileName: string = await getInstanceFileName({ fileNameFields: [], idFields: ['id', 'name', 'number'] })
-            expect(fileName).toEqual(`${ID}_${NAME}_${NUMBER}`)
+            const fileName: string = await getInstanceFileName({ fileNameFields: [], idFields: ['id', 'name', 'number', 'list'] })
+            expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_${NUMBER}_${LIST}`)))
           })
           it('all fields are null', async () => {
             const fileName: string = await getInstanceFileName({ fileNameFields: ['nullField'], idFields: ['id', 'name', 'number'] })
-            expect(fileName).toEqual(`${ID}_${NAME}_${NUMBER}`)
+            expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_${NUMBER}`)))
           })
           it('contains field of unsupported type: list', async () => {
             const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'name', 'list', 'number'], idFields: ['id', 'name', 'number'] })
-            expect(fileName).toEqual(`${ID}_${NAME}_${NUMBER}`)
+            expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_${NUMBER}`)))
           })
           it('contains undefined field', async () => {
             const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'name', 'undefinedField', 'number'], idFields: ['id', 'name', 'number'] })
-            expect(fileName).toEqual(`${ID}_${NAME}_${NUMBER}`)
+            expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_${NUMBER}`)))
           })
         })
       })
 
       describe('element id', () => {
+        const getInstanceIdName = async (params: GetInstanceParams) : Promise<string> => {
+          const { elemID } = await getInstance(params)
+          return elemID.name
+        }
         it('generates id with non undefined fields', async () => {
-          const instance = await getInstance({ idFields: ['id', 'name', 'number'] })
-          expect(instance.elemID.name).toEqual(`${ID}_${NAME}_${NUMBER}`)
+          const elementIdName = await getInstanceIdName({ idFields: ['id', 'name', 'number', 'list'] })
+          expect(elementIdName).toEqual(naclCase(`${ID}_${NAME}_${NUMBER}_${LIST}`))
         })
 
         describe('generates id with null field', () => {
           it('at the beginning', async () => {
-            const instance = await getInstance({ idFields: ['nullField', 'name', 'number'] })
-            expect(instance.elemID.name).toEqual(`_${NAME}_${NUMBER}`)
+            const elementIdName = await getInstanceIdName({ idFields: ['nullField', 'name', 'number'] })
+            expect(elementIdName).toEqual(naclCase(`_${NAME}_${NUMBER}`))
           })
           it('in the middle', async () => {
-            const instance = await getInstance({ idFields: ['id', 'nullField', 'number'] })
-            expect(instance.elemID.name).toEqual(`${ID}__${NUMBER}`)
+            const elementIdName = await getInstanceIdName({ idFields: ['id', 'nullField', 'number'] })
+            expect(elementIdName).toEqual(naclCase(`${ID}__${NUMBER}`))
           })
           it('at the end', async () => {
-            const instance = await getInstance({ idFields: ['id', 'name', 'nullField'] })
-            expect(instance.elemID.name).toEqual(`${ID}_${NAME}_`)
+            const elementIdName = await getInstanceIdName({ idFields: ['id', 'name', 'nullField'] })
+            expect(elementIdName).toEqual(naclCase(`${ID}_${NAME}_`))
           })
         })
         describe('uses default name as id', () => {
           it('no fields are provided', async () => {
-            const instance = await getInstance({ idFields: [] })
-            expect(instance.elemID.name).toEqual('unnamed_0')
+            const elementIdName = await getInstanceIdName({ idFields: [] })
+            expect(elementIdName).toEqual(naclCase('unnamed_0'))
           })
           it('all fields are null', async () => {
-            const instance = await getInstance({ idFields: ['nullField'] })
-            expect(instance.elemID.name).toEqual('unnamed_0')
-          })
-          it('contains field of unsupported type: list', async () => {
-            const instance = await getInstance({ idFields: ['id', 'name', 'list', 'number'] })
-            expect(instance.elemID.name).toEqual('unnamed_0')
+            const elementIdName = await getInstanceIdName({ idFields: ['nullField'] })
+            expect(elementIdName).toEqual(naclCase('unnamed_0'))
           })
           it('contains undefined field', async () => {
-            const instance = await getInstance({ idFields: ['id', 'name', 'undefinedField', 'number'] })
-            expect(instance.elemID.name).toEqual('unnamed_0')
+            const elementIdName = await getInstanceIdName({ idFields: ['id', 'name', 'undefinedField', 'number'] })
+            expect(elementIdName).toEqual(naclCase('unnamed_0'))
           })
         })
       })

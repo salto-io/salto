@@ -70,37 +70,34 @@ export const toBasicInstance = async ({
     }
     return value
   }
-  const config = getConfigWithDefault(
+  const { idFields, fileNameFields } = getConfigWithDefault(
     transformationConfigByType[type.elemID.name],
     transformationDefaultConfig,
   )
-  const idFields: string[] = config.idFields ?? []
-  const fileNameFields: string[] = config.fileNameFields ?? []
-
-  const isValueTypeSupported = (value: unknown): boolean =>
-    _.isString(value) || _.isNumber(value) || _.isNull(value)
 
   const getFieldValue = (fieldName: string): unknown => _.get(entry, fieldName)
-  const isUnsupportedValue = (value: unknown): boolean =>
-    value === undefined || !isValueTypeSupported(value)
 
-  const getName = (fields: string[]): string | undefined => {
+  const getNameFromFields = (fields: string[]): string | undefined => {
     const fieldValues = fields.map(getFieldValue)
-    const unsupportedFieldsNames = fieldValues
-      .filter(isUnsupportedValue)
+    const undefinedFieldsNames = fieldValues
+      .filter(_.isUndefined)
       .map((__, i,) => fields[i])
-    if (unsupportedFieldsNames.length > 0) {
-      log.warn('Found unsupported fields [%s]. Please make sure the given fields '
-        + 'exists in the given object and of type: string | number | null', unsupportedFieldsNames)
+    if (undefinedFieldsNames.length > 0) {
+      log.warn('Found undefined fields: %s.', undefinedFieldsNames)
+      return undefined
+    }
+    if (_.isEmpty(fieldValues)) {
+      log.warn('No fields were given')
       return undefined
     }
     if (fieldValues.every(_.isNull)) {
-      log.warn('All of the given fields [%s] were null', fields)
+      log.warn('All given fields were null: %s', fields)
       return undefined
     }
     const formatValue = (v: unknown): string => (_.isNull(v) ? NULL_REPRESENTATION : _.toString(v))
     return fieldValues.map(formatValue).join(FIELDS_SEPARATOR)
   }
+
   const entryData = await transformValues({
     values: entry,
     type,
@@ -108,19 +105,23 @@ export const toBasicInstance = async ({
     strict: false,
   })
 
-
-  const elementIdName = getName(idFields) ?? defaultName
+  const elementIdName = getNameFromFields(idFields) ?? defaultName
   const naclName = naclCase(
     parent && nestName
       ? `${parent.elemID.name}${ID_SEPARATOR}${elementIdName}`
       : String(elementIdName)
   )
-  const getFileName = ():string => {
-    const fileName = getName(fileNameFields)
-    if (_.isUndefined(fileName)) {
-      return pathNaclCase(naclName)
+  const getFileName = (): string => {
+    const hasUnsupportedValue = (fields: string[]): boolean =>
+      fields
+        .map(getFieldValue)
+        .some(v => !(_.isString(v) || _.isNumber(v) || _.isNull(v)))
+    const defaultFileName = pathNaclCase(naclName)
+    if (_.isUndefined(fileNameFields) || hasUnsupportedValue(fileNameFields)) {
+      return defaultFileName
     }
-    return pathNaclCase(naclCase(fileName))
+    const fileName = getNameFromFields(fileNameFields)
+    return _.isUndefined(fileName) ? defaultFileName : pathNaclCase(naclCase(fileName))
   }
 
   return new InstanceElement(

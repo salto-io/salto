@@ -23,7 +23,7 @@
     "test": "jest",
     "e2e-test": "RUN_E2E_TESTS=1 jest",
     "clean": "rm -rf ./dist .eslintcache",
-    "clean-ts": "../../build_utils/clean-oldI -ts.sh",
+    "clean-ts": "../../build_utils/clean-old-ts.sh",
     "clean-ts-test": "yarn clean-ts && yarn test",
     "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
     "build-ts": "tsc -b && yarn clean-ts",

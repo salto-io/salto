@@ -55,6 +55,8 @@ export type TransformationConfig = {
 
   // set '.' to indicate that the full object should be returned
   dataField?: string
+  // set to true if the defined instance element has only one instance
+  isSingleton?: boolean
 }
 
 export type TransformationDefaultConfig = types.PickyRequired<Partial<TransformationConfig>, 'idFields'>

@@ -1030,4 +1030,134 @@ describe('swagger_instance_elements', () => {
       })).rejects.toThrow(new Error('Invalid type config - type myAdapter.Pet has no request config'))
     })
   })
+
+  describe('test singleton types', () => {
+    let mockPaginator: jest.MockedFunction<Paginator>
+
+    const generateObjectTypes = (): Record<string, ObjectType> => {
+      const Owner = new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'Owner'),
+        fields: {
+          name: { refType: BuiltinTypes.STRING },
+          additionalProperties: {
+            refType: new MapType(BuiltinTypes.UNKNOWN),
+          },
+        },
+        isSettings: true,
+      })
+      const Pet = new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'Pet'),
+        fields: {
+          id: { refType: BuiltinTypes.STRING },
+          name: { refType: BuiltinTypes.STRING },
+        },
+        isSettings: true,
+      })
+      return {
+        Owner,
+        Pet,
+      }
+    }
+
+    beforeEach(() => {
+      mockPaginator = mockFunction<Paginator>().mockImplementation(
+        async function *getAll(getParams, extractPageEntries) {
+          if (getParams.url === '/pet') {
+            yield [
+              {
+                id: 'dog',
+                name: 'def',
+              },
+              {
+                id: 'cat',
+                name: 'def',
+              },
+            ].flatMap(extractPageEntries)
+          }
+          if (getParams.url === '/owner') {
+            yield [
+              { name: 'owner2' },
+            ].flatMap(extractPageEntries)
+          }
+        }
+      )
+    })
+
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+
+    it('should have the correct instance name as a singleton types', async () => {
+      const objectTypes = generateObjectTypes()
+      const res = await getAllInstances({
+        paginator: mockPaginator,
+        apiConfig: {
+          typeDefaults: {
+            transformation: {
+              idFields: ['id'],
+            },
+          },
+          types: {
+            Owner: {
+              request: {
+                url: '/owner',
+              },
+              transformation: {
+                idFields: ['name'],
+                isSingleton: true,
+              },
+            },
+          },
+        },
+        fetchConfig: {
+          includeTypes: ['Owner'],
+        },
+        objectTypes,
+        computeGetArgs: simpleGetArgs,
+        nestedFieldFinder: returnFullEntry,
+      })
+      expect(res.map(e => e.elemID.name)).toEqual([
+        `${ElemID.CONFIG_NAME}`,
+      ])
+      expect(res.map(e => e.path)).toEqual([
+        [
+          ADAPTER_NAME,
+          'Records',
+          'Owner',
+        ]
+      ])
+    })
+    it('should fail if singleton type have more than one instance', async () => {
+      const objectTypes = generateObjectTypes()
+      await expect(getAllInstances({
+        paginator: mockPaginator,
+        apiConfig: {
+          typeDefaults: {
+            transformation: {
+              idFields: ['id'],
+            },
+          },
+          types: {
+            Pet: {
+              request: {
+                url: '/pet',
+                queryParams: {
+                  a: 'b',
+                },
+              },
+              transformation: {
+                isSingleton: true,
+              },
+            },
+          },
+        },
+        fetchConfig: {
+          includeTypes: ['Pet'],
+        },
+        objectTypes,
+        computeGetArgs: simpleGetArgs,
+        nestedFieldFinder: returnFullEntry,
+      })).rejects.toThrow()
+    })
+  })
 })

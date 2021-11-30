@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  InstanceElement, Values, ObjectType, ReferenceExpression, CORE_ANNOTATIONS,
+  InstanceElement, Values, ObjectType, ReferenceExpression, CORE_ANNOTATIONS, ElemID,
 } from '@salto-io/adapter-api'
 import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -99,9 +99,20 @@ export const toBasicInstance = async ({
     parent && nestName ? `${parent.elemID.name}${ID_SEPARATOR}${name}` : String(name)
   )
   const adapterName = type.elemID.adapter
-
+  const filePath = type.isSettings ? 
+    [
+      adapterName,
+      RECORDS_PATH,
+      pathNaclCase(type.elemID.name),
+    ] :
+    [
+      adapterName,
+      RECORDS_PATH,
+      pathNaclCase(type.elemID.name),
+      fileName ? pathNaclCase(naclCase(fileName)) : pathNaclCase(naclName),
+    ]
   return new InstanceElement(
-    naclName,
+    type.isSettings ? ElemID.CONFIG_NAME : naclName,
     type,
     await transformValues({
       values: entryData,
@@ -110,12 +121,7 @@ export const toBasicInstance = async ({
       transformFunc: ({ value }) => (value === null ? undefined : value),
       strict: false,
     }),
-    [
-      adapterName,
-      RECORDS_PATH,
-      pathNaclCase(type.elemID.name),
-      fileName ? pathNaclCase(naclCase(fileName)) : pathNaclCase(naclName),
-    ],
+    filePath,
     parent
       ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] }
       : undefined,

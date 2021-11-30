@@ -213,6 +213,11 @@ describe('swagger_type_elements', () => {
                   ],
                 },
               },
+              foodDetails: {
+                transformation: {
+                  isSingleton: true,
+                },
+              },
             },
           },
         )
@@ -281,6 +286,10 @@ describe('swagger_type_elements', () => {
       it('should not add types that did not already exist', () => {
         const order = allTypes.NewType as ObjectType
         expect(order).toBeUndefined()
+      })
+      it('should be a isSetting type', () => {
+        const foodDet = allTypes.foodDetails as ObjectType
+        expect(foodDet.isSettings).toEqual(true)
       })
     })
 

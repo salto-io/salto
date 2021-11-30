@@ -15,10 +15,10 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { InstanceElement, Adapter } from '@salto-io/adapter-api'
+import { InstanceElement, Adapter, Values, OAuthRequestParameters, OauthAccessTokenResponse } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import ZendeskAdapter from './adapter'
-import { Credentials, usernamePasswordCredentialsType } from './auth'
+import { Credentials, oauthAccessTokenCredentialsType, oauthRequestParametersType, usernamePasswordCredentialsType } from './auth'
 import {
   configType, ZendeskConfig, CLIENT_CONFIG, FETCH_CONFIG, DEFAULT_TYPES, DEFAULT_ID_FIELDS,
   FIELDS_TO_OMIT,
@@ -32,10 +32,48 @@ const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
 const { validateDuckTypeApiDefinitionConfig } = configUtils
 
-const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
-  username: config.value.username,
-  password: config.value.password,
-  subdomain: config.value.subdomain,
+/*
+
+Steps for OAuth authentication in zendesk:
+1. add oauth client in https://{subdomain}.zendesk.com/admin/apps-integrations/apis/apis/oauth_clients/
+  - specify "client name" and "redirect url" and click save
+  - keep the generated oauth token - it's your salto client's secret
+
+2. go to this page:
+https://{subdomain}.zendesk.com/oauth/authorizations/new?response_type=token&redirect_uri={your_redirect_url}&client_id={your_unique_identifier}&scope=read%20write
+
+  you'll be redirect to zendesk authorizing page.
+
+3. click "Allow". you'll be redirected to your "redirect url" with "access_token" url parameter.
+
+4. make API calls with your access token:
+curl https://{subdomain}.zendesk.com/api/v2/tickets.json \
+  -H "Authorization: Bearer {access_token}"
+
+*/
+
+const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
+  if (config.value.authType === 'oauth') {
+    return {
+      accessToken: config.value.accessToken,
+      subdomain: config.value.subdomain,
+    }
+  }
+  return {
+    username: config.value.username,
+    password: config.value.password,
+    subdomain: config.value.subdomain,
+  }
+}
+
+export const createUrlFromUserInput = (value: Values): string => {
+  const { subdomain, port, clientId } = value
+  return `https://${subdomain}.zendesk.com/oauth/authorizations/new?response_type=token&redirect_uri=http://localhost:${port}&client_id=${clientId}&scope=read%20write`
+}
+
+const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters => ({
+  url: createUrlFromUserInput(userInput.value),
+  oauthRequiredFields: ['access_token'],
 })
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZendeskConfig => {
@@ -89,6 +127,22 @@ export const adapter: Adapter = {
   authenticationMethods: {
     basic: {
       credentialsType: usernamePasswordCredentialsType,
+    },
+    oauth: {
+      createOAuthRequest,
+      credentialsType: oauthAccessTokenCredentialsType,
+      oauthRequestParameters: oauthRequestParametersType,
+      createFromOauthResponse: (oldConfig: Values, response: OauthAccessTokenResponse) => {
+        const { clientId, clientSecret, port, subdomain } = oldConfig
+        const { accessToken } = response.fields
+        return {
+          clientId,
+          clientSecret,
+          port,
+          subdomain,
+          accessToken,
+        }
+      },
     },
   },
   configType,

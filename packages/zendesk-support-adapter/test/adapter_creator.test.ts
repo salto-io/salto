@@ -15,11 +15,11 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { ObjectType, InstanceElement } from '@salto-io/adapter-api'
+import { ObjectType, InstanceElement, OAuthMethod } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import ZendeskAdapter from '../src/adapter'
-import { adapter } from '../src/adapter_creator'
-import { usernamePasswordCredentialsType } from '../src/auth'
+import { adapter, createUrlFromUserInput } from '../src/adapter_creator'
+import { oauthAccessTokenCredentialsType, usernamePasswordCredentialsType } from '../src/auth'
 import { configType } from '../src/config'
 import { ZENDESK_SUPPORT } from '../src/constants'
 import * as connection from '../src/client/connection'
@@ -43,10 +43,64 @@ describe('adapter creator', () => {
       Object.keys(usernamePasswordCredentialsType.fields)
     )
   })
+  it('should use accessToken as the OAuth auth method', () => {
+    expect(adapter.authenticationMethods.oauth).toBeDefined()
+    expect(Object.keys(
+      (adapter.authenticationMethods.oauth as OAuthMethod).credentialsType.fields
+    )).toEqual(Object.keys(oauthAccessTokenCredentialsType.fields))
+  })
+  it('should return oauth params', () => {
+    expect((adapter.authenticationMethods.oauth as OAuthMethod).createFromOauthResponse(
+      {
+        clientId: 'client',
+        clientSecret: 'secret',
+        port: 8080,
+        subdomain: 'abc',
+      },
+      {
+        fields: {
+          accessToken: 'token',
+        },
+      }
+    )).toEqual({
+      clientId: 'client',
+      clientSecret: 'secret',
+      port: 8080,
+      subdomain: 'abc',
+      accessToken: 'token',
+    })
+  })
   it('should return the zendesk adapter', () => {
+    // with basic auth method
     expect(adapter.operations({
       credentials: new InstanceElement(ZENDESK_SUPPORT,
         adapter.authenticationMethods.basic.credentialsType),
+      config: new InstanceElement(
+        ZENDESK_SUPPORT,
+        adapter.configType as ObjectType,
+        {
+          fetch: {
+            includeTypes: [],
+          },
+          apiDefinitions: {
+            types: {},
+          },
+        },
+      ),
+      elementsSource: buildElementsSourceFromElements([]),
+    })).toBeInstanceOf(ZendeskAdapter)
+
+    // with OAuth auth method
+    expect(adapter.operations({
+      credentials: new InstanceElement(
+        ZENDESK_SUPPORT,
+        adapter.authenticationMethods.oauth?.credentialsType as ObjectType,
+        {
+          authType: 'oauth',
+          accessToken: 'token',
+          subdomain: 'abc',
+        }
+      ),
       config: new InstanceElement(
         ZENDESK_SUPPORT,
         adapter.configType as ObjectType,
@@ -113,16 +167,34 @@ describe('adapter creator', () => {
     })).toThrow(new Error('Invalid type names in fetch: a,b'))
   })
 
+  it('should return right url for oauth request', () => {
+    expect(createUrlFromUserInput({
+      subdomain: 'abc',
+      port: 8080,
+      clientId: 'client',
+    })).toEqual('https://abc.zendesk.com/oauth/authorizations/new?response_type=token&redirect_uri=http://localhost:8080&client_id=client&scope=read%20write')
+  })
+
   it('should validate credentials using createConnection', async () => {
     jest.spyOn(connection, 'createConnection')
     mockAxiosAdapter.onGet('/account/settings').reply(200, {
       settings: {},
     })
+
+    // basic auth method
     expect(await adapter.validateCredentials(new InstanceElement(
       'config',
       usernamePasswordCredentialsType,
       { username: 'user123', password: 'pwd456', subdomain: 'abc' },
     ))).toEqual('abc')
     expect(connection.createConnection).toHaveBeenCalledTimes(1)
+
+    // OAuth auth method
+    expect(await adapter.validateCredentials(new InstanceElement(
+      'config',
+      oauthAccessTokenCredentialsType,
+      { authType: 'oauth', accessToken: 'token', subdomain: 'abc' },
+    ))).toEqual('abc')
+    expect(connection.createConnection).toHaveBeenCalledTimes(2)
   })
 })

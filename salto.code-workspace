@@ -97,6 +97,10 @@
 			"path": "packages/graph-exporter"
 		},
 		{
+			"name": "zendesk-support-adapter",
+			"path": "packages/zendesk-support-adapter"
+		},
+		{
 			"name": "zuora-billing-adapter",
 			"path": "packages/zuora-billing-adapter"
 		},

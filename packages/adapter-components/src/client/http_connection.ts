@@ -100,12 +100,14 @@ export const validateCredentials = async <TCredentials>(
   return accountId
 }
 
+export type AuthParams = {
+  auth?: AxiosBasicCredentials
+  headers?: Record<string, unknown>
+}
+
 type AxiosConnectionParams<TCredentials> = {
   retryOptions: RetryOptions
-  authParamsFunc: (creds: TCredentials) => Promise<{
-    auth?: AxiosBasicCredentials
-    headers?: Record<string, unknown>
-  }>
+  authParamsFunc: (creds: TCredentials) => Promise<AuthParams>
   baseURLFunc: (creds: TCredentials) => string
   credValidateFunc: ({ credentials, connection }: {
     credentials: TCredentials

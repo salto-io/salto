@@ -1030,7 +1030,7 @@ describe('swagger_instance_elements', () => {
       })).rejects.toThrow(new Error('Invalid type config - type myAdapter.Pet has no request config'))
     })
 
-    describe('element ids and file names transformation', () => {
+    describe('element id and filename transformation', () => {
       const NAME = 'name'
       const ID = 'id'
       const NUMBER = 9
@@ -1048,6 +1048,7 @@ describe('swagger_instance_elements', () => {
                 name: NAME,
                 number: NUMBER,
                 list: [1, 2, 3],
+                nullField: null,
               },
             ].flatMap(extractPageEntries)
           }))
@@ -1095,63 +1096,83 @@ describe('swagger_instance_elements', () => {
           return path?.[path.length - 1] ?? ''
         }
 
-        test('generates name with non undefined fields', async () => {
+        it('generates name with non undefined fields', async () => {
           const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'name', 'number'] })
           expect(fileName).toEqual(`${ID}_${NAME}_${NUMBER}`)
         })
-        test('generates name with undefined field at the beginning', async () => {
-          const fileName: string = await getInstanceFileName({ fileNameFields: ['undefined', 'name', 'number'] })
-          expect(fileName).toEqual(`_${NAME}_${NUMBER}`)
+
+        describe('generates name with null field', () => {
+          it('at the beginning', async () => {
+            const fileName: string = await getInstanceFileName({ fileNameFields: ['nullField', 'name', 'number'] })
+            expect(fileName).toEqual(`_${NAME}_${NUMBER}`)
+          })
+          it('in the middle', async () => {
+            const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'nullField', 'number'] })
+            expect(fileName).toEqual(`${ID}__${NUMBER}`)
+          })
+          it('at the end', async () => {
+            const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'name', 'nullField'] })
+            expect(fileName).toEqual(`${ID}_${NAME}_`)
+          })
         })
-        test('generates name with undefined field in the middle', async () => {
-          const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'undefined', 'number'] })
-          expect(fileName).toEqual(`${ID}__${NUMBER}`)
-        })
-        test('generates name with undefined field at the end', async () => {
-          const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'name', 'undefined'] })
-          expect(fileName).toEqual(`${ID}_${NAME}_`)
-        })
-        test('uses ElementId as filename when no filename fields are provided', async () => {
-          const fileName: string = await getInstanceFileName({ fileNameFields: [], idFields: ['id', 'name', 'number'] })
-          expect(fileName).toEqual(`${ID}_${NAME}_${NUMBER}`)
-        })
-        test('uses ElementId as filename when all filename fields are filtered out', async () => {
-          const fileName: string = await getInstanceFileName({ fileNameFields: ['undefined', 'anotherUndefined'], idFields: ['id', 'name', 'number'] })
-          expect(fileName).toEqual(`${ID}_${NAME}_${NUMBER}`)
-        })
-        test('filters out unsupported field of type "list"', async () => {
-          const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'name', 'list', 'number'] })
-          expect(fileName).toEqual(`${ID}_${NAME}__${NUMBER}`)
+
+        describe('uses naclName as filename', () => {
+          it('no fields are provided', async () => {
+            const fileName: string = await getInstanceFileName({ fileNameFields: [], idFields: ['id', 'name', 'number'] })
+            expect(fileName).toEqual(`${ID}_${NAME}_${NUMBER}`)
+          })
+          it('all fields are null', async () => {
+            const fileName: string = await getInstanceFileName({ fileNameFields: ['nullField'], idFields: ['id', 'name', 'number'] })
+            expect(fileName).toEqual(`${ID}_${NAME}_${NUMBER}`)
+          })
+          it('contains field of unsupported type: list', async () => {
+            const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'name', 'list', 'number'], idFields: ['id', 'name', 'number'] })
+            expect(fileName).toEqual(`${ID}_${NAME}_${NUMBER}`)
+          })
+          it('contains undefined field', async () => {
+            const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'name', 'undefinedField', 'number'], idFields: ['id', 'name', 'number'] })
+            expect(fileName).toEqual(`${ID}_${NAME}_${NUMBER}`)
+          })
         })
       })
+
       describe('element id', () => {
-        test('generates id with non undefined fields', async () => {
+        it('generates id with non undefined fields', async () => {
           const instance = await getInstance({ idFields: ['id', 'name', 'number'] })
           expect(instance.elemID.name).toEqual(`${ID}_${NAME}_${NUMBER}`)
         })
-        test('generates id with undefined field at the beginning', async () => {
-          const instance = await getInstance({ idFields: ['undefined', 'name', 'number'] })
-          expect(instance.elemID.name).toEqual(`_${NAME}_${NUMBER}`)
+
+        describe('generates id with null field', () => {
+          it('at the beginning', async () => {
+            const instance = await getInstance({ idFields: ['nullField', 'name', 'number'] })
+            expect(instance.elemID.name).toEqual(`_${NAME}_${NUMBER}`)
+          })
+          it('in the middle', async () => {
+            const instance = await getInstance({ idFields: ['id', 'nullField', 'number'] })
+            expect(instance.elemID.name).toEqual(`${ID}__${NUMBER}`)
+          })
+          it('at the end', async () => {
+            const instance = await getInstance({ idFields: ['id', 'name', 'nullField'] })
+            expect(instance.elemID.name).toEqual(`${ID}_${NAME}_`)
+          })
         })
-        test('generates id with undefined field in the middle', async () => {
-          const instance = await getInstance({ idFields: ['id', 'undefined', 'number'] })
-          expect(instance.elemID.name).toEqual(`${ID}__${NUMBER}`)
-        })
-        test('generates id with undefined field at the end', async () => {
-          const instance = await getInstance({ idFields: ['id', 'name', 'undefined'] })
-          expect(instance.elemID.name).toEqual(`${ID}_${NAME}_`)
-        })
-        test('generates default name when no fields are provided', async () => {
-          const instance = await getInstance({ idFields: [] })
-          expect(instance.elemID.name).toEqual('unnamed_0')
-        })
-        test('generates default name when all fields are filtered out', async () => {
-          const instance = await getInstance({ idFields: ['undefined', 'anotherUndefined'] })
-          expect(instance.elemID.name).toEqual('unnamed_0')
-        })
-        test('filters out unsupported field of type "list"', async () => {
-          const instance = await getInstance({ idFields: ['id', 'name', 'list', 'number'] })
-          expect(instance.elemID.name).toEqual(`${ID}_${NAME}__${NUMBER}`)
+        describe('uses default name as id', () => {
+          it('no fields are provided', async () => {
+            const instance = await getInstance({ idFields: [] })
+            expect(instance.elemID.name).toEqual('unnamed_0')
+          })
+          it('all fields are null', async () => {
+            const instance = await getInstance({ idFields: ['nullField'] })
+            expect(instance.elemID.name).toEqual('unnamed_0')
+          })
+          it('contains field of unsupported type: list', async () => {
+            const instance = await getInstance({ idFields: ['id', 'name', 'list', 'number'] })
+            expect(instance.elemID.name).toEqual('unnamed_0')
+          })
+          it('contains undefined field', async () => {
+            const instance = await getInstance({ idFields: ['id', 'name', 'undefinedField', 'number'] })
+            expect(instance.elemID.name).toEqual('unnamed_0')
+          })
         })
       })
     })

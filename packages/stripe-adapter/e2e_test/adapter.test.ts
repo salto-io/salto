@@ -19,10 +19,10 @@ import { AccessTokenCredentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
 
 
-/*
-assumes the mapping: v1__<plural-typeName> -> <plural-typeName>
-is declared for all the supported types.
-*/
+/**
+ * assumes the mapping: v1__<plural-typeName> -> <plural-typeName> is declared
+ * for all the supported types in {@link DEFAULT_API_DEFINITIONS.swagger.typeNameOverrides}
+ */
 describe('Stripe adapter E2E with real swagger and mock replies', () => {
   let fetchedSwaggerTypes: string[]
   let credLease: CredsLease<AccessTokenCredentials>
@@ -34,7 +34,9 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
       progressReporter:
                 { reportProgress: () => null },
     })
-    fetchedSwaggerTypes = elements.filter(isObjectType).map(e => e.elemID.typeName)
+    fetchedSwaggerTypes = elements
+      .filter(isObjectType)
+      .map(e => e.elemID.typeName)
   })
 
   afterAll(async () => {
@@ -43,40 +45,40 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
     }
   })
 
-  const TYPE_NAMES = [
-    'stripe.country_specs',
-    'stripe.coupons',
-    'stripe.prices',
-    'stripe.products',
-    'stripe.reporting__report_types',
-    'stripe.tax_rates',
-    'stripe.webhook_endpoints',
-    'stripe.price',
-    'stripe.product',
-    'stripe.reporting_report_type',
-    'stripe.country_spec',
-    'stripe.coupon',
-    'stripe.tax_rate',
-    'stripe.webhook_endpoint',
-    'stripe.product_metadata',
-    'stripe.package_dimensions',
-    'stripe.recurring',
-    'stripe.price_tier',
-    'stripe.transform_quantity',
-    'stripe.country_spec_supported_bank_account_currencies',
-    'stripe.country_spec_verification_fields',
-    'stripe.coupon_applies_to',
-    'stripe.coupon_metadata',
-    'stripe.transform_usage',
-    'stripe.tax_rate_metadata',
-    'stripe.webhook_endpoint_metadata',
+  const EXPECTED_TYPE_NAMES = [
+    'country_specs',
+    'coupons',
+    'prices',
+    'products',
+    'reporting__report_types',
+    'tax_rates',
+    'webhook_endpoints',
+    'price',
+    'product',
+    'reporting_report_type',
+    'country_spec',
+    'coupon',
+    'tax_rate',
+    'webhook_endpoint',
+    'product_metadata',
+    'package_dimensions',
+    'recurring',
+    'price_tier',
+    'transform_quantity',
+    'country_spec_supported_bank_account_currencies',
+    'country_spec_verification_fields',
+    'coupon_applies_to',
+    'coupon_metadata',
+    'transform_usage',
+    'tax_rate_metadata',
+    'webhook_endpoint_metadata',
   ]
 
   describe('fetches swagger types', () => {
-    test.each(TYPE_NAMES)(
+    it.each(EXPECTED_TYPE_NAMES)(
       '%s',
-      async typeName => {
-        expect(fetchedSwaggerTypes).toContain(typeName)
+      async expectedTypeName => {
+        expect(fetchedSwaggerTypes).toContain(expectedTypeName)
       }
     )
   })

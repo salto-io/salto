@@ -23,7 +23,7 @@
     "test": "jest",
     "e2e-test": "RUN_E2E_TESTS=1 jest",
     "clean": "rm -rf ./dist .eslintcache",
-    "clean-ts": "../../build_utils/clean-old-ts.sh",
+    "clean-ts": "../../build_utils/clean-oldI -ts.sh",
     "clean-ts-test": "yarn clean-ts && yarn test",
     "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
     "build-ts": "tsc -b && yarn clean-ts",
@@ -43,6 +43,7 @@
     "lodash": "^4.17.21"
   },
   "devDependencies": {
+    "@types/jest": "^26.0.20",
     "@types/lodash": "^4.14.168",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
@@ -59,7 +60,6 @@
     "jest": "^26.6.3",
     "jest-extended": "^1.1.0",
     "jest-junit": "^12.0.0",
-    "@types/jest": "^26.0.20",
     "tsc-watch": "^2.2.1",
     "typescript": "3.9.3"
   }

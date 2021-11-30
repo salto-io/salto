@@ -25,8 +25,8 @@ import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault
 const log = logger(module)
 
 const ID_SEPARATOR = '__'
-const UNSUPPORTED_FIELD_REPRESENTATION = ''
-const NAME_PARTS_SEPARATOR = '_'
+const NULL_REPRESENTATION = ''
+const FIELDS_SEPARATOR = '_'
 
 export type InstanceCreationParams = {
   entry: Values
@@ -70,6 +70,37 @@ export const toBasicInstance = async ({
     }
     return value
   }
+  const config = getConfigWithDefault(
+    transformationConfigByType[type.elemID.name],
+    transformationDefaultConfig,
+  )
+  const idFields: string[] = config.idFields ?? []
+  const fileNameFields: string[] = config.fileNameFields ?? []
+
+  const isValueTypeSupported = (value: unknown): boolean =>
+    _.isString(value) || _.isNumber(value) || _.isNull(value)
+
+  const getFieldValue = (fieldName: string): unknown => _.get(entry, fieldName)
+  const isUnsupportedValue = (value: unknown): boolean =>
+    value === undefined || !isValueTypeSupported(value)
+
+  const getName = (fields: string[]): string | undefined => {
+    const fieldValues = fields.map(getFieldValue)
+    const unsupportedFieldsNames = fieldValues
+      .filter(isUnsupportedValue)
+      .map((__, i,) => fields[i])
+    if (unsupportedFieldsNames.length > 0) {
+      log.warn('Found unsupported fields [%s]. Please make sure the given fields '
+        + 'exists in the given object and of type: string | number | null', unsupportedFieldsNames)
+      return undefined
+    }
+    if (fieldValues.every(_.isNull)) {
+      log.warn('All of the given fields [%s] were null', fields)
+      return undefined
+    }
+    const formatValue = (v: unknown): string => (_.isNull(v) ? NULL_REPRESENTATION : _.toString(v))
+    return fieldValues.map(formatValue).join(FIELDS_SEPARATOR)
+  }
   const entryData = await transformValues({
     values: entry,
     type,
@@ -77,47 +108,20 @@ export const toBasicInstance = async ({
     strict: false,
   })
 
-  const {
-    idFields, fileNameFields,
-  } = getConfigWithDefault(
-    transformationConfigByType[type.elemID.name],
-    transformationDefaultConfig,
-  )
 
-  const isValueTypeSupported = (value: unknown): boolean => _.isString(value) || _.isNumber(value)
-
-  const hasDefinedField = (fields: string[]): boolean =>
-    fields.some(field => {
-      const value = _.get(entry, field)
-      return value !== undefined && value !== null && isValueTypeSupported(value)
-    })
-
-  const getNamePart = (field: string): string => {
-    const value = _.get(entry, field)
-    if (value === null) {
-      log.warn('Ignoring null field "%s"', field)
-      return UNSUPPORTED_FIELD_REPRESENTATION
-    } if (!isValueTypeSupported(value)) {
-      log.warn('Ignoring field "%s" with unsupported type "%s". Supported types: String, Number', field, typeof value)
-      return UNSUPPORTED_FIELD_REPRESENTATION
-    }
-    return value
-  }
-
-  const idParts = idFields?.map(getNamePart) ?? []
-  const elementIdName = hasDefinedField(idFields)
-    ? idParts.join(NAME_PARTS_SEPARATOR)
-    : defaultName
+  const elementIdName = getName(idFields) ?? defaultName
   const naclName = naclCase(
-    parent && nestName ? `${parent.elemID.name}${ID_SEPARATOR}${elementIdName}` : String(elementIdName)
+    parent && nestName
+      ? `${parent.elemID.name}${ID_SEPARATOR}${elementIdName}`
+      : String(elementIdName)
   )
-
-  const fileNameParts = fileNameFields?.map(getNamePart) ?? []
-  const fileName = hasDefinedField(fileNameFields ?? [])
-    ? fileNameParts.join(NAME_PARTS_SEPARATOR)
-    : elementIdName
-
-  const adapterName = type.elemID.adapter
+  const getFileName = ():string => {
+    const fileName = getName(fileNameFields)
+    if (_.isUndefined(fileName)) {
+      return pathNaclCase(naclName)
+    }
+    return pathNaclCase(naclCase(fileName))
+  }
 
   return new InstanceElement(
     naclName,
@@ -130,10 +134,10 @@ export const toBasicInstance = async ({
       strict: false,
     }),
     [
-      adapterName,
+      type.elemID.adapter,
       RECORDS_PATH,
       pathNaclCase(type.elemID.name),
-      pathNaclCase(naclCase(fileName)),
+      getFileName(),
     ],
     parent
       ? { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parent.elemID, parent)] }

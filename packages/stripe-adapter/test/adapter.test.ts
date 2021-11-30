@@ -32,9 +32,9 @@ import {
 } from '../src/config'
 
 type MockReply = {
-    url: string
-    params: Record<string, string>
-    response: unknown
+  url: string
+  params: Record<string, string>
+  response: unknown
 }
 
 
@@ -69,8 +69,7 @@ const fetchInstances = async (config = DEFAULT_CONFIG): Promise<InstanceElement[
 }
 
 describe('stripe swagger adapter', () => {
-  let axiosAdapter: MockAdapter
-  beforeAll(async () => {
+  beforeAll(() => {
     jest.mock('@salto-io/adapter-components', () => {
       const actual = jest.requireActual('@salto-io/adapter-components')
       return {
@@ -79,26 +78,22 @@ describe('stripe swagger adapter', () => {
           ...actual.elements,
           swagger: {
             ...actual.elements.swagger,
-            generateTypes: jest.fn().mockImplementation(actual.elements.swagger.generateTypes),
-            getAllInstances: jest.fn().mockImplementation(actual.elements.swagger.getAllInstances),
+            generateTypes: jest.fn().mockImplementationOnce(actual.elements.swagger.generateTypes),
+            getAllInstances:
+              jest.fn().mockImplementationOnce(actual.elements.swagger.getAllInstances),
           },
         },
       }
     })
 
-    axiosAdapter = new MockAdapter(axios);
+    const mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' });
     (mockReplies as MockReply[]).forEach(({ url, params, response }) => {
-      axiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined).reply(
+      mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined).reply(
         200, response
       )
     })
   })
 
-  afterAll(() => {
-    axiosAdapter.restore()
-  })
-
-  // eslint-disable-next-line jest/no-disabled-tests
   describe('fetches all types', () => {
     let fetchedInstancesTypes: string[]
 
@@ -106,8 +101,7 @@ describe('stripe swagger adapter', () => {
       fetchedInstancesTypes = (await fetchInstances()).map(i => i.elemID.typeName)
     })
 
-    // TODO - Update the mock replies file using Netta's script and remove the filter
-    test.each(SINGULAR_TYPES.filter(typeName => typeName !== 'product'))(
+    it.each(SINGULAR_TYPES)(
       '%s',
       typeName => {
         expect(fetchedInstancesTypes).toContain(typeName)
@@ -138,7 +132,7 @@ describe('stripe swagger adapter', () => {
       })
 
       describe('fetches included types', () => {
-        test.each(SINGULAR_INCLUDE_TYPES)(
+        it.each(SINGULAR_INCLUDE_TYPES)(
           '%s',
           includedType => {
             expect(fetchedInstancesTypes).toContain(includedType)
@@ -146,7 +140,7 @@ describe('stripe swagger adapter', () => {
         )
       })
 
-      test('doesn\'t fetch additional types', async () => {
+      it('doesn\'t fetch additional types', () => {
         const additionalTypes: string[] = Array.from(fetchedInstancesTypes)
           .filter(fetchedType => !SINGULAR_INCLUDE_TYPES.includes(fetchedType))
         expect(additionalTypes).toBeEmpty()
@@ -154,7 +148,7 @@ describe('stripe swagger adapter', () => {
     })
 
 
-    test('fetches instances of modified type', async () => {
+    it('fetches instances of modified type', async () => {
       const config = new InstanceElement(
         'config',
         configType,

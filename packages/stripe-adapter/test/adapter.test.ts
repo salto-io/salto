@@ -110,7 +110,7 @@ describe('stripe swagger adapter', () => {
   })
 
   describe('custom config', () => {
-    describe('include types', () => {
+    describe('fetches include types', () => {
       const INCLUDE_TYPES = ['coupons', 'tax_rates']
       const SINGULAR_INCLUDE_TYPES = INCLUDE_TYPES.map(t => pluralToSingularTypes[t])
 
@@ -131,14 +131,12 @@ describe('stripe swagger adapter', () => {
         fetchedInstancesTypes = new Set(instances.map(e => e.elemID.typeName))
       })
 
-      describe('fetches included types', () => {
-        it.each(SINGULAR_INCLUDE_TYPES)(
-          '%s',
-          includedType => {
-            expect(fetchedInstancesTypes).toContain(includedType)
-          }
-        )
-      })
+      it.each(SINGULAR_INCLUDE_TYPES)(
+        '%s',
+        includedType => {
+          expect(fetchedInstancesTypes).toContain(includedType)
+        }
+      )
 
       it('doesn\'t fetch additional types', () => {
         const additionalTypes: string[] = Array.from(fetchedInstancesTypes)
@@ -146,7 +144,6 @@ describe('stripe swagger adapter', () => {
         expect(additionalTypes).toBeEmpty()
       })
     })
-
 
     it('fetches instances of modified type', async () => {
       const config = new InstanceElement(

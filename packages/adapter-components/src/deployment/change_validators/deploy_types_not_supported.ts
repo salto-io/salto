@@ -13,12 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator } from '@salto-io/adapter-api'
-import { createChangeValidator } from '@salto-io/adapter-utils'
-import { deployment } from '@salto-io/adapter-components'
+import { ChangeValidator, getChangeElement, isObjectType } from '@salto-io/adapter-api'
 
-const { deployNotSupportedValidator } = deployment.changeValidators
-
-const validators: ChangeValidator[] = [deployNotSupportedValidator]
-
-export default createChangeValidator(validators)
+export const deployTypesNotSupportedValidator: ChangeValidator = async changes => (
+  changes
+    .map(getChangeElement)
+    .filter(isObjectType)
+    .map(objectType => ({
+      elemID: objectType.elemID,
+      severity: 'Error',
+      message: 'Deployment of non-instance elements is not supported',
+      detailedMessage: `Salto does not support deployment of ${objectType.elemID.getFullName()}`,
+    }))
+)

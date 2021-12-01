@@ -13,12 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator } from '@salto-io/adapter-api'
-import { createChangeValidator } from '@salto-io/adapter-utils'
-import { deployment } from '@salto-io/adapter-components'
-
-const { deployNotSupportedValidator } = deployment.changeValidators
-
-const validators: ChangeValidator[] = [deployNotSupportedValidator]
-
-export default createChangeValidator(validators)
+export { deployTypesNotSupportedValidator } from './deploy_types_not_supported'
+export { deployNotSupportedValidator } from './deploy_not_supported'
+export { checkDeploymentAnnotationsValidator } from './check_deployment_annotations'

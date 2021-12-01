@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { toChange, ObjectType, ElemID } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, toChange } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
-import { deployNotSupportedValidator } from '../src/change_validators'
+import { deployNotSupportedValidator } from '../../../src/deployment/change_validators/deploy_not_supported'
 
 describe('change validator creator', () => {
   describe('deployNotSupportedValidator', () => {

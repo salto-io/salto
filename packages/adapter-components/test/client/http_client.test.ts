@@ -21,15 +21,18 @@ import { createConnection, Credentials } from './common'
 
 describe('client_http_client', () => {
   let mockAxiosAdapter: MockAdapter
+  const mockCreateConnection: jest.MockedFunction<ConnectionCreator<Credentials>> = jest.fn(
+    createConnection
+  )
+
   beforeEach(() => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
+    mockCreateConnection.mockClear()
   })
 
   afterEach(() => {
     mockAxiosAdapter.restore()
   })
-
-  const mockCreateConnection: ConnectionCreator<Credentials> = jest.fn(createConnection)
 
   class MyCustomClient extends AdapterHTTPClient<
     Credentials, ClientRateLimitConfig
@@ -74,6 +77,54 @@ describe('client_http_client', () => {
         accountId: 'ACCOUNT_ID',
       })
       await expect(client.getSinglePage({ url: '/ep' })).rejects.toThrow(UnauthorizedError)
+    })
+  })
+
+  describe('post', () => {
+    it('should make the right request', async () => {
+      expect(mockCreateConnection).not.toHaveBeenCalled()
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      expect(mockCreateConnection).toHaveBeenCalledTimes(1)
+
+      mockAxiosAdapter.onGet('/users/me').reply(200, {
+        accountId: 'ACCOUNT_ID',
+      })
+      mockAxiosAdapter.onPost('/ep', 'someData').replyOnce(200, { a: 'b' })
+
+      const postRes = await client.post({ url: '/ep', data: 'someData' })
+      expect(postRes).toEqual({ data: { a: 'b' }, status: 200 })
+    })
+  })
+
+  describe('put', () => {
+    it('should make the right request', async () => {
+      expect(mockCreateConnection).not.toHaveBeenCalled()
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      expect(mockCreateConnection).toHaveBeenCalledTimes(1)
+
+      mockAxiosAdapter.onGet('/users/me').reply(200, {
+        accountId: 'ACCOUNT_ID',
+      })
+      mockAxiosAdapter.onPut('/ep', 'someData').replyOnce(200, { a: 'b' })
+
+      const putRes = await client.put({ url: '/ep', data: 'someData' })
+      expect(putRes).toEqual({ data: { a: 'b' }, status: 200 })
+    })
+  })
+
+  describe('delete', () => {
+    it('should make the right request', async () => {
+      expect(mockCreateConnection).not.toHaveBeenCalled()
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      expect(mockCreateConnection).toHaveBeenCalledTimes(1)
+
+      mockAxiosAdapter.onGet('/users/me').reply(200, {
+        accountId: 'ACCOUNT_ID',
+      })
+      mockAxiosAdapter.onDelete('/ep', { a: 'AAA' }).replyOnce(200, { a: 'b' })
+
+      const getRes = await client.delete({ url: '/ep' })
+      expect(getRes).toEqual({ data: { a: 'b' }, status: 200 })
     })
   })
 

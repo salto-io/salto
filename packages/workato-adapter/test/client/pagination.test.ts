@@ -26,9 +26,9 @@ const extractPageEntries: clientUtils.PageEntriesExtractor = page =>
 
 describe('client_pagination', () => {
   describe('getMinSinceIdPagination', () => {
-    const client: MockInterface<clientUtils.HTTPClientInterface> = {
-      getSinglePage: mockFunction<clientUtils.HTTPClientInterface['getSinglePage']>(),
-      getPageSize: mockFunction<clientUtils.HTTPClientInterface['getPageSize']>(),
+    const client: MockInterface<clientUtils.HTTPReadClientInterface> = {
+      getSinglePage: mockFunction<clientUtils.HTTPReadClientInterface['getSinglePage']>(),
+      getPageSize: mockFunction<clientUtils.HTTPReadClientInterface['getPageSize']>(),
     }
     beforeEach(() => {
       client.getSinglePage.mockReset()

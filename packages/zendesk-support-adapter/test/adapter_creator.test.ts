@@ -49,7 +49,7 @@ describe('adapter creator', () => {
       (adapter.authenticationMethods.oauth as OAuthMethod).credentialsType.fields
     )).toEqual(Object.keys(oauthAccessTokenCredentialsType.fields))
   })
-  it('should return oauth params', () => {
+  it('should return oauth params - only accessToken and subdomain', () => {
     expect((adapter.authenticationMethods.oauth as OAuthMethod).createFromOauthResponse(
       {
         clientId: 'client',
@@ -63,9 +63,6 @@ describe('adapter creator', () => {
         },
       }
     )).toEqual({
-      clientId: 'client',
-      clientSecret: 'secret',
-      port: 8080,
       subdomain: 'abc',
       accessToken: 'token',
     })
@@ -177,6 +174,7 @@ describe('adapter creator', () => {
 
   it('should validate credentials using createConnection', async () => {
     jest.spyOn(connection, 'createConnection')
+    jest.spyOn(connection, 'validateCredentials')
     mockAxiosAdapter.onGet('/account/settings').reply(200, {
       settings: {},
     })
@@ -187,7 +185,6 @@ describe('adapter creator', () => {
       usernamePasswordCredentialsType,
       { username: 'user123', password: 'pwd456', subdomain: 'abc' },
     ))).toEqual('abc')
-    expect(connection.createConnection).toHaveBeenCalledTimes(1)
 
     // OAuth auth method
     expect(await adapter.validateCredentials(new InstanceElement(
@@ -195,6 +192,20 @@ describe('adapter creator', () => {
       oauthAccessTokenCredentialsType,
       { authType: 'oauth', accessToken: 'token', subdomain: 'abc' },
     ))).toEqual('abc')
+
     expect(connection.createConnection).toHaveBeenCalledTimes(2)
+    expect(connection.validateCredentials).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        credentials: { username: 'user123', password: 'pwd456', subdomain: 'abc' },
+      })
+    )
+
+    expect(connection.validateCredentials).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        credentials: { accessToken: 'token', subdomain: 'abc' },
+      })
+    )
   })
 })

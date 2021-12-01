@@ -132,13 +132,10 @@ export const adapter: Adapter = {
       createOAuthRequest,
       credentialsType: oauthAccessTokenCredentialsType,
       oauthRequestParameters: oauthRequestParametersType,
-      createFromOauthResponse: (oldConfig: Values, response: OauthAccessTokenResponse) => {
-        const { clientId, clientSecret, port, subdomain } = oldConfig
+      createFromOauthResponse: (inputConfig: Values, response: OauthAccessTokenResponse) => {
+        const { subdomain } = inputConfig
         const { accessToken } = response.fields
         return {
-          clientId,
-          clientSecret,
-          port,
           subdomain,
           accessToken,
         }

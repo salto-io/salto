@@ -14,121 +14,55 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { collections, multiIndex, promises, strings, values as lowerdashValues } from '@salto-io/lowerdash'
+import { collections, strings, multiIndex, promises, values as lowerdashValues } from '@salto-io/lowerdash'
 import {
-  ADAPTER,
-  BuiltinTypes,
-  Change,
-  CORE_ANNOTATIONS,
+  ADAPTER, Element, Field, ObjectType, TypeElement, isObjectType, isInstanceElement, ElemID,
+  BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement, Values, ReadOnlyElementsSource,
+  ReferenceExpression, ListType, Change, getChangeElement, isField, isObjectTypeChange,
+  isAdditionOrRemovalChange, isFieldChange, isRemovalChange, isInstanceChange, toChange,
   createRefToElmWithValue,
-  Element,
-  ElemID,
-  Field,
-  getChangeElement,
-  InstanceElement,
-  isAdditionOrRemovalChange,
-  isField,
-  isFieldChange,
-  isInstanceChange,
-  isInstanceElement,
-  isObjectType,
-  isObjectTypeChange,
-  isRemovalChange,
-  ListType,
-  ObjectType,
-  ReadOnlyElementsSource,
-  ReferenceExpression,
-  toChange,
-  TypeElement,
-  TypeMap,
-  Values,
 } from '@salto-io/adapter-api'
-import { findObjectType, getParents, pathNaclCase, transformValues } from '@salto-io/adapter-utils'
+import { findObjectType, transformValues, getParents, pathNaclCase } from '@salto-io/adapter-utils'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
 import {
-  API_NAME,
-  API_NAME_SEPARATOR,
-  ASSIGNMENT_RULES_METADATA_TYPE,
-  BUSINESS_PROCESS_METADATA_TYPE,
-  COMPOUND_FIELD_TYPE_NAMES,
-  CUSTOM_FIELD,
-  CUSTOM_OBJECT,
-  CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE,
-  CUSTOM_TAB_METADATA_TYPE,
-  DEFAULT_VALUE_FORMULA,
-  DUPLICATE_RULE_METADATA_TYPE,
-  FIELD_ANNOTATIONS,
-  FIELD_DEPENDENCY_FIELDS,
-  FIELD_TYPE_NAMES,
+  API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
+  LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
+  VALUE_SETTINGS_FIELDS, API_NAME_SEPARATOR, FIELD_ANNOTATIONS, VALUE_SET_DEFINITION_FIELDS,
+  VALUE_SET_FIELDS, DEFAULT_VALUE_FORMULA, FIELD_TYPE_NAMES, OBJECTS_PATH, INSTALLED_PACKAGES_PATH,
+  FORMULA, LEAD_CONVERT_SETTINGS_METADATA_TYPE, ASSIGNMENT_RULES_METADATA_TYPE,
+  QUICK_ACTION_METADATA_TYPE, CUSTOM_TAB_METADATA_TYPE,
+  DUPLICATE_RULE_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
+  VALIDATION_RULES_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE,
+  WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_FIELD, NAME_FIELDS,
+  COMPOUND_FIELD_TYPE_NAMES, INTERNAL_ID_ANNOTATION, INTERNAL_ID_FIELD, LIGHTNING_PAGE_TYPE,
   FLEXI_PAGE_TYPE,
-  FORMULA,
-  INSTALLED_PACKAGES_PATH,
-  INSTANCE_FULL_NAME_FIELD,
-  INTERNAL_FIELD_TYPE_NAMES,
-  INTERNAL_ID_ANNOTATION,
-  INTERNAL_ID_FIELD,
-  LABEL,
-  LEAD_CONVERT_SETTINGS_METADATA_TYPE,
-  LIGHTNING_PAGE_TYPE,
-  LOOKUP_FILTER_FIELDS,
-  METADATA_TYPE,
-  NAME_FIELDS,
-  OBJECTS_PATH,
-  QUICK_ACTION_METADATA_TYPE,
-  RECORD_TYPE_METADATA_TYPE,
-  SALESFORCE,
-  SHARING_RULES_TYPE,
-  VALIDATION_RULES_METADATA_TYPE,
-  VALUE_SET_DEFINITION_FIELDS,
-  VALUE_SET_FIELDS,
-  VALUE_SETTINGS_FIELDS,
-  WEBLINK_METADATA_TYPE,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
-  apiName,
-  createInstanceElement,
-  createInstanceServiceIds,
-  formulaTypeName,
-  getSObjectFieldElement,
-  isCustom,
-  isCustomObject,
-  isCustomSettings,
-  isFieldOfCustomObject,
-  isLocalOnly,
-  metadataAnnotationTypes,
-  metadataType,
-  MetadataTypeAnnotations,
-  MetadataValues,
-  toCustomField,
-  toCustomProperties,
+  getSObjectFieldElement, Types, isCustomObject, apiName, transformPrimitive, MetadataValues,
+  formulaTypeName, metadataType, isCustom, isCustomSettings, metadataAnnotationTypes,
+  MetadataTypeAnnotations, createInstanceElement, toCustomField, toCustomProperties, isLocalOnly,
   toMetadataInfo,
-  transformPrimitive,
-  Types,
+  isFieldOfCustomObject,
+  createInstanceServiceIds,
 } from '../transformers/transformer'
 import {
-  addApiName,
-  addElementParentReference,
-  addKeyPrefix,
-  addLabel,
-  addMetadataType,
-  apiNameParts,
-  boolValue,
-  buildAnnotationsObjectType,
-  buildElementsSourceForFetch,
-  getDataFromChanges,
-  id,
-  isInstanceOfType,
-  isInstanceOfTypeChange,
-  isMasterDetailField,
+  id, addApiName, addMetadataType, addLabel, getNamespace, boolValue,
+  buildAnnotationsObjectType, addElementParentReference, apiNameParts,
   parentApiName,
+  getDataFromChanges,
+  isInstanceOfTypeChange,
+  isInstanceOfType,
+  isMasterDetailField,
+  buildElementsSourceForFetch,
+  addKeyPrefix,
 } from './utils'
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
 import { CustomObject } from '../client/types'
-import { WORKFLOW_DIR_NAME, WORKFLOW_FIELD_TO_TYPE, WORKFLOW_TYPE_TO_FIELD } from './workflow'
+import { WORKFLOW_FIELD_TO_TYPE, WORKFLOW_TYPE_TO_FIELD, WORKFLOW_DIR_NAME } from './workflow'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -222,15 +156,19 @@ const annotationTypesForObject = (typesFromInstance: TypesFromInstance,
   return annotationTypes
 }
 
-export const getObjectDirectoryPath = async (
+export const getObjectDirectoryPath = (obj: ObjectType): string[] =>
+  [SALESFORCE, OBJECTS_PATH, pathNaclCase(obj.elemID.name)]
+
+export const getNamespaceObjectDirectoryPath = async (
   obj: ObjectType,
   namespace?: string,
 ): Promise<string[]> => {
   const objFileName = pathNaclCase(obj.elemID.name)
-  if (namespace) {
-    return [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, objFileName]
+  const objNamespace = namespace ?? await getNamespace(obj)
+  if (objNamespace) {
+    return [SALESFORCE, INSTALLED_PACKAGES_PATH, objNamespace, OBJECTS_PATH, objFileName]
   }
-  return [SALESFORCE, OBJECTS_PATH, objFileName]
+  return getObjectDirectoryPath(obj)
 }
 
 const getFieldDependency = (values: Values): Values | undefined => {
@@ -498,7 +436,7 @@ const createObjectType = async ({
   addMetadataType(object)
   addLabel(object, label)
   addKeyPrefix(object, keyPrefix === null ? undefined : keyPrefix)
-  object.path = [...await getObjectDirectoryPath(object), pathNaclCase(object.elemID.name)]
+  object.path = [...await getNamespaceObjectDirectoryPath(object), pathNaclCase(object.elemID.name)]
   if (!_.isUndefined(fields)) {
     const getCompoundTypeName = (nestedFields: SObjField[], compoundName: string): string => {
       if (compoundName === COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME) {
@@ -593,7 +531,7 @@ const removeIrrelevantElements = async (elements: Element[]): Promise<void> => {
   await removeAsync(elements, async elem => {
     const elemApiName = await apiName(elem)
     return (isObjectType(elem) && await isCustomObject(elem)
-    && (elemApiName.endsWith('__e') || elemApiName.endsWith('__kav')))
+      && (elemApiName.endsWith('__e') || elemApiName.endsWith('__kav')))
   })
   await removeAsync(elements, async elem => (isObjectType(elem)
     && ['ArticleTypeChannelDisplay', 'ArticleTypeTemplate'].includes(await metadataType(elem))))
@@ -634,7 +572,7 @@ const fixDependentInstancesPathAndSetParent = async (
     customObject: ObjectType,
   ): Promise<void> => {
     instance.path = [
-      ...await getObjectDirectoryPath(customObject),
+      ...await getNamespaceObjectDirectoryPath(customObject),
       ...(workflowDependentMetadataTypes.has(instance.elemID.typeName)
         ? [WORKFLOW_DIR_NAME,
           pathNaclCase(
@@ -802,12 +740,12 @@ const isCustomObjectChildInstance = async (instance: InstanceElement): Promise<b
 const isCustomObjectRelatedChange = async (change: Change): Promise<boolean> => {
   const elem = getChangeElement(change)
   return (await isCustomObject(elem))
-  || (isField(elem) && await isFieldOfCustomObject(elem))
-  || (
-    isInstanceElement(elem)
-    && await isCustomObjectChildInstance(elem)
-    && await getCustomObjectFromChange(change) !== undefined
-  )
+    || (isField(elem) && await isFieldOfCustomObject(elem))
+    || (
+      isInstanceElement(elem)
+      && await isCustomObjectChildInstance(elem)
+      && await getCustomObjectFromChange(change) !== undefined
+    )
 }
 
 const createCustomObjectChange = async (

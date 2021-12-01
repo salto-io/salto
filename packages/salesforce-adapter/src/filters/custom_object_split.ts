@@ -37,7 +37,7 @@ const createCustomFieldsObject = async (customObject: ObjectType): Promise<Objec
       elemID: customObject.elemID,
       fields: customFields,
       path: [
-        ...await getObjectDirectoryPath(customObject),
+        ...getObjectDirectoryPath(customObject),
         customFieldsFileName(customObject.elemID.name),
       ],
     }
@@ -50,7 +50,7 @@ const customObjectToSplitElements = async (customObject: ObjectType): Promise<Ob
     annotationRefsOrTypes: customObject.annotationRefTypes,
     annotations: customObject.annotations,
     path: [
-      ...await getObjectDirectoryPath(customObject),
+      ...getObjectDirectoryPath(customObject),
       annotationsFileName(customObject.elemID.name),
     ],
   })
@@ -58,7 +58,7 @@ const customObjectToSplitElements = async (customObject: ObjectType): Promise<Ob
     elemID: customObject.elemID,
     fields: _.pickBy(customObject.fields, f => !isCustom(f.elemID.getFullName())),
     path: [
-      ...await getObjectDirectoryPath(customObject),
+      ...getObjectDirectoryPath(customObject),
       standardFieldsFileName(customObject.elemID.name),
     ],
   })

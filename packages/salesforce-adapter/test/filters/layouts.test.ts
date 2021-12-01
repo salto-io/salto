@@ -21,7 +21,7 @@ import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
-import { getObjectDirectoryPath } from '../../src/filters/custom_objects'
+import { getNamespaceObjectDirectoryPath } from '../../src/filters/custom_objects'
 
 describe('Test layout filter', () => {
   describe('Test layout fetch', () => {
@@ -41,7 +41,10 @@ describe('Test layout filter', () => {
           },
         }
       )
-      const testSobjPath = [...await getObjectDirectoryPath(testSObj), pathNaclCase(apiName)]
+      const testSobjPath = [
+        ...await getNamespaceObjectDirectoryPath(testSObj),
+        pathNaclCase(apiName),
+      ]
       testSObj.path = testSobjPath
 
       const shortName = 'Test Layout'

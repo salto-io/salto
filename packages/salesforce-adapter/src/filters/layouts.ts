@@ -23,7 +23,7 @@ import { apiName, isCustomObject } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { addElementParentReference, isInstanceOfType, buildElementsSourceForFetch } from './utils'
 import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
-import { getObjectDirectoryPath } from './custom_objects'
+import { getNamespaceObjectDirectoryPath } from './custom_objects'
 
 const { awu } = collections.asynciterable
 
@@ -49,7 +49,7 @@ const fixLayoutPath = async (
   layoutName: string,
 ): Promise<void> => {
   layout.path = [
-    ...await getObjectDirectoryPath(customObject),
+    ...await getNamespaceObjectDirectoryPath(customObject),
     layout.elemID.typeName,
     pathNaclCase(naclCase(layoutName)),
   ]

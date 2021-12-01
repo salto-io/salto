@@ -18,7 +18,7 @@ import { ElemID, ElemIDTypes, Value, ElemIDType, isObjectType } from '@salto-io/
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
-import { RemoteMap } from './remote_map'
+import { ReadOnlyRemoteMap } from './remote_map'
 
 const { asynciterable } = collections
 const { awu } = asynciterable
@@ -67,14 +67,13 @@ const match = (elemId: ElemID, selector: ElementSelector, includeNested = false)
 const matchWithReferenceBy = async (
   elemId: ElemID,
   selector: ElementSelector,
-  referencedByIndex?: RemoteMap<ElemID[]>,
+  referenceSourcesIndex: ReadOnlyRemoteMap<ElemID[]>,
   includeNested = false
 ): Promise<boolean> => {
   const { referencedBy } = selector
   return match(elemId, selector, includeNested)
     && (referencedBy === undefined
-      || referencedByIndex === undefined
-      || (await referencedByIndex.get(elemId.getFullName()) ?? [])
+      || (await referenceSourcesIndex.get(elemId.getFullName()) ?? [])
         .some(id => match(id, referencedBy, true)))
 }
 
@@ -101,11 +100,11 @@ export const validateSelectorsMatches = (selectors: ElementSelector[],
 
 export const selectElementsBySelectors = (
   {
-    elementIds, selectors, referencedByIndex, includeNested = false,
+    elementIds, selectors, referenceSourcesIndex, includeNested = false,
   }: {
     elementIds: AsyncIterable<ElemID>
     selectors: ElementSelector[]
-    referencedByIndex?: RemoteMap<ElemID[]>
+    referenceSourcesIndex: ReadOnlyRemoteMap<ElemID[]>
     includeNested?: boolean
   }
 ): AsyncIterable<ElemID> => {
@@ -118,7 +117,7 @@ export const selectElementsBySelectors = (
       const result = await matchWithReferenceBy(
         isElementContainer(obj) ? obj.elemID : obj as ElemID,
         selector,
-        referencedByIndex,
+        referenceSourcesIndex,
         includeNested
       )
       matches[selector.origin] = matches[selector.origin] || result
@@ -214,31 +213,33 @@ const isElementPossiblyParentOfSearchedElement = (
   selectors.some(selector => match(testId, createSameDepthSelector(selector, testId)))
 
 const isBaseIdSelector = (selector: ElementSelector): boolean =>
-  selector.idTypeSelector !== 'attr' && (selector.nameSelectors ?? []).length <= 1
+  (selector.idTypeSelector === 'field' && (selector.nameSelectors ?? []).length === 1) || isTopLevelSelector(selector)
 
-const validateSelector = (selector: ElementSelector, referencedByIndex?: RemoteMap<ElemID[]>):
-  void => {
+const validateSelector = (
+  selector: ElementSelector,
+): void => {
   if (selector.referencedBy !== undefined) {
     if (!isBaseIdSelector(selector)) {
       throw new Error(`Unsupported selector: referencedBy is only supported for selector of base ids (types, fields or instances), received: ${selector.origin}`)
     }
-
-    if (referencedByIndex === undefined) {
-      throw new Error(`Received selector with referencedBy: ${selector.origin}, but did not get referencedByIndex`)
-    }
   }
 }
 
-export const selectElementIdsByTraversal = async (
-  selectors: ElementSelector[],
-  source: ElementsSource,
-  referencedByIndex?: RemoteMap<ElemID[]>,
+export const selectElementIdsByTraversal = async ({
+  selectors,
+  source,
+  referenceSourcesIndex,
   compact = false,
-): Promise<AsyncIterable<ElemID>> => {
+}: {
+  selectors: ElementSelector[]
+  source: ElementsSource
+  referenceSourcesIndex: ReadOnlyRemoteMap<ElemID[]>
+  compact?: boolean
+}): Promise<AsyncIterable<ElemID>> => {
   if (selectors.length === 0) {
     return awu([])
   }
-  selectors.forEach(selector => validateSelector(selector, referencedByIndex))
+  selectors.forEach(selector => validateSelector(selector))
 
   const [topLevelSelectors, subElementSelectors] = _.partition(
     selectors,
@@ -252,7 +253,7 @@ export const selectElementIdsByTraversal = async (
     return awu(selectElementsBySelectors({
       elementIds: awu(await source.list()),
       selectors: topLevelSelectors,
-      referencedByIndex,
+      referenceSourcesIndex,
     })).toArray()
   }
 
@@ -263,7 +264,7 @@ export const selectElementIdsByTraversal = async (
   const possibleParentIDs = selectElementsBySelectors({
     elementIds: awu(await source.list()),
     selectors: possibleParentSelectors,
-    referencedByIndex,
+    referenceSourcesIndex,
   })
   const stillRelevantIDs = compact
     ? awu(possibleParentIDs).filter(id => !currentIds.has(id.getFullName()))
@@ -310,7 +311,7 @@ export const selectElementIdsByTraversal = async (
           // Since we only support referenceBy on a base elemID, a selector
           // that is not top level and that has referenceBy is necessarily a field selector
           if (await awu(subSelectorsWithReferencedBy).some(
-            selector => matchWithReferenceBy(field.elemID, selector, referencedByIndex)
+            selector => matchWithReferenceBy(field.elemID, selector, referenceSourcesIndex)
           )) {
             subElementIDs.push(field.elemID)
           }

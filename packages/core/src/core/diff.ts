@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Element, DetailedChange, ElemID, ReadOnlyElementsSource, isAdditionChange, isRemovalChange, Change } from '@salto-io/adapter-api'
-import { ElementSelector, selectElementIdsByTraversal, elementSource, Workspace } from '@salto-io/workspace'
+import { ElementSelector, selectElementIdsByTraversal, elementSource, Workspace, remoteMap } from '@salto-io/workspace'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
@@ -100,15 +100,21 @@ const filterPlanItemsByRelevance = async (
 }
 
 const getFilteredIds = async (
-  elementSelectors: ElementSelector[],
-  src: elementSource.ElementsSource
+  selectors: ElementSelector[],
+  source: elementSource.ElementsSource,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
 ): Promise<ElemID[]> => (
-  awu(await selectElementIdsByTraversal(elementSelectors, src, undefined, true)).toArray()
+  awu(await selectElementIdsByTraversal({
+    selectors,
+    source,
+    referenceSourcesIndex,
+  })).toArray()
 )
 
 export const createDiffChanges = async (
   toElementsSrc: elementSource.ElementsSource,
   fromElementsSrc: elementSource.ElementsSource,
+  referenceSourcesIndex: remoteMap.ReadOnlyRemoteMap<ElemID[]>,
   elementSelectors: ElementSelector[] = [],
   topLevelFilters: IDFilter[] = []
 ): Promise<DetailedChange[]> => {
@@ -120,8 +126,16 @@ export const createDiffChanges = async (
   })
 
   if (elementSelectors.length > 0) {
-    const toElementIdsFiltered = await getFilteredIds(elementSelectors, toElementsSrc)
-    const fromElementIdsFiltered = await getFilteredIds(elementSelectors, fromElementsSrc)
+    const toElementIdsFiltered = await getFilteredIds(
+      elementSelectors,
+      toElementsSrc,
+      referenceSourcesIndex,
+    )
+    const fromElementIdsFiltered = await getFilteredIds(
+      elementSelectors,
+      fromElementsSrc,
+      referenceSourcesIndex,
+    )
     return filterPlanItemsByRelevance(
       plan,
       toElementsSrc,

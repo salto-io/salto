@@ -380,17 +380,17 @@ const buildMultiEnvSource = (
   const getElementIdsBySelectors = async (
     env: string,
     selectors: ElementSelector[],
-    referencedByIndex: RemoteMap<ElemID[]>,
+    referenceSourcesIndex: RemoteMap<ElemID[]>,
     fromSource: FromSource = 'env',
     compact = false,
   ): Promise<AsyncIterable<ElemID>> => {
     const relevantSource: ElementsSource = await determineSource(env, fromSource)
-    return selectElementIdsByTraversal(
+    return selectElementIdsByTraversal({
       selectors,
-      relevantSource,
-      referencedByIndex,
+      source: relevantSource,
+      referenceSourcesIndex,
       compact,
-    )
+    })
   }
 
   const mergeRoutedChanges = (routedChanges: RoutedChanges[]): RoutedChanges => ({

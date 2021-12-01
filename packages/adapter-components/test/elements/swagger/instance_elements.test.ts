@@ -1051,6 +1051,7 @@ describe('swagger_instance_elements', () => {
                 number: NUMBER,
                 list: LIST,
                 emptyField: '',
+                nullField: null,
               },
             ].flatMap(extractPageEntries)
           }))
@@ -1097,22 +1098,23 @@ describe('swagger_instance_elements', () => {
           return elemID.name
         }
         it('generates id with non undefined fields', async () => {
-          const elementIdName = await getInstanceIdName({ idFields: ['id', 'name', 'number', 'list'] })
-          expect(elementIdName).toEqual(naclCase(`${ID}_${NAME}_${NUMBER}_${LIST}`))
+          const elementIdName = await getInstanceIdName({ idFields: ['id', 'name', 'number', 'list', 'nullField'] })
+          expect(elementIdName).toEqual(naclCase(`${ID}_${NAME}_${NUMBER}_${LIST}_null`))
         })
 
         describe('uses default name as id', () => {
+          const EXPECTED_DEFAULT_NAME = 'unnamed_0'
           it('no fields are provided', async () => {
             const elementIdName = await getInstanceIdName({ idFields: [] })
-            expect(elementIdName).toEqual(naclCase('unnamed_0'))
+            expect(elementIdName).toEqual(naclCase(EXPECTED_DEFAULT_NAME))
           })
           it('contains undefined field', async () => {
             const elementIdName = await getInstanceIdName({ idFields: ['id', 'name', 'undefinedField', 'number'] })
-            expect(elementIdName).toEqual(naclCase('unnamed_0'))
+            expect(elementIdName).toEqual(naclCase(EXPECTED_DEFAULT_NAME))
           })
           it('contain empty field', async () => {
             const elementIdName = await getInstanceIdName({ idFields: ['id', 'name', 'emptyField', 'number'] })
-            expect(elementIdName).toEqual(naclCase('unnamed_0'))
+            expect(elementIdName).toEqual(naclCase(EXPECTED_DEFAULT_NAME))
           })
         })
       })
@@ -1123,21 +1125,25 @@ describe('swagger_instance_elements', () => {
           return path?.[path.length - 1] ?? ''
         }
         it('generates name with non undefined fields', async () => {
-          const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'name', 'number', 'emptyField'] })
+          const fileName = await getInstanceFileName({ fileNameFields: ['id', 'name', 'number', 'emptyField'] })
           expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_${NUMBER}_`)))
         })
 
         describe('uses naclName as filename', () => {
           it('no fields are provided', async () => {
-            const fileName: string = await getInstanceFileName({ fileNameFields: [], idFields: ['id', 'name', 'number', 'list'] })
+            const fileName = await getInstanceFileName({ fileNameFields: [], idFields: ['id', 'name', 'number', 'list'] })
             expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_${NUMBER}_${LIST}`)))
           })
           it('contains field of unsupported type: list', async () => {
-            const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'name', 'list', 'number'], idFields: ['id', 'name', 'number'] })
+            const fileName = await getInstanceFileName({ fileNameFields: ['id', 'name', 'list', 'number'], idFields: ['id', 'name', 'number'] })
             expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_${NUMBER}`)))
           })
           it('contains undefined field', async () => {
-            const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'name', 'undefinedField', 'number'], idFields: ['id', 'name', 'number'] })
+            const fileName = await getInstanceFileName({ fileNameFields: ['id', 'name', 'undefinedField', 'number'], idFields: ['id', 'name', 'number'] })
+            expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_${NUMBER}`)))
+          })
+          it('contains null field', async () => {
+            const fileName = await getInstanceFileName({ fileNameFields: ['id', 'name', 'nullField', 'number'], idFields: ['id', 'name', 'number'] })
             expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_${NUMBER}`)))
           })
         })

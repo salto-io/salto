@@ -1097,6 +1097,14 @@ describe('swagger_instance_elements', () => {
           const { elemID } = await getInstance(params)
           return elemID.name
         }
+        /**
+         * This test demonstrates a bug that causes collusion between element ids.
+         * Please refer to [this]{@link https://salto-io.atlassian.net/browse/SALTO-1738} ticket
+         */
+        it('generates id with value "null" when one null field is given', async () => {
+          const elementIdName = await getInstanceIdName({ idFields: ['nullField'] })
+          expect(elementIdName).toEqual(naclCase('null'))
+        })
         it('generates id with non undefined fields', async () => {
           const elementIdName = await getInstanceIdName({ idFields: ['id', 'name', 'number', 'list', 'nullField'] })
           expect(elementIdName).toEqual(naclCase(`${ID}_${NAME}_${NUMBER}_${LIST}_null`))

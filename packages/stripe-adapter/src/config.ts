@@ -81,7 +81,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: StripeApiConfig['types'] = {
   },
   tax_rate: {
     transformation: {
-      idFields: ['id', 'country', 'percentage'],
+      idFields: ['display_name', 'id', 'country', 'percentage'],
     },
   },
 }

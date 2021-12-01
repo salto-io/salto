@@ -50,6 +50,8 @@ https://{subdomain}.zendesk.com/oauth/authorizations/new?response_type=token&red
 curl https://{subdomain}.zendesk.com/api/v2/tickets.json \
   -H "Authorization: Bearer {access_token}"
 
+see https://support.zendesk.com/hc/en-us/articles/4408845965210 for more information
+
 */
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {

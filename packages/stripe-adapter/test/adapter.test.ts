@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import 'jest-extended'
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
@@ -94,8 +95,6 @@ describe('stripe swagger adapter', () => {
   })
 
   describe('fetch', () => {
-    const PRODUCT_NAME = 'sfdsfsf_prod_JMpOpTpdX5rDKx'
-
     let fetchedInstances: InstanceElement[]
 
     beforeAll(async () => {
@@ -123,6 +122,7 @@ describe('stripe swagger adapter', () => {
       )
     })
 
+    const PRODUCT_NAME = 'sfdsfsf_prod_JMpOpTpdX5rDKx'
     it(`fetches prices for product "${PRODUCT_NAME}"`, () => {
       const productInstance = <InstanceElement>fetchedInstances
         .find(e => e.elemID.name === PRODUCT_NAME)

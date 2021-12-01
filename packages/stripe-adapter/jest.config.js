@@ -36,13 +36,6 @@ module.exports = deepMerge(
       },
     },
     setupFilesAfterEnv: ["jest-extended/all"],
-    setupFiles: [
-      "<rootDir>/test/setupTests.ts"
-    ],
-    transform: {
-      '^.+\\.(ts|tsx)?$': 'ts-jest',
-      '^.+\\.(js|jsx)?$': 'babel-jest',
-    }
   },
 )
 

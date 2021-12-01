@@ -1146,6 +1146,10 @@ describe('swagger_instance_elements', () => {
             const fileName = await getInstanceFileName({ fileNameFields: ['id', 'name', 'nullField', 'number'], idFields: ['id', 'name', 'number'] })
             expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_${NUMBER}`)))
           })
+          it('all fields are empty strings', async () => {
+            const fileName = await getInstanceFileName({ fileNameFields: ['emptyField'], idFields: ['id', 'name', 'number'] })
+            expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_${NUMBER}`)))
+          })
         })
       })
     })

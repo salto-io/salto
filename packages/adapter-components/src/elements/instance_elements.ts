@@ -82,11 +82,16 @@ export const toBasicInstance = async ({
     transformationDefaultConfig,
   )
 
-  const nameParts = idFields.map(field => _.get(entry, field))
-  if (nameParts.includes(undefined)) {
+  const nameParts = _.isEmpty(idFields)
+    ? undefined
+    : idFields.map(field => _.get(entry, field))
+
+  if (_.isUndefined(nameParts)) {
+    log.warn('no id fields were provided')
+  } else if (nameParts.includes(undefined)) {
     log.warn(`could not find id for entry - expected id fields ${idFields}, available fields ${Object.keys(entry)}`)
   }
-  const name = nameParts.every(part => part !== undefined && part !== '') ? nameParts.map(String).join('_') : defaultName
+  const name = nameParts?.every(part => part !== undefined && part !== '') ? nameParts.map(String).join('_') : defaultName
 
   const fileNameParts = (fileNameFields !== undefined
     ? fileNameFields.map(field => _.get(entry, field))

@@ -17,6 +17,7 @@
 import { collections } from '@salto-io/lowerdash'
 import { ObjectType, ElemID, BuiltinTypes, ListType, MapType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { getAllInstances } from '../../../src/elements/swagger'
 import { returnFullEntry } from '../../../src/elements/field_finder'
 import { Paginator } from '../../../src/client'
@@ -1028,6 +1029,119 @@ describe('swagger_instance_elements', () => {
         },
         objectTypes,
       })).rejects.toThrow(new Error('Invalid type config - type myAdapter.Pet has no request config'))
+    })
+
+    describe('element id and filename transformation', () => {
+      const NAME = 'name'
+      const ID = 'id'
+      const NUMBER = 9
+      const LIST = [1, 2, 3]
+      interface GetInstanceParams {
+        fileNameFields?: string[]
+        idFields?: string[]
+      }
+      const getInstance = async ({ fileNameFields = [], idFields = [] }
+                                   : GetInstanceParams): Promise<InstanceElement> => {
+        const paginator: Paginator = jest.fn((
+          async function *getAll(_, extractPageEntries) {
+            yield [
+              {
+                id: ID,
+                name: NAME,
+                number: NUMBER,
+                list: LIST,
+                emptyField: '',
+              },
+            ].flatMap(extractPageEntries)
+          }))
+        const customType = new ObjectType({
+          elemID: new ElemID(ADAPTER_NAME, 'customType'),
+          fields: {
+            name: { refType: BuiltinTypes.STRING },
+            id: { refType: BuiltinTypes.STRING },
+            number: { refType: BuiltinTypes.NUMBER },
+          },
+        })
+        return (await getAllInstances({
+          paginator,
+          apiConfig: {
+            typeDefaults: {
+              transformation: {
+                idFields: ['id'],
+              },
+            },
+            types: {
+              customType: {
+                request: {
+                  url: '/someObject',
+                },
+                transformation: {
+                  fileNameFields,
+                  idFields,
+                },
+              },
+            },
+          },
+          fetchConfig: {
+            includeTypes: ['customType'],
+          },
+          objectTypes: { customType },
+          computeGetArgs: simpleGetArgs,
+          nestedFieldFinder: returnFullEntry,
+        }))[0]
+      }
+
+      describe('element id', () => {
+        const getInstanceIdName = async (params: GetInstanceParams) : Promise<string> => {
+          const { elemID } = await getInstance(params)
+          return elemID.name
+        }
+        it('generates id with non undefined fields', async () => {
+          const elementIdName = await getInstanceIdName({ idFields: ['id', 'name', 'number', 'list'] })
+          expect(elementIdName).toEqual(naclCase(`${ID}_${NAME}_${NUMBER}_${LIST}`))
+        })
+
+        describe('uses default name as id', () => {
+          it('no fields are provided', async () => {
+            const elementIdName = await getInstanceIdName({ idFields: [] })
+            expect(elementIdName).toEqual(naclCase('unnamed_0'))
+          })
+          it('contains undefined field', async () => {
+            const elementIdName = await getInstanceIdName({ idFields: ['id', 'name', 'undefinedField', 'number'] })
+            expect(elementIdName).toEqual(naclCase('unnamed_0'))
+          })
+          it('contain empty field', async () => {
+            const elementIdName = await getInstanceIdName({ idFields: ['id', 'name', 'emptyField', 'number'] })
+            expect(elementIdName).toEqual(naclCase('unnamed_0'))
+          })
+        })
+      })
+      describe('filename', () => {
+        const getInstanceFileName = async (params: GetInstanceParams)
+          : Promise<string> => {
+          const { path } = await getInstance(params)
+          return path?.[path.length - 1] ?? ''
+        }
+        it('generates name with non undefined fields', async () => {
+          const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'name', 'number', 'emptyField'] })
+          expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_${NUMBER}_`)))
+        })
+
+        describe('uses naclName as filename', () => {
+          it('no fields are provided', async () => {
+            const fileName: string = await getInstanceFileName({ fileNameFields: [], idFields: ['id', 'name', 'number', 'list'] })
+            expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_${NUMBER}_${LIST}`)))
+          })
+          it('contains field of unsupported type: list', async () => {
+            const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'name', 'list', 'number'], idFields: ['id', 'name', 'number'] })
+            expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_${NUMBER}`)))
+          })
+          it('contains undefined field', async () => {
+            const fileName: string = await getInstanceFileName({ fileNameFields: ['id', 'name', 'undefinedField', 'number'], idFields: ['id', 'name', 'number'] })
+            expect(fileName).toEqual(pathNaclCase(naclCase(`${ID}_${NAME}_${NUMBER}`)))
+          })
+        })
+      })
     })
   })
 })

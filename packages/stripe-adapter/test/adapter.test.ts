@@ -14,106 +14,79 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import 'jest-extended'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { elements as elementUtils } from '@salto-io/adapter-components'
-import { InstanceElement, isInstanceElement, ElemID, ObjectType, ListType, BuiltinTypes } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
+import { InstanceElement, isInstanceElement, Values } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { accessTokenCredentialsType } from '../src/auth'
-import { configType, FETCH_CONFIG,
-  DEFAULT_INCLUDE_TYPES,
+import {
+  API_DEFINITIONS_CONFIG,
+  configType,
   DEFAULT_API_DEFINITIONS,
-  API_DEFINITIONS_CONFIG } from '../src/config'
-import { STRIPE } from '../src/constants'
+  DEFAULT_INCLUDE_TYPES,
+  FETCH_CONFIG,
+} from '../src/config'
+import { EXPECTED_INSTANCES_FULL_NAMES } from './instances_full_names'
 
-type MockReply = {
-  url: string
-  params: Record<string, string>
-  response: unknown
-}
-const pluralToSingularTypes: Record<string, string> = _.zipObject(DEFAULT_INCLUDE_TYPES,
-  ['country_spec', 'coupon', 'plan', 'price', 'product', 'reporting_report_type', 'tax_rate', 'webhook_endpoint'])
-
-const singularTypes = Object.fromEntries(Object.values(pluralToSingularTypes).map(
-  type => [naclCase(type), new ObjectType({ elemID: new ElemID(STRIPE, type),
-    fields: { id: { refType: BuiltinTypes.STRING } } })]
-))
-const generateMockTypes: typeof elementUtils.swagger.generateTypes = async () => (
-  {
-    allTypes: {
-      ...singularTypes,
-      ...Object.fromEntries(DEFAULT_INCLUDE_TYPES.map(
-        type => [naclCase(type), new ObjectType({ elemID: new ElemID(STRIPE, type),
-          fields: { data: {
-            refType: new ListType(singularTypes[pluralToSingularTypes[type]]),
-          } } })]
-      )),
-    },
-    parsedConfigs: {
-      products: {
-        request: {
-          url: '/v1/products',
-        },
-      },
-      coupons: {
-        request: {
-          url: '/v1/coupons',
-        },
-      },
-      plans: {
-        request: {
-          url: '/v1/plans',
-        },
-      },
-      prices: {
-        request: {
-          url: '/v1/prices',
-        },
-      },
-      country_specs: {
-        request: {
-          url: '/v1/country_specs',
-        },
-      },
-      reporting__report_types: {
-        request: {
-          url: '/v1/reporting/report_types',
-        },
-      },
-      tax_rates: {
-        request: {
-          url: '/v1/tax_rates',
-        },
-      },
-      webhook_endpoints: {
-        request: {
-          url: '/v1/webhook_endpoints',
-        },
-      },
-    },
-  })
-
-jest.mock('@salto-io/adapter-components', () => {
-  const actual = jest.requireActual('@salto-io/adapter-components')
-  return {
-    ...actual,
-    elements: {
-      ...actual.elements,
-      swagger: {
-        ...actual.elements.swagger,
-        generateTypes: jest.fn().mockImplementation(generateMockTypes),
-      },
-    },
+describe('stripe swagger adapter', () => {
+  type MockReply = {
+    url: string
+    params: Record<string, string>
+    response: unknown
   }
-})
 
-describe('adapter', () => {
-  let mockAxiosAdapter: MockAdapter
+  const TESTS_TIMEOUT_SECONDS = 30
+  const SINGULAR_TYPES = ['country_spec', 'coupon', 'product', 'reporting_report_type', 'tax_rate', 'webhook_endpoint']
+  const pluralToSingularTypes = _.zipObject(DEFAULT_INCLUDE_TYPES, SINGULAR_TYPES)
 
-  beforeEach(async () => {
-    mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' });
+  const CREDENTIALS = new InstanceElement(
+    'credentials',
+    accessTokenCredentialsType,
+    { token: 'testToken' }
+  )
+
+  const DEFAULT_CONFIG = new InstanceElement(
+    'config',
+    configType,
+    {
+      [FETCH_CONFIG]: {
+        includeTypes: DEFAULT_INCLUDE_TYPES,
+      },
+      [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
+    }
+  )
+
+  const fetchInstances = async (config = DEFAULT_CONFIG): Promise<InstanceElement[]> => {
+    const { elements } = await adapter.operations({
+      credentials: CREDENTIALS,
+      config,
+      elementsSource: buildElementsSourceFromElements([]),
+    }).fetch({ progressReporter: { reportProgress: () => null } })
+
+    return elements.filter(isInstanceElement)
+  }
+  beforeAll(() => {
+    jest.setTimeout(TESTS_TIMEOUT_SECONDS)
+    jest.mock('@salto-io/adapter-components', () => {
+      const actual = jest.requireActual('@salto-io/adapter-components')
+      return {
+        ...actual,
+        elements: {
+          ...actual.elements,
+          swagger: {
+            ...actual.elements.swagger,
+            generateTypes: jest.fn().mockImplementation(actual.elements.swagger.generateTypes),
+            getAllInstances:
+              jest.fn().mockImplementation(actual.elements.swagger.getAllInstances),
+          },
+        },
+      }
+    })
+
+    const mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' });
     (mockReplies as MockReply[]).forEach(({ url, params, response }) => {
       mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined).reply(
         200, response
@@ -121,148 +94,120 @@ describe('adapter', () => {
     })
   })
 
-  afterEach(() => {
-    mockAxiosAdapter.restore()
-  })
+  describe('fetch', () => {
+    let fetchedInstances: InstanceElement[]
 
-  describe('full fetch', () => {
-    it('should generate the right elements on fetch', async () => {
-      const { elements } = await adapter.operations({
-        credentials: new InstanceElement(
-          'config',
-          accessTokenCredentialsType,
-          { token: 'aaa' },
-        ),
-        config: new InstanceElement(
+    beforeAll(async () => {
+      fetchedInstances = await fetchInstances()
+    })
+
+    it('fetches all instances', () => {
+      const fetchedInstancesFullNames = fetchedInstances
+        .map(instance => instance.elemID.getFullName())
+      expect(fetchedInstancesFullNames).toIncludeSameMembers(EXPECTED_INSTANCES_FULL_NAMES)
+    })
+
+    describe('fetches all types', () => {
+      let fetchedInstancesTypes: Set<string>
+
+      beforeAll(() => {
+        fetchedInstancesTypes = new Set(fetchedInstances.map(instance => instance.elemID.typeName))
+      })
+
+      it.each(SINGULAR_TYPES)(
+        '%s',
+        typeName => {
+          expect(fetchedInstancesTypes).toContain(typeName)
+        },
+      )
+    })
+
+    const PRODUCT_NAME = 'sfdsfsf_prod_JMpOpTpdX5rDKx'
+    it(`fetches prices for product "${PRODUCT_NAME}"`, () => {
+      const productInstance = <InstanceElement>fetchedInstances
+        .find(e => e.elemID.name === PRODUCT_NAME)
+      const expectedPriceIds = [
+        'price_1JjN8THipyrr1EYirgGmnx9A',
+        'price_1JjN8GHipyrr1EYi69M6nDJA',
+        'price_1Ik5jyHipyrr1EYiTX75FImK',
+        'price_1Ik5jyHipyrr1EYiZkn6nySi',
+      ]
+      const productPrices: Values[] = productInstance.value.product_prices
+      const receivedPriceIds: string[] = productPrices.map(p => p.id)
+      expect(receivedPriceIds).toIncludeSameMembers(expectedPriceIds)
+    })
+
+    describe('custom config', () => {
+      describe('fetches include types', () => {
+        const INCLUDE_TYPES = ['coupons', 'tax_rates']
+        const SINGULAR_INCLUDE_TYPES = INCLUDE_TYPES.map(t => pluralToSingularTypes[t])
+
+        const notIncluded = (typeName: string): boolean =>
+          !SINGULAR_INCLUDE_TYPES.includes(typeName)
+
+        let fetchedInstancesTypes: Set<string>
+
+        beforeAll(async () => {
+          const config = new InstanceElement(
+            'config',
+            configType,
+            {
+              [FETCH_CONFIG]: {
+                includeTypes: INCLUDE_TYPES,
+              },
+              [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
+            }
+          )
+          const instances = await fetchInstances(config)
+          fetchedInstancesTypes = new Set(instances.map(e => e.elemID.typeName))
+        })
+
+        it.each(SINGULAR_INCLUDE_TYPES)(
+          '%s',
+          includedType => {
+            expect(fetchedInstancesTypes).toContain(includedType)
+          }
+        )
+
+        it('doesn\'t fetch additional types', () => {
+          const additionalTypes: string[] = Array.from(fetchedInstancesTypes).filter(notIncluded)
+          expect(additionalTypes).toBeEmpty()
+        })
+      })
+
+      it('fetches instances of modified type: "product"', async () => {
+        const config = new InstanceElement(
           'config',
           configType,
           {
             [FETCH_CONFIG]: {
               includeTypes: DEFAULT_INCLUDE_TYPES,
             },
-            [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
-          }
-        ),
-        elementsSource: buildElementsSourceFromElements([]),
-      }).fetch({ progressReporter: { reportProgress: () => null } })
-      expect(elements.filter(isInstanceElement)).toHaveLength(17)
-
-      const countrySpec = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'stripe.country_spec.instance.AT')
-      expect(countrySpec).toBeDefined()
-      expect(countrySpec?.value).toEqual(expect.objectContaining({ id: 'AT' }))
-
-
-      const coupon = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'stripe.coupon.instance.2JI7xnRz')
-      expect(coupon).toBeDefined()
-      expect(coupon?.value).toEqual(expect.objectContaining({ id: '2JI7xnRz' }))
-
-
-      const plan = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'stripe.plan.instance.price_1Ihz4cHipyrr1EYi5QfXJ8Y1')
-      expect(plan).toBeDefined()
-      expect(plan?.value).toEqual(expect.objectContaining({ id: 'price_1Ihz4cHipyrr1EYi5QfXJ8Y1' }))
-
-      const price = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'stripe.price.instance.price_1Ik5jyHipyrr1EYiTX75FImK')
-      expect(price).toBeDefined()
-      expect(price?.value).toEqual(expect.objectContaining({ id: 'price_1Ik5jyHipyrr1EYiTX75FImK' }))
-
-
-      const product = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'stripe.product.instance.prod_JMpOpTpdX5rDKx')
-      expect(product).toBeDefined()
-      expect(product?.value).toEqual(expect.objectContaining({ id: 'prod_JMpOpTpdX5rDKx' }))
-
-      const reportType = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'stripe.reporting_report_type.instance.balance_summary_1')
-      expect(reportType).toBeDefined()
-      expect(reportType?.value).toEqual(expect.objectContaining({ id: 'balance_summary_1' }))
-
-
-      const taxRate = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'stripe.tax_rate.instance.txr_1IcrqNHipyrr1EYiTpN0iuVj')
-      expect(taxRate).toBeDefined()
-      expect(taxRate?.value).toEqual(expect.objectContaining({ id: 'txr_1IcrqNHipyrr1EYiTpN0iuVj' }))
-
-
-      const webhookEndpoint = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'stripe.webhook_endpoint.instance.we_1IcrkHHipyrr1EYiSGhlscV7')
-      expect(webhookEndpoint).toBeDefined()
-      expect(webhookEndpoint?.value).toEqual(expect.objectContaining({ id: 'we_1IcrkHHipyrr1EYiSGhlscV7' }))
-    })
-  })
-
-  describe('type overrides', () => {
-    it('should fetch only the relevant types', async () => {
-      const { elements } = await adapter.operations({
-        credentials: new InstanceElement(
-          'config',
-          accessTokenCredentialsType,
-          { token: 'aaa' },
-        ),
-        config: new InstanceElement(
-          'config',
-          configType,
-          {
-            [FETCH_CONFIG]: {
-              includeTypes: ['prices'],
-            },
-            [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
-          }
-        ),
-        elementsSource: buildElementsSourceFromElements([]),
-      }).fetch({ progressReporter: { reportProgress: () => null } })
-      expect(elements.filter(isInstanceElement)).toHaveLength(1)
-      expect(elements.filter(isInstanceElement).map(e => e.elemID.getFullName())).toEqual(['stripe.price.instance.price_1Ik5jyHipyrr1EYiTX75FImK'])
-    })
-  })
-
-  describe('modified types in config', async () => {
-    const { elements } = await adapter.operations({
-      credentials: new InstanceElement(
-        'config',
-        accessTokenCredentialsType,
-        { token: 'aaa' },
-      ),
-      config: new InstanceElement(
-        'config',
-        configType,
-        {
-          [FETCH_CONFIG]: {
-            includeTypes: DEFAULT_INCLUDE_TYPES,
-          },
-          [API_DEFINITIONS_CONFIG]: {
-            ...DEFAULT_API_DEFINITIONS,
-            types: {
-              products: {
-                request: {
-                  url: '/v1/products',
+            [API_DEFINITIONS_CONFIG]: {
+              ...DEFAULT_API_DEFINITIONS,
+              types: {
+                products: {
+                  request: {
+                    url: '/v1/products',
+                  },
                 },
               },
             },
-          },
-        }
-      ),
-      elementsSource: buildElementsSourceFromElements([]),
-    }).fetch({ progressReporter: { reportProgress: () => null } })
-    expect(elements.filter(isInstanceElement)).toHaveLength(17)
+          }
+        )
+        const fetchedTypes = (await fetchInstances(config)).map(i => i.elemID.typeName)
+        expect(fetchedTypes).toContain('product')
+      })
+    })
   })
 
-  describe('deploy', () => {
-    it('should throw not implemented', async () => {
-      const operations = adapter.operations({
-        credentials: new InstanceElement(
-          'config',
-          accessTokenCredentialsType,
-          { token: 'aaa' },
-        ),
-        config: new InstanceElement(
-          'config',
-          configType,
-          {
-            [FETCH_CONFIG]: {
-              includeTypes: DEFAULT_INCLUDE_TYPES,
-            },
-            [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
-          }
-        ),
-        elementsSource: buildElementsSourceFromElements([]),
-      })
-      await expect(operations.deploy({ changeGroup: { groupID: '', changes: [] } })).rejects.toThrow(new Error('Not implemented.'))
+  it('throws Error on deploy', async () => {
+    const adapterOperations = adapter.operations({
+      credentials: CREDENTIALS,
+      config: DEFAULT_CONFIG,
+      elementsSource: buildElementsSourceFromElements([]),
     })
+    const deployOptions = { changeGroup: { groupID: '', changes: [] } }
+    await expect(adapterOperations.deploy(deployOptions)).rejects.toThrow(new Error('Not implemented.'))
   })
 })

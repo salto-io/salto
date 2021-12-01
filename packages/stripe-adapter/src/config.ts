@@ -24,6 +24,8 @@ const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configU
 
 const DEFAULT_ID_FIELDS = ['id']
 export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
+  { fieldName: 'object', fieldType: 'string' },
+  { fieldName: 'created', fieldType: 'number' },
 ]
 
 export const CLIENT_CONFIG = 'client'
@@ -42,47 +44,81 @@ export type StripeConfig = {
   [API_DEFINITIONS_CONFIG]: StripeApiConfig
 }
 
-
-const DEFAULT_SWAGGER_CONFIG: StripeApiConfig['swagger'] = {
-  url: 'https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.yaml',
-  typeNameOverrides: [
-    { originalName: 'v1__country_specs', newName: 'country_specs' },
-    { originalName: 'v1__coupons', newName: 'coupons' },
-    { originalName: 'v1__plans', newName: 'plans' },
-    { originalName: 'v1__prices', newName: 'prices' },
-    { originalName: 'v1__products', newName: 'products' },
-    { originalName: 'v1__reporting__report_types', newName: 'reporting__report_types' },
-    { originalName: 'v1__tax_rates', newName: 'tax_rates' },
-    { originalName: 'v1__webhook_endpoints', newName: 'webhook_endpoints' },
-  ],
-  additionalTypes: [],
+const DEFAULT_TYPE_CUSTOMIZATIONS: StripeApiConfig['types'] = {
+  coupon: {
+    transformation: {
+      idFields: ['name', 'duration', 'id'],
+    },
+  },
+  products: {
+    request: {
+      url: '/v1/products',
+      recurseInto: [
+        {
+          type: 'prices',
+          toField: 'product_prices',
+          context: [{ name: 'productId', fromField: 'id' }],
+        },
+      ],
+    },
+    transformation: {
+      dataField: 'data',
+    },
+  },
+  product: {
+    transformation: {
+      idFields: ['name', 'id'],
+      fieldTypeOverrides: [{ fieldName: 'product_prices', fieldType: 'list<price>' }],
+    },
+  },
+  prices: {
+    request: {
+      url: '/v1/prices?product={productId}',
+    },
+    transformation: {
+      dataField: 'data',
+    },
+  },
+  tax_rate: {
+    transformation: {
+      idFields: ['id', 'country', 'percentage'],
+    },
+  },
 }
 
-export const ALL_SUPPORTED_TYPES = [
-  'country_specs',
-  'coupons',
-  'plans',
-  'prices',
-  'products',
-  'reporting__report_types',
-  'tax_rates',
-  'webhook_endpoints',
-]
-
-export const DEFAULT_INCLUDE_TYPES = ALL_SUPPORTED_TYPES
-
 export const DEFAULT_API_DEFINITIONS: StripeApiConfig = {
-  swagger: DEFAULT_SWAGGER_CONFIG,
+  swagger: {
+    url: 'https://raw.githubusercontent.com/stripe/openapi/master/openapi/spec3.yaml',
+    typeNameOverrides: [
+      { originalName: 'v1__country_specs', newName: 'country_specs' },
+      { originalName: 'v1__coupons', newName: 'coupons' },
+      { originalName: 'v1__prices', newName: 'prices' },
+      { originalName: 'v1__products', newName: 'products' },
+      { originalName: 'v1__reporting__report_types', newName: 'reporting__report_types' },
+      { originalName: 'v1__tax_rates', newName: 'tax_rates' },
+      { originalName: 'v1__webhook_endpoints', newName: 'webhook_endpoints' },
+    ],
+  },
   typeDefaults: {
     transformation: {
       idFields: DEFAULT_ID_FIELDS,
       fieldsToOmit: FIELDS_TO_OMIT,
     },
   },
-  types: {},
-  supportedTypes: ALL_SUPPORTED_TYPES,
+  types: DEFAULT_TYPE_CUSTOMIZATIONS,
 }
 
+const ALL_SUPPORTED_TYPES = [
+  'country_specs',
+  'coupons',
+  'products',
+  'reporting__report_types',
+  'tax_rates',
+  'webhook_endpoints',
+]
+
+// noinspection UnnecessaryLocalVariableJS
+export const DEFAULT_INCLUDE_TYPES = ALL_SUPPORTED_TYPES
 
 export const configType = createMatchingObjectType<StripeConfig>({
   elemID: new ElemID(STRIPE),

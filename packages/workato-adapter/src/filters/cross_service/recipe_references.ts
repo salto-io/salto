@@ -136,14 +136,13 @@ const addReferencesForConnectionRecipes = async (
 const filter: FilterCreator = ({ config }) => ({
   onPostFetch: async ({
     currentAdapterElements,
-    elementsByAdapter,
+    elementsByAccount,
     accountToServiceNameMap,
   }: PostFetchOptions): Promise<void> => {
     const { serviceConnectionNames } = config[FETCH_CONFIG]
     if (serviceConnectionNames === undefined || _.isEmpty(serviceConnectionNames)) {
       return
     }
-    // TODO change to adapterTypes when allowing multiple adapters of the same type
     const supportedAdapters = Object.keys(accountToServiceNameMap)
     if (serviceConnectionNames !== undefined) {
       const unsupportedAccounts = Object.keys(serviceConnectionNames).filter(
@@ -184,7 +183,7 @@ const filter: FilterCreator = ({ config }) => ({
             relevantRecipeCodes,
             applicationName,
             accountToServiceNameMap[accountName],
-            elementsByAdapter[accountName] ?? [],
+            elementsByAccount[accountName] ?? [],
           )
         })
       })

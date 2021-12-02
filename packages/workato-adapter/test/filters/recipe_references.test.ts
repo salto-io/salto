@@ -993,7 +993,7 @@ describe('Recipe references filter', () => {
       zuoraElements = generateZuoraElements()
       await filter.onPostFetch({
         currentAdapterElements,
-        elementsByAdapter: {
+        elementsByAccount: {
           salesforce: salesforceElements,
           netsuite: netsuiteElements,
           zuora_billing: zuoraElements,
@@ -1269,7 +1269,7 @@ describe('Recipe references filter', () => {
       const elements = generateCurrentAdapterElements()
       expect(await filter.onPostFetch({
         currentAdapterElements: elements,
-        elementsByAdapter: {
+        elementsByAccount: {
           salesforce: [],
           netsuite: [],
         },
@@ -1307,7 +1307,7 @@ describe('Recipe references filter', () => {
 
       expect(await otherFilter.onPostFetch({
         currentAdapterElements: elements,
-        elementsByAdapter: {
+        elementsByAccount: {
           salesforce: [],
           netsuite: [],
         },
@@ -1354,7 +1354,7 @@ describe('Recipe references filter', () => {
       // should still resolve the netsuite references
       await otherFilter.onPostFetch({
         currentAdapterElements: elements,
-        elementsByAdapter: {
+        elementsByAccount: {
           salesforce: generateSalesforceElements(),
           netsuite: generateNetsuiteElements(),
         },
@@ -1425,7 +1425,7 @@ describe('Recipe references filter', () => {
       netsuiteElements = generateNetsuiteElements()
       await filter.onPostFetch({
         currentAdapterElements,
-        elementsByAdapter: {
+        elementsByAccount: {
           salesforce: salesforceElements,
           netsuite: netsuiteElements,
         },

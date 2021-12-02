@@ -58,7 +58,7 @@ describe('workspace command group', () => {
             cache: false,
             staticResources: false,
             credentials: false,
-            serviceConfig: false,
+            accountConfig: false,
 
           },
           workspace: mocks.mockWorkspace({}),
@@ -79,7 +79,7 @@ describe('workspace command group', () => {
             cache: true,
             staticResources: true,
             credentials: true,
-            serviceConfig: true,
+            accountConfig: true,
 
           },
           workspace: mocks.mockWorkspace({}),
@@ -98,7 +98,7 @@ describe('workspace command group', () => {
             cache: false,
             staticResources: false,
             credentials: false,
-            serviceConfig: false,
+            accountConfig: false,
 
           },
           workspace: mocks.mockWorkspace({}),
@@ -116,7 +116,7 @@ describe('workspace command group', () => {
             cache: true,
             staticResources: true,
             credentials: true,
-            serviceConfig: true,
+            accountConfig: true,
 
           },
           workspace: mocks.mockWorkspace({}),
@@ -136,7 +136,7 @@ describe('workspace command group', () => {
             cache: true,
             staticResources: true,
             credentials: true,
-            serviceConfig: true,
+            accountConfig: true,
           },
           workspace,
         })).toBe(CliExitCode.Success)
@@ -147,7 +147,7 @@ describe('workspace command group', () => {
           cache: true,
           staticResources: true,
           credentials: true,
-          serviceConfig: true,
+          accountConfig: true,
         })
 
         expect(output.stdout.content.search('Starting to clean')).toBeGreaterThan(0)
@@ -166,7 +166,7 @@ describe('workspace command group', () => {
             cache: true,
             staticResources: true,
             credentials: true,
-            serviceConfig: true,
+            accountConfig: true,
 
           },
           workspace: mocks.mockWorkspace({}),
@@ -192,7 +192,7 @@ describe('workspace command group', () => {
             cache: true,
             staticResources: true,
             credentials: true,
-            serviceConfig: true,
+            accountConfig: true,
 
           },
           workspace,
@@ -204,7 +204,7 @@ describe('workspace command group', () => {
           cache: true,
           staticResources: true,
           credentials: true,
-          serviceConfig: true,
+          accountConfig: true,
         })
         expect(output.stdout.content.search('Starting to clean')).toBeGreaterThan(0)
         expect(output.stdout.content.search('Finished cleaning')).toBeGreaterThan(0)

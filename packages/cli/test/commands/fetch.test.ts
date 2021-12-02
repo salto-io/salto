@@ -78,7 +78,7 @@ describe('fetch command', () => {
           input: {
             force: true,
             mode: 'default',
-            services: accounts,
+            accounts,
             stateOnly: false,
             regenerateSaltoIds: false,
           },
@@ -101,7 +101,7 @@ describe('fetch command', () => {
           input: {
             force: true,
             mode: 'default',
-            services: accounts,
+            accounts,
             stateOnly: false,
             regenerateSaltoIds: false,
           },
@@ -131,7 +131,7 @@ describe('fetch command', () => {
         const mockFetchWithEmitter: jest.Mock = jest.fn((
           _workspace,
           progressEmitter: EventEmitter<FetchProgressEvents>,
-          _services,
+          _accounts,
         ) => {
           const getChangesEmitter = new StepEmitter()
           progressEmitter.emit('changesWillBeFetched', getChangesEmitter, ['adapterName'])
@@ -252,7 +252,7 @@ describe('fetch command', () => {
       })
       describe('with upstream changes', () => {
         const changes = mocks.dummyChanges.map(
-          (change: DetailedChange): FetchChange => ({ change, serviceChanges: [change] })
+          (change: DetailedChange): FetchChange => ({ change, accountChanges: [change] })
         )
         const mockFetchWithChanges = jest.fn().mockResolvedValue(
           {
@@ -597,13 +597,13 @@ describe('fetch command', () => {
       })
     })
   })
-  describe('multienv - new service in env, with existing common elements', () => {
+  describe('multienv - new account in env, with existing common elements', () => {
     let workspace: mocks.MockWorkspace
     beforeEach(() => {
       workspace = mocks.mockWorkspace({})
-      workspace.hasElementsInServices.mockResolvedValue(true)
+      workspace.hasElementsInAccounts.mockResolvedValue(true)
       workspace.getStateRecency.mockResolvedValue(
-        { serviceName: 'salesforce', status: 'Nonexistent', date: undefined }
+        { accountName: 'salesforce', status: 'Nonexistent', date: undefined }
       )
       jest.spyOn(fetchCmd, 'fetchCommand').mockImplementationOnce(() => Promise.resolve(
         CliExitCode.Success
@@ -625,7 +625,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'default',
-          services: accounts,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -646,7 +646,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'override',
-          services: accounts,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -666,7 +666,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'default',
-          services: accounts,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -685,7 +685,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'override',
-          services: accounts,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -696,19 +696,19 @@ describe('fetch command', () => {
       expect(fetchCmd.fetchCommand).toHaveBeenCalledTimes(1)
       expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('override')
     })
-    it('should not prompt if already ran service', async () => {
+    it('should not prompt if already ran account', async () => {
       jest.spyOn(callbacks, 'getChangeToAlignAction').mockImplementationOnce(
         () => Promise.resolve('no')
       )
       workspace.getStateRecency.mockResolvedValue(
-        { serviceName: 'salesforce', status: 'Valid', date: new Date() }
+        { accountName: 'salesforce', status: 'Valid', date: new Date() }
       )
       await action({
         ...cliCommandArgs,
         input: {
           force: false,
           mode: 'default',
-          services: accounts,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -728,7 +728,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'align',
-          services: accounts,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -742,13 +742,13 @@ describe('fetch command', () => {
       jest.spyOn(callbacks, 'getChangeToAlignAction').mockImplementation(
         () => Promise.resolve('no')
       )
-      workspace.hasElementsInServices.mockResolvedValue(false)
+      workspace.hasElementsInAccounts.mockResolvedValue(false)
       await action({
         ...cliCommandArgs,
         input: {
           force: false,
           mode: 'default',
-          services: accounts,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -759,14 +759,14 @@ describe('fetch command', () => {
       expect((fetchCmd.fetchCommand as jest.Mock).mock.calls[0][0].mode).toEqual('default')
     })
 
-    it('should not prompt if only one of the services is new', async () => {
+    it('should not prompt if only one of the accounts is new', async () => {
       jest.spyOn(callbacks, 'getChangeToAlignAction').mockImplementationOnce(
         () => Promise.resolve('no')
       )
-      workspace.getStateRecency.mockImplementation(async serviceName => ({
-        serviceName,
-        status: serviceName === 'salesforce' ? 'Nonexistent' : 'Valid',
-        date: serviceName === 'salesforce' ? undefined : new Date(),
+      workspace.getStateRecency.mockImplementation(async accountName => ({
+        accountName,
+        status: accountName === 'salesforce' ? 'Nonexistent' : 'Valid',
+        date: accountName === 'salesforce' ? undefined : new Date(),
       }))
       await action({
         ...cliCommandArgs,
@@ -792,7 +792,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services: accounts,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
         },
@@ -807,7 +807,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services: accounts,
+          accounts,
           stateOnly: false,
           env: mocks.withEnvironmentParam,
           regenerateSaltoIds: false,
@@ -822,7 +822,7 @@ describe('fetch command', () => {
         input: {
           force: false,
           mode: 'default',
-          services: accounts,
+          accounts,
           stateOnly: false,
           env: 'envThatDoesNotExist',
           regenerateSaltoIds: false,
@@ -857,7 +857,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services: accounts,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
           fromEnv: env,
@@ -883,7 +883,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services: accounts,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
           fromEnv: 'what*env*er',
@@ -900,7 +900,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services: accounts,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
           fromEnv: 'what*env*er',
@@ -917,7 +917,7 @@ describe('fetch command', () => {
         input: {
           force: true,
           mode: 'default',
-          services: accounts,
+          accounts,
           stateOnly: false,
           regenerateSaltoIds: false,
           fromWorkspace: 'path/to/nowhere',

@@ -323,7 +323,7 @@ describe('adapter', () => {
                 includeTypes: [...Object.keys(DEFAULT_TYPES)].sort(),
                 serviceConnectionNames: {
                   salesforce: ['sfdev1'],
-                  salesforce2: ['sfdev1'],
+                  salesforce2: ['dev2 sfdc account'],
                   netsuite: ['Test NetSuite account'],
                 },
               },
@@ -338,7 +338,7 @@ describe('adapter', () => {
         expect(adapterOperations.postFetch).toBeDefined()
         await adapterOperations.postFetch({
           currentAdapterElements,
-          elementsByAdapter: {
+          elementsByAccount: {
             salesforce: [fishCustomObject],
             salesforce2: [fishCustomObject2],
           },

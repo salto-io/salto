@@ -28,8 +28,8 @@ export const cleanWorkspace = async (
   workspace: Workspace,
   cleanArgs: WorkspaceComponents,
 ): Promise<void> => {
-  await workspace.clear(_.omit(cleanArgs, 'serviceConfig'))
-  if (cleanArgs.serviceConfig === true) {
+  await workspace.clear(_.omit(cleanArgs, 'accountConfig'))
+  if (cleanArgs.accountConfig === true) {
     await awu(workspace.accounts()).forEach(async account => {
       const service = workspace.getServiceFromAccountName(account)
       const defaultConfig = await getDefaultAdapterConfig(service, account)

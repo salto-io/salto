@@ -176,7 +176,7 @@ describe('api.ts', () => {
         await api.fetch(ws, undefined, [mockService])
       })
 
-      it('should call fetch changes with first service only', () => {
+      it('should call fetch changes with first account only', () => {
         expect(mockFetchChanges).toHaveBeenCalled()
       })
       it('should override state but also include existing elements', async () => {
@@ -369,15 +369,15 @@ describe('api.ts', () => {
     })
 
     describe('validateCredentials', () => {
-      it('should throw if passed unknown adapter name', () => {
+      it('should throw if passed unknown account name', () => {
         const newConfType = new ObjectType({
-          elemID: new ElemID('unknownService'),
+          elemID: new ElemID('unknownAccount'),
           fields: mockConfigType.fields,
         })
         const newConf = new InstanceElement(ElemID.CONFIG_NAME, newConfType,
           mockConfigInstance.value)
         return expect(api.verifyCredentials(newConf)).rejects
-          .toThrow('unknown adapter: unknownService')
+          .toThrow('unknown adapter: unknownAccount')
       })
       it('should call validateConfig of adapterCreator', async () => {
         const newConf = mockConfigInstance.clone()
@@ -440,7 +440,7 @@ describe('api.ts', () => {
       })
       const changes = await api.restore(ws)
       expect(changes).toHaveLength(1)
-      expect(_.keys(changes[0])).toEqual(['change', 'serviceChanges'])
+      expect(_.keys(changes[0])).toEqual(['change', 'accountChanges'])
     })
   })
 
@@ -515,7 +515,7 @@ describe('api.ts', () => {
       })
     })
 
-    describe('Fetch one service out of two.', () => {
+    describe('Fetch one account out of two.', () => {
       let ws: workspace.Workspace
       let ows: workspace.Workspace
       beforeAll(async () => {
@@ -530,19 +530,19 @@ describe('api.ts', () => {
         })
       })
 
-      it('should call fetch changes with first service only', () => {
+      it('should call fetch changes with first account only', () => {
         expect(mockFetchChangesFromWorkspace).toHaveBeenCalled()
       })
     })
 
-    describe('default services', () => {
+    describe('default accounts', () => {
       let ws: workspace.Workspace
       let ows: workspace.Workspace
 
 
       beforeAll(async () => {
-        ws = mockWorkspace({ services: ['salto', 'salesforce'] })
-        ows = mockWorkspace({ services: ['salto', 'netsuite'] })
+        ws = mockWorkspace({ accounts: ['salto', 'salesforce'] })
+        ows = mockWorkspace({ accounts: ['salto', 'netsuite'] })
         mockFetchChangesFromWorkspace.mockClear()
         await api.fetchFromWorkspace({
           otherWorkspace: ws,
@@ -551,9 +551,9 @@ describe('api.ts', () => {
         })
       })
 
-      it('should use services that are in the current workspace as defaults', () => {
-        const servicesUsed = mockFetchChangesFromWorkspace.mock.calls[0][1]
-        expect(servicesUsed).toEqual(['salto', 'netsuite'])
+      it('should use accounts that are in the current workspace as defaults', () => {
+        const accountsUsed = mockFetchChangesFromWorkspace.mock.calls[0][1]
+        expect(accountsUsed).toEqual(['salto', 'netsuite'])
       })
     })
   })

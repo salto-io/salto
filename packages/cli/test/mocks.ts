@@ -315,19 +315,19 @@ type MockWorkspaceArgs = {
   uid?: string
   name?: string
   envs?: string[]
-  services?: string[]
+  accounts?: string[]
 }
 export const mockWorkspace = ({
   uid = '123',
   name = '',
   envs = ['active', 'inactive'],
-  services = ['salesforce', 'hubspot'],
+  accounts = ['salesforce', 'hubspot'],
 }: MockWorkspaceArgs): MockWorkspace => {
   const state = wsState.buildInMemState(
     async () => ({
       elements: createInMemoryElementSource(elements()),
       pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
-      servicesUpdateDate: new InMemoryRemoteMap(),
+      accountsUpdateDate: new InMemoryRemoteMap(),
       saltoMetadata: new InMemoryRemoteMap([
         { key: 'version', value: currentVersion },
       ] as {key: wsState.StateMetadataKey; value: string}[]),
@@ -342,8 +342,8 @@ export const mockWorkspace = ({
     state: mockFunction<Workspace['state']>().mockReturnValue(state),
     envs: mockFunction<Workspace['envs']>().mockReturnValue(envs),
     currentEnv: mockFunction<Workspace['currentEnv']>().mockReturnValue(envs[0]),
-    accounts: mockFunction<Workspace['accounts']>().mockReturnValue(services),
-    services: mockFunction<Workspace['services']>().mockReturnValue(services),
+    accounts: mockFunction<Workspace['accounts']>().mockReturnValue(accounts),
+    services: mockFunction<Workspace['services']>().mockReturnValue(accounts),
     accountCredentials: mockFunction<Workspace['accountCredentials']>().mockResolvedValue({}),
     servicesCredentials: mockFunction<Workspace['servicesCredentials']>().mockResolvedValue({}),
     accountConfig: mockFunction<Workspace['accountConfig']>().mockResolvedValue(undefined),
@@ -401,7 +401,7 @@ export const mockWorkspace = ({
     updateAccountConfig: mockFunction<Workspace['updateAccountConfig']>(),
     updateServiceConfig: mockFunction<Workspace['updateServiceConfig']>(),
     getStateRecency: mockFunction<Workspace['getStateRecency']>().mockImplementation(
-      async serviceName => ({ serviceName, status: 'Nonexistent', date: undefined })
+      async accountName => ({ accountName, status: 'Nonexistent', date: undefined })
     ),
     promote: mockFunction<Workspace['promote']>(),
     demote: mockFunction<Workspace['demote']>(),
@@ -660,7 +660,7 @@ export const deploy = async (
   _workspace: Workspace,
   actionPlan: Plan,
   reportProgress: (action: PlanItem, step: string, details?: string) => void,
-  _services: string[],
+  _accounts: string[],
 ): Promise<DeployResult> => {
   let numOfChangesReported = 0
   wu(actionPlan.itemsByEvalOrder()).forEach(change => {
@@ -681,7 +681,7 @@ export const deploy = async (
 
   return {
     success: true,
-    changes: dummyChanges.map(c => ({ change: c, serviceChanges: [c] })),
+    changes: dummyChanges.map(c => ({ change: c, accountChanges: [c] })),
     errors: [],
   }
 }

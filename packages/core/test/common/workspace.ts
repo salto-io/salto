@@ -22,7 +22,7 @@ import { mockState } from './state'
 const mockService = 'salto'
 const emptyMockService = 'salto2'
 
-export const SERVICES = [mockService, emptyMockService]
+export const ACCOUNTS = [mockService, emptyMockService]
 
 export const configID = new ElemID(mockService)
 export const emptyConfigID = new ElemID(emptyMockService)
@@ -65,7 +65,7 @@ export const mockWorkspace = ({
   name = undefined,
   index = [],
   stateElements = undefined,
-  services = SERVICES,
+  accounts = ACCOUNTS,
   errors = [],
   accountConfigs = {},
 }: {
@@ -73,12 +73,12 @@ export const mockWorkspace = ({
   name?: string
   index?: workspace.remoteMap.RemoteMapEntry<workspace.pathIndex.Path[]>[]
   stateElements?: Element[]
-  services?: string[]
+  accounts?: string[]
   errors?: SaltoError[]
   accountConfigs?: Record<string, InstanceElement>
   getValue?: Promise<Value | undefined>
 }): workspace.Workspace => {
-  const state = mockState(SERVICES, stateElements || elements, index)
+  const state = mockState(ACCOUNTS, stateElements || elements, index)
   return {
     elements: jest.fn().mockImplementation(
       async () => elementSource.createInMemoryElementSource(elements)
@@ -86,8 +86,8 @@ export const mockWorkspace = ({
     name,
     envs: () => ['default'],
     currentEnv: () => 'default',
-    services: () => services,
-    accounts: () => services,
+    services: () => accounts,
+    accounts: () => accounts,
     state: jest.fn().mockReturnValue(state),
     updateNaclFiles: jest.fn(),
     flush: jest.fn(),

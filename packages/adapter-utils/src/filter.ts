@@ -86,9 +86,9 @@ export const filtersRunner = <
       await promises.array.series(filtersWith('onDeploy').map(filter => () => filter.onDeploy(changes, deployResult)))
     },
     /**
-     * onPostFetch is run after fetch completed for all services, and receives
+     * onPostFetch is run after fetch completed for all accounts, and receives
      * as context all the elements for the env. It should only be used to change
-     * references, and should not make any changes that other services might rely on.
+     * references, and should not make any changes that other accounts might rely on.
      * There is no guarantee on the order in which the onPostFetch operations from
      * different adapters are performed, only within each adapter.
      * The filters are run in the same order as onFetch.

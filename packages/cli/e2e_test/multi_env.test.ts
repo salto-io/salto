@@ -43,9 +43,14 @@ import * as templates from './helpers/templates'
 const { awu } = collections.asynciterable
 const { dumpElements } = parser
 
-const SALESFORCE_ACCOUNT_NAME = 'e2esalesforce'
+const SALESFORCE_SERVICE_NAME = 'salesforce'
+const ALTERNATIVE_SALESFORCE_ACCOUNT_NAME = 'e2esalesforce'
 
-describe('multi env tests', () => {
+describe.each([
+  SALESFORCE_SERVICE_NAME,
+  ALTERNATIVE_SALESFORCE_ACCOUNT_NAME,
+])('.add($accountName)', accountName => {
+  const accounts = accountName === SALESFORCE_SERVICE_NAME ? undefined : [accountName]
   jest.setTimeout(15 * 60 * 1000)
 
   const ENV1_NAME = 'env1'
@@ -66,29 +71,29 @@ describe('multi env tests', () => {
     path.join(saltoHomeDir, '*')
   )
   const commonObjectDir = (): string => (
-    path.join(baseDir, SALESFORCE_ACCOUNT_NAME, 'Objects')
+    path.join(baseDir, accountName, 'Objects')
   )
   const commonInstanceDir = (): string => (
-    path.join(baseDir, SALESFORCE_ACCOUNT_NAME, 'Records', 'Role')
+    path.join(baseDir, accountName, 'Records', 'Role')
   )
   const env1ObjectDir = (): string => (
-    path.join(baseDir, 'envs', ENV1_NAME, SALESFORCE_ACCOUNT_NAME, 'Objects')
+    path.join(baseDir, 'envs', ENV1_NAME, accountName, 'Objects')
   )
   const env2ObjectDir = (): string => (
-    path.join(baseDir, 'envs', ENV2_NAME, SALESFORCE_ACCOUNT_NAME, 'Objects')
+    path.join(baseDir, 'envs', ENV2_NAME, accountName, 'Objects')
   )
   const env1InstanceDir = (): string => (
-    path.join(baseDir, 'envs', ENV1_NAME, SALESFORCE_ACCOUNT_NAME, 'Records', 'Role')
+    path.join(baseDir, 'envs', ENV1_NAME, accountName, 'Records', 'Role')
   )
   const env2InstanceDir = (): string => (
-    path.join(baseDir, 'envs', ENV2_NAME, SALESFORCE_ACCOUNT_NAME, 'Records', 'Role')
+    path.join(baseDir, 'envs', ENV2_NAME, accountName, 'Records', 'Role')
   )
   const workspaceConfigFilePath = (): string => (
     path.join(baseDir, 'salto.config', 'workspace.nacl')
   )
   const adapterConfigsFilePath = (): string => (
-    path.join(baseDir, 'salto.config', 'adapters', SALESFORCE_ACCOUNT_NAME,
-      `${SALESFORCE_ACCOUNT_NAME}.nacl`)
+    path.join(baseDir, 'salto.config', 'adapters', accountName,
+      `${accountName}.nacl`)
   )
   const workspaceUserConfigFilePath = (): string => (
     path.join(homeWSDir(), 'workspaceUser.nacl')
@@ -127,66 +132,66 @@ describe('multi env tests', () => {
   const commonInst = templates.instance({
     instName: commonInstName,
     description: 'Common instance',
-    accountName: SALESFORCE_ACCOUNT_NAME,
+    accountName,
   })
 
   const env1Inst = templates.instance({
     instName: env1InstName,
     description: 'Common instance',
-    accountName: SALESFORCE_ACCOUNT_NAME,
+    accountName,
   })
 
   const env2Inst = templates.instance({
     instName: env2InstName,
     description: 'Common instance',
-    accountName: SALESFORCE_ACCOUNT_NAME,
+    accountName,
   })
 
   const diffInstEnv1 = templates.instance({
     instName: commonInstWithDiffName,
     description: 'Common instance Env 1',
-    accountName: SALESFORCE_ACCOUNT_NAME,
+    accountName,
   })
 
   const diffInstEnv2 = templates.instance({
     instName: commonInstWithDiffName,
     description: 'Common instance Env 2',
-    accountName: SALESFORCE_ACCOUNT_NAME,
+    accountName,
   })
 
   const commonObj = templates.customObject({
     objName: commonObjName,
     alphaLabel: 'alpha',
     betaLabel: 'beta',
-    accountName: SALESFORCE_ACCOUNT_NAME,
+    accountName,
   })
 
   const env1Obj = templates.customObject({
     objName: env1ObjName,
     alphaLabel: 'alpha',
     betaLabel: 'beta',
-    accountName: SALESFORCE_ACCOUNT_NAME,
+    accountName,
   })
 
   const env2Obj = templates.customObject({
     objName: env2ObjName,
     alphaLabel: 'alpha',
     betaLabel: 'beta',
-    accountName: SALESFORCE_ACCOUNT_NAME,
+    accountName,
   })
 
   const diffObjEnv1 = templates.customObject({
     objName: commonWithDiffName,
     alphaLabel: 'alpha1',
     betaLabel: 'beta1',
-    accountName: SALESFORCE_ACCOUNT_NAME,
+    accountName,
   })
 
   const diffObjEnv2 = templates.customObject({
     objName: commonWithDiffName,
     alphaLabel: 'alpha2',
     betaLabel: 'beta2',
-    accountName: SALESFORCE_ACCOUNT_NAME,
+    accountName,
   })
 
   const env1Elements = [commonObj, env1Obj, diffObjEnv1, commonInst, env1Inst, diffInstEnv1]
@@ -212,7 +217,7 @@ describe('multi env tests', () => {
     baseDir = (await tmp.dir()).path
     saltoHomeDir = (await tmp.dir()).path
 
-    // Create the base elements in the services
+    // Create the base elements in the accounts
     process.env.SALTO_HOME = saltoHomeDir
     env1ElementAfterDeploy = await addElements(env1Client, env1Elements)
     env2ElementAfterDeploy = await addElements(env2Client, env2Elements)
@@ -239,13 +244,13 @@ describe('multi env tests', () => {
       const mockGetCreds = jest.spyOn(callbacks, 'getCredentialsFromUser')
       mockGetCreds.mockImplementation(() =>
         Promise.resolve(getSalesforceCredsInstance(env1Creds)))
-      await runAddSalesforceService(baseDir, SALESFORCE_ACCOUNT_NAME)
+      await runAddSalesforceService(baseDir, accounts ? accounts[0] : undefined)
       // run create env with env2
       await runCreateEnv(baseDir, ENV2_NAME)
       // run add salesforce service
       mockGetCreds.mockImplementation(() =>
         Promise.resolve(getSalesforceCredsInstance(env2Creds)))
-      await runAddSalesforceService(baseDir, SALESFORCE_ACCOUNT_NAME)
+      await runAddSalesforceService(baseDir, accounts ? accounts[0] : undefined)
     })
 
     it('should create proper env structure', () => {
@@ -300,9 +305,9 @@ describe('multi env tests', () => {
       let env2Plan: Plan | undefined
       beforeAll(async () => {
         await runSetEnv(baseDir, ENV1_NAME)
-        env1Plan = await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
+        env1Plan = await runPreviewGetPlan(baseDir, accounts)
         await runSetEnv(baseDir, ENV2_NAME)
-        env2Plan = await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
+        env2Plan = await runPreviewGetPlan(baseDir, accounts)
       })
       it('should have empty previews for all envs', async () => {
         expect(env1Plan?.size).toBe(0)
@@ -347,42 +352,42 @@ describe('multi env tests', () => {
     })
   })
 
-  describe('handle changes that originated in the service', () => {
-    const objToSyncFromServiceName = `TestSyncFromServiceObj${tempID}`
-    const instToSyncFromServiceName = `TestSyncFromServiceInst${tempID}`
-    const objToSyncFromService = templates.customObject({
-      objName: objToSyncFromServiceName,
+  describe('handle changes that originated in the account', () => {
+    const objToSyncFromAccountName = `TestSyncFromAccountObj${tempID}`
+    const instToSyncFromAccountName = `TestSyncFromAccountInst${tempID}`
+    const objToSyncFromAccount = templates.customObject({
+      objName: objToSyncFromAccountName,
       alphaLabel: 'alpha2',
       betaLabel: 'beta2',
-      accountName: SALESFORCE_ACCOUNT_NAME,
+      accountName,
     })
-    const instToSyncFromService = templates.instance({
-      instName: instToSyncFromServiceName,
-      description: 'This was created on the service',
-      accountName: SALESFORCE_ACCOUNT_NAME,
+    const instToSyncFromAccount = templates.instance({
+      instName: instToSyncFromAccountName,
+      description: 'This was created on the account',
+      accountName,
     })
-    const elementsAddedToService = [objToSyncFromService, instToSyncFromService]
-    let fromSyncToRemove: typeof elementsAddedToService
+    const elementsAddedToAccount = [objToSyncFromAccount, instToSyncFromAccount]
+    let fromSyncToRemove: typeof elementsAddedToAccount
 
-    describe('fetch an add change from the service', () => {
+    describe('fetch an add change from the account', () => {
       let afterFetchPlan: Plan | undefined
       beforeAll(async () => {
-        // Add the new element directly to the service
-        fromSyncToRemove = await addElements(env1Client, elementsAddedToService)
+        // Add the new element directly to the account
+        fromSyncToRemove = await addElements(env1Client, elementsAddedToAccount)
         // We fetch it to common
         await runSetEnv(baseDir, ENV1_NAME)
         await runFetch(baseDir, false) // Fetch in normal mode
-        afterFetchPlan = await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
+        afterFetchPlan = await runPreviewGetPlan(baseDir, accounts)
       })
 
       it('should add the fetched element to the common folder', () => {
-        expect(path.join(commonObjectDir(), naclNameToSFName(objToSyncFromServiceName))).toExist()
-        expect(path.join(commonInstanceDir(), `${instToSyncFromServiceName}.nacl`)).toExist()
+        expect(path.join(commonObjectDir(), naclNameToSFName(objToSyncFromAccountName))).toExist()
+        expect(path.join(commonInstanceDir(), `${instToSyncFromAccountName}.nacl`)).toExist()
 
-        expect(path.join(env1ObjectDir(), naclNameToSFName(objToSyncFromServiceName))).not.toExist()
-        expect(path.join(env2ObjectDir(), naclNameToSFName(objToSyncFromServiceName))).not.toExist()
-        expect(path.join(env1InstanceDir(), `${instToSyncFromServiceName}.nacl`)).not.toExist()
-        expect(path.join(env2InstanceDir(), `${instToSyncFromServiceName}.nacl`)).not.toExist()
+        expect(path.join(env1ObjectDir(), naclNameToSFName(objToSyncFromAccountName))).not.toExist()
+        expect(path.join(env2ObjectDir(), naclNameToSFName(objToSyncFromAccountName))).not.toExist()
+        expect(path.join(env1InstanceDir(), `${instToSyncFromAccountName}.nacl`)).not.toExist()
+        expect(path.join(env2InstanceDir(), `${instToSyncFromAccountName}.nacl`)).not.toExist()
       })
 
       it('should have empty preview for the env from which the element was fetched', () => {
@@ -395,7 +400,7 @@ describe('multi env tests', () => {
       beforeAll(async () => {
         // We fetch it to common
         await runSetEnv(baseDir, ENV2_NAME)
-        afterOtherEnvFetchPlan = await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
+        afterOtherEnvFetchPlan = await runPreviewGetPlan(baseDir, accounts)
         // Just a safety check to avoid deploying changes if something
         // went wrong.
         if (afterOtherEnvFetchPlan && afterOtherEnvFetchPlan.size > 10) {
@@ -410,9 +415,9 @@ describe('multi env tests', () => {
       it('should create the element in the target env', async () => {
         expect(await objectExists(
           env2Client,
-          naclNameToSFName(objToSyncFromServiceName)
+          naclNameToSFName(objToSyncFromAccountName)
         )).toBeTruthy()
-        expect(await instanceExists(env2Client, 'Role', instToSyncFromServiceName)).toBeTruthy()
+        expect(await instanceExists(env2Client, 'Role', instToSyncFromAccountName)).toBeTruthy()
       })
     })
 
@@ -429,16 +434,16 @@ describe('multi env tests', () => {
         ])
         await runSetEnv(baseDir, ENV1_NAME)
         await runFetch(baseDir, false) // Fetch in normal mode
-        afterDeleteFetchPlan = await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
+        afterDeleteFetchPlan = await runPreviewGetPlan(baseDir, accounts)
       })
 
       it('should remove the elements from the nacl files in the common folder', () => {
         expect(path.join(commonObjectDir(), naclNameToSFName(commonObjName))).not.toExist()
         expect(path.join(commonInstanceDir(), `${commonInstName}.nacl`)).not.toExist()
         expect(
-          path.join(commonObjectDir(), naclNameToSFName(objToSyncFromServiceName))
+          path.join(commonObjectDir(), naclNameToSFName(objToSyncFromAccountName))
         ).not.toExist()
-        expect(path.join(commonInstanceDir(), `${instToSyncFromServiceName}.nacl`)).not.toExist()
+        expect(path.join(commonInstanceDir(), `${instToSyncFromAccountName}.nacl`)).not.toExist()
         expect(commonWithDiffCommonFilePath()).not.toExist()
         expect(commonInstWithDiffCommonFilePath()).not.toExist()
       })
@@ -458,7 +463,7 @@ describe('multi env tests', () => {
       beforeAll(async () => {
         // We fetch it to common
         await runSetEnv(baseDir, ENV2_NAME)
-        afterDeleteOtherEnvFetchPlan = await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
+        afterDeleteOtherEnvFetchPlan = await runPreviewGetPlan(baseDir, accounts)
         await runDeploy({ workspacePath: baseDir, allowErrors: true })
       })
 
@@ -469,9 +474,9 @@ describe('multi env tests', () => {
       it('should delete the elements in the target env', async () => {
         expect(await objectExists(
           env2Client,
-          naclNameToSFName(objToSyncFromServiceName)
+          naclNameToSFName(objToSyncFromAccountName)
         )).toBeFalsy()
-        expect(await instanceExists(env2Client, 'Role', instToSyncFromServiceName)).toBeFalsy()
+        expect(await instanceExists(env2Client, 'Role', instToSyncFromAccountName)).toBeFalsy()
         expect(await instanceExists(env2Client, 'Role', commonInstName)).toBeFalsy()
       })
     })
@@ -484,19 +489,19 @@ describe('multi env tests', () => {
     const commonNaclFileInstName = `CommonInstNacl${tempID}`
     const env1NaclFileInstName = `Env1InstNacl${tempID}`
     const env2NaclFileInstName = `Env2InstNacl${tempID}`
-    const commonNaclFileName = (): string => path.join(baseDir, SALESFORCE_ACCOUNT_NAME, 'common.nacl')
+    const commonNaclFileName = (): string => path.join(baseDir, accountName, 'common.nacl')
     const env1NaclFileName = (): string => path.join(
       baseDir,
       'envs',
       ENV1_NAME,
-      SALESFORCE_ACCOUNT_NAME,
+      accountName,
       'env1.nacl'
     )
     const env2NaclFileName = (): string => path.join(
       baseDir,
       'envs',
       ENV2_NAME,
-      SALESFORCE_ACCOUNT_NAME,
+      accountName,
       'env2.nacl'
     )
 
@@ -507,12 +512,12 @@ describe('multi env tests', () => {
             objName: commonNaclFileObjectName,
             alphaLabel: 'alpha1',
             betaLabel: 'beta1',
-            accountName: SALESFORCE_ACCOUNT_NAME,
+            accountName,
           }),
           templates.instance({
             instName: commonNaclFileInstName,
             description: 'Common from Nacl',
-            accountName: SALESFORCE_ACCOUNT_NAME,
+            accountName,
           }),
         ])
         const env1NaclFile = await dumpElements([
@@ -520,12 +525,12 @@ describe('multi env tests', () => {
             objName: env1NaclFileObjectName,
             alphaLabel: 'alpha1',
             betaLabel: 'beta1',
-            accountName: SALESFORCE_ACCOUNT_NAME,
+            accountName,
           }),
           templates.instance({
             instName: env1NaclFileInstName,
             description: 'Env1 from Nacl',
-            accountName: SALESFORCE_ACCOUNT_NAME,
+            accountName,
           }),
         ])
         const env2NaclFile = await dumpElements([
@@ -533,21 +538,21 @@ describe('multi env tests', () => {
             objName: env2NaclFileObjectName,
             alphaLabel: 'alpha1',
             betaLabel: 'beta1',
-            accountName: SALESFORCE_ACCOUNT_NAME,
+            accountName,
           }),
           templates.instance({
             instName: env2NaclFileInstName,
             description: 'Env2 from Nacl',
-            accountName: SALESFORCE_ACCOUNT_NAME,
+            accountName,
           }),
         ])
         await writeFile(commonNaclFileName(), commonNaclFile)
         await writeFile(env1NaclFileName(), env1NaclFile)
         await writeFile(env2NaclFileName(), env2NaclFile)
         await runSetEnv(baseDir, ENV1_NAME)
-        await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
+        await runPreviewGetPlan(baseDir, accounts)
         await runSetEnv(baseDir, ENV2_NAME)
-        await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
+        await runPreviewGetPlan(baseDir, accounts)
         await runSetEnv(baseDir, ENV1_NAME)
         await runDeploy({ workspacePath: baseDir, allowErrors: true })
         await runSetEnv(baseDir, ENV2_NAME)
@@ -629,9 +634,9 @@ describe('multi env tests', () => {
         await rm(env2ObjFilePath())
         await rm(env2InstFilePath())
         await runSetEnv(baseDir, ENV1_NAME)
-        env1DeployPlan = await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
+        env1DeployPlan = await runPreviewGetPlan(baseDir, accounts)
         await runSetEnv(baseDir, ENV2_NAME)
-        env2DeployPlan = await runPreviewGetPlan(baseDir, [SALESFORCE_ACCOUNT_NAME])
+        env2DeployPlan = await runPreviewGetPlan(baseDir, accounts)
         await runSetEnv(baseDir, ENV1_NAME)
         await runDeploy({ workspacePath: baseDir, allowErrors: true })
         await runSetEnv(baseDir, ENV2_NAME)

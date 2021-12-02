@@ -20,14 +20,14 @@ import { mockWorkspace } from '../common/workspace'
 
 jest.mock('../../src/core/adapters', () => ({
   ...jest.requireActual<{}>('../../src/core/adapters'),
-  getDefaultAdapterConfig: jest.fn(service => ({ service, aaa: 'aaa' })),
+  getDefaultAdapterConfig: jest.fn(account => ({ account, aaa: 'aaa' })),
 }))
 
 describe('clean', () => {
   let workspace: Workspace
 
   beforeEach(async () => {
-    workspace = mockWorkspace({ services: ['salesforce', 'netsuite'] })
+    workspace = mockWorkspace({ accounts: ['salesforce', 'netsuite'] })
   })
 
   afterEach(() => {
@@ -41,7 +41,7 @@ describe('clean', () => {
       cache: true,
       staticResources: false,
       credentials: true,
-      serviceConfig: true,
+      accountConfig: true,
     })
     expect(workspace.clear).toHaveBeenCalledWith({
       nacl: true,
@@ -53,20 +53,20 @@ describe('clean', () => {
     expect(adapters.getDefaultAdapterConfig).toHaveBeenCalledWith('salesforce', 'salesforce')
     expect(adapters.getDefaultAdapterConfig).toHaveBeenCalledWith('netsuite', 'netsuite')
     expect(workspace.updateAccountConfig).toHaveBeenCalledWith('salesforce',
-      { service: 'salesforce', aaa: 'aaa' }, 'salesforce')
+      { account: 'salesforce', aaa: 'aaa' }, 'salesforce')
     expect(workspace.updateAccountConfig).toHaveBeenCalledWith('netsuite',
-      { service: 'netsuite', aaa: 'aaa' }, 'netsuite')
+      { account: 'netsuite', aaa: 'aaa' }, 'netsuite')
     expect(workspace.flush).toHaveBeenCalled()
   })
 
-  it('should not clear the service config if not specified', async () => {
+  it('should not clear the account config if not specified', async () => {
     await cleanWorkspace(workspace, {
       nacl: true,
       state: true,
       cache: true,
       staticResources: true,
       credentials: false,
-      serviceConfig: false,
+      accountConfig: false,
     })
     expect(workspace.clear).toHaveBeenCalledWith({
       nacl: true,
@@ -80,7 +80,7 @@ describe('clean', () => {
     expect(workspace.flush).toHaveBeenCalled()
   })
 
-  it('should finish even if some service configs cannot be restored', async () => {
+  it('should finish even if some account configs cannot be restored', async () => {
     jest.spyOn(adapters, 'getDefaultAdapterConfig')
       .mockImplementationOnce(async () => undefined)
       .mockImplementationOnce(async () => undefined)
@@ -90,7 +90,7 @@ describe('clean', () => {
       cache: true,
       staticResources: true,
       credentials: true,
-      serviceConfig: true,
+      accountConfig: true,
     })
     expect(adapters.getDefaultAdapterConfig).toHaveBeenCalledWith('salesforce', 'salesforce')
     expect(adapters.getDefaultAdapterConfig).toHaveBeenCalledWith('netsuite', 'netsuite')

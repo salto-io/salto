@@ -125,8 +125,8 @@ describe('local state', () => {
       expect(multiExtra).toBeUndefined()
     })
 
-    it('should have two items in service update list', async () => {
-      expect(Object.keys(await (state.getServicesUpdateDates()))).toEqual(['netsuite', 'salesforce'])
+    it('should have two items in account update list', async () => {
+      expect(Object.keys(await (state.getAccountsUpdateDates()))).toEqual(['netsuite', 'salesforce'])
     })
 
     it('should write two files', async () => {
@@ -316,20 +316,20 @@ describe('local state', () => {
     it('should return an empty object when the state does not exist', async () => {
       mockExists.mockResolvedValueOnce(false)
       const state = localState('filename', '', remoteMapCreator)
-      const date = await state.getServicesUpdateDates()
+      const date = await state.getAccountsUpdateDates()
       expect(date).toEqual({})
     })
     it('should return empty object when the updated date is not set', async () => {
       mockExists.mockResolvedValueOnce(true)
       const state = localState('filename', '', remoteMapCreator)
-      const date = await state.getServicesUpdateDates()
+      const date = await state.getAccountsUpdateDates()
       expect(date).toEqual({})
     })
     it('should return the modification date of the state', async () => {
       mockExists.mockResolvedValueOnce(true)
       readZipFileMock.mockResolvedValueOnce(mockStateStr)
       const state = localState('filename', '', remoteMapCreator)
-      const date = await state.getServicesUpdateDates()
+      const date = await state.getAccountsUpdateDates()
       expect(date.salto).toEqual(saltoModificationDate)
       expect(date.hubspot).toEqual(hubspotModificationDate)
     })
@@ -340,11 +340,11 @@ describe('local state', () => {
       jest.spyOn(Date, 'now').mockImplementation(() => now)
       const state = localState('filename', '', remoteMapCreator)
 
-      const beforeOverrideDate = await state.getServicesUpdateDates()
+      const beforeOverrideDate = await state.getAccountsUpdateDates()
       expect(beforeOverrideDate.salto).toEqual(saltoModificationDate)
       expect(beforeOverrideDate.hubspot).toEqual(hubspotModificationDate)
       await state.override(awu([mockElement]))
-      const overrideDate = await state.getServicesUpdateDates()
+      const overrideDate = await state.getAccountsUpdateDates()
       expect(overrideDate.salto.getTime()).toBe(now)
       expect(beforeOverrideDate.hubspot).toEqual(hubspotModificationDate)
     })
@@ -354,7 +354,7 @@ describe('local state', () => {
       const state = localState('filename', '', remoteMapCreator)
 
       await state.set(mockElement)
-      const overrideDate = await state.getServicesUpdateDates()
+      const overrideDate = await state.getAccountsUpdateDates()
       expect(overrideDate.salto).toEqual(saltoModificationDate)
       expect(overrideDate.hubspot).toEqual(hubspotModificationDate)
       await state.remove(mockElement.elemID)
@@ -365,7 +365,7 @@ describe('local state', () => {
       mockExists.mockResolvedValueOnce(true)
       const state = localState('empty', '', remoteMapCreator)
       await state.set(BuiltinTypes.STRING)
-      const overrideDate = await state.getServicesUpdateDates()
+      const overrideDate = await state.getAccountsUpdateDates()
       expect(overrideDate).toEqual({})
     })
   })
@@ -373,12 +373,12 @@ describe('local state', () => {
   describe('exsitingAdapters', () => {
     it('should return empty list on empty state', async () => {
       const state = localState('empty', '', remoteMapCreator)
-      const adapters = await state.existingServices()
+      const adapters = await state.existingAccounts()
       expect(adapters).toHaveLength(0)
     })
     it('should return all adapters in a full state', async () => {
       const state = localState('mutiple_adapters', '', remoteMapCreator)
-      const adapters = await state.existingServices()
+      const adapters = await state.existingAccounts()
       expect(adapters).toEqual(['hubspot', 'salto'])
     })
   })
@@ -406,7 +406,7 @@ describe('local state', () => {
   describe('glob test', () => {
     const glob = promisify(jest.requireActual('glob'))
     const globString = filePathGlob('/tmp/env1')
-    it('should catch all the strings it is supposed to', async () => {
+    it('should match files with correct adapter file name like env1.someadapter.jsonl.zip', async () => {
       const goodFiles = [`env1.someadapter${ZIPPED_STATE_EXTENSION}`,
         `env1.anotheradapter${ZIPPED_STATE_EXTENSION}`]
       const results = await glob(globString, { cache: {
@@ -414,7 +414,7 @@ describe('local state', () => {
       } })
       expect(results.sort()).toEqual(goodFiles.map(file => `/tmp/${file}`).sort())
     })
-    it('shouldnt catch strings it is not supposed to', async () => {
+    it('should not match files with less or more that two seperating dots', async () => {
       const badFiles = [`env1${ZIPPED_STATE_EXTENSION}`,
         `env1.one.two${ZIPPED_STATE_EXTENSION}`]
       const results = await glob(globString, { cache: {

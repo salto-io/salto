@@ -25,7 +25,7 @@ export type StateMetadataKey = 'version' | 'hash'
 export type StateData = {
   elements: RemoteElementSource
   // The date of the last fetch
-  servicesUpdateDate: RemoteMap<Date>
+  accountsUpdateDate: RemoteMap<Date>
   pathIndex: PathIndex
   saltoMetadata: RemoteMap<string, StateMetadataKey>
 }
@@ -33,11 +33,11 @@ export type StateData = {
 export interface State extends ElementsSource {
   set(element: Element): Promise<void>
   remove(id: ElemID): Promise<void>
-  override(elements: AsyncIterable<Element>, services?: string[]): Promise<void>
-  getServicesUpdateDates(): Promise<Record<string, Date>>
-  existingServices(): Promise<string[]>
+  override(elements: AsyncIterable<Element>, accounts?: string[]): Promise<void>
+  getAccountsUpdateDates(): Promise<Record<string, Date>>
+  existingAccounts(): Promise<string[]>
   overridePathIndex(unmergedElements: Element[]): Promise<void>
-  updatePathIndex(unmergedElements: Element[], servicesToMaintain: string[]): Promise<void>
+  updatePathIndex(unmergedElements: Element[], accountsToMaintain: string[]): Promise<void>
   getPathIndex(): Promise<PathIndex>
   getHash(): Promise<string | undefined>
   setHash(hash: string): Promise<void>
@@ -68,7 +68,7 @@ Promise<StateData> => ({
     deserialize: async data => JSON.parse(data),
     persistent,
   }),
-  servicesUpdateDate: await remoteMapCreator<Date>({
+  accountsUpdateDate: await remoteMapCreator<Date>({
     namespace: createStateNamespace(envName, 'service_update_date'),
     serialize: date => date.toISOString(),
     deserialize: async data => new Date(data),

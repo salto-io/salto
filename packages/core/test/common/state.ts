@@ -18,15 +18,15 @@ import { pathIndex, state, elementSource, remoteMap } from '@salto-io/workspace'
 
 
 export const mockState = (
-  services: string[] = [],
+  accounts: string[] = [],
   elements: Element[] = [],
   index: remoteMap.RemoteMapEntry<pathIndex.Path[]>[] = []
 ): state.State => (
   state.buildInMemState(async () => ({
     elements: elementSource.createInMemoryElementSource(elements),
     pathIndex: new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(index),
-    servicesUpdateDate: new remoteMap.InMemoryRemoteMap<Date>(
-      services.map(serviceName => ({ key: serviceName, value: new Date() }))
+    accountsUpdateDate: new remoteMap.InMemoryRemoteMap<Date>(
+      accounts.map(accountName => ({ key: accountName, value: new Date() }))
     ),
     saltoMetadata: new remoteMap.InMemoryRemoteMap<string, 'version'>([{ key: 'version', value: '0.0.1' }]),
   }))

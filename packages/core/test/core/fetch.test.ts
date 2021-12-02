@@ -218,7 +218,7 @@ describe('fetch', () => {
           expect(Array.from(fetchChangesResult.changes).length).toBe(0)
         })
 
-        it('should return the state elements with the service elements', async () => {
+        it('should return the state elements with the account elements', async () => {
           mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
             { elements: [newTypeBaseModified], isPartial: true },
           )
@@ -250,7 +250,7 @@ describe('fetch', () => {
           expect(resultChanges[0].change.action).toBe('remove')
         })
 
-        it('should return only the service elements', async () => {
+        it('should return only the account elements', async () => {
           mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
             { elements: [newTypeBaseModified], isPartial: false },
           )
@@ -309,17 +309,17 @@ describe('fetch', () => {
         expect(resultChanges.length).toBe(1)
 
         const workspaceChange = resultChanges[0].change
-        const [serviceChange] = resultChanges[0].serviceChanges
+        const [accountChange] = resultChanges[0].accountChanges
 
         expect(workspaceChange.action).toBe('modify')
-        expect(serviceChange.action).toBe('modify')
+        expect(accountChange.action).toBe('modify')
 
-        if (workspaceChange.action === 'modify' && serviceChange.action === 'modify') {
+        if (workspaceChange.action === 'modify' && accountChange.action === 'modify') {
           expect(workspaceChange.data.after).toBe(4)
           expect(workspaceChange.data.before.resValue).toBe(5)
 
-          expect(serviceChange.data.after).toBe(4)
-          expect(serviceChange.data.before.resValue).toBe(6)
+          expect(accountChange.data.after).toBe(4)
+          expect(accountChange.data.before.resValue).toBe(6)
         }
       })
 
@@ -521,7 +521,7 @@ describe('fetch', () => {
       })
     })
 
-    describe('when the change is only in the service', () => {
+    describe('when the change is only in the account', () => {
       const hiddenChangedVal = 'hiddenChanged'
       const hiddenValueChangedVal = 'hiddenChanged2'
 
@@ -743,7 +743,7 @@ describe('fetch', () => {
           })
         })
       })
-      describe('when the working copy is already the same as the service', () => {
+      describe('when the working copy is already the same as the account', () => {
         beforeEach(async () => {
           mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
             Promise.resolve({ elements: [typeWithFieldChange] })
@@ -804,22 +804,22 @@ describe('fetch', () => {
           beforeEach(() => {
             [change] = changes
           })
-          it('should contain the service changes', () => {
-            expect(change.serviceChanges).toHaveLength(2)
-            expect(change.serviceChanges[0].action).toEqual('modify')
+          it('should contain the account changes', () => {
+            expect(change.accountChanges).toHaveLength(2)
+            expect(change.accountChanges[0].action).toEqual('modify')
           })
           it('should contain the local change', () => {
             expect(change.pendingChanges).toHaveLength(1)
             expect(change.pendingChanges?.[0].action).toEqual('remove')
           })
-          it('should have the change that syncs the working copy to the service', () => {
+          it('should have the change that syncs the working copy to the account', () => {
             expect(change.change.action).toEqual('add')
           })
         })
       })
     })
 
-    describe('when the changed element is removed from the service', () => {
+    describe('when the changed element is removed from the account', () => {
       beforeEach(async () => {
         mockAdapters[newTypeDifferentAdapterID.adapter]
           .fetch.mockResolvedValueOnce({ elements: [] })
@@ -835,15 +835,15 @@ describe('fetch', () => {
       it('should return a single change with a conflict', () => {
         expect(changes).toHaveLength(1)
         const [change] = changes
-        expect(change.serviceChanges).toHaveLength(1)
+        expect(change.accountChanges).toHaveLength(1)
         expect(change.pendingChanges).toHaveLength(2)
       })
-      it('should have the change that syncs the working copy to the service', () => {
+      it('should have the change that syncs the working copy to the account', () => {
         expect(changes[0].change.action).toEqual('remove')
       })
     })
 
-    describe('when there is only a pending change and no service change', () => {
+    describe('when there is only a pending change and no account change', () => {
       beforeEach(async () => {
         mockAdapters[newTypeDifferentAdapterID.adapter].fetch
           .mockResolvedValueOnce({ elements: [typeWithField] })
@@ -1036,7 +1036,7 @@ describe('fetch', () => {
         changes.forEach(c => expect(c.pendingChanges).toBeUndefined())
       })
 
-      it('changes should be equal to the service elements', () => {
+      it('changes should be equal to the account elements', () => {
         expect(getChangeElement(changes[0].change)).toEqual(typeWithFieldDifferentID)
         const expectedHiddenInstanceAlternateId = hiddenInstanceAlternateId.clone()
         expectedHiddenInstanceAlternateId.refType = _.clone(expectedHiddenInstanceAlternateId
@@ -1088,7 +1088,7 @@ describe('fetch', () => {
       },
     }
     describe('fetch is partial', () => {
-      it('should call postFetch with the state and service elements combined in elementsByAdapter, but only the fetched elements in currentAdapterElements', async () => {
+      it('should call postFetch with the state and account elements combined in elementsByAccount, but only the fetched elements in currentAdapterElements', async () => {
         mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
           Promise.resolve({ elements: [newTypeBaseModified], isPartial: true }),
         )
@@ -1105,7 +1105,7 @@ describe('fetch', () => {
           currentAdapterElements: expect.arrayContaining([
             newTypeBaseModifiedDifferentId,
           ]),
-          elementsByAdapter: {
+          elementsByAccount: {
             [newTypeDifferentAdapterID.adapter]: expect.arrayContaining([
               newTypeBaseModifiedDifferentId,
               typeWithFieldDifferentID,
@@ -1119,7 +1119,7 @@ describe('fetch', () => {
       })
     })
     describe('fetch is not partial', () => {
-      it('should call postFetch with only the service elements', async () => {
+      it('should call postFetch with only the account elements', async () => {
         mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
           { elements: [newTypeBaseModified], isPartial: false },
         )
@@ -1135,7 +1135,7 @@ describe('fetch', () => {
           currentAdapterElements: expect.arrayContaining([
             newTypeBaseModifiedDifferentId,
           ]),
-          elementsByAdapter: {
+          elementsByAccount: {
             [newTypeDifferentAdapterID.adapter]: expect.arrayContaining([
               newTypeBaseModifiedDifferentId,
             ]),
@@ -1148,7 +1148,7 @@ describe('fetch', () => {
       })
     })
 
-    describe('multiple adapters, some of same service type', () => {
+    describe('multiple adapters, some of same account type', () => {
       const dummy2PrimStr = new PrimitiveType({
         elemID: new ElemID('dummy2', 'prim'),
         primitive: PrimitiveTypes.STRING,
@@ -1216,7 +1216,7 @@ describe('fetch', () => {
         )
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
           currentAdapterElements: expect.arrayContaining([dummy2Type1]),
-          elementsByAdapter: {
+          elementsByAccount: {
             [expectedDummy1.elemID.adapter]: expect.arrayContaining(
               [expectedDummy1Type1, expectedDummy1]
             ),
@@ -1232,7 +1232,7 @@ describe('fetch', () => {
         })
         expect(adapters.dummy3.postFetch).toHaveBeenCalledWith({
           currentAdapterElements: expect.arrayContaining([expectedDummy3Type1AfterRename]),
-          elementsByAdapter: {
+          elementsByAccount: {
             [expectedDummy1.elemID.adapter]: expect
               .arrayContaining([expectedDummy1Type1, expectedDummy1]),
             dummy2: expect.arrayContaining([dummy2Type1]),
@@ -1260,7 +1260,7 @@ describe('fetch', () => {
         )
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
           currentAdapterElements: expect.arrayContaining([dummy2Type1]),
-          elementsByAdapter: {
+          elementsByAccount: {
             // dummy1 is partial so it also includes elements from the workspace
             [expectedDummy1.elemID.adapter]: expect
               .arrayContaining([expectedDummy1Type1, expectedDummy1]),
@@ -1292,7 +1292,7 @@ describe('fetch', () => {
         )).resolves.not.toThrow()
         expect(adapters.dummy2.postFetch).toHaveBeenCalledWith({
           currentAdapterElements: expect.arrayContaining([dummy2Type1]),
-          elementsByAdapter: {
+          elementsByAccount: {
             // dummy1 is partial so it also includes elements from the workspace
             [expectedDummy1.elemID.adapter]: expect.arrayContaining(
               [expectedDummy1Type1, expectedDummy1]
@@ -1318,7 +1318,7 @@ describe('fetch from workspace', () => {
   describe('workspace mismatch errors', () => {
     it('should fail when attempting to fetch an env not present in the source workspace', async () => {
       const sourceWS = mockWorkspace({
-        services: ['salto'],
+        accounts: ['salto'],
       })
 
       const fetchRes = await fetchChangesFromWorkspace(
@@ -1337,9 +1337,9 @@ describe('fetch from workspace', () => {
       expect(fetchRes.errors[0].severity).toBe('Error')
     })
 
-    it('should fail when attempting to fetch a service not present in the source workspace', async () => {
+    it('should fail when attempting to fetch an account not present in the source workspace', async () => {
       const sourceWS = mockWorkspace({
-        services: ['salto'],
+        accounts: ['salto'],
       })
 
       const fetchRes = await fetchChangesFromWorkspace(
@@ -1354,13 +1354,13 @@ describe('fetch from workspace', () => {
       expect(fetchRes.elements).toHaveLength(0)
       expect(fetchRes.unmergedElements).toHaveLength(0)
       expect(fetchRes.errors).toHaveLength(1)
-      expect(fetchRes.errors[0].message).toBe('Source env does not contain the following services: salesforce')
+      expect(fetchRes.errors[0].message).toBe('Source env does not contain the following accounts: salesforce')
       expect(fetchRes.errors[0].severity).toBe('Error')
     })
 
     it('should fail if the source workspace has errors', async () => {
       const sourceWS = mockWorkspace({
-        services: ['salto'],
+        accounts: ['salto'],
         errors: [{ message: 'A glitch', severity: 'Error' }],
       })
 

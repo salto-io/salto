@@ -132,8 +132,8 @@ const createState = (
 ): State => buildInMemState(async () => ({
   elements: createInMemoryElementSource(elements),
   pathIndex: new InMemoryRemoteMap<Path[]>(),
-  servicesUpdateDate: new InMemoryRemoteMap(),
   referenceSources: new InMemoryRemoteMap(),
+  accountsUpdateDate: new InMemoryRemoteMap(),
   saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
 }), persistent)
 const createWorkspace = async (
@@ -2070,7 +2070,7 @@ describe('workspace', () => {
       const ws = await createWorkspace(undefined, undefined, mockWorkspaceConfigSource(
         { staleStateThresholdMinutes: durationAfterLastModificationMinutes + 1 }
       ))
-      ws.state().getServicesUpdateDates = jest.fn().mockImplementation(
+      ws.state().getAccountsUpdateDates = jest.fn().mockImplementation(
         () => Promise.resolve({ salesforce: modificationDate })
       )
       const recency = await ws.getStateRecency('salesforce')
@@ -2081,7 +2081,7 @@ describe('workspace', () => {
       const ws = await createWorkspace(undefined, undefined, mockWorkspaceConfigSource(
         { staleStateThresholdMinutes: durationAfterLastModificationMinutes - 1 }
       ))
-      ws.state().getServicesUpdateDates = jest.fn().mockImplementation(
+      ws.state().getAccountsUpdateDates = jest.fn().mockImplementation(
         () => Promise.resolve({ salesforce: modificationDate })
       )
       const recency = await ws.getStateRecency('salesforce')
@@ -2090,7 +2090,7 @@ describe('workspace', () => {
     })
     it('should return nonexistent when the state does not exist', async () => {
       const ws = await createWorkspace()
-      ws.state().getServicesUpdateDates = jest.fn().mockImplementation(() => Promise.resolve({}))
+      ws.state().getAccountsUpdateDates = jest.fn().mockImplementation(() => Promise.resolve({}))
       const recency = await ws.getStateRecency('salesforce')
       expect(recency.status).toBe('Nonexistent')
       expect(recency.date).toBe(undefined)
@@ -2544,7 +2544,7 @@ describe('workspace', () => {
       expect(workspace.accounts().includes('new')).toBeTruthy()
     })
 
-    it('should throw service duplication error', async () => {
+    it('should throw account duplication error', async () => {
       await expect(workspace.addAccount('new')).rejects.toThrow(AccountDuplicationError)
     })
 
@@ -3204,8 +3204,8 @@ describe('workspace', () => {
         {
           getWorkspaceConfig: jest.fn().mockImplementation(() => ({
             envs: [
-              { name: 'default', services: ['salto'] },
-              { name: 'inactive', services: ['salto'] },
+              { name: 'default', accounts: ['salto'] },
+              { name: 'inactive', accounts: ['salto'] },
             ],
             uid: '',
             name: 'test',

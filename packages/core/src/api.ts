@@ -54,13 +54,13 @@ const log = logger(module)
 
 const { mapValuesAsync } = promises.object
 
-const getAdapterFromLoginConfig = (serviceName: string): Adapter =>
-  adapterCreators[serviceName]
+const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adapter =>
+  adapterCreators[loginConfig.elemID.adapter]
 
 export const verifyCredentials = async (
   loginConfig: Readonly<InstanceElement>,
 ): Promise<AccountId> => {
-  const adapterCreator = getAdapterFromLoginConfig(loginConfig.elemID.adapter)
+  const adapterCreator = getAdapterFromLoginConfig(loginConfig)
   if (adapterCreator) {
     return adapterCreator.validateCredentials(loginConfig)
   }
@@ -77,10 +77,10 @@ export const updateCredentials = async (
   log.debug(`persisted new configs for adapter: ${newConfig.elemID.adapter}`)
 }
 
-const shouldElementBeIncluded = (services: ReadonlyArray<string>) =>
+const shouldElementBeIncluded = (accounts: ReadonlyArray<string>) =>
   (id: ElemID): boolean => (
-    services.includes(id.adapter)
-    // Variables belong to all of the services
+    accounts.includes(id.adapter)
+    // Variables belong to all of the accounts
     || id.adapter === ElemID.VARIABLES_NAMESPACE
   )
 
@@ -168,7 +168,7 @@ export const deploy = async (
     await workspace.elements(),
     changedElements,
     [id => changedElements.has(id)]
-  )).map(change => ({ change, serviceChanges: [change] }))
+  )).map(change => ({ change, accountChanges: [change] }))
     .toArray()
   const errored = errors.length > 0
   return {
@@ -209,16 +209,16 @@ const updateStateWithFetchResults = async (
   workspace: Workspace,
   mergedElements: Element[],
   unmergedElements: Element[],
-  fetchedServices: string[]
+  fetchedAccounts: string[]
 ): Promise<void> => {
-  const fetchElementsFilter = shouldElementBeIncluded(fetchedServices)
+  const fetchElementsFilter = shouldElementBeIncluded(fetchedAccounts)
   const stateElementsNotCoveredByFetch = await awu(await workspace.state().getAll())
     .filter(element => !fetchElementsFilter(element.elemID)).toArray()
   await workspace.state()
     .override(awu(mergedElements)
-      .concat(stateElementsNotCoveredByFetch), fetchedServices)
+      .concat(stateElementsNotCoveredByFetch), fetchedAccounts)
   await workspace.state().updatePathIndex(unmergedElements,
-    (await workspace.state().existingServices()).filter(key => !fetchedServices.includes(key)))
+    (await workspace.state().existingAccounts()).filter(key => !fetchedAccounts.includes(key)))
   log.debug(`finish to override state with ${mergedElements.length} elements`)
 }
 
@@ -277,12 +277,12 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   env,
 }: FetchFromWorkspaceFuncParams) => {
   log.debug('fetch starting from workspace..')
-  const fetchServices = accounts ?? workspace.accounts()
+  const fetchAccounts = accounts ?? workspace.accounts()
 
   const { currentConfigs } = await getFetchAdapterAndServicesSetup(
     workspace,
-    fetchServices,
-    getAccountToServiceNameMap(workspace, fetchServices),
+    fetchAccounts,
+    getAccountToServiceNameMap(workspace, fetchAccounts),
   )
 
   const {
@@ -290,7 +290,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     configChanges, adapterNameToConfigMessage, unmergedElements,
   } = await fetchChangesFromWorkspace(
     otherWorkspace,
-    fetchServices,
+    fetchAccounts,
     await workspace.elements(),
     workspace.state(),
     currentConfigs,
@@ -299,7 +299,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   )
 
   log.debug(`${elements.length} elements were fetched from a remote workspace [mergedErrors=${mergeErrors.length}]`)
-  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchServices)
+  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchAccounts)
   return {
     changes,
     fetchErrors: errors,
@@ -329,7 +329,7 @@ export const restore = async (
     elementSelectors,
     fetchAccounts
   )
-  return changes.map(change => ({ change, serviceChanges: [change] }))
+  return changes.map(change => ({ change, accountChanges: [change] }))
 }
 
 export const diff = async (
@@ -357,7 +357,7 @@ export const diff = async (
     [shouldElementBeIncluded(diffAccounts)]
   )
 
-  return diffChanges.map(change => ({ change, serviceChanges: [change] }))
+  return diffChanges.map(change => ({ change, accountChanges: [change] }))
 }
 
 class AdapterInstallError extends Error {

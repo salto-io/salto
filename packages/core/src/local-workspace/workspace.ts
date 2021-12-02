@@ -261,7 +261,7 @@ export const loadLocalWorkspace = async (
       }
       return ws.demoteAll()
     },
-    clear: async (args: Omit<WorkspaceComponents, 'serviceConfig'>) => {
+    clear: async (args: Omit<WorkspaceComponents, 'accountConfig'>) => {
       await ws.clear(args)
       const envsDir = path.join(baseDir, ENVS_PREFIX)
       if (await isEmptyDir.notFoundAsUndefined(envsDir)) {

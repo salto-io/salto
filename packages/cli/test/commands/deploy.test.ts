@@ -35,17 +35,17 @@ jest.mock('@salto-io/core', () => ({
     ws: Workspace,
     actionPlan: Plan,
     reportProgress: (action: PlanItem, step: string, details?: string) => void,
-    services = new Array<string>(),
+    accounts = new Array<string>(),
   ) =>
   // Deploy with Nacl files will fail, doing this trick as we cannot reference vars, we get error:
   // "The module factory of `jest.mock()` is not allowed to reference any
   // out-of-scope variables."
   // Notice that Nacl files are ignored in mockDeploy.
 
-    mockDeploy(ws, actionPlan, reportProgress, services)),
+    mockDeploy(ws, actionPlan, reportProgress, accounts)),
   preview: jest.fn().mockImplementation((
     _workspace: Workspace,
-    _services: string[],
+    _accounts: string[],
   ) => mockPreview()),
 }))
 
@@ -55,7 +55,7 @@ describe('deploy command', () => {
   let workspace: mocks.MockWorkspace
   let output: mocks.MockCliOutput
   let cliCommandArgs: mocks.MockCommandArgs
-  const services = ['salesforce']
+  const accounts = ['salesforce']
   const mockGetUserBooleanInput = callbacks.getUserBooleanInput as jest.Mock
   const mockShouldCancel = callbacks.shouldCancelCommand as jest.Mock
 
@@ -64,8 +64,8 @@ describe('deploy command', () => {
     cliCommandArgs = mocks.mockCliCommandArgs(commandName, cliArgs)
     output = cliArgs.output
     workspace = mocks.mockWorkspace({})
-    workspace.getStateRecency.mockImplementation(async serviceName => ({
-      serviceName, status: 'Valid', date: new Date(),
+    workspace.getStateRecency.mockImplementation(async accountName => ({
+      accountName, status: 'Valid', date: new Date(),
     }))
     mockGetUserBooleanInput.mockReset()
     mockShouldCancel.mockReset()
@@ -80,7 +80,7 @@ describe('deploy command', () => {
           force: false,
           dryRun: false,
           detailedPlan: false,
-          services,
+          accounts,
         },
         workspace,
       })
@@ -96,7 +96,7 @@ describe('deploy command', () => {
           force: false,
           dryRun: false,
           detailedPlan: false,
-          services,
+          accounts,
         },
         workspace,
       })
@@ -113,7 +113,7 @@ describe('deploy command', () => {
           force: false,
           dryRun: true,
           detailedPlan: false,
-          services,
+          accounts,
         },
         workspace,
       })
@@ -132,7 +132,7 @@ describe('deploy command', () => {
           force: false,
           dryRun: false,
           detailedPlan: true,
-          services,
+          accounts,
         },
         workspace,
       })
@@ -151,7 +151,7 @@ describe('deploy command', () => {
           force: false,
           dryRun: false,
           detailedPlan: false,
-          services,
+          accounts,
         },
         workspace,
       })
@@ -168,7 +168,7 @@ describe('deploy command', () => {
           force: false,
           dryRun: false,
           detailedPlan: false,
-          services,
+          accounts,
         },
         workspace,
       })
@@ -195,7 +195,7 @@ describe('deploy command', () => {
             force: false,
             dryRun: false,
             detailedPlan: false,
-            services,
+            accounts,
           },
           workspace,
         })
@@ -211,7 +211,7 @@ describe('deploy command', () => {
             force: true,
             dryRun: false,
             detailedPlan: false,
-            services,
+            accounts,
           },
           workspace,
         })
@@ -228,7 +228,7 @@ describe('deploy command', () => {
           force: false,
           dryRun: false,
           detailedPlan: false,
-          services,
+          accounts,
           env: mocks.withEnvironmentParam,
         },
         workspace,
@@ -248,7 +248,7 @@ describe('deploy command', () => {
       return state.buildInMemState(async () => ({
         elements: createInMemoryElementSource(),
         pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
-        servicesUpdateDate: data.servicesUpdateDate ?? new InMemoryRemoteMap(),
+        accountsUpdateDate: data.accountsUpdateDate ?? new InMemoryRemoteMap(),
         saltoMetadata,
       }))
     }
@@ -294,7 +294,7 @@ describe('deploy command', () => {
         workspace.state.mockReturnValue(mockState({ },
           currentVersion,))
       })
-      describe('when all services are valid', () => {
+      describe('when all accounts are valid', () => {
         beforeEach(async () => {
           await action({
             ...cliCommandArgs,
@@ -306,10 +306,10 @@ describe('deploy command', () => {
           expect(callbacks.shouldCancelCommand).not.toHaveBeenCalled()
         })
       })
-      describe('when some services were never fetched', () => {
+      describe('when some accounts were never fetched', () => {
         beforeEach(async () => {
-          workspace.getStateRecency.mockImplementationOnce(async serviceName => ({
-            serviceName, status: 'Nonexistent', date: undefined,
+          workspace.getStateRecency.mockImplementationOnce(async accountName => ({
+            accountName, status: 'Nonexistent', date: undefined,
           }))
           await action({
             ...cliCommandArgs,
@@ -323,8 +323,8 @@ describe('deploy command', () => {
       })
       describe('when some services are old', () => {
         beforeEach(async () => {
-          workspace.getStateRecency.mockImplementationOnce(async serviceName => ({
-            serviceName, status: 'Old', date: moment(new Date()).subtract(1, 'month').toDate(),
+          workspace.getStateRecency.mockImplementationOnce(async accountName => ({
+            accountName, status: 'Old', date: moment(new Date()).subtract(1, 'month').toDate(),
           }))
           await action({
             ...cliCommandArgs,

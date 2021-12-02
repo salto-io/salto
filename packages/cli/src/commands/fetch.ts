@@ -31,7 +31,7 @@ import { getApprovedChanges as cliGetApprovedChanges, shouldUpdateConfig as cliS
 import { getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace, isValidWorkspaceForCommand } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { ENVIRONMENT_OPTION, EnvArg, validateAndSetEnv } from './common/env'
-import { SERVICES_OPTION, ServicesArg, getAndValidateActiveAccounts } from './common/services'
+import { ACCOUNTS_OPTION, AccountsArg, getAndValidateActiveAccounts } from './common/services'
 
 const log = logger(module)
 const { series } = promises.array
@@ -222,17 +222,17 @@ export const fetchCommand = async (
 const shouldRecommendAlignMode = async (
   workspace: Workspace,
   stateRecencies: StateRecency[],
-  inputServices?: ReadonlyArray<string>,
+  inputAccounts?: ReadonlyArray<string>,
 ): Promise<boolean> => {
-  const newlyAddedServices = stateRecencies
+  const newlyAddedAccounts = stateRecencies
     .filter(recency => (
-      inputServices === undefined
-      || inputServices.includes(recency.serviceName)
+      inputAccounts === undefined
+      || inputAccounts.includes(recency.accountName)
     ))
 
   return (
-    newlyAddedServices.every(recency => recency.status === 'Nonexistent')
-    && workspace.hasElementsInServices(newlyAddedServices.map(recency => recency.serviceName))
+    newlyAddedAccounts.every(recency => recency.status === 'Nonexistent')
+    && workspace.hasElementsInAccounts(newlyAddedAccounts.map(recency => recency.accountName))
   )
 }
 
@@ -243,7 +243,7 @@ type FetchArgs = {
   regenerateSaltoIds: boolean
   fromWorkspace?: string
   fromEnv?: string
-} & ServicesArg & EnvArg
+} & AccountsArg & EnvArg
 
 export const action: WorkspaceCommandAction<FetchArgs> = async ({
   input,
@@ -253,7 +253,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   spinnerCreator,
   workspace,
 }): Promise<CliExitCode> => {
-  const { force, stateOnly, services, mode, regenerateSaltoIds, fromWorkspace, fromEnv } = input
+  const { force, stateOnly, accounts, mode, regenerateSaltoIds, fromWorkspace, fromEnv } = input
   if (
     [fromEnv, fromWorkspace].some(values.isDefined)
     && ![fromEnv, fromWorkspace].every(values.isDefined)
@@ -264,7 +264,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   }
   const { shouldCalcTotalSize } = config
   await validateAndSetEnv(workspace, input, output)
-  const activeAccounts = getAndValidateActiveAccounts(workspace, services)
+  const activeAccounts = getAndValidateActiveAccounts(workspace, accounts)
   const stateRecencies = await Promise.all(
     activeAccounts.map(account => workspace.getStateRecency(account))
   )
@@ -331,7 +331,7 @@ const fetchDef = createWorkspaceCommand({
         description: 'Update just the state file and not the NaCLs',
         type: 'boolean',
       },
-      SERVICES_OPTION,
+      ACCOUNTS_OPTION,
       ENVIRONMENT_OPTION,
       {
         name: 'mode',

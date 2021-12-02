@@ -394,7 +394,7 @@ export const formatFetchChangeForApproval = async (
   idx: number,
   totalChanges: number
 ): Promise<string> => {
-  const formattedChange = await formatDetailedChanges([change.serviceChanges], true)
+  const formattedChange = await formatDetailedChanges([change.accountChanges], true)
   const formattedConflict = change.pendingChanges === undefined || _.isEmpty(change.pendingChanges)
     ? []
     : [
@@ -490,23 +490,23 @@ export const formatChangingFetchMode = header(`${Prompts.FETCH_CHANGING_FETCH_MO
 export const formatNotChangingFetchMode = header(`${Prompts.FETCH_NOT_CHANGING_FETCH_MODE}\n`)
 
 export const formatLoginUpdated = [
-  formatSuccess(Prompts.SERVICES_LOGIN_UPDATED),
+  formatSuccess(Prompts.ACCOUNTS_LOGIN_UPDATED),
   emptyLine(),
 ].join('\n')
 
 export const formatLoginOverride = [
-  Prompts.SERVICES_LOGIN_OVERRIDE,
+  Prompts.ACCOUNTS_LOGIN_OVERRIDE,
   emptyLine(),
   emptyLine(),
 ].join('\n')
 
-export const formatServiceConfigured = (serviceName: string): string => [
-  Prompts.SERVICE_CONFIGURED(serviceName),
+export const formatAccountConfigured = (accountName: string): string => [
+  Prompts.ACCOUNT_CONFIGURED(accountName),
   emptyLine(),
 ].join('\n')
 
 export const formatAccountNotConfigured = (accountName: string): string => [
-  Prompts.SERVICE_NOT_CONFIGURED(accountName),
+  Prompts.ACCOUNT_NOT_CONFIGURED(accountName),
   emptyLine(),
   Prompts.SERVICE_HOW_ADD(accountName),
   emptyLine(),
@@ -515,13 +515,13 @@ export const formatAccountNotConfigured = (accountName: string): string => [
 const formatConfiguredAccounts = (accountNames: ReadonlyArray<string>): string => {
   if (accountNames.length === 0) {
     return [
-      Prompts.NO_CONFIGURED_SERVICES,
+      Prompts.NO_CONFIGURED_ACCOUNTS,
       emptyLine(),
     ].join('\n')
   }
 
   const formattedAccounts = accountNames.map(account => indent(`* ${account}`, 1))
-  formattedAccounts.unshift(Prompts.CONFIGURED_SERVICES_TITLE)
+  formattedAccounts.unshift(Prompts.CONFIGURED_ACCOUNTS_TITLE)
   formattedAccounts.push(emptyLine())
   return formattedAccounts.join('\n')
 }
@@ -534,7 +534,7 @@ const formatAdditionalAccounts = (accounts: ReadonlyArray<string>): string => {
       && !getPrivateAdaptersNames().includes(accountName))
     .map(accountName => indent(`- ${accountName}`, 1))
   if (formattedAccounts.length === 0) {
-    return Prompts.NO_ADDITIONAL_CONFIGURED_SERVICES.concat(EOL)
+    return Prompts.NO_ADDITIONAL_CONFIGURED_ACCOUNTS.concat(EOL)
   }
 
   formattedAccounts.unshift(Prompts.ADDITIONAL_SUPPORTED_SERVICES_TITLE)
@@ -546,13 +546,13 @@ export const formatConfiguredAndAdditionalAccounts = (accounts: ReadonlyArray<st
   [formatConfiguredAccounts(accounts), formatAdditionalAccounts(accounts)].join(EOL)
 
 export const formatAccountAdded = (accountName: string): string => [
-  formatSuccess(Prompts.SERVICE_ADDED(accountName)),
+  formatSuccess(Prompts.ACCOUNT_ADDED(accountName)),
   emptyLine(),
   emptyLine(),
 ].join('\n')
 
 export const formatAccountAlreadyAdded = (accountName: string): string => [
-  formatSimpleError(Prompts.SERVICE_ALREADY_ADDED(accountName)),
+  formatSimpleError(Prompts.ACCOUNT_ALREADY_ADDED(accountName)),
   emptyLine(),
 ].join('\n')
 
@@ -574,13 +574,13 @@ export const formatInvalidServiceInput = (
 }
 
 export const formatLoginToAccountFailed = (accountName: string, errorMessage: string): string => [
-  formatSimpleError(Prompts.SERVICE_LOGIN_FAILED(accountName, errorMessage)),
-  Prompts.SERVICE_LOGIN_FAILED_TRY_AGAIN(accountName),
+  formatSimpleError(Prompts.ACCOUNT_LOGIN_FAILED(accountName, errorMessage)),
+  Prompts.ACCOUNT_LOGIN_FAILED_TRY_AGAIN(accountName),
   emptyLine(),
 ].join('\n')
 
-export const formatAddAccountFailed = (accountName: string, errorMessage: string): string => [
-  formatSimpleError(Prompts.SERVICE_LOGIN_FAILED(accountName, errorMessage)),
+export const formatAddServiceFailed = (accountName: string, errorMessage: string): string => [
+  formatSimpleError(Prompts.ACCOUNT_LOGIN_FAILED(accountName, errorMessage)),
   Prompts.SERVICE_ADD_FAILED_TRY_AGAIN(accountName),
   emptyLine(),
 ].join('\n')
@@ -729,8 +729,8 @@ export const formatEnvDiff = async (
 export const formatStateRecencies = (stateRecencies: StateRecency[]): string => (
   stateRecencies.map(
     recency => (recency.status === 'Nonexistent'
-      ? Prompts.NONEXISTENT_STATE(recency.serviceName)
-      : Prompts.STATE_RECENCY(recency.serviceName, recency.date as Date))
+      ? Prompts.NONEXISTENT_STATE(recency.accountName)
+      : Prompts.STATE_RECENCY(recency.accountName, recency.date as Date))
   ).join(EOL)
 )
 

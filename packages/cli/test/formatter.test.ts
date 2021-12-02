@@ -344,7 +344,7 @@ describe('formatter', () => {
   describe('formatFetchChangeForApproval', () => {
     const change = detailedChange('modify', ['object', 'field', 'value'], 'old', 'new')
     describe('without conflict', () => {
-      const changeWithoutConflict = { change, serviceChanges: [change] }
+      const changeWithoutConflict = { change, accountChanges: [change] }
       let output: string
       beforeAll(async () => {
         output = await formatFetchChangeForApproval(changeWithoutConflict, 0, 3)
@@ -359,7 +359,7 @@ describe('formatter', () => {
     describe('with conflict', () => {
       const fetchChange: FetchChange = {
         change: detailedChange('modify', ['object', 'field', 'value'], 'local', 'new'),
-        serviceChanges: [change],
+        accountChanges: [change],
         pendingChanges: [detailedChange('modify', ['object', 'field', 'value'], 'old', 'local')],
       }
       let output: string
@@ -375,7 +375,7 @@ describe('formatter', () => {
       it('should contain the local change', () => {
         expect(output).toMatch(/.*old.*=>.*local/)
       })
-      it('should contain the service change', () => {
+      it('should contain the account change', () => {
         expect(output).toMatch(/.*old.*=>.*new/)
       })
     })

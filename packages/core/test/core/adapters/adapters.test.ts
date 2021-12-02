@@ -52,7 +52,7 @@ jest.mock('../../../src/core/adapters/creators', () => {
 })
 describe('adapters.ts', () => {
   const { authenticationMethods } = adapter
-  const services = ['salesforce']
+  const accounts = ['salesforce']
   const sfConfig = new InstanceElement(
     ElemID.CONFIG_NAME,
     authenticationMethods.basic.credentialsType,
@@ -68,12 +68,12 @@ describe('adapters.ts', () => {
     let credentials: Record<string, AdapterAuthentication>
 
     it('should return config for defined adapter', () => {
-      credentials = getAdaptersCredentialsTypes(services)
+      credentials = getAdaptersCredentialsTypes(accounts)
       expect(credentials.salesforce).toEqual(authenticationMethods)
     })
 
     it('should throw error for non defined adapter', () => {
-      expect(() => getAdaptersCredentialsTypes(services.concat('fake'))).toThrow()
+      expect(() => getAdaptersCredentialsTypes(accounts.concat('fake'))).toThrow()
     })
   })
 
@@ -229,7 +229,7 @@ describe('adapters.ts', () => {
       const credentials: InstanceElement | undefined = undefined
       expect(() => initAdapters(
         {
-          [services[0]]: {
+          [accounts[0]]: {
             credentials: (credentials as unknown as InstanceElement),
             elementsSource: utils.buildElementsSourceFromElements([]),
           },

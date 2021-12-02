@@ -177,15 +177,15 @@ export const overridePathIndex = async (
 export const updatePathIndex = async (
   current: PathIndex,
   unmergedElements: Element[],
-  servicesToMaintain: string[]
+  accountsToMaintain: string[]
 ): Promise<void> => {
-  if (servicesToMaintain.length === 0) {
+  if (accountsToMaintain.length === 0) {
     await overridePathIndex(current, unmergedElements)
     return
   }
   const entries = getElementsPathHints(unmergedElements)
   const oldPathHintsToMaintain = await awu(current.entries())
-    .filter(e => servicesToMaintain.includes(ElemID.fromFullName(e.key).adapter))
+    .filter(e => accountsToMaintain.includes(ElemID.fromFullName(e.key).adapter))
     .concat(entries)
     .toArray()
   await current.clear()
@@ -198,7 +198,7 @@ export const deserializedPathsIndex = (dataEntries: string[]): RemoteMapEntry<Pa
 export const serializedPathIndex = (entries: RemoteMapEntry<Path[], string>[]): string => (
   safeJsonStringify(Array.from(entries.map(e => [e.key, e.value] as [string, Path[]])))
 )
-export const serializePathIndexByService = (entries: RemoteMapEntry<Path[], string>[]):
+export const serializePathIndexByAccount = (entries: RemoteMapEntry<Path[], string>[]):
 Record<string, string> =>
   _.mapValues(
     _.groupBy(Array.from(entries), entry => ElemID.fromFullName(entry.key).adapter),

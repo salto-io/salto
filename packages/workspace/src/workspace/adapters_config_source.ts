@@ -186,7 +186,7 @@ export const buildAdaptersConfigSource = async ({
       elementsSource = buildElementsSourceFromElements(additionalConfigs, elementsSource)
       const configsToUpdate = collections.array.makeArray(configs).map(e => e.clone())
       const currConfWithoutOverrides = await getConfigWithoutOverrides(account)
-      // Could happen at the initialization of a service.
+      // Could happen at the initialization of an account.
       if (currConfWithoutOverrides === undefined) {
         await overwriteNacl(configsToUpdate)
         await updateValidationErrorsCache(validationErrorsMap, elementsSource, naclSource)

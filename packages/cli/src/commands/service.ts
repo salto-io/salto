@@ -21,7 +21,7 @@ import { naclCase } from '@salto-io/adapter-utils'
 import { getCredentialsFromUser } from '../callbacks'
 import { CliOutput, CliExitCode, KeyedOption } from '../types'
 import { createCommandGroupDef, WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
-import { formatAccountAlreadyAdded, formatAccountAdded, formatLoginToAccountFailed, formatCredentialsHeader, formatLoginUpdated, formatAccountNotConfigured, formatLoginOverride, formatConfiguredAndAdditionalAccounts, formatAddAccountFailed, formatInvalidServiceInput } from '../formatter'
+import { formatAccountAlreadyAdded, formatAccountAdded, formatLoginToAccountFailed, formatCredentialsHeader, formatLoginUpdated, formatAccountNotConfigured, formatLoginOverride, formatConfiguredAndAdditionalAccounts, formatAddServiceFailed, formatInvalidServiceInput } from '../formatter'
 import { errorOutputLine, outputLine } from '../outputer'
 import { processOauthCredentials } from '../cli_oauth_authenticator'
 import { EnvArg, ENVIRONMENT_OPTION, validateAndSetEnv } from './common/env'
@@ -34,7 +34,7 @@ type AuthTypeArgs = {
 const AUTH_TYPE_OPTION: KeyedOption<AuthTypeArgs> = {
   name: 'authType',
   alias: 'a',
-  description: 'The type of authorization you would like to use for the service. Options = [basic, oauth]',
+  description: 'The type of authorization you would like to use for the account. Options = [basic, oauth]',
   type: 'string',
   required: false,
   choices: ['basic', 'oauth'],
@@ -111,7 +111,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
     errorOutputLine('Account name may not be an empty string.', output)
     return CliExitCode.UserInputError
   }
-  if (account !== undefined && account.includes('var')) {
+  if (account !== undefined && account === 'var') {
     errorOutputLine('Account name may not be "var"', output)
     return CliExitCode.UserInputError
   }
@@ -135,7 +135,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
     try {
       await getLoginInputFlow(workspace, adapterCredentialsTypes, output, authType, accountName)
     } catch (e) {
-      errorOutputLine(formatAddAccountFailed(serviceName, e.message), output)
+      errorOutputLine(formatAddServiceFailed(accountName, e.message), output)
       return CliExitCode.AppError
     }
   }
@@ -149,7 +149,7 @@ export const addAction: WorkspaceCommandAction<AccountAddArgs> = async ({
 const serviceAddDef = createWorkspaceCommand({
   properties: {
     name: 'add',
-    description: 'Add a new service to the environment',
+    description: 'Add an account on a service to the environment',
     keyedOptions: [
       {
         // Will be replaced with --no-login
@@ -157,7 +157,7 @@ const serviceAddDef = createWorkspaceCommand({
         default: true,
         alias: 'n',
         type: 'boolean',
-        description: 'Do not login to service when adding it. Example usage: \'service add <service-name> --no-login\'.',
+        description: 'Do not login to account when adding it. Example usage: \'service add <service-name> --no-login\'.',
         required: false,
       },
       {
@@ -192,10 +192,10 @@ export const listAction: WorkspaceCommandAction<ServiceListArgs> = async (
   return CliExitCode.Success
 }
 
-const serviceListDef = createWorkspaceCommand({
+const accountListDef = createWorkspaceCommand({
   properties: {
     name: 'list',
-    description: 'List all environment services',
+    description: 'List all environment accounts',
     keyedOptions: [
       ENVIRONMENT_OPTION,
     ],
@@ -205,8 +205,7 @@ const serviceListDef = createWorkspaceCommand({
 
 // Login
 type ServiceLoginArgs = {
-    serviceName: string
-    account?: string
+    accountName: string
 } & AuthTypeArgs & EnvArg
 
 export const loginAction: WorkspaceCommandAction<ServiceLoginArgs> = async ({
@@ -214,22 +213,21 @@ export const loginAction: WorkspaceCommandAction<ServiceLoginArgs> = async ({
   output,
   workspace,
 }): Promise<CliExitCode> => {
-  const { serviceName, authType, account } = input
+  const { accountName, authType } = input
   await validateAndSetEnv(workspace, input, output)
-  const accountName = account ?? serviceName
-  if (!workspace.accounts().includes(serviceName)) {
-    errorOutputLine(formatAccountNotConfigured(serviceName), output)
+  if (!workspace.accounts().includes(accountName)) {
+    errorOutputLine(formatAccountNotConfigured(accountName), output)
     return CliExitCode.AppError
   }
-  const serviceLoginStatus = (await getLoginStatuses(
+  const accountLoginStatus = (await getLoginStatuses(
     workspace,
     [accountName],
   ))[accountName] as LoginStatus
-  if (serviceLoginStatus.isLoggedIn) {
+  if (accountLoginStatus.isLoggedIn) {
     outputLine(formatLoginOverride, output)
   }
   try {
-    await getLoginInputFlow(workspace, serviceLoginStatus.configTypeOptions,
+    await getLoginInputFlow(workspace, accountLoginStatus.configTypeOptions,
       output, authType, accountName)
   } catch (e) {
     errorOutputLine(formatLoginToAccountFailed(accountName, e.message), output)
@@ -238,19 +236,19 @@ export const loginAction: WorkspaceCommandAction<ServiceLoginArgs> = async ({
   return CliExitCode.Success
 }
 
-const serviceLoginDef = createWorkspaceCommand({
+const accountLoginDef = createWorkspaceCommand({
   properties: {
     name: 'login',
-    description: 'Set the environment service credentials',
+    description: 'Set the account credentials',
     keyedOptions: [
       AUTH_TYPE_OPTION,
       ENVIRONMENT_OPTION,
     ],
     positionalOptions: [
       {
-        name: 'serviceName',
+        name: 'accountName',
         type: 'string',
-        description: 'The name of the service',
+        description: 'The name of the account',
         required: true,
       },
     ],
@@ -258,16 +256,16 @@ const serviceLoginDef = createWorkspaceCommand({
   action: loginAction,
 })
 
-const serviceGroupDef = createCommandGroupDef({
+const accountGroupDef = createCommandGroupDef({
   properties: {
     name: 'service',
-    description: 'Manage the environment services',
+    description: 'Manage the environment accounts',
   },
   subCommands: [
     serviceAddDef,
-    serviceListDef,
-    serviceLoginDef,
+    accountListDef,
+    accountLoginDef,
   ],
 })
 
-export default serviceGroupDef
+export default accountGroupDef

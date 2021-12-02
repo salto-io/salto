@@ -70,7 +70,7 @@ export type WorkspaceError<T extends SaltoError> = Readonly<T & {
 
 type RecencyStatus = 'Old' | 'Nonexistent' | 'Valid'
 export type StateRecency = {
-  serviceName: string
+  accountName: string
   status: RecencyStatus
   date: Date | undefined
 }
@@ -81,10 +81,10 @@ export type WorkspaceComponents = {
   cache: boolean
   staticResources: boolean
   credentials: boolean
-  serviceConfig: boolean
+  accountConfig: boolean
 }
 
-export type ClearFlags = Omit<WorkspaceComponents, 'serviceConfig'>
+export type ClearFlags = Omit<WorkspaceComponents, 'accountConfig'>
 
 export type UnresolvedElemIDs = {
   found: ElemID[]
@@ -149,7 +149,7 @@ export type Workspace = {
   // use hasElementsInAccounts.
   // Remove this when no longer used, SALTO-1661
   hasElementsInServices(serviceNames: string[]): Promise<boolean>
-  hasElementsInAccounts(serviceNames: string[]): Promise<boolean>
+  hasElementsInAccounts(accountNames: string[]): Promise<boolean>
   hasElementsInEnv(envName: string): Promise<boolean>
   envOfFile(filename: string): string
   getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment>
@@ -198,7 +198,7 @@ export type Workspace = {
   deleteEnvironment: (env: string, keepNacls?: boolean) => Promise<void>
   renameEnvironment: (envName: string, newEnvName: string, newSourceName? : string) => Promise<void>
   setCurrentEnv: (env: string, persist?: boolean) => Promise<void>
-  updateAccountCredentials: (service: string, creds: Readonly<InstanceElement>) => Promise<void>
+  updateAccountCredentials: (account: string, creds: Readonly<InstanceElement>) => Promise<void>
   // updateServiceCredentials is deprecated, kept for backwards compatibility.
   // use updateAccountCredentials.
   // Remove this when no longer used, SALTO-1661
@@ -217,7 +217,7 @@ export type Workspace = {
     account?: string,
   ) => Promise<void>
   getServiceFromAccountName: (account: string) => string
-  getStateRecency(services: string): Promise<StateRecency>
+  getStateRecency(accounts: string): Promise<StateRecency>
   promote(
     idsToMove: ElemID[],
     idsToRemove?: Record<string, ElemID[]>
@@ -1183,10 +1183,10 @@ export const loadWorkspace = async (
       }
     },
 
-    getStateRecency: async (serviceName: string): Promise<StateRecency> => {
+    getStateRecency: async (accountName: string): Promise<StateRecency> => {
       const staleStateThresholdMs = (workspaceConfig.staleStateThresholdMinutes
         || DEFAULT_STALE_STATE_THRESHOLD_MINUTES) * 60 * 1000
-      const date = (await state().getServicesUpdateDates())[serviceName]
+      const date = (await state().getAccountsUpdateDates())[accountName]
       const status = (() => {
         if (date === undefined) {
           return 'Nonexistent'
@@ -1196,7 +1196,7 @@ export const loadWorkspace = async (
         }
         return 'Valid'
       })()
-      return { serviceName, status, date }
+      return { accountName, status, date }
     },
     getValue: async (id: ElemID, env?: string): Promise<Value | undefined> => (
       (await elements(env)).get(id)

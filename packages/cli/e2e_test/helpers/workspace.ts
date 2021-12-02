@@ -131,9 +131,12 @@ export const runInit = async (
 }
 
 export const runAddSalesforceService = async (workspacePath: string,
-  accountName: string): Promise<void> => {
+  accountName?: string): Promise<void> => {
   await runCommand({
-    workspacePath, args: ['service', 'add', 'salesforce', '--account', accountName],
+    workspacePath,
+    args: accountName
+      ? ['service', 'add', 'salesforce', '--account', accountName]
+      : ['service', 'add', 'salesforce'],
   })
 }
 
@@ -226,7 +229,7 @@ export const runClean = async ({
     ...cleanArgs.cache === false ? ['--no-cache'] : [],
     ...cleanArgs.staticResources === false ? ['--no-static-resources'] : [],
     ...cleanArgs.credentials ? ['--credentials'] : [],
-    ...cleanArgs.serviceConfig ? ['--service-config'] : [],
+  ...cleanArgs.accountConfig ? ['--service-config'] : [],
   ]
   return runCommand({
     workspacePath,
@@ -243,7 +246,7 @@ export const loadValidWorkspace = async (fetchOutputDir: string): Promise<Worksp
 
 export const runPreviewGetPlan = async (
   fetchOutputDir: string,
-  accounts: string[]
+  accounts?: string[]
 ): Promise<Plan> => {
   const workspace = await loadLocalWorkspace(fetchOutputDir)
   return preview(workspace, accounts)
@@ -274,7 +277,7 @@ export const verifyChanges = (plan: Plan,
 
 export const runEmptyPreview = async (
   fetchOutputDir: string,
-  accounts: string[]
+  accounts?: string[]
 ): Promise<void> => {
   const plan = await runPreviewGetPlan(fetchOutputDir, accounts)
   verifyChanges(plan, [])

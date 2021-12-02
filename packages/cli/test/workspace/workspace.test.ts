@@ -25,7 +25,7 @@ import { getCliTelemetry } from '../../src/telemetry'
 import { version } from '../../src/generated/version.json'
 
 const mockWsFunctions = {
-  services: mockFunction<Workspace['services']>().mockReturnValue(['salesforce']),
+  accounts: mockFunction<Workspace['accounts']>().mockReturnValue(['salesforce']),
   envs: mockFunction<Workspace['envs']>().mockReturnValue(['default']),
   currentEnv: mockFunction<Workspace['currentEnv']>().mockReturnValue('default'),
   errors: mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors([])),
@@ -40,7 +40,7 @@ const mockWsFunctions = {
   ),
   getTotalSize: mockFunction<Workspace['getTotalSize']>(),
   getStateRecency: mockFunction<Workspace['getStateRecency']>().mockResolvedValue({
-    serviceName: 'salesforce',
+    accountName: 'salesforce',
     date: new Date(),
     status: 'Valid',
   }),
@@ -105,7 +105,7 @@ describe('workspace', () => {
       const result = await updateWorkspace({
         workspace: mockWs,
         output: cliOutput,
-        changes: dummyChanges.map(change => ({ change, serviceChanges: [change] })),
+        changes: dummyChanges.map(change => ({ change, accountChanges: [change] })),
       })
       expect(result).toBeTruthy()
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, 'default')
@@ -118,7 +118,7 @@ describe('workspace', () => {
       const result = await updateWorkspace({
         workspace: mockWs,
         output: cliOutput,
-        changes: changes.map(change => ({ change, serviceChanges: [change] })),
+        changes: changes.map(change => ({ change, accountChanges: [change] })),
       })
       expect(result).toBeTruthy()
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(changes, 'default')
@@ -132,7 +132,7 @@ describe('workspace', () => {
       const result = await updateWorkspace({
         workspace: mockWs,
         output: cliOutput,
-        changes: dummyChanges.map(change => ({ change, serviceChanges: [change] })),
+        changes: dummyChanges.map(change => ({ change, accountChanges: [change] })),
       })
       expect(result.success).toBe(false)
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, 'default')
@@ -162,7 +162,7 @@ describe('workspace', () => {
     let approveChangesCallback: jest.MockedFunction<ApproveChangesCB>
 
     beforeEach(() => {
-      changes = dummyChanges.map(change => ({ change, serviceChanges: [change] }))
+      changes = dummyChanges.map(change => ({ change, accountChanges: [change] }))
       approveChangesCallback = mockFunction<ApproveChangesCB>().mockResolvedValue(changes)
     })
     it('should apply changes and return true', async () => {

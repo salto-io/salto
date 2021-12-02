@@ -17,7 +17,6 @@ import _ from 'lodash'
 import {
   AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
   Adapter, AdapterAuthentication, Element, ReadOnlyElementsSource, GLOBAL_ADAPTER, ObjectType,
-  ServiceIds,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -193,10 +192,7 @@ export const getAdaptersCreatorConfigs = async (
           elementsSource: createElemIDReplacedElementsSource(filterElementsSource(
             elementsSource, accountToServiceName[account]
           ), account, accountToServiceName[account]),
-          getElemIdFunc: (elemIdGetters[account]
-            ? ((adapterIds: string, serviceIds: ServiceIds, name: string) =>
-              elemIdGetters[account](adapterIds, serviceIds, name))
-            : undefined),
+          getElemIdFunc: elemIdGetters[account],
         },
       ]
     }

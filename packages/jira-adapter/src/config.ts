@@ -87,7 +87,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
           context: [{ name: 'fieldId', fromField: 'id' }],
           conditions: [{
             fromField: 'schema.custom',
-            match: FIELD_TYPES_WITH_OPTIONS,
+            // This condition is to avoid trying to fetch the default value
+            // for unsupported types (e.g., com.atlassian.jira.ext.charting:timeinstatus)
+            // for which Jira will return "Retrieving default value for provided
+            // custom field is not supported."
+            match: ['com.atlassian.jira.plugin.system.customfieldtypes:*'],
           }],
         },
         {

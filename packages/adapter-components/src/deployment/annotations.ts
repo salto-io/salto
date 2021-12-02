@@ -17,7 +17,7 @@
 export type DeploymentAnnotation = 'creatable' | 'updatable' | 'deletable'
 
 export const DEPLOYMENT_ANNOTATIONS = {
-  CREATABLE: 'creatable',
-  UPDATABLE: 'updatable',
-  DELETABLE: 'deletable',
+  CREATEABLE: 'createable',
+  UPDATEABLE: 'updateable',
+  DELETEABLE: 'deleteable',
 }

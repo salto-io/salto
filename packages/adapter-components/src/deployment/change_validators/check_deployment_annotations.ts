@@ -22,9 +22,9 @@ import { DEPLOYMENT_ANNOTATIONS } from '../annotations'
 const { awu } = collections.asynciterable
 
 const isDeploymentSupported = (annotations: Values, action: Change['action']): boolean =>
-  (action === 'add' && annotations[DEPLOYMENT_ANNOTATIONS.CREATABLE])
-    || (action === 'modify' && annotations[DEPLOYMENT_ANNOTATIONS.UPDATABLE])
-    || (action === 'remove' && annotations[DEPLOYMENT_ANNOTATIONS.DELETABLE])
+  (action === 'add' && annotations[DEPLOYMENT_ANNOTATIONS.CREATEABLE])
+    || (action === 'modify' && annotations[DEPLOYMENT_ANNOTATIONS.UPDATEABLE])
+    || (action === 'remove' && annotations[DEPLOYMENT_ANNOTATIONS.DELETEABLE])
 
 const getDiffInstance = (change: Change<InstanceElement>): InstanceElement => {
   const instance = getChangeElement(change)

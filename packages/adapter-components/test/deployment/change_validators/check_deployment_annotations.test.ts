@@ -26,17 +26,17 @@ describe('checkDeploymentAnnotationsValidator', () => {
       fields: {
         updatableField: {
           refType: BuiltinTypes.STRING,
-          annotations: { [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: true },
+          annotations: { [DEPLOYMENT_ANNOTATIONS.UPDATEABLE]: true },
         },
         notUpdatableField: { refType: BuiltinTypes.STRING },
       },
       annotations: {
-        [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: true,
-        [DEPLOYMENT_ANNOTATIONS.DELETABLE]: true,
+        [DEPLOYMENT_ANNOTATIONS.UPDATEABLE]: true,
+        [DEPLOYMENT_ANNOTATIONS.DELETEABLE]: true,
       },
     })
 
-    type.fields.inner = new Field(type, 'inner', type, { [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: true })
+    type.fields.inner = new Field(type, 'inner', type, { [DEPLOYMENT_ANNOTATIONS.UPDATEABLE]: true })
 
     instance = new InstanceElement(
       'instance',

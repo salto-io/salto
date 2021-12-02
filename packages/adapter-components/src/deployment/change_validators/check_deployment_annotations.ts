@@ -13,18 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Values, Element, isModificationChange, isRemovalChange, InstanceElement, ElemID, isReferenceExpression } from '@salto-io/adapter-api'
-import { getPath, setPath, transformValues, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, isModificationChange, isRemovalChange, InstanceElement, ElemID, isReferenceExpression, isElement } from '@salto-io/adapter-api'
+import { resolvePath, setPath, transformValues, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { DEPLOYMENT_ANNOTATIONS } from '../annotations'
 
 const { awu } = collections.asynciterable
 
-const isDeploymentSupported = (annotations: Values, action: Change['action']): boolean =>
-  (action === 'add' && annotations[DEPLOYMENT_ANNOTATIONS.CREATEABLE])
-    || (action === 'modify' && annotations[DEPLOYMENT_ANNOTATIONS.UPDATEABLE])
-    || (action === 'remove' && annotations[DEPLOYMENT_ANNOTATIONS.DELETEABLE])
+const ERROR_MESSAGE = 'Operation not supported'
+
+const detailedErrorMessage = (action: Change['action'], path: ElemID): string =>
+  `Salto does not support "${action}" of ${path.getFullName()}`
+
+const isDeploymentSupported = (element: Element, action: Change['action']): boolean =>
+  (action === 'add' && element.annotations[DEPLOYMENT_ANNOTATIONS.CREATEABLE])
+    || (action === 'modify' && element.annotations[DEPLOYMENT_ANNOTATIONS.UPDATEABLE])
+    || (action === 'remove' && element.annotations[DEPLOYMENT_ANNOTATIONS.DELETEABLE])
 
 const getDiffInstance = (change: Change<InstanceElement>): InstanceElement => {
   const instance = getChangeElement(change)
@@ -41,13 +46,22 @@ const getDiffInstance = (change: Change<InstanceElement>): InstanceElement => {
 
         const resolvedValue = isReferenceExpression(value) ? value.value : value
 
-        const afterPath = getPath(instance, path)
-        const valueAfter = afterPath && _.get(instance, afterPath)
+        const valueAfter = resolvePath(instance, path)
         const resolvedValueAfter = isReferenceExpression(valueAfter)
           ? valueAfter.value
           : valueAfter
 
-        if (_.isEqual(resolvedValue, resolvedValueAfter)) {
+        const areValuesEqual = (
+          isElement(resolvedValue)
+          && isElement(resolvedValueAfter)
+          && resolvedValue.isEqual(resolvedValueAfter))
+          || (
+            !isElement(resolvedValue)
+            && !isElement(resolvedValueAfter)
+            && _.isEqual(resolvedValue, resolvedValueAfter)
+          )
+
+        if (areValuesEqual) {
           setPath(diffInstance, path, undefined)
         }
         return WALK_NEXT_STEP.RECURSE
@@ -68,9 +82,10 @@ const getUnsupportedPaths = async (change: Change<InstanceElement>): Promise<Ele
     pathID: diffInstance.elemID,
     transformFunc: async ({ value, field, path }) => {
       if (field !== undefined
-        && !isDeploymentSupported(field.annotations, change.action)
+        && !isDeploymentSupported(field, change.action)
         && path !== undefined) {
         unsupportedPaths.push(path)
+        return undefined
       }
       return value
     },
@@ -87,12 +102,12 @@ export const checkDeploymentAnnotationsValidator: ChangeValidator = async change
       }
       const instance = getChangeElement(change)
       const type = await instance.getType()
-      if (!isDeploymentSupported(type.annotations, change.action)) {
+      if (!isDeploymentSupported(type, change.action)) {
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: 'Operation not supported',
-          detailedMessage: `Salto does not support "${change.action}" of ${instance.elemID.getFullName()}`,
+          message: ERROR_MESSAGE,
+          detailedMessage: detailedErrorMessage(change.action, instance.elemID),
         }]
       }
 
@@ -105,8 +120,8 @@ export const checkDeploymentAnnotationsValidator: ChangeValidator = async change
       return unsupportedPaths.map(path => ({
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'Operation not supported',
-        detailedMessage: `Salto does not support "${change.action}" of ${path.getFullName()}`,
+        message: ERROR_MESSAGE,
+        detailedMessage: detailedErrorMessage(change.action, path),
       }))
     })
     .flat()

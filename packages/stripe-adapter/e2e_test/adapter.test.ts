@@ -24,7 +24,7 @@ import { credsLease, realAdapter } from './adapter'
  * for all the supported types in {@link DEFAULT_API_DEFINITIONS.swagger.typeNameOverrides}
  */
 describe('Stripe adapter E2E with real swagger and mock replies', () => {
-  let fetchedSwaggerTypes: string[]
+  let fetchedSwaggerTypes: Set<string>
   let credLease: CredsLease<AccessTokenCredentials>
 
   beforeAll(async () => {
@@ -34,9 +34,9 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
       progressReporter:
         { reportProgress: () => null },
     })
-    fetchedSwaggerTypes = elements
+    fetchedSwaggerTypes = new Set(elements
       .filter(isObjectType)
-      .map(e => e.elemID.getFullName())
+      .map(e => e.elemID.getFullName()))
   })
 
   afterAll(async () => {
@@ -81,5 +81,11 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
         expect(fetchedSwaggerTypes).toContain(expectedType)
       }
     )
+  })
+
+  it('doesnt fetch additional types', () => {
+    const notIncluded = (fetchedType: string): boolean => !EXPECTED_TYPES.includes(fetchedType)
+    const additionalTypes = Array.from(fetchedSwaggerTypes).filter(notIncluded)
+    expect(additionalTypes).toBeEmpty()
   })
 })

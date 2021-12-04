@@ -24,7 +24,7 @@ import { credsLease, realAdapter } from './adapter'
  * for all the supported types in {@link DEFAULT_API_DEFINITIONS.swagger.typeNameOverrides}
  */
 describe('Stripe adapter E2E with real swagger and mock replies', () => {
-  let fetchedSwaggerTypes: Set<string>
+  let fetchedSwaggerTypes: string[]
   let credLease: CredsLease<AccessTokenCredentials>
 
   beforeAll(async () => {
@@ -34,9 +34,9 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
       progressReporter:
         { reportProgress: () => null },
     })
-    fetchedSwaggerTypes = new Set(elements
+    fetchedSwaggerTypes = elements
       .filter(isObjectType)
-      .map(e => e.elemID.getFullName()))
+      .map(e => e.elemID.getFullName())
   })
 
   afterAll(async () => {
@@ -44,48 +44,39 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
       await credLease.return()
     }
   })
-
-  const EXPECTED_TYPES = [
-    'stripe.country_specs',
-    'stripe.coupons',
-    'stripe.prices',
-    'stripe.products',
-    'stripe.reporting__report_types',
-    'stripe.tax_rates',
-    'stripe.webhook_endpoints',
-    'stripe.price',
-    'stripe.product',
-    'stripe.reporting_report_type',
-    'stripe.country_spec',
-    'stripe.coupon',
-    'stripe.tax_rate',
-    'stripe.webhook_endpoint',
-    'stripe.product_metadata',
-    'stripe.package_dimensions',
-    'stripe.recurring',
-    'stripe.price_tier',
-    'stripe.transform_quantity',
-    'stripe.country_spec_supported_bank_account_currencies',
-    'stripe.country_spec_verification_fields',
-    'stripe.coupon_applies_to',
-    'stripe.coupon_metadata',
-    'stripe.transform_usage',
-    'stripe.tax_rate_metadata',
-    'stripe.webhook_endpoint_metadata',
-  ]
-
   describe('fetches swagger types', () => {
-    it.each(EXPECTED_TYPES)(
+    it.each([
+      'stripe.country_specs',
+      'stripe.coupons',
+      'stripe.prices',
+      'stripe.products',
+      'stripe.reporting__report_types',
+      'stripe.tax_rates',
+      'stripe.webhook_endpoints',
+      'stripe.price',
+      'stripe.product',
+      'stripe.reporting_report_type',
+      'stripe.country_spec',
+      'stripe.coupon',
+      'stripe.tax_rate',
+      'stripe.webhook_endpoint',
+      'stripe.product_metadata',
+      'stripe.package_dimensions',
+      'stripe.recurring',
+      'stripe.price_tier',
+      'stripe.transform_quantity',
+      'stripe.country_spec_supported_bank_account_currencies',
+      'stripe.country_spec_verification_fields',
+      'stripe.coupon_applies_to',
+      'stripe.coupon_metadata',
+      'stripe.transform_usage',
+      'stripe.tax_rate_metadata',
+      'stripe.webhook_endpoint_metadata',
+    ])(
       '%s',
       async expectedType => {
         expect(fetchedSwaggerTypes).toContain(expectedType)
       }
     )
-  })
-
-  it('doesnt fetch additional types', () => {
-    const notIncluded = (fetchedType: string): boolean => !EXPECTED_TYPES.includes(fetchedType)
-    const additionalTypes = Array.from(fetchedSwaggerTypes).filter(notIncluded)
-    expect(additionalTypes).toBeEmpty()
   })
 })

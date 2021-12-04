@@ -21,7 +21,7 @@ import { selectElementsBySelectors, createElementSelectors, createElementSelecto
   selectElementIdsByTraversal,
   ElementSelector } from '../src/workspace/element_selector'
 import { createInMemoryElementSource } from '../src/workspace/elements_source'
-import { ReadOnlyRemoteMap, RemoteMap } from '../src/workspace/remote_map'
+import { RemoteMap } from '../src/workspace/remote_map'
 import { createMockRemoteMap } from './utils'
 
 const { awu } = collections.asynciterable
@@ -106,8 +106,7 @@ const selectElements = async ({
   (selectElementsBySelectors({
     elementIds: awu(elements),
     selectors: createElementSelectors(selectors, caseInsensitive).validSelectors,
-    referenceSourcesIndex:
-      createMockRemoteMap<ElemID>()as unknown as MockInterface<ReadOnlyRemoteMap<ElemID[]>>,
+    referenceSourcesIndex: createMockRemoteMap<ElemID[]>(),
     includeNested,
   }))
 ).toArray()

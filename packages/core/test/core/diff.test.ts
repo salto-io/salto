@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange, TypeReference } from '@salto-io/adapter-api'
-import { merger, createElementSelector, elementSource, createElementSelectors } from '@salto-io/workspace'
+import { merger, createElementSelector, elementSource, createElementSelectors, remoteMap } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import { createMockReadOnlyRemoteMap } from '../common/remote_map'
 import { mockWorkspace } from '../common/workspace'
 import { createDiffChanges, getEnvsDeletionsDiff } from '../../src/core/diff'
 import { createElementSource } from '../common/helpers'
@@ -146,7 +145,7 @@ describe('diff', () => {
       const changes = await createDiffChanges(
         createElementSource(allElement),
         createElementSource(allElement),
-        createMockReadOnlyRemoteMap<ElemID[]>(),
+        new remoteMap.InMemoryRemoteMap<ElemID[]>(),
       )
       expect(changes).toHaveLength(0)
     })
@@ -180,7 +179,7 @@ describe('diff', () => {
         changes = await createDiffChanges(
           createElementSource(toElements),
           createElementSource(beforeElements),
-          createMockReadOnlyRemoteMap<ElemID[]>(),
+          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
         )
       })
 
@@ -220,7 +219,7 @@ describe('diff', () => {
         changes = await createDiffChanges(
           createElementSource(toElements),
           createElementSource(beforeElements),
-          createMockReadOnlyRemoteMap<ElemID[]>(),
+          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
           selectors
         )
       })
@@ -242,7 +241,7 @@ describe('diff', () => {
         const changes = await createDiffChanges(
           createElementSource(toElements),
           createElementSource(beforeElements),
-          createMockReadOnlyRemoteMap<ElemID[]>(),
+          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
           selectors,
         )
         expect(changes).toHaveLength(0)
@@ -257,7 +256,7 @@ describe('diff', () => {
         await expect(createDiffChanges(
           createElementSource(toElements),
           createElementSource(beforeElements),
-          createMockReadOnlyRemoteMap<ElemID[]>(),
+          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
           selectors,
         )).rejects.toThrow()
       })
@@ -280,7 +279,7 @@ describe('diff', () => {
         const changes = await createDiffChanges(
           createElementSource(toElements),
           createElementSource(newBeforeElements),
-          createMockReadOnlyRemoteMap<ElemID[]>(),
+          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
           selectors,
         )
         expect(changes).toHaveLength(2)
@@ -298,7 +297,7 @@ describe('diff', () => {
         const changes = await createDiffChanges(
           createInMemoryElementSource([newSinglePathObjMerged]),
           createInMemoryElementSource([singlePathObjMerged]),
-          createMockReadOnlyRemoteMap<ElemID[]>(),
+          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
           selectors
         )
         expect(changes.map(change => change.id.getFullName()))

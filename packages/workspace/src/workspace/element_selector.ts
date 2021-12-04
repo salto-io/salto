@@ -275,14 +275,14 @@ export const selectElementIdsByTraversal = async ({
     selector => selector.referencedBy !== undefined
   )
 
-  const subElementIDs: ElemID[] = []
+  const subElementIDs = new Set<string>()
   const selectFromSubElements: WalkOnFunc = ({ path }) => {
     if (path.getFullNameParts().length <= 1) {
       return WALK_NEXT_STEP.RECURSE
     }
 
     if (subSelectorsWithoutReferencedBy.some(selector => match(path, selector))) {
-      subElementIDs.push(path)
+      subElementIDs.add(path.getFullName())
       if (compact) {
         return WALK_NEXT_STEP.SKIP
       }
@@ -313,10 +313,14 @@ export const selectElementIdsByTraversal = async ({
           if (await awu(subSelectorsWithReferencedBy).some(
             selector => matchWithReferenceBy(field.elemID, selector, referenceSourcesIndex)
           )) {
-            subElementIDs.push(field.elemID)
+            subElementIDs.add(field.elemID.getFullName())
           }
         })
       }
     })
-  return awu(topLevelIDs.concat(subElementIDs)).uniquify(id => id.getFullName())
+  return awu(
+    topLevelIDs.concat(
+      Array.from(subElementIDs).map(ElemID.fromFullName)
+    )
+  ).uniquify(id => id.getFullName())
 }

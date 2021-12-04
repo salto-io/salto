@@ -16,7 +16,6 @@
 import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange, isAdditionChange, isRemovalChange, isModificationChange } from '@salto-io/adapter-api'
 import { merger, pathIndex, remoteMap } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import { createMockReadOnlyRemoteMap } from '../common/remote_map'
 import { createRestoreChanges } from '../../src/core/restore'
 import { createElementSource } from '../common/helpers'
 
@@ -144,7 +143,7 @@ describe('restore', () => {
         createElementSource(allElement),
         createElementSource(allElement),
         index,
-        createMockReadOnlyRemoteMap<ElemID[]>(),
+        new remoteMap.InMemoryRemoteMap<ElemID[]>(),
       )
       expect(changes).toHaveLength(0)
     })
@@ -176,7 +175,7 @@ describe('restore', () => {
           createElementSource([...wsElements, nestedType]),
           createElementSource([...stateElements, nestedType]),
           index,
-          createMockReadOnlyRemoteMap<ElemID[]>(),
+          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
         )
       })
 
@@ -219,7 +218,7 @@ describe('restore', () => {
         createElementSource([multiPathObjMerged]),
         createElementSource([]),
         index,
-        createMockReadOnlyRemoteMap<ElemID[]>(),
+        new remoteMap.InMemoryRemoteMap<ElemID[]>(),
       )
     })
     it('should return only on change (avoid spliting by path hint)', () => {

@@ -70,7 +70,7 @@ describe('stripe swagger adapter', () => {
     return elements.filter(isInstanceElement)
   }
   beforeAll(() => {
-    jest.setTimeout(TESTS_TIMEOUT_SECONDS)
+    jest.setTimeout(TESTS_TIMEOUT_SECONDS * 1000)
     jest.mock('@salto-io/adapter-components', () => {
       const actual = jest.requireActual('@salto-io/adapter-components')
       return {

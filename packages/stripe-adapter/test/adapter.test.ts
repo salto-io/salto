@@ -203,13 +203,15 @@ describe('stripe swagger adapter', () => {
     })
   })
 
-  it('throws Error on deploy', async () => {
-    const adapterOperations = adapter.operations({
-      credentials: CREDENTIALS,
-      config: DEFAULT_CONFIG,
-      elementsSource: buildElementsSourceFromElements([]),
+  describe('deploy', () => {
+    it('throws Error on deploy', async () => {
+      const adapterOperations = adapter.operations({
+        credentials: CREDENTIALS,
+        config: DEFAULT_CONFIG,
+        elementsSource: buildElementsSourceFromElements([]),
+      })
+      const deployOptions = { changeGroup: { groupID: '', changes: [] } }
+      await expect(adapterOperations.deploy(deployOptions)).rejects.toThrow(new Error('Not implemented.'))
     })
-    const deployOptions = { changeGroup: { groupID: '', changes: [] } }
-    await expect(adapterOperations.deploy(deployOptions)).rejects.toThrow(new Error('Not implemented.'))
   })
 })

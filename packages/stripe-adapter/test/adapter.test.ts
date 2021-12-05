@@ -30,6 +30,9 @@ import {
   FETCH_CONFIG,
 } from '../src/config'
 
+const TESTS_TIMEOUT_SECONDS = 30
+jest.setTimeout(TESTS_TIMEOUT_SECONDS * 1000)
+
 describe('stripe swagger adapter', () => {
   type MockReply = {
     url: string
@@ -37,7 +40,6 @@ describe('stripe swagger adapter', () => {
     response: unknown
   }
 
-  const TESTS_TIMEOUT_SECONDS = 30
   const SINGULAR_TYPES = ['country_spec', 'coupon', 'product', 'reporting_report_type', 'tax_rate', 'webhook_endpoint']
   const pluralToSingularTypes = _.zipObject(DEFAULT_INCLUDE_TYPES, SINGULAR_TYPES)
 
@@ -70,7 +72,6 @@ describe('stripe swagger adapter', () => {
     return elements.filter(isInstanceElement)
   }
   beforeAll(() => {
-    jest.setTimeout(TESTS_TIMEOUT_SECONDS * 1000)
     jest.mock('@salto-io/adapter-components', () => {
       const actual = jest.requireActual('@salto-io/adapter-components')
       return {

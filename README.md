@@ -30,8 +30,9 @@ See [the vscode package documentation](packages/vscode/README.md#installation)
 
 ### Building from source
 
-  1. Install [yarn](https://yarnpkg.com/en/docs/install).
-  2. Fetch dependencies and build:
+  1. Install Node.js 12.22.7 . You can download it directly from [here](https://nodejs.org/en/download/releases/), or use [Node Version Manager (NVM)](https://github.com/nvm-sh/nvm) to install it.
+  2. Install [yarn](https://yarnpkg.com/en/docs/install).
+  3. Fetch dependencies and build:
 
 ```bash
 $ yarn

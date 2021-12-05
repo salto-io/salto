@@ -17,12 +17,18 @@ import { AccountId } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Credentials } from '../auth'
 
-const isValidCredentials = async (connection: clientUtils.APIConnection): Promise<boolean> =>
-  connection.get('/rest/api/3/configuration')
-    .then(
-      () => true,
-      () => false
-    )
+const isValidCredentials = async (connection: clientUtils.APIConnection): Promise<boolean> => {
+  try {
+    await connection.get('/rest/api/3/configuration')
+    return true
+  } catch (e) {
+    if (e.response?.status === 401) {
+      return false
+    }
+    throw e
+  }
+}
+
 
 const getBaseUrl = async (connection: clientUtils.APIConnection): Promise<string> => {
   const response = await connection.get('/rest/api/3/serverInfo')

@@ -10,7 +10,7 @@ jira {
     }
     rateLimit = {
       total = -1
-      get = 10
+      get = 20
     }
   }
   fetch = {
@@ -51,7 +51,7 @@ jira {
 
 | Name                                                        | Default when undefined                           | Description
 | ------------------------------------------------------------| -------------------------------------------------| -----------
-| get                                                         | `10`                                             | Max number of concurrent get requests
+| get                                                         | `20`                                             | Max number of concurrent get requests
 | total                                                       | `-1` (unlimited)                                 | Shared limit for all concurrent requests
 
 ## Fetch configuration options

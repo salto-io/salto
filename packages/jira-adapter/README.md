@@ -2,7 +2,7 @@
 
 Atlassian JIRA adapter for salto.io
 
-## Configuring your Jira account 
+## Connecting Salto to Jira 
 
 Salto supports authenticating with Atlassian Jira using a user email and an API Token:
 - Go to https://id.atlassian.com/manage-profile/security/api-tokens 

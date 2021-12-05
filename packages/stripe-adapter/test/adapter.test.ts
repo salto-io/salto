@@ -140,7 +140,7 @@ describe('stripe swagger adapter', () => {
     })
 
     describe('custom config', () => {
-      describe('fetches include types', () => {
+      describe('fetches included types', () => {
         const INCLUDE_TYPES = ['coupons', 'tax_rates']
         const SINGULAR_INCLUDE_TYPES = INCLUDE_TYPES.map(t => pluralToSingularTypes[t])
 

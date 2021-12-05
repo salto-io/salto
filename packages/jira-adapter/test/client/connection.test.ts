@@ -80,12 +80,14 @@ describe('Jira connection', () => {
     })
 
     describe('fail', () => {
-      beforeEach(() => {
+      it('throws Invalid Credentials Error when unauthorized', async () => {
         mockAxios.onGet('/rest/api/3/configuration').reply(401)
+        await expect(validateCredentials({ connection })).rejects.toThrow(new Error('Invalid Credentials'))
       })
 
-      it('throws Invalid Credentials Error when unauthorized', async () => {
-        await expect(validateCredentials({ connection })).rejects.toThrow(new Error('Invalid Credentials'))
+      it('rethrows unrelated Network Error', async () => {
+        mockAxios.onGet('/rest/api/3/configuration').networkError()
+        await expect(validateCredentials({ connection })).rejects.toThrow(new Error('Network Error'))
       })
     })
   })

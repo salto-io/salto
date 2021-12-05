@@ -190,6 +190,19 @@ describe('element selector', () => {
     expect(selectedElements).toEqual([elements[0], elements[1], elements[2]])
   })
 
+  it('should select fields and attributes when includeNested is true', async () => {
+    const elements = [
+      new ElemID('salesforce', 'sometype'),
+      new ElemID('salesforce', 'sometype', 'field', 'A',),
+      new ElemID('salesforce', 'sometype', 'attr', 'B', 'B', 'C'),
+      new ElemID('salesforce', 'sometype', 'instance', 'NotA'),
+    ]
+    const selectedElements = await selectElements(
+      { elements, selectors: ['salesforce.*'], includeNested: true }
+    )
+    expect(selectedElements).toEqual([elements[0], elements[1], elements[2]])
+  })
+
   it('should select elements with the same selector length when includeNested is false and name selectors length is 2', async () => {
     const elements = [
       new ElemID('salesforce', 'sometype', 'instance', 'A'),

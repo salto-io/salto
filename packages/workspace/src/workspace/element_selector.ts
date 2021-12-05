@@ -46,21 +46,19 @@ type ElementIDContainer = {
 }
 
 const testNames = (
-  nameArray: readonly string[], nameSelectors?: RegExp[], includeNested = false
+  nameArray: readonly string[], nameSelectors: RegExp[], includeNested = false
 ): boolean =>
-  (nameSelectors
-    ? ((nameArray.length === nameSelectors.length
-      || (includeNested && nameArray.length > nameSelectors.length))
-      && nameSelectors.every((regex, i) => regex.test(nameArray[i])))
-    : nameArray.length === 0)
+  ((nameArray.length === nameSelectors.length
+    || (includeNested && nameArray.length > nameSelectors.length))
+    && nameSelectors.every((regex, i) => regex.test(nameArray[i])))
 
 const match = (elemId: ElemID, selector: ElementSelector, includeNested = false): boolean =>
   selector.adapterSelector.test(elemId.adapter)
   && selector.typeNameSelector.test(elemId.typeName)
-  && (selector.idTypeSelector === elemId.idType)
+  && ((selector.idTypeSelector === elemId.idType) || (includeNested && selector.idTypeSelector === 'type' && elemId.idType !== 'instance'))
   && testNames(
     elemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
-    selector.nameSelectors,
+    selector.nameSelectors ?? [],
     includeNested
   )
 
@@ -73,7 +71,9 @@ const matchWithReferenceBy = async (
   const { referencedBy } = selector
   return match(elemId, selector, includeNested)
     && (referencedBy === undefined
-      || (await referenceSourcesIndex.get(elemId.getFullName()) ?? [])
+      || (await referenceSourcesIndex.get(
+        (selector.idTypeSelector === 'field' ? elemId.createBaseID() : elemId.createTopLevelParentID()).parent.getFullName()
+      ) ?? [])
         .some(id => match(id, referencedBy, true)))
 }
 

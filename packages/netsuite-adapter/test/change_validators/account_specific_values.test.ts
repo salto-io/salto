@@ -80,26 +80,4 @@ describe('account specific value validator', () => {
     expect(changeErrors[0].severity).toEqual('Warning')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
   })
-
-  it('should have Warning ChangeError when creating an inactive instance with ACCOUNT_SPECIFIC_VALUE', async () => {
-    instance.value.name = ACCOUNT_SPECIFIC_VALUE
-    instance.value.isinactive = true
-    const changeErrors = await accountSpecificValueValidator(
-      [toChange({ after: instance })]
-    )
-    expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Warning')
-    expect(changeErrors[0].elemID).toEqual(instance.elemID)
-  })
-
-  it('should have Error ChangeError when creating an active instance with ACCOUNT_SPECIFIC_VALUE', async () => {
-    instance.value.name = ACCOUNT_SPECIFIC_VALUE
-    instance.value.isinactive = false
-    const changeErrors = await accountSpecificValueValidator(
-      [toChange({ after: instance })]
-    )
-    expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Error')
-    expect(changeErrors[0].elemID).toEqual(instance.elemID)
-  })
 })

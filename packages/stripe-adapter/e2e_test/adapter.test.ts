@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isObjectType } from '@salto-io/adapter-api'
+import { Element, isObjectType } from '@salto-io/adapter-api'
+import 'jest-extended'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { AccessTokenCredentials } from '../src/auth'
 import { credsLease, realAdapter } from './adapter'
@@ -24,7 +25,7 @@ import { credsLease, realAdapter } from './adapter'
  * for all the supported types in {@link DEFAULT_API_DEFINITIONS.swagger.typeNameOverrides}
  */
 describe('Stripe adapter E2E with real swagger and mock replies', () => {
-  let fetchedSwaggerTypes: string[]
+  let fetchedSwaggerElements: Element[]
   let credLease: CredsLease<AccessTokenCredentials>
 
   beforeAll(async () => {
@@ -34,9 +35,7 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
       progressReporter:
         { reportProgress: () => null },
     })
-    fetchedSwaggerTypes = elements
-      .filter(isObjectType)
-      .map(e => e.elemID.getFullName())
+    fetchedSwaggerElements = elements
   })
 
   afterAll(async () => {
@@ -44,7 +43,17 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
       await credLease.return()
     }
   })
+
+  it('fetched elements are all objects', () => {
+    expect(fetchedSwaggerElements).toSatisfyAll(isObjectType)
+  })
+
   describe('fetches swagger types', () => {
+    let fetchedElementsNames: string[]
+
+    beforeAll(() => {
+      fetchedElementsNames = fetchedSwaggerElements.map(e => e.elemID.getFullName())
+    })
     it.each([
       'stripe.country_specs',
       'stripe.coupons',
@@ -58,6 +67,7 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
       'stripe.reporting_report_type',
       'stripe.country_spec',
       'stripe.coupon',
+      'stripe.plan',
       'stripe.tax_rate',
       'stripe.webhook_endpoint',
       'stripe.product_metadata',
@@ -69,13 +79,15 @@ describe('Stripe adapter E2E with real swagger and mock replies', () => {
       'stripe.country_spec_verification_fields',
       'stripe.coupon_applies_to',
       'stripe.coupon_metadata',
+      'stripe.plan_metadata',
+      'stripe.plan_tier',
       'stripe.transform_usage',
       'stripe.tax_rate_metadata',
       'stripe.webhook_endpoint_metadata',
     ])(
       '%s',
       async expectedType => {
-        expect(fetchedSwaggerTypes).toContain(expectedType)
+        expect(fetchedElementsNames).toContain(expectedType)
       }
     )
   })

@@ -28,11 +28,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import axios, { AxiosRequestConfig } from 'axios'
+import 'jest-extended'
+import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import _ from 'lodash'
-import { validateCredentials, createConnection } from '../../src/client/connection'
+import { createConnection, validateCredentials } from '../../src/client/connection'
 
 
 describe('Jira connection', () => {
@@ -52,26 +52,19 @@ describe('Jira connection', () => {
       mockAxios.restore()
     })
 
-    describe('pass', () => {
+    describe('when authorized', () => {
       let result: string
-
-      const getServerInfoRequest = (): AxiosRequestConfig => {
-        const request = mockAxios.history.get.find(r => r.url === '/rest/api/3/serverInfo')
-        if (_.isUndefined(request)) {
-          throw new Error('No serverInfo request was sent')
-        }
-        return request
-      }
 
       beforeEach(async () => {
         result = await validateCredentials({ connection })
       })
 
       it('should get server info with auth headers', () => {
-        const { url, baseURL, auth } = getServerInfoRequest()
-        expect(url).toEqual('/rest/api/3/serverInfo')
-        expect(baseURL).toEqual('http://myJira.net')
-        expect(auth).toEqual({ username: 'me', password: 'tok' })
+        expect(mockAxios.history.get).toIncludeAllPartialMembers([{
+          url: '/rest/api/3/serverInfo',
+          baseURL: 'http://myJira.net',
+          auth: { username: 'me', password: 'tok' },
+        }])
       })
 
       it('should return the base url from the response as account id', () => {
@@ -79,13 +72,13 @@ describe('Jira connection', () => {
       })
     })
 
-    describe('fail', () => {
-      it('throws Invalid Credentials Error when unauthorized', async () => {
+    describe('when unauthorized', () => {
+      it('should throw Invalid Credentials Error', async () => {
         mockAxios.onGet('/rest/api/3/configuration').reply(401)
         await expect(validateCredentials({ connection })).rejects.toThrow(new Error('Invalid Credentials'))
       })
 
-      it('rethrows unrelated Network Error', async () => {
+      it('should rethrow unrelated Network Error', async () => {
         mockAxios.onGet('/rest/api/3/configuration').networkError()
         await expect(validateCredentials({ connection })).rejects.toThrow(new Error('Network Error'))
       })

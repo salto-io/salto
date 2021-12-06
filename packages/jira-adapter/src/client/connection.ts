@@ -40,7 +40,7 @@ export const validateCredentials = async (
   if (await isAuthorized(connection)) {
     return getBaseUrl(connection)
   }
-  return Promise.reject(new Error('Invalid Credentials'))
+  throw new Error('Invalid Credentials')
 }
 
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => (

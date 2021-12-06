@@ -16,12 +16,11 @@
 import { ElemID, PrimitiveTypes, ObjectType, PrimitiveType, BuiltinTypes,
   ListType, MapType, InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { MockInterface } from '@salto-io/test-utils'
 import { selectElementsBySelectors, createElementSelectors, createElementSelector,
   selectElementIdsByTraversal,
   ElementSelector } from '../src/workspace/element_selector'
 import { createInMemoryElementSource } from '../src/workspace/elements_source'
-import { RemoteMap } from '../src/workspace/remote_map'
+import { InMemoryRemoteMap, RemoteMap } from '../src/workspace/remote_map'
 import { createMockRemoteMap } from './utils'
 
 const { awu } = collections.asynciterable
@@ -467,7 +466,7 @@ describe('select elements recursively', () => {
 })
 
 describe('referencedBy', () => {
-  let referenceSourcesIndex: MockInterface<RemoteMap<ElemID[]>>
+  let referenceSourcesIndex: RemoteMap<ElemID[]>
 
   const objectType = new ObjectType({
     elemID: new ElemID('salesforce', 'type'),
@@ -486,7 +485,7 @@ describe('referencedBy', () => {
   })
 
   beforeEach(() => {
-    referenceSourcesIndex = createMockRemoteMap<ElemID[]>()
+    referenceSourcesIndex = new InMemoryRemoteMap<ElemID[]>()
   })
 
   it('should return referenced instances', async () => {
@@ -495,12 +494,7 @@ describe('referencedBy', () => {
 
     selector.referencedBy = referencedBy
 
-    referenceSourcesIndex.get.mockImplementation(async id => {
-      if (id === 'salesforce.type.instance.inst1') {
-        return [new ElemID('workato', 'type', 'instance', 'inst1', 'val')]
-      }
-      return undefined
-    })
+    await referenceSourcesIndex.set('salesforce.type.instance.inst1', [new ElemID('workato', 'type', 'instance', 'inst1', 'val')])
 
     const elements = [
       new InstanceElement('inst1', objectType),
@@ -517,16 +511,9 @@ describe('referencedBy', () => {
   })
 
   describe('when a field is referenced', () => {
-    beforeEach(() => {
-      referenceSourcesIndex.get.mockImplementation(async id => {
-        if (id === 'salesforce.type.field.field1') {
-          return [new ElemID('workato', 'type', 'instance', 'inst1', 'val')]
-        }
-        if (id === 'salesforce.type') {
-          return [new ElemID('workato', 'type', 'instance', 'inst1', 'val')]
-        }
-        return undefined
-      })
+    beforeEach(async () => {
+      await referenceSourcesIndex.set('salesforce.type.field.field1', [new ElemID('workato', 'type', 'instance', 'inst1', 'val')])
+      await referenceSourcesIndex.set('salesforce.type', [new ElemID('workato', 'type', 'instance', 'inst1', 'val')])
     })
 
     it('should return the type of the referenced field', async () => {
@@ -571,16 +558,8 @@ describe('referencedBy', () => {
   })
 
   it('should return referenced types', async () => {
-    referenceSourcesIndex.get.mockImplementation(async id => {
-      if (id === 'salesforce.type') {
-        return [new ElemID('workato', 'type', 'instance', 'inst1', 'val')]
-      }
-
-      if (id === 'salesforce.type2') {
-        return [new ElemID('workato', 'type', 'instance', 'inst1', 'val2')]
-      }
-      return undefined
-    })
+    await referenceSourcesIndex.set('salesforce.type', [new ElemID('workato', 'type', 'instance', 'inst1', 'val')])
+    await referenceSourcesIndex.set('salesforce.type2', [new ElemID('workato', 'type', 'instance', 'inst1', 'val2')])
 
     const [selector] = createElementSelectors(['salesforce.*']).validSelectors
     const [referencedBy] = createElementSelectors(['workato.*.instance.*.val']).validSelectors

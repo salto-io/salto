@@ -19,7 +19,7 @@ import {
   ChangeError,
   ChangeValidator,
   getChangeElement,
-  InstanceElement, isAdditionChange,
+  InstanceElement,
   isAdditionOrModificationChange,
   isInstanceChange,
 } from '@salto-io/adapter-api'
@@ -60,25 +60,11 @@ const changeValidator: ChangeValidator = async changes => (
       if (!hasAccountSpecificValue(instance)) {
         return undefined
       }
-      // We identified ACCOUNT_SPECIFIC_VALUE only in workflows and script related types,
-      // e.g. clientscript, restlet etc.
-      // These types have an isinactive field. If it indicates that the instance is enabled and
-      // we deploy it, without the real value behind the ACCOUNT_SPECIFIC_VALUE, it might be
-      // created invalid since some data is missing.
-      // Since the SAAS doesn't present the validation output yet (SAAS-1542), we set it to ERROR.
-      if (isAdditionChange(change) && !instance.value.isinactive) {
-        return {
-          elemID: instance.elemID,
-          severity: 'Error',
-          message: 'New instances that have fields with ACCOUNT_SPECIFIC_VALUE can be deployed only when they are inactive',
-          detailedMessage: 'New instances that have fields with ACCOUNT_SPECIFIC_VALUE can be deployed only when they are inactive',
-        } as ChangeError
-      }
       return {
         elemID: instance.elemID,
         severity: 'Warning',
-        message: 'Fields with ACCOUNT_SPECIFIC_VALUE will be skipped and not deployed',
-        detailedMessage: 'Fields with ACCOUNT_SPECIFIC_VALUE will be skipped and not deployed',
+        message: 'Element contains fields with account specific values. These fields will be skipped from the deployment.',
+        detailedMessage: 'Fields with account specific values (ACCOUNT_SPECIFIC_VALUE) will be skipped from the deployment. After deploying this element, please make sure these fields are mapped correctly in NetSuite.',
       } as ChangeError
     })
     .filter(isDefined)

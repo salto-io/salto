@@ -28,60 +28,57 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import 'jest-extended'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { createConnection, validateCredentials } from '../../src/client/connection'
 
 
-describe('Jira connection', () => {
-  describe('validateCredentials', () => {
-    let mockAxios: MockAdapter
-    let connection: clientUtils.APIConnection
+describe('validateCredentials', () => {
+  let mockAxios: MockAdapter
+  let connection: clientUtils.APIConnection
+
+  beforeEach(async () => {
+    mockAxios = new MockAdapter(axios)
+    mockAxios.onGet('/rest/api/3/configuration').reply(200)
+    mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
+    connection = await createConnection({ retries: 1 }).login(
+      { baseUrl: 'http://myJira.net', user: 'me', token: 'tok' }
+    )
+  })
+  afterEach(() => {
+    mockAxios.restore()
+  })
+
+  describe('when authorized', () => {
+    let result: string
 
     beforeEach(async () => {
-      mockAxios = new MockAdapter(axios)
-      mockAxios.onGet('/rest/api/3/configuration').reply(200)
-      mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
-      connection = await createConnection({ retries: 1 }).login(
-        { baseUrl: 'http://myJira.net', user: 'me', token: 'tok' }
-      )
-    })
-    afterEach(() => {
-      mockAxios.restore()
+      result = await validateCredentials({ connection })
     })
 
-    describe('when authorized', () => {
-      let result: string
-
-      beforeEach(async () => {
-        result = await validateCredentials({ connection })
-      })
-
-      it('should get server info with auth headers', () => {
-        expect(mockAxios.history.get).toIncludeAllPartialMembers([{
-          url: '/rest/api/3/serverInfo',
-          baseURL: 'http://myJira.net',
-          auth: { username: 'me', password: 'tok' },
-        }])
-      })
-
-      it('should return the base url from the response as account id', () => {
-        expect(result).toEqual('http://my.jira.net')
-      })
+    it('should get server info with auth headers', () => {
+      expect(mockAxios.history.get).toContainEqual(expect.objectContaining({
+        url: '/rest/api/3/serverInfo',
+        baseURL: 'http://myJira.net',
+        auth: { username: 'me', password: 'tok' },
+      }))
     })
 
-    describe('when unauthorized', () => {
-      it('should throw Invalid Credentials Error', async () => {
-        mockAxios.onGet('/rest/api/3/configuration').reply(401)
-        await expect(validateCredentials({ connection })).rejects.toThrow(new Error('Invalid Credentials'))
-      })
+    it('should return the base url from the response as account id', () => {
+      expect(result).toEqual('http://my.jira.net')
+    })
+  })
 
-      it('should rethrow unrelated Network Error', async () => {
-        mockAxios.onGet('/rest/api/3/configuration').networkError()
-        await expect(validateCredentials({ connection })).rejects.toThrow(new Error('Network Error'))
-      })
+  describe('when unauthorized', () => {
+    it('should throw Invalid Credentials Error', async () => {
+      mockAxios.onGet('/rest/api/3/configuration').reply(401)
+      await expect(validateCredentials({ connection })).rejects.toThrow(new Error('Invalid Credentials'))
+    })
+
+    it('should rethrow unrelated Network Error', async () => {
+      mockAxios.onGet('/rest/api/3/configuration').networkError()
+      await expect(validateCredentials({ connection })).rejects.toThrow(new Error('Network Error'))
     })
   })
 })

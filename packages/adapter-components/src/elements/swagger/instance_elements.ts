@@ -397,7 +397,7 @@ const getInstancesForType = async (params: GetEntriesParams): Promise<InstanceEl
   try {
     const { entries, objType } = await getEntriesForType(params)
     if (objType.isSettings && entries.length > 1) {
-      log.warn(`Found more than one instance for singleton type: ${typeName}`)
+      log.warn(`Expected one instance for singleton type: ${typeName} but received: ${entries.length}`)
       throw new InvalidTypeConfig(`Could not fetch type ${typeName}, singleton types should not have more than one instance`)
     }
     return generateInstancesForType({

@@ -287,7 +287,7 @@ describe('swagger_type_elements', () => {
         const order = allTypes.NewType as ObjectType
         expect(order).toBeUndefined()
       })
-      it('should be a isSetting type', () => {
+      it('should mark singleton types as isSettings=true', () => {
         const foodDet = allTypes.foodDetails as ObjectType
         expect(foodDet.isSettings).toEqual(true)
       })

@@ -142,6 +142,32 @@ describe('config_ducktype', () => {
         },
       )).toThrow(new Error('Duplicate fieldsToOmit params found in PATH for the following types: abc'))
     })
+    // TODO: remove this test once singleton types are implemented in ducktype
+    it('should throw if isSingleton flag is on', () => {
+      expect(() => validateDuckTypeApiDefinitionConfig(
+        'PATH',
+        {
+          typeDefaults: {
+            transformation: {
+              idFields: ['a', 'b'],
+            },
+          },
+          types: {
+            abc: {
+              transformation: {
+                idFields: ['something', 'else'],
+              },
+            },
+            aaa: {
+              transformation: {
+                idFields: ['something'],
+                isSingleton: true,
+              },
+            },
+          },
+        },
+      )).toThrow(new Error('singleton types are not implemented yet for ducktype'))
+    })
   })
 
   describe('validateFetchConfig', () => {

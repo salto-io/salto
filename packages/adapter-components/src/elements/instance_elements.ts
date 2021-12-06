@@ -99,13 +99,13 @@ export const toBasicInstance = async ({
     parent && nestName ? `${parent.elemID.name}${ID_SEPARATOR}${name}` : String(name)
   )
   const adapterName = type.elemID.adapter
-  const filePath = type.isSettings ? 
-    [
+  const filePath = type.isSettings
+    ? [
       adapterName,
       RECORDS_PATH,
       pathNaclCase(type.elemID.name),
-    ] :
-    [
+    ]
+    : [
       adapterName,
       RECORDS_PATH,
       pathNaclCase(type.elemID.name),

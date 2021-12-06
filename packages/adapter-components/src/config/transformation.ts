@@ -59,7 +59,7 @@ export type TransformationConfig = {
   isSingleton?: boolean
 }
 
-export type TransformationDefaultConfig = types.PickyRequired<Partial<TransformationConfig>, 'idFields'>
+export type TransformationDefaultConfig = types.PickyRequired<Partial<Omit<TransformationConfig, 'isSingleton'>>, 'idFields'>
 
 export const createTransformationConfigTypes = (
   adapter: string,
@@ -200,4 +200,14 @@ export const validateTransoformationConfig = (
     defaultConfig.standaloneFields,
     _.mapValues(configMap, c => c.standaloneFields),
   )
+
+  const validateIsSingletonTypes = (Object.keys(configMap)
+    .filter(type => (
+      configMap[type].isSingleton
+      && (configMap[type].idFields !== undefined || configMap[type].fileNameFields !== undefined)
+    ))
+  )
+  if (validateIsSingletonTypes.length > 0) {
+    throw new Error(`Singleton types should not have dataField or fileNameFields set, misconfiguration found for the following types: ${validateIsSingletonTypes.toString()}`)
+  }
 }

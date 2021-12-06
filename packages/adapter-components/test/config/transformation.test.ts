@@ -192,5 +192,29 @@ describe('config_transformation', () => {
         },
       )).toThrow(new Error('Duplicate fieldTypeOverrides params found in PATH for the following types: t1'))
     })
+    it('should fail if there are conflict between isSingleton field and idFields/fileNameFields', () => {
+      expect(() => validateTransoformationConfig(
+        'PATH',
+        {
+          idFields: ['a', 'b', 'c'],
+          fieldsToOmit: [
+            { fieldName: 'abc', fieldType: 'something' },
+          ],
+        },
+        {
+          t1: {
+            idFields: ['a'],
+            isSingleton: true,
+          },
+          t2: {
+            fileNameFields: ['name'],
+            isSingleton: true,
+          },
+          t3: {
+            isSingleton: true,
+          },
+        },
+      )).toThrow(new Error('Singleton types should not have dataField or fileNameFields set, misconfiguration found for the following types: t1,t2'))
+    })
   })
 })

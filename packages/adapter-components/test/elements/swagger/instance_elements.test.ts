@@ -1124,7 +1124,7 @@ describe('swagger_instance_elements', () => {
           ADAPTER_NAME,
           'Records',
           'Owner',
-        ]
+        ],
       ])
     })
     it('should fail if singleton type have more than one instance', async () => {

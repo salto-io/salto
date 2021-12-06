@@ -46,19 +46,21 @@ type ElementIDContainer = {
 }
 
 const testNames = (
-  nameArray: readonly string[], nameSelectors: RegExp[], includeNested = false
+  nameArray: readonly string[], nameSelectors?: RegExp[], includeNested = false
 ): boolean =>
-  ((nameArray.length === nameSelectors.length
-    || (includeNested && nameArray.length > nameSelectors.length))
-    && nameSelectors.every((regex, i) => regex.test(nameArray[i])))
+  (nameSelectors
+    ? ((nameArray.length === nameSelectors.length
+      || (includeNested && nameArray.length > nameSelectors.length))
+      && nameSelectors.every((regex, i) => regex.test(nameArray[i])))
+    : nameArray.length === 0)
 
 const match = (elemId: ElemID, selector: ElementSelector, includeNested = false): boolean =>
   selector.adapterSelector.test(elemId.adapter)
   && selector.typeNameSelector.test(elemId.typeName)
-  && ((selector.idTypeSelector === elemId.idType) || (includeNested && selector.idTypeSelector === 'type' && elemId.idType !== 'instance'))
+  && (selector.idTypeSelector === elemId.idType)
   && testNames(
     elemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
-    selector.nameSelectors ?? [],
+    selector.nameSelectors,
     includeNested
   )
 

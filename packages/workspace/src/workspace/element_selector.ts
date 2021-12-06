@@ -55,7 +55,7 @@ const testNames = (
 const match = (elemId: ElemID, selector: ElementSelector, includeNested = false): boolean =>
   selector.adapterSelector.test(elemId.adapter)
   && selector.typeNameSelector.test(elemId.typeName)
-  && ((selector.idTypeSelector === elemId.idType) || (includeNested && selector.idTypeSelector === 'type' && elemId.idType !== 'instance'))
+  && ((selector.idTypeSelector === elemId.idType) || (includeNested && selector.idTypeSelector === 'type' && elemId.createTopLevelParentID().parent.idType === 'type'))
   && testNames(
     elemId.getFullNameParts().slice(ElemID.NUM_ELEM_ID_NON_NAME_PARTS),
     selector.nameSelectors ?? [],

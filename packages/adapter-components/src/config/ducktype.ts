@@ -80,8 +80,8 @@ export const validateApiDefinitionConfig = (
     isDefined,
   )
   // TODO: remove this check once singleton types are implemented in ducktype
-  if (_.filter(configMap, ['isSingleton', true]).length > 0) {
-    throw new Error('singleton types are not implemented yet for ducktype')
+  if (Object.values(configMap).some(def => def.isSingleton !== undefined)) {
+    throw new Error('transformation.isSingleton flag is not supported in this adapter')
   }
   validateTransoformationConfig(
     apiDefinitionConfigPath,

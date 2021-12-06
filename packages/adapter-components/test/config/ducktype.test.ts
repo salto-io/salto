@@ -166,7 +166,7 @@ describe('config_ducktype', () => {
             },
           },
         },
-      )).toThrow(new Error('singleton types are not implemented yet for ducktype'))
+      )).toThrow(new Error('transformation.isSingleton flag is not supported in this adapter'))
     })
   })
 

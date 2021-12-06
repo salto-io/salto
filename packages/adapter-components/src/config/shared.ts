@@ -128,3 +128,14 @@ export const getConfigWithDefault = <
       defaultConfig,
     )
   )
+
+export const getTypeTransformationConfig = (
+  typeName: string,
+  typeConfig: Record<string, TypeConfig>,
+  typeDefaultConfig: TypeDefaultsConfig
+): TransformationConfig => (
+  getConfigWithDefault(
+    typeConfig[typeName]?.transformation,
+    typeDefaultConfig.transformation,
+  )
+)

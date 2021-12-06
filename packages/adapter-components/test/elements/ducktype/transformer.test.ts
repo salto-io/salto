@@ -415,10 +415,10 @@ describe('ducktype_transformer', () => {
       expect(res).toHaveLength(6)
       expect(res.map(e => e.elemID.getFullName())).toEqual([
         'something.folder',
-        'something.folder.instance.abc',
         'something.permission',
-        'something.permission.instance.abc',
         'something.file',
+        'something.folder.instance.abc',
+        'something.permission.instance.abc',
         'something.file.instance.abc',
       ])
       expect(transformer.getTypeAndInstances).toHaveBeenCalledTimes(3)

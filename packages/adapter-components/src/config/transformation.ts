@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS,
+  FieldDefinition, ListType, RestrictionAnnotationType } from '@salto-io/adapter-api'
 import { types } from '@salto-io/lowerdash'
 import { findDuplicates } from './validation_utils'
 
@@ -28,11 +29,13 @@ type FieldToAdjustType = {
   fieldName: string
   fieldType?: string
 }
+
 export type FieldToOmitType = FieldToAdjustType
 export type FieldToHideType = FieldToAdjustType
 export type FieldTypeOverrideType = {
   fieldName: string
   fieldType: string
+  restrictions?: RestrictionAnnotationType
 }
 
 export type TransformationConfig = {

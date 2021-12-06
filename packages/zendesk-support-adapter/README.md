@@ -8,10 +8,14 @@ We do this using the [Zendesk REST API](<https://developer.zendesk.com/api-refer
 
 ## Configuring your Zendesk account for Salto OAuth Authentication
 Salto supports authenticating with Zendesk using either a combination of user-name and password, or using OAuth authentication. In order to use OAuth authentication, please follow the steps below.
-- Create a new "OAuth Client" in your Zendesk account (see https://support.zendesk.com/hc/en-us/articles/4408845965210#topic_s21_lfs_qk)
-	- Under "Redirect URL", write <http://localhost:PORT>, where PORT is a port you can allow salto to open momentarily on your computer (it will not be open to external connections). Except for PORT, do not change any character in the URL.
-- You can now connect your Zendesk account using OAuth credentials, by adding the flag '-a oauth' or '--auth-type oauth' to the commands 'salto service add zendesk_support' or 'salto service login zendesk_support'
-- You will be asked to provide the Client ID of the OAuth Client, the generated Client Secret, the port you provided in the redirect URL, and your Zendesk account subdomain.
+- Create a new "OAuth Client" in your Zendesk account (see [details](https://developer.zendesk.com/documentation/ticketing/working-with-oauth/creating-and-using-oauth-tokens-with-the-api/#create-an-oauth-client))
+	- Under "Redirect URL", write `http://localhost:PORT`, where `PORT` is a port you can allow salto to open momentarily on your computer (it will not be open to external connections). Except for PORT, do not change any character in the URL.
+- You can now connect your Zendesk account using OAuth credentials, by adding the flag `-a oauth` or `--auth-type oauth` to the commands `salto service add zendesk_support` or `salto service login zendesk_support`
+- You will be asked to provide the following parameters:
+  - Client ID of the OAuth Client
+  - The generated Client Secret
+  - The Port you provided in the redirect URL
+  - Your Zendesk account subdomain.
 
 ## Known limitations
 * Sunshine APIs (including custom objects) are not yet supported. Please reach out if interested.

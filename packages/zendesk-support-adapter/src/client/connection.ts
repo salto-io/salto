@@ -27,6 +27,12 @@ const MARKETPLACE_NAME = 'Salto'
 const MARKETPLACE_ORG_ID = 5110
 const MARKETPLACE_APP_ID = 608042
 
+const APP_MARKETPLACE_HEADERS = {
+  'X-Zendesk-Marketplace-Name': MARKETPLACE_NAME,
+  'X-Zendesk-Marketplace-Organization-Id': MARKETPLACE_ORG_ID,
+  'X-Zendesk-Marketplace-App-Id': MARKETPLACE_APP_ID,
+}
+
 export const validateCredentials = async ({ credentials, connection }: {
   credentials: Credentials
   connection: clientUtils.APIConnection
@@ -48,11 +54,7 @@ const usernamePasswordAuthParamsFunc = (
     username,
     password,
   },
-  headers: {
-    'X-Zendesk-Marketplace-Name': MARKETPLACE_NAME,
-    'X-Zendesk-Marketplace-Organization-Id': MARKETPLACE_ORG_ID,
-    'X-Zendesk-Marketplace-App-Id': MARKETPLACE_APP_ID,
-  },
+  headers: APP_MARKETPLACE_HEADERS,
 })
 
 const accessTokenAuthParamsFunc = (
@@ -60,9 +62,7 @@ const accessTokenAuthParamsFunc = (
 ): AuthParams => ({
   headers: {
     Authorization: `Bearer ${accessToken}`,
-    'X-Zendesk-Marketplace-Name': MARKETPLACE_NAME,
-    'X-Zendesk-Marketplace-Organization-Id': MARKETPLACE_ORG_ID,
-    'X-Zendesk-Marketplace-App-Id': MARKETPLACE_APP_ID,
+    ...APP_MARKETPLACE_HEADERS,
   },
 })
 

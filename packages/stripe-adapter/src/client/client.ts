@@ -29,6 +29,7 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
   post: 25,
   put: 25,
   delete: 25,
+  patch: 25,
 }
 
 // Stripe uses cursor pagination so this parameter is not in use

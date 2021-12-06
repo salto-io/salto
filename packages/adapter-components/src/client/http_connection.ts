@@ -44,6 +44,8 @@ export type APIConnection<T = any, S = any> = {
     => Promise<Response<T>>
   put: (url: string, data: S, config?: { params: Record<string, unknown> }) => Promise<Response<T>>
   delete: (url: string, config?: { params: Record<string, unknown> }) => Promise<Response<T>>
+  patch: (url: string, data: S, config?: { params: Record<string, unknown> })
+    => Promise<Response<T>>
 }
 
 type AuthenticatedAPIConnection = APIConnection & {

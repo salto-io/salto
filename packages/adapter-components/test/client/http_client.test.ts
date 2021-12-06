@@ -46,7 +46,7 @@ describe('client_http_client', () => {
         mockCreateConnection,
         {
           pageSize: { get: 123 },
-          rateLimit: { total: -1, get: 3, post: 4, put: 5, delete: 6 },
+          rateLimit: { total: -1, get: 3, post: 4, put: 5, delete: 6, patch: 7 },
           retry: { maxAttempts: 3, retryDelay: 123 },
         }
       )
@@ -125,6 +125,22 @@ describe('client_http_client', () => {
 
       const getRes = await client.delete({ url: '/ep' })
       expect(getRes).toEqual({ data: { a: 'b' }, status: 200 })
+    })
+  })
+
+  describe('patch', () => {
+    it('should make the right request', async () => {
+      expect(mockCreateConnection).not.toHaveBeenCalled()
+      const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
+      expect(mockCreateConnection).toHaveBeenCalledTimes(1)
+
+      mockAxiosAdapter.onGet('/users/me').reply(200, {
+        accountId: 'ACCOUNT_ID',
+      })
+      mockAxiosAdapter.onPatch('/ep', 'someData').replyOnce(200, { a: 'b' })
+
+      const patchRes = await client.patch({ url: '/ep', data: 'someData' })
+      expect(patchRes).toEqual({ data: { a: 'b' }, status: 200 })
     })
   })
 

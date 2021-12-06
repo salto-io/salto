@@ -37,6 +37,7 @@ describe('client connection', () => {
       post: mockFunction<clientUtils.APIConnection['post']>(),
       put: mockFunction<clientUtils.APIConnection['put']>(),
       delete: mockFunction<clientUtils.APIConnection['delete']>(),
+      patch: mockFunction<clientUtils.APIConnection['patch']>(),
     }
     it('should always extract empty account id', async () => {
       expect(await validateCredentials({ connection: mockConnection })).toEqual('')

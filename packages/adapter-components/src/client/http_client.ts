@@ -46,7 +46,10 @@ export type ClientPutParams = ClientPostParams
 
 export type ClientDeleteParams = ClientGetParams
 
+export type ClientPatchParams = ClientPostParams
+
 export type ClientParams = ClientGetParams | ClientPostParams | ClientPutParams | ClientDeleteParams
+  | ClientPatchParams
 
 export interface HTTPReadClientInterface {
   getSinglePage(params: ClientGetParams): Promise<Response<ResponseValue | ResponseValue[]>>
@@ -57,6 +60,7 @@ export interface HTTPWriteClientInterface {
   post(params: ClientPostParams): Promise<Response<ResponseValue>>
   put(params: ClientPutParams): Promise<Response<ResponseValue>>
   delete(params: ClientDeleteParams): Promise<Response<ResponseValue>>
+  patch(params: ClientPatchParams): Promise<Response<ResponseValue>>
 }
 
 export abstract class AdapterHTTPClient<
@@ -138,7 +142,15 @@ export abstract class AdapterHTTPClient<
     return this.sendRequest('delete', params)
   }
 
-  private static isDataParams(params: ClientParams): params is ClientPostParams | ClientPutParams {
+  @throttle<TRateLimitConfig>({ bucketName: 'patch', keys: ['url', 'queryParams'] })
+  @logDecorator(['url', 'queryParams'])
+  @requiresLogin()
+  public async patch(params: ClientPatchParams):
+    Promise<Response<ResponseValue>> {
+    return this.sendRequest('patch', params)
+  }
+
+  private static isDataParams(params: ClientParams): params is ClientParams & { data: unknown } {
     return 'data' in params
   }
 

@@ -23,6 +23,7 @@ export type ClientRateLimitConfig = Partial<{
   post: number
   put: number
   delete: number
+  patch: number
 }>
 
 export type ClientPageSizeConfig = Partial<{

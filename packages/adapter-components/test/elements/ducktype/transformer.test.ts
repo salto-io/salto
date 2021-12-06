@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { getTypeAndInstances, getAllElements } from '../../../src/elements/ducktype'
 import * as typeElements from '../../../src/elements/ducktype/type_elements'
@@ -381,7 +381,14 @@ describe('ducktype_transformer', () => {
       },
     }
 
-    beforeEach(() => {
+    afterEach(() => {
+      jest.clearAllMocks()
+    })
+    afterAll(() => {
+      jest.restoreAllMocks()
+    })
+
+    it('should return the type, nested types and instances', async () => {
       jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(async ({ adapterName, typeName }) => {
         const type = new ObjectType({ elemID: new ElemID(adapterName, typeName) })
         return [
@@ -393,16 +400,6 @@ describe('ducktype_transformer', () => {
           ),
         ]
       })
-    })
-
-    afterEach(() => {
-      jest.clearAllMocks()
-    })
-    afterAll(() => {
-      jest.restoreAllMocks()
-    })
-
-    it('should return the type, nested types and instances', async () => {
       const res = await getAllElements({
         adapterName: 'something',
         paginator: mockPaginator,
@@ -454,6 +451,56 @@ describe('ducktype_transformer', () => {
         typeDefaultConfig,
         contextElements: undefined,
       })
+    })
+    it('should fix field types', async () => {
+      const typeToOverrideWith = 'test'
+      jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(async ({ adapterName, typeName }) =>
+        [
+          new ObjectType({ elemID: new ElemID(adapterName, typeToOverrideWith) }),
+          new ObjectType({
+            elemID: new ElemID(adapterName, typeName),
+            fields: {
+              test1: { refType: BuiltinTypes.STRING },
+              test2: { refType: BuiltinTypes.STRING },
+            },
+          }),
+        ])
+      const res = await getAllElements({
+        adapterName: 'something',
+        paginator: mockPaginator,
+        includeTypes: ['folder'],
+        computeGetArgs: simpleGetArgs,
+        nestedFieldFinder: returnFullEntry,
+        types: {
+          folder: {
+            request: {
+              url: '/folders',
+            },
+            transformation: {
+              idFields: ['name'],
+              fieldTypeOverrides: [
+                { fieldName: 'test1', fieldType: typeToOverrideWith },
+                {
+                  fieldName: 'test2',
+                  fieldType: BuiltinTypes.STRING.elemID.getFullName(),
+                  restrictions: { enforce_value: true, values: ['yes', 'no'] },
+                },
+              ],
+            },
+          },
+        },
+        typeDefaults: typeDefaultConfig,
+      })
+      expect(res).toHaveLength(2)
+      const overridedType = res[1] as ObjectType
+      const overridedFieldType = overridedType.fields.test1
+      const overridedFieldWithRestrictions = overridedType.fields.test2
+      expect(overridedFieldType.refType.elemID.getFullName())
+        .toEqual('something.test')
+      expect(overridedFieldWithRestrictions.annotations)
+        .toEqual({
+          [CORE_ANNOTATIONS.RESTRICTION]: { enforce_value: true, values: ['yes', 'no'] },
+        })
     })
   })
 })

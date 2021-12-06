@@ -31,13 +31,13 @@ describe('change validator creator', () => {
         {
           elemID: new ElemID(STRIPE, 'obj'),
           severity: 'Error',
-          message: 'Deploy is not supported.',
+          message: 'Deploy is not supported in adapter stripe.',
           detailedMessage: 'Deploy is not supported.',
         },
         {
           elemID: new ElemID(STRIPE, 'obj2'),
           severity: 'Error',
-          message: 'Deploy is not supported.',
+          message: 'Deploy is not supported in adapter stripe.',
           detailedMessage: 'Deploy is not supported.',
         },
       ])

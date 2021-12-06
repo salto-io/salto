@@ -27,9 +27,9 @@ const detailedErrorMessage = (action: Change['action'], path: ElemID): string =>
   `Salto does not support "${action}" of ${path.getFullName()}`
 
 const isDeploymentSupported = (element: Element, action: Change['action']): boolean =>
-  (action === 'add' && element.annotations[DEPLOYMENT_ANNOTATIONS.CREATEABLE])
-    || (action === 'modify' && element.annotations[DEPLOYMENT_ANNOTATIONS.UPDATEABLE])
-    || (action === 'remove' && element.annotations[DEPLOYMENT_ANNOTATIONS.DELETEABLE])
+  (action === 'add' && element.annotations[DEPLOYMENT_ANNOTATIONS.CREATABLE])
+    || (action === 'modify' && element.annotations[DEPLOYMENT_ANNOTATIONS.UPDATABLE])
+    || (action === 'remove' && element.annotations[DEPLOYMENT_ANNOTATIONS.DELETABLE])
 
 const getDiffInstance = (change: Change<InstanceElement>): InstanceElement => {
   const instance = getChangeElement(change)

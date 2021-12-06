@@ -31,13 +31,13 @@ describe('change validator creator', () => {
         {
           elemID: new ElemID('myAdapter', 'obj'),
           severity: 'Error',
-          message: 'Deploy is not supported.',
+          message: 'Deploy is not supported in adapter myAdapter.',
           detailedMessage: 'Deploy is not supported.',
         },
         {
           elemID: new ElemID('myAdapter', 'obj2'),
           severity: 'Error',
-          message: 'Deploy is not supported.',
+          message: 'Deploy is not supported in adapter myAdapter.',
           detailedMessage: 'Deploy is not supported.',
         },
       ])

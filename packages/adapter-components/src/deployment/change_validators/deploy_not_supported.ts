@@ -19,7 +19,7 @@ export const deployNotSupportedValidator: ChangeValidator = async changes => (
   changes.map(change => ({
     elemID: getChangeElement(change).elemID,
     severity: 'Error',
-    message: 'Deploy is not supported.',
+    message: `Deploy is not supported in adapter ${getChangeElement(change).elemID.adapter}.`,
     detailedMessage: 'Deploy is not supported.',
   }))
 )

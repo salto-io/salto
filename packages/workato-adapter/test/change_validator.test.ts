@@ -31,13 +31,13 @@ describe('change validator creator', () => {
         {
           elemID: new ElemID(WORKATO, 'obj'),
           severity: 'Error',
-          message: 'Deploy is not supported.',
+          message: 'Deploy is not supported in adapter workato.',
           detailedMessage: 'Deploy is not supported.',
         },
         {
           elemID: new ElemID(WORKATO, 'obj2'),
           severity: 'Error',
-          message: 'Deploy is not supported.',
+          message: 'Deploy is not supported in adapter workato.',
           detailedMessage: 'Deploy is not supported.',
         },
       ])

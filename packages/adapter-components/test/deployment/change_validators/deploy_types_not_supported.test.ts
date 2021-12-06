@@ -26,7 +26,7 @@ describe('deployTypesNotSupportedValidator', () => {
     expect(errors).toEqual([{
       elemID: type.elemID,
       severity: 'Error',
-      message: 'Deployment of non-instance elements is not supported',
+      message: `Deployment of non-instance elements is not supported in adapter ${type.elemID.adapter}`,
       detailedMessage: `Salto does not support deployment of ${type.elemID.getFullName()}`,
     }])
   })

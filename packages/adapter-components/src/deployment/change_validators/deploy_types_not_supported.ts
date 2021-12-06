@@ -22,7 +22,7 @@ export const deployTypesNotSupportedValidator: ChangeValidator = async changes =
     .map(objectType => ({
       elemID: objectType.elemID,
       severity: 'Error',
-      message: 'Deployment of non-instance elements is not supported',
+      message: `Deployment of non-instance elements is not supported in adapter ${objectType.elemID.adapter}`,
       detailedMessage: `Salto does not support deployment of ${objectType.elemID.getFullName()}`,
     }))
 )

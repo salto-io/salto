@@ -206,7 +206,7 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'ApexPage' },
   },
   {
-    src: { field: 'apexClass', parentTypes: ['FlowApexPluginCall', 'FlowVariable', 'ProfileApexClassAccess', 'TransactionSecurityPolicy', 'ProfileApexClassAccess'] },
+    src: { field: 'apexClass', parentTypes: ['FlowApexPluginCall', 'FlowVariable', 'ProfileApexClassAccess', 'TransactionSecurityPolicy'] },
     target: { type: 'ApexClass' },
   },
   {

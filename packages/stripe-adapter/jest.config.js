@@ -29,12 +29,13 @@ module.exports = deepMerge(
     : undefined,
     coverageThreshold: {
       'global': {
-        branches: 89,
-        functions: 94,
-        lines: 95,
-        statements: 95,
+        branches: 100,
+        functions: 95,
+        lines: 99,
+        statements: 99,
       },
     },
+    setupFilesAfterEnv: ["jest-extended/all"],
   },
 )
 

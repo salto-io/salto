@@ -312,6 +312,7 @@ export const restore = async (
     await workspace.elements(),
     workspace.state(),
     await workspace.state().getPathIndex(),
+    await workspace.getReferenceSourcesIndex(),
     elementSelectors,
     fetchServices
   )
@@ -338,6 +339,7 @@ export const diff = async (
   const diffChanges = await createDiffChanges(
     toElements,
     fromElements,
+    await workspace.getReferenceSourcesIndex(),
     elementSelectors,
     [shouldElementBeIncluded(diffServices)]
   )

@@ -30,32 +30,55 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { validateCredentials, createConnection } from '../../src/client/connection'
+import { client as clientUtils } from '@salto-io/adapter-components'
+import { createConnection, validateCredentials } from '../../src/client/connection'
+
 
 describe('validateCredentials', () => {
   let mockAxios: MockAdapter
-  let result: string
+  let connection: clientUtils.APIConnection
+
   beforeEach(async () => {
     mockAxios = new MockAdapter(axios)
-    mockAxios.onGet().reply(200, { baseUrl: 'http://my.jira.net' })
-    const connection = await createConnection({ retries: 1 }).login(
+    mockAxios.onGet('/rest/api/3/configuration').reply(200)
+    mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
+    connection = await createConnection({ retries: 1 }).login(
       { baseUrl: 'http://myJira.net', user: 'me', token: 'tok' }
     )
-    result = await validateCredentials({ connection })
   })
   afterEach(() => {
     mockAxios.restore()
   })
 
-  it('should get server info with auth headers', () => {
-    expect(mockAxios.history.get).toHaveLength(1)
-    const request = mockAxios.history.get[0]
-    expect(request.url).toEqual('/rest/api/3/serverInfo')
-    expect(request.baseURL).toEqual('http://myJira.net')
-    expect(request.auth).toEqual({ username: 'me', password: 'tok' })
+  describe('when authorized', () => {
+    let result: string
+
+    beforeEach(async () => {
+      result = await validateCredentials({ connection })
+    })
+
+    it('should get server info with auth headers', () => {
+      expect(mockAxios.history.get).toContainEqual(expect.objectContaining({
+        url: '/rest/api/3/serverInfo',
+        baseURL: 'http://myJira.net',
+        auth: { username: 'me', password: 'tok' },
+      }))
+    })
+
+    it('should return the base url from the response as account id', () => {
+      expect(result).toEqual('http://my.jira.net')
+    })
   })
 
-  it('should return the base url from the response as account id', () => {
-    expect(result).toEqual('http://my.jira.net')
+  describe('when unauthorized', () => {
+    it('should throw Invalid Credentials Error', async () => {
+      mockAxios.onGet('/rest/api/3/configuration').reply(401)
+      await expect(validateCredentials({ connection })).rejects.toThrow(new Error('Invalid Credentials'))
+    })
+
+    it('should rethrow unrelated Network Error', async () => {
+      mockAxios.onGet('/rest/api/3/configuration').networkError()
+      await expect(validateCredentials({ connection })).rejects.toThrow(new Error('Network Error'))
+    })
   })
 })

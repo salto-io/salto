@@ -17,11 +17,30 @@ import { AccountId } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Credentials } from '../auth'
 
+const isAuthorized = async (connection: clientUtils.APIConnection): Promise<boolean> => {
+  try {
+    await connection.get('/rest/api/3/configuration')
+    return true
+  } catch (e) {
+    if (e.response?.status === 401) {
+      return false
+    }
+    throw e
+  }
+}
+
+const getBaseUrl = async (connection: clientUtils.APIConnection): Promise<string> => {
+  const response = await connection.get('/rest/api/3/serverInfo')
+  return response.data.baseUrl
+}
+
 export const validateCredentials = async (
   { connection }: { connection: clientUtils.APIConnection },
 ): Promise<AccountId> => {
-  const res = await connection.get('/rest/api/3/serverInfo')
-  return res.data.baseUrl
+  if (await isAuthorized(connection)) {
+    return getBaseUrl(connection)
+  }
+  throw new Error('Invalid Credentials')
 }
 
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => (

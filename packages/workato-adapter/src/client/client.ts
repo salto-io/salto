@@ -24,6 +24,9 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   // this is arbitrary, could not find official limits
   get: 10,
+  post: 10,
+  put: 10,
+  delete: 10,
 }
 
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {

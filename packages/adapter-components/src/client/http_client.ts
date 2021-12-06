@@ -114,28 +114,32 @@ export abstract class AdapterHTTPClient<
     return this.sendRequest('get', params)
   }
 
-  @throttle<TRateLimitConfig>({ bucketName: 'total', keys: ['url', 'data', 'queryParams'] })
-  @logDecorator(['url', 'data', 'queryParams'])
+  @throttle<TRateLimitConfig>({ bucketName: 'post', keys: ['url', 'queryParams'] })
+  @logDecorator(['url', 'queryParams'])
   @requiresLogin()
   public async post(params: ClientPostParams):
     Promise<Response<ResponseValue>> {
     return this.sendRequest('post', params)
   }
 
-  @throttle<TRateLimitConfig>({ bucketName: 'total', keys: ['url', 'data', 'queryParams'] })
-  @logDecorator(['url', 'data', 'queryParams'])
+  @throttle<TRateLimitConfig>({ bucketName: 'put', keys: ['url', 'queryParams'] })
+  @logDecorator(['url', 'queryParams'])
   @requiresLogin()
   public async put(params: ClientPutParams):
     Promise<Response<ResponseValue>> {
     return this.sendRequest('put', params)
   }
 
-  @throttle<TRateLimitConfig>({ bucketName: 'total', keys: ['url', 'data', 'queryParams'] })
+  @throttle<TRateLimitConfig>({ bucketName: 'delete', keys: ['url', 'queryParams'] })
   @logDecorator(['url', 'queryParams'])
   @requiresLogin()
   public async delete(params: ClientDeleteParams):
     Promise<Response<ResponseValue>> {
     return this.sendRequest('delete', params)
+  }
+
+  private static isDataParams(params: ClientParams): params is ClientPostParams | ClientPutParams {
+    return 'data' in params
   }
 
   private async sendRequest<T extends ClientParams>(
@@ -153,10 +157,10 @@ export abstract class AdapterHTTPClient<
         ? { params: queryParams }
         : undefined
 
-      const { data, status } = 'data' in params
-        ? await (this.apiClient[method] as APIConnection['post'] | APIConnection['put'])(
+      const { data, status } = AdapterHTTPClient.isDataParams(params)
+        ? await this.apiClient[method](
           url,
-          (params as { data?: Record<string, unknown> }).data,
+          params.data,
           requestQueryParams,
         )
         : await this.apiClient[method](
@@ -172,7 +176,7 @@ export abstract class AdapterHTTPClient<
         status,
       }
     } catch (e) {
-      log.warn(`failed to ${method} ${url} ${queryParams}: ${e}, ${safeJsonStringify(e?.response?.data)}, stack: ${e.stack}`)
+      log.warn(`failed to ${method} ${url} ${queryParams}: ${e}, stack: ${e.stack}, data: ${safeJsonStringify(e?.response?.data)}`)
       throw new Error(`Failed to ${method} ${url} with error: ${e}`)
     }
   }

@@ -33,8 +33,6 @@ export const getToken = (fileContent: string, position: EditorPosition):
   const lexerToken = wu(parser.tokenizeContent(line)).find(
     token => token.col - 1 <= position.col && position.col < token.col + token.value.length,
   )
-  // eslint-disable-next-line no-console
-  console.log(lexerToken)
   if (lexerToken === undefined) {
     return undefined
   }

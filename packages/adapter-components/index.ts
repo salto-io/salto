@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 export * as auth from './src/auth'
-export * as changeValidators from './src/change_validators'
+export * as deployment from './src/deployment'
 export * as client from './src/client'
 export * as config from './src/config'
 export * as elements from './src/elements'

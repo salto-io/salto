@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, isModificationChange, isRemovalChange, InstanceElement, ElemID, isReferenceExpression, isElement } from '@salto-io/adapter-api'
+import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, isModificationChange, isRemovalChange, InstanceElement, ElemID, isReferenceExpression, compareSpecialValues } from '@salto-io/adapter-api'
 import { resolvePath, setPath, transformValues, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -44,24 +44,9 @@ const getDiffInstance = (change: Change<InstanceElement>): InstanceElement => {
           return WALK_NEXT_STEP.RECURSE
         }
 
-        const resolvedValue = isReferenceExpression(value) ? value.value : value
-
         const valueAfter = resolvePath(instance, path)
-        const resolvedValueAfter = isReferenceExpression(valueAfter)
-          ? valueAfter.value
-          : valueAfter
 
-        const areValuesEqual = (
-          isElement(resolvedValue)
-          && isElement(resolvedValueAfter)
-          && resolvedValue.isEqual(resolvedValueAfter))
-          || (
-            !isElement(resolvedValue)
-            && !isElement(resolvedValueAfter)
-            && _.isEqual(resolvedValue, resolvedValueAfter)
-          )
-
-        if (areValuesEqual) {
+        if (_.isEqualWith(value, valueAfter, compareSpecialValues)) {
           setPath(diffInstance, path, undefined)
         }
         return WALK_NEXT_STEP.RECURSE

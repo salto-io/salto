@@ -386,7 +386,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   Permissions_permissions: {
     transformation: {
       isSingleton: true,
-    }
+    },
   },
 
   // Jira API

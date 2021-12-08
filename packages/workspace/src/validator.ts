@@ -471,37 +471,37 @@ const validateValue = async (
       return [new InvalidValueTypeValidationError({ elemID, value, type: type.elemID })]
     }
     const objType = toObjectType(type, value)
-    return (await Promise.all(Object.keys(value).map(
+    return awu(Object.keys(value)).flatMap(
       // eslint-disable-next-line no-use-before-define
       async k => validateFieldValue(elemID.createNestedID(k),
         value[k],
         (await objType.fields[k]?.getType(elementsSource)) ?? BuiltinTypes.UNKNOWN,
         objType.fields[k]?.annotations ?? {},
         elementsSource)
-    ))).flat()
+    ).toArray()
   }
 
   if (type === BuiltinTypes.UNKNOWN) {
     if (!_.isObjectLike(value)) {
       return []
     }
-    return (await Promise.all(Object.keys(value).map(
+    return awu(Object.keys(value)).flatMap(
       // eslint-disable-next-line no-use-before-define
       async k => validateFieldValue(elemID.createNestedID(k),
         value[k],
         BuiltinTypes.UNKNOWN,
         {},
         elementsSource)
-    ))).flat()
+    ).toArray()
   }
 
   if (isListType(type)) {
-    return (await Promise.all(mapAsArrayWithIds(value, elemID).map(async item => validateValue(
+    return awu(mapAsArrayWithIds(value, elemID)).flatMap(async item => validateValue(
       item.nestedID,
       item.value,
       await type.getInnerType(elementsSource),
       elementsSource
-    )))).flat()
+    )).toArray()
   }
 
   return (
@@ -649,7 +649,7 @@ const validateVariable = (element: Variable): ValidationError[] => validateVaria
 
 export const validateElements = async (
   elements: Element[], elementsSource: ReadOnlyElementsSource,
-): Promise<ValidationError[]> => (await Promise.all((await resolve(elements, elementsSource))
+): Promise<ValidationError[]> => awu((await resolve(elements, elementsSource)))
   .flatMap(async e => {
     if (isInstanceElement(e)) {
       return validateInstanceElements(e, elementsSource)
@@ -658,4 +658,4 @@ export const validateElements = async (
       return validateVariable(e)
     }
     return validateType(e as TypeElement, elementsSource)
-  }))).flat()
+  }).toArray()

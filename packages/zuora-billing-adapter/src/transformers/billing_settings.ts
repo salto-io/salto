@@ -88,9 +88,16 @@ export const generateBillingSettingsTypes = async (
   )
 
   const schemasAndRefs = toSchemasAndRefs(settingsInfos)
+  const settingsApiDefConfig = {
+    ...apiDefConfig,
+    swagger: {
+      url: apiDefConfig.swagger.url,
+      typeNameOverrides: apiDefConfig.settingsSwagger?.typeNameOverrides,
+    },
+  }
   return generateTypes(
     ZUORA_BILLING,
-    _.omit(apiDefConfig, 'swagger.additionalTypes', 'swagger.typeNameOverrides'),
+    settingsApiDefConfig,
     schemasAndRefs,
   )
 }

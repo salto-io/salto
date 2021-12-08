@@ -15,14 +15,14 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import { WORKFLOW_TYPE, TASK_TYPE, SETTINGS_TYPE_PREFIX } from '../constants'
+import { WORKFLOW_DETAILED_TYPE, TASK_TYPE, SETTINGS_TYPE_PREFIX } from '../constants'
 import { FilterCreator } from '../filter'
 
 const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<never>[] = [
   {
     src: { field: 'source_workflow_id', parentTypes: ['Linkage'] },
     serializationStrategy: 'id',
-    target: { type: WORKFLOW_TYPE },
+    target: { type: WORKFLOW_DETAILED_TYPE },
   },
   {
     src: { field: 'target_task_id', parentTypes: ['Linkage'] },

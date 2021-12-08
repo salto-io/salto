@@ -21,7 +21,7 @@ import { client as clientUtils, filterUtils } from '@salto-io/adapter-components
 import { DetailedDependency } from '@salto-io/adapter-utils'
 import ZuoraClient from '../../src/client/client'
 import { paginate } from '../../src/client/pagination'
-import { ZUORA_BILLING, WORKFLOW_TYPE, TASK_TYPE, STANDARD_OBJECT, METADATA_TYPE } from '../../src/constants'
+import { ZUORA_BILLING, WORKFLOW_DETAILED_TYPE, TASK_TYPE, STANDARD_OBJECT, METADATA_TYPE } from '../../src/constants'
 import filterCreator from '../../src/filters/workflow_and_task_references'
 
 /* eslint-disable camelcase */
@@ -33,7 +33,7 @@ describe('Workflow and task references filter', () => {
 
   const generateElements = (): Element[] => {
     const workflowType = new ObjectType({
-      elemID: new ElemID(ZUORA_BILLING, WORKFLOW_TYPE),
+      elemID: new ElemID(ZUORA_BILLING, WORKFLOW_DETAILED_TYPE),
     })
     const taskType = new ObjectType({
       elemID: new ElemID(ZUORA_BILLING, TASK_TYPE),
@@ -274,7 +274,7 @@ describe('Workflow and task references filter', () => {
     })
     it('add references in workflows', () => {
       expect(elements.length).toEqual(origElements.length)
-      const workflows = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === 'Workflow')
+      const workflows = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === 'DetailedWorkflow')
       expect(workflows).toHaveLength(3)
 
       const wf1Param0 = workflows[0].value.additionalProperties.parameters.fields[0]

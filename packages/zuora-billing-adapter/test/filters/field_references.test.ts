@@ -54,7 +54,7 @@ describe('Field references filter', () => {
   })
 
   const workflowType = new ObjectType({
-    elemID: new ElemID(ZUORA_BILLING, 'Workflow'),
+    elemID: new ElemID(ZUORA_BILLING, 'DetailedWorkflow'),
     fields: {
       id: { refType: BuiltinTypes.NUMBER },
     },
@@ -127,7 +127,7 @@ describe('Field references filter', () => {
         e => isInstanceElement(e) && e.refType.elemID.name === 'Linkage'
       )[0] as InstanceElement
       expect(link.value.source_workflow_id).toBeInstanceOf(ReferenceExpression)
-      expect(link.value.source_workflow_id?.elemID.getFullName()).toEqual('zuora_billing.Workflow.instance.workflow123')
+      expect(link.value.source_workflow_id?.elemID.getFullName()).toEqual('zuora_billing.DetailedWorkflow.instance.workflow123')
       expect(link.value.target_task_id).toBeInstanceOf(ReferenceExpression)
       expect(link.value.target_task_id?.elemID.getFullName()).toEqual('zuora_billing.Task.instance.task22')
 

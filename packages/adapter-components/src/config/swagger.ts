@@ -28,7 +28,7 @@ export type FieldOverrideConfig = {
   list?: boolean
 }
 
-type TypeNameOverrideConfig = {
+export type TypeNameOverrideConfig = {
   originalName: string
   newName: string
 }

@@ -21,7 +21,7 @@ import {
 import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, multiIndex } from '@salto-io/lowerdash'
-import { TASK_TYPE, WORKFLOW_TYPE } from '../constants'
+import { TASK_TYPE, WORKFLOW_DETAILED_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
 import { isObjectDef } from '../element_utils'
 
@@ -96,9 +96,10 @@ const addTaskDependencies = (
  */
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    const workflowType = elements.filter(isObjectType).find(e => e.elemID.name === WORKFLOW_TYPE)
+    const workflowType = elements.filter(isObjectType)
+      .find(e => e.elemID.name === WORKFLOW_DETAILED_TYPE)
     if (workflowType === undefined) {
-      log.warn('Could not find %s object type', WORKFLOW_TYPE)
+      log.warn('Could not find %s object type', WORKFLOW_DETAILED_TYPE)
       return
     }
     const taskType = elements.filter(isObjectType).find(e => e.elemID.name === TASK_TYPE)
@@ -108,7 +109,8 @@ const filterCreator: FilterCreator = () => ({
     }
 
     const instances = elements.filter(isInstanceElement)
-    const workflowInstances = instances.filter(inst => inst.elemID.typeName === WORKFLOW_TYPE)
+    const workflowInstances = instances
+      .filter(inst => inst.elemID.typeName === WORKFLOW_DETAILED_TYPE)
     const taskInstances = instances.filter(inst => inst.elemID.typeName === TASK_TYPE)
     if (workflowInstances.length === 0 && taskInstances.length === 0) {
       return

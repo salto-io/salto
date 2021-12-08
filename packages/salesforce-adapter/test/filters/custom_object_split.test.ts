@@ -24,6 +24,12 @@ import { METADATA_TYPE, CUSTOM_OBJECT, API_NAME, SALESFORCE, OBJECTS_PATH } from
 describe('Custom Object Split filter', () => {
   type FilterType = FilterWith<'onFetch'>
   const filter = (): FilterType => filterCreator() as FilterType
+  const runFilter = async (...customObjects: ObjectType[]): Promise<Element[]> => {
+    const elements = [...customObjects]
+    await filter().onFetch(elements)
+    return elements
+  }
+
   const noNameSpaceObject = new ObjectType({
     elemID: CUSTOM_OBJECT_TYPE_ID,
     fields: {
@@ -73,9 +79,9 @@ describe('Custom Object Split filter', () => {
     ${'namespace object'}       |   ${namespaceObject}
   `('$description', ({ customObject }: { customObject: ObjectType }) => {
   let elements: Element[]
+
   beforeEach(async () => {
-    elements = [customObject]
-    await filter().onFetch(elements)
+    elements = await runFilter(customObject)
     expect(elements).toBeDefined()
     expect(elements.length).toEqual(3)
   })

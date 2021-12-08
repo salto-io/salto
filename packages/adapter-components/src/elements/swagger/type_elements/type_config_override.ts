@@ -81,7 +81,9 @@ export const fixTypes = (
 
   // update isSettings field in case of singleton
   Object.keys(typeConfig)
-    .filter(typeName => getTypeTransformationConfig(typeName).isSingleton)
+    .filter(typeName => getTypeTransformationConfig(
+      typeName, typeConfig, typeDefaultConfig
+    ).isSingleton)
     .forEach(typeName => {
       const type = definedTypes[typeName]
       if (type !== undefined) {

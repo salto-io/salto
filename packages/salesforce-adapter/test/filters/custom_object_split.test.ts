@@ -18,7 +18,7 @@ import { ObjectType, BuiltinTypes, Element } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/custom_object_split'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
-import { METADATA_TYPE, CUSTOM_OBJECT, API_NAME, SALESFORCE, INSTALLED_PACKAGES_PATH, OBJECTS_PATH } from '../../src/constants'
+import { METADATA_TYPE, CUSTOM_OBJECT, API_NAME, SALESFORCE, OBJECTS_PATH } from '../../src/constants'
 
 
 describe('Custom Object Split filter', () => {
@@ -30,11 +30,9 @@ describe('Custom Object Split filter', () => {
       standard: {
         refType: BuiltinTypes.STRING,
       },
-      // eslint-disable-next-line camelcase
       custom__c: {
         refType: BuiltinTypes.STRING,
       },
-      // eslint-disable-next-line camelcase
       custom_namespace__c: {
         refType: BuiltinTypes.STRING,
         annotations: {
@@ -47,17 +45,15 @@ describe('Custom Object Split filter', () => {
       [API_NAME]: 'objectRandom__c',
     },
   })
-  const withNamespaceOject = new ObjectType({
+  const namespaceObject = new ObjectType({
     elemID: CUSTOM_OBJECT_TYPE_ID,
     fields: {
       standard: {
         refType: BuiltinTypes.STRING,
       },
-      // eslint-disable-next-line camelcase
       custom__c: {
         refType: BuiltinTypes.STRING,
       },
-      // eslint-disable-next-line camelcase
       custom_namespace__c: {
         refType: BuiltinTypes.STRING,
         annotations: {
@@ -71,100 +67,51 @@ describe('Custom Object Split filter', () => {
     },
   })
 
-  describe('should split non-Namespace Custom Object to elements', () => {
-    let elements: Element[]
-    beforeEach(async () => {
-      elements = [noNameSpaceObject]
-      await filter().onFetch(elements)
-      expect(elements).toBeDefined()
-      expect(elements.length).toEqual(4)
-    })
-
-    it('should create annotations object', () => {
-      const annotationsObj = elements.find(obj =>
-        _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
-          'CustomObject', 'CustomObjectAnnotations'])) as ObjectType
-      expect(annotationsObj).toBeDefined()
-      expect(Object.values(annotationsObj.fields).length).toEqual(0)
-      expect(annotationsObj.annotations[METADATA_TYPE]).toEqual(CUSTOM_OBJECT)
-    })
-
-    it('should create standard fields object', () => {
-      const standardFieldsObj = elements.find(obj =>
-        _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
-          'CustomObject', 'CustomObjectStandardFields'])) as ObjectType
-      expect(standardFieldsObj).toBeDefined()
-      expect(Object.values(standardFieldsObj.annotations).length).toEqual(0)
-      expect(standardFieldsObj.fields.standard).toBeDefined()
-      expect(standardFieldsObj.fields.standard
-        .isEqual(noNameSpaceObject.fields.standard)).toBeTruthy()
-    })
-
-    it('should create custom fields object', () => {
-      const customFieldsObj = elements.find(obj =>
-        _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
-          'CustomObject', 'CustomObjectCustomFields'])) as ObjectType
-      expect(customFieldsObj).toBeDefined()
-      expect(Object.values(customFieldsObj.annotations).length).toEqual(0)
-      expect(customFieldsObj.fields.custom__c).toBeDefined()
-      expect(customFieldsObj.fields.custom__c
-        .isEqual(noNameSpaceObject.fields.custom__c)).toBeTruthy()
-    })
-
-    it('should create namespace custom fields object', () => {
-      const packageCustomFieldsObj = elements.find(obj =>
-        _.isEqual(obj.path, [SALESFORCE, INSTALLED_PACKAGES_PATH, 'namespace', OBJECTS_PATH,
-          'CustomObject', 'CustomObjectCustomFields'])) as ObjectType
-      expect(packageCustomFieldsObj).toBeDefined()
-      expect(Object.values(packageCustomFieldsObj.annotations).length).toEqual(0)
-      expect(packageCustomFieldsObj.fields.custom_namespace__c).toBeDefined()
-      expect(packageCustomFieldsObj.fields.custom_namespace__c
-        .isEqual(noNameSpaceObject.fields.custom_namespace__c)).toBeTruthy()
-    })
+  describe.each`
+    description                 |   customObject
+    ${'non namespace object'}   |   ${noNameSpaceObject}
+    ${'namespace object'}       |   ${namespaceObject}
+  `('$description', ({ customObject }: { customObject: ObjectType }) => {
+  let elements: Element[]
+  beforeEach(async () => {
+    elements = [customObject]
+    await filter().onFetch(elements)
+    expect(elements).toBeDefined()
+    expect(elements.length).toEqual(3)
   })
 
-
-  describe('should split namespace Custom Object to elements', () => {
-    let elements: Element[]
-    beforeEach(async () => {
-      elements = [withNamespaceOject]
-      await filter().onFetch(elements)
-      expect(elements).toBeDefined()
-      expect(elements.length).toEqual(3)
-    })
-
-    it('should create annotations object inside the installed packages folder', () => {
-      const annotationsObj = elements.find(obj =>
-        _.isEqual(obj.path, [SALESFORCE, INSTALLED_PACKAGES_PATH, 'namespace', OBJECTS_PATH,
-          'CustomObject', 'CustomObjectAnnotations'])) as ObjectType
-      expect(annotationsObj).toBeDefined()
-      expect(Object.values(annotationsObj.fields).length).toEqual(0)
-      expect(annotationsObj.annotations[METADATA_TYPE]).toEqual(CUSTOM_OBJECT)
-    })
-
-    it('should create standard fields object inside the installed packages folder', () => {
-      const standardFieldsObj = elements.find(obj =>
-        _.isEqual(obj.path, [SALESFORCE, INSTALLED_PACKAGES_PATH, 'namespace', OBJECTS_PATH,
-          'CustomObject', 'CustomObjectStandardFields'])) as ObjectType
-      expect(standardFieldsObj).toBeDefined()
-      expect(Object.values(standardFieldsObj.annotations).length).toEqual(0)
-      expect(standardFieldsObj.fields.standard).toBeDefined()
-      expect(standardFieldsObj.fields.standard
-        .isEqual(withNamespaceOject.fields.standard)).toBeTruthy()
-    })
-
-    it('should create namespace custom fields object with all custom fields inside the installed packages folder', () => {
-      const customFieldsObj = elements.find(obj =>
-        _.isEqual(obj.path, [SALESFORCE, INSTALLED_PACKAGES_PATH, 'namespace', OBJECTS_PATH,
-          'CustomObject', 'CustomObjectCustomFields'])) as ObjectType
-      expect(customFieldsObj).toBeDefined()
-      expect(Object.values(customFieldsObj.annotations).length).toEqual(0)
-      expect(customFieldsObj.fields.custom_namespace__c).toBeDefined()
-      expect(customFieldsObj.fields.custom_namespace__c
-        .isEqual(withNamespaceOject.fields.custom_namespace__c)).toBeTruthy()
-      expect(customFieldsObj.fields.custom__c).toBeDefined()
-      expect(customFieldsObj.fields.custom__c
-        .isEqual(withNamespaceOject.fields.custom__c)).toBeTruthy()
-    })
+  it('should create annotations object', () => {
+    const annotationsObj = elements.find(obj =>
+      _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
+        'CustomObject', 'CustomObjectAnnotations'])) as ObjectType
+    expect(annotationsObj).toBeDefined()
+    expect(Object.values(annotationsObj.fields).length).toEqual(0)
+    expect(annotationsObj.annotations[METADATA_TYPE]).toEqual(CUSTOM_OBJECT)
   })
+
+  it('should create standard fields object', () => {
+    const standardFieldsObj = elements.find(obj =>
+      _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
+        'CustomObject', 'CustomObjectStandardFields'])) as ObjectType
+    expect(standardFieldsObj).toBeDefined()
+    expect(Object.values(standardFieldsObj.annotations).length).toEqual(0)
+    expect(standardFieldsObj.fields.standard).toBeDefined()
+    expect(standardFieldsObj.fields.standard
+      .isEqual(customObject.fields.standard)).toBeTruthy()
+  })
+
+  it('should create custom fields object', () => {
+    const customFieldsObj = elements.find(obj =>
+      _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
+        'CustomObject', 'CustomObjectCustomFields'])) as ObjectType
+    expect(customFieldsObj).toBeDefined()
+    expect(Object.values(customFieldsObj.annotations).length).toEqual(0)
+    expect(customFieldsObj.fields.custom__c).toBeDefined()
+    expect(customFieldsObj.fields.custom__c
+      .isEqual(customObject.fields.custom__c)).toBeTruthy()
+    expect(customFieldsObj.fields.custom_namespace__c).toBeDefined()
+    expect(customFieldsObj.fields.custom_namespace__c
+      .isEqual(customObject.fields.custom_namespace__c)).toBeTruthy()
+  })
+})
 })

@@ -27,7 +27,7 @@ export const annotationsFileName = (objectName: string): string => `${pathNaclCa
 export const standardFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}StandardFields`
 export const customFieldsFileName = (objectName: string): string => `${pathNaclCase(objectName)}CustomFields`
 
-const createCustomFieldsObject = async (customObject: ObjectType): Promise<ObjectType> => {
+const createCustomFieldsObject = (customObject: ObjectType): ObjectType => {
   const customFields = _.pickBy(
     customObject.fields,
     f => isCustom(f.elemID.getFullName())
@@ -62,23 +62,28 @@ const customObjectToSplitElements = async (customObject: ObjectType): Promise<Ob
       standardFieldsFileName(customObject.elemID.name),
     ],
   })
-  const customFieldsObject = await createCustomFieldsObject(customObject)
+  const customFieldsObject = createCustomFieldsObject(customObject)
   return [customFieldsObject, standardFieldsObject, annotationsObject]
 }
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
     const customObjects = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
-    const allSplitCustomObjects = await awu(customObjects)
+    const newSplitCustomObjects = await awu(customObjects)
       .flatMap(customObjectToSplitElements)
       .toArray()
     _.pullAllWith(
       elements,
       customObjects,
-      (element: Element, customObject: ObjectType): boolean =>
-        isObjectType(element) && element.isEqual(customObject)
+      // No need to check for custom objectness since all of the elements in
+      // the second params are custom objects.
+      (elementA: Element, elementB: Element): boolean => isObjectType(elementA)
+        && isObjectType(elementB)
+        && elementA.isEqual(elementB)
     )
-    elements.push(...allSplitCustomObjects)
+    const isNotEmptyObject = (customObject: ObjectType): boolean =>
+      !(_.isEmpty(customObject.annotations) && _.isEmpty(customObject.fields))
+    elements.push(...newSplitCustomObjects.filter(isNotEmptyObject))
   },
 })
 

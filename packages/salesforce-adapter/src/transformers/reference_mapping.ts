@@ -161,8 +161,10 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     serializationStrategy: 'relativeApiName',
     target: { parentContext: 'instanceParent', type: CUSTOM_FIELD },
   },
+  // note: not all field values under ReportColumn match this rule - but it's ok because
+  // only the ones that match are currently extracted (SALTO-1758)
   {
-    src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity', 'FilterItem', 'PermissionSetFieldPermissions'] },
+    src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity', 'FilterItem', 'PermissionSetFieldPermissions', 'ReportColumn'] },
     target: { type: CUSTOM_FIELD },
   },
   {
@@ -471,6 +473,21 @@ export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: CPQ_CONSTRAINT_FIELD, parentTypes: [CPQ_PRICE_SCHEDULE, CPQ_DISCOUNT_SCHEDULE] },
     serializationStrategy: 'scheduleConstraintFieldMapping',
     target: { parent: CPQ_QUOTE, type: CUSTOM_FIELD },
+  },
+
+  // note: not all column and xColumn values match this rule - but it's ok because
+  // only the ones that match are currently extracted (SALTO-1758)
+  {
+    src: { field: 'groupingColumn', parentTypes: ['Report'] },
+    target: { type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'secondaryGroupingColumn', parentTypes: ['Report'] },
+    target: { type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'column', parentTypes: ['ReportFilterItem', 'DashboardFilterColumn', 'DashboardTableColumn'] },
+    target: { type: CUSTOM_FIELD },
   },
 ]
 

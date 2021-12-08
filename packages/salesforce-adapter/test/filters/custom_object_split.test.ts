@@ -124,7 +124,7 @@ describe('Custom Object Split filter', () => {
   describe('when split elements contains empty objects', () => {
     const getSplitElementsPaths = async (...customObjects: ObjectType[]): Promise<string[][]> => {
       const splitElements = await runFilter(...customObjects)
-      return splitElements.map(customObject => customObject.path as string[] ?? [])
+      return splitElements.map(customObject => customObject.path as string[])
     }
 
     it('should filter out empty standard fields object', async () => {

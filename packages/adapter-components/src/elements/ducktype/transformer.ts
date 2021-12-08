@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isObjectType, ObjectType, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, Element, isObjectType, PrimitiveType, Values } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
@@ -27,7 +27,7 @@ import { TypeDuckTypeDefaultsConfig, TypeDuckTypeConfig } from '../../config/duc
 import { ComputeGetArgsFunc } from '../request_parameters'
 import { getElementsWithContext } from '../element_getter'
 import { extractStandaloneFields } from './standalone_field_extractor'
-import { fixFieldTypes } from '../field_type_config_override'
+import { fixFieldTypes } from '../type_elements'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
@@ -195,6 +195,16 @@ export const getAllElements = async ({
   const objectTypes = Object.fromEntries(
     elements.filter(isObjectType).map(e => [e.elemID.name, e])
   )
-  fixFieldTypes(objectTypes as Record<string, ObjectType>, types, typeDefaults)
+  const duckTypeTypeMap: Record<string, PrimitiveType> = {
+    string: BuiltinTypes.STRING,
+    boolean: BuiltinTypes.BOOLEAN,
+    number: BuiltinTypes.NUMBER,
+  }
+  fixFieldTypes(
+    objectTypes,
+    types,
+    typeDefaults,
+    (val: string) => _.get(duckTypeTypeMap, val, BuiltinTypes.UNKNOWN),
+  )
   return [...Object.values(objectTypes), ...elements.filter(e => !isObjectType(e))]
 }

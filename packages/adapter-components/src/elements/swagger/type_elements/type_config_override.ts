@@ -13,52 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, BuiltinTypes, MapType, ListType, TypeElement, isEqualElements, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ElemID } from '@salto-io/adapter-api'
+import { ObjectType, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { getTypeTransformationConfig } from '../../../config/shared'
 import { TypeSwaggerConfig, AdditionalTypeConfig, TypeSwaggerDefaultConfig } from '../../../config/swagger'
-import { FieldToHideType } from '../../../config/transformation'
+import { FieldToHideType, getTypeTransformationConfig } from '../../../config/transformation'
 import { toPrimitiveType } from './swagger_parser'
-import { hideFields } from '../../type_elements'
-import { fixFieldTypes } from '../../field_type_config_override'
+import { hideFields, fixFieldTypes } from '../../type_elements'
 
 const log = logger(module)
-
-/**
- * Helper function for creating the right type element from the type name specified in the config.
- * This can be called recursively to generate the right type from existing types, potentially
- * wrapped in containers - such as List<Map<List<someTypeName>>>
- */
-const getContainerForType = (typeName: string): {
-  container: 'list' | 'map'
-  typeNameSubstring: string
-} | undefined => {
-  if (
-    typeName.toLowerCase().startsWith(`${LIST_ID_PREFIX.toLowerCase()}${GENERIC_ID_PREFIX}`)
-    && typeName.endsWith(GENERIC_ID_SUFFIX)
-  ) {
-    return {
-      container: 'list',
-      typeNameSubstring: typeName.substring(
-        LIST_ID_PREFIX.length + GENERIC_ID_PREFIX.length,
-        typeName.length - GENERIC_ID_SUFFIX.length,
-      ),
-    }
-  }
-  if (
-    typeName.toLowerCase().startsWith(MAP_ID_PREFIX.toLowerCase())
-    && typeName.endsWith(GENERIC_ID_SUFFIX)
-  ) {
-    return {
-      container: 'map',
-      typeNameSubstring: typeName.substring(
-        MAP_ID_PREFIX.length + GENERIC_ID_PREFIX.length,
-        typeName.length - GENERIC_ID_SUFFIX.length,
-      ),
-    }
-  }
-  return undefined
-}
 
 /**
  * Define additional types/endpoints from config that were missing in the swagger.
@@ -99,33 +61,19 @@ export const fixTypes = (
   typeConfig: Record<string, TypeSwaggerConfig>,
   typeDefaultConfig: TypeSwaggerDefaultConfig,
 ): void => {
-  const toTypeWithContainers = (typeName: string): TypeElement => {
-    const containerDetails = getContainerForType(typeName)
-    if (containerDetails?.container === 'list') {
-      return new ListType(toTypeWithContainers(containerDetails.typeNameSubstring))
-    }
-    if (containerDetails?.container === 'map') {
-      return new MapType(toTypeWithContainers(containerDetails.typeNameSubstring))
-    }
-    const type = definedTypes[typeName] ?? toPrimitiveType(typeName)
-    if (isEqualElements(type, BuiltinTypes.UNKNOWN) && typeName.toLowerCase() !== 'unknown') {
-      log.error('could not find type %s, falling back to unknown', typeName)
-    }
-    return type
-  }
-
-  // fix field types
-  fixFieldTypes(definedTypes, typeConfig, typeDefaultConfig, toTypeWithContainers)
+  fixFieldTypes(definedTypes, typeConfig, typeDefaultConfig, toPrimitiveType)
 
   // hide env-specific fields
   Object.entries(definedTypes)
     .filter(([typeName]) =>
-      getTypeTransformationConfig(typeName, typeConfig, typeDefaultConfig)
-        .fieldsToHide !== undefined)
+      getTypeTransformationConfig(
+        typeName, typeConfig, typeDefaultConfig
+      ).fieldsToHide !== undefined)
     .forEach(([typeName, type]) => {
       hideFields(
-        getTypeTransformationConfig(typeName, typeConfig, typeDefaultConfig)
-          .fieldsToHide as FieldToHideType[],
+        getTypeTransformationConfig(
+          typeName, typeConfig, typeDefaultConfig
+        ).fieldsToHide as FieldToHideType[],
         type.fields,
         typeName,
       )

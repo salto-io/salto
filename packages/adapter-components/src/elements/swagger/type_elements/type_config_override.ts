@@ -13,51 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, BuiltinTypes, createRefToElmWithValue, MapType, ListType, TypeElement, isEqualElements, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ElemID, Field } from '@salto-io/adapter-api'
+import { ObjectType, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { getConfigWithDefault } from '../../../config/shared'
 import { TypeSwaggerConfig, AdditionalTypeConfig, TypeSwaggerDefaultConfig } from '../../../config/swagger'
-import { FieldTypeOverrideType, FieldToHideType, TransformationConfig } from '../../../config/transformation'
+import { FieldToHideType, getTypeTransformationConfig } from '../../../config/transformation'
 import { toPrimitiveType } from './swagger_parser'
-import { hideFields } from '../../type_elements'
+import { hideFields, fixFieldTypes } from '../../type_elements'
 
 const log = logger(module)
-
-/**
- * Helper function for creating the right type element from the type name specified in the config.
- * This can be called recursively to generate the right type from existing types, potentially
- * wrapped in containers - such as List<Map<List<someTypeName>>>
- */
-const getContainerForType = (typeName: string): {
-  container: 'list' | 'map'
-  typeNameSubstring: string
-} | undefined => {
-  if (
-    typeName.toLowerCase().startsWith(`${LIST_ID_PREFIX.toLowerCase()}${GENERIC_ID_PREFIX}`)
-    && typeName.endsWith(GENERIC_ID_SUFFIX)
-  ) {
-    return {
-      container: 'list',
-      typeNameSubstring: typeName.substring(
-        LIST_ID_PREFIX.length + GENERIC_ID_PREFIX.length,
-        typeName.length - GENERIC_ID_SUFFIX.length,
-      ),
-    }
-  }
-  if (
-    typeName.toLowerCase().startsWith(MAP_ID_PREFIX.toLowerCase())
-    && typeName.endsWith(GENERIC_ID_SUFFIX)
-  ) {
-    return {
-      container: 'map',
-      typeNameSubstring: typeName.substring(
-        MAP_ID_PREFIX.length + GENERIC_ID_PREFIX.length,
-        typeName.length - GENERIC_ID_SUFFIX.length,
-      ),
-    }
-  }
-  return undefined
-}
 
 /**
  * Define additional types/endpoints from config that were missing in the swagger.
@@ -98,59 +61,19 @@ export const fixTypes = (
   typeConfig: Record<string, TypeSwaggerConfig>,
   typeDefaultConfig: TypeSwaggerDefaultConfig,
 ): void => {
-  const toTypeWithContainers = (typeName: string): TypeElement => {
-    const containerDetails = getContainerForType(typeName)
-    if (containerDetails?.container === 'list') {
-      return new ListType(toTypeWithContainers(containerDetails.typeNameSubstring))
-    }
-    if (containerDetails?.container === 'map') {
-      return new MapType(toTypeWithContainers(containerDetails.typeNameSubstring))
-    }
-    const type = definedTypes[typeName] ?? toPrimitiveType(typeName)
-    if (isEqualElements(type, BuiltinTypes.UNKNOWN) && typeName.toLowerCase() !== 'unknown') {
-      log.error('could not find type %s, falling back to unknown', typeName)
-    }
-    return type
-  }
-
-  const getTypeTransformationConfig = (typeName: string): TransformationConfig => (
-    getConfigWithDefault(
-      typeConfig[typeName]?.transformation,
-      typeDefaultConfig.transformation,
-    )
-  )
-
-  // fix field types
-  Object.keys(typeConfig)
-    .filter(typeName => getTypeTransformationConfig(typeName).fieldTypeOverrides !== undefined)
-    .forEach(typeName => {
-      const type = definedTypes[typeName]
-      if (type === undefined) {
-        log.warn('type %s not found, cannot override its field types', typeName)
-        return
-      }
-      const fieldTypeOverrides = getTypeTransformationConfig(
-        typeName
-      ).fieldTypeOverrides as FieldTypeOverrideType[]
-      fieldTypeOverrides.forEach(({ fieldName, fieldType }) => {
-        const field = type.fields[fieldName]
-        const newFieldType = toTypeWithContainers(fieldType)
-        if (field === undefined) {
-          log.debug('Creating field type for %s.%s with type %s', typeName, fieldName, newFieldType.elemID.name)
-          type.fields[fieldName] = new Field(type, fieldName, newFieldType)
-        } else {
-          log.debug('Modifying field type for %s.%s from %s to %s', typeName, fieldName, field.refType.elemID.name, newFieldType.elemID.name)
-          field.refType = createRefToElmWithValue(newFieldType)
-        }
-      })
-    })
+  fixFieldTypes(definedTypes, typeConfig, typeDefaultConfig, toPrimitiveType)
 
   // hide env-specific fields
   Object.entries(definedTypes)
-    .filter(([typeName]) => getTypeTransformationConfig(typeName).fieldsToHide !== undefined)
+    .filter(([typeName]) =>
+      getTypeTransformationConfig(
+        typeName, typeConfig, typeDefaultConfig
+      ).fieldsToHide !== undefined)
     .forEach(([typeName, type]) => {
       hideFields(
-        getTypeTransformationConfig(typeName).fieldsToHide as FieldToHideType[],
+        getTypeTransformationConfig(
+          typeName, typeConfig, typeDefaultConfig
+        ).fieldsToHide as FieldToHideType[],
         type.fields,
         typeName,
       )

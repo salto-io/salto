@@ -14,9 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS,
+  FieldDefinition, ListType, RestrictionAnnotationType } from '@salto-io/adapter-api'
 import { types } from '@salto-io/lowerdash'
 import { findDuplicates } from './validation_utils'
+import { getConfigWithDefault, TypeConfig, TypeDefaultsConfig } from './shared'
 
 export const DATA_FIELD_ENTIRE_OBJECT = '.'
 
@@ -33,6 +35,7 @@ export type FieldToHideType = FieldToAdjustType
 export type FieldTypeOverrideType = {
   fieldName: string
   fieldType: string
+  restrictions?: RestrictionAnnotationType
 }
 
 export type TransformationConfig = {
@@ -211,3 +214,14 @@ export const validateTransoformationConfig = (
     throw new Error(`Singleton types should not have dataField or fileNameFields set, misconfiguration found for the following types: ${validateIsSingletonTypes.toString()}`)
   }
 }
+
+export const getTypeTransformationConfig = (
+  typeName: string,
+  typeConfig: Record<string, TypeConfig>,
+  typeDefaultConfig: TypeDefaultsConfig
+): TransformationConfig => (
+  getConfigWithDefault(
+    typeConfig[typeName]?.transformation,
+    typeDefaultConfig.transformation,
+  )
+)

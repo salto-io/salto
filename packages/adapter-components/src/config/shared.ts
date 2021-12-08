@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { RequestConfig, RequestDefaultConfig } from './request'
-import { TransformationConfig, TransformationDefaultConfig } from './transformation'
+import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
 
 export type TypeConfig<T extends TransformationConfig = TransformationConfig> = {
   request?: RequestConfig

@@ -112,7 +112,7 @@ const dependencyType = new ObjectType({
   },
 })
 
-type RestrictionAnnotationType = Partial<{
+export type RestrictionAnnotationType = Partial<{
   // eslint-disable-next-line camelcase
   enforce_value: boolean
   values: ReadonlyArray<unknown>

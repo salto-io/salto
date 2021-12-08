@@ -78,7 +78,7 @@ describe('Custom Object Split filter', () => {
     description                 |   customObject
     ${'non namespace object'}   |   ${noNameSpaceObject}
     ${'namespace object'}       |   ${namespaceObject}
-  `('$description', ({ customObject }: { customObject: ObjectType }) => {
+  `('$description', ({ customObject }) => {
   let elements: Element[]
 
   beforeEach(async () => {

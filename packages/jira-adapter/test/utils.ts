@@ -40,9 +40,11 @@ export const createConfigInstance = (config: JiraConfig): InstanceElement => (
 )
 
 const mockConnection = (): MockInterface<clientUtils.APIConnection> => ({
-  request: mockFunction<clientUtils.APIConnection['request']>().mockResolvedValue({ status: 200, data: '' }),
   get: mockFunction<clientUtils.APIConnection['get']>().mockResolvedValue({ status: 200, data: '' }),
   post: mockFunction<clientUtils.APIConnection['post']>().mockResolvedValue({ status: 200, data: '' }),
+  put: mockFunction<clientUtils.APIConnection['put']>().mockResolvedValue({ status: 200, data: '' }),
+  delete: mockFunction<clientUtils.APIConnection['delete']>().mockResolvedValue({ status: 200, data: '' }),
+  patch: mockFunction<clientUtils.APIConnection['patch']>().mockResolvedValue({ status: 200, data: '' }),
 })
 
 type ClientWithMockConnection = {

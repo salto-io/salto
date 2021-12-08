@@ -151,6 +151,13 @@ export abstract class AdapterHTTPClient<
     return this.sendRequest('patch', params)
   }
 
+  private static isDataParams(
+    _params: ClientParams,
+    method: keyof HttpMethodToClientParams
+  ): _params is ClientParams & { data: unknown } {
+    return ['post', 'put', 'patch'].includes(method)
+  }
+
   private async sendRequest<T extends keyof HttpMethodToClientParams>(
     method: T,
     params: HttpMethodToClientParams[T]
@@ -166,12 +173,16 @@ export abstract class AdapterHTTPClient<
         ? { params: queryParams }
         : undefined
 
-      const { data, status } = await this.apiClient.request({
-        method,
-        url,
-        params: requestQueryParams,
-        data: (params as { data?: unknown }).data,
-      })
+      const { data, status } = AdapterHTTPClient.isDataParams(params, method)
+        ? await this.apiClient[method](
+          url,
+          params.data,
+          requestQueryParams,
+        )
+        : await this.apiClient[method](
+          url,
+          requestQueryParams,
+        )
       log.debug('Received response for %s (%s) with status %d', url, safeJsonStringify({ url, queryParams }), status)
       log.trace('Full HTTP response for %s: %s', url, safeJsonStringify({
         url, queryParams, response: data,

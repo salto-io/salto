@@ -18,7 +18,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values as lowerfashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ResponseValue } from './http_connection'
-import { ClientGetParams, HTTPReadClientInterface } from './http_client'
+import { ClientBaseParams, HTTPReadClientInterface } from './http_client'
 
 const { isDefined } = lowerfashValues
 const { makeArray } = collections.array
@@ -26,7 +26,7 @@ const log = logger(module)
 
 type RecursiveQueryArgFunc = Record<string, (entry: ResponseValue) => string>
 
-export type ClientGetWithPaginationParams = ClientGetParams & {
+export type ClientGetWithPaginationParams = ClientBaseParams & {
   recursiveQueryParams?: RecursiveQueryArgFunc
   paginationField?: string
 }

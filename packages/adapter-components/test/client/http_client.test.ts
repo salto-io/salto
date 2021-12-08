@@ -46,7 +46,7 @@ describe('client_http_client', () => {
         mockCreateConnection,
         {
           pageSize: { get: 123 },
-          rateLimit: { total: -1, get: 3, post: 4, put: 5, delete: 6, patch: 7 },
+          rateLimit: { total: -1, get: 3, deploy: 4 },
           retry: { maxAttempts: 3, retryDelay: 123 },
         }
       )

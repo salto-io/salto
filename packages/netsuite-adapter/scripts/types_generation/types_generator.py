@@ -228,7 +228,7 @@ def parse_field_def(type_name, cells, is_attribute, is_inner_type, script_id_pre
     if has_length_limitations:
       regex_matches = re.match("[\s\S]*value can be up to (\d*) characters long\.[\s\S]*", description)
       max_length = regex_matches.groups()[0]
-      annotations['[CORE_ANNOTATIONS.RESTRICTION]'] = "createRestriction({{ max_length: {0} }})".format(max_length)
+      annotations['// [CORE_ANNOTATIONS.RESTRICTION]'] = "createRestriction({{ max_length: {0} }})".format(max_length)
 
     return { NAME: field_name, TYPE: field_type, ANNOTATIONS: annotations, DESCRIPTION: '   '.join(description.splitlines()) }
 
@@ -334,7 +334,8 @@ def generate_type_name_to_script_id_prefix():
     type_name_to_script_id_prefix = {}
     for row in webpage.find_elements(By.XPATH, '//*[@id="nshelp"]/div[2]/div/div[2]/table/tbody/tr'):
         cells = row.find_elements(By.XPATH, './/td/p')
-        type_name_to_script_id_prefix[cells[0].text] = cells[1].text
+        if (cells[0].text not in types_to_skip_their_generation):
+            type_name_to_script_id_prefix[cells[0].text] = cells[1].text
     return type_name_to_script_id_prefix
 
 
@@ -496,6 +497,11 @@ def generate_file_per_type(type_name_to_types_defs):
         Path(CUSTOM_TYPES_DIR).mkdir(parents=True, exist_ok=True)
         with open(CUSTOM_TYPES_DIR + type_name + '.ts', 'w') as file:
             file.write(type_def_file_content)
+
+types_to_skip_their_generation = {
+    'financiallayout', # SALTO-1720
+    'reportdefinition', # SALTO-1720
+}
 
 inner_types_to_export = {
     'dataset_dependencies',

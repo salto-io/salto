@@ -40,7 +40,7 @@ const transactionForm_actionbar_buttons_button = new ObjectType({
     label: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
       },
     }, /* Original description: This field value can be up to 40 characters long. */
     visible: {
@@ -83,13 +83,13 @@ const transactionForm_actionbar_customButtons_customButton = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 99 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 99 }),
       },
     }, /* Original description: This field value can be up to 99 characters long. */
     function: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 200 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 200 }),
       },
     }, /* Original description: This field value can be up to 200 characters long. */
   },
@@ -127,13 +127,13 @@ const transactionForm_actionbar_customMenu_customMenuItem = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 99 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 99 }),
       },
     }, /* Original description: This field value can be up to 99 characters long. */
     function: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 200 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 200 }),
       },
     }, /* Original description: This field value can be up to 200 characters long. */
   },
@@ -176,7 +176,7 @@ const transactionForm_actionbar_menu_menuitem = new ObjectType({
     label: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 40 }),
       },
     }, /* Original description: This field value can be up to 40 characters long. */
     visible: {

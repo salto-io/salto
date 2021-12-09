@@ -37,7 +37,7 @@ const addFinanceInformationDependencies = (
     }
 
     Object.keys(financeInformation)
-      // financeInformation entries comes in couples - '.*AccountingCode' and '.*AccountingCodeType'
+      // financeInformation fields comes in couples - '.*AccountingCode' and '.*AccountingCodeType'
       // for example:
       // deferredRevenueAccountingCode & deferredRevenueAccountingCodeType
       // recognizedRevenueAccountingCode & recognizedRevenueAccountingCodeType
@@ -48,8 +48,9 @@ const addFinanceInformationDependencies = (
         const accountingCodeItem = accountingCodeItems.find(item =>
           item.value.name === financeInformation[key] && item.value.type === financeInformation[`${key}Type`])
         if (isDefined(accountingCodeItem)) {
-          financeInformation[key] = new ReferenceExpression(accountingCodeItem.elemID.createNestedID('name'))
-          financeInformation[`${key}Type`] = new ReferenceExpression(accountingCodeItem.elemID.createNestedID('type'))
+          // one field should be with with a reference, and the second is unnecessary
+          financeInformation[key] = new ReferenceExpression(accountingCodeItem.elemID)
+          _.omit(financeInformation, `${key}Type`)
         }
       })
   })

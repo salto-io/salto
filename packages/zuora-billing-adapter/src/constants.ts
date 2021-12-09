@@ -48,10 +48,3 @@ export const PRODUCT_RATE_PLAN_TYPE = 'ProductRatePlanType'
 export const ACCOUNTING_CODE_ITEM_TYPE = 'AccountingCodeItem'
 export const LIST_ALL_SETTINGS_TYPE = 'ListAllSettings'
 export const SETTINGS_TYPE_PREFIX = 'Settings_'
-
-// workflow consts
-export const WORKFLOW_PARAMS_REF = 'Workflow'
-export const WORKFLOW_PARAMS_PATH = ['additionalProperties', 'parameters', 'fields']
-export const TASK_PARAM_FIELDS_PATH = ['parameters', 'fields']
-export const TASK_REFS_NAME_PARTS_SLICE = [-2, Infinity]
-export const TASK_REFS_REGEX = /(\w+\.)+(\w+)/g

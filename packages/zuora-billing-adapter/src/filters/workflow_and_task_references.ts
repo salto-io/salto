@@ -21,14 +21,19 @@ import {
 import { extendGeneratedDependencies, FlatDetailedDependency, resolvePath, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, multiIndex, values } from '@salto-io/lowerdash'
-import { TASK_TYPE, WORKFLOW_PARAMS_PATH, WORKFLOW_PARAMS_REF, TASK_REFS_NAME_PARTS_SLICE, TASK_REFS_REGEX, WORKFLOW_EXPORT_TYPE, WORKFLOW_DETAILED_TYPE, TASK_PARAM_FIELDS_PATH } from '../constants'
+import { TASK_TYPE, WORKFLOW_EXPORT_TYPE, WORKFLOW_DETAILED_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
-import { isObjectDef } from '../element_utils'
+import { getTypeNameAsReferenced, isObjectDef } from '../element_utils'
 
 const { isDefined } = values
 
 const log = logger(module)
 const { flatMapAsync, toAsyncIterable, awu } = collections.asynciterable
+
+const WORKFLOW_PARAMS_REF = 'Workflow'
+const WORKFLOW_PARAMS_PATH = ['additionalProperties', 'parameters', 'fields']
+const TASK_PARAM_FIELDS_PATH = ['parameters', 'fields']
+const TASK_REFS_REGEX = /(\w+\.)+(\w+)/g
 
 const addWorkflowDependencies = (
   inst: InstanceElement,
@@ -104,7 +109,7 @@ const addStringsReferencesDependency = (
 
     const potentialReferencesNameParts = _.uniq(potentialReferencesStrings).map(str => {
       const parts = str.split(ElemID.NAMESPACE_SEPARATOR)
-      return parts.slice(...TASK_REFS_NAME_PARTS_SLICE)
+      return parts.slice(-2)
     })
 
     const references = potentialReferencesNameParts.map(([typeName, fieldName]) => {
@@ -210,14 +215,14 @@ const filterCreator: FilterCreator = () => ({
         name: 'typeLowercaseLookup',
         filter: isObjectDef,
         // id name changes are currently not allowed so it's ok to use the elem id
-        key: type => [type.elemID.name.toLowerCase()],
+        key: type => [getTypeNameAsReferenced(type)],
         map: type => type.elemID,
       })
       .addIndex({
         name: 'fieldLowercaseLookup',
         filter: isField,
         // id name changes are currently not allowed so it's ok to use the elem id
-        key: field => [field.elemID.typeName.toLowerCase(), field.elemID.name],
+        key: field => [getTypeNameAsReferenced(field.parent), field.elemID.name],
         map: field => field.elemID,
       })
       .process(

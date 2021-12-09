@@ -36,14 +36,12 @@ const ZuoraReferenceSerializationStrategyLookup: Record<
   },
 }
 
-type ZuoraFieldReferenceDefinition<T extends string | never> =
-  referenceUtils.FieldReferenceDefinition<T> & {
+type ZuoraFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<never> & {
   zuoraSerializationStrategy?: ZuoraReferenceSerializationStrategyName
 }
 
-class ZuoraFieldReferenceResolver<T extends string>
-  extends referenceUtils.FieldReferenceResolver<T> {
-  constructor(def: ZuoraFieldReferenceDefinition<T>) {
+class ZuoraFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<never> {
+  constructor(def: ZuoraFieldReferenceDefinition) {
     super({ src: def.src })
     this.serializationStrategy = ZuoraReferenceSerializationStrategyLookup[
       def.zuoraSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
@@ -54,7 +52,7 @@ class ZuoraFieldReferenceResolver<T extends string>
   }
 }
 
-const fieldNameToTypeMappingDefs: ZuoraFieldReferenceDefinition<never>[] = [
+const fieldNameToTypeMappingDefs: ZuoraFieldReferenceDefinition[] = [
   {
     src: { field: 'source_workflow_id', parentTypes: ['Linkage'] },
     serializationStrategy: 'id',

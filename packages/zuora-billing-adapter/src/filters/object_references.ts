@@ -22,7 +22,7 @@ import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { collections, multiIndex } from '@salto-io/lowerdash'
 import { SETTINGS_TYPE_PREFIX, TASK_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
-import { isObjectDef } from '../element_utils'
+import { getTypeNameAsReferenced, isObjectDef } from '../element_utils'
 
 const { flatMapAsync, toAsyncIterable, awu } = collections.asynciterable
 
@@ -60,14 +60,14 @@ const filterCreator: FilterCreator = () => ({
         name: 'typeLowercaseLookup',
         filter: isObjectDef,
         // id name changes are currently not allowed so it's ok to use the elem id
-        key: type => [type.elemID.name.toLowerCase()],
+        key: type => [getTypeNameAsReferenced(type)],
         map: type => type.elemID,
       })
       .addIndex({
         name: 'fieldLowercaseLookup',
         filter: isField,
         // id name changes are currently not allowed so it's ok to use the elem id
-        key: field => [field.elemID.typeName.toLowerCase(), field.elemID.name],
+        key: field => [getTypeNameAsReferenced(field.parent), field.elemID.name],
         map: field => field.elemID,
       })
       .process(

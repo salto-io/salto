@@ -37,8 +37,14 @@ const addFinanceInformationDependencies = (
     }
 
     Object.keys(financeInformation)
+      // financeInformation entries comes in couples - '.*AccountingCode' and '.*AccountingCodeType'
+      // for example:
+      // deferredRevenueAccountingCode & deferredRevenueAccountingCodeType
+      // recognizedRevenueAccountingCode & recognizedRevenueAccountingCodeType
       .filter(key => /^.*AccountingCode$/.test(key))
       .forEach(key => {
+        // each couple of fields (as mentioned above) refer to an accountingCodeItem
+        // with a unique combination of name & type
         const accountingCodeItem = accountingCodeItems.find(item =>
           item.value.name === financeInformation[key] && item.value.type === financeInformation[`${key}Type`])
         if (isDefined(accountingCodeItem)) {
@@ -50,7 +56,8 @@ const addFinanceInformationDependencies = (
 }
 
 /**
- * Add references to fields used as parameters in workflow tasks.
+ * Add references to fields in financeInformation
+ * (an object field in ProductRatePlan->ProductRatePlanCharges)
  */
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {

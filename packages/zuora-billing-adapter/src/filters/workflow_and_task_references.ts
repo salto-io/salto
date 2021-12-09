@@ -183,7 +183,7 @@ const filterCreator: FilterCreator = () => ({
       return
     }
     const workflowType = elements.filter(isObjectType)
-      .find(e => e.elemID.name === WORKFLOW_EXPORT_TYPE)
+      .find(e => e.elemID.name === WORKFLOW_DETAILED_TYPE)
     if (workflowType === undefined) {
       log.warn('Could not find %s object type', WORKFLOW_DETAILED_TYPE)
       return

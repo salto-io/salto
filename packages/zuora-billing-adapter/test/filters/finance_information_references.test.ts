@@ -120,9 +120,8 @@ describe('finance information references filter', () => {
       const ratePlan = elements.find(e => e.elemID.name === 'rate_plan') as InstanceElement
       const { financeInformation } = ratePlan.value.productRatePlanCharges[0]
       expect(financeInformation.someAccountingCode).toBeInstanceOf(ReferenceExpression)
-      expect(financeInformation.someAccountingCode.elemID.getFullName()).toEqual(`zuora_billing.${ACCOUNTING_CODE_ITEM_TYPE}.instance.Cash_Check.name`)
-      expect(financeInformation.someAccountingCodeType).toBeInstanceOf(ReferenceExpression)
-      expect(financeInformation.someAccountingCodeType.elemID.getFullName()).toEqual(`zuora_billing.${ACCOUNTING_CODE_ITEM_TYPE}.instance.Cash_Check.type`)
+      expect(financeInformation.someAccountingCode.elemID.getFullName()).toEqual(`zuora_billing.${ACCOUNTING_CODE_ITEM_TYPE}.instance.Cash_Check`)
+      expect(financeInformation.someAccountingCodeType).toBeUndefined()
 
       // if the accounting code item doesn't exists the value isn't replaced
       expect(financeInformation.notAnAccountingCode).toEqual('invalid')

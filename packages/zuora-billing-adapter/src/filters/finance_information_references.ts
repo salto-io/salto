@@ -50,7 +50,7 @@ const addFinanceInformationDependencies = (
         if (isDefined(accountingCodeItem)) {
           // one field should be with with a reference, and the second is unnecessary
           financeInformation[key] = new ReferenceExpression(accountingCodeItem.elemID)
-          _.omit(financeInformation, `${key}Type`)
+          _.unset(financeInformation, `${key}Type`)
         }
       })
   })

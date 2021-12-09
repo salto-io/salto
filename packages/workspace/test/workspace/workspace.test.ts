@@ -54,6 +54,7 @@ import { Path } from '../../src/workspace/path_index'
 import { mockState } from '../common/state'
 import * as multiEnvSrcLib from '../../src/workspace/nacl_files/multi_env/multi_env_source'
 import { AdaptersConfigSource } from '../../src/workspace/adapters_config_source'
+import { createElementSelector } from '../../src/workspace/element_selector'
 
 
 const { awu } = collections.asynciterable
@@ -129,6 +130,7 @@ const createState = (
   elements: createInMemoryElementSource(elements),
   pathIndex: new InMemoryRemoteMap<Path[]>(),
   servicesUpdateDate: new InMemoryRemoteMap(),
+  referenceSources: new InMemoryRemoteMap(),
   saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
 }), persistent)
 const createWorkspace = async (
@@ -3264,6 +3266,74 @@ describe('workspace', () => {
         mockState([new ObjectType({ elemID: new ElemID('salto', 'something') })])
       )
       expect(await ws.isEmpty(true)).toBeTruthy()
+    })
+  })
+
+  describe('getElementIdsBySelectors', () => {
+    let ws: Workspace
+
+    const defaultElem = new ObjectType({
+      elemID: new ElemID('adapter', 'default'),
+    })
+
+    const inactiveElem = new ObjectType({
+      elemID: new ElemID('adapter', 'inactive'),
+    })
+    beforeEach(async () => {
+      ws = await createWorkspace(
+        undefined,
+        undefined,
+        {
+          getWorkspaceConfig: jest.fn().mockImplementation(() => ({
+            envs: [
+              { name: 'default', services: ['salto'] },
+              { name: 'inactive', services: ['salto'] },
+            ],
+            uid: '',
+            name: 'test',
+            currentEnv: 'default',
+          })),
+          setWorkspaceConfig: jest.fn(),
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource(
+              [defaultElem]
+            ),
+            state: createState([]),
+          },
+          inactive: {
+            naclFiles: createMockNaclFileSource(
+              [inactiveElem]
+            ),
+            state: createState([]),
+          },
+        }
+      )
+    })
+
+    it('When envName is passed should use the env', async () => {
+      const selector = createElementSelector('adapter.*')
+      const ids = await awu(await ws.getElementIdsBySelectors(
+        [selector],
+        { source: 'env', envName: 'inactive' }
+      )).toArray()
+      expect(ids.map(id => id.getFullName())).toEqual(['adapter.inactive'])
+    })
+
+    it('When envName is not passed should use the current env', async () => {
+      const selector = createElementSelector('adapter.*')
+      const ids = await awu(await ws.getElementIdsBySelectors(
+        [selector],
+        { source: 'env' }
+      )).toArray()
+      expect(ids.map(id => id.getFullName())).toEqual(['adapter.default'])
     })
   })
 })

@@ -106,17 +106,14 @@ export type EnvironmentsSources = {
 
 export type FromSourceWithEnv = {
   source: 'env'
-  fromEnv? : string
+  envName? : string
 }
 
 const isFromSourceWithEnv = (
   value: {source: FromSource} | FromSourceWithEnv
-): value is FromSourceWithEnv => {
-  if (value.source === 'env') {
-    return 'fromEnv' in value
-  }
-  return false
-}
+): value is FromSourceWithEnv =>
+  value.source === 'env'
+
 export type Workspace = {
   uid: string
   name: string
@@ -161,10 +158,7 @@ export type Workspace = {
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementIdsBySelectors: (
     selectors: ElementSelector[],
-    from: {
-      source: 'env'
-      envName?: string
-    } | {
+    from: FromSourceWithEnv | {
       source: FromSource
     },
     compact?: boolean,
@@ -891,7 +885,7 @@ export const loadWorkspace = async (
       selectors: ElementSelector[], from, compacted = false,
     ) => {
       const env = isFromSourceWithEnv(from)
-        ? from.fromEnv ?? currentEnv()
+        ? from.envName ?? currentEnv()
         : currentEnv()
 
       return (await getLoadedNaclFilesSource())

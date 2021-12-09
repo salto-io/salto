@@ -183,7 +183,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       recurseInto: [
         {
           type: 'PageBeanFieldConfigurationIssueTypeItem',
-          toField: 'fieldConfigurationIssueTypeItems',
+          toField: 'items',
           context: [{ name: 'schemeId', fromField: 'id' }],
         },
       ],
@@ -191,7 +191,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   FieldConfigurationScheme: {
     transformation: {
-      fieldTypeOverrides: [{ fieldName: 'fieldConfigurationIssueTypeItems', fieldType: 'list<FieldConfigurationIssueTypeItem>' }],
+      fieldTypeOverrides: [{ fieldName: 'items', fieldType: 'list<FieldConfigurationIssueTypeItem>' }],
     },
   },
   PageBeanFieldConfigurationIssueTypeItem: { // FieldConfigurationIssueTypeItem
@@ -238,7 +238,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       recurseInto: [
         {
           type: 'PageBeanIssueTypeSchemeMapping',
-          toField: 'issueTypeIds',
+          toField: 'issueTypes',
           context: [{ name: 'schemeId', fromField: 'id' }],
         },
       ],
@@ -246,7 +246,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   IssueTypeScheme: {
     transformation: {
-      fieldTypeOverrides: [{ fieldName: 'issueTypeIds', fieldType: 'list<IssueTypeSchemeMapping>' }],
+      fieldTypeOverrides: [{ fieldName: 'issueTypes', fieldType: 'list<IssueTypeSchemeMapping>' }],
     },
   },
   PageBeanIssueTypeSchemeMapping: {
@@ -267,7 +267,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       recurseInto: [
         {
           type: 'PageBeanIssueTypeScreenSchemeItem',
-          toField: 'issueTypeScreenSchemeItems',
+          toField: 'items',
           context: [{ name: 'schemeId', fromField: 'id' }],
         },
       ],
@@ -275,7 +275,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
   },
   IssueTypeScreenScheme: {
     transformation: {
-      fieldTypeOverrides: [{ fieldName: 'issueTypeScreenSchemeItems', fieldType: 'list<IssueTypeScreenSchemeItem>' }],
+      fieldTypeOverrides: [{ fieldName: 'items', fieldType: 'list<IssueTypeScreenSchemeItem>' }],
     },
   },
   PageBeanIssueTypeScreenSchemeItem: {

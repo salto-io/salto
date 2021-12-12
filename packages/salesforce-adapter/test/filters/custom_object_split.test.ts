@@ -15,11 +15,18 @@
 */
 import 'jest-extended'
 import _ from 'lodash'
-import { ObjectType, BuiltinTypes, Element, ElemID } from '@salto-io/adapter-api'
+import { BuiltinTypes, Element, ElemID, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/custom_object_split'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
-import { METADATA_TYPE, CUSTOM_OBJECT, API_NAME, SALESFORCE, OBJECTS_PATH } from '../../src/constants'
+import {
+  API_NAME,
+  CUSTOM_OBJECT,
+  INSTALLED_PACKAGES_PATH,
+  METADATA_TYPE,
+  OBJECTS_PATH,
+  SALESFORCE,
+} from '../../src/constants'
 
 
 describe('Custom Object Split filter', () => {
@@ -30,16 +37,17 @@ describe('Custom Object Split filter', () => {
     await filter().onFetch(elements)
     return elements
   }
-
   const noNameSpaceObject = new ObjectType({
     elemID: CUSTOM_OBJECT_TYPE_ID,
     fields: {
       standard: {
         refType: BuiltinTypes.STRING,
       },
+      // eslint-disable-next-line camelcase
       custom__c: {
         refType: BuiltinTypes.STRING,
       },
+      // eslint-disable-next-line camelcase
       custom_namespace__c: {
         refType: BuiltinTypes.STRING,
         annotations: {
@@ -58,9 +66,11 @@ describe('Custom Object Split filter', () => {
       standard: {
         refType: BuiltinTypes.STRING,
       },
+      // eslint-disable-next-line camelcase
       custom__c: {
         refType: BuiltinTypes.STRING,
       },
+      // eslint-disable-next-line camelcase
       custom_namespace__c: {
         refType: BuiltinTypes.STRING,
         annotations: {
@@ -74,53 +84,88 @@ describe('Custom Object Split filter', () => {
     },
   })
 
-  describe.each`
-    description                 |   customObject
-    ${'non namespace object'}   |   ${noNameSpaceObject}
-    ${'namespace object'}       |   ${namespaceObject}
-  `('$description', ({ customObject }) => {
-  let elements: Element[]
+  describe('should split non-Namespace Custom Object to elements', () => {
+    let elements: Element[]
+    beforeEach(async () => {
+      elements = await runFilter(noNameSpaceObject)
+    })
 
-  beforeEach(async () => {
-    elements = await runFilter(customObject)
-    expect(elements).toBeDefined()
-    expect(elements.length).toEqual(3)
+    it('should create annotations object', () => {
+      const annotationsObj = elements.find(obj =>
+        _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
+          'CustomObject', 'CustomObjectAnnotations'])) as ObjectType
+      expect(annotationsObj).toBeDefined()
+      expect(Object.values(annotationsObj.fields).length).toEqual(0)
+      expect(annotationsObj.annotations[METADATA_TYPE]).toEqual(CUSTOM_OBJECT)
+    })
+
+    it('should create standard fields object', () => {
+      const standardFieldsObj = elements.find(obj =>
+        _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
+          'CustomObject', 'CustomObjectStandardFields'])) as ObjectType
+      expect(standardFieldsObj).toBeDefined()
+      expect(Object.values(standardFieldsObj.annotations).length).toEqual(0)
+      expect(standardFieldsObj.fields.standard).toBeDefined()
+      expect(standardFieldsObj.fields.standard
+        .isEqual(noNameSpaceObject.fields.standard)).toBeTruthy()
+    })
+
+    it('should create custom fields object with all custom fields', () => {
+      const customFieldsObj = elements.find(obj =>
+        _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
+          'CustomObject', 'CustomObjectCustomFields'])) as ObjectType
+      expect(customFieldsObj).toBeDefined()
+      expect(Object.values(customFieldsObj.annotations).length).toEqual(0)
+      expect(customFieldsObj.fields.custom__c).toBeDefined()
+      expect(customFieldsObj.fields.custom__c
+        .isEqual(noNameSpaceObject.fields.custom__c)).toBeTruthy()
+      expect(customFieldsObj.fields.custom_namespace__c).toBeDefined()
+      expect(customFieldsObj.fields.custom_namespace__c
+        .isEqual(noNameSpaceObject.fields.custom_namespace__c)).toBeTruthy()
+    })
   })
 
-  it('should create annotations object', () => {
-    const annotationsObj = elements.find(obj =>
-      _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
-        'CustomObject', 'CustomObjectAnnotations'])) as ObjectType
-    expect(annotationsObj).toBeDefined()
-    expect(Object.values(annotationsObj.fields).length).toEqual(0)
-    expect(annotationsObj.annotations[METADATA_TYPE]).toEqual(CUSTOM_OBJECT)
+  describe('should split namespace Custom Object to elements', () => {
+    let elements: Element[]
+    beforeEach(async () => {
+      elements = await runFilter(namespaceObject)
+    })
+
+    it('should create annotations object inside the installed packages folder', () => {
+      const annotationsObj = elements.find(obj =>
+        _.isEqual(obj.path, [SALESFORCE, INSTALLED_PACKAGES_PATH, 'namespace', OBJECTS_PATH,
+          'CustomObject', 'CustomObjectAnnotations'])) as ObjectType
+      expect(annotationsObj).toBeDefined()
+      expect(Object.values(annotationsObj.fields).length).toEqual(0)
+      expect(annotationsObj.annotations[METADATA_TYPE]).toEqual(CUSTOM_OBJECT)
+    })
+
+    it('should create standard fields object inside the installed packages folder', () => {
+      const standardFieldsObj = elements.find(obj =>
+        _.isEqual(obj.path, [SALESFORCE, INSTALLED_PACKAGES_PATH, 'namespace', OBJECTS_PATH,
+          'CustomObject', 'CustomObjectStandardFields'])) as ObjectType
+      expect(standardFieldsObj).toBeDefined()
+      expect(Object.values(standardFieldsObj.annotations).length).toEqual(0)
+      expect(standardFieldsObj.fields.standard).toBeDefined()
+      expect(standardFieldsObj.fields.standard
+        .isEqual(namespaceObject.fields.standard)).toBeTruthy()
+    })
+
+    it('should create namespace custom fields object with all custom fields inside the objects folder', () => {
+      const customFieldsObj = elements.find(obj =>
+        _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
+          'CustomObject', 'CustomObjectCustomFields'])) as ObjectType
+      expect(customFieldsObj).toBeDefined()
+      expect(Object.values(customFieldsObj.annotations).length).toEqual(0)
+      expect(customFieldsObj.fields.custom_namespace__c).toBeDefined()
+      expect(customFieldsObj.fields.custom_namespace__c
+        .isEqual(namespaceObject.fields.custom_namespace__c)).toBeTruthy()
+      expect(customFieldsObj.fields.custom__c).toBeDefined()
+      expect(customFieldsObj.fields.custom__c
+        .isEqual(namespaceObject.fields.custom__c)).toBeTruthy()
+    })
   })
 
-  it('should create standard fields object', () => {
-    const standardFieldsObj = elements.find(obj =>
-      _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
-        'CustomObject', 'CustomObjectStandardFields'])) as ObjectType
-    expect(standardFieldsObj).toBeDefined()
-    expect(Object.values(standardFieldsObj.annotations).length).toEqual(0)
-    expect(standardFieldsObj.fields.standard).toBeDefined()
-    expect(standardFieldsObj.fields.standard
-      .isEqual(customObject.fields.standard)).toBeTruthy()
-  })
-
-  it('should create custom fields object', () => {
-    const customFieldsObj = elements.find(obj =>
-      _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH,
-        'CustomObject', 'CustomObjectCustomFields'])) as ObjectType
-    expect(customFieldsObj).toBeDefined()
-    expect(Object.values(customFieldsObj.annotations).length).toEqual(0)
-    expect(customFieldsObj.fields.custom__c).toBeDefined()
-    expect(customFieldsObj.fields.custom__c
-      .isEqual(customObject.fields.custom__c)).toBeTruthy()
-    expect(customFieldsObj.fields.custom_namespace__c).toBeDefined()
-    expect(customFieldsObj.fields.custom_namespace__c
-      .isEqual(customObject.fields.custom_namespace__c)).toBeTruthy()
-  })
-})
   describe('when split elements contains empty objects', () => {
     const getSplitElementsPaths = async (...customObjects: ObjectType[]): Promise<string[][]> => {
       const splitElements = await runFilter(...customObjects)
@@ -172,6 +217,7 @@ describe('Custom Object Split filter', () => {
       ])
     })
   })
+
   it('should not split non-custom object', async () => {
     const nonCustomObject = new ObjectType({
       elemID: new ElemID(SALESFORCE, 'NonCustomObject'),

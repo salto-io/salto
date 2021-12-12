@@ -19,7 +19,7 @@ import { pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { isCustom, isCustomObject } from '../transformers/transformer'
 import { FilterWith } from '../filter'
-import { getObjectDirectoryPath } from './custom_objects'
+import { getNamespaceObjectDirectoryPath, getObjectDirectoryPath } from './custom_objects'
 
 const { awu } = collections.asynciterable
 
@@ -43,14 +43,13 @@ const createCustomFieldsObject = (customObject: ObjectType): ObjectType => {
     }
   )
 }
-
 const customObjectToSplitElements = async (customObject: ObjectType): Promise<ObjectType[]> => {
   const annotationsObject = new ObjectType({
     elemID: customObject.elemID,
     annotationRefsOrTypes: customObject.annotationRefTypes,
     annotations: customObject.annotations,
     path: [
-      ...getObjectDirectoryPath(customObject),
+      ...await getNamespaceObjectDirectoryPath(customObject),
       annotationsFileName(customObject.elemID.name),
     ],
   })
@@ -58,7 +57,7 @@ const customObjectToSplitElements = async (customObject: ObjectType): Promise<Ob
     elemID: customObject.elemID,
     fields: _.pickBy(customObject.fields, f => !isCustom(f.elemID.getFullName())),
     path: [
-      ...getObjectDirectoryPath(customObject),
+      ...await getNamespaceObjectDirectoryPath(customObject),
       standardFieldsFileName(customObject.elemID.name),
     ],
   })

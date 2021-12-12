@@ -15,8 +15,9 @@
 */
 import { AccountId } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { AuthParams } from '@salto-io/adapter-components/src/client/http_connection'
 import { logger } from '@salto-io/logging'
-import { Credentials, UsernamePasswordCredentials } from '../auth'
+import { Credentials, isOauthAccessTokenCredentials, OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../auth'
 
 const log = logger(module)
 
@@ -26,9 +27,14 @@ const MARKETPLACE_NAME = 'Salto'
 const MARKETPLACE_ORG_ID = 5110
 const MARKETPLACE_APP_ID = 608042
 
-// TODO change validation when switching to oauth
+const APP_MARKETPLACE_HEADERS = {
+  'X-Zendesk-Marketplace-Name': MARKETPLACE_NAME,
+  'X-Zendesk-Marketplace-Organization-Id': MARKETPLACE_ORG_ID,
+  'X-Zendesk-Marketplace-App-Id': MARKETPLACE_APP_ID,
+}
+
 export const validateCredentials = async ({ credentials, connection }: {
-  credentials: UsernamePasswordCredentials
+  credentials: Credentials
   connection: clientUtils.APIConnection
 }): Promise<AccountId> => {
   try {
@@ -41,20 +47,33 @@ export const validateCredentials = async ({ credentials, connection }: {
   return credentials.subdomain
 }
 
+const usernamePasswordAuthParamsFunc = (
+  { username, password }: UsernamePasswordCredentials
+): AuthParams => ({
+  auth: {
+    username,
+    password,
+  },
+  headers: APP_MARKETPLACE_HEADERS,
+})
+
+const accessTokenAuthParamsFunc = (
+  { accessToken }: OauthAccessTokenCredentials
+): AuthParams => ({
+  headers: {
+    Authorization: `Bearer ${accessToken}`,
+    ...APP_MARKETPLACE_HEADERS,
+  },
+})
+
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => (
   clientUtils.axiosConnection({
     retryOptions,
-    authParamsFunc: async ({ username, password }: Credentials) => ({
-      auth: {
-        username,
-        password,
-      },
-      headers: {
-        'X-Zendesk-Marketplace-Name': MARKETPLACE_NAME,
-        'X-Zendesk-Marketplace-Organization-Id': MARKETPLACE_ORG_ID,
-        'X-Zendesk-Marketplace-App-Id': MARKETPLACE_APP_ID,
-      },
-    }),
+    authParamsFunc: async (creds: Credentials) => (
+      isOauthAccessTokenCredentials(creds)
+        ? accessTokenAuthParamsFunc(creds)
+        : usernamePasswordAuthParamsFunc(creds)
+    ),
     baseURLFunc: ({ subdomain }) => baseUrl(subdomain),
     credValidateFunc: validateCredentials,
   })

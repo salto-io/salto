@@ -196,7 +196,7 @@ export class ElemID {
         && this.nameParts.length === 1)
   }
 
-  isBaseId(): boolean {
+  isBaseID(): boolean {
     return (this.idType === 'field' && this.nameParts.length === 1) || this.isTopLevel()
   }
 

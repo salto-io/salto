@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, Element, ElemID, InstanceElement, ObjectType, SaltoError, Value } from '@salto-io/adapter-api'
+import { mockFunction } from '@salto-io/test-utils'
 import * as workspace from '@salto-io/workspace'
 import { elementSource } from '@salto-io/workspace'
 import { mockState } from './state'
@@ -98,6 +99,8 @@ export const mockWorkspace = ({
     addService: jest.fn(),
     updateServiceCredentials: jest.fn(),
     updateServiceConfig: jest.fn(),
+    getReferenceSourcesIndex: mockFunction<workspace.Workspace['getReferenceSourcesIndex']>(),
+    getReferenceTargetsIndex: mockFunction<workspace.Workspace['getReferenceSourcesIndex']>(),
     clear: jest.fn(),
     getElementIdsBySelectors: jest.fn(),
     hasErrors: () => errors.length > 0,

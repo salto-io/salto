@@ -31,13 +31,13 @@ describe('change validator creator', () => {
         {
           elemID: new ElemID(ZENDESK_SUPPORT, 'obj'),
           severity: 'Error',
-          message: 'Deploy is not supported.',
+          message: 'Deploy is not supported in adapter zendesk_support.',
           detailedMessage: 'Deploy is not supported.',
         },
         {
           elemID: new ElemID(ZENDESK_SUPPORT, 'obj2'),
           severity: 'Error',
-          message: 'Deploy is not supported.',
+          message: 'Deploy is not supported in adapter zendesk_support.',
           detailedMessage: 'Deploy is not supported.',
         },
       ])

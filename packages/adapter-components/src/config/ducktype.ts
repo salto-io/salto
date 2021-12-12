@@ -75,13 +75,18 @@ export const validateApiDefinitionConfig = (
       isDefined,
     ),
   )
+  const configMap = _.pickBy(
+    _.mapValues(adapterApiConfig.types, typeDef => typeDef.transformation),
+    isDefined,
+  )
+  // TODO: remove this check once singleton types are implemented in ducktype
+  if (Object.values(configMap).some(def => def.isSingleton !== undefined)) {
+    throw new Error('transformation.isSingleton flag is not supported in this adapter')
+  }
   validateTransoformationConfig(
     apiDefinitionConfigPath,
     adapterApiConfig.typeDefaults.transformation,
-    _.pickBy(
-      _.mapValues(adapterApiConfig.types, typeDef => typeDef.transformation),
-      isDefined,
-    ),
+    configMap,
   )
 }
 

@@ -23,6 +23,18 @@ export type UsernamePasswordCredentials = {
   subdomain: string
 }
 
+export type OauthAccessTokenCredentials = {
+  accessToken: string
+  subdomain: string
+}
+
+export type OauthRequestParameters = {
+  clientId: string
+  clientSecret: string
+  port: number
+  subdomain: string
+}
+
 export const usernamePasswordCredentialsType = createMatchingObjectType<
   UsernamePasswordCredentials
 >({
@@ -43,4 +55,61 @@ export const usernamePasswordCredentialsType = createMatchingObjectType<
   },
 })
 
-export type Credentials = UsernamePasswordCredentials
+export const oauthAccessTokenCredentialsType = createMatchingObjectType<
+  OauthAccessTokenCredentials
+>({
+  elemID: new ElemID(constants.ZENDESK_SUPPORT),
+  fields: {
+    accessToken: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+    subdomain: {
+      refType: BuiltinTypes.STRING,
+      annotations: { _required: true },
+    },
+  },
+})
+
+export const oauthRequestParametersType = createMatchingObjectType<
+  OauthRequestParameters
+>({
+  elemID: new ElemID(constants.ZENDESK_SUPPORT),
+  fields: {
+    clientId: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        message: 'Client ID',
+        _required: true,
+      },
+    },
+    clientSecret: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        message: 'Client Secret',
+        _required: true,
+      },
+    },
+    port: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: {
+        message: 'Port',
+        _required: true,
+      },
+    },
+    subdomain: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        message: 'subdomain',
+        _required: true,
+      },
+    },
+  },
+})
+
+export type Credentials = UsernamePasswordCredentials | OauthAccessTokenCredentials
+
+export const isOauthAccessTokenCredentials = (
+  creds: Credentials
+): creds is OauthAccessTokenCredentials =>
+  (creds as OauthAccessTokenCredentials).accessToken !== undefined

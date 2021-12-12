@@ -39,7 +39,7 @@ import { WorkspaceConfigSource } from './workspace_config_source'
 import { MergeError, mergeElements } from '../merger'
 import { RemoteElementSource, ElementsSource, mapReadOnlyElementsSource } from './elements_source'
 import { createMergeManager, ElementMergeManager, ChangeSet, createEmptyChangeSet, MergedRecoveryMode, RecoveryOverrideFunc } from './nacl_files/elements_cache'
-import { RemoteMap, RemoteMapCreator } from './remote_map'
+import { ReadOnlyRemoteMap, RemoteMap, RemoteMapCreator } from './remote_map'
 import { serialize, deserializeMergeErrors, deserializeSingleElement, deserializeValidationErrors } from '../serializer/elements'
 import { AdaptersConfigSource } from './adapters_config_source'
 import { updateReferenceIndexes } from './reference_indexes'
@@ -106,17 +106,14 @@ export type EnvironmentsSources = {
 
 export type FromSourceWithEnv = {
   source: 'env'
-  fromEnv? : string
+  envName? : string
 }
 
 const isFromSourceWithEnv = (
   value: {source: FromSource} | FromSourceWithEnv
-): value is FromSourceWithEnv => {
-  if (value.source === 'env') {
-    return 'fromEnv' in value
-  }
-  return false
-}
+): value is FromSourceWithEnv =>
+  value.source === 'env'
+
 export type Workspace = {
   uid: string
   name: string
@@ -154,15 +151,14 @@ export type Workspace = {
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
+  getReferenceSourcesIndex: () => Promise<ReadOnlyRemoteMap<ElemID[]>>
+  getReferenceTargetsIndex: () =>Promise<ReadOnlyRemoteMap<ElemID[]>>
   getElementOutgoingReferences: (id: ElemID) => Promise<ElemID[]>
   getElementIncomingReferences: (id: ElemID) => Promise<ElemID[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   getElementIdsBySelectors: (
     selectors: ElementSelector[],
-    from: {
-      source: 'env'
-      envName?: string
-    } | {
+    from: FromSourceWithEnv | {
       source: FromSource
     },
     compact?: boolean,
@@ -889,24 +885,34 @@ export const loadWorkspace = async (
       selectors: ElementSelector[], from, compacted = false,
     ) => {
       const env = isFromSourceWithEnv(from)
-        ? from.fromEnv ?? currentEnv()
+        ? from.envName ?? currentEnv()
         : currentEnv()
 
       return (await getLoadedNaclFilesSource())
-        .getElementIdsBySelectors(env, selectors, from.source, compacted)
+        .getElementIdsBySelectors(
+          env,
+          selectors,
+          (await getWorkspaceState()).states[env].referenceSources,
+          from.source,
+          compacted
+        )
     },
     getElementReferencedFiles: async id => (
       (await getLoadedNaclFilesSource()).getElementReferencedFiles(currentEnv(), id)
     ),
+    getReferenceSourcesIndex: async () => (await getWorkspaceState())
+      .states[currentEnv()].referenceSources,
+    getReferenceTargetsIndex: async () => (await getWorkspaceState())
+      .states[currentEnv()].referenceTargets,
     getElementOutgoingReferences: async id => {
-      if (!id.isBaseId()) {
+      if (!id.isBaseID()) {
         throw new Error(`getElementOutgoingReferences only support base ids, received ${id.getFullName()}`)
       }
       return await (await getWorkspaceState()).states[currentEnv()]
         .referenceTargets.get(id.getFullName()) ?? []
     },
     getElementIncomingReferences: async id => {
-      if (!id.isBaseId()) {
+      if (!id.isBaseID()) {
         throw new Error(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
       }
       return await (await getWorkspaceState()).states[currentEnv()]

@@ -166,7 +166,7 @@ export default class ZuoraAdapter implements AdapterOperations {
       t => t !== standardObjectTypeName
     )
     // settings include types can be fetched with the regular include types, since their types
-    // were already generatedטוב
+    // were already generated
     const settingsIncludeTypes = (this.userConfig[FETCH_CONFIG].settingsIncludeTypes ?? []).map(
       t => `${SETTINGS_TYPE_PREFIX}${t}`
     )

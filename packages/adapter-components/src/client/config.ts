@@ -20,6 +20,7 @@ import { ElemID, ObjectType, BuiltinTypes, FieldDefinition, createRestriction, C
 export type ClientRateLimitConfig = Partial<{
   total: number
   get: number
+  deploy: number
 }>
 
 export type ClientPageSizeConfig = Partial<{

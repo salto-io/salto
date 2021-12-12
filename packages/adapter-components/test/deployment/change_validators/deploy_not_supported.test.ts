@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { toChange, ObjectType, ElemID } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, toChange } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
-import { deployNotSupportedValidator } from '../src/change_validators'
+import { deployNotSupportedValidator } from '../../../src/deployment/change_validators/deploy_not_supported'
 
 describe('change validator creator', () => {
   describe('deployNotSupportedValidator', () => {
@@ -31,13 +31,13 @@ describe('change validator creator', () => {
         {
           elemID: new ElemID('myAdapter', 'obj'),
           severity: 'Error',
-          message: 'Deploy is not supported.',
+          message: 'Deploy is not supported in adapter myAdapter.',
           detailedMessage: 'Deploy is not supported.',
         },
         {
           elemID: new ElemID('myAdapter', 'obj2'),
           severity: 'Error',
-          message: 'Deploy is not supported.',
+          message: 'Deploy is not supported in adapter myAdapter.',
           detailedMessage: 'Deploy is not supported.',
         },
       ])

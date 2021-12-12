@@ -18,7 +18,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values as lowerfashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { ResponseValue } from './http_connection'
-import { ClientGetParams, HTTPClientInterface } from './http_client'
+import { ClientBaseParams, HTTPReadClientInterface } from './http_client'
 
 const { isDefined } = lowerfashValues
 const { makeArray } = collections.array
@@ -26,14 +26,14 @@ const log = logger(module)
 
 type RecursiveQueryArgFunc = Record<string, (entry: ResponseValue) => string>
 
-export type ClientGetWithPaginationParams = ClientGetParams & {
+export type ClientGetWithPaginationParams = ClientBaseParams & {
   recursiveQueryParams?: RecursiveQueryArgFunc
   paginationField?: string
 }
 
 export type PageEntriesExtractor = (page: ResponseValue) => ResponseValue[]
 export type GetAllItemsFunc = (args: {
-  client: HTTPClientInterface
+  client: HTTPReadClientInterface
   pageSize: number
   getParams: ClientGetWithPaginationParams
 }) => AsyncIterable<ResponseValue[]>
@@ -53,7 +53,7 @@ export type PaginationFunc = ({
 }) => Record<string, string>[]
 
 export type PaginationFuncCreator<T = {}> = (args: {
-  client: HTTPClientInterface
+  client: HTTPReadClientInterface
   pageSize: number
   getParams: ClientGetWithPaginationParams
 } & T) => PaginationFunc
@@ -276,7 +276,7 @@ export type Paginator = (
 export const createPaginator = ({ paginationFuncCreator, customEntryExtractor, client }: {
   paginationFuncCreator: PaginationFuncCreator
   customEntryExtractor?: PageEntriesExtractor
-  client: HTTPClientInterface
+  client: HTTPReadClientInterface
 }): Paginator => (
   (getParams, extractPageEntries) => traverseRequests(
     paginationFuncCreator({ client, pageSize: client.getPageSize(), getParams }),

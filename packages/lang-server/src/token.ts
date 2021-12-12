@@ -30,9 +30,8 @@ export const getToken = (fileContent: string, position: EditorPosition):
   // This is done to avoid parsing the entire file
   // and cause us to not support multiline tokens
   const line = lines[position.line]
-
   const lexerToken = wu(parser.tokenizeContent(line)).find(
-    token => token.col - 1 <= position.col && position.col < token.col + token.value.length - 1,
+    token => token.col - 1 <= position.col && position.col < token.col + token.value.length,
   )
   if (lexerToken === undefined) {
     return undefined

@@ -142,7 +142,8 @@ describe('restore', () => {
       const changes = await createRestoreChanges(
         createElementSource(allElement),
         createElementSource(allElement),
-        index
+        index,
+        new remoteMap.InMemoryRemoteMap<ElemID[]>(),
       )
       expect(changes).toHaveLength(0)
     })
@@ -173,7 +174,8 @@ describe('restore', () => {
         changes = await createRestoreChanges(
           createElementSource([...wsElements, nestedType]),
           createElementSource([...stateElements, nestedType]),
-          index
+          index,
+          new remoteMap.InMemoryRemoteMap<ElemID[]>(),
         )
       })
 
@@ -215,7 +217,8 @@ describe('restore', () => {
       changes = await createRestoreChanges(
         createElementSource([multiPathObjMerged]),
         createElementSource([]),
-        index
+        index,
+        new remoteMap.InMemoryRemoteMap<ElemID[]>(),
       )
     })
     it('should return only on change (avoid spliting by path hint)', () => {

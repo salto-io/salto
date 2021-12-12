@@ -127,6 +127,7 @@ export type MultiEnvSource = {
   getElementIdsBySelectors: (
     env: string,
     selectors: ElementSelector[],
+    referencedByIndex: RemoteMap<ElemID[]>,
     fromSource?: FromSource,
     compact?: boolean,
   ) => Promise<AsyncIterable<ElemID>>
@@ -379,15 +380,17 @@ const buildMultiEnvSource = (
   const getElementIdsBySelectors = async (
     env: string,
     selectors: ElementSelector[],
+    referenceSourcesIndex: RemoteMap<ElemID[]>,
     fromSource: FromSource = 'env',
     compact = false,
   ): Promise<AsyncIterable<ElemID>> => {
     const relevantSource: ElementsSource = await determineSource(env, fromSource)
-    return selectElementIdsByTraversal(
+    return selectElementIdsByTraversal({
       selectors,
-      relevantSource,
+      source: relevantSource,
+      referenceSourcesIndex,
       compact,
-    )
+    })
   }
 
   const mergeRoutedChanges = (routedChanges: RoutedChanges[]): RoutedChanges => ({

@@ -14,9 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS,
+  FieldDefinition, ListType, RestrictionAnnotationType } from '@salto-io/adapter-api'
 import { types } from '@salto-io/lowerdash'
 import { findDuplicates } from './validation_utils'
+import { getConfigWithDefault, TypeConfig, TypeDefaultsConfig } from './shared'
 
 export const DATA_FIELD_ENTIRE_OBJECT = '.'
 
@@ -33,6 +35,7 @@ export type FieldToHideType = FieldToAdjustType
 export type FieldTypeOverrideType = {
   fieldName: string
   fieldType: string
+  restrictions?: RestrictionAnnotationType
 }
 
 export type TransformationConfig = {
@@ -55,9 +58,11 @@ export type TransformationConfig = {
 
   // set '.' to indicate that the full object should be returned
   dataField?: string
+  // set to true if the defined instance element has only one instance
+  isSingleton?: boolean
 }
 
-export type TransformationDefaultConfig = types.PickyRequired<Partial<TransformationConfig>, 'idFields'>
+export type TransformationDefaultConfig = types.PickyRequired<Partial<Omit<TransformationConfig, 'isSingleton'>>, 'idFields'>
 
 export const createTransformationConfigTypes = (
   adapter: string,
@@ -198,4 +203,25 @@ export const validateTransoformationConfig = (
     defaultConfig.standaloneFields,
     _.mapValues(configMap, c => c.standaloneFields),
   )
+
+  const validateIsSingletonTypes = (Object.keys(configMap)
+    .filter(type => (
+      configMap[type].isSingleton
+      && (configMap[type].idFields !== undefined || configMap[type].fileNameFields !== undefined)
+    ))
+  )
+  if (validateIsSingletonTypes.length > 0) {
+    throw new Error(`Singleton types should not have dataField or fileNameFields set, misconfiguration found for the following types: ${validateIsSingletonTypes.toString()}`)
+  }
 }
+
+export const getTypeTransformationConfig = (
+  typeName: string,
+  typeConfig: Record<string, TypeConfig>,
+  typeDefaultConfig: TypeDefaultsConfig
+): TransformationConfig => (
+  getConfigWithDefault(
+    typeConfig[typeName]?.transformation,
+    typeDefaultConfig.transformation,
+  )
+)

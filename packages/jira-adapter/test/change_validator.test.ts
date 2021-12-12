@@ -31,13 +31,13 @@ describe('change validator creator', () => {
         {
           elemID: new ElemID(JIRA, 'obj'),
           severity: 'Error',
-          message: 'Deploy is not supported.',
+          message: 'Deploy is not supported in adapter jira.',
           detailedMessage: 'Deploy is not supported.',
         },
         {
           elemID: new ElemID(JIRA, 'obj2'),
           severity: 'Error',
-          message: 'Deploy is not supported.',
+          message: 'Deploy is not supported in adapter jira.',
           detailedMessage: 'Deploy is not supported.',
         },
       ])

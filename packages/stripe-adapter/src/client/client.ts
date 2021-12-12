@@ -26,6 +26,7 @@ const {
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   get: 25,
+  deploy: 25,
 }
 
 // Stripe uses cursor pagination so this parameter is not in use

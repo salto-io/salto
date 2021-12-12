@@ -15,7 +15,7 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
-import { getWithCursorPagination, getWithPageOffsetPagination, getWithPageOffsetAndLastPagination, getWithOffsetAndLimit, HTTPClientInterface, createPaginator, ResponseValue, PageEntriesExtractor, PaginationFuncCreator, PaginationFunc, traverseRequests } from '../../src/client'
+import { getWithCursorPagination, getWithPageOffsetPagination, getWithPageOffsetAndLastPagination, getWithOffsetAndLimit, HTTPReadClientInterface, createPaginator, ResponseValue, PageEntriesExtractor, PaginationFuncCreator, PaginationFunc, traverseRequests } from '../../src/client'
 
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
@@ -24,9 +24,9 @@ const extractPageEntries: PageEntriesExtractor = page => makeArray(page) as Resp
 
 describe('client_pagination', () => {
   describe('traverseRequests', () => {
-    const client: MockInterface<HTTPClientInterface> = {
-      getSinglePage: mockFunction<HTTPClientInterface['getSinglePage']>(),
-      getPageSize: mockFunction<HTTPClientInterface['getPageSize']>(),
+    const client: MockInterface<HTTPReadClientInterface> = {
+      getSinglePage: mockFunction<HTTPReadClientInterface['getSinglePage']>(),
+      getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>(),
     }
     const paginationFunc = mockFunction<PaginationFunc>()
     const customEntryExtractor = mockFunction<PageEntriesExtractor>()
@@ -592,9 +592,9 @@ describe('client_pagination', () => {
   })
 
   describe('getWithCursorPagination', () => {
-    const client: MockInterface<HTTPClientInterface> = {
-      getSinglePage: mockFunction<HTTPClientInterface['getSinglePage']>(),
-      getPageSize: mockFunction<HTTPClientInterface['getPageSize']>(),
+    const client: MockInterface<HTTPReadClientInterface> = {
+      getSinglePage: mockFunction<HTTPReadClientInterface['getSinglePage']>(),
+      getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>(),
     }
     beforeEach(() => {
       client.getSinglePage.mockReset()
@@ -761,9 +761,9 @@ describe('client_pagination', () => {
   })
 
   describe('createPaginator', () => {
-    const client: MockInterface<HTTPClientInterface> = {
-      getSinglePage: mockFunction<HTTPClientInterface['getSinglePage']>(),
-      getPageSize: mockFunction<HTTPClientInterface['getPageSize']>().mockReturnValueOnce(3),
+    const client: MockInterface<HTTPReadClientInterface> = {
+      getSinglePage: mockFunction<HTTPReadClientInterface['getSinglePage']>(),
+      getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>().mockReturnValueOnce(3),
     }
 
     it('should call the pagination function with the right paramters', () => {

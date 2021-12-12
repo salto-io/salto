@@ -33,21 +33,45 @@ export type ClientOpts<
   credentials: TCredentials
 }
 
-export type ClientGetParams = {
+export type ClientBaseParams = {
   url: string
   queryParams?: Record<string, string>
 }
 
-export interface HTTPClientInterface {
-  getSinglePage(params: ClientGetParams): Promise<Response<ResponseValue | ResponseValue[]>>
+export type ClientDataParams = ClientBaseParams & {
+  data: unknown
+}
 
+export type ClientParams = ClientBaseParams | ClientDataParams
+
+export interface HTTPReadClientInterface {
+  getSinglePage(params: ClientBaseParams): Promise<Response<ResponseValue | ResponseValue[]>>
   getPageSize(): number
 }
+
+export interface HTTPWriteClientInterface {
+  post(params: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>>
+  put(params: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>>
+  delete(params: ClientBaseParams): Promise<Response<ResponseValue | ResponseValue[]>>
+  patch(params: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>>
+}
+
+type HttpMethodToClientParams = {
+  get: ClientBaseParams
+  post: ClientDataParams
+  put: ClientDataParams
+  patch: ClientDataParams
+  delete: ClientBaseParams
+}
+
+const isMethodWithData = (params: ClientParams): params is ClientDataParams =>
+  'data' in params
 
 export abstract class AdapterHTTPClient<
   TCredentials,
   TRateLimitConfig extends ClientRateLimitConfig,
-> extends AdapterClientBase<TRateLimitConfig> implements HTTPClientInterface {
+> extends AdapterClientBase<TRateLimitConfig>
+  implements HTTPReadClientInterface, HTTPWriteClientInterface {
   protected readonly conn: Connection<TCredentials>
   private readonly credentials: TCredentials
 
@@ -93,21 +117,68 @@ export abstract class AdapterHTTPClient<
   @throttle<TRateLimitConfig>({ bucketName: 'get', keys: ['url', 'queryParams'] })
   @logDecorator(['url', 'queryParams'])
   @requiresLogin()
-  public async getSinglePage({
-    url, queryParams,
-  }: ClientGetParams): Promise<Response<ResponseValue | ResponseValue[]>> {
+  public async getSinglePage(params: ClientBaseParams):
+    Promise<Response<ResponseValue | ResponseValue[]>> {
+    return this.sendRequest('get', params)
+  }
+
+  @throttle<TRateLimitConfig>({ bucketName: 'deploy', keys: ['url', 'queryParams'] })
+  @logDecorator(['url', 'queryParams'])
+  @requiresLogin()
+  public async post(params: ClientDataParams):
+    Promise<Response<ResponseValue | ResponseValue[]>> {
+    return this.sendRequest('post', params)
+  }
+
+  @throttle<TRateLimitConfig>({ bucketName: 'deploy', keys: ['url', 'queryParams'] })
+  @logDecorator(['url', 'queryParams'])
+  @requiresLogin()
+  public async put(params: ClientDataParams):
+    Promise<Response<ResponseValue | ResponseValue[]>> {
+    return this.sendRequest('put', params)
+  }
+
+  @throttle<TRateLimitConfig>({ bucketName: 'deploy', keys: ['url', 'queryParams'] })
+  @logDecorator(['url', 'queryParams'])
+  @requiresLogin()
+  public async delete(params: ClientBaseParams):
+    Promise<Response<ResponseValue | ResponseValue[]>> {
+    return this.sendRequest('delete', params)
+  }
+
+  @throttle<TRateLimitConfig>({ bucketName: 'deploy', keys: ['url', 'queryParams'] })
+  @logDecorator(['url', 'queryParams'])
+  @requiresLogin()
+  public async patch(params: ClientDataParams):
+    Promise<Response<ResponseValue | ResponseValue[]>> {
+    return this.sendRequest('patch', params)
+  }
+
+  private async sendRequest<T extends keyof HttpMethodToClientParams>(
+    method: T,
+    params: HttpMethodToClientParams[T]
+  ): Promise<Response<ResponseValue | ResponseValue[]>> {
     if (this.apiClient === undefined) {
       // initialized by requiresLogin (through ensureLoggedIn in this case)
       throw new Error(`uninitialized ${this.clientName} client`)
     }
 
+    const { url, queryParams } = params
     try {
-      const { data, status } = await this.apiClient.get(
-        url,
-        queryParams !== undefined && Object.keys(queryParams).length > 0
-          ? { params: queryParams }
-          : undefined,
-      )
+      const requestQueryParams = queryParams !== undefined && Object.keys(queryParams).length > 0
+        ? { params: queryParams }
+        : undefined
+
+      const { data, status } = isMethodWithData(params)
+        ? await this.apiClient[method](
+          url,
+          params.data,
+          requestQueryParams,
+        )
+        : await this.apiClient[method](
+          url,
+          requestQueryParams,
+        )
       log.debug('Received response for %s (%s) with status %d', url, safeJsonStringify({ url, queryParams }), status)
       log.trace('Full HTTP response for %s: %s', url, safeJsonStringify({
         url, queryParams, response: data,
@@ -117,8 +188,8 @@ export abstract class AdapterHTTPClient<
         status,
       }
     } catch (e) {
-      log.warn(`failed to get ${url} ${queryParams}: ${e}, stack: ${e.stack}`)
-      throw new Error(`Failed to get ${url} with error: ${e}`)
+      log.warn(`failed to ${method} ${url} ${queryParams}: ${e}, stack: ${e.stack}, data: ${safeJsonStringify(e?.response?.data)}`)
+      throw new Error(`Failed to ${method} ${url} with error: ${e}`)
     }
   }
 }

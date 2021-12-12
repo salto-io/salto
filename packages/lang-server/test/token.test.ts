@@ -53,6 +53,6 @@ describe('Test go to definitions', () => {
     expect(getToken(naclFileContent, { line: 135, col: 0 })).toEqual({ value: 'vs.person', type: 'word' })
   })
   it('For a position of the last character of a valid token the right token should be return', () => {
-    expect(getToken(naclFileContent, { line: 135, col: 8 })).toEqual({ value: 'vs.person', type: 'word' })
+    expect(getToken(naclFileContent, { line: 135, col: 9 })).toEqual({ value: 'vs.person', type: 'word' })
   })
 })

@@ -23,6 +23,7 @@ import changeValidator from './change_validator'
 import { JiraConfig, getApiDefinitions } from './config'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import referenceBySelfLinkFilter from './filters/references_by_self_link'
+import issueTypeSchemeReferences from './filters/issue_type_scheme_references'
 import { JIRA } from './constants'
 import { removeScopedObjects } from './client/pagination'
 
@@ -32,6 +33,7 @@ const log = logger(module)
 
 export const DEFAULT_FILTERS = [
   referenceBySelfLinkFilter,
+  issueTypeSchemeReferences,
 ]
 
 export interface JiraAdapterParams {

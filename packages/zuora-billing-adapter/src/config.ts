@@ -325,6 +325,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       ],
     },
   },
+  // this type has only 'additionalProperties',
+  // but because we want to replace 'segmentName' with a reference it can't be nested
   [`${SETTINGS_TYPE_PREFIX}RuleDetail`]: {
     transformation: {
       fieldTypeOverrides: [
@@ -332,6 +334,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
         { fieldName: 'segmentName', fieldType: 'string' },
         { fieldName: 'transactionType', fieldType: 'string' },
       ],
+      // omitting and not hiding because the type is used inside an array, and can cause
+      // merge conflicts
       fieldsToOmit: [
         { fieldName: 'segmentId' },
       ],

@@ -188,7 +188,7 @@ const getFullElement = async (
   return (topLevelElement && resolvePath(topLevelElement, partial.elemID)) || partial
 }
 
-const getPositionFromTree = (
+export const getPositionFromTree = (
   treeBase: PositionContext,
   position: EditorPosition
 ): PositionContext => {

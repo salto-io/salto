@@ -13,8 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { getAllInstances, extractPageEntriesByNestedField } from './instance_elements'
-export { generateTypes, ParsedTypes } from './type_elements/element_generator'
-export { toPrimitiveType, ADDITIONAL_PROPERTIES_FIELD, SchemaObject, SchemasAndRefs, SchemaOrReference } from './type_elements/swagger_parser'
-export { loadSwagger, LoadedSwagger } from './swagger'
-export { addDeploymentAnnotations } from './deployment/annotations'
+import { isReferenceExpression, ObjectType, Values } from '@salto-io/adapter-api'
+import { transformValues } from './utils'
+
+export const resolveReferences = async (
+  values: Values,
+  type: ObjectType,
+): Promise<Values> => await transformValues({
+  values,
+  type,
+  strict: false,
+  transformFunc: async ({ value }) => {
+    if (isReferenceExpression(value)) {
+      return value.value
+    }
+    return value
+  },
+}) ?? {}

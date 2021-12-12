@@ -18,18 +18,19 @@ import {
   ElemID, ObjectType, BuiltinTypes, FieldDefinition, ListType, MapType,
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { RequestConfig, RequestDefaultConfig } from './request'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
+import { DeploymentRequests, FetchRequestConfig, FetchRequestDefaultConfig } from './request'
 
 export type TypeConfig<T extends TransformationConfig = TransformationConfig> = {
-  request?: RequestConfig
+  request?: FetchRequestConfig
+  deployRequests?: DeploymentRequests
   transformation?: T
 }
 
 export type TypeDefaultsConfig<
   TD extends TransformationDefaultConfig = TransformationDefaultConfig
 > = {
-  request?: RequestDefaultConfig
+  request?: FetchRequestDefaultConfig
   transformation: TD
 }
 
@@ -54,13 +55,17 @@ export const createAdapterApiConfigType = ({
 }: {
   adapter: string
   additionalFields?: Record<string, FieldDefinition>
-  requestTypes: { request: ObjectType; requestDefault: ObjectType }
+  requestTypes: {
+    fetchRequest: ObjectType
+    fetchRequestDefault: ObjectType
+    deployRequests: ObjectType
+  }
   transformationTypes: { transformation: ObjectType; transformationDefault: ObjectType }
 }): ObjectType => {
   const typeDefaultsConfigType = createMatchingObjectType<TypeDefaultsConfig>({
     elemID: new ElemID(adapter, 'typeDefaultsConfig'),
     fields: {
-      request: { refType: requestTypes.requestDefault },
+      request: { refType: requestTypes.fetchRequestDefault },
       transformation: {
         refType: transformationTypes.transformationDefault,
         annotations: {
@@ -73,7 +78,10 @@ export const createAdapterApiConfigType = ({
   const typesConfigType = createMatchingObjectType<TypeConfig>({
     elemID: new ElemID(adapter, 'typesConfig'),
     fields: {
-      request: { refType: requestTypes.request },
+      request: { refType: requestTypes.fetchRequest },
+      deployRequests: {
+        refType: requestTypes.deployRequests,
+      },
       transformation: { refType: transformationTypes.transformation },
     },
   })
@@ -116,8 +124,8 @@ export const createUserFetchConfigType = (
 )
 
 export const getConfigWithDefault = <
-  T extends TransformationConfig | RequestConfig | undefined,
-  S extends TransformationDefaultConfig | RequestDefaultConfig
+  T extends TransformationConfig | FetchRequestConfig | undefined,
+  S extends TransformationDefaultConfig | FetchRequestDefaultConfig
 >(
     typeSpecificConfig: T,
     defaultConfig: S,

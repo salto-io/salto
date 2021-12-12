@@ -13,8 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { getAllInstances, extractPageEntriesByNestedField } from './instance_elements'
-export { generateTypes, ParsedTypes } from './type_elements/element_generator'
-export { toPrimitiveType, ADDITIONAL_PROPERTIES_FIELD, SchemaObject, SchemasAndRefs, SchemaOrReference } from './type_elements/swagger_parser'
-export { loadSwagger, LoadedSwagger } from './swagger'
-export { addDeploymentAnnotations } from './deployment/annotations'
+import SwaggerParser from '@apidevtools/swagger-parser'
+import { OpenAPI } from 'openapi-types'
+
+export type LoadedSwagger = {
+  document: OpenAPI.Document
+  parser: SwaggerParser
+}
+
+export const loadSwagger = async (swaggerPath: string): Promise<LoadedSwagger> => {
+  const parser = new SwaggerParser()
+  const document = await parser.bundle(swaggerPath)
+  return {
+    document,
+    parser,
+  }
+}

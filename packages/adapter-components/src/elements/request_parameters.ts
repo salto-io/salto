@@ -17,13 +17,14 @@ import _ from 'lodash'
 import { Element, Values, isInstanceElement, isPrimitiveValue } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { strings } from '@salto-io/lowerdash'
 import { ClientGetWithPaginationParams } from '../client'
-import { RequestConfig, ARG_PLACEHOLDER_MATCHER } from '../config/request'
+import { FetchRequestConfig, ARG_PLACEHOLDER_MATCHER } from '../config/request'
 
 const log = logger(module)
 
 export type ComputeGetArgsFunc = (
-  request: RequestConfig,
+  request: FetchRequestConfig,
   contextElements?: Record<string, Element[]>,
   requestContext?: Record<string, unknown>,
 ) => ClientGetWithPaginationParams[]
@@ -53,7 +54,7 @@ const computeDependsOnURLs = (
   {
     url,
     dependsOn,
-  }: RequestConfig,
+  }: FetchRequestConfig,
   contextElements?: Record<string, Element[]>,
 ): string[] => {
   if (!url.includes('{')) {
@@ -88,22 +89,31 @@ const computeDependsOnURLs = (
   return potentialParams.map(p => url.replace(ARG_PLACEHOLDER_MATCHER, p))
 }
 
+export const getUrlVars = (url: string): string[] =>
+  Array.from(strings.matchAll(url, ARG_PLACEHOLDER_MATCHER)).map(match => match[1])
+
+export const setUrlVarsValues = (url: string, varsValues: Record<string, unknown>): string =>
+  url.replace(
+    ARG_PLACEHOLDER_MATCHER,
+    val => {
+      const replacement = varsValues[val.slice(1, -1)] ?? val
+      if (!isPrimitiveValue(replacement)) {
+        throw new Error(`Cannot replace arg ${val} in ${url} with non-primitive value ${replacement}`)
+      }
+      return replacement.toString()
+    }
+  )
+
 export const computeGetArgs: ComputeGetArgsFunc = (
   args,
   contextElements,
   requestContext
 ) => {
   // Replace known url params
-  const baseUrl = args.url.replace(
-    ARG_PLACEHOLDER_MATCHER,
-    val => {
-      const replacement = requestContext?.[val.slice(1, -1)] ?? val
-      if (!isPrimitiveValue(replacement)) {
-        throw new Error(`Cannot replace arg ${val} in ${args.url} with non-primitive value ${replacement}`)
-      }
-      return replacement.toString()
-    }
-  )
+  const baseUrl = requestContext !== undefined
+    ? setUrlVarsValues(args.url, requestContext)
+    : args.url
+
   const urls = computeDependsOnURLs(
     { url: baseUrl, dependsOn: args.dependsOn },
     contextElements,

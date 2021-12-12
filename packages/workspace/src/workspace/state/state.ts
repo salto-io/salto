@@ -22,7 +22,9 @@ import { serialize, deserializeSingleElement } from '../../serializer/elements'
 
 export type StateMetadataKey = 'version' | 'hash'
 
-export type StateData = {
+// This distinction is temporary for the transition to multiple services.
+// Remove this when no longer used, SALTO-1661
+type OldStateData = {
   elements: RemoteElementSource
   // The date of the last fetch
   accountsUpdateDate: RemoteMap<Date>
@@ -30,11 +32,36 @@ export type StateData = {
   saltoMetadata: RemoteMap<string, StateMetadataKey>
 }
 
+// This distinction is temporary for the transition to multiple services.
+// Remove this when no longer used, SALTO-1661
+type NewStateData = {
+  elements: RemoteElementSource
+  // The date of the last fetch
+  servicesUpdateDate: RemoteMap<Date>
+  pathIndex: PathIndex
+  saltoMetadata: RemoteMap<string, StateMetadataKey>
+}
+
+export type StateData = OldStateData | NewStateData
+
+// This function is temporary for the transition to multiple services.
+// Remove this when no longer used, SALTO-1661
+export const getUpdateDate = (data: StateData): RemoteMap<Date> => {
+  if ('servicesUpdateDate' in data) {
+    return data.servicesUpdateDate
+  }
+  return data.accountsUpdateDate
+}
+
 export interface State extends ElementsSource {
   set(element: Element): Promise<void>
   remove(id: ElemID): Promise<void>
   override(elements: AsyncIterable<Element>, accounts?: string[]): Promise<void>
   getAccountsUpdateDates(): Promise<Record<string, Date>>
+  // getServicesUpdateDates is deprecated, kept for backwards compatibility.
+  // use getAccountsUpdateDates.
+  // Remove this when no longer used, SALTO-1661
+  getServicesUpdateDates(): Promise<Record<string, Date>>
   existingAccounts(): Promise<string[]>
   overridePathIndex(unmergedElements: Element[]): Promise<void>
   updatePathIndex(unmergedElements: Element[], accountsToMaintain: string[]): Promise<void>

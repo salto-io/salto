@@ -27,10 +27,12 @@ import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { elementSource, pathIndex, remoteMap, createAdapterReplacedID } from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
+import { SALESFORCE } from '@salto-io/salesforce-adapter/src/constants'
 import { mockWorkspace } from '../common/workspace'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
-  FetchChangesResult, FetchProgressEvents, getAdaptersFirstFetchPartial, fetchChangesFromWorkspace,
+  FetchChangesResult, FetchProgressEvents, getAdaptersFirstFetchPartial,
+  fetchChangesFromWorkspace, createElemIdGetter,
 } from '../../src/core/fetch'
 import { getPlan, Plan } from '../../src/core/plan'
 import { createElementSource } from '../common/helpers'
@@ -309,7 +311,7 @@ describe('fetch', () => {
         expect(resultChanges.length).toBe(1)
 
         const workspaceChange = resultChanges[0].change
-        const [accountChange] = resultChanges[0].accountChanges
+        const [accountChange] = resultChanges[0].serviceChanges
 
         expect(workspaceChange.action).toBe('modify')
         expect(accountChange.action).toBe('modify')
@@ -805,8 +807,8 @@ describe('fetch', () => {
             [change] = changes
           })
           it('should contain the account changes', () => {
-            expect(change.accountChanges).toHaveLength(2)
-            expect(change.accountChanges[0].action).toEqual('modify')
+            expect(change.serviceChanges).toHaveLength(2)
+            expect(change.serviceChanges[0].action).toEqual('modify')
           })
           it('should contain the local change', () => {
             expect(change.pendingChanges).toHaveLength(1)
@@ -835,7 +837,7 @@ describe('fetch', () => {
       it('should return a single change with a conflict', () => {
         expect(changes).toHaveLength(1)
         const [change] = changes
-        expect(change.accountChanges).toHaveLength(1)
+        expect(change.serviceChanges).toHaveLength(1)
         expect(change.pendingChanges).toHaveLength(2)
       })
       it('should have the change that syncs the working copy to the account', () => {
@@ -1555,6 +1557,18 @@ describe('fetch from workspace', () => {
         .map(change => getChangeElement(change.change))
       unmergedDiffElement
         .forEach(frag => expect(changesElements.filter(e => e.isEqual(frag))).toHaveLength(1))
+    })
+  })
+
+  describe('elem id getter test', () => {
+    it('translated id to new account name', async () => {
+      const objID = new ElemID(SALESFORCE, 'obj')
+      const obj = new ObjectType({
+        elemID: new ElemID(`${SALESFORCE}accountName`, 'obj'),
+      })
+      const idGetter = await createElemIdGetter(awu([obj]), createElementSource([]))
+      expect(idGetter(SALESFORCE, { [OBJECT_SERVICE_ID]: objID.getFullName() },
+        'obj')).toEqual(objID)
     })
   })
 })

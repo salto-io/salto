@@ -68,6 +68,7 @@ export const mockWorkspace = ({
   accounts = ACCOUNTS,
   errors = [],
   accountConfigs = {},
+  accountToServiceName = {},
 }: {
   elements?: Element[]
   name?: string
@@ -77,6 +78,7 @@ export const mockWorkspace = ({
   errors?: SaltoError[]
   accountConfigs?: Record<string, InstanceElement>
   getValue?: Promise<Value | undefined>
+  accountToServiceName?: Record<string, string>
 }): workspace.Workspace => {
   const state = mockState(ACCOUNTS, stateElements || elements, index)
   return {
@@ -97,7 +99,7 @@ export const mockWorkspace = ({
     }),
     accountConfig: (accountName: string) => accountConfigs[accountName],
     getWorkspaceErrors: jest.fn().mockResolvedValue(errors),
-    getServiceFromAccountName: (account: string) => account,
+    getServiceFromAccountName: (account: string) => accountToServiceName[account] ?? account,
     addService: jest.fn(),
     updateServiceCredentials: jest.fn(),
     updateServiceConfig: jest.fn(),

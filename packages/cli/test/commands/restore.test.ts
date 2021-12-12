@@ -50,7 +50,7 @@ describe('restore command', () => {
     mockRestore = restore as typeof mockRestore
     mockRestore.mockReset()
     mockRestore.mockResolvedValue(
-      mocks.dummyChanges.map(change => ({ change, accountChanges: [change] }))
+      mocks.dummyChanges.map(change => ({ change, serviceChanges: [change] }))
     )
   })
 
@@ -260,7 +260,7 @@ describe('restore command', () => {
     it('should not print about addition changes of static files', async () => {
       const workspace = mocks.mockWorkspace({})
       mockRestore.mockResolvedValueOnce([
-        { change: mocks.staticFileChange('add'), accountChanges: [mocks.staticFileChange('add')] }])
+        { change: mocks.staticFileChange('add'), serviceChanges: [mocks.staticFileChange('add')] }])
 
       const result = await action({
         ...cliCommandArgs,
@@ -282,7 +282,7 @@ describe('restore command', () => {
     it('should warn of unrestoring modified static files', async () => {
       const workspace = mocks.mockWorkspace({})
       mockRestore.mockResolvedValueOnce([
-        { change: mocks.staticFileChange('modify'), accountChanges: [mocks.staticFileChange('modify')] }])
+        { change: mocks.staticFileChange('modify'), serviceChanges: [mocks.staticFileChange('modify')] }])
 
       const result = await action({
         ...cliCommandArgs,
@@ -304,7 +304,7 @@ describe('restore command', () => {
     it('should warn of unrestoring removed static files', async () => {
       const workspace = mocks.mockWorkspace({})
       mockRestore.mockResolvedValueOnce([
-        { change: mocks.staticFileChange('remove'), accountChanges: [mocks.staticFileChange('remove')] }])
+        { change: mocks.staticFileChange('remove'), serviceChanges: [mocks.staticFileChange('remove')] }])
 
       const result = await action({
         ...cliCommandArgs,

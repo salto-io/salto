@@ -54,7 +54,7 @@ export type DeployOptions = {
 export type PostFetchOptions = {
   currentAdapterElements: Element[]
   elementsByAccount: Readonly<Record<string, ReadonlyArray<Readonly<Element>>>>
-  accountToServiceNameMap: Record<string, string>
+  accountToServiceNameMap?: Record<string, string>
   progressReporter: ProgressReporter
 }
 

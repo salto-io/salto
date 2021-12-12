@@ -28,6 +28,7 @@ import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
 import { createElementSource } from './common/helpers'
 import { mockConfigType, mockEmptyConfigType, mockWorkspace, mockConfigInstance } from './common/workspace'
+import { getLoginStatuses } from '../src/api'
 
 const { awu } = collections.asynciterable
 const mockService = 'salto'
@@ -122,7 +123,7 @@ describe('api.ts', () => {
         unmergedElements: fetchedElements,
         elements: fetchedElements,
         mergeErrors: [],
-        adapterNameToConfigMessage: {},
+        accountNameToConfigMessage: {},
       })
     })
 
@@ -390,8 +391,8 @@ describe('api.ts', () => {
     })
 
     describe('addAdapter', () => {
-      it('should set adapter config', async () => {
-        const serviceName = 'test'
+      const serviceName = 'test'
+      beforeAll(() => {
         adapterCreators[serviceName] = {
           authenticationMethods: {
             basic: { credentialsType: new ObjectType({ elemID: new ElemID(serviceName) }) },
@@ -399,9 +400,19 @@ describe('api.ts', () => {
           operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
           validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
         }
+      })
+
+      it('should set adapter config', async () => {
         const wsp = mockWorkspace({})
         await api.addAdapter(wsp, serviceName)
         expect((wsp.addAccount as jest.Mock).call).toHaveLength(1)
+      })
+
+      it('should update workspace config if different account name provided', async () => {
+        const wsp = mockWorkspace({})
+        await api.addAdapter(wsp, serviceName, `${serviceName}account`)
+        expect((wsp.addAccount as jest.Mock).call).toHaveLength(1)
+        expect((wsp.updateAccountConfig as jest.Mock).call).toHaveLength(1)
       })
     })
 
@@ -440,7 +451,7 @@ describe('api.ts', () => {
       })
       const changes = await api.restore(ws)
       expect(changes).toHaveLength(1)
-      expect(_.keys(changes[0])).toEqual(['change', 'accountChanges'])
+      expect(_.keys(changes[0])).toEqual(['change', 'serviceChanges'])
     })
   })
 
@@ -488,7 +499,7 @@ describe('api.ts', () => {
         elements: fetchedElements,
         mergeErrors: [],
         updatedConfig: {},
-        adapterNameToConfigMessage: {},
+        accountNameToConfigMessage: {},
       })
     })
 
@@ -589,6 +600,21 @@ describe('api.ts', () => {
 
     it('should return changes', () => {
       expect(changes).toEqual(expectedChanges)
+    })
+  })
+  describe('getLoginStatuses', () => {
+    it('returns login status for each account', async () => {
+      const ws = mockWorkspace({
+        accounts: ['salto1', 'salto2'],
+        accountToServiceName: {
+          salto1: 'salto',
+          salto2: 'salto',
+        },
+      })
+      const statuses = await getLoginStatuses(ws)
+      expect(Object.keys(statuses).length).toEqual(2)
+      expect(Object.keys(statuses)).toContain('salto1')
+      expect(Object.keys(statuses)).toContain('salto2')
     })
   })
 })

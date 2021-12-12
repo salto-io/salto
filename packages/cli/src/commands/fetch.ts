@@ -168,7 +168,7 @@ export const fetchCommand = async (
         }
         const shouldWriteToConfig = force || await shouldUpdateConfig(
           output,
-          fetchResult.adapterNameToConfigMessage?.[accountName] || '',
+          fetchResult.accountNameToConfigMessage?.[accountName] || '',
           planItem,
         )
         if (shouldWriteToConfig) {
@@ -227,12 +227,14 @@ const shouldRecommendAlignMode = async (
   const newlyAddedAccounts = stateRecencies
     .filter(recency => (
       inputAccounts === undefined
-      || inputAccounts.includes(recency.accountName)
+      || inputAccounts.includes(recency.accountName ?? recency.serviceName)
     ))
 
   return (
     newlyAddedAccounts.every(recency => recency.status === 'Nonexistent')
-    && workspace.hasElementsInAccounts(newlyAddedAccounts.map(recency => recency.accountName))
+    && workspace.hasElementsInAccounts(newlyAddedAccounts.map(
+      recency => recency.accountName ?? recency.serviceName
+    ))
   )
 }
 

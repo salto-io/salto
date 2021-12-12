@@ -173,4 +173,54 @@ describe('workspace local config', () => {
       })
     })
   })
+  describe('Test fix old environment', () => {
+    beforeEach(async () => {
+      jest.clearAllMocks()
+      const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
+      const oldDirStore = mockDirStoreInstance({
+        [`${WORKSPACE_CONFIG_NAME}.nacl`]: `
+        workspace {
+        uid = "98bb902f-a144-42da-9672-f36e312e8e09"
+        name = "test"
+      }
+      `,
+        [`${ENVS_CONFIG_NAME}.nacl`]: `
+      envs {
+        envs = [
+          {
+            name = "salesforceEnv"
+            services = [
+              "salesforce",
+            ]
+          },
+          {
+            name = "othersEnv"
+            services = [
+              "netsuite",
+              "workato",
+            ]
+          },
+        ]
+      }`,
+      })
+      mockCreateDirStore.mockImplementation(_params => oldDirStore)
+
+      configSource = await workspaceConfigSource('bla', undefined)
+    })
+    it('transforms into new config', async () => {
+      (await configSource.getWorkspaceConfig()).envs.forEach(env => {
+        if (env.name === 'othersEnv') {
+          expect(env.accountToServiceName).toEqual({
+            netsuite: 'net',
+            workato: 'workato',
+          })
+        }
+        if (env.name === 'salesforce') {
+          expect(env.accountToServiceName).toEqual({
+            salesforce: 'salesforce',
+          })
+        }
+      })
+    })
+  })
 })

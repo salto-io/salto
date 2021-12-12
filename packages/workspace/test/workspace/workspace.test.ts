@@ -40,7 +40,7 @@ import { DirectoryStore } from '../../src/workspace/dir_store'
 import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
   COMMON_ENV_PREFIX, UnresolvedElemIDs, UpdateNaclFilesResult, isValidEnvName } from '../../src/workspace/workspace'
 import { DeleteCurrentEnvError, UnknownEnvError, EnvDuplicationError,
-  AccountDuplicationError, InvalidEnvNameError, Errors, MAX_ENV_NAME_LEN } from '../../src/workspace/errors'
+  AccountDuplicationError, InvalidEnvNameError, Errors, MAX_ENV_NAME_LEN, UnknownAccountError, InvalidAccountNameError } from '../../src/workspace/errors'
 import { StaticFilesSource } from '../../src/workspace/static_files'
 import * as dump from '../../src/parser/dump'
 import { mockDirStore } from '../common/nacl_file_store'
@@ -2537,7 +2537,7 @@ describe('workspace', () => {
     beforeEach(async () => {
       workspaceConf = mockWorkspaceConfigSource()
       workspace = await createWorkspace(undefined, undefined, workspaceConf)
-      await workspace.addAccount('new')
+      await workspace.addAccount('salto', 'new')
     })
 
     it('should change workspace state', async () => {
@@ -2545,7 +2545,13 @@ describe('workspace', () => {
     })
 
     it('should throw account duplication error', async () => {
-      await expect(workspace.addAccount('new')).rejects.toThrow(AccountDuplicationError)
+      await expect(workspace.addAccount('salto', 'new')).rejects.toThrow(AccountDuplicationError)
+    })
+
+    it('should throw invalidAccountNameError', async () => {
+      await expect(workspace.addAccount('salto', 'new;;')).rejects.toThrow(InvalidAccountNameError)
+      await expect(workspace.addAccount('salto', 'new account')).rejects.toThrow(InvalidAccountNameError)
+      await expect(workspace.addAccount('salto', 'new.')).rejects.toThrow(InvalidAccountNameError)
     })
 
     it('should persist', () => {
@@ -3338,6 +3344,50 @@ describe('workspace', () => {
         { source: 'env' }
       )).toArray()
       expect(ids.map(id => id.getFullName())).toEqual(['adapter.default'])
+    })
+  })
+  describe('getServiceFromAccountName', () => {
+    let ws: Workspace
+    beforeEach(async () => {
+      ws = await createWorkspace(
+        undefined,
+        undefined,
+        {
+          getWorkspaceConfig: jest.fn().mockImplementation(() => ({
+            envs: [
+              { name: 'default', accountToServiceName: { salto2: 'salto', salto1: 'salto' } },
+            ],
+            uid: '',
+            name: 'test',
+            currentEnv: 'default',
+          })),
+          setWorkspaceConfig: jest.fn(),
+        },
+        undefined,
+        undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: createMockNaclFileSource(
+              []
+            ),
+            state: createState([]),
+          },
+        }
+      )
+    })
+
+    it('gets correct service from account name', () => {
+      expect(ws.getServiceFromAccountName('salto2')).toEqual('salto')
+      expect(ws.getServiceFromAccountName('salto1')).toEqual('salto')
+    })
+
+    it('throws exception on non-existant account name', () => {
+      expect(() => ws.getServiceFromAccountName('salto'))
+        .toThrow(new UnknownAccountError('salto'))
     })
   })
 })

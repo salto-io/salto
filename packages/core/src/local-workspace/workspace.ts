@@ -28,7 +28,7 @@ import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'
 import { createRemoteMapCreator } from './remote_map'
-import { getAdaptersConfigTypes } from '../core/adapters'
+import { getAdaptersConfigTypesMap } from '../core/adapters'
 import { buildLocalAdaptersConfigSource } from './adapters_config'
 
 const { awu } = collections.asynciterable
@@ -191,7 +191,7 @@ const credentialsSource = (localStorage: string): cs.ConfigSource =>
   }))
 
 const getAdapterConfigsPerAccount = async (envs: EnvConfig[]): Promise<ObjectType[]> => {
-  const configTypesByAccount = await getAdaptersConfigTypes()
+  const configTypesByAccount = await getAdaptersConfigTypesMap()
   const differentlyNamedAccounts = Object.fromEntries(envs
     .flatMap(env => Object.entries(env.accountToServiceName ?? {}))
     .filter(entry => entry[0] !== entry[1]))
@@ -299,7 +299,7 @@ Promise<Workspace> => {
     localStorage,
     remoteMapCreator,
     persistentMode,
-    Object.values(await getAdaptersConfigTypes()).flat(),
+    Object.values(await getAdaptersConfigTypesMap()).flat(),
   )
   const credentials = credentialsSource(localStorage)
   const elemSources = await loadLocalElementsSources(

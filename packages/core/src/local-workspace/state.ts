@@ -20,7 +20,7 @@ import { Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { exists, readTextFile, mkdirp, rm, rename, readZipFile, replaceContents, generateZipString } from '@salto-io/file'
 import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
-import { serialization, pathIndex, state, remoteMap } from '@salto-io/workspace'
+import { serialization, pathIndex, state, remoteMap, getUpdateDate } from '@salto-io/workspace'
 import { hash, collections } from '@salto-io/lowerdash'
 import origGlob from 'glob'
 import semver from 'semver'
@@ -111,8 +111,8 @@ export const localState = (
         .reduce((entry1, entry2) => Object.assign(entry1, entry2), {}) as Record<string, string>,
       dateStr => new Date(dateStr)
     )
-    await stateData.accountsUpdateDate.clear()
-    await stateData.accountsUpdateDate.setAll(awu(
+    await getUpdateDate(stateData)?.clear()
+    await getUpdateDate(stateData)?.setAll(awu(
       Object.entries(updateDatesByAccount).map(([key, value]) => ({ key, value }))
     ))
     const currentVersion = semver.minSatisfying(versions, '*') ?? undefined

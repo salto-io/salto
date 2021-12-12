@@ -29,5 +29,5 @@ export type SaltoElementError = SaltoError & {
     elemID: ElemID
 }
 
-export const isSaltoElementError = (error: SaltoError): error is SaltoElementError =>
-  'elemID' in error
+export const isSaltoElementError = (error: SaltoError | SaltoElementError):
+    error is SaltoElementError => 'elemID' in error

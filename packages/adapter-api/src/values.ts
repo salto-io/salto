@@ -159,11 +159,6 @@ export class TypeReference extends ReferenceExpression {
     }
   }
 
-  public createWithValue(resValue: Value): TypeReference {
-    const ExpressionCtor = this.constructor as typeof TypeReference
-    return new ExpressionCtor(this.elemID, resValue)
-  }
-
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
     return super.getResolvedValue(elementsSource)
   }

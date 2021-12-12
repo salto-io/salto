@@ -16,7 +16,7 @@
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { updatePathIndex, overridePathIndex, PathIndex } from '../path_index'
-import { State, StateData } from './state'
+import { getUpdateDate, State, StateData } from './state'
 
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
@@ -37,6 +37,10 @@ export const buildInMemState = (
     }
     return innerStateData
   }
+  const getAccountsUpdateDates = async (): Promise<Record<string, Date>> => {
+    const stateDataVal = await awu(getUpdateDate(await stateData()).entries()).toArray()
+    return Object.fromEntries(stateDataVal.map(e => [e.key, e.value]))
+  }
   const setHashImpl = async (newHash: string): Promise<void> => (await stateData())
     .saltoMetadata.set('hash', newHash)
   return {
@@ -54,18 +58,16 @@ export const buildInMemState = (
     isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
     override: async (elements: AsyncIterable<Element>, accounts?: string[]): Promise<void> => {
       const data = await stateData()
-      const newAccounts = accounts ?? await awu(data.accountsUpdateDate.keys()).toArray()
+      const newAccounts = accounts ?? await awu(getUpdateDate(data).keys()).toArray()
       await data.elements.overide(elements)
-      await data.accountsUpdateDate.setAll(
+      await getUpdateDate(data).setAll(
         awu(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
       )
     },
-    getAccountsUpdateDates: async (): Promise<Record<string, Date>> => {
-      const stateDataVal = await awu((await stateData()).accountsUpdateDate.entries()).toArray()
-      return Object.fromEntries(stateDataVal.map(e => [e.key, e.value]))
-    },
+    getAccountsUpdateDates,
+    getServicesUpdateDates: getAccountsUpdateDates,
     existingAccounts: async (): Promise<string[]> =>
-      awu((await stateData()).accountsUpdateDate.keys()).toArray(),
+      awu(getUpdateDate(await stateData()).keys()).toArray(),
     overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {
       const currentStateData = await stateData()
       await overridePathIndex(currentStateData.pathIndex, unmergedElements)
@@ -85,7 +87,7 @@ export const buildInMemState = (
       const currentStateData = await stateData()
       await currentStateData.elements.clear()
       await currentStateData.pathIndex.clear()
-      await currentStateData.accountsUpdateDate.clear()
+      await getUpdateDate(currentStateData).clear()
       await currentStateData.saltoMetadata.clear()
     },
     flush: async () => {
@@ -95,7 +97,7 @@ export const buildInMemState = (
       const currentStateData = await stateData()
       await currentStateData.elements.flush()
       await currentStateData.pathIndex.flush()
-      await currentStateData.accountsUpdateDate.flush()
+      await getUpdateDate(currentStateData).flush()
       await currentStateData.saltoMetadata.flush()
     },
     rename: () => Promise.resolve(),

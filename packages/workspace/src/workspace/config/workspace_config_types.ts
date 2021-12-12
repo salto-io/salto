@@ -18,6 +18,7 @@ import { InstanceElement } from '@salto-io/adapter-api'
 
 export type EnvConfig = {
     name: string
+    services?: string[]
     accountToServiceName?: Record<string, string>
 }
 

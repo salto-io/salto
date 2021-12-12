@@ -50,8 +50,8 @@ export type FetchChangeMetadata = ChangeAuthorInformation
 export type FetchChange = {
   // The actual change to apply to the workspace
   change: DetailedChange
-  // The change that happened in the account
-  accountChanges: DetailedChange[]
+  // The change that happened in the service
+  serviceChanges: DetailedChange[]
   // The change between the working copy and the state
   pendingChanges?: DetailedChange[]
   // Metadata information about the change.
@@ -77,7 +77,7 @@ export const toAddFetchChange = (elem: Element): FetchChange => {
     action: 'add',
     data: { after: elem },
   }
-  return { change, accountChanges: [change], metadata: getFetchChangeMetadata(elem) }
+  return { change, serviceChanges: [change], metadata: getFetchChangeMetadata(elem) }
 }
 
 
@@ -115,7 +115,7 @@ export const getDetailedChanges = async (
     .map(item => item.detailedChanges())
     .flatten()
 
-type WorkspaceDetailedChangeOrigin = 'account' | 'workspace'
+type WorkspaceDetailedChangeOrigin = 'service' | 'workspace'
 type WorkspaceDetailedChange = {
   change: DetailedChange
   origin: WorkspaceDetailedChangeOrigin
@@ -186,7 +186,7 @@ const addFetchChangeMetadata = (
 
 const toFetchChanges = (
   accountAndPendingChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>,
-  workspaceToAccountChanges: Record<string, DetailedChange>,
+  workspaceToServiceChanges: Record<string, DetailedChange>,
 ): Iterable<FetchChange> => {
   const handledChangeIDs = new Set<string>()
   return wu(accountAndPendingChanges.keys())
@@ -197,7 +197,7 @@ const toFetchChanges = (
         return undefined
       }
 
-      const wsChange = workspaceToAccountChanges[id]
+      const wsChange = workspaceToServiceChanges[id]
       if (wsChange === undefined) {
         // If we get here it means there is a difference between the account and the state
         // but there is no difference between the account and the workspace. this can happen
@@ -215,23 +215,23 @@ const toFetchChanges = (
           wsChange.id.isEqual(change.change.id) || wsChange.id.isParentOf(change.change.id))
       relatedChanges.forEach(change => handledChangeIDs.add(change.change.id.getFullName()))
 
-      const [accountChanges, pendingChanges] = _.partition(
+      const [serviceChanges, pendingChanges] = _.partition(
         relatedChanges,
-        change => change.origin === 'account'
+        change => change.origin === 'service'
       ).map(changeList => changeList.map(change => change.change))
 
-      if (accountChanges.length === 0) {
+      if (serviceChanges.length === 0) {
         // If nothing changed in the account, we don't want to do anything
         return undefined
       }
 
       if (pendingChanges.length > 0) {
         log.debug(
-          'Found conflict on %s between %d account changes and %d pending changes',
-          id, accountChanges.length, pendingChanges.length,
+          'Found conflict on %s between %d service changes and %d pending changes',
+          id, serviceChanges.length, pendingChanges.length,
         )
       }
-      return { change: wsChange, accountChanges, pendingChanges }
+      return { change: wsChange, serviceChanges, pendingChanges }
     })
     .filter(values.isDefined)
 }
@@ -244,7 +244,7 @@ export type FetchChangesResult = {
   mergeErrors: MergeErrorWithElements[]
   updatedConfig: Record<string, InstanceElement[]>
   configChanges?: Plan
-  adapterNameToConfigMessage?: Record<string, string>
+  accountNameToConfigMessage?: Record<string, string>
 }
 
 type ProcessMergeErrorsResult = {
@@ -563,12 +563,12 @@ const calcFetchChanges = async (
     list: () => mergedAccountElements.list(),
   }
 
-  const accountChanges = await log.time(
+  const serviceChanges = await log.time(
     () => getDetailedChangeTree(
       stateElements,
       partialFetchElementSource,
       [accountFetchFilter, partialFetchFilter],
-      'account',
+      'service',
     ),
     'calculate service-state changes',
   )
@@ -592,8 +592,8 @@ const calcFetchChanges = async (
   )
 
   // Merge pending changes and service changes into one tree so we can find conflicts between them
-  accountChanges.merge(pendingChanges)
-  const fetchChanges = toFetchChanges(accountChanges, workspaceToServiceChanges)
+  serviceChanges.merge(pendingChanges)
+  const fetchChanges = toFetchChanges(serviceChanges, workspaceToServiceChanges)
   const serviceElementsMap = _.groupBy(
     accountElements,
     e => e.elemID.getFullName()
@@ -670,8 +670,8 @@ const createFetchChanges = async ({
     after: elementSource.createInMemoryElementSource(configs),
   })
 
-  const adapterNameToConfig = _.keyBy(updatedConfigs, config => config.config[0].elemID.adapter)
-  const adapterNameToConfigMessage = _.mapValues(adapterNameToConfig, config => config.message)
+  const accountNameToConfig = _.keyBy(updatedConfigs, config => config.config[0].elemID.adapter)
+  const accountNameToConfigMessage = _.mapValues(accountNameToConfig, config => config.message)
 
   const elements = partiallyFetchedAccounts.size !== 0
     ? _(await awu(await stateElements.getAll()).toArray())
@@ -687,8 +687,8 @@ const createFetchChanges = async ({
     unmergedElements,
     mergeErrors: processErrorsResult.errorsWithDroppedElements,
     configChanges,
-    updatedConfig: _.mapValues(adapterNameToConfig, config => config.config),
-    adapterNameToConfigMessage,
+    updatedConfig: _.mapValues(accountNameToConfig, config => config.config),
+    accountNameToConfigMessage,
   }
 }
 export const fetchChanges = async (

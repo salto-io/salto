@@ -394,7 +394,7 @@ export const formatFetchChangeForApproval = async (
   idx: number,
   totalChanges: number
 ): Promise<string> => {
-  const formattedChange = await formatDetailedChanges([change.accountChanges], true)
+  const formattedChange = await formatDetailedChanges([change.serviceChanges], true)
   const formattedConflict = change.pendingChanges === undefined || _.isEmpty(change.pendingChanges)
     ? []
     : [
@@ -729,8 +729,8 @@ export const formatEnvDiff = async (
 export const formatStateRecencies = (stateRecencies: StateRecency[]): string => (
   stateRecencies.map(
     recency => (recency.status === 'Nonexistent'
-      ? Prompts.NONEXISTENT_STATE(recency.accountName)
-      : Prompts.STATE_RECENCY(recency.accountName, recency.date as Date))
+      ? Prompts.NONEXISTENT_STATE(recency.accountName ?? recency.serviceName)
+      : Prompts.STATE_RECENCY(recency.accountName ?? recency.serviceName, recency.date as Date))
   ).join(EOL)
 )
 

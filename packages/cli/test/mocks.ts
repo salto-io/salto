@@ -401,7 +401,12 @@ export const mockWorkspace = ({
     updateAccountConfig: mockFunction<Workspace['updateAccountConfig']>(),
     updateServiceConfig: mockFunction<Workspace['updateServiceConfig']>(),
     getStateRecency: mockFunction<Workspace['getStateRecency']>().mockImplementation(
-      async accountName => ({ accountName, status: 'Nonexistent', date: undefined })
+      async accountName => ({
+        serviceName: accountName,
+        accountName,
+        status: 'Nonexistent',
+        date: undefined,
+      })
     ),
     promote: mockFunction<Workspace['promote']>(),
     demote: mockFunction<Workspace['demote']>(),
@@ -681,7 +686,7 @@ export const deploy = async (
 
   return {
     success: true,
-    changes: dummyChanges.map(c => ({ change: c, accountChanges: [c] })),
+    changes: dummyChanges.map(c => ({ change: c, serviceChanges: [c] })),
     errors: [],
   }
 }

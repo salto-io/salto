@@ -168,7 +168,7 @@ export const deploy = async (
     await workspace.elements(),
     changedElements,
     [id => changedElements.has(id)]
-  )).map(change => ({ change, accountChanges: [change] }))
+  )).map(change => ({ change, serviceChanges: [change] }))
     .toArray()
   const errored = errors.length > 0
   return {
@@ -187,7 +187,7 @@ export type FetchResult = {
   success: boolean
   configChanges?: Plan
   updatedConfig : Record<string, InstanceElement[]>
-  adapterNameToConfigMessage?: Record<string, string>
+  accountNameToConfigMessage?: Record<string, string>
 }
 export type FetchFunc = (
   workspace: Workspace,
@@ -201,6 +201,7 @@ export type FetchFromWorkspaceFuncParams = {
   otherWorkspace: Workspace
   progressEmitter?: EventEmitter<FetchProgressEvents>
   accounts?: string[]
+  services?: string[]
   env: string
 }
 export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Promise<FetchResult>
@@ -247,7 +248,7 @@ export const fetch: FetchFunc = async (
   }
   const {
     changes, elements, mergeErrors, errors, updatedConfig,
-    configChanges, adapterNameToConfigMessage, unmergedElements,
+    configChanges, accountNameToConfigMessage, unmergedElements,
   } = await fetchChanges(
     accountToAdapter,
     await workspace.elements(),
@@ -265,7 +266,7 @@ export const fetch: FetchFunc = async (
     success: true,
     configChanges,
     updatedConfig,
-    adapterNameToConfigMessage,
+    accountNameToConfigMessage,
   }
 }
 
@@ -274,10 +275,11 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   otherWorkspace,
   progressEmitter,
   accounts,
+  services,
   env,
 }: FetchFromWorkspaceFuncParams) => {
   log.debug('fetch starting from workspace..')
-  const fetchAccounts = accounts ?? workspace.accounts()
+  const fetchAccounts = services ?? accounts ?? workspace.accounts()
 
   const { currentConfigs } = await getFetchAdapterAndServicesSetup(
     workspace,
@@ -287,7 +289,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
 
   const {
     changes, elements, mergeErrors, errors,
-    configChanges, adapterNameToConfigMessage, unmergedElements,
+    configChanges, accountNameToConfigMessage, unmergedElements,
   } = await fetchChangesFromWorkspace(
     otherWorkspace,
     fetchAccounts,
@@ -307,7 +309,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     success: true,
     updatedConfig: {},
     configChanges,
-    adapterNameToConfigMessage,
+    accountNameToConfigMessage,
     progressEmitter,
   }
 }
@@ -329,7 +331,7 @@ export const restore = async (
     elementSelectors,
     fetchAccounts
   )
-  return changes.map(change => ({ change, accountChanges: [change] }))
+  return changes.map(change => ({ change, serviceChanges: [change] }))
 }
 
 export const diff = async (
@@ -357,7 +359,7 @@ export const diff = async (
     [shouldElementBeIncluded(diffAccounts)]
   )
 
-  return diffChanges.map(change => ({ change, accountChanges: [change] }))
+  return diffChanges.map(change => ({ change, serviceChanges: [change] }))
 }
 
 class AdapterInstallError extends Error {
@@ -411,8 +413,9 @@ export const getLoginStatuses = async (
   accounts = workspace.accounts(),
 ): Promise<Record<string, LoginStatus>> => {
   const creds = await workspace.accountCredentials(accounts)
-  const accountToServiceMap = Object.fromEntries(accounts.map(account => [account,
-    workspace.getServiceFromAccountName(account)]))
+  const accountToServiceMap = Object.fromEntries(accounts.map(account => [
+    account, workspace.getServiceFromAccountName(account),
+  ]))
   const relevantServices = _.uniq(Object.values(accountToServiceMap))
   const logins = await mapValuesAsync(
     getAdaptersCredentialsTypes(relevantServices),

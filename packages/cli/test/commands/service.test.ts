@@ -168,7 +168,7 @@ describe('service command group', () => {
         Promise.resolve(mockGetCredentialsFromUser(obj)))
     }))
     describe('when the workspace loads successfully', () => {
-      describe('when called with already configured accpimt', () => {
+      describe('when called with already configured account', () => {
         beforeEach(async () => {
           await addAction({
             ...cliCommandArgs,
@@ -183,6 +183,60 @@ describe('service command group', () => {
 
         it('should print already added', () => {
           expect(output.stderr.content).toContain('salesforce was already added to this environment')
+        })
+      })
+
+      describe('When called with invalid accountName', () => {
+        beforeEach(async () => {
+          await addAction({
+            ...cliCommandArgs,
+            input: {
+              serviceName: 'salesforce',
+              account: 'falsd;l;l;l',
+              authType: 'basic',
+              login: true,
+            },
+            workspace,
+          })
+        })
+        it('should throw error', () => {
+          expect(output.stderr.content).toContain('Invalid account name')
+        })
+      })
+
+      describe('When called with empty accountName', () => {
+        beforeEach(async () => {
+          await addAction({
+            ...cliCommandArgs,
+            input: {
+              serviceName: 'salesforce',
+              account: '',
+              authType: 'basic',
+              login: true,
+            },
+            workspace,
+          })
+        })
+        it('should throw error', () => {
+          expect(output.stderr.content).toContain('empty string')
+        })
+      })
+
+      describe('When called with var as accountName', () => {
+        beforeEach(async () => {
+          await addAction({
+            ...cliCommandArgs,
+            input: {
+              serviceName: 'salesforce',
+              account: 'var',
+              authType: 'basic',
+              login: true,
+            },
+            workspace,
+          })
+        })
+        it('should throw error', () => {
+          expect(output.stderr.content).toContain('may not be "var"')
         })
       })
 

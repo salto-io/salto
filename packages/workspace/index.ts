@@ -40,7 +40,7 @@ import * as remoteMap from './src/workspace/remote_map'
 import { updateElementsWithAlternativeAccount, createAdapterReplacedID } from './src/element_adapter_rename'
 import { RemoteElementSource, ElementsSource } from './src/workspace/elements_source'
 import { FromSource } from './src/workspace/nacl_files/multi_env/multi_env_source'
-import { State } from './src/workspace/state'
+import { State, getUpdateDate } from './src/workspace/state'
 import { PathIndex, splitElementByPath, getElementsPathHints } from './src/workspace/path_index'
 
 export {
@@ -89,6 +89,7 @@ export {
   UpdateNaclFilesResult,
   ElementsSource,
   State,
+  getUpdateDate,
   splitElementByPath,
   PathIndex,
   getElementsPathHints,

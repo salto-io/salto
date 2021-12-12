@@ -178,6 +178,17 @@ describe('adapters config', () => {
     expect(mockNaclFilesSource.flush).toHaveBeenCalled()
   })
 
+  it('should set adapter in nacl files source with the config path, if account name isnt same as service', async () => {
+    await configSource.setAdapter('salesforce2', 'salesforce', new InstanceElement(
+      ElemID.CONFIG_NAME,
+      new ObjectType({
+        elemID: new ElemID('salesforce2', ElemID.CONFIG_NAME),
+      }),
+    ))
+    expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalledWith([expect.objectContaining({ path: ['salto.config', 'adapters', 'salesforce2', 'salesforce2'] })])
+    expect(mockNaclFilesSource.flush).toHaveBeenCalled()
+  })
+
   it('should return errors with "config" source', async () => {
     mockNaclFilesSource.getErrors.mockResolvedValue(new Errors({
       merge: [new DuplicateAnnotationError({ elemID: new ElemID('someID'), key: 'key', existingValue: 'val', newValue: 'val2' })],

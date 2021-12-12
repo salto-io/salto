@@ -41,6 +41,7 @@ const mockWsFunctions = {
   getTotalSize: mockFunction<Workspace['getTotalSize']>(),
   getStateRecency: mockFunction<Workspace['getStateRecency']>().mockResolvedValue({
     accountName: 'salesforce',
+    serviceName: 'salesforce',
     date: new Date(),
     status: 'Valid',
   }),
@@ -105,7 +106,7 @@ describe('workspace', () => {
       const result = await updateWorkspace({
         workspace: mockWs,
         output: cliOutput,
-        changes: dummyChanges.map(change => ({ change, accountChanges: [change] })),
+        changes: dummyChanges.map(change => ({ change, serviceChanges: [change] })),
       })
       expect(result).toBeTruthy()
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, 'default')
@@ -118,7 +119,7 @@ describe('workspace', () => {
       const result = await updateWorkspace({
         workspace: mockWs,
         output: cliOutput,
-        changes: changes.map(change => ({ change, accountChanges: [change] })),
+        changes: changes.map(change => ({ change, serviceChanges: [change] })),
       })
       expect(result).toBeTruthy()
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(changes, 'default')
@@ -132,7 +133,7 @@ describe('workspace', () => {
       const result = await updateWorkspace({
         workspace: mockWs,
         output: cliOutput,
-        changes: dummyChanges.map(change => ({ change, accountChanges: [change] })),
+        changes: dummyChanges.map(change => ({ change, serviceChanges: [change] })),
       })
       expect(result.success).toBe(false)
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, 'default')
@@ -162,7 +163,7 @@ describe('workspace', () => {
     let approveChangesCallback: jest.MockedFunction<ApproveChangesCB>
 
     beforeEach(() => {
-      changes = dummyChanges.map(change => ({ change, accountChanges: [change] }))
+      changes = dummyChanges.map(change => ({ change, serviceChanges: [change] }))
       approveChangesCallback = mockFunction<ApproveChangesCB>().mockResolvedValue(changes)
     })
     it('should apply changes and return true', async () => {

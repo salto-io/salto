@@ -70,7 +70,8 @@ export type WorkspaceError<T extends SaltoError> = Readonly<T & {
 
 type RecencyStatus = 'Old' | 'Nonexistent' | 'Valid'
 export type StateRecency = {
-  accountName: string
+  serviceName: string
+  accountName?: string
   status: RecencyStatus
   date: Date | undefined
 }
@@ -868,10 +869,11 @@ export const loadWorkspace = async (
     pickAccounts(names).map(async account => [account, await credentials.get(credsPath(account))])
   ))
   const addAccount = async (service: string, account?: string): Promise<void> => {
-    if (account && (naclCase(account) !== account)) {
-      throw new InvalidAccountNameError(account)
-    }
     const accountName = account ?? service
+
+    if (accountName && (naclCase(accountName) !== accountName)) {
+      throw new InvalidAccountNameError(accountName)
+    }
     const currentAccounts = accounts() || []
     if (currentAccounts.includes(accountName)) {
       throw new AccountDuplicationError(accountName)
@@ -1196,7 +1198,7 @@ export const loadWorkspace = async (
         }
         return 'Valid'
       })()
-      return { accountName, status, date }
+      return { serviceName: accountName, accountName, status, date }
     },
     getValue: async (id: ElemID, env?: string): Promise<Value | undefined> => (
       (await elements(env)).get(id)

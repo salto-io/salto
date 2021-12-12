@@ -40,7 +40,7 @@ const userDataConfigType = new ObjectType({
   isSettings: true,
 })
 const envConfigElemID = new ElemID(ENVS_CONFIG_NAME, 'env')
-const envConfigType = createMatchingObjectType<EnvConfig>({
+const envConfigType = createMatchingObjectType<Omit<EnvConfig, 'services'>>({
   elemID: envConfigElemID,
   fields: {
     name: { refType: BuiltinTypes.STRING, annotations: { _required: true } },

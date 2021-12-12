@@ -252,7 +252,7 @@ describe('fetch command', () => {
       })
       describe('with upstream changes', () => {
         const changes = mocks.dummyChanges.map(
-          (change: DetailedChange): FetchChange => ({ change, accountChanges: [change] })
+          (change: DetailedChange): FetchChange => ({ change, serviceChanges: [change] })
         )
         const mockFetchWithChanges = jest.fn().mockResolvedValue(
           {
@@ -603,7 +603,12 @@ describe('fetch command', () => {
       workspace = mocks.mockWorkspace({})
       workspace.hasElementsInAccounts.mockResolvedValue(true)
       workspace.getStateRecency.mockResolvedValue(
-        { accountName: 'salesforce', status: 'Nonexistent', date: undefined }
+        {
+          serviceName: 'salesforce',
+          accountName: 'salesforce',
+          status: 'Nonexistent',
+          date: undefined,
+        }
       )
       jest.spyOn(fetchCmd, 'fetchCommand').mockImplementationOnce(() => Promise.resolve(
         CliExitCode.Success
@@ -701,7 +706,7 @@ describe('fetch command', () => {
         () => Promise.resolve('no')
       )
       workspace.getStateRecency.mockResolvedValue(
-        { accountName: 'salesforce', status: 'Valid', date: new Date() }
+        { serviceName: 'salesforce', accountName: 'salesforce', status: 'Valid', date: new Date() }
       )
       await action({
         ...cliCommandArgs,
@@ -764,6 +769,7 @@ describe('fetch command', () => {
         () => Promise.resolve('no')
       )
       workspace.getStateRecency.mockImplementation(async accountName => ({
+        serviceName: accountName,
         accountName,
         status: accountName === 'salesforce' ? 'Nonexistent' : 'Valid',
         date: accountName === 'salesforce' ? undefined : new Date(),

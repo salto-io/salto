@@ -24,7 +24,7 @@ import {
   initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs,
   getDefaultAdapterConfig,
   adapterCreators,
-  getAdaptersConfigTypes,
+  getAdaptersConfigTypesMap,
 } from '../../../src/core/adapters'
 
 jest.mock('@salto-io/workspace', () => ({
@@ -134,7 +134,7 @@ describe('adapters.ts', () => {
     })
 
     it('should return the config type and its sub-types', async () => {
-      const types = await getAdaptersConfigTypes()
+      const types = await getAdaptersConfigTypesMap()
       expect(types.mockAdapter).toContain(mockConfigType)
       expect(types.mockAdapter).toContain(mockConfigSubType)
     })

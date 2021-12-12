@@ -65,7 +65,7 @@ describe('deploy command', () => {
     output = cliArgs.output
     workspace = mocks.mockWorkspace({})
     workspace.getStateRecency.mockImplementation(async accountName => ({
-      accountName, status: 'Valid', date: new Date(),
+      serviceName: accountName, accountName, status: 'Valid', date: new Date(),
     }))
     mockGetUserBooleanInput.mockReset()
     mockShouldCancel.mockReset()
@@ -245,10 +245,18 @@ describe('deploy command', () => {
         { key: 'version', value: saltoVersion },
       ] as {key: state.StateMetadataKey; value: string}[] : []
       const saltoMetadata = new InMemoryRemoteMap<string, state.StateMetadataKey>(metaData)
+      let dateMap: remoteMap.RemoteMap<Date> | undefined
+      // This if statement is temporary for the transition to multiple services.
+      // Remove this when no longer used, SALTO-1661
+      if ('servicesUpdateDate' in data) {
+        dateMap = data.servicesUpdateDate
+      } else if ('accountsUpdateDate' in data) {
+        dateMap = data.accountsUpdateDate
+      }
       return state.buildInMemState(async () => ({
         elements: createInMemoryElementSource(),
         pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
-        accountsUpdateDate: data.accountsUpdateDate ?? new InMemoryRemoteMap(),
+        accountsUpdateDate: dateMap ?? new InMemoryRemoteMap(),
         saltoMetadata,
       }))
     }
@@ -309,7 +317,7 @@ describe('deploy command', () => {
       describe('when some accounts were never fetched', () => {
         beforeEach(async () => {
           workspace.getStateRecency.mockImplementationOnce(async accountName => ({
-            accountName, status: 'Nonexistent', date: undefined,
+            serviceName: accountName, accountName, status: 'Nonexistent', date: undefined,
           }))
           await action({
             ...cliCommandArgs,
@@ -324,7 +332,10 @@ describe('deploy command', () => {
       describe('when some services are old', () => {
         beforeEach(async () => {
           workspace.getStateRecency.mockImplementationOnce(async accountName => ({
-            accountName, status: 'Old', date: moment(new Date()).subtract(1, 'month').toDate(),
+            serviceName: accountName,
+            accountName,
+            status: 'Old',
+            date: moment(new Date()).subtract(1, 'month').toDate(),
           }))
           await action({
             ...cliCommandArgs,

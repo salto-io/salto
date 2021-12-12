@@ -1,0 +1,33 @@
+salesforce {
+  fetch = {
+    exclude = [
+      {
+        metadataType = "Report"
+      },
+      {
+        metadataType = "ReportType"
+      },
+      {
+        metadataType = "ReportFolder"
+      },
+      {
+        metadataType = "Dashboard"
+      },
+      {
+        metadataType = "DashboardFolder"
+      },
+      {
+        metadataType = "Profile"
+      },
+      {
+        metadataType = "EmailTemplate"
+      },
+    ]
+  }
+  maxItemsInRetrieveRequest = 2500
+  client = {
+    maxConcurrentApiRequests = {
+      retrieve = 3
+    }
+  }
+}

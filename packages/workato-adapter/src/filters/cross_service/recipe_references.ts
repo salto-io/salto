@@ -143,7 +143,7 @@ const filter: FilterCreator = ({ config }) => ({
     if (serviceConnectionNames === undefined || _.isEmpty(serviceConnectionNames)) {
       return
     }
-    const supportedAdapters = Object.keys(accountToServiceNameMap)
+    const supportedAdapters = Object.keys(accountToServiceNameMap ?? {})
     if (serviceConnectionNames !== undefined) {
       const unsupportedAccounts = Object.keys(serviceConnectionNames).filter(
         adapterName => !supportedAdapters.includes(adapterName)
@@ -182,7 +182,7 @@ const filter: FilterCreator = ({ config }) => ({
           await addReferencesForConnectionRecipes(
             relevantRecipeCodes,
             applicationName,
-            accountToServiceNameMap[accountName],
+            (accountToServiceNameMap ?? {})[accountName],
             elementsByAccount[accountName] ?? [],
           )
         })

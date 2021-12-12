@@ -229,7 +229,7 @@ export const runClean = async ({
     ...cleanArgs.cache === false ? ['--no-cache'] : [],
     ...cleanArgs.staticResources === false ? ['--no-static-resources'] : [],
     ...cleanArgs.credentials ? ['--credentials'] : [],
-    ...cleanArgs.accountConfig ? ['--service-config'] : [],
+    ...cleanArgs.accountConfig ? ['--account-config'] : [],
   ]
   return runCommand({
     workspacePath,

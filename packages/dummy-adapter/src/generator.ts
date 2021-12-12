@@ -71,12 +71,12 @@ export type GeneratorParams = {
 
 export const defaultParams: Omit<GeneratorParams, 'extraNaclPath'> = {
   seed: 123456,
-  numOfRecords: 522,
-  numOfPrimitiveTypes: 44,
-  numOfObjs: 103,
-  numOfMapChunks: 3,
+  numOfRecords: 5220,
+  numOfPrimitiveTypes: 440,
+  numOfObjs: 1030,
+  numOfMapChunks: 30,
   numOfProfiles: 0,
-  numOfTypes: 496,
+  numOfTypes: 4960,
   maxRank: 9,
   primitiveFieldFreq: 0.349,
   builtinFieldFreq: 0.56,

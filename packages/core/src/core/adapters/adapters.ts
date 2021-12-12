@@ -54,11 +54,14 @@ export const initAdapters = (
       if (!context.credentials) {
         throw new Error(`${account} is not logged in.\n\nPlease login and try again.`)
       }
+      if (!accountToServiceNameMap[account]) {
+        throw new Error(`${account} account does not exist in environment.`)
+      }
       const creator = adapterCreators[accountToServiceNameMap[account]]
       if (!creator) {
-        throw new Error(`${account} adapter is not registered.`)
+        throw new Error(`${accountToServiceNameMap[account]} adapter is not registered.`)
       }
-      log.debug('Using the following config for %s adapter: %s', account, safeJsonStringify(context.config?.value, undefined, 2))
+      log.debug('Using the following config for %s account: %s', account, safeJsonStringify(context.config?.value, undefined, 2))
       return creator.operations(context)
     }
   )
@@ -70,7 +73,7 @@ const getAdapterConfigFromType = async (
   return configType ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType) : undefined
 }
 
-export const getAdaptersConfigTypes = async (): Promise<Record<string, ObjectType[]>> =>
+export const getAdaptersConfigTypesMap = async (): Promise<Record<string, ObjectType[]>> =>
   Object.fromEntries(
     Object.entries(await mapValuesAsync(
       adapterCreators,
@@ -82,9 +85,12 @@ export const getAdaptersConfigTypes = async (): Promise<Record<string, ObjectTyp
     )).filter(entry => entry[1].length > 0)
   )
 
+export const getAdaptersConfigTypes = async (): Promise<ObjectType[]> =>
+  Object.values(await getAdaptersConfigTypesMap()).flat()
+
 export const getDefaultAdapterConfig = async (
   adapterName: string,
-  accountName: string,
+  accountName?: string,
 ): Promise<InstanceElement[] | undefined> => {
   const { getDefaultConfig } = adapterCreators[adapterName]
   const defaultConf = (getDefaultConfig !== undefined) ? await getDefaultConfig()
@@ -92,7 +98,7 @@ export const getDefaultAdapterConfig = async (
   if (defaultConf.length === 0) {
     return undefined
   }
-  if (adapterName !== accountName) {
+  if (accountName && adapterName !== accountName) {
     return awu(defaultConf).map(async conf => {
       const confClone = conf.clone()
       await updateElementsWithAlternativeAccount([confClone], accountName, adapterName)

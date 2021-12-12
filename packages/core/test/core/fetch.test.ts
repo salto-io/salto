@@ -27,7 +27,6 @@ import * as utils from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { elementSource, pathIndex, remoteMap, createAdapterReplacedID } from '@salto-io/workspace'
 import { mockFunction } from '@salto-io/test-utils'
-import { SALESFORCE } from '@salto-io/salesforce-adapter/src/constants'
 import { mockWorkspace } from '../common/workspace'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
@@ -1562,12 +1561,12 @@ describe('fetch from workspace', () => {
 
   describe('elem id getter test', () => {
     it('translated id to new account name', async () => {
-      const objID = new ElemID(SALESFORCE, 'obj')
+      const objID = new ElemID('salesforce', 'obj')
       const obj = new ObjectType({
-        elemID: new ElemID(`${SALESFORCE}accountName`, 'obj'),
+        elemID: new ElemID('salesforceaccountName', 'obj'),
       })
       const idGetter = await createElemIdGetter(awu([obj]), createElementSource([]))
-      expect(idGetter(SALESFORCE, { [OBJECT_SERVICE_ID]: objID.getFullName() },
+      expect(idGetter('salesforce', { [OBJECT_SERVICE_ID]: objID.getFullName() },
         'obj')).toEqual(objID)
     })
   })

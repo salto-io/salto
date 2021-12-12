@@ -64,6 +64,9 @@ type HttpMethodToClientParams = {
   delete: ClientBaseParams
 }
 
+const isMethodWithData = (params: ClientParams): params is ClientDataParams =>
+  'data' in params
+
 export abstract class AdapterHTTPClient<
   TCredentials,
   TRateLimitConfig extends ClientRateLimitConfig,
@@ -151,13 +154,6 @@ export abstract class AdapterHTTPClient<
     return this.sendRequest('patch', params)
   }
 
-  private static isDataParams(
-    _params: ClientParams,
-    method: keyof HttpMethodToClientParams
-  ): _params is ClientParams & { data: unknown } {
-    return ['post', 'put', 'patch'].includes(method)
-  }
-
   private async sendRequest<T extends keyof HttpMethodToClientParams>(
     method: T,
     params: HttpMethodToClientParams[T]
@@ -173,7 +169,7 @@ export abstract class AdapterHTTPClient<
         ? { params: queryParams }
         : undefined
 
-      const { data, status } = AdapterHTTPClient.isDataParams(params, method)
+      const { data, status } = isMethodWithData(params)
         ? await this.apiClient[method](
           url,
           params.data,

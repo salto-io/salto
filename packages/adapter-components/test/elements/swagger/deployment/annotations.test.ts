@@ -15,13 +15,13 @@
 */
 import { BuiltinTypes, ElemID, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { DeploymentRequests } from '../../../../src/config'
+import { DeploymentRequestsByAction } from '../../../../src/config'
 import { addDeploymentAnnotations, LoadedSwagger } from '../../../../src/elements/swagger'
 
 describe('addDeploymentAnnotations', () => {
   let type: ObjectType
   let mockSwagger: LoadedSwagger
-  let endpoint: DeploymentRequests
+  let endpoint: DeploymentRequestsByAction
 
   beforeEach(() => {
     type = new ObjectType({

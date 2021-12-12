@@ -19,11 +19,11 @@ import {
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
-import { DeploymentRequests, FetchRequestConfig, FetchRequestDefaultConfig } from './request'
+import { DeploymentRequestsByAction, FetchRequestConfig, FetchRequestDefaultConfig } from './request'
 
 export type TypeConfig<T extends TransformationConfig = TransformationConfig> = {
   request?: FetchRequestConfig
-  deployRequests?: DeploymentRequests
+  deployRequests?: DeploymentRequestsByAction
   transformation?: T
 }
 
@@ -56,8 +56,10 @@ export const createAdapterApiConfigType = ({
   adapter: string
   additionalFields?: Record<string, FieldDefinition>
   requestTypes: {
-    fetchRequest: ObjectType
-    fetchRequestDefault: ObjectType
+    fetch: {
+      request: ObjectType
+      requestDefault: ObjectType
+    }
     deployRequests: ObjectType
   }
   transformationTypes: { transformation: ObjectType; transformationDefault: ObjectType }
@@ -65,7 +67,7 @@ export const createAdapterApiConfigType = ({
   const typeDefaultsConfigType = createMatchingObjectType<TypeDefaultsConfig>({
     elemID: new ElemID(adapter, 'typeDefaultsConfig'),
     fields: {
-      request: { refType: requestTypes.fetchRequestDefault },
+      request: { refType: requestTypes.fetch.requestDefault },
       transformation: {
         refType: transformationTypes.transformationDefault,
         annotations: {
@@ -78,7 +80,7 @@ export const createAdapterApiConfigType = ({
   const typesConfigType = createMatchingObjectType<TypeConfig>({
     elemID: new ElemID(adapter, 'typesConfig'),
     fields: {
-      request: { refType: requestTypes.fetchRequest },
+      request: { refType: requestTypes.fetch.request },
       deployRequests: {
         refType: requestTypes.deployRequests,
       },

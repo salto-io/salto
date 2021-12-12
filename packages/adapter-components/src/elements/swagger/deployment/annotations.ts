@@ -17,7 +17,7 @@ import { ActionName, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { OpenAPIV3 } from 'openapi-types'
-import { DeploymentRequests } from '../../../config/request'
+import { DeploymentRequestsByAction } from '../../../config/request'
 import { OPERATION_TO_ANNOTATION } from '../../../deployment'
 import { LoadedSwagger } from '../swagger'
 import { extractProperties, isReferenceObject, isV3, SwaggerVersion, toSchema } from '../type_elements/swagger_parser'
@@ -58,7 +58,7 @@ const getSwaggerEndpoint = (url: string, baseUrls: string[]): string => {
 export const addDeploymentAnnotations = (
   type: ObjectType,
   swagger: LoadedSwagger,
-  endpointDetails: DeploymentRequests,
+  endpointDetails: DeploymentRequestsByAction,
 ): void => {
   const { document } = swagger
   if (!isV3(document)) {

@@ -17,13 +17,13 @@ import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression,
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { HTTPWriteClientInterface } from '../../src/client/http_client'
 import { deployChange } from '../../src/deployment/deployment'
-import { DeploymentRequests } from '../../src/config/request'
+import { DeploymentRequestsByAction } from '../../src/config/request'
 
 describe('deployChange', () => {
   let type: ObjectType
   let instance: InstanceElement
   let httpClient: MockInterface<HTTPWriteClientInterface>
-  let endpoint: DeploymentRequests
+  let endpoint: DeploymentRequestsByAction
 
   beforeEach(() => {
     type = new ObjectType({

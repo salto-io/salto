@@ -19,7 +19,7 @@ import { resolveReferences } from '@salto-io/adapter-utils'
 import { getUrlVars, setUrlVarsValues } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
 import { getDiffInstance } from './diff'
-import { DeploymentRequests } from '../config/request'
+import { DeploymentRequestsByAction } from '../config/request'
 import { ResponseValue } from '../client'
 
 /**
@@ -35,7 +35,7 @@ import { ResponseValue } from '../client'
 export const deployChange = async (
   change: Change<Element>,
   client: HTTPWriteClientInterface,
-  endpointDetails?: DeploymentRequests,
+  endpointDetails?: DeploymentRequestsByAction,
   fieldsToIgnore: string[] = [],
   additionalUrlVars?: Record<string, string>
 ): Promise<ResponseValue | ResponseValue[]> => {

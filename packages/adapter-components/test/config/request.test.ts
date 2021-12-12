@@ -19,7 +19,7 @@ import { createRequestConfigs, validateRequestConfig } from '../../src/config'
 describe('config_request', () => {
   describe('createRequestConfigs', () => {
     it('should return default config type when no custom fields were added', async () => {
-      const { fetchRequest: request, fetchRequestDefault: requestDefault } = createRequestConfigs('myAdapter')
+      const { fetch: { request, requestDefault } } = createRequestConfigs('myAdapter')
       expect(Object.keys(request.fields)).toHaveLength(5)
       expect(Object.keys(request.fields).sort()).toEqual(['dependsOn', 'paginationField', 'queryParams', 'recursiveQueryByResponseField', 'url'])
       expect(request.fields.url.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
@@ -64,7 +64,7 @@ describe('config_request', () => {
     })
 
     it('should include additional fields when added', () => {
-      const { fetchRequest: request, fetchRequestDefault: requestDefault } = createRequestConfigs(
+      const { fetch: { request, requestDefault } } = createRequestConfigs(
         'myAdapter',
         { a: { refType: BuiltinTypes.STRING } },
       )

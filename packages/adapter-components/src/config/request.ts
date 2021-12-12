@@ -74,14 +74,14 @@ export type DeployRequestConfig = BaseRequestConfig & {
   method: 'post' | 'put' | 'delete' | 'patch'
 }
 
-export type DeploymentRequests = Partial<Record<ActionName, DeployRequestConfig>>
+export type DeploymentRequestsByAction = Partial<Record<ActionName, DeployRequestConfig>>
 
 export type FetchRequestDefaultConfig = Partial<Omit<FetchRequestConfig, 'url'>>
 
 export const createRequestConfigs = (
   adapter: string,
   additionalFields?: Record<string, FieldDefinition>,
-): { fetchRequest: ObjectType; fetchRequestDefault: ObjectType; deployRequests: ObjectType } => {
+): { fetch: { request: ObjectType; requestDefault: ObjectType }; deployRequests: ObjectType } => {
   const dependsOnFromConfig = new ObjectType({
     elemID: new ElemID(adapter, 'dependsOnFromConfig'),
     fields: {
@@ -184,8 +184,10 @@ export const createRequestConfigs = (
   })
 
   return {
-    fetchRequest: fetchRequestConfigType,
-    fetchRequestDefault: fetchRequestDefaultConfigType,
+    fetch: {
+      request: fetchRequestConfigType,
+      requestDefault: fetchRequestDefaultConfigType,
+    },
     deployRequests: deployRequestsType,
   }
 }

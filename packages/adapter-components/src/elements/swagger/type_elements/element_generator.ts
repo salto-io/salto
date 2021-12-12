@@ -27,6 +27,7 @@ import {
 } from './swagger_parser'
 import { fixTypes, defineAdditionalTypes } from './type_config_override'
 import { filterTypes } from '../../type_elements'
+import { LoadedSwagger } from '../swagger'
 
 const { isDefined } = lowerdashValues
 const { isArrayOfType } = lowerdashTypes
@@ -269,6 +270,7 @@ export const generateTypes = async (
     supportedTypes,
   }: AdapterSwaggerApiConfig,
   preParsedDefs?: SchemasAndRefs,
+  loadedSwagger?: LoadedSwagger,
 ): Promise<ParsedTypes> => {
   // TODO SALTO-1252 - persist swagger locally
 
@@ -281,7 +283,8 @@ export const generateTypes = async (
   const definedTypes: Record<string, ObjectType> = {}
   const parsedConfigs: Record<string, RequestableTypeSwaggerConfig> = {}
 
-  const { schemas: getResponseSchemas, refs } = preParsedDefs ?? await getParsedDefs(swagger.url)
+  const { schemas: getResponseSchemas, refs } = preParsedDefs
+    ?? await getParsedDefs(swagger.url, loadedSwagger)
 
   const addType = typeAdder({
     adapterName,

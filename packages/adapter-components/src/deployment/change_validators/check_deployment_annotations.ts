@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, isModificationChange, isRemovalChange, InstanceElement, ElemID, isReferenceExpression, compareSpecialValues } from '@salto-io/adapter-api'
-import { resolvePath, setPath, transformValues, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { Change, ChangeError, ChangeValidator, getChangeElement, isInstanceChange, Element, isRemovalChange, InstanceElement, ElemID } from '@salto-io/adapter-api'
+import { transformValues } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
-import _ from 'lodash'
 import { DEPLOYMENT_ANNOTATIONS } from '../annotations'
+import { getDiffInstance } from '../diff'
 
 const { awu } = collections.asynciterable
 
@@ -30,32 +30,6 @@ const isDeploymentSupported = (element: Element, action: Change['action']): bool
   (action === 'add' && element.annotations[DEPLOYMENT_ANNOTATIONS.CREATABLE])
     || (action === 'modify' && element.annotations[DEPLOYMENT_ANNOTATIONS.UPDATABLE])
     || (action === 'remove' && element.annotations[DEPLOYMENT_ANNOTATIONS.DELETABLE])
-
-const getDiffInstance = (change: Change<InstanceElement>): InstanceElement => {
-  const instance = getChangeElement(change)
-
-  const diffInstance = instance.clone()
-
-  if (isModificationChange(change)) {
-    walkOnElement({
-      element: change.data.before,
-      func: ({ value, path }) => {
-        if (_.isObject(value) && !isReferenceExpression(value)) {
-          return WALK_NEXT_STEP.RECURSE
-        }
-
-        const valueAfter = resolvePath(instance, path)
-
-        if (_.isEqualWith(value, valueAfter, compareSpecialValues)) {
-          setPath(diffInstance, path, undefined)
-        }
-        return WALK_NEXT_STEP.RECURSE
-      },
-    })
-  }
-
-  return diffInstance
-}
 
 const getUnsupportedPaths = async (change: Change<InstanceElement>): Promise<ElemID[]> => {
   const unsupportedPaths: ElemID[] = []

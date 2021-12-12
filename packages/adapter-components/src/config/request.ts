@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, MapType, ListType } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, MapType, ListType, ActionName } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { findDuplicates } from './validation_utils'
 
 export const ARG_PLACEHOLDER_MATCHER = /\{([\w_]+)\}/g
@@ -54,21 +55,33 @@ type RecurseIntoConfig = {
   conditions?: RecurseIntoCondition[]
 }
 
-export type RequestConfig = {
+type BaseRequestConfig = {
   url: string
   queryParams?: Record<string, string>
+}
+
+export type FetchRequestConfig = BaseRequestConfig & {
   recursiveQueryByResponseField?: Record<string, string>
   dependsOn?: DependsOnConfig[]
   recurseInto?: RecurseIntoConfig[]
   paginationField?: string
 }
 
-export type RequestDefaultConfig = Partial<Omit<RequestConfig, 'url'>>
+export type UrlVars = Record<string, string>
+
+export type DeployRequestConfig = BaseRequestConfig & {
+  urlVarsToFields?: UrlVars
+  method: 'post' | 'put' | 'delete' | 'patch'
+}
+
+export type DeploymentRequests = Partial<Record<ActionName, DeployRequestConfig>>
+
+export type FetchRequestDefaultConfig = Partial<Omit<FetchRequestConfig, 'url'>>
 
 export const createRequestConfigs = (
   adapter: string,
   additionalFields?: Record<string, FieldDefinition>,
-): { request: ObjectType; requestDefault: ObjectType } => {
+): { fetchRequest: ObjectType; fetchRequestDefault: ObjectType; deployRequests: ObjectType } => {
   const dependsOnFromConfig = new ObjectType({
     elemID: new ElemID(adapter, 'dependsOnFromConfig'),
     fields: {
@@ -105,9 +118,20 @@ export const createRequestConfigs = (
   })
 
   const sharedEndpointFields: Record<string, FieldDefinition> = {
+    url: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
     queryParams: {
       refType: new MapType(BuiltinTypes.STRING),
     },
+    ...additionalFields,
+  }
+
+
+  const fetchEndpointFields: Record<string, FieldDefinition> = {
     recursiveQueryByResponseField: {
       refType: new MapType(BuiltinTypes.STRING),
     },
@@ -117,30 +141,53 @@ export const createRequestConfigs = (
     dependsOn: {
       refType: new ListType(dependsOnConfigType),
     },
-    ...additionalFields,
+    ...sharedEndpointFields,
   }
 
-  const requestConfigType = new ObjectType({
-    elemID: new ElemID(adapter, 'requestConfig'),
+  const fetchRequestConfigType = new ObjectType({
+    elemID: new ElemID(adapter, 'fetchRequestConfig'),
+    fields: fetchEndpointFields,
+  })
+
+  const fetchRequestDefaultConfigType = new ObjectType({
+    elemID: new ElemID(adapter, 'fetchRequestDefaultConfig'),
+    fields: _.omit(fetchEndpointFields, ['url']),
+  })
+
+
+  const deployRequestConfigType = new ObjectType({
+    elemID: new ElemID(adapter, 'deployRequestConfig'),
     fields: {
-      url: {
+      ...sharedEndpointFields,
+      method: {
         refType: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: true,
-        },
       },
-      ...sharedEndpointFields,
+      urlVarsToFields: {
+        refType: new MapType(BuiltinTypes.STRING),
+      },
     },
   })
 
-  const requestDefaultConfigType = new ObjectType({
-    elemID: new ElemID(adapter, 'requestDefaultConfig'),
+  const deployRequestsType = new ObjectType({
+    elemID: new ElemID(adapter, 'deployRequests'),
     fields: {
-      ...sharedEndpointFields,
+      add: {
+        refType: deployRequestConfigType,
+      },
+      modify: {
+        refType: deployRequestConfigType,
+      },
+      remove: {
+        refType: deployRequestConfigType,
+      },
     },
   })
 
-  return { request: requestConfigType, requestDefault: requestDefaultConfigType }
+  return {
+    fetchRequest: fetchRequestConfigType,
+    fetchRequestDefault: fetchRequestDefaultConfigType,
+    deployRequests: deployRequestsType,
+  }
 }
 
 const findUnresolvedArgs = (url: string, dependsOnArgs: Set<string>): string[] => {
@@ -150,8 +197,8 @@ const findUnresolvedArgs = (url: string, dependsOnArgs: Set<string>): string[] =
 
 export const validateRequestConfig = (
   configPath: string,
-  requestDefaultConfig: RequestDefaultConfig | undefined,
-  requestConfigMap: Record<string, RequestConfig>
+  requestDefaultConfig: FetchRequestDefaultConfig | undefined,
+  requestConfigMap: Record<string, FetchRequestConfig>
 ): void => {
   if (requestDefaultConfig?.dependsOn !== undefined) {
     const duplicates = findDuplicates(requestDefaultConfig.dependsOn.map(def => def.pathParam))

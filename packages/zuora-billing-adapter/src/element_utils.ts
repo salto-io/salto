@@ -36,8 +36,8 @@ export const isObjectDef = async (element: Element): Promise<boolean> => (
   && [CUSTOM_OBJECT, STANDARD_OBJECT].includes(await metadataType(element) || 'unknown')
 )
 
-export const getTypeNameAsReferenced = (type: Element): string => (
-  isObjectType(type) && type.annotations[METADATA_TYPE] === CUSTOM_OBJECT
+export const getTypeNameAsReferenced = async (type: Element): Promise<string> => (
+  isObjectType(type) && await metadataType(type) === CUSTOM_OBJECT
     // Custom Objects referred as 'default__<annotations.type>'
     ? `default__${type.annotations.type}`.toLowerCase()
     : type.elemID.name.toLowerCase()

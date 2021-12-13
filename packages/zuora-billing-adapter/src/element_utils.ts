@@ -39,7 +39,7 @@ export const isObjectDef = async (element: Element): Promise<boolean> => (
 
 export const getTypeNameAsReferenced = (type: Element): string => (
   isObjectType(type) && type.annotations[METADATA_TYPE] === CUSTOM_OBJECT
-    // Custom Objects referred as 'default_<typeName>' instead of '<typeName>__c'
+    // Custom Objects referred as 'default__<typeName>' instead of '<typeName>__c'
     ? `default__${type.elemID.name.toLowerCase().slice(0, -CUSTOM_OBJECT_SUFFIX.length)}`
     : type.elemID.name.toLowerCase()
 )

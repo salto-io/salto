@@ -557,6 +557,60 @@ describe('ducktype_type_elements', () => {
       expect(nestedTypes).toHaveLength(0)
       expect(type.path).toEqual([ADAPTER_NAME, TYPES_PATH, SUBTYPES_PATH, 'parent_type', 'subtypeName'])
     })
+    it('should mark singleton types as isSettings=true', () => {
+      const entries = [
+        {
+          id: 41619,
+          api_collection_id: 11815,
+          flow_id: 1381119,
+          flow_ids: [1381119, 1382229],
+          name: 'ab321',
+          method: 'GET',
+          url: 'https://some.url.com/a/bbb/user/{id}',
+          legacy_url: null,
+          base_path: '/a/bbb/user/{id}',
+          path: 'user/{id}',
+          active: false,
+          legacy: false,
+          created_at: '2020-12-21T16:08:03.762-08:00',
+          updated_at: '2020-12-21T16:08:03.762-08:00',
+        },
+      ]
+      const { type, nestedTypes } = generateType({
+        adapterName: ADAPTER_NAME,
+        name: 'typeName',
+        entries,
+        hasDynamicFields: false,
+        isSubType: false,
+        transformationConfigByType: {
+          typeName: {
+            isSingleton: true,
+          },
+        },
+        transformationDefaultConfig: { idFields: [] },
+      })
+      expect(type.isEqual(new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'typeName'),
+        fields: {
+          id: { refType: BuiltinTypes.NUMBER },
+          api_collection_id: { refType: BuiltinTypes.NUMBER },
+          flow_id: { refType: BuiltinTypes.NUMBER },
+          flow_ids: { refType: new ListType(BuiltinTypes.NUMBER) },
+          name: { refType: BuiltinTypes.STRING },
+          method: { refType: BuiltinTypes.STRING },
+          url: { refType: BuiltinTypes.STRING },
+          legacy_url: { refType: BuiltinTypes.UNKNOWN },
+          base_path: { refType: BuiltinTypes.STRING },
+          path: { refType: BuiltinTypes.STRING },
+          active: { refType: BuiltinTypes.BOOLEAN },
+          legacy: { refType: BuiltinTypes.BOOLEAN },
+          created_at: { refType: BuiltinTypes.STRING },
+          updated_at: { refType: BuiltinTypes.STRING },
+        },
+        isSettings: true,
+      }))).toBeTruthy()
+      expect(nestedTypes).toHaveLength(0)
+    })
   })
 
   describe('toNestedTypeName', () => {

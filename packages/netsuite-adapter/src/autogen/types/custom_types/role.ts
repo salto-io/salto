@@ -156,6 +156,11 @@ export const role = new ObjectType({
       annotations: {
       },
     }, /* Original description: This field is mandatory when the tfarequired value is not equal to OFF.   For information about possible values, see tfaduration.   The default value is '0'. */
+    coreadminpermission: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: For more information about the Core Administration Permission feature, see Core Administration Permissions.   The default value is F. */
     employeerestriction: {
       refType: createRefToElmWithValue(enums.role_fullrestrictions),
       annotations: {
@@ -211,6 +216,11 @@ export const role = new ObjectType({
       annotations: {
       },
     }, /* Original description: For information about possible values, see rolesubsidiaryoption.   The default value is 'ALL'.   If this field appears in the project, you must reference the SUBSIDIARIES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. SUBSIDIARIES must be enabled for this field to appear in your account. */
+    accountingbooksoption: {
+      refType: createRefToElmWithValue(enums.roleaccountingbooksoption),
+      annotations: {
+      },
+    }, /* Original description: For information about possible values, see roleaccountingbooksoption.   The default value is 'PRIMARY'.   If this field appears in the project, you must reference the MULTIBOOK feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MULTIBOOK must be enabled for this field to appear in your account. */
     issinglesignononly: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {

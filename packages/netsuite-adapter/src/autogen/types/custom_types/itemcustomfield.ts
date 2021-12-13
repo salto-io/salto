@@ -169,7 +169,7 @@ export const itemcustomfield = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 200 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 200 }),
       },
     }, /* Original description: This field value can be up to 200 characters long.   This field accepts references to the string custom type. */
     selectrecordtype: {
@@ -318,10 +318,10 @@ export const itemcustomfield = new ObjectType({
       },
     }, /* Original description: This field accepts references to the itemcustomfield custom type.   For information about other possible values, see generic_standard_field. */
     sourcefrom: {
-      refType: createRefToElmWithValue(enums.generic_standard_field),
+      refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
       },
-    }, /* Original description: For information about possible values, see generic_standard_field. */
+    }, /* Original description: This field accepts references to the itemcustomfield custom type.   For information about other possible values, see generic_standard_field. */
     sourcelist: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {
@@ -392,6 +392,11 @@ export const itemcustomfield = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    appliestoexpense: {
+      refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
+      annotations: {
+      },
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the CHARGEBASEDBILLING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CHARGEBASEDBILLING must be enabled for this field to appear in your account. */
     includechilditems: {
       refType: createRefToElmWithValue(BuiltinTypes.BOOLEAN),
       annotations: {

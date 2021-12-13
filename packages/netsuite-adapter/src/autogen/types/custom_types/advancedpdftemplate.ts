@@ -49,13 +49,13 @@ export const advancedpdftemplate = new ObjectType({
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 297 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 297 }),
       },
     }, /* Original description: This field value can be up to 297 characters long. */
     description: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING),
       annotations: {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 4000 }),
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 4000 }),
       },
     }, /* Original description: This field value can be up to 4000 characters long. */
     displaysourcecode: {
@@ -73,6 +73,18 @@ export const advancedpdftemplate = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    trantype: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      annotations: {
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 4000 }),
+      },
+    }, /* Original description: This field value can be up to 4000 characters long. */
+    printtype: {
+      refType: createRefToElmWithValue(BuiltinTypes.STRING),
+      annotations: {
+        // [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max_length: 4000 }),
+      },
+    }, /* Original description: This field value can be up to 4000 characters long. */
     savedsearch: {
       refType: createRefToElmWithValue(BuiltinTypes.STRING /* Original type was single-select list */),
       annotations: {

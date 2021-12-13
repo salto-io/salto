@@ -237,6 +237,7 @@ export const generateType = ({
     elemID: new ElemID(adapterName, naclName),
     fields,
     path,
+    isSettings: transformationConfigByType[naclName]?.isSingleton ?? false,
   })
 
   return { type, nestedTypes }

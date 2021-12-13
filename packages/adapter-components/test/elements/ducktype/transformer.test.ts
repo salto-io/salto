@@ -330,6 +330,43 @@ describe('ducktype_transformer', () => {
         nestedFieldFinder: findDataField,
       })).rejects.toThrow(new Error('could not find type missing'))
     })
+    it('should fail if type is setting but there\'s more than one instance', async () => {
+      jest.spyOn(typeElements, 'generateType').mockImplementation(({ adapterName, name }) => {
+        const someNested = new ObjectType({ elemID: new ElemID(adapterName, `${name}__some_nested`) })
+        const anotherNested = new ObjectType({ elemID: new ElemID(adapterName, `${name}__another_nested`) })
+        return {
+          type: new ObjectType({
+            elemID: new ElemID(adapterName, name),
+            fields: { someNested: { refType: someNested } },
+            isSettings: true,
+          }),
+          nestedTypes: [someNested, anotherNested],
+        }
+      })
+      await expect(getTypeAndInstances({
+        adapterName: 'something',
+        paginator: mockPaginator,
+        computeGetArgs: simpleGetArgs,
+        typeName: 'myType',
+        typesConfig: {
+          myType: {
+            request: {
+              url: 'url',
+            },
+            transformation: {
+              isSingleton: true,
+            },
+          },
+        },
+        typeDefaultConfig: {
+          transformation: {
+            idFields: ['name'],
+            fileNameFields: ['also_name'],
+          },
+        },
+        nestedFieldFinder: returnFullEntry,
+      })).rejects.toThrow(new Error('Could not fetch type myType, singleton types should not have more than one instance'))
+    })
   })
 
   describe('getAllElements', () => {

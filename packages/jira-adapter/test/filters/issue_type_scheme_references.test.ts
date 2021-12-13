@@ -15,18 +15,18 @@
 */
 import 'jest-extended'
 import { filterUtils } from '@salto-io/adapter-components'
-import { Element, ReferenceExpression } from '@salto-io/adapter-api'
+import { Element, ElemID, ReferenceExpression } from '@salto-io/adapter-api'
 import { getDefaultAdapterConfig, mockClient } from '../utils'
 import issueTypeSchemeReferences, { isIssueTypeSchemeInstance } from '../../src/filters/issue_type_scheme_references'
 import { instanceCreators } from '../mock_elements'
 
 describe('issueTypeSchemeReferences', () => {
-  const ISSUE_TYPES = [
-    instanceCreators.issueType('Bug', '1'),
-    instanceCreators.issueType('Task', '2'),
-    instanceCreators.issueType('Feature', '3'),
+  const ISSUE_TYPES_REFERENCES = [
+    new ReferenceExpression(new ElemID('Jira', 'Bug')),
+    new ReferenceExpression(new ElemID('Jira', 'Task')),
+    new ReferenceExpression(new ElemID('Jira', 'Feature')),
   ]
-  const ISSUE_TYPE_SCHEME = instanceCreators.issueTypeScheme('TestScheme', ['1', '2', '3'])
+  const ISSUE_TYPE_SCHEME = instanceCreators.issueTypeScheme('TestScheme', ISSUE_TYPES_REFERENCES)
 
   let runFilter: (...elements: Element[]) => Promise<Element[]>
   beforeAll(async () => {
@@ -42,13 +42,9 @@ describe('issueTypeSchemeReferences', () => {
     }
   })
 
-  it('should replace issueTypeIds with references to IssueType instances', async () => {
-    const elements = await runFilter(...ISSUE_TYPES, ISSUE_TYPE_SCHEME)
+  it('should convert the value of the "issueTypes" field to list of references', async () => {
+    const elements = await runFilter(ISSUE_TYPE_SCHEME)
     const issueTypeSchemeInstance = elements.find(isIssueTypeSchemeInstance)
-    expect(issueTypeSchemeInstance?.value.issueTypes).toIncludeSameMembers([
-      new ReferenceExpression(ISSUE_TYPES[0].elemID),
-      new ReferenceExpression(ISSUE_TYPES[1].elemID),
-      new ReferenceExpression(ISSUE_TYPES[2].elemID),
-    ])
+    expect(issueTypeSchemeInstance?.value.issueTypes).toIncludeSameMembers(ISSUE_TYPES_REFERENCES)
   })
 })

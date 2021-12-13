@@ -14,7 +14,15 @@
 * limitations under the License.
 */
 
-import { ObjectType, ElemID, BuiltinTypes, MapType, InstanceElement, ListType } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  BuiltinTypes,
+  MapType,
+  InstanceElement,
+  ListType,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { JIRA } from '../src/constants'
 
@@ -43,14 +51,6 @@ const projectType = new ObjectType({
   },
 })
 
-const issueTypeType = new ObjectType({
-  elemID: new ElemID(JIRA, 'IssueTypeDetails'),
-  fields: {
-    id: { refType: BuiltinTypes.STRING },
-    name: { refType: BuiltinTypes.STRING },
-  },
-})
-
 const issueTypeSchemeMappingType = new ObjectType({
   elemID: new ElemID(JIRA, 'IssueTypeSchemeMapping'),
   fields: {
@@ -68,7 +68,6 @@ const issueTypeSchemeType = new ObjectType({
 export const mockTypes = {
   Board: boardType,
   Project: projectType,
-  IssueType: issueTypeType,
   IssueTypeScheme: issueTypeSchemeType,
 }
 
@@ -96,14 +95,10 @@ export const mockInstances = {
 }
 
 export const instanceCreators = {
-  issueType: (name: string, id: string) => new InstanceElement(
-    name,
-    mockTypes.IssueType,
-    { id, name }
-  ),
-  issueTypeScheme: (name: string, issueTypesIds: string[]) => new InstanceElement(
-    name,
-    mockTypes.IssueTypeScheme,
-    { issueTypes: issueTypesIds.map(issueTypeId => ({ issueTypeId })) }
-  ),
+  issueTypeScheme: (name: string, issueTypesReferences: ReferenceExpression[]) =>
+    new InstanceElement(
+      name,
+      mockTypes.IssueTypeScheme,
+      { issueTypes: issueTypesReferences.map(reference => ({ issueTypeId: reference })) }
+    ),
 }

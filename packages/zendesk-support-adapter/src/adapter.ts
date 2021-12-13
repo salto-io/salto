@@ -34,7 +34,6 @@ import changeValidator from './change_validator'
 import { paginate } from './client/pagination'
 import fieldReferencesFilter from './filters/field_references'
 import unorderedListsFilter from './filters/unordered_lists'
-import addDeploymentAnnotationsFilter from './filters/add_deployment_annotations'
 
 const log = logger(module)
 const { createPaginator } = clientUtils
@@ -46,7 +45,6 @@ export const DEFAULT_FILTERS = [
   fieldReferencesFilter,
   // unorderedListsFilter should run after fieldReferencesFilter
   unorderedListsFilter,
-  addDeploymentAnnotationsFilter,
 ]
 
 export interface ZendeskAdapterParams {

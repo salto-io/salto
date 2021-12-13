@@ -16,18 +16,32 @@
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { InstanceElement, isObjectType, isInstanceElement, ReferenceExpression, isRemovalChange,
+  AdapterOperations, toChange, ObjectType, ElemID } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernamePasswordCredentialsType } from '../src/auth'
 import { configType, FETCH_CONFIG, DEFAULT_TYPES, API_DEFINITIONS_CONFIG } from '../src/config'
+import { ZENDESK_SUPPORT } from '../src/constants'
 
 type MockReply = {
   url: string
   params: Record<string, string>
   response: unknown
 }
+
+const mockDeployChange = jest.fn()
+jest.mock('@salto-io/adapter-components', () => {
+  const actual = jest.requireActual('@salto-io/adapter-components')
+  return {
+    ...actual,
+    deployment: {
+      ...actual.deployment,
+      deployChange: jest.fn((...args) => mockDeployChange(...args)),
+    },
+  }
+})
 
 describe('adapter', () => {
   let mockAxiosAdapter: MockAdapter
@@ -403,8 +417,16 @@ describe('adapter', () => {
   })
 
   describe('deploy', () => {
-    it('should throw not implemented', async () => {
-      const operations = adapter.operations({
+    let operations: AdapterOperations
+    const groupType = new ObjectType({ elemID: new ElemID(ZENDESK_SUPPORT, 'group') })
+    beforeEach(() => {
+      mockDeployChange.mockImplementation(async change => {
+        if (isRemovalChange(change)) {
+          throw new Error('some error')
+        }
+        return { id: 2 }
+      })
+      operations = adapter.operations({
         credentials: new InstanceElement(
           'config',
           usernamePasswordCredentialsType,
@@ -415,13 +437,84 @@ describe('adapter', () => {
           configType,
           {
             [FETCH_CONFIG]: {
-              includeTypes: [...Object.keys(DEFAULT_TYPES)].sort(),
+              includeTypes: ['group', 'groups'],
+            },
+            [API_DEFINITIONS_CONFIG]: {
+              types: {
+                group: {
+                  transformation: {
+                    sourceTypeName: 'groups__groups',
+                    deployRequests: {
+                      add: {
+                        url: '/groups',
+                        dataField: 'group',
+                        method: 'post',
+                      },
+                      modify: {
+                        url: '/groups/{groupId}',
+                        method: 'put',
+                        dataField: 'group',
+                        urlVarsToFields: {
+                          groupId: 'id',
+                        },
+                      },
+                      remove: {
+                        url: '/groups/{groupId}',
+                        method: 'delete',
+                        dataField: 'group',
+                        urlVarsToFields: {
+                          groupId: 'id',
+                        },
+                      },
+                    },
+                  },
+                },
+                groups: {
+                  request: {
+                    url: '/groups',
+                  },
+                  transformation: {
+                    dataField: 'groups',
+                  },
+                },
+              },
             },
           }
         ),
         elementsSource: buildElementsSourceFromElements([]),
       })
-      await expect(operations.deploy({ changeGroup: { groupID: '', changes: [] } })).rejects.toThrow(new Error('Not implemented.'))
+    })
+
+    it('should return the applied changes', async () => {
+      const deployRes = await operations.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({ after: new InstanceElement('inst', groupType) }),
+            toChange({ before: new InstanceElement('inst2', groupType) }),
+          ],
+        },
+      })
+
+      expect(deployRes.appliedChanges).toEqual([
+        toChange({ after: new InstanceElement('inst', groupType, { id: 2 }) }),
+      ])
+    })
+
+    it('should return the errors', async () => {
+      const deployRes = await operations.deploy({
+        changeGroup: {
+          groupID: 'group',
+          changes: [
+            toChange({ after: new InstanceElement('inst', groupType) }),
+            toChange({ before: new InstanceElement('inst2', groupType) }),
+          ],
+        },
+      })
+
+      expect(deployRes.errors).toEqual([
+        new Error('some error'),
+      ])
     })
   })
 })

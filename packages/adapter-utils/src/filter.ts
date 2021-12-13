@@ -13,8 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Change, PostFetchOptions } from '@salto-io/adapter-api'
-import { types, promises, values } from '@salto-io/lowerdash'
+import { Element, Change, PostFetchOptions, DeployResult } from '@salto-io/adapter-api'
+import { types, promises, values, collections, objects } from '@salto-io/lowerdash'
+
+const { awu } = collections.asynciterable
+const { concatObjects } = objects
 
 const { isDefined } = values
 
@@ -25,41 +28,45 @@ const { isDefined } = values
 // separate commands
 export type FilterResult = Record<string, unknown[] | undefined>
 
-export type Filter<T extends FilterResult | void, DeployResult=void> = Partial<{
+export type Filter<T extends FilterResult | void, DeployInfo=void> = Partial<{
   onFetch(elements: Element[]): Promise<T | void>
   preDeploy(changes: Change[]): Promise<void>
-  onDeploy(changes: Change[], deployResult: DeployResult): Promise<void>
+  deploy(changes: Change[]): Promise<{
+    deployResult: DeployResult
+    leftoverChanges: Change[]
+  }>
+  onDeploy(changes: Change[], deployInfo: DeployInfo): Promise<void>
   onPostFetch(args: PostFetchOptions): Promise<void>
 }>
 
 export type FilterWith<
   T extends FilterResult | void,
   // eslint-disable-next-line no-use-before-define
-  M extends keyof Filter<T, DeployResult>,
-  DeployResult = void,
-> = types.HasMember<Filter<T, DeployResult>, M>
+  M extends keyof Filter<T, DeployInfo>,
+  DeployInfo = void,
+> = types.HasMember<Filter<T, DeployInfo>, M>
 
 export type FilterCreator<
   R extends FilterResult | void,
   T,
-  DeployResult=void,
-> = (opts: T) => Filter<R, DeployResult>
+  DeployInfo=void,
+> = (opts: T) => Filter<R, DeployInfo>
 
 export const filtersRunner = <
   R extends FilterResult | void,
   T,
-  DeployResult=void,
+  DeployInfo=void,
 >(
     opts: T,
-    filterCreators: ReadonlyArray<FilterCreator<R, T, DeployResult>>,
+    filterCreators: ReadonlyArray<FilterCreator<R, T, DeployInfo>>,
     onFetchAggregator: (results: R[]) => R | void = () => undefined,
-  ): Required<Filter<R, DeployResult>> => {
+  ): Required<Filter<R, DeployInfo>> => {
   // Create all filters in advance to allow them to hold context between calls
   const allFilters = filterCreators.map(f => f(opts))
 
-  const filtersWith = <M extends keyof Filter<R, DeployResult>>(m: M):
-    FilterWith<R, M, DeployResult>[] => (
-      types.filterHasMember<Filter<R, DeployResult>, M>(m, allFilters)
+  const filtersWith = <M extends keyof Filter<R, DeployInfo>>(m: M):
+    FilterWith<R, M, DeployInfo>[] => (
+      types.filterHasMember<Filter<R, DeployInfo>, M>(m, allFilters)
     )
 
   return {
@@ -77,6 +84,27 @@ export const filtersRunner = <
     preDeploy: async changes => {
       await promises.array.series(filtersWith('preDeploy').reverse().map(filter => () => filter.preDeploy(changes)))
     },
+    /**
+     * deploy method for implementing a deployment functionality.
+     */
+    deploy: async changes => (
+      awu(filtersWith('deploy')).reduce(
+        async (total, current) => {
+          const res = await current.deploy(total.leftoverChanges)
+          return {
+            deployResult: concatObjects([total.deployResult, res.deployResult]),
+            leftoverChanges: res.leftoverChanges,
+          }
+        },
+        {
+          deployResult: {
+            appliedChanges: [] as ReadonlyArray<Change>,
+            errors: [] as ReadonlyArray<Error>,
+          },
+          leftoverChanges: changes,
+        }
+      )
+    ),
     /**
      * onDeploy is called in the same order as onFetch and is expected to do basically
      * the same thing that onFetch does but with a different context (on changes instead

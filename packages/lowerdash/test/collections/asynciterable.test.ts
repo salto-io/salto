@@ -539,6 +539,16 @@ describe('asynciterable', () => {
         })
       })
     })
+
+    describe('reduce', () => {
+      it('should return the reduced value', async () => {
+        const res = await awu([1, 2, 3]).reduce(
+          async (total, current, index) => total + current + index,
+          0,
+        )
+        expect(res).toEqual(9)
+      })
+    })
   })
 
   describe('handleErrorsAsync', () => {

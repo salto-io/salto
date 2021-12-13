@@ -19,7 +19,7 @@ import {
   stat, exists, readFile, replaceContents, mkdirp, rm, isEmptyDir,
   rename, existsSync, readFileSync, statSync, notFoundAsUndefined,
 } from '@salto-io/file'
-import { localDirectoryStore } from '../../../src/local-workspace/dir_store'
+import { localDirectoryStore, createExtensionFileFilter } from '../../../src/local-workspace/dir_store'
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual<{}>('@salto-io/file'),
@@ -66,14 +66,13 @@ describe('localDirectoryStore', () => {
       expect(result).toEqual([])
     })
     it('skip hidden directories', async () => {
-      const fileFilter = '*.nacl'
+      const fileFilter = createExtensionFileFilter('nacl')
       const baseDir = 'hidden'
       mockFileExists.mockResolvedValue(true)
       mockReaddirp.mockResolvedValue([{ fullPath: 'test1' }, { fullPath: 'test2' }])
       const result = await localDirectoryStore({ baseDir, name: '', encoding, fileFilter }).list()
       expect(result).toEqual(['test1', 'test2'])
       expect(mockReaddirp.mock.calls[0][0]).toEqual(baseDir)
-      expect(mockReaddirp.mock.calls[0][1].fileFilter).toEqual(fileFilter)
       expect(mockReaddirp.mock.calls[0][1].directoryFilter({ basename: '.hidden' })).toBeFalsy()
     })
 
@@ -95,7 +94,7 @@ describe('localDirectoryStore', () => {
       expect(result).toEqual(true)
     })
     it('return true if dir is empty', async () => {
-      const fileFilter = '*.nacl'
+      const fileFilter = createExtensionFileFilter('nacl')
       const baseDir = 'base'
       mockFileExists.mockResolvedValue(true)
       mockReaddirp.mockResolvedValue([])
@@ -103,7 +102,7 @@ describe('localDirectoryStore', () => {
       expect(result).toEqual(true)
     })
     it('return false if dir has files', async () => {
-      const fileFilter = '*.nacl'
+      const fileFilter = createExtensionFileFilter('nacl')
       const baseDir = 'base'
       mockFileExists.mockResolvedValue(true)
       mockReaddirp.mockResolvedValue([{ fullPath: 'test1' }, { fullPath: 'test2' }])
@@ -415,6 +414,28 @@ describe('localDirectoryStore', () => {
 
       const filename = 'filename'
       expect(naclFileStore.getFullPath(filename)).toBe(`${baseDir}/${name}/${filename}`)
+    })
+  })
+
+  describe('doesIncludePath', () => {
+    const baseDir = '/base'
+    const fileFilter = (filePath: string): boolean => path.extname(filePath) === '.nacl'
+    const directoryFilter = (filePath: string): boolean => (
+      !path.dirname(filePath).includes('exclude')
+    )
+    const naclFileStore = localDirectoryStore({ baseDir, encoding, fileFilter, directoryFilter })
+
+    it('should return true for file which are in the path and passes both the directory and file filters', () => {
+      expect(naclFileStore.doesIncludePath(path.resolve(baseDir, 'sup.nacl'))).toBeTruthy()
+    })
+    it('should return false for file which are in the path and do not path the files filter', () => {
+      expect(naclFileStore.doesIncludePath(path.resolve(baseDir, 'sup.exe'))).toBeFalsy()
+    })
+    it('should return false for file which are in the path and do not path the directory filter', () => {
+      expect(naclFileStore.doesIncludePath(path.resolve(baseDir, 'exclude', 'sup.nacl'))).toBeFalsy()
+    })
+    it('should return false for files which are not in the path', () => {
+      expect(naclFileStore.doesIncludePath(path.resolve('/nope', 'sup.nacl'))).toBeFalsy()
     })
   })
 })

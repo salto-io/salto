@@ -149,6 +149,7 @@ export const buildStaticFilesSource = (
     delete: async (staticFile: StaticFile): Promise<void> => (
       staticFilesDirStore.delete(staticFile.filepath)
     ),
+    doesIncludePath: filePath => staticFilesSource.doesIncludePath(filePath),
   }
   return staticFilesSource
 }

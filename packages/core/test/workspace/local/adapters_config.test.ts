@@ -15,7 +15,7 @@
 */
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { nacl, remoteMap, validator } from '@salto-io/workspace'
-import { localDirectoryStore } from '../../../src/local-workspace/dir_store'
+import { localDirectoryStore, createExtensionFileFilter } from '../../../src/local-workspace/dir_store'
 import { buildLocalAdaptersConfigSource } from '../../../src/local-workspace/adapters_config'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
 
@@ -71,9 +71,9 @@ describe('adapters local config', () => {
       expect(localDirectoryStore).toHaveBeenCalledWith({
         baseDir: 'baseDir',
         accessiblePath: 'salto.config/adapters',
-        fileFilter: '*.nacl',
         encoding: 'utf8',
       })
+      expect(createExtensionFileFilter).toHaveBeenCalledWith('.nacl')
     })
   })
 })

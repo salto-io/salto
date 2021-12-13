@@ -116,5 +116,9 @@ export const createMockNaclFileSource = (
         ? sfile
         : undefined
     }),
+    doesIncludePath: mockFunction<NaclFilesSource['doesIncludePath']>().mockImplementation(filePath => ({
+      included: naclFiles[filePath] !== undefined,
+    })),
+
   })
 }

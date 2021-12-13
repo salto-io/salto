@@ -77,6 +77,7 @@ dirStore.SyncDirectoryStore<T> => {
     isEmpty: mockFunction<dirStore.SyncDirectoryStore<T>['isEmpty']>(),
     getFullPath: mockFunction<dirStore.SyncDirectoryStore<T>['getFullPath']>().mockImplementation(filepath => `full-${filepath}`),
     getSync: mockFunction<dirStore.SyncDirectoryStore<T>['getSync']>(),
+    doesIncludePath: mockFunction<dirStore.SyncDirectoryStore<T>['doesIncludePath']>(),
   }
 }
 

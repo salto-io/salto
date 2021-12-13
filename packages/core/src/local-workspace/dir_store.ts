@@ -31,13 +31,20 @@ const RENAME_CONCURRENCY = 100
 
 type FileMap<T extends dirStore.ContentType> = Record<string, dirStore.File<T>>
 
+export const createExtensionFileFilter = (
+  extension: string
+) : (filePath: string
+) => boolean => (
+  (filePath: string) => path.extname(filePath) === extension
+)
+
 const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   baseDir: string,
   storeName?: string,
   nameSuffix?: string,
   accessiblePath = '',
   encoding?: BufferEncoding,
-  fileFilter?: string,
+  fileFilter?: (path: string) => boolean,
   directoryFilter?: (path: string) => boolean,
   initUpdated?: FileMap<T>,
   initDeleted? : string[],
@@ -68,7 +75,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   const listDirFiles = async (listDirectories = false):
   Promise<string[]> => (await fileUtils.exists(getAccessibleFullPath())
     ? readdirp.promise(getAccessibleFullPath(), {
-      fileFilter: fileFilter || (() => true),
+      fileFilter: fileFilter ? (e => fileFilter(e.fullPath)) : (() => true),
       directoryFilter: e => e.basename[0] !== '.'
         && (!directoryFilter || directoryFilter(e.fullPath)),
       type: listDirectories ? 'directories' : 'files',
@@ -175,6 +182,22 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       .map(f => () => removeDirIfEmpty(getAbsFileName(f))))
   }
 
+  const doesIncludePath = (filePath: string): boolean => {
+    const absPath = getAbsFileName(filePath)
+    if (fileFilter && !fileFilter(absPath)) {
+      return false
+    }
+    if (directoryFilter && !directoryFilter(filePath)) {
+      return false
+    }
+    try {
+      getRelativeFileName(absPath)
+      return true
+    } catch {
+      return false
+    }
+  }
+
   return {
     list,
     isEmpty,
@@ -269,8 +292,8 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       _.cloneDeep(updated),
       _.cloneDeep(deleted)
     ),
-    getFullPath: filename =>
-      getAbsFileName(filename),
+    getFullPath: filename => getAbsFileName(filename),
+    doesIncludePath,
   }
 }
 
@@ -280,7 +303,7 @@ type LocalDirectoryStoreParams = {
   nameSuffix?: string
   accessiblePath?: string
   encoding?: 'utf8'
-  fileFilter?: string
+  fileFilter?: (path: string) => boolean
   directoryFilter?: (path: string) => boolean
 }
 

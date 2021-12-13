@@ -1110,4 +1110,23 @@ describe('multi env source', () => {
       expect(postClearElements).toEqual([])
     })
   })
+
+  describe('getFileEnvs', () => {
+    const src = multiEnvSource(
+      sources,
+      commonPrefix,
+      () => Promise.resolve(new InMemoryRemoteMap()),
+      false
+    )
+
+    it('should return a single env when the file is included in the env source', () => {
+      expect(src.getFileEnvs('envs/active/env.nacl')).toEqual([{ envName: 'active' }])
+    })
+    it('should return all envs if the file is included in the common source', () => {
+      expect(src.getFileEnvs('common.nacl')).toEqual([{ envName: 'active' }, { envName: 'inactive' }])
+    })
+    it('should return an empty array if the file is not included in any env', () => {
+      expect(src.getFileEnvs('envs/active/not_a_file.nacl')).toEqual([])
+    })
+  })
 })

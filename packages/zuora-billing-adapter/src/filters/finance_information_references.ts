@@ -14,16 +14,17 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, InstanceElement, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
+import { Element, ElemID, InstanceElement, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { collections, multiIndex, values } from '@salto-io/lowerdash'
 import { ACCOUNTING_CODE_ITEM_TYPE, PRODUCT_RATE_PLAN_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
 
 const { isDefined } = values
+const { toAsyncIterable, awu } = collections.asynciterable
 
 const addFinanceInformationDependencies = (
   inst: InstanceElement,
-  accountingCodeItems: InstanceElement[]
+  accountingCodeItemsLookup: multiIndex.Index<[string, string], ElemID>
 ): void => {
   const { productRatePlanCharges } = inst.value
   if (!_.isArray(productRatePlanCharges)) {
@@ -45,11 +46,12 @@ const addFinanceInformationDependencies = (
       .forEach(key => {
         // each couple of fields (as mentioned above) refer to an accountingCodeItem
         // with a unique combination of name & type
-        const accountingCodeItem = accountingCodeItems.find(item =>
-          item.value.name === financeInformation[key] && item.value.type === financeInformation[`${key}Type`])
+        const accountingCodeItem = accountingCodeItemsLookup.get(
+          financeInformation[key]?.toLowerCase(), financeInformation[`${key}Type`]?.toLowerCase()
+        )
         if (isDefined(accountingCodeItem)) {
           // one field should be with with a reference, and the second is unnecessary
-          financeInformation[key] = new ReferenceExpression(accountingCodeItem.elemID)
+          financeInformation[key] = new ReferenceExpression(accountingCodeItem)
           _.unset(financeInformation, `${key}Type`)
         }
       })
@@ -67,14 +69,24 @@ const filterCreator: FilterCreator = () => ({
     const productRatePlanInstances = instances
       .filter(inst => inst.elemID.typeName === PRODUCT_RATE_PLAN_TYPE)
 
-    const accountingCodeItems = instances.filter(inst =>
-      inst.elemID.typeName === ACCOUNTING_CODE_ITEM_TYPE)
+    const accountingCodeItems = await awu(instances).filter(inst =>
+      inst.elemID.typeName === ACCOUNTING_CODE_ITEM_TYPE).toArray() as InstanceElement[]
+
     if (_.isEmpty(productRatePlanInstances) || _.isEmpty(accountingCodeItems)) {
       return
     }
 
+    const { accountingCodeItemsLookup } = await multiIndex.buildMultiIndex<Element>()
+      .addIndex({
+        name: 'accountingCodeItemsLookup',
+        filter: isInstanceElement,
+        // id name changes are currently not allowed so it's ok to use the elem id
+        key: item => [item.value.name.toLowerCase(), item.value.type.toLowerCase()],
+        map: item => item.elemID,
+      }).process(toAsyncIterable(accountingCodeItems))
+
     productRatePlanInstances.forEach(inst => {
-      addFinanceInformationDependencies(inst, accountingCodeItems)
+      addFinanceInformationDependencies(inst, accountingCodeItemsLookup)
     })
   },
 })

@@ -52,6 +52,9 @@ const addFinanceInformationDependencies = (
         if (isDefined(accountingCodeItem)) {
           // one field should be with with a reference, and the second is unnecessary
           financeInformation[key] = new ReferenceExpression(accountingCodeItem)
+          // TODO: when this adapter would be able to deploy,
+          // this field should be created on preDeploy
+          // so it won't considered as deleted at the service
           _.unset(financeInformation, `${key}Type`)
         }
       })
@@ -63,6 +66,9 @@ const addFinanceInformationDependencies = (
  * (an object field in ProductRatePlan->ProductRatePlanCharges)
  */
 const filterCreator: FilterCreator = () => ({
+  // TODO: in onDeploy - create the deleted fields in the pattern of '.*AccountingCodeType'
+  // from the 'type' value of the referred AccountingCodeItem in the fields in the pattern of
+  // '.*AccountingCode'.
   onFetch: async (elements: Element[]): Promise<void> => {
     const instances = elements.filter(isInstanceElement)
 
@@ -80,7 +86,8 @@ const filterCreator: FilterCreator = () => ({
       .addIndex({
         name: 'accountingCodeItemsLookup',
         filter: isInstanceElement,
-        // id name changes are currently not allowed so it's ok to use the elem id
+        // we want to look for the AccountingCodeItem by its name & type
+        // (they're unique for each instance)
         key: item => [item.value.name.toLowerCase(), item.value.type.toLowerCase()],
         map: item => item.elemID,
       }).process(toAsyncIterable(accountingCodeItems))

@@ -18,7 +18,6 @@ import {
 } from '@salto-io/adapter-api'
 import {
   CUSTOM_FIELD, CUSTOM_OBJECT, ZUORA_CUSTOM_SUFFIX, METADATA_TYPE, STANDARD_OBJECT,
-  CUSTOM_OBJECT_SUFFIX,
 } from './constants'
 
 export const metadataType = async (element: Element): Promise<string | undefined> => {
@@ -39,8 +38,8 @@ export const isObjectDef = async (element: Element): Promise<boolean> => (
 
 export const getTypeNameAsReferenced = (type: Element): string => (
   isObjectType(type) && type.annotations[METADATA_TYPE] === CUSTOM_OBJECT
-    // Custom Objects referred as 'default__<typeName>' instead of '<typeName>__c'
-    ? `default__${type.elemID.name.toLowerCase().slice(0, -CUSTOM_OBJECT_SUFFIX.length)}`
+    // Custom Objects referred as 'default__<annotations.type>'
+    ? `default__${type.annotations.type}`.toLowerCase()
     : type.elemID.name.toLowerCase()
 )
 

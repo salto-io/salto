@@ -24,8 +24,8 @@ import { logger } from '@salto-io/logging'
 import { values as lowerdashValues, promises } from '@salto-io/lowerdash'
 import {
   ZUORA_BILLING, CUSTOM_OBJECT, CUSTOM_OBJECT_DEFINITION_TYPE, OBJECTS_PATH, METADATA_TYPE,
-  STANDARD_OBJECT_DEFINITION_TYPE, CUSTOM_OBJECT_SUFFIX, LABEL, FIELD_RELATIONSHIP_ANNOTATIONS,
-  REQUIRED, FILTERABLE, DESCRIPTION, INTERNAL_ID, STANDARD_OBJECT,
+  STANDARD_OBJECT_DEFINITION_TYPE, CUSTOM_OBJECT_SUFFIX, LABEL, TYPE,
+  FIELD_RELATIONSHIP_ANNOTATIONS, REQUIRED, FILTERABLE, DESCRIPTION, INTERNAL_ID, STANDARD_OBJECT,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import { isInstanceOfType } from '../element_utils'
@@ -57,9 +57,28 @@ const flattenAdditionalProperties = (val: Values): Values => ({
   ...val[ADDITIONAL_PROPERTIES_FIELD],
 })
 
+// this function makes sure that CustomObject elements would have their original 'type' value kept
+// because overwise it is replaced in their elemID by '<type>__c'
+const getAnnotations = (inst: InstanceElement): Values => (
+  isStandardObjectInstance(inst)
+    ? {
+      [METADATA_TYPE]: isStandardObjectInstance(inst) ? STANDARD_OBJECT : CUSTOM_OBJECT,
+      [LABEL]: inst.value.schema.label,
+      [DESCRIPTION]: inst.value.schema.description,
+      [INTERNAL_ID]: inst.value.additionalProperties?.Id,
+    }
+    : {
+      [METADATA_TYPE]: isStandardObjectInstance(inst) ? STANDARD_OBJECT : CUSTOM_OBJECT,
+      [LABEL]: inst.value.schema.label,
+      [DESCRIPTION]: inst.value.schema.description,
+      [INTERNAL_ID]: inst.value.additionalProperties?.Id,
+      [TYPE]: inst.value.type,
+    }
+)
+
 const createObjectFromInstance = async (inst: InstanceElement): Promise<ObjectType> => {
   const {
-    properties, required, filterable, description, label,
+    properties, required, filterable,
   } = inst.value.schema
   const requiredFields = new Set(required)
   const filterableFields = new Set(filterable)
@@ -83,12 +102,7 @@ const createObjectFromInstance = async (inst: InstanceElement): Promise<ObjectTy
       [DESCRIPTION]: BuiltinTypes.STRING,
       [INTERNAL_ID]: BuiltinTypes.HIDDEN_STRING,
     },
-    annotations: {
-      [METADATA_TYPE]: isStandardObjectInstance(inst) ? STANDARD_OBJECT : CUSTOM_OBJECT,
-      [LABEL]: label,
-      [DESCRIPTION]: description,
-      [INTERNAL_ID]: inst.value.additionalProperties?.Id,
-    },
+    annotations: getAnnotations(inst),
     // id name changes are currently not allowed so it's ok to use the elem id
     path: [ZUORA_BILLING, OBJECTS_PATH, pathNaclCase(naclCase(inst.elemID.name))],
   })

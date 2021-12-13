@@ -177,16 +177,33 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       paginationField: 'startAt',
     },
   },
-  PageBeanFieldConfigurationScheme: {
+  PageBeanFieldConfigurationScheme: { // FieldConfigurationScheme
     request: {
       url: '/rest/api/3/fieldconfigurationscheme',
       paginationField: 'startAt',
+      recurseInto: [
+        {
+          type: 'PageBeanFieldConfigurationIssueTypeItem',
+          toField: 'items',
+          context: [{ name: 'schemeId', fromField: 'id' }],
+        },
+      ],
     },
   },
-  PageBeanFieldConfigurationIssueTypeItem: {
+  FieldConfigurationScheme: {
+    transformation: {
+      fieldTypeOverrides: [{ fieldName: 'items', fieldType: 'list<FieldConfigurationIssueTypeItem>' }],
+    },
+  },
+  PageBeanFieldConfigurationIssueTypeItem: { // FieldConfigurationIssueTypeItem
     request: {
-      url: '/rest/api/3/fieldconfigurationscheme/mapping',
+      url: '/rest/api/3/fieldconfigurationscheme/mapping?fieldConfigurationSchemeId={schemeId}',
       paginationField: 'startAt',
+    },
+  },
+  FieldConfigurationIssueTypeItem: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'fieldConfigurationSchemeId' }],
     },
   },
   PageBeanFilterDetails: {
@@ -219,24 +236,58 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/issuetypescheme',
       paginationField: 'startAt',
+      recurseInto: [
+        {
+          type: 'PageBeanIssueTypeSchemeMapping',
+          toField: 'issueTypes',
+          context: [{ name: 'schemeId', fromField: 'id' }],
+        },
+      ],
+    },
+  },
+  IssueTypeScheme: {
+    transformation: {
+      fieldTypeOverrides: [{ fieldName: 'issueTypes', fieldType: 'list<IssueTypeSchemeMapping>' }],
     },
   },
   PageBeanIssueTypeSchemeMapping: {
     request: {
-      url: '/rest/api/3/issuetypescheme/mapping',
+      url: '/rest/api/3/issuetypescheme/mapping?issueTypeSchemeId={schemeId}',
       paginationField: 'startAt',
+    },
+  },
+  IssueTypeSchemeMapping: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'issueTypeSchemeId' }],
     },
   },
   PageBeanIssueTypeScreenScheme: {
     request: {
       url: '/rest/api/3/issuetypescreenscheme',
       paginationField: 'startAt',
+      recurseInto: [
+        {
+          type: 'PageBeanIssueTypeScreenSchemeItem',
+          toField: 'items',
+          context: [{ name: 'schemeId', fromField: 'id' }],
+        },
+      ],
+    },
+  },
+  IssueTypeScreenScheme: {
+    transformation: {
+      fieldTypeOverrides: [{ fieldName: 'items', fieldType: 'list<IssueTypeScreenSchemeItem>' }],
     },
   },
   PageBeanIssueTypeScreenSchemeItem: {
     request: {
-      url: '/rest/api/3/issuetypescreenscheme/mapping',
+      url: '/rest/api/3/issuetypescreenscheme/mapping?issueTypeScreenSchemeId={schemeId}',
       paginationField: 'startAt',
+    },
+  },
+  IssueTypeScreenSchemeItem: {
+    transformation: {
+      fieldsToOmit: [{ fieldName: 'issueTypeScreenSchemeId' }],
     },
   },
   PageBeanNotificationScheme: {

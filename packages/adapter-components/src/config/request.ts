@@ -71,6 +71,7 @@ export type UrlVars = Record<string, string>
 
 export type DeployRequestConfig = BaseRequestConfig & {
   urlVarsToFields?: UrlVars
+  dataField?: string
   method: 'post' | 'put' | 'delete' | 'patch'
 }
 
@@ -164,6 +165,9 @@ export const createRequestConfigs = (
       },
       urlVarsToFields: {
         refType: new MapType(BuiltinTypes.STRING),
+      },
+      dataField: {
+        refType: BuiltinTypes.STRING,
       },
     },
   })

@@ -57,6 +57,29 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       sourceTypeName: 'groups__groups',
     },
+    deployRequests: {
+      add: {
+        url: '/groups',
+        dataField: 'group',
+        method: 'post',
+      },
+      modify: {
+        url: '/groups/{groupId}',
+        method: 'put',
+        dataField: 'group',
+        urlVarsToFields: {
+          groupId: 'id',
+        },
+      },
+      remove: {
+        url: '/groups/{groupId}',
+        method: 'delete',
+        dataField: 'group',
+        urlVarsToFields: {
+          groupId: 'id',
+        },
+      },
+    },
   },
   custom_role: {
     transformation: {

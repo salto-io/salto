@@ -68,7 +68,8 @@ export const deployChange = async (
       ])
   )
   const url = setUrlVarsValues(endpoint.url, urlVarsValues)
-  const response = await client[endpoint.method]({ url, data: resolvedValues })
+  const data = endpoint.dataField ? { [endpoint.dataField]: resolvedValues } : resolvedValues
+  const response = await client[endpoint.method]({ url, data })
 
   return response.data
 }

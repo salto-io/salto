@@ -229,7 +229,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
         { fieldName: 'price', fieldType: 'number' },
         { fieldName: 'discountAmount', fieldType: 'number' },
         { fieldName: 'discountPercentage', fieldType: 'number' },
-        { fieldName: 'discountAmount', fieldType: 'number' },
         { fieldName: 'includedUnits', fieldType: 'number' },
         { fieldName: 'overagePrice', fieldType: 'number' },
       ],

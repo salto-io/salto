@@ -204,9 +204,6 @@ const filterCreator: FilterCreator = () => ({
       return
     }
 
-    // for now only supporting standard objects - not clear if and how custom objects can be
-    // referenced from workflows
-
     const objectDefs = await awu(elements).filter(isObjectDef).toArray() as ObjectType[]
     const {
       typeLowercaseLookup, fieldLowercaseLookup,

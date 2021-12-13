@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Element, InstanceElement, isInstanceElement, ReferenceExpression, isField,
+  Element, InstanceElement, isInstanceElement, ReferenceExpression, isField, ElemID,
 } from '@salto-io/adapter-api'
 import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { collections, multiIndex } from '@salto-io/lowerdash'
@@ -42,6 +42,44 @@ const dependencies: ObjectFieldDependency[] = [
     parentTypes: [`${SETTINGS_TYPE_PREFIX}Segment`],
   },
 ]
+
+const addObjectFieldDependency = (
+  inst: InstanceElement,
+  typeLowercaseLookup: multiIndex.Index<[string], ElemID>,
+  fieldLowercaseLookup: multiIndex.Index<[string, string], ElemID>,
+  typeReferencePath: string[],
+  fieldReferencePath?: string[],
+): void => {
+  const typeElemId = inst.elemID.createNestedID(...typeReferencePath)
+  const typeName = resolvePath(inst, typeElemId)
+  if (!_.isString(typeName)) {
+    return
+  }
+
+  const objId = typeLowercaseLookup.get(typeName.toLowerCase())
+  if (_.isUndefined(objId)) {
+    return
+  }
+
+  setPath(inst, typeElemId, new ReferenceExpression(objId))
+
+  if (_.isUndefined(fieldReferencePath)) {
+    return
+  }
+
+  const fieldElemId = inst.elemID.createNestedID(...fieldReferencePath)
+  const fieldName = resolvePath(inst, fieldElemId)
+  if (!_.isString(fieldName)) {
+    return
+  }
+
+  const fieldId = fieldLowercaseLookup.get(typeName.toLowerCase(), fieldName)
+  if (_.isUndefined(fieldId)) {
+    return
+  }
+
+  setPath(inst, fieldElemId, new ReferenceExpression(fieldId))
+}
 
 /**
  * Add references to fields that represent objects and fields.
@@ -70,42 +108,6 @@ const filterCreator: FilterCreator = () => ({
         flatMapAsync(toAsyncIterable(objectDefs), obj => [obj, ...Object.values(obj.fields)])
       )
 
-    const addObjectFieldDependency = (
-      inst: InstanceElement,
-      typeReferencePath: string[],
-      fieldReferencePath?: string[]
-    ): void => {
-      const typeElemId = inst.elemID.createNestedID(...typeReferencePath)
-      const typeName = resolvePath(inst, typeElemId)
-      if (!_.isString(typeName)) {
-        return
-      }
-
-      const objId = typeLowercaseLookup.get(typeName.toLowerCase())
-      if (_.isUndefined(objId)) {
-        return
-      }
-
-      setPath(inst, typeElemId, new ReferenceExpression(objId))
-
-      if (_.isUndefined(fieldReferencePath)) {
-        return
-      }
-
-      const fieldElemId = inst.elemID.createNestedID(...fieldReferencePath)
-      const fieldName = resolvePath(inst, fieldElemId)
-      if (!_.isString(fieldName)) {
-        return
-      }
-
-      const fieldId = fieldLowercaseLookup.get(typeName.toLowerCase(), fieldName)
-      if (_.isUndefined(fieldId)) {
-        return
-      }
-
-      setPath(inst, fieldElemId, new ReferenceExpression(fieldId))
-    }
-
     const instances = elements.filter(isInstanceElement)
     dependencies.forEach(dependency => {
       const dependentInstances = instances.filter(inst =>
@@ -113,6 +115,8 @@ const filterCreator: FilterCreator = () => ({
       if (!_.isEmpty(dependentInstances)) {
         dependentInstances.forEach(instance => addObjectFieldDependency(
           instance,
+          typeLowercaseLookup,
+          fieldLowercaseLookup,
           dependency.typeReferencePath,
           dependency.fieldReferencePath
         ))

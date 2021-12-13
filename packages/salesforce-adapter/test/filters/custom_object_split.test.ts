@@ -15,6 +15,7 @@
 */
 import 'jest-extended'
 import _ from 'lodash'
+import { values } from '@salto-io/lowerdash'
 import { BuiltinTypes, Element, ElemID, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/custom_object_split'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects'
@@ -167,9 +168,10 @@ describe('Custom Object Split filter', () => {
   })
 
   describe('when split elements contain empty objects', () => {
-    const getSplitElementsPaths = async (...customObjects: ObjectType[]): Promise<string[][]> => {
+    const getSplitElementsPaths = async (...customObjects: ObjectType[])
+      : Promise<(readonly string[])[]> => {
       const splitElements = await runFilter(...customObjects)
-      return splitElements.map(customObject => customObject.path as string[])
+      return splitElements.map(customObject => (customObject.path)).filter(values.isDefined)
     }
 
     it('should filter out empty standard fields object', async () => {

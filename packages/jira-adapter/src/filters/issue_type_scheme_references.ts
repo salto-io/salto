@@ -16,11 +16,10 @@
 import { Element, InstanceElement, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 
-export const isIssueTypeSchemeInstance = (element: Element): element is InstanceElement =>
-  isInstanceElement(element) && element.elemID.typeName === 'IssueTypeScheme'
-
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
+    const isIssueTypeSchemeInstance = (element: Element): element is InstanceElement =>
+      isInstanceElement(element) && element.elemID.typeName === 'IssueTypeScheme'
     const setReferences = (scheme: InstanceElement): void => {
       type IssueTypeMapping = {issueTypeId: ReferenceExpression}
       scheme.value.issueTypes = scheme.value.issueTypes

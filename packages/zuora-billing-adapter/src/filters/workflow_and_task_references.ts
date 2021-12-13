@@ -16,19 +16,19 @@
 import _ from 'lodash'
 import {
   Element, isObjectType, InstanceElement, ElemID, isInstanceElement, ReferenceExpression,
-  isField, ObjectType, CORE_ANNOTATIONS, isReferenceExpression,
+  isField, CORE_ANNOTATIONS, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, FlatDetailedDependency, resolvePath, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, multiIndex, values } from '@salto-io/lowerdash'
 import { TASK_TYPE, WORKFLOW_EXPORT_TYPE, WORKFLOW_DETAILED_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
-import { getTypeNameAsReferenced, isObjectDef } from '../element_utils'
+import { getObjectDefs, getTypeNameAsReferenced, isObjectDef } from '../element_utils'
 
 const { isDefined } = values
 
 const log = logger(module)
-const { flatMapAsync, toAsyncIterable, awu } = collections.asynciterable
+const { flatMapAsync, toAsyncIterable } = collections.asynciterable
 
 const WORKFLOW_PARAMS_REF = 'Workflow'
 const WORKFLOW_PARAMS_PATH = ['additionalProperties', 'parameters', 'fields']
@@ -204,7 +204,7 @@ const filterCreator: FilterCreator = () => ({
       return
     }
 
-    const objectDefs = await awu(elements).filter(isObjectDef).toArray() as ObjectType[]
+    const objectDefs = await getObjectDefs(elements)
     const {
       typeLowercaseLookup, fieldLowercaseLookup,
     } = await multiIndex.buildMultiIndex<Element>()

@@ -13,12 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { collections } from '@salto-io/lowerdash'
 import {
-  isInstanceElement, Element, isObjectType, isField, Field, InstanceElement,
+  isInstanceElement, Element, isObjectType, isField, Field, InstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
 import {
   CUSTOM_FIELD, CUSTOM_OBJECT, ZUORA_CUSTOM_SUFFIX, METADATA_TYPE, STANDARD_OBJECT,
 } from './constants'
+
+const { awu } = collections.asynciterable
 
 export const metadataType = async (element: Element): Promise<string | undefined> => {
   if (isInstanceElement(element)) {
@@ -35,6 +38,9 @@ export const isObjectDef = async (element: Element): Promise<boolean> => (
   isObjectType(element)
   && [CUSTOM_OBJECT, STANDARD_OBJECT].includes(await metadataType(element) || 'unknown')
 )
+
+export const getObjectDefs = async (elements: Element[]): Promise<ObjectType[]> =>
+  await awu(elements).filter(isObjectDef).toArray() as ObjectType[]
 
 export const getTypeNameAsReferenced = async (type: Element): Promise<string> => (
   isObjectType(type) && await metadataType(type) === CUSTOM_OBJECT

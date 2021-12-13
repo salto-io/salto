@@ -15,16 +15,15 @@
 */
 import _ from 'lodash'
 import {
-  Element, InstanceElement, isInstanceElement, ReferenceExpression,
-  isField, ObjectType,
+  Element, InstanceElement, isInstanceElement, ReferenceExpression, isField,
 } from '@salto-io/adapter-api'
 import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { collections, multiIndex } from '@salto-io/lowerdash'
 import { SETTINGS_TYPE_PREFIX, TASK_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
-import { getTypeNameAsReferenced, isObjectDef } from '../element_utils'
+import { getObjectDefs, getTypeNameAsReferenced, isObjectDef } from '../element_utils'
 
-const { flatMapAsync, toAsyncIterable, awu } = collections.asynciterable
+const { flatMapAsync, toAsyncIterable } = collections.asynciterable
 
 type ObjectFieldDependency = {
   typeReferencePath: string[]
@@ -49,7 +48,7 @@ const dependencies: ObjectFieldDependency[] = [
  */
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    const objectDefs = await awu(elements).filter(isObjectDef).toArray() as ObjectType[]
+    const objectDefs = await getObjectDefs(elements)
     const {
       typeLowercaseLookup, fieldLowercaseLookup,
     } = await multiIndex.buildMultiIndex<Element>()

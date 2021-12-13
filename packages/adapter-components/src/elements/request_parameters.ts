@@ -17,7 +17,6 @@ import _ from 'lodash'
 import { Element, Values, isInstanceElement, isPrimitiveValue } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { strings } from '@salto-io/lowerdash'
 import { ClientGetWithPaginationParams } from '../client'
 import { FetchRequestConfig, ARG_PLACEHOLDER_MATCHER } from '../config/request'
 
@@ -88,9 +87,6 @@ const computeDependsOnURLs = (
   const potentialParams = contextInstances.map(e => e.value[referenceDetails.from.field])
   return potentialParams.map(p => url.replace(ARG_PLACEHOLDER_MATCHER, p))
 }
-
-export const getUrlVars = (url: string): string[] =>
-  Array.from(strings.matchAll(url, ARG_PLACEHOLDER_MATCHER)).map(match => match[1])
 
 export const setUrlVarsValues = (url: string, varsValues: Record<string, unknown>): string =>
   url.replace(

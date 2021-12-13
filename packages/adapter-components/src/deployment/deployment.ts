@@ -15,8 +15,7 @@
 */
 import _ from 'lodash'
 import { Change, getChangeElement, isInstanceChange, Element } from '@salto-io/adapter-api'
-import { resolveReferences } from '@salto-io/adapter-utils'
-import { getUrlVars, setUrlVarsValues } from '../elements/request_parameters'
+import { setUrlVarsValues } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
 import { getDiffInstance } from './diff'
 import { DeploymentRequestsByAction } from '../config/request'
@@ -25,7 +24,8 @@ import { ResponseValue } from '../client'
 /**
  * Deploy a single change to the service using the given details
  *
- * @param change The change to deploy
+ * @param change The change to deploy. The change is expected to be fully resolved
+ * (meaning without any ReferenceExpression or StaticFiles)
  * @param client The client to use to make the request
  * @param endpointDetails The details of of what endpoints to use for each action
  * @param fieldsToIgnore Fields to omit for the deployment
@@ -44,31 +44,22 @@ export const deployChange = async (
   }
 
   const instance = getChangeElement(change)
-  const type = await instance.getType()
   const endpoint = endpointDetails?.[change.action]
   if (endpoint === undefined) {
     throw new Error(`No endpoint of type ${change.action} for ${instance.elemID.typeName}`)
   }
-  const resolvedValues = await resolveReferences(
-    _.pickBy(
-      getDiffInstance(change).value,
-      (_value, key) => !fieldsToIgnore.includes(key)
-    ),
-    type
+  const valuesToDeploy = _.pickBy(
+    getDiffInstance(change).value,
+    (_value, key) => !fieldsToIgnore.includes(key)
   )
 
-  const urlVarsValues = Object.fromEntries(
-    getUrlVars(endpoint.url)
-      .map(varKey => [
-        varKey,
-        {
-          ...instance.value,
-          ...(additionalUrlVars ?? {}),
-        }[endpoint.urlVarsToFields?.[varKey] ?? varKey],
-      ])
-  )
+  const urlVarsValues = {
+    ...instance.value,
+    ..._.mapValues(endpoint.urlVarsToFields ?? {}, fieldName => instance.value[fieldName]),
+    ...(additionalUrlVars ?? {}),
+  }
   const url = setUrlVarsValues(endpoint.url, urlVarsValues)
-  const response = await client[endpoint.method]({ url, data: resolvedValues })
+  const response = await client[endpoint.method]({ url, data: valuesToDeploy })
 
   return response.data
 }

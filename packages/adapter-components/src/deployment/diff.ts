@@ -13,9 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeElement, InstanceElement, isEqualValues, isModificationChange, isReferenceExpression } from '@salto-io/adapter-api'
+import { Change, ElemID, getChangeElement, InstanceElement, isEqualValues, isModificationChange, isReferenceExpression } from '@salto-io/adapter-api'
 import { resolvePath, setPath, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+
+const isNumber = (value: string): boolean => !Number.isNaN(Number(value))
+
+const removePath = (instance: InstanceElement, path: ElemID): void => {
+  setPath(instance, path, undefined)
+  const parentPath = path.createParentID()
+  if (path.nestingLevel > 1 && _.isEmpty(resolvePath(instance, parentPath))) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    removePath(instance, parentPath)
+  }
+}
 
 export const getDiffInstance = (change: Change<InstanceElement>): InstanceElement => {
   const instance = getChangeElement(change)
@@ -26,15 +37,22 @@ export const getDiffInstance = (change: Change<InstanceElement>): InstanceElemen
     walkOnElement({
       element: change.data.before,
       func: ({ value, path }) => {
-        if (_.isObject(value) && !isReferenceExpression(value)) {
+        const isValueInArray = isNumber(path.getFullNameParts()[path.getFullNameParts().length - 1])
+        if (
+          (_.isPlainObject(value) && !isReferenceExpression(value))
+          // We don't want to remove values from arrays to not create arrays with "holes" in them
+          || isValueInArray
+        ) {
           return WALK_NEXT_STEP.RECURSE
         }
 
         const valueAfter = resolvePath(instance, path)
 
         if (isEqualValues(value, valueAfter)) {
-          setPath(diffInstance, path, undefined)
+          removePath(diffInstance, path)
+          return WALK_NEXT_STEP.SKIP
         }
+
         return WALK_NEXT_STEP.RECURSE
       },
     })

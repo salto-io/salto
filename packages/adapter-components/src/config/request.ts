@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, MapType, ListType, ActionName } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, MapType, ListType, ActionName, createRestriction } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { findDuplicates } from './validation_utils'
 
@@ -127,7 +127,6 @@ export const createRequestConfigs = (
     queryParams: {
       refType: new MapType(BuiltinTypes.STRING),
     },
-    ...additionalFields,
   }
 
 
@@ -142,6 +141,7 @@ export const createRequestConfigs = (
       refType: new ListType(dependsOnConfigType),
     },
     ...sharedEndpointFields,
+    ...additionalFields,
   }
 
   const fetchRequestConfigType = new ObjectType({
@@ -161,6 +161,9 @@ export const createRequestConfigs = (
       ...sharedEndpointFields,
       method: {
         refType: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['get', 'post', 'put', 'delete', 'patch'] }),
+        },
       },
       urlVarsToFields: {
         refType: new MapType(BuiltinTypes.STRING),

@@ -37,10 +37,12 @@ const getFieldsNames = (
     ? swagger.parser.$refs.get(schemaOrRef.$ref)
     : schemaOrRef
 
-  return _(extractProperties(schema, swagger.parser.$refs).allProperties)
+  const fields = extractProperties(schema, swagger.parser.$refs).allProperties
+  const editableFieldNames = _(fields)
     .pickBy(val => !('readOnly' in val) || !val.readOnly)
     .keys()
     .value()
+  return editableFieldNames
 }
 
 const getSwaggerEndpoint = (url: string, baseUrls: string[]): string => {

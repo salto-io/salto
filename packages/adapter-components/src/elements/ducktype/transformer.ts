@@ -135,6 +135,11 @@ export const getTypeAndInstances = async ({
     })].filter(isDefined)
   }).toArray()
 
+  if (type.isSettings && instances.length > 1) {
+    log.warn(`Expected one instance for singleton type: ${type.elemID.name} but received: ${instances.length}`)
+    throw new Error(`Could not fetch type ${type.elemID.name}, singleton types should not have more than one instance`)
+  }
+
   const elements = [type, ...nestedTypes, ...instances]
 
   await extractStandaloneFields({

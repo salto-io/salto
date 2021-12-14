@@ -37,6 +37,7 @@ const addFinanceInformationDependencies = (
       return
     }
 
+    const references: Record<string, ReferenceExpression> = {}
     Object.keys(financeInformation)
       // financeInformation fields comes in couples - '.*AccountingCode' and '.*AccountingCodeType'
       // for example:
@@ -50,14 +51,17 @@ const addFinanceInformationDependencies = (
           financeInformation[key]?.toLowerCase(), financeInformation[`${key}Type`]?.toLowerCase()
         )
         if (isDefined(accountingCodeItem)) {
-          // one field should be with with a reference, and the second is unnecessary
-          financeInformation[key] = new ReferenceExpression(accountingCodeItem)
-          // TODO: when this adapter would be able to deploy,
-          // this field should be created on preDeploy
-          // so it won't considered as deleted at the service
-          _.unset(financeInformation, `${key}Type`)
+          references[key] = new ReferenceExpression(accountingCodeItem)
         }
       })
+
+    charge.financeInformation = _.merge(
+      // TODO: when this adapter would be able to deploy,
+      // those fields should be created on preDeploy
+      // so they won't considered as deleted at the service
+      _.omit(financeInformation, Object.keys(references).map(key => `${key}Type`)),
+      references,
+    )
   })
 }
 

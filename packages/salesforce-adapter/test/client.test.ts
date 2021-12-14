@@ -215,6 +215,20 @@ describe('salesforce client', () => {
         .toEqual({ result: [], errors: ['FakeName'] })
       expect(dodoScope.isDone()).toBeTruthy()
     })
+
+    it('should return error when response is a non transient salesforce error', async () => {
+      const dodoScope = nock(`http://dodo22/services/Soap/m/${API_VERSION}`)
+        .post(/.*/)
+        .times(1)
+        .reply(
+          500,
+          { 'a:Envelope': { 'a:Body': { 'a:Fault': { faultcode: 'sf:INVALID_TYPE', faultstring: 'INVALID_TYPE: This type of metadata is not available for this organization' } } } },
+          headers,
+        )
+      expect(await client.readMetadata('FakeType', 'FakeName'))
+        .toEqual({ result: [], errors: ['FakeName'] })
+      expect(dodoScope.isDone()).toBeTruthy()
+    })
   })
 
   describe('with suppressed errors', () => {

@@ -141,7 +141,7 @@ const addStringsReferencesDependency = (
       return undefined
     }).filter(isDefined)
 
-    _.uniqBy(references, reference => reference.elemID.getFullName()).forEach(
+    references.forEach(
       reference => dependencies.push({ reference, location: new ReferenceExpression(path) })
     )
 

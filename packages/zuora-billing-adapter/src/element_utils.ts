@@ -42,9 +42,11 @@ export const isObjectDef = async (element: Element): Promise<boolean> => (
 export const getObjectDefs = async (elements: Element[]): Promise<ObjectType[]> =>
   await awu(elements).filter(isObjectDef).toArray() as ObjectType[]
 
+// This function is used to find references of standard and custom objects in workflows and tasks.
+// Custom Objects referred there as 'default__<annotations.type>'.
+// It is used in workflow_and_tasks_references filter and object_references filter.
 export const getTypeNameAsReferenced = async (type: Element): Promise<string> => (
   isObjectType(type) && await metadataType(type) === CUSTOM_OBJECT
-    // Custom Objects referred as 'default__<annotations.type>'
     ? `default__${type.annotations.type}`.toLowerCase()
     : type.elemID.name.toLowerCase()
 )

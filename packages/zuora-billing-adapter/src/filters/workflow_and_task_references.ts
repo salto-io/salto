@@ -20,11 +20,12 @@ import {
 } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, FlatDetailedDependency, resolvePath, walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections, multiIndex, values } from '@salto-io/lowerdash'
+import { collections, multiIndex, values, strings } from '@salto-io/lowerdash'
 import { TASK_TYPE, WORKFLOW_EXPORT_TYPE, WORKFLOW_DETAILED_TYPE } from '../constants'
 import { FilterCreator } from '../filter'
 import { getObjectDefs, getTypeNameAsReferenced, isObjectDef } from '../element_utils'
 
+const { matchAll } = strings
 const { isDefined } = values
 
 const log = logger(module)
@@ -33,7 +34,12 @@ const { flatMapAsync, toAsyncIterable } = collections.asynciterable
 const WORKFLOW_PARAMS_REF = 'Workflow'
 const WORKFLOW_PARAMS_PATH = ['additionalProperties', 'parameters', 'fields']
 const TASK_PARAM_FIELDS_PATH = ['parameters', 'fields']
-const TASK_REFS_REGEX = /(\w+\.)+(\w+)/g
+const TASK_REFS_REGEX = /(\w+\.)*(?<typeName>\w+)\.(?<fieldName>\w+)/g
+
+type StringReference = {
+  typeName: string
+  fieldName: string
+}
 
 const addWorkflowDependencies = (
   inst: InstanceElement,
@@ -102,17 +108,14 @@ const addStringsReferencesDependency = (
       return WALK_NEXT_STEP.RECURSE
     }
 
-    const potentialReferencesStrings = value.match(TASK_REFS_REGEX)
-    if (potentialReferencesStrings === null || _.isEmpty(potentialReferencesStrings)) {
+    const potentialReferences = _.uniq([...matchAll(value, TASK_REFS_REGEX)]
+      .map(r => r.groups)
+      .filter(isDefined)) as StringReference[]
+    if (_.isEmpty(potentialReferences)) {
       return WALK_NEXT_STEP.SKIP
     }
 
-    const potentialReferencesNameParts = _.uniq(potentialReferencesStrings).map(str => {
-      const parts = str.split(ElemID.NAMESPACE_SEPARATOR)
-      return parts.slice(-2)
-    })
-
-    const references = potentialReferencesNameParts.map(([typeName, fieldName]) => {
+    const references = potentialReferences.map(({ typeName, fieldName }) => {
       const fieldId = fieldLowercaseLookup.get(typeName.toLowerCase(), fieldName)
       if (isDefined(fieldId)) {
         return new ReferenceExpression(fieldId)

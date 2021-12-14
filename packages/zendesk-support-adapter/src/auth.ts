@@ -30,7 +30,6 @@ export type OauthAccessTokenCredentials = {
 
 export type OauthRequestParameters = {
   clientId: string
-  clientSecret: string
   port: number
   subdomain: string
 }
@@ -80,13 +79,6 @@ export const oauthRequestParametersType = createMatchingObjectType<
       refType: BuiltinTypes.STRING,
       annotations: {
         message: 'Client ID',
-        _required: true,
-      },
-    },
-    clientSecret: {
-      refType: BuiltinTypes.STRING,
-      annotations: {
-        message: 'Client Secret',
         _required: true,
       },
     },

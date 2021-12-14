@@ -37,7 +37,6 @@ const { validateDuckTypeApiDefinitionConfig } = configUtils
 Steps for OAuth authentication in zendesk:
 1. add oauth client in https://{subdomain}.zendesk.com/admin/apps-integrations/apis/apis/oauth_clients/
   - specify "client name" and "redirect url" and click save
-  - keep the generated oauth token - it's your salto client's secret
 
 2. go to this page:
 https://{subdomain}.zendesk.com/oauth/authorizations/new?response_type=token&redirect_uri={your_redirect_url}&client_id={your_unique_identifier}&scope=read%20write

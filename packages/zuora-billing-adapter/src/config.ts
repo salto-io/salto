@@ -495,6 +495,91 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: ZuoraApiConfig['types'] = {
       ],
     },
   },
+  [`${SETTINGS_TYPE_PREFIX}AccountingRules`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}BillingCycleType`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}BillingListPriceBase`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}BillingPeriod`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}BillingPeriodStart`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}BillingRules`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}ChargeModel`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}ChargeType`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}DocPrefix`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}FxCurrency`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}NumberAndSku`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}PaymentMethods`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}PaymentRules`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}RevenueRecognitionModels`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}RevenueRecognitionStatus`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}RevenueStartDate`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
+  [`${SETTINGS_TYPE_PREFIX}SubscriptionSetting`]: {
+    transformation: {
+      isSingleton: true,
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: ZuoraApiConfig['swagger'] = {

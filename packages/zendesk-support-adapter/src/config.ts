@@ -106,6 +106,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   sla_policy_definition: {
     transformation: {
       sourceTypeName: 'sla_policies_definitions__definitions',
+      isSingleton: true,
     },
   },
   target: {
@@ -134,6 +135,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   macro_definition: {
     transformation: {
       sourceTypeName: 'macros_definitions__definitions',
+      isSingleton: true,
     },
   },
   brand: {
@@ -199,6 +201,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       sourceTypeName: 'routing_attribute_definitions__definitions',
       hasDynamicFields: true,
+      isSingleton: true,
     },
   },
   workspace: {
@@ -234,6 +237,7 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
   account_setting: {
     transformation: {
       sourceTypeName: 'account_settings__settings',
+      isSingleton: true,
     },
   },
   resource_collection: {
@@ -341,12 +345,16 @@ export const DEFAULT_TYPES: Record<string, configUtils.TypeDuckTypeConfig> = {
     transformation: {
       // no unique identifier for individual items
       dataField: '.',
+      isSingleton: true,
     },
   },
   // eslint-disable-next-line camelcase
   macro_categories: {
     request: {
       url: '/macros/categories',
+    },
+    transformation: {
+      isSingleton: true,
     },
   },
   // eslint-disable-next-line camelcase

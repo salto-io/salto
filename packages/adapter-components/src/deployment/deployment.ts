@@ -74,7 +74,8 @@ export const deployChange = async (
     ...(additionalUrlVars ?? {}),
   }
   const url = replaceUrlParams(endpoint.url, urlVarsValues)
-  const response = await client[endpoint.method]({ url, data: valuesToDeploy })
+  const data = endpoint.dataField ? { [endpoint.dataField]: valuesToDeploy } : valuesToDeploy
+  const response = await client[endpoint.method]({ url, data })
 
   return response.data
 }

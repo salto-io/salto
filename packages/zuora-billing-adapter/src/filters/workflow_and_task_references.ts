@@ -132,12 +132,13 @@ const addStringsReferencesDependency = (
         return undefined
       }
 
-      return workflowParams.some(field =>
-        field.object_name === WORKFLOW_PARAMS_REF && field.field_name === fieldName)
-        ? new ReferenceExpression(
+      if (workflowParams.some(field =>
+        field.object_name === WORKFLOW_PARAMS_REF && field.field_name === fieldName)) {
+        return new ReferenceExpression(
           parentWorkflow.elemID.createNestedID(...WORKFLOW_PARAMS_PATH)
         )
-        : undefined
+      }
+      return undefined
     }).filter(isDefined)
 
     _.uniqBy(references, reference => reference.elemID.getFullName()).forEach(

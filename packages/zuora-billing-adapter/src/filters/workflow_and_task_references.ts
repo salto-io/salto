@@ -58,7 +58,7 @@ const addWorkflowDependencies = (
       return
     }
     fieldDef.object_name = new ReferenceExpression(objId)
-    const fieldId = fieldLowercaseLookup.get(objName, fieldDef.field_name)
+    const fieldId = fieldLowercaseLookup.get(objName, fieldDef.field_name?.toLowerCase())
     if (fieldId !== undefined) {
       fieldDef.field_name = new ReferenceExpression(fieldId)
     }
@@ -83,7 +83,7 @@ const addParameterFieldsFieldDependency = (
     return Object.keys(fieldMapping as object).flatMap(fieldName => {
       // not looking up custom objects for now - if we did, they'd need to have
       // CUSTOM_OBJECT_SUFFIX appended for lookup
-      const fieldId = fieldLowercaseLookup.get(typeName.toLowerCase(), fieldName)
+      const fieldId = fieldLowercaseLookup.get(typeName.toLowerCase(), fieldName.toLowerCase())
       if (fieldId !== undefined) {
         return [{
           reference: new ReferenceExpression(fieldId),
@@ -116,7 +116,7 @@ const addStringsReferencesDependency = (
     }
 
     const references = potentialReferences.map(({ typeName, fieldName }) => {
-      const fieldId = fieldLowercaseLookup.get(typeName.toLowerCase(), fieldName)
+      const fieldId = fieldLowercaseLookup.get(typeName.toLowerCase(), fieldName.toLowerCase())
       if (isDefined(fieldId)) {
         return new ReferenceExpression(fieldId)
       }
@@ -223,7 +223,9 @@ const filterCreator: FilterCreator = () => ({
         name: 'fieldLowercaseLookup',
         filter: isField,
         // id name changes are currently not allowed so it's ok to use the elem id
-        key: async field => [await getTypeNameAsReferenced(field.parent), field.elemID.name],
+        key: async field => [
+          await getTypeNameAsReferenced(field.parent), field.elemID.name.toLowerCase(),
+        ],
         map: field => field.elemID,
       })
       .process(

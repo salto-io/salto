@@ -73,7 +73,7 @@ const addObjectFieldDependency = (
     return
   }
 
-  const fieldId = fieldLowercaseLookup.get(typeName.toLowerCase(), fieldName)
+  const fieldId = fieldLowercaseLookup.get(typeName.toLowerCase(), fieldName.toLowerCase())
   if (_.isUndefined(fieldId)) {
     return
   }
@@ -101,7 +101,9 @@ const filterCreator: FilterCreator = () => ({
         name: 'fieldLowercaseLookup',
         filter: isField,
         // id name changes are currently not allowed so it's ok to use the elem id
-        key: async field => [await getTypeNameAsReferenced(field.parent), field.elemID.name],
+        key: async field => [
+          await getTypeNameAsReferenced(field.parent), field.elemID.name.toLowerCase(),
+        ],
         map: field => field.elemID,
       })
       .process(

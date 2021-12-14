@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, getChangeElement, isInstanceChange, Element } from '@salto-io/adapter-api'
+import { Change, getChangeElement, InstanceElement } from '@salto-io/adapter-api'
+import { getDiffInstance } from '@salto-io/adapter-utils'
 import { setUrlVarsValues } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
-import { getDiffInstance } from './diff'
 import { DeploymentRequestsByAction } from '../config/request'
 import { ResponseValue } from '../client'
 
@@ -33,16 +33,12 @@ import { ResponseValue } from '../client'
  * @returns: The response data of the request
  */
 export const deployChange = async (
-  change: Change<Element>,
+  change: Change<InstanceElement>,
   client: HTTPWriteClientInterface,
   endpointDetails?: DeploymentRequestsByAction,
   fieldsToIgnore: string[] = [],
   additionalUrlVars?: Record<string, string>
 ): Promise<ResponseValue | ResponseValue[]> => {
-  if (!isInstanceChange(change)) {
-    throw new Error(`Received a change of ${getChangeElement(change).elemID.idType} while the adapter ${getChangeElement(change).elemID.adapter} only support instance changes`)
-  }
-
   const instance = getChangeElement(change)
   const endpoint = endpointDetails?.[change.action]
   if (endpoint === undefined) {

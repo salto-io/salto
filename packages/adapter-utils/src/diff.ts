@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, getChangeElement, InstanceElement, isEqualValues, isModificationChange, isReferenceExpression } from '@salto-io/adapter-api'
-import { resolvePath, setPath, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { Change, ElemID, getChangeElement, InstanceElement, isEqualValues, isModificationChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { resolvePath, setPath } from './utils'
+import { walkOnElement, WALK_NEXT_STEP } from './walk_element'
 
 const isNumber = (value: string): boolean => !Number.isNaN(Number(value))
 
@@ -37,9 +38,9 @@ export const getDiffInstance = (change: Change<InstanceElement>): InstanceElemen
     walkOnElement({
       element: change.data.before,
       func: ({ value, path }) => {
-        const isValueInArray = isNumber(path.getFullNameParts()[path.getFullNameParts().length - 1])
+        const isValueInArray = isNumber(path.name)
         if (
-          (_.isPlainObject(value) && !isReferenceExpression(value))
+          _.isPlainObject(value)
           // We don't want to remove values from arrays to not create arrays with "holes" in them
           || isValueInArray
         ) {

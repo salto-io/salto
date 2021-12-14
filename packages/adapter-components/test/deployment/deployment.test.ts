@@ -64,13 +64,6 @@ describe('deployChange', () => {
     }
   })
 
-  it('When element is not ObjectType should throw an error', async () => {
-    await expect(() => deployChange(toChange({ after: type }), httpClient, endpoint))
-      .rejects.toThrow(
-        'Received a change of type while the adapter adapter only support instance changes'
-      )
-  })
-
   it('When no endpoint for deploying the element should throw an error', async () => {
     await expect(() => deployChange(
       toChange({ before: instance, after: instance }),

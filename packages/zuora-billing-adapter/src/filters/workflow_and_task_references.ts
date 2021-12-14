@@ -204,7 +204,7 @@ const filterCreator: FilterCreator = () => ({
     const workflowInstances = instances
       .filter(inst => inst.elemID.typeName === WORKFLOW_DETAILED_TYPE)
     const taskInstances = instances.filter(inst => inst.elemID.typeName === TASK_TYPE)
-    if (_.isEmpty(workflowInstances) && _.isEmpty(taskInstances)) {
+    if (workflowInstances.length === 0 && taskInstances.length === 0) {
       return
     }
 

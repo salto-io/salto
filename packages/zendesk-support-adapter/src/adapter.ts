@@ -13,12 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   FetchResult, AdapterOperations, DeployResult, Element, DeployModifiers,
-  FetchOptions,
+  FetchOptions, DeployOptions, Change, getChangeElement, isAdditionChange,
+  isInstanceChange, InstanceElement,
 } from '@salto-io/adapter-api'
-import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { logDuration } from '@salto-io/adapter-utils'
+import {
+  client as clientUtils,
+  elements as elementUtils,
+  deployment as deploymentUtils,
+  config as configUtils,
+} from '@salto-io/adapter-components'
+import { logDuration, resolveChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
 import { FilterCreator, Filter, filtersRunner } from './filter'
@@ -33,6 +40,7 @@ const log = logger(module)
 const { createPaginator } = clientUtils
 const { findDataField, simpleGetArgs } = elementUtils
 const { getAllElements } = elementUtils.ducktype
+const { deployChange } = deploymentUtils
 
 export const DEFAULT_FILTERS = [
   fieldReferencesFilter,
@@ -47,7 +55,7 @@ export interface ZendeskAdapterParams {
 }
 
 export default class ZendeskAdapter implements AdapterOperations {
-  private filtersRunner: Required<Filter>
+  private createFiltersRunner: () => Promise<Required<Filter>>
   private client: ZendeskClient
   private paginator: clientUtils.Paginator
   private userConfig: ZendeskConfig
@@ -63,16 +71,15 @@ export default class ZendeskAdapter implements AdapterOperations {
       client: this.client,
       paginationFuncCreator: paginate,
     })
-    this.filtersRunner = filtersRunner(
-      {
+    this.createFiltersRunner = async () => (
+      filtersRunner({
         client: this.client,
         paginator: this.paginator,
         config: {
           fetch: config.fetch,
           apiDefinitions: config.apiDefinitions,
         },
-      },
-      filterCreators,
+      }, filterCreators)
     )
   }
 
@@ -102,17 +109,65 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    await this.filtersRunner.onFetch(elements)
+    await (await this.createFiltersRunner()).onFetch(elements)
     return { elements }
   }
 
   /**
-   * Deploy configuration elements to the given account.
-   */
+ * Deploy configuration elements to the given account.
+ */
   @logDuration('deploying account configuration')
-  // eslint-disable-next-line class-methods-use-this
-  async deploy(): Promise<DeployResult> {
-    throw new Error('Not implemented.')
+  async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
+    const changesToDeploy = changeGroup.changes
+      .filter(isInstanceChange)
+      .map(change => ({
+        action: change.action,
+        data: _.mapValues(change.data, (element: Element) => element.clone()),
+      })) as Change<InstanceElement>[]
+
+    const runner = await this.createFiltersRunner()
+    await runner.preDeploy(changesToDeploy)
+
+    const { apiDefinitions } = this.userConfig
+    const result = await Promise.all(
+      changesToDeploy.map(async change => {
+        const { deployRequests, transformation } = apiDefinitions
+          .types[getChangeElement(change).elemID.typeName]
+        try {
+          const response = await deployChange(
+            await resolveChangeElement(change as Change<InstanceElement>, ({ ref }) => ref.value),
+            this.client,
+            deployRequests,
+          )
+          if (isAdditionChange(change) && isInstanceChange(change) && !Array.isArray(response)) {
+            const transformationConfig = configUtils.getConfigWithDefault(
+              transformation,
+              apiDefinitions.typeDefaults.transformation,
+            )
+            const idField = transformationConfig.serviceIdField ?? 'id'
+            const dataField = deployRequests?.add?.dataField
+            getChangeElement(change).value.id = dataField
+              ? (response[dataField] as Record<string, unknown>)[idField]
+              : response[idField]
+          }
+          return change
+        } catch (err) {
+          if (!_.isError(err)) {
+            throw err
+          }
+          return err
+        }
+      })
+    )
+
+    const [errors, appliedChanges] = _.partition(result, _.isError)
+
+    await runner.onDeploy(appliedChanges)
+
+    return {
+      appliedChanges,
+      errors,
+    }
   }
 
   // eslint-disable-next-line class-methods-use-this

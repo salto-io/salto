@@ -42,7 +42,7 @@ import {
   runPreviewGetPlan,
   runClean,
 } from './helpers/workspace'
-import { instanceExists, objectExists, getSalesforceCredsInstance } from './helpers/salesforce'
+import { instanceExists, objectExists, getSalesforceCredsInstance, getSalesforceClient } from './helpers/salesforce'
 
 const { awu } = collections.asynciterable
 // let lastPlan: Plan
@@ -110,9 +110,7 @@ describe('cli e2e', () => {
 
     process.env[SALTO_HOME_VAR] = homePath
     credsLease = await salesforceTestHelpers().credentials()
-    client = new SalesforceClient({
-      credentials: new UsernamePasswordCredentials(credsLease.value),
-    })
+    client = getSalesforceClient(credsLease.value)
     jest.spyOn(DeployCommandImpl, 'shouldDeploy').mockImplementation(
       (p: Plan): Promise<boolean> => {
         const { length } = [...wu(p.itemsByEvalOrder())]

@@ -78,6 +78,11 @@ export const mockTypes = {
       dirName: 'aura',
     },
   }),
+  CustomObject: createMetadataObjectType({
+    annotations: {
+      metadataType: 'CustomObject',
+    },
+  }),
   StaticResource: createMetadataObjectType({
     annotations: {
       metadataType: 'StaticResource',

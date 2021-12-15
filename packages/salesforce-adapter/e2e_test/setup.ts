@@ -21,7 +21,6 @@ import { CustomField, ProfileInfo } from '../src/client/types'
 import { createDeployPackage } from '../src/transformers/xml_transformer'
 import { MetadataValues, createInstanceElement } from '../src/transformers/transformer'
 import SalesforceClient from '../src/client/client'
-import { objectExists } from './utils'
 import { mockTypes, mockDefaultValues } from '../test/mock_elements'
 
 
@@ -63,16 +62,10 @@ export const CUSTOM_FIELD_NAMES = {
 
 export const removeCustomObjectsWithVariousFields = async (client: SalesforceClient):
   Promise<void> => {
-  const deleteCustomObject = async (objectName: string): Promise<void> => {
-    if (await objectExists(client, constants.CUSTOM_FIELD, summaryFieldName)) {
-      await client.delete(constants.CUSTOM_FIELD, summaryFieldName)
-    }
-    if (await objectExists(client, constants.CUSTOM_OBJECT, objectName)) {
-      await client.delete(constants.CUSTOM_OBJECT, objectName)
-    }
-  }
-  await Promise.all([customObjectWithFieldsName, customObjectAddFieldsName]
-    .map(o => deleteCustomObject(o)))
+  const deployPkg = createDeployPackage()
+  deployPkg.delete(mockTypes.CustomObject, customObjectWithFieldsName)
+  deployPkg.delete(mockTypes.CustomObject, customObjectAddFieldsName)
+  await client.deploy(await deployPkg.getZip())
 }
 
 export const verifyElementsExist = async (client: SalesforceClient): Promise<void> => {

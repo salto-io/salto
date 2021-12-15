@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ElemID, ServiceIds } from '@salto-io/adapter-api'
 import SalesforceClient from '../src/client/client'
@@ -32,7 +33,12 @@ const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: s
   ElemID => new ElemID(adapterName, name)
 
 const realAdapter = ({ adapterParams, credentials }: Opts, config?: SalesforceConfig): Reals => {
-  const client = (adapterParams && adapterParams.client) || new SalesforceClient({ credentials })
+  // Default to purge on delete to avoid leaving definitions in the recycle bin
+  const clientConfig = _.merge({ deploy: { purgeOnDelete: true } }, config?.client)
+  const client = (
+    (adapterParams && adapterParams.client)
+    || new SalesforceClient({ credentials, config: clientConfig })
+  )
   const adapter = new SalesforceAdapter({
     client,
     config: config ?? {},

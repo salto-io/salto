@@ -22,7 +22,7 @@ import tmp from 'tmp-promise'
 import { writeFile, rm } from '@salto-io/file'
 import { isObjectType, ObjectType, Element, isInstanceElement } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { addElements, objectExists, naclNameToSFName, instanceExists, removeElements, getSalesforceCredsInstance } from './helpers/salesforce'
+import { addElements, objectExists, naclNameToSFName, instanceExists, removeElements, getSalesforceCredsInstance, getSalesforceClient } from './helpers/salesforce'
 import * as callbacks from '../src/callbacks'
 import {
   runInit,
@@ -193,8 +193,8 @@ describe('multi env tests', () => {
     env2CredsLease = await salesforceTestHelpers().credentials('ENV_2')
     env1Creds = env1CredsLease.value
     env2Creds = env2CredsLease.value
-    env1Client = new SalesforceClient({ credentials: new UsernamePasswordCredentials(env1Creds) })
-    env2Client = new SalesforceClient({ credentials: new UsernamePasswordCredentials(env2Creds) })
+    env1Client = getSalesforceClient(env1Creds)
+    env2Client = getSalesforceClient(env2Creds)
 
     baseDir = (await tmp.dir()).path
     saltoHomeDir = (await tmp.dir()).path

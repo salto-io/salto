@@ -116,7 +116,7 @@ describe('getDiffInstance', () => {
     )
 
     expect(getDiffInstance(toChange({ before, after })).value).toEqual({
-      partiallyDifferentArray: [1, 2, 4],
+      partiallyDifferentArray: [undefined, undefined, 4],
       fullyDifferentArray: [],
       arrayOfObjects: [{
         different: 'different2',

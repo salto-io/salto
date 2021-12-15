@@ -18,8 +18,6 @@ import _ from 'lodash'
 import { resolvePath, setPath } from './utils'
 import { walkOnElement, WALK_NEXT_STEP } from './walk_element'
 
-const isNumber = (value: string): boolean => !Number.isNaN(Number(value))
-
 const removePath = (instance: InstanceElement, path: ElemID): void => {
   setPath(instance, path, undefined)
   const parentPath = path.createParentID()
@@ -38,12 +36,7 @@ export const getDiffInstance = (change: Change<InstanceElement>): InstanceElemen
     walkOnElement({
       element: change.data.before,
       func: ({ value, path }) => {
-        const isValueInArray = isNumber(path.name)
-        if (
-          _.isPlainObject(value)
-          // We don't want to remove values from arrays to not create arrays with "holes" in them
-          || isValueInArray
-        ) {
+        if (_.isPlainObject(value) && Array.isArray(value)) {
           return WALK_NEXT_STEP.RECURSE
         }
 

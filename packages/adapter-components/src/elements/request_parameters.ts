@@ -88,7 +88,7 @@ const computeDependsOnURLs = (
   return potentialParams.map(p => url.replace(ARG_PLACEHOLDER_MATCHER, p))
 }
 
-export const setUrlVarsValues = (url: string, varsValues: Record<string, unknown>): string =>
+export const replaceUrlVarsValues = (url: string, varsValues: Record<string, unknown>): string =>
   url.replace(
     ARG_PLACEHOLDER_MATCHER,
     val => {
@@ -107,7 +107,7 @@ export const computeGetArgs: ComputeGetArgsFunc = (
 ) => {
   // Replace known url params
   const baseUrl = requestContext !== undefined
-    ? setUrlVarsValues(args.url, requestContext)
+    ? replaceUrlVarsValues(args.url, requestContext)
     : args.url
 
   const urls = computeDependsOnURLs(

@@ -14,12 +14,30 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, getChangeElement, InstanceElement } from '@salto-io/adapter-api'
-import { getDiffInstance } from '@salto-io/adapter-utils'
-import { setUrlVarsValues } from '../elements/request_parameters'
+import { ActionName, Change, getChangeElement, InstanceElement } from '@salto-io/adapter-api'
+import { transformElement } from '@salto-io/adapter-utils'
+import { replaceUrlVarsValues } from '../elements/request_parameters'
 import { HTTPWriteClientInterface } from '../client/http_client'
 import { DeploymentRequestsByAction } from '../config/request'
 import { ResponseValue } from '../client'
+import { OPERATION_TO_ANNOTATION } from './annotations'
+
+const filterIrrelevantValues = async (
+  instance: InstanceElement,
+  action: ActionName
+): Promise<InstanceElement> => (
+  transformElement({
+    element: instance,
+    strict: false,
+    allowEmpty: true,
+    transformFunc: ({ value, field }) => {
+      if (field !== undefined && !field?.annotations[OPERATION_TO_ANNOTATION[action]]) {
+        return undefined
+      }
+      return value
+    },
+  })
+)
 
 /**
  * Deploy a single change to the service using the given details
@@ -45,7 +63,7 @@ export const deployChange = async (
     throw new Error(`No endpoint of type ${change.action} for ${instance.elemID.typeName}`)
   }
   const valuesToDeploy = _.pickBy(
-    getDiffInstance(change).value,
+    (await filterIrrelevantValues(getChangeElement(change), change.action)).value,
     (_value, key) => !fieldsToIgnore.includes(key)
   )
 
@@ -54,7 +72,7 @@ export const deployChange = async (
     ..._.mapValues(endpoint.urlVarsToFields ?? {}, fieldName => instance.value[fieldName]),
     ...(additionalUrlVars ?? {}),
   }
-  const url = setUrlVarsValues(endpoint.url, urlVarsValues)
+  const url = replaceUrlVarsValues(endpoint.url, urlVarsValues)
   const response = await client[endpoint.method]({ url, data: valuesToDeploy })
 
   return response.data

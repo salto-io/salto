@@ -18,6 +18,7 @@ import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { HTTPWriteClientInterface } from '../../src/client/http_client'
 import { deployChange } from '../../src/deployment/deployment'
 import { DeploymentRequestsByAction } from '../../src/config/request'
+import { DEPLOYMENT_ANNOTATIONS } from '../../src/deployment'
 
 describe('deployChange', () => {
   let type: ObjectType
@@ -30,7 +31,10 @@ describe('deployChange', () => {
       elemID: new ElemID('adapter', 'test'),
       fields: {
         id: { refType: BuiltinTypes.STRING },
-        creatableField: { refType: BuiltinTypes.STRING },
+        creatableField: {
+          refType: BuiltinTypes.STRING,
+          annotations: { [DEPLOYMENT_ANNOTATIONS.CREATABLE]: true },
+        },
       },
     })
 

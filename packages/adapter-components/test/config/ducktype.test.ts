@@ -28,7 +28,7 @@ describe('config_ducktype', () => {
       expect(types).toBeInstanceOf(MapType)
       const typesInner = await types.getInnerType() as ObjectType
       expect(typesInner).toBeInstanceOf(ObjectType)
-      expect(new Set(Object.keys(typesInner.fields))).toEqual(new Set(['request', 'transformation']))
+      expect(new Set(Object.keys(typesInner.fields))).toEqual(new Set(['request', 'transformation', 'deployRequests']))
       const request = await typesInner.fields.request.getType() as ObjectType
       const transformation = await typesInner.fields.transformation.getType() as ObjectType
       expect(request).toBeInstanceOf(ObjectType)
@@ -60,7 +60,7 @@ describe('config_ducktype', () => {
       expect(types).toBeInstanceOf(MapType)
       const typesInner = await types.getInnerType() as ObjectType
       expect(typesInner).toBeInstanceOf(ObjectType)
-      expect(new Set(Object.keys(typesInner.fields))).toEqual(new Set(['request', 'transformation']))
+      expect(new Set(Object.keys(typesInner.fields))).toEqual(new Set(['request', 'transformation', 'deployRequests']))
       const request = await typesInner.fields.request.getType() as ObjectType
       const transformation = await typesInner.fields.transformation.getType() as ObjectType
       expect(request).toBeInstanceOf(ObjectType)

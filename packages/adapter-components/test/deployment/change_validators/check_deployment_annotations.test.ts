@@ -26,13 +26,18 @@ describe('checkDeploymentAnnotationsValidator', () => {
       fields: {
         updatableField: {
           refType: BuiltinTypes.STRING,
-          annotations: { [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: true },
+          annotations: { [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false },
         },
-        notUpdatableField: { refType: BuiltinTypes.STRING },
+        notUpdatableField: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false,
+            [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: false,
+          },
+        },
       },
       annotations: {
-        [DEPLOYMENT_ANNOTATIONS.UPDATABLE]: true,
-        [DEPLOYMENT_ANNOTATIONS.DELETABLE]: true,
+        [DEPLOYMENT_ANNOTATIONS.CREATABLE]: false,
       },
     })
 

@@ -24,8 +24,8 @@ import { logger } from '@salto-io/logging'
 import { values as lowerdashValues, promises } from '@salto-io/lowerdash'
 import {
   ZUORA_BILLING, CUSTOM_OBJECT, CUSTOM_OBJECT_DEFINITION_TYPE, OBJECTS_PATH, METADATA_TYPE,
-  STANDARD_OBJECT_DEFINITION_TYPE, CUSTOM_OBJECT_SUFFIX, LABEL, FIELD_RELATIONSHIP_ANNOTATIONS,
-  REQUIRED, FILTERABLE, DESCRIPTION, INTERNAL_ID, STANDARD_OBJECT,
+  STANDARD_OBJECT_DEFINITION_TYPE, CUSTOM_OBJECT_SUFFIX, LABEL, OBJECT_TYPE,
+  FIELD_RELATIONSHIP_ANNOTATIONS, REQUIRED, FILTERABLE, DESCRIPTION, INTERNAL_ID, STANDARD_OBJECT,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import { isInstanceOfType } from '../element_utils'
@@ -58,9 +58,10 @@ const flattenAdditionalProperties = (val: Values): Values => ({
 })
 
 const createObjectFromInstance = async (inst: InstanceElement): Promise<ObjectType> => {
+  const { schema, type } = inst.value
   const {
     properties, required, filterable, description, label,
-  } = inst.value.schema
+  } = schema
   const requiredFields = new Set(required)
   const filterableFields = new Set(filterable)
   const obj = new ObjectType({
@@ -82,12 +83,14 @@ const createObjectFromInstance = async (inst: InstanceElement): Promise<ObjectTy
       [LABEL]: BuiltinTypes.STRING,
       [DESCRIPTION]: BuiltinTypes.STRING,
       [INTERNAL_ID]: BuiltinTypes.HIDDEN_STRING,
+      [OBJECT_TYPE]: BuiltinTypes.STRING,
     },
     annotations: {
       [METADATA_TYPE]: isStandardObjectInstance(inst) ? STANDARD_OBJECT : CUSTOM_OBJECT,
       [LABEL]: label,
       [DESCRIPTION]: description,
       [INTERNAL_ID]: inst.value.additionalProperties?.Id,
+      [OBJECT_TYPE]: type,
     },
     // id name changes are currently not allowed so it's ok to use the elem id
     path: [ZUORA_BILLING, OBJECTS_PATH, pathNaclCase(naclCase(inst.elemID.name))],

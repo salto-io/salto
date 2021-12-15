@@ -18,7 +18,41 @@ import { references as referenceUtils } from '@salto-io/adapter-components'
 import { WORKFLOW_DETAILED_TYPE, TASK_TYPE, SETTINGS_TYPE_PREFIX } from '../constants'
 import { FilterCreator } from '../filter'
 
-const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<never>[] = [
+type ZuoraReferenceSerializationStrategyName = 'currencyCode' | 'segmentName'
+const ZuoraReferenceSerializationStrategyLookup: Record<
+  ZuoraReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
+  referenceUtils.ReferenceSerializationStrategy
+> = {
+  ...referenceUtils.ReferenceSerializationStrategyLookup,
+  currencyCode: {
+    serialize: ({ ref }) => ref.value.value.currencyCode,
+    lookup: val => val,
+    lookupIndexName: 'currencyCode',
+  },
+  segmentName: {
+    serialize: ({ ref }) => ref.value.value.segmentName,
+    lookup: val => val,
+    lookupIndexName: 'segmentName',
+  },
+}
+
+type ZuoraFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<never> & {
+  zuoraSerializationStrategy?: ZuoraReferenceSerializationStrategyName
+}
+
+class ZuoraFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<never> {
+  constructor(def: ZuoraFieldReferenceDefinition) {
+    super({ src: def.src })
+    this.serializationStrategy = ZuoraReferenceSerializationStrategyLookup[
+      def.zuoraSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
+    ]
+    this.target = def.target
+      ? { ...def.target, lookup: this.serializationStrategy.lookup }
+      : undefined
+  }
+}
+
+const fieldNameToTypeMappingDefs: ZuoraFieldReferenceDefinition[] = [
   {
     src: { field: 'source_workflow_id', parentTypes: ['Linkage'] },
     serializationStrategy: 'id',
@@ -40,9 +74,81 @@ const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<never>
     target: { type: `${SETTINGS_TYPE_PREFIX}CommunicationProfile` },
   },
   {
+    src: { field: 'emailTemplateName', parentTypes: [`${SETTINGS_TYPE_PREFIX}Notification`] },
+    serializationStrategy: 'name',
+    target: { type: 'PublicEmailTemplate' },
+  },
+  {
     src: { field: 'revenueRecognitionRuleName', parentTypes: ['GETProductRatePlanChargeType'] },
     serializationStrategy: 'name',
     target: { type: `${SETTINGS_TYPE_PREFIX}RevenueRecognitionRule` },
+  },
+  {
+    src: { field: 'uom', parentTypes: ['GETProductRatePlanChargeType'] },
+    serializationStrategy: 'name',
+    target: { type: `${SETTINGS_TYPE_PREFIX}UnitOfMeasure` },
+  },
+  {
+    src: { field: 'taxCode', parentTypes: ['GETProductRatePlanChargeType'] },
+    serializationStrategy: 'name',
+    target: { type: `${SETTINGS_TYPE_PREFIX}TaxCode` },
+  },
+  {
+    src: { field: 'discountClass', parentTypes: ['GETProductRatePlanChargeType'] },
+    serializationStrategy: 'name',
+    target: { type: `${SETTINGS_TYPE_PREFIX}DiscountSetting` },
+  },
+  {
+    src: { field: 'appliedProductRatePlanId', parentTypes: ['GETProductDiscountApplyDetailsType'] },
+    serializationStrategy: 'id',
+    target: { type: 'ProductRatePlanType' },
+  },
+  {
+    src: { field: 'appliedProductRatePlanChargeId', parentTypes: ['GETProductDiscountApplyDetailsType'] },
+    serializationStrategy: 'id',
+    target: { type: 'GETProductRatePlanChargeType' },
+  },
+  {
+    src: { field: 'id', parentTypes: ['PaymentGatewayResponse', `${SETTINGS_TYPE_PREFIX}GatewayResponse`] },
+    serializationStrategy: 'id',
+    target: { type: `${SETTINGS_TYPE_PREFIX}Gateway` },
+  },
+  {
+    src: { field: 'taxEngineId', parentTypes: [`${SETTINGS_TYPE_PREFIX}TaxCode`, `${SETTINGS_TYPE_PREFIX}TaxCompany`] },
+    serializationStrategy: 'id',
+    target: { type: `${SETTINGS_TYPE_PREFIX}TaxEngine` },
+  },
+  {
+    src: { field: 'taxCompanyId', parentTypes: [`${SETTINGS_TYPE_PREFIX}TaxCode`] },
+    serializationStrategy: 'id',
+    target: { type: `${SETTINGS_TYPE_PREFIX}TaxCompany` },
+  },
+  {
+    src: { field: 'pageId', parentTypes: ['HostedPage'] },
+    serializationStrategy: 'id',
+    target: { type: `${SETTINGS_TYPE_PREFIX}HostedPaymentPage` },
+  },
+  {
+    src: { field: 'currency', parentTypes: ['GETProductRatePlanChargePricingType'] },
+    zuoraSerializationStrategy: 'currencyCode',
+    target: { type: `${SETTINGS_TYPE_PREFIX}Currency` },
+  },
+  {
+    src: { field: 'homeCurrencyCode', parentTypes: [`${SETTINGS_TYPE_PREFIX}FxCurrency`] },
+    zuoraSerializationStrategy: 'currencyCode',
+    target: { type: `${SETTINGS_TYPE_PREFIX}Currency` },
+  },
+  {
+    src: { field: 'segmentName', parentTypes: [`${SETTINGS_TYPE_PREFIX}RuleDetail`] },
+    zuoraSerializationStrategy: 'segmentName',
+    target: { type: `${SETTINGS_TYPE_PREFIX}Segment` },
+  },
+
+  // the following are future references - target objects aren't supported on the api yet
+  {
+    src: { field: 'entityId', parentTypes: [`${SETTINGS_TYPE_PREFIX}Role`] },
+    serializationStrategy: 'id',
+    target: { type: `${SETTINGS_TYPE_PREFIX}EntityNode` },
   },
 ]
 
@@ -55,7 +161,8 @@ const filter: FilterCreator = () => ({
     await referenceUtils.addReferences({
       elements,
       defs: fieldNameToTypeMappingDefs,
-      fieldsToGroupBy: ['id', 'name'],
+      fieldsToGroupBy: ['id', 'name', 'currencyCode', 'segmentName'],
+      fieldReferenceResolverCreator: defs => new ZuoraFieldReferenceResolver(defs),
     })
   },
 })

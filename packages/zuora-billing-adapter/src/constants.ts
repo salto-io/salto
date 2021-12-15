@@ -28,6 +28,7 @@ export const OBJECTS_PATH = 'Objects'
 // annotations
 export const METADATA_TYPE = 'metadataType'
 export const LABEL = 'label'
+export const OBJECT_TYPE = 'objectType'
 export const REQUIRED = 'required'
 export const FILTERABLE = 'filterable'
 export const DESCRIPTION = 'description'

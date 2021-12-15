@@ -15,4 +15,4 @@
 */
 export { neighborContextGetter, ContextFunc, ContextValueMapperFunc } from './context'
 export { addReferences, replaceReferenceValues } from './field_references'
-export { FieldReferenceDefinition, ReferenceResolverFinder, ReferenceTargetDefinition, ExtendedReferenceTargetDefinition } from './reference_mapping'
+export { ReferenceSerializationStrategy, ReferenceSerializationStrategyName, ReferenceSerializationStrategyLookup, FieldReferenceDefinition, FieldReferenceResolver, ReferenceResolverFinder, ReferenceTargetDefinition, ExtendedReferenceTargetDefinition } from './reference_mapping'
